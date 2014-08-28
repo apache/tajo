@@ -51,8 +51,6 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
 
   private UnSafeTuple tuple;
 
-  private int headerSize = 0;
-  private static final int RECORD_SIZE = 4;
   private boolean eof = false;
   private long fileSize;
   private FileInputStream fis;
@@ -134,6 +132,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
       fetchNeeded = !rowBlock.next(unSafeTuple);
 
       if (!fetchNeeded) {
+        recordCount++;
         return unSafeTuple;
       }
     }

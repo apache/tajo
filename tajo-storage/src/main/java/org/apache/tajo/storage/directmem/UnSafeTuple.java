@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.directmem;
 
+import com.google.common.base.Preconditions;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.sun.tools.javac.util.Convert;
@@ -35,6 +36,7 @@ import static org.apache.tajo.common.TajoDataTypes.DataType;
 public class UnSafeTuple implements Tuple {
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
 
+  private boolean selfAllocated = false;
   private DirectBuffer bb;
   private int relativePos;
   private int length;
@@ -45,6 +47,7 @@ public class UnSafeTuple implements Tuple {
 
   public UnSafeTuple(int length, DataType [] types) {
     bb = (DirectBuffer) ByteBuffer.allocateDirect(length).order(ByteOrder.nativeOrder());
+    selfAllocated = true;
     this.relativePos = 0;
     this.length = length;
     this.types = types;
@@ -71,7 +74,9 @@ public class UnSafeTuple implements Tuple {
   }
 
   public void put(UnSafeTuple tuple) {
-    ((ByteBuffer)bb).clear();
+    Preconditions.checkNotNull(tuple);
+
+    ((ByteBuffer) bb).clear();
     if (length < tuple.length) {
       UnsafeUtil.free((ByteBuffer) bb);
       bb = (DirectBuffer) ByteBuffer.allocateDirect(tuple.length).order(ByteOrder.nativeOrder());
@@ -305,5 +310,11 @@ public class UnSafeTuple implements Tuple {
     }
     str.append(")");
     return str.toString();
+  }
+
+  public void free() {
+    if (selfAllocated) {
+      UnsafeUtil.free((ByteBuffer) bb);
+    }
   }
 }

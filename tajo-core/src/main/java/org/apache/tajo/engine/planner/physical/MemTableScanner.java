@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import com.google.common.base.Preconditions;
+import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -29,6 +31,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 class MemTableScanner implements Scanner {
+  Iterable<Tuple> iterable;
   Iterator<Tuple> iterator;
   long inputBytes;
 
@@ -38,8 +41,9 @@ class MemTableScanner implements Scanner {
   int totalRecords;
   TableStats scannerTableStats;
 
-  public MemTableScanner(Collection<Tuple> iterable, long inputBytes) {
-    iterator = iterable.iterator();
+  public MemTableScanner(@NotNull Collection<Tuple> iterable, long inputBytes) {
+    Preconditions.checkNotNull(iterable);
+    this.iterable = iterable;
     totalRecords = iterable.size();
     this.inputBytes = inputBytes;
   }
@@ -54,6 +58,8 @@ class MemTableScanner implements Scanner {
     scannerTableStats.setNumBytes(inputBytes);
     scannerTableStats.setReadBytes(inputBytes);
     scannerTableStats.setNumRows(totalRecords);
+
+    iterator = iterable.iterator();
   }
 
   @Override

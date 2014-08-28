@@ -116,7 +116,7 @@ public class ExternalSortExec extends SortExec {
     }
     // TODO - sort buffer and core num should be changed to use the allocated container resource.
     //this.sortBufferBytesNum = context.getQueryContext().getLong(SessionVars.EXTSORT_BUFFER_SIZE) * StorageUnit.MB;
-    //this.sortBufferBytesNum = 38;
+    //this.sortBufferBytesNum = 150;
     this.sortBufferBytesNum = 100 * StorageUnit.MB;
     this.allocatedCoreNum = context.getConf().getIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_THREAD_NUM);
     this.executorService = Executors.newFixedThreadPool(this.allocatedCoreNum);
@@ -553,8 +553,9 @@ public class ExternalSortExec extends SortExec {
   public void rescan() throws IOException {
     if (result != null) {
       result.reset();
+    } else {
+      super.rescan();
     }
-    super.rescan();
     progress = 0.5f;
   }
 

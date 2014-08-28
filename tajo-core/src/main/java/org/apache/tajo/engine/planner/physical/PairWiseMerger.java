@@ -41,14 +41,26 @@ class PairWiseMerger implements Scanner {
   private Scanner leftScan;
   private Scanner rightScan;
 
+  private UnSafeTuple outTuple;
+  private UnSafeTuple outTuplePtr;
   private UnSafeTuple leftTuple;
+  private UnSafeTuple leftTuplePtr;
   private UnSafeTuple rightTuple;
+  private UnSafeTuple rightTuplePtr;
 
   private final Schema schema;
   private final Comparator<Tuple> comparator;
 
   private float mergerProgress;
   private TableStats mergerInputStats;
+
+  private static enum State {
+    NEW,
+    INITED,
+    CLOSED
+  }
+
+  private State state = State.NEW;
 
   public PairWiseMerger(Schema schema, Scanner leftScanner, Scanner rightScanner, Comparator<Tuple> comparator)
       throws IOException {
@@ -58,14 +70,36 @@ class PairWiseMerger implements Scanner {
     this.comparator = comparator;
   }
 
+  private void setState(State state) {
+    this.state = state;
+  }
+
   @Override
   public void init() throws IOException {
-    leftScan.init();
-    rightScan.init();
+    if (state == State.NEW) {
+      leftScan.init();
+      rightScan.init();
 
-    leftTuple = new UnSafeTuple(128, SchemaUtil.toDataTypes(schema));
-    rightTuple = new UnSafeTuple(128, SchemaUtil.toDataTypes(schema));
+      outTuplePtr = new UnSafeTuple(128, SchemaUtil.toDataTypes(schema));
+      leftTuplePtr = new UnSafeTuple(128, SchemaUtil.toDataTypes(schema));
+      rightTuplePtr = new UnSafeTuple(128, SchemaUtil.toDataTypes(schema));
 
+      outTuple = outTuplePtr;
+      leftTuple = leftTuplePtr;
+      rightTuple = rightTuplePtr;
+
+      prepareTuplesForFirstComparison();
+
+      mergerInputStats = new TableStats();
+      mergerProgress = 0.0f;
+
+      setState(State.INITED);
+    } else {
+      throw new IllegalStateException("Illegal State: init() is not allowed in " + state.name());
+    }
+  }
+
+  private void prepareTuplesForFirstComparison() throws IOException {
     UnSafeTuple lt = (UnSafeTuple) leftScan.next();
     if (lt != null) {
       leftTuple.put(lt);
@@ -79,17 +113,13 @@ class PairWiseMerger implements Scanner {
     } else {
       rightTuple = null; // TODO - missed free
     }
-
-
-    mergerInputStats = new TableStats();
-    mergerProgress = 0.0f;
   }
 
   public Tuple next() throws IOException {
-    Tuple outTuple;
+
     if (leftTuple != null && rightTuple != null) {
       if (comparator.compare(leftTuple, rightTuple) < 0) {
-        outTuple = leftTuple;
+        outTuple.put(leftTuple);
 
         UnSafeTuple lt = (UnSafeTuple) leftScan.next();
         if (lt != null) {
@@ -98,7 +128,7 @@ class PairWiseMerger implements Scanner {
           leftTuple = null; // TODO - missed free
         }
       } else {
-        outTuple = rightTuple;
+        outTuple.put(rightTuple);
 
         UnSafeTuple rt = (UnSafeTuple) rightScan.next();
         if (rt != null) {
@@ -111,7 +141,11 @@ class PairWiseMerger implements Scanner {
     }
 
     if (leftTuple == null) {
-      outTuple = rightTuple;
+      if (rightTuple != null) {
+        outTuple.put(rightTuple);
+      } else {
+        outTuple = null;
+      }
 
       UnSafeTuple rt = (UnSafeTuple) rightScan.next();
       if (rt != null) {
@@ -120,7 +154,11 @@ class PairWiseMerger implements Scanner {
         rightTuple = null; // TODO - missed free
       }
     } else {
-      outTuple = leftTuple;
+      if (leftTuple != null) {
+        outTuple.put(leftTuple);
+      } else {
+        outTuple = null;
+      }
 
       UnSafeTuple lt = (UnSafeTuple) leftScan.next();
       if (lt != null) {
@@ -134,9 +172,18 @@ class PairWiseMerger implements Scanner {
 
   @Override
   public void reset() throws IOException {
-    leftScan.reset();
-    rightScan.reset();
-    init();
+    if (state == State.INITED) {
+      leftScan.reset();
+      rightScan.reset();
+
+      outTuple = outTuplePtr;
+      leftTuple = leftTuplePtr;
+      rightTuple = rightTuplePtr;
+
+      prepareTuplesForFirstComparison();
+    } else {
+      throw new IllegalStateException("Illegal State: init() is not allowed in " + state.name());
+    }
   }
 
   public void close() throws IOException {
@@ -144,7 +191,17 @@ class PairWiseMerger implements Scanner {
     getInputStats();
     leftScan = null;
     rightScan = null;
+
+    outTuplePtr.free();
+    leftTuplePtr.free();
+    rightTuplePtr.free();
+    outTuplePtr = null;
+    leftTuplePtr = null;
+    rightTuplePtr = null;
+
     mergerProgress = 1.0f;
+
+    setState(State.CLOSED);
   }
 
   @Override

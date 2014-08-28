@@ -234,6 +234,9 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
       case INTERVAL:
         putInterval((IntervalDatum) tuple.getInterval(i));
         break;
+      case PROTOBUF:
+        putProtoDatum((ProtobufDatum) tuple.getProtobufDatum(i));
+        break;
       default:
         throw new UnsupportedException("Unknown data type: " + dataTypes[i]);
       }
