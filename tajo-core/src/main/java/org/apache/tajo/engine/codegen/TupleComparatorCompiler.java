@@ -114,7 +114,7 @@ public class TupleComparatorCompiler {
     compMethod.visitCode();
     compMethod.visitVarInsn(Opcodes.ALOAD, 0);
 
-    TajoGeneratorAdapter generatorAdapter =
+    TajoGeneratorAdapter adapter =
         new TajoGeneratorAdapter(Opcodes.ACC_PUBLIC, compMethod, methodName, methodDesc);
 
     final Label returnLabel = new Label();
@@ -127,34 +127,36 @@ public class TupleComparatorCompiler {
         // } else {
         //   return cmpVal;
         // }
-        generatorAdapter.dup();
-        generatorAdapter.push(0);
+        adapter.dup();
+        adapter.push(0);
         compMethod.visitJumpInsn(Opcodes.IF_ICMPNE, returnLabel);
         compMethod.visitInsn(Opcodes.POP);
       }
 
-//      adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 1);
-//      adapter.invokeInterface(Tuple.class, "isNotNull", boolean.class, new Class [] {int.class});
-//
-//      adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
-//      adapter.invokeInterface(Tuple.class, "isNotNull", boolean.class, new Class [] {int.class});
-//
-//      compMethod.visitInsn(Opcodes.ISUB);
-//
-//      adapter.dup();
-//      adapter.push(0);
-//      compMethod.visitJumpInsn(Opcodes.IF_ICMPNE, returnLabel);
-      //adapter.pop();
+      adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 1);
+      adapter.push(compImpl.getSortKeyIds()[idx]);
+      adapter.invokeInterface(Tuple.class, "isNull", boolean.class, new Class [] {int.class});
+
+      adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
+      adapter.push(compImpl.getSortKeyIds()[idx]);
+      adapter.invokeInterface(Tuple.class, "isNull", boolean.class, new Class [] {int.class});
+
+      compMethod.visitInsn(Opcodes.ISUB);
+
+      adapter.dup();
+      adapter.push(0);
+      compMethod.visitJumpInsn(Opcodes.IF_ICMPNE, returnLabel);
+      adapter.pop();
 
       SortSpec sortSpec = compImpl.getSortSpecs()[idx];
       DataType dataType = sortSpec.getSortKey().getDataType();
 
       if (TajoGeneratorAdapter.isJVMInternalInt(dataType)) {
-        emitComparisonForJVMInteger(generatorAdapter, compImpl, idx);
+        emitComparisonForJVMInteger(adapter, compImpl, idx);
       } else if (TajoGeneratorAdapter.getWordSize(dataType) == 2 || dataType.getType() == Type.FLOAT4) {
-        emitComparisonForOtherPrimitives(generatorAdapter, compImpl, idx);
+        emitComparisonForOtherPrimitives(adapter, compImpl, idx);
       } else if (dataType.getType() == Type.TEXT) {
-        emitComparisonForText(generatorAdapter, compImpl, idx, ensureUnSafeTuple);
+        emitComparisonForText(adapter, compImpl, idx, ensureUnSafeTuple);
       } else {
         throw new UnsupportedException("Unknown sort type: " + dataType.getType().name());
       }
@@ -206,6 +208,7 @@ public class TupleComparatorCompiler {
 
     Type type = dataType.getType();
     switch (type) {
+    case BOOLEAN:
     case INT1:
     case INT2:
       adapter.invokeInterface(Tuple.class, "getInt2", short.class, new Class[]{int.class});

@@ -100,6 +100,7 @@ public class UnsafeComparer implements Comparator<byte[]> {
     }
   }
 
+  @SuppressWarnings("unused")
   public static int compareStatic(byte[] left, byte[] right) {
     return INSTANCE.compare(left, right);
   }
