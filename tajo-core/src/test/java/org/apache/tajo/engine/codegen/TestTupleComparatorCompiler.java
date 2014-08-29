@@ -211,5 +211,6 @@ public class TestTupleComparatorCompiler {
     assertTrue(rowBlock.next(t3));
 
     assertCompare(compiled, t1, t2, t3);
+    rowBlock.free();
   }
 }

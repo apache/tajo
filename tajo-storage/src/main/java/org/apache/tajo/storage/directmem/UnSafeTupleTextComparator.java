@@ -79,6 +79,9 @@ public class UnSafeTupleTextComparator {
         }
         return (int) (((lw >>> n) & 0xFFL) - ((rw >>> n) & 0xFFL));
       }
+
+      ptr1 += SizeOf.SIZE_OF_LONG;
+      ptr2 += SizeOf.SIZE_OF_LONG;
     }
 
     // The epilogue to cover the last (minLength % 8) elements.
