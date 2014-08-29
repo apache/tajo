@@ -109,6 +109,11 @@ public class UnSafeTuple implements Tuple {
   }
 
   @Override
+  public boolean isNotNull(int fieldid) {
+    return getFieldOffset(fieldid) == -1;
+  }
+
+  @Override
   public void clear() {
     // nothing to do
   }

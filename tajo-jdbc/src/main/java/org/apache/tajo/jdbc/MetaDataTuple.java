@@ -52,6 +52,11 @@ public class MetaDataTuple implements Tuple {
   }
 
   @Override
+  public boolean isNotNull(int fieldid) {
+    return !isNull(fieldid);
+  }
+
+  @Override
   public void clear() {
     values.clear();
   }

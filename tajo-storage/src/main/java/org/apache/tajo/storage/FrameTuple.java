@@ -76,6 +76,11 @@ public class FrameTuple implements Tuple, Cloneable {
   }
 
   @Override
+  public boolean isNotNull(int fieldid) {
+    return !isNull(fieldid);
+  }
+
+  @Override
   public void clear() {
     throw new UnsupportedException();
   }

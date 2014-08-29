@@ -73,6 +73,11 @@ public class LazyTuple implements Tuple, Cloneable {
   }
 
   @Override
+  public boolean isNotNull(int fieldid) {
+    return !isNull(fieldid);
+  }
+
+  @Override
   public void clear() {
     for (int i = 0; i < values.length; i++) {
       values[i] = null;

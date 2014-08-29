@@ -133,6 +133,19 @@ public class TupleComparatorCompiler {
         compMethod.visitInsn(Opcodes.POP);
       }
 
+//      adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 1);
+//      adapter.invokeInterface(Tuple.class, "isNotNull", boolean.class, new Class [] {int.class});
+//
+//      adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
+//      adapter.invokeInterface(Tuple.class, "isNotNull", boolean.class, new Class [] {int.class});
+//
+//      compMethod.visitInsn(Opcodes.ISUB);
+//
+//      adapter.dup();
+//      adapter.push(0);
+//      compMethod.visitJumpInsn(Opcodes.IF_ICMPNE, returnLabel);
+      //adapter.pop();
+
       SortSpec sortSpec = compImpl.getSortSpecs()[idx];
       DataType dataType = sortSpec.getSortKey().getDataType();
 
