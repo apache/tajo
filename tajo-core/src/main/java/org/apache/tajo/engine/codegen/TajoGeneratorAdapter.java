@@ -159,6 +159,10 @@ class TajoGeneratorAdapter {
     generatorAdapter = new GeneratorAdapter(methodVisitor, access, name, desc);
   }
 
+  public MethodVisitor getMethodvisitor() {
+    return methodvisitor;
+  }
+
   public static boolean isJVMInternalInt(TajoDataTypes.DataType dataType) {
     TajoDataTypes.Type type = dataType.getType();
     return type == BOOLEAN || type == INT1 || type == INT2 || type == INT4 || type== INET4;

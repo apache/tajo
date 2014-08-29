@@ -32,7 +32,7 @@ import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.exception.InvalidQueryException;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.catalog.SchemaUtil;
-import org.apache.tajo.storage.TupleComparator;
+import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
@@ -540,11 +540,11 @@ public class PlannerUtil {
     return new SortSpec[][]{outerSortSpec, innerSortSpec};
   }
 
-  public static TupleComparator[] getComparatorsFromJoinQual(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
+  public static TupleComparatorImpl[] getComparatorsFromJoinQual(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
     SortSpec[][] sortSpecs = getSortKeysFromJoinQual(joinQual, leftSchema, rightSchema);
-    TupleComparator[] comparators = new TupleComparator[2];
-    comparators[0] = new TupleComparator(leftSchema, sortSpecs[0]);
-    comparators[1] = new TupleComparator(rightSchema, sortSpecs[1]);
+    TupleComparatorImpl[] comparators = new TupleComparatorImpl[2];
+    comparators[0] = new TupleComparatorImpl(leftSchema, sortSpecs[0]);
+    comparators[1] = new TupleComparatorImpl(rightSchema, sortSpecs[1]);
     return comparators;
   }
 

@@ -24,7 +24,6 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
-import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
@@ -142,7 +141,7 @@ public class TestExternalSortExec {
     int cnt = 0;
     exec.init();
     long start = System.currentTimeMillis();
-    TupleComparator comparator = new TupleComparator(exec.getSchema(),
+    TupleComparatorImpl comparator = new TupleComparatorImpl(exec.getSchema(),
         new SortSpec[]{
             new SortSpec(new Column("col2", Type.INT4)),
             new SortSpec(new Column("col3", Type.INT8))
@@ -177,7 +176,7 @@ public class TestExternalSortExec {
   }
 
   public static DirectRawFileScanner createSortedScanner(TajoConf conf, TableMeta meta, int rowNum,
-                                                         TupleComparator comparator)
+                                                         TupleComparatorImpl comparator)
       throws IOException {
     Path testDir = CommonTestingUtil.getTestDir();
     Path outFile = new Path(testDir, "file1.out");

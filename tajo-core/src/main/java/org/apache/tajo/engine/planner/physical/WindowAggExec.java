@@ -28,7 +28,7 @@ import org.apache.tajo.engine.function.FunctionContext;
 import org.apache.tajo.engine.planner.logical.WindowAggNode;
 import org.apache.tajo.engine.planner.logical.WindowSpec;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.TupleComparator;
+import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -265,7 +265,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
   }
 
   private void evaluationWindowFrame() {
-    TupleComparator comp;
+    TupleComparatorImpl comp;
 
     evaluatedTuples = new ArrayList<Tuple>();
 
@@ -285,9 +285,9 @@ public class WindowAggExec extends UnaryPhysicalExec {
 
     for (int idx = 0; idx < functions.length; idx++) {
       if (orderedFuncFlags[idx]) {
-        comp = new TupleComparator(inSchema, functions[idx].getSortSpecs());
+        comp = new TupleComparatorImpl(inSchema, functions[idx].getSortSpecs());
         Collections.sort(accumulatedInTuples, comp);
-        comp = new TupleComparator(schemaForOrderBy, functions[idx].getSortSpecs());
+        comp = new TupleComparatorImpl(schemaForOrderBy, functions[idx].getSortSpecs());
         Collections.sort(evaluatedTuples, comp);
       }
 

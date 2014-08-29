@@ -49,7 +49,7 @@ import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.storage.StorageUtil;
-import org.apache.tajo.storage.TupleComparator;
+import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 
@@ -96,7 +96,7 @@ public class Task {
   // TODO - to be refactored
   private ShuffleType shuffleType = null;
   private Schema finalSchema = null;
-  private TupleComparator sortComp = null;
+  private TupleComparatorImpl sortComp = null;
   private ClientSocketChannelFactory channelFactory = null;
 
   static final String OUTPUT_FILE_PREFIX="part-";
@@ -196,7 +196,7 @@ public class Task {
       if (shuffleType == ShuffleType.RANGE_SHUFFLE) {
         SortNode sortNode = PlannerUtil.findTopNode(plan, NodeType.SORT);
         this.finalSchema = PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys());
-        this.sortComp = new TupleComparator(finalSchema, sortNode.getSortKeys());
+        this.sortComp = new TupleComparatorImpl(finalSchema, sortNode.getSortKeys());
       }
     } else {
       // The final result of a task will be written in a file named part-ss-nnnnnnn,

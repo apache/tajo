@@ -27,7 +27,7 @@ import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.TupleComparator;
+import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -52,7 +52,7 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
   private List<Tuple> rightTupleSlots;
 
   private JoinTupleComparator joincomparator = null;
-  private TupleComparator[] tupleComparator = null;
+  private TupleComparatorImpl[] tupleComparator = null;
 
   private final static int INITIAL_TUPLE_SLOT = 10000;
 

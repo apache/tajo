@@ -1,4 +1,4 @@
-/**
+/***
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,17 +16,16 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.index;
+package org.apache.tajo.engine.codegen;
 
-import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.storage.TupleComparatorImpl;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.TupleComparator;
 
-import java.io.IOException;
+public class TupleCmp extends TupleComparator {
+  @Override
+  public int compare(Tuple o1, Tuple o2) {
 
-public interface IndexMethod {
-  IndexWriter getIndexWriter(final Path fileName, int level, Schema keySchema,
-      TupleComparatorImpl comparator) throws IOException;
-  IndexReader getIndexReader(final Path fileName, Schema keySchema,
-      TupleComparatorImpl comparator) throws IOException;
+    o1.clear();;
+    return 0;
+  }
 }

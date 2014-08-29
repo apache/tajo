@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.codegen;
 
 import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.storage.TupleComparatorImpl;
 
 public class CompilationError extends RuntimeException {
   public CompilationError(String message) {
@@ -27,5 +28,9 @@ public class CompilationError extends RuntimeException {
 
   public CompilationError(EvalNode evalNode, Throwable t, byte [] clazz) {
     super("Compilation Error: " + evalNode.toString() + "\n\nBYTES CODE DUMP:\n" + CodeGenUtils.disassemble(clazz), t);
+  }
+
+  public CompilationError(TupleComparatorImpl comp, Throwable t, byte [] clazz) {
+    super("Compilation Error: " + comp.toString() + "\n\nBYTES CODE DUMP:\n" + CodeGenUtils.disassemble(clazz), t);
   }
 }

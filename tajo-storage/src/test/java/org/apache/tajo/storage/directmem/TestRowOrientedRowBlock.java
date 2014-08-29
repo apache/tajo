@@ -27,13 +27,11 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.TupleComparator;
+import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.storage.raw.TestDirectRawFile;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.ProtoUtil;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.nio.ByteBuffer;
@@ -204,7 +202,7 @@ public class TestRowOrientedRowBlock {
     LOG.info("reading takes " + (readEnd - readStart) + " msec");
 
     SortSpec sortSpec = new SortSpec(new Column("col2", Type.INT4));
-    TupleComparator comparator = new TupleComparator(schema, new SortSpec[] {sortSpec});
+    TupleComparatorImpl comparator = new TupleComparatorImpl(schema, new SortSpec[] {sortSpec});
 
     long sortStart = System.currentTimeMillis();
     Collections.sort(unSafeTuples, comparator);

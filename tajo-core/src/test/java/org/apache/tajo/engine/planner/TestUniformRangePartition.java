@@ -23,7 +23,7 @@ import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.TupleComparator;
+import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.VTuple;
 import org.junit.Test;
@@ -483,7 +483,7 @@ public class TestUniformRangePartition {
     TupleRange expected = new TupleRange(sortSpecs, s, e);
 
     UniformRangePartition partitioner = new UniformRangePartition(expected, sortSpecs);
-    TupleComparator comp = new TupleComparator(schema, sortSpecs);
+    TupleComparatorImpl comp = new TupleComparatorImpl(schema, sortSpecs);
 
     Tuple tuple = s;
     Tuple prevTuple = null;

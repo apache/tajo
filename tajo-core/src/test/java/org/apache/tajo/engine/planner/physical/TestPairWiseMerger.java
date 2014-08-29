@@ -27,7 +27,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.TupleComparator;
+import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.storage.directmem.TestRowOrientedRowBlock;
 import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
 import org.junit.Test;
@@ -40,11 +40,11 @@ import static org.junit.Assert.assertTrue;
 
 public class TestPairWiseMerger {
   static TajoConf conf;
-  private static TupleComparator comparator;
+  private static TupleComparatorImpl comparator;
   static {
     conf = new TajoConf();
 
-    comparator = new TupleComparator(TestRowOrientedRowBlock.schema,
+    comparator = new TupleComparatorImpl(TestRowOrientedRowBlock.schema,
         new SortSpec[] {
             new SortSpec(new Column("col2", TajoDataTypes.Type.INT4)),
             new SortSpec(new Column("col3", TajoDataTypes.Type.INT8))
@@ -293,7 +293,7 @@ public class TestPairWiseMerger {
     return scanners;
   }
 
-  private static void assertSortResult(int[] rowNums, Scanner scanner, TupleComparator comparator) throws IOException {
+  private static void assertSortResult(int[] rowNums, Scanner scanner, TupleComparatorImpl comparator) throws IOException {
     Tuple tuple;
     Tuple curVal;
     Tuple preVal = null;

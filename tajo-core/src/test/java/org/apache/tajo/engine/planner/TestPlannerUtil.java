@@ -32,7 +32,7 @@ import org.apache.tajo.engine.function.builtin.SumInt;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.TupleComparator;
+import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -287,7 +287,7 @@ public class TestPlannerUtil {
     FieldEval f4 = new FieldEval("people.fid2", CatalogUtil.newSimpleDataType(Type.INT4));
 
     EvalNode joinQual = new BinaryEval(EvalType.EQUAL, f1, f2);
-    TupleComparator [] comparators = PlannerUtil.getComparatorsFromJoinQual(joinQual, outerSchema, innerSchema);
+    TupleComparatorImpl[] comparators = PlannerUtil.getComparatorsFromJoinQual(joinQual, outerSchema, innerSchema);
 
     Tuple t1 = new VTuple(2);
     t1.put(0, DatumFactory.createInt4(1));
@@ -297,11 +297,11 @@ public class TestPlannerUtil {
     t2.put(0, DatumFactory.createInt4(2));
     t2.put(1, DatumFactory.createInt4(3));
 
-    TupleComparator outerComparator = comparators[0];
+    TupleComparatorImpl outerComparator = comparators[0];
     assertTrue(outerComparator.compare(t1, t2) < 0);
     assertTrue(outerComparator.compare(t2, t1) > 0);
 
-    TupleComparator innerComparator = comparators[1];
+    TupleComparatorImpl innerComparator = comparators[1];
     assertTrue(innerComparator.compare(t1, t2) < 0);
     assertTrue(innerComparator.compare(t2, t1) > 0);
 

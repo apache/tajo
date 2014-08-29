@@ -102,14 +102,14 @@ class PairWiseMerger implements Scanner {
   private void prepareTuplesForFirstComparison() throws IOException {
     UnSafeTuple lt = (UnSafeTuple) leftScan.next();
     if (lt != null) {
-      leftTuple.put(lt);
+      leftTuple.copyFrom(lt);
     } else {
       leftTuple = null; // TODO - missed free
     }
 
     UnSafeTuple rt = (UnSafeTuple) rightScan.next();
     if (rt != null) {
-      rightTuple.put(rt);
+      rightTuple.copyFrom(rt);
     } else {
       rightTuple = null; // TODO - missed free
     }
@@ -119,20 +119,20 @@ class PairWiseMerger implements Scanner {
 
     if (leftTuple != null && rightTuple != null) {
       if (comparator.compare(leftTuple, rightTuple) < 0) {
-        outTuple.put(leftTuple);
+        outTuple.copyFrom(leftTuple);
 
         UnSafeTuple lt = (UnSafeTuple) leftScan.next();
         if (lt != null) {
-          leftTuple.put(lt);
+          leftTuple.copyFrom(lt);
         } else {
           leftTuple = null; // TODO - missed free
         }
       } else {
-        outTuple.put(rightTuple);
+        outTuple.copyFrom(rightTuple);
 
         UnSafeTuple rt = (UnSafeTuple) rightScan.next();
         if (rt != null) {
-          rightTuple.put(rt);
+          rightTuple.copyFrom(rt);
         } else {
           rightTuple = null; // TODO - missed free
         }
@@ -142,27 +142,27 @@ class PairWiseMerger implements Scanner {
 
     if (leftTuple == null) {
       if (rightTuple != null) {
-        outTuple.put(rightTuple);
+        outTuple.copyFrom(rightTuple);
       } else {
         outTuple = null;
       }
 
       UnSafeTuple rt = (UnSafeTuple) rightScan.next();
       if (rt != null) {
-        rightTuple.put(rt);
+        rightTuple.copyFrom(rt);
       } else {
         rightTuple = null; // TODO - missed free
       }
     } else {
       if (leftTuple != null) {
-        outTuple.put(leftTuple);
+        outTuple.copyFrom(leftTuple);
       } else {
         outTuple = null;
       }
 
       UnSafeTuple lt = (UnSafeTuple) leftScan.next();
       if (lt != null) {
-        leftTuple.put(lt);
+        leftTuple.copyFrom(lt);
       } else {
         leftTuple = null; // TODO - missed free
       }

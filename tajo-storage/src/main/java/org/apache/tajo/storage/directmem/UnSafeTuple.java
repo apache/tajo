@@ -73,7 +73,7 @@ public class UnSafeTuple implements Tuple {
     return ((ByteBuffer)((ByteBuffer)bb).duplicate().position(relativePos).limit(relativePos + length)).slice();
   }
 
-  public void put(UnSafeTuple tuple) {
+  public void copyFrom(UnSafeTuple tuple) {
     Preconditions.checkNotNull(tuple);
 
     ((ByteBuffer) bb).clear();
