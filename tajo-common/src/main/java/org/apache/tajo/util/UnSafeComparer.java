@@ -32,19 +32,19 @@ import java.util.Comparator;
 /**
  * This is borrowed from UnsignedBytes.
  */
-public class UnsafeComparator implements Comparator<byte[]> {
+public class UnsafeComparer implements Comparator<byte[]> {
 
-  public static final UnsafeComparator INSTANCE;
+  public static final UnsafeComparer INSTANCE;
 
   static {
-    INSTANCE = new UnsafeComparator();
+    INSTANCE = new UnsafeComparer();
   }
 
   public Comparator<byte []> get() {
     return INSTANCE;
   }
 
-  private UnsafeComparator() {}
+  private UnsafeComparer() {}
 
   static final boolean littleEndian =
       ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN);

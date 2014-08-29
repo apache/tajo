@@ -31,7 +31,7 @@ import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.storage.directmem.UnSafeTuple;
 import org.apache.tajo.storage.directmem.UnSafeTupleTextComparator;
-import org.apache.tajo.util.UnsafeComparator;
+import org.apache.tajo.util.UnsafeComparer;
 
 import java.lang.reflect.Constructor;
 
@@ -293,7 +293,7 @@ public class TupleComparatorCompiler {
       adapter.push(c.getSortKeyIds()[idx]);
       adapter.invokeInterface(Tuple.class, "getBytes", byte [].class, new Class [] {int.class});
 
-      adapter.invokeStatic(UnsafeComparator.class, "compareStatic", int.class, new Class[]{byte[].class, byte[].class});
+      adapter.invokeStatic(UnsafeComparer.class, "compareStatic", int.class, new Class[]{byte[].class, byte[].class});
     }
   }
 }
