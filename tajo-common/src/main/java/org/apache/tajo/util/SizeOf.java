@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.directmem;
+package org.apache.tajo.util;
 
 import static sun.misc.Unsafe.*;
 

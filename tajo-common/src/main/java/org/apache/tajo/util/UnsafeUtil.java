@@ -15,12 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.tajo.storage.directmem;
+package org.apache.tajo.util;
 
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Longs;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.common.TajoDataTypes;
 import sun.misc.Cleaner;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
@@ -57,14 +55,6 @@ public class UnsafeUtil {
 
   public static long alloc(long size) {
     return unsafe.allocateMemory(size);
-  }
-
-  public static long allocVector(TajoDataTypes.Type type, int num) {
-    return allocVector(CatalogUtil.newSimpleDataType(type), num);
-  }
-
-  public static long allocVector(TajoDataTypes.DataType dataType, int num) {
-    return unsafe.allocateMemory(alignedSize(TypeUtil.sizeOf(dataType, num)));
   }
 
   public static long getAddress(ByteBuffer buffer) {
@@ -185,4 +175,6 @@ public class UnsafeUtil {
       cleaner.clean();
     }
   }
+
+
 }

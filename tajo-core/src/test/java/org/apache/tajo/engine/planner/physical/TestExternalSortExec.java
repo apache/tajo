@@ -24,6 +24,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
@@ -43,6 +44,7 @@ import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.raw.TestDirectRawFile;
 import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
 import org.apache.tajo.storage.rawfile.DirectRawFileWriter;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -70,7 +72,7 @@ public class TestExternalSortExec {
   private AbstractStorageManager sm;
   private Path testDir;
 
-  private final int numTuple = 3000000;
+  private final int numTuple = 2000000;
   private TableDesc employee;
 
   @Before
@@ -120,7 +122,8 @@ public class TestExternalSortExec {
   @Test
   public final void testNext() throws IOException, PlanningException {
     QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
-    //queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 38);
+    queryContext.setBool(SessionVars.CODEGEN, true);
+    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 400 * StorageUnit.MB);
 
     FileFragment[] frags = StorageManager.splitNG(conf, "default.employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);

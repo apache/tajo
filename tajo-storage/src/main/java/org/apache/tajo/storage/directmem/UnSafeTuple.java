@@ -22,6 +22,8 @@ import com.google.common.base.Preconditions;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.sun.tools.javac.util.Convert;
+import org.apache.tajo.util.SizeOf;
+import org.apache.tajo.util.UnsafeUtil;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
@@ -91,7 +93,7 @@ public class UnSafeTuple implements Tuple {
     return UNSAFE.getInt(bb.address() + relativePos + SizeOf.SIZE_OF_INT + (fieldId * SizeOf.SIZE_OF_INT));
   }
 
-  private long getFieldAddr(int fieldId) {
+  public long getFieldAddr(int fieldId) {
     int fieldOffset = getFieldOffset(fieldId);
     return bb.address() + relativePos + fieldOffset;
   }

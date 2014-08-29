@@ -31,15 +31,12 @@ import org.apache.tajo.storage.SeekableScanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
 import org.apache.tajo.storage.directmem.UnSafeTuple;
-import org.apache.tajo.storage.directmem.UnsafeUtil;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.unit.StorageUnit;
-import sun.nio.ch.DirectBuffer;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 public class DirectRawFileScanner extends FileScanner implements SeekableScanner {

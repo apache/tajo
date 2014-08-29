@@ -25,6 +25,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RawLocalFileSystem;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -108,16 +109,14 @@ public class ExternalSortExec extends SortExec {
     super(context, plan.getInSchema(), plan.getOutSchema(), null, plan.getSortKeys());
 
     this.plan = plan;
-    this.meta = CatalogUtil.newTableMeta(StoreType.ROWFILE);
+    this.meta = CatalogUtil.newTableMeta(StoreType.DIRECTRAW);
 
     this.defaultFanout = context.getConf().getIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT);
     if (defaultFanout < 2) {
       throw new PhysicalPlanningException(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT.varname + " cannot be lower than 2");
     }
     // TODO - sort buffer and core num should be changed to use the allocated container resource.
-    //this.sortBufferBytesNum = context.getQueryContext().getLong(SessionVars.EXTSORT_BUFFER_SIZE) * StorageUnit.MB;
-    //this.sortBufferBytesNum = 150;
-    this.sortBufferBytesNum = 100 * StorageUnit.MB;
+    this.sortBufferBytesNum = context.getQueryContext().getLong(SessionVars.EXTSORT_BUFFER_SIZE) * StorageUnit.MB;
     this.allocatedCoreNum = context.getConf().getIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_THREAD_NUM);
     this.executorService = Executors.newFixedThreadPool(this.allocatedCoreNum);
     this.inMemoryTable = new RowOrientedRowBlock(inSchema, (int) sortBufferBytesNum, 0.2f);

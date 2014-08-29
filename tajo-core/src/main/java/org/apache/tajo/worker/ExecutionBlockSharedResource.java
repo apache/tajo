@@ -124,6 +124,10 @@ public class ExecutionBlockSharedResource {
     }
   }
 
+  public TajoClassLoader getClassLoader() {
+    return classLoader;
+  }
+
   public void release() {
     compilationContext = null;
 

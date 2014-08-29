@@ -19,6 +19,7 @@
 package org.apache.tajo.storage.directmem;
 
 import com.google.common.base.Preconditions;
+import org.apache.tajo.util.UnsafeUtil;
 import sun.nio.ch.DirectBuffer;
 
 import java.nio.ByteBuffer;

@@ -19,6 +19,8 @@
 package org.apache.tajo.storage.directmem;
 
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.util.SizeOf;
+import org.apache.tajo.util.UnsafeUtil;
 import sun.misc.Unsafe;
 
 public class VectorUtil {

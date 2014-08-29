@@ -26,6 +26,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RawLocalFileSystem;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.util.UnsafeUtil;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;

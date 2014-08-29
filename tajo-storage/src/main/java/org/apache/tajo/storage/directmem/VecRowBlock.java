@@ -22,6 +22,8 @@ import com.google.common.collect.Lists;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.util.SizeOf;
+import org.apache.tajo.util.UnsafeUtil;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
