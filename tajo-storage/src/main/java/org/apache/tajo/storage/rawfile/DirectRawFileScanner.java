@@ -90,17 +90,20 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
       columnTypes[i] = schema.getColumn(i).getDataType();
     }
 
+    fetchNeeded = !next(rowBlock);
+
     super.init();
   }
 
   @Override
   public long getNextOffset() throws IOException {
-    return channel.position();
+    return channel.position() - rowBlock.remainForRead();
   }
 
   @Override
   public void seek(long offset) throws IOException {
     channel.position(offset);
+    fetchNeeded = true;
   }
 
   public boolean next(RowOrientedRowBlock rowblock) throws IOException {

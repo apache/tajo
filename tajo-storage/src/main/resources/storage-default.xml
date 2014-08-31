@@ -40,7 +40,7 @@
   <!--- Registered Scanner Handler -->
   <property>
     <name>tajo.storage.scanner-handler</name>
-    <value>csv,raw,rcfile,row,trevni,parquet,sequencefile,avro</value>
+    <value>csv,raw,rcfile,row,trevni,parquet,sequencefile,avro,directraw</value>
   </property>
 
   <!--- Fragment Class Configurations -->

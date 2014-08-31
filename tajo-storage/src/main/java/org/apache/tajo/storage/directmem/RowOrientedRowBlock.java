@@ -135,6 +135,10 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
     return bytesLen;
   }
 
+  public long remainForRead() {
+    return bytesLen - curPosForRead;
+  }
+
   public long remain() {
     return bytesLen - curOffsetForWrite - rowOffsetForWrite;
   }
@@ -263,6 +267,7 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
 
         if (remain() < SizeOf.SIZE_OF_INT) {
           channel.position(channel.position() - remain());
+          bytesLen = (int) (bytesLen - remain());
           return true;
         }
 
@@ -270,6 +275,7 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
 
         if (remain() < recordSize) {
           channel.position(channel.position() - remain());
+          bytesLen = (int) (bytesLen - remain());
           return true;
         }
 

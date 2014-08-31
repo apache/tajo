@@ -133,7 +133,7 @@ public class DirectRawFileWriter extends FileAppender {
       ensureSize(bb.limit());
       buffer.put(bb);
 
-      pos = channel.position();
+      pos = channel.position() + (buffer.limit() - buffer.remaining());
     } else {
 
       if (encoder == null) {
@@ -144,7 +144,7 @@ public class DirectRawFileWriter extends FileAppender {
       ensureSize(bb.limit());
       buffer.put(bb);
 
-      pos = channel.position();
+      pos = channel.position() + (buffer.limit() - buffer.remaining());
     }
 
     if (enabledStats) {

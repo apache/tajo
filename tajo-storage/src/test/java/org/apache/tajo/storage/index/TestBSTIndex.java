@@ -74,7 +74,8 @@ public class TestBSTIndex {
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
         {StoreType.CSV},
-        {StoreType.RAW}
+        {StoreType.RAW},
+        {StoreType.DIRECTRAW}
     });
   }
 
@@ -91,15 +92,15 @@ public class TestBSTIndex {
     Path tablePath = new Path(testDir, "testFindValue_" + storeType);
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
     appender.init();
-    Tuple tuple;
+    Tuple key;
     for (int i = 0; i < TUPLE_NUM; i++) {
-      tuple = new VTuple(5);
-      tuple.put(0, DatumFactory.createInt4(i));
-      tuple.put(1, DatumFactory.createInt8(i));
-      tuple.put(2, DatumFactory.createFloat8(i));
-      tuple.put(3, DatumFactory.createFloat4(i));
-      tuple.put(4, DatumFactory.createText("field_" + i));
-      appender.addTuple(tuple);
+      key = new VTuple(5);
+      key.put(0, DatumFactory.createInt4(i));
+      key.put(1, DatumFactory.createInt8(i));
+      key.put(2, DatumFactory.createFloat8(i));
+      key.put(3, DatumFactory.createFloat4(i));
+      key.put(4, DatumFactory.createText("field_" + i));
+      appender.addTuple(key);
     }
     appender.close();
 
@@ -132,11 +133,11 @@ public class TestBSTIndex {
     while (true) {
       keyTuple = new VTuple(2);
       offset = scanner.getNextOffset();
-      tuple = scanner.next();
-      if (tuple == null) break;
+      key = scanner.next();
+      if (key == null) break;
 
-      keyTuple.put(0, tuple.get(1));
-      keyTuple.put(1, tuple.get(2));
+      keyTuple.put(0, key.get(1));
+      keyTuple.put(1, key.get(2));
       creater.write(keyTuple, offset);
     }
 
@@ -144,29 +145,29 @@ public class TestBSTIndex {
     creater.close();
     scanner.close();
 
-    tuple = new VTuple(keySchema.size());
+    key = new VTuple(keySchema.size());
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindValue_" + storeType + ".idx"), keySchema, comp);
     reader.open();
     scanner = StorageManagerFactory.getSeekableScanner(conf, meta, schema, tablet, schema);
     scanner.init();
 
     for (int i = 0; i < TUPLE_NUM - 1; i++) {
-      tuple.put(0, DatumFactory.createInt8(i));
-      tuple.put(1, DatumFactory.createFloat8(i));
-      long offsets = reader.find(tuple);
+      key.put(0, DatumFactory.createInt8(i));
+      key.put(1, DatumFactory.createFloat8(i));
+      long offsets = reader.find(key);
       scanner.seek(offsets);
-      tuple = scanner.next();
-      assertTrue("seek check [" + (i) + " ," + (tuple.get(1).asInt8()) + "]", (i) == (tuple.get(1).asInt8()));
-      assertTrue("seek check [" + (i) + " ," + (tuple.get(2).asFloat8()) + "]", (i) == (tuple.get(2).asFloat8()));
+      Tuple found = scanner.next();
+      assertTrue("seek check [" + (i) + " ," + (found.get(1).asInt8()) + "]", (i) == (found.get(1).asInt8()));
+      assertTrue("seek check [" + (i) + " ," + (found.get(2).asFloat8()) + "]", (i) == (found.get(2).asFloat8()));
 
       offsets = reader.next();
       if (offsets == -1) {
         continue;
       }
       scanner.seek(offsets);
-      tuple = scanner.next();
-      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (tuple.get(0).asInt4()));
-      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (tuple.get(1).asInt8()));
+      found = scanner.next();
+      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (found.get(0).asInt4()));
+      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (found.get(1).asInt8()));
     }
     reader.close();
     scanner.close();
@@ -197,19 +198,19 @@ public class TestBSTIndex {
     creater.setLoadNum(LOAD_NUM);
     creater.open();
 
-    Tuple tuple;
+    Tuple key;
     long offset;
     for (int i = 0; i < TUPLE_NUM; i++) {
-      tuple = new VTuple(5);
-      tuple.put(0, DatumFactory.createInt4(i));
-      tuple.put(1, DatumFactory.createInt8(i));
-      tuple.put(2, DatumFactory.createFloat8(i));
-      tuple.put(3, DatumFactory.createFloat4(i));
-      tuple.put(4, DatumFactory.createText("field_" + i));
+      key = new VTuple(5);
+      key.put(0, DatumFactory.createInt4(i));
+      key.put(1, DatumFactory.createInt8(i));
+      key.put(2, DatumFactory.createFloat8(i));
+      key.put(3, DatumFactory.createFloat4(i));
+      key.put(4, DatumFactory.createText("field_" + i));
 
       offset = appender.getOffset();
-      appender.addTuple(tuple);
-      creater.write(tuple, offset);
+      appender.addTuple(key);
+      creater.write(key, offset);
     }
     appender.flush();
     appender.close();
@@ -222,7 +223,7 @@ public class TestBSTIndex {
     long fileLen = status.getLen();
     FileFragment tablet = new FileFragment("table1_1", status.getPath(), 0, fileLen);
 
-    tuple = new VTuple(keySchema.size());
+    key = new VTuple(keySchema.size());
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testBuildIndexWithAppender_" + storeType + ".idx"),
         keySchema, comp);
     reader.open();
@@ -230,22 +231,23 @@ public class TestBSTIndex {
     scanner.init();
 
     for (int i = 0; i < TUPLE_NUM - 1; i++) {
-      tuple.put(0, DatumFactory.createInt8(i));
-      tuple.put(1, DatumFactory.createFloat8(i));
-      long offsets = reader.find(tuple);
+      key.put(0, DatumFactory.createInt8(i));
+      key.put(1, DatumFactory.createFloat8(i));
+      long offsets = reader.find(key);
       scanner.seek(offsets);
-      tuple = scanner.next();
-      assertTrue("[seek check " + (i) + " ]", (i) == (tuple.get(1).asInt8()));
-      assertTrue("[seek check " + (i) + " ]", (i) == (tuple.get(2).asFloat8()));
+
+      Tuple found = scanner.next();
+      assertTrue("[seek check " + (i) + " ]", (i) == (found.get(1).asInt8()));
+      assertTrue("[seek check " + (i) + " ]", (i) == (found.get(2).asFloat8()));
 
       offsets = reader.next();
       if (offsets == -1) {
         continue;
       }
       scanner.seek(offsets);
-      tuple = scanner.next();
-      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (tuple.get(0).asInt4()));
-      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (tuple.get(1).asInt8()));
+      found = scanner.next();
+      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (found.get(0).asInt4()));
+      assertTrue("[seek check " + (i + 1) + " ]", (i + 1) == (found.get(1).asInt8()));
     }
     reader.close();
     scanner.close();
@@ -336,6 +338,7 @@ public class TestBSTIndex {
       tuple.put(2, DatumFactory.createFloat8(i));
       tuple.put(3, DatumFactory.createFloat4(i));
       tuple.put(4, DatumFactory.createText("field_" + i));
+
       appender.addTuple(tuple);
     }
     appender.close();
@@ -765,15 +768,15 @@ public class TestBSTIndex {
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
     appender.init();
 
-    Tuple tuple;
+    Tuple key;
     for (int i = (TUPLE_NUM - 1); i >= 0; i--) {
-      tuple = new VTuple(5);
-      tuple.put(0, DatumFactory.createInt4(i));
-      tuple.put(1, DatumFactory.createInt8(i));
-      tuple.put(2, DatumFactory.createFloat8(i));
-      tuple.put(3, DatumFactory.createFloat4(i));
-      tuple.put(4, DatumFactory.createText("field_" + i));
-      appender.addTuple(tuple);
+      key = new VTuple(5);
+      key.put(0, DatumFactory.createInt4(i));
+      key.put(1, DatumFactory.createInt8(i));
+      key.put(2, DatumFactory.createFloat8(i));
+      key.put(3, DatumFactory.createFloat4(i));
+      key.put(4, DatumFactory.createText("field_" + i));
+      appender.addTuple(key);
     }
     appender.close();
 
@@ -806,11 +809,11 @@ public class TestBSTIndex {
     while (true) {
       keyTuple = new VTuple(2);
       offset = scanner.getNextOffset();
-      tuple = scanner.next();
-      if (tuple == null) break;
+      key = scanner.next();
+      if (key == null) break;
 
-      keyTuple.put(0, tuple.get(1));
-      keyTuple.put(1, tuple.get(2));
+      keyTuple.put(0, key.get(1));
+      keyTuple.put(1, key.get(2));
       creater.write(keyTuple, offset);
     }
 
@@ -818,7 +821,7 @@ public class TestBSTIndex {
     creater.close();
     scanner.close();
 
-    tuple = new VTuple(keySchema.size());
+    key = new VTuple(keySchema.size());
 
     BSTIndexReader reader = bst.getIndexReader(new Path(testDir, "testFindValueDescOrder_" + storeType + ".idx"),
         keySchema, comp);
@@ -827,22 +830,22 @@ public class TestBSTIndex {
     scanner.init();
 
     for (int i = (TUPLE_NUM - 1); i > 0; i--) {
-      tuple.put(0, DatumFactory.createInt8(i));
-      tuple.put(1, DatumFactory.createFloat8(i));
-      long offsets = reader.find(tuple);
+      key.put(0, DatumFactory.createInt8(i));
+      key.put(1, DatumFactory.createFloat8(i));
+      long offsets = reader.find(key);
       scanner.seek(offsets);
-      tuple = scanner.next();
-      assertTrue("seek check [" + (i) + " ," + (tuple.get(1).asInt8()) + "]", (i) == (tuple.get(1).asInt8()));
-      assertTrue("seek check [" + (i) + " ," + (tuple.get(2).asFloat8()) + "]", (i) == (tuple.get(2).asFloat8()));
+      Tuple found = scanner.next();
+      assertTrue("seek check [" + (i) + " ," + (found.get(1).asInt8()) + "]", (i) == (found.get(1).asInt8()));
+      assertTrue("seek check [" + (i) + " ," + (found.get(2).asFloat8()) + "]", (i) == (found.get(2).asFloat8()));
 
       offsets = reader.next();
       if (offsets == -1) {
         continue;
       }
       scanner.seek(offsets);
-      tuple = scanner.next();
-      assertTrue("[seek check " + (i - 1) + " ]", (i - 1) == (tuple.get(0).asInt4()));
-      assertTrue("[seek check " + (i - 1) + " ]", (i - 1) == (tuple.get(1).asInt8()));
+      found = scanner.next();
+      assertTrue("[seek check " + (i - 1) + " ]", (i - 1) == (found.get(0).asInt4()));
+      assertTrue("[seek check " + (i - 1) + " ]", (i - 1) == (found.get(1).asInt8()));
     }
     reader.close();
     scanner.close();

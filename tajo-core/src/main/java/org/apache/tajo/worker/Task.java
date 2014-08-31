@@ -424,7 +424,7 @@ public class Task {
 
   public void run() {
     startTime = System.currentTimeMillis();
-    Exception error = null;
+    Throwable error = null;
     try {
       context.setState(TaskAttemptState.TA_RUNNING);
 
@@ -442,7 +442,7 @@ public class Task {
 
       while(!killed && executor.next() != null) {
       }
-    } catch (Exception e) {
+    } catch (Throwable e) {
       error = e ;
       LOG.error(e.getMessage(), e);
       aborted = true;
