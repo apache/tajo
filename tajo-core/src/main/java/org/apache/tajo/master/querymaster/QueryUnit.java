@@ -622,6 +622,11 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   }
 
   public void setIntermediateData(Collection<IntermediateEntry> partitions) {
+    for (IntermediateEntry i: partitions) {
+      if (i.getPullHost().getPort() == 0) {
+        int a= 1;
+      }
+    }
     this.intermediateData = new ArrayList<IntermediateEntry>(partitions);
   }
 

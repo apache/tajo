@@ -160,29 +160,8 @@ public class WorkerHeartbeatService extends AbstractService {
         clientPort = context.getTajoWorkerClientService().getBindAddr().getPort();
       }
 
-      // get pull server port
-      long startTime = System.currentTimeMillis();
-      while (true) {
-        if (context.getPullService() != null) {
-          pullServerPort = context.getPullService().getPort();
-          if (pullServerPort > 0) {
-            break;
-          }
-        } else {
-          pullServerPort = TajoPullServerService.readPullServerPort();
-          if (pullServerPort > 0) {
-            break;
-          }
-        }
-        try {
-          Thread.sleep(1000);
-        } catch (InterruptedException e) {
-        }
-        if (System.currentTimeMillis() - startTime > 30 * 1000) {
-          LOG.fatal("TajoWorker stopped cause can't get PullServer port.");
-          System.exit(-1);
-        }
-      }
+      pullServerPort = context.getPullServerPort();
+
       while(!stopped.get()) {
         if(sendDiskInfoCount == 0 && diskDeviceInfos != null) {
           getDiskUsageInfos();
