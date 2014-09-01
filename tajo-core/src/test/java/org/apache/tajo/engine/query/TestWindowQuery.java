@@ -175,6 +175,17 @@ public class TestWindowQuery extends QueryTestCaseBase {
     cleanupQuery(res);
   }
 
+  //@Test
+  public final void testWindowWithSubQuery7() throws Exception {
+    executeFile("skt_ddl1.sql").close();
+    executeFile("skt_ddl2.sql").close();
+
+    // filter push down test
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
   @Test
   public final void testWindowWithSubQuery11() throws Exception {
     // filter push down test

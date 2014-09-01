@@ -462,13 +462,17 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       }
     }
 
-    // transformed -> pushingDownFilters
-    Map<EvalNode, EvalNode> transformedMap =
-        transformEvalsWidthByPassNode(matched, plan, block, node, node.getSubQuery());
+    if (matched.size() > 0) {
+      // transformed -> pushingDownFilters
+      Map<EvalNode, EvalNode> transformedMap =
+          transformEvalsWidthByPassNode(matched, plan, block, node, node.getSubQuery());
 
-    context.setFiltersTobePushed(new HashSet<EvalNode>(transformedMap.keySet()));
-    visit(context, plan, plan.getBlock(node.getSubQuery()));
-    context.setToOrigin(transformedMap);
+      context.setFiltersTobePushed(new HashSet<EvalNode>(transformedMap.keySet()));
+      visit(context, plan, plan.getBlock(node.getSubQuery()));
+      context.setToOrigin(transformedMap);
+    } else {
+      visit(new FilterPushDownContext(), plan, plan.getBlock(node.getSubQuery()));
+    }
 
     return node;
   }
@@ -780,9 +784,6 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   public LogicalNode visitWindowAgg(FilterPushDownContext context, LogicalPlan plan,
                                   LogicalPlan.QueryBlock block, WindowAggNode winAggNode,
                                   Stack<LogicalNode> stack) throws PlanningException {
-    stack.push(winAggNode);
-    super.visitWindowAgg(context, plan, block, winAggNode, stack);
-    stack.pop();
     return winAggNode;
   }
 
