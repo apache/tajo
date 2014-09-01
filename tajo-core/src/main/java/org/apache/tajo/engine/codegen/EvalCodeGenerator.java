@@ -24,10 +24,12 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.IntervalDatum;
-import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.json.CoreGsonHelper;
-import org.apache.tajo.org.objectweb.asm.*;
+import org.apache.tajo.org.objectweb.asm.ClassWriter;
+import org.apache.tajo.org.objectweb.asm.Label;
+import org.apache.tajo.org.objectweb.asm.Opcodes;
+import org.apache.tajo.org.objectweb.asm.Type;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 
@@ -36,7 +38,7 @@ import java.lang.reflect.Constructor;
 import java.util.Stack;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
-import static org.apache.tajo.engine.codegen.TajoGeneratorAdapter.*;
+import static org.apache.tajo.engine.codegen.TajoGeneratorAdapter.getDescription;
 import static org.apache.tajo.engine.eval.FunctionEval.ParamType;
 
 public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext> {
@@ -418,12 +420,12 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
         break;
       case INTERVAL:
         methodName = "getInterval";
-        returnType = IntervalDatum.class;
+        returnType = Datum.class;
         paramTypes = new Class [] {int.class};
         break;
       case PROTOBUF:
         methodName = "getProtobufDatum";
-        returnType = ProtobufDatum.class;
+        returnType = Datum.class;
         paramTypes = new Class [] {int.class};
         break;
       default:

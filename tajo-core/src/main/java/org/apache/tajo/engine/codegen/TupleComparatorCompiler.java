@@ -74,7 +74,7 @@ public class TupleComparatorCompiler {
 
   private void emitClassDefinition(ClassWriter classWriter, String generatedClassName) {
     classWriter.visit(
-        Opcodes.V1_5,
+        Opcodes.V1_6,
         Opcodes.ACC_PUBLIC,
         generatedClassName,
         null,
@@ -122,6 +122,8 @@ public class TupleComparatorCompiler {
     for (int idx = 0; idx < compImpl.getSortSpecs().length; idx++) {
 
       if (idx > 0) {
+        // this check is omitted in the first field for comparison
+        //
         // if cmpVal == 0 {
         //
         // } else {
@@ -133,13 +135,22 @@ public class TupleComparatorCompiler {
         compMethod.visitInsn(Opcodes.POP);
       }
 
+
       adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 1);
       adapter.push(compImpl.getSortKeyIds()[idx]);
-      adapter.invokeInterface(Tuple.class, "isNull", boolean.class, new Class [] {int.class});
+      if (compImpl.getSortSpecs()[idx].isNullFirst()) {
+        adapter.invokeInterface(Tuple.class, "isNotNull", boolean.class, new Class[]{int.class});
+      } else {
+        adapter.invokeInterface(Tuple.class, "isNull", boolean.class, new Class[]{int.class});
+      }
 
       adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
       adapter.push(compImpl.getSortKeyIds()[idx]);
-      adapter.invokeInterface(Tuple.class, "isNull", boolean.class, new Class [] {int.class});
+      if (compImpl.getSortSpecs()[idx].isNullFirst()) {
+        adapter.invokeInterface(Tuple.class, "isNotNull", boolean.class, new Class[]{int.class});
+      } else {
+        adapter.invokeInterface(Tuple.class, "isNull", boolean.class, new Class[]{int.class});
+      }
 
       compMethod.visitInsn(Opcodes.ISUB);
 
@@ -193,11 +204,18 @@ public class TupleComparatorCompiler {
   }
 
   private void emitComparisonForJVMInteger(TajoGeneratorAdapter adapter, TupleComparatorImpl c, int idx) {
-
-    adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 1);
+    if (c.getSortSpecs()[idx].isAscending()) {
+      adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 1);
+    } else {
+      adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
+    }
     emitGetJVMIntValue(adapter, c.getSortSpecs()[idx].getSortKey().getDataType(), c.getSortKeyIds()[idx]);
 
-    adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
+    if (c.getSortSpecs()[idx].isAscending()) {
+      adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
+    } else {
+      adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 1);
+    }
     emitGetJVMIntValue(adapter, c.getSortSpecs()[idx].getSortKey().getDataType(), c.getSortKeyIds()[idx]);
 
     adapter.methodvisitor.visitInsn(Opcodes.ISUB);
@@ -242,12 +260,19 @@ public class TupleComparatorCompiler {
 
   private void emitComparisonForOtherPrimitives(TajoGeneratorAdapter adapter, TupleComparatorImpl comp, int idx) {
     DataType dataType = comp.getSortSpecs()[idx].getSortKey().getDataType();
-
-    adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 1);
+    if (comp.getSortSpecs()[idx].isAscending()) {
+      adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 1);
+    } else {
+      adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
+    }
     emitGetJVMIntValue(adapter, dataType, comp.getSortKeyIds()[idx]);
     int lhs = adapter.store(dataType);
 
-    adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
+    if (comp.getSortSpecs()[idx].isAscending()) {
+      adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
+    } else {
+      adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 1);
+    }
     emitGetJVMIntValue(adapter, dataType, comp.getSortKeyIds()[idx]);
     int rhs = adapter.store(dataType);
 
@@ -276,23 +301,39 @@ public class TupleComparatorCompiler {
   private void emitComparisonForText(TajoGeneratorAdapter adapter, TupleComparatorImpl c, int idx,
                                      boolean ensureUnSafeTuple) {
     if (ensureUnSafeTuple) {
-      adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 1);
+      if (c.getSortSpecs()[idx].isAscending()) {
+        adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 1);
+      } else {
+        adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
+      }
       adapter.methodvisitor.visitTypeInsn(Opcodes.CHECKCAST, TajoGeneratorAdapter.getInternalName(UnSafeTuple.class));
       adapter.push(c.getSortKeyIds()[idx]);
       adapter.invokeVirtual(UnSafeTuple.class, "getFieldAddr", long.class, new Class[]{int.class});
 
-      adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
+      if (c.getSortSpecs()[idx].isAscending()) {
+        adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
+      } else {
+        adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 1);
+      }
       adapter.methodvisitor.visitTypeInsn(Opcodes.CHECKCAST, TajoGeneratorAdapter.getInternalName(UnSafeTuple.class));
       adapter.push(c.getSortKeyIds()[idx]);
       adapter.invokeVirtual(UnSafeTuple.class, "getFieldAddr", long.class, new Class[]{int.class});
 
       adapter.invokeStatic(UnSafeTupleTextComparator.class, "compare", int.class, new Class[]{long.class, long.class});
     } else {
-      adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 1);
+      if (c.getSortSpecs()[idx].isAscending()) {
+        adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 1);
+      } else {
+        adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
+      }
       adapter.push(c.getSortKeyIds()[idx]);
       adapter.invokeInterface(Tuple.class, "getBytes", byte [].class, new Class [] {int.class});
 
-      adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
+      if (c.getSortSpecs()[idx].isAscending()) {
+        adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
+      } else {
+        adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 1);
+      }
       adapter.push(c.getSortKeyIds()[idx]);
       adapter.invokeInterface(Tuple.class, "getBytes", byte [].class, new Class [] {int.class});
 

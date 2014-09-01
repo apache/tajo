@@ -62,7 +62,7 @@ public class EvalCodeGenContext extends TajoGeneratorAdapter {
   }
 
   public void emitClassDefinition() {
-    classWriter.visit(Opcodes.V1_5, Opcodes.ACC_PUBLIC, this.owner, null,
+    classWriter.visit(Opcodes.V1_6, Opcodes.ACC_PUBLIC, this.owner, null,
         TajoGeneratorAdapter.getInternalName(EvalNode.class), null);
   }
 
