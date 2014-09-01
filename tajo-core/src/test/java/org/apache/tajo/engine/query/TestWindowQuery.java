@@ -171,7 +171,6 @@ public class TestWindowQuery extends QueryTestCaseBase {
   public final void testWindowWithSubQuery6() throws Exception {
     // filter push down test
     ResultSet res = executeQuery();
-    //assertResultSet(res);
     assertResultSet(res);
     cleanupQuery(res);
   }
