@@ -784,6 +784,29 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   public LogicalNode visitWindowAgg(FilterPushDownContext context, LogicalPlan plan,
                                   LogicalPlan.QueryBlock block, WindowAggNode winAggNode,
                                   Stack<LogicalNode> stack) throws PlanningException {
+
+
+    Set<EvalNode> matched = TUtil.newHashSet();
+    for (EvalNode eachEval : context.pushingDownFilters) {
+      if (LogicalPlanner.checkIfBeEvaluatedAtThis(eachEval, winAggNode)) {
+        matched.add(eachEval);
+      }
+    }
+
+    if (matched.size() > 0) {
+      context.pushingDownFilters.removeAll(matched);
+    }
+
+    FilterPushDownContext newContext = new FilterPushDownContext();
+    newContext.addFiltersTobePushed(matched);
+    stack.push(winAggNode);
+    visit(newContext, plan, block, winAggNode.getChild(), stack);
+    stack.pop();
+
+    if (newContext.pushingDownFilters.size() > 0) {
+      context.pushingDownFilters.addAll(newContext.pushingDownFilters);
+    }
+
     return winAggNode;
   }
 
