@@ -290,7 +290,9 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     Map<EvalNode, EvalNode> transformedMap = findCanPushdownAndTransform(context, block, joinNode, left, notMatched,
         null, true, 0);
     context.setFiltersTobePushed(transformedMap.keySet());
+    stack.push(joinNode);
     visit(context, plan, block, left, stack);
+    stack.pop();
 
     context.setToOrigin(transformedMap);
     context.addFiltersTobePushed(notMatched);
@@ -300,7 +302,9 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         left.getOutSchema().size());
     context.setFiltersTobePushed(new HashSet<EvalNode>(transformedMap.keySet()));
 
+    stack.push(joinNode);
     visit(context, plan, block, right, stack);
+    stack.pop();
 
     context.setToOrigin(transformedMap);
     context.addFiltersTobePushed(notMatched);
@@ -520,9 +524,14 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     childNode = visit(context, plan, plan.getBlock(childNode), childNode, stack);
     stack.pop();
 
-    // find not matched after visiting child
+    // find the remain expressions after visiting child
     for (EvalNode eval: context.pushingDownFilters) {
-      notMatched.add(transformedMap.get(eval));
+      // If EvalNode evaluated in a target of this node can be evaluated
+      if (LogicalPlanner.checkIfBeEvaluatedAtThis(eval, projectionNode)) {
+        notMatched.add(eval);
+      } else if (LogicalPlanner.checkIfBeEvaluatedAtThis(transformedMap.get(eval), projectionNode)) {
+        notMatched.add(transformedMap.get(eval));
+      }
     }
 
     EvalNode qual = null;
