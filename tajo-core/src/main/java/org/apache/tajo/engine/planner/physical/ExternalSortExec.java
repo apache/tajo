@@ -34,6 +34,7 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.PhysicalPlanningException;
 import org.apache.tajo.engine.planner.logical.SortNode;
 import org.apache.tajo.storage.AbstractStorageManager;
+import org.apache.tajo.storage.RawFile;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
@@ -492,7 +493,11 @@ public class ExternalSortExec extends SortExec {
   }
 
   private Scanner getFileScanner(Path path) throws IOException {
-    return new DirectRawFileScanner(context.getConf(), plan.getInSchema(), meta, path);
+    if (mergedInputPaths != null) {
+      return new RawFile.RawFileScanner(context.getConf(), plan.getInSchema(), meta, path);
+    } else {
+      return new DirectRawFileScanner(context.getConf(), plan.getInSchema(), meta, path);
+    }
   }
 
   private Scanner createKWayMerger(List<Path> inputs, final int startChunkId, final int num) throws IOException {

@@ -46,7 +46,7 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
 
   private static final float DEFAULT_BUF_INCREASE_RATIO = 1.0f;
-  private static final int NULL_FIELD_OFFSET = -1;
+  public static final int NULL_FIELD_OFFSET = -1;
 
   private DataType [] dataTypes;
   private int bytesLen;

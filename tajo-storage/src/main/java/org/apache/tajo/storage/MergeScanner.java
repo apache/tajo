@@ -26,6 +26,8 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.UnimplementedException;
+import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
 import org.apache.tajo.storage.fragment.FileFragment;
 
 import java.io.IOException;
@@ -117,6 +119,11 @@ public class MergeScanner implements Scanner {
   public void reset() throws IOException {
     this.iterator = fragments.iterator();
     this.currentScanner = getNextScanner();
+  }
+
+  @Override
+  public boolean next(RowOrientedRowBlock block) throws IOException {
+    throw new UnimplementedException("next(RowOrientedRowBlock)");
   }
 
   private Scanner getNextScanner() throws IOException {

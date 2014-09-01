@@ -37,7 +37,9 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
 import org.apache.tajo.storage.fragment.FileFragment;
 
 import java.io.Closeable;
@@ -1770,6 +1772,11 @@ public class RCFile {
     @Override
     public void reset() throws IOException {
       seek(startOffset);
+    }
+
+    @Override
+    public boolean next(RowOrientedRowBlock block) throws IOException {
+      throw new UnimplementedException("next(RowOrientedRowBlock)");
     }
 
     @Override

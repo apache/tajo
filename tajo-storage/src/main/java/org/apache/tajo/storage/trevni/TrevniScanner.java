@@ -27,9 +27,11 @@ import org.apache.tajo.datum.BlobDatum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatumFactory;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.trevni.ColumnFileReader;
 import org.apache.trevni.ColumnValues;
@@ -168,6 +170,11 @@ public class TrevniScanner extends FileScanner {
     for (int i = 0; i < projectionMap.length; i++) {
       columns[i] = reader.getValues(projectionMap[i]);
     }
+  }
+
+  @Override
+  public boolean next(RowOrientedRowBlock block) throws IOException {
+    throw new UnimplementedException("next(RowOrientedRowBlock)");
   }
 
   @Override

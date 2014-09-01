@@ -23,8 +23,11 @@ import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -66,7 +69,7 @@ class MemTableScanner implements Scanner {
   public Tuple next() throws IOException {
     if (iterator.hasNext()) {
       numRecords++;
-      return iterator.next();
+      return new VTuple(iterator.next());
     } else {
       return null;
     }
@@ -75,6 +78,11 @@ class MemTableScanner implements Scanner {
   @Override
   public void reset() throws IOException {
     init();
+  }
+
+  @Override
+  public boolean next(RowOrientedRowBlock block) throws IOException {
+    throw new UnimplementedException("next(RowOrientedRowBlock)");
   }
 
   @Override

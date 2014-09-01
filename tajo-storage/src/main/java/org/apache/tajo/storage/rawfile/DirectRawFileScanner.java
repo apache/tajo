@@ -114,8 +114,6 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, 64 * StorageUnit.KB);
   private boolean fetchNeeded = true;
 
-  int cnt = 0;
-
   @Override
   public Tuple next() throws IOException {
     if(eof) {

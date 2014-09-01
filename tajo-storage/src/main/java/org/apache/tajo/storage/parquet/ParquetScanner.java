@@ -21,8 +21,10 @@ package org.apache.tajo.storage.parquet;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
 import org.apache.tajo.storage.fragment.FileFragment;
 
 import java.io.IOException;
@@ -75,6 +77,11 @@ public class ParquetScanner extends FileScanner {
    */
   @Override
   public void reset() throws IOException {
+  }
+
+  @Override
+  public boolean next(RowOrientedRowBlock block) {
+    throw new UnimplementedException("next(RowOrientedRowBlock)");
   }
 
   /**

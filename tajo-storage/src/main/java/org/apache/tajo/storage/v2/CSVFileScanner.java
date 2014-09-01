@@ -27,9 +27,11 @@ import org.apache.hadoop.fs.Seekable;
 import org.apache.hadoop.io.compress.*;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.LazyTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.compress.CodecPool;
+import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.BytesUtils;
 
@@ -264,6 +266,11 @@ public class CSVFileScanner extends FileScannerV2 {
       this.tupleOffsets[i] = curTupleOffset + this.pageStart;
       curTupleOffset += this.tuples[i].length + 1;//tuple byte +  1byte line feed
     }
+  }
+
+  @Override
+  public boolean next(RowOrientedRowBlock block) throws IOException {
+    throw new UnimplementedException("next(RowOrientedRowBlock)");
   }
 
   protected Tuple nextTuple() throws IOException {

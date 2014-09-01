@@ -100,17 +100,17 @@ public class UnSafeTuple implements Tuple {
 
   @Override
   public boolean contains(int fieldid) {
-    return getFieldOffset(fieldid) > 0;
+    return getFieldOffset(fieldid) > RowOrientedRowBlock.NULL_FIELD_OFFSET;
   }
 
   @Override
   public boolean isNull(int fieldid) {
-    return getFieldOffset(fieldid) > 0;
+    return getFieldOffset(fieldid) == RowOrientedRowBlock.NULL_FIELD_OFFSET;
   }
 
   @Override
   public boolean isNotNull(int fieldid) {
-    return getFieldOffset(fieldid) == -1;
+    return getFieldOffset(fieldid) > RowOrientedRowBlock.NULL_FIELD_OFFSET;
   }
 
   @Override
@@ -140,6 +140,10 @@ public class UnSafeTuple implements Tuple {
 
   @Override
   public Datum get(int fieldId) {
+    if (isNull(fieldId)) {
+      return NullDatum.get();
+    }
+
     switch (types[fieldId].getType()) {
     case BOOLEAN:
       return DatumFactory.createBool(getBool(fieldId));

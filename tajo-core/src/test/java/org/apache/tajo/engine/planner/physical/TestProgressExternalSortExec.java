@@ -87,7 +87,7 @@ public class TestProgressExternalSortExec {
     schema.addColumn("empid", TajoDataTypes.Type.INT4);
     schema.addColumn("deptname", TajoDataTypes.Type.TEXT);
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.RAW);
+    TableMeta employeeMeta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.DIRECTRAW);
     Path employeePath = new Path(testDir, "employee.csv");
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(employeeMeta, schema, employeePath);
     appender.enableStats();

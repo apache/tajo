@@ -23,11 +23,12 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.directmem.UnSafeTuple;
+import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
 
 import java.io.IOException;
 import java.util.Comparator;
@@ -41,12 +42,9 @@ class PairWiseMerger implements Scanner {
   private Scanner leftScan;
   private Scanner rightScan;
 
-  private UnSafeTuple outTuple;
-  private UnSafeTuple outTuplePtr;
-  private UnSafeTuple leftTuple;
-  private UnSafeTuple leftTuplePtr;
-  private UnSafeTuple rightTuple;
-  private UnSafeTuple rightTuplePtr;
+  private VTuple outTuple;
+  private VTuple leftTuple;
+  private VTuple rightTuple;
 
   private final Schema schema;
   private final Comparator<Tuple> comparator;
@@ -80,14 +78,6 @@ class PairWiseMerger implements Scanner {
       leftScan.init();
       rightScan.init();
 
-      outTuplePtr = new UnSafeTuple(128, SchemaUtil.toDataTypes(schema));
-      leftTuplePtr = new UnSafeTuple(128, SchemaUtil.toDataTypes(schema));
-      rightTuplePtr = new UnSafeTuple(128, SchemaUtil.toDataTypes(schema));
-
-      outTuple = outTuplePtr;
-      leftTuple = leftTuplePtr;
-      rightTuple = rightTuplePtr;
-
       prepareTuplesForFirstComparison();
 
       mergerInputStats = new TableStats();
@@ -100,16 +90,16 @@ class PairWiseMerger implements Scanner {
   }
 
   private void prepareTuplesForFirstComparison() throws IOException {
-    UnSafeTuple lt = (UnSafeTuple) leftScan.next();
+    Tuple lt = leftScan.next();
     if (lt != null) {
-      leftTuple.copyFrom(lt);
+      leftTuple = new VTuple(lt);
     } else {
       leftTuple = null; // TODO - missed free
     }
 
-    UnSafeTuple rt = (UnSafeTuple) rightScan.next();
+    Tuple rt = rightScan.next();
     if (rt != null) {
-      rightTuple.copyFrom(rt);
+      rightTuple = new VTuple(rt);
     } else {
       rightTuple = null; // TODO - missed free
     }
@@ -119,20 +109,20 @@ class PairWiseMerger implements Scanner {
 
     if (leftTuple != null && rightTuple != null) {
       if (comparator.compare(leftTuple, rightTuple) < 0) {
-        outTuple.copyFrom(leftTuple);
+        outTuple = new VTuple(leftTuple);
 
-        UnSafeTuple lt = (UnSafeTuple) leftScan.next();
+        Tuple lt = leftScan.next();
         if (lt != null) {
-          leftTuple.copyFrom(lt);
+          leftTuple = new VTuple(lt);
         } else {
           leftTuple = null; // TODO - missed free
         }
       } else {
-        outTuple.copyFrom(rightTuple);
+        outTuple = new VTuple(rightTuple);
 
-        UnSafeTuple rt = (UnSafeTuple) rightScan.next();
+        Tuple rt = rightScan.next();
         if (rt != null) {
-          rightTuple.copyFrom(rt);
+          rightTuple = new VTuple(rt);
         } else {
           rightTuple = null; // TODO - missed free
         }
@@ -142,27 +132,27 @@ class PairWiseMerger implements Scanner {
 
     if (leftTuple == null) {
       if (rightTuple != null) {
-        outTuple.copyFrom(rightTuple);
+        outTuple = new VTuple(rightTuple);
       } else {
         outTuple = null;
       }
 
-      UnSafeTuple rt = (UnSafeTuple) rightScan.next();
+      Tuple rt = rightScan.next();
       if (rt != null) {
-        rightTuple.copyFrom(rt);
+        rightTuple = new VTuple(rt);
       } else {
         rightTuple = null; // TODO - missed free
       }
     } else {
       if (leftTuple != null) {
-        outTuple.copyFrom(leftTuple);
+        outTuple = new VTuple(leftTuple);
       } else {
         outTuple = null;
       }
 
-      UnSafeTuple lt = (UnSafeTuple) leftScan.next();
+      Tuple lt = leftScan.next();
       if (lt != null) {
-        leftTuple.copyFrom(lt);
+        leftTuple = new VTuple(lt);
       } else {
         leftTuple = null; // TODO - missed free
       }
@@ -176,14 +166,19 @@ class PairWiseMerger implements Scanner {
       leftScan.reset();
       rightScan.reset();
 
-      outTuple = outTuplePtr;
-      leftTuple = leftTuplePtr;
-      rightTuple = rightTuplePtr;
+      outTuple = null;
+      leftTuple = null;
+      rightTuple = null;
 
       prepareTuplesForFirstComparison();
     } else {
       throw new IllegalStateException("Illegal State: init() is not allowed in " + state.name());
     }
+  }
+
+  @Override
+  public boolean next(RowOrientedRowBlock block) throws IOException {
+    throw new UnimplementedException("next(RowOrientedRowBlock)");
   }
 
   public void close() throws IOException {
@@ -192,12 +187,12 @@ class PairWiseMerger implements Scanner {
     leftScan = null;
     rightScan = null;
 
-    outTuplePtr.free();
-    leftTuplePtr.free();
-    rightTuplePtr.free();
-    outTuplePtr = null;
-    leftTuplePtr = null;
-    rightTuplePtr = null;
+//    outTuplePtr.free();
+//    leftTuplePtr.free();
+//    rightTuplePtr.free();
+//    outTuplePtr = null;
+//    leftTuplePtr = null;
+//    rightTuplePtr = null;
 
     mergerProgress = 1.0f;
 

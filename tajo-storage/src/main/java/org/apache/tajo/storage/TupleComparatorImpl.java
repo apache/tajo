@@ -24,9 +24,6 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.NullDatum;
-
-import java.util.Comparator;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.TupleComparatorSpecProto;
 import static org.apache.tajo.index.IndexProtos.TupleComparatorProto;
@@ -115,11 +112,11 @@ public class TupleComparatorImpl extends TupleComparator implements ProtoObject<
       left = tuple1.get(sortKeyIds[i]);
       right = tuple2.get(sortKeyIds[i]);
 
-      if (left instanceof NullDatum || right instanceof NullDatum) {
+      if (left.isNull() || right.isNull()) {
         if (!left.equals(right)) {
-          if (left instanceof NullDatum) {
+          if (left.isNull()) {
             compVal = 1;
-          } else if (right instanceof NullDatum) {
+          } else if (right.isNull()) {
             compVal = -1;
           }
           if (nullFirsts[i]) {

@@ -35,9 +35,11 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.*;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
 import org.apache.tajo.storage.fragment.FileFragment;
 
 import java.io.IOException;
@@ -242,6 +244,11 @@ public class AvroScanner extends FileScanner {
    */
   @Override
   public void reset() throws IOException {
+  }
+
+  @Override
+  public boolean next(RowOrientedRowBlock block) {
+    throw new UnimplementedException("next(RowOrientedRowBlock)");
   }
 
   /**
