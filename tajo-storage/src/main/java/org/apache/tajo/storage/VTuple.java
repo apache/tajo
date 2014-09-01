@@ -53,7 +53,7 @@ public class VTuple implements Tuple, Cloneable {
 
   @Override
   public boolean isNull(int fieldid) {
-    return values[fieldid] instanceof NullDatum;
+    return values[fieldid].isNull();
   }
 
   @Override

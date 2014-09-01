@@ -59,7 +59,7 @@ public class RoundFloat8 extends GeneralFunction {
     Datum valueDatum = params.get(0);
     Datum roundDatum = params.get(1);
 
-    if(valueDatum instanceof NullDatum || roundDatum instanceof  NullDatum) {
+    if(valueDatum.isNull() || roundDatum.isNull()) {
       return NullDatum.get();
     }
 

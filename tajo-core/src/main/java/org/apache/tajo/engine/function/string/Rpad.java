@@ -69,8 +69,12 @@ public class Rpad extends GeneralFunction {
     Datum datum = params.get(0);
     Datum lengthDatum = params.get(1);
 
-    if(datum instanceof NullDatum) return NullDatum.get();
-    if(lengthDatum instanceof NullDatum) return NullDatum.get();
+    if(datum.isNull()) {
+      return NullDatum.get();
+    }
+    if(lengthDatum.isNull()) {
+      return NullDatum.get();
+    }
 
     Datum fillText=NullDatum.get();
     if(hasFillCharacters) {

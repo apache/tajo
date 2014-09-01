@@ -48,7 +48,7 @@ public class MetaDataTuple implements Tuple {
 
   @Override
   public boolean isNull(int fieldid) {
-    return values.get(fieldid) == null || values.get(fieldid) instanceof NullDatum;
+    return values.get(fieldid) == null || values.get(fieldid).isNull();
   }
 
   @Override

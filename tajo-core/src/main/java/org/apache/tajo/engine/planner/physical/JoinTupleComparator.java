@@ -73,11 +73,11 @@ public class JoinTupleComparator implements Comparator<Tuple> {
         inner = innerTuple.get(innerSortKeyIds[i]);
       }
 
-      if (outer instanceof NullDatum || inner instanceof NullDatum) {
+      if (outer.isNull() || inner.isNull()) {
         if (!outer.equals(inner)) {
-          if (outer instanceof NullDatum) {
+          if (outer.isNull()) {
             compVal = 1;
-          } else if (inner instanceof NullDatum) {
+          } else if (inner.isNull()) {
             compVal = -1;
           }
         } else {

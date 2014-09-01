@@ -251,7 +251,7 @@ public class DateDatum extends Datum {
       }
 
       return (dayOfMonth < another.dayOfMonth) ? -1 : ((dayOfMonth == another.dayOfMonth) ? 0 : 1);
-    } else if (datum instanceof NullDatum || datum.isNull()) {
+    } else if (datum.isNull()) {
       return -1;
     } else {
       throw new InvalidOperationException(datum.type());

@@ -72,7 +72,7 @@ public class FrameTuple implements Tuple, Cloneable {
 
   @Override
   public boolean isNull(int fieldid) {
-    return get(fieldid) instanceof NullDatum;
+    return get(fieldid).isNull();
   }
 
   @Override

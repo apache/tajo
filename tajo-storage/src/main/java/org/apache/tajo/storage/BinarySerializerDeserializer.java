@@ -36,7 +36,7 @@ public class BinarySerializerDeserializer implements SerializerDeserializer {
       throws IOException {
     byte[] bytes;
     int length = 0;
-    if (datum == null || datum instanceof NullDatum) {
+    if (datum == null || datum.isNull()) {
       return 0;
     }
 

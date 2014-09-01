@@ -21,7 +21,6 @@ package org.apache.tajo.engine.codegen;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
@@ -41,14 +40,14 @@ import static org.apache.tajo.common.TajoDataTypes.Type.*;
 import static org.apache.tajo.storage.directmem.TestRowOrientedRowBlock.schema;
 import static org.junit.Assert.assertTrue;
 
-public class TestTupleComparatorCompiler {
+public class TestTupleComparerCompiler {
   private static TajoClassLoader classLoader;
-  private static TupleComparatorCompiler compiler;
+  private static TupleComparerCompiler compiler;
 
   @BeforeClass
   public static void setUp() {
     classLoader = new TajoClassLoader();
-    compiler = new TupleComparatorCompiler(classLoader);
+    compiler = new TupleComparerCompiler(classLoader);
   }
 
   @AfterClass
@@ -77,136 +76,6 @@ public class TestTupleComparatorCompiler {
     }
 
     return comps;
-  }
-
-  @Test
-  public void testCompareOneBool() throws Exception {
-    SortSpec [][] sortSpecs = createSortSpecs("col0");
-    TupleComparator [] comps = createComparators(sortSpecs, false);
-
-    Tuple t1 = new VTuple(schema.size());
-    t1.put(0, DatumFactory.createBool(true));
-
-    Tuple t2 = new VTuple(schema.size());
-    t2.put(0, DatumFactory.createBool(true));
-
-    Tuple t3 = new VTuple(schema.size());
-    t3.put(0, DatumFactory.createBool(false));
-
-    Tuple t4 = new VTuple(schema.size());
-    t4.put(0, NullDatum.get());
-
-    assertCompareAll(comps, sortSpecs, t1, t2, t3, t4, t4);
-  }
-
-
-  @Test
-  public void testCompareOneInt() throws Exception {
-    SortSpec [][] sortSpecs = createSortSpecs("col2");
-    TupleComparator [] comps = createComparators(sortSpecs, false);
-
-    Tuple t1 = new VTuple(schema.size());
-    t1.put(2, DatumFactory.createInt2((short) 1));
-
-    Tuple t2 = new VTuple(schema.size());
-    t2.put(2, DatumFactory.createInt2((short) 1));
-
-    Tuple t3 = new VTuple(schema.size());
-    t3.put(2, DatumFactory.createInt2((short) 2));
-
-    Tuple t4 = new VTuple(schema.size());
-    t4.put(2, NullDatum.get());
-
-    Tuple t5 = new VTuple(schema.size());
-    t5.put(2, NullDatum.get());
-
-    assertCompareAll(comps, sortSpecs, t1, t2, t3, t4, t5);
-  }
-
-  @Test
-  public void testCompareTwoInts() throws Exception {
-    SortSpec[] sortSpecs = new SortSpec[] {
-        new SortSpec(new Column("col2", INT2)),
-        new SortSpec(new Column("col3", INT4))};
-
-
-    TupleComparatorImpl comparator = new TupleComparatorImpl(schema, sortSpecs);
-
-    TajoClassLoader classLoader = new TajoClassLoader();
-
-    TupleComparatorCompiler compiler = new TupleComparatorCompiler(classLoader);
-    TupleComparator compiled = compiler.compile(comparator, false);
-
-    Tuple t1 = new VTuple(schema.size());
-    t1.put(2, DatumFactory.createInt2((short) 1));
-    t1.put(3, DatumFactory.createInt4(1));
-
-    Tuple t2 = new VTuple(schema.size());
-    t2.put(2, DatumFactory.createInt2((short) 1));
-    t2.put(3, DatumFactory.createInt4(1));
-
-    Tuple t3 = new VTuple(schema.size());
-    t3.put(2, DatumFactory.createInt2((short) 2));
-    t3.put(3, DatumFactory.createInt4(1));
-
-    Tuple t4 = new VTuple(schema.size());
-    t4.put(2, DatumFactory.createInt2((short) 1));
-    t4.put(3, DatumFactory.createInt4(2));
-
-    Tuple t5 = new VTuple(schema.size());
-    t5.put(2, NullDatum.get());
-    t5.put(3, DatumFactory.createInt4(2));
-
-    Tuple t6 = new VTuple(schema.size());
-    t6.put(2, DatumFactory.createInt2((short) 1));
-    t6.put(3, NullDatum.get());
-
-    assertCompare(compiled, sortSpecs, t1, t2, t3, t5, t5);
-    assertCompare(compiled, sortSpecs, t1, t2, t4, t5, t5);
-
-    assertCompare(compiled, sortSpecs, t1, t2, t4, t5, t5);
-  }
-
-  @Test
-  public void testCompareTwoIntsWithNull() throws Exception {
-    SortSpec[] sortSpecs = new SortSpec[]{
-        new SortSpec(new Column("col2", INT2)),
-        new SortSpec(new Column("col3", INT4))};
-
-    TupleComparatorImpl comparator = new TupleComparatorImpl(schema, sortSpecs);
-
-    TajoClassLoader classLoader = new TajoClassLoader();
-
-    TupleComparatorCompiler compiler = new TupleComparatorCompiler(classLoader);
-    TupleComparator compiled = compiler.compile(comparator, false);
-
-    Tuple t1 = new VTuple(schema.size());
-    t1.put(2, DatumFactory.createInt2((short) 1));
-    t1.put(3, DatumFactory.createInt4(1));
-
-    Tuple t2 = new VTuple(schema.size());
-    t2.put(2, DatumFactory.createInt2((short) 1));
-    t2.put(3, NullDatum.get());
-
-    Tuple t3 = new VTuple(schema.size());
-    t3.put(2, NullDatum.get());
-    t3.put(3, DatumFactory.createInt4(1));
-
-    Tuple t4 = new VTuple(schema.size());
-    t4.put(2, NullDatum.get());
-    t4.put(3, DatumFactory.createInt4(1));
-
-    assertTrue(compiled.compare(t1, t2) < 0);
-    assertTrue(compiled.compare(t2, t1) > 0);
-
-    assertTrue(compiled.compare(t1, t3) < 0);
-    assertTrue(compiled.compare(t3, t1) > 0);
-
-    assertTrue(compiled.compare(t1, t4) < 0);
-    assertTrue(compiled.compare(t4, t1) > 0);
-
-    assertTrue(compiled.compare(t3, t4) == 0);
-    assertTrue(compiled.compare(t4, t3) == 0);
   }
 
   private void assertCompareAll(TupleComparator [] comps, SortSpec [][] sortSpecs, Tuple...tuples) {
@@ -248,15 +117,95 @@ public class TestTupleComparatorCompiler {
   }
 
   @Test
-  public void testCompareOneFloat4() throws Exception {
+  public void testCompareOneBool() throws Exception {
+    SortSpec [][] sortSpecs = createSortSpecs("col0");
+    TupleComparator [] comps = createComparators(sortSpecs, false);
+
+    Tuple t1 = new VTuple(schema.size());
+    t1.put(0, DatumFactory.createBool(true));
+
+    Tuple t2 = new VTuple(schema.size());
+    t2.put(0, DatumFactory.createBool(true));
+
+    Tuple t3 = new VTuple(schema.size());
+    t3.put(0, DatumFactory.createBool(false));
+
+    Tuple t4 = new VTuple(schema.size());
+    t4.put(0, NullDatum.get());
+
+    assertCompareAll(comps, sortSpecs, t1, t2, t3, t4, t4);
+  }
+
+  @Test
+  public void testCompareOneInt() throws Exception {
+    SortSpec [][] sortSpecs = createSortSpecs("col2");
+    TupleComparator [] comps = createComparators(sortSpecs, false);
+
+    Tuple t1 = new VTuple(schema.size());
+    t1.put(2, DatumFactory.createInt2((short) 1));
+
+    Tuple t2 = new VTuple(schema.size());
+    t2.put(2, DatumFactory.createInt2((short) 1));
+
+    Tuple t3 = new VTuple(schema.size());
+    t3.put(2, DatumFactory.createInt2((short) 2));
+
+    Tuple t4 = new VTuple(schema.size());
+    t4.put(2, NullDatum.get());
+
+    Tuple t5 = new VTuple(schema.size());
+    t5.put(2, NullDatum.get());
+
+    assertCompareAll(comps, sortSpecs, t1, t2, t3, t4, t5);
+  }
+
+  @Test
+  public void testCompareTwoInts() throws Exception {
     SortSpec[] sortSpecs = new SortSpec[] {
-        new SortSpec(new Column("col4", FLOAT4))};
+        new SortSpec(new Column("col2", INT2)),
+        new SortSpec(new Column("col3", INT4))};
+
 
     TupleComparatorImpl comparator = new TupleComparatorImpl(schema, sortSpecs);
 
     TajoClassLoader classLoader = new TajoClassLoader();
-    TupleComparatorCompiler compiler = new TupleComparatorCompiler(classLoader);
+
+    TupleComparerCompiler compiler = new TupleComparerCompiler(classLoader);
     TupleComparator compiled = compiler.compile(comparator, false);
+
+    Tuple t1 = new VTuple(schema.size());
+    t1.put(2, DatumFactory.createInt2((short) 1));
+    t1.put(3, DatumFactory.createInt4(1));
+
+    Tuple t2 = new VTuple(schema.size());
+    t2.put(2, DatumFactory.createInt2((short) 1));
+    t2.put(3, DatumFactory.createInt4(1));
+
+    Tuple t3 = new VTuple(schema.size());
+    t3.put(2, DatumFactory.createInt2((short) 2));
+    t3.put(3, DatumFactory.createInt4(1));
+
+    Tuple t4 = new VTuple(schema.size());
+    t4.put(2, DatumFactory.createInt2((short) 1));
+    t4.put(3, DatumFactory.createInt4(2));
+
+    Tuple t5 = new VTuple(schema.size());
+    t5.put(2, NullDatum.get());
+    t5.put(3, DatumFactory.createInt4(2));
+
+    Tuple t6 = new VTuple(schema.size());
+    t6.put(2, DatumFactory.createInt2((short) 1));
+    t6.put(3, NullDatum.get());
+
+    assertCompare(compiled, sortSpecs, t1, t2, t3, t5, t5);
+    assertCompare(compiled, sortSpecs, t1, t2, t4, t5, t5);
+    assertCompare(compiled, sortSpecs, t1, t2, t5, t6, t6);
+  }
+
+  @Test
+  public void testCompareOneFloat4() throws Exception {
+    SortSpec [][] sortSpecs = createSortSpecs("col4");
+    TupleComparator comps [] = createComparators(sortSpecs, false);
 
     Tuple t1 = new VTuple(schema.size());
     t1.put(4, DatumFactory.createFloat4(1.0f));
@@ -270,7 +219,7 @@ public class TestTupleComparatorCompiler {
     Tuple t4 = new VTuple(schema.size());
     t4.put(4, NullDatum.get());
 
-    assertCompare(compiled, sortSpecs, t1, t2, t4, t4, t4);
+    assertCompareAll(comps, sortSpecs, t1, t2, t3, t4, t4);
   }
 
   @Test
@@ -282,7 +231,7 @@ public class TestTupleComparatorCompiler {
     TupleComparatorImpl comparator = new TupleComparatorImpl(schema, sortSpecs);
 
     TajoClassLoader classLoader = new TajoClassLoader();
-    TupleComparatorCompiler compiler = new TupleComparatorCompiler(classLoader);
+    TupleComparerCompiler compiler = new TupleComparerCompiler(classLoader);
     TupleComparator compiled = compiler.compile(comparator, false);
 
     Tuple t1 = new VTuple(schema.size());
@@ -305,8 +254,13 @@ public class TestTupleComparatorCompiler {
     t5.put(4, DatumFactory.createFloat4(2.0f));
     t5.put(5, NullDatum.get());
 
+    Tuple t6 = new VTuple(schema.size());
+    t6.put(4, NullDatum.get());
+    t6.put(5, DatumFactory.createFloat8(1.0f));
+
     assertCompare(compiled, sortSpecs, t1, t2, t3, t5, t5);
     assertCompare(compiled, sortSpecs, t1, t2, t4, t5, t5);
+    assertCompare(compiled, sortSpecs, t1, t2, t5, t6, t6);
   }
 
   @Test
@@ -327,6 +281,33 @@ public class TestTupleComparatorCompiler {
     t4.put(6, NullDatum.get());
 
     assertCompareAll(comps, sortSpecs, t1, t2, t3, t4, t4);
+  }
+
+  @Test
+  public void testCompareTextWithNull() throws Exception {
+    SortSpec[] sortSpecs = new SortSpec[] {
+        new SortSpec(new Column("col5", FLOAT8)),
+        new SortSpec(new Column("col6", TEXT))};
+    TupleComparatorImpl compImpl = new TupleComparatorImpl(schema, sortSpecs);
+    TupleComparator comp = compiler.compile(compImpl, false);
+
+    Tuple t1 = new VTuple(schema.size());
+    t1.put(5, NullDatum.get());
+    t1.put(6, DatumFactory.createText("ARGENTINA"));
+
+    Tuple t2 = new VTuple(schema.size());
+    t2.put(5, NullDatum.get());
+    t2.put(6, DatumFactory.createText("ARGENTINA"));
+
+    Tuple t3 = new VTuple(schema.size());
+    t3.put(5, NullDatum.get());
+    t3.put(6, DatumFactory.createText("CANADA"));
+
+    Tuple t4 = new VTuple(schema.size());
+    t4.put(5, NullDatum.get());
+    t4.put(6, NullDatum.get());
+
+    assertCompare(comp, sortSpecs, t1, t2, t3, t4, t4);
   }
 
   private void fillTextColumnToRowBlock(RowOrientedRowBlock rowBlock, String text) {

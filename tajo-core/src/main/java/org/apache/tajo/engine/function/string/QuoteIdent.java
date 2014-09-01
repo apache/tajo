@@ -58,7 +58,7 @@ public class QuoteIdent extends GeneralFunction {
   public Datum eval(Tuple params) {
     Datum datum = params.get(0);
 
-    if(datum instanceof NullDatum) {
+    if(datum.isNull()) {
       return NullDatum.get();
     }
 

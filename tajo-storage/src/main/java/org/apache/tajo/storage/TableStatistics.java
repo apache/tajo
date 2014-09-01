@@ -87,7 +87,7 @@ public class TableStatistics {
   }
 
   public void analyzeField(int idx, Datum datum) {
-    if (datum instanceof NullDatum) {
+    if (datum.isNull()) {
       numNulls[idx]++;
       return;
     }

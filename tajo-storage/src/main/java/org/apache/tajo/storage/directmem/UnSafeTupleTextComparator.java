@@ -26,6 +26,9 @@ import sun.misc.Unsafe;
 
 import java.nio.ByteOrder;
 
+/**
+ * It directly access UTF bytes in UnSafeTuple without any copy. It is used by compiled TupleComparator.
+ */
 public class UnSafeTupleTextComparator {
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
 

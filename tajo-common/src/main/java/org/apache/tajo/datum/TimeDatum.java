@@ -177,7 +177,7 @@ public class TimeDatum extends Datum {
     if (datum.type() == Type.TIME) {
       TimeDatum another = (TimeDatum)datum;
       return (time < another.time) ? -1 : ((time == another.time) ? 0 : 1);
-    } else if (datum instanceof NullDatum || datum.isNull()) {
+    } else if (datum.isNull()) {
       return -1;
     } else {
       throw new InvalidOperationException(datum.type());

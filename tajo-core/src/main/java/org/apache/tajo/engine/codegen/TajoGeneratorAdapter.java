@@ -51,6 +51,9 @@ class TajoGeneratorAdapter {
     TUtil.putToNestedMap(OpCodesMap, EvalType.PLUS, INT8, Opcodes.LADD);
     TUtil.putToNestedMap(OpCodesMap, EvalType.PLUS, FLOAT4, Opcodes.FADD);
     TUtil.putToNestedMap(OpCodesMap, EvalType.PLUS, FLOAT8, Opcodes.DADD);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.PLUS, TIMESTAMP, Opcodes.LADD);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.PLUS, DATE, Opcodes.IADD);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.PLUS, TIME, Opcodes.LADD);
 
     TUtil.putToNestedMap(OpCodesMap, EvalType.MINUS, INT1, Opcodes.ISUB);
     TUtil.putToNestedMap(OpCodesMap, EvalType.MINUS, INT2, Opcodes.ISUB);
@@ -58,6 +61,10 @@ class TajoGeneratorAdapter {
     TUtil.putToNestedMap(OpCodesMap, EvalType.MINUS, INT8, Opcodes.LSUB);
     TUtil.putToNestedMap(OpCodesMap, EvalType.MINUS, FLOAT4, Opcodes.FSUB);
     TUtil.putToNestedMap(OpCodesMap, EvalType.MINUS, FLOAT8, Opcodes.DSUB);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.MINUS, TIMESTAMP, Opcodes.LSUB);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.MINUS, DATE, Opcodes.ISUB);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.MINUS, TIME, Opcodes.LSUB);
+
 
     TUtil.putToNestedMap(OpCodesMap, EvalType.MULTIPLY, INT1, Opcodes.IMUL);
     TUtil.putToNestedMap(OpCodesMap, EvalType.MULTIPLY, INT2, Opcodes.IMUL);
@@ -102,6 +109,10 @@ class TajoGeneratorAdapter {
     TUtil.putToNestedMap(OpCodesMap, EvalType.EQUAL, FLOAT4, Opcodes.FCMPL);
     TUtil.putToNestedMap(OpCodesMap, EvalType.EQUAL, FLOAT8, Opcodes.DCMPG);
     TUtil.putToNestedMap(OpCodesMap, EvalType.EQUAL, TEXT, Opcodes.IF_ACMPNE);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.EQUAL, TIMESTAMP, Opcodes.LCMP);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.EQUAL, DATE, Opcodes.IF_ICMPEQ);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.EQUAL, TIME, Opcodes.LCMP);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.EQUAL, INET4, Opcodes.IF_ICMPEQ);
 
     TUtil.putToNestedMap(OpCodesMap, EvalType.NOT_EQUAL, INT1, Opcodes.IF_ICMPNE);
     TUtil.putToNestedMap(OpCodesMap, EvalType.NOT_EQUAL, INT2, Opcodes.IF_ICMPNE);
@@ -110,6 +121,10 @@ class TajoGeneratorAdapter {
     TUtil.putToNestedMap(OpCodesMap, EvalType.NOT_EQUAL, FLOAT4, Opcodes.FCMPL);
     TUtil.putToNestedMap(OpCodesMap, EvalType.NOT_EQUAL, FLOAT8, Opcodes.DCMPG);
     TUtil.putToNestedMap(OpCodesMap, EvalType.NOT_EQUAL, TEXT, Opcodes.IF_ACMPNE);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.NOT_EQUAL, TIMESTAMP, Opcodes.LCMP);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.NOT_EQUAL, DATE, Opcodes.IF_ICMPNE);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.NOT_EQUAL, TIME, Opcodes.LCMP);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.NOT_EQUAL, INET4, Opcodes.IF_ICMPNE);
 
     TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, INT1, Opcodes.IF_ICMPLT);
     TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, INT2, Opcodes.IF_ICMPLT);
@@ -117,13 +132,9 @@ class TajoGeneratorAdapter {
     TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, INT8, Opcodes.LCMP);
     TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, FLOAT4, Opcodes.FCMPL);
     TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, FLOAT8, Opcodes.DCMPG);
-
-    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, INT1, Opcodes.IF_ICMPLT);
-    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, INT2, Opcodes.IF_ICMPLT);
-    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, INT4, Opcodes.IF_ICMPLT);
-    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, INT8, Opcodes.LCMP);
-    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, FLOAT4, Opcodes.FCMPL);
-    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, FLOAT8, Opcodes.DCMPG);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, TIMESTAMP, Opcodes.LCMP);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, DATE, Opcodes.IF_ICMPLT);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, TIME, Opcodes.LCMP);
 
     TUtil.putToNestedMap(OpCodesMap, EvalType.LEQ, INT1, Opcodes.IF_ICMPLE);
     TUtil.putToNestedMap(OpCodesMap, EvalType.LEQ, INT2, Opcodes.IF_ICMPLE);
@@ -131,6 +142,9 @@ class TajoGeneratorAdapter {
     TUtil.putToNestedMap(OpCodesMap, EvalType.LEQ, INT8, Opcodes.LCMP);
     TUtil.putToNestedMap(OpCodesMap, EvalType.LEQ, FLOAT4, Opcodes.FCMPL);
     TUtil.putToNestedMap(OpCodesMap, EvalType.LEQ, FLOAT8, Opcodes.DCMPG);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, TIMESTAMP, Opcodes.LCMP);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, DATE, Opcodes.IF_ICMPLE);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, TIME, Opcodes.LCMP);
 
     TUtil.putToNestedMap(OpCodesMap, EvalType.GTH, INT1, Opcodes.IF_ICMPGT);
     TUtil.putToNestedMap(OpCodesMap, EvalType.GTH, INT2, Opcodes.IF_ICMPGT);
@@ -138,6 +152,9 @@ class TajoGeneratorAdapter {
     TUtil.putToNestedMap(OpCodesMap, EvalType.GTH, INT8, Opcodes.LCMP);
     TUtil.putToNestedMap(OpCodesMap, EvalType.GTH, FLOAT4, Opcodes.FCMPL);
     TUtil.putToNestedMap(OpCodesMap, EvalType.GTH, FLOAT8, Opcodes.DCMPG);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, TIMESTAMP, Opcodes.LCMP);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, DATE, Opcodes.IF_ICMPGT);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, TIME, Opcodes.LCMP);
 
     TUtil.putToNestedMap(OpCodesMap, EvalType.GEQ, INT1, Opcodes.IF_ICMPGE);
     TUtil.putToNestedMap(OpCodesMap, EvalType.GEQ, INT2, Opcodes.IF_ICMPGE);
@@ -145,6 +162,9 @@ class TajoGeneratorAdapter {
     TUtil.putToNestedMap(OpCodesMap, EvalType.GEQ, INT8, Opcodes.LCMP);
     TUtil.putToNestedMap(OpCodesMap, EvalType.GEQ, FLOAT4, Opcodes.FCMPL);
     TUtil.putToNestedMap(OpCodesMap, EvalType.GEQ, FLOAT8, Opcodes.DCMPG);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, TIMESTAMP, Opcodes.LCMP);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, DATE, Opcodes.IF_ICMPGE);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, TIME, Opcodes.LCMP);
   }
 
   protected int access;
@@ -165,7 +185,7 @@ class TajoGeneratorAdapter {
 
   public static boolean isJVMInternalInt(TajoDataTypes.DataType dataType) {
     TajoDataTypes.Type type = dataType.getType();
-    return type == BOOLEAN || type == INT1 || type == INT2 || type == INT4 || type== INET4;
+    return type == BOOLEAN || type == INT1 || type == INT2 || type == INT4 || type == DATE || type== INET4;
   }
 
   public static int getWordSize(TajoDataTypes.DataType type) {
@@ -294,6 +314,8 @@ class TajoGeneratorAdapter {
       methodvisitor.visitVarInsn(Opcodes.ILOAD, idx);
       break;
     case INT8:
+    case TIMESTAMP:
+    case TIME:
       methodvisitor.visitVarInsn(Opcodes.LLOAD, idx);
       break;
     case FLOAT4:

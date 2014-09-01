@@ -79,11 +79,11 @@ public class Locate extends GeneralFunction {
   @Override
   public Datum eval(Tuple params) {
     Datum strDatum = params.get(0);
-    if(strDatum instanceof NullDatum) {
+    if(strDatum.isNull()) {
       return NullDatum.get();
     }
     Datum substrDatum = params.get(1);
-    if (substrDatum instanceof NullDatum) {
+    if (substrDatum.isNull()) {
       return NullDatum.get();
     }
     

@@ -65,7 +65,9 @@ public class RTrim extends GeneralFunction {
   @Override
   public Datum eval(Tuple params) {
     Datum datum = params.get(0);
-    if(datum instanceof NullDatum) return NullDatum.get();
+    if(datum.isNull()) {
+      return NullDatum.get();
+    }
 
     if (!hasTrimCharacters) {
       return DatumFactory.createText(StringUtils.stripEnd(datum.asChars(), null));

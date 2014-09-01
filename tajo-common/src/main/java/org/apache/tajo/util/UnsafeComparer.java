@@ -30,7 +30,7 @@ import java.security.PrivilegedAction;
 import java.util.Comparator;
 
 /**
- * This is borrowed from UnsignedBytes.
+ * This is borrowed from Guava's UnsignedBytes.
  */
 public class UnsafeComparer implements Comparator<byte[]> {
 

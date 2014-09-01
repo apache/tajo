@@ -219,7 +219,7 @@ public class TestStorages {
           || storeType == StoreType.CSV
           || storeType == StoreType.PARQUET
           || storeType == StoreType.AVRO) {
-        assertTrue(tuple.get(0) == null || tuple.get(0) instanceof NullDatum);
+        assertTrue(tuple.get(0) == null || tuple.get(0).isNull());
       }
       assertTrue(tupleCnt + 2 == tuple.get(1).asInt8());
       assertTrue(tupleCnt + 3 == tuple.get(2).asFloat4());

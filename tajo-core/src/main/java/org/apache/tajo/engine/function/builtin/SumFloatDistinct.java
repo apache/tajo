@@ -66,7 +66,7 @@ public class SumFloatDistinct extends AggFunction<Datum> {
   public void merge(FunctionContext context, Tuple params) {
     SumContext distinctContext = (SumContext) context;
     Datum value = params.get(0);
-    if ((distinctContext.latest == null || (!distinctContext.latest.equals(value)) && !(value instanceof NullDatum))) {
+    if ((distinctContext.latest == null || (!distinctContext.latest.equals(value)) && !(value.isNull()))) {
       distinctContext.latest = value;
       distinctContext.sum += value.asFloat4();
     }
