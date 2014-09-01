@@ -60,7 +60,7 @@ public class Substr extends GeneralFunction {
     Datum fromDatum = params.get(1);
     Datum countDatum = params.size() > 2 ? params.get(2) : null;
 
-    if(valueDatum.isNull() || fromDatum.isNull() || countDatum.isNull()) {
+    if(valueDatum instanceof NullDatum || fromDatum instanceof NullDatum) {
       return NullDatum.get();
     }
 

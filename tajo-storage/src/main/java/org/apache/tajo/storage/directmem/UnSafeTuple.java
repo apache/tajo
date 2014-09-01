@@ -95,6 +95,9 @@ public class UnSafeTuple implements Tuple {
 
   public long getFieldAddr(int fieldId) {
     int fieldOffset = getFieldOffset(fieldId);
+    if (fieldOffset == -1) {
+      throw new RuntimeException("Invalid Field Access: " + fieldId);
+    }
     return bb.address() + relativePos + fieldOffset;
   }
 

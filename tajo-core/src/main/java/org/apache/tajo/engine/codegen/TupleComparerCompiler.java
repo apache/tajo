@@ -134,26 +134,39 @@ public class TupleComparerCompiler {
         //   return cmpVal;
         // }
         adapter.dup();
-        adapter.push(0);
-        compMethod.visitJumpInsn(Opcodes.IF_ICMPNE, returnLabel);
+        compMethod.visitJumpInsn(Opcodes.IFNE, returnLabel);
         compMethod.visitInsn(Opcodes.POP);
       }
 
+      int nullFlagVarId = 0;
 
       adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 1);
+
       adapter.push(compImpl.getSortKeyIds()[idx]);
       if (compImpl.getSortSpecs()[idx].isNullFirst()) {
         adapter.invokeInterface(Tuple.class, "isNotNull", boolean.class, new Class[]{int.class});
       } else {
         adapter.invokeInterface(Tuple.class, "isNull", boolean.class, new Class[]{int.class});
       }
+      adapter.dup();
+      nullFlagVarId = adapter.istore();
 
       adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
       adapter.push(compImpl.getSortKeyIds()[idx]);
       if (compImpl.getSortSpecs()[idx].isNullFirst()) {
         adapter.invokeInterface(Tuple.class, "isNotNull", boolean.class, new Class[]{int.class});
+
+        adapter.dup();
+        adapter.iload(nullFlagVarId);
+        compMethod.visitInsn(Opcodes.IAND);
+        compMethod.visitVarInsn(Opcodes.ISTORE, nullFlagVarId);
       } else {
         adapter.invokeInterface(Tuple.class, "isNull", boolean.class, new Class[]{int.class});
+
+        adapter.dup();
+        adapter.iload(nullFlagVarId);
+        compMethod.visitInsn(Opcodes.IOR);
+        compMethod.visitVarInsn(Opcodes.ISTORE, nullFlagVarId);
       }
 
       compMethod.visitInsn(Opcodes.ISUB);
@@ -162,6 +175,16 @@ public class TupleComparerCompiler {
       adapter.push(0);
       compMethod.visitJumpInsn(Opcodes.IF_ICMPNE, returnLabel);
       adapter.pop();
+
+      Label nextComp = new Label();
+      Label pushComp = new Label();
+
+      adapter.iload(nullFlagVarId);
+      if (compImpl.getSortSpecs()[idx].isNullFirst()) { // -> if (left.isNotNull && right.isNotNull) == FALSE than skip
+        compMethod.visitJumpInsn(Opcodes.IFEQ, pushComp);
+      } else {                                          // -> if (left.isNull || right.isNull) != FALSE than skip
+        compMethod.visitJumpInsn(Opcodes.IFNE, pushComp);
+      }
 
       SortSpec sortSpec = compImpl.getSortSpecs()[idx];
       DataType dataType = sortSpec.getSortKey().getDataType();
@@ -177,6 +200,12 @@ public class TupleComparerCompiler {
       } else {
         throw new UnsupportedException("Unknown sort type: " + dataType.getType().name());
       }
+      compMethod.visitJumpInsn(Opcodes.GOTO, nextComp);
+
+      compMethod.visitLabel(pushComp);
+      adapter.push(0);
+
+      compMethod.visitLabel(nextComp);
     }
 
     // column 1

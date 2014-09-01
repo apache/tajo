@@ -19,9 +19,12 @@
 package org.apache.tajo.engine.codegen;
 
 import org.apache.tajo.org.objectweb.asm.ClassReader;
+import org.apache.tajo.org.objectweb.asm.MethodVisitor;
+import org.apache.tajo.org.objectweb.asm.Opcodes;
 import org.apache.tajo.org.objectweb.asm.util.ASMifier;
 import org.apache.tajo.org.objectweb.asm.util.TraceClassVisitor;
 
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
@@ -37,5 +40,12 @@ public class CodeGenUtils {
     cr.accept(new TraceClassVisitor(null, new ASMifier(), writer), FLAGS);
 
     return strWriter.toString();
+  }
+
+  public static void emitPrintOut(MethodVisitor mv, String message) {
+    mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+    mv.visitLdcInsn(message);
+    mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, TajoGeneratorAdapter.getInternalName(PrintStream.class),
+        "println", TajoGeneratorAdapter.getMethodDescription(void.class, new Class[]{String.class}));
   }
 }

@@ -112,8 +112,8 @@ public class TestTupleComparerCompiler {
       assertTrue("Checking Greater Than", comp.compare(tuples[3], tuples[0]) > 0);
     }
 
-    assertTrue("Checking Greater Than", comp.compare(tuples[3], tuples[4]) == 0);
-    assertTrue("Checking Greater Than", comp.compare(tuples[4], tuples[3]) == 0);
+    assertTrue("Checking Null Equality", comp.compare(tuples[3], tuples[4]) == 0);
+    assertTrue("Checking Null Equality", comp.compare(tuples[4], tuples[3]) == 0);
   }
 
   @Test
