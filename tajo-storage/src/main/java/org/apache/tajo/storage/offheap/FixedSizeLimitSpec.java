@@ -18,25 +18,15 @@
 
 package org.apache.tajo.storage.offheap;
 
-import org.apache.tajo.unit.StorageUnit;
-import org.junit.Test;
+/**
+ * Fixed size limit specification
+ */
+public class FixedSizeLimitSpec extends ResizableLimitSpec {
+  public FixedSizeLimitSpec(long size) {
+    super(size, size);
+  }
 
-import static org.junit.Assert.*;
-
-public class TestLimitSpec {
-
-  @Test
-  public void testLimitSpec() {
-    ResizableSpec limit = new ResizableSpec(10 * StorageUnit.MB, 1000 * StorageUnit.MB, 0.5f);
-
-    assertEquals(limit.limit(), 1000 * StorageUnit.MB);
-
-    assertTrue(limit.increasedSize(1000) == 1500);
-
-    assertEquals(limit.increasedSize(1600 * StorageUnit.MB), 1000 * StorageUnit.MB);
-
-    assertTrue(0.98f == limit.remainRatio(980 * StorageUnit.MB));
-
-    assertFalse(limit.canIncrease(limit.limit()));
+  public FixedSizeLimitSpec(long size, float allowedOverflowRatio) {
+    super(size, size, allowedOverflowRatio);
   }
 }

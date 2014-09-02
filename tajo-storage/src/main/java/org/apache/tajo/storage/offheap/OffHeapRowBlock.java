@@ -18,11 +18,13 @@
 
 package org.apache.tajo.storage.offheap;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.util.Deallocatable;
 import org.apache.tajo.util.SizeOf;
 import org.apache.tajo.util.UnsafeUtil;
 import org.apache.tajo.datum.IntervalDatum;
@@ -41,26 +43,22 @@ import java.nio.channels.FileChannel;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 
-public class RowOrientedRowBlock implements RowBlockWriter {
-  private static final Log LOG = LogFactory.getLog(RowOrientedRowBlock.class);
+public class OffHeapRowBlock implements RowBlockWriter, Deallocatable {
+  private static final Log LOG = LogFactory.getLog(OffHeapRowBlock.class);
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
 
   public static final int NULL_FIELD_OFFSET = -1;
 
-  private DataType [] dataTypes;
-  private int bytesLen;
-  private ByteBuffer buffer;
+  DataType [] dataTypes;
+  int bytesLen;
+  ByteBuffer buffer;
   private long address;
   private int fieldIndexBytesLen;
-  private ResizableSpec resizableSpec;
+  private ResizableLimitSpec limitSpec;
 
   // Basic States
   private int maxRowNum = Integer.MAX_VALUE; // optional
   private int rowNum;
-
-  // Read States
-  private int curRowIdxForRead;
-  private int curPosForRead;
 
   // Write States --------------------
   private int curOffsetForWrite;
@@ -69,7 +67,7 @@ public class RowOrientedRowBlock implements RowBlockWriter {
   private int curFieldIdxForWrite;
   private int [] fieldIndexesForWrite;
 
-  public RowOrientedRowBlock(Schema schema, ByteBuffer buffer, ResizableSpec resizableSpec) {
+  private OffHeapRowBlock(Schema schema, ByteBuffer buffer, ResizableLimitSpec limitSpec) {
     this.buffer = buffer;
 
     this.address = ((DirectBuffer) buffer).address();
@@ -80,32 +78,33 @@ public class RowOrientedRowBlock implements RowBlockWriter {
     fieldIndexesForWrite = new int[schema.size()];
     fieldIndexBytesLen = SizeOf.SIZE_OF_INT * schema.size();
 
-    this.resizableSpec = resizableSpec;
+    this.limitSpec = limitSpec;
 
     curOffsetForWrite = 0;
   }
 
-  public RowOrientedRowBlock(Schema schema, ByteBuffer buffer) {
-    this(schema, buffer, ResizableSpec.DEFAULT_LIMIT);
+  @VisibleForTesting
+  public OffHeapRowBlock(Schema schema, ByteBuffer buffer) {
+    this(schema, buffer, ResizableLimitSpec.DEFAULT_LIMIT);
   }
 
-  public RowOrientedRowBlock(Schema schema, int bytes, ResizableSpec resizableSpec) {
-    this(schema, ByteBuffer.allocateDirect(bytes).order(ByteOrder.nativeOrder()), resizableSpec);
+  public OffHeapRowBlock(Schema schema, ResizableLimitSpec limitSpec) {
+    this(schema, ByteBuffer.allocateDirect((int) limitSpec.initialSize()).order(ByteOrder.nativeOrder()),
+        limitSpec);
   }
 
-  public RowOrientedRowBlock(Schema schema, int bytes) {
-    this(schema, bytes, ResizableSpec.DEFAULT_LIMIT);
+  public OffHeapRowBlock(Schema schema, int bytes) {
+    this(schema, new ResizableLimitSpec(bytes));
   }
 
   public void clear() {
-    resetRowCursor();
-
     this.curOffsetForWrite = 0;
     this.rowOffsetForWrite = 0;
     this.curFieldIdxForWrite = 0;
     this.rowNum = 0;
   }
 
+  @Override
   public void free() {
     UnsafeUtil.free(this.buffer);
     this.buffer = null;
@@ -131,10 +130,6 @@ public class RowOrientedRowBlock implements RowBlockWriter {
     return bytesLen;
   }
 
-  public long remainForRead() {
-    return bytesLen - curPosForRead;
-  }
-
   public long remain() {
     return bytesLen - curOffsetForWrite - rowOffsetForWrite;
   }
@@ -147,32 +142,6 @@ public class RowOrientedRowBlock implements RowBlockWriter {
   }
 
   /**
-   * Return for each tuple
-   *
-   * @return True if tuple block is filled with tuples. Otherwise, It will return false.
-   */
-  public boolean next(UnSafeTuple tuple) {
-    if (curRowIdxForRead < rowNum) {
-
-      long recordStartPtr = address + curPosForRead;
-      int recordLen = UNSAFE.getInt(recordStartPtr);
-      tuple.set(buffer, curPosForRead, recordLen, dataTypes);
-
-      curPosForRead += recordLen;
-      curRowIdxForRead++;
-
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  public void resetRowCursor() {
-    curPosForRead = 0;
-    curRowIdxForRead = 0;
-  }
-
-  /**
    * Ensure that this buffer has enough remaining space to add the size.
    * Creates and copies to a new buffer if necessary
    *
@@ -180,12 +149,11 @@ public class RowOrientedRowBlock implements RowBlockWriter {
    */
   private void ensureSize(int size) {
     if (remain() - size < 0) {
-
-      if (!resizableSpec.canIncrease(bytesLen)) {
+      if (!limitSpec.canIncrease(bytesLen)) {
         throw new RuntimeException("Cannot increase RowBlock anymore.");
       }
 
-      int newBlockSize = UnsafeUtil.alignedSize(resizableSpec.increasedSize(bytesLen));
+      int newBlockSize = UnsafeUtil.alignedSize(limitSpec.increasedSize(bytesLen));
       ByteBuffer newByteBuf = ByteBuffer.allocateDirect(newBlockSize);
       long newAddress = ((DirectBuffer)newByteBuf).address();
       UNSAFE.copyMemory(this.address, newAddress, bytesLen);

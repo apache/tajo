@@ -35,27 +35,15 @@ import java.nio.ByteOrder;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 
-public class UnSafeTuple implements Tuple {
+public abstract class UnSafeTuple implements Tuple {
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
 
-  private boolean selfAllocated = false;
   private DirectBuffer bb;
   private int relativePos;
   private int length;
   private DataType [] types;
 
-  public UnSafeTuple() {
-  }
-
-  public UnSafeTuple(int length, DataType [] types) {
-    bb = (DirectBuffer) ByteBuffer.allocateDirect(length).order(ByteOrder.nativeOrder());
-    selfAllocated = true;
-    this.relativePos = 0;
-    this.length = length;
-    this.types = types;
-  }
-
-  void set(ByteBuffer bb, int relativePos, int length, DataType [] types) {
+  protected void set(ByteBuffer bb, int relativePos, int length, DataType [] types) {
     this.bb = (DirectBuffer) bb;
     this.relativePos = relativePos;
     this.length = length;
@@ -103,17 +91,17 @@ public class UnSafeTuple implements Tuple {
 
   @Override
   public boolean contains(int fieldid) {
-    return getFieldOffset(fieldid) > RowOrientedRowBlock.NULL_FIELD_OFFSET;
+    return getFieldOffset(fieldid) > OffHeapRowBlock.NULL_FIELD_OFFSET;
   }
 
   @Override
   public boolean isNull(int fieldid) {
-    return getFieldOffset(fieldid) == RowOrientedRowBlock.NULL_FIELD_OFFSET;
+    return getFieldOffset(fieldid) == OffHeapRowBlock.NULL_FIELD_OFFSET;
   }
 
   @Override
   public boolean isNotNull(int fieldid) {
-    return getFieldOffset(fieldid) > RowOrientedRowBlock.NULL_FIELD_OFFSET;
+    return getFieldOffset(fieldid) > OffHeapRowBlock.NULL_FIELD_OFFSET;
   }
 
   @Override
@@ -326,9 +314,5 @@ public class UnSafeTuple implements Tuple {
     return str.toString();
   }
 
-  public void free() {
-    if (selfAllocated) {
-      UnsafeUtil.free((ByteBuffer) bb);
-    }
-  }
+  public abstract void free();
 }

@@ -23,62 +23,85 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.util.FileUtil;
 
-public class ResizableSpec {
-  private final Log LOG = LogFactory.getLog(ResizableSpec.class);
+/**
+ * It specifies the maximum size or increasing ratio. In addition,
+ * it guarantees that all numbers are less than or equal to Integer.MAX_VALUE 2^31
+ * due to ByteBuffer.
+ */
+public class ResizableLimitSpec {
+  private final Log LOG = LogFactory.getLog(ResizableLimitSpec.class);
 
   public static final int MAX_SIZE_BYTES = Integer.MAX_VALUE;
-  public static final ResizableSpec DEFAULT_LIMIT = new ResizableSpec(Integer.MAX_VALUE);
+  public static final ResizableLimitSpec DEFAULT_LIMIT = new ResizableLimitSpec(Integer.MAX_VALUE);
 
-  private final int initSize;
-  private final int limitBytes;
+  private final long initSize;
+  private final long limitBytes;
   private final float incRatio;
+  private final float allowedOVerflowRatio;
+  private final static float DEFAULT_ALLOWED_OVERFLOW_RATIO = 0.1f;
   private final static float DEFAULT_INCREASE_RATIO = 1.0f;
 
-  public ResizableSpec(int initSize) {
-    this(initSize, MAX_SIZE_BYTES);
+  public ResizableLimitSpec(long initSize) {
+    this(initSize, MAX_SIZE_BYTES, DEFAULT_ALLOWED_OVERFLOW_RATIO);
   }
 
-  public ResizableSpec(int initSize, int limitBytes) {
-    this(initSize, limitBytes, DEFAULT_INCREASE_RATIO);
+  public ResizableLimitSpec(long initSize, long limitBytes) {
+    this(initSize, limitBytes, DEFAULT_ALLOWED_OVERFLOW_RATIO);
   }
 
-  public ResizableSpec(int initSize, int limitBytes, float incRatio) {
+  public ResizableLimitSpec(long initSize, long limitBytes, float allowedOverflow) {
+    this(initSize, limitBytes, allowedOverflow, DEFAULT_INCREASE_RATIO);
+  }
+
+  public ResizableLimitSpec(long initSize, long limitBytes, float allowedOverflowRatio, float incRatio) {
     Preconditions.checkArgument(initSize > 0, "initial size must be greater than 0 bytes.");
     Preconditions.checkArgument(initSize <= MAX_SIZE_BYTES, "The maximum initial size is 2GB.");
     Preconditions.checkArgument(limitBytes > 0, "The limit size must be greater than 0 bytes.");
     Preconditions.checkArgument(limitBytes <= MAX_SIZE_BYTES, "The maximum limit size is 2GB.");
     Preconditions.checkArgument(incRatio > 0.0f, "Increase Ratio must be greater than 0.");
 
-    this.initSize = initSize;
-    this.limitBytes = limitBytes;
+    if (initSize == limitBytes) {
+      long overflowedSize = (long) (initSize + (initSize * allowedOverflowRatio));
+      this.initSize = overflowedSize;
+      this.limitBytes = overflowedSize;
+    } else {
+      this.initSize = initSize;
+      this.limitBytes = (long) (limitBytes + (limitBytes * allowedOverflowRatio));
+    }
+    this.allowedOVerflowRatio = allowedOverflowRatio;
     this.incRatio = incRatio;
   }
 
-  public int initialSize() {
+  public long initialSize() {
     return initSize;
   }
 
-  public int limit() {
+  public long limit() {
     return limitBytes;
   }
 
-  public float remainRatio(int currentSize) {
+  public float remainRatio(long currentSize) {
+    Preconditions.checkArgument(currentSize > 0, "Size must be greater than 0 bytes.");
+    if (currentSize > Integer.MAX_VALUE) {
+      currentSize = Integer.MAX_VALUE;
+    }
     return (float)currentSize / (float)limitBytes;
   }
 
-  public float increaseRatio() {
-    return incRatio;
-  }
-
-  public boolean canIncrease(int currentSize) {
+  public boolean canIncrease(long currentSize) {
     return remain(currentSize) > 0;
   }
 
-  public long remain(int currentSize) {
+  public long remain(long currentSize) {
+    Preconditions.checkArgument(currentSize > 0, "Size must be greater than 0 bytes.");
     return limitBytes > Integer.MAX_VALUE ? Integer.MAX_VALUE - currentSize : limitBytes - currentSize;
   }
 
   public int increasedSize(int currentSize) {
+    if (currentSize < initSize) {
+      return (int) initSize;
+    }
+
     if (currentSize > Integer.MAX_VALUE) {
       LOG.warn("Current size already exceeds the maximum size (" + Integer.MAX_VALUE + " bytes)");
       return Integer.MAX_VALUE;
@@ -101,6 +124,7 @@ public class ResizableSpec {
   @Override
   public String toString() {
     return "init=" + FileUtil.humanReadableByteCount(initSize, false) + ",limit="
-        + FileUtil.humanReadableByteCount(limitBytes, false) + ",incRatio=" + incRatio;
+        + FileUtil.humanReadableByteCount(limitBytes, false) + "allowed_overflow=" + allowedOVerflowRatio
+        + ",incRatio=" + incRatio;
   }
 }

@@ -29,9 +29,10 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.SeekableScanner;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.offheap.RowOrientedRowBlock;
-import org.apache.tajo.storage.offheap.UnSafeTuple;
+import org.apache.tajo.storage.offheap.OffHeapRowBlock;
+import org.apache.tajo.storage.offheap.OffHeapRowBlockReader;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.offheap.ZeroCopyTuple;
 import org.apache.tajo.unit.StorageUnit;
 
 import java.io.File;
@@ -46,12 +47,14 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   private TajoDataTypes.DataType[] columnTypes;
   private Path path;
 
-  private UnSafeTuple tuple;
-
   private boolean eof = false;
   private long fileSize;
   private FileInputStream fis;
   private long recordCount;
+
+  private ZeroCopyTuple unSafeTuple = new ZeroCopyTuple();
+  private OffHeapRowBlock tupleBuffer = new OffHeapRowBlock(schema, 64 * StorageUnit.KB);
+  private OffHeapRowBlockReader reader = new OffHeapRowBlockReader(tupleBuffer);
 
   public DirectRawFileScanner(Configuration conf, Schema schema, TableMeta meta, Path path) throws IOException {
     super(conf, schema, meta, null);
@@ -90,14 +93,16 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
       columnTypes[i] = schema.getColumn(i).getDataType();
     }
 
-    fetchNeeded = !next(rowBlock);
+    reader.resetRowCursor();
+
+    fetchNeeded = !next(tupleBuffer);
 
     super.init();
   }
 
   @Override
   public long getNextOffset() throws IOException {
-    return channel.position() - rowBlock.remainForRead();
+    return channel.position() - reader.remainForRead();
   }
 
   @Override
@@ -106,12 +111,10 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
     fetchNeeded = true;
   }
 
-  public boolean next(RowOrientedRowBlock rowblock) throws IOException {
+  public boolean next(OffHeapRowBlock rowblock) throws IOException {
     return rowblock.copyFromChannel(channel, tableStats);
   }
 
-  private UnSafeTuple unSafeTuple = new UnSafeTuple();
-  RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, 64 * StorageUnit.KB);
   private boolean fetchNeeded = true;
 
   @Override
@@ -122,12 +125,13 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
 
     while(true) {
       if (fetchNeeded) {
-        if (!next(rowBlock)) {
+        if (!next(tupleBuffer)) {
           return null;
         }
+        reader.resetRowCursor();
       }
 
-      fetchNeeded = !rowBlock.next(unSafeTuple);
+      fetchNeeded = !reader.next(unSafeTuple);
 
       if (!fetchNeeded) {
         recordCount++;
@@ -142,6 +146,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
     fetchNeeded = true;
     channel.position(0);
     eof = false;
+    reader.resetRowCursor();
   }
 
   @Override
@@ -150,7 +155,8 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
       tableStats.setReadBytes(fileSize);
       tableStats.setNumRows(recordCount);
     }
-
+    tupleBuffer.free();
+    reader = null;
     IOUtils.cleanup(LOG, channel, fis);
   }
 

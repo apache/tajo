@@ -37,8 +37,7 @@ import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.RawFile;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.offheap.RowOrientedRowBlock;
-import org.apache.tajo.storage.offheap.UnSafeTuple;
+import org.apache.tajo.storage.offheap.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
@@ -80,7 +79,7 @@ public class ExternalSortExec extends SortExec {
   /** If there are available multiple cores, it tries parallel merge. */
   private ExecutorService executorService;
   /** used for in-memory sort of each chunk. */
-  private RowOrientedRowBlock inMemoryTable;
+  private OffHeapRowBlock tupleBlock;
   private List<Tuple> sortedTuples;
   /** temporal dir */
   private final Path sortTmpDir;
@@ -120,7 +119,7 @@ public class ExternalSortExec extends SortExec {
     this.sortBufferBytesNum = context.getQueryContext().getLong(SessionVars.EXTSORT_BUFFER_SIZE) * StorageUnit.MB;
     this.allocatedCoreNum = context.getConf().getIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_THREAD_NUM);
     this.executorService = Executors.newFixedThreadPool(this.allocatedCoreNum);
-    this.inMemoryTable = new RowOrientedRowBlock(inSchema, (int) sortBufferBytesNum, 0.2f);
+    this.tupleBlock = new OffHeapRowBlock(inSchema, new FixedSizeLimitSpec(sortBufferBytesNum));
 
     this.sortTmpDir = getExecutorTmpDir();
     localDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
@@ -160,13 +159,13 @@ public class ExternalSortExec extends SortExec {
     return this.plan;
   }
 
-  public static List<Tuple> sortTuples(RowOrientedRowBlock sortBuffer, Comparator<Tuple> comparator) {
+  public static List<Tuple> sortTuples(OffHeapRowBlock sortBuffer, Comparator<Tuple> comparator) {
     List<Tuple> tupleList = Lists.newArrayList();
-    UnSafeTuple unSafeTuple = new UnSafeTuple();
-    sortBuffer.resetRowCursor();
-    while(sortBuffer.next(unSafeTuple)) {
-      tupleList.add(unSafeTuple);
-      unSafeTuple = new UnSafeTuple();
+    ZeroCopyTuple zcTuple = new ZeroCopyTuple();
+    OffHeapRowBlockReader reader = new OffHeapRowBlockReader(sortBuffer);
+    while(reader.next(zcTuple)) {
+      tupleList.add(zcTuple);
+      zcTuple = new ZeroCopyTuple();
     }
     Collections.sort(tupleList, comparator);
     return tupleList;
@@ -175,7 +174,7 @@ public class ExternalSortExec extends SortExec {
   /**
    * Sort a tuple block and store them into a chunk file
    */
-  private Path sortAndStoreChunk(int chunkId, RowOrientedRowBlock sortBuffer)
+  private Path sortAndStoreChunk(int chunkId, OffHeapRowBlock sortBuffer)
       throws IOException {
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.DIRECTRAW);
     int rowNum = sortBuffer.rows();
@@ -193,10 +192,7 @@ public class ExternalSortExec extends SortExec {
     }
     appender.close();
 
-    sortBuffer.clear();
     long chunkWriteEnd = System.currentTimeMillis();
-
-
     info(LOG, "Chunk #" + chunkId + " sort and written (" +
         FileUtil.humanReadableByteCount(appender.getOffset(), false) + " bytes, " + rowNum + " rows, " +
         ", sort time: " + (sortEnd - sortStart) + " msec, " +
@@ -214,15 +210,12 @@ public class ExternalSortExec extends SortExec {
     Tuple tuple;
     List<Path> chunkPaths = TUtil.newList();
 
-    int cnt = 0;
-
     int chunkId = 0;
     long runStartTime = System.currentTimeMillis();
     while ((tuple = child.next()) != null) { // partition sort start
-      cnt++;
-      inMemoryTable.addTuple(tuple);
+      tupleBlock.addTuple(tuple);
 
-      if (inMemoryTable.usedMem() > sortBufferBytesNum) {
+      if (tupleBlock.usedMem() > sortBufferBytesNum) {
         long runEndTime = System.currentTimeMillis();
         info(LOG, chunkId + " run loading time: " + (runEndTime - runStartTime) + " msec");
         runStartTime = runEndTime;
@@ -230,7 +223,8 @@ public class ExternalSortExec extends SortExec {
         info(LOG, "Memory consumption exceeds " + sortBufferBytesNum + " bytes");
         memoryResident = false;
 
-        chunkPaths.add(sortAndStoreChunk(chunkId, inMemoryTable));
+        chunkPaths.add(sortAndStoreChunk(chunkId, tupleBlock));
+        tupleBlock.clear();
         chunkId++;
 
         // When the volume of sorting data once exceed the size of sort buffer,
@@ -248,17 +242,17 @@ public class ExternalSortExec extends SortExec {
       }
     }
 
-    if (inMemoryTable.rows() >= 0) { // if there are at least one or more input tuples
+    if (tupleBlock.rows() >= 0) { // if there are at least one or more input tuples
       if (!memoryResident) { // check if data exceeds a sort buffer. If so, it store the remain data into a chunk.
-        if (inMemoryTable.rows() > 0) {
+        if (tupleBlock.rows() > 0) {
           long start = System.currentTimeMillis();
-          int rowNum = inMemoryTable.rows();
-          chunkPaths.add(sortAndStoreChunk(chunkId, inMemoryTable));
+          int rowNum = tupleBlock.rows();
+          chunkPaths.add(sortAndStoreChunk(chunkId, tupleBlock));
           long end = System.currentTimeMillis();
           info(LOG, "Last Chunk #" + chunkId + " " + rowNum + " rows written (" + (end - start) + " msec)");
         }
       } else { // this case means that all data does not exceed a sort buffer
-        sortedTuples = sortTuples(inMemoryTable, getComparator());
+        sortedTuples = sortTuples(tupleBlock, getComparator());
       }
     }
 
@@ -539,9 +533,9 @@ public class ExternalSortExec extends SortExec {
       }
     }
 
-    if(inMemoryTable != null){
-      inMemoryTable.free();
-      inMemoryTable = null;
+    if(tupleBlock != null){
+      tupleBlock.free();
+      tupleBlock = null;
     }
 
     if(executorService != null){

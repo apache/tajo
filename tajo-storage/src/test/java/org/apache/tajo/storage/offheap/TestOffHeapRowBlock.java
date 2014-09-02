@@ -42,11 +42,9 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestRowOrientedRowBlock {
-  private static final Log LOG = LogFactory.getLog(TestRowOrientedRowBlock.class);
-
-  public static String TEXT_FIELD_PREFIX = "가나다_abc_";
-
+public class TestOffHeapRowBlock {
+  private static final Log LOG = LogFactory.getLog(TestOffHeapRowBlock.class);
+  public static String UNICODE_FIELD_PREFIX = "abc_가나다_";
   public static Schema schema;
 
   static {
@@ -67,24 +65,30 @@ public class TestRowOrientedRowBlock {
         CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, PrimitiveProtos.StringProto.class.getName()));
   }
 
+  private void explainRowBlockAllocation(OffHeapRowBlock rowBlock, long startTime, long endTime) {
+    LOG.info(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
+        + (endTime - startTime) + " msec");
+  }
+
   @Test
   public void testPutAndReadValidation() {
-    int vecSize = 1000;
+    int rowNum = 1000;
 
-    long allocateStart = System.currentTimeMillis();
-    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, 1024);
-    long allocatedEnd = System.currentTimeMillis();
-    LOG.info(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
-        + (allocatedEnd - allocateStart) + " msec");
+    long allocStart = System.currentTimeMillis();
+    OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, 1024);
+    long allocEnd = System.currentTimeMillis();
+    explainRowBlockAllocation(rowBlock, allocStart, allocEnd);
 
-    UnSafeTuple tuple = new UnSafeTuple();
+    OffHeapRowBlockReader reader = new OffHeapRowBlockReader(rowBlock);
+
+    ZeroCopyTuple tuple = new ZeroCopyTuple();
     long writeStart = System.currentTimeMillis();
-    for (int i = 0; i < vecSize; i++) {
+    for (int i = 0; i < rowNum; i++) {
       fillRowBlock(i, rowBlock);
 
-      rowBlock.resetRowCursor();
+      reader.resetRowCursor();
       int j = 0;
-      while(rowBlock.next(tuple)) {
+      while(reader.next(tuple)) {
         validateTupleResult(j, tuple);
 
         j++;
@@ -94,10 +98,10 @@ public class TestRowOrientedRowBlock {
     LOG.info("writing and validating take " + (writeEnd - writeStart) + " msec");
 
     long readStart = System.currentTimeMillis();
-    tuple = new UnSafeTuple();
+    tuple = new ZeroCopyTuple();
     int j = 0;
-    rowBlock.resetRowCursor();
-    while(rowBlock.next(tuple)) {
+    reader.resetRowCursor();
+    while(reader.next(tuple)) {
       validateTupleResult(j, tuple);
       j++;
     }
@@ -109,22 +113,22 @@ public class TestRowOrientedRowBlock {
 
   @Test
   public void testNullityValidation() {
-    int vecSize = 1000;
+    int rowNum = 1000;
 
-    long allocateStart = System.currentTimeMillis();
-    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, 1024);
-    long allocatedEnd = System.currentTimeMillis();
-    LOG.info(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
-        + (allocatedEnd - allocateStart) + " msec");
+    long allocStart = System.currentTimeMillis();
+    OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, 1024);
+    long allocEnd = System.currentTimeMillis();
+    explainRowBlockAllocation(rowBlock, allocStart, allocEnd);
 
-    UnSafeTuple tuple = new UnSafeTuple();
+    OffHeapRowBlockReader reader = new OffHeapRowBlockReader(rowBlock);
+    ZeroCopyTuple tuple = new ZeroCopyTuple();
     long writeStart = System.currentTimeMillis();
-    for (int i = 0; i < vecSize; i++) {
+    for (int i = 0; i < rowNum; i++) {
       fillRowBlockWithNull(i, rowBlock);
 
-      rowBlock.resetRowCursor();
+      reader.resetRowCursor();
       int j = 0;
-      while(rowBlock.next(tuple)) {
+      while(reader.next(tuple)) {
         validateNullity(j, tuple);
 
         j++;
@@ -134,10 +138,10 @@ public class TestRowOrientedRowBlock {
     LOG.info("writing and nullity validating take " + (writeEnd - writeStart) +" msec");
 
     long readStart = System.currentTimeMillis();
-    tuple = new UnSafeTuple();
+    tuple = new ZeroCopyTuple();
     int j = 0;
-    rowBlock.resetRowCursor();
-    while(rowBlock.next(tuple)) {
+    reader.resetRowCursor();
+    while(reader.next(tuple)) {
       validateNullity(j, tuple);
 
       j++;
@@ -150,53 +154,54 @@ public class TestRowOrientedRowBlock {
 
   @Test
   public void testEmptyRow() {
-    int vecSize = 100000;
+    int rowNum = 1000;
 
-    long allocateStart = System.currentTimeMillis();
-    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 10);
-    long allocatedEnd = System.currentTimeMillis();
-    LOG.info(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocation took "
-        + (allocatedEnd - allocateStart) + " msec");
+    long allocStart = System.currentTimeMillis();
+    OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, StorageUnit.MB * 10);
+    long allocEnd = System.currentTimeMillis();
+    explainRowBlockAllocation(rowBlock, allocStart, allocEnd);
 
     long writeStart = System.currentTimeMillis();
-    for (int i = 0; i < vecSize; i++) {
+    for (int i = 0; i < rowNum; i++) {
       rowBlock.startRow();
       // empty columns
       rowBlock.endRow();
     }
     long writeEnd = System.currentTimeMillis();
-    System.out.println("writing took " + (writeEnd - writeStart) + " msec");
+    LOG.info("writing tooks " + (writeEnd - writeStart) + " msec");
+
+    OffHeapRowBlockReader reader = new OffHeapRowBlockReader(rowBlock);
 
     long readStart = System.currentTimeMillis();
-    UnSafeTuple tuple = new UnSafeTuple();
+    ZeroCopyTuple tuple = new ZeroCopyTuple();
     int j = 0;
-    rowBlock.resetRowCursor();
-    while(rowBlock.next(tuple)) {
+    reader.resetRowCursor();
+    while(reader.next(tuple)) {
       j++;
     }
     long readEnd = System.currentTimeMillis();
     LOG.info("reading takes " + (readEnd - readStart) + " msec");
     rowBlock.free();
 
-    assertEquals(vecSize, j);
-    assertEquals(vecSize, rowBlock.rows());
+    assertEquals(rowNum, j);
+    assertEquals(rowNum, rowBlock.rows());
   }
 
   @Test
   public void testSortBenchmark() {
-    int vecSize = 3000000;
+    int rowNum = 1000;
 
-    RowOrientedRowBlock rowBlock = createRowBlock(vecSize);
+    OffHeapRowBlock rowBlock = createRowBlock(rowNum);
+    OffHeapRowBlockReader reader = new OffHeapRowBlockReader(rowBlock);
 
-    List<UnSafeTuple> unSafeTuples = Lists.newArrayList();
+    List<ZeroCopyTuple> unSafeTuples = Lists.newArrayList();
 
     long readStart = System.currentTimeMillis();
-    UnSafeTuple tuple = new UnSafeTuple();
-    int j = 0;
-    rowBlock.resetRowCursor();
-    while(rowBlock.next(tuple)) {
+    ZeroCopyTuple tuple = new ZeroCopyTuple();
+    reader.resetRowCursor();
+    while(reader.next(tuple)) {
       unSafeTuples.add(tuple);
-      tuple = new UnSafeTuple();
+      tuple = new ZeroCopyTuple();
     }
     long readEnd = System.currentTimeMillis();
     LOG.info("reading takes " + (readEnd - readStart) + " msec");
@@ -208,13 +213,12 @@ public class TestRowOrientedRowBlock {
     Collections.sort(unSafeTuples, comparator);
     long sortEnd = System.currentTimeMillis();
     LOG.info("sorting took " + (sortEnd - sortStart) + " msec");
-
     rowBlock.free();
   }
 
   @Test
   public void testVTuplePutAndGetBenchmark() {
-    int rowNum = 1000000;
+    int rowNum = 1000;
 
     List<VTuple> rowBlock = Lists.newArrayList();
     long writeStart = System.currentTimeMillis();
@@ -225,7 +229,7 @@ public class TestRowOrientedRowBlock {
       rowBlock.add(tuple);
     }
     long writeEnd = System.currentTimeMillis();
-    System.out.println(writeEnd - writeStart + " write msec");
+    LOG.info("Writing takes " + (writeEnd - writeStart) + " msec");
 
     long readStart = System.currentTimeMillis();
     int j = 0;
@@ -250,9 +254,9 @@ public class TestRowOrientedRowBlock {
 
   @Test
   public void testVTuplePutAndGetBenchmarkViaDirectRowEncoder() {
-    int rowNum = 1000000;
+    int rowNum = 1000;
 
-    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 100);
+    OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, StorageUnit.MB * 100);
 
     long writeStart = System.currentTimeMillis();
     VTuple tuple = new VTuple(schema.size());
@@ -262,7 +266,7 @@ public class TestRowOrientedRowBlock {
       rowBlock.addTuple(tuple);
     }
     long writeEnd = System.currentTimeMillis();
-    System.out.println(writeEnd - writeStart + " write msec");
+    LOG.info("Writing takes " + (writeEnd - writeStart) + " msec");
 
     validateResults(rowBlock);
     rowBlock.free();
@@ -272,29 +276,30 @@ public class TestRowOrientedRowBlock {
   public void testSerDerOfRowBlock() {
     int rowNum = 1000;
 
-    RowOrientedRowBlock rowBlock = createRowBlock(rowNum);
+    OffHeapRowBlock rowBlock = createRowBlock(rowNum);
 
     ByteBuffer bb = rowBlock.nioBuffer();
-    RowOrientedRowBlock restoredRowBlock = new RowOrientedRowBlock(schema, bb);
+    OffHeapRowBlock restoredRowBlock = new OffHeapRowBlock(schema, bb);
     validateResults(restoredRowBlock);
     rowBlock.free();
   }
 
   @Test
-  public void testSerDerOfUnSafeTuple() {
+  public void testSerDerOfZeroCopyTuple() {
     int rowNum = 1000;
 
-    RowOrientedRowBlock rowBlock = createRowBlock(rowNum);
+    OffHeapRowBlock rowBlock = createRowBlock(rowNum);
 
     ByteBuffer bb = rowBlock.nioBuffer();
-    RowOrientedRowBlock restoredRowBlock = new RowOrientedRowBlock(schema, bb);
+    OffHeapRowBlock restoredRowBlock = new OffHeapRowBlock(schema, bb);
+    OffHeapRowBlockReader reader = new OffHeapRowBlockReader(restoredRowBlock);
 
     long readStart = System.currentTimeMillis();
-    UnSafeTuple tuple = new UnSafeTuple();
-    UnSafeTuple copyTuple = new UnSafeTuple();
+    ZeroCopyTuple tuple = new ZeroCopyTuple();
+    ZeroCopyTuple copyTuple = new ZeroCopyTuple();
     int j = 0;
-    restoredRowBlock.resetRowCursor();
-    while(restoredRowBlock.next(tuple)) {
+    reader.resetRowCursor();
+    while(reader.next(tuple)) {
       ByteBuffer copy = tuple.nioBuffer();
       copyTuple.set(copy, SchemaUtil.toDataTypes(schema));
 
@@ -308,9 +313,9 @@ public class TestRowOrientedRowBlock {
     rowBlock.free();
   }
 
-  public static RowOrientedRowBlock createRowBlock(int rowNum) {
+  public static OffHeapRowBlock createRowBlock(int rowNum) {
     long allocateStart = System.currentTimeMillis();
-    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 8);
+    OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, StorageUnit.MB * 8);
     long allocatedEnd = System.currentTimeMillis();
     LOG.info(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
         + (allocatedEnd - allocateStart) + " msec");
@@ -325,7 +330,7 @@ public class TestRowOrientedRowBlock {
     return rowBlock;
   }
 
-  public static void fillRowBlock(int i, RowOrientedRowBlock rowBlock) {
+  public static void fillRowBlock(int i, OffHeapRowBlock rowBlock) {
     rowBlock.startRow();
     rowBlock.putBool(i % 1 == 0 ? true : false); // 0
     rowBlock.putInt2((short) 1);                 // 1
@@ -333,7 +338,7 @@ public class TestRowOrientedRowBlock {
     rowBlock.putInt8(i);                         // 3
     rowBlock.putFloat4(i);                       // 4
     rowBlock.putFloat8(i);                       // 5
-    rowBlock.putText((TEXT_FIELD_PREFIX + i).getBytes());  // 6
+    rowBlock.putText((UNICODE_FIELD_PREFIX + i).getBytes());  // 6
     rowBlock.putTimestamp(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + i); // 7
     rowBlock.putDate(DatumFactory.createDate("2014-04-16").asInt4() + i); // 8
     rowBlock.putTime(DatumFactory.createTime("08:48:00").asInt8() + i); // 9
@@ -343,7 +348,7 @@ public class TestRowOrientedRowBlock {
     rowBlock.endRow();
   }
 
-  public static void fillRowBlockWithNull(int i, RowOrientedRowBlock rowBlock) {
+  public static void fillRowBlockWithNull(int i, OffHeapRowBlock rowBlock) {
     rowBlock.startRow();
 
     if (i == 0) {
@@ -384,7 +389,7 @@ public class TestRowOrientedRowBlock {
     if (i % 6 == 0) {
       rowBlock.skipField();
     } else {
-      rowBlock.putText((TEXT_FIELD_PREFIX + i).getBytes());  // 6
+      rowBlock.putText((UNICODE_FIELD_PREFIX + i).getBytes());  // 6
     }
 
     if (i % 7 == 0) {
@@ -433,7 +438,7 @@ public class TestRowOrientedRowBlock {
     tuple.put(3, DatumFactory.createInt8(i));
     tuple.put(4, DatumFactory.createFloat4(i));
     tuple.put(5, DatumFactory.createFloat8(i));
-    tuple.put(6, DatumFactory.createText((TEXT_FIELD_PREFIX + i).getBytes()));
+    tuple.put(6, DatumFactory.createText((UNICODE_FIELD_PREFIX + i).getBytes()));
     tuple.put(7, DatumFactory.createTimestamp(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + i)); // 7
     tuple.put(8, DatumFactory.createDate(DatumFactory.createDate("2014-04-16").asInt4() + i)); // 8
     tuple.put(9, DatumFactory.createTime(DatumFactory.createTime("08:48:00").asInt8() + i)); // 9
@@ -442,17 +447,18 @@ public class TestRowOrientedRowBlock {
     tuple.put(12, new ProtobufDatum(ProtoUtil.convertString(i + ""))); // 12;
   }
 
-  public static void validateResults(RowOrientedRowBlock rowBlock) {
+  public static void validateResults(OffHeapRowBlock rowBlock) {
     long readStart = System.currentTimeMillis();
-    UnSafeTuple tuple = new UnSafeTuple();
+    ZeroCopyTuple tuple = new ZeroCopyTuple();
     int j = 0;
-    rowBlock.resetRowCursor();
-    while(rowBlock.next(tuple)) {
+    OffHeapRowBlockReader reader = new OffHeapRowBlockReader(rowBlock);
+    reader.resetRowCursor();
+    while(reader.next(tuple)) {
       validateTupleResult(j, tuple);
       j++;
     }
     long readEnd = System.currentTimeMillis();
-    LOG.info("reading takes " + (readEnd - readStart) + " msec");
+    LOG.info("Reading takes " + (readEnd - readStart) + " msec");
   }
 
   public static void validateTupleResult(int j, Tuple t) {
@@ -462,7 +468,7 @@ public class TestRowOrientedRowBlock {
     assertEquals(j, t.getInt8(3));
     assertTrue(j == t.getFloat4(4));
     assertTrue(j == t.getFloat8(5));
-    assertEquals(new String(TEXT_FIELD_PREFIX + j), t.getText(6));
+    assertEquals(new String(UNICODE_FIELD_PREFIX + j), t.getText(6));
     assertEquals(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + (long) j, t.getInt8(7));
     assertEquals(DatumFactory.createDate("2014-04-16").asInt4() + j, t.getInt4(8));
     assertEquals(DatumFactory.createTime("08:48:00").asInt8() + j, t.getInt8(9));
@@ -511,7 +517,7 @@ public class TestRowOrientedRowBlock {
     if (j % 6 == 0) {
       tuple.isNull(6);
     } else {
-      assertEquals(new String(TEXT_FIELD_PREFIX + j), tuple.getText(6));
+      assertEquals(new String(UNICODE_FIELD_PREFIX + j), tuple.getText(6));
     }
 
     if (j % 7 == 0) {

@@ -35,7 +35,7 @@ import org.apache.tajo.storage.BinarySerializerDeserializer;
 import org.apache.tajo.storage.SerializerDeserializer;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.storage.offheap.RowOrientedRowBlock;
+import org.apache.tajo.storage.offheap.OffHeapRowBlock;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.rcfile.BytesRefArrayWritable;
 import org.apache.tajo.storage.rcfile.ColumnProjectionUtils;
@@ -135,11 +135,6 @@ public class RCFileScanner extends FileScannerV2 {
     prepareProjection(targets);
 
     super.init();
-  }
-
-  @Override
-  public boolean next(RowOrientedRowBlock block) throws IOException {
-    throw new UnimplementedException("next(RowOrientedRowBlock)");
   }
 
   private void prepareProjection(Column[] targets) {

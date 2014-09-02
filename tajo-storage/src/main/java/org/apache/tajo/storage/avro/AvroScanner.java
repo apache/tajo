@@ -39,7 +39,7 @@ import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.storage.offheap.RowOrientedRowBlock;
+import org.apache.tajo.storage.offheap.OffHeapRowBlock;
 import org.apache.tajo.storage.fragment.FileFragment;
 
 import java.io.IOException;
@@ -244,11 +244,6 @@ public class AvroScanner extends FileScanner {
    */
   @Override
   public void reset() throws IOException {
-  }
-
-  @Override
-  public boolean next(RowOrientedRowBlock block) {
-    throw new UnimplementedException("next(RowOrientedRowBlock)");
   }
 
   /**

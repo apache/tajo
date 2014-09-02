@@ -27,9 +27,10 @@ import org.apache.tajo.datum.IntervalDatum;
  *   startRow() -->  skipField() or putXXX --> endRow()
  * </pre>
  *
- * The total number of skipField and putXXX must be equivalent to the number of fields.
+ * The total number of skipField and putXXX invocations must be equivalent to the number of fields.
  */
 public interface RowBlockWriter {
+
   public boolean startRow();
 
   public void endRow();

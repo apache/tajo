@@ -31,7 +31,7 @@ import org.apache.tajo.storage.FileAppender;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.TableStatistics;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.offheap.RowOrientedRowBlock;
+import org.apache.tajo.storage.offheap.OffHeapRowBlock;
 import org.apache.tajo.storage.offheap.UnSafeTuple;
 import org.apache.tajo.unit.StorageUnit;
 
@@ -88,7 +88,7 @@ public class DirectRawFileWriter extends FileAppender {
     return pos;
   }
 
-  public void writeRowBlock(RowOrientedRowBlock rowBlock) throws IOException {
+  public void writeRowBlock(OffHeapRowBlock rowBlock) throws IOException {
     channel.write(rowBlock.nioBuffer());
     if (enabledStats) {
       stats.incrementRows(rowBlock.rows());

@@ -28,8 +28,10 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.storage.offheap.RowOrientedRowBlock;
+import org.apache.tajo.storage.offheap.OffHeapRowBlock;
+import org.apache.tajo.storage.offheap.OffHeapRowBlockReader;
 import org.apache.tajo.storage.offheap.UnSafeTuple;
+import org.apache.tajo.storage.offheap.ZeroCopyTuple;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,7 +39,7 @@ import org.junit.Test;
 import java.util.List;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
-import static org.apache.tajo.storage.offheap.TestRowOrientedRowBlock.schema;
+import static org.apache.tajo.storage.offheap.TestOffHeapRowBlock.schema;
 import static org.junit.Assert.assertTrue;
 
 public class TestTupleComparerCompiler {
@@ -310,7 +312,7 @@ public class TestTupleComparerCompiler {
     assertCompare(comp, sortSpecs, t1, t2, t3, t4, t4);
   }
 
-  private void fillTextColumnToRowBlock(RowOrientedRowBlock rowBlock, String text) {
+  private void fillTextColumnToRowBlock(OffHeapRowBlock rowBlock, String text) {
     rowBlock.startRow();
     rowBlock.skipField(); // 0
     rowBlock.skipField(); // 1
@@ -329,7 +331,7 @@ public class TestTupleComparerCompiler {
     SortSpec [][] sortSpecs = createSortSpecs("col6");
     TupleComparator [] comps = createComparators(sortSpecs, true);
 
-    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, 640);
+    OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, 640);
     fillTextColumnToRowBlock(rowBlock, "tajo");
     fillTextColumnToRowBlock(rowBlock, "tajo");
     fillTextColumnToRowBlock(rowBlock, "tazo");
@@ -337,11 +339,13 @@ public class TestTupleComparerCompiler {
 
     List<UnSafeTuple> tuples = Lists.newArrayList();
 
-    rowBlock.resetRowCursor();
-    UnSafeTuple t = new UnSafeTuple();
-    while(rowBlock.next(t)) {
-      tuples.add(t);
-      t = new UnSafeTuple();
+    OffHeapRowBlockReader reader = new OffHeapRowBlockReader(rowBlock);
+
+    reader.resetRowCursor();
+    ZeroCopyTuple zcTuple = new ZeroCopyTuple();
+    while(reader.next(zcTuple)) {
+      tuples.add(zcTuple);
+      zcTuple = new ZeroCopyTuple();
     }
 
     assertCompareAll(comps, sortSpecs, tuples.get(0), tuples.get(1), tuples.get(2), tuples.get(3), tuples.get(3));

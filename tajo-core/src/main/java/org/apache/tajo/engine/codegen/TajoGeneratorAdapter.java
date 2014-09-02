@@ -237,7 +237,10 @@ class TajoGeneratorAdapter {
       invokeInterface(Tuple.class, "getText", String.class, new Class[]{int.class});
       break;
     case INTERVAL:
-      invokeInterface(Tuple.class, "getInterval", IntervalDatum.class, new Class[]{int.class});
+      invokeInterface(Tuple.class, "getInterval", Datum.class, new Class[]{int.class});
+      break;
+    case PROTOBUF:
+      invokeInterface(Tuple.class, "getProtobufDatum", Datum.class, new Class[]{int.class});
       break;
     default:
       throw new UnsupportedException("Unknown data type: " + type.name());

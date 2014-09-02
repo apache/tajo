@@ -28,9 +28,10 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.offheap.RowOrientedRowBlock;
-import org.apache.tajo.storage.offheap.TestRowOrientedRowBlock;
-import org.apache.tajo.storage.offheap.UnSafeTuple;
+import org.apache.tajo.storage.offheap.OffHeapRowBlock;
+import org.apache.tajo.storage.offheap.OffHeapRowBlockReader;
+import org.apache.tajo.storage.offheap.TestOffHeapRowBlock;
+import org.apache.tajo.storage.offheap.ZeroCopyTuple;
 import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
 import org.apache.tajo.storage.rawfile.DirectRawFileWriter;
 import org.apache.tajo.unit.StorageUnit;
@@ -40,13 +41,13 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.apache.tajo.storage.offheap.TestRowOrientedRowBlock.*;
+import static org.apache.tajo.storage.offheap.TestOffHeapRowBlock.*;
 import static org.junit.Assert.*;
 
 public class TestDirectRawFile {
   private static final Log LOG = LogFactory.getLog(TestDirectRawFile.class);
 
-  public static Path writeRowBlock(TajoConf conf, TableMeta meta, RowOrientedRowBlock rowBlock, Path outputFile)
+  public static Path writeRowBlock(TajoConf conf, TableMeta meta, OffHeapRowBlock rowBlock, Path outputFile)
       throws IOException {
     DirectRawFileWriter writer = new DirectRawFileWriter(conf, schema, meta, outputFile);
     writer.init();
@@ -61,7 +62,7 @@ public class TestDirectRawFile {
     return outputFile;
   }
 
-  public static Path writeRowBlock(TajoConf conf, TableMeta meta, RowOrientedRowBlock rowBlock) throws IOException {
+  public static Path writeRowBlock(TajoConf conf, TableMeta meta, OffHeapRowBlock rowBlock) throws IOException {
     Path testDir = CommonTestingUtil.getTestDir();
     Path outputFile = new Path(testDir, "output.draw");
     return writeRowBlock(conf, meta, rowBlock, outputFile);
@@ -71,7 +72,7 @@ public class TestDirectRawFile {
   public void testRWForAllTypes() throws IOException {
     int rowNum = 50000;
 
-    RowOrientedRowBlock rowBlock = TestRowOrientedRowBlock.createRowBlock(rowNum);
+    OffHeapRowBlock rowBlock = TestOffHeapRowBlock.createRowBlock(rowNum);
     TajoConf conf = new TajoConf();
     TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.DIRECTRAW);
     Path outputFile = writeRowBlock(conf, meta, rowBlock);
@@ -84,18 +85,19 @@ public class TestDirectRawFile {
     LOG.info("Written file size: " + FileUtil.humanReadableByteCount(status.getLen(), false));
 
 
-    RowOrientedRowBlock readBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 1);
+    OffHeapRowBlock readBlock = new OffHeapRowBlock(schema, StorageUnit.MB * 1);
+    OffHeapRowBlockReader blockReader = new OffHeapRowBlockReader(readBlock);
     DirectRawFileScanner reader = new DirectRawFileScanner(conf, schema, meta, outputFile);
     reader.init();
 
     long readStart = System.currentTimeMillis();
-    UnSafeTuple tuple = new UnSafeTuple();
+    ZeroCopyTuple tuple = new ZeroCopyTuple();
     int j = 0;
 
     while(reader.next(readBlock)) {
-      readBlock.resetRowCursor();
-      while (readBlock.next(tuple)) {
-        TestRowOrientedRowBlock.validateTupleResult(j, tuple);
+      blockReader.resetRowCursor();
+      while (blockReader.next(tuple)) {
+        TestOffHeapRowBlock.validateTupleResult(j, tuple);
         j++;
       }
     }
@@ -112,7 +114,7 @@ public class TestDirectRawFile {
   public void testRWForAllTypesWithNextTuple() throws IOException {
     int rowNum = 10000;
 
-    RowOrientedRowBlock rowBlock = TestRowOrientedRowBlock.createRowBlock(rowNum);
+    OffHeapRowBlock rowBlock = TestOffHeapRowBlock.createRowBlock(rowNum);
 
     TajoConf conf = new TajoConf();
     TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.DIRECTRAW);
@@ -126,7 +128,7 @@ public class TestDirectRawFile {
     int j = 0;
     Tuple tuple;
     while ((tuple = reader.next()) != null) {
-      TestRowOrientedRowBlock.validateTupleResult(j, tuple);
+      TestOffHeapRowBlock.validateTupleResult(j, tuple);
       j++;
     }
 
@@ -141,7 +143,7 @@ public class TestDirectRawFile {
   public void testRepeatedScan() throws IOException {
     int rowNum = 2;
 
-    RowOrientedRowBlock rowBlock = TestRowOrientedRowBlock.createRowBlock(rowNum);
+    OffHeapRowBlock rowBlock = TestOffHeapRowBlock.createRowBlock(rowNum);
 
     TajoConf conf = new TajoConf();
     TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.DIRECTRAW);
@@ -169,7 +171,7 @@ public class TestDirectRawFile {
   public void testReset() throws IOException {
     int rowNum = 2;
 
-    RowOrientedRowBlock rowBlock = TestRowOrientedRowBlock.createRowBlock(rowNum);
+    OffHeapRowBlock rowBlock = TestOffHeapRowBlock.createRowBlock(rowNum);
 
     TajoConf conf = new TajoConf();
     TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.DIRECTRAW);
@@ -207,7 +209,8 @@ public class TestDirectRawFile {
   public void testRWWithAddTupleForAllTypes() throws IOException {
     int rowNum = 10;
 
-    RowOrientedRowBlock rowBlock = TestRowOrientedRowBlock.createRowBlock(rowNum);
+    OffHeapRowBlock rowBlock = TestOffHeapRowBlock.createRowBlock(rowNum);
+    OffHeapRowBlockReader blockReader = new OffHeapRowBlockReader(rowBlock);
 
     Path testDir = CommonTestingUtil.getTestDir();
     Path outputFile = new Path(testDir, "output.draw");
@@ -216,10 +219,10 @@ public class TestDirectRawFile {
     DirectRawFileWriter writer = new DirectRawFileWriter(conf, schema, meta, outputFile);
     writer.init();
 
-    rowBlock.resetRowCursor();
+    blockReader.resetRowCursor();
     int i = 0;
-    UnSafeTuple tuple = new UnSafeTuple();
-    while(rowBlock.next(tuple)) {
+    ZeroCopyTuple tuple = new ZeroCopyTuple();
+    while(blockReader.next(tuple)) {
       writer.addTuple(tuple);
     }
     writer.close();
@@ -231,17 +234,18 @@ public class TestDirectRawFile {
     assertTrue(status.getLen() > 0);
     LOG.info("Written file size: " + FileUtil.humanReadableByteCount(status.getLen(), false));
 
-    RowOrientedRowBlock readBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 1);
+    OffHeapRowBlock readBlock = new OffHeapRowBlock(schema, StorageUnit.MB * 1);
+    OffHeapRowBlockReader blockReader2 = new OffHeapRowBlockReader(readBlock);
     DirectRawFileScanner reader = new DirectRawFileScanner(conf, schema, meta, outputFile);
     reader.init();
 
     long readStart = System.currentTimeMillis();
-    tuple = new UnSafeTuple();
+    tuple = new ZeroCopyTuple();
     int j = 0;
     while(reader.next(readBlock)) {
-      readBlock.resetRowCursor();
-      while (readBlock.next(tuple)) {
-        TestRowOrientedRowBlock.validateTupleResult(j, tuple);
+      blockReader2.resetRowCursor();
+      while (blockReader2.next(tuple)) {
+        TestOffHeapRowBlock.validateTupleResult(j, tuple);
         j++;
       }
     }
@@ -259,7 +263,7 @@ public class TestDirectRawFile {
     int rowNum = 1000;
 
     long allocateStart = System.currentTimeMillis();
-    RowOrientedRowBlock rowBlock = new RowOrientedRowBlock(schema, 1024);
+    OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, 1024);
     long allocatedEnd = System.currentTimeMillis();
     LOG.info(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
         + (allocatedEnd - allocateStart) + " msec");
@@ -287,17 +291,18 @@ public class TestDirectRawFile {
     assertTrue(status.getLen() > 0);
     LOG.info("Written file size: " + FileUtil.humanReadableByteCount(status.getLen(), false));
 
-    RowOrientedRowBlock readBlock = new RowOrientedRowBlock(schema, StorageUnit.MB * 1);
+    OffHeapRowBlock readBlock = new OffHeapRowBlock(schema, StorageUnit.MB * 1);
+    OffHeapRowBlockReader blockReader = new OffHeapRowBlockReader(rowBlock);
     DirectRawFileScanner reader = new DirectRawFileScanner(conf, schema, meta, outputFile);
     reader.init();
 
     long readStart = System.currentTimeMillis();
-    UnSafeTuple tuple = new UnSafeTuple();
+    ZeroCopyTuple tuple = new ZeroCopyTuple();
     int j = 0;
 
     do {
-      readBlock.resetRowCursor();
-      while (readBlock.next(tuple)) {
+      blockReader.resetRowCursor();
+      while (blockReader.next(tuple)) {
         validateNullity(j, tuple);
         j++;
       }

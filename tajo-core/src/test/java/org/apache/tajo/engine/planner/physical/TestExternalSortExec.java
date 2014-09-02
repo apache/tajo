@@ -38,8 +38,8 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.storage.offheap.RowOrientedRowBlock;
-import org.apache.tajo.storage.offheap.TestRowOrientedRowBlock;
+import org.apache.tajo.storage.offheap.OffHeapRowBlock;
+import org.apache.tajo.storage.offheap.TestOffHeapRowBlock;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.raw.TestDirectRawFile;
 import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
@@ -47,6 +47,8 @@ import org.apache.tajo.storage.rawfile.DirectRawFileWriter;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.worker.ExecutionBlockSharedResource;
+import org.apache.tajo.worker.TajoWorker;
 import org.apache.tajo.worker.TaskAttemptContext;
 import org.junit.After;
 import org.junit.Before;
@@ -56,7 +58,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
-import static org.apache.tajo.storage.offheap.TestRowOrientedRowBlock.schema;
+import static org.apache.tajo.storage.offheap.TestOffHeapRowBlock.schema;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -86,7 +88,7 @@ public class TestExternalSortExec {
     conf.setVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR, testDir.toString());
     sm = StorageManagerFactory.getStorageManager(conf, testDir);
 
-    RowOrientedRowBlock rowBlock = TestRowOrientedRowBlock.createRowBlock(numTuple);
+    OffHeapRowBlock rowBlock = TestOffHeapRowBlock.createRowBlock(numTuple);
     TableMeta employeeMeta = CatalogUtil.newTableMeta(StoreType.DIRECTRAW);
 
     Path outFile = new Path(TEST_PATH, "output.draw");
@@ -111,7 +113,7 @@ public class TestExternalSortExec {
 
   @After
   public void tearDown() throws Exception {
-    CommonTestingUtil.cleanupTestDir(TEST_PATH);;
+    CommonTestingUtil.cleanupTestDir(TEST_PATH);
     util.shutdownCatalogCluster();
   }
 
@@ -120,23 +122,27 @@ public class TestExternalSortExec {
   };
 
   @Test
-  public final void testNext() throws IOException, PlanningException {
+  public final void testNext() throws IOException, PlanningException, InterruptedException {
     QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
     queryContext.setBool(SessionVars.CODEGEN, true);
-    queryContext.setInt(SessionVars.EXTSORT_BUFFER_SIZE, 400 * StorageUnit.MB);
+    queryContext.setLong(SessionVars.EXTSORT_BUFFER_SIZE, 400);
 
-    FileFragment[] frags = StorageManager.splitNG(conf, "default.employee", employee.getMeta(), employee.getPath(),
-        Integer.MAX_VALUE);
-    Path workDir = new Path(testDir, TestExternalSortExec.class.getName());
-    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
-        LocalTajoTestingUtility.newQueryUnitAttemptId(), new FileFragment[] { frags[0] }, workDir);
-    ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalPlan plan = planner.createPlan(queryContext, expr);
     LogicalNode rootNode = plan.getRootBlock().getRoot();
 
+    ExecutionBlockSharedResource resource = new ExecutionBlockSharedResource();
+    resource.initialize(queryContext, rootNode.toJson());
+
+    FileFragment[] frags = StorageManager.splitNG(conf, "default.employee", employee.getMeta(), employee.getPath(),
+        Integer.MAX_VALUE);
+    Path workDir = new Path(testDir, TestExternalSortExec.class.getName());
+    TaskAttemptContext taskContext = new TaskAttemptContext(queryContext,
+        LocalTajoTestingUtility.newQueryUnitAttemptId(), new FileFragment[] { frags[0] }, workDir, resource);
+    taskContext.setEnforcer(new Enforcer());
+
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    PhysicalExec exec = phyPlanner.createPlan(taskContext, rootNode);
 
     Tuple tuple;
     Tuple preVal = null;
@@ -184,7 +190,7 @@ public class TestExternalSortExec {
     Path testDir = CommonTestingUtil.getTestDir();
     Path outFile = new Path(testDir, "file1.out");
 
-    RowOrientedRowBlock rowBlock = TestRowOrientedRowBlock.createRowBlock(rowNum);
+    OffHeapRowBlock rowBlock = TestOffHeapRowBlock.createRowBlock(rowNum);
 
     List<Tuple> tupleList = ExternalSortExec.sortTuples(rowBlock, comparator);
 

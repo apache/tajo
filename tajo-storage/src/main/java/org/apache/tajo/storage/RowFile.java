@@ -33,7 +33,7 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.exception.UnimplementedException;
-import org.apache.tajo.storage.offheap.RowOrientedRowBlock;
+import org.apache.tajo.storage.offheap.OffHeapRowBlock;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.BitArray;
@@ -279,11 +279,6 @@ public class RowFile {
     @Override
     public void reset() throws IOException {
       init();
-    }
-
-    @Override
-    public boolean next(RowOrientedRowBlock block) {
-      throw new UnimplementedException("next(RowOrientedRowBlock)");
     }
 
     @Override

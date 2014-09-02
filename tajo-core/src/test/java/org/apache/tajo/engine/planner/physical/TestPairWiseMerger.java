@@ -28,13 +28,13 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparatorImpl;
-import org.apache.tajo.storage.offheap.TestRowOrientedRowBlock;
+import org.apache.tajo.storage.offheap.TestOffHeapRowBlock;
 import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
 import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.apache.tajo.storage.offheap.TestRowOrientedRowBlock.schema;
+import static org.apache.tajo.storage.offheap.TestOffHeapRowBlock.schema;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -44,7 +44,7 @@ public class TestPairWiseMerger {
   static {
     conf = new TajoConf();
 
-    comparator = new TupleComparatorImpl(TestRowOrientedRowBlock.schema,
+    comparator = new TupleComparatorImpl(TestOffHeapRowBlock.schema,
         new SortSpec[] {
             new SortSpec(new Column("col2", TajoDataTypes.Type.INT4)),
             new SortSpec(new Column("col3", TajoDataTypes.Type.INT8))

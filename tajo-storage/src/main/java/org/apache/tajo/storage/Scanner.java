@@ -21,7 +21,7 @@ package org.apache.tajo.storage;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SchemaObject;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.storage.offheap.RowOrientedRowBlock;
+import org.apache.tajo.storage.offheap.OffHeapRowBlock;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -50,8 +50,6 @@ public interface Scanner extends SchemaObject, Closeable {
    * @throws IOException if internal I/O error occurs during reset method
    */
   void reset() throws IOException;
-
-  boolean next(RowOrientedRowBlock block) throws IOException;
   
   /**
    * Close scanner

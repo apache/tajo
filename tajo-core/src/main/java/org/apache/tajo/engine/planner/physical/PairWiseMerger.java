@@ -28,7 +28,7 @@ import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.storage.offheap.RowOrientedRowBlock;
+import org.apache.tajo.storage.offheap.OffHeapRowBlock;
 
 import java.io.IOException;
 import java.util.Comparator;
@@ -176,26 +176,12 @@ class PairWiseMerger implements Scanner {
     }
   }
 
-  @Override
-  public boolean next(RowOrientedRowBlock block) throws IOException {
-    throw new UnimplementedException("next(RowOrientedRowBlock)");
-  }
-
   public void close() throws IOException {
     IOUtils.cleanup(PairWiseMerger.LOG, leftScan, rightScan);
     getInputStats();
     leftScan = null;
     rightScan = null;
-
-//    outTuplePtr.free();
-//    leftTuplePtr.free();
-//    rightTuplePtr.free();
-//    outTuplePtr = null;
-//    leftTuplePtr = null;
-//    rightTuplePtr = null;
-
     mergerProgress = 1.0f;
-
     setState(State.CLOSED);
   }
 

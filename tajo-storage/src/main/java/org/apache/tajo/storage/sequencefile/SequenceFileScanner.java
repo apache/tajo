@@ -33,7 +33,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.storage.offheap.RowOrientedRowBlock;
+import org.apache.tajo.storage.offheap.OffHeapRowBlock;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.BytesUtils;
 
@@ -308,11 +308,6 @@ public class SequenceFileScanner extends FileScanner {
     if (reader != null) {
       reader.sync(0);
     }
-  }
-
-  @Override
-  public boolean next(RowOrientedRowBlock block) {
-    throw new UnimplementedException("next(RowOrientedRowBlock)");
   }
 
   @Override
