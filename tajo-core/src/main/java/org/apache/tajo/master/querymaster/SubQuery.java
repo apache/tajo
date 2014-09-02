@@ -961,7 +961,6 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       if (subQuery.getTaskScheduler() instanceof DefaultTaskScheduler) {
         //Leaf task of DefaultTaskScheduler should be fragment size
         // EstimatedTaskNum determined number of initial container
-        subQuery.schedulerContext.setTaskSize(fragments.size());
         subQuery.schedulerContext.setEstimatedTaskNum(fragments.size());
       } else {
         TajoConf conf = subQuery.context.getConf();
