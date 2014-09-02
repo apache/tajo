@@ -53,7 +53,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
   private long recordCount;
 
   private ZeroCopyTuple unSafeTuple = new ZeroCopyTuple();
-  private OffHeapRowBlock tupleBuffer = new OffHeapRowBlock(schema, 64 * StorageUnit.KB);
+  private OffHeapRowBlock tupleBuffer;
   private OffHeapRowBlockReader reader = new OffHeapRowBlockReader(tupleBuffer);
 
   public DirectRawFileScanner(Configuration conf, Schema schema, TableMeta meta, Path path) throws IOException {
@@ -93,7 +93,8 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
       columnTypes[i] = schema.getColumn(i).getDataType();
     }
 
-    reader.resetRowCursor();
+    tupleBuffer = new OffHeapRowBlock(schema, 64 * StorageUnit.KB);
+    reader = new OffHeapRowBlockReader(tupleBuffer);
 
     fetchNeeded = !next(tupleBuffer);
 
@@ -156,6 +157,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
       tableStats.setNumRows(recordCount);
     }
     tupleBuffer.free();
+    tupleBuffer = null;
     reader = null;
     IOUtils.cleanup(LOG, channel, fis);
   }

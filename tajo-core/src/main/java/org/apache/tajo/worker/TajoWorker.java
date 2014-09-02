@@ -424,7 +424,9 @@ public class TajoWorker extends CompositeService {
     }
 
     public void releaseSharedResource(ExecutionBlockId blockId) {
-      sharedResourceMap.remove(blockId).release();
+      if (sharedResourceMap.containsKey(blockId)) {
+        sharedResourceMap.remove(blockId).release();
+      }
     }
 
     protected void cleanup(String strPath) {

@@ -39,6 +39,7 @@ import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.offheap.OffHeapRowBlock;
+import org.apache.tajo.storage.offheap.OffHeapRowBlockUtils;
 import org.apache.tajo.storage.offheap.TestOffHeapRowBlock;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.raw.TestDirectRawFile;
@@ -74,7 +75,7 @@ public class TestExternalSortExec {
   private AbstractStorageManager sm;
   private Path testDir;
 
-  private final int numTuple = 2000000;
+  private final int numTuple = 10000;
   private TableDesc employee;
 
   @Before
@@ -192,7 +193,7 @@ public class TestExternalSortExec {
 
     OffHeapRowBlock rowBlock = TestOffHeapRowBlock.createRowBlock(rowNum);
 
-    List<Tuple> tupleList = ExternalSortExec.sortTuples(rowBlock, comparator);
+    List<Tuple> tupleList = OffHeapRowBlockUtils.sort(rowBlock, comparator);
 
     DirectRawFileWriter writer1 = new DirectRawFileWriter(conf, schema, meta, outFile);
     writer1.init();

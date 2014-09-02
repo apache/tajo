@@ -159,18 +159,6 @@ public class ExternalSortExec extends SortExec {
     return this.plan;
   }
 
-  public static List<Tuple> sortTuples(OffHeapRowBlock sortBuffer, Comparator<Tuple> comparator) {
-    List<Tuple> tupleList = Lists.newArrayList();
-    ZeroCopyTuple zcTuple = new ZeroCopyTuple();
-    OffHeapRowBlockReader reader = new OffHeapRowBlockReader(sortBuffer);
-    while(reader.next(zcTuple)) {
-      tupleList.add(zcTuple);
-      zcTuple = new ZeroCopyTuple();
-    }
-    Collections.sort(tupleList, comparator);
-    return tupleList;
-  }
-
   /**
    * Sort a tuple block and store them into a chunk file
    */
@@ -180,7 +168,7 @@ public class ExternalSortExec extends SortExec {
     int rowNum = sortBuffer.rows();
 
     long sortStart = System.currentTimeMillis();
-    List<Tuple> tupleList = sortTuples(sortBuffer, getComparator());
+    List<Tuple> tupleList = OffHeapRowBlockUtils.sort(sortBuffer, getComparator());
     long sortEnd = System.currentTimeMillis();
 
     long chunkWriteStart = System.currentTimeMillis();
@@ -252,7 +240,7 @@ public class ExternalSortExec extends SortExec {
           info(LOG, "Last Chunk #" + chunkId + " " + rowNum + " rows written (" + (end - start) + " msec)");
         }
       } else { // this case means that all data does not exceed a sort buffer
-        sortedTuples = sortTuples(tupleBlock, getComparator());
+        sortedTuples = OffHeapRowBlockUtils.sort(tupleBlock, getComparator());
       }
     }
 

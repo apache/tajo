@@ -68,10 +68,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
     }
 
     PhysicalPlanUtil.setNullCharIfNecessary(context.getQueryContext(), plan, meta);
-
-    if (context.getQueryContext().containsKey(SessionVars.MAX_OUTPUT_FILE_SIZE)) {
-      maxPerFileSize = context.getQueryContext().getLong(SessionVars.MAX_OUTPUT_FILE_SIZE) * StorageUnit.MB;
-    }
+    maxPerFileSize = context.getQueryContext().getLong(SessionVars.MAX_OUTPUT_FILE_SIZE) * StorageUnit.MB;
 
     openNewFile(writtenFileNum);
     sumStats = new TableStats();

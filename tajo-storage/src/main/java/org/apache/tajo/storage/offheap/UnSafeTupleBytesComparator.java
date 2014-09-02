@@ -29,7 +29,7 @@ import java.nio.ByteOrder;
 /**
  * It directly access UTF bytes in UnSafeTuple without any copy. It is used by compiled TupleComparator.
  */
-public class UnSafeTupleTextComparator {
+public class UnSafeTupleBytesComparator {
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
 
   static final boolean littleEndian =

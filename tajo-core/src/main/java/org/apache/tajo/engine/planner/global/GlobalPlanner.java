@@ -27,6 +27,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.SessionVars;
+import org.apache.tajo.algebra.CreateTable;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -1141,8 +1142,8 @@ public class GlobalPlanner {
 
     if (node.getType() == NodeType.INSERT) {
       InsertNode insertNode = (InsertNode) node;
-      channel.setSchema(((InsertNode)node).getProjectedSchema());
-      Column [] shuffleKeys = new Column[partitionMethod.getExpressionSchema().size()];
+      channel.setSchema(((InsertNode) node).getProjectedSchema());
+      Column[] shuffleKeys = new Column[partitionMethod.getExpressionSchema().size()];
       int i = 0;
       for (Column column : partitionMethod.getExpressionSchema().getColumns()) {
         int id = insertNode.getTableSchema().getColumnId(column.getQualifiedName());
@@ -1152,7 +1153,7 @@ public class GlobalPlanner {
       channel.setShuffleType(SCATTERED_HASH_SHUFFLE);
     } else {
       channel.setShuffleKeys(partitionMethod.getExpressionSchema().toArray());
-      channel.setShuffleType(HASH_SHUFFLE);
+      channel.setShuffleType(SCATTERED_HASH_SHUFFLE);
     }
     channel.setShuffleOutputNum(32);
   }
