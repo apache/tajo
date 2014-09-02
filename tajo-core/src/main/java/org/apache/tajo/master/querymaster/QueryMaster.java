@@ -181,10 +181,10 @@ public class QueryMaster extends CompositeService implements EventHandler {
   }
 
   protected void cleanupExecutionBlock(List<TajoIdProtos.ExecutionBlockIdProto> executionBlockIds) {
-    String cleanupMessage = "";
+    StringBuilder cleanupMessage = new StringBuilder();
     String prefix = "";
     for (TajoIdProtos.ExecutionBlockIdProto eachEbId: executionBlockIds) {
-      cleanupMessage += prefix + (new ExecutionBlockId(eachEbId)).toString();
+      cleanupMessage.append(prefix).append(new ExecutionBlockId(eachEbId).toString());
       prefix = ",";
     }
     LOG.info("cleanup executionBlocks: " + cleanupMessage);
