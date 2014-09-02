@@ -394,7 +394,7 @@ public class ExecutionBlockContext {
               } else {
                 for (Task task : new ArrayList<Task>(tasks.values())){
 
-                  if(task.isProgressChanged()){
+                  if (task.isRunning() && task.isProgressChanged()) {
                     task.updateProgress();
                     masterStub.statusUpdate(null, task.getReport(), NullCallback.get());
                     task.getContext().setProgressChanged(false);

@@ -345,6 +345,9 @@ public class TaskAttemptContext {
   }
 
   public void setFetcherProgress(float fetcherProgress) {
+    if(Float.isNaN(fetcherProgress) || Float.isInfinite(fetcherProgress)){
+      fetcherProgress = 0.0f;
+    }
     this.fetcherProgress = fetcherProgress;
   }
 

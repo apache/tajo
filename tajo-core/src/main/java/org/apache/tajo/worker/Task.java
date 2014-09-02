@@ -414,7 +414,7 @@ public class Task {
 
   public void run() throws Exception {
     startTime = System.currentTimeMillis();
-    Exception error = null;
+    Throwable error = null;
     try {
       context.setState(TaskAttemptState.TA_RUNNING);
 
@@ -433,7 +433,7 @@ public class Task {
 
       while(!killed && !aborted && executor.next() != null) {
       }
-    } catch (Exception e) {
+    } catch (Throwable e) {
       error = e ;
       LOG.error(e.getMessage(), e);
       aborted = true;
@@ -443,7 +443,7 @@ public class Task {
           executor.close();
           reloadInputStats();
         } catch (IOException e) {
-          e.printStackTrace();
+          LOG.error(e);
         }
         this.executor = null;
       }
@@ -643,7 +643,11 @@ public class Task {
 
   @VisibleForTesting
   public static float adjustFetchProcess(int totalFetcher, int remainFetcher) {
-    return ((totalFetcher - remainFetcher) / (float) totalFetcher) * FETCHER_PROGRESS;
+    if (totalFetcher > 0) {
+      return ((totalFetcher - remainFetcher) / (float) totalFetcher) * FETCHER_PROGRESS;
+    } else {
+      return 0.0f;
+    }
   }
 
   private synchronized void fetcherFinished(TaskAttemptContext ctx) {
