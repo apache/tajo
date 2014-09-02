@@ -317,7 +317,6 @@ public class RowStoreUtil {
     }
 
     private void ensureSize(int size) {
-
       if (buffer.remaining() - size < 0) { // check the remain size
         // enlarge new buffer and copy writing data
         int newBlockSize = UnsafeUtil.alignedSize(buffer.capacity() << 1);
@@ -339,15 +338,15 @@ public class RowStoreUtil {
 
       int rowStartPos = 0;
       int curFieldIdx = 0;
-      int [] fieldOffset = new int[types.length];
+      int [] fieldOffsets = new int[types.length];
       rowOffset += SizeOf.SIZE_OF_INT * (types.length + 1); // record size + offset list
 
       for (int i = 0; i < types.length; i++) {
-        fieldOffset[curFieldIdx++] = rowOffset;
+        fieldOffsets[curFieldIdx++] = rowOffset;
 
         switch (types[i]) {
         case NULL_TYPE:
-          fieldOffset[curFieldIdx - 1] = -1;
+          fieldOffsets[curFieldIdx - 1] = -1;
           break;
 
         case BOOLEAN:
@@ -427,7 +426,7 @@ public class RowStoreUtil {
       offset += SizeOf.SIZE_OF_INT;
 
       for (int i = 0; i < types.length; i++) {
-        UNSAFE.putInt(offset, fieldOffset[i]);
+        UNSAFE.putInt(offset, fieldOffsets[i]);
         offset += SizeOf.SIZE_OF_INT;
       }
 

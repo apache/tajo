@@ -43,7 +43,7 @@ import java.nio.channels.FileChannel;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 
-public class OffHeapRowBlock implements RowBlockWriter, Deallocatable {
+public class OffHeapRowBlock implements RowWriter, Deallocatable {
   private static final Log LOG = LogFactory.getLog(OffHeapRowBlock.class);
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
 

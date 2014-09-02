@@ -18,76 +18,52 @@
 
 package org.apache.tajo.storage.offheap;
 
-import com.google.common.base.Preconditions;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 import com.sun.tools.javac.util.Convert;
-import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.util.SizeOf;
-import org.apache.tajo.util.UnsafeUtil;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.util.SizeOf;
+import org.apache.tajo.util.UnsafeUtil;
 import sun.misc.Unsafe;
-import sun.nio.ch.DirectBuffer;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 
-public abstract class UnSafeTuple implements Tuple {
+public class HeapTuple implements Tuple {
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
+  private static final long BASE_OFFSET = UNSAFE.arrayBaseOffset(byte [].class);
 
-  private DirectBuffer bb;
-  private int relativePos;
-  private int length;
-  private DataType [] types;
+  private final byte [] data;
+  private final DataType [] types;
 
-  protected void set(ByteBuffer bb, int relativePos, int length, DataType [] types) {
-    this.bb = (DirectBuffer) bb;
-    this.relativePos = relativePos;
-    this.length = length;
+  public HeapTuple(final byte [] bytes, final DataType [] types) {
+    this.data = bytes;
     this.types = types;
-  }
-
-  void set(ByteBuffer bb, DataType [] types) {
-    set(bb, 0, bb.limit(), types);
   }
 
   @Override
   public int size() {
-    return types.length;
+    return data.length;
   }
 
   public ByteBuffer nioBuffer() {
-    return ((ByteBuffer)((ByteBuffer)bb).duplicate().position(relativePos).limit(relativePos + length)).slice();
-  }
-
-  public void copyFrom(UnSafeTuple tuple) {
-    Preconditions.checkNotNull(tuple);
-
-    ((ByteBuffer) bb).clear();
-    if (length < tuple.length) {
-      UnsafeUtil.free((ByteBuffer) bb);
-      bb = (DirectBuffer) ByteBuffer.allocateDirect(tuple.length).order(ByteOrder.nativeOrder());
-      this.relativePos = 0;
-      this.length = tuple.length;
-    }
-
-    ((ByteBuffer) bb).put(tuple.nioBuffer());
+    return ByteBuffer.wrap(data);
   }
 
   private int getFieldOffset(int fieldId) {
-    return UNSAFE.getInt(bb.address() + relativePos + SizeOf.SIZE_OF_INT + (fieldId * SizeOf.SIZE_OF_INT));
+    return UNSAFE.getInt(data, BASE_OFFSET + SizeOf.SIZE_OF_INT + (fieldId * SizeOf.SIZE_OF_INT));
   }
 
-  public long getFieldAddr(int fieldId) {
-    int fieldOffset = getFieldOffset(fieldId);
-    if (fieldOffset == -1) {
+  private int checkNullAndGetOffset(int fieldId) {
+    int offset = getFieldOffset(fieldId);
+    if (offset == OffHeapRowBlock.NULL_FIELD_OFFSET) {
       throw new RuntimeException("Invalid Field Access: " + fieldId);
     }
-    return bb.address() + relativePos + fieldOffset;
+    return offset;
   }
 
   @Override
@@ -180,72 +156,65 @@ public abstract class UnSafeTuple implements Tuple {
 
   @Override
   public boolean getBool(int fieldId) {
-    return UNSAFE.getByte(getFieldAddr(fieldId)) == 0x01;
+    return UNSAFE.getByte(data, BASE_OFFSET + checkNullAndGetOffset(fieldId)) == 0x01;
   }
 
   @Override
   public byte getByte(int fieldId) {
-    return UNSAFE.getByte(getFieldAddr(fieldId));
+    return UNSAFE.getByte(data, BASE_OFFSET + checkNullAndGetOffset(fieldId));
   }
 
   @Override
   public char getChar(int fieldId) {
-    return UNSAFE.getChar(getFieldAddr(fieldId));
+    return UNSAFE.getChar(data, BASE_OFFSET + checkNullAndGetOffset(fieldId));
   }
 
   @Override
   public byte[] getBytes(int fieldId) {
-    long pos = getFieldAddr(fieldId);
-    int len = UNSAFE.getInt(pos);
+    long pos = checkNullAndGetOffset(fieldId);
+    int len = UNSAFE.getInt(data, BASE_OFFSET + pos);
     pos += SizeOf.SIZE_OF_INT;
 
     byte [] bytes = new byte[len];
-    UNSAFE.copyMemory(null, pos, bytes, UNSAFE.ARRAY_BYTE_BASE_OFFSET, len);
+    UNSAFE.copyMemory(data, BASE_OFFSET + pos, bytes, UNSAFE.ARRAY_BYTE_BASE_OFFSET, len);
     return bytes;
   }
 
   @Override
   public short getInt2(int fieldId) {
-    long addr = getFieldAddr(fieldId);
-    return UNSAFE.getShort(addr);
+    return UNSAFE.getShort(data, BASE_OFFSET + checkNullAndGetOffset(fieldId));
   }
 
   @Override
   public int getInt4(int fieldId) {
-    return UNSAFE.getInt(getFieldAddr(fieldId));
+    return UNSAFE.getInt(data, BASE_OFFSET + checkNullAndGetOffset(fieldId));
   }
 
   @Override
   public long getInt8(int fieldId) {
-    return UNSAFE.getLong(getFieldAddr(fieldId));
+    return UNSAFE.getLong(data, BASE_OFFSET + checkNullAndGetOffset(fieldId));
   }
 
   @Override
   public float getFloat4(int fieldId) {
-    return UNSAFE.getFloat(getFieldAddr(fieldId));
+    return UNSAFE.getFloat(data, BASE_OFFSET + checkNullAndGetOffset(fieldId));
   }
 
   @Override
   public double getFloat8(int fieldId) {
-    return UNSAFE.getDouble(getFieldAddr(fieldId));
+    return UNSAFE.getDouble(data, BASE_OFFSET + checkNullAndGetOffset(fieldId));
   }
 
   @Override
   public String getText(int fieldId) {
-    long pos = getFieldAddr(fieldId);
-    int len = UNSAFE.getInt(pos);
-    pos += SizeOf.SIZE_OF_INT;
-
-    byte [] bytes = new byte[len];
-    UNSAFE.copyMemory(null, pos, bytes, UNSAFE.ARRAY_BYTE_BASE_OFFSET, len);
-    return new String(bytes);
+    return new String(getBytes(fieldId));
   }
 
   public IntervalDatum getInterval(int fieldId) {
-    long pos = getFieldAddr(fieldId);
-    int months = UNSAFE.getInt(pos);
+    long pos = checkNullAndGetOffset(fieldId);
+    int months = UNSAFE.getInt(data, BASE_OFFSET + pos);
     pos += SizeOf.SIZE_OF_INT;
-    long millisecs = UNSAFE.getLong(pos);
+    long millisecs = UNSAFE.getLong(data, BASE_OFFSET + pos);
     return new IntervalDatum(months, millisecs);
   }
 
@@ -266,12 +235,12 @@ public abstract class UnSafeTuple implements Tuple {
 
   @Override
   public char[] getUnicodeChars(int fieldId) {
-    long pos = getFieldAddr(fieldId);
-    int len = UNSAFE.getInt(pos);
+    long pos = checkNullAndGetOffset(fieldId);
+    int len = UNSAFE.getInt(data, BASE_OFFSET + pos);
     pos += SizeOf.SIZE_OF_INT;
 
     byte [] bytes = new byte[len];
-    UNSAFE.copyMemory(null, pos, bytes, UNSAFE.ARRAY_BYTE_BASE_OFFSET, len);
+    UNSAFE.copyMemory(data, BASE_OFFSET + pos, bytes, UNSAFE.ARRAY_BYTE_BASE_OFFSET, len);
     return Convert.utf2chars(bytes);
   }
 
@@ -297,6 +266,4 @@ public abstract class UnSafeTuple implements Tuple {
   public String toString() {
     return VTuple.toDisplayString(getValues());
   }
-
-  public abstract void free();
 }

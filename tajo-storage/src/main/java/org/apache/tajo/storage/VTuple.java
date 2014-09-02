@@ -199,23 +199,7 @@ public class VTuple implements Tuple, Cloneable {
   }
 
   public String toString() {
-		boolean first = true;
-		StringBuilder str = new StringBuilder();
-		str.append("(");
-		for(int i=0; i < values.length; i++) {			
-			if(values[i] != null) {
-				if(first) {
-					first = false;
-				} else {
-					str.append(", ");
-				}
-				str.append(i)
-				.append("=>")
-				.append(values[i]);
-			}
-		}
-		str.append(")");
-		return str.toString();
+		return toDisplayString(getValues());
 	}
 
 	@Override
@@ -235,5 +219,25 @@ public class VTuple implements Tuple, Cloneable {
       return Arrays.equals(getValues(), other.getValues());
     }
     return false;
+  }
+
+  public static String toDisplayString(Datum [] values) {
+    boolean first = true;
+    StringBuilder str = new StringBuilder();
+    str.append("(");
+    for(int i=0; i < values.length; i++) {
+      if(values[i] != null) {
+        if(first) {
+          first = false;
+        } else {
+          str.append(", ");
+        }
+        str.append(i)
+            .append("=>")
+            .append(values[i]);
+      }
+    }
+    str.append(")");
+    return str.toString();
   }
 }
