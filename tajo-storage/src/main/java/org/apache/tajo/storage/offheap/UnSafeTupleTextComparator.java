@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.directmem;
+package org.apache.tajo.storage.offheap;
 
 import com.google.common.primitives.Longs;
 import com.google.common.primitives.UnsignedLongs;

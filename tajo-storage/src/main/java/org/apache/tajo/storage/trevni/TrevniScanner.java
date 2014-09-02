@@ -31,7 +31,7 @@ import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
+import org.apache.tajo.storage.offheap.RowOrientedRowBlock;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.trevni.ColumnFileReader;
 import org.apache.trevni.ColumnValues;

@@ -29,8 +29,8 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.SeekableScanner;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
-import org.apache.tajo.storage.directmem.UnSafeTuple;
+import org.apache.tajo.storage.offheap.RowOrientedRowBlock;
+import org.apache.tajo.storage.offheap.UnSafeTuple;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.unit.StorageUnit;
 

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.directmem;
+package org.apache.tajo.storage.offheap;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -41,11 +41,10 @@ import java.nio.channels.FileChannel;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 
-public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
+public class RowOrientedRowBlock implements RowBlockWriter {
   private static final Log LOG = LogFactory.getLog(RowOrientedRowBlock.class);
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
 
-  private static final float DEFAULT_BUF_INCREASE_RATIO = 1.0f;
   public static final int NULL_FIELD_OFFSET = -1;
 
   private DataType [] dataTypes;
@@ -53,7 +52,7 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
   private ByteBuffer buffer;
   private long address;
   private int fieldIndexBytesLen;
-  private float bufIncreaseRatio;
+  private ResizableSpec resizableSpec;
 
   // Basic States
   private int maxRowNum = Integer.MAX_VALUE; // optional
@@ -70,9 +69,8 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
   private int curFieldIdxForWrite;
   private int [] fieldIndexesForWrite;
 
-  public RowOrientedRowBlock(Schema schema, ByteBuffer buffer, float bufIncreaseRatio) {
+  public RowOrientedRowBlock(Schema schema, ByteBuffer buffer, ResizableSpec resizableSpec) {
     this.buffer = buffer;
-    this.bufIncreaseRatio = bufIncreaseRatio;
 
     this.address = ((DirectBuffer) buffer).address();
     this.bytesLen = buffer.limit();
@@ -82,19 +80,21 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
     fieldIndexesForWrite = new int[schema.size()];
     fieldIndexBytesLen = SizeOf.SIZE_OF_INT * schema.size();
 
+    this.resizableSpec = resizableSpec;
+
     curOffsetForWrite = 0;
   }
 
   public RowOrientedRowBlock(Schema schema, ByteBuffer buffer) {
-    this(schema, buffer, DEFAULT_BUF_INCREASE_RATIO);
+    this(schema, buffer, ResizableSpec.DEFAULT_LIMIT);
   }
 
-  public RowOrientedRowBlock(Schema schema, int bytes,float bufIncreaseRatio) {
-    this(schema, ByteBuffer.allocateDirect(bytes).order(ByteOrder.nativeOrder()), bufIncreaseRatio);
+  public RowOrientedRowBlock(Schema schema, int bytes, ResizableSpec resizableSpec) {
+    this(schema, ByteBuffer.allocateDirect(bytes).order(ByteOrder.nativeOrder()), resizableSpec);
   }
 
   public RowOrientedRowBlock(Schema schema, int bytes) {
-    this(schema, bytes, DEFAULT_BUF_INCREASE_RATIO);
+    this(schema, bytes, ResizableSpec.DEFAULT_LIMIT);
   }
 
   public void clear() {
@@ -121,10 +121,6 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
     buffer.flip();
     buffer.limit(curOffsetForWrite);
     return buffer;
-  }
-
-  public float increaseRatio() {
-    return bufIncreaseRatio;
   }
 
   public long usedMem() {
@@ -184,7 +180,12 @@ public class RowOrientedRowBlock implements RowBlock, RowBlockWriter {
    */
   private void ensureSize(int size) {
     if (remain() - size < 0) {
-      int newBlockSize = UnsafeUtil.alignedSize((int) (bytesLen + (bytesLen * DEFAULT_BUF_INCREASE_RATIO)));
+
+      if (!resizableSpec.canIncrease(bytesLen)) {
+        throw new RuntimeException("Cannot increase RowBlock anymore.");
+      }
+
+      int newBlockSize = UnsafeUtil.alignedSize(resizableSpec.increasedSize(bytesLen));
       ByteBuffer newByteBuf = ByteBuffer.allocateDirect(newBlockSize);
       long newAddress = ((DirectBuffer)newByteBuf).address();
       UNSAFE.copyMemory(this.address, newAddress, bytesLen);

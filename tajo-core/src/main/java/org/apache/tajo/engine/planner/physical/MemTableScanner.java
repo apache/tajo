@@ -27,7 +27,7 @@ import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
+import org.apache.tajo.storage.offheap.RowOrientedRowBlock;
 
 import java.io.IOException;
 import java.util.Collection;

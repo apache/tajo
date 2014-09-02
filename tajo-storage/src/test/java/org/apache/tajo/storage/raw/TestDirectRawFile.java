@@ -28,9 +28,9 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
-import org.apache.tajo.storage.directmem.TestRowOrientedRowBlock;
-import org.apache.tajo.storage.directmem.UnSafeTuple;
+import org.apache.tajo.storage.offheap.RowOrientedRowBlock;
+import org.apache.tajo.storage.offheap.TestRowOrientedRowBlock;
+import org.apache.tajo.storage.offheap.UnSafeTuple;
 import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
 import org.apache.tajo.storage.rawfile.DirectRawFileWriter;
 import org.apache.tajo.unit.StorageUnit;
@@ -40,7 +40,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.apache.tajo.storage.directmem.TestRowOrientedRowBlock.*;
+import static org.apache.tajo.storage.offheap.TestRowOrientedRowBlock.*;
 import static org.junit.Assert.*;
 
 public class TestDirectRawFile {

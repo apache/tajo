@@ -28,6 +28,10 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
+/**
+ * It includes utility methods, and some of them are only used in generated code.
+ * So, they appear to be not used in the project.
+ */
 public class CodeGenUtils {
   private static final int FLAGS = ClassReader.SKIP_DEBUG;
 
@@ -42,6 +46,7 @@ public class CodeGenUtils {
     return strWriter.toString();
   }
 
+  @SuppressWarnings("unused")
   public static void emitPrintOut(MethodVisitor mv, String message) {
     mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
     mv.visitLdcInsn(message);

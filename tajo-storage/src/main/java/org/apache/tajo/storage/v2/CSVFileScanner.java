@@ -31,7 +31,7 @@ import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.LazyTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.compress.CodecPool;
-import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
+import org.apache.tajo.storage.offheap.RowOrientedRowBlock;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.BytesUtils;
 

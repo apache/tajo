@@ -33,7 +33,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
+import org.apache.tajo.storage.offheap.RowOrientedRowBlock;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.BytesUtils;
 

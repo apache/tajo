@@ -20,12 +20,14 @@ package org.apache.tajo.engine.codegen;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalType;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.org.objectweb.asm.Label;
@@ -177,6 +179,69 @@ class TajoGeneratorAdapter {
     this.access = access;
     this.methodvisitor = methodVisitor;
     generatorAdapter = new GeneratorAdapter(methodVisitor, access, name, desc);
+  }
+
+  public void emitIsNullOfTuple() {
+    emitIsNullOfTuple(null);
+  }
+
+  public void emitIsNullOfTuple(Integer fieldIndex) {
+    if (fieldIndex != null) {
+      push(fieldIndex);
+    }
+
+    invokeInterface(Tuple.class, "isNull", boolean.class, new Class[]{int.class});
+  }
+
+  public void emitIsNotNullOfTuple() {
+    emitIsNotNullOfTuple(null);
+  }
+
+  public void emitIsNotNullOfTuple(@Nullable Integer fieldIndex) {
+    if (fieldIndex != null) {
+      push(fieldIndex);
+    }
+    invokeInterface(Tuple.class, "isNotNull", boolean.class, new Class [] {int.class});
+  }
+
+  public void emitGetValueOfTuple(TajoDataTypes.DataType dataType, int fieldIndex) {
+    push(fieldIndex);
+
+    TajoDataTypes.Type type = dataType.getType();
+    switch (type) {
+    case BOOLEAN:
+      invokeInterface(Tuple.class, "getByte", byte.class, new Class[]{int.class});
+      break;
+    case INT1:
+    case INT2:
+      invokeInterface(Tuple.class, "getInt2", short.class, new Class[]{int.class});
+      break;
+    case INT4:
+    case DATE:
+    case INET4:
+      invokeInterface(Tuple.class, "getInt4", int.class, new Class[]{int.class});
+      break;
+    case INT8:
+    case TIMESTAMP:
+    case TIME:
+      invokeInterface(Tuple.class, "getInt8", long.class, new Class[]{int.class});
+      break;
+    case FLOAT4:
+      invokeInterface(Tuple.class, "getFloat4", float.class, new Class[]{int.class});
+      break;
+    case FLOAT8:
+      invokeInterface(Tuple.class, "getFloat8", double.class, new Class[]{int.class});
+      break;
+    case CHAR:
+    case TEXT:
+      invokeInterface(Tuple.class, "getText", String.class, new Class[]{int.class});
+      break;
+    case INTERVAL:
+      invokeInterface(Tuple.class, "getInterval", IntervalDatum.class, new Class[]{int.class});
+      break;
+    default:
+      throw new UnsupportedException("Unknown data type: " + type.name());
+    }
   }
 
   public MethodVisitor getMethodvisitor() {

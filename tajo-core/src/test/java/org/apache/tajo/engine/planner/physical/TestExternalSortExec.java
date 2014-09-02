@@ -38,8 +38,8 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
-import org.apache.tajo.storage.directmem.TestRowOrientedRowBlock;
+import org.apache.tajo.storage.offheap.RowOrientedRowBlock;
+import org.apache.tajo.storage.offheap.TestRowOrientedRowBlock;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.raw.TestDirectRawFile;
 import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
@@ -56,7 +56,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
-import static org.apache.tajo.storage.directmem.TestRowOrientedRowBlock.schema;
+import static org.apache.tajo.storage.offheap.TestRowOrientedRowBlock.schema;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

@@ -98,12 +98,6 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     return compiledEval;
   }
 
-  private void printOut(EvalCodeGenContext context, String message) {
-    context.methodvisitor.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
-    context.push(message);
-    context.invokeVirtual(PrintStream.class, "println", void.class, new Class[]{String.class});
-  }
-
   public EvalNode visitBinaryEval(EvalCodeGenContext context, Stack<EvalNode> stack, BinaryEval binaryEval) {
     if (EvalType.isLogicalOperator(binaryEval.getType())) {
       return visitAndOrEval(context, binaryEval, stack);
@@ -135,17 +129,17 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     } else if (unary.getType() == EvalType.NOT) {
 
       visit(context, unary.getChild(), stack);
-      context.methodvisitor.visitVarInsn(Opcodes.ISTORE, 9);
-      context.methodvisitor.visitVarInsn(Opcodes.ISTORE, 10);
+      int nullFlagId = context.istore();
+      int valueId = context.istore();
 
       Label ifNull = new Label();
       Label endIf = new Label();
 
-      context.emitNullityCheck(ifNull, 9);
+      context.emitNullityCheck(ifNull, nullFlagId);
 
       context.methodvisitor.visitFieldInsn(Opcodes.GETSTATIC, Type.getInternalName(EvalCodeGenerator.class),
           "NOT_LOGIC", "[B");
-      context.methodvisitor.visitVarInsn(Opcodes.ILOAD, 10);
+      context.iload(valueId);
       context.methodvisitor.visitInsn(Opcodes.BALOAD);
       context.pushNullFlag(true);
       emitGotoLabel(context, endIf);
@@ -211,9 +205,9 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     final int BEGIN_NULLFLAG = context.istore();
     final int BEGIN = context.store(begin.getValueType());
 
-    visit(context, end, stack);                                         // < end, right_nullflag
+    visit(context, end, stack);
     final int END_NULLFLAG = context.istore();
-    final int END = context.store(end.getValueType());                                // <
+    final int END = context.store(end.getValueType());
 
     stack.pop();
 
@@ -341,7 +335,6 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     context.pop(srcType);
     context.pushDummyValue(targetType);
     context.pushNullFlag(false);
-    printOut(context, "endIfNull");
 
     emitLabel(context, afterEnd);
     return cast;
@@ -363,8 +356,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
       }
 
       context.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
-      context.push(fieldIdx);
-      context.invokeInterface(Tuple.class, "isNull", boolean.class, new Class [] {int.class});
+      context.emitIsNullOfTuple(fieldIdx);
 
       context.push(true);
 
@@ -372,69 +364,8 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
       Label afterAll = new Label();
       context.methodvisitor.visitJumpInsn(Opcodes.IF_ICMPEQ, ifNull);
 
-      String methodName = null;
-      Class returnType = null;
-      Class [] paramTypes = null;
-      switch (field.getValueType().getType()) {
-      case BOOLEAN:
-        methodName = "getByte";
-        returnType = byte.class;
-        paramTypes = new Class[] {int.class};
-        break;
-      case CHAR: {
-        methodName = "getText";
-        returnType = String.class;
-        paramTypes = new Class[] {int.class};
-        break;
-      }
-      case INT1:
-      case INT2:
-      case INT4:
-      case DATE:
-      case INET4:
-        methodName = "getInt4";
-        returnType = int.class;
-        paramTypes = new Class [] {int.class};
-        break;
-      case INT8:
-      case TIMESTAMP:
-      case TIME:
-        methodName = "getInt8";
-        returnType = long.class;
-        paramTypes = new Class [] {int.class};
-        break;
-      case FLOAT4:
-        methodName = "getFloat4";
-        returnType = float.class;
-        paramTypes = new Class [] {int.class};
-        break;
-      case FLOAT8:
-        methodName = "getFloat8";
-        returnType = double.class;
-        paramTypes = new Class [] {int.class};
-        break;
-      case TEXT:
-        methodName = "getText";
-        returnType = String.class;
-        paramTypes = new Class [] {int.class};
-        break;
-      case INTERVAL:
-        methodName = "getInterval";
-        returnType = Datum.class;
-        paramTypes = new Class [] {int.class};
-        break;
-      case PROTOBUF:
-        methodName = "getProtobufDatum";
-        returnType = Datum.class;
-        paramTypes = new Class [] {int.class};
-        break;
-      default:
-        throw new InvalidEvalException(field.getValueType() + " is not supported yet");
-      }
-
       context.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
-      context.push(fieldIdx);
-      context.invokeInterface(Tuple.class, methodName, returnType, paramTypes);
+      context.emitGetValueOfTuple(columnRef.getDataType(), fieldIdx);
 
       context.pushNullFlag(true); // not null
       context.methodvisitor.visitJumpInsn(Opcodes.GOTO, afterAll);

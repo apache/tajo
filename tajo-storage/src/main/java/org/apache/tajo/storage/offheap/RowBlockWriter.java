@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.directmem;
+package org.apache.tajo.storage.offheap;
 
 import org.apache.tajo.datum.IntervalDatum;
 

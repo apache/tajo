@@ -21,7 +21,6 @@ package org.apache.tajo.engine.codegen;
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.UnsignedInts;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.engine.eval.EvalType;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.org.objectweb.asm.ClassWriter;
@@ -31,14 +30,15 @@ import org.apache.tajo.org.objectweb.asm.Opcodes;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.TupleComparatorImpl;
-import org.apache.tajo.storage.directmem.UnSafeTuple;
-import org.apache.tajo.storage.directmem.UnSafeTupleTextComparator;
+import org.apache.tajo.storage.offheap.UnSafeTuple;
+import org.apache.tajo.storage.offheap.UnSafeTupleTextComparator;
 import org.apache.tajo.util.UnsafeComparer;
 
 import java.lang.reflect.Constructor;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
+import static org.apache.tajo.engine.codegen.TajoGeneratorAdapter.getInternalName;
 
 public class TupleComparerCompiler {
   private final static int LEFT_VALUE = 1;
@@ -56,7 +56,7 @@ public class TupleComparerCompiler {
 
     String className = TupleComparator.class.getPackage().getName() + ".TupleComparator" + classSeqId++;
 
-    emitClassDefinition(classWriter, TajoGeneratorAdapter.getInternalName(className));
+    emitClassDefinition(classWriter, getInternalName(className));
     emitConstructor(classWriter);
     emitCompare(classWriter, comp, ensureUnSafeTuple);
 
@@ -66,7 +66,6 @@ public class TupleComparerCompiler {
     Constructor constructor;
     TupleComparator compiled;
 
-    System.out.println(CodeGenUtils.disassemble(classWriter.toByteArray()));
     try {
       constructor = clazz.getConstructor();
       compiled = (TupleComparator) constructor.newInstance();
@@ -82,7 +81,7 @@ public class TupleComparerCompiler {
         Opcodes.ACC_PUBLIC,
         generatedClassName,
         null,
-        TajoGeneratorAdapter.getInternalName(TupleComparator.class),
+        getInternalName(TupleComparator.class),
         new String[]{}
     );
   }
@@ -96,7 +95,7 @@ public class TupleComparerCompiler {
     MethodVisitor constructorMethod = classWriter.visitMethod(Opcodes.ACC_PUBLIC, "<init>", "()V", null, null);
     constructorMethod.visitVarInsn(Opcodes.ALOAD, 0);
     constructorMethod.visitMethodInsn(Opcodes.INVOKESPECIAL,
-        TajoGeneratorAdapter.getInternalName(TupleComparator.class),
+        getInternalName(TupleComparator.class),
         "<init>",
         "()V");
     constructorMethod.visitInsn(Opcodes.RETURN);
@@ -106,6 +105,9 @@ public class TupleComparerCompiler {
 
   /**
    * Generation Comparator::compare(Tuple t1, Tuple t2);
+   *
+   * This code generation makes use of subtraction for bool, short, integer
+   *
    *
    * @param classWriter
    * @param compImpl
@@ -138,51 +140,62 @@ public class TupleComparerCompiler {
         compMethod.visitInsn(Opcodes.POP);
       }
 
-      int nullFlagVarId = 0;
+      int nullFlag;
 
       adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 1);
 
       adapter.push(compImpl.getSortKeyIds()[idx]);
       if (compImpl.getSortSpecs()[idx].isNullFirst()) {
-        adapter.invokeInterface(Tuple.class, "isNotNull", boolean.class, new Class[]{int.class});
+        adapter.emitIsNotNullOfTuple();
       } else {
-        adapter.invokeInterface(Tuple.class, "isNull", boolean.class, new Class[]{int.class});
+        adapter.emitIsNullOfTuple();
       }
       adapter.dup();
-      nullFlagVarId = adapter.istore();
+      nullFlag = adapter.istore();
 
       adapter.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
       adapter.push(compImpl.getSortKeyIds()[idx]);
       if (compImpl.getSortSpecs()[idx].isNullFirst()) {
-        adapter.invokeInterface(Tuple.class, "isNotNull", boolean.class, new Class[]{int.class});
+        adapter.emitIsNotNullOfTuple();
 
         adapter.dup();
-        adapter.iload(nullFlagVarId);
+        adapter.iload(nullFlag);
         compMethod.visitInsn(Opcodes.IAND);
-        compMethod.visitVarInsn(Opcodes.ISTORE, nullFlagVarId);
+        compMethod.visitVarInsn(Opcodes.ISTORE, nullFlag);
       } else {
-        adapter.invokeInterface(Tuple.class, "isNull", boolean.class, new Class[]{int.class});
+        adapter.emitIsNullOfTuple();
 
         adapter.dup();
-        adapter.iload(nullFlagVarId);
+        adapter.iload(nullFlag);
         compMethod.visitInsn(Opcodes.IOR);
-        compMethod.visitVarInsn(Opcodes.ISTORE, nullFlagVarId);
+        compMethod.visitVarInsn(Opcodes.ISTORE, nullFlag);
       }
 
       compMethod.visitInsn(Opcodes.ISUB);
 
       adapter.dup();
-      adapter.push(0);
-      compMethod.visitJumpInsn(Opcodes.IF_ICMPNE, returnLabel);
+      compMethod.visitJumpInsn(Opcodes.IFNE, returnLabel);
       adapter.pop();
 
       Label nextComp = new Label();
       Label pushComp = new Label();
 
-      adapter.iload(nullFlagVarId);
-      if (compImpl.getSortSpecs()[idx].isNullFirst()) { // -> if (left.isNotNull && right.isNotNull) == FALSE than skip
+      // nullFlag indicates if either value is null. If one of them is null, we should skip reading values.
+      // For computation efficiency for null comparison, we use subtraction the results of isNull or isNotNull.
+      // We reuse the result as follows:
+      //
+      // <For Null First>
+      //
+      // if (left.isNotNull && right.isNotNull) == FALSE, we can ensure one of them is NULL.
+      //
+      // <For Null Last>
+      //
+      // if (left.isNull || right.isNull) != FALSE, we can ensure one of them is NULL.
+
+      adapter.iload(nullFlag);
+      if (compImpl.getSortSpecs()[idx].isNullFirst()) {
         compMethod.visitJumpInsn(Opcodes.IFEQ, pushComp);
-      } else {                                          // -> if (left.isNull || right.isNull) != FALSE than skip
+      } else {
         compMethod.visitJumpInsn(Opcodes.IFNE, pushComp);
       }
 
@@ -202,36 +215,12 @@ public class TupleComparerCompiler {
       }
       compMethod.visitJumpInsn(Opcodes.GOTO, nextComp);
 
-      compMethod.visitLabel(pushComp);
+      compMethod.visitLabel(pushComp); // manually push compVal due to stack height balance
       adapter.push(0);
 
-      compMethod.visitLabel(nextComp);
+      compMethod.visitLabel(nextComp); // label for next value comparison
     }
 
-    // column 1
-
-    // some routine which return integer;
-    //
-    // bool:
-    //
-    // true - true = 0,
-    // true (1) - false (2)
-    // false - true 1
-    //
-    // int1, int2, int4, date, inet4 -> left value - right value
-
-    // Other than JVM integer types (long, float, double, timestamp, time)
-    //
-    // if x.c1 < y.c1
-    //   compVal = -1;
-    // else if (x.c2 == y.c2) {
-    //   return 0;
-    // else
-    //   return 1;
-
-    // text (Improve UnsignedBytes to directly access bytes)
-
-    // proto - non comparable
     compMethod.visitLabel(returnLabel);
     compMethod.visitInsn(Opcodes.IRETURN);
     compMethod.visitMaxs(1, 0);
@@ -250,69 +239,32 @@ public class TupleComparerCompiler {
 
   private void emitComparisonForJVMInteger(TajoGeneratorAdapter adapter, TupleComparatorImpl c, int idx) {
     emitGetParam(adapter, c, idx, LEFT_VALUE);
-    emitGetJVMIntValue(adapter, c.getSortSpecs()[idx].getSortKey().getDataType(), c.getSortKeyIds()[idx]);
+    adapter.emitGetValueOfTuple(c.getSortSpecs()[idx].getSortKey().getDataType(), c.getSortKeyIds()[idx]);
 
     emitGetParam(adapter, c, idx, RIGHT_VALUE);
-    emitGetJVMIntValue(adapter, c.getSortSpecs()[idx].getSortKey().getDataType(), c.getSortKeyIds()[idx]);
+    adapter.emitGetValueOfTuple(c.getSortSpecs()[idx].getSortKey().getDataType(), c.getSortKeyIds()[idx]);
 
     adapter.methodvisitor.visitInsn(Opcodes.ISUB);
   }
 
   private void emitComparisonForUnsignedInts(TajoGeneratorAdapter adapter, TupleComparatorImpl c, int idx) {
     emitGetParam(adapter, c, idx, LEFT_VALUE);
-    emitGetJVMIntValue(adapter, c.getSortSpecs()[idx].getSortKey().getDataType(), c.getSortKeyIds()[idx]);
+    adapter.emitGetValueOfTuple(c.getSortSpecs()[idx].getSortKey().getDataType(), c.getSortKeyIds()[idx]);
 
     emitGetParam(adapter, c, idx, RIGHT_VALUE);
-    emitGetJVMIntValue(adapter, c.getSortSpecs()[idx].getSortKey().getDataType(), c.getSortKeyIds()[idx]);
+    adapter.emitGetValueOfTuple(c.getSortSpecs()[idx].getSortKey().getDataType(), c.getSortKeyIds()[idx]);
 
     adapter.invokeStatic(UnsignedInts.class, "compare", int.class, new Class [] {int.class, int.class});
-  }
-
-  private void emitGetJVMIntValue(TajoGeneratorAdapter adapter, DataType dataType, int fieldIndex) {
-    adapter.push(fieldIndex);
-
-    Type type = dataType.getType();
-    switch (type) {
-    case BOOLEAN:
-    case INT1:
-    case INT2:
-      adapter.invokeInterface(Tuple.class, "getInt2", short.class, new Class[]{int.class});
-      break;
-    case INT4:
-    case DATE:
-    case INET4:
-      adapter.invokeInterface(Tuple.class, "getInt4", int.class, new Class[]{int.class});
-      break;
-    case INT8:
-    case TIMESTAMP:
-    case TIME:
-      adapter.invokeInterface(Tuple.class, "getInt8", long.class, new Class[]{int.class});
-      break;
-    case FLOAT4:
-      adapter.invokeInterface(Tuple.class, "getFloat4", float.class, new Class[]{int.class});
-      break;
-    case FLOAT8:
-      adapter.invokeInterface(Tuple.class, "getFloat8", double.class, new Class[]{int.class});
-      break;
-    case TEXT:
-      adapter.invokeInterface(Tuple.class, "getText", String.class, new Class[]{int.class});
-      break;
-    case INTERVAL:
-      adapter.invokeInterface(Tuple.class, "getInterval", IntervalDatum.class, new Class[]{int.class});
-      break;
-    default:
-      throw new UnsupportedException("Unknown data type: " + type.name());
-    }
   }
 
   private void emitComparisonForOtherPrimitives(TajoGeneratorAdapter adapter, TupleComparatorImpl comp, int idx) {
     DataType dataType = comp.getSortSpecs()[idx].getSortKey().getDataType();
     emitGetParam(adapter, comp, idx, LEFT_VALUE);
-    emitGetJVMIntValue(adapter, dataType, comp.getSortKeyIds()[idx]);
+    adapter.emitGetValueOfTuple(dataType, comp.getSortKeyIds()[idx]);
     int lhs = adapter.store(dataType);
 
     emitGetParam(adapter, comp, idx, RIGHT_VALUE);
-    emitGetJVMIntValue(adapter, dataType, comp.getSortKeyIds()[idx]);
+    adapter.emitGetValueOfTuple(dataType, comp.getSortKeyIds()[idx]);
     int rhs = adapter.store(dataType);
 
     Label equalLabel = new Label();
@@ -341,12 +293,12 @@ public class TupleComparerCompiler {
                                      boolean ensureUnSafeTuple) {
     if (ensureUnSafeTuple) {
       emitGetParam(adapter, c, idx, LEFT_VALUE);
-      adapter.methodvisitor.visitTypeInsn(Opcodes.CHECKCAST, TajoGeneratorAdapter.getInternalName(UnSafeTuple.class));
+      adapter.methodvisitor.visitTypeInsn(Opcodes.CHECKCAST, getInternalName(UnSafeTuple.class));
       adapter.push(c.getSortKeyIds()[idx]);
       adapter.invokeVirtual(UnSafeTuple.class, "getFieldAddr", long.class, new Class[]{int.class});
 
       emitGetParam(adapter, c, idx, RIGHT_VALUE);
-      adapter.methodvisitor.visitTypeInsn(Opcodes.CHECKCAST, TajoGeneratorAdapter.getInternalName(UnSafeTuple.class));
+      adapter.methodvisitor.visitTypeInsn(Opcodes.CHECKCAST, getInternalName(UnSafeTuple.class));
       adapter.push(c.getSortKeyIds()[idx]);
       adapter.invokeVirtual(UnSafeTuple.class, "getFieldAddr", long.class, new Class[]{int.class});
 

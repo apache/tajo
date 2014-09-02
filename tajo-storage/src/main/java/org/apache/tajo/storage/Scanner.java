@@ -21,7 +21,7 @@ package org.apache.tajo.storage;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SchemaObject;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
+import org.apache.tajo.storage.offheap.RowOrientedRowBlock;
 
 import java.io.Closeable;
 import java.io.IOException;

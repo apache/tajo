@@ -28,8 +28,8 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.storage.directmem.RowOrientedRowBlock;
-import org.apache.tajo.storage.directmem.UnSafeTuple;
+import org.apache.tajo.storage.offheap.RowOrientedRowBlock;
+import org.apache.tajo.storage.offheap.UnSafeTuple;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -37,7 +37,7 @@ import org.junit.Test;
 import java.util.List;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
-import static org.apache.tajo.storage.directmem.TestRowOrientedRowBlock.schema;
+import static org.apache.tajo.storage.offheap.TestRowOrientedRowBlock.schema;
 import static org.junit.Assert.assertTrue;
 
 public class TestTupleComparerCompiler {
