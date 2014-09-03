@@ -95,6 +95,8 @@ public class TajoWorker extends CompositeService {
 
   private TajoPullServerService pullService;
 
+  private int pullServerPort;
+
   private boolean yarnContainerMode;
 
   private boolean queryMasterMode;
@@ -205,7 +207,7 @@ public class TajoWorker extends CompositeService {
     addService(tajoWorkerManagerService);
 
     if(!yarnContainerMode) {
-      if(taskRunnerMode) {
+      if(taskRunnerMode && !TajoPullServerService.isStandaloneMode()) {
         pullService = new TajoPullServerService();
         addService(pullService);
       }
@@ -356,7 +358,7 @@ public class TajoWorker extends CompositeService {
         new ConcurrentHashMap<ExecutionBlockId, ExecutionBlockSharedResource>();
 
     public QueryMaster getQueryMaster() {
-      if(queryMasterManagerService == null) {
+      if (queryMasterManagerService == null) {
         return null;
       }
       return queryMasterManagerService.getQueryMaster();
@@ -386,24 +388,21 @@ public class TajoWorker extends CompositeService {
       return catalogClient;
     }
 
-    public TajoPullServerService getPullService() {
-      return pullService;
-    }
-
     public int getHttpPort() {
       return httpPort;
     }
 
     public String getWorkerName() {
-      if(queryMasterMode) {
+      if (queryMasterMode) {
         return getQueryMasterManagerService().getHostAndPort();
       } else {
         return getTajoWorkerManagerService().getHostAndPort();
       }
     }
+
     public void stopWorker(boolean force) {
       stop();
-      if(force) {
+      if (force) {
         System.exit(0);
       }
     }
@@ -428,14 +427,14 @@ public class TajoWorker extends CompositeService {
     }
 
     protected void cleanup(String strPath) {
-      if(deletionService == null) return;
+      if (deletionService == null) return;
 
       LocalDirAllocator lDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
 
       try {
         Iterable<Path> iter = lDirAllocator.getAllLocalPathsToRead(strPath, systemConf);
         FileSystem localFS = FileSystem.getLocal(systemConf);
-        for (Path path : iter){
+        for (Path path : iter) {
           deletionService.delete(localFS.makeQualified(path));
         }
       } catch (IOException e) {
@@ -444,21 +443,21 @@ public class TajoWorker extends CompositeService {
     }
 
     protected void cleanupTemporalDirectories() {
-      if(deletionService == null) return;
+      if (deletionService == null) return;
 
       LocalDirAllocator lDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
 
       try {
         Iterable<Path> iter = lDirAllocator.getAllLocalPathsToRead(".", systemConf);
         FileSystem localFS = FileSystem.getLocal(systemConf);
-        for (Path path : iter){
+        for (Path path : iter) {
           PathData[] items = PathData.expandAsGlob(localFS.makeQualified(new Path(path, "*")).toString(), systemConf);
 
           ArrayList<Path> paths = new ArrayList<Path>();
-          for (PathData pd : items){
+          for (PathData pd : items) {
             paths.add(pd.path);
           }
-          if(paths.size() == 0) continue;
+          if (paths.size() == 0) continue;
 
           deletionService.delete(null, paths.toArray(new Path[paths.size()]));
         }
@@ -480,13 +479,13 @@ public class TajoWorker extends CompositeService {
     }
 
     public void setClusterResource(TajoMasterProtocol.ClusterResourceSummary clusterResource) {
-      synchronized(numClusterNodes) {
+      synchronized (numClusterNodes) {
         TajoWorker.this.clusterResource = clusterResource;
       }
     }
 
     public TajoMasterProtocol.ClusterResourceSummary getClusterResource() {
-      synchronized(numClusterNodes) {
+      synchronized (numClusterNodes) {
         return TajoWorker.this.clusterResource;
       }
     }
@@ -525,6 +524,52 @@ public class TajoWorker extends CompositeService {
 
     public HashShuffleAppenderManager getHashShuffleAppenderManager() {
       return hashShuffleAppenderManager;
+    }
+
+    public int getPullServerPort() {
+      if (pullService != null) {
+        long startTime = System.currentTimeMillis();
+        while (true) {
+          int pullServerPort = pullService.getPort();
+          if (pullServerPort > 0) {
+            return pullServerPort;
+          }
+          try {
+            Thread.sleep(1000);
+          } catch (InterruptedException e) {
+          }
+          if (System.currentTimeMillis() - startTime > 30 * 1000) {
+            LOG.fatal("TajoWorker stopped cause can't get PullServer port.");
+            System.exit(-1);
+          }
+        }
+      } else {
+        if (pullServerPort != 0) {
+          return pullServerPort;
+        } else {
+          loadPullServerPort();
+          return pullServerPort;
+        }
+      }
+    }
+  }
+
+  private void loadPullServerPort() {
+    // get pull server port
+    long startTime = System.currentTimeMillis();
+    while (true) {
+      pullServerPort = TajoPullServerService.readPullServerPort();
+      if (pullServerPort > 0) {
+        break;
+      }
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException e) {
+      }
+      if (System.currentTimeMillis() - startTime > 30 * 1000) {
+        LOG.fatal("TajoWorker stopped cause can't get PullServer port.");
+        System.exit(-1);
+      }
     }
   }
 

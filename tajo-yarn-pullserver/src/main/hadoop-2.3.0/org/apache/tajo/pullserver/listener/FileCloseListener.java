@@ -19,15 +19,25 @@
 package org.apache.tajo.pullserver.listener;
 
 import org.apache.hadoop.mapred.FadvisedFileRegion;
+import org.apache.tajo.pullserver.TajoPullServerService;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 
 public class FileCloseListener implements ChannelFutureListener {
 
   private FadvisedFileRegion filePart;
+  private String requestUri;
+  private TajoPullServerService pullServerService;
+  private long startTime;
 
-  public FileCloseListener(FadvisedFileRegion filePart) {
+  public FileCloseListener(FadvisedFileRegion filePart,
+                           String requestUri,
+                           long startTime,
+                           TajoPullServerService pullServerService) {
     this.filePart = filePart;
+    this.requestUri = requestUri;
+    this.pullServerService = pullServerService;
+    this.startTime = startTime;
   }
 
   // TODO error handling; distinguish IO/connection failures,
@@ -38,5 +48,8 @@ public class FileCloseListener implements ChannelFutureListener {
       filePart.transferSuccessful();
     }
     filePart.releaseExternalResources();
+    if (pullServerService != null) {
+      pullServerService.completeFileChunk(filePart, requestUri, startTime);
+    }
   }
 }

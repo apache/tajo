@@ -37,6 +37,9 @@
 # export TAJO_WORKER_HEAPSIZE=1000
 
 # The maximum amount of heap to use, in MB. Default is 1000.
+# export TAJO_PULLSERVER_HEAPSIZE=1000
+
+# The maximum amount of heap to use, in MB. Default is 1000.
 # export TAJO_QUERYMASTER_HEAPSIZE=1000
 
 # Extra Java runtime options.  Empty by default.
@@ -45,8 +48,11 @@
 # Extra TajoMaster's java runtime options for TajoMaster. Empty by default
 # export TAJO_MASTER_OPTS=
 
-# Extra TajoWorker's java runtime options for TajoMaster. Empty by default
+# Extra TajoWorker's java runtime options. Empty by default
 # export TAJO_WORKER_OPTS=
+
+# Extra TajoPullServer's java runtime options. Empty by default
+# export TAJO_PULLSERVER_OPTS=
 
 # Extra  QueryMaster mode TajoWorker's java runtime options for TajoMaster. Empty by default
 # export TAJO_QUERYMASTER_OPTS=
@@ -69,3 +75,6 @@ export TAJO_WORKER_STANDBY_MODE=true
 # It must be required to use HCatalogStore
 # export HIVE_HOME=
 # export HIVE_JDBC_DRIVER_DIR=
+
+# Tajo PullServer mode. the default mode is standalone mode
+export TAJO_PULLSERVER_STANDALONE=true

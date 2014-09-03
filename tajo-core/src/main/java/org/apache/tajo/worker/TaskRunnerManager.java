@@ -28,6 +28,7 @@ import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.util.Pair;
 
@@ -172,16 +173,19 @@ public class TaskRunnerManager extends CompositeService {
           failureBuilder.setEndRowNum(eachFailure.getSecond().getSecond());
           failureIntermediateItems.add(failureBuilder.build());
         }
+
         intermediateBuilder.clear();
+
         intermediateBuilder.setEbId(ebId.getProto())
             .setHost(workerContext.getTajoWorkerManagerService().getBindAddr().getHostName() + ":" +
-                workerContext.getPullService().getPort())
+                workerContext.getPullServerPort())
             .setTaskId(-1)
             .setAttemptId(-1)
             .setPartId(eachShuffle.getPartId())
             .setVolume(eachShuffle.getVolume())
             .addAllPages(pages)
             .addAllFailures(failureIntermediateItems);
+
         intermediateEntries.add(intermediateBuilder.build());
       }
 
@@ -191,7 +195,11 @@ public class TaskRunnerManager extends CompositeService {
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       reporterBuilder.setReportSuccess(false);
-      reporterBuilder.setReportErrorMessage(e.getMessage());
+      if (e.getMessage() == null) {
+        reporterBuilder.setReportErrorMessage(e.getClass().getSimpleName());
+      } else {
+        reporterBuilder.setReportErrorMessage(e.getMessage());
+      }
     }
     lastTaskRunner.sendExecutionBlockReport(reporterBuilder.build());
   }

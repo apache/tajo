@@ -27,6 +27,7 @@ import org.apache.hadoop.service.AbstractService;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
+import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
@@ -141,24 +142,6 @@ public class WorkerHeartbeatService extends AbstractService {
       LOG.info("Worker Resource Heartbeat Thread start.");
       int sendDiskInfoCount = 0;
       int pullServerPort = 0;
-      if(context.getPullService()!= null) {
-        long startTime = System.currentTimeMillis();
-        while(true) {
-          pullServerPort = context.getPullService().getPort();
-          if(pullServerPort > 0) {
-            break;
-          }
-          //waiting while pull server init
-          try {
-            Thread.sleep(100);
-          } catch (InterruptedException e) {
-          }
-          if(System.currentTimeMillis() - startTime > 30 * 1000) {
-            LOG.fatal("Too long push server init.");
-            System.exit(0);
-          }
-        }
-      }
 
       String hostName = null;
       int peerRpcPort = 0;
@@ -176,9 +159,8 @@ public class WorkerHeartbeatService extends AbstractService {
       if(context.getTajoWorkerClientService() != null) {
         clientPort = context.getTajoWorkerClientService().getBindAddr().getPort();
       }
-      if (context.getPullService() != null) {
-        pullServerPort = context.getPullService().getPort();
-      }
+
+      pullServerPort = context.getPullServerPort();
 
       while(!stopped.get()) {
         if(sendDiskInfoCount == 0 && diskDeviceInfos != null) {
