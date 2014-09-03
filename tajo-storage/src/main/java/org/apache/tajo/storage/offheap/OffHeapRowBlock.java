@@ -55,7 +55,6 @@ public class OffHeapRowBlock extends OffHeapMemory implements Deallocatable {
 
   // Write States --------------------
   long rowStartAddrForWrite;
-  private int rowOffsetForWrite;
 
   private TupleBuilder builder;
 
@@ -88,7 +87,6 @@ public class OffHeapRowBlock extends OffHeapMemory implements Deallocatable {
 
   public void clear() {
     this.position = 0;
-    this.rowOffsetForWrite = 0;
     this.rowNum = 0;
 
     builder.clear();
@@ -129,7 +127,7 @@ public class OffHeapRowBlock extends OffHeapMemory implements Deallocatable {
   }
 
   public long remain() {
-    return memorySize - position - rowOffsetForWrite;
+    return memorySize - position - builder.offset();
   }
 
   public int maxRowNum() {
@@ -150,15 +148,13 @@ public class OffHeapRowBlock extends OffHeapMemory implements Deallocatable {
       while (position < memorySize) {
         rowStartAddrForWrite = address + position;
 
-        rowOffsetForWrite = 0;
-
         if (remain() < SizeOf.SIZE_OF_INT) {
           channel.position(channel.position() - remain());
           memorySize = (int) (memorySize - remain());
           return true;
         }
 
-        int recordSize = UNSAFE.getInt(rowStartAddrForWrite + rowOffsetForWrite);
+        int recordSize = UNSAFE.getInt(rowStartAddrForWrite);
 
         if (remain() < recordSize) {
           channel.position(channel.position() - remain());
@@ -192,14 +188,19 @@ public class OffHeapRowBlock extends OffHeapMemory implements Deallocatable {
   public class TupleBuilder {
     private int [] fieldIndexesForWrite;
     private int curFieldIdxForWrite;
+    private int rowOffsetForWrite;
     TupleBuilder() {
       fieldIndexesForWrite = new int[dataTypes.length];
     }
 
     void clear() {
+      rowOffsetForWrite = 0;
       curFieldIdxForWrite = 0;
     }
 
+    public int offset() {
+      return rowOffsetForWrite;
+    }
 
     public void addTuple(Tuple tuple) {
       startRow();
