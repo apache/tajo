@@ -265,7 +265,7 @@ public class TestDirectRawFile {
     long allocateStart = System.currentTimeMillis();
     OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, 1024);
     long allocatedEnd = System.currentTimeMillis();
-    LOG.info(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
+    LOG.info(FileUtil.humanReadableByteCount(rowBlock.size(), true) + " bytes allocated "
         + (allocatedEnd - allocateStart) + " msec");
 
     long writeStart = System.currentTimeMillis();

@@ -66,7 +66,7 @@ public class TestOffHeapRowBlock {
   }
 
   private void explainRowBlockAllocation(OffHeapRowBlock rowBlock, long startTime, long endTime) {
-    LOG.info(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
+    LOG.info(FileUtil.humanReadableByteCount(rowBlock.size(), true) + " bytes allocated "
         + (endTime - startTime) + " msec");
   }
 
@@ -317,7 +317,7 @@ public class TestOffHeapRowBlock {
     long allocateStart = System.currentTimeMillis();
     OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, StorageUnit.MB * 8);
     long allocatedEnd = System.currentTimeMillis();
-    LOG.info(FileUtil.humanReadableByteCount(rowBlock.totalMem(), true) + " bytes allocated "
+    LOG.info(FileUtil.humanReadableByteCount(rowBlock.size(), true) + " bytes allocated "
         + (allocatedEnd - allocateStart) + " msec");
 
     long writeStart = System.currentTimeMillis();

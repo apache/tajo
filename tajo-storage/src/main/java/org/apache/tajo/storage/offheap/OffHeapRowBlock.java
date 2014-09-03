@@ -24,121 +24,83 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.util.Deallocatable;
-import org.apache.tajo.util.SizeOf;
-import org.apache.tajo.util.UnsafeUtil;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.Deallocatable;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.SizeOf;
 import sun.misc.Unsafe;
-import sun.nio.ch.DirectBuffer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 
-public class OffHeapRowBlock implements RowWriter, Deallocatable {
+public class OffHeapRowBlock extends OffHeapMemory implements RowWriter, Deallocatable {
   private static final Log LOG = LogFactory.getLog(OffHeapRowBlock.class);
-  private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
 
   public static final int NULL_FIELD_OFFSET = -1;
 
   DataType [] dataTypes;
-  int bytesLen;
-  ByteBuffer buffer;
-  private long address;
-  private int fieldIndexBytesLen;
-  private ResizableLimitSpec limitSpec;
+  int fieldIndexBytesLen;
 
   // Basic States
   private int maxRowNum = Integer.MAX_VALUE; // optional
   private int rowNum;
+  protected int position = 0;
 
   // Write States --------------------
-  private int curOffsetForWrite;
-  private long rowStartAddrForWrite;
+  long rowStartAddrForWrite;
   private int rowOffsetForWrite;
   private int curFieldIdxForWrite;
   private int [] fieldIndexesForWrite;
 
-  private OffHeapRowBlock(Schema schema, ByteBuffer buffer, ResizableLimitSpec limitSpec) {
-    this.buffer = buffer;
+  private OffHeapRowBlock(ByteBuffer buffer, Schema schema, ResizableLimitSpec limitSpec) {
+    super(buffer, limitSpec);
+    initialize(schema);
+  }
 
-    this.address = ((DirectBuffer) buffer).address();
-    this.bytesLen = buffer.limit();
+  public OffHeapRowBlock(Schema schema, ResizableLimitSpec limitSpec) {
+    super(limitSpec);
+    initialize(schema);
+  }
 
+  private void initialize(Schema schema) {
     dataTypes = SchemaUtil.toDataTypes(schema);
 
     fieldIndexesForWrite = new int[schema.size()];
     fieldIndexBytesLen = SizeOf.SIZE_OF_INT * schema.size();
-
-    this.limitSpec = limitSpec;
-
-    curOffsetForWrite = 0;
   }
 
   @VisibleForTesting
-  public OffHeapRowBlock(Schema schema, ByteBuffer buffer) {
-    this(schema, buffer, ResizableLimitSpec.DEFAULT_LIMIT);
-  }
-
-  public OffHeapRowBlock(Schema schema, ResizableLimitSpec limitSpec) {
-    this(schema, ByteBuffer.allocateDirect((int) limitSpec.initialSize()).order(ByteOrder.nativeOrder()),
-        limitSpec);
-  }
-
   public OffHeapRowBlock(Schema schema, int bytes) {
     this(schema, new ResizableLimitSpec(bytes));
   }
 
+  @VisibleForTesting
+  public OffHeapRowBlock(Schema schema, ByteBuffer buffer) {
+    this(buffer, schema, ResizableLimitSpec.DEFAULT_LIMIT);
+  }
+
   public void clear() {
-    this.curOffsetForWrite = 0;
+    this.position = 0;
     this.rowOffsetForWrite = 0;
     this.curFieldIdxForWrite = 0;
     this.rowNum = 0;
   }
 
-  @Override
-  public void free() {
-    UnsafeUtil.free(this.buffer);
-    this.buffer = null;
-    this.address = 0;
-    this.bytesLen = 0;
-  }
-
-  public long address() {
-    return address;
-  }
-
   public ByteBuffer nioBuffer() {
     buffer.flip();
-    buffer.limit(curOffsetForWrite);
+    buffer.limit(position);
     return buffer;
   }
 
   public long usedMem() {
-    return curOffsetForWrite;
-  }
-
-  public long totalMem() {
-    return bytesLen;
-  }
-
-  public long remain() {
-    return bytesLen - curOffsetForWrite - rowOffsetForWrite;
-  }
-
-  public int maxRowNum() {
-    return maxRowNum;
-  }
-  public int rows() {
-    return rowNum;
+    return position;
   }
 
   /**
@@ -147,29 +109,33 @@ public class OffHeapRowBlock implements RowWriter, Deallocatable {
    *
    * @param size Size to add
    */
-  private void ensureSize(int size) {
+  public void ensureSize(int size) {
     if (remain() - size < 0) {
-      if (!limitSpec.canIncrease(bytesLen)) {
+      if (!limitSpec.canIncrease(memorySize)) {
         throw new RuntimeException("Cannot increase RowBlock anymore.");
       }
-
-      int newBlockSize = UnsafeUtil.alignedSize(limitSpec.increasedSize(bytesLen));
-      ByteBuffer newByteBuf = ByteBuffer.allocateDirect(newBlockSize);
-      long newAddress = ((DirectBuffer)newByteBuf).address();
-      UNSAFE.copyMemory(this.address, newAddress, bytesLen);
-
-      LOG.info("Increase DirectRowBlock to " + FileUtil.humanReadableByteCount(newBlockSize, false));
 
       // compute the relative position of current row start offset
       long relativeRowStartPos = this.rowStartAddrForWrite - this.address;
 
+      int newBlockSize = limitSpec.increasedSize(memorySize);
+      resize(newBlockSize);
+      LOG.info("Increase DirectRowBlock to " + FileUtil.humanReadableByteCount(newBlockSize, false));
+
       // Update current write states
-      rowStartAddrForWrite = newAddress + relativeRowStartPos;
-      bytesLen = newBlockSize;
-      UnsafeUtil.free(buffer);
-      buffer = newByteBuf;
-      address = newAddress;
+      rowStartAddrForWrite = address() + relativeRowStartPos;
     }
+  }
+
+  public long remain() {
+    return memorySize - position - rowOffsetForWrite;
+  }
+
+  public int maxRowNum() {
+    return maxRowNum;
+  }
+  public int rows() {
+    return rowNum;
   }
 
   public void addTuple(Tuple tuple) {
@@ -227,16 +193,16 @@ public class OffHeapRowBlock implements RowWriter, Deallocatable {
 
       buffer.clear();
       channel.read(buffer);
-      bytesLen = buffer.position();
+      memorySize = buffer.position();
 
-      while (curOffsetForWrite < bytesLen) {
-        rowStartAddrForWrite = address + curOffsetForWrite;
+      while (position < memorySize) {
+        rowStartAddrForWrite = address + position;
 
         rowOffsetForWrite = 0;
 
         if (remain() < SizeOf.SIZE_OF_INT) {
           channel.position(channel.position() - remain());
-          bytesLen = (int) (bytesLen - remain());
+          memorySize = (int) (memorySize - remain());
           return true;
         }
 
@@ -244,11 +210,11 @@ public class OffHeapRowBlock implements RowWriter, Deallocatable {
 
         if (remain() < recordSize) {
           channel.position(channel.position() - remain());
-          bytesLen = (int) (bytesLen - remain());
+          memorySize = (int) (memorySize - remain());
           return true;
         }
 
-        curOffsetForWrite += recordSize;
+        position += recordSize;
         rowNum++;
       }
 
@@ -269,7 +235,7 @@ public class OffHeapRowBlock implements RowWriter, Deallocatable {
   //                               4 bytes          4 bytes               4 bytes
 
   public boolean startRow() {
-    rowStartAddrForWrite = address + curOffsetForWrite;
+    rowStartAddrForWrite = address + position;
     rowOffsetForWrite = 0;
     rowOffsetForWrite += 4; // skip row header
     rowOffsetForWrite += fieldIndexBytesLen; // skip an array of field indices
@@ -294,7 +260,7 @@ public class OffHeapRowBlock implements RowWriter, Deallocatable {
     }
 
     // rowOffset is equivalent to a byte length of this row.
-    curOffsetForWrite += rowOffsetForWrite;
+    position += rowOffsetForWrite;
   }
 
   public void skipField() {

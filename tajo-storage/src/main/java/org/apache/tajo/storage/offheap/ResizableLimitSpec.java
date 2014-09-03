@@ -62,12 +62,24 @@ public class ResizableLimitSpec {
 
     if (initSize == limitBytes) {
       long overflowedSize = (long) (initSize + (initSize * allowedOverflowRatio));
+
+      if (overflowedSize > Integer.MAX_VALUE) {
+        overflowedSize = Integer.MAX_VALUE;
+      }
+
       this.initSize = overflowedSize;
       this.limitBytes = overflowedSize;
     } else {
       this.initSize = initSize;
-      this.limitBytes = (long) (limitBytes + (limitBytes * allowedOverflowRatio));
+      limitBytes = (long) (limitBytes + (limitBytes * allowedOverflowRatio));
+
+      if (limitBytes > Integer.MAX_VALUE) {
+        this.limitBytes = Integer.MAX_VALUE;
+      } else {
+        this.limitBytes = Integer.MAX_VALUE;
+      }
     }
+
     this.allowedOVerflowRatio = allowedOverflowRatio;
     this.incRatio = incRatio;
   }
@@ -124,7 +136,7 @@ public class ResizableLimitSpec {
   @Override
   public String toString() {
     return "init=" + FileUtil.humanReadableByteCount(initSize, false) + ",limit="
-        + FileUtil.humanReadableByteCount(limitBytes, false) + "allowed_overflow=" + allowedOVerflowRatio
-        + ",incRatio=" + incRatio;
+        + FileUtil.humanReadableByteCount(limitBytes, false) + ",overflow_ratio=" + allowedOVerflowRatio
+        + ",inc_ratio=" + incRatio;
   }
 }

@@ -34,7 +34,7 @@ public class OffHeapRowBlockReader {
   }
 
   public long remainForRead() {
-    return rowBlock.bytesLen - curPosForRead;
+    return rowBlock.memorySize - curPosForRead;
   }
 
   /**
