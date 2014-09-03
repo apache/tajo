@@ -19,6 +19,7 @@
 package org.apache.tajo.master;
 
 import com.google.protobuf.ServiceException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -36,7 +37,6 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.hadoop.yarn.util.SystemClock;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.function.Function;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -60,6 +60,7 @@ import org.apache.tajo.util.ClassUtil;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.util.VersionInfo;
 import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.webapp.QueryExecutorServlet;
 import org.apache.tajo.webapp.StaticHttpServer;
@@ -143,7 +144,7 @@ public class TajoMaster extends CompositeService {
   }
 
   public String getVersion() {
-    return TajoConstants.TAJO_VERSION;
+    return VersionInfo.getVersion();
   }
 
   public TajoMasterClientService getTajoMasterClientService() {
