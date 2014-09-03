@@ -163,9 +163,9 @@ public class TestOffHeapRowBlock {
 
     long writeStart = System.currentTimeMillis();
     for (int i = 0; i < rowNum; i++) {
-      rowBlock.startRow();
+      rowBlock.getWriter().startRow();
       // empty columns
-      rowBlock.endRow();
+      rowBlock.getWriter().endRow();
     }
     long writeEnd = System.currentTimeMillis();
     LOG.info("writing tooks " + (writeEnd - writeStart) + " msec");
@@ -263,7 +263,7 @@ public class TestOffHeapRowBlock {
     for (int i = 0; i < rowNum; i++) {
       fillVTuple(i, tuple);
 
-      rowBlock.addTuple(tuple);
+      rowBlock.getWriter().addTuple(tuple);
     }
     long writeEnd = System.currentTimeMillis();
     LOG.info("Writing takes " + (writeEnd - writeStart) + " msec");
@@ -331,104 +331,106 @@ public class TestOffHeapRowBlock {
   }
 
   public static void fillRowBlock(int i, OffHeapRowBlock rowBlock) {
-    rowBlock.startRow();
-    rowBlock.putBool(i % 1 == 0 ? true : false); // 0
-    rowBlock.putInt2((short) 1);                 // 1
-    rowBlock.putInt4(i);                         // 2
-    rowBlock.putInt8(i);                         // 3
-    rowBlock.putFloat4(i);                       // 4
-    rowBlock.putFloat8(i);                       // 5
-    rowBlock.putText((UNICODE_FIELD_PREFIX + i).getBytes());  // 6
-    rowBlock.putTimestamp(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + i); // 7
-    rowBlock.putDate(DatumFactory.createDate("2014-04-16").asInt4() + i); // 8
-    rowBlock.putTime(DatumFactory.createTime("08:48:00").asInt8() + i); // 9
-    rowBlock.putInterval(DatumFactory.createInterval((i + 1) + " hours")); // 10
-    rowBlock.putInet4(DatumFactory.createInet4("192.168.0.1").asInt4() + i); // 11
-    rowBlock.putProtoDatum(new ProtobufDatum(ProtoUtil.convertString(i + ""))); // 12
-    rowBlock.endRow();
+    OffHeapRowBlock.TupleBuilder builder = rowBlock.getWriter();
+    builder.startRow();
+    builder.putBool(i % 1 == 0 ? true : false); // 0
+    builder.putInt2((short) 1);                 // 1
+    builder.putInt4(i);                         // 2
+    builder.putInt8(i);                         // 3
+    builder.putFloat4(i);                       // 4
+    builder.putFloat8(i);                       // 5
+    builder.putText((UNICODE_FIELD_PREFIX + i).getBytes());  // 6
+    builder.putTimestamp(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + i); // 7
+    builder.putDate(DatumFactory.createDate("2014-04-16").asInt4() + i); // 8
+    builder.putTime(DatumFactory.createTime("08:48:00").asInt8() + i); // 9
+    builder.putInterval(DatumFactory.createInterval((i + 1) + " hours")); // 10
+    builder.putInet4(DatumFactory.createInet4("192.168.0.1").asInt4() + i); // 11
+    builder.putProtoDatum(new ProtobufDatum(ProtoUtil.convertString(i + ""))); // 12
+    builder.endRow();
   }
 
   public static void fillRowBlockWithNull(int i, OffHeapRowBlock rowBlock) {
-    rowBlock.startRow();
+    OffHeapRowBlock.TupleBuilder writer = rowBlock.getWriter();
+    writer.startRow();
 
     if (i == 0) {
-      rowBlock.skipField();
+      writer.skipField();
     } else {
-      rowBlock.putBool(i % 1 == 0 ? true : false); // 0
+      writer.putBool(i % 1 == 0 ? true : false); // 0
     }
     if (i % 1 == 0) {
-      rowBlock.skipField();
+      writer.skipField();
     } else {
-      rowBlock.putInt2((short) 1);                 // 1
+      writer.putInt2((short) 1);                 // 1
     }
 
     if (i % 2 == 0) {
-      rowBlock.skipField();
+      writer.skipField();
     } else {
-      rowBlock.putInt4(i);                         // 2
+      writer.putInt4(i);                         // 2
     }
 
     if (i % 3 == 0) {
-      rowBlock.skipField();
+      writer.skipField();
     } else {
-      rowBlock.putInt8(i);                         // 3
+      writer.putInt8(i);                         // 3
     }
 
     if (i % 4 == 0) {
-      rowBlock.skipField();
+      writer.skipField();
     } else {
-      rowBlock.putFloat4(i);                       // 4
+      writer.putFloat4(i);                       // 4
     }
 
     if (i % 5 == 0) {
-      rowBlock.skipField();
+      writer.skipField();
     } else {
-      rowBlock.putFloat8(i);                       // 5
+      writer.putFloat8(i);                       // 5
     }
 
     if (i % 6 == 0) {
-      rowBlock.skipField();
+      writer.skipField();
     } else {
-      rowBlock.putText((UNICODE_FIELD_PREFIX + i).getBytes());  // 6
+      writer.putText((UNICODE_FIELD_PREFIX + i).getBytes());  // 6
     }
 
     if (i % 7 == 0) {
-      rowBlock.skipField();
+      writer.skipField();
     } else {
-      rowBlock.putTimestamp(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + i); // 7
+      writer.putTimestamp(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + i); // 7
     }
 
     if (i % 8 == 0) {
-      rowBlock.skipField();
+      writer.skipField();
     } else {
-      rowBlock.putDate(DatumFactory.createDate("2014-04-16").asInt4() + i); // 8
+      writer.putDate(DatumFactory.createDate("2014-04-16").asInt4() + i); // 8
     }
 
     if (i % 9 == 0) {
-      rowBlock.skipField();
+      writer.skipField();
     } else {
-      rowBlock.putTime(DatumFactory.createTime("08:48:00").asInt8() + i); // 9
+      writer.putTime(DatumFactory.createTime("08:48:00").asInt8() + i); // 9
     }
 
     if (i % 10 == 0) {
-      rowBlock.skipField();
+      writer.skipField();
     } else {
-      rowBlock.putInterval(DatumFactory.createInterval((i + 1) + " hours")); // 10
+      writer.putInterval(DatumFactory.createInterval((i + 1) + " hours")); // 10
     }
 
     if (i % 11 == 0) {
-      rowBlock.skipField();
+      writer.skipField();
     } else {
-      rowBlock.putInet4(DatumFactory.createInet4("192.168.0.1").asInt4() + i); // 11
+      writer.putInet4(DatumFactory.createInet4("192.168.0.1").asInt4() + i); // 11
     }
 
     if (i % 12 == 0) {
-      rowBlock.skipField();
+      writer.skipField();
     } else {
-      rowBlock.putProtoDatum(new ProtobufDatum(ProtoUtil.convertString(i + ""))); // 12
+      writer.putProtoDatum(new ProtobufDatum(ProtoUtil.convertString(i + ""))); // 12
     }
 
-    rowBlock.endRow();
+    writer.endRow();
   }
 
   public static void fillVTuple(int i, VTuple tuple) {

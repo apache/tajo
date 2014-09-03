@@ -313,17 +313,18 @@ public class TestTupleComparerCompiler {
   }
 
   private void fillTextColumnToRowBlock(OffHeapRowBlock rowBlock, String text) {
-    rowBlock.startRow();
-    rowBlock.skipField(); // 0
-    rowBlock.skipField(); // 1
-    rowBlock.skipField(); // 2
-    rowBlock.skipField(); // 3
-    rowBlock.skipField(); // 4
-    rowBlock.skipField(); // 5
+    OffHeapRowBlock.TupleBuilder writer = rowBlock.getWriter();
+    writer.startRow();
+    writer.skipField(); // 0
+    writer.skipField(); // 1
+    writer.skipField(); // 2
+    writer.skipField(); // 3
+    writer.skipField(); // 4
+    writer.skipField(); // 5
     if (text != null) {
-      rowBlock.putText(text);
+      writer.putText(text);
     }
-    rowBlock.endRow();
+    writer.endRow();
   }
 
   @Test

@@ -201,7 +201,7 @@ public class ExternalSortExec extends SortExec {
     int chunkId = 0;
     long runStartTime = System.currentTimeMillis();
     while ((tuple = child.next()) != null) { // partition sort start
-      tupleBlock.addTuple(tuple);
+      tupleBlock.getWriter().addTuple(tuple);
 
       if (tupleBlock.usedMem() > sortBufferBytesNum) {
         long runEndTime = System.currentTimeMillis();
