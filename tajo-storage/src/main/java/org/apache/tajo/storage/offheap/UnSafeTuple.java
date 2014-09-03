@@ -64,6 +64,12 @@ public abstract class UnSafeTuple implements Tuple {
     return ((ByteBuffer)((ByteBuffer)bb).duplicate().position(relativePos).limit(relativePos + length)).slice();
   }
 
+  public HeapTuple toHeapTuple() {
+    byte [] bytes = new byte[length];
+    UNSAFE.copyMemory(null, bb.address() + relativePos, bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, length);
+    return new HeapTuple(bytes, types);
+  }
+
   public void copyFrom(UnSafeTuple tuple) {
     Preconditions.checkNotNull(tuple);
 
