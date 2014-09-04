@@ -91,13 +91,13 @@ public class TajoConf extends Configuration {
   }
 
   public static TimeZone setCurrentTimeZone(TimeZone timeZone) {
-    readLock.lock();
+    writeLock.lock();
     try {
       TimeZone oldTimeZone = CURRENT_TIMEZONE;
       CURRENT_TIMEZONE = timeZone;
       return oldTimeZone;
     } finally {
-      readLock.unlock();
+      writeLock.unlock();
     }
   }
 
@@ -124,13 +124,13 @@ public class TajoConf extends Configuration {
   }
 
   public static int setDateOrder(int dateOrder) {
-    readLock.lock();
+    writeLock.lock();
     try {
       int oldDateOrder = DATE_ORDER;
       DATE_ORDER = dateOrder;
       return oldDateOrder;
     } finally {
-      readLock.unlock();
+    	writeLock.unlock();
     }
   }
 
