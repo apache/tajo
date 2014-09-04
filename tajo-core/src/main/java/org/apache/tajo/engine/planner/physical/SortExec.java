@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.engine.codegen.TupleComparerCompiler;
 import org.apache.tajo.storage.TupleComparatorImpl;
@@ -30,6 +32,7 @@ import java.io.IOException;
 import java.util.Comparator;
 
 public abstract class SortExec extends UnaryPhysicalExec {
+  private final static Log LOG = LogFactory.getLog(SortExec.class);
   private final Comparator<Tuple> comparator;
   private final SortSpec [] sortSpecs;
 
@@ -38,12 +41,11 @@ public abstract class SortExec extends UnaryPhysicalExec {
     super(context, inSchema, outSchema, child);
     this.sortSpecs = sortSpecs;
 
+    TupleComparatorImpl comp = new TupleComparatorImpl(inSchema, sortSpecs);
     if (context.getQueryContext().getBool(SessionVars.CODEGEN)) {
-      TupleComparatorImpl compImpl = new TupleComparatorImpl(inSchema, sortSpecs);
-      TupleComparerCompiler compiler = new TupleComparerCompiler(context.getSharedResource().getClassLoader());
-      this.comparator = compiler.compile(compImpl, false);
+      this.comparator = context.getSharedResource().getCompiledComparator(inSchema, comp);
     } else {
-      this.comparator = new TupleComparatorImpl(inSchema, sortSpecs);
+      this.comparator = comp;
     }
   }
 

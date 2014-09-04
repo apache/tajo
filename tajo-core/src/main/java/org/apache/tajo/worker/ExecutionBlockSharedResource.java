@@ -30,6 +30,8 @@ import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.storage.TupleComparator;
+import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.util.Pair;
 
 import java.util.concurrent.CountDownLatch;
@@ -101,10 +103,10 @@ public class ExecutionBlockSharedResource {
   }
 
   public EvalNode compileEval(Schema schema, EvalNode eval) {
-    return compilationContext.getCompiler().compile(schema, eval);
+    return compilationContext.getEvalCompiler().compile(schema, eval);
   }
 
-  public EvalNode getPreCompiledEval(Schema schema, EvalNode eval) {
+  public EvalNode getCompiledEval(Schema schema, EvalNode eval) {
     if (codeGenEnabled) {
 
       Pair<Schema, EvalNode> key = new Pair<Schema, EvalNode>(schema, eval);
@@ -112,7 +114,7 @@ public class ExecutionBlockSharedResource {
         return compilationContext.getPrecompiedEvals().get(key);
       } else {
         try {
-          LOG.warn(eval.toString() + " does not exists. Immediately compile it: " + eval);
+          LOG.warn(eval.toString() + " does not exist. Compiling it immediately.");
           return compileEval(schema, eval);
         } catch (Throwable t) {
           LOG.warn(t);
@@ -120,7 +122,30 @@ public class ExecutionBlockSharedResource {
         }
       }
     } else {
-      throw new IllegalStateException("CodeGen is disabled");
+      throw new IllegalStateException("CODEGEN is disabled");
+    }
+  }
+
+  public TupleComparator compileComparator(Schema schema, TupleComparatorImpl comp) {
+    return compilationContext.getComparatorCompiler().compile(comp, false);
+  }
+
+  public TupleComparator getCompiledComparator(Schema schema, TupleComparatorImpl comp) {
+    if (codeGenEnabled) {
+      Pair<Schema, TupleComparatorImpl> key = new Pair<Schema, TupleComparatorImpl>(schema, comp);
+      if (compilationContext.getPrecompiedComparators().containsKey(key)) {
+        return compilationContext.getPrecompiedComparators().get(key);
+      } else {
+        try {
+          LOG.warn(comp + " does not exist. Compiling it immediately");
+          return compileComparator(schema, comp);
+        } catch (Throwable t) {
+          LOG.warn(t);
+          return comp;
+        }
+      }
+    } else {
+      throw new IllegalStateException("CODEGEN is disabled");
     }
   }
 
