@@ -28,7 +28,7 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.storage.offheap.*;
+import org.apache.tajo.tuple.offheap.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -36,7 +36,7 @@ import org.junit.Test;
 import java.util.List;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
-import static org.apache.tajo.storage.offheap.TestOffHeapRowBlock.schema;
+import static org.apache.tajo.tuple.offheap.TestOffHeapRowBlock.schema;
 import static org.junit.Assert.assertTrue;
 
 public class TestTupleComparerCompiler {
@@ -310,7 +310,7 @@ public class TestTupleComparerCompiler {
   }
 
   private void fillTextColumnToRowBlock(OffHeapRowBlock rowBlock, String text) {
-    TupleBuilder writer = rowBlock.getWriter();
+    RowWriter writer = rowBlock.getWriter();
     writer.startRow();
     writer.skipField(); // 0
     writer.skipField(); // 1
@@ -339,7 +339,7 @@ public class TestTupleComparerCompiler {
 
     OffHeapRowBlockReader reader = new OffHeapRowBlockReader(rowBlock);
 
-    reader.resetRowCursor();
+    reader.reset();
     ZeroCopyTuple zcTuple = new ZeroCopyTuple();
     while(reader.next(zcTuple)) {
       tuples.add(zcTuple);

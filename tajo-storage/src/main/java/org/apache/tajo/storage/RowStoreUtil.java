@@ -26,7 +26,9 @@ import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.IntervalDatum;
+import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.tuple.offheap.RowWriter;
 import org.apache.tajo.util.SizeOf;
 import org.apache.tajo.util.UnsafeUtil;
 import org.apache.tajo.storage.exception.UnknownDataTypeException;
@@ -336,7 +338,6 @@ public class RowStoreUtil {
       buffer.clear();
       rowOffset = 0;
 
-      int rowStartPos = 0;
       int curFieldIdx = 0;
       int [] fieldOffsets = new int[types.length];
       rowOffset += SizeOf.SIZE_OF_INT * (types.length + 1); // record size + offset list
@@ -421,7 +422,7 @@ public class RowStoreUtil {
         }
       }
 
-      long offset = address + rowStartPos;
+      long offset = address;
       UNSAFE.putInt(offset, rowOffset);
       offset += SizeOf.SIZE_OF_INT;
 
@@ -433,5 +434,52 @@ public class RowStoreUtil {
       buffer.position(0).limit(rowOffset);
       return buffer;
     }
+  }
+
+  public static void convert(Tuple tuple, RowWriter writer) {
+    writer.startRow();
+
+    for (int i = 0; i < writer.dataTypes().length; i++) {
+      switch (writer.dataTypes()[i].getType()) {
+      case BOOLEAN:
+        writer.putBool(tuple.getBool(i));
+        break;
+      case INT1:
+      case INT2:
+        writer.putInt2(tuple.getInt2(i));
+        break;
+      case INT4:
+      case DATE:
+      case INET4:
+        writer.putInt4(tuple.getInt4(i));
+        break;
+      case INT8:
+      case TIMESTAMP:
+      case TIME:
+        writer.putInt8(tuple.getInt8(i));
+        break;
+      case FLOAT4:
+        writer.putFloat4(tuple.getFloat4(i));
+        break;
+      case FLOAT8:
+        writer.putFloat8(tuple.getFloat8(i));
+        break;
+      case TEXT:
+        writer.putText(tuple.getBytes(i));
+        break;
+      case INTERVAL:
+        writer.putInterval((IntervalDatum) tuple.getInterval(i));
+        break;
+      case PROTOBUF:
+        writer.putProtoDatum((ProtobufDatum) tuple.getProtobufDatum(i));
+        break;
+      case NULL_TYPE:
+        writer.skipField();
+        break;
+      default:
+        throw new UnsupportedException("Unknown data type: " + writer.dataTypes()[i]);
+      }
+    }
+    writer.endRow();
   }
 }

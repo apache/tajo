@@ -16,10 +16,9 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.offheap;
+package org.apache.tajo.tuple.offheap;
 
 import com.google.common.collect.Lists;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.storage.Tuple;
 
 import java.util.Arrays;

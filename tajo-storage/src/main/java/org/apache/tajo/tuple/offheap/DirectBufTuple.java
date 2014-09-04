@@ -1,4 +1,4 @@
-/***
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,11 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.tuple;
+package org.apache.tajo.tuple.offheap;
 
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.tuple.offheap.RowWriter;
+import org.apache.tajo.util.Deallocatable;
+import org.apache.tajo.util.UnsafeUtil;
 
-public interface TupleBuilder extends RowWriter {
-  public Tuple build();
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
+import static org.apache.tajo.common.TajoDataTypes.DataType;
+
+public class DirectBufTuple extends UnSafeTuple implements Deallocatable {
+  private ByteBuffer bb;
+
+  public DirectBufTuple(int length, DataType[] types) {
+    bb = ByteBuffer.allocateDirect(length).order(ByteOrder.nativeOrder());
+    set(bb, 0, length, types);
+  }
+
+  @Override
+  public void free() {
+    UnsafeUtil.free(bb);
+  }
 }

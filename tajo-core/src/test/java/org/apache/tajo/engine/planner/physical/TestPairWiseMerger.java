@@ -28,13 +28,13 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparatorImpl;
-import org.apache.tajo.storage.offheap.TestOffHeapRowBlock;
+import org.apache.tajo.tuple.offheap.TestOffHeapRowBlock;
 import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
 import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.apache.tajo.storage.offheap.TestOffHeapRowBlock.schema;
+import static org.apache.tajo.tuple.offheap.TestOffHeapRowBlock.schema;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

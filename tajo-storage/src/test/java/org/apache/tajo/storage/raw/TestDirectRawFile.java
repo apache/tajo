@@ -28,10 +28,10 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.offheap.OffHeapRowBlock;
-import org.apache.tajo.storage.offheap.OffHeapRowBlockReader;
-import org.apache.tajo.storage.offheap.TestOffHeapRowBlock;
-import org.apache.tajo.storage.offheap.ZeroCopyTuple;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlockReader;
+import org.apache.tajo.tuple.offheap.TestOffHeapRowBlock;
+import org.apache.tajo.tuple.offheap.ZeroCopyTuple;
 import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
 import org.apache.tajo.storage.rawfile.DirectRawFileWriter;
 import org.apache.tajo.unit.StorageUnit;
@@ -41,7 +41,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import static org.apache.tajo.storage.offheap.TestOffHeapRowBlock.*;
+import static org.apache.tajo.tuple.offheap.TestOffHeapRowBlock.*;
 import static org.junit.Assert.*;
 
 public class TestDirectRawFile {
@@ -95,7 +95,7 @@ public class TestDirectRawFile {
     int j = 0;
 
     while(reader.next(readBlock)) {
-      blockReader.resetRowCursor();
+      blockReader.reset();
       while (blockReader.next(tuple)) {
         TestOffHeapRowBlock.validateTupleResult(j, tuple);
         j++;
@@ -219,7 +219,7 @@ public class TestDirectRawFile {
     DirectRawFileWriter writer = new DirectRawFileWriter(conf, schema, meta, outputFile);
     writer.init();
 
-    blockReader.resetRowCursor();
+    blockReader.reset();
     int i = 0;
     ZeroCopyTuple tuple = new ZeroCopyTuple();
     while(blockReader.next(tuple)) {
@@ -243,7 +243,7 @@ public class TestDirectRawFile {
     tuple = new ZeroCopyTuple();
     int j = 0;
     while(reader.next(readBlock)) {
-      blockReader2.resetRowCursor();
+      blockReader2.reset();
       while (blockReader2.next(tuple)) {
         TestOffHeapRowBlock.validateTupleResult(j, tuple);
         j++;
@@ -270,7 +270,7 @@ public class TestDirectRawFile {
 
     long writeStart = System.currentTimeMillis();
     for (int i = 0; i < rowNum; i++) {
-      fillRowBlockWithNull(i, rowBlock);
+      fillRowBlockWithNull(i, rowBlock.getWriter());
     }
     long writeEnd = System.currentTimeMillis();
     LOG.info("writing and nullity validating take " + (writeEnd - writeStart) +" msec");
@@ -301,7 +301,7 @@ public class TestDirectRawFile {
     int j = 0;
 
     do {
-      blockReader.resetRowCursor();
+      blockReader.reset();
       while (blockReader.next(tuple)) {
         validateNullity(j, tuple);
         j++;

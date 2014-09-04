@@ -37,9 +37,7 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.storage.offheap.OffHeapRowBlock;
 import org.apache.tajo.storage.fragment.FileFragment;
 
 import java.io.Closeable;

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.offheap;
+package org.apache.tajo.tuple.offheap;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.logging.Log;
@@ -46,7 +46,7 @@ public class OffHeapRowBlock extends OffHeapMemory implements Deallocatable {
   private int rowNum;
   protected int position = 0;
 
-  private TupleBuilder builder;
+  private OffHeapRowBlockWriter builder;
 
   private OffHeapRowBlock(ByteBuffer buffer, Schema schema, ResizableLimitSpec limitSpec) {
     super(buffer, limitSpec);
@@ -61,7 +61,7 @@ public class OffHeapRowBlock extends OffHeapMemory implements Deallocatable {
   private void initialize(Schema schema) {
     dataTypes = SchemaUtil.toDataTypes(schema);
 
-    this.builder = new TupleBuilder(this);
+    this.builder = new OffHeapRowBlockWriter(this);
   }
 
   @VisibleForTesting
@@ -109,9 +109,6 @@ public class OffHeapRowBlock extends OffHeapMemory implements Deallocatable {
       if (!limitSpec.canIncrease(memorySize)) {
         throw new RuntimeException("Cannot increase RowBlock anymore.");
       }
-
-      // compute the relative position of current row start offset
-      long relativeRowStartPos = builder.rowAddress() - this.address;
 
       int newBlockSize = limitSpec.increasedSize(memorySize);
       resize(newBlockSize);
@@ -169,7 +166,11 @@ public class OffHeapRowBlock extends OffHeapMemory implements Deallocatable {
     }
   }
 
-  public TupleBuilder getWriter() {
+  public RowWriter getWriter() {
     return builder;
+  }
+
+  public OffHeapRowBlockReader getReader() {
+    return new OffHeapRowBlockReader(this);
   }
 }

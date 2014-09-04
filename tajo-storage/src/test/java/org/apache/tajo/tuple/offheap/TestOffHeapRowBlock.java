@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.offheap;
+package org.apache.tajo.tuple.offheap;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
@@ -26,6 +26,7 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.storage.VTuple;
@@ -84,9 +85,9 @@ public class TestOffHeapRowBlock {
     ZeroCopyTuple tuple = new ZeroCopyTuple();
     long writeStart = System.currentTimeMillis();
     for (int i = 0; i < rowNum; i++) {
-      fillRowBlock(i, rowBlock);
+      fillRow(i, rowBlock.getWriter());
 
-      reader.resetRowCursor();
+      reader.reset();
       int j = 0;
       while(reader.next(tuple)) {
         validateTupleResult(j, tuple);
@@ -100,7 +101,7 @@ public class TestOffHeapRowBlock {
     long readStart = System.currentTimeMillis();
     tuple = new ZeroCopyTuple();
     int j = 0;
-    reader.resetRowCursor();
+    reader.reset();
     while(reader.next(tuple)) {
       validateTupleResult(j, tuple);
       j++;
@@ -124,9 +125,9 @@ public class TestOffHeapRowBlock {
     ZeroCopyTuple tuple = new ZeroCopyTuple();
     long writeStart = System.currentTimeMillis();
     for (int i = 0; i < rowNum; i++) {
-      fillRowBlockWithNull(i, rowBlock);
+      fillRowBlockWithNull(i, rowBlock.getWriter());
 
-      reader.resetRowCursor();
+      reader.reset();
       int j = 0;
       while(reader.next(tuple)) {
         validateNullity(j, tuple);
@@ -140,7 +141,7 @@ public class TestOffHeapRowBlock {
     long readStart = System.currentTimeMillis();
     tuple = new ZeroCopyTuple();
     int j = 0;
-    reader.resetRowCursor();
+    reader.reset();
     while(reader.next(tuple)) {
       validateNullity(j, tuple);
 
@@ -175,7 +176,7 @@ public class TestOffHeapRowBlock {
     long readStart = System.currentTimeMillis();
     ZeroCopyTuple tuple = new ZeroCopyTuple();
     int j = 0;
-    reader.resetRowCursor();
+    reader.reset();
     while(reader.next(tuple)) {
       j++;
     }
@@ -198,7 +199,7 @@ public class TestOffHeapRowBlock {
 
     long readStart = System.currentTimeMillis();
     ZeroCopyTuple tuple = new ZeroCopyTuple();
-    reader.resetRowCursor();
+    reader.reset();
     while(reader.next(tuple)) {
       unSafeTuples.add(tuple);
       tuple = new ZeroCopyTuple();
@@ -263,7 +264,7 @@ public class TestOffHeapRowBlock {
     for (int i = 0; i < rowNum; i++) {
       fillVTuple(i, tuple);
 
-      rowBlock.getWriter().addTuple(tuple);
+      RowStoreUtil.convert(tuple, rowBlock.getWriter());
     }
     long writeEnd = System.currentTimeMillis();
     LOG.info("Writing takes " + (writeEnd - writeStart) + " msec");
@@ -298,7 +299,7 @@ public class TestOffHeapRowBlock {
     ZeroCopyTuple tuple = new ZeroCopyTuple();
     ZeroCopyTuple copyTuple = new ZeroCopyTuple();
     int j = 0;
-    reader.resetRowCursor();
+    reader.reset();
     while(reader.next(tuple)) {
       ByteBuffer copy = tuple.nioBuffer();
       copyTuple.set(copy, SchemaUtil.toDataTypes(schema));
@@ -322,7 +323,24 @@ public class TestOffHeapRowBlock {
 
     long writeStart = System.currentTimeMillis();
     for (int i = 0; i < rowNum; i++) {
-      fillRowBlock(i, rowBlock);
+      fillRow(i, rowBlock.getWriter());
+    }
+    long writeEnd = System.currentTimeMillis();
+    LOG.info("writing takes " + (writeEnd - writeStart) + " msec");
+
+    return rowBlock;
+  }
+
+  public static OffHeapRowBlock createRowBlockWithNull(int rowNum) {
+    long allocateStart = System.currentTimeMillis();
+    OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, StorageUnit.MB * 8);
+    long allocatedEnd = System.currentTimeMillis();
+    LOG.info(FileUtil.humanReadableByteCount(rowBlock.size(), true) + " bytes allocated "
+        + (allocatedEnd - allocateStart) + " msec");
+
+    long writeStart = System.currentTimeMillis();
+    for (int i = 0; i < rowNum; i++) {
+      fillRowBlockWithNull(i, rowBlock.getWriter());
     }
     long writeEnd = System.currentTimeMillis();
     LOG.info("writing and validating take " + (writeEnd - writeStart) + " msec");
@@ -330,8 +348,7 @@ public class TestOffHeapRowBlock {
     return rowBlock;
   }
 
-  public static void fillRowBlock(int i, OffHeapRowBlock rowBlock) {
-    TupleBuilder builder = rowBlock.getWriter();
+  public static void fillRow(int i, RowWriter builder) {
     builder.startRow();
     builder.putBool(i % 1 == 0 ? true : false); // 0
     builder.putInt2((short) 1);                 // 1
@@ -349,8 +366,7 @@ public class TestOffHeapRowBlock {
     builder.endRow();
   }
 
-  public static void fillRowBlockWithNull(int i, OffHeapRowBlock rowBlock) {
-    TupleBuilder writer = rowBlock.getWriter();
+  public static void fillRowBlockWithNull(int i, RowWriter writer) {
     writer.startRow();
 
     if (i == 0) {
@@ -454,7 +470,7 @@ public class TestOffHeapRowBlock {
     ZeroCopyTuple tuple = new ZeroCopyTuple();
     int j = 0;
     OffHeapRowBlockReader reader = new OffHeapRowBlockReader(rowBlock);
-    reader.resetRowCursor();
+    reader.reset();
     while(reader.next(tuple)) {
       validateTupleResult(j, tuple);
       j++;

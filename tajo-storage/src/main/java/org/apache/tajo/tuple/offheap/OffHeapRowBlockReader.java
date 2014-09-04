@@ -16,12 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.offheap;
+package org.apache.tajo.tuple.offheap;
 
+import org.apache.tajo.tuple.RowBlockReader;
 import org.apache.tajo.util.UnsafeUtil;
 import sun.misc.Unsafe;
 
-public class OffHeapRowBlockReader {
+public class OffHeapRowBlockReader implements RowBlockReader<ZeroCopyTuple> {
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
   OffHeapRowBlock rowBlock;
 
@@ -37,11 +38,7 @@ public class OffHeapRowBlockReader {
     return rowBlock.memorySize - curPosForRead;
   }
 
-  /**
-   * Return for each tuple
-   *
-   * @return True if tuple block is filled with tuples. Otherwise, It will return false.
-   */
+  @Override
   public boolean next(ZeroCopyTuple tuple) {
     if (curRowIdxForRead < rowBlock.rows()) {
 
@@ -58,12 +55,9 @@ public class OffHeapRowBlockReader {
     }
   }
 
-  public void resetRowCursor() {
+  @Override
+  public void reset() {
     curPosForRead = 0;
     curRowIdxForRead = 0;
-  }
-
-  public void free() {
-    rowBlock = null;
   }
 }

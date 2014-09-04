@@ -16,9 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.offheap;
+package org.apache.tajo.tuple.offheap;
 
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.IntervalDatum;
+import org.apache.tajo.datum.ProtobufDatum;
 
 /**
  * The call sequence should be as follows:
@@ -30,6 +32,8 @@ import org.apache.tajo.datum.IntervalDatum;
  * The total number of skipField and putXXX invocations must be equivalent to the number of fields.
  */
 public interface RowWriter {
+
+  public TajoDataTypes.DataType [] dataTypes();
 
   public boolean startRow();
 
@@ -59,7 +63,11 @@ public interface RowWriter {
 
   public void putTime(long val);
 
+  public void putDate(int val);
+
   public void putInterval(IntervalDatum val);
 
   public void putInet4(int val);
+
+  public void putProtoDatum(ProtobufDatum datum);
 }

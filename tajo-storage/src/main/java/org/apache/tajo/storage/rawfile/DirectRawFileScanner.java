@@ -29,10 +29,10 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.SeekableScanner;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.offheap.OffHeapRowBlock;
-import org.apache.tajo.storage.offheap.OffHeapRowBlockReader;
 import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.storage.offheap.ZeroCopyTuple;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlockReader;
+import org.apache.tajo.tuple.offheap.ZeroCopyTuple;
 import org.apache.tajo.unit.StorageUnit;
 
 import java.io.File;
@@ -129,7 +129,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
         if (!next(tupleBuffer)) {
           return null;
         }
-        reader.resetRowCursor();
+        reader.reset();
       }
 
       fetchNeeded = !reader.next(unSafeTuple);
@@ -147,7 +147,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
     fetchNeeded = true;
     channel.position(0);
     eof = false;
-    reader.resetRowCursor();
+    reader.reset();
   }
 
   @Override

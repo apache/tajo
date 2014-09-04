@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.offheap;
+package org.apache.tajo.tuple.offheap;
 
 import org.apache.tajo.unit.StorageUnit;
 import org.junit.Test;

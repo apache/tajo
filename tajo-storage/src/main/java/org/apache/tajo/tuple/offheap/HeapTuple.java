@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.offheap;
+package org.apache.tajo.tuple.offheap;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;

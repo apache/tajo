@@ -19,7 +19,6 @@
 package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.LocalDirAllocator;
@@ -33,11 +32,8 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.PhysicalPlanningException;
 import org.apache.tajo.engine.planner.logical.SortNode;
-import org.apache.tajo.storage.AbstractStorageManager;
-import org.apache.tajo.storage.RawFile;
-import org.apache.tajo.storage.Scanner;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.offheap.*;
+import org.apache.tajo.storage.*;
+import org.apache.tajo.tuple.offheap.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
@@ -48,8 +44,6 @@ import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.*;
 
@@ -201,7 +195,7 @@ public class ExternalSortExec extends SortExec {
     int chunkId = 0;
     long runStartTime = System.currentTimeMillis();
     while ((tuple = child.next()) != null) { // partition sort start
-      tupleBlock.getWriter().addTuple(tuple);
+      RowStoreUtil.convert(tuple, tupleBlock.getWriter());
 
       if (tupleBlock.usedMem() > sortBufferBytesNum) {
         long runEndTime = System.currentTimeMillis();

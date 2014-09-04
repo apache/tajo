@@ -1,4 +1,4 @@
-/***
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,30 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.offheap;
+package org.apache.tajo.tuple.offheap;
 
-import org.apache.tajo.catalog.SchemaUtil;
-import org.junit.Test;
+/**
+ * Fixed size limit specification
+ */
+public class FixedSizeLimitSpec extends ResizableLimitSpec {
+  public FixedSizeLimitSpec(long size) {
+    super(size, size);
+  }
 
-public class TestHeapTuple {
-
-  @Test
-  public void testHeapTuple() {
-    OffHeapRowBlock rowBlock = TestOffHeapRowBlock.createRowBlock(1024);
-
-    OffHeapRowBlockReader reader = new OffHeapRowBlockReader(rowBlock);
-
-    ZeroCopyTuple zcTuple = new ZeroCopyTuple();
-    int i = 0;
-    while (reader.next(zcTuple)) {
-      byte [] bytes = new byte[zcTuple.nioBuffer().limit()];
-      zcTuple.nioBuffer().get(bytes);
-
-      HeapTuple heapTuple = new HeapTuple(bytes, SchemaUtil.toDataTypes(TestOffHeapRowBlock.schema));
-      TestOffHeapRowBlock.validateTupleResult(i, heapTuple);
-      i++;
-    }
-
-    rowBlock.free();
+  public FixedSizeLimitSpec(long size, float allowedOverflowRatio) {
+    super(size, size, allowedOverflowRatio);
   }
 }

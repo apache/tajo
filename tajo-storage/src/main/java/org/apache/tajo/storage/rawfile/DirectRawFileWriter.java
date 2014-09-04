@@ -31,8 +31,8 @@ import org.apache.tajo.storage.FileAppender;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.TableStatistics;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.offheap.OffHeapRowBlock;
-import org.apache.tajo.storage.offheap.UnSafeTuple;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
+import org.apache.tajo.tuple.offheap.UnSafeTuple;
 import org.apache.tajo.unit.StorageUnit;
 
 import java.io.File;

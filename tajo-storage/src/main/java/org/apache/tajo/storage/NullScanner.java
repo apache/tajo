@@ -19,8 +19,6 @@ package org.apache.tajo.storage; /**
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.exception.UnimplementedException;
-import org.apache.tajo.storage.offheap.OffHeapRowBlock;
 import org.apache.tajo.storage.fragment.FileFragment;
 
 import java.io.IOException;

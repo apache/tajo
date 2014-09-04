@@ -30,8 +30,8 @@ import org.apache.tajo.org.objectweb.asm.Opcodes;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.TupleComparatorImpl;
-import org.apache.tajo.storage.offheap.UnSafeTuple;
-import org.apache.tajo.storage.offheap.UnSafeTupleBytesComparator;
+import org.apache.tajo.tuple.offheap.UnSafeTuple;
+import org.apache.tajo.tuple.offheap.UnSafeTupleBytesComparator;
 import org.apache.tajo.util.UnsafeComparer;
 
 import java.lang.reflect.Constructor;

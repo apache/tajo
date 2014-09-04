@@ -23,11 +23,9 @@ import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.storage.offheap.OffHeapRowBlock;
 
 import java.io.IOException;
 import java.util.Collection;

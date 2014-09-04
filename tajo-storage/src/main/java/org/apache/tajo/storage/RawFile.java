@@ -31,8 +31,6 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatumFactory;
-import org.apache.tajo.exception.UnimplementedException;
-import org.apache.tajo.storage.offheap.OffHeapRowBlock;
 import org.apache.tajo.util.UnsafeUtil;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.BitArray;
