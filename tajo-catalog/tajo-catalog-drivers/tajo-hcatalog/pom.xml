@@ -467,6 +467,7 @@
           <groupId>org.apache.hive.hcatalog</groupId>
           <artifactId>hive-hcatalog-core</artifactId>
           <version>${hive.version}</version>
+          <scope>provided</scope>
           <exclusions>
             <exclusion>
               <groupId>org.apache.hive</groupId>
@@ -640,6 +641,7 @@
           <groupId>org.apache.hive.hcatalog</groupId>
           <artifactId>hive-hcatalog-core</artifactId>
           <version>${hive.version}</version>
+          <scope>provided</scope>
           <exclusions>
             <exclusion>
               <groupId>org.apache.hive</groupId>
