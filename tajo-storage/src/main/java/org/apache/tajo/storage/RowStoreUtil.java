@@ -328,6 +328,10 @@ public class RowStoreUtil {
     writer.startRow();
 
     for (int i = 0; i < writer.dataTypes().length; i++) {
+      if (tuple.isNull(i)) {
+        writer.skipField();
+        break;
+      }
       switch (writer.dataTypes()[i].getType()) {
       case BOOLEAN:
         writer.putBool(tuple.getBool(i));
