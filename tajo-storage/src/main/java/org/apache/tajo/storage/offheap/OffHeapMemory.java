@@ -84,7 +84,7 @@ public class OffHeapMemory implements Deallocatable {
     this.address = newAddress;
   }
 
-  public ByteBuffer nioBuffer() {
+  public java.nio.Buffer nioBuffer() {
     return (ByteBuffer) buffer.position(0).limit(memorySize);
   }
 

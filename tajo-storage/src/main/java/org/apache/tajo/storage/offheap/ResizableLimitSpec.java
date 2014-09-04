@@ -76,7 +76,7 @@ public class ResizableLimitSpec {
       if (limitBytes > Integer.MAX_VALUE) {
         this.limitBytes = Integer.MAX_VALUE;
       } else {
-        this.limitBytes = Integer.MAX_VALUE;
+        this.limitBytes = limitBytes;
       }
     }
 

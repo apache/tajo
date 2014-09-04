@@ -331,7 +331,7 @@ public class TestOffHeapRowBlock {
   }
 
   public static void fillRowBlock(int i, OffHeapRowBlock rowBlock) {
-    OffHeapRowBlock.TupleBuilder builder = rowBlock.getWriter();
+    TupleBuilder builder = rowBlock.getWriter();
     builder.startRow();
     builder.putBool(i % 1 == 0 ? true : false); // 0
     builder.putInt2((short) 1);                 // 1
@@ -350,7 +350,7 @@ public class TestOffHeapRowBlock {
   }
 
   public static void fillRowBlockWithNull(int i, OffHeapRowBlock rowBlock) {
-    OffHeapRowBlock.TupleBuilder writer = rowBlock.getWriter();
+    TupleBuilder writer = rowBlock.getWriter();
     writer.startRow();
 
     if (i == 0) {
