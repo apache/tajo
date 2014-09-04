@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.LocalDirAllocator;
@@ -96,7 +97,7 @@ public class ExternalSortExec extends SortExec {
   /** the final result */
   private Scanner result;
   /** total bytes of input data */
-  private long sortAndStoredBytes;
+  private long bytesOfLatestChunk;
 
   private ExternalSortExec(final TaskAttemptContext context, final AbstractStorageManager sm, final SortNode plan)
       throws PhysicalPlanningException {
@@ -206,7 +207,6 @@ public class ExternalSortExec extends SortExec {
         memoryResident = false;
 
         chunkPaths.add(sortAndStoreChunk(chunkId, tupleBlock));
-        tupleBlock.clear();
         chunkId++;
 
         // When the volume of sorting data once exceed the size of sort buffer,
@@ -221,27 +221,19 @@ public class ExternalSortExec extends SortExec {
         // That is, the progress was divided into two parts.
         // So, it multiply the progress of the children operator and 0.5f.
         progress = child.getProgress() * 0.5f;
+
+        tupleBlock.clear();
       }
     }
 
     if (tupleBlock.rows() >= 0) { // if there are at least one or more input tuples
-      if (!memoryResident) { // check if data exceeds a sort buffer. If so, it store the remain data into a chunk.
-        if (tupleBlock.rows() > 0) {
-          long start = System.currentTimeMillis();
-          int rowNum = tupleBlock.rows();
-          chunkPaths.add(sortAndStoreChunk(chunkId, tupleBlock));
-          long end = System.currentTimeMillis();
-          info(LOG, "Last Chunk #" + chunkId + " " + rowNum + " rows written (" + (end - start) + " msec)");
-        }
-      } else { // this case means that all data does not exceed a sort buffer
-        sortedTuples = OffHeapRowBlockUtils.sort(tupleBlock, getComparator());
-      }
+      sortedTuples = OffHeapRowBlockUtils.sort(tupleBlock, getComparator());
     }
 
     // get total loaded (or stored) bytes and total row numbers
     TableStats childTableStats = child.getInputStats();
     if (childTableStats != null) {
-      sortAndStoredBytes = childTableStats.getNumBytes();
+      bytesOfLatestChunk = childTableStats.getNumBytes();
     }
     return chunkPaths;
   }
@@ -270,10 +262,10 @@ public class ExternalSortExec extends SortExec {
         long startTimeOfChunkSplit = System.currentTimeMillis();
         List<Path> chunks = sortAndStoreAllChunks();
         long endTimeOfChunkSplit = System.currentTimeMillis();
-        info(LOG, "Chunks creation time: " + (endTimeOfChunkSplit - startTimeOfChunkSplit) + " msec");
+        info(LOG, "Sort of all chunks is completed (" + (endTimeOfChunkSplit - startTimeOfChunkSplit) + " msec).");
 
         if (memoryResident) { // if all sorted data reside in a main-memory table.
-          this.result = new MemTableScanner(sortedTuples, sortAndStoredBytes);
+          this.result = new MemTableScanner(sortedTuples, bytesOfLatestChunk);
         } else { // if input data exceeds main-memory at least once
 
           try {
@@ -477,12 +469,21 @@ public class ExternalSortExec extends SortExec {
   }
 
   private Scanner createKWayMerger(List<Path> inputs, final int startChunkId, final int num) throws IOException {
-    final Scanner [] sources = new Scanner[num];
-    for (int i = 0; i < num; i++) {
-      sources[i] = getFileScanner(inputs.get(startChunkId + i));
+    boolean tupleInMemory = tupleBlock.rows() > 0;
+
+    List<Scanner> scannerList = Lists.newArrayList();
+
+    // if tuples are still the in-memory block, the in-memory tuples will be included in merge phase.
+    if (tupleInMemory) {
+      scannerList.add(new MemTableScanner(sortedTuples, bytesOfLatestChunk));
     }
 
-    return createKWayMergerInternal(sources, 0, num);
+    for (int i = 0; i < num; i++) {
+      scannerList.add(getFileScanner(inputs.get(startChunkId + i)));
+    }
+    Scanner [] sources = scannerList.toArray(new Scanner[scannerList.size()]);
+
+    return createKWayMergerInternal(sources, 0, sources.length);
   }
 
   private Scanner createKWayMergerInternal(final Scanner [] sources, final int startIdx, final int num)

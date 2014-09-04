@@ -73,7 +73,7 @@ public class TestExternalSortExec {
   private AbstractStorageManager sm;
   private Path testDir;
 
-  private final int numTuple = 1000000;
+  private final int numTuple = 2000000;
   private TableDesc employee;
 
   @Before
@@ -124,7 +124,7 @@ public class TestExternalSortExec {
   public final void testNext() throws IOException, PlanningException, InterruptedException {
     QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
     queryContext.setBool(SessionVars.CODEGEN, true);
-    queryContext.setLong(SessionVars.EXTSORT_BUFFER_SIZE, 400);
+    queryContext.setLong(SessionVars.EXTSORT_BUFFER_SIZE, 100);
 
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalPlan plan = planner.createPlan(queryContext, expr);
