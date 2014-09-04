@@ -64,6 +64,7 @@ if [ $# = 0 ]; then
   echo "where COMMAND is one of:"
   echo "  master               run the Master Server"
   echo "  worker               run the Worker Server"
+  echo "  pullserver           run the Pull Server"
   echo "  catalog              run the Catalog server"
   echo "  catutil              catalog utility"
   echo "  cli                  run the tajo cli"
@@ -120,6 +121,11 @@ if [ "$TAJO_WORKER_HEAPSIZE" != "" ]; then
   #echo "run with heapsize $TAJO_WORKER_HEAPSIZE"
   JAVA_WORKER_HEAP_MAX="-Xmx""$TAJO_WORKER_HEAPSIZE""m"
   #echo $JAVA_WORKER_HEAP_MAX
+fi
+if [ "$TAJO_PULLSERVER_HEAPSIZE" != "" ]; then
+  #echo "run with heapsize $TAJO_PULLSERVER_HEAPSIZE"
+  JAVA_PULLSERVER_HEAP_MAX="-Xmx""$TAJO_PULLSERVER_HEAPSIZE""m"
+  #echo $JAVA_PULLSERVER_HEAP_MAX
 fi
 if [ "$TAJO_QUERYMASTER_HEAPSIZE" != "" ]; then
   #echo "run with heapsize $TAJO_QUERYMASTER_HEAPSIZE"
@@ -330,6 +336,9 @@ elif [ "$COMMAND" = "master" ] ; then
 elif [ "$COMMAND" = "worker" ] ; then
   CLASS='org.apache.tajo.worker.TajoWorker'
   TAJO_OPTS="$TAJO_OPTS $JAVA_WORKER_HEAP_MAX $TAJO_WORKER_OPTS"
+elif [ "$COMMAND" = "pullserver" ] ; then
+  CLASS='org.apache.tajo.pullserver.TajoPullServer'
+  TAJO_OPTS="$TAJO_OPTS $JAVA_PULLSERVER_HEAP_MAX $TAJO_PULLSERVER_OPTS"
 elif [ "$COMMAND" = "querymaster" ] ; then
   CLASS='org.apache.tajo.worker.TajoWorker'
   TAJO_OPTS="$TAJO_OPTS $JAVA_QUERYMASTER_HEAP_MAX $TAJO_QUERYMASTER_OPTS"
