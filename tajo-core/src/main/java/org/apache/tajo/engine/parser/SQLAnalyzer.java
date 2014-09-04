@@ -463,7 +463,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       if (specContext.order_specification() != null) {
         if (specContext.order.DESC() != null) {
           specs[i].setDescending();
-          specs[i].setNullFirst();
+          specs[i].setNullFirst(); // null first is default in descending order
         }
       }
 

@@ -540,7 +540,8 @@ public class PlannerUtil {
     return new SortSpec[][]{outerSortSpec, innerSortSpec};
   }
 
-  public static TupleComparatorImpl[] getComparatorsFromJoinQual(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
+  public static TupleComparatorImpl[] getComparatorsFromJoinQual(EvalNode joinQual, Schema leftSchema,
+                                                                 Schema rightSchema) {
     SortSpec[][] sortSpecs = getSortKeysFromJoinQual(joinQual, leftSchema, rightSchema);
     TupleComparatorImpl[] comparators = new TupleComparatorImpl[2];
     comparators[0] = new TupleComparatorImpl(leftSchema, sortSpecs[0]);

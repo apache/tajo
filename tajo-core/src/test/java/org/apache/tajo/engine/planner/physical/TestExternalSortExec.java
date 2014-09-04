@@ -73,7 +73,7 @@ public class TestExternalSortExec {
   private AbstractStorageManager sm;
   private Path testDir;
 
-  private final int numTuple = 2000000;
+  private final int numTuple = 100000;
   private TableDesc employee;
 
   @Before

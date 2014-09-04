@@ -19,8 +19,6 @@
 package org.apache.tajo.storage;
 
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.IntervalDatum;
-import org.apache.tajo.datum.ProtobufDatum;
 
 public interface Tuple extends Cloneable {
   

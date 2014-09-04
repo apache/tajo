@@ -69,7 +69,6 @@ import static org.apache.tajo.ipc.TajoWorkerProtocol.SortEnforce;
 
 public class PhysicalPlannerImpl implements PhysicalPlanner {
   private static final Log LOG = LogFactory.getLog(PhysicalPlannerImpl.class);
-  private static final int UNGENERATED_PID = -1;
 
   protected final TajoConf conf;
   protected final AbstractStorageManager sm;

@@ -330,7 +330,7 @@ public class RowStoreUtil {
     for (int i = 0; i < writer.dataTypes().length; i++) {
       if (tuple.isNull(i)) {
         writer.skipField();
-        break;
+        continue;
       }
       switch (writer.dataTypes()[i].getType()) {
       case BOOLEAN:

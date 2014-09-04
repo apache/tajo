@@ -20,14 +20,6 @@ package org.apache.tajo.tuple.offheap;
 
 import org.apache.tajo.common.TajoDataTypes;
 
-/**
- *
- * Row Record Structure
- *
- * | row length (4 bytes) | field 1 offset | field 2 offset | ... | field N offset| field 1 | field 2| ... | field N |
- *                              4 bytes          4 bytes               4 bytes
- *
- */
 public class OffHeapRowBlockWriter extends OffHeapRowWriter {
   OffHeapRowBlock rowBlock;
 
