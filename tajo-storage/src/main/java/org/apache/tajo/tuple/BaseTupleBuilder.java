@@ -25,6 +25,7 @@ import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.tuple.offheap.*;
 import org.apache.tajo.unit.StorageUnit;
+import org.apache.tajo.util.Deallocatable;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.UnsafeUtil;
 import sun.misc.Unsafe;
@@ -33,7 +34,7 @@ import sun.nio.ch.DirectBuffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-public class BaseTupleBuilder extends OffHeapRowWriter implements TupleBuilder {
+public class BaseTupleBuilder extends OffHeapRowWriter implements TupleBuilder, Deallocatable {
   private static final Log LOG = LogFactory.getLog(BaseTupleBuilder.class);
 
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
@@ -99,5 +100,11 @@ public class BaseTupleBuilder extends OffHeapRowWriter implements TupleBuilder {
     ZeroCopyTuple zcTuple = new ZeroCopyTuple();
     zcTuple.set(buffer, 0, buffer.limit(), dataTypes());
     return zcTuple;
+  }
+
+  public void release() {
+    UnsafeUtil.free(buffer);
+    buffer = null;
+    address = 0;
   }
 }

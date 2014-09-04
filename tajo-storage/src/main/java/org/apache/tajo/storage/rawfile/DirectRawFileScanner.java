@@ -156,7 +156,7 @@ public class DirectRawFileScanner extends FileScanner implements SeekableScanner
       tableStats.setReadBytes(fileSize);
       tableStats.setNumRows(recordCount);
     }
-    tupleBuffer.free();
+    tupleBuffer.release();
     tupleBuffer = null;
     reader = null;
     IOUtils.cleanup(LOG, channel, fis);

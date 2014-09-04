@@ -29,7 +29,7 @@ public class ZeroCopyTuple extends UnSafeTuple {
   }
 
   @Override
-  public void free() {
+  public void release() {
     // nothing to do
   }
 }

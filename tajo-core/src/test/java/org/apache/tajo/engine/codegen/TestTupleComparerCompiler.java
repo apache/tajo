@@ -347,6 +347,6 @@ public class TestTupleComparerCompiler {
     }
 
     assertCompareAll(comps, sortSpecs, tuples.get(0), tuples.get(1), tuples.get(2), tuples.get(3), tuples.get(3));
-    rowBlock.free();
+    rowBlock.release();
   }
 }

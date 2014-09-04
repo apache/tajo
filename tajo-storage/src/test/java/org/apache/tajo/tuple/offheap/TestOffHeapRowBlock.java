@@ -109,7 +109,7 @@ public class TestOffHeapRowBlock {
     long readEnd = System.currentTimeMillis();
     LOG.info("reading takes " + (readEnd - readStart) + " msec");
 
-    rowBlock.free();
+    rowBlock.release();
   }
 
   @Test
@@ -150,7 +150,7 @@ public class TestOffHeapRowBlock {
     long readEnd = System.currentTimeMillis();
     LOG.info("reading takes " + (readEnd - readStart) + " msec");
 
-    rowBlock.free();
+    rowBlock.release();
   }
 
   @Test
@@ -182,7 +182,7 @@ public class TestOffHeapRowBlock {
     }
     long readEnd = System.currentTimeMillis();
     LOG.info("reading takes " + (readEnd - readStart) + " msec");
-    rowBlock.free();
+    rowBlock.release();
 
     assertEquals(rowNum, j);
     assertEquals(rowNum, rowBlock.rows());
@@ -214,7 +214,7 @@ public class TestOffHeapRowBlock {
     Collections.sort(unSafeTuples, comparator);
     long sortEnd = System.currentTimeMillis();
     LOG.info("sorting took " + (sortEnd - sortStart) + " msec");
-    rowBlock.free();
+    rowBlock.release();
   }
 
   @Test
@@ -270,7 +270,7 @@ public class TestOffHeapRowBlock {
     LOG.info("Writing takes " + (writeEnd - writeStart) + " msec");
 
     validateResults(rowBlock);
-    rowBlock.free();
+    rowBlock.release();
   }
 
   @Test
@@ -282,7 +282,7 @@ public class TestOffHeapRowBlock {
     ByteBuffer bb = rowBlock.nioBuffer();
     OffHeapRowBlock restoredRowBlock = new OffHeapRowBlock(schema, bb);
     validateResults(restoredRowBlock);
-    rowBlock.free();
+    rowBlock.release();
   }
 
   @Test
@@ -311,7 +311,7 @@ public class TestOffHeapRowBlock {
     long readEnd = System.currentTimeMillis();
     LOG.info("reading takes " + (readEnd - readStart) + " msec");
 
-    rowBlock.free();
+    rowBlock.release();
   }
 
   public static OffHeapRowBlock createRowBlock(int rowNum) {

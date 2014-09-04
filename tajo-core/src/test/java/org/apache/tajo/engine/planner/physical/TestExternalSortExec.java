@@ -95,7 +95,7 @@ public class TestExternalSortExec {
     long startTime = System.currentTimeMillis();
     Path employeePath = TestDirectRawFile.writeRowBlock(conf, employeeMeta, rowBlock, outFile);
     long endTime = System.currentTimeMillis();
-    rowBlock.free();
+    rowBlock.release();
 
     FileSystem fs = FileSystem.getLocal(conf);
     FileStatus status = fs.getFileStatus(employeePath);

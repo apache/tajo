@@ -19,5 +19,5 @@
 package org.apache.tajo.util;
 
 public interface Deallocatable {
-  void free();
+  void release();
 }

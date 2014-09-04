@@ -31,6 +31,8 @@ import org.apache.tajo.storage.FileAppender;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.TableStatistics;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.tuple.BaseTupleBuilder;
+import org.apache.tajo.tuple.TupleBuilder;
 import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
 import org.apache.tajo.tuple.offheap.UnSafeTuple;
 import org.apache.tajo.unit.StorageUnit;
@@ -50,6 +52,8 @@ public class DirectRawFileWriter extends FileAppender {
   private long pos;
 
   private TableStatistics stats;
+
+  private BaseTupleBuilder builder;
 
   public DirectRawFileWriter(Configuration conf, Schema schema, TableMeta meta, Path path) throws IOException {
     super(conf, schema, meta, path);
@@ -80,6 +84,8 @@ public class DirectRawFileWriter extends FileAppender {
       this.stats = new TableStatistics(this.schema);
     }
 
+    builder = new BaseTupleBuilder(schema);
+
     super.init();
   }
 
@@ -109,9 +115,6 @@ public class DirectRawFileWriter extends FileAppender {
     }
   }
 
-
-  private RowStoreUtil.DirectRowStoreEncoder encoder;
-
   @Override
   public void addTuple(Tuple t) throws IOException {
     if (enabledStats) {
@@ -124,28 +127,20 @@ public class DirectRawFileWriter extends FileAppender {
       buffer = ByteBuffer.allocateDirect(64 * StorageUnit.KB);
     }
 
+    UnSafeTuple unSafeTuple;
 
-
-    if (t instanceof UnSafeTuple) {
-      UnSafeTuple unSafeTuple = (UnSafeTuple) t;
-
-      ByteBuffer bb = unSafeTuple.nioBuffer();
-      ensureSize(bb.limit());
-      buffer.put(bb);
-
-      pos = channel.position() + (buffer.limit() - buffer.remaining());
+    if (!(t instanceof UnSafeTuple)) {
+      RowStoreUtil.convert(t, builder);
+      unSafeTuple = builder.buildToZeroCopyTuple();
     } else {
-
-      if (encoder == null) {
-        encoder = RowStoreUtil.createDirectRawEncoder(schema);
-      }
-
-      ByteBuffer bb = encoder.encode(t);
-      ensureSize(bb.limit());
-      buffer.put(bb);
-
-      pos = channel.position() + (buffer.limit() - buffer.remaining());
+      unSafeTuple = (UnSafeTuple) t;
     }
+
+    ByteBuffer bb = unSafeTuple.nioBuffer();
+    ensureSize(bb.limit());
+    buffer.put(bb);
+
+    pos = channel.position() + (buffer.limit() - buffer.remaining());
 
     if (enabledStats) {
       stats.incrementRow();

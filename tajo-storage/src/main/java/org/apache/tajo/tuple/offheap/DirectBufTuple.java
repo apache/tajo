@@ -35,7 +35,7 @@ public class DirectBufTuple extends UnSafeTuple implements Deallocatable {
   }
 
   @Override
-  public void free() {
+  public void release() {
     UnsafeUtil.free(bb);
   }
 }

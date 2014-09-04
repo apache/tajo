@@ -76,7 +76,7 @@ public class TestDirectRawFile {
     TajoConf conf = new TajoConf();
     TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.DIRECTRAW);
     Path outputFile = writeRowBlock(conf, meta, rowBlock);
-    rowBlock.free();
+    rowBlock.release();
 
 
     FileSystem fs = FileSystem.getLocal(conf);
@@ -105,7 +105,7 @@ public class TestDirectRawFile {
     long readEnd = System.currentTimeMillis();
     LOG.info("reading takes " + (readEnd - readStart) + " msec");
     reader.close();
-    readBlock.free();
+    readBlock.release();
 
     assertEquals(rowNum, j);
   }
@@ -119,7 +119,7 @@ public class TestDirectRawFile {
     TajoConf conf = new TajoConf();
     TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.DIRECTRAW);
     Path outputFile = writeRowBlock(conf, meta, rowBlock);
-    rowBlock.free();
+    rowBlock.release();
 
     DirectRawFileScanner reader = new DirectRawFileScanner(conf, schema, meta, outputFile);
     reader.init();
@@ -149,7 +149,7 @@ public class TestDirectRawFile {
     TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.DIRECTRAW);
     Path outputFile = writeRowBlock(conf, meta, rowBlock);
 
-    rowBlock.free();
+    rowBlock.release();
 
     DirectRawFileScanner reader = new DirectRawFileScanner(conf, schema, meta, outputFile);
     reader.init();
@@ -176,7 +176,7 @@ public class TestDirectRawFile {
     TajoConf conf = new TajoConf();
     TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.DIRECTRAW);
     Path outputFile = writeRowBlock(conf, meta, rowBlock);
-    rowBlock.free();
+    rowBlock.release();
 
     DirectRawFileScanner reader = new DirectRawFileScanner(conf, schema, meta, outputFile);
     reader.init();
@@ -226,7 +226,7 @@ public class TestDirectRawFile {
       writer.addTuple(tuple);
     }
     writer.close();
-    rowBlock.free();
+    rowBlock.release();
 
 
     FileSystem fs = FileSystem.getLocal(conf);
@@ -253,7 +253,7 @@ public class TestDirectRawFile {
     long readEnd = System.currentTimeMillis();
     LOG.info("reading takes " + (readEnd - readStart) + " msec");
     reader.close();
-    readBlock.free();
+    readBlock.release();
 
     assertEquals(rowNum, j);
   }
@@ -283,7 +283,7 @@ public class TestDirectRawFile {
     writer.init();
     writer.writeRowBlock(rowBlock);
     writer.close();
-    rowBlock.free();
+    rowBlock.release();
 
 
     FileSystem fs = FileSystem.getLocal(conf);
@@ -311,7 +311,7 @@ public class TestDirectRawFile {
     long readEnd = System.currentTimeMillis();
     LOG.info("reading takes " + (readEnd - readStart) + " msec");
     reader.close();
-    readBlock.free();
+    readBlock.release();
 
     assertEquals(rowNum, j);
   }

@@ -35,7 +35,7 @@ import static org.apache.tajo.common.TajoDataTypes.DataType;
 
 public class HeapTuple implements Tuple {
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
-  private static final long BASE_OFFSET = UNSAFE.arrayBaseOffset(byte [].class);
+  private static final long BASE_OFFSET = Unsafe.ARRAY_BYTE_BASE_OFFSET;
 
   private final byte [] data;
   private final DataType [] types;

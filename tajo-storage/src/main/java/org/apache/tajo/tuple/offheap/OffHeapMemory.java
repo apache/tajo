@@ -89,7 +89,7 @@ public class OffHeapMemory implements Deallocatable {
   }
 
   @Override
-  public void free() {
+  public void release() {
     UnsafeUtil.free(this.buffer);
     this.buffer = null;
     this.address = 0;

@@ -18,7 +18,6 @@
 package org.apache.tajo.util;
 
 import com.google.common.base.Preconditions;
-import com.google.common.primitives.Longs;
 import sun.misc.Cleaner;
 import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
@@ -59,7 +58,7 @@ public class UnsafeUtil {
   }
 
   public static void free(Deallocatable obj) {
-    obj.free();
+    obj.release();
   }
 
   public static void free(ByteBuffer bb) {

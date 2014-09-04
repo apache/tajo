@@ -304,5 +304,5 @@ public abstract class UnSafeTuple implements Tuple {
     return VTuple.toDisplayString(getValues());
   }
 
-  public abstract void free();
+  public abstract void release();
 }

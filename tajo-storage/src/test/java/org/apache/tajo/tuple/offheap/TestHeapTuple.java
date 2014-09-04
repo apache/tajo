@@ -40,6 +40,6 @@ public class TestHeapTuple {
       i++;
     }
 
-    rowBlock.free();
+    rowBlock.release();
   }
 }

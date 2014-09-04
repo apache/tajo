@@ -516,7 +516,7 @@ public class ExternalSortExec extends SortExec {
     }
 
     if(tupleBlock != null){
-      tupleBlock.free();
+      tupleBlock.release();
       tupleBlock = null;
     }
 
