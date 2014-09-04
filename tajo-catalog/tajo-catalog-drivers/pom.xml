@@ -69,6 +69,24 @@
         <module>tajo-hcatalog</module>
       </modules>
     </profile>
+    <profile>
+      <id>hcatalog-0.13.0</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <modules>
+        <module>tajo-hcatalog</module>
+      </modules>
+    </profile>
+    <profile>
+      <id>hcatalog-0.13.1</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <modules>
+        <module>tajo-hcatalog</module>
+      </modules>
+    </profile>
   </profiles>
 
   <reporting>
