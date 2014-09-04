@@ -24,6 +24,11 @@ import java.util.regex.PatternSyntaxException;
 public class SimilarToPredicateEval extends PatternMatchPredicateEval {
   private static final String SIMILARTO_ESCAPE_SPATIAL_CHARACTERS = "([.])";
 
+  public SimilarToPredicateEval(boolean not, EvalNode field, ConstEval pattern,
+                                @SuppressWarnings("unused") boolean isCaseSensitive) {
+    super(EvalType.SIMILAR_TO, not, field, pattern, false);
+  }
+
   public SimilarToPredicateEval(boolean not, EvalNode field, ConstEval pattern) {
     super(EvalType.SIMILAR_TO, not, field, pattern);
   }

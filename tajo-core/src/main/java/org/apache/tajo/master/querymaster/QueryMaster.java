@@ -28,15 +28,14 @@ import org.apache.hadoop.yarn.event.Event;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.SystemClock;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.SessionVars;
-import org.apache.tajo.TajoIdProtos;
-import org.apache.tajo.TajoProtos;
+import org.apache.tajo.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.ipc.TajoWorkerProtocol.ExecutionBlockReport;
+import org.apache.tajo.ipc.TajoWorkerProtocol.IntermediateEntryProto;
 import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.event.QueryStartEvent;
 import org.apache.tajo.rpc.CallFuture;
@@ -46,7 +45,9 @@ import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageManagerFactory;
+import org.apache.tajo.util.HAServiceUtil;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.worker.TajoWorker;
 
 import java.util.ArrayList;
@@ -56,6 +57,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.tajo.ipc.TajoMasterProtocol.TajoHeartbeat;
@@ -179,12 +181,19 @@ public class QueryMaster extends CompositeService implements EventHandler {
   }
 
   protected void cleanupExecutionBlock(List<TajoIdProtos.ExecutionBlockIdProto> executionBlockIds) {
-    LOG.info("cleanup executionBlocks : " + executionBlockIds);
+    StringBuilder cleanupMessage = new StringBuilder();
+    String prefix = "";
+    for (TajoIdProtos.ExecutionBlockIdProto eachEbId: executionBlockIds) {
+      cleanupMessage.append(prefix).append(new ExecutionBlockId(eachEbId).toString());
+      prefix = ",";
+    }
+    LOG.info("cleanup executionBlocks: " + cleanupMessage);
     NettyClientBase rpc = null;
     List<TajoMasterProtocol.WorkerResourceProto> workers = getAllWorker();
     TajoWorkerProtocol.ExecutionBlockListProto.Builder builder = TajoWorkerProtocol.ExecutionBlockListProto.newBuilder();
     builder.addAllExecutionBlockId(Lists.newArrayList(executionBlockIds));
     TajoWorkerProtocol.ExecutionBlockListProto executionBlockListProto = builder.build();
+
     for (TajoMasterProtocol.WorkerResourceProto worker : workers) {
       try {
         if (worker.getPeerRpcPort() == 0) continue;
@@ -195,7 +204,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
         tajoWorkerProtocolService.cleanupExecutionBlocks(null, executionBlockListProto, NullCallback.get());
       } catch (Exception e) {
-        LOG.error(e.getMessage());
+        continue;
       } finally {
         connPool.releaseConnection(rpc);
       }
@@ -228,8 +237,27 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
     NettyClientBase rpc = null;
     try {
-      rpc = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
-          TajoMasterProtocol.class, true);
+      // In TajoMaster HA mode, if backup master be active status,
+      // worker may fail to connect existing active master. Thus,
+      // if worker can't connect the master, worker should try to connect another master and
+      // update master address in worker context.
+      if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+        try {
+          rpc = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+              TajoMasterProtocol.class, true);
+        } catch (Exception e) {
+          queryMasterContext.getWorkerContext().setWorkerResourceTrackerAddr(
+              HAServiceUtil.getResourceTrackerAddress(systemConf));
+          queryMasterContext.getWorkerContext().setTajoMasterAddress(
+              HAServiceUtil.getMasterUmbilicalAddress(systemConf));
+          rpc = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+              TajoMasterProtocol.class, true);
+        }
+      } else {
+        rpc = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+            TajoMasterProtocol.class, true);
+      }
+
       TajoMasterProtocol.TajoMasterProtocolService masterService = rpc.getStub();
 
       CallFuture<TajoMasterProtocol.WorkerResourcesRequest> callBack =
@@ -251,8 +279,27 @@ public class QueryMaster extends CompositeService implements EventHandler {
     LOG.info("Send QueryMaster Ready to QueryJobManager:" + queryId);
     NettyClientBase tmClient = null;
     try {
-      tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
-          TajoMasterProtocol.class, true);
+      // In TajoMaster HA mode, if backup master be active status,
+      // worker may fail to connect existing active master. Thus,
+      // if worker can't connect the master, worker should try to connect another master and
+      // update master address in worker context.
+      if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+        try {
+          tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+              TajoMasterProtocol.class, true);
+        } catch (Exception e) {
+          queryMasterContext.getWorkerContext().setWorkerResourceTrackerAddr(
+              HAServiceUtil.getResourceTrackerAddress(systemConf));
+          queryMasterContext.getWorkerContext().setTajoMasterAddress(
+              HAServiceUtil.getMasterUmbilicalAddress(systemConf));
+          tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+              TajoMasterProtocol.class, true);
+        }
+      } else {
+        tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+            TajoMasterProtocol.class, true);
+      }
+
       TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
 
       TajoHeartbeat.Builder queryHeartbeatBuilder = TajoHeartbeat.newBuilder()
@@ -365,8 +412,25 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
         NettyClientBase tmClient = null;
         try {
-          tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
-              TajoMasterProtocol.class, true);
+          // In TajoMaster HA mode, if backup master be active status,
+          // worker may fail to connect existing active master. Thus,
+          // if worker can't connect the master, worker should try to connect another master and
+          // update master address in worker context.
+          if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+            try {
+              tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+                  TajoMasterProtocol.class, true);
+            } catch (Exception e) {
+              queryMasterContext.getWorkerContext().setWorkerResourceTrackerAddr(HAServiceUtil.getResourceTrackerAddress(systemConf));
+              queryMasterContext.getWorkerContext().setTajoMasterAddress(HAServiceUtil.getMasterUmbilicalAddress(systemConf));
+              tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+                  TajoMasterProtocol.class, true);
+            }
+          } else {
+            tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+                TajoMasterProtocol.class, true);
+          }
+
           TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
           masterClientService.heartbeat(future.getController(), queryHeartbeat, future);
         }  catch (Exception e) {
@@ -453,8 +517,27 @@ public class QueryMaster extends CompositeService implements EventHandler {
           for(QueryMasterTask eachTask: tempTasks) {
             NettyClientBase tmClient;
             try {
-              tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
-                  TajoMasterProtocol.class, true);
+              // In TajoMaster HA mode, if backup master be active status,
+              // worker may fail to connect existing active master. Thus,
+              // if worker can't connect the master, worker should try to connect another master and
+              // update master address in worker context.
+              if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+                try {
+                  tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+                      TajoMasterProtocol.class, true);
+                } catch (Exception e) {
+                  queryMasterContext.getWorkerContext().setWorkerResourceTrackerAddr(
+                      HAServiceUtil.getResourceTrackerAddress(systemConf));
+                  queryMasterContext.getWorkerContext().setTajoMasterAddress(
+                      HAServiceUtil.getMasterUmbilicalAddress(systemConf));
+                  tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+                      TajoMasterProtocol.class, true);
+                }
+              } else {
+                tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+                    TajoMasterProtocol.class, true);
+              }
+
               TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
 
               CallFuture<TajoHeartbeatResponse> callBack =
@@ -499,8 +582,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
               long lastHeartbeat = eachTask.getLastClientHeartbeat();
               long time = System.currentTimeMillis() - lastHeartbeat;
               if(lastHeartbeat > 0 && time > querySessionTimeout * 1000) {
-                LOG.warn("Query " + eachTask.getQueryId() + " stopped cause query sesstion timeout: " + time + " ms");
-                eachTask.expiredSessionTimeout();
+                LOG.warn("Query " + eachTask.getQueryId() + " stopped cause query session timeout: " + time + " ms");
+                eachTask.expireQuerySession();
               }
             } catch (Exception e) {
               LOG.error(eachTask.getQueryId() + ":" + e.getMessage(), e);

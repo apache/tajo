@@ -33,6 +33,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.session.Session;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TajoIdUtils;
 
@@ -66,12 +67,15 @@ public class LocalTajoTestingUtility {
   public static QueryUnitAttemptId newQueryUnitAttemptId(MasterPlan plan) {
     return QueryIdFactory.newQueryUnitAttemptId(QueryIdFactory.newQueryUnitId(plan.newExecutionBlockId()), 0);
   }
+
   public static Session createDummySession() {
     return new Session(UUID.randomUUID().toString(), dummyUserInfo.getUserName(), TajoConstants.DEFAULT_DATABASE_NAME);
   }
 
   public static QueryContext createDummyContext(TajoConf conf) {
-    return new QueryContext(conf, createDummySession());
+    QueryContext context = new QueryContext(conf, createDummySession());
+    context.putAll(CommonTestingUtil.getSessionVarsForTest().getAllKeyValus());
+    return context;
   }
 
   /**

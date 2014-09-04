@@ -34,6 +34,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.engine.planner.PhysicalPlanningException;
 import org.apache.tajo.engine.planner.logical.SortNode;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.Scanner;
@@ -703,6 +704,9 @@ public class ExternalSortExec extends SortExec {
         return mergerInputStats;
       }
       TableStats leftInputStats = leftScan.getInputStats();
+      if (mergerInputStats == null) {
+        mergerInputStats = new TableStats();
+      }
       mergerInputStats.setNumBytes(0);
       mergerInputStats.setReadBytes(0);
       mergerInputStats.setNumRows(0);

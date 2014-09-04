@@ -25,6 +25,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -48,7 +50,10 @@ public class TestReadWrite {
     File tmp = File.createTempFile(getClass().getSimpleName(), ".tmp");
     tmp.deleteOnExit();
     tmp.delete();
-    return new Path(tmp.getPath());
+
+    // it prevents accessing HDFS namenode of TajoTestingCluster.
+    LocalFileSystem localFS = LocalFileSystem.getLocal(new Configuration());
+    return localFS.makeQualified(new Path(tmp.getPath()));
   }
 
   private Schema createAllTypesSchema() {

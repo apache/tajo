@@ -64,10 +64,12 @@ if [ $# = 0 ]; then
   echo "where COMMAND is one of:"
   echo "  master               run the Master Server"
   echo "  worker               run the Worker Server"
+  echo "  pullserver           run the Pull Server"
   echo "  catalog              run the Catalog server"
   echo "  catutil              catalog utility"
   echo "  cli                  run the tajo cli"
   echo "  admin                run the tajo admin util"
+  echo "  haadmin              run the tajo master HA admin util"
   echo "  getconf              print tajo configuration"
   echo "  jar <jar>            run a jar file"
   echo "  benchmark            run the benchmark driver"
@@ -119,6 +121,11 @@ if [ "$TAJO_WORKER_HEAPSIZE" != "" ]; then
   #echo "run with heapsize $TAJO_WORKER_HEAPSIZE"
   JAVA_WORKER_HEAP_MAX="-Xmx""$TAJO_WORKER_HEAPSIZE""m"
   #echo $JAVA_WORKER_HEAP_MAX
+fi
+if [ "$TAJO_PULLSERVER_HEAPSIZE" != "" ]; then
+  #echo "run with heapsize $TAJO_PULLSERVER_HEAPSIZE"
+  JAVA_PULLSERVER_HEAP_MAX="-Xmx""$TAJO_PULLSERVER_HEAPSIZE""m"
+  #echo $JAVA_PULLSERVER_HEAP_MAX
 fi
 if [ "$TAJO_QUERYMASTER_HEAPSIZE" != "" ]; then
   #echo "run with heapsize $TAJO_QUERYMASTER_HEAPSIZE"
@@ -179,8 +186,8 @@ fi
 # Allow alternate conf dir location.
 HADOOP_CONF_DIR="${HADOOP_CONF_DIR:-$HADOOP_HOME/etc/hadoop}"
 
-# CLASSPATH initially contains $HADOOP_CONF_DIR
-CLASSPATH="${HADOOP_CONF_DIR}"
+# CLASSPATH initially contains $HADOOP_CONF_DIR and tools.jar
+CLASSPATH="${HADOOP_CONF_DIR}:${JAVA_HOME}/lib/tools.jar"
 
 ##############################################################################
 # Hadoop Version Checking Section End
@@ -329,6 +336,9 @@ elif [ "$COMMAND" = "master" ] ; then
 elif [ "$COMMAND" = "worker" ] ; then
   CLASS='org.apache.tajo.worker.TajoWorker'
   TAJO_OPTS="$TAJO_OPTS $JAVA_WORKER_HEAP_MAX $TAJO_WORKER_OPTS"
+elif [ "$COMMAND" = "pullserver" ] ; then
+  CLASS='org.apache.tajo.pullserver.TajoPullServer'
+  TAJO_OPTS="$TAJO_OPTS $JAVA_PULLSERVER_HEAP_MAX $TAJO_PULLSERVER_OPTS"
 elif [ "$COMMAND" = "querymaster" ] ; then
   CLASS='org.apache.tajo.worker.TajoWorker'
   TAJO_OPTS="$TAJO_OPTS $JAVA_QUERYMASTER_HEAP_MAX $TAJO_QUERYMASTER_OPTS"
@@ -347,6 +357,10 @@ elif [ "$COMMAND" = "cli" ] ; then
   TAJO_OPTS="$TAJO_OPTS $TAJO_CLI_OPTS"
 elif [ "$COMMAND" = "admin" ] ; then
   CLASS='org.apache.tajo.client.TajoAdmin'
+  TAJO_ROOT_LOGGER_APPENDER="${TAJO_ROOT_LOGGER_APPENDER:-NullAppender}"
+  TAJO_OPTS="$TAJO_OPTS $TAJO_CLI_OPTS"
+elif [ "$COMMAND" = "haadmin" ] ; then
+  CLASS='org.apache.tajo.client.TajoHAAdmin'
   TAJO_ROOT_LOGGER_APPENDER="${TAJO_ROOT_LOGGER_APPENDER:-NullAppender}"
   TAJO_OPTS="$TAJO_OPTS $TAJO_CLI_OPTS"
 elif [ "$COMMAND" = "getconf" ] ; then

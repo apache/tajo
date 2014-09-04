@@ -210,6 +210,10 @@ public class ParquetWriter<T> implements Closeable {
     }
   }
 
+  public long getEstimatedWrittenSize() throws IOException {
+    return this.writer.getEstimatedWrittenSize();
+  }
+
   @Override
   public void close() throws IOException {
     try {

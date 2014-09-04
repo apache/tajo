@@ -27,6 +27,7 @@ import org.apache.hadoop.service.AbstractService;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
+import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
@@ -34,6 +35,7 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.v2.DiskDeviceInfo;
 import org.apache.tajo.storage.v2.DiskMountInfo;
 import org.apache.tajo.storage.v2.DiskUtil;
+import org.apache.tajo.util.HAServiceUtil;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -140,24 +142,6 @@ public class WorkerHeartbeatService extends AbstractService {
       LOG.info("Worker Resource Heartbeat Thread start.");
       int sendDiskInfoCount = 0;
       int pullServerPort = 0;
-      if(context.getPullService()!= null) {
-        long startTime = System.currentTimeMillis();
-        while(true) {
-          pullServerPort = context.getPullService().getPort();
-          if(pullServerPort > 0) {
-            break;
-          }
-          //waiting while pull server init
-          try {
-            Thread.sleep(100);
-          } catch (InterruptedException e) {
-          }
-          if(System.currentTimeMillis() - startTime > 30 * 1000) {
-            LOG.fatal("Too long push server init.");
-            System.exit(0);
-          }
-        }
-      }
 
       String hostName = null;
       int peerRpcPort = 0;
@@ -175,9 +159,8 @@ public class WorkerHeartbeatService extends AbstractService {
       if(context.getTajoWorkerClientService() != null) {
         clientPort = context.getTajoWorkerClientService().getBindAddr().getPort();
       }
-      if (context.getPullService() != null) {
-        pullServerPort = context.getPullService().getPort();
-      }
+
+      pullServerPort = context.getPullServerPort();
 
       while(!stopped.get()) {
         if(sendDiskInfoCount == 0 && diskDeviceInfos != null) {
@@ -217,7 +200,22 @@ public class WorkerHeartbeatService extends AbstractService {
           CallFuture<TajoMasterProtocol.TajoHeartbeatResponse> callBack =
               new CallFuture<TajoMasterProtocol.TajoHeartbeatResponse>();
 
-          rmClient = connectionPool.getConnection(context.getResourceTrackerAddress(), TajoResourceTrackerProtocol.class, true);
+          // In TajoMaster HA mode, if backup master be active status,
+          // worker may fail to connect existing active master. Thus,
+          // if worker can't connect the master, worker should try to connect another master and
+          // update master address in worker context.
+          if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+            try {
+              rmClient = connectionPool.getConnection(context.getResourceTrackerAddress(), TajoResourceTrackerProtocol.class, true);
+            } catch (Exception e) {
+              context.setWorkerResourceTrackerAddr(HAServiceUtil.getResourceTrackerAddress(systemConf));
+              context.setTajoMasterAddress(HAServiceUtil.getMasterUmbilicalAddress(systemConf));
+              rmClient = connectionPool.getConnection(context.getResourceTrackerAddress(), TajoResourceTrackerProtocol.class, true);
+            }
+          } else {
+            rmClient = connectionPool.getConnection(context.getResourceTrackerAddress(), TajoResourceTrackerProtocol.class, true);
+          }
+
           TajoResourceTrackerProtocol.TajoResourceTrackerProtocolService resourceTracker = rmClient.getStub();
           resourceTracker.heartbeat(callBack.getController(), heartbeatProto, callBack);
 

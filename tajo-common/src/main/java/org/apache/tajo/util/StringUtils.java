@@ -25,6 +25,8 @@ import org.apache.hadoop.util.Shell;
 import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.util.SignalLogger;
 
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.util.Arrays;
 import java.util.BitSet;
 
@@ -69,6 +71,12 @@ public class StringUtils {
       buf.append(" msec");
     }
     return buf.toString();
+  }
+
+  static CharsetEncoder asciiEncoder = Charset.forName("US-ASCII").newEncoder(); // or "ISO-8859-1" for ISO Latin 1
+
+  public static boolean isPureAscii(String v) {
+    return asciiEncoder.canEncode(v);
   }
 
   public static String quote(String str) {
@@ -275,5 +283,31 @@ public class StringUtils {
       sb.append(c);
     }
     return sb.toString();
+  }
+
+  public static char[][] padChars(char []...bytes) {
+    char[] startChars = bytes[0];
+    char[] endChars = bytes[1];
+
+    char[][] padded = new char[2][];
+    int max = Math.max(startChars.length, endChars.length);
+
+    padded[0] = new char[max];
+    padded[1] = new char[max];
+
+    for (int i = 0; i < startChars.length; i++) {
+      padded[0][i] = startChars[i];
+    }
+    for (int i = startChars.length; i < max; i++) {
+      padded[0][i] = 0;
+    }
+    for (int i = 0; i < endChars.length; i++) {
+      padded[1][i] = endChars[i];
+    }
+    for (int i = endChars.length; i < max; i++) {
+      padded[1][i] = 0;
+    }
+
+    return padded;
   }
 }

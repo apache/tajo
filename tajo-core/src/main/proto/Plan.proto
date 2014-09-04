@@ -1,0 +1,209 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package tajo.plan;
+option cc_generic_services = false;
+option java_package = "org.apache.tajo.engine.plan.proto";
+option java_outer_classname = "PlanProto";
+option java_generic_services = false;
+option java_generate_equals_and_hash = true;
+
+import "PrimitiveProtos.proto";
+import "CatalogProtos.proto";
+import "DataTypes.proto";
+
+enum NodeType {
+  BST_INDEX_SCAN = 0;
+  EXCEPT = 1;
+  EXPRS = 2;
+  DISTINCT_GROUP_BY = 3;
+  GROUP_BY = 4;
+  HAVING = 5;
+  JOIN = 6;
+  INSERT = 7;
+  INTERSECT = 8;
+  LIMIT = 9;
+  PARTITIONS_SCAN = 10;
+  PROJECTION = 11;
+  ROOT = 12;
+  SCAN = 13;
+  SELECTION = 14;
+  SORT = 15;
+  STORE = 16;
+  TABLE_SUBQUERY = 17;
+  UNION = 18;
+  WINDOW_AGG = 19;
+
+  CREATE_DATABASE = 20;
+  DROP_DATABASE = 21;
+  CREATE_TABLE = 22;
+  DROP_TABLE = 23;
+  ALTER_TABLESPACE = 24;
+  ALTER_TABLE = 25;
+  TRUNCATE_TABLE = 26;
+}
+
+message LogicalPlan {
+  required KeyValueSetProto adjacentList = 1;
+}
+
+message LogicalNode {
+  required int32 pid = 1;
+  required NodeType type = 2;
+  required SchemaProto in_schema = 3;
+  required SchemaProto out_schema = 4;
+  required NodeSpec spec = 5;
+}
+
+message NodeSpec {
+  optional ScanNode scan = 1;
+}
+
+message ScanNode {
+  required TableDescProto table = 1;
+  optional string alias = 2;
+  required SchemaProto schema = 3;
+}
+
+
+enum EvalType {
+  NOT = 0;
+  AND = 1;
+  OR = 2;
+  EQUAL = 3;
+  IS_NULL = 4;
+  NOT_EQUAL = 5;
+  LTH = 6;
+  LEQ = 7;
+  GTH = 8;
+  GEQ = 9;
+  PLUS = 10;
+  MINUS = 11;
+  MODULAR = 12;
+  MULTIPLY = 13;
+  DIVIDE = 14;
+
+  // Binary Bitwise expressions
+  BIT_AND = 15;
+  BIT_OR = 16;
+  BIT_XOR = 17;
+
+  // Function
+  WINDOW_FUNCTION = 18;
+  AGG_FUNCTION = 19;
+  FUNCTION = 20;
+
+  // String operator or pattern matching predicates
+  LIKE = 21;
+  SIMILAR_TO = 22;
+  REGEX = 23;
+  CONCATENATE = 24;
+
+  // Other predicates
+  BETWEEN = 25;
+  CASE = 26;
+  IF_THEN = 27;
+  IN = 28;
+
+  // Value or Reference
+  SIGNED = 29;
+  CAST = 30;
+  ROW_CONSTANT = 31;
+  FIELD = 32;
+  CONST = 33;
+}
+
+message EvalTree {
+  repeated EvalNode nodes = 1;
+}
+
+message EvalNode {
+  required int32 id = 1;
+  required EvalType type = 2;
+  required DataType data_type = 3;
+
+  optional UnaryEval unary = 4; // NOT
+  optional BinaryEval binary = 5;
+  optional ConstEval const = 6;
+  optional ColumnProto field = 7; // field eval
+  optional FunctionEval function = 8;
+  optional RowConstEval rowConst = 9;
+  optional BetweenEval between = 10;
+  optional CaseWhenEval casewhen = 11;
+  optional IfCondEval ifCond = 12;
+}
+
+message UnaryEval {
+  required int32 child_id = 1;
+  optional DataType castingType = 2;
+  optional bool negative = 3;
+}
+
+message BinaryEval {
+  required int32 lhs_id = 1;
+  required int32 rhs_id = 2;
+  optional bool negative = 3 [default = false];
+}
+
+message BetweenEval {
+  required int32 predicand = 1;
+  required int32 begin = 2;
+  required int32 end = 3;
+  optional bool negative = 4 [default = false];
+  optional bool symmetric = 5 [default = false];
+}
+
+message CaseWhenEval {
+  repeated int32 ifConds = 1;
+  optional int32 else = 2;
+}
+
+message IfCondEval {
+  required int32 condition = 1;
+  required int32 then = 2;
+}
+
+message ConstEval {
+  required Datum value = 1;
+}
+
+message RowConstEval {
+  repeated Datum values = 1;
+}
+
+message FunctionEval {
+  required FunctionDescProto funcion = 1;
+  repeated int32 paramIds = 2;
+}
+
+message Datum {
+  required Type type = 1;
+  optional bool boolean = 2;
+  optional int32 int4 = 3;    // int4, date
+  optional int64 int8 = 4;    // int8, timestamp, and time
+  optional float float4 = 5;
+  optional double float8 = 6;
+  optional string text = 7;
+  optional bytes blob = 8;
+  optional Interval interval = 12;
+}
+
+message Interval {
+  optional int32 month = 1 [default = 0];
+  optional int64 msec = 2;
+}

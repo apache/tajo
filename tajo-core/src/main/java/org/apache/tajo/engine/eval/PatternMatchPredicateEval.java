@@ -55,6 +55,14 @@ public abstract class PatternMatchPredicateEval extends BinaryEval {
 
   abstract void compile(String pattern) throws PatternSyntaxException;
 
+  public boolean isNot() {
+    return not;
+  }
+
+  public boolean isCaseInsensitive() {
+    return caseInsensitive;
+  }
+
   @Override
   public DataType getValueType() {
     return RES_TYPE;

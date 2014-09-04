@@ -27,12 +27,12 @@ import java.util.Comparator;
 /**
  * It represents a pair of start and end tuples.
  */
-public class TupleRange implements Comparable<TupleRange> {
-  private final Tuple start;
-  private final Tuple end;
+public class TupleRange implements Comparable<TupleRange>, Cloneable {
+  private Tuple start;
+  private Tuple end;
   private final TupleComparator comp;
 
-  public TupleRange(final SortSpec [] sortSpecs, final Tuple start, final Tuple end) {
+  public TupleRange(final SortSpec[] sortSpecs, final Tuple start, final Tuple end) {
     this.comp = new TupleComparator(sortSpecsToSchema(sortSpecs), sortSpecs);
     // if there is only one value, start == end
     this.start = start;
@@ -48,8 +48,16 @@ public class TupleRange implements Comparable<TupleRange> {
     return schema;
   }
 
+  public void setStart(Tuple tuple) {
+    this.start = tuple;
+  }
+
   public final Tuple getStart() {
     return this.start;
+  }
+
+  public void setEnd(Tuple tuple) {
+    this.end = tuple;
   }
 
   public final Tuple getEnd() {
@@ -57,7 +65,7 @@ public class TupleRange implements Comparable<TupleRange> {
   }
 
   public String toString() {
-    return "[" + this.start + ", " + this.end+")";
+    return "[" + this.start + ", " + this.end + ")";
   }
 
   @Override
@@ -67,7 +75,7 @@ public class TupleRange implements Comparable<TupleRange> {
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof  TupleRange) {
+    if (obj instanceof TupleRange) {
       TupleRange other = (TupleRange) obj;
       return this.start.equals(other.start) && this.end.equals(other.end);
     } else {
@@ -93,5 +101,12 @@ public class TupleRange implements Comparable<TupleRange> {
     public int compare(TupleRange left, TupleRange right) {
       return right.compareTo(left);
     }
+  }
+
+  public TupleRange clone() throws CloneNotSupportedException {
+    TupleRange newRange = (TupleRange) super.clone();
+    newRange.setStart(start.clone());
+    newRange.setEnd(end.clone());
+    return newRange;
   }
 }

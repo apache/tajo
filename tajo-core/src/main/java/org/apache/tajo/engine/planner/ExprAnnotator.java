@@ -352,7 +352,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     for (CaseWhenPredicate.WhenExpr when : caseWhen.getWhens()) {
       condition = visit(ctx, stack, when.getCondition());
       result = visit(ctx, stack, when.getResult());
-      caseWhenEval.addWhen(condition, result);
+      caseWhenEval.addIfCond(condition, result);
     }
 
     if (caseWhen.hasElseResult()) {
@@ -439,11 +439,18 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   @Override
   public EvalNode visitConcatenate(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
     stack.push(expr);
-    EvalNode left = visit(ctx, stack, expr.getLeft());
-    EvalNode right = visit(ctx, stack, expr.getRight());
+    EvalNode lhs = visit(ctx, stack, expr.getLeft());
+    EvalNode rhs = visit(ctx, stack, expr.getRight());
     stack.pop();
 
-    return new BinaryEval(EvalType.CONCATENATE, left, right);
+    if (lhs.getValueType().getType() != Type.TEXT) {
+      lhs = convertType(lhs, CatalogUtil.newSimpleDataType(Type.TEXT));
+    }
+    if (rhs.getValueType().getType() != Type.TEXT) {
+      rhs = convertType(rhs, CatalogUtil.newSimpleDataType(Type.TEXT));
+    }
+
+    return new BinaryEval(EvalType.CONCATENATE, lhs, rhs);
   }
 
   private EvalNode visitPatternMatchPredicate(Context ctx, Stack<Expr> stack, PatternMatchPredicate expr)
@@ -599,7 +606,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
     // trying the implicit type conversion between actual parameter types and the definition types.
     if (CatalogUtil.checkIfVariableLengthParamDefinition(TUtil.newList(funcDesc.getParamTypes()))) {
-      DataType lastDataType = null;
+      DataType lastDataType = funcDesc.getParamTypes()[0];
       for (int i = 0; i < givenArgs.length; i++) {
         if (i < (funcDesc.getParamTypes().length - 1)) { // variable length
           lastDataType = funcDesc.getParamTypes()[i];

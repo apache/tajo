@@ -38,6 +38,7 @@ import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.master.TajoMaster;
+import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -85,11 +86,24 @@ public class TajoTestingCluster {
   public Boolean isHCatalogStoreUse = false;
 
   public TajoTestingCluster() {
+    this(false);
+  }
+
+  public TajoTestingCluster(boolean masterHaEMode) {
     this.conf = new TajoConf();
+    this.conf.setBoolVar(ConfVars.TAJO_MASTER_HA_ENABLE, masterHaEMode);
+
+    setTestingFlagProperties();
     initPropertiesAndConfigs();
-	}
+  }
+
+  void setTestingFlagProperties() {
+    System.setProperty(CommonTestingUtil.TAJO_TEST_KEY, CommonTestingUtil.TAJO_TEST_TRUE);
+    conf.set(CommonTestingUtil.TAJO_TEST_KEY, CommonTestingUtil.TAJO_TEST_TRUE);
+  }
 
   void initPropertiesAndConfigs() {
+    System.setProperty("TAJO_PULLSERVER_STANDALONE", "false");
     if (System.getProperty(ConfVars.RESOURCE_MANAGER_CLASS.varname) != null) {
       String testResourceManager = System.getProperty(ConfVars.RESOURCE_MANAGER_CLASS.varname);
       Preconditions.checkState(testResourceManager.equals(TajoWorkerResourceManager.class.getCanonicalName()));
@@ -100,7 +114,6 @@ public class TajoTestingCluster {
 
     this.standbyWorkerMode = conf.getVar(ConfVars.RESOURCE_MANAGER_CLASS)
         .indexOf(TajoWorkerResourceManager.class.getName()) >= 0;
-    conf.set(CommonTestingUtil.TAJO_TEST, "TRUE");
   }
 
 	public TajoConf getConfiguration() {
@@ -671,5 +684,35 @@ public class TajoTestingCluster {
     for (TajoWorker eachWorker: tajoWorkers) {
       eachWorker.getConfig().set(key, value);
     }
+  }
+
+  public void waitForQueryRunning(QueryId queryId) throws Exception {
+    QueryMasterTask qmt = null;
+
+    int i = 0;
+    while (qmt == null || TajoClient.isInPreNewState(qmt.getState())) {
+      try {
+        Thread.sleep(100);
+        if(qmt == null){
+          qmt = getQueryMasterTask(queryId);
+        }
+      } catch (InterruptedException e) {
+      }
+      if (++i > 100) {
+        throw new IOException("Timed out waiting for query to start");
+      }
+    }
+  }
+
+  public QueryMasterTask getQueryMasterTask(QueryId queryId) {
+    QueryMasterTask qmt = null;
+    for (TajoWorker worker : getTajoWorkers()) {
+      qmt = worker.getWorkerContext().getQueryMaster().getQueryMasterTask(queryId);
+      if (qmt != null) {
+        break;
+      }
+    }
+
+    return qmt;
   }
 }

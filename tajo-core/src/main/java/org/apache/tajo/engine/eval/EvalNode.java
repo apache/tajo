@@ -32,7 +32,6 @@ import org.apache.tajo.storage.Tuple;
  */
 public abstract class EvalNode implements Cloneable, GsonObject {
 	@Expose protected EvalType type;
-  @Expose protected DataType returnType = null;
 
   public EvalNode() {
   }
@@ -46,6 +45,10 @@ public abstract class EvalNode implements Cloneable, GsonObject {
 	}
 	
 	public abstract DataType getValueType();
+
+  public abstract int childNum();
+
+  public abstract EvalNode getChild(int idx);
 	
 	public abstract String getName();
 
@@ -66,7 +69,6 @@ public abstract class EvalNode implements Cloneable, GsonObject {
   public Object clone() throws CloneNotSupportedException {
     EvalNode evalNode = (EvalNode) super.clone();
     evalNode.type = type;
-    evalNode.returnType = returnType;
     return evalNode;
   }
 }
