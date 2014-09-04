@@ -26,9 +26,9 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.FileUtil;
@@ -208,7 +208,7 @@ public class TestOffHeapRowBlock {
     LOG.info("reading takes " + (readEnd - readStart) + " msec");
 
     SortSpec sortSpec = new SortSpec(new Column("col2", Type.INT4));
-    TupleComparatorImpl comparator = new TupleComparatorImpl(schema, new SortSpec[] {sortSpec});
+    BaseTupleComparator comparator = new BaseTupleComparator(schema, new SortSpec[] {sortSpec});
 
     long sortStart = System.currentTimeMillis();
     Collections.sort(unSafeTuples, comparator);

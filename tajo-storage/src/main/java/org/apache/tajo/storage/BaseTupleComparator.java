@@ -33,7 +33,7 @@ import static org.apache.tajo.index.IndexProtos.TupleComparatorProto;
  * 
  * @see Tuple
  */
-public class TupleComparatorImpl extends TupleComparator implements ProtoObject<TupleComparatorProto> {
+public class BaseTupleComparator extends TupleComparator implements ProtoObject<TupleComparatorProto> {
   private final Schema schema;
   private final SortSpec [] sortSpecs;
   private final int[] sortKeyIds;
@@ -49,7 +49,7 @@ public class TupleComparatorImpl extends TupleComparator implements ProtoObject<
    * @param schema The schema of input tuples
    * @param sortKeys The description of sort keys
    */
-  public TupleComparatorImpl(Schema schema, SortSpec[] sortKeys) {
+  public BaseTupleComparator(Schema schema, SortSpec[] sortKeys) {
     Preconditions.checkArgument(sortKeys.length > 0, 
         "At least one sort key must be specified.");
 
@@ -70,7 +70,7 @@ public class TupleComparatorImpl extends TupleComparator implements ProtoObject<
     }
   }
 
-  public TupleComparatorImpl(TupleComparatorProto proto) {
+  public BaseTupleComparator(TupleComparatorProto proto) {
     this.schema = new Schema(proto.getSchema());
 
     this.sortSpecs = new SortSpec[proto.getSortSpecsCount()];
@@ -149,8 +149,8 @@ public class TupleComparatorImpl extends TupleComparator implements ProtoObject<
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof TupleComparatorImpl) {
-      TupleComparatorImpl other = (TupleComparatorImpl) obj;
+    if (obj instanceof BaseTupleComparator) {
+      BaseTupleComparator other = (BaseTupleComparator) obj;
       if (sortKeyIds.length != other.sortKeyIds.length) {
         return false;
       }

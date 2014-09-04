@@ -27,12 +27,12 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
+import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.storage.index.IndexMethod;
 import org.apache.tajo.storage.index.IndexWriter;
 import org.apache.tajo.storage.index.OrderIndexReader;
@@ -67,13 +67,13 @@ public class BSTIndex implements IndexMethod {
   
   @Override
   public BSTIndexWriter getIndexWriter(final Path fileName, int level, Schema keySchema,
-      TupleComparatorImpl comparator) throws IOException {
+      BaseTupleComparator comparator) throws IOException {
     return new BSTIndexWriter(fileName, level, keySchema, comparator);
   }
 
   @Override
   public BSTIndexReader getIndexReader(Path fileName, Schema keySchema,
-      TupleComparatorImpl comparator) throws IOException {
+      BaseTupleComparator comparator) throws IOException {
     return new BSTIndexReader(fileName, keySchema, comparator);
   }
 
@@ -89,7 +89,7 @@ public class BSTIndex implements IndexMethod {
     private Path fileName;
 
     private final Schema keySchema;
-    private final TupleComparatorImpl compartor;
+    private final BaseTupleComparator compartor;
     private final KeyOffsetCollector collector;
     private KeyOffsetCollector rootCollector;
 
@@ -108,7 +108,7 @@ public class BSTIndex implements IndexMethod {
      * @throws IOException
      */
     public BSTIndexWriter(final Path fileName, int level, Schema keySchema,
-        TupleComparatorImpl comparator) throws IOException {
+        BaseTupleComparator comparator) throws IOException {
       this.fileName = fileName;
       this.level = level;
       this.keySchema = keySchema;
@@ -141,7 +141,7 @@ public class BSTIndex implements IndexMethod {
       collector.put(key, offset);
     }
 
-    public TupleComparatorImpl getComparator() {
+    public BaseTupleComparator getComparator() {
       return this.compartor;
     }
 
@@ -253,7 +253,7 @@ public class BSTIndex implements IndexMethod {
     private class KeyOffsetCollector {
       private TreeMap<Tuple, LinkedList<Long>> map;
 
-      public KeyOffsetCollector(TupleComparatorImpl comparator) {
+      public KeyOffsetCollector(BaseTupleComparator comparator) {
         map = new TreeMap<Tuple, LinkedList<Long>>(comparator);
       }
 
@@ -283,7 +283,7 @@ public class BSTIndex implements IndexMethod {
   public class BSTIndexReader implements OrderIndexReader , Closeable{
     private Path fileName;
     private Schema keySchema;
-    private TupleComparatorImpl comparator;
+    private BaseTupleComparator comparator;
 
     private FileSystem fs;
     private FSDataInputStream indexIn;
@@ -312,7 +312,7 @@ public class BSTIndex implements IndexMethod {
      * @param comparator
      * @throws IOException
      */
-    public BSTIndexReader(final Path fileName, Schema keySchema, TupleComparatorImpl comparator) throws IOException {
+    public BSTIndexReader(final Path fileName, Schema keySchema, BaseTupleComparator comparator) throws IOException {
       this.fileName = fileName;
       this.keySchema = keySchema;
       this.comparator = comparator;
@@ -327,7 +327,7 @@ public class BSTIndex implements IndexMethod {
       return this.keySchema;
     }
 
-    public TupleComparatorImpl getComparator() {
+    public BaseTupleComparator getComparator() {
       return this.comparator;
     }
 
@@ -350,7 +350,7 @@ public class BSTIndex implements IndexMethod {
 
       TupleComparatorProto.Builder compProto = TupleComparatorProto.newBuilder();
       compProto.mergeFrom(compBytes);
-      this.comparator = new TupleComparatorImpl(compProto.build());
+      this.comparator = new BaseTupleComparator(compProto.build());
 
       // level
       this.level = indexIn.readInt();

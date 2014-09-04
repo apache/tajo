@@ -25,8 +25,8 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.TupleComparator;
-import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.util.Pair;
 
 import java.util.Collections;
@@ -58,7 +58,7 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
     private final EvalCodeGenerator evalCompiler;
     private final TupleComparerCompiler comparerCompiler;
     private Map<Pair<Schema,EvalNode>, EvalNode> compiledEvals;
-    private Map<Pair<Schema,TupleComparatorImpl>, TupleComparator> compiledComparators;
+    private Map<Pair<Schema,BaseTupleComparator>, TupleComparator> compiledComparators;
 
     public CompilationContext(TajoClassLoader classLoader) {
       this.evalCompiler = new EvalCodeGenerator(classLoader);
@@ -79,7 +79,7 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
       return compiledEvals;
     }
 
-    public Map<Pair<Schema, TupleComparatorImpl>, TupleComparator> getPrecompiedComparators() {
+    public Map<Pair<Schema, BaseTupleComparator>, TupleComparator> getPrecompiedComparators() {
       return compiledComparators;
     }
   }
@@ -100,8 +100,8 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
     }
   }
 
-  private static void compileIfAbsent(CompilationContext context, Schema schema, TupleComparatorImpl comparator) {
-    Pair<Schema, TupleComparatorImpl> key = new Pair<Schema, TupleComparatorImpl>(schema, comparator);
+  private static void compileIfAbsent(CompilationContext context, Schema schema, BaseTupleComparator comparator) {
+    Pair<Schema, BaseTupleComparator> key = new Pair<Schema, BaseTupleComparator>(schema, comparator);
     if (!context.compiledComparators.containsKey(key)) {
       try {
         TupleComparator compiled = context.comparerCompiler.compile(comparator, false);
@@ -150,7 +150,7 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
                                SortNode node, Stack<LogicalNode> stack) throws PlanningException {
     super.visitSort(context, plan, block, node, stack);
 
-    TupleComparatorImpl comparator = new TupleComparatorImpl(node.getInSchema(), node.getSortKeys());
+    BaseTupleComparator comparator = new BaseTupleComparator(node.getInSchema(), node.getSortKeys());
     compileIfAbsent(context, node.getInSchema(), comparator);
 
     return node;

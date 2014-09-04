@@ -112,7 +112,7 @@ public class TestTupleUtil {
         sortSpecs);
     TupleRange [] ranges = partitioner.partition(5);
     assertTrue(5 <= ranges.length);
-    TupleComparatorImpl comp = new TupleComparatorImpl(schema, PlannerUtil.schemaToSortSpecs(schema));
+    BaseTupleComparator comp = new BaseTupleComparator(schema, PlannerUtil.schemaToSortSpecs(schema));
     TupleRange prev = ranges[0];
     for (int i = 1; i < ranges.length; i++) {
       assertTrue(comp.compare(prev.getStart(), ranges[i].getStart()) < 0);

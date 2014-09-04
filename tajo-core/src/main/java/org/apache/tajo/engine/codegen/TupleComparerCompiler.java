@@ -27,9 +27,9 @@ import org.apache.tajo.org.objectweb.asm.ClassWriter;
 import org.apache.tajo.org.objectweb.asm.Label;
 import org.apache.tajo.org.objectweb.asm.MethodVisitor;
 import org.apache.tajo.org.objectweb.asm.Opcodes;
+import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
-import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.tuple.offheap.UnSafeTuple;
 import org.apache.tajo.tuple.offheap.UnSafeTupleBytesComparator;
 import org.apache.tajo.util.UnsafeComparer;
@@ -51,7 +51,7 @@ public class TupleComparerCompiler {
     this.classLoader = classLoader;
   }
 
-  public TupleComparator compile(TupleComparatorImpl comp, boolean ensureUnSafeTuple) {
+  public TupleComparator compile(BaseTupleComparator comp, boolean ensureUnSafeTuple) {
     ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
 
     String className = TupleComparator.class.getPackage().getName() + ".TupleComparator" + classSeqId++;
@@ -112,7 +112,7 @@ public class TupleComparerCompiler {
    * @param classWriter
    * @param compImpl
    */
-  private void emitCompare(ClassWriter classWriter, TupleComparatorImpl compImpl, boolean ensureUnSafeTuple) {
+  private void emitCompare(ClassWriter classWriter, BaseTupleComparator compImpl, boolean ensureUnSafeTuple) {
 
     String methodName = "compare";
     String methodDesc = TajoGeneratorAdapter.getMethodDescription(int.class, new Class[]{Tuple.class, Tuple.class});
@@ -227,7 +227,7 @@ public class TupleComparerCompiler {
     compMethod.visitEnd();
   }
 
-  private void emitGetParam(TajoGeneratorAdapter adapter, TupleComparatorImpl c, int idx, int paramIdx) {
+  private void emitGetParam(TajoGeneratorAdapter adapter, BaseTupleComparator c, int idx, int paramIdx) {
     Preconditions.checkArgument(paramIdx == LEFT_VALUE || paramIdx == RIGHT_VALUE,
         "Param Index must be either 1 or 2.");
 
@@ -237,7 +237,7 @@ public class TupleComparerCompiler {
         asc ? paramIdx : (paramIdx == LEFT_VALUE ? RIGHT_VALUE : LEFT_VALUE));
   }
 
-  private void emitComparisonForJVMInteger(TajoGeneratorAdapter adapter, TupleComparatorImpl c, int idx) {
+  private void emitComparisonForJVMInteger(TajoGeneratorAdapter adapter, BaseTupleComparator c, int idx) {
     emitGetParam(adapter, c, idx, LEFT_VALUE);
     adapter.emitGetValueOfTuple(c.getSortSpecs()[idx].getSortKey().getDataType(), c.getSortKeyIds()[idx]);
 
@@ -247,7 +247,7 @@ public class TupleComparerCompiler {
     adapter.methodvisitor.visitInsn(Opcodes.ISUB);
   }
 
-  private void emitComparisonForUnsignedInts(TajoGeneratorAdapter adapter, TupleComparatorImpl c, int idx) {
+  private void emitComparisonForUnsignedInts(TajoGeneratorAdapter adapter, BaseTupleComparator c, int idx) {
     emitGetParam(adapter, c, idx, LEFT_VALUE);
     adapter.emitGetValueOfTuple(c.getSortSpecs()[idx].getSortKey().getDataType(), c.getSortKeyIds()[idx]);
 
@@ -257,7 +257,7 @@ public class TupleComparerCompiler {
     adapter.invokeStatic(UnsignedInts.class, "compare", int.class, new Class [] {int.class, int.class});
   }
 
-  private void emitComparisonForOtherPrimitives(TajoGeneratorAdapter adapter, TupleComparatorImpl comp, int idx) {
+  private void emitComparisonForOtherPrimitives(TajoGeneratorAdapter adapter, BaseTupleComparator comp, int idx) {
     DataType dataType = comp.getSortSpecs()[idx].getSortKey().getDataType();
     emitGetParam(adapter, comp, idx, LEFT_VALUE);
     adapter.emitGetValueOfTuple(dataType, comp.getSortKeyIds()[idx]);
@@ -289,7 +289,7 @@ public class TupleComparerCompiler {
     adapter.methodvisitor.visitLabel(returnLabel);
   }
 
-  private void emitComparisonForText(TajoGeneratorAdapter adapter, TupleComparatorImpl c, int idx,
+  private void emitComparisonForText(TajoGeneratorAdapter adapter, BaseTupleComparator c, int idx,
                                      boolean ensureUnSafeTuple) {
     if (ensureUnSafeTuple) {
       emitGetParam(adapter, c, idx, LEFT_VALUE);

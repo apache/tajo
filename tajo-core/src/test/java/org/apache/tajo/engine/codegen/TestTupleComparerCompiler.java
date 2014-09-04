@@ -24,9 +24,9 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
-import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.tuple.offheap.*;
 import org.junit.AfterClass;
@@ -70,7 +70,7 @@ public class TestTupleComparerCompiler {
   private TupleComparator [] createComparators(SortSpec [][] sortSpecs, boolean unsafeTuple) {
     TupleComparator [] comps = new TupleComparator[sortSpecs.length];
     for (int i = 0; i < sortSpecs.length; i++) {
-      TupleComparatorImpl compImpl = new TupleComparatorImpl(schema, sortSpecs[i]);
+      BaseTupleComparator compImpl = new BaseTupleComparator(schema, sortSpecs[i]);
       comps[i] = compiler.compile(compImpl, unsafeTuple);
     }
 
@@ -165,7 +165,7 @@ public class TestTupleComparerCompiler {
         new SortSpec(new Column("col3", INT4))};
 
 
-    TupleComparatorImpl comparator = new TupleComparatorImpl(schema, sortSpecs);
+    BaseTupleComparator comparator = new BaseTupleComparator(schema, sortSpecs);
 
     TajoClassLoader classLoader = new TajoClassLoader();
 
@@ -227,7 +227,7 @@ public class TestTupleComparerCompiler {
         new SortSpec(new Column("col4", FLOAT4)),
         new SortSpec(new Column("col5", FLOAT8))};
 
-    TupleComparatorImpl comparator = new TupleComparatorImpl(schema, sortSpecs);
+    BaseTupleComparator comparator = new BaseTupleComparator(schema, sortSpecs);
 
     TajoClassLoader classLoader = new TajoClassLoader();
     TupleComparerCompiler compiler = new TupleComparerCompiler(classLoader);
@@ -287,7 +287,7 @@ public class TestTupleComparerCompiler {
     SortSpec[] sortSpecs = new SortSpec[] {
         new SortSpec(new Column("col5", FLOAT8)),
         new SortSpec(new Column("col6", TEXT))};
-    TupleComparatorImpl compImpl = new TupleComparatorImpl(schema, sortSpecs);
+    BaseTupleComparator compImpl = new BaseTupleComparator(schema, sortSpecs);
     TupleComparator comp = compiler.compile(compImpl, false);
 
     Tuple t1 = new VTuple(schema.size());

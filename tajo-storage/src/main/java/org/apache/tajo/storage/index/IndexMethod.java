@@ -20,13 +20,13 @@ package org.apache.tajo.storage.index;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.storage.TupleComparatorImpl;
+import org.apache.tajo.storage.BaseTupleComparator;
 
 import java.io.IOException;
 
 public interface IndexMethod {
   IndexWriter getIndexWriter(final Path fileName, int level, Schema keySchema,
-      TupleComparatorImpl comparator) throws IOException;
+      BaseTupleComparator comparator) throws IOException;
   IndexReader getIndexReader(final Path fileName, Schema keySchema,
-      TupleComparatorImpl comparator) throws IOException;
+      BaseTupleComparator comparator) throws IOException;
 }

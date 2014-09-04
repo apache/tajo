@@ -45,8 +45,8 @@ import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer;
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.SortSpecArray;
 import org.apache.tajo.storage.AbstractStorageManager;
+import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.FileUtil;
@@ -1136,7 +1136,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     String indexName = IndexUtil.getIndexNameOfFrag(fragments.get(0), annotation.getSortKeys());
     Path indexPath = new Path(sm.getTablePath(annotation.getTableName()), "index");
 
-    TupleComparatorImpl comp = new TupleComparatorImpl(annotation.getKeySchema(),
+    BaseTupleComparator comp = new BaseTupleComparator(annotation.getKeySchema(),
         annotation.getSortKeys());
     return new BSTIndexScanExec(ctx, sm, annotation, fragments.get(0), new Path(indexPath, indexName),
         annotation.getKeySchema(), comp, annotation.getDatum());

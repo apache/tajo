@@ -116,7 +116,7 @@ public class TestBSTIndex {
     keySchema.addColumn(new Column("long", Type.INT8));
     keySchema.addColumn(new Column("double", Type.FLOAT8));
 
-    TupleComparatorImpl comp = new TupleComparatorImpl(keySchema, sortKeys);
+    BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
     BSTIndex bst = new BSTIndex(conf);
     BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testFindValue_" + storeType + ".idx"),
@@ -190,7 +190,7 @@ public class TestBSTIndex {
     keySchema.addColumn(new Column("long", Type.INT8));
     keySchema.addColumn(new Column("double", Type.FLOAT8));
 
-    TupleComparatorImpl comp = new TupleComparatorImpl(keySchema, sortKeys);
+    BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
     BSTIndex bst = new BSTIndex(conf);
     BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testBuildIndexWithAppender_" + storeType + ".idx"),
@@ -283,7 +283,7 @@ public class TestBSTIndex {
     keySchema.addColumn(new Column("long", Type.INT8));
     keySchema.addColumn(new Column("double", Type.FLOAT8));
 
-    TupleComparatorImpl comp = new TupleComparatorImpl(keySchema, sortKeys);
+    BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
     BSTIndex bst = new BSTIndex(conf);
     BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testFindOmittedValue_" + storeType + ".idx"),
@@ -355,7 +355,7 @@ public class TestBSTIndex {
     keySchema.addColumn(new Column("int", Type.INT4));
     keySchema.addColumn(new Column("long", Type.INT8));
 
-    TupleComparatorImpl comp = new TupleComparatorImpl(keySchema, sortKeys);
+    BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
     BSTIndex bst = new BSTIndex(conf);
     BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testFindNextKeyValue_" + storeType + ".idx"),
@@ -445,7 +445,7 @@ public class TestBSTIndex {
     keySchema.addColumn(new Column("int", Type.INT4));
     keySchema.addColumn(new Column("long", Type.INT8));
 
-    TupleComparatorImpl comp = new TupleComparatorImpl(keySchema, sortKeys);
+    BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
     BSTIndex bst = new BSTIndex(conf);
     BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testFindNextKeyOmittedValue_" + storeType + ".idx"),
@@ -525,7 +525,7 @@ public class TestBSTIndex {
     keySchema.addColumn(new Column("long", Type.INT8));
     keySchema.addColumn(new Column("double", Type.FLOAT8));
 
-    TupleComparatorImpl comp = new TupleComparatorImpl(keySchema, sortKeys);
+    BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
     BSTIndex bst = new BSTIndex(conf);
     BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testFindMinValue_" + storeType + ".idx"),
         BSTIndex.TWO_LEVEL_INDEX, keySchema, comp);
@@ -607,7 +607,7 @@ public class TestBSTIndex {
     keySchema.addColumn(new Column("int", Type.INT4));
     keySchema.addColumn(new Column("long", Type.INT8));
 
-    TupleComparatorImpl comp = new TupleComparatorImpl(keySchema, sortKeys);
+    BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
     BSTIndex bst = new BSTIndex(conf);
     BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testMinMax_" + storeType + ".idx"),
@@ -712,7 +712,7 @@ public class TestBSTIndex {
     keySchema.addColumn(new Column("int", Type.INT4));
     keySchema.addColumn(new Column("long", Type.INT8));
 
-    TupleComparatorImpl comp = new TupleComparatorImpl(keySchema, sortKeys);
+    BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
     BSTIndex bst = new BSTIndex(conf);
     BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "testConcurrentAccess_" + storeType + ".idx"),
@@ -792,7 +792,7 @@ public class TestBSTIndex {
     keySchema.addColumn(new Column("long", Type.INT8));
     keySchema.addColumn(new Column("double", Type.FLOAT8));
 
-    TupleComparatorImpl comp = new TupleComparatorImpl(keySchema, sortKeys);
+    BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
 
     BSTIndex bst = new BSTIndex(conf);
@@ -883,7 +883,7 @@ public class TestBSTIndex {
     keySchema.addColumn(new Column("int", Type.INT4));
     keySchema.addColumn(new Column("long", Type.INT8));
 
-    TupleComparatorImpl comp = new TupleComparatorImpl(keySchema, sortKeys);
+    BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
     BSTIndex bst = new BSTIndex(conf);
     BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir,

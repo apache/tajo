@@ -25,9 +25,9 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.tuple.offheap.TestOffHeapRowBlock;
 import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
 import org.junit.Test;
@@ -40,11 +40,11 @@ import static org.junit.Assert.assertTrue;
 
 public class TestPairWiseMerger {
   static TajoConf conf;
-  private static TupleComparatorImpl comparator;
+  private static BaseTupleComparator comparator;
   static {
     conf = new TajoConf();
 
-    comparator = new TupleComparatorImpl(TestOffHeapRowBlock.schema,
+    comparator = new BaseTupleComparator(TestOffHeapRowBlock.schema,
         new SortSpec[] {
             new SortSpec(new Column("col2", TajoDataTypes.Type.INT4)),
             new SortSpec(new Column("col3", TajoDataTypes.Type.INT8))
@@ -293,7 +293,7 @@ public class TestPairWiseMerger {
     return scanners;
   }
 
-  private static void assertSortResult(int[] rowNums, Scanner scanner, TupleComparatorImpl comparator) throws IOException {
+  private static void assertSortResult(int[] rowNums, Scanner scanner, BaseTupleComparator comparator) throws IOException {
     Tuple tuple;
     Tuple curVal;
     Tuple preVal = null;

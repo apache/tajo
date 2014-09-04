@@ -30,8 +30,8 @@ import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.planner.PlanningException;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.TupleComparator;
-import org.apache.tajo.storage.TupleComparatorImpl;
 import org.apache.tajo.util.Pair;
 
 import java.util.concurrent.CountDownLatch;
@@ -126,13 +126,13 @@ public class ExecutionBlockSharedResource {
     }
   }
 
-  public TupleComparator compileComparator(Schema schema, TupleComparatorImpl comp) {
+  public TupleComparator compileComparator(Schema schema, BaseTupleComparator comp) {
     return compilationContext.getComparatorCompiler().compile(comp, false);
   }
 
-  public TupleComparator getCompiledComparator(Schema schema, TupleComparatorImpl comp) {
+  public TupleComparator getCompiledComparator(Schema schema, BaseTupleComparator comp) {
     if (codeGenEnabled) {
-      Pair<Schema, TupleComparatorImpl> key = new Pair<Schema, TupleComparatorImpl>(schema, comp);
+      Pair<Schema, BaseTupleComparator> key = new Pair<Schema, BaseTupleComparator>(schema, comp);
       if (compilationContext.getPrecompiedComparators().containsKey(key)) {
         return compilationContext.getPrecompiedComparators().get(key);
       } else {

@@ -47,7 +47,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
   private Schema keySchema;
 
   private BSTIndex.BSTIndexWriter indexWriter;
-  private TupleComparatorImpl comp;
+  private BaseTupleComparator comp;
   private FileAppender appender;
   private TableMeta meta;
 
@@ -71,7 +71,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
     }
 
     BSTIndex bst = new BSTIndex(new TajoConf());
-    this.comp = new TupleComparatorImpl(keySchema, sortSpecs);
+    this.comp = new BaseTupleComparator(keySchema, sortSpecs);
     Path storeTablePath = new Path(context.getWorkDir(), "output");
     LOG.info("Output data directory: " + storeTablePath);
     this.meta = CatalogUtil.newTableMeta(context.getDataChannel() != null ?

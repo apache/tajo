@@ -149,7 +149,7 @@ public class TestExternalSortExec {
     int cnt = 0;
     exec.init();
     long start = System.currentTimeMillis();
-    TupleComparatorImpl comparator = new TupleComparatorImpl(exec.getSchema(),
+    BaseTupleComparator comparator = new BaseTupleComparator(exec.getSchema(),
         new SortSpec[]{
             new SortSpec(new Column("col2", Type.INT4)),
             new SortSpec(new Column("col3", Type.INT8))
@@ -184,7 +184,7 @@ public class TestExternalSortExec {
   }
 
   public static DirectRawFileScanner createSortedScanner(TajoConf conf, TableMeta meta, int rowNum,
-                                                         TupleComparatorImpl comparator)
+                                                         BaseTupleComparator comparator)
       throws IOException {
     Path testDir = CommonTestingUtil.getTestDir();
     Path outFile = new Path(testDir, "file1.out");
