@@ -189,7 +189,7 @@ public class TajoCli {
 
     if (cmd.hasOption("help")) {
       printUsage();
-      return;
+      System.exit(0);
     }
 
     String hostName = null;
