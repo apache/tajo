@@ -57,7 +57,7 @@ public class BaseTupleBuilder extends OffHeapRowWriter implements TupleBuilder, 
   public void ensureSize(int size) {
     if (buffer.remaining() - size < 0) { // check the remain size
       // enlarge new buffer and copy writing data
-      int newBlockSize = UnsafeUtil.alignedSize(buffer.capacity() << 1);
+      int newBlockSize = UnsafeUtil.alignedSize(buffer.capacity() * 2);
       ByteBuffer newByteBuf = ByteBuffer.allocateDirect(newBlockSize);
       long newAddress = ((DirectBuffer)newByteBuf).address();
       UNSAFE.copyMemory(this.address, newAddress, buffer.limit());

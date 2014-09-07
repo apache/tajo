@@ -43,6 +43,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 public class RawFile {
+  public static final String FILE_EXTENSION = "raw";
+
   private static final Log LOG = LogFactory.getLog(RawFile.class);
 
   public static class RawFileScanner extends FileScanner implements SeekableScanner {

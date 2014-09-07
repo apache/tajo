@@ -44,6 +44,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 public class DirectRawFileWriter extends FileAppender {
+  public static final String FILE_EXTENSION = "draw";
   private static final Log LOG = LogFactory.getLog(DirectRawFileWriter.class);
 
   private FileChannel channel;

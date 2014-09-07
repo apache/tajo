@@ -49,6 +49,7 @@ import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.storage.BaseTupleComparator;
+import org.apache.tajo.storage.RawFile;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
@@ -726,7 +727,7 @@ public class Task {
           if (!storeDir.exists()) {
             storeDir.mkdirs();
           }
-          storeFile = new File(storeDir, "in_" + i);
+          storeFile = new File(storeDir, "in_" + i + "." + RawFile.FILE_EXTENSION);
           Fetcher fetcher = new Fetcher(systemConf, uri, storeFile, channelFactory);
           runnerList.add(fetcher);
           i++;

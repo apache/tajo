@@ -242,7 +242,12 @@ public class ExternalSortExec extends SortExec {
    * Get a local path from all temporal paths in round-robin manner.
    */
   private synchronized Path getChunkPathForWrite(int level, int chunkId) throws IOException {
-    return localDirAllocator.getLocalPathForWrite(sortTmpDir + "/" + level +"_" + chunkId, context.getConf());
+    // example:
+    //   - ${sortTmpDir}/1_4.draw for 1 run and 4th chunk
+    //   - ${sortTmpDir}/2_8.draw for 2 run and 8th chunk
+    String outputFileName = sortTmpDir + "/" + level + "_" + chunkId + "." + DirectRawFileWriter.FILE_EXTENSION;
+    return localDirAllocator.getLocalPathForWrite(outputFileName, context.getConf());
+
   }
 
   @Override
@@ -461,10 +466,13 @@ public class ExternalSortExec extends SortExec {
   }
 
   private Scanner getFileScanner(Path path) throws IOException {
-    if (mergedInputPaths != null) {
+    String extension = FileUtil.getExtension(path.getName());
+    if (extension.equals(RawFile.FILE_EXTENSION)) {
       return new RawFile.RawFileScanner(context.getConf(), plan.getInSchema(), meta, path);
-    } else {
+    } else if (extension.equalsIgnoreCase(DirectRawFileWriter.FILE_EXTENSION)) {
       return new DirectRawFileScanner(context.getConf(), plan.getInSchema(), meta, path);
+    } else {
+      throw new IllegalStateException("Unknown File Extension: " + path);
     }
   }
 
