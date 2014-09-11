@@ -25,6 +25,7 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.client.TajoClient;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -54,8 +55,8 @@ public class TestTajoJdbc extends QueryTestCaseBase {
   public static void tearDown() throws Exception {
   }
 
-  public static String buildConnectionUri(String hostName, int port, String databaseNme) {
-    return "jdbc:tajo://" + hostName + ":" + port + "/" + databaseNme;
+  public static String buildConnectionUri(String hostName, int port, String databaseName) {
+    return "jdbc:tajo://" + hostName + ":" + port + "/" + databaseName;
   }
 
   @Test
@@ -393,6 +394,96 @@ public class TestTajoJdbc extends QueryTestCaseBase {
         assertTrue(conns[1].isValid(100));
         conns[1].close();
         assertFalse(conns[1].isValid(100));
+      }
+    }
+  }
+
+  @Test
+  public void testSetStatement() throws Exception {
+    assertTrue(TajoStatement.isSetVariableQuery("Set JOIN_TASK_INPUT_SIZE 123"));
+    assertTrue(TajoStatement.isSetVariableQuery("SET JOIN_TASK_INPUT_SIZE 123"));
+    assertFalse(TajoStatement.isSetVariableQuery("--SET JOIN_TASK_INPUT_SIZE 123"));
+
+    String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+        DEFAULT_DATABASE_NAME);
+
+    Connection conn = DriverManager.getConnection(connUri);
+
+    Statement stmt = null;
+    ResultSet res = null;
+    try {
+      stmt = conn.createStatement();
+      res = stmt.executeQuery("Set JOIN_TASK_INPUT_SIZE 123");
+      assertFalse(res.next());
+      ResultSetMetaData rsmd = res.getMetaData();
+      assertNotNull(rsmd);
+      assertEquals(0, rsmd.getColumnCount());
+
+      TajoClient connTajoClient = ((TajoConnection)stmt.getConnection()).getTajoClient();
+      Map<String, String> variables = connTajoClient.getAllSessionVariables();
+      String value = variables.get("JOIN_TASK_INPUT_SIZE");
+      assertNotNull(value);
+      assertEquals("123", value);
+
+      res.close();
+
+      res = stmt.executeQuery("unset JOIN_TASK_INPUT_SIZE");
+      variables = connTajoClient.getAllSessionVariables();
+      value = variables.get("JOIN_TASK_INPUT_SIZE");
+      assertNull(value);
+    } finally {
+      if (res != null) {
+        res.close();
+      }
+      if (stmt != null) {
+        stmt.close();
+      }
+      if (conn != null) {
+        conn.close();
+      }
+    }
+  }
+
+  @Test
+  public void testSetPreparedStatement() throws Exception {
+    String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+        DEFAULT_DATABASE_NAME);
+
+    Connection conn = DriverManager.getConnection(connUri);
+
+    PreparedStatement stmt = null;
+    ResultSet res = null;
+    try {
+      stmt = conn.prepareStatement("Set JOIN_TASK_INPUT_SIZE 123");
+      res = stmt.executeQuery();
+      assertFalse(res.next());
+      ResultSetMetaData rsmd = res.getMetaData();
+      assertNotNull(rsmd);
+      assertEquals(0, rsmd.getColumnCount());
+
+      TajoClient connTajoClient = ((TajoConnection)stmt.getConnection()).getTajoClient();
+      Map<String, String> variables = connTajoClient.getAllSessionVariables();
+      String value = variables.get("JOIN_TASK_INPUT_SIZE");
+      assertNotNull(value);
+      assertEquals("123", value);
+
+      res.close();
+      stmt.close();
+
+      stmt = conn.prepareStatement("unset JOIN_TASK_INPUT_SIZE");
+      res = stmt.executeQuery();
+      variables = connTajoClient.getAllSessionVariables();
+      value = variables.get("JOIN_TASK_INPUT_SIZE");
+      assertNull(value);
+    } finally {
+      if (res != null) {
+        res.close();
+      }
+      if (stmt != null) {
+        stmt.close();
+      }
+      if (conn != null) {
+        conn.close();
       }
     }
   }
