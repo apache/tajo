@@ -137,6 +137,8 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1010: Improve multiple DISTINCT aggregation. (hyoungjun, jaehwa)
+
     TAJO-1022: tsql does not work as background process(Hyoungjun Kim)
 
     TAJO-1029: TAJO_PULLSERVER_STANDALONE should be false in default tajo-env.sh

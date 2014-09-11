@@ -799,13 +799,14 @@ public class Repartitioner {
     }
 
     int groupingColumns = 0;
-    GroupbyNode groupby = PlannerUtil.findMostBottomNode(subQuery.getBlock().getPlan(), NodeType.GROUP_BY);
-    if (groupby != null) {
-      groupingColumns = groupby.getGroupingColumns().length;
-    } else {
-      DistinctGroupbyNode dGroupby = PlannerUtil.findMostBottomNode(subQuery.getBlock().getPlan(), NodeType.DISTINCT_GROUP_BY);
-      if (dGroupby != null) {
-        groupingColumns = dGroupby.getGroupingColumns().length;
+    LogicalNode[] groupbyNodes = PlannerUtil.findAllNodes(subQuery.getBlock().getPlan(),
+        new NodeType[]{NodeType.GROUP_BY, NodeType.DISTINCT_GROUP_BY});
+    if (groupbyNodes != null && groupbyNodes.length > 0) {
+      LogicalNode bottomNode = groupbyNodes[0];
+      if (bottomNode.getType() == NodeType.GROUP_BY) {
+        groupingColumns = ((GroupbyNode)bottomNode).getGroupingColumns().length;
+      } else if (bottomNode.getType() == NodeType.DISTINCT_GROUP_BY) {
+        groupingColumns = ((DistinctGroupbyNode)bottomNode).getGroupingColumns().length;
       }
     }
     // get a proper number of tasks

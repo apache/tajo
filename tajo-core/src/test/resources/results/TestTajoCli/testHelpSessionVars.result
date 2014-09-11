@@ -25,6 +25,7 @@ Available Session Variables:
 \set JOIN_PER_SHUFFLE_SIZE [int value] - shuffle output size for join (mb)
 \set GROUPBY_PER_SHUFFLE_SIZE [int value] - shuffle output size for sort (mb)
 \set TABLE_PARTITION_PER_SHUFFLE_SIZE [int value] - shuffle output size for partition table write (mb)
+\set GROUPBY_MULTI_LEVEL_ENABLED [true or false] - Multiple level groupby enabled
 \set EXTSORT_BUFFER_SIZE [long value] - sort buffer size for external sort (mb)
 \set HASH_JOIN_SIZE_LIMIT [long value] - limited size for hash join (mb)
 \set INNER_HASH_JOIN_SIZE_LIMIT [long value] - limited size for hash inner join (mb)

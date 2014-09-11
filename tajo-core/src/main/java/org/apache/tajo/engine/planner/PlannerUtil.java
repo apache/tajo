@@ -762,4 +762,17 @@ public class PlannerUtil {
 
     return explains.toString();
   }
+
+  public static boolean isPlanMultiDistinct(GroupbyNode groupbyNode) {
+    Set<Column> distinctColumns = new HashSet<Column>();
+    for (AggregationFunctionCallEval eachEval: groupbyNode.getAggFunctions()) {
+      if (eachEval.isDistinct()) {
+        distinctColumns.addAll(EvalTreeUtil.findUniqueColumns(eachEval));
+        if (distinctColumns.size() > 1) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
 }

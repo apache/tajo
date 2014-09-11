@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
+import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalTreeUtil;
@@ -36,11 +37,14 @@ import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.GlobalPlanner.GlobalPlanContext;
+import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.DistinctGroupbyNode;
 import org.apache.tajo.engine.planner.logical.GroupbyNode;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.planner.logical.ScanNode;
+import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
+import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.SortSpecArray;
 import org.apache.tajo.util.TUtil;
 
@@ -56,6 +60,259 @@ public class DistinctGroupbyBuilder {
     this.globalPlanner = globalPlanner;
   }
 
+  public ExecutionBlock buildMultiLevelPlan(GlobalPlanContext context,
+                                            ExecutionBlock latestExecBlock,
+                                            LogicalNode currentNode) throws PlanningException {
+    try {
+      GroupbyNode groupbyNode = (GroupbyNode) currentNode;
+
+      LogicalPlan plan = context.getPlan().getLogicalPlan();
+
+      DistinctGroupbyNode baseDistinctNode =
+          buildMultiLevelBaseDistinctGroupByNode(context, latestExecBlock, groupbyNode);
+      baseDistinctNode.setGroupbyPlan(groupbyNode);
+
+      // Set total Aggregation Functions.
+      AggregationFunctionCallEval[] aggFunctions =
+          new AggregationFunctionCallEval[groupbyNode.getAggFunctions().length];
+
+      for (int i = 0; i < aggFunctions.length; i++) {
+        aggFunctions[i] = (AggregationFunctionCallEval) groupbyNode.getAggFunctions()[i].clone();
+        aggFunctions[i].setFirstPhase();
+        // If there is not grouping column, we can't find column alias.
+        // Thus we should find the alias at Groupbynode output schema.
+        if (groupbyNode.getGroupingColumns().length == 0
+            && aggFunctions.length == groupbyNode.getOutSchema().getColumns().size()) {
+          aggFunctions[i].setAlias(groupbyNode.getOutSchema().getColumn(i).getQualifiedName());
+        }
+      }
+
+      if (groupbyNode.getGroupingColumns().length == 0
+          && aggFunctions.length == groupbyNode.getOutSchema().getColumns().size()) {
+        groupbyNode.setAggFunctions(aggFunctions);
+      }
+
+      baseDistinctNode.setAggFunctions(aggFunctions);
+
+      // Create First, SecondStage's Node using baseNode
+      DistinctGroupbyNode firstStageDistinctNode = PlannerUtil.clone(plan, baseDistinctNode);
+      DistinctGroupbyNode secondStageDistinctNode = PlannerUtil.clone(plan, baseDistinctNode);
+      DistinctGroupbyNode thirdStageDistinctNode = PlannerUtil.clone(plan, baseDistinctNode);
+
+      // Set second, third non-distinct aggregation's eval node to field eval
+      GroupbyNode lastGroupbyNode = secondStageDistinctNode.getGroupByNodes().get(secondStageDistinctNode.getGroupByNodes().size() - 1);
+      if (!lastGroupbyNode.isDistinct()) {
+        int index = 0;
+        for (AggregationFunctionCallEval aggrFunction: lastGroupbyNode.getAggFunctions()) {
+          aggrFunction.setIntermediatePhase();
+          aggrFunction.setArgs(new EvalNode[]{new FieldEval(lastGroupbyNode.getTargets()[index].getNamedColumn())});
+          index++;
+        }
+      }
+      lastGroupbyNode = thirdStageDistinctNode.getGroupByNodes().get(thirdStageDistinctNode.getGroupByNodes().size() - 1);
+      if (!lastGroupbyNode.isDistinct()) {
+        int index = 0;
+        for (AggregationFunctionCallEval aggrFunction: lastGroupbyNode.getAggFunctions()) {
+          aggrFunction.setFirstPhase();
+          aggrFunction.setArgs(new EvalNode[]{new FieldEval(lastGroupbyNode.getTargets()[index].getNamedColumn())});
+          index++;
+        }
+      }
+
+      // Set in & out schema for each DistinctGroupbyNode.
+      secondStageDistinctNode.setInSchema(firstStageDistinctNode.getOutSchema());
+      secondStageDistinctNode.setOutSchema(firstStageDistinctNode.getOutSchema());
+      thirdStageDistinctNode.setInSchema(firstStageDistinctNode.getOutSchema());
+      thirdStageDistinctNode.setOutSchema(groupbyNode.getOutSchema());
+
+      // Set latestExecBlock's plan with firstDistinctNode
+      latestExecBlock.setPlan(firstStageDistinctNode);
+
+      // Make SecondStage ExecutionBlock
+      ExecutionBlock secondStageBlock = context.getPlan().newExecutionBlock();
+
+      // Make ThirdStage ExecutionBlock
+      ExecutionBlock thirdStageBlock = context.getPlan().newExecutionBlock();
+
+      // Set Enforcer
+      setMultiStageAggregationEnforcer(latestExecBlock, firstStageDistinctNode, secondStageBlock,
+          secondStageDistinctNode, thirdStageBlock, thirdStageDistinctNode);
+
+      //Create data channel FirstStage to SecondStage
+      DataChannel channel;
+      if (groupbyNode.isEmptyGrouping()) {
+        channel = new DataChannel(latestExecBlock, secondStageBlock, HASH_SHUFFLE, 1);
+        channel.setShuffleKeys(firstStageDistinctNode.getOutSchema().getColumns().toArray(new Column[]{}));
+      } else {
+        channel = new DataChannel(latestExecBlock, secondStageBlock, HASH_SHUFFLE, 32);
+        channel.setShuffleKeys(firstStageDistinctNode.getOutSchema().getColumns().toArray(new Column[]{}));
+      }
+      channel.setSchema(firstStageDistinctNode.getOutSchema());
+      channel.setStoreType(globalPlanner.getStoreType());
+
+      ScanNode scanNode = GlobalPlanner.buildInputExecutor(context.getPlan().getLogicalPlan(), channel);
+      secondStageDistinctNode.setChild(scanNode);
+
+      secondStageBlock.setPlan(secondStageDistinctNode);
+
+      context.getPlan().addConnect(channel);
+
+      //Create data channel SecondStage to ThirdStage
+      if (groupbyNode.isEmptyGrouping()) {
+        channel = new DataChannel(secondStageBlock, thirdStageBlock, HASH_SHUFFLE, 1);
+        channel.setShuffleKeys(firstStageDistinctNode.getGroupingColumns());
+      } else {
+        channel = new DataChannel(secondStageBlock, thirdStageBlock, HASH_SHUFFLE, 32);
+        channel.setShuffleKeys(firstStageDistinctNode.getGroupingColumns());
+      }
+      channel.setSchema(secondStageDistinctNode.getOutSchema());
+      channel.setStoreType(globalPlanner.getStoreType());
+
+      scanNode = GlobalPlanner.buildInputExecutor(context.getPlan().getLogicalPlan(), channel);
+      thirdStageDistinctNode.setChild(scanNode);
+
+      thirdStageBlock.setPlan(thirdStageDistinctNode);
+
+      context.getPlan().addConnect(channel);
+
+      if (GlobalPlanner.hasUnionChild(firstStageDistinctNode)) {
+        buildDistinctGroupbyAndUnionPlan(
+            context.getPlan(), latestExecBlock, firstStageDistinctNode, firstStageDistinctNode);
+      }
+
+      return thirdStageBlock;
+    } catch (Exception e) {
+      LOG.error(e.getMessage(), e);
+      throw new PlanningException(e);
+    }
+  }
+
+  private DistinctGroupbyNode buildMultiLevelBaseDistinctGroupByNode(GlobalPlanContext context,
+                                                                     ExecutionBlock latestExecBlock,
+                                                                     GroupbyNode groupbyNode) {
+    LogicalPlan plan = context.getPlan().getLogicalPlan();
+
+    /*
+     Making DistinctGroupbyNode from GroupByNode
+     select col1, count(distinct col2), count(distinct col3), sum(col4) from ... group by col1
+     => DistinctGroupbyNode
+        Distinct Seq
+        grouping key = col1
+        Sub GroupbyNodes
+         - GroupByNode1: grouping(col2), expr(count distinct col2)
+         - GroupByNode2: grouping(col3), expr(count distinct col3)
+         - GroupByNode3: expr(sum col4)
+    */
+    List<Column> originalGroupingColumns = Arrays.asList(groupbyNode.getGroupingColumns());
+
+    List<GroupbyNode> childGroupbyNodes = new ArrayList<GroupbyNode>();
+
+    List<AggregationFunctionCallEval> otherAggregationFunctionCallEvals = new ArrayList<AggregationFunctionCallEval>();
+    List<Target> otherAggregationFunctionTargets = new ArrayList<Target>();
+
+    //distinct columns -> GroupbyNode
+    Map<String, DistinctGroupbyNodeBuildInfo> distinctNodeBuildInfos = new HashMap<String, DistinctGroupbyNodeBuildInfo>();
+    AggregationFunctionCallEval[] aggFunctions = groupbyNode.getAggFunctions();
+    for (int aggIdx = 0; aggIdx < aggFunctions.length; aggIdx++) {
+      AggregationFunctionCallEval aggFunction = aggFunctions[aggIdx];
+      aggFunction.setFirstPhase();
+      Target originAggFunctionTarget = groupbyNode.getTargets()[originalGroupingColumns.size() + aggIdx];
+      Target aggFunctionTarget =
+          new Target(new FieldEval(originAggFunctionTarget.getEvalTree().getName(), aggFunction.getValueType()));
+
+      if (aggFunction.isDistinct()) {
+        // Create or reuse Groupby node for each Distinct expression.
+        LinkedHashSet<Column> groupbyUniqColumns = EvalTreeUtil.findUniqueColumns(aggFunction);
+        String groupbyMapKey = EvalTreeUtil.columnsToStr(groupbyUniqColumns);
+        DistinctGroupbyNodeBuildInfo buildInfo = distinctNodeBuildInfos.get(groupbyMapKey);
+        if (buildInfo == null) {
+          GroupbyNode distinctGroupbyNode = new GroupbyNode(context.getPlan().getLogicalPlan().newPID());
+          buildInfo = new DistinctGroupbyNodeBuildInfo(distinctGroupbyNode);
+          distinctNodeBuildInfos.put(groupbyMapKey, buildInfo);
+
+          // Grouping columns are GROUP BY clause's column + Distinct column.
+          List<Column> groupingColumns = new ArrayList<Column>();
+          for (Column eachGroupingColumn: groupbyUniqColumns) {
+            if (!groupingColumns.contains(eachGroupingColumn)) {
+              groupingColumns.add(eachGroupingColumn);
+            }
+          }
+          distinctGroupbyNode.setGroupingColumns(groupingColumns.toArray(new Column[]{}));
+        }
+        buildInfo.addAggFunction(aggFunction);
+        buildInfo.addAggFunctionTarget(aggFunctionTarget);
+      } else {
+        otherAggregationFunctionCallEvals.add(aggFunction);
+        otherAggregationFunctionTargets.add(aggFunctionTarget);
+      }
+    }
+
+    List<Target> baseGroupByTargets = new ArrayList<Target>();
+    baseGroupByTargets.add(new Target(new FieldEval(new Column("?distinctseq", Type.INT2))));
+    for (Column column : originalGroupingColumns) {
+      baseGroupByTargets.add(new Target(new FieldEval(column)));
+    }
+
+    //Add child groupby node for each Distinct clause
+    for (String eachKey: distinctNodeBuildInfos.keySet()) {
+      DistinctGroupbyNodeBuildInfo buildInfo = distinctNodeBuildInfos.get(eachKey);
+      GroupbyNode eachGroupbyNode = buildInfo.getGroupbyNode();
+      List<AggregationFunctionCallEval> groupbyAggFunctions = buildInfo.getAggFunctions();
+      String [] firstPhaseEvalNames = new String[groupbyAggFunctions.size()];
+      int index = 0;
+      for (AggregationFunctionCallEval eachCallEval: groupbyAggFunctions) {
+        firstPhaseEvalNames[index++] = eachCallEval.getName();
+      }
+
+      Target[] targets = new Target[eachGroupbyNode.getGroupingColumns().length + groupbyAggFunctions.size()];
+      int targetIdx = 0;
+
+      for (Column column : eachGroupbyNode.getGroupingColumns()) {
+        Target target = new Target(new FieldEval(column));
+        targets[targetIdx++] = target;
+        baseGroupByTargets.add(target);
+      }
+      for (Target eachAggFunctionTarget: buildInfo.getAggFunctionTargets()) {
+        targets[targetIdx++] = eachAggFunctionTarget;
+      }
+      eachGroupbyNode.setTargets(targets);
+      eachGroupbyNode.setAggFunctions(groupbyAggFunctions.toArray(new AggregationFunctionCallEval[]{}));
+      eachGroupbyNode.setDistinct(true);
+      eachGroupbyNode.setInSchema(groupbyNode.getInSchema());
+
+      childGroupbyNodes.add(eachGroupbyNode);
+    }
+
+    // Merge other aggregation function to a GroupBy Node.
+    if (!otherAggregationFunctionCallEvals.isEmpty()) {
+      // finally this aggregation output tuple's order is GROUP_BY_COL1, COL2, .... + AGG_VALUE, SUM_VALUE, ...
+      GroupbyNode otherGroupbyNode = new GroupbyNode(context.getPlan().getLogicalPlan().newPID());
+
+      Target[] targets = new Target[otherAggregationFunctionTargets.size()];
+      int targetIdx = 0;
+      for (Target eachTarget : otherAggregationFunctionTargets) {
+        targets[targetIdx++] = eachTarget;
+        baseGroupByTargets.add(eachTarget);
+      }
+
+      otherGroupbyNode.setTargets(targets);
+      otherGroupbyNode.setGroupingColumns(new Column[]{});
+      otherGroupbyNode.setAggFunctions(otherAggregationFunctionCallEvals.toArray(new AggregationFunctionCallEval[]{}));
+      otherGroupbyNode.setInSchema(groupbyNode.getInSchema());
+
+      childGroupbyNodes.add(otherGroupbyNode);
+    }
+
+    DistinctGroupbyNode baseDistinctNode = new DistinctGroupbyNode(context.getPlan().getLogicalPlan().newPID());
+    baseDistinctNode.setTargets(baseGroupByTargets.toArray(new Target[]{}));
+    baseDistinctNode.setGroupColumns(groupbyNode.getGroupingColumns());
+    baseDistinctNode.setInSchema(groupbyNode.getInSchema());
+    baseDistinctNode.setChild(groupbyNode.getChild());
+
+    baseDistinctNode.setGroupbyNodes(childGroupbyNodes);
+
+    return baseDistinctNode;
+  }
 
   public ExecutionBlock buildPlan(GlobalPlanContext context,
                                   ExecutionBlock latestExecBlock,
@@ -66,7 +323,7 @@ public class DistinctGroupbyBuilder {
       DistinctGroupbyNode baseDistinctNode = buildBaseDistinctGroupByNode(context, latestExecBlock, groupbyNode);
 
       // Create First, SecondStage's Node using baseNode
-      DistinctGroupbyNode[] distinctNodes = createMultiPhaseDistinctNode(plan, groupbyNode, baseDistinctNode);
+      DistinctGroupbyNode[] distinctNodes = createTwoPhaseDistinctNode(plan, groupbyNode, baseDistinctNode);
 
       DistinctGroupbyNode firstStageDistinctNode = distinctNodes[0];
       DistinctGroupbyNode secondStageDistinctNode = distinctNodes[1];
@@ -100,7 +357,7 @@ public class DistinctGroupbyBuilder {
       context.getPlan().addConnect(channel);
 
       if (GlobalPlanner.hasUnionChild(firstStageDistinctNode)) {
-        globalPlanner.buildDistinctGroupbyAndUnionPlan(
+        buildDistinctGroupbyAndUnionPlan(
             context.getPlan(), latestExecBlock, firstStageDistinctNode, firstStageDistinctNode);
       }
 
@@ -162,6 +419,7 @@ public class DistinctGroupbyBuilder {
         buildInfo.addAggFunction(aggFunction);
         buildInfo.addAggFunctionTarget(aggFunctionTarget);
       } else {
+        aggFunction.setFinalPhase();
         otherAggregationFunctionCallEvals.add(aggFunction);
         otherAggregationFunctionTargets.add(aggFunctionTarget);
       }
@@ -224,7 +482,7 @@ public class DistinctGroupbyBuilder {
     return baseDistinctNode;
   }
 
-  public DistinctGroupbyNode[] createMultiPhaseDistinctNode(LogicalPlan plan,
+  public DistinctGroupbyNode[] createTwoPhaseDistinctNode(LogicalPlan plan,
                                                                    GroupbyNode originGroupbyNode,
                                                                    DistinctGroupbyNode baseDistinctNode) {
     /*
@@ -454,6 +712,75 @@ public class DistinctGroupbyBuilder {
     secondStageBlock.getEnforcer().enforceDistinctAggregation(secondStageDistinctNode.getPID(),
         DistinctAggregationAlgorithm.SORT_AGGREGATION, sortSpecArrays);
 
+  }
+
+  private void setMultiStageAggregationEnforcer(
+      ExecutionBlock firstStageBlock, DistinctGroupbyNode firstStageDistinctNode,
+      ExecutionBlock secondStageBlock, DistinctGroupbyNode secondStageDistinctNode,
+      ExecutionBlock thirdStageBlock, DistinctGroupbyNode thirdStageDistinctNode) {
+    firstStageBlock.getEnforcer().enforceDistinctAggregation(firstStageDistinctNode.getPID(),
+        true, MultipleAggregationStage.FIRST_STAGE,
+        DistinctAggregationAlgorithm.HASH_AGGREGATION, null);
+
+    secondStageBlock.getEnforcer().enforceDistinctAggregation(secondStageDistinctNode.getPID(),
+        true, MultipleAggregationStage.SECOND_STAGE,
+        DistinctAggregationAlgorithm.HASH_AGGREGATION, null);
+
+    List<SortSpecArray> sortSpecArrays = new ArrayList<SortSpecArray>();
+    int index = 0;
+    for (GroupbyNode groupbyNode: firstStageDistinctNode.getGroupByNodes()) {
+      List<SortSpecProto> sortSpecs = new ArrayList<SortSpecProto>();
+      for (Column column: groupbyNode.getGroupingColumns()) {
+        sortSpecs.add(SortSpecProto.newBuilder().setColumn(column.getProto()).build());
+      }
+      sortSpecArrays.add( SortSpecArray.newBuilder()
+          .setPid(thirdStageDistinctNode.getGroupByNodes().get(index).getPID())
+          .addAllSortSpecs(sortSpecs).build());
+    }
+    thirdStageBlock.getEnforcer().enforceDistinctAggregation(thirdStageDistinctNode.getPID(),
+        true, MultipleAggregationStage.THRID_STAGE,
+        DistinctAggregationAlgorithm.SORT_AGGREGATION, sortSpecArrays);
+  }
+
+  private ExecutionBlock buildDistinctGroupbyAndUnionPlan(MasterPlan masterPlan, ExecutionBlock lastBlock,
+                                                         DistinctGroupbyNode firstPhaseGroupBy,
+                                                         DistinctGroupbyNode secondPhaseGroupBy) {
+    DataChannel lastDataChannel = null;
+
+    // It pushes down the first phase group-by operator into all child blocks.
+    //
+    // (second phase)    G (currentBlock)
+    //                  /|\
+    //                / / | \
+    // (first phase) G G  G  G (child block)
+
+    // They are already connected one another.
+    // So, we don't need to connect them again.
+    for (DataChannel dataChannel : masterPlan.getIncomingChannels(lastBlock.getId())) {
+      if (firstPhaseGroupBy.isEmptyGrouping()) {
+        dataChannel.setShuffle(HASH_SHUFFLE, firstPhaseGroupBy.getGroupingColumns(), 1);
+      } else {
+        dataChannel.setShuffle(HASH_SHUFFLE, firstPhaseGroupBy.getGroupingColumns(), 32);
+      }
+      dataChannel.setSchema(firstPhaseGroupBy.getOutSchema());
+      ExecutionBlock childBlock = masterPlan.getExecBlock(dataChannel.getSrcId());
+
+      // Why must firstPhaseGroupby be copied?
+      //
+      // A groupby in each execution block can have different child.
+      // It affects groupby's input schema.
+      DistinctGroupbyNode firstPhaseGroupbyCopy = PlannerUtil.clone(masterPlan.getLogicalPlan(), firstPhaseGroupBy);
+      firstPhaseGroupbyCopy.setChild(childBlock.getPlan());
+      childBlock.setPlan(firstPhaseGroupbyCopy);
+
+      // just keep the last data channel.
+      lastDataChannel = dataChannel;
+    }
+
+    ScanNode scanNode = GlobalPlanner.buildInputExecutor(masterPlan.getLogicalPlan(), lastDataChannel);
+    secondPhaseGroupBy.setChild(scanNode);
+    lastBlock.setPlan(secondPhaseGroupBy);
+    return lastBlock;
   }
 
   static class DistinctGroupbyNodeBuildInfo {

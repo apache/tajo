@@ -43,6 +43,7 @@ import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer;
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
+import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.SortSpecArray;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageConstants;
@@ -56,6 +57,7 @@ import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
@@ -1047,15 +1049,59 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     Enforcer enforcer = context.getEnforcer();
     EnforceProperty property = getAlgorithmEnforceProperty(enforcer, distinctNode);
     if (property != null) {
-      DistinctAggregationAlgorithm algorithm = property.getDistinct().getAlgorithm();
-      if (algorithm == DistinctAggregationAlgorithm.HASH_AGGREGATION) {
-        return createInMemoryDistinctGroupbyExec(context, distinctNode, subOp);
+      if (property.getDistinct().getIsMultipleAggregation()) {
+        MultipleAggregationStage stage = property.getDistinct().getMultipleAggregationStage();
+
+        if (stage == MultipleAggregationStage.FIRST_STAGE) {
+          return new DistinctGroupbyFirstAggregationExec(context, distinctNode, subOp);
+        } else if (stage == MultipleAggregationStage.SECOND_STAGE) {
+          return new DistinctGroupbySecondAggregationExec(context, distinctNode,
+              createSortExecForDistinctGroupby(context, distinctNode, subOp, 2));
+        } else {
+          return new DistinctGroupbyThirdAggregationExec(context, distinctNode,
+              createSortExecForDistinctGroupby(context, distinctNode, subOp, 3));
+        }
       } else {
-        return createSortAggregationDistinctGroupbyExec(context, distinctNode, subOp, property.getDistinct());
+        DistinctAggregationAlgorithm algorithm = property.getDistinct().getAlgorithm();
+        if (algorithm == DistinctAggregationAlgorithm.HASH_AGGREGATION) {
+          return createInMemoryDistinctGroupbyExec(context, distinctNode, subOp);
+        } else {
+          return createSortAggregationDistinctGroupbyExec(context, distinctNode, subOp, property.getDistinct());
+        }
       }
     } else {
       return createInMemoryDistinctGroupbyExec(context, distinctNode, subOp);
     }
+  }
+
+  private SortExec createSortExecForDistinctGroupby(TaskAttemptContext context,
+                                                    DistinctGroupbyNode distinctNode,
+                                                    PhysicalExec subOp,
+                                                    int phase) throws IOException {
+    SortNode sortNode = LogicalPlan.createNodeWithoutPID(SortNode.class);
+    //2 phase: seq, groupby columns, distinct1 keys, distinct2 keys,
+    //3 phase: groupby columns, seq, distinct1 keys, distinct2 keys,
+    List<SortSpec> sortSpecs = new ArrayList<SortSpec>();
+    if (phase == 2) {
+      sortSpecs.add(new SortSpec(distinctNode.getTargets()[0].getNamedColumn()));
+    }
+    for (Column eachColumn: distinctNode.getGroupingColumns()) {
+      sortSpecs.add(new SortSpec(eachColumn));
+    }
+    if (phase == 3) {
+      sortSpecs.add(new SortSpec(distinctNode.getTargets()[0].getNamedColumn()));
+    }
+    for (GroupbyNode eachGroupbyNode: distinctNode.getGroupByNodes()) {
+      for (Column eachColumn: eachGroupbyNode.getGroupingColumns()) {
+        sortSpecs.add(new SortSpec(eachColumn));
+      }
+    }
+    sortNode.setSortSpecs(sortSpecs.toArray(new SortSpec[]{}));
+    sortNode.setInSchema(distinctNode.getInSchema());
+    sortNode.setOutSchema(distinctNode.getInSchema());
+    ExternalSortExec sortExec = new ExternalSortExec(context, sm, sortNode, subOp);
+
+    return sortExec;
   }
 
   private PhysicalExec createInMemoryDistinctGroupbyExec(TaskAttemptContext ctx,

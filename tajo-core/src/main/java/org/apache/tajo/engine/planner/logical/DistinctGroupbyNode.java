@@ -31,6 +31,9 @@ import java.util.List;
 
 public class DistinctGroupbyNode extends UnaryNode implements Projectable, Cloneable {
   @Expose
+  private GroupbyNode groupbyPlan;
+
+  @Expose
   private List<GroupbyNode> groupByNodes;
 
   @Expose
@@ -41,6 +44,9 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
 
   @Expose
   private int[] resultColumnIds;
+
+  /** Aggregation Functions */
+  @Expose private AggregationFunctionCallEval [] aggrFunctions;
 
   public DistinctGroupbyNode(int pid) {
     super(pid, NodeType.DISTINCT_GROUP_BY);
@@ -59,7 +65,11 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
 
   @Override
   public Target[] getTargets() {
-    return new Target[0];
+    if (hasTargets()) {
+      return targets;
+    } else {
+      return new Target[0];
+    }
   }
 
   public void setGroupbyNodes(List<GroupbyNode> groupByNodes) {
@@ -85,6 +95,18 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
   public void setResultColumnIds(int[] resultColumnIds) {
     this.resultColumnIds = resultColumnIds;
   }
+
+  public AggregationFunctionCallEval [] getAggFunctions() {
+    return this.aggrFunctions;
+  }
+
+  public void setAggFunctions(AggregationFunctionCallEval[] evals) {
+    this.aggrFunctions = evals;
+  }
+
+  public void setGroupbyPlan(GroupbyNode groupbyPlan) { this.groupbyPlan = groupbyPlan; }
+
+  public GroupbyNode getGroupbyPlan() { return this.groupbyPlan; }
 
   @Override
   public Object clone() throws CloneNotSupportedException {
@@ -113,6 +135,9 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
       }
     }
 
+    if (groupbyPlan != null) {
+      cloneNode.groupbyPlan = (GroupbyNode)groupbyPlan.clone();
+    }
     return cloneNode;
   }
 
