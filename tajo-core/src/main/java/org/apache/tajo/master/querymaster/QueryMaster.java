@@ -28,10 +28,7 @@ import org.apache.hadoop.yarn.event.Event;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.SystemClock;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.SessionVars;
-import org.apache.tajo.TajoIdProtos;
-import org.apache.tajo.TajoProtos;
+import org.apache.tajo.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.query.QueryContext;
@@ -50,6 +47,7 @@ import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.util.HAServiceUtil;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.worker.TajoWorker;
 
 import java.util.ArrayList;
@@ -183,7 +181,13 @@ public class QueryMaster extends CompositeService implements EventHandler {
   }
 
   protected void cleanupExecutionBlock(List<TajoIdProtos.ExecutionBlockIdProto> executionBlockIds) {
-    LOG.info("cleanup executionBlocks: " + executionBlockIds);
+    StringBuilder cleanupMessage = new StringBuilder();
+    String prefix = "";
+    for (TajoIdProtos.ExecutionBlockIdProto eachEbId: executionBlockIds) {
+      cleanupMessage.append(prefix).append(new ExecutionBlockId(eachEbId).toString());
+      prefix = ",";
+    }
+    LOG.info("cleanup executionBlocks: " + cleanupMessage);
     NettyClientBase rpc = null;
     List<TajoMasterProtocol.WorkerResourceProto> workers = getAllWorker();
     TajoWorkerProtocol.ExecutionBlockListProto.Builder builder = TajoWorkerProtocol.ExecutionBlockListProto.newBuilder();

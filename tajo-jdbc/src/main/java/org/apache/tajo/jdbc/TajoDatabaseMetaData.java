@@ -19,7 +19,6 @@ package org.apache.tajo.jdbc;
 
 import com.google.common.collect.Lists;
 import com.google.protobuf.ServiceException;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.client.ResultSetUtil;
@@ -27,6 +26,7 @@ import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.util.VersionInfo;
 
 import java.sql.*;
 import java.util.*;
@@ -83,7 +83,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public String getDatabaseProductVersion() throws SQLException {
-    return TajoConstants.TAJO_VERSION;
+    return VersionInfo.getVersion();
   }
 
   @Override
