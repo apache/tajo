@@ -31,6 +31,8 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1028: JDBC should support SET command.(Hyoungjun Kim)
+
     TAJO-937: Should use tajo.util.VersionInfo instead of 
     TajoConstants.TAJO_VERSION. (Mai Hai Thanh via hyunsik)
 
