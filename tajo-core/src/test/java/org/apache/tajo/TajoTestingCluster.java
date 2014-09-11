@@ -103,7 +103,6 @@ public class TajoTestingCluster {
   }
 
   void initPropertiesAndConfigs() {
-    System.setProperty("TAJO_PULLSERVER_STANDALONE", "false");
     if (System.getProperty(ConfVars.RESOURCE_MANAGER_CLASS.varname) != null) {
       String testResourceManager = System.getProperty(ConfVars.RESOURCE_MANAGER_CLASS.varname);
       Preconditions.checkState(testResourceManager.equals(TajoWorkerResourceManager.class.getCanonicalName()));

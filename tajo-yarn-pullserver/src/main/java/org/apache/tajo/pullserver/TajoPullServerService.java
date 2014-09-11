@@ -20,6 +20,7 @@ package org.apache.tajo.pullserver;
 
 import com.google.common.collect.Lists;
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -29,6 +30,7 @@ import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DataInputByteBuffer;
 import org.apache.hadoop.io.DataOutputBuffer;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.ReadaheadPool;
 import org.apache.hadoop.mapred.FadvisedChunkedFile;
 import org.apache.hadoop.mapred.FadvisedFileRegion;
@@ -121,6 +123,15 @@ public class TajoPullServerService extends AbstractService {
     "tajo.pullserver.ssl.file.buffer.size";
 
   public static final int DEFAULT_SUFFLE_SSL_FILE_BUFFER_SIZE = 60 * 1024;
+
+  private static boolean STANDALONE = false;
+
+  static {
+    String standalone = System.getenv("TAJO_PULLSERVER_STANDALONE");
+    if (!StringUtils.isEmpty(standalone)) {
+      STANDALONE = standalone.equalsIgnoreCase("true");
+    }
+  }
 
   @Metrics(name="PullServerShuffleMetrics", about="PullServer output metrics", context="tajo")
   static class ShuffleMetrics implements ChannelFutureListener {
@@ -245,48 +256,41 @@ public class TajoPullServerService extends AbstractService {
     sslFileBufferSize = conf.getInt(SUFFLE_SSL_FILE_BUFFER_SIZE_KEY,
                                     DEFAULT_SUFFLE_SSL_FILE_BUFFER_SIZE);
 
-    if (isStandaloneMode()) {
+    if (STANDALONE) {
       File pullServerPortFile = getPullServerPortFile();
       if (pullServerPortFile.exists()) {
         pullServerPortFile.delete();
       }
       pullServerPortFile.getParentFile().mkdirs();
       LOG.info("Write PullServerPort to " + pullServerPortFile);
+      FileOutputStream out = null;
       try {
-        FileOutputStream out = new FileOutputStream(pullServerPortFile);
+        out = new FileOutputStream(pullServerPortFile);
         out.write(("" + port).getBytes());
-        out.close();
       } catch (Exception e) {
         LOG.fatal("PullServer exists cause can't write PullServer port to " + pullServerPortFile +
             ", " + e.getMessage(), e);
         System.exit(-1);
+      } finally {
+        IOUtils.closeStream(out);
       }
     }
     LOG.info("TajoPullServerService started: port=" + port);
   }
 
+  public static boolean isStandalone() {
+    return STANDALONE;
+  }
+
   private static File getPullServerPortFile() {
     String pullServerPortInfoFile = System.getenv("TAJO_PID_DIR");
-    if (pullServerPortInfoFile == null || pullServerPortInfoFile.isEmpty()) {
+    if (StringUtils.isEmpty(pullServerPortInfoFile)) {
       pullServerPortInfoFile = "/tmp";
     }
-
     return new File(pullServerPortInfoFile + "/pullserver.port");
   }
 
-  public static boolean isStandaloneMode() {
-    String mode = System.getenv("TAJO_PULLSERVER_STANDALONE");
-    if (mode == null || mode.trim().isEmpty()) {
-      mode = System.getProperty("TAJO_PULLSERVER_STANDALONE");
-    }
-
-    if (mode == null || mode.trim().isEmpty()) {
-      return true;
-    } else {
-      return mode.equalsIgnoreCase("true");
-    }
-  }
-
+  // TODO change to get port from master or tajoConf
   public static int readPullServerPort() {
     FileInputStream in = null;
     try {
@@ -299,16 +303,11 @@ public class TajoPullServerService extends AbstractService {
       byte[] buf = new byte[1024];
       int readBytes = in.read(buf);
       return Integer.parseInt(new String(buf, 0, readBytes));
-    } catch (Exception e) {
-      LOG.error(e.getMessage(), e);
+    } catch (IOException e) {
+      LOG.fatal(e.getMessage(), e);
       return -1;
     } finally {
-      if (in != null) {
-        try {
-          in.close();
-        } catch (IOException e) {
-        }
-      }
+      IOUtils.closeStream(in);
     }
   }
 
