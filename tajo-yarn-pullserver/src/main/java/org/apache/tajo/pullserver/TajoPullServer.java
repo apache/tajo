@@ -60,7 +60,7 @@ public class TajoPullServer extends CompositeService {
   public static void main(String[] args) throws Exception {
     StringUtils.startupShutdownMessage(PullServer.class, args, LOG);
 
-    if (!TajoPullServerService.isStandaloneMode()) {
+    if (!TajoPullServerService.isStandalone()) {
       LOG.fatal("TAJO_PULLSERVER_STANDALONE env variable is not 'true'");
       return;
     }
