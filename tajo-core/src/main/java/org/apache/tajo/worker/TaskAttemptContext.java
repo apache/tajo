@@ -318,7 +318,13 @@ public class TaskAttemptContext {
 
   public void setProgress(float progress) {
     float previousProgress = this.progress;
-    this.progress = progress;
+
+    if (Float.isNaN(progress) || Float.isInfinite(progress)) {
+      this.progress = 0.0f;
+    } else {
+      this.progress = progress;
+    }
+
     if (previousProgress != progress) {
       setProgressChanged(true);
     }

@@ -17,11 +17,17 @@
  */
 package org.apache.tajo.jdbc;
 
+import com.google.common.collect.Lists;
+import com.google.protobuf.ServiceException;
 import org.apache.tajo.client.TajoClient;
 
+import java.io.IOException;
 import java.sql.*;
+import java.util.HashMap;
+import java.util.Map;
 
 public class TajoStatement implements Statement {
+  private TajoConnection conn;
   private TajoClient tajoClient;
   private int fetchSize = 200;
 
@@ -44,7 +50,8 @@ public class TajoStatement implements Statement {
    */
   private boolean isClosed = false;
 
-  public TajoStatement(TajoClient tajoClient) {
+  public TajoStatement(TajoConnection conn, TajoClient tajoClient) {
+    this.conn = conn;
     this.tajoClient = tajoClient;
   }
 
@@ -116,11 +123,72 @@ public class TajoStatement implements Statement {
     }
 
     try {
-      resultSet = tajoClient.executeQueryAndGetResult(sql);
-      return resultSet;
+      if (isSetVariableQuery(sql)) {
+        return setSessionVariable(tajoClient, sql);
+      } else if (isUnSetVariableQuery(sql)) {
+        return unSetSessionVariable(tajoClient, sql);
+      } else {
+        return tajoClient.executeQueryAndGetResult(sql);
+      }
     } catch (Exception e) {
       throw new SQLFeatureNotSupportedException(e.getMessage(), e);
     }
+  }
+
+  public static boolean isSetVariableQuery(String sql) {
+    if (sql == null || sql.trim().isEmpty()) {
+      return false;
+    }
+
+    return sql.trim().toLowerCase().startsWith("set");
+  }
+
+  public static boolean isUnSetVariableQuery(String sql) {
+    if (sql == null || sql.trim().isEmpty()) {
+      return false;
+    }
+
+    return sql.trim().toLowerCase().startsWith("unset");
+  }
+
+  public static ResultSet setSessionVariable(TajoClient client, String sql) throws SQLException {
+    int index = sql.toLowerCase().indexOf("set");
+    if (index < 0) {
+      throw new SQLException("SET statement should be started 'SET' keyword: " + sql);
+    }
+
+    String[] tokens = sql.substring(index + 3).trim().split(" ");
+    if (tokens.length != 2) {
+      throw new SQLException("SET statement should be <KEY> <VALUE>: " + sql);
+    }
+    Map<String, String> variable = new HashMap<String, String>();
+    variable.put(tokens[0].trim(), tokens[1].trim());
+    try {
+      client.updateSessionVariables(variable);
+    } catch (ServiceException e) {
+      throw new SQLException(e.getMessage(), e);
+    }
+
+    return new TajoResultSet(client, null);
+  }
+
+  public static ResultSet unSetSessionVariable(TajoClient client, String sql) throws SQLException {
+    int index = sql.toLowerCase().indexOf("unset");
+    if (index < 0) {
+      throw new SQLException("UNSET statement should be started 'UNSET' keyword: " + sql);
+    }
+
+    String key = sql.substring(index + 5).trim();
+    if (key.isEmpty()) {
+      throw new SQLException("UNSET statement should be <KEY>: " + sql);
+    }
+    try {
+      client.unsetSessionVariables(Lists.newArrayList(key));
+    } catch (ServiceException e) {
+      throw new SQLException(e.getMessage(), e);
+    }
+
+    return new TajoResultSet(client, null);
   }
 
   @Override
@@ -151,7 +219,7 @@ public class TajoStatement implements Statement {
 
   @Override
   public Connection getConnection() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getConnection not supported");
+    return conn;
   }
 
   @Override

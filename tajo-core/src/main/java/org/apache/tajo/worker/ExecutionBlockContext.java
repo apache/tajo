@@ -334,9 +334,10 @@ public class ExecutionBlockContext {
           failureIntermediateItems.add(failureBuilder.build());
         }
         intermediateBuilder.clear();
+
         intermediateBuilder.setEbId(ebId.getProto())
             .setHost(getWorkerContext().getTajoWorkerManagerService().getBindAddr().getHostName() + ":" +
-                getWorkerContext().getPullService().getPort())
+                getWorkerContext().getPullServerPort())
             .setTaskId(-1)
             .setAttemptId(-1)
             .setPartId(eachShuffle.getPartId())
@@ -352,7 +353,11 @@ public class ExecutionBlockContext {
     } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
       reporterBuilder.setReportSuccess(false);
-      reporterBuilder.setReportErrorMessage(e.getMessage());
+      if (e.getMessage() == null) {
+        reporterBuilder.setReportErrorMessage(e.getClass().getSimpleName());
+      } else {
+        reporterBuilder.setReportErrorMessage(e.getMessage());
+      }
     }
     try {
       sendExecutionBlockReport(reporterBuilder.build());

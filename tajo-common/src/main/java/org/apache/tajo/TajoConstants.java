@@ -19,7 +19,6 @@
 package org.apache.tajo;
 
 public class TajoConstants {
-  public static final String TAJO_VERSION = "0.9.0-SNAPSHOT";
   public static final String SYSTEM_CONF_FILENAME = "system_conf.xml";
 
   public static final String SYSTEM_DIR_NAME = "system";
