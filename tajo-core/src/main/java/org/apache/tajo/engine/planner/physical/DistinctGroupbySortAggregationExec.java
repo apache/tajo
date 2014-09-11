@@ -188,4 +188,8 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
   public TableStats getInputStats() {
     return aggregateExecs[aggregateExecs.length - 1].getInputStats();
   }
+
+  public SortAggregateExec[] getAggregateExecs() {
+    return aggregateExecs;
+  }
 }

@@ -785,6 +785,7 @@ public class GlobalPlanner {
     firstStageGroupby.setTargets(firstStageTargets);
     firstStageGroupby.setChild(groupbyNode.getChild());
     firstStageGroupby.setInSchema(groupbyNode.getInSchema());
+    firstStageGroupby.setSingleDistinctFunction(true);
 
     // Makes two execution blocks for the first stage
     ExecutionBlock firstStage = buildGroupBy(context, latestExecBlock, firstStageGroupby);
@@ -794,6 +795,7 @@ public class GlobalPlanner {
     secondPhaseGroupby.setGroupingColumns(originalGroupingColumns);
     secondPhaseGroupby.setAggFunctions(TUtil.toArray(secondPhaseEvalNodes, AggregationFunctionCallEval.class));
     secondPhaseGroupby.setTargets(groupbyNode.getTargets());
+    secondPhaseGroupby.setSingleDistinctFunction(true);
 
     ExecutionBlock secondStage = context.plan.newExecutionBlock();
     secondStage.setPlan(secondPhaseGroupby);
@@ -824,8 +826,24 @@ public class GlobalPlanner {
     ExecutionBlock currentBlock;
 
     if (groupbyNode.isDistinct()) { // if there is at one distinct aggregation function
-      DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
-      return builder.buildPlan(context, lastBlock, groupbyNode);
+      boolean multiLevelEnabled = context.getPlan().getContext().getBool(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED);
+
+      if (PlannerUtil.isPlanMultiDistinct(groupbyNode)) {
+        if (multiLevelEnabled) {
+          if (PlannerUtil.findTopNode(groupbyNode, NodeType.UNION) == null) {
+            DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
+            return builder.buildMultiStagePlan(context, lastBlock, groupbyNode);
+          } else {
+            DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
+            return builder.buildPlan(context, lastBlock, groupbyNode);
+          }
+        } else {
+          DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
+          return builder.buildPlan(context, lastBlock, groupbyNode);
+        }
+      } else {
+        return buildGroupByIncludingDistinctFunctionsMultiStage(context, lastBlock, groupbyNode);
+      }
     } else {
       GroupbyNode firstPhaseGroupby = createFirstPhaseGroupBy(masterPlan.getLogicalPlan(), groupbyNode);
 

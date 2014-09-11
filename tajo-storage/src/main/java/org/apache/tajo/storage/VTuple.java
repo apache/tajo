@@ -61,7 +61,7 @@ public class VTuple implements Tuple, Cloneable {
   }
 
   @Override
-  public void clear() {   
+  public void clear() {
     for (int i=0; i < values.length; i++) {
       values[i] = null;
     }

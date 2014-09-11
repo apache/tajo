@@ -222,9 +222,7 @@ public class DatumFactory {
     return new Int2Datum(Short.valueOf(val));
   }
 
-  public static Int4Datum createInt4(int val) {
-    return new Int4Datum(val);
-  }
+  public static Int4Datum createInt4(int val) { return new Int4Datum(val);  }
 
   public static Int4Datum createInt4(String val) {
     return new Int4Datum(Integer.parseInt(val));

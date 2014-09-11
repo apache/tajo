@@ -18,7 +18,12 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.FunctionContext;
+import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.logical.GroupbyNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -38,6 +43,7 @@ public class HashAggregateExec extends AggregationExec {
   private Map<Tuple, FunctionContext[]> hashTable;
   private boolean computed = false;
   private Iterator<Entry<Tuple, FunctionContext []>> iterator = null;
+  private boolean finished = false;
 
   public HashAggregateExec(TaskAttemptContext ctx, GroupbyNode plan, PhysicalExec subOp) throws IOException {
     super(ctx, plan, subOp);
@@ -83,12 +89,30 @@ public class HashAggregateExec extends AggregationExec {
 
   @Override
   public Tuple next() throws IOException {
+    if (finished) {
+      return null;
+    }
+
     if(!computed) {
       compute();
       iterator = hashTable.entrySet().iterator();
       computed = true;
     }
 
+    // If this operator received empty data in DistinctFunctions Single Stage,
+    // we need to handle the return value. Because it will cause NPE.
+    if (plan.isSingleDistinctFunction() && hashTable.entrySet().size() == 0) {
+      finished = true;
+      if (groupingKeyNum > 1) {
+        return null;
+      } else {
+        Tuple tuple = new VTuple(outColumnNum);
+        for (int i = 0; i < outColumnNum; i++) {
+          tuple.put(i, DatumFactory.createNullDatum());
+        }
+        return tuple;
+      }
+    }
     FunctionContext [] contexts;
 
     if (iterator.hasNext()) {

@@ -139,10 +139,14 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
         entry.getValue().clear();
       }
 
-      TableStats aggregated = (TableStats)child.getInputStats().clone();
-      aggregated.setNumBytes(writtenBytes);
-      aggregated.setNumRows(numRows);
-      context.setResultStats(aggregated);
+      // If this operator received empty data in DistinctFunctions Multi Stage,
+      // its input stats would be null. Thus we need to avoid NPE.
+      if (child.getInputStats() != null) {
+        TableStats aggregated = (TableStats)child.getInputStats().clone();
+        aggregated.setNumBytes(writtenBytes);
+        aggregated.setNumRows(numRows);
+        context.setResultStats(aggregated);
+      }
 
       partitionTuples.clear();
 

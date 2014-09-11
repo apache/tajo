@@ -23,14 +23,22 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.function.FunctionContext;
+import org.apache.tajo.engine.function.builtin.AvgDouble;
+import org.apache.tajo.engine.function.builtin.AvgFloat;
+import org.apache.tajo.engine.function.builtin.AvgInt;
+import org.apache.tajo.engine.function.builtin.AvgLong;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 
 public class AggregationFunctionCallEval extends FunctionEval implements Cloneable {
   @Expose protected AggFunction instance;
   @Expose boolean firstPhase = false;
+  @Expose String alias;
+
   private Tuple params;
 
   protected AggregationFunctionCallEval(EvalType type, FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs) {
@@ -86,6 +94,10 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
       return funcDesc.getReturnType();
     }
   }
+
+  public void setAlias(String alias) { this.alias = alias; }
+
+  public String getAlias() { return  this.alias; }
 
   public Object clone() throws CloneNotSupportedException {
     return super.clone();

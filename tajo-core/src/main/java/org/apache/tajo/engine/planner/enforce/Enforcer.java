@@ -25,6 +25,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.SortSpecArray;
+import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.util.TUtil;
 
 import java.util.Collection;
@@ -135,12 +136,24 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
   public void enforceDistinctAggregation(int pid,
                                          DistinctAggregationAlgorithm algorithm,
                                          List<SortSpecArray> sortSpecArrays) {
+    enforceDistinctAggregation(pid, false, null, algorithm, sortSpecArrays);
+  }
+
+  public void enforceDistinctAggregation(int pid,
+                                         boolean isMultipleAggregation,
+                                         MultipleAggregationStage stage,
+                                         DistinctAggregationAlgorithm algorithm,
+                                         List<SortSpecArray> sortSpecArrays) {
     EnforceProperty.Builder builder = newProperty();
     DistinctGroupbyEnforcer.Builder enforce = DistinctGroupbyEnforcer.newBuilder();
     enforce.setPid(pid);
+    enforce.setIsMultipleAggregation(isMultipleAggregation);
     enforce.setAlgorithm(algorithm);
     if (sortSpecArrays != null) {
       enforce.addAllSortSpecArrays(sortSpecArrays);
+    }
+    if (stage != null) {
+      enforce.setMultipleAggregationStage(stage);
     }
 
     builder.setType(EnforceType.DISTINCT_GROUP_BY);

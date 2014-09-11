@@ -33,7 +33,11 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
+import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.engine.eval.EvalType;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.logical.*;
@@ -42,6 +46,7 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer;
+import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.SortSpecArray;
 import org.apache.tajo.storage.AbstractStorageManager;
@@ -55,7 +60,8 @@ import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Stack;
 
@@ -962,7 +968,65 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   private PhysicalExec createSortAggregation(TaskAttemptContext ctx, EnforceProperty property, GroupbyNode groupbyNode,
                                              PhysicalExec subOp) throws IOException {
 
+    ExternalSortExec sortExec = getExternalSortExec(ctx, property, groupbyNode, subOp);
+    return new SortAggregateExec(ctx, groupbyNode, sortExec);
+  }
+
+  private ExternalSortExec getExternalSortExec(TaskAttemptContext ctx, EnforceProperty property, GroupbyNode groupbyNode,
+                                               PhysicalExec subOp) throws IOException {
+
     Column[] grpColumns = groupbyNode.getGroupingColumns();
+    SortSpec[] sortSpecs = getSortSpecs(grpColumns, property);
+
+    SortNode sortNode = LogicalPlan.createNodeWithoutPID(SortNode.class);
+    sortNode.setSortSpecs(sortSpecs);
+    sortNode.setInSchema(subOp.getSchema());
+    sortNode.setOutSchema(subOp.getSchema());
+    ExternalSortExec sortExec = new ExternalSortExec(ctx, sm, sortNode, subOp);
+    LOG.info("The planner chooses [Sort Aggregation] in (" + TUtil.arrayToString(sortSpecs) + ")");
+    return sortExec;
+  }
+
+  private ExternalSortExec getExternalSortExec(TaskAttemptContext ctx, EnforceProperty property,
+                                               DistinctGroupbyNode distinctGroupbyNode,
+                                               PhysicalExec subOp) throws IOException {
+
+    Column[] grpColumns = distinctGroupbyNode.getGroupingColumns();
+    SortSpec[] sortSpecs = getSortSpecs(grpColumns, property);
+
+    SortNode sortNode = LogicalPlan.createNodeWithoutPID(SortNode.class);
+
+    // If there is no grouping keys, we need to set another columns for sorting.
+    // We'll try to find it in distinct columns.
+    if (sortSpecs == null || sortSpecs.length == 0) {
+      List<Column> columns = TUtil.newList();
+      for (AggregationFunctionCallEval aggFunction : distinctGroupbyNode.getAggFunctions()) {
+        if (aggFunction.isDistinct() && aggFunction.getArgs() != null) {
+          for (EvalNode node : aggFunction.getArgs()) {
+            if (node.getType() == EvalType.FIELD &&
+                distinctGroupbyNode.getGroupbyPlan().getInSchema().getColumn(node.getName()) != null) {
+              Column column = distinctGroupbyNode.getGroupbyPlan().getInSchema().getColumn(node.getName());
+              if (!columns.contains(column)) {
+                columns.add(column);
+              }
+            }
+          }
+        }
+      }
+      if (!columns.isEmpty()) {
+        sortSpecs = getSortSpecs(columns.toArray(new Column[]{}), property);
+      }
+    }
+
+    sortNode.setSortSpecs(sortSpecs);
+    sortNode.setInSchema(subOp.getSchema());
+    sortNode.setOutSchema(subOp.getSchema());
+    ExternalSortExec sortExec = new ExternalSortExec(ctx, sm, sortNode, subOp);
+    LOG.info("The planner chooses [Sort Aggregation] in (" + TUtil.arrayToString(sortSpecs) + ")");
+    return sortExec;
+  }
+
+  private SortSpec[] getSortSpecs(Column[] grpColumns, EnforceProperty property) {
     SortSpec[] sortSpecs = new SortSpec[grpColumns.length];
     for (int i = 0; i < grpColumns.length; i++) {
       sortSpecs[i] = new SortSpec(grpColumns[i], true, false);
@@ -988,16 +1052,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
       sortSpecs = ObjectArrays.concat(sortSpecs, TUtil.toArray(enforcedSortSpecList, SortSpec.class), SortSpec.class);
     }
-
-    SortNode sortNode = LogicalPlan.createNodeWithoutPID(SortNode.class);
-    sortNode.setSortSpecs(sortSpecs);
-    sortNode.setInSchema(subOp.getSchema());
-    sortNode.setOutSchema(subOp.getSchema());
-    ExternalSortExec sortExec = new ExternalSortExec(ctx, sm, sortNode, subOp);
-    LOG.info("The planner chooses [Sort Aggregation] in (" + TUtil.arrayToString(sortSpecs) + ")");
-    return new SortAggregateExec(ctx, groupbyNode, sortExec);
+    return sortSpecs;
   }
-
   private PhysicalExec createBestAggregationPlan(TaskAttemptContext context, GroupbyNode groupbyNode,
                                                  PhysicalExec subOp) throws IOException {
     Column[] grpColumns = groupbyNode.getGroupingColumns();
@@ -1047,11 +1103,24 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     Enforcer enforcer = context.getEnforcer();
     EnforceProperty property = getAlgorithmEnforceProperty(enforcer, distinctNode);
     if (property != null) {
-      DistinctAggregationAlgorithm algorithm = property.getDistinct().getAlgorithm();
-      if (algorithm == DistinctAggregationAlgorithm.HASH_AGGREGATION) {
-        return createInMemoryDistinctGroupbyExec(context, distinctNode, subOp);
+      if (property.getDistinct().getIsMultipleAggregation()) {
+        MultipleAggregationStage stage = property.getDistinct().getMultipleAggregationStage();
+
+        if (stage == MultipleAggregationStage.FIRST_STAGE) {
+          return new DistinctGroupbyFirstWriterExec(context, distinctNode, subOp);
+        } else if (stage == MultipleAggregationStage.SECOND_STAGE) {
+          return new DistinctGroupbySecondAggregationExec(context, distinctNode, subOp);
+        } else {
+          ExternalSortExec sortExec = getExternalSortExec(context, property, distinctNode, subOp);
+          return new DistinctGroupbyThirdWriterExec(context, distinctNode, sortExec);
+        }
       } else {
-        return createSortAggregationDistinctGroupbyExec(context, distinctNode, subOp, property.getDistinct());
+        DistinctAggregationAlgorithm algorithm = property.getDistinct().getAlgorithm();
+        if (algorithm == DistinctAggregationAlgorithm.HASH_AGGREGATION) {
+          return createInMemoryDistinctGroupbyExec(context, distinctNode, subOp);
+        } else {
+          return createSortAggregationDistinctGroupbyExec(context, distinctNode, subOp, property.getDistinct());
+        }
       }
     } else {
       return createInMemoryDistinctGroupbyExec(context, distinctNode, subOp);

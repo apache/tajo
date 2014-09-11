@@ -345,6 +345,9 @@ public class TajoConf extends Configuration {
     // FILE FORMAT
     $CSVFILE_NULL("tajo.csvfile.null", "\\\\N"),
 
+    // Algorith for count distinct
+    $GROUPBY_MULTI_LEVEL_ENABLED("tajo.dist-query.groupby.multi-level-aggr", true),
+
     // Only for Debug and Testing
     $DEBUG_ENABLED("tajo.debug.enabled", false),
     $TEST_BROADCAST_JOIN_ENABLED("tajo.dist-query.join.auto-broadcast", true),
@@ -354,6 +357,8 @@ public class TajoConf extends Configuration {
 
     // Behavior Control ---------------------------------------------------------
     $BEHAVIOR_ARITHMETIC_ABORT("tajo.behavior.arithmetic-abort", false);
+
+
     ;
 
     public final String varname;
