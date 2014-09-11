@@ -145,7 +145,7 @@ public class TajoResultSet extends TajoResultSetBase {
     }
 
     try {
-      if(tajoClient != null && !queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
+      if(tajoClient != null && queryId != null && !queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
         this.tajoClient.closeQuery(queryId);
       }
     } catch (Exception e) {

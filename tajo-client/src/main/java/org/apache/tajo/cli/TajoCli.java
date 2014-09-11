@@ -21,6 +21,9 @@ package org.apache.tajo.cli;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ServiceException;
+import jline.TerminalFactory;
+import jline.TerminalFactory.Flavor;
+import jline.UnsupportedTerminal;
 import jline.console.ConsoleReader;
 import org.apache.commons.cli.*;
 import org.apache.tajo.*;
@@ -39,10 +42,7 @@ import java.io.*;
 import java.lang.reflect.Constructor;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 import static org.apache.tajo.cli.ParsedResult.StatementType.META;
 import static org.apache.tajo.cli.ParsedResult.StatementType.STATEMENT;
@@ -98,6 +98,7 @@ public class TajoCli {
     options.addOption("f", "file", true, "execute commands from file, then exit");
     options.addOption("h", "host", true, "Tajo server host");
     options.addOption("p", "port", true, "Tajo server port");
+    options.addOption("B", "background", false, "execute as background process");
     options.addOption("conf", "conf", true, "configuration value");
     options.addOption("param", "param", true, "parameter value in SQL file");
     options.addOption("help", "help", false, "help");
@@ -170,19 +171,25 @@ public class TajoCli {
   }
 
   public TajoCli(TajoConf c, String [] args, InputStream in, OutputStream out) throws Exception {
+    CommandLineParser parser = new PosixParser();
+    CommandLine cmd = parser.parse(options, args);
+
     this.conf = new TajoConf(c);
     context = new TajoCliContext(conf);
     this.sin = in;
-    this.reader = new ConsoleReader(sin, out);
+    if (cmd.hasOption("B")) {
+      this.reader = new ConsoleReader(sin, out, new UnsupportedTerminal());
+    } else {
+      this.reader = new ConsoleReader(sin, out);
+    }
+
     this.reader.setExpandEvents(false);
     this.sout = new PrintWriter(reader.getOutput());
     initFormatter();
 
-    CommandLineParser parser = new PosixParser();
-    CommandLine cmd = parser.parse(options, args);
-
     if (cmd.hasOption("help")) {
       printUsage();
+      System.exit(0);
     }
 
     String hostName = null;
