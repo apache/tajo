@@ -246,7 +246,7 @@ public class HeapTuple implements Tuple {
 
   @Override
   public Tuple clone() throws CloneNotSupportedException {
-    throw new UnsupportedException("clone");
+    return this;
   }
 
   @Override

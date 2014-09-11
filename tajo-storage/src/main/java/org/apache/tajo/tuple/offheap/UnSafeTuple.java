@@ -283,7 +283,7 @@ public abstract class UnSafeTuple implements Tuple {
 
   @Override
   public Tuple clone() throws CloneNotSupportedException {
-    throw new UnsupportedException("clone");
+    return toHeapTuple();
   }
 
   @Override
