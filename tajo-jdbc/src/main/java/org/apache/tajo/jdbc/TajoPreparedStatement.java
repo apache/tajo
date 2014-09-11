@@ -31,6 +31,7 @@ import java.util.HashMap;
  *
  */
 public class TajoPreparedStatement implements PreparedStatement {
+  private TajoConnection conn;
   private final String sql;
   private TajoClient tajoClient;
   /**
@@ -65,8 +66,10 @@ public class TajoPreparedStatement implements PreparedStatement {
   /**
    *
    */
-  public TajoPreparedStatement(TajoClient tajoClient,
+  public TajoPreparedStatement(TajoConnection conn,
+                               TajoClient tajoClient,
                                String sql) {
+    this.conn = conn;
     this.tajoClient = tajoClient;
     this.sql = sql;
   }
@@ -107,11 +110,16 @@ public class TajoPreparedStatement implements PreparedStatement {
       if (sql.contains("?")) {
         sql = updateSql(sql, parameters);
       }
-      resultSet = tajoClient.executeQueryAndGetResult(sql);
+      if (TajoStatement.isSetVariableQuery(sql)) {
+        return TajoStatement.setSessionVariable(tajoClient, sql);
+      } else if (TajoStatement.isUnSetVariableQuery(sql)) {
+        return TajoStatement.unSetSessionVariable(tajoClient, sql);
+      } else {
+        return tajoClient.executeQueryAndGetResult(sql);
+      }
     } catch (Exception e) {
       throw new SQLException(e.getMessage(), e);
     }
-    return resultSet;
   }
 
   /**
@@ -517,7 +525,7 @@ public class TajoPreparedStatement implements PreparedStatement {
 
   @Override
   public Connection getConnection() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getConnection not supported");
+    return conn;
   }
 
   @Override
