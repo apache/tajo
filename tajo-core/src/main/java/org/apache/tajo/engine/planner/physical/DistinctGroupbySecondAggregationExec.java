@@ -1,4 +1,4 @@
-/**
+  /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -35,6 +35,45 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * This class adjusts shuffle columns between DistinctGroupbyFirstAggregationExec and
+ * DistinctGroupbyThirdAggregationExec. It shuffled by grouping columns and aggregation columns. Because of the
+ * shuffle, more DistinctGroupbyThirdAggregationExec will execute compare than previous two distinct group by
+ * algorithm. And then, many DistinctGroupbyThirdAggregationExec improve the performance of count distinct query.
+ *
+ * For example, there is a query as follows:
+ *  select sum(distinct l_orderkey), l_linenumber, l_returnflag, l_linestatus, l_shipdate,
+ *         count(distinct l_partkey), sum(l_orderkey)
+ *  from lineitem
+ *  group by l_linenumber, l_returnflag, l_linestatus, l_shipdate;
+ *
+ *  In this case, execution plan for this operator will set shuffle type as follows:
+ *    Incoming: 1 => 2 (type=HASH_SHUFFLE, key=?distinctseq (INT2), default.lineitem.l_linenumber (INT4),
+ *      default.lineitem.l_returnflag (TEXT), default.lineitem.l_linestatus (TEXT), default.lineitem.l_shipdate (TEXT),
+ *     default.lineitem.l_partkey (INT4), default.lineitem.l_orderkey (INT4), ?sum_2 (INT8), num=32)
+ *
+ *    Outgoing: 2 => 3 (type=HASH_SHUFFLE, key=default.lineitem.l_linenumber (INT4),
+ *      default.lineitem.l_returnflag (TEXT), default.lineitem.l_linestatus (TEXT),
+ *      default.lineitem.l_shipdate (TEXT), num=32)
+ *
+ *  For reference, input data and output data results as follows:
+ *
+ *  -------------------------------------------------------------------------------------------------------------------
+ *  NodeSequence, l_linenumber, l_returnflag, l_linestatus, l_shipdate, l_partkey for distinct,
+ *  l_orderkey for distinct, l_orderkey for nondistinct
+ *  -------------------------------------------------------------------------------------------------------------------
+ *  0, 2, R, F, 1993-11-09, 3, NULL, 3
+ *  0, 2, N, O, 1996-04-12, 1, NULL, 1
+ *  0, 1, N, O, 1997-01-28, 2, NULL, 2
+ *  0, 1, R, F, 1994-02-02, 2, NULL, 3
+ *  0, 1, N, O, 1996-03-13, 1, NULL, 1
+ *  1, 2, R, F, 1993-11-09, NULL, 3, NULL
+ *  1, 2, N, O, 1996-04-12, NULL, 1, NULL
+ *  1, 1, N, O, 1997-01-28, NULL, 2, NULL
+ *  1, 1, R, F, 1994-02-02, NULL, 3, NULL
+ *  1, 1, N, O, 1996-03-13, NULL, 1, NULL
+ *
+ */
 public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
   private static Log LOG = LogFactory.getLog(DistinctGroupbySecondAggregationExec.class);
   private DistinctGroupbyNode plan;

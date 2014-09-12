@@ -34,6 +34,10 @@ import org.apache.tajo.worker.TaskAttemptContext;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ *  This class aggregates the output of DistinctGroupbySecondAggregationExec.
+ *
+ */
 public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
   private static Log LOG = LogFactory.getLog(DistinctGroupbyThirdAggregationExec.class);
   private DistinctGroupbyNode plan;

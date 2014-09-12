@@ -36,6 +36,54 @@ import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
 
+/**
+ * This class incremented each row to more rows by grouping columns. In addition, the operator must creates each row
+ * because of aggregation non-distinct columns.
+ *
+ * For example, there is a query as follows:
+ *  select sum(distinct l_orderkey), l_linenumber, l_returnflag, l_linestatus, l_shipdate,
+ *         count(distinct l_partkey), sum(l_orderkey)
+ *  from lineitem
+ *  group by l_linenumber, l_returnflag, l_linestatus, l_shipdate;
+ *
+ *  If you execute above query on tajo, FileScanner makes tuples after scanning raw data as follows:
+ *
+ *  -----------------------------------------------------------------------------
+ *  l_linenumber, l_returnflag, l_linestatus, l_shipdate, l_orderkey, l_partkey
+ *  -----------------------------------------------------------------------------
+ *  1, N, O, 1996-03-13, 1, 1
+ *  2, N, O, 1996-04-12, 1, 1
+ *  1, N, O, 1997-01-28, 2, 2
+ *  1, R, F, 1994-02-02, 3, 2
+ *  2, R, F, 1993-11-09, 3, 3
+ *  
+ *  And then the scanner will push it as input data to this class. After then, this class will makes output data as
+ *  follows:
+ *
+ *  -------------------------------------------------------------------------------------------------------------------
+ *  NodeSequence, l_linenumber, l_returnflag, l_linestatus, l_shipdate, l_partkey for distinct,
+ *  l_orderkey for distinct, l_orderkey for nondistinct
+ *  -------------------------------------------------------------------------------------------------------------------
+ *  0, 2, R, F, 1993-11-09, 3, NULL, 3
+ *  0, 2, N, O, 1996-04-12, 1, NULL, 1
+ *  0, 1, N, O, 1997-01-28, 2, NULL, 2
+ *  0, 1, R, F, 1994-02-02, 2, NULL, 3
+ *  0, 1, N, O, 1996-03-13, 1, NULL, 1
+ *  1, 2, R, F, 1993-11-09, NULL, 3, NULL
+ *  1, 2, N, O, 1996-04-12, NULL, 1, NULL
+ *  1, 1, N, O, 1997-01-28, NULL, 2, NULL
+ *  1, 1, R, F, 1994-02-02, NULL, 3, NULL
+ *  1, 1, N, O, 1996-03-13, NULL, 1, NULL
+ *
+ *  For reference, NodeSequence means GroupByNode sequence. In this case, there are two GroupByNode. And it consist
+ *  of lineitem.l_partkey and lineitem.l_orderkey. The NodeSequence of lineitem.l_partkey is zero and the sequence of
+ *  lineitem.l_orderkey is one. As above output data, If there are uncomfortable column for DistinctGroupBy, 
+ *  inner aggregator makes it to NullDataTum.
+ *  
+ *  In addition, columns for NonDistinctGroupBy only can contains real value at first NodeSequence.
+ *
+ */
+
 public class DistinctGroupbyFirstAggregationExec extends PhysicalExec {
   private static Log LOG = LogFactory.getLog(DistinctGroupbyFirstAggregationExec.class);
 
