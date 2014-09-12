@@ -139,41 +139,37 @@ public class DistinctGroupbyBuilder {
           secondStageDistinctNode, thirdStageBlock, thirdStageDistinctNode);
 
       //Create data channel FirstStage to SecondStage
-      DataChannel channel;
-      if (groupbyNode.isEmptyGrouping()) {
-        channel = new DataChannel(latestExecBlock, secondStageBlock, HASH_SHUFFLE, 1);
-        channel.setShuffleKeys(firstStageDistinctNode.getOutSchema().getColumns().toArray(new Column[]{}));
-      } else {
-        channel = new DataChannel(latestExecBlock, secondStageBlock, HASH_SHUFFLE, 32);
-        channel.setShuffleKeys(firstStageDistinctNode.getOutSchema().getColumns().toArray(new Column[]{}));
-      }
-      channel.setSchema(firstStageDistinctNode.getOutSchema());
-      channel.setStoreType(globalPlanner.getStoreType());
+      DataChannel firstChannel = new DataChannel(latestExecBlock, secondStageBlock, HASH_SHUFFLE, 32);
 
-      ScanNode scanNode = GlobalPlanner.buildInputExecutor(context.getPlan().getLogicalPlan(), channel);
+      firstChannel.setShuffleKeys(firstStageDistinctNode.getFirstStageShuffleKeyColumns());
+      firstChannel.setSchema(firstStageDistinctNode.getOutSchema());
+      firstChannel.setStoreType(globalPlanner.getStoreType());
+
+      ScanNode scanNode = GlobalPlanner.buildInputExecutor(context.getPlan().getLogicalPlan(), firstChannel);
       secondStageDistinctNode.setChild(scanNode);
 
       secondStageBlock.setPlan(secondStageDistinctNode);
 
-      context.getPlan().addConnect(channel);
+      context.getPlan().addConnect(firstChannel);
 
+      DataChannel secondChannel;
       //Create data channel SecondStage to ThirdStage
       if (groupbyNode.isEmptyGrouping()) {
-        channel = new DataChannel(secondStageBlock, thirdStageBlock, HASH_SHUFFLE, 1);
-        channel.setShuffleKeys(firstStageDistinctNode.getGroupingColumns());
+        secondChannel = new DataChannel(secondStageBlock, thirdStageBlock, HASH_SHUFFLE, 1);
+        secondChannel.setShuffleKeys(firstStageDistinctNode.getGroupingColumns());
       } else {
-        channel = new DataChannel(secondStageBlock, thirdStageBlock, HASH_SHUFFLE, 32);
-        channel.setShuffleKeys(firstStageDistinctNode.getGroupingColumns());
+        secondChannel = new DataChannel(secondStageBlock, thirdStageBlock, HASH_SHUFFLE, 32);
+        secondChannel.setShuffleKeys(firstStageDistinctNode.getGroupingColumns());
       }
-      channel.setSchema(secondStageDistinctNode.getOutSchema());
-      channel.setStoreType(globalPlanner.getStoreType());
+      secondChannel.setSchema(secondStageDistinctNode.getOutSchema());
+      secondChannel.setStoreType(globalPlanner.getStoreType());
 
-      scanNode = GlobalPlanner.buildInputExecutor(context.getPlan().getLogicalPlan(), channel);
+      scanNode = GlobalPlanner.buildInputExecutor(context.getPlan().getLogicalPlan(), secondChannel);
       thirdStageDistinctNode.setChild(scanNode);
 
       thirdStageBlock.setPlan(thirdStageDistinctNode);
 
-      context.getPlan().addConnect(channel);
+      context.getPlan().addConnect(secondChannel);
 
       if (GlobalPlanner.hasUnionChild(firstStageDistinctNode)) {
         buildDistinctGroupbyAndUnionPlan(

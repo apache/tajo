@@ -44,13 +44,17 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.plan.proto.PlanProto;
+import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.PlannerUtil;
+import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.MultipleAggregationStage;
+import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty;
 import org.apache.tajo.ipc.TajoWorkerProtocol.IntermediateEntryProto;
 import org.apache.tajo.master.*;
 import org.apache.tajo.master.TaskRunnerGroupEvent.EventType;
@@ -816,9 +820,30 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         if (grpNode.getType() == NodeType.GROUP_BY) {
           hasGroupColumns = ((GroupbyNode)grpNode).getGroupingColumns().length > 0;
         } else if (grpNode.getType() == NodeType.DISTINCT_GROUP_BY) {
-          hasGroupColumns = ((DistinctGroupbyNode)grpNode).getGroupingColumns().length > 0;
+          // Find current distinct stage node.
+          DistinctGroupbyNode distinctNode = PlannerUtil.findMostBottomNode(subQuery.getBlock().getPlan(), NodeType.DISTINCT_GROUP_BY);
+          if (distinctNode == null) {
+            LOG.warn(subQuery.getId() + ", Can't find current DistinctGroupbyNode");
+            distinctNode = (DistinctGroupbyNode)grpNode;
+          }
+          hasGroupColumns = distinctNode.getGroupingColumns().length > 0;
+
+          Enforcer enforcer = subQuery.getBlock().getEnforcer();
+          if (enforcer == null) {
+            LOG.warn(subQuery.getId() + ", DistinctGroupbyNode's enforcer is null.");
+          }
+          EnforceProperty property = PhysicalPlannerImpl.getAlgorithmEnforceProperty(enforcer, distinctNode);
+          if (property != null) {
+            if (property.getDistinct().getIsMultipleAggregation()) {
+              MultipleAggregationStage stage = property.getDistinct().getMultipleAggregationStage();
+              if (stage != MultipleAggregationStage.THRID_STAGE) {
+                hasGroupColumns = true;
+              }
+            }
+          }
         }
         if (!hasGroupColumns) {
+          LOG.info(subQuery.getId() + ", No Grouping Column - determinedTaskNum is set to 1");
           return 1;
         } else {
           long volume = getInputVolume(subQuery.masterPlan, subQuery.context, subQuery.block);

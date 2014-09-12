@@ -50,7 +50,7 @@ import java.util.Set;
  *  In this case, execution plan for this operator will set shuffle type as follows:
  *    Incoming: 1 => 2 (type=HASH_SHUFFLE, key=?distinctseq (INT2), default.lineitem.l_linenumber (INT4),
  *      default.lineitem.l_returnflag (TEXT), default.lineitem.l_linestatus (TEXT), default.lineitem.l_shipdate (TEXT),
- *     default.lineitem.l_partkey (INT4), default.lineitem.l_orderkey (INT4), ?sum_2 (INT8), num=32)
+ *     default.lineitem.l_partkey (INT4), default.lineitem.l_orderkey (INT4), num=32)
  *
  *    Outgoing: 2 => 3 (type=HASH_SHUFFLE, key=default.lineitem.l_linenumber (INT4),
  *      default.lineitem.l_returnflag (TEXT), default.lineitem.l_linestatus (TEXT),

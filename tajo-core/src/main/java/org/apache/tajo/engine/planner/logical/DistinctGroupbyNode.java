@@ -27,7 +27,9 @@ import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class DistinctGroupbyNode extends UnaryNode implements Projectable, Cloneable {
   @Expose
@@ -224,5 +226,28 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
     }
 
     return planStr;
+  }
+
+  public Column[] getFirstStageShuffleKeyColumns() {
+    List<Column> shuffleKeyColumns = new ArrayList<Column>();
+    shuffleKeyColumns.add(getOutSchema().getColumn(0));   //distinctseq column
+    if (groupingColumns != null) {
+      for (Column eachColumn: groupingColumns) {
+        if (!shuffleKeyColumns.contains(eachColumn)) {
+          shuffleKeyColumns.add(eachColumn);
+        }
+      }
+    }
+    for (GroupbyNode eachGroupbyNode: groupByNodes) {
+      if (eachGroupbyNode.getGroupingColumns() != null && eachGroupbyNode.getGroupingColumns().length > 0) {
+        for (Column eachColumn: eachGroupbyNode.getGroupingColumns()) {
+          if (!shuffleKeyColumns.contains(eachColumn)) {
+            shuffleKeyColumns.add(eachColumn);
+          }
+        }
+      }
+    }
+
+    return shuffleKeyColumns.toArray(new Column[]{});
   }
 }
