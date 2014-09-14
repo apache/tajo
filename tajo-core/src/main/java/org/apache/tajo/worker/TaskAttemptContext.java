@@ -118,8 +118,6 @@ public class TaskAttemptContext {
     if (workerContext != null) {
       this.hashShuffleAppenderManager = workerContext.getHashShuffleAppenderManager();
     } else {
-      // For TestCase
-      LOG.warn("WorkerContext is null, so create HashShuffleAppenderManager created per a Task.");
       try {
         this.hashShuffleAppenderManager = new HashShuffleAppenderManager(queryContext.getConf());
       } catch (IOException e) {

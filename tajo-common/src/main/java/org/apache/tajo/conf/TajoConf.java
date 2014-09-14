@@ -353,7 +353,10 @@ public class TajoConf extends Configuration {
     $TEST_MIN_TASK_NUM("tajo.test.min-task-num", -1),
 
     // Behavior Control ---------------------------------------------------------
-    $BEHAVIOR_ARITHMETIC_ABORT("tajo.behavior.arithmetic-abort", false);
+    $BEHAVIOR_ARITHMETIC_ABORT("tajo.behavior.arithmetic-abort", false),
+
+    // ResultSet ---------------------------------------------------------
+    $RESULT_SET_FETCH_SIZE("tajo.resultset.fetch.size", 200)
     ;
 
     public final String varname;

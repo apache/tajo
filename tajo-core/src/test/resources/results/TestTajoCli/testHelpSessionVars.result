@@ -34,4 +34,5 @@ Available Session Variables:
 \set NULL_CHAR [text value] - null char of text file output
 \set CODEGEN [true or false] - Runtime code generation enabled (experiment)
 \set ARITHABORT [true or false] - If true, a running query will be terminated when an overflow or divide-by-zero occurs.
+\set FETCH_SIZE [int value] - Sets the number of rows at a time from Master
 \set DEBUG_ENABLED [true or false] - (debug only) debug mode enabled

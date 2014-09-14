@@ -86,7 +86,7 @@ message GetQueryResultResponse {
   required string tajoUserName = 3;
 }
 
-message KillQueryRequest {
+message QueryIdRequest {
   optional SessionIdProto sessionId = 1;
   required QueryIdProto queryId = 2;
 }
@@ -115,6 +115,12 @@ message GetQueryStatusRequest {
   required QueryIdProto queryId = 2;
 }
 
+message SerializedResultSet {
+  optional SchemaProto schema = 1;
+  optional int32 bytesNum = 2;
+  repeated bytes serializedTuples = 3;
+}
+
 message SubmitQueryResponse {
   required ResultCode resultCode = 1;
   required QueryIdProto queryId = 2;
@@ -124,18 +130,14 @@ message SubmitQueryResponse {
   optional string queryMasterHost = 5;
   optional int32 queryMasterPort = 6;
 
-  message SerializedResultSet {
-    optional SchemaProto schema = 1;
-    optional int32 bytesNum = 2;
-    repeated bytes serializedTuples = 3;
-  }
-
   optional SerializedResultSet resultSet = 7;
   optional TableDescProto tableDesc = 8;
   optional int32 maxRowNum = 9;
 
   optional string errorMessage = 10;
   optional string errorTrace = 11;
+
+  optional KeyValueSetProto sessionVariables = 12;
 }
 
 message GetQueryStatusResponse {
@@ -150,6 +152,19 @@ message GetQueryStatusResponse {
   optional string errorTrace = 10;
   optional string queryMasterHost = 11;
   optional int32 queryMasterPort = 12;
+}
+
+message GetQueryResultDataRequest {
+  required SessionIdProto sessionId = 1;
+  required QueryIdProto queryId = 2;
+  required int32 fetchSize = 3;
+}
+
+message GetQueryResultDataResponse {
+  required ResultCode resultCode = 1;
+  required SerializedResultSet resultSet = 2;
+  optional string errorMessage = 3;
+  optional string errorTrace = 4;
 }
 
 message GetClusterInfoRequest {

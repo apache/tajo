@@ -570,6 +570,39 @@ public class TajoTestingCluster {
     LOG.info("Minicluster is down");
   }
 
+  public static TajoClient newTajoClient() throws Exception {
+    TpchTestBase instance = TpchTestBase.getInstance();
+    TajoTestingCluster util = instance.getTestingCluster();
+    while(true) {
+      if(util.getMaster().isMasterRunning()) {
+        break;
+      }
+      Thread.sleep(1000);
+    }
+    TajoConf conf = util.getConfiguration();
+    return new TajoClient(conf);
+  }
+
+  public static ResultSet run(String[] names,
+                              Schema[] schemas,
+                              KeyValueSet tableOption,
+                              String[][] tables,
+                              String query,
+                              TajoClient client) throws Exception {
+    TajoTestingCluster util = TpchTestBase.getInstance().getTestingCluster();
+
+    FileSystem fs = util.getDefaultFileSystem();
+    Path rootDir = util.getMaster().
+        getStorageManager().getWarehouseDir();
+    fs.mkdirs(rootDir);
+    for (int i = 0; i < names.length; i++) {
+      createTable(names[i], schemas[i], tableOption, tables[i]);
+    }
+    Thread.sleep(1000);
+    ResultSet res = client.executeQueryAndGetResult(query);
+    return res;
+  }
+
   public static ResultSet run(String[] names,
                               Schema[] schemas,
                               KeyValueSet tableOption,
@@ -585,17 +618,9 @@ public class TajoTestingCluster {
     }
     TajoConf conf = util.getConfiguration();
     TajoClient client = new TajoClient(conf);
+
     try {
-      FileSystem fs = util.getDefaultFileSystem();
-      Path rootDir = util.getMaster().
-          getStorageManager().getWarehouseDir();
-      fs.mkdirs(rootDir);
-      for (int i = 0; i < names.length; i++) {
-        createTable(names[i], schemas[i], tableOption, tables[i]);
-      }
-      Thread.sleep(1000);
-      ResultSet res = client.executeQueryAndGetResult(query);
-      return res;
+      return run(names, schemas, tableOption, tables, query, client);
     } finally {
       client.close();
     }

@@ -81,6 +81,21 @@ public class TestSelectQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testSimpleQueryWithLimitPartitionedTable() throws Exception {
+    // select * from customer_parts limit 10;
+    executeDDL("customer_ddl.sql", null);
+    for (int i = 0; i < 5; i++) {
+      executeFile("insert_into_customer.sql").close();
+    }
+
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    executeString("DROP TABLE customer_parts PURGE").close();
+  }
+
+  @Test
   public final void testExplainSelect() throws Exception {
     // explain select l_orderkey, l_partkey from lineitem;
     ResultSet res = executeQuery();

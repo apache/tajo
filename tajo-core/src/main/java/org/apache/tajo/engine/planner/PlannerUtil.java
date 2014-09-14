@@ -21,20 +21,29 @@ package org.apache.tajo.engine.planner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.exception.InvalidQueryException;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.storage.TupleComparator;
+import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.TUtil;
 
+import java.io.IOException;
 import java.util.*;
 
 public class PlannerUtil {
@@ -75,19 +84,32 @@ public class PlannerUtil {
     boolean noGroupBy = !plan.getRootBlock().hasNode(NodeType.GROUP_BY);
     boolean noWhere = !plan.getRootBlock().hasNode(NodeType.SELECTION);
     boolean noJoin = !plan.getRootBlock().hasNode(NodeType.JOIN);
-    boolean singleRelation = plan.getRootBlock().hasNode(NodeType.SCAN)
+    boolean singleRelation = (plan.getRootBlock().hasNode(NodeType.SCAN) || plan.getRootBlock().hasNode(NodeType.PARTITIONS_SCAN))
         && PlannerUtil.getRelationLineage(plan.getRootBlock().getRoot()).length == 1;
 
     boolean noComplexComputation = false;
     if (singleRelation) {
       ScanNode scanNode = plan.getRootBlock().getNode(NodeType.SCAN);
-      if (!scanNode.getTableDesc().hasPartition() && scanNode.hasTargets()
-          && scanNode.getTargets().length == scanNode.getInSchema().size()) {
+      if (scanNode == null) {
+        scanNode = plan.getRootBlock().getNode(NodeType.PARTITIONS_SCAN);
+      }
+      if (scanNode.hasTargets()) {
+        if (scanNode.getTableDesc().hasPartition()) {
+          int numPartitionColumns = scanNode.getTableDesc().getPartitionMethod().getExpressionSchema().size();
+          if (scanNode.getTargets().length != scanNode.getInSchema().size() + numPartitionColumns) {
+            return false;
+          }
+        } else {
+          if (scanNode.getTargets().length != scanNode.getInSchema().size()) {
+            return false;
+          }
+        }
         noComplexComputation = true;
         for (int i = 0; i < scanNode.getTargets().length; i++) {
           noComplexComputation = noComplexComputation && scanNode.getTargets()[i].getEvalTree().getType() == EvalType.FIELD;
           if (noComplexComputation) {
-            noComplexComputation = noComplexComputation && scanNode.getTargets()[i].getNamedColumn().equals(scanNode.getInSchema().getColumn(i));
+            noComplexComputation = noComplexComputation &&
+                scanNode.getTargets()[i].getNamedColumn().equals(scanNode.getTableDesc().getLogicalSchema().getColumn(i));
           }
           if (!noComplexComputation) {
             return noComplexComputation;
@@ -97,7 +119,8 @@ public class PlannerUtil {
     }
 
     return !checkIfDDLPlan(rootNode) &&
-        (simpleOperator && noComplexComputation  && isOneQueryBlock && noOrderBy && noGroupBy && noWhere && noJoin && singleRelation);
+        (simpleOperator && noComplexComputation && isOneQueryBlock &&
+            noOrderBy && noGroupBy && noWhere && noJoin && singleRelation);
   }
 
   /**
@@ -761,5 +784,44 @@ public class PlannerUtil {
     }
 
     return explains.toString();
+  }
+
+  public static FragmentProto[] getNonZeroLengthDataFiles(TajoConf tajoConf, TableDesc tableDesc,
+                                                          int page, int pageSize) throws IOException {
+    Path tablePath = tableDesc.getPath();
+    FileSystem fs = tablePath.getFileSystem(tajoConf);
+
+    List<FileStatus> nonZeroLengthFiles = new ArrayList<FileStatus>();
+    if (fs.exists(tablePath)) {
+      getNonZeroLengthDataFiles(fs, tablePath, nonZeroLengthFiles, page, pageSize);
+    }
+
+    List<FileFragment> fragments = new ArrayList<FileFragment>();
+    for (FileStatus eachFile: nonZeroLengthFiles) {
+      FileFragment fileFragment = new FileFragment(tableDesc.getName(), eachFile.getPath(), 0, eachFile.getLen(), null);
+      fragments.add(fileFragment);
+    }
+    return FragmentConvertor.toFragmentProtoArray(fragments.toArray(new FileFragment[]{}));
+  }
+
+  private static void getNonZeroLengthDataFiles(FileSystem fs, Path path, List<FileStatus> result,
+                                         int page, int pageSize) throws IOException {
+    if (fs.isDirectory(path)) {
+      FileStatus[] files = fs.listStatus(path);
+      if (files != null && files.length > 0) {
+        for (FileStatus eachFile: files) {
+          if (eachFile.isDirectory()) {
+            getNonZeroLengthDataFiles(fs, eachFile.getPath(), result, page, pageSize);
+          } else if (eachFile.isFile() && eachFile.getLen() > 0) {
+            result.add(eachFile);
+          }
+        }
+      }
+    } else {
+      FileStatus fileStatus = fs.getFileStatus(path);
+      if (fileStatus != null && fileStatus.getLen() > 0) {
+        result.add(fileStatus);
+      }
+    }
   }
 }

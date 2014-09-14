@@ -764,7 +764,7 @@ public abstract class TajoResultSetBase implements ResultSet {
         return true;
       }
     } catch (IOException e) {
-      throw new SQLException(e.getMessage());
+      throw new SQLException(e.getMessage(), e);
     }
     return false;
   }
