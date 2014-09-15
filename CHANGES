@@ -31,6 +31,8 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1034: Reduce Explicit Use of JVM Internal Class. (Jihun Kang via hyunsik)
+
     TAJO-1027: Upgrade Hive to 0.13.0 and 0.13.1. (jaehwa)
 
     TAJO-1028: JDBC should support SET command.(Hyoungjun Kim)
