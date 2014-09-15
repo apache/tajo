@@ -34,8 +34,6 @@ import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.ipc.TajoWorkerProtocol.ExecutionBlockReport;
-import org.apache.tajo.ipc.TajoWorkerProtocol.IntermediateEntryProto;
 import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.event.QueryStartEvent;
 import org.apache.tajo.rpc.CallFuture;
@@ -47,7 +45,6 @@ import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.util.HAServiceUtil;
 import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.worker.TajoWorker;
 
 import java.util.ArrayList;
@@ -57,7 +54,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.tajo.ipc.TajoMasterProtocol.TajoHeartbeat;
@@ -404,6 +400,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
     public void stopQuery(QueryId queryId) {
       QueryMasterTask queryMasterTask;
       queryMasterTask = queryMasterTasks.remove(queryId);
+      if(queryMasterTask == null) return;
+
       finishedQueryMasterTasks.put(queryId, queryMasterTask);
 
       if(queryMasterTask != null) {

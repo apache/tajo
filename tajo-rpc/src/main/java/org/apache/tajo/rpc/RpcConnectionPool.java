@@ -75,8 +75,12 @@ public class RpcConnectionPool {
     NettyClientBase client = connections.get(key);
 
     if (client == null) {
-      client = makeConnection(key);
-      boolean added = connections.putIfAbsent(key, client) == null;
+      boolean added;
+      synchronized (connections){
+        client = makeConnection(key);
+        connections.put(key, client);
+        added = true;
+      }
 
       if (!added) {
         client.close();
