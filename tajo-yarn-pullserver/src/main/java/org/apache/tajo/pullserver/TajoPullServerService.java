@@ -230,7 +230,7 @@ public class TajoPullServerService extends AbstractService {
 
   // TODO change AbstractService to throw InterruptedException
   @Override
-  protected void serviceInit(Configuration conf) throws Exception {
+  public synchronized void serviceInit(Configuration conf) throws Exception {
     ServerBootstrap bootstrap = new ServerBootstrap(selector);
 
     try {
@@ -252,7 +252,29 @@ public class TajoPullServerService extends AbstractService {
 
     sslFileBufferSize = conf.getInt(SUFFLE_SSL_FILE_BUFFER_SIZE_KEY,
                                     DEFAULT_SUFFLE_SSL_FILE_BUFFER_SIZE);
+
+
+    if (STANDALONE) {
+      File pullServerPortFile = getPullServerPortFile();
+      if (pullServerPortFile.exists()) {
+        pullServerPortFile.delete();
+      }
+      pullServerPortFile.getParentFile().mkdirs();
+      LOG.info("Write PullServerPort to " + pullServerPortFile);
+      FileOutputStream out = null;
+      try {
+        out = new FileOutputStream(pullServerPortFile);
+        out.write(("" + port).getBytes());
+      } catch (Exception e) {
+        LOG.fatal("PullServer exists cause can't write PullServer port to " + pullServerPortFile +
+            ", " + e.getMessage(), e);
+        System.exit(-1);
+      } finally {
+        IOUtils.closeStream(out);
+      }
+    }
     super.serviceInit(conf);
+    LOG.info("TajoPullServerService started: port=" + port);
   }
 
   public static boolean isStandalone() {
