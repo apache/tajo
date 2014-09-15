@@ -38,7 +38,10 @@ import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.master.TajoMaster;
+import org.apache.tajo.master.querymaster.Query;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
+import org.apache.tajo.master.querymaster.SubQuery;
+import org.apache.tajo.master.querymaster.SubQueryState;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -686,19 +689,50 @@ public class TajoTestingCluster {
   }
 
   public void waitForQueryRunning(QueryId queryId) throws Exception {
+    waitForQueryRunning(queryId, 50);
+  }
+
+  public void waitForQueryRunning(QueryId queryId, int delay) throws Exception {
     QueryMasterTask qmt = null;
 
     int i = 0;
     while (qmt == null || TajoClient.isInPreNewState(qmt.getState())) {
       try {
-        Thread.sleep(100);
+        Thread.sleep(delay);
         if(qmt == null){
           qmt = getQueryMasterTask(queryId);
         }
       } catch (InterruptedException e) {
       }
-      if (++i > 100) {
+      if (++i > 200) {
         throw new IOException("Timed out waiting for query to start");
+      }
+    }
+  }
+
+  public void waitForQueryState(Query query, TajoProtos.QueryState expected, int delay) throws Exception {
+    int i = 0;
+    while (query == null || query.getSynchronizedState() != expected) {
+      try {
+        Thread.sleep(delay);
+      } catch (InterruptedException e) {
+      }
+      if (++i > 200) {
+        throw new IOException("Timed out waiting");
+      }
+    }
+  }
+
+  public void waitForSubQueryState(SubQuery subQuery, SubQueryState expected, int delay) throws Exception {
+
+    int i = 0;
+    while (subQuery == null || subQuery.getSynchronizedState() != expected) {
+      try {
+        Thread.sleep(delay);
+      } catch (InterruptedException e) {
+      }
+      if (++i > 200) {
+        throw new IOException("Timed out waiting");
       }
     }
   }

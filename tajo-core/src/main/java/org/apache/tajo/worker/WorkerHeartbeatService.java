@@ -262,10 +262,22 @@ public class WorkerHeartbeatService extends AbstractService {
   }
 
   public static int getTotalMemoryMB() {
-    com.sun.management.OperatingSystemMXBean bean =
-        (com.sun.management.OperatingSystemMXBean)
-            java.lang.management.ManagementFactory.getOperatingSystemMXBean();
-    long max = bean.getTotalPhysicalMemorySize();
+    javax.management.MBeanServer mBeanServer = java.lang.management.ManagementFactory.getPlatformMBeanServer();
+    long max = 0;
+    Object maxObject = null;
+    try {
+      javax.management.ObjectName osName = new javax.management.ObjectName("java.lang:type=OperatingSystem");
+      if (!System.getProperty("java.vendor").startsWith("IBM")) {
+        maxObject = mBeanServer.getAttribute(osName, "TotalPhysicalMemorySize");
+      } else {
+        maxObject = mBeanServer.getAttribute(osName, "TotalPhysicalMemory");
+      }
+    } catch (Throwable t) {
+      LOG.error(t.getMessage(), t);
+    }
+    if (maxObject != null) {
+      max = ((Long)maxObject).longValue();
+    }
     return ((int) (max / (1024 * 1024)));
   }
 }

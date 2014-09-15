@@ -101,7 +101,7 @@ public class TajoContainerProxy extends ContainerProxy {
 
       TajoWorkerProtocol.RunExecutionBlockRequestProto request =
           TajoWorkerProtocol.RunExecutionBlockRequestProto.newBuilder()
-              .setExecutionBlockId(executionBlockId.toString())
+              .setExecutionBlockId(executionBlockId.getProto())
               .setQueryMaster(context.getQueryMasterContext().getWorkerContext().getConnectionInfo().getProto())
               .setNodeId(container.getNodeId().toString())
               .setContainerId(container.getId().toString())
@@ -110,7 +110,7 @@ public class TajoContainerProxy extends ContainerProxy {
               .setPlanJson(planJson)
               .build();
 
-      tajoWorkerRpcClient.executeExecutionBlock(null, request, NullCallback.get());
+      tajoWorkerRpcClient.startExecutionBlock(null, request, NullCallback.get());
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
     } finally {

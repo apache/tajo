@@ -43,7 +43,6 @@ import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.json.CoreGsonHelper;
-import org.apache.tajo.engine.plan.proto.PlanProto;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
@@ -138,7 +137,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
               SubQueryEventType.SQ_DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
           .addTransition(SubQueryState.INITED, SubQueryState.KILL_WAIT,
-              SubQueryEventType.SQ_KILL)
+              SubQueryEventType.SQ_KILL, new KillTasksTransition())
           .addTransition(SubQueryState.INITED, SubQueryState.ERROR,
               SubQueryEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
@@ -175,7 +174,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
               SubQueryEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINERS_CANCEL_TRANSITION)
           .addTransition(SubQueryState.KILL_WAIT, SubQueryState.KILL_WAIT,
-              EnumSet.of(SubQueryEventType.SQ_KILL))
+              EnumSet.of(SubQueryEventType.SQ_KILL), new KillTasksTransition())
           .addTransition(SubQueryState.KILL_WAIT, SubQueryState.KILL_WAIT,
               SubQueryEventType.SQ_TASK_COMPLETED,
               TASK_COMPLETED_TRANSITION)
@@ -349,7 +348,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
 
     if (totalProgress > 0.0f) {
-      return (float) Math.floor((totalProgress / (float) tempTasks.size()) * 1000.0f) / 1000.0f;
+      return (float) Math.floor((totalProgress / (float) Math.max(tempTasks.size(), 1)) * 1000.0f) / 1000.0f;
     } else {
       return 0.0f;
     }
@@ -668,13 +667,14 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
                             LOG.info(subQuery.totalScheduledObjectsCount + " objects are scheduled");
 
                             if (subQuery.getTaskScheduler().remainingScheduledObjectNum() == 0) { // if there is no tasks
-                              subQuery.stopScheduler();
-                              subQuery.finalizeStats();
-                              subQuery.eventHandler.handle(new SubQueryCompletedEvent(subQuery.getId(), SubQueryState.SUCCEEDED));
+                              subQuery.complete();
                             } else {
-                              subQuery.taskScheduler.start();
-                              allocateContainers(subQuery);
-
+                              if(subQuery.getSynchronizedState() == SubQueryState.INITED) {
+                                subQuery.taskScheduler.start();
+                                allocateContainers(subQuery);
+                              } else {
+                                subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_KILL));
+                              }
                             }
                           } catch (Throwable e) {
                             LOG.error("SubQuery (" + subQuery.getId() + ") ERROR: ", e);
@@ -1116,7 +1116,10 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
     @Override
     public void transition(SubQuery subQuery, SubQueryEvent subQueryEvent) {
-      subQuery.getTaskScheduler().stop();
+      if(subQuery.getTaskScheduler() != null){
+        subQuery.getTaskScheduler().stop();
+      }
+
       for (QueryUnit queryUnit : subQuery.getQueryUnits()) {
         subQuery.eventHandler.handle(new TaskEvent(queryUnit.getId(), TaskEventType.T_KILL));
       }

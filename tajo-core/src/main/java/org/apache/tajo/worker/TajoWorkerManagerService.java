@@ -25,14 +25,19 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
-import org.apache.tajo.*;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.TajoIdUtils;
+import org.apache.tajo.worker.event.TaskRunnerStartEvent;
+import org.apache.tajo.worker.event.TaskRunnerStopEvent;
 
 import java.net.InetSocketAddress;
 
@@ -105,31 +110,37 @@ public class TajoWorkerManagerService extends CompositeService
   }
 
   @Override
-  public void executeExecutionBlock(RpcController controller,
+  public void startExecutionBlock(RpcController controller,
                                     TajoWorkerProtocol.RunExecutionBlockRequestProto request,
                                     RpcCallback<PrimitiveProtos.BoolProto> done) {
     workerContext.getWorkerSystemMetrics().counter("query", "executedExecutionBlocksNum").inc();
 
     try {
-      workerContext.initSharedResource(
-          new QueryContext(workerContext.getConf(), request.getQueryContext()),
-          TajoIdUtils.createExecutionBlockId(request.getExecutionBlockId()), request.getPlanJson());
-
-      String[] params = new String[7];
-      params[0] = "standby";  //mode(never used)
-      params[1] = request.getExecutionBlockId();
-      // NodeId has a form of hostname:port.
-      params[2] = request.getNodeId();
-      params[3] = request.getContainerId();
-
-      // QueryMaster's address
-      params[4] = request.getQueryMaster().getHost();
-      params[5] = String.valueOf(request.getQueryMaster().getQueryMasterPort());
-      params[6] = request.getQueryOutputPath();
-      workerContext.getTaskRunnerManager().startTask(params);
+      workerContext.getTaskRunnerManager().getEventHandler().handle(new TaskRunnerStartEvent(
+          new WorkerConnectionInfo(request.getQueryMaster())
+          , new ExecutionBlockId(request.getExecutionBlockId())
+          , request.getContainerId()
+          , new QueryContext(workerContext.getConf(), request.getQueryContext()),
+          request.getPlanJson()
+      ));
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
+      done.run(TajoWorker.FALSE_PROTO);
+    }
+  }
+
+  @Override
+  public void stopExecutionBlock(RpcController controller,
+                                 TajoIdProtos.ExecutionBlockIdProto requestProto,
+                                 RpcCallback<PrimitiveProtos.BoolProto> done) {
+    try {
+      workerContext.getTaskRunnerManager().getEventHandler().handle(new TaskRunnerStopEvent(
+          new ExecutionBlockId(requestProto)
+      ));
+      done.run(TajoWorker.TRUE_PROTO);
+    } catch (Exception e) {
+      LOG.error(e.getMessage(), e);
       done.run(TajoWorker.FALSE_PROTO);
     }
   }
@@ -155,13 +166,10 @@ public class TajoWorkerManagerService extends CompositeService
                                      TajoWorkerProtocol.ExecutionBlockListProto ebIds,
                                      RpcCallback<PrimitiveProtos.BoolProto> done) {
     for (TajoIdProtos.ExecutionBlockIdProto executionBlockIdProto : ebIds.getExecutionBlockIdList()) {
-      String inputDir = TaskRunner.getBaseInputDir(new ExecutionBlockId(executionBlockIdProto)).toString();
+      String inputDir = ExecutionBlockContext.getBaseInputDir(new ExecutionBlockId(executionBlockIdProto)).toString();
       workerContext.cleanup(inputDir);
-      String outputDir = TaskRunner.getBaseOutputDir(new ExecutionBlockId(executionBlockIdProto)).toString();
+      String outputDir = ExecutionBlockContext.getBaseOutputDir(new ExecutionBlockId(executionBlockIdProto)).toString();
       workerContext.cleanup(outputDir);
-
-      // Release shared resources
-      workerContext.releaseSharedResource(new ExecutionBlockId(executionBlockIdProto));
     }
     done.run(TajoWorker.TRUE_PROTO);
   }
