@@ -123,18 +123,6 @@ public class ExecutionBlockContext {
     // TODO - 'load credential' should be implemented
     // Getting taskOwner
     UserGroupInformation taskOwner = UserGroupInformation.createRemoteUser(systemConf.getVar(TajoConf.ConfVars.USERNAME));
-    //taskOwner.addToken(token);
-
-    // initialize MasterWorkerProtocol as an actual task owner.
-//      this.client =
-//          taskOwner.doAs(new PrivilegedExceptionAction<AsyncRpcClient>() {
-//            @Override
-//            public AsyncRpcClient run() throws Exception {
-//              return new AsyncRpcClient(TajoWorkerProtocol.class, masterAddr);
-//            }
-//          });
-//      this.master = client.getStub();
-
 
     // initialize DFS and LocalFileSystems
     this.taskOwner = taskOwner;
