@@ -42,6 +42,7 @@ import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.worker.event.TaskRunnerStartEvent;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
+import org.jboss.netty.util.Timer;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -270,6 +271,10 @@ public class ExecutionBlockContext {
       channelFactory = RpcChannelFactory.createClientChannelFactory("Fetcher", workerNum);
     }
     return channelFactory;
+  }
+
+  public Timer getRPCTimer() {
+    return manager.getRPCTimer();
   }
 
   protected void releaseShuffleChannelFactory(){
