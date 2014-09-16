@@ -188,7 +188,6 @@
     <tr>
       <td><a href='cluster.jsp'>Worker</a></td>
       <td align='right'><%=numWorkers%></td>
-      <td align='right'><%=numWorkers%></td>
       <td align='right'><%=numLiveWorkers%></td>
       <td align='right'><%=numDeadWorkersHtml%></td>
       <td align='right'>-</td>
