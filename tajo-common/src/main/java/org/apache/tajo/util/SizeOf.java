@@ -18,7 +18,7 @@
 
 package org.apache.tajo.util;
 
-import static sun.misc.Unsafe.*;
+import static org.apache.tajo.util.UnsafeUtil.*;
 
 
 public final class SizeOf {
