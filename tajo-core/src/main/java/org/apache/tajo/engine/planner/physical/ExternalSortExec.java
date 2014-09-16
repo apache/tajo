@@ -19,17 +19,14 @@
 package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RawLocalFileSystem;
-import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.SessionVars;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -37,20 +34,19 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.PhysicalPlanningException;
 import org.apache.tajo.engine.planner.logical.SortNode;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.storage.Scanner;
+import org.apache.tajo.tuple.offheap.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
+import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
+import org.apache.tajo.storage.rawfile.DirectRawFileWriter;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
 import java.util.concurrent.*;
-
-import static org.apache.tajo.storage.RawFile.RawFileAppender;
-import static org.apache.tajo.storage.RawFile.RawFileScanner;
 
 /**
  * This external sort algorithm can be characterized by the followings:
@@ -78,7 +74,8 @@ public class ExternalSortExec extends SortExec {
   /** If there are available multiple cores, it tries parallel merge. */
   private ExecutorService executorService;
   /** used for in-memory sort of each chunk. */
-  private List<Tuple> inMemoryTable;
+  private OffHeapRowBlock tupleBlock;
+  private List<Tuple> sortedTuples;
   /** temporal dir */
   private final Path sortTmpDir;
   /** It enables round-robin disks allocation */
@@ -100,14 +97,14 @@ public class ExternalSortExec extends SortExec {
   /** the final result */
   private Scanner result;
   /** total bytes of input data */
-  private long sortAndStoredBytes;
+  private long bytesOfLatestChunk;
 
   private ExternalSortExec(final TaskAttemptContext context, final AbstractStorageManager sm, final SortNode plan)
       throws PhysicalPlanningException {
     super(context, plan.getInSchema(), plan.getOutSchema(), null, plan.getSortKeys());
 
     this.plan = plan;
-    this.meta = CatalogUtil.newTableMeta(StoreType.ROWFILE);
+    this.meta = CatalogUtil.newTableMeta(StoreType.DIRECTRAW);
 
     this.defaultFanout = context.getConf().getIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT);
     if (defaultFanout < 2) {
@@ -117,7 +114,7 @@ public class ExternalSortExec extends SortExec {
     this.sortBufferBytesNum = context.getQueryContext().getLong(SessionVars.EXTSORT_BUFFER_SIZE) * StorageUnit.MB;
     this.allocatedCoreNum = context.getConf().getIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_THREAD_NUM);
     this.executorService = Executors.newFixedThreadPool(this.allocatedCoreNum);
-    this.inMemoryTable = new ArrayList<Tuple>(100000);
+    this.tupleBlock = new OffHeapRowBlock(inSchema, new FixedSizeLimitSpec(sortBufferBytesNum));
 
     this.sortTmpDir = getExecutorTmpDir();
     localDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
@@ -160,27 +157,25 @@ public class ExternalSortExec extends SortExec {
   /**
    * Sort a tuple block and store them into a chunk file
    */
-  private Path sortAndStoreChunk(int chunkId, List<Tuple> tupleBlock)
+  private Path sortAndStoreChunk(int chunkId, OffHeapRowBlock sortBuffer)
       throws IOException {
-    TableMeta meta = CatalogUtil.newTableMeta(StoreType.RAW);
-    int rowNum = tupleBlock.size();
+    TableMeta meta = CatalogUtil.newTableMeta(StoreType.DIRECTRAW);
+    int rowNum = sortBuffer.rows();
 
     long sortStart = System.currentTimeMillis();
-    Collections.sort(tupleBlock, getComparator());
+    List<Tuple> tupleList = OffHeapRowBlockUtils.sort(sortBuffer, getComparator());
     long sortEnd = System.currentTimeMillis();
 
     long chunkWriteStart = System.currentTimeMillis();
     Path outputPath = getChunkPathForWrite(0, chunkId);
-    final RawFileAppender appender = new RawFileAppender(context.getConf(), inSchema, meta, outputPath);
+    final DirectRawFileWriter appender = new DirectRawFileWriter(context.getConf(), inSchema, meta, outputPath);
     appender.init();
-    for (Tuple t : tupleBlock) {
+    for (Tuple t : tupleList) {
       appender.addTuple(t);
     }
     appender.close();
-    tupleBlock.clear();
+
     long chunkWriteEnd = System.currentTimeMillis();
-
-
     info(LOG, "Chunk #" + chunkId + " sort and written (" +
         FileUtil.humanReadableByteCount(appender.getOffset(), false) + " bytes, " + rowNum + " rows, " +
         ", sort time: " + (sortEnd - sortStart) + " msec, " +
@@ -196,17 +191,14 @@ public class ExternalSortExec extends SortExec {
    */
   private List<Path> sortAndStoreAllChunks() throws IOException {
     Tuple tuple;
-    long memoryConsumption = 0;
     List<Path> chunkPaths = TUtil.newList();
 
     int chunkId = 0;
     long runStartTime = System.currentTimeMillis();
     while ((tuple = child.next()) != null) { // partition sort start
-      Tuple vtuple = new VTuple(tuple);
-      inMemoryTable.add(vtuple);
-      memoryConsumption += MemoryUtil.calculateMemorySize(vtuple);
+      RowStoreUtil.convert(tuple, tupleBlock.getWriter());
 
-      if (memoryConsumption > sortBufferBytesNum) {
+      if (tupleBlock.usedMem() > sortBufferBytesNum) {
         long runEndTime = System.currentTimeMillis();
         info(LOG, chunkId + " run loading time: " + (runEndTime - runStartTime) + " msec");
         runStartTime = runEndTime;
@@ -214,9 +206,7 @@ public class ExternalSortExec extends SortExec {
         info(LOG, "Memory consumption exceeds " + sortBufferBytesNum + " bytes");
         memoryResident = false;
 
-        chunkPaths.add(sortAndStoreChunk(chunkId, inMemoryTable));
-
-        memoryConsumption = 0;
+        chunkPaths.add(sortAndStoreChunk(chunkId, tupleBlock));
         chunkId++;
 
         // When the volume of sorting data once exceed the size of sort buffer,
@@ -231,27 +221,19 @@ public class ExternalSortExec extends SortExec {
         // That is, the progress was divided into two parts.
         // So, it multiply the progress of the children operator and 0.5f.
         progress = child.getProgress() * 0.5f;
+
+        tupleBlock.clear();
       }
     }
 
-    if (inMemoryTable.size() > 0) { // if there are at least one or more input tuples
-      if (!memoryResident) { // check if data exceeds a sort buffer. If so, it store the remain data into a chunk.
-        if (inMemoryTable.size() > 0) {
-          long start = System.currentTimeMillis();
-          int rowNum = inMemoryTable.size();
-          chunkPaths.add(sortAndStoreChunk(chunkId, inMemoryTable));
-          long end = System.currentTimeMillis();
-          info(LOG, "Last Chunk #" + chunkId + " " + rowNum + " rows written (" + (end - start) + " msec)");
-        }
-      } else { // this case means that all data does not exceed a sort buffer
-        Collections.sort(inMemoryTable, getComparator());
-      }
+    if (tupleBlock.rows() >= 0) { // if there are at least one or more input tuples
+      sortedTuples = OffHeapRowBlockUtils.sort(tupleBlock, getComparator());
     }
 
     // get total loaded (or stored) bytes and total row numbers
     TableStats childTableStats = child.getInputStats();
     if (childTableStats != null) {
-      sortAndStoredBytes = childTableStats.getNumBytes();
+      bytesOfLatestChunk = childTableStats.getNumBytes();
     }
     return chunkPaths;
   }
@@ -260,7 +242,12 @@ public class ExternalSortExec extends SortExec {
    * Get a local path from all temporal paths in round-robin manner.
    */
   private synchronized Path getChunkPathForWrite(int level, int chunkId) throws IOException {
-    return localDirAllocator.getLocalPathForWrite(sortTmpDir + "/" + level +"_" + chunkId, context.getConf());
+    // example:
+    //   - ${sortTmpDir}/1_4.draw for 1 run and 4th chunk
+    //   - ${sortTmpDir}/2_8.draw for 2 run and 8th chunk
+    String outputFileName = sortTmpDir + "/" + level + "_" + chunkId + "." + DirectRawFileWriter.FILE_EXTENSION;
+    return localDirAllocator.getLocalPathForWrite(outputFileName, context.getConf());
+
   }
 
   @Override
@@ -280,10 +267,10 @@ public class ExternalSortExec extends SortExec {
         long startTimeOfChunkSplit = System.currentTimeMillis();
         List<Path> chunks = sortAndStoreAllChunks();
         long endTimeOfChunkSplit = System.currentTimeMillis();
-        info(LOG, "Chunks creation time: " + (endTimeOfChunkSplit - startTimeOfChunkSplit) + " msec");
+        info(LOG, "Sort of all chunks is completed (" + (endTimeOfChunkSplit - startTimeOfChunkSplit) + " msec).");
 
         if (memoryResident) { // if all sorted data reside in a main-memory table.
-          this.result = new MemTableScanner();
+          this.result = new MemTableScanner(sortedTuples, bytesOfLatestChunk);
         } else { // if input data exceeds main-memory at least once
 
           try {
@@ -441,7 +428,7 @@ public class ExternalSortExec extends SortExec {
       final Path outputPath = getChunkPathForWrite(level + 1, nextRunId);
       info(LOG, mergeFanout + " files are being merged to an output file " + outputPath.getName());
       long mergeStartTime = System.currentTimeMillis();
-      final RawFileAppender output = new RawFileAppender(context.getConf(), inSchema, meta, outputPath);
+      final DirectRawFileWriter output = new DirectRawFileWriter(context.getConf(), inSchema, meta, outputPath);
       output.init();
       final Scanner merger = createKWayMerger(inputFiles, startIdx, mergeFanout);
       merger.init();
@@ -479,252 +466,43 @@ public class ExternalSortExec extends SortExec {
   }
 
   private Scanner getFileScanner(Path path) throws IOException {
-    return new RawFileScanner(context.getConf(), plan.getInSchema(), meta, path);
+    String extension = FileUtil.getExtension(path.getName());
+    if (extension.equals(RawFile.FILE_EXTENSION)) {
+      return new RawFile.RawFileScanner(context.getConf(), plan.getInSchema(), meta, path);
+    } else if (extension.equalsIgnoreCase(DirectRawFileWriter.FILE_EXTENSION)) {
+      return new DirectRawFileScanner(context.getConf(), plan.getInSchema(), meta, path);
+    } else {
+      throw new IllegalStateException("Unknown File Extension: " + path);
+    }
   }
 
   private Scanner createKWayMerger(List<Path> inputs, final int startChunkId, final int num) throws IOException {
-    final Scanner [] sources = new Scanner[num];
-    for (int i = 0; i < num; i++) {
-      sources[i] = getFileScanner(inputs.get(startChunkId + i));
+    boolean tupleInMemory = tupleBlock.rows() > 0;
+
+    List<Scanner> scannerList = Lists.newArrayList();
+
+    // if tuples are still the in-memory block, the in-memory tuples will be included in merge phase.
+    if (tupleInMemory) {
+      scannerList.add(new MemTableScanner(sortedTuples, bytesOfLatestChunk));
     }
 
-    return createKWayMergerInternal(sources, 0, num);
+    for (int i = 0; i < num; i++) {
+      scannerList.add(getFileScanner(inputs.get(startChunkId + i)));
+    }
+    Scanner [] sources = scannerList.toArray(new Scanner[scannerList.size()]);
+
+    return createKWayMergerInternal(sources, 0, sources.length);
   }
 
   private Scanner createKWayMergerInternal(final Scanner [] sources, final int startIdx, final int num)
       throws IOException {
     if (num > 1) {
       final int mid = (int) Math.ceil((float)num / 2);
-      return new PairWiseMerger(
+      return new PairWiseMerger(inSchema,
           createKWayMergerInternal(sources, startIdx, mid),
-          createKWayMergerInternal(sources, startIdx + mid, num - mid));
+          createKWayMergerInternal(sources, startIdx + mid, num - mid), getComparator());
     } else {
       return sources[startIdx];
-    }
-  }
-
-  private class MemTableScanner implements Scanner {
-    Iterator<Tuple> iterator;
-
-    // for input stats
-    float scannerProgress;
-    int numRecords;
-    int totalRecords;
-    TableStats scannerTableStats;
-
-    @Override
-    public void init() throws IOException {
-      iterator = inMemoryTable.iterator();
-
-      totalRecords = inMemoryTable.size();
-      scannerProgress = 0.0f;
-      numRecords = 0;
-
-      // it will be returned as the final stats
-      scannerTableStats = new TableStats();
-      scannerTableStats.setNumBytes(sortAndStoredBytes);
-      scannerTableStats.setReadBytes(sortAndStoredBytes);
-      scannerTableStats.setNumRows(totalRecords);
-    }
-
-    @Override
-    public Tuple next() throws IOException {
-      if (iterator.hasNext()) {
-        numRecords++;
-        return iterator.next();
-      } else {
-        return null;
-      }
-    }
-
-    @Override
-    public void reset() throws IOException {
-      init();
-    }
-
-    @Override
-    public void close() throws IOException {
-      iterator = null;
-      scannerProgress = 1.0f;
-    }
-
-    @Override
-    public boolean isProjectable() {
-      return false;
-    }
-
-    @Override
-    public void setTarget(Column[] targets) {
-    }
-
-    @Override
-    public boolean isSelectable() {
-      return false;
-    }
-
-    @Override
-    public void setSearchCondition(Object expr) {
-    }
-
-    @Override
-    public boolean isSplittable() {
-      return false;
-    }
-
-    @Override
-    public Schema getSchema() {
-      return null;
-    }
-
-    @Override
-    public float getProgress() {
-      if (iterator != null && numRecords > 0) {
-        return (float)numRecords / (float)totalRecords;
-
-      } else { // if an input is empty
-        return scannerProgress;
-      }
-    }
-
-    @Override
-    public TableStats getInputStats() {
-      return scannerTableStats;
-    }
-  }
-
-  /**
-   * Two-way merger scanner that reads two input sources and outputs one output tuples sorted in some order.
-   */
-  private class PairWiseMerger implements Scanner {
-    private Scanner leftScan;
-    private Scanner rightScan;
-
-    private Tuple leftTuple;
-    private Tuple rightTuple;
-
-    private final Comparator<Tuple> comparator = getComparator();
-
-    private float mergerProgress;
-    private TableStats mergerInputStats;
-
-    public PairWiseMerger(Scanner leftScanner, Scanner rightScanner) throws IOException {
-      this.leftScan = leftScanner;
-      this.rightScan = rightScanner;
-    }
-
-    @Override
-    public void init() throws IOException {
-      leftScan.init();
-      rightScan.init();
-
-      leftTuple = leftScan.next();
-      rightTuple = rightScan.next();
-
-      mergerInputStats = new TableStats();
-      mergerProgress = 0.0f;
-    }
-
-    public Tuple next() throws IOException {
-      Tuple outTuple;
-      if (leftTuple != null && rightTuple != null) {
-        if (comparator.compare(leftTuple, rightTuple) < 0) {
-          outTuple = leftTuple;
-          leftTuple = leftScan.next();
-        } else {
-          outTuple = rightTuple;
-          rightTuple = rightScan.next();
-        }
-        return outTuple;
-      }
-
-      if (leftTuple == null) {
-        outTuple = rightTuple;
-        rightTuple = rightScan.next();
-      } else {
-        outTuple = leftTuple;
-        leftTuple = leftScan.next();
-      }
-      return outTuple;
-    }
-
-    @Override
-    public void reset() throws IOException {
-      leftScan.reset();
-      rightScan.reset();
-      init();
-    }
-
-    public void close() throws IOException {
-      IOUtils.cleanup(LOG, leftScan, rightScan);
-      getInputStats();
-      leftScan = null;
-      rightScan = null;
-      mergerProgress = 1.0f;
-    }
-
-    @Override
-    public boolean isProjectable() {
-      return false;
-    }
-
-    @Override
-    public void setTarget(Column[] targets) {
-    }
-
-    @Override
-    public boolean isSelectable() {
-      return false;
-    }
-
-    @Override
-    public void setSearchCondition(Object expr) {
-    }
-
-    @Override
-    public boolean isSplittable() {
-      return false;
-    }
-
-    @Override
-    public Schema getSchema() {
-      return inSchema;
-    }
-
-    @Override
-    public float getProgress() {
-      if (leftScan == null) {
-        return mergerProgress;
-      }
-      return leftScan.getProgress() * 0.5f + rightScan.getProgress() * 0.5f;
-    }
-
-    @Override
-    public TableStats getInputStats() {
-      if (leftScan == null) {
-        return mergerInputStats;
-      }
-      TableStats leftInputStats = leftScan.getInputStats();
-      if (mergerInputStats == null) {
-        mergerInputStats = new TableStats();
-      }
-      mergerInputStats.setNumBytes(0);
-      mergerInputStats.setReadBytes(0);
-      mergerInputStats.setNumRows(0);
-
-      if (leftInputStats != null) {
-        mergerInputStats.setNumBytes(leftInputStats.getNumBytes());
-        mergerInputStats.setReadBytes(leftInputStats.getReadBytes());
-        mergerInputStats.setNumRows(leftInputStats.getNumRows());
-      }
-
-      TableStats rightInputStats = rightScan.getInputStats();
-      if (rightInputStats != null) {
-        mergerInputStats.setNumBytes(mergerInputStats.getNumBytes() + rightInputStats.getNumBytes());
-        mergerInputStats.setReadBytes(mergerInputStats.getReadBytes() + rightInputStats.getReadBytes());
-        mergerInputStats.setNumRows(mergerInputStats.getNumRows() + rightInputStats.getNumRows());
-      }
-
-      return mergerInputStats;
     }
   }
 
@@ -746,9 +524,9 @@ public class ExternalSortExec extends SortExec {
       }
     }
 
-    if(inMemoryTable != null){
-      inMemoryTable.clear();
-      inMemoryTable = null;
+    if(tupleBlock != null){
+      tupleBlock.release();
+      tupleBlock = null;
     }
 
     if(executorService != null){
@@ -764,8 +542,9 @@ public class ExternalSortExec extends SortExec {
   public void rescan() throws IOException {
     if (result != null) {
       result.reset();
+    } else {
+      super.rescan();
     }
-    super.rescan();
     progress = 0.5f;
   }
 

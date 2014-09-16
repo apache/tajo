@@ -45,7 +45,7 @@
   <!--- Registered Scanner Handler -->
   <property>
     <name>tajo.storage.scanner-handler</name>
-    <value>csv,raw,rcfile,row,trevni,parquet,sequencefile,avro</value>
+    <value>csv,raw,rcfile,row,trevni,parquet,sequencefile,avro,directraw</value>
   </property>
 
   <!--- Fragment Class Configurations -->
@@ -55,6 +55,10 @@
   </property>
   <property>
     <name>tajo.storage.fragment.raw.class</name>
+    <value>org.apache.tajo.storage.fragment.FileFragment</value>
+  </property>
+  <property>
+    <name>tajo.storage.fragment.directraw.class</name>
     <value>org.apache.tajo.storage.fragment.FileFragment</value>
   </property>
   <property>
@@ -101,6 +105,11 @@
   <property>
     <name>tajo.storage.scanner-handler.v2.raw.class</name>
     <value>org.apache.tajo.storage.RawFile$RawFileScanner</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.scanner-handler.directraw.class</name>
+    <value>org.apache.tajo.storage.rawfile.DirectRawFileScanner</value>
   </property>
 
   <property>
@@ -177,6 +186,11 @@
   <property>
     <name>tajo.storage.appender-handler.raw.class</name>
     <value>org.apache.tajo.storage.RawFile$RawFileAppender</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.appender-handler.directraw.class</name>
+    <value>org.apache.tajo.storage.rawfile.DirectRawFileWriter</value>
   </property>
 
   <property>

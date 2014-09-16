@@ -31,6 +31,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatumFactory;
+import org.apache.tajo.util.UnsafeUtil;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.BitArray;
 
@@ -42,6 +43,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
 public class RawFile {
+  public static final String FILE_EXTENSION = "raw";
+
   private static final Log LOG = LogFactory.getLog(RawFile.class);
 
   public static class RawFileScanner extends FileScanner implements SeekableScanner {
@@ -380,7 +383,7 @@ public class RawFile {
         tableStats.setNumRows(recordCount);
       }
 
-      StorageUtil.closeBuffer(buffer);
+      UnsafeUtil.free(buffer);
       IOUtils.cleanup(LOG, channel, fis);
     }
 
@@ -722,7 +725,7 @@ public class RawFile {
         LOG.debug("RawFileAppender written: " + getOffset() + " bytes, path: " + path);
       }
 
-      StorageUtil.closeBuffer(buffer);
+      UnsafeUtil.free(buffer);
       IOUtils.cleanup(LOG, channel, randomAccessFile);
     }
 

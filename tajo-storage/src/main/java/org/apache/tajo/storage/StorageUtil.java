@@ -30,13 +30,11 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
 import parquet.hadoop.ParquetOutputFormat;
-import sun.nio.ch.DirectBuffer;
 
 import java.io.DataInput;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -190,16 +188,6 @@ public class StorageUtil extends StorageConstants {
       return Integer.parseInt(pathTokens[3]);
     } else {
       return -1;
-    }
-  }
-
-  public static void closeBuffer(ByteBuffer buffer) {
-    if (buffer != null) {
-      if (buffer.isDirect()) {
-        ((DirectBuffer) buffer).cleaner().clean();
-      } else {
-        buffer.clear();
-      }
     }
   }
 

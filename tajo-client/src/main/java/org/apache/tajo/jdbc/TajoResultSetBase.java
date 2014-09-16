@@ -51,7 +51,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   }
 
   private void handleNull(Datum d) {
-    wasNull = (d instanceof NullDatum);
+    wasNull = d.isNull();
   }
 
   public Tuple getCurrentTuple() {

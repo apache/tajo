@@ -1,5 +1,12 @@
 Tajo Change Log 
 
+Block Iteration - branch
+
+  IMPROVEMENT
+    
+    TAJO-907: Implement off-heap tuple block and zero-copy tuple. 
+    (hyunsik)
+
 Release 0.9.0 - unreleased
 
   NEW FEATURES 

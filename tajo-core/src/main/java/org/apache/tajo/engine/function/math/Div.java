@@ -56,7 +56,7 @@ public class Div extends GeneralFunction {
   @Override
   public Datum eval(Tuple params) {
     Datum value1Datum = params.get(0);
-    if(value1Datum instanceof NullDatum) {
+    if(value1Datum.isNull()) {
       return NullDatum.get();
     }
 

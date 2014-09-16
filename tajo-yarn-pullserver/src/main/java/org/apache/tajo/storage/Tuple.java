@@ -19,6 +19,7 @@
 package org.apache.tajo.storage;
 
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 
 public interface Tuple extends Cloneable {
@@ -28,6 +29,8 @@ public interface Tuple extends Cloneable {
 	public boolean contains(int fieldid);
 
   public boolean isNull(int fieldid);
+
+  public boolean isNotNull(int fieldid);
 	
 	public void clear();
 	
@@ -73,6 +76,8 @@ public interface Tuple extends Cloneable {
 
   @SuppressWarnings("unused")
 	public String getText(int fieldId);
+
+  public IntervalDatum getInterval(int fieldId);
 
   @SuppressWarnings("unused")
   public ProtobufDatum getProtobufDatum(int field);

@@ -29,13 +29,14 @@ enum StoreType {
   MEM = 0;
   CSV = 1;
   RAW = 2;
-  RCFILE = 3;
-  ROWFILE = 4;
-  HCFILE = 5;
-  TREVNI = 6;
-  PARQUET = 7;
-  SEQUENCEFILE = 8;
-  AVRO = 9;
+  DIRECTRAW = 3;
+  RCFILE = 4;
+  ROWFILE = 5;
+  HCFILE = 6;
+  TREVNI = 7;
+  PARQUET = 8;
+  SEQUENCEFILE = 9;
+  AVRO = 10;
 }
 
 enum OrderType {

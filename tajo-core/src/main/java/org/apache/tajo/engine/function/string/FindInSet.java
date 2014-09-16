@@ -62,7 +62,7 @@ public class FindInSet extends GeneralFunction {
     Datum finding = params.get(0);
     Datum textArray = params.get(1);
 
-    if (finding instanceof NullDatum || textArray instanceof NullDatum) {
+    if (finding.isNull() || textArray.isNull()) {
       return NullDatum.get();
     }
 

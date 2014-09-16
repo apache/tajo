@@ -26,7 +26,6 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.NullDatum;
 
 /**
  * This class is not thread-safe.
@@ -69,6 +68,11 @@ public class TableStatistics {
     numRows++;
   }
 
+  public void incrementRows(long num) {
+    numRows += num;
+  }
+
+
   public long getNumRows() {
     return this.numRows;
   }
@@ -82,7 +86,7 @@ public class TableStatistics {
   }
 
   public void analyzeField(int idx, Datum datum) {
-    if (datum instanceof NullDatum) {
+    if (datum.isNull()) {
       numNulls[idx]++;
       return;
     }

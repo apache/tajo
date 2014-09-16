@@ -66,7 +66,7 @@ public class AvgDouble extends AggFunction {
   public void merge(FunctionContext ctx, Tuple part) {
     AvgContext avgCtx = (AvgContext) ctx;
     Datum d = part.get(0);
-    if (d instanceof NullDatum) {
+    if (d.isNull()) {
       return;
     }
     ProtobufDatum datum = (ProtobufDatum) d;

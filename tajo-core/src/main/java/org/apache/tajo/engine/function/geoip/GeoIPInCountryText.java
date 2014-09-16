@@ -47,7 +47,7 @@ public class GeoIPInCountryText extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    if (params.get(0) instanceof NullDatum || params.get(1) instanceof NullDatum) {
+    if (params.get(0).isNull() || params.get(1).isNull()) {
       return NullDatum.get();
     }
 

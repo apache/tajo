@@ -51,7 +51,7 @@ public class Cos extends GeneralFunction {
   @Override
   public Datum eval(Tuple params) {
     Datum valueDatum = params.get(0);
-    if(valueDatum instanceof NullDatum) {
+    if(valueDatum.isNull()) {
       return NullDatum.get();
     }
 

@@ -55,12 +55,12 @@ public class StrPosb extends GeneralFunction {
   @Override
   public Datum eval(Tuple params) {
     Datum valueDatum = params.get(0);
-    if(valueDatum instanceof NullDatum) {
+    if(valueDatum.isNull()) {
       return NullDatum.get();
     }
 
     Datum substringDatum = params.get(1);
-    if(substringDatum instanceof NullDatum) {
+    if(substringDatum.isNull()) {
       return NullDatum.get();
     }
 

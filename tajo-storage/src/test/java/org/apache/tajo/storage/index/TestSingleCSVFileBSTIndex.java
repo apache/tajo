@@ -104,7 +104,7 @@ public class TestSingleCSVFileBSTIndex {
     keySchema.addColumn(new Column("long", Type.INT8));
     keySchema.addColumn(new Column("double", Type.FLOAT8));
 
-    TupleComparator comp = new TupleComparator(keySchema, sortKeys);
+    BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
 
     BSTIndex bst = new BSTIndex(conf);
     BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir,
@@ -193,7 +193,7 @@ public class TestSingleCSVFileBSTIndex {
     keySchema.addColumn(new Column("int", Type.INT4));
     keySchema.addColumn(new Column("long", Type.INT8));
 
-    TupleComparator comp = new TupleComparator(keySchema, sortKeys);
+    BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortKeys);
     
     BSTIndex bst = new BSTIndex(conf);
     BSTIndexWriter creater = bst.getIndexWriter(new Path(testDir, "FindNextKeyValueInCSV.idx"),

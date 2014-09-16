@@ -45,7 +45,7 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
     int length = 0;
     TajoDataTypes.DataType dataType = col.getDataType();
 
-    if (datum == null || datum instanceof NullDatum) {
+    if (datum == null || datum.isNull()) {
       switch (dataType.getType()) {
         case CHAR:
         case TEXT:

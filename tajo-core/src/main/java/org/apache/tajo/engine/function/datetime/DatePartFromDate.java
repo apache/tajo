@@ -50,12 +50,12 @@ public class DatePartFromDate extends GeneralFunction {
   public Datum eval(Tuple params) {
     Datum target = params.get(0);
 
-    if(target instanceof NullDatum || params.get(1) instanceof NullDatum) {
+    if(target.isNull() || params.get(1).isNull()) {
       return NullDatum.get();
     }
 
     DateDatum date;
-    if(params.get(1) instanceof DateDatum) {
+    if(params.get(1).type() == DATE) {
       date = (DateDatum)(params.get(1));
     } else {
       return NullDatum.get();

@@ -68,7 +68,7 @@ public class TestBSTIndexExec {
   private LogicalOptimizer optimizer;
   private AbstractStorageManager sm;
   private Schema idxSchema;
-  private TupleComparator comp;
+  private BaseTupleComparator comp;
   private BSTIndex.BSTIndexWriter writer;
   private HashMap<Integer , Integer> randomValues ;
   private int rndKey = -1;
@@ -104,7 +104,7 @@ public class TestBSTIndexExec {
     idxSchema.addColumn("managerid", Type.INT4);
     SortSpec[] sortKeys = new SortSpec[1];
     sortKeys[0] = new SortSpec(idxSchema.getColumn("managerid"), true, false);
-    this.comp = new TupleComparator(idxSchema, sortKeys);
+    this.comp = new BaseTupleComparator(idxSchema, sortKeys);
 
     this.writer = new BSTIndex(conf).getIndexWriter(idxPath,
         BSTIndex.TWO_LEVEL_INDEX, this.idxSchema, this.comp);
