@@ -106,6 +106,8 @@ public class TestFetcher {
 
   @Test
   public void testAdjustFetchProcess() {
+    assertEquals(0.0f, Task.adjustFetchProcess(0, 0), 0);
+    assertEquals(0.0f, Task.adjustFetchProcess(10, 10), 0);
     assertEquals(0.05f, Task.adjustFetchProcess(10, 9), 0);
     assertEquals(0.1f, Task.adjustFetchProcess(10, 8), 0);
     assertEquals(0.25f, Task.adjustFetchProcess(10, 5), 0);

@@ -34,14 +34,12 @@ import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.util.Pair;
 
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ExecutionBlockSharedResource {
   private static Log LOG = LogFactory.getLog(ExecutionBlockSharedResource.class);
   private AtomicBoolean initializing = new AtomicBoolean(false);
   private volatile Boolean resourceInitSuccess = new Boolean(false);
-  private CountDownLatch initializedResourceLatch = new CountDownLatch(1);
 
   // Query
   private QueryContext context;
@@ -52,27 +50,18 @@ public class ExecutionBlockSharedResource {
   private LogicalNode plan;
   private boolean codeGenEnabled = false;
 
-  public void initialize(final QueryContext context, final String planJson) throws InterruptedException {
+  public void initialize(final QueryContext context, final String planJson) {
 
     if (!initializing.getAndSet(true)) {
-      Thread thread = new Thread(new Runnable() {
-        @Override
-        public void run() {
-          try {
-            ExecutionBlockSharedResource.this.context = context;
-            initPlan(planJson);
-            initCodeGeneration();
-            resourceInitSuccess = true;
-          } catch (Throwable t) {
-            LOG.error(t);
-            LOG.error(ExceptionUtils.getStackTrace(t));
-          } finally {
-            initializedResourceLatch.countDown();
-          }
-        }
-      });
-      thread.run();
-      thread.join();
+      try {
+        ExecutionBlockSharedResource.this.context = context;
+        initPlan(planJson);
+        initCodeGeneration();
+        resourceInitSuccess = true;
+      } catch (Throwable t) {
+        LOG.error(t);
+        LOG.error(ExceptionUtils.getStackTrace(t));
+      }
 
       if (!resourceInitSuccess) {
         throw new RuntimeException("Resource cannot be initialized");
@@ -91,11 +80,6 @@ public class ExecutionBlockSharedResource {
       compilationContext = new ExecutorPreCompiler.CompilationContext(classLoader);
       ExecutorPreCompiler.compile(compilationContext, plan);
     }
-  }
-
-  public boolean awaitInitializedResource() throws InterruptedException {
-    initializedResourceLatch.await();
-    return resourceInitSuccess;
   }
 
   public LogicalNode getPlan() {
