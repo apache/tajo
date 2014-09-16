@@ -34,6 +34,7 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.v2.DiskDeviceInfo;
 import org.apache.tajo.storage.v2.DiskMountInfo;
 import org.apache.tajo.storage.v2.DiskUtil;
+import org.apache.tajo.util.HAServiceUtil;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -140,24 +141,6 @@ public class WorkerHeartbeatService extends AbstractService {
       LOG.info("Worker Resource Heartbeat Thread start.");
       int sendDiskInfoCount = 0;
       int pullServerPort = 0;
-      if(context.getPullService()!= null) {
-        long startTime = System.currentTimeMillis();
-        while(true) {
-          pullServerPort = context.getPullService().getPort();
-          if(pullServerPort > 0) {
-            break;
-          }
-          //waiting while pull server init
-          try {
-            Thread.sleep(100);
-          } catch (InterruptedException e) {
-          }
-          if(System.currentTimeMillis() - startTime > 30 * 1000) {
-            LOG.fatal("Too long push server init.");
-            System.exit(0);
-          }
-        }
-      }
 
       String hostName = null;
       int peerRpcPort = 0;
@@ -175,9 +158,8 @@ public class WorkerHeartbeatService extends AbstractService {
       if(context.getTajoWorkerClientService() != null) {
         clientPort = context.getTajoWorkerClientService().getBindAddr().getPort();
       }
-      if (context.getPullService() != null) {
-        pullServerPort = context.getPullService().getPort();
-      }
+
+      pullServerPort = context.getPullServerPort();
 
       while(!stopped.get()) {
         if(sendDiskInfoCount == 0 && diskDeviceInfos != null) {
@@ -217,7 +199,22 @@ public class WorkerHeartbeatService extends AbstractService {
           CallFuture<TajoMasterProtocol.TajoHeartbeatResponse> callBack =
               new CallFuture<TajoMasterProtocol.TajoHeartbeatResponse>();
 
-          rmClient = connectionPool.getConnection(context.getResourceTrackerAddress(), TajoResourceTrackerProtocol.class, true);
+          // In TajoMaster HA mode, if backup master be active status,
+          // worker may fail to connect existing active master. Thus,
+          // if worker can't connect the master, worker should try to connect another master and
+          // update master address in worker context.
+          if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+            try {
+              rmClient = connectionPool.getConnection(context.getResourceTrackerAddress(), TajoResourceTrackerProtocol.class, true);
+            } catch (Exception e) {
+              context.setWorkerResourceTrackerAddr(HAServiceUtil.getResourceTrackerAddress(systemConf));
+              context.setTajoMasterAddress(HAServiceUtil.getMasterUmbilicalAddress(systemConf));
+              rmClient = connectionPool.getConnection(context.getResourceTrackerAddress(), TajoResourceTrackerProtocol.class, true);
+            }
+          } else {
+            rmClient = connectionPool.getConnection(context.getResourceTrackerAddress(), TajoResourceTrackerProtocol.class, true);
+          }
+
           TajoResourceTrackerProtocol.TajoResourceTrackerProtocolService resourceTracker = rmClient.getStub();
           resourceTracker.heartbeat(callBack.getController(), heartbeatProto, callBack);
 
@@ -280,10 +277,22 @@ public class WorkerHeartbeatService extends AbstractService {
   }
 
   public static int getTotalMemoryMB() {
-    com.sun.management.OperatingSystemMXBean bean =
-        (com.sun.management.OperatingSystemMXBean)
-            java.lang.management.ManagementFactory.getOperatingSystemMXBean();
-    long max = bean.getTotalPhysicalMemorySize();
+    javax.management.MBeanServer mBeanServer = java.lang.management.ManagementFactory.getPlatformMBeanServer();
+    long max = 0;
+    Object maxObject = null;
+    try {
+      javax.management.ObjectName osName = new javax.management.ObjectName("java.lang:type=OperatingSystem");
+      if (!System.getProperty("java.vendor").startsWith("IBM")) {
+        maxObject = mBeanServer.getAttribute(osName, "TotalPhysicalMemorySize");
+      } else {
+        maxObject = mBeanServer.getAttribute(osName, "TotalPhysicalMemory");
+      }
+    } catch (Throwable t) {
+      LOG.error(t.getMessage(), t);
+    }
+    if (maxObject != null) {
+      max = ((Long)maxObject).longValue();
+    }
     return ((int) (max / (1024 * 1024)));
   }
 }

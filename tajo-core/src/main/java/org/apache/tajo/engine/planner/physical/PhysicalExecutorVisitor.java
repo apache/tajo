@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.engine.planner.PhysicalPlanningException;
+
 import java.util.Stack;
 
 public interface PhysicalExecutorVisitor<CONTEXT, RESULT> {

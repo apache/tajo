@@ -30,7 +30,7 @@ import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.util.TUtil;
 
-public class ScanNode extends RelationNode implements Projectable, Cloneable {
+public class ScanNode extends RelationNode implements Projectable, SelectableNode, Cloneable {
 	@Expose protected TableDesc tableDesc;
   @Expose protected String alias;
   @Expose protected Schema logicalSchema;
@@ -118,15 +118,18 @@ public class ScanNode extends RelationNode implements Projectable, Cloneable {
   public Schema getPhysicalSchema() {
     return getInSchema();
   }
-	
+
+  @Override
 	public boolean hasQual() {
 	  return qual != null;
 	}
-	
+
+  @Override
 	public EvalNode getQual() {
 	  return this.qual;
 	}
-	
+
+  @Override
 	public void setQual(EvalNode evalTree) {
 	  this.qual = evalTree;
 	}

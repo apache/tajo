@@ -88,9 +88,39 @@ message FetchProto {
     //repeated part
     repeated int32 taskId = 9 [packed=true];
     repeated int32 attemptId = 10 [packed=true];
+
+    optional int64 offset = 11;
+    optional int64 length = 12;
 }
 
+message FailureIntermediateProto {
+    required int64 pagePos = 1;
+    required int32 startRowNum = 2;
+    required int32 endRowNum = 3;
+}
 
+message IntermediateEntryProto {
+    message PageProto {
+        required int64 pos = 1;
+        required int32 length = 2;
+    }
+    required ExecutionBlockIdProto ebId = 1;
+    required int32 taskId = 2;
+    required int32 attemptId = 3;
+    required int32 partId = 4;
+    required string host = 5;
+    required int64 volume = 6;
+    repeated PageProto pages = 7;
+    repeated FailureIntermediateProto failures = 8;
+}
+
+message ExecutionBlockReport {
+    required ExecutionBlockIdProto ebId = 1;
+    required bool reportSuccess = 2;
+    optional string reportErrorMessage = 3;
+    required int32 succeededTasks = 4;
+    repeated IntermediateEntryProto intermediateEntries = 5;
+}
 
 message QueryUnitResponseProto {
     required string id = 1;
@@ -171,12 +201,15 @@ message DataChannelProto {
 }
 
 message RunExecutionBlockRequestProto {
-    required string executionBlockId = 1;
+    required ExecutionBlockIdProto executionBlockId = 1;
     required string queryMasterHost = 2;
     required int32 queryMasterPort = 3;
     required string nodeId = 4;
     required string containerId = 5;
     optional string queryOutputPath = 6;
+
+    required KeyValueSetProto queryContext = 7;
+    required string planJson = 8;
 }
 
 message ExecutionBlockListProto {
@@ -187,7 +220,8 @@ service TajoWorkerProtocolService {
   rpc ping (QueryUnitAttemptIdProto) returns (BoolProto);
 
   // from QueryMaster(Worker)
-  rpc executeExecutionBlock(RunExecutionBlockRequestProto) returns (BoolProto);
+  rpc startExecutionBlock(RunExecutionBlockRequestProto) returns (BoolProto);
+  rpc stopExecutionBlock(ExecutionBlockIdProto) returns (BoolProto);
   rpc killTaskAttempt(QueryUnitAttemptIdProto) returns (BoolProto);
   rpc cleanup(QueryIdProto) returns (BoolProto);
   rpc cleanupExecutionBlocks(ExecutionBlockListProto) returns (BoolProto);

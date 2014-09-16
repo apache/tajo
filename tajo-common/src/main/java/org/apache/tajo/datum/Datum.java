@@ -53,6 +53,10 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
     return false;
   }
 
+  public boolean isNotNull() {
+    return true;
+  }
+
   public boolean asBool() {
     throw new InvalidCastException(type, Type.BOOLEAN);
   }
@@ -88,6 +92,10 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
   }
 
   public String asChars() {
+    throw new InvalidCastException(type, Type.TEXT);
+  }
+
+  public char [] asUnicodeChars() {
     throw new InvalidCastException(type, Type.TEXT);
   }
 

@@ -175,7 +175,7 @@ public class QueryMasterManagerService extends CompositeService
 
   @Override
   public void ping(RpcController controller,
-                   TajoIdProtos.QueryUnitAttemptIdProto attemptId,
+                   TajoIdProtos.ExecutionBlockIdProto requestProto,
                    RpcCallback<PrimitiveProtos.BoolProto> done) {
     done.run(TajoWorker.TRUE_PROTO);
   }
@@ -212,6 +212,18 @@ public class QueryMasterManagerService extends CompositeService
       LOG.error(e.getMessage(), e);
       done.run(TajoWorker.FALSE_PROTO);
     }
+  }
+
+  @Override
+  public void doneExecutionBlock(
+      RpcController controller, TajoWorkerProtocol.ExecutionBlockReport request,
+      RpcCallback<PrimitiveProtos.BoolProto> done) {
+    QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(new QueryId(request.getEbId().getQueryId()));
+    if (queryMasterTask != null) {
+      ExecutionBlockId ebId = new ExecutionBlockId(request.getEbId());
+      queryMasterTask.getQuery().getSubQuery(ebId).receiveExecutionBlockReport(request);
+    }
+    done.run(TajoWorker.TRUE_PROTO);
   }
 
   @Override

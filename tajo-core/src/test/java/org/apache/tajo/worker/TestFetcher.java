@@ -23,8 +23,10 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.rpc.RpcChannelFactory;
+import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.junit.After;
@@ -73,14 +75,16 @@ public class TestFetcher {
     Random rnd = new Random();
     QueryId queryId = QueryIdFactory.NULL_QUERY_ID;
     String sid = "1";
-    String ta = "1_0";
     String partId = "1";
 
-    String dataPath = INPUT_DIR + queryId.toString() + "/output"+ "/" + sid + "/" +ta + "/output/" + partId;
-    String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, "h", ta);
+    int partParentId = HashShuffleAppenderManager.getPartParentId(Integer.parseInt(partId), conf);
+    String dataPath = conf.getVar(ConfVars.WORKER_TEMPORAL_DIR) +
+       queryId.toString() + "/output/" + sid + "/hash-shuffle/" + partParentId + "/" + partId;
+
+    String params = String.format("qid=%s&sid=%s&p=%s&type=%s", queryId, sid, partId, "h");
 
     Path inputPath = new Path(dataPath);
-    FSDataOutputStream stream =  LocalFileSystem.get(conf).create(inputPath, true);
+    FSDataOutputStream stream = FileSystem.getLocal(conf).create(inputPath, true);
     for (int i = 0; i < 100; i++) {
       String data = ""+rnd.nextInt();
       stream.write(data.getBytes());
@@ -102,6 +106,8 @@ public class TestFetcher {
 
   @Test
   public void testAdjustFetchProcess() {
+    assertEquals(0.0f, Task.adjustFetchProcess(0, 0), 0);
+    assertEquals(0.0f, Task.adjustFetchProcess(10, 10), 0);
     assertEquals(0.05f, Task.adjustFetchProcess(10, 9), 0);
     assertEquals(0.1f, Task.adjustFetchProcess(10, 8), 0);
     assertEquals(0.25f, Task.adjustFetchProcess(10, 5), 0);
@@ -120,7 +126,7 @@ public class TestFetcher {
     String dataPath = INPUT_DIR + queryId.toString() + "/output"+ "/" + sid + "/" +ta + "/output/" + partId;
     String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, "h", ta);
 
-    FSDataOutputStream stream =  LocalFileSystem.get(conf).create(new Path(dataPath), true);
+    FSDataOutputStream stream =  FileSystem.getLocal(conf).create(new Path(dataPath), true);
     for (int i = 0; i < 100; i++) {
       String data = ""+rnd.nextInt();
       stream.write(data.getBytes());
@@ -148,11 +154,12 @@ public class TestFetcher {
     String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, "h", ta);
 
     Path inputPath = new Path(dataPath);
-    if(LocalFileSystem.get(conf).exists(inputPath)){
-      LocalFileSystem.get(conf).delete(new Path(dataPath), true);
+    FileSystem fs = FileSystem.getLocal(conf);
+    if(fs.exists(inputPath)){
+      fs.delete(new Path(dataPath), true);
     }
 
-    FSDataOutputStream stream =  LocalFileSystem.get(conf).create(new Path(dataPath).getParent(), true);
+    FSDataOutputStream stream =  FileSystem.getLocal(conf).create(new Path(dataPath).getParent(), true);
     stream.close();
 
     URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
@@ -178,7 +185,7 @@ public class TestFetcher {
     String shuffleType = "x";
     String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, shuffleType, ta);
 
-    FSDataOutputStream stream =  LocalFileSystem.get(conf).create(new Path(dataPath), true);
+    FSDataOutputStream stream =  FileSystem.getLocal(conf).create(new Path(dataPath), true);
 
     for (int i = 0; i < 100; i++) {
       String data = params + rnd.nextInt();

@@ -11,9 +11,11 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoHAClientUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.jdbc.TajoResultSet;
+import org.apache.tajo.util.HAServiceUtil;
 import org.apache.tajo.util.JSPUtil;
 import org.apache.tajo.util.TajoIdUtils;
 import org.codehaus.jackson.map.DeserializationConfig;
@@ -271,6 +273,9 @@ public class QueryExecutorServlet extends HttpServlet {
     public void run() {
       startTime = System.currentTimeMillis();
       try {
+        TajoConf conf = tajoClient.getConf();
+        tajoClient = TajoHAClientUtil.getTajoClient(conf, tajoClient);
+
         response = tajoClient.executeQuery(query);
 
         if (response == null) {

@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.engine.codegen.CompilationError;
 import org.apache.tajo.engine.eval.ConstEval;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalTreeUtil;
@@ -66,8 +67,8 @@ public class SeqScanExec extends PhysicalExec {
 
   private boolean cacheRead = false;
 
-  public SeqScanExec(TaskAttemptContext context, AbstractStorageManager sm,
-                     ScanNode plan, CatalogProtos.FragmentProto [] fragments) throws IOException {
+  public SeqScanExec(TaskAttemptContext context, AbstractStorageManager sm, ScanNode plan,
+                     CatalogProtos.FragmentProto [] fragments) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema());
 
     this.plan = plan;
@@ -86,6 +87,12 @@ public class SeqScanExec extends PhysicalExec {
 
       cacheKey = new TupleCacheKey(
           context.getTaskId().getQueryUnitId().getExecutionBlockId().toString(), plan.getTableName(), pathNameKey);
+    }
+
+    if (fragments != null
+        && plan.getTableDesc().hasPartition()
+        && plan.getTableDesc().getPartitionMethod().getPartitionType() == CatalogProtos.PartitionType.COLUMN) {
+      rewriteColumnPartitionedTableSchema();
     }
   }
 
@@ -120,12 +127,16 @@ public class SeqScanExec extends PhysicalExec {
       Datum datum = targetExpr.eval(columnPartitionSchema, partitionRow);
       ConstEval constExpr = new ConstEval(datum);
 
-      for (Target target : plan.getTargets()) {
+
+      for (int i = 0; i < plan.getTargets().length; i++) {
+        Target target = plan.getTargets()[i];
+
         if (target.getEvalTree().equals(targetExpr)) {
           if (!target.hasAlias()) {
             target.setAlias(target.getEvalTree().getName());
           }
           target.setExpr(constExpr);
+
         } else {
           EvalTreeUtil.replace(target.getEvalTree(), targetExpr, constExpr);
         }
@@ -139,12 +150,6 @@ public class SeqScanExec extends PhysicalExec {
 
   public void init() throws IOException {
     Schema projected;
-
-    if (fragments != null
-        && plan.getTableDesc().hasPartition()
-        && plan.getTableDesc().getPartitionMethod().getPartitionType() == CatalogProtos.PartitionType.COLUMN) {
-      rewriteColumnPartitionedTableSchema();
-    }
 
     if (plan.hasTargets()) {
       projected = new Schema();
@@ -193,10 +198,19 @@ public class SeqScanExec extends PhysicalExec {
     } else {
       initScanner(projected);
     }
+
+    super.init();
+  }
+
+  @Override
+  protected void compile() throws CompilationError {
+    if (plan.hasQual()) {
+      qual = context.getPrecompiledEval(inSchema, qual);
+    }
   }
 
   private void initScanner(Schema projected) throws IOException {
-    this.projector = new Projector(inSchema, outSchema, plan.getTargets());
+    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
     if (fragments != null) {
       if (fragments.length > 1) {
         this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), plan.getTableDesc().getMeta(),

@@ -98,7 +98,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
   }
 
   @SuppressWarnings("unchecked")
-  public Class<? extends Function> getFuncClass() throws InternalException {
+  public Class<? extends Function> getFuncClass() {
     return this.funcClass;
   }
 

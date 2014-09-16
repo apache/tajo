@@ -18,6 +18,7 @@ package org.apache.tajo.jdbc; /**
 
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
 
@@ -137,6 +138,16 @@ public class MetaDataTuple implements Tuple {
   @Override
   public String getText(int fieldId) {
     return values.get(fieldId).toString();
+  }
+
+  @Override
+  public ProtobufDatum getProtobufDatum(int fieldId) {
+    throw new UnsupportedException();
+  }
+
+  @Override
+  public char[] getUnicodeChars(int fieldId) {
+    return values.get(fieldId).asUnicodeChars();
   }
 
   @Override

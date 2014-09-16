@@ -18,7 +18,6 @@
 
 package org.apache.tajo.scheduler;
 
-import com.google.protobuf.ServiceException;
 import org.apache.tajo.*;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
@@ -28,7 +27,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
-import java.io.IOException;
 import java.sql.ResultSet;
 
 import static org.junit.Assert.*;
@@ -52,51 +50,52 @@ public class TestFifoScheduler {
   }
 
   @Test
-  public final void testKillScheduledQuery() throws IOException, ServiceException, InterruptedException {
-    ClientProtos.SubmitQueryResponse res = client.executeQuery("select sleep(2) from lineitem");
-    ClientProtos.SubmitQueryResponse res2 = client.executeQuery("select sleep(2) from lineitem");
-    Thread.sleep(1000);
+  public final void testKillScheduledQuery() throws Exception {
+    ClientProtos.SubmitQueryResponse res = client.executeQuery("select sleep(1) from lineitem");
+    ClientProtos.SubmitQueryResponse res2 = client.executeQuery("select sleep(1) from lineitem");
     QueryId queryId = new QueryId(res.getQueryId());
     QueryId queryId2 = new QueryId(res2.getQueryId());
-    assertEquals(TajoProtos.QueryState.QUERY_MASTER_INIT, client.getQueryStatus(queryId2).getState());
 
+    cluster.waitForQueryRunning(queryId);
     client.killQuery(queryId2);
     assertEquals(TajoProtos.QueryState.QUERY_KILLED, client.getQueryStatus(queryId2).getState());
-    client.killQuery(queryId);
-    assertEquals(TajoProtos.QueryState.QUERY_KILLED, client.getQueryStatus(queryId).getState());
+
+    client.killQuery(queryId); // cleanup
   }
 
   @Test
-  public final void testForwardedQuery() throws IOException, ServiceException, InterruptedException {
-    ClientProtos.SubmitQueryResponse res = client.executeQuery("select sleep(2) from lineitem");
+  public final void testForwardedQuery() throws Exception {
+    ClientProtos.SubmitQueryResponse res = client.executeQuery("select sleep(1) from lineitem");
     ClientProtos.SubmitQueryResponse res2 = client.executeQuery("select * from lineitem limit 1");
-
-    Thread.sleep(1000);
+    assertTrue(res.getIsForwarded());
     assertFalse(res2.getIsForwarded());
+
+    QueryId queryId = new QueryId(res.getQueryId());
     QueryId queryId2 = new QueryId(res2.getQueryId());
+    cluster.waitForQueryRunning(queryId);
+
     assertEquals(TajoProtos.QueryState.QUERY_SUCCEEDED, client.getQueryStatus(queryId2).getState());
     ResultSet resSet = TajoClient.createResultSet(client, res2);
     assertNotNull(resSet);
 
-    QueryId queryId = new QueryId(res.getQueryId());
-    assertEquals(TajoProtos.QueryState.QUERY_RUNNING, client.getQueryStatus(queryId).getState());
-    client.killQuery(queryId);
+    client.killQuery(queryId); //cleanup
   }
 
   @Test
-  public final void testScheduledQuery() throws IOException, ServiceException, InterruptedException {
-    ClientProtos.SubmitQueryResponse res = client.executeQuery("select sleep(2) from lineitem");
-    ClientProtos.SubmitQueryResponse res2 = client.executeQuery("select sleep(2) from lineitem");
-    ClientProtos.SubmitQueryResponse res3 = client.executeQuery("select sleep(2) from lineitem");
-    ClientProtos.SubmitQueryResponse res4 = client.executeQuery("select sleep(2) from lineitem");
-
-    Thread.sleep(1000);
+  public final void testScheduledQuery() throws Exception {
+    ClientProtos.SubmitQueryResponse res = client.executeQuery("select sleep(1) from lineitem");
+    ClientProtos.SubmitQueryResponse res2 = client.executeQuery("select sleep(1) from lineitem");
+    ClientProtos.SubmitQueryResponse res3 = client.executeQuery("select sleep(1) from lineitem");
+    ClientProtos.SubmitQueryResponse res4 = client.executeQuery("select sleep(1) from lineitem");
 
     QueryId queryId = new QueryId(res.getQueryId());
     QueryId queryId2 = new QueryId(res2.getQueryId());
     QueryId queryId3 = new QueryId(res3.getQueryId());
     QueryId queryId4 = new QueryId(res4.getQueryId());
-    assertEquals(TajoProtos.QueryState.QUERY_RUNNING, client.getQueryStatus(queryId).getState());
+
+    cluster.waitForQueryRunning(queryId);
+
+    assertTrue(TajoClient.isInRunningState(client.getQueryStatus(queryId).getState()));
 
     assertEquals(TajoProtos.QueryState.QUERY_MASTER_INIT, client.getQueryStatus(queryId2).getState());
     assertEquals(TajoProtos.QueryState.QUERY_MASTER_INIT, client.getQueryStatus(queryId3).getState());

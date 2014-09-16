@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.parquet;
 
+import org.apache.tajo.storage.StorageConstants;
 import parquet.hadoop.ParquetOutputFormat;
 import parquet.hadoop.metadata.CompressionCodecName;
 
@@ -56,15 +57,15 @@ public class ParquetAppender extends FileAppender {
                          Path path) throws IOException {
     super(conf, schema, meta, path);
     this.blockSize = Integer.parseInt(
-        meta.getOption(ParquetOutputFormat.BLOCK_SIZE));
+        meta.getOption(ParquetOutputFormat.BLOCK_SIZE, StorageConstants.PARQUET_DEFAULT_BLOCK_SIZE));
     this.pageSize = Integer.parseInt(
-        meta.getOption(ParquetOutputFormat.PAGE_SIZE));
+        meta.getOption(ParquetOutputFormat.PAGE_SIZE, StorageConstants.PARQUET_DEFAULT_PAGE_SIZE));
     this.compressionCodecName = CompressionCodecName.fromConf(
-        meta.getOption(ParquetOutputFormat.COMPRESSION));
+        meta.getOption(ParquetOutputFormat.COMPRESSION, StorageConstants.PARQUET_DEFAULT_COMPRESSION_CODEC_NAME));
     this.enableDictionary = Boolean.parseBoolean(
-        meta.getOption(ParquetOutputFormat.ENABLE_DICTIONARY));
+        meta.getOption(ParquetOutputFormat.ENABLE_DICTIONARY, StorageConstants.PARQUET_DEFAULT_IS_DICTIONARY_ENABLED));
     this.validating = Boolean.parseBoolean(
-        meta.getOption(ParquetOutputFormat.VALIDATION));
+        meta.getOption(ParquetOutputFormat.VALIDATION, StorageConstants.PARQUET_DEFAULT_IS_VALIDATION_ENABLED));
   }
 
   /**
@@ -127,6 +128,10 @@ public class ParquetAppender extends FileAppender {
   @Override
   public void close() throws IOException {
     writer.close();
+  }
+
+  public long getEstimatedOutputSize() throws IOException {
+    return writer.getEstimatedWrittenSize();
   }
 
   /**

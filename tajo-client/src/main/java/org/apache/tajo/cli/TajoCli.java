@@ -21,6 +21,9 @@ package org.apache.tajo.cli;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ServiceException;
+import jline.TerminalFactory;
+import jline.TerminalFactory.Flavor;
+import jline.UnsupportedTerminal;
 import jline.console.ConsoleReader;
 import org.apache.commons.cli.*;
 import org.apache.tajo.*;
@@ -28,19 +31,18 @@ import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoHAClientUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.HAServiceUtil;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 import static org.apache.tajo.cli.ParsedResult.StatementType.META;
 import static org.apache.tajo.cli.ParsedResult.StatementType.STATEMENT;
@@ -81,7 +83,8 @@ public class TajoCli {
       ExecExternalShellCommand.class,
       HdfsCommand.class,
       TajoAdminCommand.class,
-      TajoGetConfCommand.class
+      TajoGetConfCommand.class,
+      TajoHAAdminCommand.class
   };
   private final Map<String, TajoShellCommand> commands = new TreeMap<String, TajoShellCommand>();
 
@@ -95,6 +98,7 @@ public class TajoCli {
     options.addOption("f", "file", true, "execute commands from file, then exit");
     options.addOption("h", "host", true, "Tajo server host");
     options.addOption("p", "port", true, "Tajo server port");
+    options.addOption("B", "background", false, "execute as background process");
     options.addOption("conf", "conf", true, "configuration value");
     options.addOption("param", "param", true, "parameter value in SQL file");
     options.addOption("help", "help", false, "help");
@@ -167,19 +171,25 @@ public class TajoCli {
   }
 
   public TajoCli(TajoConf c, String [] args, InputStream in, OutputStream out) throws Exception {
+    CommandLineParser parser = new PosixParser();
+    CommandLine cmd = parser.parse(options, args);
+
     this.conf = new TajoConf(c);
     context = new TajoCliContext(conf);
     this.sin = in;
-    this.reader = new ConsoleReader(sin, out);
+    if (cmd.hasOption("B")) {
+      this.reader = new ConsoleReader(sin, out, new UnsupportedTerminal());
+    } else {
+      this.reader = new ConsoleReader(sin, out);
+    }
+
     this.reader.setExpandEvents(false);
     this.sout = new PrintWriter(reader.getOutput());
     initFormatter();
 
-    CommandLineParser parser = new PosixParser();
-    CommandLine cmd = parser.parse(options, args);
-
     if (cmd.hasOption("help")) {
       printUsage();
+      System.exit(0);
     }
 
     String hostName = null;
@@ -226,6 +236,7 @@ public class TajoCli {
       client = new TajoClient(conf, baseDatabase);
     }
 
+    checkMasterStatus();
     context.setCurrentDatabase(client.getCurrentDatabase());
     initHistory();
     initCommands();
@@ -419,6 +430,7 @@ public class TajoCli {
   }
 
   public int executeMetaCommand(String line) throws Exception {
+    checkMasterStatus();
     String [] metaCommands = line.split(";");
     for (String metaCommand : metaCommands) {
       String arguments [] = metaCommand.split(" ");
@@ -452,7 +464,8 @@ public class TajoCli {
     return 0;
   }
 
-  private void executeJsonQuery(String json) throws ServiceException {
+  private void executeJsonQuery(String json) throws ServiceException, IOException {
+    checkMasterStatus();
     long startTime = System.currentTimeMillis();
     ClientProtos.SubmitQueryResponse response = client.executeQueryWithJson(json);
     if (response == null) {
@@ -478,7 +491,8 @@ public class TajoCli {
     }
   }
 
-  private int executeQuery(String statement) throws ServiceException {
+  private int executeQuery(String statement) throws ServiceException, IOException {
+    checkMasterStatus();
     long startTime = System.currentTimeMillis();
     ClientProtos.SubmitQueryResponse response = client.executeQuery(statement);
     if (response == null) {
@@ -549,22 +563,20 @@ public class TajoCli {
       while (true) {
         // TODO - configurable
         status = client.getQueryStatus(queryId);
-        if(status.getState() == QueryState.QUERY_MASTER_INIT || status.getState() == QueryState.QUERY_MASTER_LAUNCHED) {
+        if(TajoClient.isInPreNewState(status.getState())) {
           Thread.sleep(Math.min(20 * initRetries, 1000));
           initRetries++;
           continue;
         }
 
-        if (status.getState() == QueryState.QUERY_RUNNING || status.getState() == QueryState.QUERY_SUCCEEDED) {
+        if (TajoClient.isInRunningState(status.getState()) || status.getState() == QueryState.QUERY_SUCCEEDED) {
           displayFormatter.printProgress(sout, status);
         }
 
-        if (status.getState() != QueryState.QUERY_RUNNING &&
-            status.getState() != QueryState.QUERY_NOT_ASSIGNED &&
-            status.getState() != QueryState.QUERY_KILL_WAIT) {
+        if (TajoClient.isInCompleteState(status.getState()) && status.getState() != QueryState.QUERY_KILL_WAIT) {
           break;
         } else {
-          Thread.sleep(Math.min(200 * progressRetries, 1000));
+          Thread.sleep(Math.min(100 * progressRetries, 1000));
           progressRetries += 2;
         }
       }
@@ -625,6 +637,17 @@ public class TajoCli {
     //for testcase
     if (client != null) {
       client.close();
+    }
+  }
+
+  private void checkMasterStatus() throws IOException, ServiceException {
+    String sessionId = client.getSessionId() != null ? client.getSessionId().getId() : null;
+    client = TajoHAClientUtil.getTajoClient(conf, client, context);
+    if(sessionId != null && (client.getSessionId() == null ||
+        !sessionId.equals(client.getSessionId().getId()))) {
+      commands.clear();
+      initHistory();
+      initCommands();
     }
   }
 

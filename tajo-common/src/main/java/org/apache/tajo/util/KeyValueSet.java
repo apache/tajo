@@ -21,7 +21,6 @@ package org.apache.tajo.util;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.OverridableConf;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.json.GsonObject;
@@ -38,9 +37,7 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
   public static final String TRUE_STR = "true";
   public static final String FALSE_STR = "false";
 
-	private KeyValueSetProto.Builder builder = KeyValueSetProto.newBuilder();
-	
-	@Expose private Map<String,String> keyVals;
+  @Expose private Map<String,String> keyVals;
 	
 	public KeyValueSet() {
     keyVals = TUtil.newHashMap();
@@ -222,27 +219,22 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
 	@Override
   public Object clone() throws CloneNotSupportedException {    
     KeyValueSet keyValueSet = (KeyValueSet) super.clone();
-    keyValueSet.builder = KeyValueSetProto.newBuilder();
     keyValueSet.keyVals = keyVals != null ? new HashMap<String, String>(keyVals) : null;
     return keyValueSet;
 	}
 	
 	@Override
 	public KeyValueSetProto getProto() {
-    if (builder == null) {
-      builder = KeyValueSetProto.newBuilder();
-    } else {
-      builder.clear();
-    }
+    KeyValueSetProto.Builder builder = KeyValueSetProto.newBuilder();
 
-    KeyValueProto.Builder kvBuilder;
+    KeyValueProto.Builder kvBuilder = KeyValueProto.newBuilder();
     if(this.keyVals != null) {
       for(Entry<String,String> kv : keyVals.entrySet()) {
-        kvBuilder = KeyValueProto.newBuilder();
         kvBuilder.setKey(kv.getKey());
-
         kvBuilder.setValue(kv.getValue());
         builder.addKeyval(kvBuilder.build());
+
+        kvBuilder.clear();
       }
     }
     return builder.build();

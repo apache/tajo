@@ -31,12 +31,11 @@ import org.apache.tajo.engine.function.annotation.ParamTypes;
     example = "> SELECT coalesce(null, null, 10.0);\n"
         + "10.0",
     returnType = TajoDataTypes.Type.FLOAT8,
-    paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT8, TajoDataTypes.Type.FLOAT8_ARRAY})}
+    paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT8_ARRAY})}
 )
 public class CoalesceDouble extends Coalesce {
   public CoalesceDouble() {
     super(new Column[] {
-        new Column("column", TajoDataTypes.Type.FLOAT8),
         new Column("params", TajoDataTypes.Type.FLOAT8_ARRAY),
     });
   }

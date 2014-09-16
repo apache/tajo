@@ -91,13 +91,13 @@ public class TajoConf extends Configuration {
   }
 
   public static TimeZone setCurrentTimeZone(TimeZone timeZone) {
-    readLock.lock();
+    writeLock.lock();
     try {
       TimeZone oldTimeZone = CURRENT_TIMEZONE;
       CURRENT_TIMEZONE = timeZone;
       return oldTimeZone;
     } finally {
-      readLock.unlock();
+      writeLock.unlock();
     }
   }
 
@@ -124,13 +124,13 @@ public class TajoConf extends Configuration {
   }
 
   public static int setDateOrder(int dateOrder) {
-    readLock.lock();
+    writeLock.lock();
     try {
       int oldDateOrder = DATE_ORDER;
       DATE_ORDER = dateOrder;
       return oldDateOrder;
     } finally {
-      readLock.unlock();
+    	writeLock.unlock();
     }
   }
 
@@ -157,6 +157,10 @@ public class TajoConf extends Configuration {
     TAJO_MASTER_UMBILICAL_RPC_ADDRESS("tajo.master.umbilical-rpc.address", "localhost:26001"),
     TAJO_MASTER_CLIENT_RPC_ADDRESS("tajo.master.client-rpc.address", "localhost:26002"),
     TAJO_MASTER_INFO_ADDRESS("tajo.master.info-http.address", "0.0.0.0:26080"),
+
+    // Tajo Master HA Configurations
+    TAJO_MASTER_HA_ENABLE("tajo.master.ha.enable", false),
+    TAJO_MASTER_HA_MONITOR_INTERVAL("tajo.master.ha.monitor.interval", 5 * 1000), // 5 sec
 
     // Resource tracker service
     RESOURCE_TRACKER_RPC_ADDRESS("tajo.resource-tracker.rpc.address", "localhost:26003"),
@@ -219,7 +223,9 @@ public class TajoConf extends Configuration {
     SHUFFLE_FETCHER_CHUNK_MAX_SIZE("tajo.shuffle.fetcher.chunk.max-size",  8192),
     SHUFFLE_FETCHER_READ_TIMEOUT("tajo.shuffle.fetcher.read.timeout-sec", 120),
     SHUFFLE_FETCHER_READ_RETRY_MAX_NUM("tajo.shuffle.fetcher.read.retry.max-num", 20),
-
+    SHUFFLE_HASH_APPENDER_BUFFER_SIZE("tajo.shuffle.hash.appender.buffer.size", 10000),
+    SHUFFLE_HASH_APPENDER_PAGE_VOLUME("tajo.shuffle.hash.appender.page.volumn-mb", 30),
+    HASH_SHUFFLE_PARENT_DIRS("tajo.hash.shuffle.parent.dirs.count", 10),
 
     // Storage Configuration --------------------------------------------------
     ROWFILE_SYNC_INTERVAL("rowfile.sync.interval", 100),
@@ -227,7 +233,7 @@ public class TajoConf extends Configuration {
     // for RCFile
     HIVEUSEEXPLICITRCFILEHEADER("tajo.exec.rcfile.use.explicit.header", true),
 
-    // for Storage Manager ----------------------------------------------------
+    // for Storage Manager v2
     STORAGE_MANAGER_VERSION_2("tajo.storage-manager.v2", false),
     STORAGE_MANAGER_DISK_SCHEDULER_MAX_READ_BYTES_PER_SLOT("tajo.storage-manager.max-read-bytes", 8 * 1024 * 1024),
     STORAGE_MANAGER_DISK_SCHEDULER_REPORT_INTERVAL("tajo.storage-manager.disk-scheduler.report-interval", 60 * 1000),
@@ -255,6 +261,9 @@ public class TajoConf extends Configuration {
 
     // Client RPC
     RPC_CLIENT_WORKER_THREAD_NUM("tajo.rpc.client.worker-thread-num", 4),
+
+    SHUFFLE_RPC_CLIENT_WORKER_THREAD_NUM("tajo.shuffle.rpc.client.worker-thread-num",
+        Runtime.getRuntime().availableProcessors()),
 
     //Client service RPC Server
     MASTER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM("tajo.master.service.rpc.server.worker-thread-num",
@@ -318,7 +327,7 @@ public class TajoConf extends Configuration {
     $EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD("tajo.executor.groupby.in-memory-hash-threshold-bytes",
         (long)256 * 1048576),
     $MAX_OUTPUT_FILE_SIZE("tajo.query.max-outfile-size-mb", 0), // zero means infinite
-
+    $CODEGEN("tajo.executor.codegen.enabled", false), // Runtime code generation
 
     // Client -----------------------------------------------------------------
     $CLIENT_SESSION_EXPIRY_TIME("tajo.client.session.expiry-time-sec", 3600), // default time is one hour.
@@ -595,6 +604,10 @@ public class TajoConf extends Configuration {
 
   public static Path getSystemResourceDir(TajoConf conf) {
     return new Path(getSystemDir(conf), TajoConstants.SYSTEM_RESOURCE_DIR_NAME);
+  }
+
+  public static Path getSystemHADir(TajoConf conf) {
+    return new Path(getSystemDir(conf), TajoConstants.SYSTEM_HA_DIR_NAME);
   }
 
   private static boolean hasScheme(String path) {

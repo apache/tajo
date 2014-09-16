@@ -31,13 +31,12 @@ import org.apache.tajo.engine.function.annotation.ParamTypes;
     example = "> SELECT coalesce(null, null, 'default');\n"
         + "default",
     returnType = TajoDataTypes.Type.TEXT,
-    paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.TEXT_ARRAY})}
+    paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT_ARRAY})}
 )
 public class CoalesceString extends Coalesce {
 
   public CoalesceString() {
     super(new Column[] {
-        new Column("column", TajoDataTypes.Type.TEXT),
         new Column("params", TajoDataTypes.Type.TEXT_ARRAY),
     });
   }

@@ -35,7 +35,6 @@ import org.apache.tajo.storage.Tuple;
  */
 public abstract class EvalNode implements Cloneable, GsonObject, ProtoObject<PlanProto.EvalTree> {
 	@Expose protected EvalType type;
-  @Expose protected DataType returnType = null;
 
   public EvalNode() {
   }
@@ -73,7 +72,6 @@ public abstract class EvalNode implements Cloneable, GsonObject, ProtoObject<Pla
   public Object clone() throws CloneNotSupportedException {
     EvalNode evalNode = (EvalNode) super.clone();
     evalNode.type = type;
-    evalNode.returnType = returnType;
     return evalNode;
   }
 

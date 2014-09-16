@@ -25,15 +25,14 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.LocalTajoTestingUtility;
-import org.apache.tajo.QueryUnitAttemptId;
-import org.apache.tajo.TajoConstants;
-import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.*;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
@@ -52,6 +51,7 @@ import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.index.bst.BSTIndex;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
@@ -64,6 +64,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -89,6 +90,7 @@ public class TestPhysicalPlanner {
 
   private static TableDesc employee = null;
   private static TableDesc score = null;
+  private static TableDesc largeScore = null;
 
   private static MasterPlan masterPlan;
 
@@ -171,6 +173,45 @@ public class TestPhysicalPlanner {
 
     defaultContext = LocalTajoTestingUtility.createDummyContext(conf);
     masterPlan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), null, null);
+
+    createLargeScoreTable();
+  }
+
+  public static void createLargeScoreTable() throws IOException {
+    // Preparing a large table
+    Path scoreLargePath = new Path(testDir, "score_large");
+    CommonTestingUtil.cleanupTestDir(scoreLargePath.toString());
+
+    Schema scoreSchmea = score.getSchema();
+    TableMeta scoreLargeMeta = CatalogUtil.newTableMeta(StoreType.RAW, new KeyValueSet());
+    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(scoreLargeMeta, scoreSchmea,
+        scoreLargePath);
+    appender.enableStats();
+    appender.init();
+    largeScore = new TableDesc(
+        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "score_large"), scoreSchmea, scoreLargeMeta,
+        scoreLargePath);
+
+    Tuple tuple = new VTuple(scoreSchmea.size());
+    int m = 0;
+    for (int i = 1; i <= 40000; i++) {
+      for (int k = 3; k < 5; k++) { // |{3,4}| = 2
+        for (int j = 1; j <= 3; j++) { // |{1,2,3}| = 3
+          tuple.put(
+              new Datum[] {
+                  DatumFactory.createText("name_" + i), // name_1 ~ 5 (cad: // 5)
+                  DatumFactory.createText(k + "rd"), // 3 or 4rd (cad: 2)
+                  DatumFactory.createInt4(j), // 1 ~ 3
+                  m % 3 == 1 ? DatumFactory.createText("one") : NullDatum.get()});
+          appender.addTuple(tuple);
+          m++;
+        }
+      }
+    }
+    appender.flush();
+    appender.close();
+    largeScore.setStats(appender.getStats());
+    catalog.createTable(largeScore);
   }
 
   @AfterClass
@@ -376,7 +417,10 @@ public class TestPhysicalPlanner {
   private String[] CreateTableAsStmts = {
       "create table grouped1 as select deptName, class, sum(score), max(score), min(score) from score group by deptName, class", // 0
       "create table grouped2 using rcfile as select deptName, class, sum(score), max(score), min(score) from score group by deptName, class", // 1
-      "create table grouped3 partition by column (dept text,  class text) as select sum(score), max(score), min(score), deptName, class from score group by deptName, class", // 2
+      "create table grouped3 partition by column (dept text,  class text) as select sum(score), max(score), min(score), deptName, class from score group by deptName, class", // 2,
+      "create table score_large_output as select * from score_large", // 4
+      "CREATE TABLE score_part (deptname text, score int4, nullable text) PARTITION BY COLUMN (class text) " +
+          "AS SELECT deptname, score, nullable, class from score_large" // 5
   };
 
   @Test
@@ -419,6 +463,62 @@ public class TestPhysicalPlanner {
 
     // Examine the statistics information
     assertEquals(10, ctx.getResultStats().getNumRows().longValue());
+  }
+
+  @Test
+  public final void testStorePlanWithMaxOutputFileSize() throws IOException, PlanningException,
+      CloneNotSupportedException {
+
+    TableStats stats = largeScore.getStats();
+    assertTrue("Checking meaningfulness of test", stats.getNumBytes() > StorageUnit.MB);
+
+    FileFragment[] frags = StorageManager.splitNG(conf, "default.score_large", largeScore.getMeta(),
+        largeScore.getPath(), Integer.MAX_VALUE);
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testStorePlanWithMaxOutputFileSize");
+
+    QueryContext queryContext = new QueryContext(conf, session);
+    queryContext.setInt(SessionVars.MAX_OUTPUT_FILE_SIZE, 1);
+
+    TaskAttemptContext ctx = new TaskAttemptContext(
+        queryContext,
+        LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
+        new FileFragment[] { frags[0] }, workDir);
+    ctx.setEnforcer(new Enforcer());
+    ctx.setOutputPath(new Path(workDir, "maxOutput"));
+
+    Expr context = analyzer.parse(CreateTableAsStmts[3]);
+
+    LogicalPlan plan = planner.createPlan(queryContext, context);
+    LogicalNode rootNode = optimizer.optimize(plan);
+
+    // executing StoreTableExec
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    exec.init();
+    exec.next();
+    exec.close();
+
+    // checking the number of punctuated files
+    int expectedFileNum = (int) (stats.getNumBytes() / (float) StorageUnit.MB);
+    FileSystem fs = ctx.getOutputPath().getFileSystem(conf);
+    FileStatus [] statuses = fs.listStatus(ctx.getOutputPath().getParent());
+    assertEquals(expectedFileNum, statuses.length);
+
+    // checking the file contents
+    long totalNum = 0;
+    for (FileStatus status : fs.listStatus(ctx.getOutputPath().getParent())) {
+      Scanner scanner = StorageManagerFactory.getStorageManager(conf).getFileScanner(
+          CatalogUtil.newTableMeta(StoreType.CSV),
+          rootNode.getOutSchema(),
+          status.getPath());
+
+      scanner.init();
+      while ((scanner.next()) != null) {
+        totalNum++;
+      }
+      scanner.close();
+    }
+    assertTrue(totalNum == ctx.getResultStats().getNumRows());
   }
 
   @Test
@@ -534,9 +634,8 @@ public class TestPhysicalPlanner {
     FileFragment[] frags = StorageManager.splitNG(conf, "default.score", score.getMeta(), score.getPath(),
         Integer.MAX_VALUE);
     QueryUnitAttemptId id = LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan);
-    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testPartitionedStorePlan");
-    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
-        id, new FileFragment[] { frags[0] }, workDir);
+    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf), id, new FileFragment[] { frags[0] },
+        CommonTestingUtil.getTestDir("target/test-data/testPartitionedStorePlan"));
     ctx.setEnforcer(new Enforcer());
     Expr context = analyzer.parse(QUERIES[7]);
     LogicalPlan plan = planner.createPlan(defaultContext, context);
@@ -553,27 +652,35 @@ public class TestPhysicalPlanner {
     TableMeta outputMeta = CatalogUtil.newTableMeta(dataChannel.getStoreType());
 
     FileSystem fs = sm.getFileSystem();
+    QueryId queryId = id.getQueryUnitId().getExecutionBlockId().getQueryId();
+    ExecutionBlockId ebId = id.getQueryUnitId().getExecutionBlockId();
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     exec.next();
     exec.close();
+    ctx.getHashShuffleAppenderManager().close(ebId);
 
-    Path path = new Path(workDir, "output");
-    FileStatus [] list = fs.listStatus(path);
-    assertEquals(numPartitions, list.length);
+    String executionBlockBaseDir = queryId.toString() + "/output" + "/" + ebId.getId() + "/hash-shuffle";
+    Path queryLocalTmpDir = new Path(conf.getVar(ConfVars.WORKER_TEMPORAL_DIR) + "/" + executionBlockBaseDir);
+    FileStatus [] list = fs.listStatus(queryLocalTmpDir);
 
-    FileFragment[] fragments = new FileFragment[list.length];
-    int i = 0;
+    List<FileFragment> fragments = new ArrayList<FileFragment>();
     for (FileStatus status : list) {
-      fragments[i++] = new FileFragment("partition", status.getPath(), 0, status.getLen());
+      assertTrue(status.isDirectory());
+      FileStatus [] files = fs.listStatus(status.getPath());
+      for (FileStatus eachFile: files) {
+        fragments.add(new FileFragment("partition", eachFile.getPath(), 0, eachFile.getLen()));
+      }
     }
+
+    assertEquals(numPartitions, fragments.size());
     Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, TUtil.newList(fragments));
     scanner.init();
 
     Tuple tuple;
-    i = 0;
+    int i = 0;
     while ((tuple = scanner.next()) != null) {
       assertEquals(6, tuple.get(2).asInt4()); // sum
       assertEquals(3, tuple.get(3).asInt4()); // max
@@ -585,6 +692,73 @@ public class TestPhysicalPlanner {
 
     // Examine the statistics information
     assertEquals(10, ctx.getResultStats().getNumRows().longValue());
+
+    fs.delete(queryLocalTmpDir, true);
+  }
+
+  @Test
+  public final void testPartitionedStorePlanWithMaxFileSize() throws IOException, PlanningException {
+
+    // Preparing working dir and input fragments
+    FileFragment[] frags = StorageManager.splitNG(conf, "default.score_large", largeScore.getMeta(),
+        largeScore.getPath(), Integer.MAX_VALUE);
+    QueryUnitAttemptId id = LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan);
+    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testPartitionedStorePlanWithMaxFileSize");
+
+    // Setting session variables
+    QueryContext queryContext = new QueryContext(conf, session);
+    queryContext.setInt(SessionVars.MAX_OUTPUT_FILE_SIZE, 1);
+
+    // Preparing task context
+    TaskAttemptContext ctx = new TaskAttemptContext(queryContext, id, new FileFragment[] { frags[0] }, workDir);
+    ctx.setOutputPath(new Path(workDir, "part-01-000000"));
+    // SortBasedColumnPartitionStoreExec will be chosen by default.
+    ctx.setEnforcer(new Enforcer());
+    Expr context = analyzer.parse(CreateTableAsStmts[4]);
+    LogicalPlan plan = planner.createPlan(queryContext, context);
+    LogicalNode rootNode = optimizer.optimize(plan);
+
+    // Executing CREATE TABLE PARTITION BY
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+    exec.init();
+    exec.next();
+    exec.close();
+
+    FileSystem fs = sm.getFileSystem();
+    FileStatus [] list = fs.listStatus(workDir);
+    // checking the number of partitions
+    assertEquals(2, list.length);
+
+    List<FileFragment> fragments = Lists.newArrayList();
+    int i = 0;
+    for (FileStatus status : list) {
+      assertTrue(status.isDirectory());
+
+      long fileVolumSum = 0;
+      FileStatus [] fileStatuses = fs.listStatus(status.getPath());
+      for (FileStatus fileStatus : fileStatuses) {
+        fileVolumSum += fileStatus.getLen();
+        fragments.add(new FileFragment("partition", fileStatus.getPath(), 0, fileStatus.getLen()));
+      }
+      assertTrue("checking the meaningfulness of test", fileVolumSum > StorageUnit.MB && fileStatuses.length > 1);
+
+      long expectedFileNum = (long) Math.ceil(fileVolumSum / (float)StorageUnit.MB);
+      assertEquals(expectedFileNum, fileStatuses.length);
+    }
+    TableMeta outputMeta = CatalogUtil.newTableMeta(StoreType.CSV);
+    Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, TUtil.newList(fragments));
+    scanner.init();
+
+    long rowNum = 0;
+    while (scanner.next() != null) {
+      rowNum++;
+    }
+
+    // checking the number of all written rows
+    assertTrue(largeScore.getStats().getNumRows() == rowNum);
+
+    scanner.close();
   }
 
   @Test
@@ -611,27 +785,36 @@ public class TestPhysicalPlanner {
 
     TableMeta outputMeta = CatalogUtil.newTableMeta(dataChannel.getStoreType());
 
+    FileSystem fs = sm.getFileSystem();
+    QueryId queryId = id.getQueryUnitId().getExecutionBlockId().getQueryId();
+    ExecutionBlockId ebId = id.getQueryUnitId().getExecutionBlockId();
+
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     exec.init();
     exec.next();
     exec.close();
+    ctx.getHashShuffleAppenderManager().close(ebId);
 
-    Path path = new Path(workDir, "output");
-    FileSystem fs = sm.getFileSystem();
+    String executionBlockBaseDir = queryId.toString() + "/output" + "/" + ebId.getId() + "/hash-shuffle";
+    Path queryLocalTmpDir = new Path(conf.getVar(ConfVars.WORKER_TEMPORAL_DIR) + "/" + executionBlockBaseDir);
+    FileStatus [] list = fs.listStatus(queryLocalTmpDir);
 
-    FileStatus [] list = fs.listStatus(path);
-    assertEquals(numPartitions, list.length);
-
-    FileFragment[] fragments = new FileFragment[list.length];
-    int i = 0;
+    List<FileFragment> fragments = new ArrayList<FileFragment>();
     for (FileStatus status : list) {
-      fragments[i++] = new FileFragment("partition", status.getPath(), 0, status.getLen());
+      assertTrue(status.isDirectory());
+      FileStatus [] files = fs.listStatus(status.getPath());
+      for (FileStatus eachFile: files) {
+        fragments.add(new FileFragment("partition", eachFile.getPath(), 0, eachFile.getLen()));
+      }
     }
+
+    assertEquals(numPartitions, fragments.size());
+
     Scanner scanner = new MergeScanner(conf, rootNode.getOutSchema(), outputMeta, TUtil.newList(fragments));
     scanner.init();
     Tuple tuple;
-    i = 0;
+    int i = 0;
     while ((tuple = scanner.next()) != null) {
       assertEquals(60, tuple.get(0).asInt4()); // sum
       assertEquals(3, tuple.get(1).asInt4()); // max
@@ -643,6 +826,7 @@ public class TestPhysicalPlanner {
 
     // Examine the statistics information
     assertEquals(1, ctx.getResultStats().getNumRows().longValue());
+    fs.delete(queryLocalTmpDir, true);
   }
 
   @Test
@@ -730,7 +914,7 @@ public class TestPhysicalPlanner {
   }
 
   @Test
-  public final void testUnionPlan() throws IOException, PlanningException {
+  public final void testUnionPlan() throws IOException, PlanningException, CloneNotSupportedException {
     FileFragment[] frags = StorageManager.splitNG(conf, "default.employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testUnionPlan");
@@ -743,8 +927,8 @@ public class TestPhysicalPlanner {
     LogicalNode rootNode = optimizer.optimize(plan);
     LogicalRootNode root = (LogicalRootNode) rootNode;
     UnionNode union = plan.createNode(UnionNode.class);
-    union.setLeftChild(root.getChild());
-    union.setRightChild(root.getChild());
+    union.setLeftChild((LogicalNode) root.getChild().clone());
+    union.setRightChild((LogicalNode) root.getChild().clone());
     root.setChild(union);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);

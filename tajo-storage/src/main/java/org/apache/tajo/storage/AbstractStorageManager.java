@@ -172,7 +172,6 @@ public abstract class AbstractStorageManager {
     return appender;
   }
 
-
   public TableMeta getTableMeta(Path tablePath) throws IOException {
     TableMeta meta;
 
