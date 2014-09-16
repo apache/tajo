@@ -69,7 +69,7 @@ public class Pow extends GeneralFunction {
   public Datum eval(Tuple params) {
     Datum value1Datum = params.get(0);
     Datum value2Datum = params.get(1);
-    if(value1Datum instanceof NullDatum || value2Datum instanceof NullDatum) {
+    if(value1Datum.isNull() || value2Datum.isNull()) {
       return NullDatum.get();
     }
 

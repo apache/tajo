@@ -408,7 +408,7 @@ public class IntervalDatum extends Datum {
       } else {
         return 0;
       }
-    } else if (datum instanceof NullDatum || datum.isNull()) {
+    } else if (datum.isNull()) {
       return -1;
     } else {
       throw new InvalidOperationException(datum.type());

@@ -30,7 +30,7 @@ import java.nio.charset.Charset;
 import java.util.Comparator;
 
 public class TextDatum extends Datum {
-  static Charset defaultCharset = Charset.forName("UTF-8");
+  public static Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
 
   @Expose private final int size;
   /* encoded in UTF-8 */
@@ -47,7 +47,7 @@ public class TextDatum extends Datum {
   }
 
   public TextDatum(String string) {
-    this(string.getBytes(defaultCharset));
+    this(string.getBytes(DEFAULT_CHARSET));
   }
 
   @Override
@@ -92,7 +92,7 @@ public class TextDatum extends Datum {
 
   @Override
   public String asChars() {
-    return new String(this.bytes, defaultCharset);
+    return new String(this.bytes, DEFAULT_CHARSET);
   }
 
   @Override

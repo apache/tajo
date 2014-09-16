@@ -40,7 +40,7 @@ import org.apache.tajo.engine.plan.EvalTreeProtoSerializer;
 import org.apache.tajo.engine.plan.proto.PlanProto;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.engine.utils.SchemaUtil;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.storage.LazyTuple;
 import org.apache.tajo.storage.Tuple;

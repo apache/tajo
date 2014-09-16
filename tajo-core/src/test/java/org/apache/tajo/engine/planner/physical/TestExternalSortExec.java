@@ -18,8 +18,13 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
@@ -27,29 +32,38 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlockUtils;
+import org.apache.tajo.tuple.offheap.TestOffHeapRowBlock;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.raw.TestDirectRawFile;
+import org.apache.tajo.storage.rawfile.DirectRawFileScanner;
+import org.apache.tajo.storage.rawfile.DirectRawFileWriter;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.worker.ExecutionBlockSharedResource;
 import org.apache.tajo.worker.TaskAttemptContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Random;
+import java.util.List;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
+import static org.apache.tajo.tuple.offheap.TestOffHeapRowBlock.schema;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TestExternalSortExec {
+  private static final Log LOG = LogFactory.getLog(TestExternalSortExec.class);
+
   private TajoConf conf;
   private TajoTestingCluster util;
   private final String TEST_PATH = "target/test-data/TestExternalSortExec";
@@ -60,8 +74,6 @@ public class TestExternalSortExec {
   private Path testDir;
 
   private final int numTuple = 100000;
-  private Random rnd = new Random(System.currentTimeMillis());
-
   private TableDesc employee;
 
   @Before
@@ -75,30 +87,22 @@ public class TestExternalSortExec {
     conf.setVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR, testDir.toString());
     sm = StorageManagerFactory.getStorageManager(conf, testDir);
 
-    Schema schema = new Schema();
-    schema.addColumn("managerid", Type.INT4);
-    schema.addColumn("empid", Type.INT4);
-    schema.addColumn("deptname", Type.TEXT);
+    OffHeapRowBlock rowBlock = TestOffHeapRowBlock.createRowBlock(numTuple);
+    TableMeta employeeMeta = CatalogUtil.newTableMeta(StoreType.DIRECTRAW);
 
-    TableMeta employeeMeta = CatalogUtil.newTableMeta(StoreType.CSV);
-    Path employeePath = new Path(testDir, "employee.csv");
-    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(employeeMeta, schema, employeePath);
-    appender.enableStats();
-    appender.init();
-    Tuple tuple = new VTuple(schema.size());
-    for (int i = 0; i < numTuple; i++) {
-      tuple.put(new Datum[] {
-          DatumFactory.createInt4(rnd.nextInt(50)),
-          DatumFactory.createInt4(rnd.nextInt(100)),
-          DatumFactory.createText("dept_" + i),
-      });
-      appender.addTuple(tuple);
-    }
-    appender.flush();
-    appender.close();
+    Path outFile = new Path(TEST_PATH, "output.draw");
 
-    System.out.println(appender.getStats().getNumRows() + " rows (" + (appender.getStats().getNumBytes() / 1048576) +
-        " MB)");
+    long startTime = System.currentTimeMillis();
+    Path employeePath = TestDirectRawFile.writeRowBlock(conf, employeeMeta, rowBlock, outFile);
+    long endTime = System.currentTimeMillis();
+    rowBlock.release();
+
+    FileSystem fs = FileSystem.getLocal(conf);
+    FileStatus status = fs.getFileStatus(employeePath);
+    LOG.info("============================================================");
+    LOG.info("Written file size: " + FileUtil.humanReadableByteCount(status.getLen(), false) + " " +
+        (endTime - startTime) + " msec");
+    LOG.info("============================================================");
 
     employee = new TableDesc("default.employee", schema, employeeMeta, employeePath);
     catalog.createTable(employee);
@@ -113,35 +117,31 @@ public class TestExternalSortExec {
   }
 
   String[] QUERIES = {
-      "select managerId, empId from employee order by managerId, empId"
+      "select col2, col3, col4 from employee order by col2, col3"
   };
 
   @Test
-  public final void testNext() throws IOException, PlanningException {
+  public final void testNext() throws IOException, PlanningException, InterruptedException {
+    QueryContext queryContext = LocalTajoTestingUtility.createDummyContext(conf);
+    queryContext.setBool(SessionVars.CODEGEN, true);
+    queryContext.setLong(SessionVars.EXTSORT_BUFFER_SIZE, 100);
+
+    Expr expr = analyzer.parse(QUERIES[0]);
+    LogicalPlan plan = planner.createPlan(queryContext, expr);
+    LogicalNode rootNode = plan.getRootBlock().getRoot();
+
+    ExecutionBlockSharedResource resource = new ExecutionBlockSharedResource();
+    resource.initialize(queryContext, rootNode.toJson());
+
     FileFragment[] frags = StorageManager.splitNG(conf, "default.employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Path workDir = new Path(testDir, TestExternalSortExec.class.getName());
-    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
-        LocalTajoTestingUtility.newQueryUnitAttemptId(), new FileFragment[] { frags[0] }, workDir);
-    ctx.setEnforcer(new Enforcer());
-    Expr expr = analyzer.parse(QUERIES[0]);
-    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
-    LogicalNode rootNode = plan.getRootBlock().getRoot();
+    TaskAttemptContext taskContext = new TaskAttemptContext(queryContext,
+        LocalTajoTestingUtility.newQueryUnitAttemptId(), new FileFragment[] { frags[0] }, workDir, resource);
+    taskContext.setEnforcer(new Enforcer());
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
-    
-    ProjectionExec proj = (ProjectionExec) exec;
-
-    // TODO - should be planed with user's optimization hint
-    if (!(proj.getChild() instanceof ExternalSortExec)) {
-      UnaryPhysicalExec sortExec = proj.getChild();
-      SeqScanExec scan = sortExec.getChild();
-
-      ExternalSortExec extSort = new ExternalSortExec(ctx, sm,
-          ((MemSortExec)sortExec).getPlan(), scan);
-      proj.setChild(extSort);
-    }
+    PhysicalExec exec = phyPlanner.createPlan(taskContext, rootNode);
 
     Tuple tuple;
     Tuple preVal = null;
@@ -149,10 +149,10 @@ public class TestExternalSortExec {
     int cnt = 0;
     exec.init();
     long start = System.currentTimeMillis();
-    TupleComparator comparator = new TupleComparator(proj.getSchema(),
+    BaseTupleComparator comparator = new BaseTupleComparator(exec.getSchema(),
         new SortSpec[]{
-            new SortSpec(new Column("managerid", Type.INT4)),
-            new SortSpec(new Column("empid", Type.INT4))
+            new SortSpec(new Column("col2", Type.INT4)),
+            new SortSpec(new Column("col3", Type.INT8))
         });
 
     while ((tuple = exec.next()) != null) {
@@ -180,6 +180,26 @@ public class TestExternalSortExec {
     }
     assertEquals(numTuple, cnt);
     exec.close();
-    System.out.println("Sort Time: " + (end - start) + " msc");
+    System.out.println("Sort and final write time: " + (end - start) + " msc");
+  }
+
+  public static DirectRawFileScanner createSortedScanner(TajoConf conf, TableMeta meta, int rowNum,
+                                                         BaseTupleComparator comparator)
+      throws IOException {
+    Path testDir = CommonTestingUtil.getTestDir();
+    Path outFile = new Path(testDir, "file1.out");
+
+    OffHeapRowBlock rowBlock = TestOffHeapRowBlock.createRowBlock(rowNum);
+
+    List<Tuple> tupleList = OffHeapRowBlockUtils.sort(rowBlock, comparator);
+
+    DirectRawFileWriter writer1 = new DirectRawFileWriter(conf, schema, meta, outFile);
+    writer1.init();
+    for (Tuple t:tupleList) {
+      writer1.addTuple(t);
+    }
+    writer1.close();
+
+    return new DirectRawFileScanner(conf, schema, meta, outFile);
   }
 }

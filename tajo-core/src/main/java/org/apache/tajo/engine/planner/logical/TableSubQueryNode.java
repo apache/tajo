@@ -24,7 +24,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Target;
-import org.apache.tajo.engine.utils.SchemaUtil;
+import org.apache.tajo.catalog.SchemaUtil;
 
 public class TableSubQueryNode extends RelationNode implements Projectable {
   @Expose private String tableName;

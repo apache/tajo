@@ -102,7 +102,7 @@ public class AvroAppender extends FileAppender {
   }
 
   private Object getPrimitive(Tuple tuple, int i, Schema.Type avroType) {
-    if (tuple.get(i) instanceof NullDatum) {
+    if (tuple.get(i).isNull()) {
       return null;
     }
     switch (avroType) {

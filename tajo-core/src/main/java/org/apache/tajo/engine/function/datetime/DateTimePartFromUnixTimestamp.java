@@ -61,11 +61,11 @@ public class DateTimePartFromUnixTimestamp extends GeneralFunction {
     DateTime dateTime;
     Int4Datum dayOfWeek = null;
 
-    if (target instanceof NullDatum || params.get(1) instanceof NullDatum) {
+    if (target.isNull() || params.get(1).isNull()) {
       return NullDatum.get();
     }
 
-    if (params.get(1) instanceof Int8Datum) {
+    if (params.get(1).type() == INT8) {
       dateTime = DateTimeUtil.getUTCDateTime((Int8Datum) (params.get(1)));
     } else {
       return NullDatum.get();
@@ -85,7 +85,7 @@ public class DateTimePartFromUnixTimestamp extends GeneralFunction {
       } else if (extractType.equals("year")) {
         extractor = new YearExtractorFromTime();
       } else if (extractType.equals("week")) {
-        if (params.get(2) instanceof NullDatum) {
+        if (params.get(2).isNull()) {
           return NullDatum.get();
         }
         dayOfWeek = (Int4Datum) params.get(2);

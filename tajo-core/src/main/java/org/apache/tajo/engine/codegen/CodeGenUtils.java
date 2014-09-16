@@ -19,12 +19,19 @@
 package org.apache.tajo.engine.codegen;
 
 import org.apache.tajo.org.objectweb.asm.ClassReader;
+import org.apache.tajo.org.objectweb.asm.MethodVisitor;
+import org.apache.tajo.org.objectweb.asm.Opcodes;
 import org.apache.tajo.org.objectweb.asm.util.ASMifier;
 import org.apache.tajo.org.objectweb.asm.util.TraceClassVisitor;
 
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
+/**
+ * It includes utility methods, and some of them are only used in generated code.
+ * So, they appear to be not used in the project.
+ */
 public class CodeGenUtils {
   private static final int FLAGS = ClassReader.SKIP_DEBUG;
 
@@ -37,5 +44,13 @@ public class CodeGenUtils {
     cr.accept(new TraceClassVisitor(null, new ASMifier(), writer), FLAGS);
 
     return strWriter.toString();
+  }
+
+  @SuppressWarnings("unused")
+  public static void emitPrintOut(MethodVisitor mv, String message) {
+    mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "out", "Ljava/io/PrintStream;");
+    mv.visitLdcInsn(message);
+    mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, TajoGeneratorAdapter.getInternalName(PrintStream.class),
+        "println", TajoGeneratorAdapter.getMethodDescription(void.class, new Class[]{String.class}));
   }
 }

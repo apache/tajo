@@ -34,6 +34,7 @@ import org.apache.tajo.util.datetime.TimeMeta;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.FLOAT8;
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
+import static org.apache.tajo.common.TajoDataTypes.Type.TIME;
 
 @Description(
     functionName = "date_part",
@@ -58,11 +59,11 @@ public class DatePartFromTime extends GeneralFunction {
     Datum target = params.get(0);
     TimeDatum time = null;
 
-    if(target instanceof NullDatum || params.get(1) instanceof NullDatum) {
+    if(target.isNull()|| params.get(1).isNull()) {
       return NullDatum.get();
     }
 
-    if(params.get(1) instanceof TimeDatum) {
+    if(params.get(1).type() == TIME) {
       time = (TimeDatum)(params.get(1));
     } else {
       return NullDatum.get();

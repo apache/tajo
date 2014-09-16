@@ -49,8 +49,9 @@ import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
 import org.apache.tajo.rpc.NullCallback;
+import org.apache.tajo.storage.BaseTupleComparator;
+import org.apache.tajo.storage.RawFile;
 import org.apache.tajo.storage.StorageUtil;
-import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 
@@ -94,7 +95,9 @@ public class Task {
   // TODO - to be refactored
   private ShuffleType shuffleType = null;
   private Schema finalSchema = null;
-  private TupleComparator sortComp = null;
+
+  private BaseTupleComparator sortComp = null;
+  private ClientSocketChannelFactory channelFactory = null;
 
   static final String OUTPUT_FILE_PREFIX="part-";
   static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_SUBQUERY =
@@ -175,7 +178,7 @@ public class Task {
       if (shuffleType == ShuffleType.RANGE_SHUFFLE) {
         SortNode sortNode = PlannerUtil.findTopNode(plan, NodeType.SORT);
         this.finalSchema = PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys());
-        this.sortComp = new TupleComparator(finalSchema, sortNode.getSortKeys());
+        this.sortComp = new BaseTupleComparator(finalSchema, sortNode.getSortKeys());
       }
     } else {
       // The final result of a task will be written in a file named part-ss-nnnnnnn,
@@ -685,7 +688,7 @@ public class Task {
           if (!storeDir.exists()) {
             storeDir.mkdirs();
           }
-          storeFile = new File(storeDir, "in_" + i);
+          storeFile = new File(storeDir, "in_" + i + "." + RawFile.FILE_EXTENSION);
           Fetcher fetcher = new Fetcher(systemConf, uri, storeFile, channelFactory);
           runnerList.add(fetcher);
           i++;

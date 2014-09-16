@@ -50,10 +50,10 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.pullserver.listener.FileCloseListener;
 import org.apache.tajo.pullserver.retriever.FileChunk;
+import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.util.TajoIdUtils;
 import org.jboss.netty.bootstrap.ServerBootstrap;
@@ -550,7 +550,7 @@ public class PullServerAuxService extends AuxiliaryService {
         index.getIndexReader(new Path(outDir, "index"));
     idxReader.open();
     Schema keySchema = idxReader.getKeySchema();
-    TupleComparator comparator = idxReader.getComparator();
+    BaseTupleComparator comparator = idxReader.getComparator();
 
     LOG.info("BSTIndex is loaded from disk (" + idxReader.getFirstKey() + ", "
         + idxReader.getLastKey());

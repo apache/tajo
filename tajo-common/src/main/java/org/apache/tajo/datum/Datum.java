@@ -155,7 +155,7 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
   }
 
   public Datum equalsTo(Datum datum) {
-    if (this instanceof NullDatum || datum instanceof NullDatum) {
+    if (this.isNull() || datum.isNull()) {
       return NullDatum.get();
     } else {
       return DatumFactory.createBool(compareTo(datum) == 0);
@@ -163,7 +163,7 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
   }
 
   public Datum notEqualsTo(Datum datum) {
-    if (this instanceof NullDatum || datum instanceof NullDatum) {
+    if (this.isNull() || datum.isNull()) {
       return NullDatum.get();
     } else {
       return DatumFactory.createBool(compareTo(datum) != 0);

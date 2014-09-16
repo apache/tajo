@@ -25,6 +25,8 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.storage.BaseTupleComparator;
+import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.util.Pair;
 
 import java.util.Collections;
@@ -42,45 +44,73 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
 
   public static void compile(CompilationContext context, LogicalNode node) throws PlanningException {
     instance.visit(context, null, null, node, new Stack<LogicalNode>());
-    context.compiledEval = Collections.unmodifiableMap(context.compiledEval);
+    context.compiledEvals = Collections.unmodifiableMap(context.compiledEvals);
   }
 
   public static Map<Pair<Schema, EvalNode>, EvalNode> compile(TajoClassLoader classLoader, LogicalNode node)
       throws PlanningException {
     CompilationContext context = new CompilationContext(classLoader);
     instance.visit(context, null, null, node, new Stack<LogicalNode>());
-    return context.compiledEval;
+    return context.compiledEvals;
   }
 
   public static class CompilationContext {
-    private final EvalCodeGenerator compiler;
-    private Map<Pair<Schema,EvalNode>, EvalNode> compiledEval;
+    private final EvalCodeGenerator evalCompiler;
+    private final TupleComparerCompiler comparerCompiler;
+    private Map<Pair<Schema,EvalNode>, EvalNode> compiledEvals;
+    private Map<Pair<Schema,BaseTupleComparator>, TupleComparator> compiledComparators;
 
     public CompilationContext(TajoClassLoader classLoader) {
-      this.compiler = new EvalCodeGenerator(classLoader);
-      this.compiledEval = Maps.newHashMap();
+      this.evalCompiler = new EvalCodeGenerator(classLoader);
+      this.comparerCompiler = new TupleComparerCompiler(classLoader);
+      this.compiledEvals = Maps.newHashMap();
+      this.compiledComparators = Maps.newHashMap();
     }
 
-    public EvalCodeGenerator getCompiler() {
-      return compiler;
+    public EvalCodeGenerator getEvalCompiler() {
+      return evalCompiler;
+    }
+
+    public TupleComparerCompiler getComparatorCompiler() {
+      return comparerCompiler;
     }
 
     public Map<Pair<Schema, EvalNode>, EvalNode> getPrecompiedEvals() {
-      return compiledEval;
+      return compiledEvals;
+    }
+
+    public Map<Pair<Schema, BaseTupleComparator>, TupleComparator> getPrecompiedComparators() {
+      return compiledComparators;
     }
   }
 
   private static void compileIfAbsent(CompilationContext context, Schema schema, EvalNode eval) {
     Pair<Schema, EvalNode> key = new Pair<Schema, EvalNode>(schema, eval);
-    if (!context.compiledEval.containsKey(key)) {
+    if (!context.compiledEvals.containsKey(key)) {
       try {
-        EvalNode compiled = context.compiler.compile(schema, eval);
-        context.compiledEval.put(key, compiled);
+        EvalNode compiled = context.evalCompiler.compile(schema, eval);
+        context.compiledEvals.put(key, compiled);
 
       } catch (Throwable t) {
         // If any compilation error occurs, it works in a fallback mode. This mode just uses EvalNode objects
         // instead of a compiled EvalNode.
-        context.compiledEval.put(key, eval);
+        context.compiledEvals.put(key, eval);
+        LOG.warn(t);
+      }
+    }
+  }
+
+  private static void compileIfAbsent(CompilationContext context, Schema schema, BaseTupleComparator comparator) {
+    Pair<Schema, BaseTupleComparator> key = new Pair<Schema, BaseTupleComparator>(schema, comparator);
+    if (!context.compiledComparators.containsKey(key)) {
+      try {
+        TupleComparator compiled = context.comparerCompiler.compile(comparator, false);
+        context.compiledComparators.put(key, compiled);
+
+      } catch (Throwable t) {
+        // If any compilation error occurs, it works in a fallback mode. This mode just uses EvalNode objects
+        // instead of a compiled EvalNode.
+        context.compiledComparators.put(key, comparator);
         LOG.warn(t);
       }
     }
@@ -111,6 +141,17 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
     super.visitProjection(context, plan, block, node, stack);
 
     compileProjectableNode(context, node.getInSchema(), node);
+
+    return node;
+  }
+
+  @Override
+  public LogicalNode visitSort(CompilationContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                               SortNode node, Stack<LogicalNode> stack) throws PlanningException {
+    super.visitSort(context, plan, block, node, stack);
+
+    BaseTupleComparator comparator = new BaseTupleComparator(node.getInSchema(), node.getSortKeys());
+    compileIfAbsent(context, node.getInSchema(), comparator);
 
     return node;
   }

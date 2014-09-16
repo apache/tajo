@@ -81,9 +81,9 @@ public class RegexpReplace extends GeneralFunction {
     Datum thisPattern = params.get(1);
     Datum thisReplacement = params.get(2);
     boolean nullResult = isAlwaysNull
-        || thisValue instanceof NullDatum
-        || thisReplacement instanceof NullDatum
-        || thisPattern instanceof NullDatum;
+        || thisValue.isNull()
+        || thisReplacement.isNull()
+        || thisPattern.isNull();
 
     Pattern thisCompiled;
     if (!nullResult) {

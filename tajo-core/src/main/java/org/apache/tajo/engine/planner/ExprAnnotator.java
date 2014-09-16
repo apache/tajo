@@ -460,7 +460,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
     // A pattern is a const value in pattern matching predicates.
     // In a binary expression, the result is always null if a const value in left or right side is null.
-    if (pattern.getValue() instanceof NullDatum) {
+    if (pattern.getValue().isNull()) {
       return new ConstEval(NullDatum.get());
     } else {
       if (expr.getType() == OpType.LikePredicate) {

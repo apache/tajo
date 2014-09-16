@@ -20,12 +20,14 @@ package org.apache.tajo.engine.codegen;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalType;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.org.objectweb.asm.Label;
@@ -51,6 +53,9 @@ class TajoGeneratorAdapter {
     TUtil.putToNestedMap(OpCodesMap, EvalType.PLUS, INT8, Opcodes.LADD);
     TUtil.putToNestedMap(OpCodesMap, EvalType.PLUS, FLOAT4, Opcodes.FADD);
     TUtil.putToNestedMap(OpCodesMap, EvalType.PLUS, FLOAT8, Opcodes.DADD);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.PLUS, TIMESTAMP, Opcodes.LADD);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.PLUS, DATE, Opcodes.IADD);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.PLUS, TIME, Opcodes.LADD);
 
     TUtil.putToNestedMap(OpCodesMap, EvalType.MINUS, INT1, Opcodes.ISUB);
     TUtil.putToNestedMap(OpCodesMap, EvalType.MINUS, INT2, Opcodes.ISUB);
@@ -58,6 +63,10 @@ class TajoGeneratorAdapter {
     TUtil.putToNestedMap(OpCodesMap, EvalType.MINUS, INT8, Opcodes.LSUB);
     TUtil.putToNestedMap(OpCodesMap, EvalType.MINUS, FLOAT4, Opcodes.FSUB);
     TUtil.putToNestedMap(OpCodesMap, EvalType.MINUS, FLOAT8, Opcodes.DSUB);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.MINUS, TIMESTAMP, Opcodes.LSUB);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.MINUS, DATE, Opcodes.ISUB);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.MINUS, TIME, Opcodes.LSUB);
+
 
     TUtil.putToNestedMap(OpCodesMap, EvalType.MULTIPLY, INT1, Opcodes.IMUL);
     TUtil.putToNestedMap(OpCodesMap, EvalType.MULTIPLY, INT2, Opcodes.IMUL);
@@ -102,6 +111,10 @@ class TajoGeneratorAdapter {
     TUtil.putToNestedMap(OpCodesMap, EvalType.EQUAL, FLOAT4, Opcodes.FCMPL);
     TUtil.putToNestedMap(OpCodesMap, EvalType.EQUAL, FLOAT8, Opcodes.DCMPG);
     TUtil.putToNestedMap(OpCodesMap, EvalType.EQUAL, TEXT, Opcodes.IF_ACMPNE);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.EQUAL, TIMESTAMP, Opcodes.LCMP);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.EQUAL, DATE, Opcodes.IF_ICMPEQ);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.EQUAL, TIME, Opcodes.LCMP);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.EQUAL, INET4, Opcodes.IF_ICMPEQ);
 
     TUtil.putToNestedMap(OpCodesMap, EvalType.NOT_EQUAL, INT1, Opcodes.IF_ICMPNE);
     TUtil.putToNestedMap(OpCodesMap, EvalType.NOT_EQUAL, INT2, Opcodes.IF_ICMPNE);
@@ -110,6 +123,10 @@ class TajoGeneratorAdapter {
     TUtil.putToNestedMap(OpCodesMap, EvalType.NOT_EQUAL, FLOAT4, Opcodes.FCMPL);
     TUtil.putToNestedMap(OpCodesMap, EvalType.NOT_EQUAL, FLOAT8, Opcodes.DCMPG);
     TUtil.putToNestedMap(OpCodesMap, EvalType.NOT_EQUAL, TEXT, Opcodes.IF_ACMPNE);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.NOT_EQUAL, TIMESTAMP, Opcodes.LCMP);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.NOT_EQUAL, DATE, Opcodes.IF_ICMPNE);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.NOT_EQUAL, TIME, Opcodes.LCMP);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.NOT_EQUAL, INET4, Opcodes.IF_ICMPNE);
 
     TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, INT1, Opcodes.IF_ICMPLT);
     TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, INT2, Opcodes.IF_ICMPLT);
@@ -117,13 +134,9 @@ class TajoGeneratorAdapter {
     TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, INT8, Opcodes.LCMP);
     TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, FLOAT4, Opcodes.FCMPL);
     TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, FLOAT8, Opcodes.DCMPG);
-
-    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, INT1, Opcodes.IF_ICMPLT);
-    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, INT2, Opcodes.IF_ICMPLT);
-    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, INT4, Opcodes.IF_ICMPLT);
-    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, INT8, Opcodes.LCMP);
-    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, FLOAT4, Opcodes.FCMPL);
-    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, FLOAT8, Opcodes.DCMPG);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, TIMESTAMP, Opcodes.LCMP);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, DATE, Opcodes.IF_ICMPLT);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, TIME, Opcodes.LCMP);
 
     TUtil.putToNestedMap(OpCodesMap, EvalType.LEQ, INT1, Opcodes.IF_ICMPLE);
     TUtil.putToNestedMap(OpCodesMap, EvalType.LEQ, INT2, Opcodes.IF_ICMPLE);
@@ -131,6 +144,9 @@ class TajoGeneratorAdapter {
     TUtil.putToNestedMap(OpCodesMap, EvalType.LEQ, INT8, Opcodes.LCMP);
     TUtil.putToNestedMap(OpCodesMap, EvalType.LEQ, FLOAT4, Opcodes.FCMPL);
     TUtil.putToNestedMap(OpCodesMap, EvalType.LEQ, FLOAT8, Opcodes.DCMPG);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, TIMESTAMP, Opcodes.LCMP);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, DATE, Opcodes.IF_ICMPLE);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, TIME, Opcodes.LCMP);
 
     TUtil.putToNestedMap(OpCodesMap, EvalType.GTH, INT1, Opcodes.IF_ICMPGT);
     TUtil.putToNestedMap(OpCodesMap, EvalType.GTH, INT2, Opcodes.IF_ICMPGT);
@@ -138,6 +154,9 @@ class TajoGeneratorAdapter {
     TUtil.putToNestedMap(OpCodesMap, EvalType.GTH, INT8, Opcodes.LCMP);
     TUtil.putToNestedMap(OpCodesMap, EvalType.GTH, FLOAT4, Opcodes.FCMPL);
     TUtil.putToNestedMap(OpCodesMap, EvalType.GTH, FLOAT8, Opcodes.DCMPG);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, TIMESTAMP, Opcodes.LCMP);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, DATE, Opcodes.IF_ICMPGT);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, TIME, Opcodes.LCMP);
 
     TUtil.putToNestedMap(OpCodesMap, EvalType.GEQ, INT1, Opcodes.IF_ICMPGE);
     TUtil.putToNestedMap(OpCodesMap, EvalType.GEQ, INT2, Opcodes.IF_ICMPGE);
@@ -145,6 +164,9 @@ class TajoGeneratorAdapter {
     TUtil.putToNestedMap(OpCodesMap, EvalType.GEQ, INT8, Opcodes.LCMP);
     TUtil.putToNestedMap(OpCodesMap, EvalType.GEQ, FLOAT4, Opcodes.FCMPL);
     TUtil.putToNestedMap(OpCodesMap, EvalType.GEQ, FLOAT8, Opcodes.DCMPG);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, TIMESTAMP, Opcodes.LCMP);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, DATE, Opcodes.IF_ICMPGE);
+    TUtil.putToNestedMap(OpCodesMap, EvalType.LTH, TIME, Opcodes.LCMP);
   }
 
   protected int access;
@@ -159,9 +181,79 @@ class TajoGeneratorAdapter {
     generatorAdapter = new GeneratorAdapter(methodVisitor, access, name, desc);
   }
 
+  public void emitIsNullOfTuple() {
+    emitIsNullOfTuple(null);
+  }
+
+  public void emitIsNullOfTuple(Integer fieldIndex) {
+    if (fieldIndex != null) {
+      push(fieldIndex);
+    }
+
+    invokeInterface(Tuple.class, "isNull", boolean.class, new Class[]{int.class});
+  }
+
+  public void emitIsNotNullOfTuple() {
+    emitIsNotNullOfTuple(null);
+  }
+
+  public void emitIsNotNullOfTuple(@Nullable Integer fieldIndex) {
+    if (fieldIndex != null) {
+      push(fieldIndex);
+    }
+    invokeInterface(Tuple.class, "isNotNull", boolean.class, new Class [] {int.class});
+  }
+
+  public void emitGetValueOfTuple(TajoDataTypes.DataType dataType, int fieldIndex) {
+    push(fieldIndex);
+
+    TajoDataTypes.Type type = dataType.getType();
+    switch (type) {
+    case BOOLEAN:
+      invokeInterface(Tuple.class, "getByte", byte.class, new Class[]{int.class});
+      break;
+    case INT1:
+    case INT2:
+      invokeInterface(Tuple.class, "getInt2", short.class, new Class[]{int.class});
+      break;
+    case INT4:
+    case DATE:
+    case INET4:
+      invokeInterface(Tuple.class, "getInt4", int.class, new Class[]{int.class});
+      break;
+    case INT8:
+    case TIMESTAMP:
+    case TIME:
+      invokeInterface(Tuple.class, "getInt8", long.class, new Class[]{int.class});
+      break;
+    case FLOAT4:
+      invokeInterface(Tuple.class, "getFloat4", float.class, new Class[]{int.class});
+      break;
+    case FLOAT8:
+      invokeInterface(Tuple.class, "getFloat8", double.class, new Class[]{int.class});
+      break;
+    case CHAR:
+    case TEXT:
+      invokeInterface(Tuple.class, "getText", String.class, new Class[]{int.class});
+      break;
+    case INTERVAL:
+      invokeInterface(Tuple.class, "getInterval", Datum.class, new Class[]{int.class});
+      break;
+    case PROTOBUF:
+      invokeInterface(Tuple.class, "getProtobufDatum", Datum.class, new Class[]{int.class});
+      break;
+    default:
+      throw new UnsupportedException("Unknown data type: " + type.name());
+    }
+  }
+
+  public MethodVisitor getMethodvisitor() {
+    return methodvisitor;
+  }
+
   public static boolean isJVMInternalInt(TajoDataTypes.DataType dataType) {
     TajoDataTypes.Type type = dataType.getType();
-    return type == BOOLEAN || type == INT1 || type == INT2 || type == INT4 || type== INET4;
+    return type == BOOLEAN || type == INT1 || type == INT2 || type == INT4 || type == DATE || type== INET4;
   }
 
   public static int getWordSize(TajoDataTypes.DataType type) {
@@ -290,6 +382,8 @@ class TajoGeneratorAdapter {
       methodvisitor.visitVarInsn(Opcodes.ILOAD, idx);
       break;
     case INT8:
+    case TIMESTAMP:
+    case TIME:
       methodvisitor.visitVarInsn(Opcodes.LLOAD, idx);
       break;
     case FLOAT4:

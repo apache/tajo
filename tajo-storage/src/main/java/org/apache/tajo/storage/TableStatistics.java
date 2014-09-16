@@ -69,6 +69,11 @@ public class TableStatistics {
     numRows++;
   }
 
+  public void incrementRows(long num) {
+    numRows += num;
+  }
+
+
   public long getNumRows() {
     return this.numRows;
   }
@@ -82,7 +87,7 @@ public class TableStatistics {
   }
 
   public void analyzeField(int idx, Datum datum) {
-    if (datum instanceof NullDatum) {
+    if (datum.isNull()) {
       numNulls[idx]++;
       return;
     }

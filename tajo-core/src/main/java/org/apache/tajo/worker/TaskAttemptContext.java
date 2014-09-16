@@ -133,6 +133,12 @@ public class TaskAttemptContext {
                             final Fragment [] fragments,  final Path workDir) {
     this(queryContext, null, queryId, FragmentConvertor.toFragmentProtoArray(fragments), workDir);
   }
+  @VisibleForTesting
+  public TaskAttemptContext(final QueryContext queryContext, final QueryUnitAttemptId queryId,
+                            final Fragment [] fragments,  final Path workDir, ExecutionBlockSharedResource resource) {
+    this(queryContext, null, queryId, FragmentConvertor.toFragmentProtoArray(fragments), workDir);
+    this.sharedResource = resource;
+  }
 
   public TajoConf getConf() {
     return queryContext.getConf();
@@ -167,13 +173,9 @@ public class TaskAttemptContext {
     return sharedResource;
   }
 
-  public EvalNode compileEval(Schema schema, EvalNode eval) {
-    return sharedResource.compileEval(schema, eval);
-  }
-
   public EvalNode getPrecompiledEval(Schema schema, EvalNode eval) {
     if (sharedResource != null) {
-      return sharedResource.getPreCompiledEval(schema, eval);
+      return sharedResource.getCompiledEval(schema, eval);
     } else {
       LOG.debug("Shared resource is not initialized. It is NORMAL in unit tests");
       return eval;

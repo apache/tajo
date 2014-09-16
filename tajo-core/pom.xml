@@ -243,6 +243,14 @@
     <dependency>
       <groupId>org.apache.tajo</groupId>
       <artifactId>tajo-storage</artifactId>
+      <type>jar</type>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-storage</artifactId>
+      <type>test-jar</type>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.tajo</groupId>

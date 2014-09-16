@@ -127,7 +127,19 @@ public class FileUtil {
     return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
   }
 
-  public static boolean isLocalPath(Path path) {
-    return path.toUri().getScheme().equals("file");
+  /**
+   * Get file extension
+   *
+   * @param name FileName
+   * @return File Extension
+   */
+  public static String getExtension(String name) {
+    int lastDelimiterIdx = name.lastIndexOf(".");
+    if (lastDelimiterIdx > -1) {
+      // plus one means skipping a delimiter.
+      return name.substring(lastDelimiterIdx + 1, name.length());
+    } else {
+      return "";
+    }
   }
 }

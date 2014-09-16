@@ -54,11 +54,11 @@ public class DatePartFromTimestamp extends GeneralFunction {
     Datum target = params.get(0);
     TimestampDatum timestamp;
 
-    if(target instanceof NullDatum || params.get(1) instanceof NullDatum) {
+    if(target.isNull() || params.get(1).isNull()) {
       return NullDatum.get();
     }
 
-    if(params.get(1) instanceof TimestampDatum) {
+    if(params.get(1).type() == TIMESTAMP) {
       timestamp = (TimestampDatum)(params.get(1));
     } else {
       return NullDatum.get();

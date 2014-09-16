@@ -34,7 +34,7 @@ public abstract class Coalesce extends GeneralFunction {
     int paramSize = params.size();
     for (int i = 0; i < paramSize; i++) {
       Datum datum = params.get(i);
-      if (datum instanceof NullDatum) {
+      if (datum.isNull()) {
         continue;
       }
       return datum;
