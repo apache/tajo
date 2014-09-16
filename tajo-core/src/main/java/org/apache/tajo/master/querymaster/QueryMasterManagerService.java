@@ -40,8 +40,6 @@ import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.TajoWorker;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 public class QueryMasterManagerService extends CompositeService
     implements QueryMasterProtocol.QueryMasterProtocolService.Interface {
@@ -177,7 +175,7 @@ public class QueryMasterManagerService extends CompositeService
 
   @Override
   public void ping(RpcController controller,
-                   TajoIdProtos.QueryUnitAttemptIdProto attemptId,
+                   TajoIdProtos.ExecutionBlockIdProto requestProto,
                    RpcCallback<PrimitiveProtos.BoolProto> done) {
     done.run(TajoWorker.TRUE_PROTO);
   }
@@ -225,6 +223,7 @@ public class QueryMasterManagerService extends CompositeService
       ExecutionBlockId ebId = new ExecutionBlockId(request.getEbId());
       queryMasterTask.getQuery().getSubQuery(ebId).receiveExecutionBlockReport(request);
     }
+    done.run(TajoWorker.TRUE_PROTO);
   }
 
   @Override

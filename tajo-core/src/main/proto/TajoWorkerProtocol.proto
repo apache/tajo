@@ -201,7 +201,7 @@ message DataChannelProto {
 }
 
 message RunExecutionBlockRequestProto {
-    required string executionBlockId = 1;
+    required ExecutionBlockIdProto executionBlockId = 1;
     required string queryMasterHost = 2;
     required int32 queryMasterPort = 3;
     required string nodeId = 4;
@@ -220,7 +220,8 @@ service TajoWorkerProtocolService {
   rpc ping (QueryUnitAttemptIdProto) returns (BoolProto);
 
   // from QueryMaster(Worker)
-  rpc executeExecutionBlock(RunExecutionBlockRequestProto) returns (BoolProto);
+  rpc startExecutionBlock(RunExecutionBlockRequestProto) returns (BoolProto);
+  rpc stopExecutionBlock(ExecutionBlockIdProto) returns (BoolProto);
   rpc killTaskAttempt(QueryUnitAttemptIdProto) returns (BoolProto);
   rpc cleanup(QueryIdProto) returns (BoolProto);
   rpc cleanupExecutionBlocks(ExecutionBlockListProto) returns (BoolProto);

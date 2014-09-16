@@ -83,15 +83,15 @@ public class TaskAttemptContext {
   private Map<Integer, Long> partitionOutputVolume;
   private HashShuffleAppenderManager hashShuffleAppenderManager;
 
-  public TaskAttemptContext(QueryContext queryContext, final WorkerContext workerContext,
+  public TaskAttemptContext(QueryContext queryContext, final ExecutionBlockContext executionBlockContext,
                             final QueryUnitAttemptId queryId,
                             final FragmentProto[] fragments,
                             final Path workDir) {
     this.queryContext = queryContext;
 
-    if (workerContext != null) { // For unit tests
-      this.workerContext = workerContext;
-      this.sharedResource = workerContext.getSharedResource(queryId.getQueryUnitId().getExecutionBlockId());
+    if (executionBlockContext != null) { // For unit tests
+      this.workerContext = executionBlockContext.getWorkerContext();
+      this.sharedResource = executionBlockContext.getSharedResource();
     }
 
     this.queryId = queryId;
@@ -317,22 +317,45 @@ public class TaskAttemptContext {
   public float getProgress() {
     return this.progress;
   }
-  
+
   public void setProgress(float progress) {
     float previousProgress = this.progress;
-    this.progress = progress;
-    progressChanged.set(previousProgress != progress);
+
+    if (Float.isNaN(progress) || Float.isInfinite(progress)) {
+      this.progress = 0.0f;
+    } else {
+      this.progress = progress;
+    }
+
+    if (previousProgress != progress) {
+      setProgressChanged(true);
+    }
   }
 
-  public boolean isPorgressChanged() {
+  public boolean isProgressChanged() {
     return progressChanged.get();
   }
+
+  public void setProgressChanged(boolean changed){
+    progressChanged.set(changed);
+  }
+
   public void setExecutorProgress(float executorProgress) {
-    float adjustProgress = executorProgress * (1 - fetcherProgress);
-    setProgress(fetcherProgress + adjustProgress);
+    if(Float.isNaN(executorProgress) || Float.isInfinite(executorProgress)){
+      executorProgress = 0.0f;
+    }
+
+    if (hasFetchPhase()) {
+      setProgress(fetcherProgress + (executorProgress * 0.5f));
+    } else {
+      setProgress(executorProgress);
+    }
   }
 
   public void setFetcherProgress(float fetcherProgress) {
+    if(Float.isNaN(fetcherProgress) || Float.isInfinite(fetcherProgress)){
+      fetcherProgress = 0.0f;
+    }
     this.fetcherProgress = fetcherProgress;
   }
 
@@ -375,10 +398,6 @@ public class TaskAttemptContext {
 
   public QueryContext getQueryContext() {
     return queryContext;
-  }
-
-  public WorkerContext getWorkContext() {
-    return workerContext;
   }
 
   public QueryUnitAttemptId getQueryId() {
