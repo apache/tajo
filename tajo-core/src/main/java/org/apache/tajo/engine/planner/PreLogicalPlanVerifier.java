@@ -254,6 +254,10 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <PreLogicalPlanVe
           }
 
           TableDesc table = catalog.getTableDesc(qualifiedName);
+          if (table == null) {
+            context.state.addVerification("It seems target table doesn't exist");
+            return null;
+          }
           if (table.hasPartition()) {
             int columnSize = table.getSchema().getColumns().size();
             columnSize += table.getPartitionMethod().getExpressionSchema().getColumns().size();
