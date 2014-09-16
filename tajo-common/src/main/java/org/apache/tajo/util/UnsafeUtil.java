@@ -28,6 +28,28 @@ import java.nio.ByteBuffer;
 public class UnsafeUtil {
   public static final Unsafe unsafe;
 
+  // offsets
+  public static final int ARRAY_BOOLEAN_BASE_OFFSET;
+  public static final int ARRAY_BYTE_BASE_OFFSET;
+  public static final int ARRAY_SHORT_BASE_OFFSET;
+  public static final int ARRAY_CHAR_BASE_OFFSET;
+  public static final int ARRAY_INT_BASE_OFFSET;
+  public static final int ARRAY_LONG_BASE_OFFSET;
+  public static final int ARRAY_FLOAT_BASE_OFFSET;
+  public static final int ARRAY_DOUBLE_BASE_OFFSET;
+  public static final int ARRAY_OBJECT_BASE_OFFSET;
+
+  // scale
+  public static final int ARRAY_BOOLEAN_INDEX_SCALE;
+  public static final int ARRAY_BYTE_INDEX_SCALE;
+  public static final int ARRAY_SHORT_INDEX_SCALE;
+  public static final int ARRAY_CHAR_INDEX_SCALE;
+  public static final int ARRAY_INT_INDEX_SCALE;
+  public static final int ARRAY_LONG_INDEX_SCALE;
+  public static final int ARRAY_FLOAT_INDEX_SCALE;
+  public static final int ARRAY_DOUBLE_INDEX_SCALE;
+  public static final int ARRAY_OBJECT_INDEX_SCALE;
+
   static {
     Field field;
     try {
@@ -41,6 +63,26 @@ public class UnsafeUtil {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+
+    ARRAY_BOOLEAN_BASE_OFFSET = unsafe.arrayBaseOffset(boolean[].class);
+    ARRAY_BYTE_BASE_OFFSET = unsafe.arrayBaseOffset(byte[].class);
+    ARRAY_SHORT_BASE_OFFSET = unsafe.arrayBaseOffset(short[].class);
+    ARRAY_CHAR_BASE_OFFSET = unsafe.arrayBaseOffset(char[].class);
+    ARRAY_INT_BASE_OFFSET = unsafe.arrayBaseOffset(int[].class);
+    ARRAY_LONG_BASE_OFFSET = unsafe.arrayBaseOffset(long[].class);
+    ARRAY_FLOAT_BASE_OFFSET = unsafe.arrayBaseOffset(float[].class);
+    ARRAY_DOUBLE_BASE_OFFSET = unsafe.arrayBaseOffset(double[].class);
+    ARRAY_OBJECT_BASE_OFFSET = unsafe.arrayBaseOffset(Object[].class);
+
+    ARRAY_BOOLEAN_INDEX_SCALE = unsafe.arrayIndexScale(boolean[].class);
+    ARRAY_BYTE_INDEX_SCALE = unsafe.arrayIndexScale(byte[].class);
+    ARRAY_SHORT_INDEX_SCALE = unsafe.arrayIndexScale(short[].class);
+    ARRAY_CHAR_INDEX_SCALE = unsafe.arrayIndexScale(char[].class);
+    ARRAY_INT_INDEX_SCALE = unsafe.arrayIndexScale(int[].class);
+    ARRAY_LONG_INDEX_SCALE = unsafe.arrayIndexScale(long[].class);
+    ARRAY_FLOAT_INDEX_SCALE = unsafe.arrayIndexScale(float[].class);
+    ARRAY_DOUBLE_INDEX_SCALE = unsafe.arrayIndexScale(double[].class);
+    ARRAY_OBJECT_INDEX_SCALE = unsafe.arrayIndexScale(Object[].class);
   }
 
   public static int alignedSize(int size) {

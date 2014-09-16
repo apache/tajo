@@ -23,6 +23,7 @@ import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.util.SizeOf;
+import org.apache.tajo.util.UnsafeUtil;
 import sun.misc.Unsafe;
 
 /**
@@ -180,7 +181,8 @@ public abstract class OffHeapRowWriter implements RowWriter {
     OffHeapMemory.UNSAFE.putInt(recordStartAddr() + curOffset, bytesLen);
     curOffset += SizeOf.SIZE_OF_INT;
 
-    OffHeapMemory.UNSAFE.copyMemory(val, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, recordStartAddr() + curOffset, bytesLen);
+    OffHeapMemory.UNSAFE.copyMemory(val, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET, null,
+        recordStartAddr() + curOffset, bytesLen);
     curOffset += bytesLen;
   }
 
@@ -193,7 +195,8 @@ public abstract class OffHeapRowWriter implements RowWriter {
     OffHeapMemory.UNSAFE.putInt(recordStartAddr() + curOffset, bytesLen);
     curOffset += SizeOf.SIZE_OF_INT;
 
-    OffHeapMemory.UNSAFE.copyMemory(val, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, recordStartAddr() + curOffset, bytesLen);
+    OffHeapMemory.UNSAFE.copyMemory(val, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET, null,
+        recordStartAddr() + curOffset, bytesLen);
     curOffset += bytesLen;
   }
 

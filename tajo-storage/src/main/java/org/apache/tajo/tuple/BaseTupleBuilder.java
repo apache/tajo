@@ -92,7 +92,7 @@ public class BaseTupleBuilder extends OffHeapRowWriter implements TupleBuilder, 
 
   public HeapTuple buildToHeapTuple() {
     byte [] bytes = new byte[buffer.limit()];
-    UNSAFE.copyMemory(null, address, bytes, Unsafe.ARRAY_BOOLEAN_BASE_OFFSET, buffer.limit());
+    UNSAFE.copyMemory(null, address, bytes, UnsafeUtil.ARRAY_BOOLEAN_BASE_OFFSET, buffer.limit());
     return new HeapTuple(bytes, dataTypes());
   }
 

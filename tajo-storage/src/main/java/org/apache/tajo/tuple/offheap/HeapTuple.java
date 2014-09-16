@@ -35,7 +35,7 @@ import static org.apache.tajo.common.TajoDataTypes.DataType;
 
 public class HeapTuple implements Tuple {
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
-  private static final long BASE_OFFSET = Unsafe.ARRAY_BYTE_BASE_OFFSET;
+  private static final long BASE_OFFSET = UnsafeUtil.ARRAY_BYTE_BASE_OFFSET;
 
   private final byte [] data;
   private final DataType [] types;
@@ -176,7 +176,7 @@ public class HeapTuple implements Tuple {
     pos += SizeOf.SIZE_OF_INT;
 
     byte [] bytes = new byte[len];
-    UNSAFE.copyMemory(data, BASE_OFFSET + pos, bytes, UNSAFE.ARRAY_BYTE_BASE_OFFSET, len);
+    UNSAFE.copyMemory(data, BASE_OFFSET + pos, bytes, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET, len);
     return bytes;
   }
 
@@ -240,7 +240,7 @@ public class HeapTuple implements Tuple {
     pos += SizeOf.SIZE_OF_INT;
 
     byte [] bytes = new byte[len];
-    UNSAFE.copyMemory(data, BASE_OFFSET + pos, bytes, UNSAFE.ARRAY_BYTE_BASE_OFFSET, len);
+    UNSAFE.copyMemory(data, BASE_OFFSET + pos, bytes, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET, len);
     return Convert.utf2chars(bytes);
   }
 

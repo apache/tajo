@@ -66,7 +66,7 @@ public abstract class UnSafeTuple implements Tuple {
 
   public HeapTuple toHeapTuple() {
     byte [] bytes = new byte[length];
-    UNSAFE.copyMemory(null, bb.address() + relativePos, bytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, length);
+    UNSAFE.copyMemory(null, bb.address() + relativePos, bytes, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET, length);
     return new HeapTuple(bytes, types);
   }
 
@@ -206,7 +206,7 @@ public abstract class UnSafeTuple implements Tuple {
     pos += SizeOf.SIZE_OF_INT;
 
     byte [] bytes = new byte[len];
-    UNSAFE.copyMemory(null, pos, bytes, UNSAFE.ARRAY_BYTE_BASE_OFFSET, len);
+    UNSAFE.copyMemory(null, pos, bytes, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET, len);
     return bytes;
   }
 
@@ -243,7 +243,7 @@ public abstract class UnSafeTuple implements Tuple {
     pos += SizeOf.SIZE_OF_INT;
 
     byte [] bytes = new byte[len];
-    UNSAFE.copyMemory(null, pos, bytes, UNSAFE.ARRAY_BYTE_BASE_OFFSET, len);
+    UNSAFE.copyMemory(null, pos, bytes, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET, len);
     return new String(bytes);
   }
 
@@ -277,7 +277,7 @@ public abstract class UnSafeTuple implements Tuple {
     pos += SizeOf.SIZE_OF_INT;
 
     byte [] bytes = new byte[len];
-    UNSAFE.copyMemory(null, pos, bytes, UNSAFE.ARRAY_BYTE_BASE_OFFSET, len);
+    UNSAFE.copyMemory(null, pos, bytes, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET, len);
     return Convert.utf2chars(bytes);
   }
 
