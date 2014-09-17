@@ -20,16 +20,17 @@ package org.apache.tajo.cluster;
 
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.junit.Test;
+
 import static org.junit.Assert.*;
 
 public class TestWorkerConnectionInfo {
 
-	@Test
-	public void testWorkerId() {
+  @Test
+  public void testWorkerId() {
     WorkerConnectionInfo worker = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
     WorkerConnectionInfo worker2 = new WorkerConnectionInfo("host2", 28091, 28092, 21000, 28093, 28080);
 
     assertNotEquals(worker.getId(), worker2.getId());
     assertEquals(worker.getId(), new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080).getId());
-	}
+  }
 }
