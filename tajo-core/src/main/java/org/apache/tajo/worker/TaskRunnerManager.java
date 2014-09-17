@@ -33,6 +33,8 @@ import org.apache.tajo.engine.utils.TupleCache;
 import org.apache.tajo.worker.event.TaskRunnerEvent;
 import org.apache.tajo.worker.event.TaskRunnerStartEvent;
 import org.apache.tajo.worker.event.TaskRunnerStopEvent;
+import org.jboss.netty.util.HashedWheelTimer;
+import org.jboss.netty.util.Timer;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -51,6 +53,7 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
   private AtomicBoolean stop = new AtomicBoolean(false);
   private FinishedTaskCleanThread finishedTaskCleanThread;
   private Dispatcher dispatcher;
+  private HashedWheelTimer rpcTimer;
 
   public TaskRunnerManager(TajoWorker.WorkerContext workerContext, Dispatcher dispatcher) {
     super(TaskRunnerManager.class.getName());
@@ -75,6 +78,7 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
   public void start() {
     finishedTaskCleanThread = new FinishedTaskCleanThread();
     finishedTaskCleanThread.start();
+    rpcTimer = new HashedWheelTimer();
     super.start();
   }
 
@@ -98,6 +102,11 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
     if(finishedTaskCleanThread != null) {
       finishedTaskCleanThread.interrupted();
     }
+
+    if(rpcTimer != null){
+      rpcTimer.stop();
+    }
+
     super.stop();
     if(workerContext.isYarnContainerMode()) {
       workerContext.stopWorker(true);
@@ -204,6 +213,10 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
 
   public TajoConf getTajoConf() {
     return tajoConf;
+  }
+
+  public Timer getRPCTimer(){
+    return rpcTimer;
   }
 
   class FinishedTaskCleanThread extends Thread {
