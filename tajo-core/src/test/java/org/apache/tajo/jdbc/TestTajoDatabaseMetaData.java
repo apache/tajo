@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.common.type.TajoTypeUtil;
 import org.apache.tajo.util.TUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -30,8 +31,7 @@ import java.net.InetSocketAddress;
 import java.sql.*;
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
   private static InetSocketAddress tajoMasterAddress;
@@ -392,6 +392,113 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
 
       executeString("DROP DATABASE db1");
       executeString("DROP DATABASE db2");
+    }
+  }
+
+  @Test
+  public void testEmptyMetaInfo() throws Exception {
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      String connUri = TestTajoJdbc.buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+          TajoConstants.DEFAULT_DATABASE_NAME);
+      Connection conn = DriverManager.getConnection(connUri);
+
+      try {
+        DatabaseMetaData meta = conn.getMetaData();
+
+        ResultSet res = meta.getProcedures(null, null, null);
+        assertNotNull(res);
+        assertFalse(res.next());
+
+        res = meta.getProcedureColumns(null, null, null, null);
+        assertNotNull(res);
+        assertFalse(res.next());
+
+        res = meta.getUDTs(null, null, null, null);
+        assertNotNull(res);
+        assertFalse(res.next());
+
+        res = meta.getColumnPrivileges(null, null, null, null);
+        assertNotNull(res);
+        assertFalse(res.next());
+
+        res = meta.getTablePrivileges(null, null, null);
+        assertNotNull(res);
+        assertFalse(res.next());
+
+        res = meta.getBestRowIdentifier(null, null, null, 0, false);
+        assertNotNull(res);
+        assertFalse(res.next());
+
+        res = meta.getVersionColumns(null, null, null);
+        assertNotNull(res);
+        assertFalse(res.next());
+
+        res = meta.getPrimaryKeys(null, null, null);
+        assertNotNull(res);
+        assertFalse(res.next());
+
+        res = meta.getImportedKeys(null, null, null);
+        assertNotNull(res);
+        assertFalse(res.next());
+
+        res = meta.getExportedKeys(null, null, null);
+        assertNotNull(res);
+        assertFalse(res.next());
+
+        res = meta.getCrossReference(null, null, null, null, null, null);
+        assertNotNull(res);
+        assertFalse(res.next());
+
+        res = meta.getIndexInfo(null, null, null, false, false);
+        assertNotNull(res);
+        assertFalse(res.next());
+
+        res = meta.getClientInfoProperties();
+        assertNotNull(res);
+        assertFalse(res.next());
+      } finally {
+        conn.close();
+      }
+    }
+  }
+
+  @Test
+  public void testGetTypeInfo() throws Exception {
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      String connUri = TestTajoJdbc.buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+          TajoConstants.DEFAULT_DATABASE_NAME);
+      Connection conn = DriverManager.getConnection(connUri);
+
+      try {
+        DatabaseMetaData meta = conn.getMetaData();
+
+        ResultSet res = meta.getTypeInfo();
+
+        assertNotNull(res);
+
+        int numTypes = 0;
+
+        String[] columnNames = {"TYPE_NAME", "DATA_TYPE", "PRECISION", "LITERAL_PREFIX", "LITERAL_SUFFIX",
+            "CREATE_PARAMS", "NULLABLE", "CASE_SENSITIVE", "SEARCHABLE", "UNSIGNED_ATTRIBUTE",
+            "FIXED_PREC_SCALE", "AUTO_INCREMENT", "LOCAL_TYPE_NAME", "MINIMUM_SCALE", "MAXIMUM_SCALE",
+            "SQL_DATA_TYPE", "SQL_DATETIME_SUB", "NUM_PREC_RADIX"};
+
+        while (res.next()) {
+          for (int i = 0; i < columnNames.length; i++) {
+            Object value = res.getObject(columnNames[i]);
+            if (i == 15 || i == 16) {
+              assertNull(value);
+            } else {
+              assertNotNull(value);
+            }
+          }
+          numTypes++;
+        }
+
+        assertEquals(numTypes, TajoTypeUtil.getTypeInfos().size());
+      } finally {
+        conn.close();
+      }
     }
   }
 }
