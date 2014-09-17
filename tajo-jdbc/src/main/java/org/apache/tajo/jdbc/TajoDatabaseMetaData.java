@@ -214,17 +214,17 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public int getMaxConnections() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxConnections not supported");
+    return CatalogConstants.MAX_CONNECTION_LENGTH;
   }
 
   @Override
   public int getMaxCursorNameLength() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxCursorNameLength not supported");
+    return CatalogConstants.MAX_IDENTIFIER_LENGTH;
   }
 
   @Override
   public int getMaxIndexLength() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxIndexLength not supported");
+    return 0;
   }
 
   @Override
@@ -254,12 +254,12 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public int getMaxStatementLength() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxStatementLength not supported");
+    return CatalogConstants.MAX_STATEMENT_LENGTH;
   }
 
   @Override
   public int getMaxStatements() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxStatements not supported");
+    return 0;
   }
 
   @Override
@@ -285,13 +285,13 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   @Override
   public boolean dataDefinitionCausesTransactionCommit()
       throws SQLException {
-    throw new SQLFeatureNotSupportedException("dataDefinitionCausesTransactionCommit not supported");
+    return false;
   }
 
   @Override
   public boolean dataDefinitionIgnoredInTransactions()
       throws SQLException {
-    throw new SQLFeatureNotSupportedException("dataDefinitionIgnoredInTransactions not supported");
+    return false;
   }
 
   @Override

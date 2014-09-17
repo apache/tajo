@@ -25,6 +25,8 @@ public class CatalogConstants {
   public final static int MAX_IDENTIFIER_LENGTH = 128;
   // Linux and BSD's max username length is 32. For compatibility with other systems, we should follow it.
   public final static int MAX_USERNAME_LENGTH = 32;
+  public final static int MAX_STATEMENT_LENGTH = 128 * 1024;
+  public final static int MAX_CONNECTION_LENGTH = 10 * 1024;
 
   public static final String STORE_CLASS="tajo.catalog.store.class";
 
