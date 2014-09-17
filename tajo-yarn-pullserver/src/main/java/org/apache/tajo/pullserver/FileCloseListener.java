@@ -16,14 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.pullserver.listener;
+package org.apache.tajo.pullserver;
 
-import org.apache.hadoop.mapred.FadvisedFileRegion;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
-import org.apache.tajo.pullserver.TajoPullServerService;
 
-@Deprecated
 public class FileCloseListener implements ChannelFutureListener {
 
   private FadvisedFileRegion filePart;
@@ -45,6 +42,9 @@ public class FileCloseListener implements ChannelFutureListener {
   //      attribute to appropriate spill output
   @Override
   public void operationComplete(ChannelFuture future) {
+    if(future.isSuccess()){
+      filePart.transferSuccessful();
+    }
     filePart.releaseExternalResources();
     if (pullServerService != null) {
       pullServerService.completeFileChunk(filePart, requestUri, startTime);
