@@ -255,7 +255,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <PreLogicalPlanVe
 
           TableDesc table = catalog.getTableDesc(qualifiedName);
           if (table == null) {
-            context.state.addVerification("It seems target table doesn't exist");
+            context.state.addVerification(String.format("relation \"%s\" does not exist", qualifiedName));
             return null;
           }
           if (table.hasPartition()) {
