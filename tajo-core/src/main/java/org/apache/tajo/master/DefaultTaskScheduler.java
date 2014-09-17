@@ -19,6 +19,7 @@
 package org.apache.tajo.master;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -94,10 +95,13 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             synchronized (schedulingThread){
               schedulingThread.wait(100);
             }
+            schedule();
           } catch (InterruptedException e) {
             break;
+          } catch (Throwable e) {
+            LOG.fatal(e.getMessage(), e);
+            break;
           }
-          schedule();
         }
         LOG.info("TaskScheduler schedulingThread stopped");
       }
@@ -451,7 +455,9 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         for (DataLocation location : queryUnitAttempt.getQueryUnit().getDataLocations()) {
           if (!this.getHost().equals(location.getHost())) {
             HostVolumeMapping volumeMapping = scheduledRequests.leafTaskHostMapping.get(location.getHost());
-            volumeMapping.removeQueryUnitAttempt(location.getVolumeId(), queryUnitAttempt);
+            if (volumeMapping != null) {
+              volumeMapping.removeQueryUnitAttempt(location.getVolumeId(), queryUnitAttempt);
+            }
           }
         }
       }
@@ -588,11 +594,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     // if the task is not included in leafTasks and nonLeafTasks.
     private final Set<QueryUnitAttemptId> leafTasks = Collections.synchronizedSet(new HashSet<QueryUnitAttemptId>());
     private final Set<QueryUnitAttemptId> nonLeafTasks = Collections.synchronizedSet(new HashSet<QueryUnitAttemptId>());
-    private Map<String, HostVolumeMapping> leafTaskHostMapping = new HashMap<String, HostVolumeMapping>();
-    private final Map<String, HashSet<QueryUnitAttemptId>> leafTasksRackMapping =
-        new HashMap<String, HashSet<QueryUnitAttemptId>>();
+    private Map<String, HostVolumeMapping> leafTaskHostMapping = Maps.newConcurrentMap();
+    private final Map<String, HashSet<QueryUnitAttemptId>> leafTasksRackMapping = Maps.newConcurrentMap();
 
-    private void addLeafTask(QueryUnitAttemptScheduleEvent event) {
+    private synchronized void addLeafTask(QueryUnitAttemptScheduleEvent event) {
       QueryUnitAttempt queryUnitAttempt = event.getQueryUnitAttempt();
       List<DataLocation> locations = queryUnitAttempt.getQueryUnit().getDataLocations();
 
@@ -645,8 +650,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       HostVolumeMapping hostVolumeMapping = leafTaskHostMapping.get(host);
 
       if (hostVolumeMapping != null) { //tajo host is located in hadoop datanode
-        while (hostVolumeMapping.getRemainingLocalTaskSize() > 0) {
+        for (int i = 0; i < hostVolumeMapping.getRemainingLocalTaskSize(); i++) {
           QueryUnitAttemptId attemptId = hostVolumeMapping.getLocalTask(containerId);
+
+          if(attemptId == null) break;
           //find remaining local task
           if (leafTasks.contains(attemptId)) {
             leafTasks.remove(attemptId);
@@ -662,22 +669,30 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
     private QueryUnitAttemptId allocateRackTask(String host) {
 
-      List<HostVolumeMapping> remainingTasks = new ArrayList<HostVolumeMapping>(leafTaskHostMapping.values());
+      List<HostVolumeMapping> remainingTasks = Lists.newArrayList(leafTaskHostMapping.values());
       String rack = RackResolver.resolve(host).getNetworkLocation();
       QueryUnitAttemptId attemptId = null;
 
       if (remainingTasks.size() > 0) {
-        //find largest remaining task of other host in rack
-        Collections.sort(remainingTasks, new Comparator<HostVolumeMapping>() {
-          @Override
-          public int compare(HostVolumeMapping v1, HostVolumeMapping v2) {
-            // descending remaining tasks
-            return Integer.valueOf(v2.remainTasksNum.get()).compareTo(Integer.valueOf(v1.remainTasksNum.get()));
-          }
-        });
+        synchronized (scheduledRequests) {
+          //find largest remaining task of other host in rack
+          Collections.sort(remainingTasks, new Comparator<HostVolumeMapping>() {
+            @Override
+            public int compare(HostVolumeMapping v1, HostVolumeMapping v2) {
+              // descending remaining tasks
+              if (v2.remainTasksNum.get() > v1.remainTasksNum.get()) {
+                return 1;
+              } else if (v2.remainTasksNum.get() == v1.remainTasksNum.get()) {
+                return 0;
+              } else {
+                return -1;
+              }
+            }
+          });
+        }
 
         for (HostVolumeMapping tasks : remainingTasks) {
-          while (tasks.getRemainingLocalTaskSize() > 0){
+          for (int i = 0; i < tasks.getRemainingLocalTaskSize(); i++) {
             QueryUnitAttemptId tId = tasks.getQueryUnitAttemptIdByRack(rack);
 
             if (tId == null) break;
