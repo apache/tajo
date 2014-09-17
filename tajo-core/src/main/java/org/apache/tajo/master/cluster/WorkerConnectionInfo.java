@@ -23,7 +23,7 @@ import org.apache.tajo.common.ProtoObject;
 import static org.apache.tajo.TajoProtos.WorkerConnectionInfoProto;
 
 public class WorkerConnectionInfo implements ProtoObject<WorkerConnectionInfoProto>, Comparable<WorkerConnectionInfo> {
-  private WorkerConnectionInfoProto.Builder builder;
+
   /**
   * unique worker id
   */
@@ -54,7 +54,6 @@ public class WorkerConnectionInfo implements ProtoObject<WorkerConnectionInfoPro
   private int httpInfoPort;
 
   public WorkerConnectionInfo() {
-    builder = WorkerConnectionInfoProto.newBuilder();
   }
 
   public WorkerConnectionInfo(WorkerConnectionInfoProto proto) {
@@ -114,6 +113,7 @@ public class WorkerConnectionInfo implements ProtoObject<WorkerConnectionInfoPro
 
   @Override
   public WorkerConnectionInfoProto getProto() {
+    WorkerConnectionInfoProto.Builder builder = WorkerConnectionInfoProto.newBuilder();
     builder.setId(id)
         .setHost(host)
         .setPeerRpcPort(peerRpcPort)
