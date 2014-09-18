@@ -18,42 +18,26 @@
 
 package org.apache.tajo.worker;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.net.NetUtils;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.api.records.impl.pb.ContainerIdPBImpl;
 import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryUnitAttemptId;
-import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryUnitRequestImpl;
-import org.apache.tajo.engine.utils.TupleCache;
-import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.rpc.CallFuture;
-import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.rpc.RpcConnectionPool;
-import org.apache.tajo.storage.StorageUtil;
-import org.apache.tajo.util.TajoIdUtils;
-import org.apache.tajo.worker.TajoWorker.WorkerContext;
 
-import java.net.InetSocketAddress;
-import java.util.Map;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
 
@@ -67,142 +51,78 @@ public class TaskRunner extends AbstractService {
   private TajoConf systemConf;
 
   private volatile boolean stopped = false;
+  private Path baseDirPath;
 
-  private ExecutionBlockId executionBlockId;
-  private QueryId queryId;
   private NodeId nodeId;
   private ContainerId containerId;
 
-  // Cluster Management
-  //private TajoWorkerProtocol.TajoWorkerProtocolService.Interface master;
-
-  // for temporal or intermediate files
-  private FileSystem localFS;
-  // for input files
-  private FileSystem defaultFS;
-
-  private TajoQueryEngine queryEngine;
-
   // for Fetcher
   private ExecutorService fetchLauncher;
-  // It keeps all of the query unit attempts while a TaskRunner is running.
-  private final Map<QueryUnitAttemptId, Task> tasks = new ConcurrentHashMap<QueryUnitAttemptId, Task>();
-
-  private LocalDirAllocator lDirAllocator;
 
   // A thread to receive each assigned query unit and execute the query unit
   private Thread taskLauncher;
 
   // Contains the object references related for TaskRunner
-  private TaskRunnerContext taskRunnerContext;
-  // for the doAs block
-  private UserGroupInformation taskOwner;
-
-  // for the local temporal dir
-  private String baseDir;
-  private Path baseDirPath;
-
-  private TaskRunnerManager taskRunnerManager;
+  private ExecutionBlockContext executionBlockContext;
 
   private long finishTime;
 
-  private RpcConnectionPool connPool;
-
-  private InetSocketAddress qmMasterAddr;
-
   private TaskRunnerHistory history;
 
-  public TaskRunner(TaskRunnerManager taskRunnerManager, TajoConf conf, String[] args) {
+  public TaskRunner(ExecutionBlockContext executionBlockContext, String[] args) {
     super(TaskRunner.class.getName());
 
-    this.taskRunnerManager = taskRunnerManager;
-    this.connPool = RpcConnectionPool.getPool(conf);
+    ThreadFactoryBuilder builder = new ThreadFactoryBuilder();
+    ThreadFactory fetcherFactory = builder.setNameFormat("Fetcher executor #%d").build();
+    this.systemConf = executionBlockContext.getConf();
     this.fetchLauncher = Executors.newFixedThreadPool(
-        conf.getIntVar(ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM));
+        systemConf.getIntVar(ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM), fetcherFactory);
     try {
-      final ExecutionBlockId executionBlockId = TajoIdUtils.createExecutionBlockId(args[1]);
-
-      LOG.info("Tajo Root Dir: " + conf.getVar(ConfVars.ROOT_DIR));
-      LOG.info("Worker Local Dir: " + conf.getVar(ConfVars.WORKER_TEMPORAL_DIR));
-
-      UserGroupInformation.setConfiguration(conf);
-
       // QueryBlockId from String
       // NodeId has a form of hostname:port.
-      NodeId nodeId = ConverterUtils.toNodeId(args[2]);
+      this.nodeId = ConverterUtils.toNodeId(args[2]);
       this.containerId = ConverterUtils.toContainerId(args[3]);
 
 
       // QueryMaster's address
-      String host = args[4];
-      int port = Integer.parseInt(args[5]);
-      this.qmMasterAddr = NetUtils.createSocketAddrForHost(host, port);
+      //String host = args[4];
+      //int port = Integer.parseInt(args[5]);
 
-      LOG.info("QueryMaster Address:" + qmMasterAddr);
-      // TODO - 'load credential' should be implemented
-      // Getting taskOwner
-      UserGroupInformation taskOwner = UserGroupInformation.createRemoteUser(conf.getVar(ConfVars.USERNAME));
-      //taskOwner.addToken(token);
-
-      // initialize MasterWorkerProtocol as an actual task owner.
-//      this.client =
-//          taskOwner.doAs(new PrivilegedExceptionAction<AsyncRpcClient>() {
-//            @Override
-//            public AsyncRpcClient run() throws Exception {
-//              return new AsyncRpcClient(TajoWorkerProtocol.class, masterAddr);
-//            }
-//          });
-//      this.master = client.getStub();
-
-      this.executionBlockId = executionBlockId;
-      this.queryId = executionBlockId.getQueryId();
-      this.nodeId = nodeId;
-      this.taskOwner = taskOwner;
-
-      this.taskRunnerContext = new TaskRunnerContext();
-      this.history = new TaskRunnerHistory(containerId, executionBlockId);
+      this.executionBlockContext = executionBlockContext;
+      this.history = executionBlockContext.createTaskRunnerHistory(this);
       this.history.setState(getServiceState());
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
     }
   }
 
-  protected void sendExecutionBlockReport(TajoWorkerProtocol.ExecutionBlockReport reporter) throws Exception {
-    QueryMasterProtocol.QueryMasterProtocolService.Interface qmClientService = null;
-    NettyClientBase qmClient = null;
-    try {
-      qmClient = connPool.getConnection(qmMasterAddr, QueryMasterProtocol.class, true);
-      qmClientService = qmClient.getStub();
-      qmClientService.doneExecutionBlock(null, reporter, NullCallback.get());
-    } finally {
-      connPool.releaseConnection(qmClient);
-    }
+  // TODO this is expensive. we should change to unique id
+  public String getId() {
+    return getId(getContext().getExecutionBlockId(), containerId);
   }
 
-  public String getId() {
-    return getId(executionBlockId, containerId);
+  public NodeId getNodeId(){
+    return nodeId;
+  }
+
+  public ContainerId getContainerId(){
+    return containerId;
   }
 
   public static String getId(ExecutionBlockId executionBlockId, ContainerId containerId) {
     return executionBlockId + "," + containerId;
   }
 
-  public static Path getBaseOutputDir(ExecutionBlockId executionBlockId){
-    Path workDir =
-        StorageUtil.concatPath(
-            executionBlockId.getQueryId().toString(),
-            "output",
-            String.valueOf(executionBlockId.getId()));
-    return workDir;
+  public TaskRunnerHistory getHistory(){
+    return history;
   }
 
-  public static Path getBaseInputDir(ExecutionBlockId executionBlockId) {
-    Path workDir =
-        StorageUtil.concatPath(
-            executionBlockId.getQueryId().toString(),
-            "in",
-            executionBlockId.toString());
-    return workDir;
+  public Path getTaskBaseDir(){
+    return baseDirPath;
+  }
+
+  public ExecutorService getFetchLauncher() {
+    return fetchLauncher;
   }
 
   @Override
@@ -210,27 +130,13 @@ public class TaskRunner extends AbstractService {
     this.systemConf = (TajoConf)conf;
 
     try {
-      // initialize DFS and LocalFileSystems
-      defaultFS = TajoConf.getTajoRootDir(systemConf).getFileSystem(conf);
-      localFS = FileSystem.getLocal(conf);
-
       // the base dir for an output dir
-      baseDir = getBaseOutputDir(executionBlockId).toString();
-
-      // initialize LocalDirAllocator
-      lDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
-
-      baseDirPath = localFS.makeQualified(lDirAllocator.getLocalPathForWrite(baseDir, conf));
-      LOG.info("TaskRunner basedir is created (" + baseDir +")");
-
-      // Setup QueryEngine according to the query plan
-      // Here, we can setup row-based query engine or columnar query engine.
-      this.queryEngine = new TajoQueryEngine(systemConf);
+      baseDirPath = getContext().createBaseDir();
+      LOG.info("TaskRunner basedir is created (" + baseDirPath +")");
     } catch (Throwable t) {
       t.printStackTrace();
       LOG.error(t);
     }
-
     super.init(conf);
     this.history.setState(getServiceState());
   }
@@ -253,23 +159,10 @@ public class TaskRunner extends AbstractService {
     // If this flag become true, taskLauncher will be terminated.
     this.stopped = true;
 
-    // If TaskRunner is stopped, all running or pending tasks will be marked as failed.
-    for (Task task : tasks.values()) {
-      if (task.getStatus() == TaskAttemptState.TA_PENDING ||
-          task.getStatus() == TaskAttemptState.TA_RUNNING) {
-        task.setState(TaskAttemptState.TA_FAILED);
-        task.abort();
-      }
-    }
-
-    tasks.clear();
     fetchLauncher.shutdown();
     fetchLauncher = null;
-    this.queryEngine = null;
 
-    TupleCache.getInstance().removeBroadcastCache(executionBlockId);
-
-    LOG.info("Stop TaskRunner: " + executionBlockId);
+    LOG.info("Stop TaskRunner: " + getId());
     synchronized (this) {
       notifyAll();
     }
@@ -281,71 +174,8 @@ public class TaskRunner extends AbstractService {
     return finishTime;
   }
 
-  public class TaskRunnerContext {
-    public AtomicInteger completedTasksNum = new AtomicInteger();
-    public AtomicInteger succeededTasksNum = new AtomicInteger();
-    public AtomicInteger killedTasksNum = new AtomicInteger();
-    public AtomicInteger failedTasksNum = new AtomicInteger();
-
-    public TajoConf getConf() {
-      return systemConf;
-    }
-
-    public String getNodeId() {
-      return nodeId.toString();
-    }
-
-    public FileSystem getLocalFS() {
-      return localFS;
-    }
-
-    public FileSystem getDefaultFS() {
-      return defaultFS;
-    }
-
-    public LocalDirAllocator getLocalDirAllocator() {
-      return lDirAllocator;
-    }
-
-    public TajoQueryEngine getTQueryEngine() {
-      return queryEngine;
-    }
-
-    public Map<QueryUnitAttemptId, Task> getTasks() {
-      return tasks;
-    }
-
-    public Task getTask(QueryUnitAttemptId taskId) {
-      return tasks.get(taskId);
-    }
-
-    public ExecutorService getFetchLauncher() {
-      return fetchLauncher;
-    }
-
-    public Path getBaseDir() {
-      return baseDirPath;
-    }
-
-    public ExecutionBlockId getExecutionBlockId() {
-      return executionBlockId;
-    }
-
-    public void addTaskHistory(QueryUnitAttemptId quAttemptId, TaskHistory taskHistory) {
-      history.addTaskHistory(quAttemptId, taskHistory);
-    }
-
-    public TaskRunnerHistory getExcutionBlockHistory(){
-      return history;
-    }
-
-    public WorkerContext getWorkerContext() {
-      return taskRunnerManager.getWorkerContext();
-    }
-  }
-
-  public TaskRunnerContext getContext() {
-    return taskRunnerContext;
+  public ExecutionBlockContext getContext() {
+    return executionBlockContext;
   }
 
   static void fatalError(QueryMasterProtocolService.Interface qmClientService,
@@ -372,17 +202,15 @@ public class TaskRunner extends AbstractService {
           QueryUnitRequestProto taskRequest = null;
 
           while(!stopped) {
-            NettyClientBase qmClient = null;
-            QueryMasterProtocolService.Interface qmClientService = null;
+            QueryMasterProtocolService.Interface qmClientService;
             try {
-              qmClient = connPool.getConnection(qmMasterAddr, QueryMasterProtocol.class, true);
-              qmClientService = qmClient.getStub();
+              qmClientService = getContext().getQueryMasterStub();
 
               if (callFuture == null) {
                 callFuture = new CallFuture<QueryUnitRequestProto>();
                 LOG.info("Request GetTask: " + getId());
                 GetTaskRequestProto request = GetTaskRequestProto.newBuilder()
-                    .setExecutionBlockId(executionBlockId.getProto())
+                    .setExecutionBlockId(getExecutionBlockId().getProto())
                     .setContainerId(((ContainerIdPBImpl) containerId).getProto())
                     .build();
 
@@ -414,17 +242,14 @@ public class TaskRunner extends AbstractService {
                 if (taskRequest.getShouldDie()) {
                   LOG.info("Received ShouldDie flag:" + getId());
                   stop();
-                  if(taskRunnerManager != null) {
-                    //notify to TaskRunnerManager
-                    taskRunnerManager.stopTask(getId());
-                    taskRunnerManager= null;
-                  }
+                  //notify to TaskRunnerManager
+                  getContext().stopTaskRunner(getId());
                 } else {
-                  taskRunnerManager.getWorkerContext().getWorkerSystemMetrics().counter("query", "task").inc();
+                  getContext().getWorkerContext().getWorkerSystemMetrics().counter("query", "task").inc();
                   LOG.info("Accumulated Received Task: " + (++receivedNum));
 
                   QueryUnitAttemptId taskAttemptId = new QueryUnitAttemptId(taskRequest.getId());
-                  if (tasks.containsKey(taskAttemptId)) {
+                  if (getContext().getTasks().containsKey(taskAttemptId)) {
                     LOG.error("Duplicate Task Attempt: " + taskAttemptId);
                     fatalError(qmClientService, taskAttemptId, "Duplicate Task Attempt: " + taskAttemptId);
                     continue;
@@ -433,9 +258,9 @@ public class TaskRunner extends AbstractService {
                   LOG.info("Initializing: " + taskAttemptId);
                   Task task;
                   try {
-                    task = new Task(taskAttemptId, taskRunnerContext, qmClientService,
+                    task = new Task(getId(), getTaskBaseDir(), taskAttemptId, executionBlockContext,
                         new QueryUnitRequestImpl(taskRequest));
-                    tasks.put(taskAttemptId, task);
+                    getContext().getTasks().put(taskAttemptId, task);
 
                     task.init();
                     if (task.hasFetchPhase()) {
@@ -453,9 +278,7 @@ public class TaskRunner extends AbstractService {
                 }
               }
             } catch (Throwable t) {
-              t.printStackTrace();
-            } finally {
-              connPool.releaseConnection(qmClient);
+              LOG.fatal(t.getMessage(), t);
             }
           }
         }
@@ -463,12 +286,6 @@ public class TaskRunner extends AbstractService {
       taskLauncher.start();
     } catch (Throwable t) {
       LOG.fatal("Unhandled exception. Starting shutdown.", t);
-    } finally {
-      for (Task t : tasks.values()) {
-        if (t.getStatus() != TaskAttemptState.TA_SUCCEEDED) {
-          t.abort();
-        }
-      }
     }
   }
 
@@ -480,6 +297,6 @@ public class TaskRunner extends AbstractService {
   }
 
   public ExecutionBlockId getExecutionBlockId() {
-    return this.executionBlockId;
+    return getContext().getExecutionBlockId();
   }
 }
