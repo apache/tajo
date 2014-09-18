@@ -157,7 +157,7 @@ message GetQueryStatusResponse {
 message GetQueryResultDataRequest {
   required SessionIdProto sessionId = 1;
   required QueryIdProto queryId = 2;
-  required int32 fetchSize = 3;
+  required int32 fetchRowNum = 3;
 }
 
 message GetQueryResultDataResponse {

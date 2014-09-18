@@ -34,7 +34,10 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.PartitionMethodProto;
 import org.apache.tajo.cli.InvalidClientSessionException;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -532,16 +535,16 @@ public class TajoClient implements Closeable {
     if (response.hasTableDesc()) {
       // non-forward query
       // select * from table1 [limit 10]
-      int fetchSize = client.getConf().getIntVar(ConfVars.$RESULT_SET_FETCH_SIZE);
+      int fetchRowNum = client.getConf().getIntVar(ConfVars.$RESULT_SET_FETCH_ROWNUM);
       if (response.hasSessionVariables()) {
         for (KeyValueProto eachKeyValue: response.getSessionVariables().getKeyvalList()) {
-          if (eachKeyValue.getKey().equals(SessionVars.FETCH_SIZE.keyname())) {
-            fetchSize = Integer.parseInt(eachKeyValue.getValue());
+          if (eachKeyValue.getKey().equals(SessionVars.FETCH_ROWNUM.keyname())) {
+            fetchRowNum = Integer.parseInt(eachKeyValue.getValue());
           }
         }
       }
       TableDesc tableDesc = new TableDesc(response.getTableDesc());
-      return new FetchResultSet(client, tableDesc.getLogicalSchema(), new QueryId(response.getQueryId()), fetchSize);
+      return new FetchResultSet(client, tableDesc.getLogicalSchema(), new QueryId(response.getQueryId()), fetchRowNum);
     } else {
       // simple eval query
       // select substr('abc', 1, 2)
@@ -616,7 +619,7 @@ public class TajoClient implements Closeable {
     }
   }
 
-  public TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchSize) throws ServiceException {
+  public TajoMemoryResultSet fetchNextQueryResult(final QueryId queryId, final int fetchRowNum) throws ServiceException {
     try {
       ServerCallable<SerializedResultSet> callable =
           new ServerCallable<SerializedResultSet>(connPool, getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
@@ -626,7 +629,7 @@ public class TajoClient implements Closeable {
           GetQueryResultDataRequest.Builder builder = GetQueryResultDataRequest.newBuilder();
           builder.setSessionId(sessionId);
           builder.setQueryId(queryId.getProto());
-          builder.setFetchSize(fetchSize);
+          builder.setFetchRowNum(fetchRowNum);
           try {
             GetQueryResultDataResponse response = tajoMasterService.getQueryResultData(null, builder.build());
             if (response.getResultCode() == ResultCode.ERROR) {
@@ -795,6 +798,25 @@ public class TajoClient implements Closeable {
   public TableDesc createExternalTable(final String tableName, final Schema schema, final Path path,
                                        final TableMeta meta)
       throws SQLException, ServiceException {
+    return createExternalTable(tableName, schema, path, meta, null);
+  }
+
+  /**
+   * Create an external table.
+   *
+   * @param tableName The table name to be created. This name is case sensitive. This name can be qualified or not.
+   *                  If the table name is not qualified, the current database in the session will be used.
+   * @param schema The schema
+   * @param path The external table location
+   * @param meta Table meta
+   * @param partitionMethodDesc Table partition description
+   * @return the created table description.
+   * @throws SQLException
+   * @throws ServiceException
+   */
+  public TableDesc createExternalTable(final String tableName, final Schema schema, final Path path,
+                                       final TableMeta meta, final PartitionMethodDesc partitionMethodDesc)
+      throws SQLException, ServiceException {
     return new ServerCallable<TableDesc>(connPool, getTajoMasterAddr(),
         TajoMasterClientProtocol.class, false, true) {
       public TableDesc call(NettyClientBase client) throws ServiceException, SQLException {
@@ -808,6 +830,9 @@ public class TajoClient implements Closeable {
         builder.setSchema(schema.getProto());
         builder.setMeta(meta.getProto());
         builder.setPath(path.toUri().toString());
+        if (partitionMethodDesc != null) {
+          builder.setPartition(partitionMethodDesc.getProto());
+        }
         TableResponse res = tajoMasterService.createExternalTable(null, builder.build());
         if (res.getResultCode() == ResultCode.OK) {
           return CatalogUtil.newTableDesc(res.getTableDesc());

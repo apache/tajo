@@ -19,18 +19,31 @@
 package org.apache.tajo.master;
 
 import com.google.protobuf.ByteString;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.QueryUnitId;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.planner.PlannerUtil;
+import org.apache.tajo.engine.planner.logical.ScanNode;
 import org.apache.tajo.engine.planner.physical.SeqScanExec;
+import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
+import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class NonForwardQueryResultScanner {
+  private static final int MAX_FILE_NUM_PER_SCAN = 100;
+
   private QueryId queryId;
   private String sessionId;
   private SeqScanExec scanExec;
@@ -38,14 +51,50 @@ public class NonForwardQueryResultScanner {
   private RowStoreEncoder rowEncoder;
   private int maxRow;
   private int currentNumRows;
+  private TaskAttemptContext taskContext;
+  private TajoConf tajoConf;
+  private ScanNode scanNode;
 
-  public NonForwardQueryResultScanner(String sessionId, QueryId queryId, TableDesc tableDesc, int maxRow) {
+  private int currentFileIndex = 0;
+
+  public NonForwardQueryResultScanner(TajoConf tajoConf, String sessionId,
+                                      QueryId queryId,
+                                      ScanNode scanNode,
+                                      TableDesc tableDesc,
+                                      int maxRow) throws IOException {
+    this.tajoConf = tajoConf;
     this.sessionId = sessionId;
     this.queryId = queryId;
+    this.scanNode = scanNode;
     this.tableDesc = tableDesc;
-    this.rowEncoder =  RowStoreUtil.createEncoder(tableDesc.getLogicalSchema());
-
     this.maxRow = maxRow;
+
+    this.rowEncoder =  RowStoreUtil.createEncoder(tableDesc.getLogicalSchema());
+  }
+
+  public void init() throws IOException {
+    initSeqScanExec();
+  }
+
+  private void initSeqScanExec() throws IOException {
+    FragmentProto[] fragments = PlannerUtil.getNonZeroLengthDataFiles(tajoConf, tableDesc,
+        currentFileIndex, MAX_FILE_NUM_PER_SCAN);
+    if (fragments != null && fragments.length > 0) {
+      this.taskContext = new TaskAttemptContext(
+          new QueryContext(tajoConf), null,
+          new QueryUnitAttemptId(new QueryUnitId(new ExecutionBlockId(queryId, 1), 0), 0),
+          fragments, null);
+
+      try {
+        // scanNode must be clone cause SeqScanExec change target in the case of a partitioned table.
+        scanExec = new SeqScanExec(taskContext,
+            StorageManagerFactory.getStorageManager(tajoConf), (ScanNode)scanNode.clone(), fragments);
+      } catch (CloneNotSupportedException e) {
+        throw new IOException(e.getMessage(), e);
+      }
+      scanExec.init();
+      currentFileIndex += fragments.length;
+    }
   }
 
   public QueryId getQueryId() {
@@ -71,7 +120,7 @@ public class NonForwardQueryResultScanner {
     }
   }
 
-  public List<ByteString> getNextRows(int fetchSize) throws IOException {
+  public List<ByteString> getNextRows(int fetchRowNum) throws IOException {
     List<ByteString> rows = new ArrayList<ByteString>();
     if (scanExec == null) {
       return rows;
@@ -81,12 +130,26 @@ public class NonForwardQueryResultScanner {
     while (true) {
       Tuple tuple = scanExec.next();
       if (tuple == null) {
-        break;
+        scanExec.close();
+        scanExec = null;
+
+        initSeqScanExec();
+        if (scanExec != null) {
+          tuple = scanExec.next();
+        }
+        if (tuple == null) {
+          if (scanExec != null ) {
+            scanExec.close();
+            scanExec = null;
+          }
+
+          break;
+        }
       }
       rows.add(ByteString.copyFrom((rowEncoder.toBytes(tuple))));
       rowCount++;
       currentNumRows++;
-      if (rowCount >= fetchSize) {
+      if (rowCount >= fetchRowNum) {
         break;
       }
 

@@ -501,7 +501,7 @@ public class TajoMasterClientService extends AbstractService {
           throw new ServiceException("No NonForwardQueryResultScanner for " + queryId);
         }
 
-        List<ByteString> rows = queryResultScanner.getNextRows(request.getFetchSize());
+        List<ByteString> rows = queryResultScanner.getNextRows(request.getFetchRowNum());
         SerializedResultSet.Builder resultSetBuilder = SerializedResultSet.newBuilder();
         resultSetBuilder.setSchema(queryResultScanner.getTableDesc().getLogicalSchema().getProto());
         resultSetBuilder.addAllSerializedTuples(rows);

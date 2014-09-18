@@ -228,20 +228,9 @@ public class GlobalEngine extends AbstractService {
       QueryId queryId = QueryIdFactory.newQueryId(context.getResourceManager().getSeedQueryId());
 
       NonForwardQueryResultScanner queryResultScanner =
-          new NonForwardQueryResultScanner(session.getSessionId(), queryId, desc, maxRow);
-      FragmentProto[] fragments = PlannerUtil.getNonZeroLengthDataFiles(context.getConf(), desc, 0, 0);
-      if (fragments != null && fragments.length > 0) {
-        TaskAttemptContext taskContext = new TaskAttemptContext(
-            new QueryContext(context.getConf(), session), null,
-            new QueryUnitAttemptId(new QueryUnitId(new ExecutionBlockId(queryId, 1), 0), 0),
-            fragments, null);
+          new NonForwardQueryResultScanner(context.getConf(), session.getSessionId(), queryId, scanNode, desc, maxRow);
 
-        SeqScanExec exec = new SeqScanExec(taskContext,
-            StorageManagerFactory.getStorageManager(context.getConf()),
-            scanNode, fragments);
-        exec.init();
-        queryResultScanner.setScanExec(exec);
-      }
+      queryResultScanner.init();
       session.addNonForwardQueryResultScanner(queryResultScanner);
 
       responseBuilder.setQueryId(queryId.getProto());

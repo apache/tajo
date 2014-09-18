@@ -116,7 +116,7 @@ public enum SessionVars implements ConfigKey {
       "If true, a running query will be terminated when an overflow or divide-by-zero occurs.", DEFAULT),
 
   // ResultSet ----------------------------------------------------------------
-  FETCH_SIZE(ConfVars.$RESULT_SET_FETCH_SIZE, "Sets the number of rows at a time from Master", DEFAULT),
+  FETCH_ROWNUM(ConfVars.$RESULT_SET_FETCH_ROWNUM, "Sets the number of rows at a time from Master", DEFAULT),
 
   //-------------------------------------------------------------------------------
   // Only for Unit Testing

@@ -29,14 +29,14 @@ import java.sql.SQLException;
 public class FetchResultSet extends TajoResultSetBase {
   private TajoClient tajoClient;
   private QueryId queryId;
-  private int fetchSize;
+  private int fetchRowNum;
   private TajoMemoryResultSet currentResultSet;
   private boolean finished = false;
 
-  public FetchResultSet(TajoClient tajoClient, Schema schema, QueryId queryId, int fetchSize) {
+  public FetchResultSet(TajoClient tajoClient, Schema schema, QueryId queryId, int fetchRowNum) {
     this.tajoClient = tajoClient;
     this.queryId = queryId;
-    this.fetchSize = fetchSize;
+    this.fetchRowNum = fetchRowNum;
     this.totalRow = Integer.MAX_VALUE;
     this.schema = schema;
   }
@@ -58,7 +58,7 @@ public class FetchResultSet extends TajoResultSetBase {
           currentResultSet.close();
           currentResultSet = null;
         }
-        currentResultSet = tajoClient.fetchNextQueryResult(queryId, fetchSize);
+        currentResultSet = tajoClient.fetchNextQueryResult(queryId, fetchRowNum);
         if (currentResultSet == null) {
           finished = true;
           return null;
