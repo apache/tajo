@@ -141,6 +141,12 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-948: 'INSERT INTO' statement to non existence table casuses 
+    NPE. (Jongyoung Park via hyunsik)
+
+    TAJO-1048: Missed use of session variables in GlobalPlanner.
+    (hyunsik)
+
     TAJO-1037: KillQuery hang in subquery init state. (jinho)
 
     TAJO-1024: RpcConnectionPool::getConnection can cause NPE at 
