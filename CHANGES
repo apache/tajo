@@ -409,6 +409,9 @@ Release 0.9.0 - unreleased
 
   TASKS
 
+    TAJO-1054: Wrong comment in ByteUtils.splitWorker(). 
+    (Jongyoung Park via jinho)
+
     TAJO-1007: Update site for new committer and new contributors. 
     (hyunsik)
 
