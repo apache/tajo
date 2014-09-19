@@ -45,6 +45,7 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
   public static void compile(CompilationContext context, LogicalNode node) throws PlanningException {
     instance.visit(context, null, null, node, new Stack<LogicalNode>());
     context.compiledEvals = Collections.unmodifiableMap(context.compiledEvals);
+    context.compiledComparators = Collections.unmodifiableMap(context.compiledComparators);
   }
 
   public static Map<Pair<Schema, EvalNode>, EvalNode> compile(TajoClassLoader classLoader, LogicalNode node)

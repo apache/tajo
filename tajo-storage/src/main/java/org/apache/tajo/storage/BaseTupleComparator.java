@@ -39,11 +39,7 @@ public class BaseTupleComparator extends TupleComparator implements ProtoObject<
   private final int[] sortKeyIds;
   private final boolean[] asc;
   @SuppressWarnings("unused")
-  private final boolean[] nullFirsts;  
-
-  private Datum left;
-  private Datum right;
-  private int compVal;
+  private final boolean[] nullFirsts;
 
   /**
    * @param schema The schema of input tuples
@@ -108,9 +104,10 @@ public class BaseTupleComparator extends TupleComparator implements ProtoObject<
 
   @Override
   public int compare(Tuple tuple1, Tuple tuple2) {
+    int compVal = 0;
     for (int i = 0; i < sortKeyIds.length; i++) {
-      left = tuple1.get(sortKeyIds[i]);
-      right = tuple2.get(sortKeyIds[i]);
+      Datum left = tuple1.get(sortKeyIds[i]);
+      Datum right = tuple2.get(sortKeyIds[i]);
 
       if (left.isNull() || right.isNull()) {
         if (!left.equals(right)) {
@@ -144,7 +141,7 @@ public class BaseTupleComparator extends TupleComparator implements ProtoObject<
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(sortKeyIds);
+    return Objects.hashCode(sortSpecs);
   }
 
   @Override
