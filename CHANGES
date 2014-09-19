@@ -38,6 +38,8 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1040: Misuse netty HashedWheelTimer. (jinho)
+
     TAJO-1034: Reduce Explicit Use of JVM Internal Class. (Jihun Kang via hyunsik)
 
     TAJO-1027: Upgrade Hive to 0.13.0 and 0.13.1. (jaehwa)
@@ -145,6 +147,12 @@ Release 0.9.0 - unreleased
     (Hyoungjun Kim via hyunsik)
 
   BUG FIXES
+
+    TAJO-948: 'INSERT INTO' statement to non existence table casuses 
+    NPE. (Jongyoung Park via hyunsik)
+
+    TAJO-1048: Missed use of session variables in GlobalPlanner.
+    (hyunsik)
 
     TAJO-1037: KillQuery hang in subquery init state. (jinho)
 
