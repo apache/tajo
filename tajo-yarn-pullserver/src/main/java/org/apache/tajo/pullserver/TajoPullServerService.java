@@ -32,8 +32,6 @@ import org.apache.hadoop.io.DataInputByteBuffer;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.ReadaheadPool;
-import org.apache.hadoop.mapred.FadvisedChunkedFile;
-import org.apache.hadoop.mapred.FadvisedFileRegion;
 import org.apache.hadoop.metrics2.MetricsSystem;
 import org.apache.hadoop.metrics2.annotation.Metric;
 import org.apache.hadoop.metrics2.annotation.Metrics;
@@ -47,7 +45,6 @@ import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.pullserver.listener.FileCloseListener;
 import org.apache.tajo.pullserver.retriever.FileChunk;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
@@ -383,7 +380,7 @@ public class TajoPullServerService extends AbstractService {
 
   Map<String, ProcessingStatus> processingStatusMap = new ConcurrentHashMap<String, ProcessingStatus>();
 
-  public void completeFileChunk(FadvisedFileRegion filePart,
+  public void completeFileChunk(FileRegion filePart,
                                    String requestUri,
                                    long startTime) {
     ProcessingStatus status = processingStatusMap.get(requestUri);
@@ -411,7 +408,7 @@ public class TajoPullServerService extends AbstractService {
       this.numFiles = numFiles;
       this.remainFiles = new AtomicInteger(numFiles);
     }
-    public void decrementRemainFiles(FadvisedFileRegion filePart, long fileStartTime) {
+    public void decrementRemainFiles(FileRegion filePart, long fileStartTime) {
       synchronized(remainFiles) {
         long fileSendTime = System.currentTimeMillis() - fileStartTime;
         if (fileSendTime > 20 * 1000) {
@@ -646,7 +643,7 @@ public class TajoPullServerService extends AbstractService {
       try {
         spill = new RandomAccessFile(file.getFile(), "r");
         if (ch.getPipeline().get(SslHandler.class) == null) {
-          final FadvisedFileRegionWrapper filePart = new FadvisedFileRegionWrapper(spill,
+          final FadvisedFileRegion filePart = new FadvisedFileRegion(spill,
               file.startOffset, file.length(), manageOsCache, readaheadLength,
               readaheadPool, file.getFile().getAbsolutePath());
           writeFuture = ch.write(filePart);
