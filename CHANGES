@@ -143,6 +143,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1050: RPC client does not retry during connecting. 
+    (Jihun Kang via jinho)
+
     TAJO-948: 'INSERT INTO' statement to non existence table casuses 
     NPE. (Jongyoung Park via hyunsik)
 

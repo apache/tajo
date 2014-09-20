@@ -61,6 +61,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse.SerializedResultSet;
 
@@ -81,6 +82,8 @@ public class TajoClient implements Closeable {
   private final UserGroupInformation userInfo;
 
   private volatile TajoIdProtos.SessionIdProto sessionId;
+
+  private AtomicBoolean closed = new AtomicBoolean(false);
 
   public TajoClient(TajoConf conf) throws IOException {
     this(conf, NetUtils.createSocketAddr(conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS)), null);
@@ -115,11 +118,14 @@ public class TajoClient implements Closeable {
   }
 
   public boolean isConnected() {
-    try {
-      return connPool.getConnection(tajoMasterAddr, TajoMasterClientProtocol.class, false).isConnected();
-    } catch (Exception e) {
-      return false;
+    if(!closed.get()){
+      try {
+        return connPool.getConnection(tajoMasterAddr, TajoMasterClientProtocol.class, false).isConnected();
+      } catch (Throwable e) {
+        return false;
+      }
     }
+    return false;
   }
 
   public TajoClient(InetSocketAddress addr) throws IOException {
@@ -152,12 +158,16 @@ public class TajoClient implements Closeable {
 
   @Override
   public void close() {
+    if(closed.getAndSet(true)){
+      return;
+    }
+
     // remove session
     try {
       NettyClientBase client = connPool.getConnection(getTajoMasterAddr(), TajoMasterClientProtocol.class, false);
       TajoMasterClientProtocolService.BlockingInterface tajoMaster = client.getStub();
       tajoMaster.removeSession(null, sessionId);
-    } catch (Exception e) {
+    } catch (Throwable e) {
     }
 
     if(connPool != null) {

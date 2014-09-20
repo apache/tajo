@@ -264,6 +264,8 @@ public class TajoMasterClientService extends AbstractService {
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
         SubmitQueryResponse.Builder responseBuilder = ClientProtos.SubmitQueryResponse.newBuilder();
+        responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+        responseBuilder.setIsForwarded(true);
         responseBuilder.setUserName(context.getConf().getVar(ConfVars.USERNAME));
         responseBuilder.setResultCode(ResultCode.ERROR);
         if (e.getMessage() != null) {
