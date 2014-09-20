@@ -33,6 +33,7 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryUnitRequest;
 import org.apache.tajo.engine.query.QueryUnitRequestImpl;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext;
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
@@ -744,13 +745,15 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         }
 
         // getting the hostname of requested node
-        String host = container.getTaskHostName();
+        WorkerConnectionInfo connectionInfo =
+            context.getMasterContext().getResourceAllocator().getWorkerConnectionInfo(taskRequest.getWorkerId());
+        String host = connectionInfo.getHost();
 
         // if there are no worker matched to the hostname a task request
         if(!leafTaskHostMapping.containsKey(host)){
-          host = NetUtils.normalizeHost(host);
+          String normalizedHost = NetUtils.normalizeHost(host);
 
-          if(!leafTaskHostMapping.containsKey(host) && !taskRequests.isEmpty()){
+          if(!leafTaskHostMapping.containsKey(normalizedHost) && !taskRequests.isEmpty()){
             // this case means one of either cases:
             // * there are no blocks which reside in this node.
             // * all blocks which reside in this node are consumed, and this task runner requests a remote task.
@@ -826,8 +829,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           }
 
           context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId,
-              taskRequest.getContainerId(),
-              host, container.getTaskPort()));
+              taskRequest.getContainerId(), connectionInfo));
           assignedRequest.add(attemptId);
 
           scheduledObjectNum--;
@@ -891,10 +893,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
             }
           }
 
-          ContainerProxy container = context.getMasterContext().getResourceAllocator().getContainer(
-              taskRequest.getContainerId());
+          WorkerConnectionInfo connectionInfo = context.getMasterContext().getResourceAllocator().
+              getWorkerConnectionInfo(taskRequest.getWorkerId());
           context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId,
-              taskRequest.getContainerId(), container.getTaskHostName(), container.getTaskPort()));
+              taskRequest.getContainerId(), connectionInfo));
           taskRequest.getCallback().run(taskAssign.getProto());
           totalAssigned++;
           scheduledObjectNum--;

@@ -522,8 +522,8 @@ public class QueryUnit implements EventHandler<TaskEvent> {
       QueryUnitAttempt attempt = task.attempts.get(attemptEvent.getTaskAttemptId());
 
       task.successfulAttempt = attemptEvent.getTaskAttemptId();
-      task.succeededHost = attempt.getHost();
-      task.succeededPullServerPort = attempt.getPullServerPort();
+      task.succeededHost = attempt.getWorkerConnectionInfo().getHost();
+      task.succeededPullServerPort = attempt.getWorkerConnectionInfo().getPullServerPort();
 
       task.finishTask();
       task.eventHandler.handle(new SubQueryTaskEvent(event.getTaskId(), TaskState.SUCCEEDED));
@@ -537,7 +537,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
       TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) event;
       QueryUnitAttempt attempt = task.attempts.get(attemptEvent.getTaskAttemptId());
       task.launchTime = System.currentTimeMillis();
-      task.succeededHost = attempt.getHost();
+      task.succeededHost = attempt.getWorkerConnectionInfo().getHost();
     }
   }
 
@@ -632,9 +632,12 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   public static class PullHost implements Cloneable {
     String host;
     int port;
+    int hashCode;
+
     public PullHost(String pullServerAddr, int pullServerPort){
       this.host = pullServerAddr;
       this.port = pullServerPort;
+      this.hashCode = Objects.hashCode(host, port);
     }
     public String getHost() {
       return host;
@@ -650,7 +653,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
     @Override
     public int hashCode() {
-      return Objects.hashCode(host, port);
+      return hashCode;
     }
 
     @Override
@@ -668,6 +671,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
       PullHost newPullHost = (PullHost) super.clone();
       newPullHost.host = host;
       newPullHost.port = port;
+      newPullHost.hashCode = Objects.hashCode(newPullHost.host, newPullHost.port);
       return newPullHost;
     }
 

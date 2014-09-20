@@ -60,14 +60,12 @@ message ServerStatusProto {
 }
 
 message TajoHeartbeat {
-  required string tajoWorkerHost = 1;
-  required int32 tajoQueryMasterPort = 2;
-  optional int32 tajoWorkerClientPort = 3;
-  optional QueryIdProto queryId = 4;
-  optional QueryState state = 5;
-  optional string statusMessage = 6;
-  optional float queryProgress = 7;
-  optional int64 queryFinishTime = 8;
+  required WorkerConnectionInfoProto connectionInfo = 1;
+  optional QueryIdProto queryId = 2;
+  optional QueryState state = 3;
+  optional string statusMessage = 4;
+  optional float queryProgress = 5;
+  optional int64 queryFinishTime = 6;
 }
 
 message TajoHeartbeatResponse {
@@ -110,12 +108,9 @@ message WorkerResourceAllocationRequest {
 }
 
 message WorkerResourceProto {
-    required string host = 1;
-    required int32 peerRpcPort = 2;
-    required int32 queryMasterPort = 3;
-    required int32 infoPort = 4;
-    required int32 memoryMB = 5 ;
-    required float diskSlots = 6;
+    required WorkerConnectionInfoProto connectionInfo = 1;
+    required int32 memoryMB = 2 ;
+    required float diskSlots = 3;
 }
 
 message WorkerResourcesRequest {
@@ -129,15 +124,10 @@ message WorkerResourceReleaseRequest {
 
 message WorkerAllocatedResource {
     required hadoop.yarn.ContainerIdProto containerId = 1;
-    required string nodeId = 2;
-    required string workerHost = 3;
-    required int32 peerRpcPort = 4;
-    required int32 queryMasterPort = 5;
-    required int32 clientPort = 6;
-    required int32 workerPullServerPort = 7;
+    required WorkerConnectionInfoProto connectionInfo = 2;
 
-    required int32 allocatedMemoryMB = 8;
-    required float allocatedDiskSlots = 9;
+    required int32 allocatedMemoryMB = 3;
+    required float allocatedDiskSlots = 4;
 }
 
 message WorkerResourceAllocationResponse {

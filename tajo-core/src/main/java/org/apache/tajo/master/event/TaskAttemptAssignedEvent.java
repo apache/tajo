@@ -20,29 +20,24 @@ package org.apache.tajo.master.event;
 
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 
 public class TaskAttemptAssignedEvent extends TaskAttemptEvent {
   private final ContainerId cId;
-  private final String hostName;
-  private final int pullServerPort;
+  private final WorkerConnectionInfo workerConnectionInfo;
 
   public TaskAttemptAssignedEvent(QueryUnitAttemptId id, ContainerId cId,
-                                  String hostname, int pullServerPort) {
+                                  WorkerConnectionInfo connectionInfo) {
     super(id, TaskAttemptEventType.TA_ASSIGNED);
     this.cId = cId;
-    this.hostName = hostname;
-    this.pullServerPort = pullServerPort;
+    this.workerConnectionInfo = connectionInfo;
   }
 
   public ContainerId getContainerId() {
     return cId;
   }
 
-  public String getHostName() {
-    return hostName;
-  }
-
-  public int getPullServerPort() {
-    return pullServerPort;
+  public WorkerConnectionInfo getWorkerConnectionInfo(){
+    return workerConnectionInfo;
   }
 }

@@ -215,11 +215,10 @@ public class TajoPullServerService extends AbstractService {
       selector = RpcChannelFactory.createServerChannelFactory("PullServerAuxService", workerNum);
 
       localFS = new LocalFileSystem();
-      super.init(conf);
 
-      this.getConfig().setInt(TajoConf.ConfVars.PULLSERVER_PORT.varname
+      conf.setInt(TajoConf.ConfVars.PULLSERVER_PORT.varname
           , TajoConf.ConfVars.PULLSERVER_PORT.defaultIntVal);
-
+      super.init(conf);
       LOG.info("Tajo PullServer initialized: readaheadLength=" + readaheadLength);
     } catch (Throwable t) {
       LOG.error(t);
@@ -228,8 +227,7 @@ public class TajoPullServerService extends AbstractService {
 
   // TODO change AbstractService to throw InterruptedException
   @Override
-  public synchronized void start() {
-    Configuration conf = getConfig();
+  public synchronized void serviceInit(Configuration conf) throws Exception {
     ServerBootstrap bootstrap = new ServerBootstrap(selector);
 
     try {
@@ -248,10 +246,10 @@ public class TajoPullServerService extends AbstractService {
     conf.set(ConfVars.PULLSERVER_PORT.varname, Integer.toString(port));
     pipelineFact.PullServer.setPort(port);
     LOG.info(getName() + " listening on port " + port);
-    super.start();
 
     sslFileBufferSize = conf.getInt(SUFFLE_SSL_FILE_BUFFER_SIZE_KEY,
                                     DEFAULT_SUFFLE_SSL_FILE_BUFFER_SIZE);
+
 
     if (STANDALONE) {
       File pullServerPortFile = getPullServerPortFile();
@@ -272,6 +270,7 @@ public class TajoPullServerService extends AbstractService {
         IOUtils.closeStream(out);
       }
     }
+    super.serviceInit(conf);
     LOG.info("TajoPullServerService started: port=" + port);
   }
 
@@ -487,9 +486,7 @@ public class TajoPullServerService extends AbstractService {
       }
 
       ProcessingStatus processingStatus = new ProcessingStatus(request.getUri().toString());
-      synchronized(processingStatusMap) {
-        processingStatusMap.put(request.getUri().toString(), processingStatus);
-      }
+      processingStatusMap.put(request.getUri().toString(), processingStatus);
       // Parsing the URL into key-values
       final Map<String, List<String>> params =
           new QueryStringDecoder(request.getUri()).getParameters();

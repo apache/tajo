@@ -16,20 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.rm;
+package org.apache.tajo.cluster;
 
-/**
- * {@link TajoResourceTracker} produces this event, and it's destination is {@link Worker}.
- * This event occurs only when an inactive worker sends a ping again.
- */
-public class WorkerReconnectEvent extends WorkerEvent {
-  private final Worker worker;
-  public WorkerReconnectEvent(int workerId, Worker worker) {
-    super(workerId, WorkerEventType.RECONNECTED);
-    this.worker = worker;
-  }
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
+import org.junit.Test;
 
-  public Worker getWorker() {
-    return worker;
+import static org.junit.Assert.*;
+
+public class TestWorkerConnectionInfo {
+
+  @Test
+  public void testWorkerId() {
+    WorkerConnectionInfo worker = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
+    WorkerConnectionInfo worker2 = new WorkerConnectionInfo("host2", 28091, 28092, 21000, 28093, 28080);
+
+    assertNotEquals(worker.getId(), worker2.getId());
+    assertEquals(worker.getId(), new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080).getId());
   }
 }

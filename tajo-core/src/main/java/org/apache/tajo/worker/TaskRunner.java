@@ -25,7 +25,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.yarn.api.records.ContainerId;
-import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.api.records.impl.pb.ContainerIdPBImpl;
 import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.tajo.ExecutionBlockId;
@@ -53,7 +52,6 @@ public class TaskRunner extends AbstractService {
   private volatile boolean stopped = false;
   private Path baseDirPath;
 
-  private NodeId nodeId;
   private ContainerId containerId;
 
   // for Fetcher
@@ -69,7 +67,7 @@ public class TaskRunner extends AbstractService {
 
   private TaskRunnerHistory history;
 
-  public TaskRunner(ExecutionBlockContext executionBlockContext, String[] args) {
+  public TaskRunner(ExecutionBlockContext executionBlockContext, String containerId) {
     super(TaskRunner.class.getName());
 
     ThreadFactoryBuilder builder = new ThreadFactoryBuilder();
@@ -78,16 +76,7 @@ public class TaskRunner extends AbstractService {
     this.fetchLauncher = Executors.newFixedThreadPool(
         systemConf.getIntVar(ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM), fetcherFactory);
     try {
-      // QueryBlockId from String
-      // NodeId has a form of hostname:port.
-      this.nodeId = ConverterUtils.toNodeId(args[2]);
-      this.containerId = ConverterUtils.toContainerId(args[3]);
-
-
-      // QueryMaster's address
-      //String host = args[4];
-      //int port = Integer.parseInt(args[5]);
-
+      this.containerId = ConverterUtils.toContainerId(containerId);
       this.executionBlockContext = executionBlockContext;
       this.history = executionBlockContext.createTaskRunnerHistory(this);
       this.history.setState(getServiceState());
@@ -99,10 +88,6 @@ public class TaskRunner extends AbstractService {
   // TODO this is expensive. we should change to unique id
   public String getId() {
     return getId(getContext().getExecutionBlockId(), containerId);
-  }
-
-  public NodeId getNodeId(){
-    return nodeId;
   }
 
   public ContainerId getContainerId(){
@@ -212,6 +197,7 @@ public class TaskRunner extends AbstractService {
                 GetTaskRequestProto request = GetTaskRequestProto.newBuilder()
                     .setExecutionBlockId(getExecutionBlockId().getProto())
                     .setContainerId(((ContainerIdPBImpl) containerId).getProto())
+                    .setWorkerId(getContext().getWorkerContext().getConnectionInfo().getId())
                     .build();
 
                 qmClientService.getTask(null, request, callFuture);

@@ -22,10 +22,25 @@ import com.google.common.collect.Maps;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.tajo.master.ContainerProxy;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
 public abstract class AbstractResourceAllocator extends CompositeService implements ResourceAllocator {
+  /**
+   * A key is worker id, and a value is a worker connection information.
+   */
+  protected ConcurrentMap<Integer, WorkerConnectionInfo> workerInfoMap = Maps.newConcurrentMap();
+
+  public WorkerConnectionInfo getWorkerConnectionInfo(int workerId) {
+    return workerInfoMap.get(workerId);
+  }
+
+  public void addWorkerConnectionInfo(WorkerConnectionInfo connectionInfo) {
+    workerInfoMap.putIfAbsent(connectionInfo.getId(), connectionInfo);
+  }
+
   private Map<ContainerId, ContainerProxy> containers = Maps.newConcurrentMap();
 
   public AbstractResourceAllocator() {

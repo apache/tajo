@@ -37,16 +37,16 @@ public class TajoRMContext {
   final Dispatcher rmDispatcher;
 
   /** map between workerIds and running workers */
-  private final ConcurrentMap<String, Worker> workers = new ConcurrentHashMap<String, Worker>();
+  private final ConcurrentMap<Integer, Worker> workers = Maps.newConcurrentMap();
 
   /** map between workerIds and inactive workers */
-  private final ConcurrentMap<String, Worker> inactiveWorkers = new ConcurrentHashMap<String, Worker>();
+  private final ConcurrentMap<Integer, Worker> inactiveWorkers = Maps.newConcurrentMap();
 
   /** map between queryIds and query master ContainerId */
   private final ConcurrentMap<QueryId, ContainerIdProto> qmContainerMap = Maps.newConcurrentMap();
 
-  private final Set<String> liveQueryMasterWorkerResources =
-      Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+  private final Set<Integer> liveQueryMasterWorkerResources =
+      Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
   private final Set<QueryId> stoppedQueryIds =
       Collections.newSetFromMap(new ConcurrentHashMap<QueryId, Boolean>());
@@ -62,14 +62,14 @@ public class TajoRMContext {
   /**
    * @return The Map for active workers
    */
-  public ConcurrentMap<String, Worker> getWorkers() {
+  public ConcurrentMap<Integer, Worker> getWorkers() {
     return workers;
   }
 
   /**
    * @return The Map for inactive workers
    */
-  public ConcurrentMap<String, Worker> getInactiveWorkers() {
+  public ConcurrentMap<Integer, Worker> getInactiveWorkers() {
     return inactiveWorkers;
   }
 
@@ -81,7 +81,7 @@ public class TajoRMContext {
     return qmContainerMap;
   }
 
-  public Set<String> getQueryMasterWorker() {
+  public Set<Integer> getQueryMasterWorker() {
     return liveQueryMasterWorkerResources;
   }
 

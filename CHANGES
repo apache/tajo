@@ -444,6 +444,8 @@ Release 0.9.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1016: Refactor worker rpc information. (jinho)
+
     TAJO-1015: Add executionblock event in worker. (jinho)
 
     TAJO-783: Remove yarn-related code from tajo-core. (hyunsik)

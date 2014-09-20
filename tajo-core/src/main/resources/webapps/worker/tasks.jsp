@@ -65,9 +65,9 @@
         <tr><th>Id</th><th>StartTime</th><th>FinishTime</th><th>RunTime</th><th>Status</th></tr>
         <%
             if (taskRunner != null) {
-                TaskRunner.TaskRunnerContext taskRunnerContext = taskRunner.getContext();
+                ExecutionBlockContext context = taskRunner.getContext();
 
-                for (Map.Entry<QueryUnitAttemptId, Task> entry : taskRunnerContext.getTasks().entrySet()) {
+                for (Map.Entry<QueryUnitAttemptId, Task> entry : context.getTasks().entrySet()) {
                     QueryUnitAttemptId queryUnitId = entry.getKey();
                     TaskHistory eachTask = entry.getValue().createTaskHistory();
         %>
