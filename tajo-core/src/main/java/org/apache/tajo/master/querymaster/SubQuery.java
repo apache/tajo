@@ -58,6 +58,7 @@ import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttem
 import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.worker.FetchImpl;
 
@@ -774,7 +775,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         LOG.info(subQuery.getId() + ", Bigger Table's volume is approximately " + mb + " MB");
 
         int taskNum = (int) Math.ceil((double) mb /
-            conf.getIntVar(ConfVars.$DIST_QUERY_JOIN_PARTITION_VOLUME));
+            masterPlan.getContext().getInt(SessionVars.JOIN_PER_SHUFFLE_SIZE));
 
         int totalMem = getClusterTotalMemory(subQuery);
         LOG.info(subQuery.getId() + ", Total memory of cluster is " + totalMem + " MB");
@@ -782,8 +783,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         // determine the number of task
         taskNum = Math.min(taskNum, slots);
 
-        if (conf.getIntVar(ConfVars.$TEST_MIN_TASK_NUM) > 0) {
-          taskNum = conf.getIntVar(ConfVars.$TEST_MIN_TASK_NUM);
+        if (masterPlan.getContext().containsKey(SessionVars.TEST_MIN_TASK_NUM)) {
+          taskNum = masterPlan.getContext().getInt(SessionVars.TEST_MIN_TASK_NUM);
           LOG.warn("!!!!! TESTCASE MODE !!!!!");
         }
 
@@ -823,11 +824,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         } else {
           long volume = getInputVolume(subQuery.masterPlan, subQuery.context, subQuery.block);
 
-          int mb = (int) Math.ceil((double) volume / 1048576);
-          LOG.info(subQuery.getId() + ", Table's volume is approximately " + mb + " MB");
+          int volumeByMB = (int) Math.ceil((double) volume / StorageUnit.MB);
+          LOG.info(subQuery.getId() + ", Table's volume is approximately " + volumeByMB + " MB");
           // determine the number of task
-          int taskNumBySize = (int) Math.ceil((double) mb /
-              conf.getIntVar(ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME));
+          int taskNumBySize = (int) Math.ceil((double) volumeByMB /
+              masterPlan.getContext().getInt(SessionVars.GROUPBY_PER_SHUFFLE_SIZE));
 
           int totalMem = getClusterTotalMemory(subQuery);
 

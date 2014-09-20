@@ -53,6 +53,7 @@ import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
+import org.jboss.netty.util.Timer;
 
 import java.io.File;
 import java.io.IOException;
@@ -672,6 +673,7 @@ public class Task {
 
     if (fetches.size() > 0) {
       ClientSocketChannelFactory channelFactory = executionBlockContext.getShuffleChannelFactory();
+      Timer timer = executionBlockContext.getRPCTimer();
       Path inputDir = executionBlockContext.getLocalDirAllocator().
           getLocalPathToRead(getTaskAttemptDir(ctx.getTaskId()).toString(), systemConf);
       File storeDir;
@@ -686,7 +688,7 @@ public class Task {
             storeDir.mkdirs();
           }
           storeFile = new File(storeDir, "in_" + i);
-          Fetcher fetcher = new Fetcher(systemConf, uri, storeFile, channelFactory);
+          Fetcher fetcher = new Fetcher(systemConf, uri, storeFile, channelFactory, timer);
           runnerList.add(fetcher);
           i++;
         }
