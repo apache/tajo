@@ -143,6 +143,8 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1056: Wrong resource release or wrong task scheduling. (jinho)
+
     TAJO-1050: RPC client does not retry during connecting. 
     (Jihun Kang via jinho)
 

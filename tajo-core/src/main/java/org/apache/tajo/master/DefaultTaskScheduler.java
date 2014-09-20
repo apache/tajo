@@ -788,7 +788,6 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               //release container
               hostVolumeMapping.decreaseConcurrency(containerId);
               taskRequest.getCallback().run(stopTaskRunnerReq);
-              subQuery.releaseContainer(containerId);
               continue;
             }
           }
