@@ -774,14 +774,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         int mb = (int) Math.ceil((double) bigger / 1048576);
         LOG.info(subQuery.getId() + ", Bigger Table's volume is approximately " + mb + " MB");
 
-        int taskNum = (int) Math.ceil((double) mb /
-            masterPlan.getContext().getInt(SessionVars.JOIN_PER_SHUFFLE_SIZE));
-
-        int totalMem = getClusterTotalMemory(subQuery);
-        LOG.info(subQuery.getId() + ", Total memory of cluster is " + totalMem + " MB");
-        int slots = Math.max(totalMem / conf.getIntVar(ConfVars.TASK_DEFAULT_MEMORY), 1);
-        // determine the number of task
-        taskNum = Math.min(taskNum, slots);
+        int taskNum = (int) Math.ceil((double) mb / masterPlan.getContext().getInt(SessionVars.JOIN_PER_SHUFFLE_SIZE));
 
         if (masterPlan.getContext().containsKey(SessionVars.TEST_MIN_TASK_NUM)) {
           taskNum = masterPlan.getContext().getInt(SessionVars.TEST_MIN_TASK_NUM);
@@ -827,14 +820,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           int volumeByMB = (int) Math.ceil((double) volume / StorageUnit.MB);
           LOG.info(subQuery.getId() + ", Table's volume is approximately " + volumeByMB + " MB");
           // determine the number of task
-          int taskNumBySize = (int) Math.ceil((double) volumeByMB /
+          int taskNum = (int) Math.ceil((double) volumeByMB /
               masterPlan.getContext().getInt(SessionVars.GROUPBY_PER_SHUFFLE_SIZE));
-
-          int totalMem = getClusterTotalMemory(subQuery);
-
-          LOG.info(subQuery.getId() + ", Total memory of cluster is " + totalMem + " MB");
-          int slots = Math.max(totalMem / conf.getIntVar(ConfVars.TASK_DEFAULT_MEMORY), 1);
-          int taskNum = Math.min(taskNumBySize, slots); //Maximum partitions
           LOG.info(subQuery.getId() + ", The determined number of aggregation partitions is " + taskNum);
           return taskNum;
         }
