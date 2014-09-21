@@ -38,8 +38,8 @@
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
-  Map<String, Worker> workers = master.getContext().getResourceManager().getWorkers();
-  Map<String, Worker> inactiveWorkers = master.getContext().getResourceManager().getInactiveWorkers();
+  Map<Integer, Worker> workers = master.getContext().getResourceManager().getWorkers();
+  Map<Integer, Worker> inactiveWorkers = master.getContext().getResourceManager().getInactiveWorkers();
 
   int numWorkers = 0;
   int numLiveWorkers = 0;

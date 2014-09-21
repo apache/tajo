@@ -28,7 +28,7 @@ public class WorkerStatusEvent extends WorkerEvent {
   private final long freeHeap;
   private final long totalHeap;
 
-  public WorkerStatusEvent(String workerId, int runningTaskNum, long maxHeap, long freeHeap, long totalHeap) {
+  public WorkerStatusEvent(int workerId, int runningTaskNum, long maxHeap, long freeHeap, long totalHeap) {
     super(workerId, WorkerEventType.STATE_UPDATE);
     this.runningTaskNum = runningTaskNum;
     this.maxHeap = maxHeap;

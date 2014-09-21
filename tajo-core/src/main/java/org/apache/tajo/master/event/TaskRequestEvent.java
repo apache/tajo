@@ -31,22 +31,29 @@ public class TaskRequestEvent extends AbstractEvent<TaskRequestEventType> {
     TASK_REQ
   }
 
-  private final ContainerId workerId;
+  private final int workerId;
+  private final ContainerId containerId;
   private final ExecutionBlockId executionBlockId;
 
   private final RpcCallback<QueryUnitRequestProto> callback;
 
-  public TaskRequestEvent(ContainerId workerId,
+  public TaskRequestEvent(int workerId,
+                          ContainerId containerId,
                           ExecutionBlockId executionBlockId,
                           RpcCallback<QueryUnitRequestProto> callback) {
     super(TaskRequestEventType.TASK_REQ);
     this.workerId = workerId;
+    this.containerId = containerId;
     this.executionBlockId = executionBlockId;
     this.callback = callback;
   }
 
-  public ContainerId getContainerId() {
+  public int getWorkerId() {
     return this.workerId;
+  }
+
+  public ContainerId getContainerId() {
+    return this.containerId;
   }
 
   public ExecutionBlockId getExecutionBlockId() {

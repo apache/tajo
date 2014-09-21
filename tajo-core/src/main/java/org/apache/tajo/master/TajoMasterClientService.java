@@ -264,6 +264,8 @@ public class TajoMasterClientService extends AbstractService {
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
         SubmitQueryResponse.Builder responseBuilder = ClientProtos.SubmitQueryResponse.newBuilder();
+        responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+        responseBuilder.setIsForwarded(true);
         responseBuilder.setUserName(context.getConf().getVar(ConfVars.USERNAME));
         responseBuilder.setResultCode(ResultCode.ERROR);
         if (e.getMessage() != null) {
@@ -503,9 +505,9 @@ public class TajoMasterClientService extends AbstractService {
         context.getSessionManager().touch(request.getSessionId().getId());
         GetClusterInfoResponse.Builder builder= GetClusterInfoResponse.newBuilder();
 
-        Map<String, Worker> workers = context.getResourceManager().getWorkers();
+        Map<Integer, Worker> workers = context.getResourceManager().getWorkers();
 
-        List<String> wokerKeys = new ArrayList<String>(workers.keySet());
+        List<Integer> wokerKeys = new ArrayList<Integer>(workers.keySet());
         Collections.sort(wokerKeys);
 
         WorkerResourceInfo.Builder workerBuilder
@@ -513,7 +515,8 @@ public class TajoMasterClientService extends AbstractService {
 
         for(Worker worker: workers.values()) {
           WorkerResource workerResource = worker.getResource();
-          workerBuilder.setAllocatedHost(worker.getHostName());
+
+          workerBuilder.setConnectionInfo(worker.getConnectionInfo().getProto());
           workerBuilder.setDiskSlots(workerResource.getDiskSlots());
           workerBuilder.setCpuCoreSlots(workerResource.getCpuCoreSlots());
           workerBuilder.setMemoryMB(workerResource.getMemoryMB());
@@ -524,11 +527,6 @@ public class TajoMasterClientService extends AbstractService {
           workerBuilder.setWorkerStatus(worker.getState().toString());
           workerBuilder.setQueryMasterMode(workerResource.isQueryMasterMode());
           workerBuilder.setTaskRunnerMode(workerResource.isTaskRunnerMode());
-          workerBuilder.setPeerRpcPort(worker.getPeerRpcPort());
-          workerBuilder.setQueryMasterPort(worker.getQueryMasterPort());
-          workerBuilder.setClientPort(worker.getClientPort());
-          workerBuilder.setPullServerPort(worker.getPullServerPort());
-          workerBuilder.setHttpPort(worker.getHttpPort());
           workerBuilder.setMaxHeap(workerResource.getMaxHeap());
           workerBuilder.setFreeHeap(workerResource.getFreeHeap());
           workerBuilder.setTotalHeap(workerResource.getTotalHeap());

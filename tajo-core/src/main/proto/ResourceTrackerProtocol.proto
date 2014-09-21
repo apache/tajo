@@ -23,16 +23,12 @@ option java_generic_services = true;
 option java_generate_equals_and_hash = true;
 
 import "TajoMasterProtocol.proto";
+import "tajo_protos.proto";
 
 message NodeHeartbeat {
-  required string tajoWorkerHost = 1;
-  required int32 peerRpcPort = 2;
-  required int32 tajoQueryMasterPort = 3;
-  optional ServerStatusProto serverStatus = 4;
-  optional int32 tajoWorkerClientPort = 5;
-  optional string statusMessage = 6;
-  optional int32 tajoWorkerPullServerPort = 7;
-  optional int32 tajoWorkerHttpPort = 8;
+  required WorkerConnectionInfoProto connectionInfo = 1;
+  optional ServerStatusProto serverStatus = 2;
+  optional string statusMessage = 3;
 }
 
 service TajoResourceTrackerProtocolService {

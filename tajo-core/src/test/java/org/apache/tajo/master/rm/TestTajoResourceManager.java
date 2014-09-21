@@ -24,6 +24,7 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoMasterProtocol.*;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.junit.Test;
@@ -94,11 +95,10 @@ public class TestTajoResourceManager {
           .setRunningTaskNum(0)
           .build();
 
+      WorkerConnectionInfo connectionInfo =
+          new WorkerConnectionInfo("host" + (i + 1), 28091, 28092, 21000 + i, 28093, 28080);
       NodeHeartbeat tajoHeartbeat = NodeHeartbeat.newBuilder()
-          .setTajoWorkerHost("host" + (i + 1))
-          .setTajoQueryMasterPort(21000)
-          .setTajoWorkerHttpPort(28080 + i)
-          .setPeerRpcPort(12345)
+          .setConnectionInfo(connectionInfo.getProto())
           .setServerStatus(serverStatus)
           .build();
 

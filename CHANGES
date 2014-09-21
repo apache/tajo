@@ -38,9 +38,15 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1049: Remove the parallel degree limit up to the maximum cluster 
+    capacity. (hyunsik)
+
+    TAJO-1046: Remove hadoop native dependency of pullserver. (jinho)
+
     TAJO-1040: Misuse netty HashedWheelTimer. (jinho)
 
-    TAJO-1034: Reduce Explicit Use of JVM Internal Class. (Jihun Kang via hyunsik)
+    TAJO-1034: Reduce Explicit Use of JVM Internal Class. 
+    (Jihun Kang via hyunsik)
 
     TAJO-1027: Upgrade Hive to 0.13.0 and 0.13.1. (jaehwa)
 
@@ -49,8 +55,8 @@ Release 0.9.0 - unreleased
     TAJO-937: Should use tajo.util.VersionInfo instead of 
     TajoConstants.TAJO_VERSION. (Mai Hai Thanh via hyunsik)
 
-    TAJO-991: Running PullServer on a dedicated JVM process which separates from worker.
-    (Hyoungjun Kim)
+    TAJO-991: Running PullServer on a dedicated JVM process which separates 
+    from worker. (Hyoungjun Kim)
 
     TAJO-906: Runtime code generation for evaluating expression trees.
     (hyunsik)
@@ -147,6 +153,14 @@ Release 0.9.0 - unreleased
     (Hyoungjun Kim via hyunsik)
 
   BUG FIXES
+
+    TAJO-1047: DefaultTaskScheduler:allocateRackTask is failed occasionally
+    on JDK 1.7. (jinho)
+
+    TAJO-1056: Wrong resource release or wrong task scheduling. (jinho)
+
+    TAJO-1050: RPC client does not retry during connecting. 
+    (Jihun Kang via jinho)
 
     TAJO-948: 'INSERT INTO' statement to non existence table casuses 
     NPE. (Jongyoung Park via hyunsik)
@@ -416,6 +430,9 @@ Release 0.9.0 - unreleased
 
   TASKS
 
+    TAJO-1054: Wrong comment in ByteUtils.splitWorker(). 
+    (Jongyoung Park via jinho)
+
     TAJO-1007: Update site for new committer and new contributors. 
     (hyunsik)
 
@@ -445,6 +462,8 @@ Release 0.9.0 - unreleased
     TAJO-834: Add Travis notification to issues@tajo.a.o and IRC. hyunsik)
 
   SUB TASKS
+
+    TAJO-1016: Refactor worker rpc information. (jinho)
 
     TAJO-1015: Add executionblock event in worker. (jinho)
 

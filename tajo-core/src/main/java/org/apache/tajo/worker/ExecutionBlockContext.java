@@ -33,12 +33,14 @@ import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryMasterProtocol;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.worker.event.TaskRunnerStartEvent;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
@@ -79,6 +81,7 @@ public class ExecutionBlockContext {
   private TajoQueryEngine queryEngine;
   private RpcConnectionPool connPool;
   private InetSocketAddress qmMasterAddr;
+  private WorkerConnectionInfo queryMaster;
   private TajoConf systemConf;
   // for the doAs block
   private UserGroupInformation taskOwner;
@@ -92,12 +95,12 @@ public class ExecutionBlockContext {
 
   private final ConcurrentMap<String, TaskRunnerHistory> histories = Maps.newConcurrentMap();
 
-  public ExecutionBlockContext(TaskRunnerManager manager, TaskRunnerStartEvent event, InetSocketAddress queryMaster)
+  public ExecutionBlockContext(TaskRunnerManager manager, TaskRunnerStartEvent event, WorkerConnectionInfo queryMaster)
       throws Throwable {
     this.manager = manager;
     this.executionBlockId = event.getExecutionBlockId();
     this.connPool = RpcConnectionPool.getPool(manager.getTajoConf());
-    this.qmMasterAddr = queryMaster;
+    this.queryMaster = queryMaster;
     this.systemConf = manager.getTajoConf();
     this.reporter = new Reporter();
     this.defaultFS = TajoConf.getTajoRootDir(systemConf).getFileSystem(systemConf);
@@ -118,6 +121,7 @@ public class ExecutionBlockContext {
     LOG.info("Tajo Root Dir: " + systemConf.getVar(TajoConf.ConfVars.ROOT_DIR));
     LOG.info("Worker Local Dir: " + systemConf.getVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR));
 
+    this.qmMasterAddr = NetUtils.createSocketAddr(queryMaster.getHost(), queryMaster.getQueryMasterPort());
     LOG.info("QueryMaster Address:" + qmMasterAddr);
 
     UserGroupInformation.setConfiguration(systemConf);
@@ -329,8 +333,8 @@ public class ExecutionBlockContext {
         intermediateBuilder.clear();
 
         intermediateBuilder.setEbId(ebId.getProto())
-            .setHost(getWorkerContext().getTajoWorkerManagerService().getBindAddr().getHostName() + ":" +
-                getWorkerContext().getPullServerPort())
+            .setHost(getWorkerContext().getConnectionInfo().getHost() + ":" +
+                getWorkerContext().getConnectionInfo().getPullServerPort())
             .setTaskId(-1)
             .setAttemptId(-1)
             .setPartId(eachShuffle.getPartId())

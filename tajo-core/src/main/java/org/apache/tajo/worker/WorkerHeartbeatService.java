@@ -19,6 +19,7 @@
 package org.apache.tajo.worker;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -37,7 +38,6 @@ import org.apache.tajo.storage.v2.DiskUtil;
 import org.apache.tajo.util.HAServiceUtil;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -68,30 +68,38 @@ public class WorkerHeartbeatService extends AbstractService {
   }
 
   @Override
-  public void serviceInit(Configuration conf) {
+  public void serviceInit(Configuration conf) throws Exception {
     Preconditions.checkArgument(conf instanceof TajoConf, "Configuration must be a TajoConf instance.");
     this.systemConf = (TajoConf) conf;
 
     connectionPool = RpcConnectionPool.getPool(systemConf);
-    thread = new WorkerHeartbeatThread();
-    thread.start();
-    super.init(conf);
+    super.serviceInit(conf);
   }
 
   @Override
-  public void serviceStop() {
-    thread.stopped.set(true);
+  public void serviceStart() throws Exception {
+    thread = new WorkerHeartbeatThread();
+    thread.start();
+    super.serviceStart();
+  }
+
+  @Override
+  public void serviceStop() throws Exception {
+    if(thread.stopped.getAndSet(true)){
+      return;
+    }
+
     synchronized (thread) {
       thread.notifyAll();
     }
-    super.stop();
+
+    super.serviceStop();
   }
 
   class WorkerHeartbeatThread extends Thread {
     private volatile AtomicBoolean stopped = new AtomicBoolean(false);
     TajoMasterProtocol.ServerStatusProto.System systemInfo;
-    List<TajoMasterProtocol.ServerStatusProto.Disk> diskInfos =
-        new ArrayList<TajoMasterProtocol.ServerStatusProto.Disk>();
+    List<TajoMasterProtocol.ServerStatusProto.Disk> diskInfos = Lists.newArrayList();
     float workerDiskSlots;
     int workerMemoryMB;
     List<DiskDeviceInfo> diskDeviceInfos;
@@ -140,26 +148,6 @@ public class WorkerHeartbeatService extends AbstractService {
     public void run() {
       LOG.info("Worker Resource Heartbeat Thread start.");
       int sendDiskInfoCount = 0;
-      int pullServerPort = 0;
-
-      String hostName = null;
-      int peerRpcPort = 0;
-      int queryMasterPort = 0;
-      int clientPort = 0;
-
-      if(context.getTajoWorkerManagerService() != null) {
-        hostName = context.getTajoWorkerManagerService().getBindAddr().getHostName();
-        peerRpcPort = context.getTajoWorkerManagerService().getBindAddr().getPort();
-      }
-      if(context.getQueryMasterManagerService() != null) {
-        hostName = context.getQueryMasterManagerService().getBindAddr().getHostName();
-        queryMasterPort = context.getQueryMasterManagerService().getBindAddr().getPort();
-      }
-      if(context.getTajoWorkerClientService() != null) {
-        clientPort = context.getTajoWorkerClientService().getBindAddr().getPort();
-      }
-
-      pullServerPort = context.getPullServerPort();
 
       while(!stopped.get()) {
         if(sendDiskInfoCount == 0 && diskDeviceInfos != null) {
@@ -185,12 +173,7 @@ public class WorkerHeartbeatService extends AbstractService {
             .build();
 
         NodeHeartbeat heartbeatProto = NodeHeartbeat.newBuilder()
-            .setTajoWorkerHost(hostName)
-            .setTajoQueryMasterPort(queryMasterPort)
-            .setPeerRpcPort(peerRpcPort)
-            .setTajoWorkerClientPort(clientPort)
-            .setTajoWorkerHttpPort(context.getHttpPort())
-            .setTajoWorkerPullServerPort(pullServerPort)
+            .setConnectionInfo(context.getConnectionInfo().getProto())
             .setServerStatus(serverStatus)
             .build();
 
@@ -241,8 +224,10 @@ public class WorkerHeartbeatService extends AbstractService {
         }
 
         try {
-          synchronized (WorkerHeartbeatThread.this){
-            wait(10 * 1000);
+          if(!stopped.get()){
+            synchronized (thread){
+              thread.wait(10 * 1000);
+            }
           }
         } catch (InterruptedException e) {
           break;
