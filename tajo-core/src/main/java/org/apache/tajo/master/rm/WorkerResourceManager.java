@@ -86,13 +86,13 @@ public interface WorkerResourceManager extends Service {
    *
    * @return a Map instance containing active workers
    */
-  public Map<String, Worker> getWorkers();
+  public Map<Integer, Worker> getWorkers();
 
   /**
    *
    * @return a Map instance containing inactive workers
    */
-  public Map<String, Worker> getInactiveWorkers();
+  public Map<Integer, Worker> getInactiveWorkers();
 
   public void stop();
 
@@ -106,5 +106,5 @@ public interface WorkerResourceManager extends Service {
    *
    * @return WorkerIds on which QueryMasters are running
    */
-  Collection<String> getQueryMasters();
+  Collection<Integer> getQueryMasters();
 }

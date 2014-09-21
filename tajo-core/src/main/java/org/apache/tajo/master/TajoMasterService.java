@@ -28,6 +28,7 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoMasterProtocol;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.querymaster.QueryJobManager;
 import org.apache.tajo.master.rm.Worker;
 import org.apache.tajo.master.rm.WorkerResource;
@@ -97,7 +98,7 @@ public class TajoMasterService extends AbstractService {
         RpcController controller,
         TajoMasterProtocol.TajoHeartbeat request, RpcCallback<TajoMasterProtocol.TajoHeartbeatResponse> done) {
       if(LOG.isDebugEnabled()) {
-        LOG.debug("Received QueryHeartbeat:" + request.getTajoWorkerHost() + ":" + request.getTajoQueryMasterPort());
+        LOG.debug("Received QueryHeartbeat:" + new WorkerConnectionInfo(request.getConnectionInfo()));
       }
 
       TajoMasterProtocol.TajoHeartbeatResponse.ResponseCommand command = null;
@@ -156,13 +157,9 @@ public class TajoMasterService extends AbstractService {
         TajoMasterProtocol.WorkerResourceProto.Builder workerResource =
             TajoMasterProtocol.WorkerResourceProto.newBuilder();
 
-        workerResource.setHost(worker.getHostName());
-        workerResource.setPeerRpcPort(worker.getPeerRpcPort());
-        workerResource.setInfoPort(worker.getHttpPort());
-        workerResource.setQueryMasterPort(worker.getQueryMasterPort());
+        workerResource.setConnectionInfo(worker.getConnectionInfo().getProto());
         workerResource.setMemoryMB(resource.getMemoryMB());
         workerResource.setDiskSlots(resource.getDiskSlots());
-        workerResource.setQueryMasterPort(worker.getQueryMasterPort());
 
         builder.addWorkerResources(workerResource);
       }

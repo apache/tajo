@@ -310,7 +310,7 @@ public class Task {
 
   public TaskStatusProto getReport() {
     TaskStatusProto.Builder builder = TaskStatusProto.newBuilder();
-    builder.setWorkerName(executionBlockContext.getTaskRunner(taskRunnerId).getNodeId().toString());
+    builder.setWorkerName(executionBlockContext.getWorkerContext().getConnectionInfo().getHostAndPeerRpcPort());
     builder.setId(context.getTaskId().getProto())
         .setProgress(context.getProgress())
         .setState(context.getState());
@@ -326,6 +326,7 @@ public class Task {
   public boolean isRunning(){
     return context.getState() == TaskAttemptState.TA_RUNNING;
   }
+
   public boolean isProgressChanged() {
     return context.isProgressChanged();
   }

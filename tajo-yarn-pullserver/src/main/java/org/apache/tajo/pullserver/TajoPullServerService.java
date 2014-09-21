@@ -32,8 +32,6 @@ import org.apache.hadoop.io.DataInputByteBuffer;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.ReadaheadPool;
-import org.apache.hadoop.mapred.FadvisedChunkedFile;
-import org.apache.hadoop.mapred.FadvisedFileRegion;
 import org.apache.hadoop.metrics2.MetricsSystem;
 import org.apache.hadoop.metrics2.annotation.Metric;
 import org.apache.hadoop.metrics2.annotation.Metrics;
@@ -47,7 +45,6 @@ import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.pullserver.listener.FileCloseListener;
 import org.apache.tajo.pullserver.retriever.FileChunk;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.storage.BaseTupleComparator;
@@ -218,11 +215,10 @@ public class TajoPullServerService extends AbstractService {
       selector = RpcChannelFactory.createServerChannelFactory("PullServerAuxService", workerNum);
 
       localFS = new LocalFileSystem();
-      super.init(conf);
 
-      this.getConfig().setInt(TajoConf.ConfVars.PULLSERVER_PORT.varname
+      conf.setInt(TajoConf.ConfVars.PULLSERVER_PORT.varname
           , TajoConf.ConfVars.PULLSERVER_PORT.defaultIntVal);
-
+      super.init(conf);
       LOG.info("Tajo PullServer initialized: readaheadLength=" + readaheadLength);
     } catch (Throwable t) {
       LOG.error(t);
@@ -231,8 +227,7 @@ public class TajoPullServerService extends AbstractService {
 
   // TODO change AbstractService to throw InterruptedException
   @Override
-  public synchronized void start() {
-    Configuration conf = getConfig();
+  public synchronized void serviceInit(Configuration conf) throws Exception {
     ServerBootstrap bootstrap = new ServerBootstrap(selector);
 
     try {
@@ -251,10 +246,10 @@ public class TajoPullServerService extends AbstractService {
     conf.set(ConfVars.PULLSERVER_PORT.varname, Integer.toString(port));
     pipelineFact.PullServer.setPort(port);
     LOG.info(getName() + " listening on port " + port);
-    super.start();
 
     sslFileBufferSize = conf.getInt(SUFFLE_SSL_FILE_BUFFER_SIZE_KEY,
                                     DEFAULT_SUFFLE_SSL_FILE_BUFFER_SIZE);
+
 
     if (STANDALONE) {
       File pullServerPortFile = getPullServerPortFile();
@@ -275,6 +270,7 @@ public class TajoPullServerService extends AbstractService {
         IOUtils.closeStream(out);
       }
     }
+    super.serviceInit(conf);
     LOG.info("TajoPullServerService started: port=" + port);
   }
 
@@ -384,7 +380,7 @@ public class TajoPullServerService extends AbstractService {
 
   Map<String, ProcessingStatus> processingStatusMap = new ConcurrentHashMap<String, ProcessingStatus>();
 
-  public void completeFileChunk(FadvisedFileRegion filePart,
+  public void completeFileChunk(FileRegion filePart,
                                    String requestUri,
                                    long startTime) {
     ProcessingStatus status = processingStatusMap.get(requestUri);
@@ -412,7 +408,7 @@ public class TajoPullServerService extends AbstractService {
       this.numFiles = numFiles;
       this.remainFiles = new AtomicInteger(numFiles);
     }
-    public void decrementRemainFiles(FadvisedFileRegion filePart, long fileStartTime) {
+    public void decrementRemainFiles(FileRegion filePart, long fileStartTime) {
       synchronized(remainFiles) {
         long fileSendTime = System.currentTimeMillis() - fileStartTime;
         if (fileSendTime > 20 * 1000) {
@@ -490,9 +486,7 @@ public class TajoPullServerService extends AbstractService {
       }
 
       ProcessingStatus processingStatus = new ProcessingStatus(request.getUri().toString());
-      synchronized(processingStatusMap) {
-        processingStatusMap.put(request.getUri().toString(), processingStatus);
-      }
+      processingStatusMap.put(request.getUri().toString(), processingStatus);
       // Parsing the URL into key-values
       final Map<String, List<String>> params =
           new QueryStringDecoder(request.getUri()).getParameters();
@@ -649,7 +643,7 @@ public class TajoPullServerService extends AbstractService {
       try {
         spill = new RandomAccessFile(file.getFile(), "r");
         if (ch.getPipeline().get(SslHandler.class) == null) {
-          final FadvisedFileRegionWrapper filePart = new FadvisedFileRegionWrapper(spill,
+          final FadvisedFileRegion filePart = new FadvisedFileRegion(spill,
               file.startOffset, file.length(), manageOsCache, readaheadLength,
               readaheadPool, file.getFile().getAbsolutePath());
           writeFuture = ch.write(filePart);

@@ -32,6 +32,7 @@ import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.NetUtils;
@@ -46,7 +47,6 @@ public class TajoWorkerManagerService extends CompositeService
 
   private AsyncRpcServer rpcServer;
   private InetSocketAddress bindAddr;
-  private String addr;
   private int port;
 
   private TajoWorker.WorkerContext workerContext;
@@ -74,14 +74,12 @@ public class TajoWorkerManagerService extends CompositeService
       this.rpcServer.start();
 
       this.bindAddr = NetUtils.getConnectAddress(rpcServer.getListenAddress());
-      this.addr = bindAddr.getHostName() + ":" + bindAddr.getPort();
-
       this.port = bindAddr.getPort();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
     }
     // Get the master address
-    LOG.info("TajoWorkerManagerService is bind to " + addr);
+    LOG.info("TajoWorkerManagerService is bind to " + bindAddr);
     tajoConf.setVar(TajoConf.ConfVars.WORKER_PEER_RPC_ADDRESS, NetUtils.normalizeInetSocketAddress(bindAddr));
     super.init(tajoConf);
   }
@@ -104,10 +102,6 @@ public class TajoWorkerManagerService extends CompositeService
     return bindAddr;
   }
 
-  public String getHostAndPort() {
-    return bindAddr.getHostName() + ":" + bindAddr.getPort();
-  }
-
   @Override
   public void ping(RpcController controller,
                    TajoIdProtos.QueryUnitAttemptIdProto attemptId,
@@ -122,24 +116,11 @@ public class TajoWorkerManagerService extends CompositeService
     workerContext.getWorkerSystemMetrics().counter("query", "executedExecutionBlocksNum").inc();
 
     try {
-
-      String[] params = new String[7];
-      params[0] = "standby";  //mode(never used)
-      params[1] = request.getExecutionBlockId().toString();
-      // NodeId has a form of hostname:port.
-      params[2] = request.getNodeId();
-      params[3] = request.getContainerId();
-
-      // QueryMaster's address
-      params[4] = request.getQueryMasterHost();
-      params[5] = String.valueOf(request.getQueryMasterPort());
-      params[6] = request.getQueryOutputPath();
-
-      ExecutionBlockId executionBlockId = new ExecutionBlockId(request.getExecutionBlockId());
       workerContext.getTaskRunnerManager().getEventHandler().handle(new TaskRunnerStartEvent(
-          params
-          , executionBlockId,
-          new QueryContext(workerContext.getConf(), request.getQueryContext()),
+          new WorkerConnectionInfo(request.getQueryMaster())
+          , new ExecutionBlockId(request.getExecutionBlockId())
+          , request.getContainerId()
+          , new QueryContext(workerContext.getConf(), request.getQueryContext()),
           request.getPlanJson()
       ));
       done.run(TajoWorker.TRUE_PROTO);

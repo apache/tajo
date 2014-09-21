@@ -16,20 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.pullserver;
+package org.apache.tajo.cluster;
 
-import org.apache.hadoop.io.ReadaheadPool;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
+import org.junit.Test;
 
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import static org.junit.Assert.*;
 
-@Deprecated
-public class FadvisedFileRegionWrapper extends org.apache.hadoop.mapred.FadvisedFileRegion {
+public class TestWorkerConnectionInfo {
 
+  @Test
+  public void testWorkerId() {
+    WorkerConnectionInfo worker = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
+    WorkerConnectionInfo worker2 = new WorkerConnectionInfo("host2", 28091, 28092, 21000, 28093, 28080);
 
-  public FadvisedFileRegionWrapper(RandomAccessFile file, long position, long count,
-                                   boolean manageOsCache, int readaheadLength, ReadaheadPool readaheadPool,
-                                   String identifier) throws IOException {
-    super(file, position, count, manageOsCache, readaheadLength, readaheadPool, identifier);
+    assertNotEquals(worker.getId(), worker2.getId());
+    assertEquals(worker.getId(), new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080).getId());
   }
 }
