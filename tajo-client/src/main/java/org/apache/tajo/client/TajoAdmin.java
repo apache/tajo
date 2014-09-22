@@ -276,14 +276,15 @@ public class TajoAdmin {
                            line5, line10, line10);
       writer.write(line);
       for (WorkerResourceInfo queryMaster : liveQueryMasters) {
-        String queryMasterHost = String.format("%s:%d",
-                                  queryMaster.getAllocatedHost(),
-                                  queryMaster.getQueryMasterPort());
-        String heap = String.format("%d MB", queryMaster.getMaxHeap()/1024/1024);
-        line = String.format(fmtQueryMasterLine, queryMasterHost,
-                             queryMaster.getClientPort(),
-                             queryMaster.getNumQueryMasterTasks(),
-                             heap, queryMaster.getWorkerStatus());
+        TajoProtos.WorkerConnectionInfoProto connInfo = queryMaster.getConnectionInfo();
+        String queryMasterHost = String.format("%s:%d", connInfo.getHost(), connInfo.getQueryMasterPort());
+        String heap = String.format("%d MB", queryMaster.getMaxHeap() / 1024 / 1024);
+        line = String.format(fmtQueryMasterLine,
+            queryMasterHost,
+            connInfo.getClientPort(),
+            queryMaster.getNumQueryMasterTasks(),
+            heap,
+            queryMaster.getWorkerStatus());
         writer.write(line);
       }
 
@@ -301,12 +302,12 @@ public class TajoAdmin {
       writer.write(line);
 
       for (WorkerResourceInfo queryMaster : deadQueryMasters) {
-        String queryMasterHost = String.format("%s:%d",
-                                  queryMaster.getAllocatedHost(),
-                                  queryMaster.getQueryMasterPort());
-        line = String.format(fmtQueryMasterLine, queryMasterHost,
-                             queryMaster.getClientPort(),
-                             queryMaster.getWorkerStatus());
+        TajoProtos.WorkerConnectionInfoProto connInfo = queryMaster.getConnectionInfo();
+        String queryMasterHost = String.format("%s:%d", connInfo.getHost(), connInfo.getQueryMasterPort());
+        line = String.format(fmtQueryMasterLine,
+            queryMasterHost,
+            connInfo.getClientPort(),
+            queryMaster.getWorkerStatus());
         writer.write(line);
       }
 
@@ -358,9 +359,8 @@ public class TajoAdmin {
     writer.write(line);
 
     for (WorkerResourceInfo worker : workers) {
-      String workerHost = String.format("%s:%d",
-          worker.getAllocatedHost(),
-          worker.getPeerRpcPort());
+      TajoProtos.WorkerConnectionInfoProto connInfo = worker.getConnectionInfo();
+      String workerHost = String.format("%s:%d", connInfo.getHost(), connInfo.getPeerRpcPort());
       String mem = String.format("%d/%d", worker.getUsedMemoryMB(),
           worker.getMemoryMB());
       String disk = String.format("%.2f/%.2f", worker.getUsedDiskSlots(),
@@ -369,7 +369,7 @@ public class TajoAdmin {
           worker.getMaxHeap()/1024/1024);
 
       line = String.format(fmtWorkerLine, workerHost,
-          worker.getPullServerPort(),
+          connInfo.getPullServerPort(),
           worker.getNumRunningTasks(),
           mem, disk, heap, worker.getWorkerStatus());
       writer.write(line);

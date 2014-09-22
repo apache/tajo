@@ -16,21 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.pullserver;
+package org.apache.tajo.worker.event;
 
-import org.apache.hadoop.io.ReadaheadPool;
+import org.apache.tajo.ExecutionBlockId;
 
-import java.io.IOException;
-import java.io.RandomAccessFile;
+public class TaskRunnerStopEvent extends TaskRunnerEvent {
 
-/* tajo is not yet supported on Windows */
-public class FadvisedFileRegionWrapper extends org.apache.hadoop.mapred.FadvisedFileRegion {
-  public static final int DEFAULT_SHUFFLE_BUFFER_SIZE = 128 * 1024;
-
-  public FadvisedFileRegionWrapper(RandomAccessFile file, long position, long count,
-                                   boolean manageOsCache, int readaheadLength, ReadaheadPool readaheadPool,
-                                   String identifier) throws IOException {
-    super(file, position, count, manageOsCache, readaheadLength, readaheadPool,
-        identifier, DEFAULT_SHUFFLE_BUFFER_SIZE, true);
+  public TaskRunnerStopEvent(ExecutionBlockId executionBlockId) {
+    super(EventType.STOP, executionBlockId);
   }
 }

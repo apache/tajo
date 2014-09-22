@@ -29,6 +29,8 @@ import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
+import org.jboss.netty.util.HashedWheelTimer;
+import org.jboss.netty.util.Timer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,6 +49,7 @@ public class TestFetcher {
   private TajoConf conf = new TajoConf();
   private TajoPullServerService pullServerService;
   private ClientSocketChannelFactory channelFactory;
+  private Timer timer;
 
   @Before
   public void setUp() throws Exception {
@@ -62,12 +65,14 @@ public class TestFetcher {
     pullServerService.start();
 
     channelFactory = RpcChannelFactory.createClientChannelFactory("Fetcher", 1);
+    timer = new HashedWheelTimer();
   }
 
   @After
   public void tearDown(){
     pullServerService.stop();
     channelFactory.releaseExternalResources();
+    timer.stop();
   }
 
   @Test
@@ -93,7 +98,7 @@ public class TestFetcher {
     stream.close();
 
     URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
-    final Fetcher fetcher = new Fetcher(conf, uri, new File(OUTPUT_DIR + "data"), channelFactory);
+    final Fetcher fetcher = new Fetcher(conf, uri, new File(OUTPUT_DIR + "data"), channelFactory, timer);
     assertNotNull(fetcher.get());
 
     FileSystem fs = FileSystem.getLocal(new TajoConf());
@@ -106,6 +111,8 @@ public class TestFetcher {
 
   @Test
   public void testAdjustFetchProcess() {
+    assertEquals(0.0f, Task.adjustFetchProcess(0, 0), 0);
+    assertEquals(0.0f, Task.adjustFetchProcess(10, 10), 0);
     assertEquals(0.05f, Task.adjustFetchProcess(10, 9), 0);
     assertEquals(0.1f, Task.adjustFetchProcess(10, 8), 0);
     assertEquals(0.25f, Task.adjustFetchProcess(10, 5), 0);
@@ -133,7 +140,7 @@ public class TestFetcher {
     stream.close();
 
     URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
-    final Fetcher fetcher = new Fetcher(conf, uri, new File(OUTPUT_DIR + "data"), channelFactory);
+    final Fetcher fetcher = new Fetcher(conf, uri, new File(OUTPUT_DIR + "data"), channelFactory, timer);
     assertEquals(TajoProtos.FetcherState.FETCH_INIT, fetcher.getState());
 
     fetcher.get();
@@ -161,7 +168,7 @@ public class TestFetcher {
     stream.close();
 
     URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
-    final Fetcher fetcher = new Fetcher(conf, uri, new File(OUTPUT_DIR + "data"), channelFactory);
+    final Fetcher fetcher = new Fetcher(conf, uri, new File(OUTPUT_DIR + "data"), channelFactory, timer);
     assertEquals(TajoProtos.FetcherState.FETCH_INIT, fetcher.getState());
 
     fetcher.get();
@@ -193,7 +200,7 @@ public class TestFetcher {
     stream.close();
 
     URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
-    final Fetcher fetcher = new Fetcher(conf, uri, new File(OUTPUT_DIR + "data"), channelFactory);
+    final Fetcher fetcher = new Fetcher(conf, uri, new File(OUTPUT_DIR + "data"), channelFactory, timer);
     assertEquals(TajoProtos.FetcherState.FETCH_INIT, fetcher.getState());
 
     fetcher.get();
@@ -211,7 +218,7 @@ public class TestFetcher {
     String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, "h", ta);
 
     URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
-    final Fetcher fetcher = new Fetcher(conf, uri, new File(OUTPUT_DIR + "data"), channelFactory);
+    final Fetcher fetcher = new Fetcher(conf, uri, new File(OUTPUT_DIR + "data"), channelFactory, timer);
     assertEquals(TajoProtos.FetcherState.FETCH_INIT, fetcher.getState());
 
     pullServerService.stop();

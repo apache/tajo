@@ -31,6 +31,21 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-910: Simple query (non-forwarded query) should be supported against 
+    partition tables. (Hyoungjun Kim)
+
+    TAJO-1035: Add default TAJO_PULLSERVER_HEAPSIZE. (Hyoungjun Kim)
+
+    TAJO-1049: Remove the parallel degree limit up to the maximum cluster 
+    capacity. (hyunsik)
+
+    TAJO-1046: Remove hadoop native dependency of pullserver. (jinho)
+
+    TAJO-1040: Misuse netty HashedWheelTimer. (jinho)
+
+    TAJO-1034: Reduce Explicit Use of JVM Internal Class. 
+    (Jihun Kang via hyunsik)
+
     TAJO-1027: Upgrade Hive to 0.13.0 and 0.13.1. (jaehwa)
 
     TAJO-1028: JDBC should support SET command.(Hyoungjun Kim)
@@ -38,8 +53,8 @@ Release 0.9.0 - unreleased
     TAJO-937: Should use tajo.util.VersionInfo instead of 
     TajoConstants.TAJO_VERSION. (Mai Hai Thanh via hyunsik)
 
-    TAJO-991: Running PullServer on a dedicated JVM process which separates from worker.
-    (Hyoungjun Kim)
+    TAJO-991: Running PullServer on a dedicated JVM process which separates 
+    from worker. (Hyoungjun Kim)
 
     TAJO-906: Runtime code generation for evaluating expression trees.
     (hyunsik)
@@ -136,8 +151,6 @@ Release 0.9.0 - unreleased
     (Hyoungjun Kim via hyunsik)
 
   BUG FIXES
-
-    TAJO-1010: Improve multiple DISTINCT aggregation. (hyoungjun, jaehwa)
 
     TAJO-1022: tsql does not work as background process(Hyoungjun Kim)
 

@@ -111,9 +111,9 @@ public class BytesUtils {
    * @param length amount of bytes to str
    * @param separatorChar the ascii separate character
    * @param preserveAllTokens if <code>true</code>, adjacent separators are
-   * @param target the projection target
    * treated as empty token separators; if <code>false</code>, adjacent
    * separators are treated as one separator.
+   * @param target the projection target
    * @return an array of parsed Strings, <code>null</code> if null String input
    */
   private static byte[][] splitWorker(byte[] str, int offset, int length, char separatorChar,

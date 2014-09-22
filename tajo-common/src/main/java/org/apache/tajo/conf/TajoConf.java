@@ -262,6 +262,9 @@ public class TajoConf extends Configuration {
     // Client RPC
     RPC_CLIENT_WORKER_THREAD_NUM("tajo.rpc.client.worker-thread-num", 4),
 
+    SHUFFLE_RPC_CLIENT_WORKER_THREAD_NUM("tajo.shuffle.rpc.client.worker-thread-num",
+        Runtime.getRuntime().availableProcessors()),
+
     //Client service RPC Server
     MASTER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM("tajo.master.service.rpc.server.worker-thread-num",
         Runtime.getRuntime().availableProcessors() * 1),
@@ -355,7 +358,10 @@ public class TajoConf extends Configuration {
     $TEST_MIN_TASK_NUM("tajo.test.min-task-num", -1),
 
     // Behavior Control ---------------------------------------------------------
-    $BEHAVIOR_ARITHMETIC_ABORT("tajo.behavior.arithmetic-abort", false);
+    $BEHAVIOR_ARITHMETIC_ABORT("tajo.behavior.arithmetic-abort", false),
+
+    // ResultSet ---------------------------------------------------------
+    $RESULT_SET_FETCH_ROWNUM("tajo.resultset.fetch.rownum", 200)
     ;
 
     public final String varname;

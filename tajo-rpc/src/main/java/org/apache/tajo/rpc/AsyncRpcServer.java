@@ -126,11 +126,13 @@ public class AsyncRpcServer extends NettyServerBase {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
         throws Exception{
+
       if (e.getCause() instanceof RemoteCallException) {
         RemoteCallException callException = (RemoteCallException) e.getCause();
         e.getChannel().write(callException.getResponse());
+      } else {
+        LOG.error(e.getCause());
       }
-      throw new RemoteException(serviceName, e.getCause());
     }
   }
 }

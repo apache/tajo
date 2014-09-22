@@ -20,20 +20,21 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
 <%@ page import="org.apache.tajo.master.TajoMaster" %>
+<%@ page import="org.apache.tajo.master.cluster.WorkerConnectionInfo" %>
 <%@ page import="org.apache.tajo.master.ha.HAService" %>
 <%@ page import="org.apache.tajo.master.ha.TajoMasterInfo" %>
 <%@ page import="org.apache.tajo.master.rm.Worker" %>
 <%@ page import="org.apache.tajo.master.rm.WorkerResource" %>
 <%@ page import="org.apache.tajo.master.rm.WorkerState" %>
 <%@ page import="org.apache.tajo.util.JSPUtil" %>
+<%@ page import="org.apache.tajo.util.TUtil" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="java.util.*" %>
-<%@ page import="org.apache.tajo.util.TUtil" %>
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
-  Map<String, Worker> workers = master.getContext().getResourceManager().getWorkers();
-  List<String> wokerKeys = new ArrayList<String>(workers.keySet());
+  Map<Integer, Worker> workers = master.getContext().getResourceManager().getWorkers();
+  List<Integer> wokerKeys = new ArrayList<Integer>(workers.keySet());
   Collections.sort(wokerKeys);
 
   int runningQueryMasterTasks = 0;
@@ -175,17 +176,19 @@
 <%
     int no = 1;
     for(Worker queryMaster: liveQueryMasters) {
-      WorkerResource resource = queryMaster.getResource();
-          String queryMasterHttp = "http://" + queryMaster.getHostName() + ":" + queryMaster.getHttpPort() + "/index.jsp";
+        WorkerResource resource = queryMaster.getResource();
+        WorkerConnectionInfo connectionInfo = queryMaster.getConnectionInfo();
+        String queryMasterHttp = "http://" + connectionInfo.getHost()
+                + ":" + connectionInfo.getHttpInfoPort() + "/index.jsp";
 %>
     <tr>
-      <td width='30' align='right'><%=no++%></td>
-      <td><a href='<%=queryMasterHttp%>'><%=queryMaster.getHostName() + ":" + queryMaster.getQueryMasterPort()%></a></td>
-      <td width='100' align='center'><%=queryMaster.getClientPort()%></td>
-      <td width='200' align='right'><%=resource.getNumQueryMasterTasks()%></td>
-      <td width='200' align='center'><%=resource.getFreeHeap()/1024/1024%>/<%=resource.getTotalHeap()/1024/1024%>/<%=resource.getMaxHeap()/1024/1024%> MB</td>
-      <td width='100' align='right'><%=JSPUtil.getElapsedTime(queryMaster.getLastHeartbeatTime(), System.currentTimeMillis())%></td>
-      <td width='100' align='center'><%=queryMaster.getState()%></td>
+        <td width='30' align='right'><%=no++%></td>
+        <td><a href='<%=queryMasterHttp%>'><%=connectionInfo.getHost() + ":" + connectionInfo.getQueryMasterPort()%></a></td>
+        <td width='100' align='center'><%=connectionInfo.getClientPort()%></td>
+        <td width='200' align='right'><%=resource.getNumQueryMasterTasks()%></td>
+        <td width='200' align='center'><%=resource.getFreeHeap()/1024/1024%>/<%=resource.getTotalHeap()/1024/1024%>/<%=resource.getMaxHeap()/1024/1024%> MB</td>
+        <td width='100' align='right'><%=JSPUtil.getElapsedTime(queryMaster.getLastHeartbeatTime(), System.currentTimeMillis())%></td>
+        <td width='100' align='center'><%=queryMaster.getState()%></td>
     </tr>
 <%
     } //end fo for
@@ -210,7 +213,7 @@
 %>
     <tr>
       <td width='30' align='right'><%=no++%></td>
-      <td><%=queryMaster.getHostName() + ":" + queryMaster.getQueryMasterPort()%></td>
+      <td><%=queryMaster.getConnectionInfo().getHost() + ":" + queryMaster.getConnectionInfo().getQueryMasterPort()%></td>
     </tr>
 <%
       } //end fo for
@@ -236,19 +239,20 @@
 <%
     int no = 1;
     for(Worker worker: liveWorkers) {
-      WorkerResource resource = worker.getResource();
-          String workerHttp = "http://" + worker.getHostName() + ":" + worker.getHttpPort() + "/index.jsp";
+        WorkerResource resource = worker.getResource();
+        WorkerConnectionInfo connectionInfo = worker.getConnectionInfo();
+        String workerHttp = "http://" + connectionInfo.getHost() + ":" + connectionInfo.getHttpInfoPort() + "/index.jsp";
 %>
     <tr>
-      <td width='30' align='right'><%=no++%></td>
-      <td><a href='<%=workerHttp%>'><%=worker.getHostName() + ":" + worker.getPeerRpcPort()%></a></td>
-      <td width='80' align='center'><%=worker.getPullServerPort()%></td>
-      <td width='100' align='right'><%=resource.getNumRunningTasks()%></td>
-      <td width='150' align='center'><%=resource.getUsedMemoryMB()%>/<%=resource.getMemoryMB()%></td>
-      <td width='100' align='center'><%=resource.getUsedDiskSlots()%>/<%=resource.getDiskSlots()%></td>
-      <td width='200' align='center'><%=resource.getFreeHeap()/1024/1024%>/<%=resource.getTotalHeap()/1024/1024%>/<%=resource.getMaxHeap()/1024/1024%> MB</td>
-      <td width='100' align='right'><%=JSPUtil.getElapsedTime(worker.getLastHeartbeatTime(), System.currentTimeMillis())%></td>
-      <td width='100' align='center'><%=worker.getState()%></td>
+        <td width='30' align='right'><%=no++%></td>
+        <td><a href='<%=workerHttp%>'><%=connectionInfo.getHostAndPeerRpcPort()%></a></td>
+        <td width='80' align='center'><%=connectionInfo.getPullServerPort()%></td>
+        <td width='100' align='right'><%=resource.getNumRunningTasks()%></td>
+        <td width='150' align='center'><%=resource.getUsedMemoryMB()%>/<%=resource.getMemoryMB()%></td>
+        <td width='100' align='center'><%=resource.getUsedDiskSlots()%>/<%=resource.getDiskSlots()%></td>
+        <td width='200' align='center'><%=resource.getFreeHeap()/1024/1024%>/<%=resource.getTotalHeap()/1024/1024%>/<%=resource.getMaxHeap()/1024/1024%> MB</td>
+        <td width='100' align='right'><%=JSPUtil.getElapsedTime(worker.getLastHeartbeatTime(), System.currentTimeMillis())%></td>
+        <td width='100' align='center'><%=worker.getState()%></td>
     </tr>
 <%
     } //end fo for
@@ -279,7 +283,7 @@
 %>
     <tr>
       <td width='30' align='right'><%=no++%></td>
-      <td><%=worker.getHostName() + ":" + worker.getPeerRpcPort()%></td>
+      <td><%=worker.getConnectionInfo().getHostAndPeerRpcPort()%></td>
     </tr>
 <%
       } //end fo for

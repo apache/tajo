@@ -67,10 +67,10 @@
   List<TajoMasterProtocol.WorkerResourceProto> allWorkers = tajoWorker.getWorkerContext()
             .getQueryMasterManagerService().getQueryMaster().getAllWorker();
 
-  Map<String, TajoMasterProtocol.WorkerResourceProto> workerMap = new HashMap<String, TajoMasterProtocol.WorkerResourceProto>();
+  Map<Integer, TajoMasterProtocol.WorkerResourceProto> workerMap = new HashMap<Integer, TajoMasterProtocol.WorkerResourceProto>();
   if(allWorkers != null) {
     for(TajoMasterProtocol.WorkerResourceProto eachWorker: allWorkers) {
-      workerMap.put(eachWorker.getHost(), eachWorker);
+      workerMap.put(eachWorker.getConnectionInfo().getId(), eachWorker);
     }
   }
   QueryMasterTask queryMasterTask = tajoWorker.getWorkerContext()
@@ -201,12 +201,13 @@
 
           String queryUnitHost = eachQueryUnit.getSucceededHost() == null ? "-" : eachQueryUnit.getSucceededHost();
           if(eachQueryUnit.getSucceededHost() != null) {
-              TajoMasterProtocol.WorkerResourceProto worker = workerMap.get(eachQueryUnit.getSucceededHost());
+              TajoMasterProtocol.WorkerResourceProto worker =
+                      workerMap.get(eachQueryUnit.getLastAttempt().getWorkerConnectionInfo().getId());
               if(worker != null) {
                   QueryUnitAttempt lastAttempt = eachQueryUnit.getLastAttempt();
                   if(lastAttempt != null) {
                     QueryUnitAttemptId lastAttemptId = lastAttempt.getId();
-                    queryUnitHost = "<a href='http://" + eachQueryUnit.getSucceededHost() + ":" + worker.getInfoPort() + "/taskdetail.jsp?queryUnitAttemptId=" + lastAttemptId + "'>" + eachQueryUnit.getSucceededHost() + "</a>";
+                    queryUnitHost = "<a href='http://" + eachQueryUnit.getSucceededHost() + ":" + worker.getConnectionInfo().getHttpInfoPort() + "/taskdetail.jsp?queryUnitAttemptId=" + lastAttemptId + "'>" + eachQueryUnit.getSucceededHost() + "</a>";
                   }
               }
           }

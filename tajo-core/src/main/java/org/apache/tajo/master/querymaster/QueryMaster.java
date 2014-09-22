@@ -34,8 +34,6 @@ import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.ipc.TajoWorkerProtocol.ExecutionBlockReport;
-import org.apache.tajo.ipc.TajoWorkerProtocol.IntermediateEntryProto;
 import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.event.QueryStartEvent;
 import org.apache.tajo.rpc.CallFuture;
@@ -47,7 +45,6 @@ import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.util.HAServiceUtil;
 import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.worker.TajoWorker;
 
 import java.util.ArrayList;
@@ -57,7 +54,6 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.tajo.ipc.TajoMasterProtocol.TajoHeartbeat;
@@ -196,9 +192,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
     for (TajoMasterProtocol.WorkerResourceProto worker : workers) {
       try {
-        if (worker.getPeerRpcPort() == 0) continue;
-
-        rpc = connPool.getConnection(NetUtils.createSocketAddr(worker.getHost(), worker.getPeerRpcPort()),
+        TajoProtos.WorkerConnectionInfoProto connectionInfo = worker.getConnectionInfo();
+        rpc = connPool.getConnection(NetUtils.createSocketAddr(connectionInfo.getHost(), connectionInfo.getPeerRpcPort()),
             TajoWorkerProtocol.class, true);
         TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
 
@@ -218,9 +213,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
     for (TajoMasterProtocol.WorkerResourceProto worker : workers) {
       try {
-        if (worker.getPeerRpcPort() == 0) continue;
-
-        rpc = connPool.getConnection(NetUtils.createSocketAddr(worker.getHost(), worker.getPeerRpcPort()),
+        TajoProtos.WorkerConnectionInfoProto connectionInfo = worker.getConnectionInfo();
+        rpc = connPool.getConnection(NetUtils.createSocketAddr(connectionInfo.getHost(), connectionInfo.getPeerRpcPort()),
             TajoWorkerProtocol.class, true);
         TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
 
@@ -303,9 +297,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
 
       TajoHeartbeat.Builder queryHeartbeatBuilder = TajoHeartbeat.newBuilder()
-          .setTajoWorkerHost(workerContext.getQueryMasterManagerService().getBindAddr().getHostName())
-          .setTajoQueryMasterPort(workerContext.getQueryMasterManagerService().getBindAddr().getPort())
-          .setTajoWorkerClientPort(workerContext.getTajoWorkerClientService().getBindAddr().getPort())
+          .setConnectionInfo(workerContext.getConnectionInfo().getProto())
           .setState(state)
           .setQueryId(queryId.getProto());
 
@@ -404,6 +396,8 @@ public class QueryMaster extends CompositeService implements EventHandler {
     public void stopQuery(QueryId queryId) {
       QueryMasterTask queryMasterTask;
       queryMasterTask = queryMasterTasks.remove(queryId);
+      if(queryMasterTask == null) return;
+
       finishedQueryMasterTasks.put(queryId, queryMasterTask);
 
       if(queryMasterTask != null) {
@@ -462,9 +456,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
   private TajoHeartbeat buildTajoHeartBeat(QueryMasterTask queryMasterTask) {
     TajoHeartbeat.Builder builder = TajoHeartbeat.newBuilder();
 
-    builder.setTajoWorkerHost(workerContext.getQueryMasterManagerService().getBindAddr().getHostName());
-    builder.setTajoQueryMasterPort(workerContext.getQueryMasterManagerService().getBindAddr().getPort());
-    builder.setTajoWorkerClientPort(workerContext.getTajoWorkerClientService().getBindAddr().getPort());
+    builder.setConnectionInfo(workerContext.getConnectionInfo().getProto());
     builder.setState(queryMasterTask.getState());
     builder.setQueryId(queryMasterTask.getQueryId().getProto());
 

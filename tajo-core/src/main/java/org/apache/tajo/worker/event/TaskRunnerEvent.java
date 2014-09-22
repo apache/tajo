@@ -16,19 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.pullserver;
+package org.apache.tajo.worker.event;
 
-import org.apache.hadoop.io.ReadaheadPool;
+import org.apache.hadoop.yarn.event.AbstractEvent;
+import org.apache.tajo.ExecutionBlockId;
 
-import java.io.IOException;
-import java.io.RandomAccessFile;
+public class TaskRunnerEvent extends AbstractEvent<TaskRunnerEvent.EventType> {
+  public enum EventType {
+    START,
+    STOP
+  }
 
-public class FadvisedFileRegionWrapper extends org.apache.hadoop.mapred.FadvisedFileRegion {
+  protected final ExecutionBlockId executionBlockId;
 
+  public TaskRunnerEvent(EventType eventType,
+                         ExecutionBlockId executionBlockId) {
+    super(eventType);
+    this.executionBlockId = executionBlockId;
+  }
 
-  public FadvisedFileRegionWrapper(RandomAccessFile file, long position, long count,
-                                   boolean manageOsCache, int readaheadLength, ReadaheadPool readaheadPool,
-                                   String identifier) throws IOException {
-    super(file, position, count, manageOsCache, readaheadLength, readaheadPool, identifier);
+  public ExecutionBlockId getExecutionBlockId() {
+    return executionBlockId;
   }
 }

@@ -54,7 +54,7 @@ public class TajoWorkerClientService extends AbstractService {
 
   private BlockingRpcServer rpcServer;
   private InetSocketAddress bindAddr;
-  private String addr;
+
   private int port;
   private TajoConf conf;
   private TajoWorker.WorkerContext workerContext;
@@ -88,14 +88,12 @@ public class TajoWorkerClientService extends AbstractService {
       this.rpcServer.start();
 
       this.bindAddr = NetUtils.getConnectAddress(rpcServer.getListenAddress());
-      this.addr = bindAddr.getHostName() + ":" + bindAddr.getPort();
-
       this.port = bindAddr.getPort();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
     }
     // Get the master address
-    LOG.info(TajoWorkerClientService.class.getSimpleName() + " is bind to " + addr);
+    LOG.info(TajoWorkerClientService.class.getSimpleName() + " is bind to " + bindAddr);
 
     super.init(conf);
   }
