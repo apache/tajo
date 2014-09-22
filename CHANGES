@@ -31,6 +31,8 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1035: Add default TAJO_PULLSERVER_HEAPSIZE. (Hyoungjun Kim)
+
     TAJO-1049: Remove the parallel degree limit up to the maximum cluster 
     capacity. (hyunsik)
 
