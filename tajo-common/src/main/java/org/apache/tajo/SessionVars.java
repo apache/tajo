@@ -115,6 +115,9 @@ public enum SessionVars implements ConfigKey {
   ARITHABORT(ConfVars.$BEHAVIOR_ARITHMETIC_ABORT,
       "If true, a running query will be terminated when an overflow or divide-by-zero occurs.", DEFAULT),
 
+  // ResultSet ----------------------------------------------------------------
+  FETCH_ROWNUM(ConfVars.$RESULT_SET_FETCH_ROWNUM, "Sets the number of rows at a time from Master", DEFAULT),
+
   //-------------------------------------------------------------------------------
   // Only for Unit Testing
   //-------------------------------------------------------------------------------
