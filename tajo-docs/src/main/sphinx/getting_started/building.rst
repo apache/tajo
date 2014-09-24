@@ -16,7 +16,8 @@ You can compile source code and get a binary archive as follows:
 
 .. note::
 
-  If you doesn't specify the hadoop version, tajo cluster may not run correctly. Thus, You must specify your hadoop version with maven build command as follows.
+  If you don't specify the hadoop version, tajo cluster may not run correctly. Thus, we highly recommend that you specify your hadoop version with maven build command, for example, as follows.
+  
     $ mvn clean install -DskipTests -Pdist -Dtar -Dhadoop.version=2.5.1
 
 Then, after you move some proper directory, discompress the tar.gz file as follows:
