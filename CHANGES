@@ -31,6 +31,9 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-983: Worker should directly read Intermediate data stored in localhost
+    rather than fetching. (Mai Hai Thanh via hyunsik)
+
     TAJO-910: Simple query (non-forwarded query) should be supported against 
     partition tables. (Hyoungjun Kim)
 
