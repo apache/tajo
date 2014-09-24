@@ -30,7 +30,6 @@ import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.http.*;
 import org.jboss.netty.handler.timeout.ReadTimeoutException;
 import org.jboss.netty.handler.timeout.ReadTimeoutHandler;
-import org.jboss.netty.util.HashedWheelTimer;
 import org.jboss.netty.util.Timer;
 
 import java.io.File;
@@ -67,11 +66,12 @@ public class Fetcher {
 
   private ClientBootstrap bootstrap;
 
-  public Fetcher(TajoConf conf, URI uri, File file, ClientSocketChannelFactory factory) {
+  public Fetcher(TajoConf conf, URI uri, File file, ClientSocketChannelFactory factory, Timer timer) {
     this.uri = uri;
     this.file = file;
     this.state = TajoProtos.FetcherState.FETCH_INIT;
     this.conf = conf;
+    this.timer = timer;
 
     String scheme = uri.getScheme() == null ? "http" : uri.getScheme();
     this.host = uri.getHost() == null ? "localhost" : uri.getHost();
@@ -154,9 +154,6 @@ public class Fetcher {
 
       this.finishTime = System.currentTimeMillis();
       LOG.info("Fetcher finished:" + (finishTime - startTime) + " ms, " + getState() + ", URI:" + uri);
-      if (timer != null) {
-        timer.stop();
-      }
     }
   }
 
@@ -301,8 +298,6 @@ public class Fetcher {
     @Override
     public ChannelPipeline getPipeline() throws Exception {
       ChannelPipeline pipeline = pipeline();
-
-      timer = new HashedWheelTimer();
 
       int maxChunkSize = conf.getIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_CHUNK_MAX_SIZE);
       int readTimeout = conf.getIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_READ_TIMEOUT);

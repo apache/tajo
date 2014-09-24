@@ -59,7 +59,7 @@ public class TajoContainerProxy extends ContainerProxy {
     context.getResourceAllocator().addContainer(containerID, this);
 
     this.hostName = container.getNodeId().getHost();
-    this.port = ((TajoWorkerContainer)container).getWorkerResource().getPullServerPort();
+    this.port = ((TajoWorkerContainer)container).getWorkerResource().getConnectionInfo().getPullServerPort();
     this.state = ContainerState.RUNNING;
 
     if (LOG.isDebugEnabled()) {
@@ -101,9 +101,8 @@ public class TajoContainerProxy extends ContainerProxy {
 
       TajoWorkerProtocol.RunExecutionBlockRequestProto request =
           TajoWorkerProtocol.RunExecutionBlockRequestProto.newBuilder()
-              .setExecutionBlockId(executionBlockId.toString())
-              .setQueryMasterHost(myAddr.getHostName())
-              .setQueryMasterPort(myAddr.getPort())
+              .setExecutionBlockId(executionBlockId.getProto())
+              .setQueryMaster(context.getQueryMasterContext().getWorkerContext().getConnectionInfo().getProto())
               .setNodeId(container.getNodeId().toString())
               .setContainerId(container.getId().toString())
               .setQueryOutputPath(context.getStagingDir().toString())
@@ -111,7 +110,7 @@ public class TajoContainerProxy extends ContainerProxy {
               .setPlanJson(planJson)
               .build();
 
-      tajoWorkerRpcClient.executeExecutionBlock(null, request, NullCallback.get());
+      tajoWorkerRpcClient.startExecutionBlock(null, request, NullCallback.get());
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
     } finally {

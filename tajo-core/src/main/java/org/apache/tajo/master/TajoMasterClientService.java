@@ -18,6 +18,7 @@
 
 package org.apache.tajo.master;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.lang.exception.ExceptionUtils;
@@ -56,6 +57,7 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
+import org.apache.tajo.util.StringUtils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -264,6 +266,8 @@ public class TajoMasterClientService extends AbstractService {
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
         SubmitQueryResponse.Builder responseBuilder = ClientProtos.SubmitQueryResponse.newBuilder();
+        responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+        responseBuilder.setIsForwarded(true);
         responseBuilder.setUserName(context.getConf().getVar(ConfVars.USERNAME));
         responseBuilder.setResultCode(ResultCode.ERROR);
         if (e.getMessage() != null) {
@@ -450,6 +454,7 @@ public class TajoMasterClientService extends AbstractService {
           if (queryInProgress == null) {
             queryInProgress = context.getQueryJobManager().getFinishedQuery(queryId);
           }
+
           if (queryInProgress != null) {
             QueryInfo queryInfo = queryInProgress.getQueryInfo();
             builder.setResultCode(ResultCode.OK);
@@ -466,14 +471,70 @@ public class TajoMasterClientService extends AbstractService {
               builder.setFinishTime(System.currentTimeMillis());
             }
           } else {
-            builder.setResultCode(ResultCode.ERROR);
-            builder.setErrorMessage("No such query: " + queryId.toString());
+            Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+            if (session.getNonForwardQueryResultScanner(queryId) != null) {
+              builder.setResultCode(ResultCode.OK);
+              builder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
+            } else {
+              builder.setResultCode(ResultCode.ERROR);
+              builder.setErrorMessage("No such query: " + queryId.toString());
+            }
           }
         }
         return builder.build();
 
       } catch (Throwable t) {
-        throw new  ServiceException(t);
+        throw new ServiceException(t);
+      }
+    }
+
+    @Override
+    public GetQueryResultDataResponse getQueryResultData(RpcController controller, GetQueryResultDataRequest request)
+        throws ServiceException {
+      GetQueryResultDataResponse.Builder builder = GetQueryResultDataResponse.newBuilder();
+
+      try {
+        context.getSessionManager().touch(request.getSessionId().getId());
+        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+
+        QueryId queryId = new QueryId(request.getQueryId());
+        NonForwardQueryResultScanner queryResultScanner = session.getNonForwardQueryResultScanner(queryId);
+        if (queryResultScanner == null) {
+          throw new ServiceException("No NonForwardQueryResultScanner for " + queryId);
+        }
+
+        List<ByteString> rows = queryResultScanner.getNextRows(request.getFetchRowNum());
+        SerializedResultSet.Builder resultSetBuilder = SerializedResultSet.newBuilder();
+        resultSetBuilder.setSchema(queryResultScanner.getTableDesc().getLogicalSchema().getProto());
+        resultSetBuilder.addAllSerializedTuples(rows);
+
+        builder.setResultSet(resultSetBuilder.build());
+        builder.setResultCode(ResultCode.OK);
+
+        LOG.info("Send result to client for " +
+            request.getSessionId().getId() + "," + queryId + ", " + rows.size() + " rows");
+
+      } catch (Throwable t) {
+        LOG.error(t.getMessage(), t);
+        builder.setResultCode(ResultCode.ERROR);
+        String errorMessage = t.getMessage() == null ? t.getClass().getName() : t.getMessage();
+        builder.setErrorMessage(errorMessage);
+        builder.setErrorTrace(org.apache.hadoop.util.StringUtils.stringifyException(t));
+      }
+      return builder.build();
+    }
+
+    @Override
+    public BoolProto closeNonForwardQuery(RpcController controller, QueryIdRequest request) throws ServiceException {
+      try {
+        context.getSessionManager().touch(request.getSessionId().getId());
+        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+        QueryId queryId = new QueryId(request.getQueryId());
+
+        session.closeNonForwardQueryResultScanner(queryId);
+        return BOOL_TRUE;
+      } catch (Throwable t) {
+        throw new ServiceException(t);
       }
     }
 
@@ -481,7 +542,7 @@ public class TajoMasterClientService extends AbstractService {
      * It is invoked by TajoContainerProxy.
      */
     @Override
-    public BoolProto killQuery(RpcController controller, KillQueryRequest request) throws ServiceException {
+    public BoolProto killQuery(RpcController controller, QueryIdRequest request) throws ServiceException {
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
         QueryId queryId = new QueryId(request.getQueryId());
@@ -490,7 +551,7 @@ public class TajoMasterClientService extends AbstractService {
             new QueryInfo(queryId)));
         return BOOL_TRUE;
       } catch (Throwable t) {
-        t.printStackTrace();
+        LOG.error(t.getMessage(), t);
         throw new ServiceException(t);
       }
     }
@@ -503,9 +564,9 @@ public class TajoMasterClientService extends AbstractService {
         context.getSessionManager().touch(request.getSessionId().getId());
         GetClusterInfoResponse.Builder builder= GetClusterInfoResponse.newBuilder();
 
-        Map<String, Worker> workers = context.getResourceManager().getWorkers();
+        Map<Integer, Worker> workers = context.getResourceManager().getWorkers();
 
-        List<String> wokerKeys = new ArrayList<String>(workers.keySet());
+        List<Integer> wokerKeys = new ArrayList<Integer>(workers.keySet());
         Collections.sort(wokerKeys);
 
         WorkerResourceInfo.Builder workerBuilder
@@ -513,7 +574,8 @@ public class TajoMasterClientService extends AbstractService {
 
         for(Worker worker: workers.values()) {
           WorkerResource workerResource = worker.getResource();
-          workerBuilder.setAllocatedHost(worker.getHostName());
+
+          workerBuilder.setConnectionInfo(worker.getConnectionInfo().getProto());
           workerBuilder.setDiskSlots(workerResource.getDiskSlots());
           workerBuilder.setCpuCoreSlots(workerResource.getCpuCoreSlots());
           workerBuilder.setMemoryMB(workerResource.getMemoryMB());
@@ -524,11 +586,6 @@ public class TajoMasterClientService extends AbstractService {
           workerBuilder.setWorkerStatus(worker.getState().toString());
           workerBuilder.setQueryMasterMode(workerResource.isQueryMasterMode());
           workerBuilder.setTaskRunnerMode(workerResource.isTaskRunnerMode());
-          workerBuilder.setPeerRpcPort(worker.getPeerRpcPort());
-          workerBuilder.setQueryMasterPort(worker.getQueryMasterPort());
-          workerBuilder.setClientPort(worker.getClientPort());
-          workerBuilder.setPullServerPort(worker.getPullServerPort());
-          workerBuilder.setHttpPort(worker.getHttpPort());
           workerBuilder.setMaxHeap(workerResource.getMaxHeap());
           workerBuilder.setFreeHeap(workerResource.getFreeHeap());
           workerBuilder.setTotalHeap(workerResource.getTotalHeap());

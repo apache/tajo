@@ -21,21 +21,31 @@ package org.apache.tajo.engine.planner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.exception.InvalidQueryException;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.storage.TupleComparator;
+import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.TUtil;
 
+import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class PlannerUtil {
 
@@ -70,24 +80,43 @@ public class PlannerUtil {
     // one block, without where clause, no group-by, no-sort, no-join
     boolean isOneQueryBlock = plan.getQueryBlocks().size() == 1;
     boolean simpleOperator = rootNode.getChild().getType() == NodeType.LIMIT
-        || rootNode.getChild().getType() == NodeType.SCAN;
+        || rootNode.getChild().getType() == NodeType.SCAN || rootNode.getChild().getType() == NodeType.PARTITIONS_SCAN;
     boolean noOrderBy = !plan.getRootBlock().hasNode(NodeType.SORT);
     boolean noGroupBy = !plan.getRootBlock().hasNode(NodeType.GROUP_BY);
     boolean noWhere = !plan.getRootBlock().hasNode(NodeType.SELECTION);
     boolean noJoin = !plan.getRootBlock().hasNode(NodeType.JOIN);
-    boolean singleRelation = plan.getRootBlock().hasNode(NodeType.SCAN)
-        && PlannerUtil.getRelationLineage(plan.getRootBlock().getRoot()).length == 1;
+    boolean singleRelation =
+        (plan.getRootBlock().hasNode(NodeType.SCAN) || plan.getRootBlock().hasNode(NodeType.PARTITIONS_SCAN)) &&
+        PlannerUtil.getRelationLineage(plan.getRootBlock().getRoot()).length == 1;
 
     boolean noComplexComputation = false;
     if (singleRelation) {
       ScanNode scanNode = plan.getRootBlock().getNode(NodeType.SCAN);
-      if (!scanNode.getTableDesc().hasPartition() && scanNode.hasTargets()
-          && scanNode.getTargets().length == scanNode.getInSchema().size()) {
+      if (scanNode == null) {
+        scanNode = plan.getRootBlock().getNode(NodeType.PARTITIONS_SCAN);
+      }
+      if (scanNode.hasTargets()) {
+        // If the number of columns in the select clause is s different from table schema,
+        // This query is not a simple query.
+        if (scanNode.getTableDesc().hasPartition()) {
+          // In the case of partitioned table, the actual number of columns is ScanNode.InSchema + partitioned columns
+          int numPartitionColumns = scanNode.getTableDesc().getPartitionMethod().getExpressionSchema().size();
+          if (scanNode.getTargets().length != scanNode.getInSchema().size() + numPartitionColumns) {
+            return false;
+          }
+        } else {
+          if (scanNode.getTargets().length != scanNode.getInSchema().size()) {
+            return false;
+          }
+        }
         noComplexComputation = true;
         for (int i = 0; i < scanNode.getTargets().length; i++) {
-          noComplexComputation = noComplexComputation && scanNode.getTargets()[i].getEvalTree().getType() == EvalType.FIELD;
+          noComplexComputation =
+              noComplexComputation && scanNode.getTargets()[i].getEvalTree().getType() == EvalType.FIELD;
           if (noComplexComputation) {
-            noComplexComputation = noComplexComputation && scanNode.getTargets()[i].getNamedColumn().equals(scanNode.getInSchema().getColumn(i));
+            noComplexComputation = noComplexComputation &&
+                scanNode.getTargets()[i].getNamedColumn().equals(
+                    scanNode.getTableDesc().getLogicalSchema().getColumn(i));
           }
           if (!noComplexComputation) {
             return noComplexComputation;
@@ -97,7 +126,8 @@ public class PlannerUtil {
     }
 
     return !checkIfDDLPlan(rootNode) &&
-        (simpleOperator && noComplexComputation  && isOneQueryBlock && noOrderBy && noGroupBy && noWhere && noJoin && singleRelation);
+        (simpleOperator && noComplexComputation && isOneQueryBlock &&
+            noOrderBy && noGroupBy && noWhere && noJoin && singleRelation);
   }
 
   /**
@@ -761,5 +791,97 @@ public class PlannerUtil {
     }
 
     return explains.toString();
+  }
+
+  /**
+   * Listing table data file which is not empty.
+   * If the table is a partitioned table, return file list which has same partition key.
+   * @param tajoConf
+   * @param tableDesc
+   * @param fileIndex
+   * @param numResultFiles
+   * @return
+   * @throws IOException
+   */
+  public static FragmentProto[] getNonZeroLengthDataFiles(TajoConf tajoConf,TableDesc tableDesc,
+                                                          int fileIndex, int numResultFiles) throws IOException {
+    FileSystem fs = tableDesc.getPath().getFileSystem(tajoConf);
+
+    List<FileStatus> nonZeroLengthFiles = new ArrayList<FileStatus>();
+    if (fs.exists(tableDesc.getPath())) {
+      getNonZeroLengthDataFiles(fs, tableDesc.getPath(), nonZeroLengthFiles, fileIndex, numResultFiles,
+          new AtomicInteger(0));
+    }
+
+    List<FileFragment> fragments = new ArrayList<FileFragment>();
+
+    //In the case of partitioned table, return same partition key data files.
+    int numPartitionColumns = 0;
+    if (tableDesc.hasPartition()) {
+      numPartitionColumns = tableDesc.getPartitionMethod().getExpressionSchema().getColumns().size();
+    }
+    String[] previousPartitionPathNames = null;
+    for (FileStatus eachFile: nonZeroLengthFiles) {
+      FileFragment fileFragment = new FileFragment(tableDesc.getName(), eachFile.getPath(), 0, eachFile.getLen(), null);
+
+      if (numPartitionColumns > 0) {
+        // finding partition key;
+        Path filePath = fileFragment.getPath();
+        Path parentPath = filePath;
+        String[] parentPathNames = new String[numPartitionColumns];
+        for (int i = 0; i < numPartitionColumns; i++) {
+          parentPath = parentPath.getParent();
+          parentPathNames[numPartitionColumns - i - 1] = parentPath.getName();
+        }
+
+        // If current partitionKey == previousPartitionKey, add to result.
+        if (previousPartitionPathNames == null) {
+          fragments.add(fileFragment);
+        } else if (previousPartitionPathNames != null && Arrays.equals(previousPartitionPathNames, parentPathNames)) {
+          fragments.add(fileFragment);
+        } else {
+          break;
+        }
+        previousPartitionPathNames = parentPathNames;
+      } else {
+        fragments.add(fileFragment);
+      }
+    }
+    return FragmentConvertor.toFragmentProtoArray(fragments.toArray(new FileFragment[]{}));
+  }
+
+  private static void getNonZeroLengthDataFiles(FileSystem fs, Path path, List<FileStatus> result,
+                                         int startFileIndex, int numResultFiles,
+                                         AtomicInteger currentFileIndex) throws IOException {
+    if (fs.isDirectory(path)) {
+      FileStatus[] files = fs.listStatus(path);
+      if (files != null && files.length > 0) {
+        for (FileStatus eachFile : files) {
+          if (result.size() >= numResultFiles) {
+            return;
+          }
+          if (eachFile.isDirectory()) {
+            getNonZeroLengthDataFiles(fs, eachFile.getPath(), result, startFileIndex, numResultFiles,
+                currentFileIndex);
+          } else if (eachFile.isFile() && eachFile.getLen() > 0) {
+            if (currentFileIndex.get() >= startFileIndex) {
+              result.add(eachFile);
+            }
+            currentFileIndex.incrementAndGet();
+          }
+        }
+      }
+    } else {
+      FileStatus fileStatus = fs.getFileStatus(path);
+      if (fileStatus != null && fileStatus.getLen() > 0) {
+        if (currentFileIndex.get() >= startFileIndex) {
+          result.add(fileStatus);
+        }
+        currentFileIndex.incrementAndGet();
+        if (result.size() >= numResultFiles) {
+          return;
+        }
+      }
+    }
   }
 }

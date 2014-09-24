@@ -43,7 +43,6 @@ import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.json.CoreGsonHelper;
-import org.apache.tajo.engine.plan.proto.PlanProto;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
@@ -59,6 +58,7 @@ import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttem
 import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.worker.FetchImpl;
 
@@ -138,7 +138,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
               SubQueryEventType.SQ_DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
           .addTransition(SubQueryState.INITED, SubQueryState.KILL_WAIT,
-              SubQueryEventType.SQ_KILL)
+              SubQueryEventType.SQ_KILL, new KillTasksTransition())
           .addTransition(SubQueryState.INITED, SubQueryState.ERROR,
               SubQueryEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
@@ -175,7 +175,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
               SubQueryEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINERS_CANCEL_TRANSITION)
           .addTransition(SubQueryState.KILL_WAIT, SubQueryState.KILL_WAIT,
-              EnumSet.of(SubQueryEventType.SQ_KILL))
+              EnumSet.of(SubQueryEventType.SQ_KILL), new KillTasksTransition())
           .addTransition(SubQueryState.KILL_WAIT, SubQueryState.KILL_WAIT,
               SubQueryEventType.SQ_TASK_COMPLETED,
               TASK_COMPLETED_TRANSITION)
@@ -349,7 +349,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
 
     if (totalProgress > 0.0f) {
-      return (float) Math.floor((totalProgress / (float) tempTasks.size()) * 1000.0f) / 1000.0f;
+      return (float) Math.floor((totalProgress / (float) Math.max(tempTasks.size(), 1)) * 1000.0f) / 1000.0f;
     } else {
       return 0.0f;
     }
@@ -668,13 +668,14 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
                             LOG.info(subQuery.totalScheduledObjectsCount + " objects are scheduled");
 
                             if (subQuery.getTaskScheduler().remainingScheduledObjectNum() == 0) { // if there is no tasks
-                              subQuery.stopScheduler();
-                              subQuery.finalizeStats();
-                              subQuery.eventHandler.handle(new SubQueryCompletedEvent(subQuery.getId(), SubQueryState.SUCCEEDED));
+                              subQuery.complete();
                             } else {
-                              subQuery.taskScheduler.start();
-                              allocateContainers(subQuery);
-
+                              if(subQuery.getSynchronizedState() == SubQueryState.INITED) {
+                                subQuery.taskScheduler.start();
+                                allocateContainers(subQuery);
+                              } else {
+                                subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_KILL));
+                              }
                             }
                           } catch (Throwable e) {
                             LOG.error("SubQuery (" + subQuery.getId() + ") ERROR: ", e);
@@ -773,17 +774,10 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         int mb = (int) Math.ceil((double) bigger / 1048576);
         LOG.info(subQuery.getId() + ", Bigger Table's volume is approximately " + mb + " MB");
 
-        int taskNum = (int) Math.ceil((double) mb /
-            conf.getIntVar(ConfVars.$DIST_QUERY_JOIN_PARTITION_VOLUME));
+        int taskNum = (int) Math.ceil((double) mb / masterPlan.getContext().getInt(SessionVars.JOIN_PER_SHUFFLE_SIZE));
 
-        int totalMem = getClusterTotalMemory(subQuery);
-        LOG.info(subQuery.getId() + ", Total memory of cluster is " + totalMem + " MB");
-        int slots = Math.max(totalMem / conf.getIntVar(ConfVars.TASK_DEFAULT_MEMORY), 1);
-        // determine the number of task
-        taskNum = Math.min(taskNum, slots);
-
-        if (conf.getIntVar(ConfVars.$TEST_MIN_TASK_NUM) > 0) {
-          taskNum = conf.getIntVar(ConfVars.$TEST_MIN_TASK_NUM);
+        if (masterPlan.getContext().containsKey(SessionVars.TEST_MIN_TASK_NUM)) {
+          taskNum = masterPlan.getContext().getInt(SessionVars.TEST_MIN_TASK_NUM);
           LOG.warn("!!!!! TESTCASE MODE !!!!!");
         }
 
@@ -823,17 +817,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         } else {
           long volume = getInputVolume(subQuery.masterPlan, subQuery.context, subQuery.block);
 
-          int mb = (int) Math.ceil((double) volume / 1048576);
-          LOG.info(subQuery.getId() + ", Table's volume is approximately " + mb + " MB");
+          int volumeByMB = (int) Math.ceil((double) volume / StorageUnit.MB);
+          LOG.info(subQuery.getId() + ", Table's volume is approximately " + volumeByMB + " MB");
           // determine the number of task
-          int taskNumBySize = (int) Math.ceil((double) mb /
-              conf.getIntVar(ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME));
-
-          int totalMem = getClusterTotalMemory(subQuery);
-
-          LOG.info(subQuery.getId() + ", Total memory of cluster is " + totalMem + " MB");
-          int slots = Math.max(totalMem / conf.getIntVar(ConfVars.TASK_DEFAULT_MEMORY), 1);
-          int taskNum = Math.min(taskNumBySize, slots); //Maximum partitions
+          int taskNum = (int) Math.ceil((double) volumeByMB /
+              masterPlan.getContext().getInt(SessionVars.GROUPBY_PER_SHUFFLE_SIZE));
           LOG.info(subQuery.getId() + ", The determined number of aggregation partitions is " + taskNum);
           return taskNum;
         }
@@ -1116,7 +1104,10 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
     @Override
     public void transition(SubQuery subQuery, SubQueryEvent subQueryEvent) {
-      subQuery.getTaskScheduler().stop();
+      if(subQuery.getTaskScheduler() != null){
+        subQuery.getTaskScheduler().stop();
+      }
+
       for (QueryUnit queryUnit : subQuery.getQueryUnits()) {
         subQuery.eventHandler.handle(new TaskEvent(queryUnit.getId(), TaskEventType.T_KILL));
       }

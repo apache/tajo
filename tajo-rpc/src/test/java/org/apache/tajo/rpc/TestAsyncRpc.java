@@ -28,6 +28,8 @@ import org.apache.tajo.rpc.test.TestProtos.SumRequest;
 import org.apache.tajo.rpc.test.TestProtos.SumResponse;
 import org.apache.tajo.rpc.test.impl.DummyProtocolAsyncImpl;
 import org.apache.tajo.util.NetUtils;
+import org.jboss.netty.channel.ConnectTimeoutException;
+import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,15 +52,20 @@ public class TestAsyncRpc {
   static AsyncRpcClient client;
   static Interface stub;
   static DummyProtocolAsyncImpl service;
+  ClientSocketChannelFactory clientChannelFactory;
+  int retries;
 
   @Before
   public void setUp() throws Exception {
+    retries = 1;
+
+    clientChannelFactory = RpcChannelFactory.createClientChannelFactory("TestAsyncRpc", 2);
     service = new DummyProtocolAsyncImpl();
     server = new AsyncRpcServer(DummyProtocol.class,
         service, new InetSocketAddress("127.0.0.1", 0), 2);
     server.start();
     client = new AsyncRpcClient(DummyProtocol.class,
-        NetUtils.getConnectAddress(server.getListenAddress()));
+        NetUtils.getConnectAddress(server.getListenAddress()), clientChannelFactory, retries);
     stub = client.getStub();
   }
 
@@ -67,8 +74,13 @@ public class TestAsyncRpc {
     if(client != null) {
       client.close();
     }
+
     if(server != null) {
       server.shutdown();
+    }
+
+    if (clientChannelFactory != null) {
+      clientChannelFactory.releaseExternalResources();
     }
   }
 
@@ -170,9 +182,83 @@ public class TestAsyncRpc {
   }
 
   @Test
+  public void testStubDisconnected() throws Exception {
+
+    EchoMessage echoMessage = EchoMessage.newBuilder()
+        .setMessage(MESSAGE).build();
+    CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
+
+    server.shutdown();
+    server = null;
+
+    stub = client.getStub();
+    stub.echo(future.getController(), echoMessage, future);
+    EchoMessage response = future.get();
+
+    assertNull(response);
+    assertTrue(future.getController().failed());
+    assertTrue(future.getController().errorText() != null);
+  }
+
+  @Test
+  public void testConnectionRetry() throws Exception {
+    retries = 10;
+    final InetSocketAddress address = server.getListenAddress();
+    tearDown();
+
+    EchoMessage echoMessage = EchoMessage.newBuilder()
+        .setMessage(MESSAGE).build();
+    CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
+
+    //lazy startup
+    Thread serverThread = new Thread(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          Thread.sleep(100);
+          server = new AsyncRpcServer(DummyProtocol.class,
+              service, address, 2);
+        } catch (Exception e) {
+          fail(e.getMessage());
+        }
+        server.start();
+      }
+    });
+    serverThread.start();
+
+    clientChannelFactory = RpcChannelFactory.createClientChannelFactory(MESSAGE, 2);
+    client = new AsyncRpcClient(DummyProtocol.class, address, clientChannelFactory, retries);
+    stub = client.getStub();
+    stub.echo(future.getController(), echoMessage, future);
+
+    assertFalse(future.isDone());
+    assertEquals(echoMessage, future.get());
+    assertTrue(future.isDone());
+  }
+
+  @Test
+  public void testConnectionFailure() throws Exception {
+    InetSocketAddress address = new InetSocketAddress("test", 0);
+    boolean expected = false;
+    try {
+      new AsyncRpcClient(DummyProtocol.class, address, clientChannelFactory, retries);
+      fail();
+    } catch (ConnectTimeoutException e) {
+      expected = true;
+    } catch (Throwable throwable) {
+      fail();
+    }
+    assertTrue(expected);
+  }
+
+  @Test
   public void testUnresolvedAddress() throws Exception {
+    client.close();
+    client = null;
+
     String hostAndPort = NetUtils.normalizeInetSocketAddress(server.getListenAddress());
-    AsyncRpcClient client = new AsyncRpcClient(DummyProtocol.class, NetUtils.createUnresolved(hostAndPort));
+    client = new AsyncRpcClient(DummyProtocol.class,
+        NetUtils.createUnresolved(hostAndPort), clientChannelFactory, retries);
     Interface stub = client.getStub();
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
@@ -182,6 +268,5 @@ public class TestAsyncRpc {
     assertFalse(future.isDone());
     assertEquals(future.get(), echoMessage);
     assertTrue(future.isDone());
-    client.close();
   }
 }

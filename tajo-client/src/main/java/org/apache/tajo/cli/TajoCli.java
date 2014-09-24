@@ -21,8 +21,6 @@ package org.apache.tajo.cli;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ServiceException;
-import jline.TerminalFactory;
-import jline.TerminalFactory.Flavor;
 import jline.UnsupportedTerminal;
 import jline.console.ConsoleReader;
 import org.apache.commons.cli.*;
@@ -36,13 +34,15 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.util.FileUtil;
-import org.apache.tajo.util.HAServiceUtil;
 
 import java.io.*;
 import java.lang.reflect.Constructor;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 
 import static org.apache.tajo.cli.ParsedResult.StatementType.META;
 import static org.apache.tajo.cli.ParsedResult.StatementType.STATEMENT;
@@ -401,6 +401,7 @@ public class TajoCli {
             history.addStatement(parsed.getHistoryStatement() + (parsed.getType() == STATEMENT ? ";" : ""));
           }
         }
+
         exitCode = executeParsedResults(parsedResults);
         currentPrompt = updatePrompt(parser.getState());
 
@@ -494,7 +495,17 @@ public class TajoCli {
   private int executeQuery(String statement) throws ServiceException, IOException {
     checkMasterStatus();
     long startTime = System.currentTimeMillis();
-    ClientProtos.SubmitQueryResponse response = client.executeQuery(statement);
+    ClientProtos.SubmitQueryResponse response = null;
+    try{
+      response = client.executeQuery(statement);
+    } catch (ServiceException e){
+      displayFormatter.printErrorMessage(sout, e.getMessage());
+      wasError = true;
+    } catch(Throwable te){
+      displayFormatter.printErrorMessage(sout, te);
+      wasError = true;
+    }
+
     if (response == null) {
       displayFormatter.printErrorMessage(sout, "response is null");
       wasError = true;

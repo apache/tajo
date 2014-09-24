@@ -19,7 +19,11 @@
 package org.apache.tajo.master.session;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
+import org.apache.tajo.master.NonForwardQueryResultScanner;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.common.ProtoObject;
 
@@ -29,10 +33,13 @@ import java.util.Map;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.SessionProto;
 
 public class Session implements SessionConstants, ProtoObject<SessionProto>, Cloneable {
+  private static final Log LOG = LogFactory.getLog(Session.class);
+
   private final String sessionId;
   private final String userName;
   private String currentDatabase;
   private final Map<String, String> sessionVariables;
+  private final Map<QueryId, NonForwardQueryResultScanner> nonForwardQueryMap = new HashMap<QueryId, NonForwardQueryResultScanner>();
 
   // transient status
   private volatile long lastAccessTime;
@@ -138,5 +145,52 @@ public class Session implements SessionConstants, ProtoObject<SessionProto>, Clo
     Session newSession = (Session) super.clone();
     newSession.sessionVariables.putAll(getAllVariables());
     return newSession;
+  }
+
+  public NonForwardQueryResultScanner getNonForwardQueryResultScanner(QueryId queryId) {
+    synchronized (nonForwardQueryMap) {
+      return nonForwardQueryMap.get(queryId);
+    }
+  }
+
+  public void addNonForwardQueryResultScanner(NonForwardQueryResultScanner resultScanner) {
+    synchronized (nonForwardQueryMap) {
+      nonForwardQueryMap.put(resultScanner.getQueryId(), resultScanner);
+    }
+  }
+
+  public void closeNonForwardQueryResultScanner(QueryId queryId) {
+    NonForwardQueryResultScanner resultScanner;
+    synchronized (nonForwardQueryMap) {
+      resultScanner = nonForwardQueryMap.remove(queryId);
+    }
+
+    if (resultScanner != null) {
+      try {
+        resultScanner.close();
+      } catch (Exception e) {
+        LOG.error("NonForwardQueryResultScanne close error: " + e.getMessage(), e);
+      }
+    }
+  }
+
+  public void close() {
+    try {
+      synchronized (nonForwardQueryMap) {
+        for (NonForwardQueryResultScanner eachQueryScanner: nonForwardQueryMap.values()) {
+          try {
+            eachQueryScanner.close();
+          } catch (Exception e) {
+            LOG.error("Error while closing NonForwardQueryResultScanner: " +
+                eachQueryScanner.getSessionId() + ", " + e.getMessage(), e);
+          }
+        }
+
+        nonForwardQueryMap.clear();
+      }
+    } catch (Throwable t) {
+      LOG.error(t.getMessage(), t);
+      throw new RuntimeException(t.getMessage(), t);
+    }
   }
 }

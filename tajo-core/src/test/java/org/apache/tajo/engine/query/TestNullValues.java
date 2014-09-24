@@ -21,6 +21,7 @@ package org.apache.tajo.engine.query;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
@@ -165,9 +166,11 @@ public class TestNullValues {
   @Test
   public final void testResultSetNullSimpleQuery() throws Exception {
     String tableName = "nulltable5";
-    ResultSet res = runNullTableQuery(tableName, "select col1, col2, col3, col4 from " + tableName);
+    ResultSet res = null;
 
+    TajoClient client = TajoTestingCluster.newTajoClient();
     try {
+      res = runNullTableQuery(tableName, "select col1, col2, col3, col4 from " + tableName, client);
       int numRows = 0;
 
       String expected =
@@ -193,7 +196,11 @@ public class TestNullValues {
       assertEquals(4, numRows);
       assertEquals(expected, result);
     } finally {
-      res.close();
+      if (res != null) {
+        res.close();
+      }
+
+      client.close();
     }
   }
 
@@ -207,9 +214,11 @@ public class TestNullValues {
         "col4 " +
         "from " + tableName;
 
-    ResultSet res = runNullTableQuery(tableName, query);
+    TajoClient client = TajoTestingCluster.newTajoClient();
+    ResultSet res = null;
 
     try {
+      res = runNullTableQuery(tableName, query, client);
       int numRows = 0;
       String expected =
           "null|99999|a|a|1.0|1.0|true\n" +
@@ -234,11 +243,15 @@ public class TestNullValues {
       assertEquals(4, numRows);
       assertEquals(expected, result);
     } finally {
-      res.close();
+      if (res != null) {
+        res.close();
+      }
+
+      client.close();
     }
   }
 
-  private ResultSet runNullTableQuery(String tableName, String query) throws Exception {
+  private ResultSet runNullTableQuery(String tableName, String query, TajoClient client) throws Exception {
     String [] table = new String[] {tableName};
     Schema schema = new Schema();
     schema.addColumn("col1", Type.INT4);
@@ -256,10 +269,11 @@ public class TestNullValues {
     tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
 
-    ResultSet res = TajoTestingCluster
-        .run(table, schemas, tableOptions, new String[][]{data}, query);
-
-    return res;
+    if (client == null) {
+      return TajoTestingCluster.run(table, schemas, tableOptions, new String[][]{data}, query);
+    } else {
+      return TajoTestingCluster.run(table, schemas, tableOptions, new String[][]{data}, query, client);
+    }
   }
 
   private void assertResultSetNull(ResultSet res, int numRows, boolean useName, int[] nullIndex) throws SQLException {

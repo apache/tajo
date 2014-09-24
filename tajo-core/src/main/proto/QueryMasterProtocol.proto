@@ -32,7 +32,7 @@ service QueryMasterProtocolService {
   //from Worker
   rpc getTask(GetTaskRequestProto) returns (QueryUnitRequestProto);
   rpc statusUpdate (TaskStatusProto) returns (BoolProto);
-  rpc ping (QueryUnitAttemptIdProto) returns (BoolProto);
+  rpc ping (ExecutionBlockIdProto) returns (BoolProto);
   rpc fatalError(TaskFatalErrorReport) returns (BoolProto);
   rpc done (TaskCompletionReport) returns (BoolProto);
   rpc doneExecutionBlock(ExecutionBlockReport) returns (BoolProto);

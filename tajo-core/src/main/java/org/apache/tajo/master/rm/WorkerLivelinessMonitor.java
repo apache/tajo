@@ -30,7 +30,7 @@ import org.apache.tajo.conf.TajoConf;
  * It periodically checks the latest heartbeat time of {@link Worker}.
  * If the latest heartbeat time is expired, it produces EXPIRE event to a corresponding {@link Worker}.
  */
-public class WorkerLivelinessMonitor extends AbstractLivelinessMonitor<String> {
+public class WorkerLivelinessMonitor extends AbstractLivelinessMonitor<Integer> {
 
   private EventHandler dispatcher;
 
@@ -50,7 +50,7 @@ public class WorkerLivelinessMonitor extends AbstractLivelinessMonitor<String> {
   }
 
   @Override
-  protected void expire(String id) {
+  protected void expire(Integer id) {
     dispatcher.handle(new WorkerEvent(id, WorkerEventType.EXPIRE));
   }
 }

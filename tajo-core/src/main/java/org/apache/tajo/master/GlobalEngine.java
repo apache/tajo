@@ -27,10 +27,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.util.StringUtils;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.QueryIdFactory;
-import org.apache.tajo.SessionVars;
-import org.apache.tajo.TajoConstants;
+import org.apache.tajo.*;
 import org.apache.tajo.algebra.AlterTablespaceSetType;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.JsonHelper;
@@ -39,6 +36,7 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
@@ -50,6 +48,7 @@ import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.physical.EvalExprExec;
+import org.apache.tajo.engine.planner.physical.SeqScanExec;
 import org.apache.tajo.engine.planner.physical.StoreTableExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.ClientProtos;
@@ -71,7 +70,7 @@ import java.util.List;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import static org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
-import static org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse.SerializedResultSet;
+import static org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
 
 public class GlobalEngine extends AbstractService {
   /** Class Logger */
@@ -217,17 +216,27 @@ public class GlobalEngine extends AbstractService {
       // Simple query indicates a form of 'select * from tb_name [LIMIT X];'.
     } else if (PlannerUtil.checkIfSimpleQuery(plan)) {
       ScanNode scanNode = plan.getRootBlock().getNode(NodeType.SCAN);
+      if (scanNode == null) {
+        scanNode = plan.getRootBlock().getNode(NodeType.PARTITIONS_SCAN);
+      }
       TableDesc desc = scanNode.getTableDesc();
+      int maxRow = Integer.MAX_VALUE;
       if (plan.getRootBlock().hasNode(NodeType.LIMIT)) {
         LimitNode limitNode = plan.getRootBlock().getNode(NodeType.LIMIT);
-        responseBuilder.setMaxRowNum((int) limitNode.getFetchFirstNum());
-      } else {
-        if (desc.getStats().getNumBytes() > 0 && desc.getStats().getNumRows() == 0) {
-          responseBuilder.setMaxRowNum(Integer.MAX_VALUE);
-        }
+        maxRow = (int) limitNode.getFetchFirstNum();
       }
+      QueryId queryId = QueryIdFactory.newQueryId(context.getResourceManager().getSeedQueryId());
+
+      NonForwardQueryResultScanner queryResultScanner =
+          new NonForwardQueryResultScanner(context.getConf(), session.getSessionId(), queryId, scanNode, desc, maxRow);
+
+      queryResultScanner.init();
+      session.addNonForwardQueryResultScanner(queryResultScanner);
+
+      responseBuilder.setQueryId(queryId.getProto());
+      responseBuilder.setMaxRowNum(maxRow);
       responseBuilder.setTableDesc(desc.getProto());
-      responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+      responseBuilder.setSessionVariables(session.getProto().getVariables());
       responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
 
       // NonFromQuery indicates a form of 'select a, x+y;'

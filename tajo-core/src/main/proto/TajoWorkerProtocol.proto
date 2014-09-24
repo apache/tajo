@@ -168,8 +168,9 @@ message QueryExecutionRequestProto {
 }
 
 message GetTaskRequestProto {
-    required hadoop.yarn.ContainerIdProto containerId = 1;
-    required ExecutionBlockIdProto executionBlockId = 2;
+    required int32 workerId = 1;
+    required hadoop.yarn.ContainerIdProto containerId = 2;
+    required ExecutionBlockIdProto executionBlockId = 3;
 }
 
 enum ShuffleType {
@@ -201,15 +202,14 @@ message DataChannelProto {
 }
 
 message RunExecutionBlockRequestProto {
-    required string executionBlockId = 1;
-    required string queryMasterHost = 2;
-    required int32 queryMasterPort = 3;
-    required string nodeId = 4;
-    required string containerId = 5;
-    optional string queryOutputPath = 6;
+    required ExecutionBlockIdProto executionBlockId = 1;
+    required WorkerConnectionInfoProto queryMaster = 2;
+    required string nodeId = 3;
+    required string containerId = 4;
+    optional string queryOutputPath = 5;
 
-    required KeyValueSetProto queryContext = 7;
-    required string planJson = 8;
+    required KeyValueSetProto queryContext = 6;
+    required string planJson = 7;
 }
 
 message ExecutionBlockListProto {
@@ -220,7 +220,8 @@ service TajoWorkerProtocolService {
   rpc ping (QueryUnitAttemptIdProto) returns (BoolProto);
 
   // from QueryMaster(Worker)
-  rpc executeExecutionBlock(RunExecutionBlockRequestProto) returns (BoolProto);
+  rpc startExecutionBlock(RunExecutionBlockRequestProto) returns (BoolProto);
+  rpc stopExecutionBlock(ExecutionBlockIdProto) returns (BoolProto);
   rpc killTaskAttempt(QueryUnitAttemptIdProto) returns (BoolProto);
   rpc cleanup(QueryIdProto) returns (BoolProto);
   rpc cleanupExecutionBlocks(ExecutionBlockListProto) returns (BoolProto);
