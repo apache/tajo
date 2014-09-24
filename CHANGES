@@ -152,6 +152,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1025: Network disconnection during query processing can cause 
+    infinite exceptions. (Jihun Kang via jinho)
+
     TAJO-1047: DefaultTaskScheduler:allocateRackTask is failed occasionally
     on JDK 1.7. (jinho)
 
