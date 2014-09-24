@@ -11,8 +11,13 @@ You can compile source code and get a binary archive as follows:
 .. code-block:: bash
 
   $ cd tajo-x.y.z
-  $ mvn clean install -DskipTests -Pdist -Dtar
+  $ mvn clean install -DskipTests -Pdist -Dtar -Dhadoop.version=xyz
   $ ls tajo-dist/target/tajo-x.y.z-SNAPSHOT.tar.gz
+
+.. note::
+
+  If you doesn't specify the hadoop version, tajo cluster may not run correctly. Thus, You must specify your hadoop version with maven build command as follows.
+    $ mvn clean install -DskipTests -Pdist -Dtar -Dhadoop.version=2.5.1
 
 Then, after you move some proper directory, discompress the tar.gz file as follows:
 
