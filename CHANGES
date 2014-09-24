@@ -461,6 +461,8 @@ Release 0.9.0 - unreleased
 
   SUB TASKS
 
+    TAJO-667: Add math function documentation. (Jongyoung Park via hyunsik)
+
     TAJO-1016: Refactor worker rpc information. (jinho)
 
     TAJO-1015: Add executionblock event in worker. (jinho)
