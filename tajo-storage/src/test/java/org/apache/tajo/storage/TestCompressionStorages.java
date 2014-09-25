@@ -21,7 +21,9 @@ package org.apache.tajo.storage;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.SequenceFile;
+import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.compress.*;
 import org.apache.hadoop.io.compress.zlib.ZlibFactory;
 import org.apache.hadoop.util.NativeCodeLoader;
@@ -34,6 +36,7 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.sequencefile.SequenceFileScanner;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -228,6 +231,13 @@ public class TestCompressionStorages {
       }
     }
     scanner.init();
+
+    if (storeType == StoreType.SEQUENCEFILE) {
+      assertTrue(scanner instanceof SequenceFileScanner);
+      Writable key = ((SequenceFileScanner) scanner).getKey();
+      assertEquals(key.getClass().getCanonicalName(), LongWritable.class.getCanonicalName());
+    }
+
     int tupleCnt = 0;
     Tuple tuple;
     while ((tuple = scanner.next()) != null) {

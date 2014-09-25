@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.planner;
 
-import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.catalog.*;
@@ -41,45 +40,13 @@ import static org.junit.Assert.*;
 
 public class TestLogicalPlan {
   private static TajoTestingCluster util;
-  private static TPCH tpch;
-  private static CatalogService catalog;
-  private static SQLAnalyzer sqlAnalyzer = new SQLAnalyzer();
   private static LogicalPlanner planner;
-  private static LogicalOptimizer optimizer;
 
   @BeforeClass
   public static void setup() throws Exception {
     util = new TajoTestingCluster();
     util.startCatalogCluster();
-    catalog = util.getMiniCatalogCluster().getCatalog();
-    catalog.createTablespace(DEFAULT_TABLESPACE_NAME, CommonTestingUtil.getTestDir().toUri().toString());
-    catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-    for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
-      catalog.createFunction(funcDesc);
-    }
-
-    // TPC-H Schema for Complex Queries
-    String [] tpchTables = {
-        "part", "supplier", "partsupp", "nation", "region", "lineitem", "customer", "orders"
-    };
-    int [] tableVolumns = {
-        100, 200, 50, 5, 5, 800, 300, 100
-    };
-    tpch = new TPCH();
-    tpch.loadSchemas();
-    tpch.loadOutSchema();
-
-    for (int i = 0; i < tpchTables.length; i++) {
-      TableMeta m = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV);
-      TableStats stats = new TableStats();
-      stats.setNumBytes(tableVolumns[i]);
-      TableDesc d = CatalogUtil.newTableDesc(tpchTables[i], tpch.getSchema(tpchTables[i]), m,
-          CommonTestingUtil.getTestDir());
-      d.setStats(stats);
-      catalog.createTable(d);
-    }
-    planner = new LogicalPlanner(catalog);
-    optimizer = new LogicalOptimizer(util.getConfiguration());
+    planner = new LogicalPlanner(util.getMiniCatalogCluster().getCatalog());
   }
 
   public static void tearDown() {
@@ -88,7 +55,7 @@ public class TestLogicalPlan {
 
   @Test
   public final void testQueryBlockGraph() {
-    LogicalPlan plan = new LogicalPlan(LocalTajoTestingUtility.createDummySession().getCurrentDatabase(), planner);
+    LogicalPlan plan = new LogicalPlan(planner);
     LogicalPlan.QueryBlock root = plan.newAndGetBlock(LogicalPlan.ROOT_BLOCK);
     LogicalPlan.QueryBlock new1 = plan.newQueryBlock();
     LogicalPlan.QueryBlock new2 = plan.newQueryBlock();

@@ -32,6 +32,8 @@ import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.function.AggFunction;
 import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.engine.planner.nameresolver.NameResolvingMode;
+import org.apache.tajo.engine.planner.nameresolver.NameResolver;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
@@ -66,17 +68,20 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   static class Context {
     LogicalPlan plan;
     LogicalPlan.QueryBlock currentBlock;
+    NameResolvingMode columnRsvLevel;
 
-    public Context(LogicalPlan plan, LogicalPlan.QueryBlock block) {
-      this.plan = plan;
-      this.currentBlock = block;
+    public Context(LogicalPlanner.PlanContext planContext, NameResolvingMode colRsvLevel) {
+      this.plan = planContext.plan;
+      this.currentBlock = planContext.queryBlock;
+      this.columnRsvLevel = colRsvLevel;
     }
   }
 
-  public EvalNode createEvalNode(LogicalPlan plan, LogicalPlan.QueryBlock block, Expr expr)
+  public EvalNode createEvalNode(LogicalPlanner.PlanContext planContext, Expr expr,
+                                 NameResolvingMode colRsvLevel)
       throws PlanningException {
-    Context context = new Context(plan, block);
-    return AlgebraicUtil.eliminateConstantExprs(visit(context, new Stack<Expr>(), expr));
+    Context context = new Context(planContext, colRsvLevel);
+    return planContext.evalOptimizer.optimize(planContext, visit(context, new Stack<Expr>(), expr));
   }
 
   public static void assertEval(boolean condition, String message) throws PlanningException {
@@ -347,7 +352,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     for (CaseWhenPredicate.WhenExpr when : caseWhen.getWhens()) {
       condition = visit(ctx, stack, when.getCondition());
       result = visit(ctx, stack, when.getResult());
-      caseWhenEval.addWhen(condition, result);
+      caseWhenEval.addIfCond(condition, result);
     }
 
     if (caseWhen.hasElseResult()) {
@@ -434,11 +439,18 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   @Override
   public EvalNode visitConcatenate(Context ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
     stack.push(expr);
-    EvalNode left = visit(ctx, stack, expr.getLeft());
-    EvalNode right = visit(ctx, stack, expr.getRight());
+    EvalNode lhs = visit(ctx, stack, expr.getLeft());
+    EvalNode rhs = visit(ctx, stack, expr.getRight());
     stack.pop();
 
-    return new BinaryEval(EvalType.CONCATENATE, left, right);
+    if (lhs.getValueType().getType() != Type.TEXT) {
+      lhs = convertType(lhs, CatalogUtil.newSimpleDataType(Type.TEXT));
+    }
+    if (rhs.getValueType().getType() != Type.TEXT) {
+      rhs = convertType(rhs, CatalogUtil.newSimpleDataType(Type.TEXT));
+    }
+
+    return new BinaryEval(EvalType.CONCATENATE, lhs, rhs);
   }
 
   private EvalNode visitPatternMatchPredicate(Context ctx, Stack<Expr> stack, PatternMatchPredicate expr)
@@ -540,7 +552,20 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   @Override
   public EvalNode visitColumnReference(Context ctx, Stack<Expr> stack, ColumnReferenceExpr expr)
       throws PlanningException {
-    Column column = ctx.plan.resolveColumn(ctx.currentBlock, expr);
+    Column column;
+
+    switch (ctx.columnRsvLevel) {
+    case LEGACY:
+      column = ctx.plan.resolveColumn(ctx.currentBlock, expr);
+      break;
+    case RELS_ONLY:
+    case RELS_AND_SUBEXPRS:
+    case SUBEXPRS_AND_RELS:
+      column = NameResolver.resolve(ctx.plan, ctx.currentBlock, expr, ctx.columnRsvLevel);
+      break;
+    default:
+      throw new PlanningException("Unsupported column resolving level: " + ctx.columnRsvLevel.name());
+    }
     return new FieldEval(column);
   }
 
@@ -581,7 +606,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
     // trying the implicit type conversion between actual parameter types and the definition types.
     if (CatalogUtil.checkIfVariableLengthParamDefinition(TUtil.newList(funcDesc.getParamTypes()))) {
-      DataType lastDataType = null;
+      DataType lastDataType = funcDesc.getParamTypes()[0];
       for (int i = 0; i < givenArgs.length; i++) {
         if (i < (funcDesc.getParamTypes().length - 1)) { // variable length
           lastDataType = funcDesc.getParamTypes()[i];

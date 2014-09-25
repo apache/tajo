@@ -23,10 +23,15 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.pullserver.TajoPullServerService;
+import org.apache.tajo.pullserver.retriever.FileChunk;
 import org.apache.tajo.rpc.RpcChannelFactory;
+import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
+import org.jboss.netty.util.HashedWheelTimer;
+import org.jboss.netty.util.Timer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -36,8 +41,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class TestFetcher {
   private String TEST_DATA = "target/test-data/TestFetcher";
@@ -46,6 +50,7 @@ public class TestFetcher {
   private TajoConf conf = new TajoConf();
   private TajoPullServerService pullServerService;
   private ClientSocketChannelFactory channelFactory;
+  private Timer timer;
 
   @Before
   public void setUp() throws Exception {
@@ -61,12 +66,14 @@ public class TestFetcher {
     pullServerService.start();
 
     channelFactory = RpcChannelFactory.createClientChannelFactory("Fetcher", 1);
+    timer = new HashedWheelTimer();
   }
 
   @After
   public void tearDown(){
     pullServerService.stop();
     channelFactory.releaseExternalResources();
+    timer.stop();
   }
 
   @Test
@@ -74,14 +81,16 @@ public class TestFetcher {
     Random rnd = new Random();
     QueryId queryId = QueryIdFactory.NULL_QUERY_ID;
     String sid = "1";
-    String ta = "1_0";
     String partId = "1";
 
-    String dataPath = INPUT_DIR + queryId.toString() + "/output"+ "/" + sid + "/" +ta + "/output/" + partId;
-    String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, "h", ta);
+    int partParentId = HashShuffleAppenderManager.getPartParentId(Integer.parseInt(partId), conf);
+    String dataPath = conf.getVar(ConfVars.WORKER_TEMPORAL_DIR) +
+       queryId.toString() + "/output/" + sid + "/hash-shuffle/" + partParentId + "/" + partId;
+
+    String params = String.format("qid=%s&sid=%s&p=%s&type=%s", queryId, sid, partId, "h");
 
     Path inputPath = new Path(dataPath);
-    FSDataOutputStream stream =  LocalFileSystem.get(conf).create(inputPath, true);
+    FSDataOutputStream stream = FileSystem.getLocal(conf).create(inputPath, true);
     for (int i = 0; i < 100; i++) {
       String data = ""+rnd.nextInt();
       stream.write(data.getBytes());
@@ -90,8 +99,12 @@ public class TestFetcher {
     stream.close();
 
     URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
-    final Fetcher fetcher = new Fetcher(conf, uri, new File(OUTPUT_DIR + "data"), channelFactory);
-    assertNotNull(fetcher.get());
+    FileChunk storeChunk = new FileChunk(new File(OUTPUT_DIR + "data"), 0, 0);
+    storeChunk.setFromRemote(true);
+    final Fetcher fetcher = new Fetcher(conf, uri, storeChunk, channelFactory, timer);
+    FileChunk chunk = fetcher.get();
+    assertNotNull(chunk);
+    assertNotNull(chunk.getFile());
 
     FileSystem fs = FileSystem.getLocal(new TajoConf());
     FileStatus inStatus = fs.getFileStatus(inputPath);
@@ -103,6 +116,8 @@ public class TestFetcher {
 
   @Test
   public void testAdjustFetchProcess() {
+    assertEquals(0.0f, Task.adjustFetchProcess(0, 0), 0);
+    assertEquals(0.0f, Task.adjustFetchProcess(10, 10), 0);
     assertEquals(0.05f, Task.adjustFetchProcess(10, 9), 0);
     assertEquals(0.1f, Task.adjustFetchProcess(10, 8), 0);
     assertEquals(0.25f, Task.adjustFetchProcess(10, 5), 0);
@@ -121,7 +136,7 @@ public class TestFetcher {
     String dataPath = INPUT_DIR + queryId.toString() + "/output"+ "/" + sid + "/" +ta + "/output/" + partId;
     String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, "h", ta);
 
-    FSDataOutputStream stream =  LocalFileSystem.get(conf).create(new Path(dataPath), true);
+    FSDataOutputStream stream =  FileSystem.getLocal(conf).create(new Path(dataPath), true);
     for (int i = 0; i < 100; i++) {
       String data = ""+rnd.nextInt();
       stream.write(data.getBytes());
@@ -130,7 +145,9 @@ public class TestFetcher {
     stream.close();
 
     URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
-    final Fetcher fetcher = new Fetcher(conf, uri, new File(OUTPUT_DIR + "data"), channelFactory);
+    FileChunk storeChunk = new FileChunk(new File(OUTPUT_DIR + "data"), 0, 0);
+    storeChunk.setFromRemote(true);
+    final Fetcher fetcher = new Fetcher(conf, uri, storeChunk, channelFactory, timer);
     assertEquals(TajoProtos.FetcherState.FETCH_INIT, fetcher.getState());
 
     fetcher.get();
@@ -149,15 +166,18 @@ public class TestFetcher {
     String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, "h", ta);
 
     Path inputPath = new Path(dataPath);
-    if(LocalFileSystem.get(conf).exists(inputPath)){
-      LocalFileSystem.get(conf).delete(new Path(dataPath), true);
+    FileSystem fs = FileSystem.getLocal(conf);
+    if(fs.exists(inputPath)){
+      fs.delete(new Path(dataPath), true);
     }
 
-    FSDataOutputStream stream =  LocalFileSystem.get(conf).create(new Path(dataPath).getParent(), true);
+    FSDataOutputStream stream =  FileSystem.getLocal(conf).create(new Path(dataPath).getParent(), true);
     stream.close();
 
     URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
-    final Fetcher fetcher = new Fetcher(conf, uri, new File(OUTPUT_DIR + "data"), channelFactory);
+    FileChunk storeChunk = new FileChunk(new File(OUTPUT_DIR + "data"), 0, 0);
+    storeChunk.setFromRemote(true);
+    final Fetcher fetcher = new Fetcher(conf, uri, storeChunk, channelFactory, timer);
     assertEquals(TajoProtos.FetcherState.FETCH_INIT, fetcher.getState());
 
     fetcher.get();
@@ -179,7 +199,7 @@ public class TestFetcher {
     String shuffleType = "x";
     String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, shuffleType, ta);
 
-    FSDataOutputStream stream =  LocalFileSystem.get(conf).create(new Path(dataPath), true);
+    FSDataOutputStream stream =  FileSystem.getLocal(conf).create(new Path(dataPath), true);
 
     for (int i = 0; i < 100; i++) {
       String data = params + rnd.nextInt();
@@ -189,10 +209,40 @@ public class TestFetcher {
     stream.close();
 
     URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
-    final Fetcher fetcher = new Fetcher(conf, uri, new File(OUTPUT_DIR + "data"), channelFactory);
+    FileChunk storeChunk = new FileChunk(new File(OUTPUT_DIR + "data"), 0, 0);
+    storeChunk.setFromRemote(true);
+    final Fetcher fetcher = new Fetcher(conf, uri, storeChunk, channelFactory, timer);
     assertEquals(TajoProtos.FetcherState.FETCH_INIT, fetcher.getState());
 
     fetcher.get();
+    assertEquals(TajoProtos.FetcherState.FETCH_FAILED, fetcher.getState());
+  }
+
+  @Test
+  public void testServerFailure() throws Exception {
+    QueryId queryId = QueryIdFactory.NULL_QUERY_ID;
+    String sid = "1";
+    String ta = "1_0";
+    String partId = "1";
+
+    String dataPath = INPUT_DIR + queryId.toString() + "/output"+ "/" + sid + "/" +ta + "/output/" + partId;
+    String params = String.format("qid=%s&sid=%s&p=%s&type=%s&ta=%s", queryId, sid, partId, "h", ta);
+
+    URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
+    FileChunk storeChunk = new FileChunk(new File(OUTPUT_DIR + "data"), 0, 0);
+    storeChunk.setFromRemote(true);
+    final Fetcher fetcher = new Fetcher(conf, uri, storeChunk, channelFactory, timer);
+    assertEquals(TajoProtos.FetcherState.FETCH_INIT, fetcher.getState());
+
+    pullServerService.stop();
+
+    boolean failure = false;
+    try{
+      fetcher.get();
+    } catch (Throwable e){
+      failure = true;
+    }
+    assertTrue(failure);
     assertEquals(TajoProtos.FetcherState.FETCH_FAILED, fetcher.getState());
   }
 }

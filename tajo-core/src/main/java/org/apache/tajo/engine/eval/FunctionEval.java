@@ -47,6 +47,10 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
     this.argEvals = argEvals;
 	}
 
+  public FunctionDesc getFuncDesc() {
+    return funcDesc;
+  }
+
   public ParamType [] getParamType() {
     ParamType [] paramTypes = new ParamType[argEvals.length];
     for (int i = 0; i < argEvals.length; i++) {
@@ -71,10 +75,29 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
 	  return this.argEvals;
 	}
 
+  public void setArg(int idx, EvalNode arg) {
+    this.argEvals[idx] = arg;
+  }
+
   public void setArgs(EvalNode [] args) {
     this.argEvals = args;
   }
-	
+
+  @Override
+  public int childNum() {
+    if (argEvals != null) {
+      return argEvals.length;
+    } else {
+      return 0;
+    }
+  }
+
+  @Override
+  public EvalNode getChild(int idx) {
+    return argEvals[idx];
+  }
+
+
 	public DataType getValueType() {
 		return this.funcDesc.getReturnType();
 	}
@@ -87,10 +110,6 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
 		return funcDesc.getSignature();
 	}
 
-  public FunctionDesc getFuncDesc() {
-    return this.funcDesc;
-  }
-
   @Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -99,7 +118,7 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
 			if(i+1 < argEvals.length)
 				sb.append(",");
 		}
-		return funcDesc.getSignature() + "(" + (isDistinct() ? " distinct" : "") + sb+")";
+		return funcDesc.getSignature() + "(" + (isDistinct() ? " distinct " : "") + sb+")";
 	}
 	
 	@Override

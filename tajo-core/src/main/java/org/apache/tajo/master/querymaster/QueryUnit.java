@@ -34,12 +34,15 @@ import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.QueryUnitId;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.ipc.TajoWorkerProtocol.FailureIntermediateProto;
+import org.apache.tajo.ipc.TajoWorkerProtocol.IntermediateEntryProto;
 import org.apache.tajo.master.FragmentPair;
 import org.apache.tajo.master.TaskState;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext;
 import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.worker.FetchImpl;
 
@@ -519,8 +522,8 @@ public class QueryUnit implements EventHandler<TaskEvent> {
       QueryUnitAttempt attempt = task.attempts.get(attemptEvent.getTaskAttemptId());
 
       task.successfulAttempt = attemptEvent.getTaskAttemptId();
-      task.succeededHost = attempt.getHost();
-      task.succeededPullServerPort = attempt.getPullServerPort();
+      task.succeededHost = attempt.getWorkerConnectionInfo().getHost();
+      task.succeededPullServerPort = attempt.getWorkerConnectionInfo().getPullServerPort();
 
       task.finishTask();
       task.eventHandler.handle(new SubQueryTaskEvent(event.getTaskId(), TaskState.SUCCEEDED));
@@ -534,7 +537,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
       TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) event;
       QueryUnitAttempt attempt = task.attempts.get(attemptEvent.getTaskAttemptId());
       task.launchTime = System.currentTimeMillis();
-      task.succeededHost = attempt.getHost();
+      task.succeededHost = attempt.getWorkerConnectionInfo().getHost();
     }
   }
 
@@ -626,12 +629,15 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     return this.intermediateData;
   }
 
-  public static class PullHost {
+  public static class PullHost implements Cloneable {
     String host;
     int port;
+    int hashCode;
+
     public PullHost(String pullServerAddr, int pullServerPort){
       this.host = pullServerAddr;
       this.port = pullServerPort;
+      this.hashCode = Objects.hashCode(host, port);
     }
     public String getHost() {
       return host;
@@ -647,7 +653,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
     @Override
     public int hashCode() {
-      return Objects.hashCode(host, port);
+      return hashCode;
     }
 
     @Override
@@ -659,6 +665,20 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
       return false;
     }
+
+    @Override
+    public PullHost clone() throws CloneNotSupportedException {
+      PullHost newPullHost = (PullHost) super.clone();
+      newPullHost.host = host;
+      newPullHost.port = port;
+      newPullHost.hashCode = Objects.hashCode(newPullHost.host, newPullHost.port);
+      return newPullHost;
+    }
+
+    @Override
+    public String toString() {
+      return host + ":" + port;
+    }
   }
 
   public static class IntermediateEntry {
@@ -668,6 +688,31 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     int partId;
     PullHost host;
     long volume;
+    List<Pair<Long, Integer>> pages;
+    List<Pair<Long, Pair<Integer, Integer>>> failureRowNums;
+
+    public IntermediateEntry(IntermediateEntryProto proto) {
+      this.ebId = new ExecutionBlockId(proto.getEbId());
+      this.taskId = proto.getTaskId();
+      this.attemptId = proto.getAttemptId();
+      this.partId = proto.getPartId();
+
+      String[] pullHost = proto.getHost().split(":");
+      this.host = new PullHost(pullHost[0], Integer.parseInt(pullHost[1]));
+      this.volume = proto.getVolume();
+
+      failureRowNums = new ArrayList<Pair<Long, Pair<Integer, Integer>>>();
+      for (FailureIntermediateProto eachFailure: proto.getFailuresList()) {
+
+        failureRowNums.add(new Pair(eachFailure.getPagePos(),
+            new Pair(eachFailure.getStartRowNum(), eachFailure.getEndRowNum())));
+      }
+
+      pages = new ArrayList<Pair<Long, Integer>>();
+      for (IntermediateEntryProto.PageProto eachPage: proto.getPagesList()) {
+        pages.add(new Pair(eachPage.getPos(), eachPage.getLength()));
+      }
+    }
 
     public IntermediateEntry(int taskId, int attemptId, int partId, PullHost host) {
       this.taskId = taskId;
@@ -712,9 +757,59 @@ public class QueryUnit implements EventHandler<TaskEvent> {
       return this.volume;
     }
 
+    public long setVolume(long volume) {
+      return this.volume = volume;
+    }
+
+    public List<Pair<Long, Integer>> getPages() {
+      return pages;
+    }
+
+    public void setPages(List<Pair<Long, Integer>> pages) {
+      this.pages = pages;
+    }
+
+    public List<Pair<Long, Pair<Integer, Integer>>> getFailureRowNums() {
+      return failureRowNums;
+    }
+
     @Override
     public int hashCode() {
       return Objects.hashCode(ebId, taskId, partId, attemptId, host);
+    }
+
+    public List<Pair<Long, Long>> split(long firstSplitVolume, long splitVolume) {
+      List<Pair<Long, Long>> splits = new ArrayList<Pair<Long, Long>>();
+
+      if (pages == null || pages.isEmpty()) {
+        return splits;
+      }
+      int pageSize = pages.size();
+
+      long currentOffset = -1;
+      long currentBytes = 0;
+
+      long realSplitVolume = firstSplitVolume > 0 ? firstSplitVolume : splitVolume;
+      for (int i = 0; i < pageSize; i++) {
+        Pair<Long, Integer> eachPage = pages.get(i);
+        if (currentOffset == -1) {
+          currentOffset = eachPage.getFirst();
+        }
+        if (currentBytes > 0 && currentBytes + eachPage.getSecond() >= realSplitVolume) {
+          splits.add(new Pair(currentOffset, currentBytes));
+          currentOffset = eachPage.getFirst();
+          currentBytes = 0;
+          realSplitVolume = splitVolume;
+        }
+
+        currentBytes += eachPage.getSecond();
+      }
+
+      //add last
+      if (currentBytes > 0) {
+        splits.add(new Pair(currentOffset, currentBytes));
+      }
+      return splits;
     }
   }
 }

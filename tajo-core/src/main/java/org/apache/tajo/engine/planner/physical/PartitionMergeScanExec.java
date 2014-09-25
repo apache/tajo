@@ -62,8 +62,9 @@ public class PartitionMergeScanExec extends PhysicalExec {
 
   public void init() throws IOException {
     for (CatalogProtos.FragmentProto fragment : fragments) {
-      scanners.add(new SeqScanExec(context, sm, (ScanNode) PlannerUtil.clone(null, plan),
-          new CatalogProtos.FragmentProto[] {fragment}));
+      SeqScanExec scanExec = new SeqScanExec(context, sm, (ScanNode) PlannerUtil.clone(null, plan),
+          new CatalogProtos.FragmentProto[] {fragment});
+      scanners.add(scanExec);
     }
     progress = 0.0f;
     rescan();

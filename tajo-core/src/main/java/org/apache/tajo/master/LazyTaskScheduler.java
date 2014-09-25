@@ -469,8 +469,6 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
 
   private void assignTask(QueryUnitAttemptScheduleContext attemptContext, QueryUnitAttempt taskAttempt) {
     QueryUnitAttemptId attemptId = taskAttempt.getId();
-    ContainerProxy containerProxy = context.getMasterContext().getResourceAllocator().
-        getContainer(attemptContext.getContainerId());
     QueryUnitRequest taskAssign = new QueryUnitRequestImpl(
         attemptId,
         new ArrayList<FragmentProto>(taskAttempt.getQueryUnit().getAllFragments()),
@@ -495,7 +493,7 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
     }
 
     context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId,
-        attemptContext.getContainerId(), attemptContext.getHost(), containerProxy.getTaskPort()));
+        attemptContext.getContainerId(), taskAttempt.getWorkerConnectionInfo()));
 
     totalAssigned++;
     attemptContext.getCallback().run(taskAssign.getProto());

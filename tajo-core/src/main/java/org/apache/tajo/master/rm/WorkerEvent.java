@@ -24,14 +24,14 @@ import org.apache.hadoop.yarn.event.AbstractEvent;
  * WorkerEvent describes all kinds of events which sent to {@link Worker}.
  */
 public class WorkerEvent extends AbstractEvent<WorkerEventType> {
-  private final String workerId;
+  private final int workerId;
 
-  public WorkerEvent(String workerId, WorkerEventType workerEventType) {
+  public WorkerEvent(int workerId, WorkerEventType workerEventType) {
     super(workerEventType);
     this.workerId = workerId;
   }
 
-  public String getWorkerId() {
+  public int getWorkerId() {
     return workerId;
   }
 }

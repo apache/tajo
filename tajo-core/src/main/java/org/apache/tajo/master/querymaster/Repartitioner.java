@@ -18,17 +18,20 @@
 
 package org.apache.tajo.master.querymaster;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.PlanningException;
@@ -48,20 +51,20 @@ import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.util.Pair;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.worker.FetchImpl;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.URI;
 import java.util.*;
 import java.util.Map.Entry;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.HASH_SHUFFLE;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.RANGE_SHUFFLE;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.SCATTERED_HASH_SHUFFLE;
+import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.*;
 
 /**
  * Repartitioner creates non-leaf tasks and shuffles intermediate data.
@@ -212,8 +215,6 @@ public class Repartitioner {
       LOG.info(String.format("[Distributed Join Strategy] : Broadcast Join with all tables, base_table=%s, base_volume=%d",
           scans[baseScanIdx].getCanonicalName(), stats[baseScanIdx]));
       scheduleLeafTasksWithBroadcastTable(schedulerContext, subQuery, baseScanIdx, fragments);
-
-
     } else if (!execBlock.getBroadcastTables().isEmpty()) { // If some relations of this EB are broadcasted
       boolean hasNonLeafNode = false;
       List<Integer> largeScanIndexList = new ArrayList<Integer>();
@@ -250,7 +251,7 @@ public class Repartitioner {
           for (Integer eachId : largeScanIndexList) {
             largeTableNames += scans[eachId].getTableName() + ",";
           }
-          throw new IOException("Broadcase join with leaf node should have only one large table, " +
+          throw new IOException("Broadcast join with leaf node should have only one large table, " +
               "but " + largeScanIndexList.size() + ", tables=" + largeTableNames);
         }
         int baseScanIdx = largeScanIndexList.isEmpty() ? maxStatsScanIdx : largeScanIndexList.get(0);
@@ -308,7 +309,7 @@ public class Repartitioner {
     MasterPlan masterPlan = subQuery.getMasterPlan();
     ExecutionBlock execBlock = subQuery.getBlock();
     // The hash map is modeling as follows:
-    // <Part Id, <EbId, Intermediate Data>>
+    // <Part Id, <EbId, List<Intermediate Data>>>
     Map<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>> hashEntries =
         new HashMap<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>>();
 
@@ -323,41 +324,41 @@ public class Repartitioner {
         scanEbId = childBlock.getId();
       }
       SubQuery childExecSM = subQuery.getContext().getSubQuery(childBlock.getId());
-      for (QueryUnit task : childExecSM.getQueryUnits()) {
-        if (task.getIntermediateData() != null && !task.getIntermediateData().isEmpty()) {
-          for (IntermediateEntry intermEntry : task.getIntermediateData()) {
-            intermEntry.setEbId(childBlock.getId());
-            if (hashEntries.containsKey(intermEntry.getPartId())) {
-              Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
-                  hashEntries.get(intermEntry.getPartId());
 
-              if (tbNameToInterm.containsKey(scanEbId)) {
-                tbNameToInterm.get(scanEbId).add(intermEntry);
-              } else {
-                tbNameToInterm.put(scanEbId, TUtil.newList(intermEntry));
-              }
+      if (childExecSM.getHashShuffleIntermediateEntries() != null &&
+          !childExecSM.getHashShuffleIntermediateEntries().isEmpty()) {
+        for (IntermediateEntry intermEntry: childExecSM.getHashShuffleIntermediateEntries()) {
+          intermEntry.setEbId(childBlock.getId());
+          if (hashEntries.containsKey(intermEntry.getPartId())) {
+            Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
+                hashEntries.get(intermEntry.getPartId());
+
+            if (tbNameToInterm.containsKey(scanEbId)) {
+              tbNameToInterm.get(scanEbId).add(intermEntry);
             } else {
-              Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
-                  new HashMap<ExecutionBlockId, List<IntermediateEntry>>();
               tbNameToInterm.put(scanEbId, TUtil.newList(intermEntry));
-              hashEntries.put(intermEntry.getPartId(), tbNameToInterm);
             }
-          }
-        } else {
-          //if no intermidatedata(empty table), make empty entry
-          int emptyPartitionId = 0;
-          if (hashEntries.containsKey(emptyPartitionId)) {
-            Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm = hashEntries.get(emptyPartitionId);
-            if (tbNameToInterm.containsKey(scanEbId))
-              tbNameToInterm.get(scanEbId).addAll(new ArrayList<IntermediateEntry>());
-            else
-              tbNameToInterm.put(scanEbId, new ArrayList<IntermediateEntry>());
           } else {
             Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
                 new HashMap<ExecutionBlockId, List<IntermediateEntry>>();
-            tbNameToInterm.put(scanEbId, new ArrayList<IntermediateEntry>());
-            hashEntries.put(emptyPartitionId, tbNameToInterm);
+            tbNameToInterm.put(scanEbId, TUtil.newList(intermEntry));
+            hashEntries.put(intermEntry.getPartId(), tbNameToInterm);
           }
+        }
+      } else {
+        //if no intermidatedata(empty table), make empty entry
+        int emptyPartitionId = 0;
+        if (hashEntries.containsKey(emptyPartitionId)) {
+          Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm = hashEntries.get(emptyPartitionId);
+          if (tbNameToInterm.containsKey(scanEbId))
+            tbNameToInterm.get(scanEbId).addAll(new ArrayList<IntermediateEntry>());
+          else
+            tbNameToInterm.put(scanEbId, new ArrayList<IntermediateEntry>());
+        } else {
+          Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
+              new HashMap<ExecutionBlockId, List<IntermediateEntry>>();
+          tbNameToInterm.put(scanEbId, new ArrayList<IntermediateEntry>());
+          hashEntries.put(emptyPartitionId, tbNameToInterm);
         }
       }
     }
@@ -373,8 +374,7 @@ public class Repartitioner {
     // Getting the desire number of join tasks according to the volumn
     // of a larger table
     int largerIdx = stats[0] >= stats[1] ? 0 : 1;
-    int desireJoinTaskVolumn = subQuery.getContext().getConf().
-        getIntVar(ConfVars.DIST_QUERY_JOIN_TASK_VOLUME);
+    int desireJoinTaskVolumn = subQuery.getMasterPlan().getContext().getInt(SessionVars.JOIN_TASK_INPUT_SIZE);
 
     // calculate the number of tasks according to the data size
     int mb = (int) Math.ceil((double) stats[largerIdx] / 1048576);
@@ -403,6 +403,53 @@ public class Repartitioner {
 
     schedulerContext.setTaskSize((int) Math.ceil((double) bothFetchSize / joinTaskNum));
     schedulerContext.setEstimatedTaskNum(joinTaskNum);
+  }
+
+  /**
+   * merge intermediate entry by ebid, pullhost
+   * @param hashEntries
+   * @return
+   */
+  public static Map<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>> mergeIntermediateByPullHost(
+      Map<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>> hashEntries) {
+    Map<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>> mergedHashEntries =
+        new HashMap<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>>();
+
+    for(Entry<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>> entry: hashEntries.entrySet()) {
+      Integer partId = entry.getKey();
+      for (Entry<ExecutionBlockId, List<IntermediateEntry>> partEntry: entry.getValue().entrySet()) {
+        List<IntermediateEntry> intermediateList = partEntry.getValue();
+        if (intermediateList == null || intermediateList.isEmpty()) {
+          continue;
+        }
+        ExecutionBlockId ebId = partEntry.getKey();
+        // EBID + PullHost -> IntermediateEntry
+        // In the case of union partEntry.getKey() return's delegated EBID.
+        // Intermediate entries are merged by real EBID.
+        Map<String, IntermediateEntry> ebMerged = new HashMap<String, IntermediateEntry>();
+
+        for (IntermediateEntry eachIntermediate: intermediateList) {
+          String ebMergedKey = eachIntermediate.getEbId().toString() + eachIntermediate.getPullHost().getPullAddress();
+          IntermediateEntry intermediateEntryPerPullHost = ebMerged.get(ebMergedKey);
+          if (intermediateEntryPerPullHost == null) {
+            intermediateEntryPerPullHost = new IntermediateEntry(-1, -1, partId, eachIntermediate.getPullHost());
+            intermediateEntryPerPullHost.setEbId(eachIntermediate.getEbId());
+            ebMerged.put(ebMergedKey, intermediateEntryPerPullHost);
+          }
+          intermediateEntryPerPullHost.setVolume(intermediateEntryPerPullHost.getVolume() + eachIntermediate.getVolume());
+        }
+
+        List<IntermediateEntry> ebIntermediateEntries = new ArrayList<IntermediateEntry>(ebMerged.values());
+
+        Map<ExecutionBlockId, List<IntermediateEntry>> mergedPartEntries = mergedHashEntries.get(partId);
+        if (mergedPartEntries == null) {
+          mergedPartEntries = new HashMap<ExecutionBlockId, List<IntermediateEntry>>();
+          mergedHashEntries.put(partId, mergedPartEntries);
+        }
+        mergedPartEntries.put(ebId, ebIntermediateEntries);
+      }
+    }
+    return mergedHashEntries;
   }
 
   /**
@@ -574,12 +621,12 @@ public class Repartitioner {
     }
     TupleRange mergedRange = TupleUtil.columnStatToRange(sortSpecs, sortSchema, totalStat.getColumnStats(), false);
     RangePartitionAlgorithm partitioner = new UniformRangePartition(mergedRange, sortSpecs);
-    BigDecimal card = partitioner.getTotalCardinality();
+    BigInteger card = partitioner.getTotalCardinality();
 
     // if the number of the range cardinality is less than the desired number of tasks,
     // we set the the number of tasks to the number of range cardinality.
     int determinedTaskNum;
-    if (card.compareTo(new BigDecimal(maxNum)) < 0) {
+    if (card.compareTo(BigInteger.valueOf(maxNum)) < 0) {
       LOG.info(subQuery.getId() + ", The range cardinality (" + card
           + ") is less then the desired number of tasks (" + maxNum + ")");
       determinedTaskNum = card.intValue();
@@ -587,9 +634,7 @@ public class Repartitioner {
       determinedTaskNum = maxNum;
     }
 
-    // for LOG
-    TupleRange mergedRangeForPrint = TupleUtil.columnStatToRange(sortSpecs, sortSchema, totalStat.getColumnStats(), true);
-    LOG.info(subQuery.getId() + ", Try to divide " + mergedRangeForPrint + " into " + determinedTaskNum +
+    LOG.info(subQuery.getId() + ", Try to divide " + mergedRange + " into " + determinedTaskNum +
         " sub ranges (total units: " + determinedTaskNum + ")");
     TupleRange [] ranges = partitioner.partition(determinedTaskNum);
     if (ranges == null || ranges.length == 0) {
@@ -636,8 +681,14 @@ public class Repartitioner {
         for (FetchImpl fetch: fetches) {
           String rangeParam =
               TupleUtil.rangeToQuery(ranges[i], ascendingFirstKey ? i == (ranges.length - 1) : i == 0, encoder);
-          fetch.setRangeParams(rangeParam);
-          fetchSet.add(fetch);
+          FetchImpl copy = null;
+          try {
+            copy = fetch.clone();
+          } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+          }
+          copy.setRangeParams(rangeParam);
+          fetchSet.add(copy);
         }
         map.put(ranges[i], fetchSet);
       }
@@ -669,6 +720,31 @@ public class Repartitioner {
     }
   }
 
+  @VisibleForTesting
+  public static class FetchGroupMeta {
+    long totalVolume;
+    List<FetchImpl> fetchUrls;
+
+    public FetchGroupMeta(long volume, FetchImpl fetchUrls) {
+      this.totalVolume = volume;
+      this.fetchUrls = Lists.newArrayList(fetchUrls);
+    }
+
+    public FetchGroupMeta addFetche(FetchImpl fetches) {
+      this.fetchUrls.add(fetches);
+      return this;
+    }
+
+    public void increaseVolume(long volume) {
+      this.totalVolume += volume;
+    }
+
+    public long getVolume() {
+      return totalVolume;
+    }
+
+  }
+
   public static void scheduleHashShuffledFetches(TaskSchedulerContext schedulerContext, MasterPlan masterPlan,
                                                  SubQuery subQuery, DataChannel channel,
                                                  int maxNum) {
@@ -682,50 +758,61 @@ public class Repartitioner {
     fragments.add(frag);
     SubQuery.scheduleFragments(subQuery, fragments);
 
-    Map<QueryUnit.PullHost, List<IntermediateEntry>> hashedByHost;
-    Map<Integer, Collection<FetchImpl>> finalFetches = new HashMap<Integer, Collection<FetchImpl>>();
+    Map<Integer, FetchGroupMeta> finalFetches = new HashMap<Integer, FetchGroupMeta>();
     Map<ExecutionBlockId, List<IntermediateEntry>> intermediates = new HashMap<ExecutionBlockId,
         List<IntermediateEntry>>();
 
     for (ExecutionBlock block : masterPlan.getChilds(execBlock)) {
       List<IntermediateEntry> partitions = new ArrayList<IntermediateEntry>();
-      for (QueryUnit tasks : subQuery.getContext().getSubQuery(block.getId()).getQueryUnits()) {
-        if (tasks.getIntermediateData() != null) {
-          partitions.addAll(tasks.getIntermediateData());
+      partitions.addAll(subQuery.getContext().getSubQuery(block.getId()).getHashShuffleIntermediateEntries());
 
-          // In scattered hash shuffle, Collecting each IntermediateEntry
-          if (channel.getShuffleType() == SCATTERED_HASH_SHUFFLE) {
-            if (intermediates.containsKey(block.getId())) {
-              intermediates.get(block.getId()).addAll(tasks.getIntermediateData());
-            } else {
-              intermediates.put(block.getId(), tasks.getIntermediateData());
-            }
-          }
+      // In scattered hash shuffle, Collecting each IntermediateEntry
+      if (channel.getShuffleType() == SCATTERED_HASH_SHUFFLE) {
+        if (intermediates.containsKey(block.getId())) {
+          intermediates.get(block.getId()).addAll(partitions);
+        } else {
+          intermediates.put(block.getId(), partitions);
         }
       }
+
+      // make FetchImpl per PullServer, PartId
       Map<Integer, List<IntermediateEntry>> hashed = hashByKey(partitions);
       for (Entry<Integer, List<IntermediateEntry>> interm : hashed.entrySet()) {
-        hashedByHost = hashByHost(interm.getValue());
+        Map<QueryUnit.PullHost, List<IntermediateEntry>> hashedByHost = hashByHost(interm.getValue());
         for (Entry<QueryUnit.PullHost, List<IntermediateEntry>> e : hashedByHost.entrySet()) {
 
           FetchImpl fetch = new FetchImpl(e.getKey(), channel.getShuffleType(),
               block.getId(), interm.getKey(), e.getValue());
 
+          long volumeSum = 0;
+          for (IntermediateEntry ie : e.getValue()) {
+            volumeSum += ie.getVolume();
+          }
+
           if (finalFetches.containsKey(interm.getKey())) {
-            finalFetches.get(interm.getKey()).add(fetch);
+            finalFetches.get(interm.getKey()).addFetche(fetch).increaseVolume(volumeSum);
           } else {
-            finalFetches.put(interm.getKey(), TUtil.newList(fetch));
+            finalFetches.put(interm.getKey(), new FetchGroupMeta(volumeSum, fetch));
           }
         }
       }
     }
 
+    int groupingColumns = 0;
     GroupbyNode groupby = PlannerUtil.findMostBottomNode(subQuery.getBlock().getPlan(), NodeType.GROUP_BY);
+    if (groupby != null) {
+      groupingColumns = groupby.getGroupingColumns().length;
+    } else {
+      DistinctGroupbyNode dGroupby = PlannerUtil.findMostBottomNode(subQuery.getBlock().getPlan(), NodeType.DISTINCT_GROUP_BY);
+      if (dGroupby != null) {
+        groupingColumns = dGroupby.getGroupingColumns().length;
+      }
+    }
     // get a proper number of tasks
     int determinedTaskNum = Math.min(maxNum, finalFetches.size());
     LOG.info(subQuery.getId() + ", ScheduleHashShuffledFetches - Max num=" + maxNum + ", finalFetchURI=" + finalFetches.size());
 
-    if (groupby != null && groupby.getGroupingColumns().length == 0) {
+    if (groupingColumns == 0) {
       determinedTaskNum = 1;
       LOG.info(subQuery.getId() + ", No Grouping Column - determinedTaskNum is set to 1");
     } else {
@@ -741,72 +828,131 @@ public class Repartitioner {
           scan.getTableName());
     } else {
       schedulerContext.setEstimatedTaskNum(determinedTaskNum);
-      // divide fetch uris into the the proper number of tasks in a round robin manner.
-      scheduleFetchesByRoundRobin(subQuery, finalFetches, scan.getTableName(), determinedTaskNum);
+      // divide fetch uris into the the proper number of tasks according to volumes
+      scheduleFetchesByEvenDistributedVolumes(subQuery, finalFetches, scan.getTableName(), determinedTaskNum);
       LOG.info(subQuery.getId() + ", DeterminedTaskNum : " + determinedTaskNum);
+    }
+  }
+
+  public static Pair<Long [], Map<String, List<FetchImpl>>[]> makeEvenDistributedFetchImpl(
+      Map<Integer, FetchGroupMeta> partitions, String tableName, int num) {
+
+    // Sort fetchGroupMeta in a descending order of data volumes.
+    List<FetchGroupMeta> fetchGroupMetaList = Lists.newArrayList(partitions.values());
+    Collections.sort(fetchGroupMetaList, new Comparator<FetchGroupMeta>() {
+      @Override
+      public int compare(FetchGroupMeta o1, FetchGroupMeta o2) {
+        return o1.getVolume() < o2.getVolume() ? 1 : (o1.getVolume() > o2.getVolume() ? -1 : 0);
+      }
+    });
+
+    // Initialize containers
+    Map<String, List<FetchImpl>>[] fetchesArray = new Map[num];
+    Long [] assignedVolumes = new Long[num];
+    // initialization
+    for (int i = 0; i < num; i++) {
+      fetchesArray[i] = new HashMap<String, List<FetchImpl>>();
+      assignedVolumes[i] = 0l;
+    }
+
+    // This algorithm assignes bigger first manner by using a sorted iterator. It is a kind of greedy manner.
+    // Its complexity is O(n). Since FetchGroup can be more than tens of thousands, we should consider its complexity.
+    // In terms of this point, it will show reasonable performance and results. even though it is not an optimal
+    // algorithm.
+    Iterator<FetchGroupMeta> iterator = fetchGroupMetaList.iterator();
+
+    int p = 0;
+    while(iterator.hasNext()) {
+      while (p < num && iterator.hasNext()) {
+        FetchGroupMeta fetchGroupMeta = iterator.next();
+        assignedVolumes[p] += fetchGroupMeta.getVolume();
+
+        TUtil.putCollectionToNestedList(fetchesArray[p], tableName, fetchGroupMeta.fetchUrls);
+        p++;
+      }
+
+      p = num - 1;
+      while (p > 0 && iterator.hasNext()) {
+        FetchGroupMeta fetchGroupMeta = iterator.next();
+        assignedVolumes[p] += fetchGroupMeta.getVolume();
+        TUtil.putCollectionToNestedList(fetchesArray[p], tableName, fetchGroupMeta.fetchUrls);
+
+        // While the current one is smaller than next one, it adds additional fetches to current one.
+        while(iterator.hasNext() && assignedVolumes[p - 1] > assignedVolumes[p]) {
+          FetchGroupMeta additionalFetchGroup = iterator.next();
+          assignedVolumes[p] += additionalFetchGroup.getVolume();
+          TUtil.putCollectionToNestedList(fetchesArray[p], tableName, additionalFetchGroup.fetchUrls);
+        }
+
+        p--;
+      }
+    }
+
+    return new Pair<Long[], Map<String, List<FetchImpl>>[]>(assignedVolumes, fetchesArray);
+  }
+
+  public static void scheduleFetchesByEvenDistributedVolumes(SubQuery subQuery, Map<Integer, FetchGroupMeta> partitions,
+                                                             String tableName, int num) {
+    Map<String, List<FetchImpl>>[] fetchsArray = makeEvenDistributedFetchImpl(partitions, tableName, num).getSecond();
+    // Schedule FetchImpls
+    for (Map<String, List<FetchImpl>> eachFetches : fetchsArray) {
+      SubQuery.scheduleFetches(subQuery, eachFetches);
     }
   }
 
   // Scattered hash shuffle hashes the key columns and groups the hash keys associated with
   // the same hash key. Then, if the volume of a group is larger
-  // than DIST_QUERY_TABLE_PARTITION_VOLUME, it divides the group into more than two sub groups
-  // according to DIST_QUERY_TABLE_PARTITION_VOLUME (default size = 256MB).
+  // than $DIST_QUERY_TABLE_PARTITION_VOLUME, it divides the group into more than two sub groups
+  // according to $DIST_QUERY_TABLE_PARTITION_VOLUME (default size = 256MB).
   // As a result, each group size always becomes the less than or equal
-  // to DIST_QUERY_TABLE_PARTITION_VOLUME. Finally, each subgroup is assigned to a query unit.
+  // to $DIST_QUERY_TABLE_PARTITION_VOLUME. Finally, each subgroup is assigned to a query unit.
   // It is usually used for writing partitioned tables.
   public static void scheduleScatteredHashShuffleFetches(TaskSchedulerContext schedulerContext,
        SubQuery subQuery, Map<ExecutionBlockId, List<IntermediateEntry>> intermediates,
        String tableName) {
-    int i = 0;
-    int splitVolume =   subQuery.getContext().getConf().
-        getIntVar(ConfVars.DIST_QUERY_TABLE_PARTITION_VOLUME);
+    long splitVolume = StorageUnit.MB *
+        subQuery.getMasterPlan().getContext().getLong(SessionVars.TABLE_PARTITION_PER_SHUFFLE_SIZE);
+    long pageSize = StorageUnit.MB * 
+        subQuery.getContext().getConf().getIntVar(ConfVars.SHUFFLE_HASH_APPENDER_PAGE_VOLUME); // in bytes
+    if (pageSize >= splitVolume) {
+      throw new RuntimeException("tajo.dist-query.table-partition.task-volume-mb should be great than " +
+          "tajo.shuffle.hash.appender.page.volumn-mb");
+    }
+    List<List<FetchImpl>> fetches = new ArrayList<List<FetchImpl>>();
 
-    long sumNumBytes = 0L;
-    Map<Integer, List<FetchImpl>> fetches = new HashMap<Integer, List<FetchImpl>>();
-
-    // Step 1 : divide fetch uris into the the proper number of tasks by
-    // SCATTERED_HASH_SHUFFLE_SPLIT_VOLUME
+    long totalIntermediateSize = 0L;
     for (Entry<ExecutionBlockId, List<IntermediateEntry>> listEntry : intermediates.entrySet()) {
-
-      // Step 2: Sort IntermediateEntry by partition id. After first sort,
-      // we need to sort again by PullHost address because of data locality.
-      Collections.sort(listEntry.getValue(), new IntermediateEntryComparator());
-      for (IntermediateEntry interm : listEntry.getValue()) {
-        FetchImpl fetch = new FetchImpl(interm.getPullHost(), SCATTERED_HASH_SHUFFLE,
-            listEntry.getKey(), interm.getPartId(), TUtil.newList(interm));
-        if (fetches.size() == 0) {
-          fetches.put(i, TUtil.newList(fetch));
+      // merge by PartitionId
+      Map<Integer, List<IntermediateEntry>> partitionIntermMap = new HashMap<Integer, List<IntermediateEntry>>();
+      for (IntermediateEntry eachInterm: listEntry.getValue()) {
+        totalIntermediateSize += eachInterm.getVolume();
+        int partId = eachInterm.getPartId();
+        List<IntermediateEntry> partitionInterms = partitionIntermMap.get(partId);
+        if (partitionInterms == null) {
+          partitionInterms = TUtil.newList(eachInterm);
+          partitionIntermMap.put(partId, partitionInterms);
         } else {
-
-          // Step 3: Compare current partition id with previous partition id because One task just
-          // can include one partitionId.
-          if (fetches.get(i).get(0).getPartitionId() != interm.getPartId()) {
-            i++;
-            fetches.put(i, TUtil.newList(fetch));
-            sumNumBytes = 0L;
-          } else {
-            if ((sumNumBytes + interm.getVolume()) < splitVolume) {
-              fetches.get(i).add(fetch);
-            } else {
-              i++;
-              fetches.put(i, TUtil.newList(fetch));
-              sumNumBytes = 0L;
-            }
-          }
+          partitionInterms.add(eachInterm);
         }
-        sumNumBytes += interm.getVolume();
+      }
+
+      // Grouping or splitting to fit $DIST_QUERY_TABLE_PARTITION_VOLUME size
+      for (List<IntermediateEntry> partitionEntries : partitionIntermMap.values()) {
+        List<List<FetchImpl>> eachFetches = splitOrMergeIntermediates(listEntry.getKey(), partitionEntries,
+            splitVolume, pageSize);
+        if (eachFetches != null && !eachFetches.isEmpty()) {
+          fetches.addAll(eachFetches);
+        }
       }
     }
 
-    // Step 4 : Set the proper number of tasks to the estimated task num
     schedulerContext.setEstimatedTaskNum(fetches.size());
 
-    // Step 5 : Apply divided fetches
-    i = 0;
+    int i = 0;
     Map<String, List<FetchImpl>>[] fetchesArray = new Map[fetches.size()];
-    for(Entry<Integer, List<FetchImpl>> entry : fetches.entrySet()) {
+    for(List<FetchImpl> entry : fetches) {
       fetchesArray[i] = new HashMap<String, List<FetchImpl>>();
-      fetchesArray[i].put(tableName, entry.getValue());
+      fetchesArray[i].put(tableName, entry);
 
       SubQuery.scheduleFetches(subQuery, fetchesArray[i]);
       i++;
@@ -814,20 +960,65 @@ public class Repartitioner {
 
     LOG.info(subQuery.getId()
         + ", ShuffleType:" + SCATTERED_HASH_SHUFFLE.name()
-        + ", DeterminedTaskNum : " + fetches.size());
+        + ", Intermediate Size: " + totalIntermediateSize
+        + ", splitSize: " + splitVolume
+        + ", DeterminedTaskNum: " + fetches.size());
   }
 
-  static class IntermediateEntryComparator implements Comparator<IntermediateEntry> {
+  /**
+   * If a IntermediateEntry is large than splitVolume, List<FetchImpl> has single element.
+   * @param ebId
+   * @param entries
+   * @param splitVolume
+   * @return
+   */
+  public static List<List<FetchImpl>> splitOrMergeIntermediates(
+      ExecutionBlockId ebId, List<IntermediateEntry> entries, long splitVolume, long pageSize) {
+    // Each List<FetchImpl> has splitVolume size.
+    List<List<FetchImpl>> fetches = new ArrayList<List<FetchImpl>>();
 
-    @Override
-    public int compare(IntermediateEntry o1, IntermediateEntry o2) {
-      int cmp = Ints.compare(o1.getPartId(), o2.getPartId());
-      if (cmp != 0) {
-        return cmp;
+    Iterator<IntermediateEntry> iter = entries.iterator();
+    if (!iter.hasNext()) {
+      return null;
+    }
+    List<FetchImpl> fetchListForSingleTask = new ArrayList<FetchImpl>();
+    long fetchListVolume = 0;
+
+    while (iter.hasNext()) {
+      IntermediateEntry currentInterm = iter.next();
+
+      long firstSplitVolume = splitVolume - fetchListVolume;
+      if (firstSplitVolume < pageSize) {
+        firstSplitVolume = splitVolume;
       }
 
-      return o1.getPullHost().getHost().compareTo(o2.getPullHost().getHost());
+      //Each Pair object in the splits variable is assigned to the next ExectionBlock's task.
+      //The first long value is a offset of the intermediate file and the second long value is length.
+      List<Pair<Long, Long>> splits = currentInterm.split(firstSplitVolume, splitVolume);
+      if (splits == null || splits.isEmpty()) {
+        break;
+      }
+
+      for (Pair<Long, Long> eachSplit: splits) {
+        if (fetchListVolume > 0 && fetchListVolume + eachSplit.getSecond() >= splitVolume) {
+          if (!fetchListForSingleTask.isEmpty()) {
+            fetches.add(fetchListForSingleTask);
+          }
+          fetchListForSingleTask = new ArrayList<FetchImpl>();
+          fetchListVolume = 0;
+        }
+        FetchImpl fetch = new FetchImpl(currentInterm.getPullHost(), SCATTERED_HASH_SHUFFLE,
+            ebId, currentInterm.getPartId(), TUtil.newList(currentInterm));
+        fetch.setOffset(eachSplit.getFirst());
+        fetch.setLength(eachSplit.getSecond());
+        fetchListForSingleTask.add(fetch);
+        fetchListVolume += eachSplit.getSecond();
+      }
     }
+    if (!fetchListForSingleTask.isEmpty()) {
+      fetches.add(fetchListForSingleTask);
+    }
+    return fetches;
   }
 
   public static List<URI> createFetchURL(FetchImpl fetch, boolean includeParts) {
@@ -847,47 +1038,59 @@ public class Repartitioner {
       urlPrefix.append("s");
     }
 
+    if (fetch.getLength() >= 0) {
+      urlPrefix.append("&offset=").append(fetch.getOffset()).append("&length=").append(fetch.getLength());
+    }
+
     List<URI> fetchURLs = new ArrayList<URI>();
-    if(includeParts){
-      // If the get request is longer than 2000 characters,
-      // the long request uri may cause HTTP Status Code - 414 Request-URI Too Long.
-      // Refer to http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.15
-      // The below code transforms a long request to multiple requests.
-      List<String> taskIdsParams = new ArrayList<String>();
-      StringBuilder taskIdListBuilder = new StringBuilder();
-      List<Integer> taskIds = fetch.getTaskIds();
-      List<Integer> attemptIds = fetch.getAttemptIds();
-      boolean first = true;
+    if(includeParts) {
+      if (fetch.getType() == HASH_SHUFFLE || fetch.getType() == SCATTERED_HASH_SHUFFLE) {
+        fetchURLs.add(URI.create(urlPrefix.toString()));
+      } else {
+        // If the get request is longer than 2000 characters,
+        // the long request uri may cause HTTP Status Code - 414 Request-URI Too Long.
+        // Refer to http://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.4.15
+        // The below code transforms a long request to multiple requests.
+        List<String> taskIdsParams = new ArrayList<String>();
+        StringBuilder taskIdListBuilder = new StringBuilder();
+        List<Integer> taskIds = fetch.getTaskIds();
+        List<Integer> attemptIds = fetch.getAttemptIds();
+        boolean first = true;
 
-      for (int i = 0; i < taskIds.size(); i++) {
-        StringBuilder taskAttemptId = new StringBuilder();
+        for (int i = 0; i < taskIds.size(); i++) {
+          StringBuilder taskAttemptId = new StringBuilder();
 
-        if (!first) { // when comma is added?
-          taskAttemptId.append(",");
-        } else {
-          first = false;
+          if (!first) { // when comma is added?
+            taskAttemptId.append(",");
+          } else {
+            first = false;
+          }
+
+          int taskId = taskIds.get(i);
+          if (taskId < 0) {
+            // In the case of hash shuffle each partition has single shuffle file per worker.
+            // TODO If file is large, consider multiple fetching(shuffle file can be split)
+            continue;
+          }
+          int attemptId = attemptIds.get(i);
+          taskAttemptId.append(taskId).append("_").append(attemptId);
+
+          if (taskIdListBuilder.length() + taskAttemptId.length()
+              > HTTP_REQUEST_MAXIMUM_LENGTH) {
+            taskIdsParams.add(taskIdListBuilder.toString());
+            taskIdListBuilder = new StringBuilder(taskId + "_" + attemptId);
+          } else {
+            taskIdListBuilder.append(taskAttemptId);
+          }
         }
-
-        int taskId = taskIds.get(i);
-        int attemptId = attemptIds.get(i);
-        taskAttemptId.append(taskId).append("_").append(attemptId);
-
-        if (taskIdListBuilder.length() + taskAttemptId.length()
-            > HTTP_REQUEST_MAXIMUM_LENGTH) {
+        // if the url params remain
+        if (taskIdListBuilder.length() > 0) {
           taskIdsParams.add(taskIdListBuilder.toString());
-          taskIdListBuilder = new StringBuilder(taskId + "_" + attemptId);
-        } else {
-          taskIdListBuilder.append(taskAttemptId);
         }
-      }
-      // if the url params remain
-      if (taskIdListBuilder.length() > 0) {
-        taskIdsParams.add(taskIdListBuilder.toString());
-      }
-
-      urlPrefix.append("&ta=");
-      for (String param : taskIdsParams) {
-        fetchURLs.add(URI.create(urlPrefix + param));
+        urlPrefix.append("&ta=");
+        for (String param : taskIdsParams) {
+          fetchURLs.add(URI.create(urlPrefix + param));
+        }
       }
     } else {
       fetchURLs.add(URI.create(urlPrefix.toString()));

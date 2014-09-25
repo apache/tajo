@@ -21,12 +21,15 @@ package org.apache.tajo.worker;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
-import org.apache.hadoop.util.ReflectionUtils;
+import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos;
@@ -43,23 +46,29 @@ import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.query.QueryUnitRequest;
-import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
+import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
+import org.apache.tajo.pullserver.TajoPullServerService;
+import org.apache.tajo.pullserver.retriever.FileChunk;
 import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.rpc.RpcChannelFactory;
+import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.util.NetUtils;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
+import org.jboss.netty.handler.codec.http.QueryStringDecoder;
+import org.jboss.netty.util.Timer;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.URI;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.ExecutorService;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
@@ -69,11 +78,9 @@ public class Task {
 
   private final TajoConf systemConf;
   private final QueryContext queryContext;
-  private final FileSystem localFS;
-  private TaskRunner.TaskRunnerContext taskRunnerContext;
-  private final QueryMasterProtocolService.Interface masterProxy;
-  private final LocalDirAllocator lDirAllocator;
+  private final ExecutionBlockContext executionBlockContext;
   private final QueryUnitAttemptId taskId;
+  private final String taskRunnerId;
 
   private final Path taskDir;
   private final QueryUnitRequest request;
@@ -85,19 +92,18 @@ public class Task {
   private boolean interQuery;
   private boolean killed = false;
   private boolean aborted = false;
-  private final Reporter reporter;
   private Path inputTableBaseDir;
 
   private long startTime;
   private long finishTime;
 
   private final TableStats inputStats;
+  private List<FileChunk> localChunks;
 
   // TODO - to be refactored
   private ShuffleType shuffleType = null;
   private Schema finalSchema = null;
   private TupleComparator sortComp = null;
-  private ClientSocketChannelFactory channelFactory = null;
 
   static final String OUTPUT_FILE_PREFIX="part-";
   static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_SUBQUERY =
@@ -132,30 +138,26 @@ public class Task {
         }
       };
 
-  public Task(QueryUnitAttemptId taskId,
-              final TaskRunner.TaskRunnerContext worker,
-              final QueryMasterProtocolService.Interface masterProxy,
+  public Task(String taskRunnerId,
+              Path baseDir,
+              QueryUnitAttemptId taskId,
+              final ExecutionBlockContext executionBlockContext,
               final QueryUnitRequest request) throws IOException {
+    this.taskRunnerId = taskRunnerId;
     this.request = request;
     this.taskId = taskId;
 
-    this.systemConf = worker.getConf();
+    this.systemConf = executionBlockContext.getConf();
     this.queryContext = request.getQueryContext();
-    this.taskRunnerContext = worker;
-    this.masterProxy = masterProxy;
-    this.localFS = worker.getLocalFS();
-    this.lDirAllocator = worker.getLocalDirAllocator();
-    this.taskDir = StorageUtil.concatPath(taskRunnerContext.getBaseDir(),
+    this.executionBlockContext = executionBlockContext;
+    this.taskDir = StorageUtil.concatPath(baseDir,
         taskId.getQueryUnitId().getId() + "_" + taskId.getId());
 
-    this.context = new TaskAttemptContext(systemConf, queryContext, taskId,
+    this.context = new TaskAttemptContext(queryContext, executionBlockContext, taskId,
         request.getFragments().toArray(new FragmentProto[request.getFragments().size()]), taskDir);
     this.context.setDataChannel(request.getDataChannel());
     this.context.setEnforcer(request.getEnforcer());
     this.inputStats = new TableStats();
-
-    this.reporter = new Reporter(taskId, masterProxy);
-    this.reporter.startCommunicationThread();
 
     plan = CoreGsonHelper.fromJson(request.getSerializedData(), LogicalNode.class);
     LogicalNode [] scanNode = PlannerUtil.findAllNodes(plan, NodeType.SCAN);
@@ -196,16 +198,20 @@ public class Task {
       context.setOutputPath(outFilePath);
     }
 
+    this.localChunks = Collections.synchronizedList(new ArrayList<FileChunk>());
+    
     context.setState(TaskAttemptState.TA_PENDING);
     LOG.info("==================================");
     LOG.info("* Subquery " + request.getId() + " is initialized");
     LOG.info("* InterQuery: " + interQuery
-        + (interQuery ? ", Use " + this.shuffleType + " shuffle":""));
+        + (interQuery ? ", Use " + this.shuffleType + " shuffle":"") +
+        ", Fragments (num: " + request.getFragments().size() + ")" +
+        ", Fetches (total:" + request.getFetches().size() + ") :");
 
-    LOG.info("* Fragments (num: " + request.getFragments().size() + ")");
-    LOG.info("* Fetches (total:" + request.getFetches().size() + ") :");
-    for (FetchImpl f : request.getFetches()) {
-      LOG.info("Table Id: " + f.getName() + ", Simple URIs: " + f.getSimpleURIs());
+    if(LOG.isDebugEnabled()) {
+      for (FetchImpl f : request.getFetches()) {
+        LOG.debug("Table Id: " + f.getName() + ", Simple URIs: " + f.getSimpleURIs());
+      }
     }
     LOG.info("* Local task dir: " + taskDir);
     if(LOG.isDebugEnabled()) {
@@ -216,25 +222,28 @@ public class Task {
   }
 
   public void init() throws IOException {
-    // initialize a task temporal dir
-    localFS.mkdirs(taskDir);
+    if (context.getState() == TaskAttemptState.TA_PENDING) {
+      // initialize a task temporal dir
+      FileSystem localFS = executionBlockContext.getLocalFS();
+      localFS.mkdirs(taskDir);
 
-    if (request.getFetches().size() > 0) {
-      inputTableBaseDir = localFS.makeQualified(
-          lDirAllocator.getLocalPathForWrite(
-              getTaskAttemptDir(context.getTaskId()).toString(), systemConf));
-      localFS.mkdirs(inputTableBaseDir);
-      Path tableDir;
-      for (String inputTable : context.getInputTables()) {
-        tableDir = new Path(inputTableBaseDir, inputTable);
-        if (!localFS.exists(tableDir)) {
-          LOG.info("the directory is created  " + tableDir.toUri());
-          localFS.mkdirs(tableDir);
+      if (request.getFetches().size() > 0) {
+        inputTableBaseDir = localFS.makeQualified(
+            executionBlockContext.getLocalDirAllocator().getLocalPathForWrite(
+                getTaskAttemptDir(context.getTaskId()).toString(), systemConf));
+        localFS.mkdirs(inputTableBaseDir);
+        Path tableDir;
+        for (String inputTable : context.getInputTables()) {
+          tableDir = new Path(inputTableBaseDir, inputTable);
+          if (!localFS.exists(tableDir)) {
+            LOG.info("the directory is created  " + tableDir.toUri());
+            localFS.mkdirs(tableDir);
+          }
         }
       }
+      // for localizing the intermediate data
+      localize(request);
     }
-    // for localizing the intermediate data
-    localize(request);
   }
 
   public QueryUnitAttemptId getTaskId() {
@@ -278,8 +287,9 @@ public class Task {
   }
 
   public void fetch() {
+    ExecutorService executorService = executionBlockContext.getTaskRunner(taskRunnerId).getFetchLauncher();
     for (Fetcher f : fetcherRunners) {
-      taskRunnerContext.getFetchLauncher().submit(new FetchRunner(context, f));
+      executorService.submit(new FetchRunner(context, f));
     }
   }
 
@@ -287,25 +297,18 @@ public class Task {
     killed = true;
     context.stop();
     context.setState(TaskAttemptState.TA_KILLED);
-    releaseChannelFactory();
   }
 
   public void abort() {
     aborted = true;
     context.stop();
-    releaseChannelFactory();
   }
 
   public void cleanUp() {
     // remove itself from worker
     if (context.getState() == TaskAttemptState.TA_SUCCEEDED) {
-      try {
-        localFS.delete(context.getWorkDir(), true);
-        synchronized (taskRunnerContext.getTasks()) {
-          taskRunnerContext.getTasks().remove(this.getId());
-        }
-      } catch (IOException e) {
-        LOG.error(e.getMessage(), e);
+      synchronized (executionBlockContext.getTasks()) {
+        executionBlockContext.getTasks().remove(this.getId());
       }
     } else {
       LOG.error("QueryUnitAttemptId: " + context.getTaskId() + " status: " + context.getState());
@@ -314,7 +317,7 @@ public class Task {
 
   public TaskStatusProto getReport() {
     TaskStatusProto.Builder builder = TaskStatusProto.newBuilder();
-    builder.setWorkerName(taskRunnerContext.getNodeId());
+    builder.setWorkerName(executionBlockContext.getWorkerContext().getConnectionInfo().getHostAndPeerRpcPort());
     builder.setId(context.getTaskId().getProto())
         .setProgress(context.getProgress())
         .setState(context.getState());
@@ -325,6 +328,24 @@ public class Task {
       builder.setResultStats(context.getResultStats().getProto());
     }
     return builder.build();
+  }
+
+  public boolean isRunning(){
+    return context.getState() == TaskAttemptState.TA_RUNNING;
+  }
+
+  public boolean isProgressChanged() {
+    return context.isProgressChanged();
+  }
+
+  public void updateProgress() {
+    if(killed || aborted){
+      return;
+    }
+
+    if (executor != null && context.getProgress() < 1.0f) {
+      context.setExecutorProgress(executor.getProgress());
+    }
   }
 
   private CatalogProtos.TableStatsProto reloadInputStats() {
@@ -401,12 +422,11 @@ public class Task {
       FileFragment[] frags = localizeFetchedData(tableDir, inputTable, descs.get(inputTable).getMeta());
       context.updateAssignedFragments(inputTable, frags);
     }
-    releaseChannelFactory();
   }
 
-  public void run() {
+  public void run() throws Exception {
     startTime = System.currentTimeMillis();
-    Exception error = null;
+    Throwable error = null;
     try {
       context.setState(TaskAttemptState.TA_RUNNING);
 
@@ -415,33 +435,40 @@ public class Task {
         // complete.
         waitForFetch();
         context.setFetcherProgress(FETCHER_PROGRESS);
-        context.setProgress(FETCHER_PROGRESS);
+        context.setProgressChanged(true);
+        updateProgress();
       }
 
-      this.executor = taskRunnerContext.getTQueryEngine().
+      this.executor = executionBlockContext.getTQueryEngine().
           createPlan(context, plan);
       this.executor.init();
 
-      while(!killed && executor.next() != null) {
+      while(!killed && !aborted && executor.next() != null) {
       }
-      this.executor.close();
-      reloadInputStats();
-      this.executor = null;
-    } catch (Exception e) {
+    } catch (Throwable e) {
       error = e ;
       LOG.error(e.getMessage(), e);
       aborted = true;
     } finally {
-      context.setProgress(1.0f);
-      taskRunnerContext.completedTasksNum.incrementAndGet();
+      if (executor != null) {
+        try {
+          executor.close();
+          reloadInputStats();
+        } catch (IOException e) {
+          LOG.error(e);
+        }
+        this.executor = null;
+      }
 
+      executionBlockContext.completedTasksNum.incrementAndGet();
+      context.getHashShuffleAppenderManager().finalizeTask(taskId);
+      QueryMasterProtocol.QueryMasterProtocolService.Interface queryMasterStub = executionBlockContext.getQueryMasterStub();
       if (killed || aborted) {
         context.setExecutorProgress(0.0f);
-        context.setProgress(0.0f);
         if(killed) {
           context.setState(TaskAttemptState.TA_KILLED);
-          masterProxy.statusUpdate(null, getReport(), NullCallback.get());
-          taskRunnerContext.killedTasksNum.incrementAndGet();
+          queryMasterStub.statusUpdate(null, getReport(), NullCallback.get());
+          executionBlockContext.killedTasksNum.incrementAndGet();
         } else {
           context.setState(TaskAttemptState.TA_FAILED);
           TaskFatalErrorReport.Builder errorBuilder =
@@ -456,47 +483,31 @@ public class Task {
             errorBuilder.setErrorTrace(ExceptionUtils.getStackTrace(error));
           }
 
-          masterProxy.fatalError(null, errorBuilder.build(), NullCallback.get());
-          taskRunnerContext.failedTasksNum.incrementAndGet();
+          queryMasterStub.fatalError(null, errorBuilder.build(), NullCallback.get());
+          executionBlockContext.failedTasksNum.incrementAndGet();
         }
-
-        // stopping the status report
-        try {
-          reporter.stopCommunicationThread();
-        } catch (InterruptedException e) {
-          LOG.warn(e);
-        }
-
       } else {
         // if successful
         context.setProgress(1.0f);
         context.setState(TaskAttemptState.TA_SUCCEEDED);
-
-        // stopping the status report
-        try {
-          reporter.stopCommunicationThread();
-        } catch (InterruptedException e) {
-          LOG.warn(e);
-        }
+        executionBlockContext.succeededTasksNum.incrementAndGet();
 
         TaskCompletionReport report = getTaskCompletionReport();
-        masterProxy.done(null, report, NullCallback.get());
-        taskRunnerContext.succeededTasksNum.incrementAndGet();
+        queryMasterStub.done(null, report, NullCallback.get());
       }
-
       finishTime = System.currentTimeMillis();
-      LOG.info("Worker's task counter - total:" + taskRunnerContext.completedTasksNum.intValue() +
-          ", succeeded: " + taskRunnerContext.succeededTasksNum.intValue()
-          + ", killed: " + taskRunnerContext.killedTasksNum.intValue()
-          + ", failed: " + taskRunnerContext.failedTasksNum.intValue());
+      LOG.info(context.getTaskId() + " completed. " +
+          "Worker's task counter - total:" + executionBlockContext.completedTasksNum.intValue() +
+          ", succeeded: " + executionBlockContext.succeededTasksNum.intValue()
+          + ", killed: " + executionBlockContext.killedTasksNum.intValue()
+          + ", failed: " + executionBlockContext.failedTasksNum.intValue());
       cleanupTask();
     }
   }
 
   public void cleanupTask() {
-    taskRunnerContext.addTaskHistory(getId(), createTaskHistory());
-    taskRunnerContext.getTasks().remove(getId());
-    taskRunnerContext = null;
+    executionBlockContext.addTaskHistory(taskRunnerId, getId(), createTaskHistory());
+    executionBlockContext.getTasks().remove(getId());
 
     fetcherRunners.clear();
     fetcherRunners = null;
@@ -506,11 +517,8 @@ public class Task {
         executor = null;
       }
     } catch (IOException e) {
-      e.printStackTrace();
+      LOG.fatal(e.getMessage(), e);
     }
-    plan = null;
-    context = null;
-    releaseChannelFactory();
   }
 
   public TaskHistory createTaskHistory() {
@@ -537,7 +545,7 @@ public class Task {
         FetcherHistoryProto.Builder builder = FetcherHistoryProto.newBuilder();
         for (Fetcher fetcher : fetcherRunners) {
           // TODO store the fetcher histories
-          if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_DEBUG)) {
+          if (systemConf.getBoolVar(TajoConf.ConfVars.$DEBUG_ENABLED)) {
             builder.setStartTime(fetcher.getStartTime());
             builder.setFinishTime(fetcher.getFinishTime());
             builder.setFileLength(fetcher.getFileLen());
@@ -551,7 +559,7 @@ public class Task {
         taskHistory.setFinishedFetchCount(i);
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      LOG.warn(e.getMessage(), e);
     }
 
     return taskHistory;
@@ -588,6 +596,17 @@ public class Task {
       listTablets.add(tablet);
     }
 
+    // Special treatment for locally pseudo fetched chunks
+    synchronized (localChunks) {
+      for (FileChunk chunk : localChunks) {
+        if (name.equals(chunk.getEbId())) {
+          tablet = new FileFragment(name, new Path(chunk.getFile().getPath()), chunk.startOffset(), chunk.length());
+          listTablets.add(tablet);
+          LOG.info("One local chunk is added to listTablets");
+        }
+      }
+    }
+
     FileFragment[] tablets = new FileFragment[listTablets.size()];
     listTablets.toArray(tablets);
 
@@ -622,11 +641,16 @@ public class Task {
             LOG.warn("Retry on the fetch: " + fetcher.getURI() + " (" + retryNum + ")");
           }
           try {
-            File fetched = fetcher.get();
-            if (fetcher.getState() == TajoProtos.FetcherState.FETCH_FINISHED && fetched != null) {
+            FileChunk fetched = fetcher.get();
+            if (fetcher.getState() == TajoProtos.FetcherState.FETCH_FINISHED && fetched != null
+          && fetched.getFile() != null) {
+              if (fetched.fromRemote() == false) {
+          localChunks.add(fetched);
+          LOG.info("Add a new FileChunk to local chunk list");
+              }
               break;
             }
-          } catch (IOException e) {
+          } catch (Throwable e) {
             LOG.error("Fetch failed: " + fetcher.getURI(), e);
           }
           retryNum++;
@@ -647,7 +671,11 @@ public class Task {
 
   @VisibleForTesting
   public static float adjustFetchProcess(int totalFetcher, int remainFetcher) {
-    return ((float)(totalFetcher - remainFetcher)) / (float)totalFetcher * FETCHER_PROGRESS;
+    if (totalFetcher > 0) {
+      return ((totalFetcher - remainFetcher) / (float) totalFetcher) * FETCHER_PROGRESS;
+    } else {
+      return 0.0f;
+    }
   }
 
   private synchronized void fetcherFinished(TaskAttemptContext ctx) {
@@ -655,24 +683,15 @@ public class Task {
     if(fetcherSize == 0) {
       return;
     }
-    try {
-      int numRunningFetcher = (int)(ctx.getFetchLatch().getCount()) - 1;
 
-      if (numRunningFetcher == 0) {
-        context.setProgress(FETCHER_PROGRESS);
-      } else {
-        context.setProgress(adjustFetchProcess(fetcherSize, numRunningFetcher));
-      }
-    } finally {
-      ctx.getFetchLatch().countDown();
-    }
-  }
+    ctx.getFetchLatch().countDown();
 
-  private void releaseChannelFactory(){
-    if(channelFactory != null) {
-      channelFactory.shutdown();
-      channelFactory.releaseExternalResources();
-      channelFactory = null;
+    int remainFetcher = (int) ctx.getFetchLatch().getCount();
+    if (remainFetcher == 0) {
+      context.setFetcherProgress(FETCHER_PROGRESS);
+    } else {
+      context.setFetcherProgress(adjustFetchProcess(fetcherSize, remainFetcher));
+      context.setProgressChanged(true);
     }
   }
 
@@ -680,28 +699,59 @@ public class Task {
                                         List<FetchImpl> fetches) throws IOException {
 
     if (fetches.size() > 0) {
-
-      releaseChannelFactory();
-
-
-      int workerNum = ctx.getConf().getIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM);
-      channelFactory = RpcChannelFactory.createClientChannelFactory("Fetcher", workerNum);
-      Path inputDir = lDirAllocator.
-          getLocalPathToRead(
-              getTaskAttemptDir(ctx.getTaskId()).toString(), systemConf);
-      File storeDir;
+      ClientSocketChannelFactory channelFactory = executionBlockContext.getShuffleChannelFactory();
+      Timer timer = executionBlockContext.getRPCTimer();
+      Path inputDir = executionBlockContext.getLocalDirAllocator().
+          getLocalPathToRead(getTaskAttemptDir(ctx.getTaskId()).toString(), systemConf);
 
       int i = 0;
-      File storeFile;
+      File storeDir;
+      File defaultStoreFile;
+      FileChunk storeChunk = null;
       List<Fetcher> runnerList = Lists.newArrayList();
+
       for (FetchImpl f : fetches) {
+        storeDir = new File(inputDir.toString(), f.getName());
+        if (!storeDir.exists()) {
+          storeDir.mkdirs();
+        }
+
         for (URI uri : f.getURIs()) {
-          storeDir = new File(inputDir.toString(), f.getName());
-          if (!storeDir.exists()) {
-            storeDir.mkdirs();
+          defaultStoreFile = new File(storeDir, "in_" + i);
+          InetAddress address = InetAddress.getByName(uri.getHost());
+
+          if (NetUtils.isLocalAddress(address)) {
+            boolean hasError = false;
+            try {
+              LOG.info("Try to get local file chunk at local host");
+              storeChunk = getLocalStoredFileChunk(uri, systemConf);
+            } catch (Throwable t) {
+              hasError = true;
+            }
+
+            // When a range request is out of range, storeChunk will be NULL. This case is normal state.
+            // So, we should skip and don't need to create storeChunk.
+            if (storeChunk == null && !hasError) {
+              continue;
+            }
+
+            if (storeChunk != null && storeChunk.getFile() != null && storeChunk.startOffset() > -1
+                && hasError == false) {
+              storeChunk.setFromRemote(false);
+            } else {
+              storeChunk = new FileChunk(defaultStoreFile, 0, -1);
+              storeChunk.setFromRemote(true);
+            }
+          } else {
+            storeChunk = new FileChunk(defaultStoreFile, 0, -1);
+            storeChunk.setFromRemote(true);
           }
-          storeFile = new File(storeDir, "in_" + i);
-          Fetcher fetcher = new Fetcher(systemConf, uri, storeFile, channelFactory);
+
+          // If we decide that intermediate data should be really fetched from a remote host, storeChunk
+          // represents a complete file. Otherwise, storeChunk may represent a complete file or only a part of it
+          storeChunk.setEbId(f.getName());
+          Fetcher fetcher = new Fetcher(systemConf, uri, storeChunk, channelFactory, timer);
+          LOG.info("Create a new Fetcher with storeChunk:" + storeChunk.toString());
           runnerList.add(fetcher);
           i++;
         }
@@ -713,93 +763,111 @@ public class Task {
     }
   }
 
-  protected class Reporter {
-    private QueryMasterProtocolService.Interface masterStub;
-    private Thread pingThread;
-    private AtomicBoolean stop = new AtomicBoolean(false);
-    private static final int PROGRESS_INTERVAL = 3000;
-    private static final int MAX_RETRIES = 3;
-    private QueryUnitAttemptId taskId;
+  private FileChunk getLocalStoredFileChunk(URI fetchURI, TajoConf conf) throws IOException {
+    // Parse the URI
+    LOG.info("getLocalStoredFileChunk starts");
+    final Map<String, List<String>> params = new QueryStringDecoder(fetchURI.toString()).getParameters();
+    final List<String> types = params.get("type");
+    final List<String> qids = params.get("qid");
+    final List<String> taskIdList = params.get("ta");
+    final List<String> subQueryIds = params.get("sid");
+    final List<String> partIds = params.get("p");
+    final List<String> offsetList = params.get("offset");
+    final List<String> lengthList = params.get("length");
 
-    public Reporter(QueryUnitAttemptId taskId, QueryMasterProtocolService.Interface masterStub) {
-      this.taskId = taskId;
-      this.masterStub = masterStub;
+    if (types == null || subQueryIds == null || qids == null || partIds == null) {
+      LOG.error("Invalid URI - Required queryId, type, subquery Id, and part id");
+      return null;
     }
 
-    Runnable createReporterThread() {
+    if (qids.size() != 1 && types.size() != 1 || subQueryIds.size() != 1) {
+      LOG.error("Invalid URI - Required qids, type, taskIds, subquery Id, and part id");
+      return null;
+    }
 
-      return new Runnable() {
-        int remainingRetries = MAX_RETRIES;
-        @Override
-        public void run() {
-          while (!stop.get() && !context.isStopped()) {
-            try {
-              if(executor != null && context.getProgress() < 1.0f) {
-                float progress = executor.getProgress();
-                context.setExecutorProgress(progress);
-              }
+    String queryId = qids.get(0);
+    String shuffleType = types.get(0);
+    String sid = subQueryIds.get(0);
+    String partId = partIds.get(0);
+
+    if (shuffleType.equals("r") && taskIdList == null) {
+      LOG.error("Invalid URI - For range shuffle, taskId is required");
+      return null;
+    }
+    List<String> taskIds = splitMaps(taskIdList);
+
+    FileChunk chunk = null;
+    long offset = (offsetList != null && !offsetList.isEmpty()) ? Long.parseLong(offsetList.get(0)) : -1L;
+    long length = (lengthList != null && !lengthList.isEmpty()) ? Long.parseLong(lengthList.get(0)) : -1L;
+
+    LOG.info("PullServer request param: shuffleType=" + shuffleType + ", sid=" + sid + ", partId=" + partId
+	+ ", taskIds=" + taskIdList);
+
+    // The working directory of Tajo worker for each query, including subquery
+    String queryBaseDir = queryId.toString() + "/output" + "/" + sid + "/";
+
+    // If the subquery requires a range shuffle
+    if (shuffleType.equals("r")) {
+      String ta = taskIds.get(0);
+      if (!executionBlockContext.getLocalDirAllocator().ifExists(queryBaseDir + ta + "/output/", conf)) {
+        LOG.warn("Range shuffle - file not exist");
+        return null;
+      }
+      Path path = executionBlockContext.getLocalFS().makeQualified(
+	      executionBlockContext.getLocalDirAllocator().getLocalPathToRead(queryBaseDir + ta + "/output/", conf));
+      String startKey = params.get("start").get(0);
+      String endKey = params.get("end").get(0);
+      boolean last = params.get("final") != null;
+
+      try {
+        chunk = TajoPullServerService.getFileCunks(path, startKey, endKey, last);
             } catch (Throwable t) {
-              LOG.error("Get progress error: " + t.getMessage(), t);
-            }
-
-            try {
-              if (context.isPorgressChanged()) {
-                masterStub.statusUpdate(null, getReport(), NullCallback.get());
-              } else {
-                masterStub.ping(null, taskId.getProto(), NullCallback.get());
-              }
-            } catch (Throwable t) {
-              LOG.error(t.getMessage(), t);
-              remainingRetries -=1;
-              if (remainingRetries == 0) {
-                ReflectionUtils.logThreadInfo(LOG, "Communication exception", 0);
-                LOG.warn("Last retry, exiting ");
-                throw new RuntimeException(t);
-              }
-            } finally {
-              if (!context.isStopped() && remainingRetries > 0) {
-                synchronized (pingThread) {
-                  try {
-                    pingThread.wait(PROGRESS_INTERVAL);
-                  } catch (InterruptedException e) {
-                  }
-                }
-              }
-            }
-          }
-        }
-      };
-    }
-
-    public void startCommunicationThread() {
-      if (pingThread == null) {
-        pingThread = new Thread(createReporterThread());
-        pingThread.setName("communication thread");
-        pingThread.start();
-      }
-    }
-
-    public void stopCommunicationThread() throws InterruptedException {
-      if(stop.getAndSet(true)){
-        return;
+        LOG.error("getFileChunks() throws exception");
+        return null;
       }
 
-      if (pingThread != null) {
-        // Intent of the lock is to not send an interupt in the middle of an
-        // umbilical.ping or umbilical.statusUpdate
-        synchronized(pingThread) {
-          //Interrupt if sleeping. Otherwise wait for the RPC call to return.
-          pingThread.notifyAll();
-        }
+      // If the subquery requires a hash shuffle or a scattered hash shuffle
+    } else if (shuffleType.equals("h") || shuffleType.equals("s")) {
+      int partParentId = HashShuffleAppenderManager.getPartParentId(Integer.parseInt(partId), (TajoConf) conf);
+      String partPath = queryBaseDir + "hash-shuffle/" + partParentId + "/" + partId;
+      if (!executionBlockContext.getLocalDirAllocator().ifExists(partPath, conf)) {
+        LOG.warn("Hash shuffle or Scattered hash shuffle - file not exist: " + partPath);
+        return null;
       }
+      Path path = executionBlockContext.getLocalFS().makeQualified(
+        executionBlockContext.getLocalDirAllocator().getLocalPathToRead(partPath, conf));
+      File file = new File(path.toUri());
+      long startPos = (offset >= 0 && length >= 0) ? offset : 0;
+      long readLen = (offset >= 0 && length >= 0) ? length : file.length();
+
+      if (startPos >= file.length()) {
+        LOG.error("Start pos[" + startPos + "] great than file length [" + file.length() + "]");
+        return null;
+      }
+      chunk = new FileChunk(file, startPos, readLen);
+
+    } else {
+      LOG.error("Unknown shuffle type");
+      return null;
     }
+
+    return chunk;
   }
+
+  private List<String> splitMaps(List<String> mapq) {
+    if (null == mapq) {
+      return null;
+    }
+    final List<String> ret = new ArrayList<String>();
+    for (String s : mapq) {
+      Collections.addAll(ret, s.split(","));
+    }
+    return ret;
+  }
+
   public static Path getTaskAttemptDir(QueryUnitAttemptId quid) {
     Path workDir =
-        StorageUtil.concatPath(
-            quid.getQueryUnitId().getExecutionBlockId().getQueryId().toString(),
-            "in",
-            quid.getQueryUnitId().getExecutionBlockId().toString(),
+        StorageUtil.concatPath(ExecutionBlockContext.getBaseInputDir(quid.getQueryUnitId().getExecutionBlockId()),
             String.valueOf(quid.getQueryUnitId().getId()),
             String.valueOf(quid.getId()));
     return workDir;

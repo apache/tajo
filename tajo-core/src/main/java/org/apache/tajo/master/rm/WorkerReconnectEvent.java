@@ -24,7 +24,7 @@ package org.apache.tajo.master.rm;
  */
 public class WorkerReconnectEvent extends WorkerEvent {
   private final Worker worker;
-  public WorkerReconnectEvent(String workerId, Worker worker) {
+  public WorkerReconnectEvent(int workerId, Worker worker) {
     super(workerId, WorkerEventType.RECONNECTED);
     this.worker = worker;
   }

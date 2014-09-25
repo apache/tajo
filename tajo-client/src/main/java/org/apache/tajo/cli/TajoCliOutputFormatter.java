@@ -21,7 +21,6 @@ package org.apache.tajo.cli;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
-import org.apache.tajo.conf.TajoConf;
 
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -30,9 +29,9 @@ import java.sql.ResultSet;
 public interface TajoCliOutputFormatter {
   /**
    * Initialize formatter
-   * @param tajoConf
+   * @param context
    */
-  public void init(TajoConf tajoConf);
+  public void init(TajoCli.TajoCliContext context);
 
   /**
    * print query result to console

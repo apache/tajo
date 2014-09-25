@@ -19,6 +19,8 @@
 package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.json.CommonGsonHelper;
@@ -27,6 +29,12 @@ import org.apache.tajo.json.GsonObject;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public abstract class Datum implements Comparable<Datum>, GsonObject {
+  static boolean abortWhenDivideByZero;
+
+  static {
+    initAbortWhenDivideByZero(new TajoConf());
+  }
+
   @Expose	private final Type type;
 
   public Datum(Type type) {
@@ -45,6 +53,10 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
     return false;
   }
 
+  public boolean isNotNull() {
+    return true;
+  }
+
   public boolean asBool() {
     throw new InvalidCastException(type, Type.BOOLEAN);
   }
@@ -61,9 +73,8 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
     throw new InvalidCastException(type, Type.INT2);
   }
   public int asInt4() {
-    throw new InvalidCastException(type, Type.INT1);
+    throw new InvalidCastException(type, Type.INT4);
   }
-
   public long asInt8() {
     throw new InvalidCastException(type, Type.INT8);
   }
@@ -81,6 +92,10 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
   }
 
   public String asChars() {
+    throw new InvalidCastException(type, Type.TEXT);
+  }
+
+  public char [] asUnicodeChars() {
     throw new InvalidCastException(type, Type.TEXT);
   }
 
@@ -103,6 +118,10 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
     return
         this.type == Type.FLOAT4||
             this.type == Type.FLOAT8;
+  }
+
+  protected static void initAbortWhenDivideByZero(TajoConf tajoConf) {
+    abortWhenDivideByZero = tajoConf.getBoolVar(ConfVars.$BEHAVIOR_ARITHMETIC_ABORT);
   }
 
   public abstract int size();
@@ -189,5 +208,65 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
   @Override
   public String toString() {
     return asChars();
+  }
+
+  protected boolean validateDivideZero(short value) {
+    if (value == (short)0) {
+      if (abortWhenDivideByZero) {
+        throw new ArithmeticException("/ by zero");
+      } else {
+        return false;
+      }
+    } else {
+      return true;
+    }
+  }
+
+  protected boolean validateDivideZero(int value) {
+    if (value == 0) {
+      if (abortWhenDivideByZero) {
+        throw new ArithmeticException("/ by zero");
+      } else {
+        return false;
+      }
+    } else {
+      return true;
+    }
+  }
+
+  protected boolean validateDivideZero(long value) {
+    if (value == 0L) {
+      if (abortWhenDivideByZero) {
+        throw new ArithmeticException("/ by zero");
+      } else {
+        return false;
+      }
+    } else {
+      return true;
+    }
+  }
+
+  protected boolean validateDivideZero(float value) {
+    if (value == 0.0f) {
+      if (abortWhenDivideByZero) {
+        throw new ArithmeticException("/ by zero");
+      } else {
+        return false;
+      }
+    } else {
+      return true;
+    }
+  }
+
+  protected boolean validateDivideZero(double value) {
+    if (value == 0.0) {
+      if (abortWhenDivideByZero) {
+        throw new ArithmeticException("/ by zero");
+      } else {
+        return false;
+      }
+    } else {
+      return true;
+    }
   }
 }

@@ -57,13 +57,8 @@ public class AsyncRpcClient extends NettyClientBase {
    * new an instance through this constructor.
    */
   AsyncRpcClient(final Class<?> protocol,
-                 final InetSocketAddress addr) throws Exception {
-    this(protocol, addr, RpcChannelFactory.getSharedClientChannelFactory());
-  }
-
-  AsyncRpcClient(final Class<?> protocol,
-                        final InetSocketAddress addr, ClientSocketChannelFactory factory)
-      throws Exception {
+                        final InetSocketAddress addr, ClientSocketChannelFactory factory, int retries)
+      throws ClassNotFoundException, NoSuchMethodException, ConnectTimeoutException {
 
     this.protocol = protocol;
     String serviceClassName = protocol.getName() + "$"
@@ -74,7 +69,7 @@ public class AsyncRpcClient extends NettyClientBase {
     this.handler = new ClientChannelUpstreamHandler();
     pipeFactory = new ProtoPipelineFactory(handler,
         RpcResponse.getDefaultInstance());
-    super.init(addr, pipeFactory, factory);
+    super.init(addr, pipeFactory, factory, retries);
     rpcChannel = new ProxyRpcChannel();
     this.key = new RpcConnectionKey(addr, protocol, true);
   }

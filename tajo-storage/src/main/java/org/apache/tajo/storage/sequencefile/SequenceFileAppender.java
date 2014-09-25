@@ -25,11 +25,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.BytesWritable;
-import org.apache.hadoop.io.SequenceFile;
+import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.SequenceFile.CompressionType;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.tajo.catalog.Schema;
@@ -43,7 +40,7 @@ import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.rcfile.NonSyncByteArrayOutputStream;
-import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.BytesUtils;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -73,7 +70,8 @@ public class SequenceFileAppender extends FileAppender {
 
   long rowCount;
   private boolean isShuffle;
-  private static final BytesWritable EMPTY_KEY = new BytesWritable();
+
+  private Writable EMPTY_KEY;
 
   public SequenceFileAppender(Configuration conf, Schema schema, TableMeta meta, Path path) throws IOException {
     super(conf, schema, meta, path);
@@ -99,7 +97,8 @@ public class SequenceFileAppender extends FileAppender {
     this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.SEQUENCEFILE_DELIMITER,
         StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
     this.columnNum = schema.size();
-    String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.SEQUENCEFILE_NULL));
+    String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.SEQUENCEFILE_NULL,
+        NullDatum.DEFAULT_TEXT));
     if (StringUtils.isEmpty(nullCharacters)) {
       nullChars = NullDatum.get().asTextBytes();
     } else {
@@ -110,8 +109,8 @@ public class SequenceFileAppender extends FileAppender {
       throw new FileNotFoundException(path.toString());
     }
 
-    String codecName = this.meta.getOption(StorageConstants.COMPRESSION_CODEC);
-    if(!StringUtils.isEmpty(codecName)){
+    if(this.meta.containsOption(StorageConstants.COMPRESSION_CODEC)) {
+      String codecName = this.meta.getOption(StorageConstants.COMPRESSION_CODEC);
       codecFactory = new CompressionCodecFactory(conf);
       codec = codecFactory.getCodecByClassName(codecName);
     } else {
@@ -121,27 +120,32 @@ public class SequenceFileAppender extends FileAppender {
     }
 
     try {
-      String serdeClass = this.meta.getOption(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
+      String serdeClass = this.meta.getOption(StorageConstants.SEQUENCEFILE_SERDE,
+          TextSerializerDeserializer.class.getName());
       serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       throw new IOException(e);
     }
 
-    Class<? extends Writable>  valueClass;
+    Class<? extends Writable>  keyClass, valueClass;
     if (serde instanceof BinarySerializerDeserializer) {
+      keyClass = BytesWritable.class;
+      EMPTY_KEY = new BytesWritable();
       valueClass = BytesWritable.class;
     } else {
+      keyClass = LongWritable.class;
+      EMPTY_KEY = new LongWritable();
       valueClass = Text.class;
     }
 
     String type = this.meta.getOption(StorageConstants.COMPRESSION_TYPE, CompressionType.NONE.name());
     if (type.equals(CompressionType.BLOCK.name())) {
-      writer = SequenceFile.createWriter(fs, conf, path, BytesWritable.class, valueClass, CompressionType.BLOCK, codec);
+      writer = SequenceFile.createWriter(fs, conf, path, keyClass, valueClass, CompressionType.BLOCK, codec);
     } else if (type.equals(CompressionType.RECORD.name())) {
-      writer = SequenceFile.createWriter(fs, conf, path, BytesWritable.class, valueClass, CompressionType.RECORD, codec);
+      writer = SequenceFile.createWriter(fs, conf, path, keyClass, valueClass, CompressionType.RECORD, codec);
     } else {
-      writer = SequenceFile.createWriter(fs, conf, path, BytesWritable.class, valueClass, CompressionType.NONE, codec);
+      writer = SequenceFile.createWriter(fs, conf, path, keyClass, valueClass, CompressionType.NONE, codec);
     }
 
     if (enabledStats) {
@@ -177,16 +181,16 @@ public class SequenceFileAppender extends FileAppender {
 
             switch (schema.getColumn(j).getDataType().getType()) {
               case TEXT:
-                Bytes.writeVLong(os, datum.asTextBytes().length);
+                BytesUtils.writeVLong(os, datum.asTextBytes().length);
                 break;
               case PROTOBUF:
                 ProtobufDatum protobufDatum = (ProtobufDatum) datum;
-                Bytes.writeVLong(os, protobufDatum.asByteArray().length);
+                BytesUtils.writeVLong(os, protobufDatum.asByteArray().length);
                 break;
               case CHAR:
               case INET4:
               case BLOB:
-                Bytes.writeVLong(os, datum.asByteArray().length);
+                BytesUtils.writeVLong(os, datum.asByteArray().length);
                 break;
               default:
             }

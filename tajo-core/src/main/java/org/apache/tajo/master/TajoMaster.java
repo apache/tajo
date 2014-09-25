@@ -36,7 +36,6 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.hadoop.yarn.util.SystemClock;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.function.Function;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -45,6 +44,8 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamOptionTypes;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
+import org.apache.tajo.master.ha.HAService;
+import org.apache.tajo.master.ha.HAServiceHDFSImpl;
 import org.apache.tajo.master.metrics.CatalogMetricsGaugeSet;
 import org.apache.tajo.master.metrics.WorkerResourceMetricsGaugeSet;
 import org.apache.tajo.master.querymaster.QueryJobManager;
@@ -58,6 +59,7 @@ import org.apache.tajo.util.ClassUtil;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.util.VersionInfo;
 import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.webapp.QueryExecutorServlet;
 import org.apache.tajo.webapp.StaticHttpServer;
@@ -130,6 +132,8 @@ public class TajoMaster extends CompositeService {
 
   private TajoSystemMetrics systemMetrics;
 
+  private HAService haService;
+
   public TajoMaster() throws Exception {
     super(TajoMaster.class.getName());
   }
@@ -139,7 +143,7 @@ public class TajoMaster extends CompositeService {
   }
 
   public String getVersion() {
-    return TajoConstants.TAJO_VERSION;
+    return VersionInfo.getVersion();
   }
 
   public TajoMasterClientService getTajoMasterClientService() {
@@ -210,7 +214,7 @@ public class TajoMaster extends CompositeService {
   }
 
   private void initWebServer() throws Exception {
-    if (!systemConf.get(CommonTestingUtil.TAJO_TEST, "FALSE").equalsIgnoreCase("TRUE")) {
+    if (!systemConf.get(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
       InetSocketAddress address = systemConf.getSocketAddrVar(ConfVars.TAJO_MASTER_INFO_ADDRESS);
       webServer = StaticHttpServer.getInstance(this ,"admin", address.getHostName(), address.getPort(),
           true, null, context.getConf(), null);
@@ -218,6 +222,20 @@ public class TajoMaster extends CompositeService {
       webServer.start();
     }
   }
+
+
+  private void initHAManger() throws Exception {
+    // If tajo provides haService based on ZooKeeper, following codes need to update.
+    if (systemConf.getBoolVar(ConfVars.TAJO_MASTER_HA_ENABLE)) {
+      haService = new HAServiceHDFSImpl(context);
+      haService.register();
+    }
+  }
+
+  public boolean isActiveMaster() {
+    return (haService != null ? haService.isActiveStatus() : true);
+  }
+
 
   private void checkAndInitializeSystemDirectories() throws IOException {
     // Get Tajo root dir
@@ -362,6 +380,12 @@ public class TajoMaster extends CompositeService {
     }
 
     initSystemMetrics();
+
+    try {
+      initHAManger();
+    } catch (IOException e) {
+      LOG.error(e.getMessage(), e);
+    }
   }
 
   private void writeSystemConf() throws IOException {
@@ -402,6 +426,14 @@ public class TajoMaster extends CompositeService {
 
   @Override
   public void stop() {
+    if (haService != null) {
+      try {
+        haService.delete();
+      } catch (Exception e) {
+        LOG.error(e);
+      }
+    }
+
     if (webServer != null) {
       try {
         webServer.stop();
@@ -491,6 +523,10 @@ public class TajoMaster extends CompositeService {
 
     public TajoSystemMetrics getSystemMetrics() {
       return systemMetrics;
+    }
+
+    public HAService getHAService() {
+      return haService;
     }
   }
 

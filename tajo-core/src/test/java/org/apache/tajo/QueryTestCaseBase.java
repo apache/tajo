@@ -214,7 +214,7 @@ public class QueryTestCaseBase {
     } catch (ServiceException e) {
       e.printStackTrace();
     }
-    testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.DIST_QUERY_BROADCAST_JOIN_AUTO.varname, "false");
+    testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname, "false");
   }
 
   protected TajoClient getClient() {

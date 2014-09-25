@@ -26,15 +26,22 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.storage.HashShuffleAppenderManager;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
+import org.apache.tajo.util.TUtil;
+import org.apache.tajo.worker.TajoWorker.WorkerContext;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
@@ -48,7 +55,6 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
  */
 public class TaskAttemptContext {
   private static final Log LOG = LogFactory.getLog(TaskAttemptContext.class);
-  private final TajoConf conf;
   private final Map<String, List<FragmentProto>> fragmentMap = Maps.newHashMap();
 
   private TaskAttemptState state;
@@ -70,15 +76,24 @@ public class TaskAttemptContext {
   private DataChannel dataChannel;
   private Enforcer enforcer;
   private QueryContext queryContext;
+  private WorkerContext workerContext;
+  private ExecutionBlockSharedResource sharedResource;
 
   /** a output volume for each partition */
   private Map<Integer, Long> partitionOutputVolume;
+  private HashShuffleAppenderManager hashShuffleAppenderManager;
 
-  public TaskAttemptContext(TajoConf conf, QueryContext queryContext, final QueryUnitAttemptId queryId,
+  public TaskAttemptContext(QueryContext queryContext, final ExecutionBlockContext executionBlockContext,
+                            final QueryUnitAttemptId queryId,
                             final FragmentProto[] fragments,
                             final Path workDir) {
-    this.conf = conf;
     this.queryContext = queryContext;
+
+    if (executionBlockContext != null) { // For unit tests
+      this.workerContext = executionBlockContext.getWorkerContext();
+      this.sharedResource = executionBlockContext.getSharedResource();
+    }
+
     this.queryId = queryId;
 
     if (fragments != null) {
@@ -99,18 +114,28 @@ public class TaskAttemptContext {
     state = TaskAttemptState.TA_PENDING;
 
     this.partitionOutputVolume = Maps.newHashMap();
+
+    if (workerContext != null) {
+      this.hashShuffleAppenderManager = workerContext.getHashShuffleAppenderManager();
+    } else {
+      try {
+        this.hashShuffleAppenderManager = new HashShuffleAppenderManager(queryContext.getConf());
+      } catch (IOException e) {
+        LOG.error(e.getMessage(), e);
+      }
+    }
   }
 
   @VisibleForTesting
-  public TaskAttemptContext(TajoConf conf, QueryContext queryContext, final QueryUnitAttemptId queryId,
+  public TaskAttemptContext(final QueryContext queryContext, final QueryUnitAttemptId queryId,
                             final Fragment [] fragments,  final Path workDir) {
-    this(conf, queryContext, queryId, FragmentConvertor.toFragmentProtoArray(fragments), workDir);
+    this(queryContext, null, queryId, FragmentConvertor.toFragmentProtoArray(fragments), workDir);
   }
 
   public TajoConf getConf() {
-    return this.conf;
+    return queryContext.getConf();
   }
-  
+
   public TaskAttemptState getState() {
     return this.state;
   }
@@ -134,6 +159,23 @@ public class TaskAttemptContext {
 
   public Enforcer getEnforcer() {
     return this.enforcer;
+  }
+
+  public ExecutionBlockSharedResource getSharedResource() {
+    return sharedResource;
+  }
+
+  public EvalNode compileEval(Schema schema, EvalNode eval) {
+    return sharedResource.compileEval(schema, eval);
+  }
+
+  public EvalNode getPrecompiledEval(Schema schema, EvalNode eval) {
+    if (sharedResource != null) {
+      return sharedResource.getPreCompiledEval(schema, eval);
+    } else {
+      LOG.debug("Shared resource is not initialized. It is NORMAL in unit tests");
+      return eval;
+    }
   }
 
   public boolean hasResultStats() {
@@ -234,10 +276,30 @@ public class TaskAttemptContext {
       tableFragments = new ArrayList<FragmentProto>();
     }
 
+    List<Path> paths = fragmentToPath(tableFragments);
+
     for (FragmentProto eachFragment: fragments) {
-      tableFragments.add(eachFragment);
+      FileFragment fileFragment = FragmentConvertor.convert(FileFragment.class, eachFragment);
+      // If current attempt already has same path, we don't need to add it to fragments.
+      if (!paths.contains(fileFragment.getPath())) {
+        tableFragments.add(eachFragment);
+      }
     }
-    fragmentMap.put(tableId, tableFragments);
+
+    if (tableFragments.size() > 0) {
+      fragmentMap.put(tableId, tableFragments);
+    }
+  }
+
+  private List<Path> fragmentToPath(List<FragmentProto> tableFragments) {
+    List<Path> list = TUtil.newList();
+
+    for (FragmentProto proto : tableFragments) {
+      FileFragment fragment = FragmentConvertor.convert(FileFragment.class, proto);
+      list.add(fragment.getPath());
+    }
+
+    return list;
   }
 
   public Path getWorkDir() {
@@ -251,22 +313,45 @@ public class TaskAttemptContext {
   public float getProgress() {
     return this.progress;
   }
-  
+
   public void setProgress(float progress) {
     float previousProgress = this.progress;
-    this.progress = progress;
-    progressChanged.set(previousProgress != progress);
+
+    if (Float.isNaN(progress) || Float.isInfinite(progress)) {
+      this.progress = 0.0f;
+    } else {
+      this.progress = progress;
+    }
+
+    if (previousProgress != progress) {
+      setProgressChanged(true);
+    }
   }
 
-  public boolean isPorgressChanged() {
+  public boolean isProgressChanged() {
     return progressChanged.get();
   }
+
+  public void setProgressChanged(boolean changed){
+    progressChanged.set(changed);
+  }
+
   public void setExecutorProgress(float executorProgress) {
-    float adjustProgress = executorProgress * (1 - fetcherProgress);
-    setProgress(fetcherProgress + adjustProgress);
+    if(Float.isNaN(executorProgress) || Float.isInfinite(executorProgress)){
+      executorProgress = 0.0f;
+    }
+
+    if (hasFetchPhase()) {
+      setProgress(fetcherProgress + (executorProgress * 0.5f));
+    } else {
+      setProgress(executorProgress);
+    }
   }
 
   public void setFetcherProgress(float fetcherProgress) {
+    if(Float.isNaN(fetcherProgress) || Float.isInfinite(fetcherProgress)){
+      fetcherProgress = 0.0f;
+    }
     this.fetcherProgress = fetcherProgress;
   }
 
@@ -317,5 +402,13 @@ public class TaskAttemptContext {
 
   public QueryContext getQueryContext() {
     return queryContext;
+  }
+
+  public QueryUnitAttemptId getQueryId() {
+    return queryId;
+  }
+
+  public HashShuffleAppenderManager getHashShuffleAppenderManager() {
+    return hashShuffleAppenderManager;
   }
 }

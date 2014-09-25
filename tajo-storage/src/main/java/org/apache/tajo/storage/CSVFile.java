@@ -40,7 +40,7 @@ import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.rcfile.NonSyncByteArrayOutputStream;
-import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.BytesUtils;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -84,7 +84,9 @@ public class CSVFile {
       this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.CSVFILE_DELIMITER,
           StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
       this.columnNum = schema.size();
-      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.CSVFILE_NULL));
+
+      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.CSVFILE_NULL,
+          NullDatum.DEFAULT_TEXT));
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {
@@ -107,8 +109,8 @@ public class CSVFile {
         isShuffle = false;
       }
 
-      String codecName = this.meta.getOption(StorageConstants.COMPRESSION_CODEC);
-      if(!StringUtils.isEmpty(codecName)){
+      if(this.meta.containsOption(StorageConstants.COMPRESSION_CODEC)) {
+        String codecName = this.meta.getOption(StorageConstants.COMPRESSION_CODEC);
         codecFactory = new CompressionCodecFactory(conf);
         codec = codecFactory.getCodecByClassName(codecName);
         compressor =  CodecPool.getCompressor(codec);
@@ -262,7 +264,8 @@ public class CSVFile {
       String delim  = meta.getOption(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
       this.delimiter = StringEscapeUtils.unescapeJava(delim).charAt(0);
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.CSVFILE_NULL));
+      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.CSVFILE_NULL,
+          NullDatum.DEFAULT_TEXT));
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {
@@ -466,8 +469,8 @@ public class CSVFile {
           offset = fileOffsets.get(currentIdx);
         }
 
-        byte[][] cells = Bytes.splitPreserveAllTokens(buffer.getData(), startOffsets.get(currentIdx),
-            rowLengthList.get(currentIdx),  delimiter, targetColumnIndexes);
+        byte[][] cells = BytesUtils.splitPreserveAllTokens(buffer.getData(), startOffsets.get(currentIdx),
+            rowLengthList.get(currentIdx), delimiter, targetColumnIndexes);
         currentIdx++;
         return new LazyTuple(schema, cells, offset, nullChars, serde);
       } catch (Throwable t) {

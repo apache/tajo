@@ -18,7 +18,7 @@
 
 package org.apache.tajo.cli;
 
-import org.apache.tajo.TajoConstants;
+import org.apache.tajo.util.VersionInfo;
 
 public class VersionCommand extends TajoShellCommand {
 
@@ -33,7 +33,7 @@ public class VersionCommand extends TajoShellCommand {
 
   @Override
   public void invoke(String[] cmd) throws Exception {
-    context.getOutput().println(TajoConstants.TAJO_VERSION);
+    context.getOutput().println(VersionInfo.getVersion());
   }
 
   @Override

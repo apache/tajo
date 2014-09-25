@@ -21,10 +21,14 @@ package org.apache.tajo.util;
 import org.apache.commons.lang.CharUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.SystemUtils;
+import org.apache.hadoop.util.Shell;
 import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.util.SignalLogger;
 
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.util.Arrays;
+import java.util.BitSet;
 
 public class StringUtils {
 
@@ -67,6 +71,12 @@ public class StringUtils {
       buf.append(" msec");
     }
     return buf.toString();
+  }
+
+  static CharsetEncoder asciiEncoder = Charset.forName("US-ASCII").newEncoder(); // or "ISO-8859-1" for ISO Latin 1
+
+  public static boolean isPureAscii(String v) {
+    return asciiEncoder.canEncode(v);
   }
 
   public static String quote(String str) {
@@ -179,5 +189,125 @@ public class StringUtils {
 
   public static String unicodeEscapedDelimiter(char c) {
     return CharUtils.unicodeEscaped(c);
+  }
+
+  /**
+   * The following lines of code that deals with escape characters is mostly copied from HIVE's FileUtils.java 
+   */
+
+  static BitSet charToEscape = new BitSet(128);
+  static {
+    for (char c = 0; c < ' '; c++) {
+      charToEscape.set(c);
+    }
+
+    /**
+     * ASCII 01-1F are HTTP control characters that need to be escaped.
+     * \u000A and \u000D are \n and \r, respectively.
+     */
+    char[] clist = new char[] {'\u0001', '\u0002', '\u0003', '\u0004',
+        '\u0005', '\u0006', '\u0007', '\u0008', '\u0009', '\n', '\u000B',
+        '\u000C', '\r', '\u000E', '\u000F', '\u0010', '\u0011', '\u0012',
+        '\u0013', '\u0014', '\u0015', '\u0016', '\u0017', '\u0018', '\u0019',
+        '\u001A', '\u001B', '\u001C', '\u001D', '\u001E', '\u001F',
+        '"', '#', '%', '\'', '*', '/', ':', '=', '?', '\\', '\u007F', '{',
+        '[', ']', '^'};
+
+    for (char c : clist) {
+      charToEscape.set(c);
+    }
+
+    if(Shell.WINDOWS){
+      // On windows, following chars need to be escaped as well
+      char [] winClist = {' ', '<','>','|'};
+      for (char c : winClist) {
+        charToEscape.set(c);
+      }
+    }
+  }
+
+  static boolean needsEscaping(char c) {
+    return c >= 0 && c < charToEscape.size() && charToEscape.get(c);
+  }
+
+  public static String escapePathName(String path) {
+    return escapePathName(path, null);
+  }
+
+  /**
+   * Escapes a path name.
+   * @param path The path to escape.
+   * @param defaultPath
+   * The default name for the path, if the given path is empty or null.
+   * @return An escaped path name.
+   */
+  public static String escapePathName(String path, String defaultPath) {
+    if (path == null || path.length() == 0) {
+      if (defaultPath == null) {
+        return "__TAJO_DEFAULT_PARTITION__";
+      } else {
+        return defaultPath;
+      }
+    }
+
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < path.length(); i++) {
+      char c = path.charAt(i);
+      if (needsEscaping(c)) {
+        sb.append('%');
+        sb.append(String.format("%1$02X", (int) c));
+      } else {
+        sb.append(c);
+      }
+    }
+    return sb.toString();
+  }
+
+  public static String unescapePathName(String path) {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < path.length(); i++) {
+      char c = path.charAt(i);
+      if (c == '%' && i + 2 < path.length()) {
+        int code = -1;
+        try {
+          code = Integer.valueOf(path.substring(i + 1, i + 3), 16);
+        } catch (Exception e) {
+          code = -1;
+        }
+        if (code >= 0) {
+          sb.append((char) code);
+          i += 2;
+          continue;
+        }
+      }
+      sb.append(c);
+    }
+    return sb.toString();
+  }
+
+  public static char[][] padChars(char []...bytes) {
+    char[] startChars = bytes[0];
+    char[] endChars = bytes[1];
+
+    char[][] padded = new char[2][];
+    int max = Math.max(startChars.length, endChars.length);
+
+    padded[0] = new char[max];
+    padded[1] = new char[max];
+
+    for (int i = 0; i < startChars.length; i++) {
+      padded[0][i] = startChars[i];
+    }
+    for (int i = startChars.length; i < max; i++) {
+      padded[0][i] = 0;
+    }
+    for (int i = 0; i < endChars.length; i++) {
+      padded[1][i] = endChars[i];
+    }
+    for (int i = endChars.length; i < max; i++) {
+      padded[1][i] = 0;
+    }
+
+    return padded;
   }
 }

@@ -31,7 +31,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.DataInputByteBuffer;
 import org.apache.hadoop.io.DataOutputBuffer;
 import org.apache.hadoop.io.ReadaheadPool;
-import org.apache.hadoop.mapred.FadvisedChunkedFile;
 import org.apache.hadoop.metrics2.MetricsSystem;
 import org.apache.hadoop.metrics2.annotation.Metric;
 import org.apache.hadoop.metrics2.annotation.Metrics;
@@ -48,7 +47,6 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.pullserver.listener.FileCloseListener;
 import org.apache.tajo.pullserver.retriever.FileChunk;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
@@ -489,21 +487,21 @@ public class PullServerAuxService extends AuxiliaryService {
       }
       ChannelFuture writeFuture;
       if (ch.getPipeline().get(SslHandler.class) == null) {
-        final FadvisedFileRegionWrapper partition = new FadvisedFileRegionWrapper(spill,
-            file.startOffset, file.length(), manageOsCache, readaheadLength,
+        final FadvisedFileRegion partition = new FadvisedFileRegion(spill,
+            file.startOffset(), file.length(), manageOsCache, readaheadLength,
             readaheadPool, file.getFile().getAbsolutePath());
         writeFuture = ch.write(partition);
-        writeFuture.addListener(new FileCloseListener(partition));
+        writeFuture.addListener(new FileCloseListener(partition, null, 0, null));
       } else {
         // HTTPS cannot be done with zero copy.
         final FadvisedChunkedFile chunk = new FadvisedChunkedFile(spill,
-            file.startOffset, file.length, sslFileBufferSize,
+            file.startOffset(), file.length(), sslFileBufferSize,
             manageOsCache, readaheadLength, readaheadPool,
             file.getFile().getAbsolutePath());
         writeFuture = ch.write(chunk);
       }
       metrics.shuffleConnections.incr();
-      metrics.shuffleOutputBytes.incr(file.length); // optimistic
+      metrics.shuffleOutputBytes.incr(file.length()); // optimistic
       return writeFuture;
     }
 

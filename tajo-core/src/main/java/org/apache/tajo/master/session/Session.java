@@ -19,6 +19,11 @@
 package org.apache.tajo.master.session;
 
 import com.google.common.collect.ImmutableMap;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.SessionVars;
+import org.apache.tajo.master.NonForwardQueryResultScanner;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.common.ProtoObject;
 
@@ -27,20 +32,27 @@ import java.util.Map;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.SessionProto;
 
-public class Session implements SessionConstants, ProtoObject<SessionProto> {
+public class Session implements SessionConstants, ProtoObject<SessionProto>, Cloneable {
+  private static final Log LOG = LogFactory.getLog(Session.class);
+
   private final String sessionId;
   private final String userName;
+  private String currentDatabase;
   private final Map<String, String> sessionVariables;
+  private final Map<QueryId, NonForwardQueryResultScanner> nonForwardQueryMap = new HashMap<QueryId, NonForwardQueryResultScanner>();
 
   // transient status
   private volatile long lastAccessTime;
-  private volatile String currentDatabase;
 
   public Session(String sessionId, String userName, String databaseName) {
     this.sessionId = sessionId;
     this.userName = userName;
+    this.currentDatabase = databaseName;
     this.lastAccessTime = System.currentTimeMillis();
+
     this.sessionVariables = new HashMap<String, String>();
+    sessionVariables.put(SessionVars.SESSION_ID.keyname(), sessionId);
+    sessionVariables.put(SessionVars.USERNAME.keyname(), userName);
     selectDatabase(databaseName);
   }
 
@@ -71,64 +83,114 @@ public class Session implements SessionConstants, ProtoObject<SessionProto> {
 
   public void setVariable(String name, String value) {
     synchronized (sessionVariables) {
-      sessionVariables.put(name, value);
+      sessionVariables.put(SessionVars.handleDeprecatedName(name), value);
     }
   }
 
   public String getVariable(String name) throws NoSuchSessionVariableException {
     synchronized (sessionVariables) {
       if (sessionVariables.containsKey(name)) {
-        return sessionVariables.get(name);
+        return sessionVariables.get(SessionVars.handleDeprecatedName(name));
       } else {
         throw new NoSuchSessionVariableException(name);
       }
     }
   }
 
-  public String getVariable(String name, String defaultValue) {
-    synchronized (sessionVariables) {
-      if (sessionVariables.containsKey(name)) {
-        return sessionVariables.get(name);
-      } else {
-        return defaultValue;
-      }
-    }
-  }
-
   public void removeVariable(String name) {
     synchronized (sessionVariables) {
-      sessionVariables.remove(name);
+      sessionVariables.remove(SessionVars.handleDeprecatedName(name));
     }
   }
 
   public synchronized Map<String, String> getAllVariables() {
     synchronized (sessionVariables) {
+      sessionVariables.put(SessionVars.SESSION_ID.keyname(), sessionId);
+      sessionVariables.put(SessionVars.USERNAME.keyname(), userName);
+      sessionVariables.put(SessionVars.SESSION_LAST_ACCESS_TIME.keyname(), String.valueOf(lastAccessTime));
+      sessionVariables.put(SessionVars.CURRENT_DATABASE.keyname(), currentDatabase);
       return ImmutableMap.copyOf(sessionVariables);
     }
   }
 
-  public void selectDatabase(String databaseName) {
+  public synchronized void selectDatabase(String databaseName) {
     this.currentDatabase = databaseName;
   }
 
-  public String getCurrentDatabase() {
-    return this.currentDatabase;
+  public synchronized String getCurrentDatabase() {
+    return currentDatabase;
   }
 
   @Override
   public SessionProto getProto() {
     SessionProto.Builder builder = SessionProto.newBuilder();
-    builder.setSessionId(sessionId);
-    builder.setUsername(userName);
-    builder.setCurrentDatabase(currentDatabase);
+    builder.setSessionId(getSessionId());
+    builder.setUsername(getUserName());
+    builder.setCurrentDatabase(getCurrentDatabase());
     builder.setLastAccessTime(lastAccessTime);
     KeyValueSet variables = new KeyValueSet();
-    variables.putAll(this.sessionVariables);
-    builder.setVariables(variables.getProto());
-    return builder.build();
+
+    synchronized (sessionVariables) {
+      variables.putAll(this.sessionVariables);
+      builder.setVariables(variables.getProto());
+      return builder.build();
+    }
   }
 
   public String toString() {
-    return "user=" + userName + ",id=" + sessionId;
+    return "user=" + getUserName() + ",id=" + getSessionId() +",last_atime=" + getLastAccessTime();
+  }
+
+  public Session clone() throws CloneNotSupportedException {
+    Session newSession = (Session) super.clone();
+    newSession.sessionVariables.putAll(getAllVariables());
+    return newSession;
+  }
+
+  public NonForwardQueryResultScanner getNonForwardQueryResultScanner(QueryId queryId) {
+    synchronized (nonForwardQueryMap) {
+      return nonForwardQueryMap.get(queryId);
+    }
+  }
+
+  public void addNonForwardQueryResultScanner(NonForwardQueryResultScanner resultScanner) {
+    synchronized (nonForwardQueryMap) {
+      nonForwardQueryMap.put(resultScanner.getQueryId(), resultScanner);
+    }
+  }
+
+  public void closeNonForwardQueryResultScanner(QueryId queryId) {
+    NonForwardQueryResultScanner resultScanner;
+    synchronized (nonForwardQueryMap) {
+      resultScanner = nonForwardQueryMap.remove(queryId);
+    }
+
+    if (resultScanner != null) {
+      try {
+        resultScanner.close();
+      } catch (Exception e) {
+        LOG.error("NonForwardQueryResultScanne close error: " + e.getMessage(), e);
+      }
+    }
+  }
+
+  public void close() {
+    try {
+      synchronized (nonForwardQueryMap) {
+        for (NonForwardQueryResultScanner eachQueryScanner: nonForwardQueryMap.values()) {
+          try {
+            eachQueryScanner.close();
+          } catch (Exception e) {
+            LOG.error("Error while closing NonForwardQueryResultScanner: " +
+                eachQueryScanner.getSessionId() + ", " + e.getMessage(), e);
+          }
+        }
+
+        nonForwardQueryMap.clear();
+      }
+    } catch (Throwable t) {
+      LOG.error(t.getMessage(), t);
+      throw new RuntimeException(t.getMessage(), t);
+    }
   }
 }

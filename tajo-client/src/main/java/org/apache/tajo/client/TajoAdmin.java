@@ -26,11 +26,14 @@ import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos.BriefQueryInfo;
 import org.apache.tajo.ipc.ClientProtos.WorkerResourceInfo;
+import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.HAServiceUtil;
 import org.apache.tajo.util.TajoIdUtils;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.net.InetSocketAddress;
 import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
@@ -58,6 +61,7 @@ public class TajoAdmin {
     options.addOption("p", "port", true, "Tajo server port");
     options.addOption("list", null, false, "Show Tajo query list");
     options.addOption("cluster", null, false, "Show Cluster Info");
+    options.addOption("showmasters", null, false, "gets list of tajomasters in the cluster");
     options.addOption("desc", null, false, "Show Query Description");
     options.addOption("kill", null, true, "Kill a running query");
   }
@@ -108,6 +112,8 @@ public class TajoAdmin {
     } else if (cmd.hasOption("kill")) {
       cmdType = 4;
       queryId = cmd.getOptionValue("kill");
+    } else if (cmd.hasOption("showmasters")) {
+      cmdType = 5;
     }
 
     // if there is no "-h" option,
@@ -155,6 +161,9 @@ public class TajoAdmin {
       case 4:
         processKill(writer, queryId);
         break;
+      case 5:
+        processMasters(writer);
+        break;
       default:
         printUsage();
         break;
@@ -165,6 +174,7 @@ public class TajoAdmin {
 
   private void processDesc(Writer writer) throws ParseException, IOException,
       ServiceException, SQLException {
+    tajoClient = TajoHAClientUtil.getTajoClient(tajoConf, tajoClient);
     List<BriefQueryInfo> queryList = tajoClient.getRunningQueryList();
     SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
     int id = 1;
@@ -186,7 +196,7 @@ public class TajoAdmin {
         long end = queryInfo.getFinishTime();
         long start = queryInfo.getStartTime();
         String executionTime = decimalF.format((end-start) / 1000) + " sec";
-        if (!TajoClient.isQueryRunnning(queryInfo.getState())) {
+        if (TajoClient.isInCompleteState(queryInfo.getState())) {
           writer.write("Finished Time: " + df.format(queryInfo.getFinishTime()));
           writer.write("\n");
         }
@@ -204,6 +214,7 @@ public class TajoAdmin {
 
   private void processCluster(Writer writer) throws ParseException, IOException,
       ServiceException, SQLException {
+    tajoClient = TajoHAClientUtil.getTajoClient(tajoConf, tajoClient);
     List<WorkerResourceInfo> workerList = tajoClient.getClusterInfo();
 
     int runningQueryMasterTasks = 0;
@@ -265,14 +276,15 @@ public class TajoAdmin {
                            line5, line10, line10);
       writer.write(line);
       for (WorkerResourceInfo queryMaster : liveQueryMasters) {
-        String queryMasterHost = String.format("%s:%d",
-                                  queryMaster.getAllocatedHost(),
-                                  queryMaster.getQueryMasterPort());
-        String heap = String.format("%d MB", queryMaster.getMaxHeap()/1024/1024);
-        line = String.format(fmtQueryMasterLine, queryMasterHost,
-                             queryMaster.getClientPort(),
-                             queryMaster.getNumQueryMasterTasks(),
-                             heap, queryMaster.getWorkerStatus());
+        TajoProtos.WorkerConnectionInfoProto connInfo = queryMaster.getConnectionInfo();
+        String queryMasterHost = String.format("%s:%d", connInfo.getHost(), connInfo.getQueryMasterPort());
+        String heap = String.format("%d MB", queryMaster.getMaxHeap() / 1024 / 1024);
+        line = String.format(fmtQueryMasterLine,
+            queryMasterHost,
+            connInfo.getClientPort(),
+            queryMaster.getNumQueryMasterTasks(),
+            heap,
+            queryMaster.getWorkerStatus());
         writer.write(line);
       }
 
@@ -290,12 +302,12 @@ public class TajoAdmin {
       writer.write(line);
 
       for (WorkerResourceInfo queryMaster : deadQueryMasters) {
-        String queryMasterHost = String.format("%s:%d",
-                                  queryMaster.getAllocatedHost(),
-                                  queryMaster.getQueryMasterPort());
-        line = String.format(fmtQueryMasterLine, queryMasterHost,
-                             queryMaster.getClientPort(),
-                             queryMaster.getWorkerStatus());
+        TajoProtos.WorkerConnectionInfoProto connInfo = queryMaster.getConnectionInfo();
+        String queryMasterHost = String.format("%s:%d", connInfo.getHost(), connInfo.getQueryMasterPort());
+        line = String.format(fmtQueryMasterLine,
+            queryMasterHost,
+            connInfo.getClientPort(),
+            queryMaster.getWorkerStatus());
         writer.write(line);
       }
 
@@ -347,9 +359,8 @@ public class TajoAdmin {
     writer.write(line);
 
     for (WorkerResourceInfo worker : workers) {
-      String workerHost = String.format("%s:%d",
-          worker.getAllocatedHost(),
-          worker.getPeerRpcPort());
+      TajoProtos.WorkerConnectionInfoProto connInfo = worker.getConnectionInfo();
+      String workerHost = String.format("%s:%d", connInfo.getHost(), connInfo.getPeerRpcPort());
       String mem = String.format("%d/%d", worker.getUsedMemoryMB(),
           worker.getMemoryMB());
       String disk = String.format("%.2f/%.2f", worker.getUsedDiskSlots(),
@@ -358,7 +369,7 @@ public class TajoAdmin {
           worker.getMaxHeap()/1024/1024);
 
       line = String.format(fmtWorkerLine, workerHost,
-          worker.getPullServerPort(),
+          connInfo.getPullServerPort(),
           worker.getNumRunningTasks(),
           mem, disk, heap, worker.getWorkerStatus());
       writer.write(line);
@@ -368,6 +379,7 @@ public class TajoAdmin {
 
   private void processList(Writer writer) throws ParseException, IOException,
       ServiceException, SQLException {
+    tajoClient = TajoHAClientUtil.getTajoClient(tajoConf, tajoClient);
     List<BriefQueryInfo> queryList = tajoClient.getRunningQueryList();
     SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
     StringBuilder builder = new StringBuilder();
@@ -403,6 +415,29 @@ public class TajoAdmin {
       writer.write(queryIdStr + " will be finished after a while.\n");
     } else {
       writer.write("ERROR:" + status.getErrorMessage());
+    }
+  }
+
+  private void processMasters(Writer writer) throws ParseException, IOException,
+      ServiceException, SQLException {
+    tajoClient = TajoHAClientUtil.getTajoClient(tajoConf, tajoClient);
+    if (tajoConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+
+      List<String> list = HAServiceUtil.getMasters(tajoConf);
+      int i = 0;
+      for (String master : list) {
+        if (i > 0) {
+          writer.write(" ");
+        }
+        writer.write(master);
+        i++;
+      }
+      writer.write("\n");
+    } else {
+      String confMasterServiceAddr = tajoClient.getConf().getVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
+      InetSocketAddress masterAddress = NetUtils.createSocketAddr(confMasterServiceAddr);
+      writer.write(masterAddress.getHostName());
+      writer.write("\n");
     }
   }
 

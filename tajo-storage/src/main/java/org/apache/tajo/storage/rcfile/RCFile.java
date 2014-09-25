@@ -39,7 +39,6 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.util.Bytes;
 
 import java.io.Closeable;
 import java.io.*;
@@ -489,7 +488,7 @@ public class RCFile {
         }
 
         if (skipTotal != 0) {
-          Bytes.skipFully(in, skipTotal);
+          StorageUtil.skipFully(in, skipTotal);
           skipTotal = 0;
         }
 
@@ -528,7 +527,7 @@ public class RCFile {
       }
 
       if (skipTotal != 0) {
-        Bytes.skipFully(in, skipTotal);
+        StorageUtil.skipFully(in, skipTotal);
       }
     }
 
@@ -734,8 +733,8 @@ public class RCFile {
         isShuffle = false;
       }
 
-      String codecClassname = this.meta.getOption(StorageConstants.COMPRESSION_CODEC);
-      if (!StringUtils.isEmpty(codecClassname)) {
+      if (this.meta.containsOption(StorageConstants.COMPRESSION_CODEC)) {
+        String codecClassname = this.meta.getOption(StorageConstants.COMPRESSION_CODEC);
         try {
           Class<? extends CompressionCodec> codecClass = conf.getClassByName(
               codecClassname).asSubclass(CompressionCodec.class);
@@ -746,7 +745,8 @@ public class RCFile {
         }
       }
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.RCFILE_NULL));
+      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.RCFILE_NULL,
+          NullDatum.DEFAULT_TEXT));
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {
@@ -1194,7 +1194,8 @@ public class RCFile {
       rowId = new LongWritable();
       readBytes = 0;
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.RCFILE_NULL));
+      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.RCFILE_NULL,
+          NullDatum.DEFAULT_TEXT));
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {

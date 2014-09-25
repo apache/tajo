@@ -31,25 +31,36 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.jdbc.TajoResultSet;
+import org.apache.tajo.master.querymaster.Query;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
+import org.apache.tajo.master.querymaster.QueryUnit;
+import org.apache.tajo.master.querymaster.SubQuery;
+import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.worker.TajoWorker;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.SCATTERED_HASH_SHUFFLE;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class TestTablePartitions extends QueryTestCaseBase {
 
@@ -785,5 +796,109 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     fail("Can't find query from workers" + queryId);
     return null;
+  }
+
+  @Test
+  public void testScatteredHashShuffle() throws Exception {
+    testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_TABLE_PARTITION_VOLUME.varname, "2");
+    testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.SHUFFLE_HASH_APPENDER_PAGE_VOLUME.varname, "1");
+    try {
+      KeyValueSet tableOptions = new KeyValueSet();
+      tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+      tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+
+      Schema schema = new Schema();
+      schema.addColumn("col1", TajoDataTypes.Type.TEXT);
+      schema.addColumn("col2", TajoDataTypes.Type.TEXT);
+
+      List<String> data = new ArrayList<String>();
+      int totalBytes = 0;
+      Random rand = new Random(System.currentTimeMillis());
+      String col2Data = "Column-2Column-2Column-2Column-2Column-2Column-2Column-2Column-2Column-2Column-2Column-2" +
+          "Column-2Column-2Column-2Column-2Column-2Column-2Column-2Column-2Column-2Column-2Column-2" +
+          "Column-2Column-2Column-2Column-2Column-2Column-2Column-2Column-2Column-2Column-2Column-2";
+
+      int index = 0;
+      while(true) {
+        int col1RandomValue = 1;
+        String str = col1RandomValue + "|col2-" + index + "-" + col2Data;
+        data.add(str);
+
+        totalBytes += str.getBytes().length;
+
+        if (totalBytes > 4 * 1024 * 1024) {
+          break;
+        }
+        index++;
+      }
+
+      TajoTestingCluster.createTable("testscatteredhashshuffle", schema, tableOptions, data.toArray(new String[]{}), 3);
+      CatalogService catalog = testingCluster.getMaster().getCatalog();
+      assertTrue(catalog.existsTable("default", "testscatteredhashshuffle"));
+
+      executeString("create table test_partition (col2 text) partition by column (col1 text)").close();
+      executeString("insert into test_partition select col2, col1 from testscatteredhashshuffle").close();
+
+      ResultSet res = executeString("select col1 from test_partition");
+
+      int numRows = 0;
+      while (res.next()) {
+        numRows++;
+      }
+      assertEquals(data.size(), numRows);
+
+      // assert data file size
+
+    } finally {
+      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$DIST_QUERY_TABLE_PARTITION_VOLUME.varname,
+          TajoConf.ConfVars.$DIST_QUERY_TABLE_PARTITION_VOLUME.defaultVal);
+      testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.SHUFFLE_HASH_APPENDER_PAGE_VOLUME.varname,
+          TajoConf.ConfVars.SHUFFLE_HASH_APPENDER_PAGE_VOLUME.defaultVal);
+      executeString("DROP TABLE test_partition PURGE").close();
+      executeString("DROP TABLE testScatteredHashShuffle PURGE").close();
+    }
+  }
+
+  @Test
+  public final void TestSpecialCharPartitionKeys1() throws Exception {
+    // See - TAJO-947: ColPartitionStoreExec can cause URISyntaxException due to special characters.
+
+    executeDDL("lineitemspecial_ddl.sql", "lineitemspecial.tbl");
+
+    executeString("CREATE TABLE IF NOT EXISTS pTable947 (id int, name text) PARTITION BY COLUMN (type text)")
+        .close();
+    executeString("INSERT OVERWRITE INTO pTable947 SELECT l_orderkey, l_shipinstruct, l_shipmode FROM lineitemspecial")
+        .close();
+    ResultSet res = executeString("select * from pTable947 where type='RA:*?><I/L#%S' or type='AIR'");
+
+    String resStr = resultSetToString(res);
+    String expected =
+        "id,name,type\n" +
+            "-------------------------------\n"
+            + "3,NONE,AIR\n"
+            + "3,TEST SPECIAL CHARS,RA:*?><I/L#%S\n";
+
+    assertEquals(expected, resStr);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void TestSpecialCharPartitionKeys2() throws Exception {
+    // See - TAJO-947: ColPartitionStoreExec can cause URISyntaxException due to special characters.
+
+    executeDDL("lineitemspecial_ddl.sql", "lineitemspecial.tbl");
+
+    executeString("CREATE TABLE IF NOT EXISTS pTable947 (id int, name text) PARTITION BY COLUMN (type text)")
+        .close();
+    executeString("INSERT OVERWRITE INTO pTable947 SELECT l_orderkey, l_shipinstruct, l_shipmode FROM lineitemspecial")
+        .close();
+
+    ResultSet res = executeString("select * from pTable947 where type='RA:*?><I/L#%S'");
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    res = executeString("select * from pTable947 where type='RA:*?><I/L#%S' or type='AIR01'");
+    assertResultSet(res);
+    cleanupQuery(res);
   }
 }

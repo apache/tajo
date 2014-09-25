@@ -29,6 +29,11 @@ public class Inet4Datum extends Datum {
   private static final int size = 4;
   @Expose private final int address;
 
+  Inet4Datum(int encoded) {
+    super(Type.INET4);
+    this.address = encoded;
+  }
+
 	public Inet4Datum(String addr) {
     super(Type.INET4);
 		String [] elems = addr.split("\\.");

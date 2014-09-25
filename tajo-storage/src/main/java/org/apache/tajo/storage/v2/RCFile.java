@@ -29,8 +29,8 @@ import org.apache.hadoop.io.compress.*;
 import org.apache.hadoop.util.Progressable;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.rcfile.*;
-import org.apache.tajo.util.Bytes;
 
 import java.io.*;
 import java.rmi.server.UID;
@@ -485,7 +485,7 @@ public class RCFile {
         }
 
         if (skipTotal != 0) {
-          Bytes.skipFully(in, skipTotal);
+          StorageUtil.skipFully(in, skipTotal);
           skipTotal = 0;
         }
 
@@ -512,7 +512,7 @@ public class RCFile {
       }
 
       if (skipTotal != 0) {
-        Bytes.skipFully(in, skipTotal);
+        StorageUtil.skipFully(in, skipTotal);
       }
     }
 

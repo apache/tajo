@@ -20,11 +20,13 @@ package org.apache.tajo.worker;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.querymaster.QueryUnit;
 import org.apache.tajo.master.querymaster.Repartitioner;
+import org.apache.tajo.util.TUtil;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -33,7 +35,7 @@ import java.util.List;
 /**
  * <code>FetchImpl</code> information to indicate the locations of intermediate data.
  */
-public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto> {
+public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto>, Cloneable {
   private TajoWorkerProtocol.FetchProto.Builder builder = null;
 
   private QueryUnit.PullHost host;             // The pull server host information
@@ -46,6 +48,9 @@ public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto> {
 
   private List<Integer> taskIds;               // repeated, the task ids
   private List<Integer> attemptIds;            // repeated, the attempt ids
+
+  private long offset = -1;
+  private long length = -1;
 
   public FetchImpl() {
     builder = TajoWorkerProtocol.FetchProto.newBuilder();
@@ -62,6 +67,14 @@ public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto> {
         proto.getHasNext(),
         proto.getName(),
         proto.getTaskIdList(), proto.getAttemptIdList());
+
+    if (proto.hasOffset()) {
+      this.offset = proto.getOffset();
+    }
+
+    if (proto.hasLength()) {
+      this.length = proto.getLength();
+    }
   }
 
   public FetchImpl(QueryUnit.PullHost host, TajoWorkerProtocol.ShuffleType type, ExecutionBlockId executionBlockId,
@@ -110,6 +123,7 @@ public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto> {
     builder.setPartitionId(partitionId);
     builder.setHasNext(hasNext);
     builder.setName(name);
+
     if (rangeParams != null && !rangeParams.isEmpty()) {
       builder.setRangeParams(rangeParams);
     }
@@ -117,6 +131,9 @@ public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto> {
     Preconditions.checkArgument(taskIds.size() == attemptIds.size());
     builder.addAllTaskId(taskIds);
     builder.addAllAttemptId(attemptIds);
+
+    builder.setOffset(offset);
+    builder.setLength(length);
     return builder.build();
   }
 
@@ -197,5 +214,65 @@ public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto> {
 
   public List<Integer> getAttemptIds() {
     return attemptIds;
+  }
+
+  public long getOffset() {
+    return offset;
+  }
+
+  public void setOffset(long offset) {
+    this.offset = offset;
+  }
+
+  public long getLength() {
+    return length;
+  }
+
+  public void setLength(long length) {
+    this.length = length;
+  }
+
+  public FetchImpl clone() throws CloneNotSupportedException {
+    FetchImpl newFetchImpl = (FetchImpl) super.clone();
+
+    newFetchImpl.builder = TajoWorkerProtocol.FetchProto.newBuilder();
+    newFetchImpl.host = host.clone();
+    newFetchImpl.type = type;
+    newFetchImpl.executionBlockId = executionBlockId;
+    newFetchImpl.partitionId = partitionId;
+    newFetchImpl.name = name;
+    newFetchImpl.rangeParams = rangeParams;
+    newFetchImpl.hasNext = hasNext;
+    if (taskIds != null) {
+      newFetchImpl.taskIds = Lists.newArrayList(taskIds);
+    }
+    if (attemptIds != null) {
+      newFetchImpl.attemptIds = Lists.newArrayList(attemptIds);
+    }
+    newFetchImpl.offset = offset;
+    newFetchImpl.length = length;
+    return newFetchImpl;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    FetchImpl fetch = (FetchImpl) o;
+
+    return TUtil.checkEquals(hasNext, fetch.hasNext) &&
+        TUtil.checkEquals(partitionId, fetch.partitionId) &&
+        TUtil.checkEquals(attemptIds, fetch.attemptIds) &&
+        TUtil.checkEquals(executionBlockId, fetch.executionBlockId) &&
+        TUtil.checkEquals(host, fetch.host) &&
+        TUtil.checkEquals(name, fetch.name) &&
+        TUtil.checkEquals(rangeParams, fetch.rangeParams) &&
+        TUtil.checkEquals(taskIds, fetch.taskIds) &&
+        TUtil.checkEquals(type, fetch.type);
   }
 }

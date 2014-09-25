@@ -74,12 +74,15 @@ public class SessionManager extends CompositeService implements EventHandler<Ses
     return sessionId;
   }
 
-  public void removeSession(String sessionId) {
+  public Session removeSession(String sessionId) {
     if (sessions.containsKey(sessionId)) {
-      sessions.remove(sessionId);
       LOG.info("Session " + sessionId + " is removed.");
+      Session session = sessions.remove(sessionId);
+      session.close();
+      return session;
     } else {
       LOG.error("No such session id: " + sessionId);
+      return null;
     }
   }
 
@@ -132,8 +135,10 @@ public class SessionManager extends CompositeService implements EventHandler<Ses
     }
 
     if (event.getType() == SessionEventType.EXPIRE) {
-      Session session = sessions.remove(event.getSessionId());
-      LOG.info("[Expired] Session username=" + session.getUserName() + ",sessionid=" + event.getSessionId());
+      Session session = removeSession(event.getSessionId());
+      if (session != null) {
+        LOG.info("[Expired] Session username=" + session.getUserName() + ",sessionid=" + event.getSessionId());
+      }
     }
   }
 }

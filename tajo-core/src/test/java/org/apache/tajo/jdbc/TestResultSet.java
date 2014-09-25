@@ -32,6 +32,7 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
@@ -139,6 +140,7 @@ public class TestResultSet {
     TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
 
     ResultSet res = null;
+    TajoClient client = TajoTestingCluster.newTajoClient();
     try {
       String tableName = "datetimetable";
       String query = "select col1, col2, col3 from " + tableName;
@@ -153,10 +155,10 @@ public class TestResultSet {
           "2014-01-01|01:00:00|2014-01-01 01:00:00"
       };
       KeyValueSet tableOptions = new KeyValueSet();
-      tableOptions.put(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+      tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
 
       res = TajoTestingCluster
-          .run(table, schemas, tableOptions, new String[][]{data}, query);
+          .run(table, schemas, tableOptions, new String[][]{data}, query, client);
 
       assertTrue(res.next());
 
@@ -212,7 +214,11 @@ public class TestResultSet {
     } finally {
       TajoConf.setCurrentTimeZone(tajoCurrentTimeZone);
       TimeZone.setDefault(systemCurrentTimeZone);
-      res.close();
+      if (res != null) {
+        res.close();
+      }
+
+      client.close();
     }
   }
 }

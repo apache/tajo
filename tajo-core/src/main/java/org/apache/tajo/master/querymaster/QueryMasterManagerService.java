@@ -133,7 +133,7 @@ public class QueryMasterManagerService extends CompositeService
         ContainerId cid =
             queryMasterTask.getQueryTaskContext().getResourceAllocator().makeContainerId(request.getContainerId());
         LOG.debug("getTask:" + cid + ", ebId:" + ebId);
-        queryMasterTask.handleTaskRequestEvent(new TaskRequestEvent(cid, ebId, done));
+        queryMasterTask.handleTaskRequestEvent(new TaskRequestEvent(request.getWorkerId(), cid, ebId, done));
       }
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
@@ -175,7 +175,7 @@ public class QueryMasterManagerService extends CompositeService
 
   @Override
   public void ping(RpcController controller,
-                   TajoIdProtos.QueryUnitAttemptIdProto attemptId,
+                   TajoIdProtos.ExecutionBlockIdProto requestProto,
                    RpcCallback<PrimitiveProtos.BoolProto> done) {
     done.run(TajoWorker.TRUE_PROTO);
   }
@@ -204,12 +204,26 @@ public class QueryMasterManagerService extends CompositeService
     try {
       QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(
           new QueryId(report.getId().getQueryUnitId().getExecutionBlockId().getQueryId()));
-      queryMasterTask.getEventHandler().handle(new TaskCompletionEvent(report));
+      if (queryMasterTask != null) {
+        queryMasterTask.getEventHandler().handle(new TaskCompletionEvent(report));
+      }
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       done.run(TajoWorker.FALSE_PROTO);
     }
+  }
+
+  @Override
+  public void doneExecutionBlock(
+      RpcController controller, TajoWorkerProtocol.ExecutionBlockReport request,
+      RpcCallback<PrimitiveProtos.BoolProto> done) {
+    QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(new QueryId(request.getEbId().getQueryId()));
+    if (queryMasterTask != null) {
+      ExecutionBlockId ebId = new ExecutionBlockId(request.getEbId());
+      queryMasterTask.getQuery().getSubQuery(ebId).receiveExecutionBlockReport(request);
+    }
+    done.run(TajoWorker.TRUE_PROTO);
   }
 
   @Override
@@ -236,7 +250,8 @@ public class QueryMasterManagerService extends CompositeService
       LOG.info("Receive executeQuery request:" + queryId);
       queryMaster.handle(new QueryStartEvent(queryId,
           new Session(request.getSession()),
-          new QueryContext(request.getQueryContext()), request.getExprInJson().getValue(),
+          new QueryContext(workerContext.getQueryMaster().getContext().getConf(),
+              request.getQueryContext()), request.getExprInJson().getValue(),
           request.getLogicalPlanJson().getValue()));
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {

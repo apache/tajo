@@ -26,7 +26,7 @@ import java.util.Stack;
  * It provides simple visitor methods for an expression tree. Since <code>SimpleEvalNodeVisitor</code> provides
  * fewer visitor methods, it allows users to write a simple rewriter for expression trees.
  */
-public class SimpleEvalNodeVisitor<CONTEXT> {
+public abstract class SimpleEvalNodeVisitor<CONTEXT> {
 
   public EvalNode visit(CONTEXT context, EvalNode evalNode, Stack<EvalNode> stack) {
     EvalNode result;
@@ -60,9 +60,6 @@ public class SimpleEvalNodeVisitor<CONTEXT> {
       case IF_THEN:
         result = visitIfThen(context, (CaseWhenEval.IfThenEval) evalNode, stack);
         break;
-      case IN:
-        result = visitInPredicate(context, (InEval) evalNode, stack);
-        break;
 
       // Functions
       case FUNCTION:
@@ -83,14 +80,14 @@ public class SimpleEvalNodeVisitor<CONTEXT> {
     return result;
   }
 
-  public EvalNode visitUnaryEval(CONTEXT context, Stack<EvalNode> stack, UnaryEval unaryEval) {
+  protected EvalNode visitUnaryEval(CONTEXT context, Stack<EvalNode> stack, UnaryEval unaryEval) {
     stack.push(unaryEval);
     visit(context, unaryEval.getChild(), stack);
     stack.pop();
     return unaryEval;
   }
 
-  public EvalNode visitBinaryEval(CONTEXT context, Stack<EvalNode> stack, BinaryEval binaryEval) {
+  protected EvalNode visitBinaryEval(CONTEXT context, Stack<EvalNode> stack, BinaryEval binaryEval) {
     stack.push(binaryEval);
     visit(context, binaryEval.getLeftExpr(), stack);
     visit(context, binaryEval.getRightExpr(), stack);
@@ -98,7 +95,7 @@ public class SimpleEvalNodeVisitor<CONTEXT> {
     return binaryEval;
   }
 
-  private EvalNode visitDefaultFunctionEval(CONTEXT context, Stack<EvalNode> stack, FunctionEval functionEval) {
+  protected EvalNode visitDefaultFunctionEval(CONTEXT context, Stack<EvalNode> stack, FunctionEval functionEval) {
     stack.push(functionEval);
     if (functionEval.getArgs() != null) {
       for (EvalNode arg : functionEval.getArgs()) {
@@ -113,15 +110,15 @@ public class SimpleEvalNodeVisitor<CONTEXT> {
   // Value and Literal
   ///////////////////////////////////////////////////////////////////////////////////////////////
 
-  public EvalNode visitConst(CONTEXT context, ConstEval evalNode, Stack<EvalNode> stack) {
+  protected EvalNode visitConst(CONTEXT context, ConstEval evalNode, Stack<EvalNode> stack) {
     return evalNode;
   }
 
-  public EvalNode visitRowConstant(CONTEXT context, RowConstantEval evalNode, Stack<EvalNode> stack) {
+  protected EvalNode visitRowConstant(CONTEXT context, RowConstantEval evalNode, Stack<EvalNode> stack) {
     return evalNode;
   }
 
-  public EvalNode visitField(CONTEXT context, Stack<EvalNode> stack, FieldEval evalNode) {
+  protected EvalNode visitField(CONTEXT context, Stack<EvalNode> stack, FieldEval evalNode) {
     return evalNode;
   }
 
@@ -130,7 +127,7 @@ public class SimpleEvalNodeVisitor<CONTEXT> {
   // SQL standard predicates
   ///////////////////////////////////////////////////////////////////////////////////////////////
 
-  public EvalNode visitBetween(CONTEXT context, BetweenPredicateEval evalNode, Stack<EvalNode> stack) {
+  protected EvalNode visitBetween(CONTEXT context, BetweenPredicateEval evalNode, Stack<EvalNode> stack) {
     stack.push(evalNode);
     visit(context, evalNode.getPredicand(), stack);
     visit(context, evalNode.getBegin(), stack);
@@ -138,7 +135,7 @@ public class SimpleEvalNodeVisitor<CONTEXT> {
     return evalNode;
   }
 
-  public EvalNode visitCaseWhen(CONTEXT context, CaseWhenEval evalNode, Stack<EvalNode> stack) {
+  protected EvalNode visitCaseWhen(CONTEXT context, CaseWhenEval evalNode, Stack<EvalNode> stack) {
     stack.push(evalNode);
     for (CaseWhenEval.IfThenEval ifThenEval : evalNode.getIfThenEvals()) {
       visitIfThen(context, ifThenEval, stack);
@@ -150,7 +147,7 @@ public class SimpleEvalNodeVisitor<CONTEXT> {
     return evalNode;
   }
 
-  public EvalNode visitIfThen(CONTEXT context, CaseWhenEval.IfThenEval evalNode, Stack<EvalNode> stack) {
+  protected EvalNode visitIfThen(CONTEXT context, CaseWhenEval.IfThenEval evalNode, Stack<EvalNode> stack) {
     stack.push(evalNode);
     visit(context, evalNode.getCondition(), stack);
     visit(context, evalNode.getResult(), stack);
@@ -158,7 +155,7 @@ public class SimpleEvalNodeVisitor<CONTEXT> {
     return evalNode;
   }
 
-  public EvalNode visitInPredicate(CONTEXT context, InEval evalNode, Stack<EvalNode> stack) {
+  protected EvalNode visitInPredicate(CONTEXT context, InEval evalNode, Stack<EvalNode> stack) {
     return visitBinaryEval(context, stack, evalNode);
   }
 
@@ -166,7 +163,7 @@ public class SimpleEvalNodeVisitor<CONTEXT> {
   // Functions
   ///////////////////////////////////////////////////////////////////////////////////////////////
 
-  public EvalNode visitFuncCall(CONTEXT context, FunctionEval evalNode, Stack<EvalNode> stack) {
+  protected EvalNode visitFuncCall(CONTEXT context, FunctionEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultFunctionEval(context, stack, evalNode);
   }
 }

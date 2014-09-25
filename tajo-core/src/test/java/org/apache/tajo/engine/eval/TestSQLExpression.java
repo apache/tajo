@@ -31,7 +31,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.TimeZone;
 
-import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
+import static org.apache.tajo.common.TajoDataTypes.Type.*;
 import static org.junit.Assert.fail;
 
 public class TestSQLExpression extends ExprTestBase {
@@ -93,16 +93,16 @@ public class TestSQLExpression extends ExprTestBase {
   @Test
   public void testExplicitCast() throws IOException {
     Schema schema = new Schema();
-    schema.addColumn("col0", TajoDataTypes.Type.INT1);
-    schema.addColumn("col1", TajoDataTypes.Type.INT2);
-    schema.addColumn("col2", TajoDataTypes.Type.INT4);
-    schema.addColumn("col3", TajoDataTypes.Type.INT8);
-    schema.addColumn("col4", TajoDataTypes.Type.FLOAT4);
-    schema.addColumn("col5", TajoDataTypes.Type.FLOAT8);
-    schema.addColumn("col6", TajoDataTypes.Type.TEXT);
+    schema.addColumn("col0", INT1);
+    schema.addColumn("col1", INT2);
+    schema.addColumn("col2", INT4);
+    schema.addColumn("col3", INT8);
+    schema.addColumn("col4", FLOAT4);
+    schema.addColumn("col5", FLOAT8);
+    schema.addColumn("col6", TEXT);
     schema.addColumn("col7", CatalogUtil.newDataType(TajoDataTypes.Type.CHAR, "", 3));
 
-    testSimpleEval("select cast (1 as char)", new String[] {"1"});
+    testSimpleEval("select cast (1 as char)", new String[]{"1"});
     testSimpleEval("select cast (119 as char)", new String[] {"1"});
 
     testEval(schema, "table1", "0,1,2,3,4.1,5.1,6,7", "select col0::int1 from table1;", new String [] {"0"});
@@ -866,6 +866,7 @@ public class TestSQLExpression extends ExprTestBase {
       Schema schema = new Schema();
       schema.addColumn("col1", TEXT);
       schema.addColumn("col2", TEXT);
+
       testEval(schema, "table1", "123,234", "select cast(col1 as float) as b, cast(col2 as float) as a from table1",
           new String[]{"123.0", "234.0"});
       testEval(schema, "table1", "123,234", "select col1::float, col2::float from table1",
@@ -879,7 +880,8 @@ public class TestSQLExpression extends ExprTestBase {
           new String[]{timestamp.asChars(TajoConf.getCurrentTimeZone(), true), "234.0"}
       );
 
-      testSimpleEval("select '1980-04-01 01:50:01'::timestamp;", new String[]{timestamp.asChars(TajoConf.getCurrentTimeZone(), true)});
+      testSimpleEval("select '1980-04-01 01:50:01'::timestamp;",
+          new String[]{timestamp.asChars(TajoConf.getCurrentTimeZone(), true)});
       testSimpleEval("select '1980-04-01 01:50:01'::timestamp::text", new String[]{"1980-04-01 01:50:01"});
 
       testSimpleEval("select (cast ('99999'::int8 as text))::int4 + 1", new String[]{"100000"});
@@ -901,6 +903,8 @@ public class TestSQLExpression extends ExprTestBase {
 
   @Test
   public void testNullComparisons() throws IOException {
+    testSimpleEval("select (1 > null) is null", new String[] {"t"});
+
     testSimpleEval("select null is null", new String[] {"t"});
     testSimpleEval("select null is not null", new String[] {"f"});
 

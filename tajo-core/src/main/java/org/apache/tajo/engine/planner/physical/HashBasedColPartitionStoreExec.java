@@ -18,14 +18,13 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.planner.logical.StoreTableNode;
 import org.apache.tajo.storage.Appender;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -38,8 +37,6 @@ import java.util.Map;
  * This class is a physical operator to store at column partitioned table.
  */
 public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
-  private static Log LOG = LogFactory.getLog(HashBasedColPartitionStoreExec.class);
-
   private final Map<String, Appender> appenderMap = new HashMap<String, Appender>();
 
   public HashBasedColPartitionStoreExec(TaskAttemptContext context, StoreTableNode plan, PhysicalExec child)
@@ -55,7 +52,7 @@ public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
     Appender appender = appenderMap.get(partition);
 
     if (appender == null) {
-      appender = makeAppender(partition);
+      appender = getNextPartitionAppender(partition);
       appenderMap.put(partition, appender);
     } else {
       appender = appenderMap.get(partition);
@@ -79,7 +76,7 @@ public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
           if(i > 0)
             sb.append("/");
           sb.append(keyNames[i]).append("=");
-          sb.append(datum.asChars());
+          sb.append(StringUtils.escapePathName(datum.asChars()));
         }
       }
 

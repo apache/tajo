@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.query;
 
 import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -160,7 +161,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 		this.serializedData = p.getSerializedData();
 		return this.serializedData;
 	}
-	
+
 	public boolean isInterQuery() {
 	  QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
     if (interQuery != null) {
@@ -193,7 +194,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
     if (!p.hasQueryContext()) {
       return null;
     }
-    this.queryContext = new QueryContext(p.getQueryContext());
+    this.queryContext = new QueryContext(new TajoConf(), p.getQueryContext());
     return this.queryContext;
   }
 
