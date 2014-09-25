@@ -359,7 +359,10 @@ public class TajoConf extends Configuration {
     $BEHAVIOR_ARITHMETIC_ABORT("tajo.behavior.arithmetic-abort", false),
 
     // ResultSet ---------------------------------------------------------
-    $RESULT_SET_FETCH_ROWNUM("tajo.resultset.fetch.rownum", 200)
+    $RESULT_SET_FETCH_ROWNUM("tajo.resultset.fetch.rownum", 200),
+
+    // Column Partition
+    $COLUMN_PARITION_REMOVE_ALL_PARTITIONS("tajo.column-paritition.remove.all-partitions", false)
     ;
 
     public final String varname;

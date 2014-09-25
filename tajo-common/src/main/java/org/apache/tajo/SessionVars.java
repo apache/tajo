@@ -118,6 +118,10 @@ public enum SessionVars implements ConfigKey {
   // ResultSet ----------------------------------------------------------------
   FETCH_ROWNUM(ConfVars.$RESULT_SET_FETCH_ROWNUM, "Sets the number of rows at a time from Master", DEFAULT),
 
+  // Column Partition
+  COLUMN_PARITION_REMOVE_ALL_PARTITIONS(ConfVars.$COLUMN_PARITION_REMOVE_ALL_PARTITIONS, "In Column partition, "
+      + "INSERT OVERWRITE INTO remove all partitions", DEFAULT),
+
   //-------------------------------------------------------------------------------
   // Only for Unit Testing
   //-------------------------------------------------------------------------------

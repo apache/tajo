@@ -25,10 +25,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.DeflateCodec;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.TajoConstants;
-import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.*;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
@@ -47,6 +44,7 @@ import org.apache.tajo.master.querymaster.QueryUnit;
 import org.apache.tajo.master.querymaster.SubQuery;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TajoWorker;
 import org.junit.Test;
 
@@ -485,6 +483,76 @@ public class TestTablePartitions extends QueryTestCaseBase {
         "R,3,3,49.0\n" +
         "R,3,3,49.0\n";
     assertEquals(expected, resultSetData);
+
+    // insert overwrite into already exists partitioned table with COLUMN_PARITION_REMOVE_ALL_PARTITIONS is false
+    res = executeString("insert overwrite into " + tableName
+        + " select l_returnflag, l_orderkey, l_partkey, 30.0 as l_quantity from lineitem "
+        + " where l_orderkey = 1 and l_partkey = 1 and  l_linenumber = 1");
+    res.close();
+
+    desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+    assertTrue(fs.isDirectory(path));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1/col3=17.0")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1/col3=30.0")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2/col2=2")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2/col2=2/col3=38.0")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=2")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=3")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=2/col3=45.0")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3/col2=3/col3=49.0")));
+
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      // TODO: If there is existing another partition directory, we must add its rows number to result row numbers.
+      // assertEquals(6, desc.getStats().getNumRows().intValue());
+    }
+
+    res = executeString("select * from " + tableName + " where col2 = 1");
+    resultSetData = resultSetToString(res);
+    res.close();
+    expected = "col4,col1,col2,col3\n" +
+        "-------------------------------\n" +
+        "N,1,1,17.0\n" +
+        "N,1,1,17.0\n" +
+        "N,1,1,30.0\n" +
+        "N,1,1,36.0\n" +
+        "N,1,1,36.0\n";
+
+    assertEquals(expected, resultSetData);
+
+    Map<String, String> sessionVariables = TUtil.newHashMap();
+    sessionVariables.put(SessionVars.COLUMN_PARITION_REMOVE_ALL_PARTITIONS.keyname(), "true");
+    client.updateSessionVariables(sessionVariables);
+
+    // insert overwrite into already exists partitioned table with COLUMN_PARITION_REMOVE_ALL_PARTITIONS is true
+    res = executeString("insert overwrite into " + tableName
+        + " select l_returnflag, l_orderkey, l_partkey, 30.0 as l_quantity from lineitem "
+        + " where l_orderkey = 1 and l_partkey = 1 and  l_linenumber = 1");
+    res.close();
+
+    desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+    assertTrue(fs.isDirectory(path));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
+    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1/col3=30.0")));
+
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      assertEquals(1, desc.getStats().getNumRows().intValue());
+    }
+
+    res = executeString("select * from " + tableName + " where col2 = 1");
+    resultSetData = resultSetToString(res);
+    res.close();
+    expected = "col4,col1,col2,col3\n" +
+        "-------------------------------\n" +
+        "N,1,1,30.0\n";
+
+    assertEquals(expected, resultSetData);
+
+    sessionVariables.put(SessionVars.COLUMN_PARITION_REMOVE_ALL_PARTITIONS.keyname(), "false");
+    client.updateSessionVariables(sessionVariables);
   }
 
   @Test
@@ -888,16 +956,16 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
     executeDDL("lineitemspecial_ddl.sql", "lineitemspecial.tbl");
 
-    executeString("CREATE TABLE IF NOT EXISTS pTable947 (id int, name text) PARTITION BY COLUMN (type text)")
+    executeString("CREATE TABLE IF NOT EXISTS pTable948 (id int, name text) PARTITION BY COLUMN (type text)")
         .close();
-    executeString("INSERT OVERWRITE INTO pTable947 SELECT l_orderkey, l_shipinstruct, l_shipmode FROM lineitemspecial")
+    executeString("INSERT OVERWRITE INTO pTable948 SELECT l_orderkey, l_shipinstruct, l_shipmode FROM lineitemspecial")
         .close();
 
-    ResultSet res = executeString("select * from pTable947 where type='RA:*?><I/L#%S'");
+    ResultSet res = executeString("select * from pTable948 where type='RA:*?><I/L#%S'");
     assertResultSet(res);
     cleanupQuery(res);
 
-    res = executeString("select * from pTable947 where type='RA:*?><I/L#%S' or type='AIR01'");
+    res = executeString("select * from pTable948 where type='RA:*?><I/L#%S' or type='AIR01'");
     assertResultSet(res);
     cleanupQuery(res);
   }
