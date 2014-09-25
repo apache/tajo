@@ -43,6 +43,7 @@ import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.worker.event.TaskRunnerStartEvent;
+import org.jboss.netty.channel.ConnectTimeoutException;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.jboss.netty.util.Timer;
 
@@ -146,7 +147,8 @@ public class ExecutionBlockContext {
     return resource;
   }
 
-  public QueryMasterProtocol.QueryMasterProtocolService.Interface getQueryMasterStub() throws Exception {
+  public QueryMasterProtocol.QueryMasterProtocolService.Interface getQueryMasterStub()
+      throws NoSuchMethodException, ConnectTimeoutException, ClassNotFoundException {
     NettyClientBase clientBase = null;
     try {
       clientBase = connPool.getConnection(qmMasterAddr, QueryMasterProtocol.class, true);
