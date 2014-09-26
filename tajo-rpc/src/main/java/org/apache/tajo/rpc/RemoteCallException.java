@@ -41,6 +41,9 @@ public class RemoteCallException extends RemoteException {
   public RemoteCallException(int seqId, Throwable t) {
     super(t);
     this.seqId = seqId;
+    if (t != null) {
+      originExceptionClass = t.getClass().getCanonicalName();
+    }
   }
 
   public RpcResponse getResponse() {
