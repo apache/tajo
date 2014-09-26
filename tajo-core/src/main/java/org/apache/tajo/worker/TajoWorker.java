@@ -49,6 +49,7 @@ import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.HAServiceUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.util.history.HistoryWriter;
 import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.webapp.StaticHttpServer;
 
@@ -130,6 +131,8 @@ public class TajoWorker extends CompositeService {
   private AsyncDispatcher dispatcher;
 
   private LocalDirAllocator lDirAllocator;
+
+  private HistoryWriter taskHistoryWriter;
 
   public TajoWorker() throws Exception {
     super(TajoWorker.class.getName());
@@ -255,6 +258,10 @@ public class TajoWorker extends CompositeService {
       LOG.fatal(e.getMessage(), e);
       System.exit(-1);
     }
+
+    taskHistoryWriter = new HistoryWriter(workerContext.getWorkerName());
+    addIfService(taskHistoryWriter);
+    taskHistoryWriter.init(conf);
   }
 
   private void initWorkerMetrics() {
@@ -534,6 +541,10 @@ public class TajoWorker extends CompositeService {
 
     public HashShuffleAppenderManager getHashShuffleAppenderManager() {
       return hashShuffleAppenderManager;
+    }
+
+    public HistoryWriter getTaskHistoryWriter() {
+      return taskHistoryWriter;
     }
   }
 

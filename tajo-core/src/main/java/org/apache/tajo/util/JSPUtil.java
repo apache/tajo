@@ -27,6 +27,7 @@ import org.apache.tajo.master.querymaster.QueryInProgress;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.querymaster.QueryUnit;
 import org.apache.tajo.master.querymaster.SubQuery;
+import org.apache.tajo.util.history.SubQueryHistory;
 import org.apache.tajo.worker.TaskRunnerHistory;
 import org.apache.tajo.worker.TaskRunner;
 
@@ -138,6 +139,29 @@ public class JSPUtil {
         int result = compareLong(q1StartTime, q2StartTime);
         if (result == 0) {
           return subQuery1.getId().toString().compareTo(subQuery2.getId().toString());
+        } else {
+          return result;
+        }
+      }
+    });
+
+    return subQueryList;
+  }
+
+  public static List<SubQueryHistory> sortSubQueryHistory(Collection<SubQueryHistory> subQueries) {
+    List<SubQueryHistory> subQueryList = new ArrayList<SubQueryHistory>();
+    Collections.sort(subQueryList, new Comparator<SubQueryHistory>() {
+      @Override
+      public int compare(SubQueryHistory subQuery1, SubQueryHistory subQuery2) {
+        long q1StartTime = subQuery1.getStartTime();
+        long q2StartTime = subQuery2.getStartTime();
+
+        q1StartTime = (q1StartTime == 0 ? Long.MAX_VALUE : q1StartTime);
+        q2StartTime = (q2StartTime == 0 ? Long.MAX_VALUE : q2StartTime);
+
+        int result = compareLong(q1StartTime, q2StartTime);
+        if (result == 0) {
+          return subQuery1.getExecutionBlockId().compareTo(subQuery2.getExecutionBlockId());
         } else {
           return result;
         }

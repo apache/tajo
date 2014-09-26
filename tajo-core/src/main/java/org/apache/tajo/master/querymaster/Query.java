@@ -52,6 +52,8 @@ import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.history.QueryHistory;
+import org.apache.tajo.util.history.SubQueryHistory;
 
 import java.io.IOException;
 import java.text.NumberFormat;
@@ -95,6 +97,8 @@ public class Query implements EventHandler<QueryEvent> {
   // State Machine
   private final StateMachine<QueryState, QueryEventType, QueryEvent> stateMachine;
   private QueryState queryState;
+
+  private QueryHistory finalQueryHistory;
 
   // Transition Handler
   private static final SingleArcTransition INTERNAL_ERROR_TRANSITION = new InternalErrorTransition();
@@ -295,6 +299,45 @@ public class Query implements EventHandler<QueryEvent> {
     finishTime = clock.getTime();
   }
 
+  public QueryHistory getQueryHistory() {
+    if (finalQueryHistory != null) {
+      return finalQueryHistory;
+    } else {
+      QueryHistory queryHistory = makeQueryHistory();
+      queryHistory.setSubQueryHistories(makeSubQueryHistories());
+      return queryHistory;
+    }
+  }
+
+  private List<SubQueryHistory> makeSubQueryHistories() {
+    List<SubQueryHistory> subQueryHistories = new ArrayList<SubQueryHistory>();
+    for(SubQuery eachSubQuery: getSubQueries()) {
+      subQueryHistories.add(eachSubQuery.getSubQueryHistory());
+    }
+
+    return subQueryHistories;
+  }
+
+  private QueryHistory makeQueryHistory() {
+    QueryHistory queryHistory = new QueryHistory();
+
+    queryHistory.setQueryMaster(context.getQueryMasterContext().getWorkerContext().getWorkerName());
+    queryHistory.setHttpPort(context.getQueryMasterContext().getWorkerContext().getConnectionInfo().getHttpInfoPort());
+    queryHistory.setLogicalPlan(plan.toString());
+    queryHistory.setLogicalPlan(plan.getLogicalPlan().toString());
+    queryHistory.setDistributedPlan(plan.toString());
+
+    List<String[]> sessionVariables = new ArrayList<String[]>();
+    for(Map.Entry<String,String> entry: plan.getContext().getAllKeyValus().entrySet()) {
+      if (SessionVars.exists(entry.getKey()) && SessionVars.isPublic(SessionVars.get(entry.getKey()))) {
+        sessionVariables.add(new String[]{entry.getKey(), entry.getValue()});
+      }
+    }
+    queryHistory.setSessionVariables(sessionVariables);
+
+    return queryHistory;
+  }
+
   public List<String> getDiagnostics() {
     readLock.lock();
     try {
@@ -393,6 +436,11 @@ public class Query implements EventHandler<QueryEvent> {
       }
       query.eventHandler.handle(new QueryMasterQueryCompletedEvent(query.getId()));
       query.setFinishTime();
+
+      query.finalQueryHistory = query.makeQueryHistory();
+      query.finalQueryHistory.setSubQueryHistories(query.makeSubQueryHistories());
+      query.context.getQueryMasterContext().getWorkerContext().
+          getTaskHistoryWriter().appendHistory(query.finalQueryHistory);
       return finalState;
     }
 

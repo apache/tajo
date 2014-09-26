@@ -42,8 +42,10 @@ import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext;
 import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TajoIdUtils;
+import org.apache.tajo.util.history.QueryUnitHistory;
 import org.apache.tajo.worker.FetchImpl;
 
 import java.net.URI;
@@ -95,6 +97,8 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   private List<DataLocation> dataLocations = Lists.newArrayList();
 
   private static final AttemptKilledTransition ATTEMPT_KILLED_TRANSITION = new AttemptKilledTransition();
+
+  private QueryUnitHistory finalQueryUnitHistory;
 
   protected static final StateMachineFactory
       <QueryUnit, TaskState, TaskEventType, TaskEvent> stateMachineFactory =
@@ -208,6 +212,58 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     } finally {
       readLock.unlock();
     }
+  }
+
+  public QueryUnitHistory getQueryUnitHistory() {
+    if (finalQueryUnitHistory != null) {
+      return finalQueryUnitHistory;
+    } else {
+      return makeQueryUnitHistory();
+    }
+  }
+
+  private QueryUnitHistory makeQueryUnitHistory() {
+    QueryUnitHistory queryUnitHistory = new QueryUnitHistory();
+
+    queryUnitHistory.setHostAndPort(succeededHost);
+    queryUnitHistory.setState(getState().toString());
+    queryUnitHistory.setRetryCount(this.getRetryCount());
+    queryUnitHistory.setProgress(getLastAttempt().getProgress());
+    queryUnitHistory.setLaunchTime(launchTime);
+    queryUnitHistory.setFinishTime(finishTime);
+
+    queryUnitHistory.setNumShuffles(getShuffleOutpuNum());
+    ShuffleFileOutput shuffleFileOutputs = getShuffleFileOutputs().get(0);
+    if(queryUnitHistory.getNumShuffles() > 0) {
+      queryUnitHistory.setShuffleKey("" + shuffleFileOutputs.getPartId());
+      queryUnitHistory.setShuffleFileName(shuffleFileOutputs.getFileName());
+    }
+
+    List<String> fragmentList = new ArrayList<String>();
+    for (FragmentProto eachFragment : getAllFragments()) {
+      FileFragment fileFragment = FragmentConvertor.convert(FileFragment.class, eachFragment);
+      fragmentList.add(fileFragment.toString());
+    }
+    queryUnitHistory.setFragments(fragmentList.toArray(new String[]{}));
+
+    List<String[]> fetchList = new ArrayList<String[]>();
+    for (Map.Entry<String, Set<FetchImpl>> e : getFetchMap().entrySet()) {
+      for (FetchImpl f : e.getValue()) {
+        for (URI uri : f.getSimpleURIs()){
+          fetchList.add(new String[] {e.getKey(), uri.toString()});
+        }
+      }
+    }
+
+    queryUnitHistory.setFetchs(fetchList.toArray(new String[][]{}));
+
+    List<String> dataLocationList = new ArrayList<String>();
+    for(DataLocation eachLocation: getDataLocations()) {
+      dataLocationList.add(eachLocation.toString());
+    }
+
+    queryUnitHistory.setDataLocations(dataLocationList.toArray(new String[]{}));
+    return queryUnitHistory;
   }
 
 	public void setLogicalPlan(LogicalNode plan) {
@@ -484,6 +540,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
   private void finishTask() {
     this.finishTime = System.currentTimeMillis();
+    finalQueryUnitHistory = makeQueryUnitHistory();
   }
 
   private static class KillNewTaskTransition implements SingleArcTransition<QueryUnit, TaskEvent> {

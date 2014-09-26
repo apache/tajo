@@ -19,21 +19,38 @@
 package org.apache.tajo.master.querymaster;
 
 
+import com.google.gson.annotations.Expose;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
+import org.apache.tajo.engine.json.CoreGsonHelper;
+import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.util.history.History;
 
-public class QueryInfo {
+public class QueryInfo implements GsonObject, History {
+  @Expose
   private QueryId queryId;
+  @Expose
   private String sql;
-  private String jsonExpr;
+  @Expose
   private TajoProtos.QueryState queryState;
+  @Expose
   private float progress;
+  @Expose
   private long startTime;
+  @Expose
   private long finishTime;
+  @Expose
   private String lastMessage;
+  @Expose
   private String hostNameOfQM;
+  @Expose
   private int queryMasterPort;
+  @Expose
   private int queryMasterClientPort;
+  @Expose
+  private int queryMasterInfoPort;
+
+  private String jsonExpr;
 
   public QueryInfo(QueryId queryId) {
     this(queryId, null, null);
@@ -60,7 +77,14 @@ public class QueryInfo {
 
   public void setQueryMaster(String hostName) {
     this.hostNameOfQM = hostName;
+  }
 
+  public int getQueryMasterInfoPort() {
+    return queryMasterInfoPort;
+  }
+
+  public void setQueryMasterInfoPort(int queryMasterInfoPort) {
+    this.queryMasterInfoPort = queryMasterInfoPort;
   }
 
   public void setQueryMasterPort(int port) {
@@ -127,5 +151,15 @@ public class QueryInfo {
 
   public String getJsonExpr() {
     return jsonExpr;
+  }
+
+  @Override
+  public String toJson() {
+    return CoreGsonHelper.toJson(this, QueryInfo.class);
+  }
+
+  @Override
+  public HistoryType getHistoryType() {
+    return HistoryType.QUERY_SUMMARY;
   }
 }
