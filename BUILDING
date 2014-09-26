@@ -57,6 +57,8 @@ Building distributions:
 
 Create binary distribution
 
-  $ mvn clean install -Pdist -DskipTests -Dtar
+  $ mvn clean install -Pdist -DskipTests -Dtar -Dhadoop.version=2.X.X
+
+You should be substitute 2.X.X with your Hadoop version.
 
 --------------------------------------------------------------------------------
