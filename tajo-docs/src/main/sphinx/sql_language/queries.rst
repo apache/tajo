@@ -157,10 +157,27 @@ Groupby and Having Clauses
       [HAVING boolean_expression]
 
 The rows which passes ``WHERE`` filter may be subject to grouping, specified by ``GROUP BY`` clause.
-Grouping combines a set of rows having common values into one group, and then computes rows in the group with aggregation functions.
-``HAVING`` clause can be used with only ``GROUP BY`` clause. It eliminates the unqualified result rows of grouping.
+Grouping combines a set of rows having common values into one group, and then computes rows in the group with aggregation functions. ``HAVING`` clause can be used with only ``GROUP BY`` clause. It eliminates the unqualified result rows of grouping.
 
 ``grouping_column_reference`` can be a column reference, a complex expression including scalar functions and arithmetic operations.
+
+.. code-block:: sql
+
+  SELECT l_orderkey, SUM(l_quantity) AS quantity FROM lineitem GROUP BY l_orderkey;
+
+  SELECT substr(l_shipdate,1,4) as year, SUM(l_orderkey) AS total2 FROM lineitem GROUP BY substr(l_shipdate,1,4);
+
+If a SQL statement includes ``GROUP BY`` clause, expressions in select list must be either grouping_column_reference or aggregation function. For example, the following example query is not allowed because ``l_orderkey`` does not occur in ``GROUP BY`` clause.
+
+.. code-block:: sql
+
+  SELECT l_orderkey, l_partkey, SUM(l_orderkey) AS total FROM lineitem GROUP BY l_partkey;
+
+Aggregation functions can be used with ``DISTINCT`` keywords. It forces an individual aggregate function to take only distinct values of the argument expression. ``DISTINCT`` keyword is used as follows:
+
+.. code-block:: sql
+
+  SELECT l_partkey, COUNT(distinct l_quantity), SUM(distinct l_extendedprice) AS total FROM lineitem GROUP BY l_partkey;
 
 ==========================
 Orderby and Limit Clauses
