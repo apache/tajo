@@ -26,7 +26,10 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.storage.StorageConstants;
 
@@ -40,6 +43,7 @@ public class TPCH extends BenchmarkSet {
 
   public static final String LINEITEM = "lineitem";
   public static final String CUSTOMER = "customer";
+  public static final String CUSTOMER_PARTS = "customer_parts";
   public static final String NATION = "nation";
   public static final String PART = "part";
   public static final String REGION = "region";
@@ -54,6 +58,7 @@ public class TPCH extends BenchmarkSet {
   static {
     tableVolumes.put(LINEITEM, 759863287L);
     tableVolumes.put(CUSTOMER, 24346144L);
+    tableVolumes.put(CUSTOMER_PARTS, 707L);
     tableVolumes.put(NATION, 2224L);
     tableVolumes.put(PART, 24135125L);
     tableVolumes.put(REGION, 389L);
@@ -97,6 +102,16 @@ public class TPCH extends BenchmarkSet {
         .addColumn("c_mktsegment", Type.TEXT) // 6
         .addColumn("c_comment", Type.TEXT); // 7
     schemas.put(CUSTOMER, customer);
+
+    Schema customerParts = new Schema()
+        .addColumn("c_custkey", Type.INT4) // 0
+        .addColumn("c_name", Type.TEXT) // 1
+        .addColumn("c_address", Type.TEXT) // 2
+        .addColumn("c_phone", Type.TEXT) // 3
+        .addColumn("c_acctbal", Type.FLOAT8) // 4
+        .addColumn("c_mktsegment", Type.TEXT) // 5
+        .addColumn("c_comment", Type.TEXT); // 6
+    schemas.put(CUSTOMER_PARTS, customerParts);
 
     Schema nation = new Schema()
         .addColumn("n_nationkey", Type.INT4) // 0
@@ -177,6 +192,7 @@ public class TPCH extends BenchmarkSet {
   public void loadTables() throws ServiceException {
     loadTable(LINEITEM);
     loadTable(CUSTOMER);
+    loadTable(CUSTOMER_PARTS);
     loadTable(NATION);
     loadTable(PART);
     loadTable(REGION);
@@ -187,12 +203,24 @@ public class TPCH extends BenchmarkSet {
 
   }
 
-  private void loadTable(String tableName) throws ServiceException {
+  public void loadTable(String tableName) throws ServiceException {
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
     meta.putOption(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
 
+    PartitionMethodDesc partitionMethodDesc = null;
+    if (tableName.equals(CUSTOMER_PARTS)) {
+      Schema expressionSchema = new Schema();
+      expressionSchema.addColumn("c_nationkey", TajoDataTypes.Type.INT4);
+      partitionMethodDesc = new PartitionMethodDesc(
+          tajo.getCurrentDatabase(),
+          CUSTOMER_PARTS,
+          CatalogProtos.PartitionType.COLUMN,
+          "c_nationkey",
+          expressionSchema);
+    }
     try {
-      tajo.createExternalTable(tableName, getSchema(tableName), new Path(dataDir, tableName), meta);
+      tajo.createExternalTable(tableName, getSchema(tableName),
+          new Path(dataDir, tableName), meta, partitionMethodDesc);
     } catch (SQLException s) {
       throw new ServiceException(s);
     }

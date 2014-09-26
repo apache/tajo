@@ -110,6 +110,7 @@ JAVA=$JAVA_HOME/bin/java
 JAVA_TAJO_MASTER_HEAP_MAX=-Xmx1000m 
 JAVA_WORKER_HEAP_MAX=-Xmx1000m
 JAVA_QUERYMASTER_HEAP_MAX=-Xmx1000m
+JAVA_PULLSERVER_HEAP_MAX=-Xmx100m
 
 # check envvars which might override default args
 if [ "$TAJO_MASTER_HEAPSIZE" != "" ]; then

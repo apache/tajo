@@ -488,20 +488,20 @@ public class PullServerAuxService extends AuxiliaryService {
       ChannelFuture writeFuture;
       if (ch.getPipeline().get(SslHandler.class) == null) {
         final FadvisedFileRegion partition = new FadvisedFileRegion(spill,
-            file.startOffset, file.length(), manageOsCache, readaheadLength,
+            file.startOffset(), file.length(), manageOsCache, readaheadLength,
             readaheadPool, file.getFile().getAbsolutePath());
         writeFuture = ch.write(partition);
         writeFuture.addListener(new FileCloseListener(partition, null, 0, null));
       } else {
         // HTTPS cannot be done with zero copy.
         final FadvisedChunkedFile chunk = new FadvisedChunkedFile(spill,
-            file.startOffset, file.length, sslFileBufferSize,
+            file.startOffset(), file.length(), sslFileBufferSize,
             manageOsCache, readaheadLength, readaheadPool,
             file.getFile().getAbsolutePath());
         writeFuture = ch.write(chunk);
       }
       metrics.shuffleConnections.incr();
-      metrics.shuffleOutputBytes.incr(file.length); // optimistic
+      metrics.shuffleOutputBytes.incr(file.length()); // optimistic
       return writeFuture;
     }
 

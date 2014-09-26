@@ -79,7 +79,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
     FileSystem fs = new RawLocalFileSystem();
     fs.mkdirs(storeTablePath);
     this.appender = (FileAppender) StorageManagerFactory.getStorageManager(context.getConf()).getAppender(meta,
-        outSchema, new Path(storeTablePath, "output"));
+        outSchema, new Path(storeTablePath, "output" + "." + RawFile.FILE_EXTENSION));
     this.appender.enableStats();
     this.appender.init();
     this.indexWriter = bst.getIndexWriter(new Path(storeTablePath, "index"),

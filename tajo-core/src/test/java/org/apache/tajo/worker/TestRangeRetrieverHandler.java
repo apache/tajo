@@ -182,7 +182,7 @@ public class TestRangeRetrieverHandler {
 
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.RAW, new KeyValueSet());
     SeekableScanner scanner = StorageManagerFactory.getSeekableScanner(conf, meta, schema,
-        StorageUtil.concatPath(testDir, "output", "output"));
+        StorageUtil.concatPath(testDir, "output", "output" + "." + RawFile.FILE_EXTENSION));
 
     scanner.init();
     int cnt = 0;
@@ -305,7 +305,7 @@ public class TestRangeRetrieverHandler {
     reader.open();
     TableMeta outputMeta = CatalogUtil.newTableMeta(StoreType.RAW, new KeyValueSet());
     SeekableScanner scanner = StorageManagerFactory.getSeekableScanner(conf, outputMeta, schema,
-        StorageUtil.concatPath(testDir, "output", "output"));
+        StorageUtil.concatPath(testDir, "output", "output" + "." + RawFile.FILE_EXTENSION));
     scanner.init();
     int cnt = 0;
     while(scanner.next() != null) {

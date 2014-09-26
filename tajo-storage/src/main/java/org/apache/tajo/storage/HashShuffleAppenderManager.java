@@ -115,7 +115,8 @@ public class HashShuffleAppenderManager {
       //LOG.info(ebId + "'s basedir is created (" + baseDirPath + ")");
 
       // If EB has many partition, too many shuffle file are in single directory.
-      return StorageUtil.concatPath(baseDirPath, "" + getPartParentId(partId, systemConf), "" + partId);
+      return StorageUtil.concatPath(baseDirPath, "" + getPartParentId(partId, systemConf), "" + partId +
+          "." + RawFile.FILE_EXTENSION);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       throw new IOException(e);

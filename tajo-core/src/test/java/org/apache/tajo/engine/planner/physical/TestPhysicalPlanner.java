@@ -1076,7 +1076,7 @@ public class TestPhysicalPlanner {
     BSTIndex.BSTIndexReader reader = bst.getIndexReader(new Path(workDir, "output/index"),
         keySchema, comp);
     reader.open();
-    Path outputPath = StorageUtil.concatPath(workDir, "output", "output");
+    Path outputPath = StorageUtil.concatPath(workDir, "output", "output" + "." + RawFile.FILE_EXTENSION);
     TableMeta meta = CatalogUtil.newTableMeta(channel.getStoreType(), new KeyValueSet());
     SeekableScanner scanner =
         StorageManagerFactory.getSeekableScanner(conf, meta, exec.getSchema(), outputPath);

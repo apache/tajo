@@ -25,6 +25,7 @@ import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
@@ -32,10 +33,7 @@ import org.apache.tajo.engine.eval.BinaryEval;
 import org.apache.tajo.engine.eval.EvalType;
 import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.planner.LogicalOptimizer;
-import org.apache.tajo.engine.planner.LogicalPlan;
-import org.apache.tajo.engine.planner.LogicalPlanner;
-import org.apache.tajo.engine.planner.PlanningException;
+import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
@@ -55,6 +53,8 @@ import java.util.Map;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class TestGlobalPlanner {
   private static Log LOG = LogFactory.getLog(TestGlobalPlanner.class);
@@ -80,10 +80,10 @@ public class TestGlobalPlanner {
 
     // TPC-H Schema for Complex Queries
     String [] tables = {
-        "part", "supplier", "partsupp", "nation", "region", "lineitem", "orders", "customer"
+        "part", "supplier", "partsupp", "nation", "region", "lineitem", "orders", "customer", "customer_parts"
     };
     int [] volumes = {
-        100, 200, 50, 5, 5, 800, 300, 100
+        100, 200, 50, 5, 5, 800, 300, 100, 707
     };
     tpch = new TPCH();
     tpch.loadSchemas();
@@ -96,6 +96,19 @@ public class TestGlobalPlanner {
           CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tables[i]), tpch.getSchema(tables[i]), m,
           CommonTestingUtil.getTestDir());
       d.setStats(stats);
+
+      if (tables[i].equals(TPCH.CUSTOMER_PARTS)) {
+        Schema expressionSchema = new Schema();
+        expressionSchema.addColumn("c_nationkey", TajoDataTypes.Type.INT4);
+        PartitionMethodDesc partitionMethodDesc = new PartitionMethodDesc(
+            DEFAULT_DATABASE_NAME,
+            tables[i],
+            CatalogProtos.PartitionType.COLUMN,
+            "c_nationkey",
+            expressionSchema);
+
+        d.setPartitionMethod(partitionMethodDesc);
+      }
       catalog.createTable(d);
     }
 
@@ -174,10 +187,10 @@ public class TestGlobalPlanner {
     visitChildExecutionBLock(plan, root, evalMap);
 
     // Find required shuffleKey.
-    Assert.assertTrue(evalMap.get(eval1).booleanValue());
+    assertTrue(evalMap.get(eval1).booleanValue());
 
     // Find that ShuffleKeys only includes equi-join conditions
-    Assert.assertFalse(evalMap.get(eval2).booleanValue());
+    assertFalse(evalMap.get(eval2).booleanValue());
   }
 
   private void visitChildExecutionBLock(MasterPlan plan, ExecutionBlock parentBlock,
@@ -289,5 +302,44 @@ public class TestGlobalPlanner {
   @Test
   public void testTPCH_Q5() throws Exception {
     buildPlan(FileUtil.readTextFile(new File("benchmark/tpch/q5.sql")));
+  }
+
+  @Test
+  public void testCheckIfSimpleQuery() throws Exception {
+    MasterPlan plan = buildPlan("select * from customer");
+    assertTrue(PlannerUtil.checkIfSimpleQuery(plan.getLogicalPlan()));
+
+    //partition table
+    plan = buildPlan("select * from customer_parts");
+    assertTrue(PlannerUtil.checkIfSimpleQuery(plan.getLogicalPlan()));
+
+    plan = buildPlan("select * from customer where c_nationkey = 1");
+    assertFalse(PlannerUtil.checkIfSimpleQuery(plan.getLogicalPlan()));
+
+    plan = buildPlan("select * from customer_parts where c_nationkey = 1");
+    assertFalse(PlannerUtil.checkIfSimpleQuery(plan.getLogicalPlan()));
+
+    // same column order
+    plan = buildPlan("select c_custkey, c_name, c_address, c_nationkey, c_phone, c_acctbal, c_mktsegment, c_comment" +
+        " from customer");
+    assertTrue(PlannerUtil.checkIfSimpleQuery(plan.getLogicalPlan()));
+
+    plan = buildPlan("select c_custkey, c_name, c_address, c_phone, c_acctbal, c_mktsegment, c_comment, c_nationkey " +
+        " from customer_parts");
+    assertTrue(PlannerUtil.checkIfSimpleQuery(plan.getLogicalPlan()));
+
+    // different column order
+    plan = buildPlan("select c_name, c_custkey, c_address, c_nationkey, c_phone, c_acctbal, c_mktsegment, c_comment" +
+        " from customer");
+    assertFalse(PlannerUtil.checkIfSimpleQuery(plan.getLogicalPlan()));
+
+    plan = buildPlan("select c_name, c_custkey, c_address, c_phone, c_acctbal, c_mktsegment, c_comment, c_nationkey " +
+        " from customer_parts");
+    assertFalse(PlannerUtil.checkIfSimpleQuery(plan.getLogicalPlan()));
+
+    plan = buildPlan("insert into customer_parts " +
+        " select c_name, c_custkey, c_address, c_phone, c_acctbal, c_mktsegment, c_comment, c_nationkey " +
+        " from customer");
+    assertFalse(PlannerUtil.checkIfSimpleQuery(plan.getLogicalPlan()));
   }
 }

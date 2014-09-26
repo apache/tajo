@@ -18,11 +18,14 @@
 
 package org.apache.tajo.engine.planner;
 
+import org.apache.commons.configuration.Configuration;
+import org.apache.hadoop.fs.*;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -34,13 +37,18 @@ import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
@@ -317,5 +325,59 @@ public class TestPlannerUtil {
     innerComparator = comparators[1];
     assertTrue(innerComparator.compare(t1, t2) < 0);
     assertTrue(innerComparator.compare(t2, t1) > 0);
+  }
+
+  @Test
+  public void testGetNonZeroLengthDataFiles() throws Exception {
+    String queryFiles = ClassLoader.getSystemResource("queries").toString() + "/TestSelectQuery";
+    Path path = new Path(queryFiles);
+
+    TableDesc tableDesc = new TableDesc();
+    tableDesc.setName("Test");
+    tableDesc.setPath(path);
+
+    FileSystem fs = path.getFileSystem(util.getConfiguration());
+
+    List<Path> expectedFiles = new ArrayList<Path>();
+    RemoteIterator<LocatedFileStatus> files = fs.listFiles(path, true);
+    while (files.hasNext()) {
+      LocatedFileStatus file = files.next();
+      if (file.isFile() && file.getLen() > 0) {
+        expectedFiles.add(file.getPath());
+      }
+    }
+    int fileNum = expectedFiles.size() / 5;
+
+    int numResultFiles = 0;
+    for (int i = 0; i <= 5; i++) {
+      int start = i * fileNum;
+
+      FragmentProto[] fragments =
+          PlannerUtil.getNonZeroLengthDataFiles(util.getConfiguration(), tableDesc, start, fileNum);
+      assertNotNull(fragments);
+
+      numResultFiles += fragments.length;
+      int expectedSize = fileNum;
+      if (i == 5) {
+        //last
+        expectedSize = expectedFiles.size() - (fileNum * 5);
+      }
+
+      comparePath(expectedFiles, fragments, start, expectedSize);
+    }
+
+    assertEquals(expectedFiles.size(), numResultFiles);
+  }
+
+  private void comparePath(List<Path> expectedFiles, FragmentProto[] fragments,
+                           int startIndex, int expectedSize) throws Exception {
+    assertEquals(expectedSize, fragments.length);
+
+    int index = 0;
+
+    for (int i = startIndex; i < startIndex + expectedSize; i++, index++) {
+      FileFragment fragment = FragmentConvertor.convert(util.getConfiguration(), StoreType.CSV, fragments[index]);
+      assertEquals(expectedFiles.get(i), fragment.getPath());
+    }
   }
 }
