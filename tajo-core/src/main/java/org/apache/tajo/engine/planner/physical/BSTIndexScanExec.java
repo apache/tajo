@@ -114,7 +114,9 @@ public class BSTIndexScanExec extends PhysicalExec {
            projector.eval(tuple, outTuple);
            return outTuple;
          } else {
-           fileScanner.seek(reader.next());
+           long offset = reader.next();
+           if (offset == -1) return null;
+           else fileScanner.seek(offset);
          }
        }
      }
