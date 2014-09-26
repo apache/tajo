@@ -469,6 +469,9 @@ Release 0.9.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1060: Apply updated hadoop versions to README and BUILDING files.
+    (jinho)
+
     TAJO-667: Add math function documentation. (Jongyoung Park via hyunsik)
 
     TAJO-1016: Refactor worker rpc information. (jinho)
