@@ -49,7 +49,7 @@ public interface Scanner extends SchemaObject, Closeable {
    * @param rowBlock
    * @return
    */
-  boolean nextFetch(OffHeapRowBlock rowBlock);
+  boolean nextFetch(OffHeapRowBlock rowBlock) throws IOException;
   
   /**
    * Reset the cursor. After executed, the scanner 

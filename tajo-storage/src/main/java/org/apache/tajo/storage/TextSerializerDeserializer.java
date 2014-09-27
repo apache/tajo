@@ -25,8 +25,11 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
+import org.apache.tajo.tuple.offheap.RowWriter;
 import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.NumberUtil;
+import org.apache.tajo.util.datetime.DateTimeUtil;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -35,7 +38,7 @@ import java.io.OutputStream;
 public class TextSerializerDeserializer implements SerializerDeserializer {
   public static final byte[] trueBytes = "true".getBytes();
   public static final byte[] falseBytes = "false".getBytes();
-  private ProtobufJsonFormat protobufJsonFormat = ProtobufJsonFormat.getInstance();
+  private static ProtobufJsonFormat protobufJsonFormat = ProtobufJsonFormat.getInstance();
 
 
   @Override
@@ -211,6 +214,95 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
         break;
     }
     return datum;
+  }
+
+  public static void write(RowWriter writer, Column col, byte [] bytes, int offset, int length, byte [] nullChar) throws IOException {
+    TajoDataTypes.Type type = col.getDataType().getType();
+    boolean nullField;
+    if (type == TajoDataTypes.Type.TEXT || type == TajoDataTypes.Type.CHAR) {
+      nullField = isNullText(bytes, offset, length, nullChar);
+    } else {
+      nullField = isNull(bytes, offset, length, nullChar);
+    }
+
+    if (nullField) {
+      writer.skipField();
+      return;
+    } else {
+      switch (col.getDataType().getType()) {
+      case BOOLEAN:
+        writer.putBool(bytes[offset] == 't' || bytes[offset] == 'T');
+        break;
+
+      case CHAR:
+      case TEXT:
+        writer.putText(bytes);
+        break;
+
+      case INT1:
+      case INT2:
+        writer.putInt2((short) NumberUtil.parseInt(bytes, offset, length));
+        break;
+
+      case INT4:
+        writer.putInt4(NumberUtil.parseInt(bytes, offset, length));
+        break;
+
+      case INT8:
+        writer.putInt8(Long.parseLong(new String(bytes, offset, length)));
+        break;
+
+      case FLOAT4:
+        writer.putFloat4(Float.parseFloat(new String(bytes, offset, length)));
+        break;
+
+      case FLOAT8:
+        writer.putFloat8(Double.parseDouble(new String(bytes, offset, length)));
+        break;
+
+      case DATE:
+        writer.putDate(DateTimeUtil.toJulianDate(new String(bytes, offset, length)));
+        break;
+
+      case TIME:
+        writer.putInt8(DateTimeUtil.toJulianTime(new String(bytes, offset, length)));
+        break;
+
+      case TIMESTAMP:
+        writer.putInt8(DateTimeUtil.toJulianTimestamp(new String(bytes, offset, length)));
+        break;
+
+      case INTERVAL:
+        writer.putInterval(DatumFactory.createInterval(new String(bytes, offset, length)));
+        break;
+
+      case PROTOBUF:
+        ProtobufDatumFactory factory = ProtobufDatumFactory.get(col.getDataType());
+        Message.Builder builder = factory.newBuilder();
+        try {
+          byte[] protoBytes = new byte[length];
+          System.arraycopy(bytes, offset, protoBytes, 0, length);
+          protobufJsonFormat.merge(protoBytes, builder);
+          writer.putProtoDatum(factory.createDatum(builder.build()));
+        } catch (IOException e) {
+          e.printStackTrace();
+          throw new RuntimeException(e);
+        }
+
+        break;
+
+      case INET4:
+        writer.putInet4(NetUtils.convertIPStringToInt(new String(bytes, offset, length)));
+        break;
+
+      case BLOB:
+        writer.putBlob(Base64.decodeBase64(bytes));
+        break;
+
+      default:
+        writer.skipField();
+      }
+    }
   }
 
   private static boolean isNull(byte[] val, int offset, int length, byte[] nullBytes) {

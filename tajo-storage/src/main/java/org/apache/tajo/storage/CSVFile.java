@@ -35,11 +35,15 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.rcfile.NonSyncByteArrayOutputStream;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlockWriter;
+import org.apache.tajo.tuple.offheap.RowWriter;
 import org.apache.tajo.util.BytesUtils;
 
 import java.io.*;
@@ -478,6 +482,53 @@ public class CSVFile {
         LOG.error("Tuple list current index: " + currentIdx, t);
         throw new IOException(t);
       }
+    }
+
+    TextSerializerDeserializer deserializer = new TextSerializerDeserializer();
+
+    boolean hasNext() throws IOException {
+      if (currentIdx == validIdx) {
+        if (eof) {
+          return false;
+        } else {
+          page();
+
+          if(currentIdx == validIdx){
+            return false;
+          }
+        }
+      }
+
+      return true;
+    }
+
+    @Override
+    public boolean nextFetch(OffHeapRowBlock rowBlock) throws IOException {
+      rowBlock.clear();
+      OffHeapRowBlockWriter writer = (OffHeapRowBlockWriter) rowBlock.getWriter();
+
+      while(hasNext() && rowBlock.rows() < rowBlock.maxRowNum()) {
+        byte[][] cells = BytesUtils.splitPreserveAllTokens(buffer.getData(), startOffsets.get(currentIdx),
+            rowLengthList.get(currentIdx), delimiter, targetColumnIndexes);
+        currentIdx++;
+
+        int fieldIdx = 0;
+        writer.startRow();
+        for (; fieldIdx < cells.length && fieldIdx < schema.size(); fieldIdx++) {
+          if (cells[fieldIdx] == null) {
+            writer.skipField();
+          } else {
+            deserializer.write(writer, schema.getColumn(fieldIdx), cells[fieldIdx], 0, cells[fieldIdx].length, nullChars);
+
+          }
+        }
+        for (; fieldIdx < schema.size(); fieldIdx++) {
+          writer.skipField();
+        }
+        writer.endRow();
+      }
+
+      return rowBlock.rows() > 0;
     }
 
     private boolean isCompress() {

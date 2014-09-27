@@ -145,6 +145,8 @@ public abstract class UnSafeTuple implements Tuple {
     switch (types[fieldId].getType()) {
     case BOOLEAN:
       return DatumFactory.createBool(getBool(fieldId));
+    case CHAR:
+      return DatumFactory.createChar(getBytes(fieldId));
     case INT1:
     case INT2:
       return DatumFactory.createInt2(getInt2(fieldId));
@@ -158,6 +160,8 @@ public abstract class UnSafeTuple implements Tuple {
       return DatumFactory.createFloat8(getFloat8(fieldId));
     case TEXT:
       return DatumFactory.createText(getText(fieldId));
+    case BLOB:
+      return DatumFactory.createBlob(getBytes(fieldId));
     case TIMESTAMP:
       return DatumFactory.createTimestamp(getInt8(fieldId));
     case DATE:
