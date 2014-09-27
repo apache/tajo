@@ -18,6 +18,7 @@
 
 package org.apache.tajo.master;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 import org.apache.commons.logging.Log;
@@ -113,6 +114,26 @@ public class GlobalEngine extends AbstractService {
 
   public void stop() {
     super.stop();
+  }
+
+  @VisibleForTesting
+  public SQLAnalyzer getAnalyzer() {
+    return analyzer;
+  }
+
+  @VisibleForTesting
+  public PreLogicalPlanVerifier getPreLogicalPlanVerifier() {
+    return preVerifier;
+  }
+
+  @VisibleForTesting
+  public LogicalPlanner getLogicalPlanner() {
+    return planner;
+  }
+
+  @VisibleForTesting
+  public LogicalOptimizer getLogicalOptimizer() {
+    return optimizer;
   }
 
   private QueryContext createQueryContext(Session session) {
