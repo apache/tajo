@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.NetUtils;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
@@ -36,11 +37,7 @@ public class Inet4Datum extends Datum {
 
 	public Inet4Datum(String addr) {
     super(Type.INET4);
-		String [] elems = addr.split("\\.");
-    address = Integer.parseInt(elems[3]) & 0xFF
-        | ((Integer.parseInt(elems[2]) << 8) & 0xFF00)
-        | ((Integer.parseInt(elems[1]) << 16) & 0xFF0000)
-        | ((Integer.parseInt(elems[0]) << 24) & 0xFF000000);
+    address = NetUtils.convertIPStringToInt(addr);
   }
 
 	public Inet4Datum(byte[] addr) {

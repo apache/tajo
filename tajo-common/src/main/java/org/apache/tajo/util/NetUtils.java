@@ -101,4 +101,13 @@ public class NetUtils {
     }
     return host;
   }
+
+  public static int convertIPStringToInt(String ipAddr) {
+    String [] elems = ipAddr.split("\\.");
+    int address = Integer.parseInt(elems[3]) & 0xFF
+        | ((Integer.parseInt(elems[2]) << 8) & 0xFF00)
+        | ((Integer.parseInt(elems[1]) << 16) & 0xFF0000)
+        | ((Integer.parseInt(elems[0]) << 24) & 0xFF000000);
+    return address;
+  }
 }

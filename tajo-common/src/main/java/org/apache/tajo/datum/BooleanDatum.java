@@ -167,12 +167,10 @@ public class BooleanDatum extends Datum {
   public int compareTo(Datum datum) {
     switch (datum.type()) {
     case BOOLEAN:
-      if (val && !datum.asBool()) {
-        return -1;
-      } else if (val && datum.asBool()) {
-        return 1;
-      } else {
+      if ((val ^ datum.asBool()) == false) { // if both are the same regardless of its value.
         return 0;
+      } else {
+        return val ? -1 : 1;
       }
     default:
       throw new InvalidOperationException(datum.type());

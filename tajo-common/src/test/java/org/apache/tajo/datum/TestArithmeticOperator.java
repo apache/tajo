@@ -62,20 +62,20 @@ public class TestArithmeticOperator {
   @Test
   public void testInt2Datum() throws Exception {
     //plus
-    runAndAssert("plus", new Int2Datum((short)10), new Int2Datum((short)5), new Int2Datum((short)15));
+    runAndAssert("plus", new Int2Datum((short)10), new Int2Datum((short)5), new Int4Datum((short)15));
     runAndAssert("plus", new Int2Datum((short)10), new Int4Datum(5), new Int4Datum(15));
     runAndAssert("plus", new Int2Datum((short)10), new Int8Datum(5), new Int8Datum(15));
     runAndAssert("plus", new Int2Datum((short)10), new Float4Datum(5.0f), new Float4Datum(15.0f));
     runAndAssert("plus", new Int2Datum((short)10), new Float8Datum(5.0), new Float8Datum(15.0));
 
     //minus
-    runAndAssert("minus", new Int2Datum((short)10), new Int2Datum((short)5), new Int2Datum((short)5));
+    runAndAssert("minus", new Int2Datum((short)10), new Int2Datum((short)5), new Int4Datum((short)5));
     runAndAssert("minus", new Int2Datum((short)10), new Int4Datum(5), new Int4Datum(5));
     runAndAssert("minus", new Int2Datum((short)10), new Int8Datum(5), new Int8Datum(5));
     runAndAssert("minus", new Int2Datum((short)10), new Float4Datum(5.0f), new Float4Datum(5.0f));
     runAndAssert("minus", new Int2Datum((short)10), new Float8Datum(5.0), new Float8Datum(5.0));
 
-    runAndAssert("minus", new Int2Datum((short)5), new Int2Datum((short)10), new Int2Datum((short)-5));
+    runAndAssert("minus", new Int2Datum((short)5), new Int2Datum((short)10), new Int4Datum((short)-5));
     runAndAssert("minus", new Int2Datum((short)5), new Int4Datum(10), new Int4Datum(-5));
     runAndAssert("minus", new Int2Datum((short)5), new Int8Datum(10), new Int8Datum(-5));
     runAndAssert("minus", new Int2Datum((short)5), new Float4Datum(10.0f), new Float4Datum(-5.0f));
@@ -89,7 +89,7 @@ public class TestArithmeticOperator {
     runAndAssert("multiply", new Int2Datum((short)10), new Float8Datum(5.0), new Float8Datum(50.0));
 
     //divide
-    runAndAssert("divide", new Int2Datum((short)10), new Int2Datum((short)5), new Int2Datum((short)2));
+    runAndAssert("divide", new Int2Datum((short)10), new Int2Datum((short)5), new Int4Datum((short)2));
     runAndAssert("divide", new Int2Datum((short)10), new Int4Datum(5), new Int4Datum(2));
     runAndAssert("divide", new Int2Datum((short)10), new Int8Datum(5), new Int8Datum(2));
     runAndAssert("divide", new Int2Datum((short)10), new Float4Datum(5.0f), new Float4Datum(2.0f));
@@ -102,7 +102,7 @@ public class TestArithmeticOperator {
     runAndAssert("divide", new Int2Datum((short)10), new Float8Datum(0.0), NullDatum.get());
 
     //modular
-    runAndAssert("modular", new Int2Datum((short)10), new Int2Datum((short)3), new Int2Datum((short)1));
+    runAndAssert("modular", new Int2Datum((short)10), new Int2Datum((short)3), new Int4Datum((short)1));
     runAndAssert("modular", new Int2Datum((short)10), new Int4Datum(3), new Int4Datum(1));
     runAndAssert("modular", new Int2Datum((short)10), new Int8Datum(3), new Int8Datum(1));
     runAndAssert("modular", new Int2Datum((short)10), new Float4Datum(3.0f), new Float4Datum(1.0f));

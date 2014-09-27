@@ -195,7 +195,6 @@ public class Int2Datum extends NumericDatum {
   public Datum plus(Datum datum) {
     switch (datum.type()) {
     case INT2:
-      return DatumFactory.createInt2((short) (val + datum.asInt2()));
     case INT4:
       return DatumFactory.createInt4(val + datum.asInt4());
     case INT8:
@@ -220,7 +219,6 @@ public class Int2Datum extends NumericDatum {
   public Datum minus(Datum datum) {
     switch (datum.type()) {
     case INT2:
-      return DatumFactory.createInt2((short) (val - datum.asInt2()));
     case INT4:
       return DatumFactory.createInt4(val - datum.asInt4());
     case INT8:
@@ -245,7 +243,6 @@ public class Int2Datum extends NumericDatum {
   public Datum multiply(Datum datum) {
     switch (datum.type()) {
     case INT2:
-      return DatumFactory.createInt4(val * datum.asInt2());
     case INT4:
       return DatumFactory.createInt4(val * datum.asInt4());
     case INT8:
@@ -268,11 +265,6 @@ public class Int2Datum extends NumericDatum {
   public Datum divide(Datum datum) {
     switch (datum.type()) {
       case INT2:
-        short paramValueI2 = datum.asInt2();
-        if (!validateDivideZero(paramValueI2)) {
-          return NullDatum.get();
-        }
-        return DatumFactory.createInt2((short) (val / paramValueI2));
       case INT4:
         int paramValueI4 = datum.asInt4();
         if (!validateDivideZero(paramValueI4)) {
@@ -308,11 +300,6 @@ public class Int2Datum extends NumericDatum {
   public Datum modular(Datum datum) {
     switch (datum.type()) {
       case INT2:
-        short paramValueI2 = datum.asInt2();
-        if (!validateDivideZero(paramValueI2)) {
-          return NullDatum.get();
-        }
-        return DatumFactory.createInt2((short) (val % paramValueI2));
       case INT4:
         int paramValueI4 = datum.asInt4();
         if (!validateDivideZero(paramValueI4)) {
