@@ -3,7 +3,7 @@ Executing as background process
 *********************************
 
 
-If you execute tsql as background process, tsql will exit before execute a query because of jconsole architecture as
+If you execute tsql as a background process, tsql will exit before executing a query because of jconsole architecture as
 follows:
 
  .. code-block:: sql

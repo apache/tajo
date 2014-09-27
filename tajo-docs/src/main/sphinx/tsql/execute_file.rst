@@ -39,7 +39,7 @@ Tajo can execute more queries that were saved to a file using the -f file argume
 Setting parameter value in SQL file
 -----------------------------------------------
 
-If you wish to set a parameter value in the SQL file, you can set with the -param key=value option.When you use this feature, you have to use the parameter in the file as follows:
+If you wish to set a parameter value in the SQL file, you can set with the -param key=value option. When you use this feature, you have to use the parameter in the file as follows:
 
 .. code-block:: sql
 

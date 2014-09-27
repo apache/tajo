@@ -7,7 +7,7 @@ Administration Commands
 Synopsis
 ==========
 
-Tsql provides commands for administrator as follows as follows:
+Tsql provides commands for administrator as follows:
 
 .. code-block:: sql
 
@@ -26,7 +26,7 @@ Tsql provides commands for administrator as follows as follows:
 Basic usages
 -----------------------------------------------
 
-``-list`` options shows a list of all running queries as follows: ::
+``-list`` option shows a list of all running queries as follows: ::
 
   default> \admin -list
   QueryId              State               StartTime           Query
@@ -34,7 +34,7 @@ Basic usages
   q_1411357607375_0006 QUERY_RUNNING       2014-09-23 07:19:40 select count(*) from lineitem
 
 
-``-desc`` options shows a detailed description of a specified running query s as follows: ::
+``-desc`` option shows a detailed description of a specified running query as follows: ::
 
   default> \admin -desc q_1411357607375_0006
   Id: 1
@@ -47,14 +47,14 @@ Basic usages
   select count(*) from lineitem
 
 
-``-kill`` options kills a specified running queries as follows: ::
+``-kill`` option kills a specified running query as follows: ::
 
   default> \admin -kill q_1411357607375_0007
   q_1411357607375_0007 is killed successfully.
 
 
 
-``-showmasters`` options shows a list of all tajo masters as follows: ::
+``-showmasters`` option shows a list of all tajo masters as follows: ::
 
   default> \admin -showmasters
   grtajo01

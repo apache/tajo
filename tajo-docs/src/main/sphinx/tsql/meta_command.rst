@@ -105,7 +105,7 @@ The prompt ``default>`` indicates the current database. Basically, all SQL state
   work1>
 
 
-``\df`` command shows a list of all buit-in function as follows: ::
+``\df`` command shows a list of all built-in functions as follows: ::
 
   default> \df
    Name            | Result type     | Argument types        | Description                                   | Type
@@ -297,17 +297,26 @@ The prompt ``default>`` indicates the current database. Basically, all SQL state
 
 ``\df [function name]`` command also shows a function description as follows: ::
 
-  default> \df trim
+  default> \df round;
    Name            | Result type     | Argument types        | Description                                   | Type
   -----------------+-----------------+-----------------------+-----------------------------------------------+-----------
-   trim            | TEXT            | TEXT                  |  Remove the longest string consisting only of | GENERAL
-   trim            | TEXT            | TEXT,TEXT             |  Remove the longest string consisting only of | GENERAL
+   round           | INT8            | FLOAT4                | Round to nearest integer.                     | GENERAL
+   round           | INT8            | FLOAT8                | Round to nearest integer.                     | GENERAL
+   round           | INT8            | INT4                  | Round to nearest integer.                     | GENERAL
+   round           | INT8            | INT8                  | Round to nearest integer.                     | GENERAL
+   round           | FLOAT8          | FLOAT8,INT4           | Round to s decimalN places.                   | GENERAL
+   round           | FLOAT8          | INT8,INT4             | Round to s decimalN places.                   | GENERAL
 
-  (2) rows
+  (6) rows
 
-  Function:    TEXT trim(text)
-  Description:  Remove the longest string consisting only of  characters in characters (a space by default) from the start and end of string.
+  Function:    INT8 round(float4)
+  Description: Round to nearest integer.
   Example:
-  > SELECT trim('xyxtrimyyx', 'xy');
-  trim
+  > SELECT round(42.4)
+  42
 
+  Function:    FLOAT8 round(float8,int4)
+  Description: Round to s decimalN places.
+  Example:
+  > SELECT round(42.4382, 2)
+  42.44
