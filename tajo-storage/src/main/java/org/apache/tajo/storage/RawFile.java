@@ -19,6 +19,7 @@
 package org.apache.tajo.storage;
 
 import com.google.protobuf.Message;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -32,6 +33,7 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatumFactory;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.BitArray;
 
 import java.io.File;
@@ -47,36 +49,31 @@ public class RawFile {
   public static class RawFileScanner extends FileScanner implements SeekableScanner {
     private FileChannel channel;
     private DataType[] columnTypes;
-    private Path path;
 
     private ByteBuffer buffer;
+    private int bufferSize;
     private Tuple tuple;
 
-    private int headerSize = 0;
+    private int headerSize = 0; // Header size of a tuple
     private BitArray nullFlags;
     private static final int RECORD_SIZE = 4;
     private boolean eof = false;
-    private long fileSize;
+    private long fileLimit; // If this.fragment represents a complete file, this value is equal to the file's size
+    private long numBytesRead;
     private FileInputStream fis;
     private long recordCount;
 
-    public RawFileScanner(Configuration conf, Schema schema, TableMeta meta, Path path) throws IOException {
-      super(conf, schema, meta, null);
-      this.path = path;
-    }
-
-    @SuppressWarnings("unused")
     public RawFileScanner(Configuration conf, Schema schema, TableMeta meta, FileFragment fragment) throws IOException {
-      this(conf, schema, meta, fragment.getPath());
+      super(conf, schema, meta, fragment);
     }
 
     public void init() throws IOException {
       File file;
       try {
-        if (path.toUri().getScheme() != null) {
-          file = new File(path.toUri());
+        if (fragment.getPath().toUri().getScheme() != null) {
+          file = new File(fragment.getPath().toUri());
         } else {
-          file = new File(path.toString());
+          file = new File(fragment.getPath().toString());
         }
       } catch (IllegalArgumentException iae) {
         throw new IOException(iae);
@@ -84,16 +81,22 @@ public class RawFile {
 
       fis = new FileInputStream(file);
       channel = fis.getChannel();
-      fileSize = channel.size();
+      fileLimit = fragment.getStartKey() + fragment.getEndKey(); // fileLimit is less than or equal to fileSize
 
       if (tableStats != null) {
-        tableStats.setNumBytes(fileSize);
+        tableStats.setNumBytes(fragment.getEndKey());
       }
       if (LOG.isDebugEnabled()) {
-        LOG.debug("RawFileScanner open:" + path + "," + channel.position() + ", size :" + channel.size());
+        LOG.debug("RawFileScanner open:" + fragment + "," + channel.position() + ", total file size :" + channel.size()
+            + ", fragment size :" + fragment.getEndKey() + ", fileLimit: " + fileLimit);
       }
 
-      buffer = ByteBuffer.allocateDirect(64 * 1024);
+      if (fragment.getEndKey() < 64 * StorageUnit.KB) {
+	      bufferSize = fragment.getEndKey().intValue();
+      } else {
+	      bufferSize = 64 * StorageUnit.KB;
+      }
+      buffer = ByteBuffer.allocateDirect(bufferSize);
 
       columnTypes = new DataType[schema.size()];
       for (int i = 0; i < schema.size(); i++) {
@@ -101,13 +104,13 @@ public class RawFile {
       }
 
       tuple = new VTuple(columnTypes.length);
+      nullFlags = new BitArray(schema.size());
+      headerSize = RECORD_SIZE + 2 + nullFlags.bytesLength(); // The middle 2 bytes is for NullFlagSize
 
       // initial read
-      channel.read(buffer);
+      channel.position(fragment.getStartKey());
+      numBytesRead = channel.read(buffer);
       buffer.flip();
-
-      nullFlags = new BitArray(schema.size());
-      headerSize = RECORD_SIZE + 2 + nullFlags.bytesLength();
 
       super.init();
     }
@@ -125,19 +128,31 @@ public class RawFile {
       } else {
         buffer.clear();
         channel.position(offset);
-        channel.read(buffer);
+        int bytesRead = channel.read(buffer);
+        numBytesRead = bytesRead;
         buffer.flip();
         eof = false;
       }
     }
 
     private boolean fillBuffer() throws IOException {
+      if (numBytesRead >= fragment.getEndKey()) {
+        eof = true;
+        return false;
+      }
+      int currentDataSize = buffer.remaining();
       buffer.compact();
-      if (channel.read(buffer) == -1) {
+      int bytesRead = channel.read(buffer);
+      if (bytesRead == -1) {
         eof = true;
         return false;
       } else {
         buffer.flip();
+        long realRemaining = fragment.getEndKey() - numBytesRead;
+        numBytesRead += bytesRead;
+        if (realRemaining < bufferSize) {
+          buffer.limit(currentDataSize + (int) realRemaining);
+        }
         return true;
       }
     }
@@ -356,7 +371,7 @@ public class RawFile {
         }
       }
 
-      if(!buffer.hasRemaining() && channel.position() == fileSize){
+      if(!buffer.hasRemaining() && channel.position() == fileLimit){
         eof = true;
       }
       return new VTuple(tuple);
@@ -368,7 +383,7 @@ public class RawFile {
       buffer.clear();
       // reload initial buffer
       channel.position(0);
-      channel.read(buffer);
+      numBytesRead = channel.read(buffer);
       buffer.flip();
       eof = false;
     }
@@ -376,7 +391,7 @@ public class RawFile {
     @Override
     public void close() throws IOException {
       if (tableStats != null) {
-        tableStats.setReadBytes(fileSize);
+        tableStats.setReadBytes(fragment.getEndKey());
         tableStats.setNumRows(recordCount);
       }
 
@@ -410,14 +425,14 @@ public class RawFile {
         }
 
         if(eof || channel == null) {
-          tableStats.setReadBytes(fileSize);
+          tableStats.setReadBytes(fragment.getEndKey());
           return 1.0f;
         }
 
         if (filePos == 0) {
           return 0.0f;
         } else {
-          return Math.min(1.0f, ((float)filePos / (float)fileSize));
+          return Math.min(1.0f, ((float)filePos / fragment.getEndKey().floatValue()));
         }
       } catch (IOException e) {
         LOG.error(e.getMessage(), e);

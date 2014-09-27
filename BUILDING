@@ -42,8 +42,8 @@ Maven build goals:
 
  Build options:
   * Use -Dtar to create a TAR with the distribution (using -Pdist)
-  * Use -Dhadoop.version to build with the specific hadoop version (-Dhadoop.version=2.3.0)
-    * Currently, 2.2.0, 2.3.0, and 2.4.0 are supported.
+  * Use -Dhadoop.version to build with the specific hadoop version (-Dhadoop.version=2.5.1)
+    * Currently, 2.2.0 or higher are supported.
 
  Tests options:
   * Use -DskipTests to skip tests when running the following Maven goals:
@@ -57,6 +57,8 @@ Building distributions:
 
 Create binary distribution
 
-  $ mvn clean install -Pdist -DskipTests -Dtar
+  $ mvn clean install -Pdist -DskipTests -Dtar -Dhadoop.version=2.X.X
+
+You should substitute 2.X.X with your Hadoop version.
 
 --------------------------------------------------------------------------------
