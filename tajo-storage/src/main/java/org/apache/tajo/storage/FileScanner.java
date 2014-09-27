@@ -29,7 +29,9 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
 
 import java.io.IOException;
 
@@ -78,6 +80,11 @@ public abstract class FileScanner implements Scanner {
   @Override
   public Schema getSchema() {
     return schema;
+  }
+
+  @Override
+  public boolean nextFetch(OffHeapRowBlock rowBlock) {
+    throw new UnimplementedException("nextFetch(OffHeapRowBlock) is not implemented");
   }
 
   @Override

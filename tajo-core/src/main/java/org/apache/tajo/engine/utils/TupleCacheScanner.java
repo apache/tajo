@@ -21,8 +21,10 @@ package org.apache.tajo.engine.utils;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -60,6 +62,11 @@ public class TupleCacheScanner implements Scanner {
     } else {
       return null;
     }
+  }
+
+  @Override
+  public boolean nextFetch(OffHeapRowBlock rowBlock) {
+    throw new UnimplementedException("nextFetch(OffHeapRowBlock) is not implemented");
   }
 
   @Override

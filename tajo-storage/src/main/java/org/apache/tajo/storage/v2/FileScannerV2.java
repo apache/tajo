@@ -28,9 +28,11 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -220,6 +222,11 @@ public abstract class FileScannerV2 implements Scanner {
       }
     }
     return nextTuple();
+  }
+
+  @Override
+  public boolean nextFetch(OffHeapRowBlock rowBlock) {
+    throw new UnimplementedException("nextFetch(OffHeapRowBlock) is not implemented");
   }
 
   @Override

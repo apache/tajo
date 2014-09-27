@@ -25,7 +25,10 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaObject;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.codegen.CompilationError;
+import org.apache.tajo.exception.UnimplementedException;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -59,6 +62,10 @@ public abstract class PhysicalExec implements SchemaObject {
   }
 
   public abstract Tuple next() throws IOException;
+
+  public boolean nextFetch(OffHeapRowBlock rowBlock) {
+    throw new UnimplementedException("nextFetch(OffHeapRowBlock) is not implemented");
+  }
 
   public abstract void rescan() throws IOException;
 

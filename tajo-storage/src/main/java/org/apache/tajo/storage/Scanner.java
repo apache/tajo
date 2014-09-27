@@ -21,6 +21,8 @@ package org.apache.tajo.storage;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SchemaObject;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.exception.UnimplementedException;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -41,6 +43,13 @@ public interface Scanner extends SchemaObject, Closeable {
    * @throws IOException if internal I/O error occurs during next method
    */
   Tuple next() throws IOException;
+
+  /**
+   *
+   * @param rowBlock
+   * @return
+   */
+  boolean nextFetch(OffHeapRowBlock rowBlock);
   
   /**
    * Reset the cursor. After executed, the scanner 
