@@ -360,9 +360,6 @@ public class TajoConf extends Configuration {
 
     // ResultSet ---------------------------------------------------------
     $RESULT_SET_FETCH_ROWNUM("tajo.resultset.fetch.rownum", 200),
-
-    // Column Partition
-    $COLUMN_PARITION_REMOVE_ALL_PARTITIONS("tajo.column-paritition.remove.all-partitions", false)
     ;
 
     public final String varname;

@@ -522,37 +522,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
         "N,1,1,36.0\n";
 
     assertEquals(expected, resultSetData);
-
-    Map<String, String> sessionVariables = TUtil.newHashMap();
-    sessionVariables.put(SessionVars.COLUMN_PARITION_REMOVE_ALL_PARTITIONS.keyname(), "true");
-    client.updateSessionVariables(sessionVariables);
-
-    // insert overwrite into already exists partitioned table with COLUMN_PARITION_REMOVE_ALL_PARTITIONS is true
-    res = executeString("insert overwrite into " + tableName
-        + " select l_returnflag, l_orderkey, l_partkey, 30.0 as l_quantity from lineitem "
-        + " where l_orderkey = 1 and l_partkey = 1 and  l_linenumber = 1");
-    res.close();
-
-    desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
-    assertTrue(fs.isDirectory(path));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
-    assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1/col3=30.0")));
-
-    if (!testingCluster.isHCatalogStoreRunning()) {
-      assertEquals(1, desc.getStats().getNumRows().intValue());
-    }
-
-    res = executeString("select * from " + tableName + " where col2 = 1");
-    resultSetData = resultSetToString(res);
-    res.close();
-    expected = "col4,col1,col2,col3\n" +
-        "-------------------------------\n" +
-        "N,1,1,30.0\n";
-
-    assertEquals(expected, resultSetData);
-
-    sessionVariables.put(SessionVars.COLUMN_PARITION_REMOVE_ALL_PARTITIONS.keyname(), "false");
-    client.updateSessionVariables(sessionVariables);
   }
 
   @Test

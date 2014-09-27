@@ -431,13 +431,12 @@ public class Query implements EventHandler<QueryEvent> {
             // Upon failed, it recovers the original table if possible.
             boolean movedToOldTable = false;
             boolean committed = false;
-            boolean removeAll = queryContext.getBool(SessionVars.COLUMN_PARITION_REMOVE_ALL_PARTITIONS);
             Path oldTableDir = new Path(queryContext.getStagingDir(), TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
 
             // INSERT OVERWRITE INTO always moves the result data into the original table location.
             // As a result, all existing partitions have been removed. The query should not remove all partitions
             // because existing partitions may be a data-set for a production cluster.
-            if (!removeAll && queryContext.hasPartition()) {
+            if (queryContext.hasPartition()) {
               Map<Path, Path> renameDirs = TUtil.newHashMap();
               Map<Path, Path> recoveryDirs = TUtil.newHashMap();
 
