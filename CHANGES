@@ -434,6 +434,8 @@ Release 0.9.0 - unreleased
 
   TASKS
 
+    TAJO-1070: BSTIndexScanExec should not seek a negative offset. (jinho)
+
     TAJO-1054: Wrong comment in ByteUtils.splitWorker(). 
     (Jongyoung Park via jinho)
 
@@ -466,6 +468,11 @@ Release 0.9.0 - unreleased
     TAJO-834: Add Travis notification to issues@tajo.a.o and IRC. hyunsik)
 
   SUB TASKS
+
+    TAJO-1061: TAJO-1061: Update build documentation. (jaehwa)
+
+    TAJO-1060: Apply updated hadoop versions to README and BUILDING files.
+    (jinho)
 
     TAJO-667: Add math function documentation. (Jongyoung Park via hyunsik)
 
