@@ -31,6 +31,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
@@ -57,6 +58,8 @@ import org.apache.tajo.storage.RawFile;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.NetUtils;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
@@ -446,7 +449,16 @@ public class Task {
           createPlan(context, plan);
       this.executor.init();
 
-      while(!killed && !aborted && executor.next() != null) {
+      String engineType = context.getQueryContext().get(SessionVars.EXEC_ENGINE);
+      LOG.info(engineType.toUpperCase() + " Executor Engine is chosen.");
+      if (engineType.equalsIgnoreCase("volcano")) {
+        while (!killed && !aborted && executor.next() != null) {
+        }
+      } else if (engineType.equalsIgnoreCase("block")) {
+        OffHeapRowBlock rowBlock = new OffHeapRowBlock(executor.getSchema(), 64 * StorageUnit.KB);
+        while (!killed && !aborted && executor.nextFetch(rowBlock)) {
+        }
+        rowBlock.release();
       }
     } catch (Throwable e) {
       error = e ;

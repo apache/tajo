@@ -48,7 +48,7 @@ public class OffHeapRowBlockWriter extends OffHeapRowWriter {
   @Override
   public void endRow() {
     super.endRow();
-    rowBlock.setRows(rowBlock.rows() + 1);
+    rowBlock.setRow(rowBlock.rows() + 1);
   }
 
   @Override

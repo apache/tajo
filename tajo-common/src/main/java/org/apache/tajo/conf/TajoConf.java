@@ -317,6 +317,7 @@ public class TajoConf extends Configuration {
     $DIST_QUERY_TABLE_PARTITION_VOLUME("tajo.dist-query.table-partition.task-volume-mb", 256),
 
     // for physical Executors
+    $EXECUTOR_ENGINE("tajo.executor.engine", "volcano"), // volcano, and block
     $EXECUTOR_EXTERNAL_SORT_BUFFER_SIZE("tajo.executor.external-sort.buffer-mb", 200L),
     $EXECUTOR_HASH_JOIN_SIZE_THRESHOLD("tajo.executor.join.common.in-memory-hash-threshold-bytes",
         (long)256 * 1048576),

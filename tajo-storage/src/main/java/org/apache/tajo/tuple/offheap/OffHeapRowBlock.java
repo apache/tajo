@@ -127,7 +127,11 @@ public class OffHeapRowBlock extends OffHeapMemory implements Deallocatable {
     return rowNum;
   }
 
-  public void setRows(int rowNum) {
+  public void setMaxRow(int rowNum) {
+    this.maxRowNum = rowNum;
+  }
+
+  void setRow(int rowNum) {
     this.rowNum = rowNum;
   }
 

@@ -41,6 +41,11 @@ import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
+import org.apache.tajo.tuple.RowBlockReader;
+import org.apache.tajo.tuple.TupleBuilder;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
+import org.apache.tajo.tuple.offheap.ZeroCopyTuple;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -66,6 +71,8 @@ public class SeqScanExec extends PhysicalExec {
   private TupleCacheKey cacheKey;
 
   private boolean cacheRead = false;
+
+  private OffHeapRowBlock inRowBlock;
 
   public SeqScanExec(TaskAttemptContext context, AbstractStorageManager sm, ScanNode plan,
                      CatalogProtos.FragmentProto [] fragments) throws IOException {
@@ -94,6 +101,8 @@ public class SeqScanExec extends PhysicalExec {
         && plan.getTableDesc().getPartitionMethod().getPartitionType() == CatalogProtos.PartitionType.COLUMN) {
       rewriteColumnPartitionedTableSchema();
     }
+
+    inRowBlock = new OffHeapRowBlock(inSchema, 64 * StorageUnit.KB);
   }
 
   /**
@@ -287,6 +296,21 @@ public class SeqScanExec extends PhysicalExec {
       }
       return null;
     }
+  }
+
+  public boolean nextFetch(OffHeapRowBlock rowBlock) throws IOException {
+    boolean noMoreTuple = scanner.nextFetch(inRowBlock);
+    if (!noMoreTuple) {
+      return false;
+    }
+
+    ZeroCopyTuple zcTuple = new ZeroCopyTuple();
+    RowBlockReader reader = inRowBlock.getReader();
+    while (reader.next(zcTuple)) {
+      projector.eval(zcTuple, rowBlock.getWriter());
+    }
+
+    return true;
   }
 
   @Override

@@ -42,17 +42,14 @@ import org.apache.tajo.storage.rcfile.RCFile;
 import org.apache.tajo.storage.sequencefile.SequenceFileScanner;
 import org.apache.tajo.tuple.RowBlockReader;
 import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
-import org.apache.tajo.tuple.offheap.UnSafeTuple;
 import org.apache.tajo.tuple.offheap.ZeroCopyTuple;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.UnsafeUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import sun.misc.Unsafe;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -173,7 +170,7 @@ public class TestNextFetches {
       int tupleCnt = 0;
 
       OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, 64 * StorageUnit.KB);
-      rowBlock.setRows(1024);
+      rowBlock.setMaxRow(1024);
 
       while (scanner.nextFetch(rowBlock)) {
         tupleCnt += rowBlock.rows();
@@ -233,7 +230,7 @@ public class TestNextFetches {
       int tupleCnt = 0;
 
       OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, 64 * StorageUnit.KB);
-      rowBlock.setRows(1024);
+      rowBlock.setMaxRow(1024);
 
       while (scanner.nextFetch(rowBlock)) {
         tupleCnt += rowBlock.rows();
@@ -294,7 +291,7 @@ public class TestNextFetches {
     int tupleCnt = 0;
 
     OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, 64 * StorageUnit.KB);
-    rowBlock.setRows(1024);
+    rowBlock.setMaxRow(1024);
 
     ZeroCopyTuple tuple = new ZeroCopyTuple();
     while (scanner.nextFetch(rowBlock)) {
@@ -376,7 +373,7 @@ public class TestNextFetches {
     scanner.init();
 
     OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, 64 * StorageUnit.KB);
-    rowBlock.setRows(1024);
+    rowBlock.setMaxRow(1024);
 
     ZeroCopyTuple zcTuple = new ZeroCopyTuple();
     while (scanner.nextFetch(rowBlock)) {
@@ -465,7 +462,7 @@ public class TestNextFetches {
     scanner.init();
 
     OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, 64 * StorageUnit.KB);
-    rowBlock.setRows(1024);
+    rowBlock.setMaxRow(1024);
 
     ZeroCopyTuple retrieved = new ZeroCopyTuple();
 
@@ -548,7 +545,7 @@ public class TestNextFetches {
     scanner.init();
 
     OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, 64 * StorageUnit.KB);
-    rowBlock.setRows(1024);
+    rowBlock.setMaxRow(1024);
 
     ZeroCopyTuple retrieved = new ZeroCopyTuple();
     while (scanner.nextFetch(rowBlock)) {
@@ -624,7 +621,7 @@ public class TestNextFetches {
     scanner.init();
 
     OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, 64 * StorageUnit.KB);
-    rowBlock.setRows(1024);
+    rowBlock.setMaxRow(1024);
 
     ZeroCopyTuple retrieved = new ZeroCopyTuple();
     while (scanner.nextFetch(rowBlock)) {
@@ -703,7 +700,7 @@ public class TestNextFetches {
     assertEquals(key.getClass().getCanonicalName(), LongWritable.class.getCanonicalName());
 
     OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, 64 * StorageUnit.KB);
-    rowBlock.setRows(1024);
+    rowBlock.setMaxRow(1024);
 
     ZeroCopyTuple retrieved = new ZeroCopyTuple();
 
@@ -785,7 +782,7 @@ public class TestNextFetches {
     assertEquals(key.getClass().getCanonicalName(), BytesWritable.class.getCanonicalName());
 
     OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, 64 * StorageUnit.KB);
-    rowBlock.setRows(1024);
+    rowBlock.setMaxRow(1024);
 
     ZeroCopyTuple retrieved = new ZeroCopyTuple();
 
@@ -833,7 +830,7 @@ public class TestNextFetches {
       scanner.init();
 
       OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, 64 * StorageUnit.KB);
-      rowBlock.setRows(1024);
+      rowBlock.setMaxRow(1024);
 
       ZeroCopyTuple retrieved = new ZeroCopyTuple();
 

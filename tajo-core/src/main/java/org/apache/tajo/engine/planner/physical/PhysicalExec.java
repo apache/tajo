@@ -63,7 +63,7 @@ public abstract class PhysicalExec implements SchemaObject {
 
   public abstract Tuple next() throws IOException;
 
-  public boolean nextFetch(OffHeapRowBlock rowBlock) {
+  public boolean nextFetch(OffHeapRowBlock rowBlock) throws IOException {
     throw new UnimplementedException("nextFetch(OffHeapRowBlock) is not implemented");
   }
 

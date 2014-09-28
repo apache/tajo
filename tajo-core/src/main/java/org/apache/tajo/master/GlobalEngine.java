@@ -115,6 +115,26 @@ public class GlobalEngine extends AbstractService {
     super.stop();
   }
 
+  public SQLAnalyzer getSQLAnalyzer() {
+    return analyzer;
+  }
+
+  public PreLogicalPlanVerifier getPreLogicalPlanVerifier() {
+    return preVerifier;
+  }
+
+  public LogicalPlanner getLogicalPlanner() {
+    return planner;
+  }
+
+  public LogicalOptimizer getLogicalOptimizer() {
+    return optimizer;
+  }
+
+  public LogicalPlanVerifier getLogicalPlanVerifier() {
+    return annotatedPlanVerifier;
+  }
+
   private QueryContext createQueryContext(Session session) {
     QueryContext newQueryContext =  new QueryContext(context.getConf(), session);
 

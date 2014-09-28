@@ -28,9 +28,13 @@ import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.logical.InsertNode;
 import org.apache.tajo.engine.planner.logical.PersistentStoreNode;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.Appender;
 import org.apache.tajo.storage.StorageManagerFactory;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.tuple.RowBlockReader;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
+import org.apache.tajo.tuple.offheap.ZeroCopyTuple;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -119,6 +123,30 @@ public class StoreTableExec extends UnaryPhysicalExec {
     }
         
     return null;
+  }
+
+  ZeroCopyTuple zcTuple = new ZeroCopyTuple();
+  RowBlockReader reader;
+
+  public boolean nextFetch(OffHeapRowBlock rowBlock) throws IOException {
+    if (child.nextFetch(rowBlock)) {
+      reader = rowBlock.getReader();
+      while (reader.next(zcTuple)) {
+        appender.addTuple(zcTuple);;
+
+        if (maxPerFileSize > 0 && maxPerFileSize <= appender.getEstimatedOutputSize()) {
+          appender.close();
+
+          writtenFileNum++;
+          StatisticsUtil.aggregateTableStat(sumStats, appender.getStats());
+          openNewFile(writtenFileNum);
+        }
+      }
+
+      return true;
+    } else {
+      return false;
+    }
   }
 
   @Override

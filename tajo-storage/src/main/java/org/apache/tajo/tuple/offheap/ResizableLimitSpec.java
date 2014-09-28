@@ -105,7 +105,7 @@ public class ResizableLimitSpec {
   }
 
   public long remain(long currentSize) {
-    Preconditions.checkArgument(currentSize > 0, "Size must be greater than 0 bytes.");
+    Preconditions.checkArgument(currentSize > 0, "Size must be greater than 0 bytes. But, its size is " + currentSize);
     return limitBytes > Integer.MAX_VALUE ? Integer.MAX_VALUE - currentSize : limitBytes - currentSize;
   }
 
