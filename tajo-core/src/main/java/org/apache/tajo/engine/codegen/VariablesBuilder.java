@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -21,13 +21,20 @@ package org.apache.tajo.engine.codegen;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.engine.eval.*;
+import org.apache.tajo.org.objectweb.asm.ClassWriter;
 import org.apache.tajo.org.objectweb.asm.Opcodes;
 
 import java.util.Stack;
 
-class VariablesPreBuilder extends SimpleEvalNodeVisitor<EvalCodeGenContext> {
+class VariablesBuilder extends SimpleEvalNodeVisitor<Variables> {
 
-  public EvalNode visitBinaryEval(EvalCodeGenContext context, Stack<EvalNode> stack, BinaryEval binaryEval) {
+  private ClassWriter classWriter;
+
+  public VariablesBuilder(ClassWriter classWriter) {
+    this.classWriter = classWriter;
+  }
+
+  public EvalNode visitBinaryEval(Variables context, Stack<EvalNode> stack, BinaryEval binaryEval) {
     super.visitBinaryEval(context, stack, binaryEval);
 
     if (EvalType.isStringPatternMatchOperator(binaryEval.getType())) {
@@ -36,7 +43,7 @@ class VariablesPreBuilder extends SimpleEvalNodeVisitor<EvalCodeGenContext> {
         context.symbols.put(binaryEval, fieldName);
 
         Class clazz = EvalCodeGenerator.getStringPatternEvalClass(binaryEval.getType());
-        context.classWriter.visitField(Opcodes.ACC_PRIVATE, fieldName,
+        classWriter.visitField(Opcodes.ACC_PRIVATE, fieldName,
             "L" + TajoGeneratorAdapter.getInternalName(clazz) + ";", null, null);
       }
     } else if (binaryEval.getType() == EvalType.IN) {
@@ -44,7 +51,7 @@ class VariablesPreBuilder extends SimpleEvalNodeVisitor<EvalCodeGenContext> {
         String fieldName = binaryEval.getType().name() + "_" + context.seqId++;
         context.symbols.put(binaryEval, fieldName);
 
-        context.classWriter.visitField(Opcodes.ACC_PRIVATE, fieldName,
+        classWriter.visitField(Opcodes.ACC_PRIVATE, fieldName,
             "L" + TajoGeneratorAdapter.getInternalName(InEval.class) + ";", null, null);
       }
     }
@@ -53,14 +60,14 @@ class VariablesPreBuilder extends SimpleEvalNodeVisitor<EvalCodeGenContext> {
   }
 
   @Override
-  public EvalNode visitConst(EvalCodeGenContext context, ConstEval constEval, Stack<EvalNode> stack) {
+  public EvalNode visitConst(Variables context, ConstEval constEval, Stack<EvalNode> stack) {
 
     if (constEval.getValueType().getType() == TajoDataTypes.Type.INTERVAL) {
       if (!context.symbols.containsKey(constEval)) {
         String fieldName = constEval.getValueType().getType().name() + "_" + context.seqId++;
         context.symbols.put(constEval, fieldName);
 
-        context.classWriter.visitField(Opcodes.ACC_PRIVATE, fieldName,
+        classWriter.visitField(Opcodes.ACC_PRIVATE, fieldName,
             "L" + TajoGeneratorAdapter.getInternalName(IntervalDatum.class) + ";", null, null);
       }
     }
@@ -68,13 +75,13 @@ class VariablesPreBuilder extends SimpleEvalNodeVisitor<EvalCodeGenContext> {
   }
 
   @Override
-  public EvalNode visitFuncCall(EvalCodeGenContext context, FunctionEval function, Stack<EvalNode> stack) {
+  public EvalNode visitFuncCall(Variables context, FunctionEval function, Stack<EvalNode> stack) {
     super.visitFuncCall(context, function, stack);
 
     if (!context.symbols.containsKey(function)) {
       String fieldName = function.getFuncDesc().getSignature() + "_" + context.seqId++;
       context.symbols.put(function, fieldName);
-      context.classWriter.visitField(Opcodes.ACC_PRIVATE, fieldName,
+      classWriter.visitField(Opcodes.ACC_PRIVATE, fieldName,
           "L" + TajoGeneratorAdapter.getInternalName(function.getFuncDesc().getFuncClass()) + ";", null, null);
     }
 

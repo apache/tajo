@@ -27,10 +27,12 @@ public class CompilationError extends RuntimeException {
   }
 
   public CompilationError(EvalNode evalNode, Throwable t, byte [] clazz) {
-    super("Compilation Error: " + evalNode.toString() + "\n\nBYTES CODE DUMP:\n" + CodeGenUtils.disassemble(clazz), t);
+    super(t.getMessage() +
+        "\nCompilation Error: " + evalNode.toString() + "\n\nBYTES CODE DUMP:\n" + CodeGenUtils.disassemble(clazz), t);
   }
 
   public CompilationError(BaseTupleComparator comp, Throwable t, byte [] clazz) {
-    super("Compilation Error: " + comp.toString() + "\n\nBYTES CODE DUMP:\n" + CodeGenUtils.disassemble(clazz), t);
+    super(t.getMessage() +
+        "\nCompilation Error: " + comp.toString() + "\n\nBYTES CODE DUMP:\n" + CodeGenUtils.disassemble(clazz), t);
   }
 }

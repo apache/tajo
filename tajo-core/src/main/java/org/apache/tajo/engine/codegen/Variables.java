@@ -1,5 +1,5 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
+/*
+ * Lisensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
  * regarding copyright ownership.  The ASF licenses this file
@@ -18,10 +18,12 @@
 
 package org.apache.tajo.engine.codegen;
 
+import com.google.common.collect.Maps;
 import org.apache.tajo.engine.eval.EvalNode;
 
-import java.util.Stack;
+import java.util.Map;
 
-public interface EvalCodeEmitter<T extends EvalNode> {
-  void emit(EvalCodeGenerator gen, EvalCodeGenContext context, T caseWhen, Stack<EvalNode> stack);
+public class Variables {
+  int seqId = 0;
+  Map<EvalNode, String> symbols = Maps.newHashMap();
 }

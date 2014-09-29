@@ -103,6 +103,7 @@ public class SeqScanExec extends PhysicalExec {
     }
 
     inRowBlock = new OffHeapRowBlock(inSchema, 64 * StorageUnit.KB);
+    inRowBlock.setMaxRow(1024);
   }
 
   /**
@@ -219,7 +220,7 @@ public class SeqScanExec extends PhysicalExec {
   }
 
   private void initScanner(Schema projected) throws IOException {
-    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
+    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets(), true);
     if (fragments != null) {
       if (fragments.length > 1) {
         this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), plan.getTableDesc().getMeta(),
@@ -299,6 +300,8 @@ public class SeqScanExec extends PhysicalExec {
   }
 
   public boolean nextFetch(OffHeapRowBlock rowBlock) throws IOException {
+    rowBlock.clear();
+
     boolean noMoreTuple = scanner.nextFetch(inRowBlock);
     if (!noMoreTuple) {
       return false;

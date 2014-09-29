@@ -18,6 +18,7 @@
 
 package org.apache.tajo.tuple.offheap;
 
+import org.apache.tajo.annotation.UsedByJIT;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
@@ -110,23 +111,49 @@ public abstract class OffHeapRowWriter implements RowWriter {
     forward(curOffset);
   }
 
+  public int currentField() {
+    return curFieldIdx;
+  }
+
   public void skipField() {
-    fieldOffsets[curFieldIdx++] = OffHeapRowBlock.NULL_FIELD_OFFSET;
+    fieldOffsets[curFieldIdx] = OffHeapRowBlock.NULL_FIELD_OFFSET;
+    curFieldIdx++;
   }
 
+  public void skipField(int num) {
+    for (int i = curFieldIdx; i < num && i < dataTypes.length; i++) {
+      fieldOffsets[curFieldIdx] = OffHeapRowBlock.NULL_FIELD_OFFSET;
+      curFieldIdx++;
+    }
+  }
+
+  @UsedByJIT
   private void forwardField() {
-    fieldOffsets[curFieldIdx++] = curOffset;
+    fieldOffsets[curFieldIdx] = curOffset;
+    curFieldIdx++;
   }
 
+  @UsedByJIT
   public void putBool(boolean val) {
     ensureSize(SizeOf.SIZE_OF_BOOL);
     forwardField();
 
-    OffHeapMemory.UNSAFE.putByte(recordStartAddr() + curOffset, (byte) (val ? 0x01 : 0x00));
+    OffHeapMemory.UNSAFE.putByte(recordStartAddr() + curOffset, (byte) (val ? 0x01 : 0x02));
 
     curOffset += SizeOf.SIZE_OF_BOOL;
   }
 
+  @UsedByJIT
+  public void putBool(byte val) {
+    ensureSize(SizeOf.SIZE_OF_BOOL);
+    forwardField();
+
+    OffHeapMemory.UNSAFE.putByte(recordStartAddr() + curOffset, val);
+
+    curOffset += SizeOf.SIZE_OF_BOOL;
+  }
+
+  @UsedByJIT
   public void putInt2(short val) {
     ensureSize(SizeOf.SIZE_OF_SHORT);
     forwardField();
@@ -135,6 +162,7 @@ public abstract class OffHeapRowWriter implements RowWriter {
     curOffset += SizeOf.SIZE_OF_SHORT;
   }
 
+  @UsedByJIT
   public void putInt4(int val) {
     ensureSize(SizeOf.SIZE_OF_INT);
     forwardField();
@@ -143,6 +171,7 @@ public abstract class OffHeapRowWriter implements RowWriter {
     curOffset += SizeOf.SIZE_OF_INT;
   }
 
+  @UsedByJIT
   public void putInt8(long val) {
     ensureSize(SizeOf.SIZE_OF_LONG);
     forwardField();
@@ -151,6 +180,7 @@ public abstract class OffHeapRowWriter implements RowWriter {
     curOffset += SizeOf.SIZE_OF_LONG;
   }
 
+  @UsedByJIT
   public void putFloat4(float val) {
     ensureSize(SizeOf.SIZE_OF_FLOAT);
     forwardField();
@@ -159,6 +189,7 @@ public abstract class OffHeapRowWriter implements RowWriter {
     curOffset += SizeOf.SIZE_OF_FLOAT;
   }
 
+  @UsedByJIT
   public void putFloat8(double val) {
     ensureSize(SizeOf.SIZE_OF_DOUBLE);
     forwardField();
@@ -167,11 +198,13 @@ public abstract class OffHeapRowWriter implements RowWriter {
     curOffset += SizeOf.SIZE_OF_DOUBLE;
   }
 
+  @UsedByJIT
   public void putText(String val) {
     byte[] bytes = val.getBytes(TextDatum.DEFAULT_CHARSET);
     putText(bytes);
   }
 
+  @UsedByJIT
   public void putText(byte[] val) {
     int bytesLen = val.length;
 
@@ -186,6 +219,23 @@ public abstract class OffHeapRowWriter implements RowWriter {
     curOffset += bytesLen;
   }
 
+  @UsedByJIT
+  public void copyTextFrom(UnSafeTuple tuple, int fieldIdx) {
+    long address = tuple.getFieldAddr(fieldIdx);
+    int strLen = OffHeapMemory.UNSAFE.getInt(address);
+    address += SizeOf.SIZE_OF_INT;
+
+    ensureSize(SizeOf.SIZE_OF_INT + strLen);
+    forwardField();
+
+    OffHeapMemory.UNSAFE.putInt(recordStartAddr() + curOffset, strLen);
+    curOffset += SizeOf.SIZE_OF_INT;
+
+    OffHeapMemory.UNSAFE.copyMemory(null, address, null, recordStartAddr() + curOffset, strLen);
+    curOffset += strLen;
+  }
+
+  @UsedByJIT
   public void putBlob(byte[] val) {
     int bytesLen = val.length;
 
@@ -200,18 +250,22 @@ public abstract class OffHeapRowWriter implements RowWriter {
     curOffset += bytesLen;
   }
 
+  @UsedByJIT
   public void putTimestamp(long val) {
     putInt8(val);
   }
 
+  @UsedByJIT
   public void putDate(int val) {
     putInt4(val);
   }
 
+  @UsedByJIT
   public void putTime(long val) {
     putInt8(val);
   }
 
+  @UsedByJIT
   public void putInterval(IntervalDatum val) {
     ensureSize(SizeOf.SIZE_OF_INT + SizeOf.SIZE_OF_LONG);
     forwardField();
@@ -223,10 +277,12 @@ public abstract class OffHeapRowWriter implements RowWriter {
     curOffset += SizeOf.SIZE_OF_INT + SizeOf.SIZE_OF_LONG;
   }
 
+  @UsedByJIT
   public void putInet4(int val) {
     putInt4(val);
   }
 
+  @UsedByJIT
   public void putProtoDatum(ProtobufDatum val) {
     putBlob(val.asByteArray());
   }

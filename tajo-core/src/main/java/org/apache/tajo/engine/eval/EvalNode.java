@@ -19,9 +19,11 @@
 package org.apache.tajo.engine.eval;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.annotation.UsedByJIT;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.engine.codegen.CompilationError;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.utils.TupleBuilderUtil;
 import org.apache.tajo.json.GsonObject;
@@ -61,9 +63,9 @@ public abstract class EvalNode implements Cloneable, GsonObject {
 	
 	public abstract <T extends Datum> T eval(Schema schema, Tuple tuple);
 
+  @UsedByJIT
   public void eval(Schema schema, Tuple tuple, RowWriter builder) {
-    Datum result = eval(schema, tuple);
-    TupleBuilderUtil.writeEvalResult(builder, result.type(), result);
+    throw new CompilationError("eval(Schema, Tuple, RowWriter) is not compiled");
   }
 
   @Deprecated

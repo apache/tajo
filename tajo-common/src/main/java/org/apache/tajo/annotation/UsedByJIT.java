@@ -1,5 +1,5 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
+/*
+ * Lisensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
  * regarding copyright ownership.  The ASF licenses this file
@@ -16,12 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.codegen;
+package org.apache.tajo.annotation;
 
-import org.apache.tajo.engine.eval.EvalNode;
 
-import java.util.Stack;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-public interface EvalCodeEmitter<T extends EvalNode> {
-  void emit(EvalCodeGenerator gen, EvalCodeGenContext context, T caseWhen, Stack<EvalNode> stack);
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.ElementType.CONSTRUCTOR;
+import static java.lang.annotation.ElementType.LOCAL_VARIABLE;
+
+/**
+ * It annotates that the method or fields are used by the codes by runtime generated code.
+ */
+@Target({TYPE, FIELD, METHOD, CONSTRUCTOR, LOCAL_VARIABLE})
+@Retention(RetentionPolicy.SOURCE)
+public @interface UsedByJIT {
 }

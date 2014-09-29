@@ -449,13 +449,14 @@ public class Task {
           createPlan(context, plan);
       this.executor.init();
 
-      String engineType = context.getQueryContext().get(SessionVars.EXEC_ENGINE);
-      LOG.info(engineType.toUpperCase() + " Executor Engine is chosen.");
+      String engineType = context.getQueryContext().get(SessionVars.EXECUTION_ENGINE);
+      LOG.info(engineType.toUpperCase() + " Execution Engine is chosen.");
       if (engineType.equalsIgnoreCase("volcano")) {
         while (!killed && !aborted && executor.next() != null) {
         }
       } else if (engineType.equalsIgnoreCase("block")) {
         OffHeapRowBlock rowBlock = new OffHeapRowBlock(executor.getSchema(), 64 * StorageUnit.KB);
+        rowBlock.setMaxRow(1024);
         while (!killed && !aborted && executor.nextFetch(rowBlock)) {
         }
         rowBlock.release();

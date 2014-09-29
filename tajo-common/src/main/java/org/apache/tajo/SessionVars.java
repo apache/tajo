@@ -99,7 +99,7 @@ public enum SessionVars implements ConfigKey {
       "shuffle output size for partition table write (mb)", DEFAULT),
 
   // for physical Executors
-  EXEC_ENGINE(ConfVars.$EXECUTOR_ENGINE,
+  EXECUTION_ENGINE(ConfVars.$EXECUTION_ENGINE,
       "executor engine types that queries will use. Types: volcano and block (default is volcano)", DEFAULT),
   EXTSORT_BUFFER_SIZE(ConfVars.$EXECUTOR_EXTERNAL_SORT_BUFFER_SIZE, "sort buffer size for external sort (mb)", DEFAULT),
   HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD, "limited size for hash join (mb)", DEFAULT),

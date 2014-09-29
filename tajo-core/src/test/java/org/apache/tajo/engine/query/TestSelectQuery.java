@@ -50,7 +50,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public final void testNonQualifiedNames() throws Exception {
-    // select l_orderkey, l_partkey from lineitem;
+    // select l_orderkey, l_partkey, l_comment from lineitem;
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);

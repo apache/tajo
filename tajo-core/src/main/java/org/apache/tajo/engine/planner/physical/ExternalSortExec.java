@@ -230,7 +230,7 @@ public class ExternalSortExec extends SortExec {
     }
 
     if (tupleBlock.rows() >= 0) { // if there are at least one or more input tuples
-      sortedTuples = OffHeapRowBlockUtils.sort(tupleBlock, getComparator());
+      sortedTuples = OffHeapRowBlockUtils.sort(tupleBlock, getUnsafeComparator());
     }
 
     // get total loaded (or stored) bytes and total row numbers
