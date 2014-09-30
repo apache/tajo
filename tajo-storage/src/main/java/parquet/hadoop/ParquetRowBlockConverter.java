@@ -1,5 +1,5 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
+/*
+ * Lisensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
  * regarding copyright ownership.  The ASF licenses this file
@@ -16,36 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.parquet;
+package parquet.hadoop;
 
-import com.google.protobuf.Message;
 import com.google.protobuf.InvalidProtocolBufferException;
-
-import java.nio.ByteBuffer;
-
-import parquet.io.api.GroupConverter;
-import parquet.io.api.Converter;
-import parquet.io.api.PrimitiveConverter;
-import parquet.io.api.Binary;
-import parquet.schema.Type;
-import parquet.schema.GroupType;
-
+import com.google.protobuf.Message;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.BlobDatum;
-import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatumFactory;
+import parquet.io.api.Binary;
+import parquet.io.api.Converter;
+import parquet.io.api.GroupConverter;
+import parquet.io.api.PrimitiveConverter;
+import parquet.schema.GroupType;
+import parquet.schema.Type;
 
 /**
  * Converter to convert a Parquet record into a Tajo Tuple.
  */
-public class TajoRecordConverter extends GroupConverter {
+public class ParquetRowBlockConverter extends GroupConverter {
   private final GroupType parquetSchema;
   private final Schema tajoReadSchema;
   private final int[] projectionMap;
@@ -53,7 +43,7 @@ public class TajoRecordConverter extends GroupConverter {
 
   private final Converter[] converters;
 
-  private Tuple currentTuple;
+  private Object [] currentTuple;
 
   /**
    * Creates a new TajoRecordConverter.
@@ -63,8 +53,7 @@ public class TajoRecordConverter extends GroupConverter {
    * @param projectionMap An array mapping the projection column to the column
    *                      index in the table.
    */
-  public TajoRecordConverter(GroupType parquetSchema, Schema tajoReadSchema,
-                             int[] projectionMap) {
+  public ParquetRowBlockConverter(GroupType parquetSchema, Schema tajoReadSchema, int[] projectionMap) {
     this.parquetSchema = parquetSchema;
     this.tajoReadSchema = tajoReadSchema;
     this.projectionMap = projectionMap;
@@ -86,7 +75,7 @@ public class TajoRecordConverter extends GroupConverter {
       converters[index] = newConverter(column, type, new ParentValueContainer() {
         @Override
         void add(Object value) {
-          TajoRecordConverter.this.set(projectionIndex, value);
+          ParquetRowBlockConverter.this.set(projectionIndex, value);
         }
       });
       ++index;
@@ -94,7 +83,7 @@ public class TajoRecordConverter extends GroupConverter {
   }
 
   private void set(int index, Object value) {
-    currentTuple.put(index, (Datum)value);
+    currentTuple[index] = value;
   }
 
   private Converter newConverter(Column column, Type type,
@@ -103,32 +92,26 @@ public class TajoRecordConverter extends GroupConverter {
     switch (dataType.getType()) {
       case BOOLEAN:
         return new FieldBooleanConverter(parent);
-      case BIT:
-        return new FieldBitConverter(parent);
       case CHAR:
         return new FieldCharConverter(parent);
       case INT2:
         return new FieldInt2Converter(parent);
       case INT4:
+      case INET4:
+      case DATE:
         return new FieldInt4Converter(parent);
       case INT8:
+      case TIMESTAMP:
+      case TIME:
         return new FieldInt8Converter(parent);
       case FLOAT4:
         return new FieldFloat4Converter(parent);
       case FLOAT8:
         return new FieldFloat8Converter(parent);
-      case TIMESTAMP:
-        return new FieldTimestampConverter(parent);
-      case TIME:
-        return new FieldTimeConverter(parent);
-      case DATE:
-        return new FieldDateConverter(parent);
-      case TEXT:
-        return new FieldTextConverter(parent);
-      case INET4:
-        return new FieldInet4Converter(parent);
       case INET6:
         throw new RuntimeException("No converter for INET6");
+      case TEXT:
+        return new FieldTextConverter(parent);
       case PROTOBUF:
         return new FieldProtobufConverter(parent, dataType);
       case BLOB:
@@ -157,7 +140,7 @@ public class TajoRecordConverter extends GroupConverter {
    */
   @Override
   public void start() {
-    currentTuple = new VTuple(tupleSize);
+    currentTuple = new Object[tupleSize];
   }
 
   /**
@@ -165,14 +148,6 @@ public class TajoRecordConverter extends GroupConverter {
    */
   @Override
   public void end() {
-    for (int i = 0; i < projectionMap.length; ++i) {
-      final int projectionIndex = projectionMap[i];
-      Column column = tajoReadSchema.getColumn(projectionIndex);
-      if (column.getDataType().getType() == TajoDataTypes.Type.NULL_TYPE
-          || currentTuple.get(projectionIndex) == null) {
-        set(projectionIndex, NullDatum.get());
-      }
-    }
   }
 
   /**
@@ -180,7 +155,7 @@ public class TajoRecordConverter extends GroupConverter {
    *
    * @return The current record.
    */
-  public Tuple getCurrentRecord() {
+  public Object [] getCurrentRecord() {
     return currentTuple;
   }
 
@@ -202,20 +177,7 @@ public class TajoRecordConverter extends GroupConverter {
 
     @Override
     final public void addBoolean(boolean value) {
-      parent.add(DatumFactory.createBool(value));
-    }
-  }
-
-  static final class FieldBitConverter extends PrimitiveConverter {
-    private final ParentValueContainer parent;
-
-    public FieldBitConverter(ParentValueContainer parent) {
-      this.parent = parent;
-    }
-
-    @Override
-    final public void addInt(int value) {
-      parent.add(DatumFactory.createBit((byte) (value & 0xff)));
+      parent.add(value);
     }
   }
 
@@ -226,9 +188,8 @@ public class TajoRecordConverter extends GroupConverter {
       this.parent = parent;
     }
 
-    @Override
-    final public void addBinary(Binary value) {
-      parent.add(DatumFactory.createChar(value.toStringUsingUTF8()));
+    public void addBinary(parquet.io.api.Binary value) {
+      parent.add(value);
     }
   }
 
@@ -241,7 +202,7 @@ public class TajoRecordConverter extends GroupConverter {
 
     @Override
     final public void addInt(int value) {
-      parent.add(DatumFactory.createInt2((short) value));
+      parent.add((short)value);
     }
   }
 
@@ -254,7 +215,7 @@ public class TajoRecordConverter extends GroupConverter {
 
     @Override
     final public void addInt(int value) {
-      parent.add(DatumFactory.createInt4(value));
+      parent.add(value);
     }
   }
 
@@ -267,12 +228,12 @@ public class TajoRecordConverter extends GroupConverter {
 
     @Override
     final public void addLong(long value) {
-      parent.add(DatumFactory.createInt8(value));
+      parent.add(value);
     }
 
     @Override
     final public void addInt(int value) {
-      parent.add(DatumFactory.createInt8(Long.valueOf(value)));
+      parent.add(value);
     }
   }
 
@@ -285,17 +246,17 @@ public class TajoRecordConverter extends GroupConverter {
 
     @Override
     final public void addInt(int value) {
-      parent.add(DatumFactory.createFloat4(Float.valueOf(value)));
+      parent.add(value);
     }
 
     @Override
     final public void addLong(long value) {
-      parent.add(DatumFactory.createFloat4(Float.valueOf(value)));
+      parent.add(value);
     }
 
     @Override
     final public void addFloat(float value) {
-      parent.add(DatumFactory.createFloat4(value));
+      parent.add(value);
     }
   }
 
@@ -308,22 +269,22 @@ public class TajoRecordConverter extends GroupConverter {
 
     @Override
     final public void addInt(int value) {
-      parent.add(DatumFactory.createFloat8(Double.valueOf(value)));
+      parent.add(value);
     }
 
     @Override
     final public void addLong(long value) {
-      parent.add(DatumFactory.createFloat8(Double.valueOf(value)));
+      parent.add(value);
     }
 
     @Override
     final public void addFloat(float value) {
-      parent.add(DatumFactory.createFloat8(Double.valueOf(value)));
+      parent.add(value);
     }
 
     @Override
     final public void addDouble(double value) {
-      parent.add(DatumFactory.createFloat8(value));
+      parent.add(value);
     }
   }
 
@@ -335,8 +296,8 @@ public class TajoRecordConverter extends GroupConverter {
     }
 
     @Override
-    public void addInt(int value) {
-      parent.add(DatumFactory.createInet4(value));
+    final public void addBinary(Binary value) {
+      parent.add(value);
     }
   }
 
@@ -349,7 +310,7 @@ public class TajoRecordConverter extends GroupConverter {
 
     @Override
     final public void addBinary(Binary value) {
-      parent.add(DatumFactory.createText(value.toStringUsingUTF8()));
+      parent.add(value);
     }
   }
 
@@ -362,46 +323,7 @@ public class TajoRecordConverter extends GroupConverter {
 
     @Override
     final public void addBinary(Binary value) {
-      parent.add(new BlobDatum(ByteBuffer.wrap(value.getBytes())));
-    }
-  }
-
-  static final class FieldTimestampConverter extends PrimitiveConverter {
-    private final ParentValueContainer parent;
-
-    public FieldTimestampConverter(ParentValueContainer parent) {
-      this.parent = parent;
-    }
-
-    @Override
-    public void addLong(long value) {
-      parent.add(DatumFactory.createTimestamp(value));
-    }
-  }
-
-  static final class FieldTimeConverter extends PrimitiveConverter {
-    private final ParentValueContainer parent;
-
-    public FieldTimeConverter(ParentValueContainer parent) {
-      this.parent = parent;
-    }
-
-    @Override
-    public void addLong(long value) {
-      parent.add(DatumFactory.createTime(value));
-    }
-  }
-
-  static final class FieldDateConverter extends PrimitiveConverter {
-    private final ParentValueContainer parent;
-
-    public FieldDateConverter(ParentValueContainer parent) {
-      this.parent = parent;
-    }
-
-    @Override
-    public void addInt(int value) {
-      parent.add(DatumFactory.createDate(value));
+      parent.add(value);
     }
   }
 

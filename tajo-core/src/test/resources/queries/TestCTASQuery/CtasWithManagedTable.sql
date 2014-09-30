@@ -1,4 +1,4 @@
-create table "MANAGED_TABLE1" (col1 float, col2 float) using rcfile as
+create table "MANAGED_TABLE1" (col1 float, col2 float) using parquet as
 select
   sum(l_orderkey) as total1,
   avg(l_partkey) as total2

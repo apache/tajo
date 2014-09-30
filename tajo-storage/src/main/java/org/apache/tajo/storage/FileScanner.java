@@ -84,7 +84,7 @@ public abstract class FileScanner implements Scanner {
 
   @Override
   public boolean nextFetch(OffHeapRowBlock rowBlock) throws IOException {
-    throw new UnimplementedException("nextFetch(OffHeapRowBlock) is not implemented");
+    throw new UnimplementedException(getClass().getSimpleName() + "::nextFetch(OffHeapRowBlock) is not implemented");
   }
 
   @Override

@@ -161,9 +161,14 @@ public class TajoSchemaConverter {
       case BIT:
       case INT2:
       case INT4:
+      case DATE:
+      case INET4:
         return primitive(column.getSimpleName(),
                          PrimitiveType.PrimitiveTypeName.INT32);
       case INT8:
+      case TIMESTAMP:
+      case TIME:
+
         return primitive(column.getSimpleName(),
                          PrimitiveType.PrimitiveTypeName.INT64);
       case FLOAT4:
@@ -183,7 +188,6 @@ public class TajoSchemaConverter {
       case BLOB:
         return primitive(column.getSimpleName(),
                          PrimitiveType.PrimitiveTypeName.BINARY);
-      case INET4:
       case INET6:
         return primitive(column.getSimpleName(),
                          PrimitiveType.PrimitiveTypeName.BINARY);

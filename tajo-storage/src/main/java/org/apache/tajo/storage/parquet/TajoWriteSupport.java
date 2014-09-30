@@ -121,9 +121,13 @@ public class TajoWriteSupport extends WriteSupport<Tuple> {
       case BIT:
       case INT2:
       case INT4:
+      case INET4:
+      case DATE:
         recordConsumer.addInteger(datum.asInt4());
         break;
       case INT8:
+      case TIMESTAMP:
+      case TIME:
         recordConsumer.addLong(datum.asInt8());
         break;
       case FLOAT4:
@@ -138,7 +142,6 @@ public class TajoWriteSupport extends WriteSupport<Tuple> {
         break;
       case PROTOBUF:
       case BLOB:
-      case INET4:
       case INET6:
         recordConsumer.addBinary(Binary.fromByteArray(datum.asByteArray()));
         break;
