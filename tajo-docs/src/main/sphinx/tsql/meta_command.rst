@@ -32,7 +32,7 @@ In the current implementation, there are meta commands as follows: ::
   Tool
     \!           execute a linux shell command
     \dfs         execute a dfs command
-    \admin       execute tajo admin command
+    \admin       execute Tajo admin command
 
 
   Variables
