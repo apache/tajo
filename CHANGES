@@ -2,8 +2,19 @@ Tajo Change Log
 
 Block Iteration - branch
 
-  IMPROVEMENT
-    
+    TAJO-1084: Generated classes should access directly UnSafeTuple and 
+    RowWriter. (hyunsik)
+
+    TAJO-1083: StoreTableExec should be block iterative. (hyunsik)
+
+    TAJO-1043: TAJO-1043: Implement nextFetch(RowBlock) of CSVScanner. 
+    (hyunsik)
+
+    TAJO-1080: Cleanup BooleanDatum and Inet4Datum.
+
+    TAJO-1042: Implement block iteration interfaces for executors and scanners.
+    (hyunsik)
+
     TAJO-907: Implement off-heap tuple block and zero-copy tuple. 
     (hyunsik)
 
