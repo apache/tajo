@@ -3,8 +3,7 @@ Executing a single command
 *********************************
 
 
-You may want to run more queries without entering tsql prompt. Tsql provides the -c argument for above
-requirement. And Tajo assumes that queries are separated by semicolon as follows:
+You may want to run more queries without entering tsql prompt. Tsql provides the ``-c`` argument for above requirement. And Tajo assumes that queries are separated by semicolon as follows:
 
 .. code-block:: sql
 

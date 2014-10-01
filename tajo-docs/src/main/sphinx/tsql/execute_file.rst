@@ -8,7 +8,7 @@ Basic usages
 -----------------------------------------------
 
 
-Tajo can execute more queries that were saved to a file using the -f file argument as follows:
+``-f`` command allows tsql to execute more than one SQL statements stored in a text file as follows:
 
 .. code-block:: sql
 

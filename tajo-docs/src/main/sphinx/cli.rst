@@ -10,7 +10,7 @@ Tajo provides a shell utility named Tsql. It is a command-line interface (CLI) w
   tsql/intro
   tsql/single_command
   tsql/execute_file
-  tsql/back_command
+  tsql/background_command
   tsql/meta_command
   tsql/dfs_command
   tsql/variables
