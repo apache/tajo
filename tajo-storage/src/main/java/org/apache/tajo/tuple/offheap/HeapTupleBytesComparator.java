@@ -39,8 +39,8 @@ public class HeapTupleBytesComparator {
     long offset1 = t1.checkNullAndGetOffset(fieldIdx1);
     long offset2 = t2.checkNullAndGetOffset(fieldIdx2);
 
-    int lstrLen = UNSAFE.getInt(t1.data, Unsafe.ARRAY_BYTE_BASE_OFFSET + offset1);
-    int rstrLen = UNSAFE.getInt(t2.data, Unsafe.ARRAY_BYTE_BASE_OFFSET + offset2);
+    int lstrLen = UNSAFE.getInt(t1.data, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET + offset1);
+    int rstrLen = UNSAFE.getInt(t2.data, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET + offset2);
 
     offset1 += SizeOf.SIZE_OF_INT;
     offset2 += SizeOf.SIZE_OF_INT;
@@ -54,8 +54,8 @@ public class HeapTupleBytesComparator {
      * On the other hand, it is substantially faster on 64-bit.
      */
     for (int i = 0; i < minWords * Longs.BYTES; i += Longs.BYTES) {
-      long lw = UNSAFE.getLong(t1.data, Unsafe.ARRAY_BYTE_BASE_OFFSET + offset1);
-      long rw = UNSAFE.getLong(t2.data, Unsafe.ARRAY_BYTE_BASE_OFFSET + offset2);
+      long lw = UNSAFE.getLong(t1.data, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET + offset1);
+      long rw = UNSAFE.getLong(t2.data, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET + offset2);
       long diff = lw ^ rw;
 
       if (diff != 0) {
@@ -92,8 +92,8 @@ public class HeapTupleBytesComparator {
 
     // The epilogue to cover the last (minLength % 8) elements.
     for (int i = minWords * Longs.BYTES; i < minLength; i++) {
-      int result = UNSAFE.getByte(t1.data, Unsafe.ARRAY_BYTE_BASE_OFFSET + offset1) -
-          UNSAFE.getByte(t2.data, Unsafe.ARRAY_BYTE_BASE_OFFSET + offset2);
+      int result = UNSAFE.getByte(t1.data, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET + offset1) -
+          UNSAFE.getByte(t2.data, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET + offset2);
       offset1++;
       offset2++;
       if (result != 0) {
