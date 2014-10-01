@@ -37,7 +37,7 @@ public class TestPreLogicalPlanVerifier extends QueryTestCaseBase {
   @BeforeClass
   public static void setUp() {
     GlobalEngine engine = testingCluster.getMaster().getContext().getGlobalEngine();
-    analyzer = engine.getAnalyzer();
+    analyzer = engine.getSQLAnalyzer();
     verifier = engine.getPreLogicalPlanVerifier();
   }
 

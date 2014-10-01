@@ -117,7 +117,7 @@ public class GlobalEngine extends AbstractService {
   }
 
   @VisibleForTesting
-  public SQLAnalyzer getAnalyzer() {
+  public SQLAnalyzer getSQLAnalyzer() {
     return analyzer;
   }
 
