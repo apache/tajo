@@ -29,7 +29,7 @@ Derby Configuration
 
 By default, Tajo uses `Apache Derby <http://db.apache.org/derby/>`_ as a persistent storage in order to manage table meta data. So, without any configuration, you can use Derby for catalog store.
 
-Also, you can set manully configs in ``conf/catalog-site.xml`` as follows:
+Also, you can set manually configs in ``conf/catalog-site.xml`` as follows:
 
 .. code-block:: xml
 
