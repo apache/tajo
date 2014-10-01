@@ -28,6 +28,7 @@ import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.tuple.RowBlockReader;
 import org.apache.tajo.tuple.offheap.*;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -265,21 +266,40 @@ public class TestTupleComparerCompiler {
   @Test
   public void testCompareText() throws Exception {
     SortSpec [][] sortSpecs = createSortSpecs("col6");
-    TupleComparator [] comps = createComparators(sortSpecs, false);
+    TupleComparator [] comps = createComparators(sortSpecs, true);
 
-    Tuple t1 = new VTuple(schema.size());
-    t1.put(6, DatumFactory.createText("tajo"));
+    OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, 1024);
+    RowWriter writer = rowBlock.getWriter();
 
-    Tuple t2 = new VTuple(schema.size());
-    t2.put(6, DatumFactory.createText("tajo"));
+    writer.startRow();
+    writer.skipField(6);
+    writer.putText("tajo");
+    writer.endRow();
 
-    Tuple t3 = new VTuple(schema.size());
-    t3.put(6, DatumFactory.createText("tazo"));
+    writer.startRow();
+    writer.skipField(6);
+    writer.putText("tajo");
+    writer.endRow();
 
-    Tuple t4 = new VTuple(schema.size());
-    t4.put(6, NullDatum.get());
+    writer.startRow();
+    writer.skipField(6);
+    writer.putText("tazo");
+    writer.endRow();
 
-    assertCompareAll(comps, sortSpecs, t1, t2, t3, t4, t4);
+    writer.startRow();
+    writer.endRow();
+
+    RowBlockReader reader = rowBlock.getReader();
+
+    ZeroCopyTuple [] tuples = new ZeroCopyTuple[4];
+    for (int i = 0; i < 4; i++) {
+      tuples[i] = new ZeroCopyTuple();
+      assertTrue(reader.next(tuples[i]));
+    }
+
+    assertCompareAll(comps, sortSpecs, tuples[0], tuples[1], tuples[2], tuples[3], tuples[3]);
+
+    rowBlock.release();
   }
 
   @Test
@@ -288,25 +308,40 @@ public class TestTupleComparerCompiler {
         new SortSpec(new Column("col5", FLOAT8)),
         new SortSpec(new Column("col6", TEXT))};
     BaseTupleComparator compImpl = new BaseTupleComparator(schema, sortSpecs);
-    TupleComparator comp = compiler.compile(compImpl, false);
+    TupleComparator comp = compiler.compile(compImpl, true);
 
-    Tuple t1 = new VTuple(schema.size());
-    t1.put(5, NullDatum.get());
-    t1.put(6, DatumFactory.createText("ARGENTINA"));
+    OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, 1024);
+    RowWriter writer = rowBlock.getWriter();
 
-    Tuple t2 = new VTuple(schema.size());
-    t2.put(5, NullDatum.get());
-    t2.put(6, DatumFactory.createText("ARGENTINA"));
+    writer.startRow();
+    writer.skipField(6);
+    writer.putText("ARGENTINA");
+    writer.endRow();
 
-    Tuple t3 = new VTuple(schema.size());
-    t3.put(5, NullDatum.get());
-    t3.put(6, DatumFactory.createText("CANADA"));
+    writer.startRow();
+    writer.skipField(6);
+    writer.putText("ARGENTINA");
+    writer.endRow();
 
-    Tuple t4 = new VTuple(schema.size());
-    t4.put(5, NullDatum.get());
-    t4.put(6, NullDatum.get());
+    writer.startRow();
+    writer.skipField(6);
+    writer.putText("CANADA");
+    writer.endRow();
 
-    assertCompare(comp, sortSpecs, t1, t2, t3, t4, t4);
+    writer.startRow();
+    writer.endRow();
+
+    RowBlockReader reader = rowBlock.getReader();
+
+    ZeroCopyTuple [] tuples = new ZeroCopyTuple[4];
+    for (int i = 0; i < 4; i++) {
+      tuples[i] = new ZeroCopyTuple();
+      assertTrue(reader.next(tuples[i]));
+    }
+
+    assertCompare(comp, sortSpecs, tuples[0], tuples[1], tuples[2], tuples[3], tuples[3]);
+
+    rowBlock.release();
   }
 
   private void fillTextColumnToRowBlock(OffHeapRowBlock rowBlock, String text) {

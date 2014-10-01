@@ -90,7 +90,7 @@ public abstract class UnSafeTuple implements Tuple {
 
   public long getFieldAddr(int fieldId) {
     int fieldOffset = getFieldOffset(fieldId);
-    if (fieldOffset == -1) {
+    if (fieldOffset == OffHeapRowBlock.NULL_FIELD_OFFSET) {
       throw new RuntimeException("Invalid Field Access: " + fieldId);
     }
     return bb.address() + relativePos + fieldOffset;

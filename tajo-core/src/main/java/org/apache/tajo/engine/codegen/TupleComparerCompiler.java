@@ -30,6 +30,8 @@ import org.apache.tajo.org.objectweb.asm.Opcodes;
 import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
+import org.apache.tajo.tuple.offheap.HeapTuple;
+import org.apache.tajo.tuple.offheap.HeapTupleBytesComparator;
 import org.apache.tajo.tuple.offheap.UnSafeTuple;
 import org.apache.tajo.tuple.offheap.UnSafeTupleBytesComparator;
 import org.apache.tajo.util.UnsafeComparer;
@@ -304,6 +306,18 @@ public class TupleComparerCompiler {
 
       adapter.invokeStatic(UnSafeTupleBytesComparator.class, "compare", int.class, new Class[]{long.class, long.class});
     } else {
+      /* It will be used for HeapTuple later.
+      emitGetParam(adapter, c, idx, LEFT_VALUE);
+      adapter.methodvisitor.visitTypeInsn(Opcodes.CHECKCAST, getInternalName(HeapTuple.class));
+      adapter.push(c.getSortKeyIds()[idx]);
+
+      emitGetParam(adapter, c, idx, RIGHT_VALUE);
+      adapter.methodvisitor.visitTypeInsn(Opcodes.CHECKCAST, getInternalName(HeapTuple.class));
+      adapter.push(c.getSortKeyIds()[idx]);
+
+      adapter.invokeStatic(HeapTupleBytesComparator.class, "compare", int.class,
+          new Class[]{HeapTuple.class, int.class, HeapTuple.class, int.class});
+      */
       emitGetParam(adapter, c, idx, LEFT_VALUE);
       adapter.push(c.getSortKeyIds()[idx]);
       adapter.invokeInterface(Tuple.class, "getBytes", byte [].class, new Class [] {int.class});

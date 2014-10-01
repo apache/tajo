@@ -113,6 +113,7 @@ public class TestBlockIteratorExec extends QueryTestCaseBase {
     outputPath = new Path(workDir, "output");
     ctx.setOutputPath(outputPath);
     ctx.setEnforcer(new Enforcer());
+    ctx.getQueryContext().setBool(SessionVars.CODEGEN, false);
 
     return physicalPlanner.createPlan(ctx, plan.getRootBlock().getRoot());
   }

@@ -1,4 +1,4 @@
-/***
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -33,21 +33,24 @@ import java.nio.ByteBuffer;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 
+/**
+ * Immutable Tuple
+ */
 public class HeapTuple implements Tuple {
   private static final Unsafe UNSAFE = UnsafeUtil.unsafe;
   private static final long BASE_OFFSET = UnsafeUtil.ARRAY_BYTE_BASE_OFFSET;
 
-  private final byte [] data;
-  private final DataType [] types;
+  final byte [] data;
+  private final DataType[] types;
 
-  public HeapTuple(final byte [] bytes, final DataType [] types) {
+  public HeapTuple(final byte [] bytes, final DataType[] types) {
     this.data = bytes;
     this.types = types;
   }
 
   @Override
   public int size() {
-    return data.length;
+    return types.length;
   }
 
   public ByteBuffer nioBuffer() {
@@ -58,7 +61,7 @@ public class HeapTuple implements Tuple {
     return UNSAFE.getInt(data, BASE_OFFSET + SizeOf.SIZE_OF_INT + (fieldId * SizeOf.SIZE_OF_INT));
   }
 
-  private int checkNullAndGetOffset(int fieldId) {
+  int checkNullAndGetOffset(int fieldId) {
     int offset = getFieldOffset(fieldId);
     if (offset == OffHeapRowBlock.NULL_FIELD_OFFSET) {
       throw new RuntimeException("Invalid Field Access: " + fieldId);
@@ -88,22 +91,22 @@ public class HeapTuple implements Tuple {
 
   @Override
   public void put(int fieldId, Datum value) {
-    throw new UnsupportedException("UnSafeTuple does not support put(int, Datum).");
+    throw new UnsupportedException("HeapTuple does not support put(int, Datum).");
   }
 
   @Override
   public void put(int fieldId, Datum[] values) {
-    throw new UnsupportedException("UnSafeTuple does not support put(int, Datum []).");
+    throw new UnsupportedException("HeapTuple does not support put(int, Datum []).");
   }
 
   @Override
   public void put(int fieldId, Tuple tuple) {
-    throw new UnsupportedException("UnSafeTuple does not support put(int, Tuple).");
+    throw new UnsupportedException("HeapTuple does not support put(int, Tuple).");
   }
 
   @Override
   public void put(Datum[] values) {
-    throw new UnsupportedException("UnSafeTuple does not support put(Datum []).");
+    throw new UnsupportedException("HeapTuple does not support put(Datum []).");
   }
 
   @Override
@@ -115,13 +118,15 @@ public class HeapTuple implements Tuple {
     switch (types[fieldId].getType()) {
     case BOOLEAN:
       return DatumFactory.createBool(getBool(fieldId));
+    case CHAR:
+      return DatumFactory.createChar(getBytes(fieldId));
     case INT1:
     case INT2:
       return DatumFactory.createInt2(getInt2(fieldId));
     case INT4:
       return DatumFactory.createInt4(getInt4(fieldId));
     case INT8:
-      return DatumFactory.createInt8(getInt4(fieldId));
+      return DatumFactory.createInt8(getInt8(fieldId));
     case FLOAT4:
       return DatumFactory.createFloat4(getFloat4(fieldId));
     case FLOAT8:
@@ -138,6 +143,8 @@ public class HeapTuple implements Tuple {
       return getInterval(fieldId);
     case INET4:
       return DatumFactory.createInet4(getInt4(fieldId));
+    case BLOB:
+      return DatumFactory.createBlob(getBytes(fieldId));
     case PROTOBUF:
       return getProtobufDatum(fieldId);
     default:
@@ -251,7 +258,7 @@ public class HeapTuple implements Tuple {
 
   @Override
   public Datum[] getValues() {
-    Datum [] datums = new Datum[size()];
+    Datum[] datums = new Datum[size()];
     for (int i = 0; i < size(); i++) {
       if (contains(i)) {
         datums[i] = get(i);

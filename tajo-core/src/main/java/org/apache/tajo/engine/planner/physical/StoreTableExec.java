@@ -129,6 +129,8 @@ public class StoreTableExec extends UnaryPhysicalExec {
   RowBlockReader reader;
 
   public boolean nextFetch(OffHeapRowBlock rowBlock) throws IOException {
+    rowBlock.clear();
+
     if (child.nextFetch(rowBlock)) {
       reader = rowBlock.getReader();
       while (reader.next(zcTuple)) {

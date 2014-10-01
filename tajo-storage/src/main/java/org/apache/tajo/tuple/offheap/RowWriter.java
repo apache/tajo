@@ -41,7 +41,11 @@ public interface RowWriter {
 
   public void skipField();
 
+  public void skipField(int num);
+
   public void putBool(boolean val);
+
+  public void putBool(byte val);
 
   public void putInt2(short val);
 

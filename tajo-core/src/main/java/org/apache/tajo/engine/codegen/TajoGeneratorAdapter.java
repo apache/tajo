@@ -27,15 +27,17 @@ import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.EvalType;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.UnsupportedException;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.util.TUtil;
-import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.org.objectweb.asm.Label;
 import org.apache.tajo.org.objectweb.asm.MethodVisitor;
 import org.apache.tajo.org.objectweb.asm.Opcodes;
 import org.apache.tajo.org.objectweb.asm.Type;
 import org.apache.tajo.org.objectweb.asm.commons.GeneratorAdapter;
 import org.apache.tajo.org.objectweb.asm.commons.TableSwitchGenerator;
+import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.tuple.TupleBuilder;
+import org.apache.tajo.tuple.offheap.RowWriter;
+import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.datetime.DateTimeUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -185,9 +187,10 @@ class TajoGeneratorAdapter {
     emitIsNullOfTuple(null);
   }
 
-  public void emitIsNullOfTuple(Integer fieldIndex) {
+  public void emitIsNullOfTuple(@Nullable Integer fieldIndex) {
     if (fieldIndex != null) {
       push(fieldIndex);
+      Preconditions.checkArgument(fieldIndex > -1, "Field index out Of range: " + fieldIndex);
     }
 
     invokeInterface(Tuple.class, "isNull", boolean.class, new Class[]{int.class});
@@ -200,11 +203,13 @@ class TajoGeneratorAdapter {
   public void emitIsNotNullOfTuple(@Nullable Integer fieldIndex) {
     if (fieldIndex != null) {
       push(fieldIndex);
+      Preconditions.checkArgument(fieldIndex > -1, "Field index out Of range: " + fieldIndex);
     }
     invokeInterface(Tuple.class, "isNotNull", boolean.class, new Class [] {int.class});
   }
 
   public void emitGetValueOfTuple(TajoDataTypes.DataType dataType, int fieldIndex) {
+    Preconditions.checkArgument(fieldIndex > -1, "Field index out Of range: " + fieldIndex);
     push(fieldIndex);
 
     TajoDataTypes.Type type = dataType.getType();
@@ -374,11 +379,11 @@ class TajoGeneratorAdapter {
     switch (dataType.getType()) {
     case NULL_TYPE:
     case BOOLEAN:
-    case CHAR:
     case INT1:
     case INT2:
     case INT4:
     case INET4:
+    case DATE:
       methodvisitor.visitVarInsn(Opcodes.ILOAD, idx);
       break;
     case INT8:
@@ -392,6 +397,7 @@ class TajoGeneratorAdapter {
     case FLOAT8:
       methodvisitor.visitVarInsn(Opcodes.DLOAD, idx);
       break;
+    case CHAR:
     case TEXT:
     case INTERVAL:
     case PROTOBUF:
@@ -723,6 +729,120 @@ class TajoGeneratorAdapter {
     methodvisitor.visitLabel(afterAll);
   }
 
+  public void writeToTupleBuilder(TajoDataTypes.DataType type) {
+    String method;
+    Class [] paramTypes;
+    switch (type.getType()) {
+    case NULL_TYPE:
+      pop();      // pop null flag
+      pop(type);  // pop null datum
+      aload(BUILDER);
+      invokeInterface(TupleBuilder.class, "skipField", void.class, new Class [] {});
+      return;
+
+    case BOOLEAN:
+      method = "putBool";
+      paramTypes = new Class[] {byte.class};
+      break;
+    case INT1:
+    case INT2:
+      method = "putInt2";
+      paramTypes = new Class[] {short.class};
+      break;
+    case INT4:
+      method = "putInt4";
+      paramTypes = new Class[] {int.class};
+      break;
+    case INT8:
+      method = "putInt8";
+      paramTypes = new Class[] {long.class};
+      break;
+    case FLOAT4:
+      method = "putFloat4";
+      paramTypes = new Class[] {float.class};
+      break;
+    case FLOAT8:
+      method = "putFloat8";
+      paramTypes = new Class[] {double.class};
+      break;
+    case CHAR:
+    case TEXT:
+      method = "putText";
+      paramTypes = new Class[] {String.class};
+      break;
+    case TIMESTAMP:
+      method = "putTimestamp";
+      paramTypes = new Class[] {long.class};
+      break;
+    case DATE:
+      method = "putDate";
+      paramTypes = new Class[] {int.class};
+      break;
+    case TIME:
+      method = "putTime";
+      paramTypes = new Class[] {long.class};
+      break;
+    case INTERVAL:
+      method = "putInterval";
+      paramTypes = new Class[] {IntervalDatum.class};
+      break;
+    case INET4:
+      method = "putInet4";
+      paramTypes = new Class[] {int.class};
+      break;
+    case PROTOBUF:
+      method = "putProtoDatum";
+      paramTypes = new Class[] {ProtobufDatum.class};
+      break;
+    default:
+      throw new RuntimeException("Unsupported type: " + type.getType().name());
+    }
+
+    Label ifNull = new Label();
+    Label afterAll = new Label();
+
+    emitNullityCheck(ifNull);
+    int value = store(type);
+    aload(BUILDER);
+    load(type, value);
+    if (type.getType() == PROTOBUF) {
+      methodvisitor.visitTypeInsn(Opcodes.CHECKCAST, TajoGeneratorAdapter.getInternalName(ProtobufDatum.class));
+    }
+    invokeInterface(RowWriter.class, method, void.class, paramTypes);
+    methodvisitor.visitJumpInsn(Opcodes.GOTO, afterAll);
+
+    methodvisitor.visitLabel(ifNull);
+    pop(type);
+    aload(BUILDER); // RowWriter
+    invokeInterface(RowWriter.class, "skipField", void.class, new Class[] {});
+
+    methodvisitor.visitLabel(afterAll);
+  }
+
+  public void returnAsBool() {
+    Label ifNull = new Label();
+    Label afterAll = new Label();
+
+    Label falseLabel = new Label();
+    emitNullityCheck(ifNull);
+    push(1);
+    methodvisitor.visitJumpInsn(Opcodes.IF_ICMPNE, falseLabel);
+    push(1);
+    gotoLabel(afterAll);
+
+    methodvisitor.visitLabel(falseLabel);
+    push(0);
+    gotoLabel(afterAll);
+
+    methodvisitor.visitLabel(ifNull);
+    pop();
+    push(0);
+    gotoLabel(afterAll);
+
+    methodvisitor.visitLabel(afterAll);
+    methodvisitor.visitInsn(Opcodes.IRETURN);
+  }
+
   public void convertToDatum(TajoDataTypes.DataType type, boolean castToDatum) {
     String convertMethod;
     Class returnType;
@@ -906,8 +1026,10 @@ class TajoGeneratorAdapter {
     methodvisitor.visitIntInsn(Opcodes.NEWARRAY, typeCode);
   }
 
-  private int nextVarId = 3;
-
+  public static final int SCHEMA = 1;
+  public static final int TUPLE = 2;
+  public static final int BUILDER = 3;
+  private int nextVarId = 4;
   private Map<String, Integer> localVariablesMap = new HashMap<String, Integer>();
 
   public void astore(String name) {
@@ -984,11 +1106,11 @@ class TajoGeneratorAdapter {
     switch (type.getType()) {
     case NULL_TYPE:
     case BOOLEAN:
-    case CHAR:
     case INT1:
     case INT2:
     case INT4:
     case INET4:
+    case DATE:
       methodvisitor.visitVarInsn(Opcodes.ISTORE, varId);
       break;
     case TIME:
@@ -1003,7 +1125,9 @@ class TajoGeneratorAdapter {
       methodvisitor.visitVarInsn(Opcodes.DSTORE, varId);
       break;
     case INTERVAL:
+    case CHAR:
     case TEXT:
+    case PROTOBUF:
       methodvisitor.visitVarInsn(Opcodes.ASTORE, varId);
       break;
     default:
@@ -1011,6 +1135,37 @@ class TajoGeneratorAdapter {
     }
 
     return varId;
+  }
+
+  @SuppressWarnings("unused")
+  public void returnByType(TajoDataTypes.DataType dataType) {
+    switch (dataType.getType()) {
+    case BOOLEAN:
+    case INT1:
+    case INT2:
+    case INT4:
+    case INET4:
+    case DATE:
+      methodvisitor.visitInsn(Opcodes.IRETURN);
+      break;
+    case INT8:
+    case TIMESTAMP:
+    case TIME:
+      methodvisitor.visitInsn(Opcodes.LRETURN);
+      break;
+    case FLOAT4:
+      methodvisitor.visitInsn(Opcodes.FRETURN);
+      break;
+    case FLOAT8:
+      methodvisitor.visitInsn(Opcodes.DRETURN);
+    case INTERVAL:
+      methodvisitor.visitInsn(Opcodes.ARETURN);
+      break;
+    case TEXT:
+      methodvisitor.visitInsn(Opcodes.ARETURN);
+    default:
+      throw new UnsupportedException("Unknown Type: " + dataType.getType().name());
+    }
   }
 
   public static interface SwitchCaseGenerator extends TableSwitchGenerator {

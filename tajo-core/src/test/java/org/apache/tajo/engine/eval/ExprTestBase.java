@@ -32,6 +32,7 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.codegen.EvalCodeGenerator;
+import org.apache.tajo.engine.codegen.EvalNodeCompiler;
 import org.apache.tajo.engine.codegen.TajoClassLoader;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
@@ -247,9 +248,9 @@ public class ExprTestBase {
     try {
       targets = getRawTargets(context, query, condition);
 
-      EvalCodeGenerator codegen = null;
+      EvalNodeCompiler compiler = null;
       if (context.getBool(SessionVars.CODEGEN)) {
-        codegen = new EvalCodeGenerator(classLoader);
+        compiler = new EvalNodeCompiler(classLoader);
       }
 
       Tuple outTuple = new VTuple(targets.length);
@@ -257,7 +258,7 @@ public class ExprTestBase {
         EvalNode eval = targets[i].getEvalTree();
 
         if (context.getBool(SessionVars.CODEGEN)) {
-          eval = codegen.compile(inputSchema, eval);
+          eval = compiler.compile(inputSchema, eval);
         }
 
         outTuple.put(i, eval.eval(inputSchema, vtuple));

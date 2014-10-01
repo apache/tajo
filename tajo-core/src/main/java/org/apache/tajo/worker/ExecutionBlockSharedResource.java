@@ -110,15 +110,38 @@ public class ExecutionBlockSharedResource {
     }
   }
 
+  public TupleComparator compileUnSafeComparator(Schema schema, BaseTupleComparator comp) {
+    return compilationContext.getComparatorCompiler().compile(comp, true);
+  }
+
   public TupleComparator compileComparator(Schema schema, BaseTupleComparator comp) {
     return compilationContext.getComparatorCompiler().compile(comp, false);
   }
 
-  public TupleComparator getCompiledComparator(Schema schema, BaseTupleComparator comp) {
+  public TupleComparator getUnSafeComparator(Schema schema, BaseTupleComparator comp) {
     if (codeGenEnabled) {
       Pair<Schema, BaseTupleComparator> key = new Pair<Schema, BaseTupleComparator>(schema, comp);
-      if (compilationContext.getPrecompiedComparators().containsKey(key)) {
-        return compilationContext.getPrecompiedComparators().get(key);
+      if (compilationContext.getUnSafeComparators().containsKey(key)) {
+        return compilationContext.getUnSafeComparators().get(key);
+      } else {
+        try {
+          LOG.warn(comp + " does not exist. Compiling it immediately");
+          return compileUnSafeComparator(schema, comp);
+        } catch (Throwable t) {
+          LOG.warn(t);
+          return comp;
+        }
+      }
+    } else {
+      throw new IllegalStateException("CODEGEN is disabled");
+    }
+  }
+
+  public TupleComparator getComparator(Schema schema, BaseTupleComparator comp) {
+    if (codeGenEnabled) {
+      Pair<Schema, BaseTupleComparator> key = new Pair<Schema, BaseTupleComparator>(schema, comp);
+      if (compilationContext.getComparators().containsKey(key)) {
+        return compilationContext.getComparators().get(key);
       } else {
         try {
           LOG.warn(comp + " does not exist. Compiling it immediately");

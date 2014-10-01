@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.codegen;
 
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
@@ -26,21 +27,27 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.json.CoreGsonHelper;
-import org.apache.tajo.org.objectweb.asm.ClassWriter;
 import org.apache.tajo.org.objectweb.asm.Label;
 import org.apache.tajo.org.objectweb.asm.Opcodes;
 import org.apache.tajo.org.objectweb.asm.Type;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.tuple.offheap.HeapTuple;
+import org.apache.tajo.tuple.offheap.HeapTupleBytesComparator;
 
-import java.lang.reflect.Constructor;
 import java.util.Stack;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
+import static org.apache.tajo.engine.codegen.TajoGeneratorAdapter.TUPLE;
 import static org.apache.tajo.engine.codegen.TajoGeneratorAdapter.getDescription;
 import static org.apache.tajo.engine.eval.FunctionEval.ParamType;
 
 public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext> {
+  public static final EvalCodeGenerator instance;
+
+  static {
+    instance = new EvalCodeGenerator();
+  }
 
   public static final byte UNKNOWN = 0;
   public static final byte TRUE = 1;
@@ -66,35 +73,8 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
       new byte [] {UNKNOWN, TRUE,    FALSE}    // false
   };
 
-  private final TajoClassLoader classLoader;
-  static int classSeq = 1;
-
-  public EvalCodeGenerator(TajoClassLoader classLoader) {
-    this.classLoader = classLoader;
-  }
-
-  public EvalNode compile(Schema schema, EvalNode expr) throws CompilationError {
-
-    ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
-
-    String className = EvalCodeGenerator.class.getPackage().getName() + ".CompiledEval" + classSeq++;
-    EvalCodeGenContext context = new EvalCodeGenContext(TajoGeneratorAdapter.getInternalName(className),
-        schema, classWriter, expr);
-    visit(context, expr, new Stack<EvalNode>());
-    context.emitReturn();
-
-    Class aClass = classLoader.defineClass(className, classWriter.toByteArray());
-
-    Constructor constructor;
-    EvalNode compiledEval;
-
-    try {
-      constructor = aClass.getConstructor();
-      compiledEval = (EvalNode) constructor.newInstance();
-    } catch (Throwable t) {
-      throw new CompilationError(expr, t, classWriter.toByteArray());
-    }
-    return compiledEval;
+  public static void visit(EvalCodeGenContext context, EvalNode eval) {
+    instance.visit(context, eval, new Stack<EvalNode>());
   }
 
   public EvalNode visitBinaryEval(EvalCodeGenContext context, Stack<EvalNode> stack, BinaryEval binaryEval) {
@@ -312,7 +292,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
   }
 
   public EvalNode visitCast(EvalCodeGenContext context, Stack<EvalNode> stack, CastEval cast) {
-    DataType  srcType = cast.getOperand().getValueType();
+    DataType srcType = cast.getOperand().getValueType();
     DataType targetType = cast.getValueType();
 
     if (srcType.equals(targetType)) {
@@ -355,23 +335,22 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
       }
 
       context.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
-      context.emitIsNullOfTuple(fieldIdx);
-
-      context.push(true);
+      context.emitIsNullOfTuple(fieldIdx); // It will push 1 if null, and it will push 0 if not null.
 
       Label ifNull = new Label();
       Label afterAll = new Label();
-      context.methodvisitor.visitJumpInsn(Opcodes.IF_ICMPEQ, ifNull);
+      // IFNE means if the first item in stack is not 0.
+      context.methodvisitor.visitJumpInsn(Opcodes.IFNE, ifNull);
 
       context.methodvisitor.visitVarInsn(Opcodes.ALOAD, 2);
       context.emitGetValueOfTuple(columnRef.getDataType(), fieldIdx);
-
       context.pushNullFlag(true); // not null
       context.methodvisitor.visitJumpInsn(Opcodes.GOTO, afterAll);
 
       context.methodvisitor.visitLabel(ifNull);
       context.pushDummyValue(field.getValueType());
       context.pushNullFlag(false);
+      context.methodvisitor.visitJumpInsn(Opcodes.GOTO, afterAll);
 
       context.methodvisitor.visitLabel(afterAll);
     }
@@ -459,6 +438,12 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     emitLabel(context, afterEnd);
 
     return evalNode;
+  }
+
+  public static boolean isTextField(EvalNode evalNode) {
+    TajoDataTypes.Type type = evalNode.getValueType().getType();
+    boolean textType = (type == TajoDataTypes.Type.TEXT || type == TajoDataTypes.Type.CHAR);
+    return textType && evalNode.getType() == EvalType.FIELD;
   }
 
   public EvalNode visitComparisonEval(EvalCodeGenContext context, BinaryEval evalNode, Stack<EvalNode> stack)
@@ -622,7 +607,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
       break;
     case INTERVAL:
       // load pre-stored variable.
-      emitGetField(context, context.owner, context.symbols.get(constEval), IntervalDatum.class);
+      emitGetField(context, context.owner, context.variables.symbols.get(constEval), IntervalDatum.class);
       break;
     default:
       throw new UnsupportedOperationException(constEval.getValueType().getType().name() +
@@ -633,7 +618,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     return constEval;
   }
 
-  public static ParamType [] getParamTypes(EvalNode [] arguments) {
+  public static ParamType[] getParamTypes(EvalNode[] arguments) {
     ParamType[] paramTypes = new ParamType[arguments.length];
     for (int i = 0; i < arguments.length; i++) {
       if (arguments[i].getType() == EvalType.CONST) {
@@ -657,7 +642,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     final int DATUM_ARRAY = context.astore();
 
     stack.push(func);
-    EvalNode [] params = func.getArgs();
+    EvalNode[] params = func.getArgs();
     for (int paramIdx = 0; paramIdx < func.getArgs().length; paramIdx++) {
       context.aload(DATUM_ARRAY);       // array ref
       context.methodvisitor.visitLdcInsn(paramIdx); // array idx
@@ -676,7 +661,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
 
     FunctionDesc desc = func.getFuncDesc();
 
-    String fieldName = context.symbols.get(func);
+    String fieldName = context.variables.symbols.get(func);
     String funcDescName = "L" + TajoGeneratorAdapter.getInternalName(desc.getFuncClass()) + ";";
 
     context.aload(0);
@@ -689,7 +674,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
   }
 
   public EvalNode visitInPredicate(EvalCodeGenContext context, EvalNode patternEval, Stack<EvalNode> stack) {
-    String fieldName = context.symbols.get(patternEval);
+    String fieldName = context.variables.symbols.get(patternEval);
     emitGetField(context, context.owner, fieldName, InEval.class);
     if (context.schema != null) {
       emitGetField(context, context.owner, "schema", Schema.class);
@@ -705,7 +690,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
 
   protected EvalNode visitStringPatternMatch(EvalCodeGenContext context, EvalNode patternEval, Stack<EvalNode> stack) {
     Class clazz = getStringPatternEvalClass(patternEval.getType());
-    String fieldName = context.symbols.get(patternEval);
+    String fieldName = context.variables.symbols.get(patternEval);
     emitGetField(context, context.owner, fieldName, clazz);
     if (context.schema != null) {
       emitGetField(context, context.owner, "schema", Schema.class);

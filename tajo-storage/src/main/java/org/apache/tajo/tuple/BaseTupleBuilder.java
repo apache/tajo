@@ -103,8 +103,10 @@ public class BaseTupleBuilder extends OffHeapRowWriter implements TupleBuilder, 
   }
 
   public void release() {
-    UnsafeUtil.free(buffer);
-    buffer = null;
-    address = 0;
+    if (buffer != null) {
+      UnsafeUtil.free(buffer);
+      buffer = null;
+      address = 0;
+    }
   }
 }
