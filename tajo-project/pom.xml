@@ -34,7 +34,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <hadoop.version>2.3.0</hadoop.version>
+    <hadoop.version>2.5.1</hadoop.version>
     <protobuf.version>2.5.0</protobuf.version>
     <tajo.version>0.9.0-SNAPSHOT</tajo.version>
     <tajo.root>${project.parent.relativePath}/..</tajo.root>
@@ -121,7 +121,7 @@
       <roles>
         <role>V.P.</role>
       </roles>
-      <timezone>+9</timezone>
+      <timezone>-8</timezone>
     </developer>
     <developer>
       <id>blrunner</id>
@@ -263,6 +263,11 @@
     <contributor>
       <name>Jinhang Choi</name>
       <organization>Korea University</organization>
+      <roles><role>Contributor</role></roles>
+    </contributor>
+    <contributor>
+      <name>Jihun Kang</name>
+      <organization></organization>
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
