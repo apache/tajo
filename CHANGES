@@ -155,6 +155,8 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1074: Query calculates wrong progress before subquery init. (jinho)
+
     TAJO-1025: Network disconnection during query processing can cause 
     infinite exceptions. (Jihun Kang via jinho)
 
