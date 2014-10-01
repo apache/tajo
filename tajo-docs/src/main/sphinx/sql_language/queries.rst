@@ -33,9 +33,9 @@ From Clause
 The ``FROM`` clause specifies one or more other tables given in a comma-separated table reference list.
 A table reference can be a relation name , or a subquery, a table join, or complex combinations of them.
 
-----------------------
-Table and Table Aliase
-----------------------
+-----------------------
+Table and Table Aliases
+-----------------------
 
 A temporary name can be given to tables and complex table references to be used
 for references to the derived table in the rest of the query. This is called a table alias.
@@ -54,7 +54,7 @@ or
 
 The ``AS`` keyword can be omitted, and *Alias* can be any identifier.
 
-A typical application of table aliases is to give short names to a long table references. For example:
+A typical application of table aliases is to give short names to long table references. For example:
 
 .. code-block:: sql
 
@@ -66,8 +66,8 @@ Joined Tables
 
 Tajo supports all kinds of join types.
 
-Join Type
-~~~~~~~~~
+Join Types
+~~~~~~~~~~
 
 Cross Join
 ^^^^^^^^^^
@@ -76,7 +76,7 @@ Cross Join
 
   FROM T1 CROSS JOIN T2
 
-Cross join, also called *Catesian product*, results in every possible combination of rows from T1 and T2.
+Cross join, also called *Cartesian product*, results in every possible combination of rows from T1 and T2.
 
 ``FROM T1 CROSS JOIN T2`` is equivalent to ``FROM T1, T2``.
 
@@ -190,7 +190,7 @@ Orderby and Limit Clauses
   FROM ... ORDER BY <sort_expr> [(ASC|DESC)] [NULL (FIRST|LAST) [,...]
 
 ``sort_expr`` can be a column reference, aliased column reference, or a complex expression. 
-``ASC`` indicates an ascending order of ``sort_expr`` values. ``DESC`` indicates an descending order of ``sort_expr`` values.
+``ASC`` indicates an ascending order of ``sort_expr`` values. ``DESC`` indicates a descending order of ``sort_expr`` values.
 ``ASC`` is the default order.
 
 ``NULLS FIRST`` and ``NULLS LAST`` options can be used to determine whether nulls values appear 
@@ -237,7 +237,7 @@ Also, ``ORDER BY`` clause can be used without ``PARTITION BY`` clause as follows
 
   SELECT salary, sum(salary) OVER (ORDER BY salary) FROM empsalary;
 
-Also, any expressions and aggregation functions are allowed in ``ORDER BY`` clause as follows:
+Also, all expressions and aggregation functions are allowed in ``ORDER BY`` clause as follows:
 
 .. code-block:: sql
 
