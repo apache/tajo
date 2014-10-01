@@ -155,6 +155,12 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-981: Help command (\?) in tsql takes too long time. (YeonSu Han via jaehwa)
+
+    TAJO-962: Column reference used in LIMIT clause incurs NPE.
+
+    TAJO-1074: Query calculates wrong progress before subquery init. (jinho)
+
     TAJO-1025: Network disconnection during query processing can cause 
     infinite exceptions. (Jihun Kang via jinho)
 
@@ -434,6 +440,8 @@ Release 0.9.0 - unreleased
 
   TASKS
 
+    TAJO-1078: Update contributor list. (hyunsik)
+
     TAJO-1070: BSTIndexScanExec should not seek a negative offset. (jinho)
 
     TAJO-1054: Wrong comment in ByteUtils.splitWorker(). 
@@ -468,6 +476,8 @@ Release 0.9.0 - unreleased
     TAJO-834: Add Travis notification to issues@tajo.a.o and IRC. hyunsik)
 
   SUB TASKS
+
+    TAJO-1061: TAJO-1061: Update build documentation. (jaehwa)
 
     TAJO-1060: Apply updated hadoop versions to README and BUILDING files.
     (jinho)

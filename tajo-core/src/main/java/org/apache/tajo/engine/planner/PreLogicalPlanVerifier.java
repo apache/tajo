@@ -90,6 +90,20 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <PreLogicalPlanVe
   }
 
   @Override
+  public Expr visitLimit(Context context, Stack<Expr> stack, Limit expr) throws PlanningException {
+    stack.push(expr);
+
+    if (ExprFinder.finds(expr.getFetchFirstNum(), OpType.Column).size() > 0) {
+      context.state.addVerification("argument of LIMIT must not contain variables");
+    }
+
+    visit(context, stack, expr.getFetchFirstNum());
+    Expr result = visit(context, stack, expr.getChild());
+    stack.pop();
+    return result;
+  }
+
+  @Override
   public Expr visitGroupBy(Context context, Stack<Expr> stack, Aggregation expr) throws PlanningException {
     super.visitGroupBy(context, stack, expr);
 
