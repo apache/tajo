@@ -587,7 +587,7 @@ public class TajoCli {
         if (TajoClient.isInCompleteState(status.getState()) && status.getState() != QueryState.QUERY_KILL_WAIT) {
           break;
         } else {
-          Thread.sleep(Math.min(100 * progressRetries, 1000));
+          Thread.sleep(Math.min(200 * progressRetries, 1000));
           progressRetries += 2;
         }
       }
