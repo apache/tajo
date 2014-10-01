@@ -245,26 +245,18 @@ public class Query implements EventHandler<QueryEvent> {
       synchronized(subqueries) {
         tempSubQueries.addAll(subqueries.values());
       }
+
       float [] subProgresses = new float[tempSubQueries.size()];
-      boolean finished = true;
       for (SubQuery subquery: tempSubQueries) {
         if (subquery.getState() != SubQueryState.NEW) {
           subProgresses[idx] = subquery.getProgress();
-          if (finished && subquery.getState() != SubQueryState.SUCCEEDED) {
-            finished = false;
-          }
         } else {
           subProgresses[idx] = 0.0f;
-          finished = false;
         }
         idx++;
       }
 
-      if (finished) {
-        return 1.0f;
-      }
-
-      float totalProgress = 0;
+      float totalProgress = 0.0f;
       float proportion = 1.0f / (float)(getExecutionBlockCursor().size() - 1); // minus one is due to
 
       for (int i = 0; i < subProgresses.length; i++) {

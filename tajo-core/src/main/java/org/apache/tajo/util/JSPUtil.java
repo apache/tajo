@@ -218,7 +218,7 @@ public class JSPUtil {
     });
   }
 
-  static final DecimalFormat PERCENT_FORMAT = new DecimalFormat("###.0");
+  static final DecimalFormat PERCENT_FORMAT = new DecimalFormat("###.#");
   public static String percentFormat(float value) {
     return PERCENT_FORMAT.format(value * 100.0f);
   }
