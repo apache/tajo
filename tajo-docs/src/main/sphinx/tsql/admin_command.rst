@@ -7,7 +7,7 @@ Administration Commands
 Synopsis
 ==========
 
-Tsql provides commands for administrator as follows:
+Tsql provides administration commands as follows:
 
 .. code-block:: sql
 
