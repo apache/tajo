@@ -277,25 +277,7 @@ public class CatalogUtil {
   }
 
   public static StoreType getStoreType(final String typeStr) {
-    if (typeStr.equalsIgnoreCase(StoreType.CSV.name())) {
-      return StoreType.CSV;
-    } else if (typeStr.equalsIgnoreCase(StoreType.RAW.name())) {
-      return StoreType.RAW;
-    } else if (typeStr.equalsIgnoreCase(StoreType.ROWFILE.name())) {
-      return StoreType.ROWFILE;
-    } else if (typeStr.equalsIgnoreCase(StoreType.RCFILE.name())) {
-      return StoreType.RCFILE;
-    } else if (typeStr.equalsIgnoreCase(StoreType.TREVNI.name())) {
-      return StoreType.TREVNI;
-    } else if (typeStr.equalsIgnoreCase(StoreType.PARQUET.name())) {
-      return StoreType.PARQUET;
-    } else if (typeStr.equalsIgnoreCase(StoreType.SEQUENCEFILE.name())) {
-      return StoreType.SEQUENCEFILE;
-    } else if (typeStr.equalsIgnoreCase(StoreType.AVRO.name())) {
-      return StoreType.AVRO;
-    } else {
-      return null;
-    }
+    return StoreType.valueOf(typeStr.toUpperCase());
   }
 
   public static TableMeta newTableMeta(StoreType type) {

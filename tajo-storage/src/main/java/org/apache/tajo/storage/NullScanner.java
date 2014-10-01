@@ -19,7 +19,9 @@ package org.apache.tajo.storage; /**
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
 
 import java.io.IOException;
 
@@ -33,6 +35,13 @@ public class NullScanner extends FileScanner {
     progress = 1.0f;
 
     return null;
+  }
+
+  @Override
+  public boolean nextFetch(OffHeapRowBlock rowBlock) throws IOException {
+    progress = 1.0f;
+
+    return false;
   }
 
   @Override

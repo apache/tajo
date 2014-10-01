@@ -61,7 +61,7 @@ public class TestSchemaConverter {
       "  optional binary mytext (UTF8);\n" +
       "  optional binary myblob;\n" +
       // NULL_TYPE fields are not encoded.
-      "  optional binary myinet4;\n" +
+      "  optional int32 myinet4;\n" +
       "  optional binary myprotobuf;\n" +
       "}\n";
 

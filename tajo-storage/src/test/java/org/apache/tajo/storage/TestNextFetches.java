@@ -97,11 +97,14 @@ public class TestNextFetches {
       "  ]\n" +
       "}\n";
 
+  private Schema schema;
+
   private StoreType storeType;
   private boolean splitable;
   private boolean statsable;
   private Path testDir;
   private FileSystem fs;
+  private Tuple allTypedTuple;
 
   public TestNextFetches(StoreType type, boolean splitable, boolean statsable) throws IOException {
     this.storeType = type;
@@ -116,6 +119,43 @@ public class TestNextFetches {
 
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     fs = testDir.getFileSystem(conf);
+
+    schema = new Schema();
+    schema.addColumn("col1", Type.BOOLEAN);
+    schema.addColumn("col2", Type.CHAR, 7);
+    schema.addColumn("col3", Type.INT2);
+    schema.addColumn("col4", Type.INT4);
+    schema.addColumn("col5", Type.INT8);
+    schema.addColumn("col6", Type.FLOAT4);
+    schema.addColumn("col7", Type.FLOAT8);
+    schema.addColumn("col8", Type.TEXT);
+    schema.addColumn("col9", Type.BLOB);
+    schema.addColumn("col10", Type.INET4);
+    schema.addColumn("col11", Type.NULL_TYPE);
+    if (storeType == StoreType.RAW) {
+      schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+    }
+
+    QueryId queryid = new QueryId("12345", 5);
+    ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
+    int columnNum = 11 + (storeType == StoreType.RAW ? 1 : 0);
+    allTypedTuple = new VTuple(columnNum);
+    allTypedTuple.put(new Datum[]{
+        DatumFactory.createBool(true),
+        DatumFactory.createChar("jinho"),
+        DatumFactory.createInt2((short) 17),
+        DatumFactory.createInt4(59),
+        DatumFactory.createInt8(23l),
+        DatumFactory.createFloat4(77.9f),
+        DatumFactory.createFloat8(271.9f),
+        DatumFactory.createText("jinho"),
+        DatumFactory.createBlob("jinho babo".getBytes()),
+        DatumFactory.createInet4("192.168.0.1"),
+        NullDatum.get(),
+    });
+    if (storeType == StoreType.RAW) {
+      allTypedTuple.put(11, factory.createDatum(queryid.getProto()));
+    }
   }
 
   @Parameterized.Parameters
@@ -125,7 +165,7 @@ public class TestNextFetches {
         // TODO - to be implemented
 //        {StoreType.RAW, false, false},
 //        {StoreType.RCFILE, true, true},
-//        {StoreType.PARQUET, false, false},
+        {StoreType.BLOCK_PARQUET, false, false},
 //        {StoreType.SEQUENCEFILE, true, true},
 //        {StoreType.AVRO, false, false},
     });
@@ -301,12 +341,13 @@ public class TestNextFetches {
             || storeType == StoreType.TREVNI
             || storeType == StoreType.CSV
             || storeType == StoreType.PARQUET
+            || storeType == StoreType.BLOCK_PARQUET
             || storeType == StoreType.SEQUENCEFILE
             || storeType == StoreType.AVRO) {
           assertTrue(tuple.isNull(0));
         }
-        assertTrue(tupleCnt + 2 == tuple.getInt8(1));
-        assertTrue(tupleCnt + 3 == tuple.getFloat4(2));
+        assertTrue(tuple.toString(), tupleCnt + 2 == tuple.getInt8(1));
+        assertTrue(tuple.toString(), tupleCnt + 3 == tuple.getFloat4(2));
         tupleCnt++;
       }
     }
@@ -319,20 +360,6 @@ public class TestNextFetches {
 
   @Test
   public void testVariousTypes() throws IOException {
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.CHAR, 7);
-    schema.addColumn("col3", Type.INT2);
-    schema.addColumn("col4", Type.INT4);
-    schema.addColumn("col5", Type.INT8);
-    schema.addColumn("col6", Type.FLOAT4);
-    schema.addColumn("col7", Type.FLOAT8);
-    schema.addColumn("col8", Type.TEXT);
-    schema.addColumn("col9", Type.BLOB);
-    schema.addColumn("col10", Type.INET4);
-    schema.addColumn("col11", Type.NULL_TYPE);
-    schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
-
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
@@ -344,26 +371,7 @@ public class TestNextFetches {
     Path tablePath = new Path(testDir, "testVariousTypes.data");
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
     appender.init();
-
-    QueryId queryid = new QueryId("12345", 5);
-    ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
-
-    Tuple tuple = new VTuple(12);
-    tuple.put(new Datum[] {
-        DatumFactory.createBool(true),
-        DatumFactory.createChar("hyunsik"),
-        DatumFactory.createInt2((short) 17),
-        DatumFactory.createInt4(59),
-        DatumFactory.createInt8(23l),
-        DatumFactory.createFloat4(77.9f),
-        DatumFactory.createFloat8(271.9f),
-        DatumFactory.createText("hyunsik"),
-        DatumFactory.createBlob("hyunsik".getBytes()),
-        DatumFactory.createInet4("192.168.0.1"),
-        NullDatum.get(),
-        factory.createDatum(queryid.getProto())
-    });
-    appender.addTuple(tuple);
+    appender.addTuple(allTypedTuple);
     appender.flush();
     appender.close();
 
@@ -379,8 +387,14 @@ public class TestNextFetches {
     while (scanner.nextFetch(rowBlock)) {
       RowBlockReader reader = rowBlock.getReader();
       while (reader.next(zcTuple)) {
-        for (int i = 0; i < tuple.size(); i++) {
-          assertEquals(tuple.get(i), zcTuple.get(i));
+        for (int i = 0; i < allTypedTuple.size(); i++) {
+          if (schema.getColumn(i).getDataType().getType() == Type.CHAR) {
+            assertEquals(i + "th column is different.",
+                allTypedTuple.get(i).asChars().trim(), zcTuple.get(i).asChars().trim());
+          } else {
+            assertEquals(i + "th column is different.", allTypedTuple.get(i), zcTuple.get(i));
+          }
+
         }
       }
     }
@@ -391,20 +405,6 @@ public class TestNextFetches {
 
   @Test
   public void testNullHandlingTypes() throws IOException {
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.CHAR, 7);
-    schema.addColumn("col3", Type.INT2);
-    schema.addColumn("col4", Type.INT4);
-    schema.addColumn("col5", Type.INT8);
-    schema.addColumn("col6", Type.FLOAT4);
-    schema.addColumn("col7", Type.FLOAT8);
-    schema.addColumn("col8", Type.TEXT);
-    schema.addColumn("col9", Type.BLOB);
-    schema.addColumn("col10", Type.INET4);
-    schema.addColumn("col11", Type.NULL_TYPE);
-    schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
-
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
@@ -421,34 +421,16 @@ public class TestNextFetches {
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
     appender.init();
 
-    QueryId queryid = new QueryId("12345", 5);
-    ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
-
-    Tuple seedTuple = new VTuple(12);
-    seedTuple.put(new Datum[]{
-        DatumFactory.createBool(true),                // 0
-        DatumFactory.createChar("hyunsik"),           // 1
-        DatumFactory.createInt2((short) 17),          // 2
-        DatumFactory.createInt4(59),                  // 3
-        DatumFactory.createInt8(23l),                 // 4
-        DatumFactory.createFloat4(77.9f),             // 5
-        DatumFactory.createFloat8(271.9f),            // 6
-        DatumFactory.createText("hyunsik"),           // 7
-        DatumFactory.createBlob("hyunsik".getBytes()),// 8
-        DatumFactory.createInet4("192.168.0.1"),      // 9
-        NullDatum.get(),                              // 10
-        factory.createDatum(queryid.getProto())       // 11
-    });
-
+    int columnNum = allTypedTuple.size();
     // Making tuples with different null column positions
     Tuple tuple;
-    for (int i = 0; i < 12; i++) {
-      tuple = new VTuple(12);
-      for (int j = 0; j < 12; j++) {
+    for (int i = 0; i < columnNum; i++) {
+      tuple = new VTuple(columnNum);
+      for (int j = 0; j < columnNum; j++) {
         if (i == j) { // i'th column will have NULL value
           tuple.put(j, NullDatum.get());
         } else {
-          tuple.put(j, seedTuple.get(j));
+          tuple.put(j, allTypedTuple.get(j));
         }
       }
       appender.addTuple(tuple);
@@ -471,12 +453,16 @@ public class TestNextFetches {
       RowBlockReader reader = rowBlock.getReader();
 
       while(reader.next(retrieved)) {
-        assertEquals(12, retrieved.size());
-        for (int j = 0; j < 12; j++) {
+        assertEquals(columnNum, retrieved.size());
+        for (int j = 0; j < columnNum; j++) {
           if (i == j) {
             assertEquals(NullDatum.get(), retrieved.get(j));
           } else {
-            assertEquals(seedTuple.get(j), retrieved.get(j));
+            if (schema.getColumn(j).getDataType().getType() == Type.CHAR) {
+              assertEquals(allTypedTuple.get(j).asChars().trim(), retrieved.get(j).asChars().trim());
+            } else {
+              assertEquals(allTypedTuple.get(j), retrieved.get(j));
+            }
           }
         }
 
@@ -492,20 +478,6 @@ public class TestNextFetches {
   public void testRCFileTextSerializeDeserialize() throws IOException {
     if(storeType != StoreType.RCFILE) return;
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.CHAR, 7);
-    schema.addColumn("col3", Type.INT2);
-    schema.addColumn("col4", Type.INT4);
-    schema.addColumn("col5", Type.INT8);
-    schema.addColumn("col6", Type.FLOAT4);
-    schema.addColumn("col7", Type.FLOAT8);
-    schema.addColumn("col8", Type.TEXT);
-    schema.addColumn("col9", Type.BLOB);
-    schema.addColumn("col10", Type.INET4);
-    schema.addColumn("col11", Type.NULL_TYPE);
-    schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
-
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.putOption(StorageConstants.CSVFILE_SERDE, TextSerializerDeserializer.class.getName());
@@ -518,22 +490,8 @@ public class TestNextFetches {
     QueryId queryid = new QueryId("12345", 5);
     ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
 
-    Tuple tuple = new VTuple(12);
-    tuple.put(new Datum[] {
-        DatumFactory.createBool(true),
-        DatumFactory.createChar("jinho"),
-        DatumFactory.createInt2((short) 17),
-        DatumFactory.createInt4(59),
-        DatumFactory.createInt8(23l),
-        DatumFactory.createFloat4(77.9f),
-        DatumFactory.createFloat8(271.9f),
-        DatumFactory.createText("jinho"),
-        DatumFactory.createBlob("hyunsik babo".getBytes()),
-        DatumFactory.createInet4("192.168.0.1"),
-        NullDatum.get(),
-        factory.createDatum(queryid.getProto())
-    });
-    appender.addTuple(tuple);
+    int columnNum = allTypedTuple.size();
+    appender.addTuple(allTypedTuple);
     appender.flush();
     appender.close();
 
@@ -551,8 +509,8 @@ public class TestNextFetches {
     while (scanner.nextFetch(rowBlock)) {
       RowBlockReader reader = rowBlock.getReader();
       while (reader.next(retrieved)) {
-        for (int i = 0; i < tuple.size(); i++) {
-          assertEquals(tuple.get(i), retrieved.get(i));
+        for (int i = 0; i < allTypedTuple.size(); i++) {
+          assertEquals(allTypedTuple.get(i), retrieved.get(i));
         }
       }
     }
@@ -567,20 +525,6 @@ public class TestNextFetches {
   public void testRCFileBinarySerializeDeserialize() throws IOException {
     if(storeType != StoreType.RCFILE) return;
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.CHAR, 7);
-    schema.addColumn("col3", Type.INT2);
-    schema.addColumn("col4", Type.INT4);
-    schema.addColumn("col5", Type.INT8);
-    schema.addColumn("col6", Type.FLOAT4);
-    schema.addColumn("col7", Type.FLOAT8);
-    schema.addColumn("col8", Type.TEXT);
-    schema.addColumn("col9", Type.BLOB);
-    schema.addColumn("col10", Type.INET4);
-    schema.addColumn("col11", Type.NULL_TYPE);
-    schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
-
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.putOption(StorageConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
@@ -589,27 +533,7 @@ public class TestNextFetches {
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
-
-    QueryId queryid = new QueryId("12345", 5);
-    ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
-
-    Tuple tuple = new VTuple(12);
-    tuple.put(new Datum[] {
-        DatumFactory.createBool(true),
-        DatumFactory.createBit((byte) 0x99),
-        DatumFactory.createChar("jinho"),
-        DatumFactory.createInt2((short) 17),
-        DatumFactory.createInt4(59),
-        DatumFactory.createInt8(23l),
-        DatumFactory.createFloat4(77.9f),
-        DatumFactory.createFloat8(271.9f),
-        DatumFactory.createText("jinho"),
-        DatumFactory.createBlob("hyunsik babo".getBytes()),
-        DatumFactory.createInet4("192.168.0.1"),
-        NullDatum.get(),
-        factory.createDatum(queryid.getProto())
-    });
-    appender.addTuple(tuple);
+    appender.addTuple(allTypedTuple);
     appender.flush();
     appender.close();
 
@@ -627,8 +551,8 @@ public class TestNextFetches {
     while (scanner.nextFetch(rowBlock)) {
       RowBlockReader reader = rowBlock.getReader();
       while (reader.next(retrieved)) {
-        for (int i = 0; i < tuple.size(); i++) {
-          assertEquals(tuple.get(i), retrieved.get(i));
+        for (int i = 0; i < allTypedTuple.size(); i++) {
+          assertEquals(allTypedTuple.get(i), retrieved.get(i));
         }
       }
     }
@@ -643,20 +567,6 @@ public class TestNextFetches {
   public void testSequenceFileTextSerializeDeserialize() throws IOException {
     if(storeType != StoreType.SEQUENCEFILE) return;
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.CHAR, 7);
-    schema.addColumn("col3", Type.INT2);
-    schema.addColumn("col4", Type.INT4);
-    schema.addColumn("col5", Type.INT8);
-    schema.addColumn("col6", Type.FLOAT4);
-    schema.addColumn("col7", Type.FLOAT8);
-    schema.addColumn("col8", Type.TEXT);
-    schema.addColumn("col9", Type.BLOB);
-    schema.addColumn("col10", Type.INET4);
-    schema.addColumn("col11", Type.NULL_TYPE);
-    schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
-
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
@@ -665,26 +575,7 @@ public class TestNextFetches {
     Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
-
-    QueryId queryid = new QueryId("12345", 5);
-    ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
-
-    Tuple tuple = new VTuple(12);
-    tuple.put(new Datum[] {
-        DatumFactory.createBool(true),
-        DatumFactory.createChar("jinho"),
-        DatumFactory.createInt2((short) 17),
-        DatumFactory.createInt4(59),
-        DatumFactory.createInt8(23l),
-        DatumFactory.createFloat4(77.9f),
-        DatumFactory.createFloat8(271.9f),
-        DatumFactory.createText("jinho"),
-        DatumFactory.createBlob("hyunsik babo".getBytes()),
-        DatumFactory.createInet4("192.168.0.1"),
-        NullDatum.get(),
-        factory.createDatum(queryid.getProto())
-    });
-    appender.addTuple(tuple);
+    appender.addTuple(allTypedTuple);
     appender.flush();
     appender.close();
 
@@ -707,8 +598,8 @@ public class TestNextFetches {
     while (scanner.nextFetch(rowBlock)) {
       RowBlockReader reader = rowBlock.getReader();
       while (reader.next(retrieved)) {
-        for (int i = 0; i < tuple.size(); i++) {
-          assertEquals(tuple.get(i), retrieved.get(i));
+        for (int i = 0; i < allTypedTuple.size(); i++) {
+          assertEquals(allTypedTuple.get(i), retrieved.get(i));
         }
       }
     }
@@ -723,21 +614,6 @@ public class TestNextFetches {
   public void testSequenceFileBinarySerializeDeserialize() throws IOException {
     if(storeType != StoreType.SEQUENCEFILE) return;
 
-    Schema schema = new Schema();
-    schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.BIT);
-    schema.addColumn("col3", Type.CHAR, 7);
-    schema.addColumn("col4", Type.INT2);
-    schema.addColumn("col5", Type.INT4);
-    schema.addColumn("col6", Type.INT8);
-    schema.addColumn("col7", Type.FLOAT4);
-    schema.addColumn("col8", Type.FLOAT8);
-    schema.addColumn("col9", Type.TEXT);
-    schema.addColumn("col10", Type.BLOB);
-    schema.addColumn("col11", Type.INET4);
-    schema.addColumn("col12", Type.NULL_TYPE);
-    schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
-
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, BinarySerializerDeserializer.class.getName());
@@ -747,26 +623,7 @@ public class TestNextFetches {
     appender.enableStats();
     appender.init();
 
-    QueryId queryid = new QueryId("12345", 5);
-    ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
-
-    Tuple tuple = new VTuple(13);
-    tuple.put(new Datum[] {
-        DatumFactory.createBool(true),
-        DatumFactory.createBit((byte) 0x99),
-        DatumFactory.createChar("jinho"),
-        DatumFactory.createInt2((short) 17),
-        DatumFactory.createInt4(59),
-        DatumFactory.createInt8(23l),
-        DatumFactory.createFloat4(77.9f),
-        DatumFactory.createFloat8(271.9f),
-        DatumFactory.createText("jinho"),
-        DatumFactory.createBlob("hyunsik babo".getBytes()),
-        DatumFactory.createInet4("192.168.0.1"),
-        NullDatum.get(),
-        factory.createDatum(queryid.getProto())
-    });
-    appender.addTuple(tuple);
+    appender.addTuple(allTypedTuple);
     appender.flush();
     appender.close();
 
@@ -789,8 +646,8 @@ public class TestNextFetches {
     while (scanner.nextFetch(rowBlock)) {
       RowBlockReader reader = rowBlock.getReader();
       while (reader.next(retrieved)) {
-        for (int i = 0; i < tuple.size(); i++) {
-          assertEquals(tuple.get(i), retrieved.get(i));
+        for (int i = 0; i < allTypedTuple.size(); i++) {
+          assertEquals(allTypedTuple.get(i), retrieved.get(i));
         }
       }
     }

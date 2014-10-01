@@ -56,6 +56,7 @@ public class HeapTupleBytesComparator {
     for (int i = 0; i < minWords * Longs.BYTES; i += Longs.BYTES) {
       long lw = UNSAFE.getLong(t1.data, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET + offset1);
       long rw = UNSAFE.getLong(t2.data, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET + offset2);
+
       long diff = lw ^ rw;
 
       if (diff != 0) {

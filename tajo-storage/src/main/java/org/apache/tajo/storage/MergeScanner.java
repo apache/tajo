@@ -117,7 +117,7 @@ public class MergeScanner implements Scanner {
 
   @Override
   public boolean nextFetch(OffHeapRowBlock rowBlock) {
-    throw new UnimplementedException("nextFetch(OffHeapRowBlock) is not implemented");
+    throw new UnimplementedException("MergeScanner::nextFetch(OffHeapRowBlock) is not implemented.");
   }
 
   @Override
