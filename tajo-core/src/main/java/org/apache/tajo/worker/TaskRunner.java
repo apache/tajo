@@ -35,6 +35,7 @@ import org.apache.tajo.engine.query.QueryUnitRequestImpl;
 import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NullCallback;
+import org.jboss.netty.channel.ConnectTimeoutException;
 
 import java.util.concurrent.*;
 
@@ -180,6 +181,7 @@ public class TaskRunner extends AbstractService {
     try {
 
       taskLauncher = new Thread(new Runnable() {
+
         @Override
         public void run() {
           int receivedNum = 0;
@@ -190,7 +192,20 @@ public class TaskRunner extends AbstractService {
             QueryMasterProtocolService.Interface qmClientService;
             try {
               qmClientService = getContext().getQueryMasterStub();
+            } catch (ConnectTimeoutException ce) {
+              // NettyClientBase throws ConnectTimeoutException if connection was failed
+              stop();
+              getContext().stopTaskRunner(getId());
+              LOG.error("Connecting to QueryMaster was failed.", ce);
+              break;
+            } catch (Throwable t) {
+              LOG.fatal("Unable to handle exception: " + t.getMessage(), t);
+              stop();
+              getContext().stopTaskRunner(getId());
+              break;
+            }
 
+            try {
               if (callFuture == null) {
                 callFuture = new CallFuture<QueryUnitRequestProto>();
                 LOG.info("Request GetTask: " + getId());
@@ -200,7 +215,7 @@ public class TaskRunner extends AbstractService {
                     .setWorkerId(getContext().getWorkerContext().getConnectionInfo().getId())
                     .build();
 
-                qmClientService.getTask(null, request, callFuture);
+                qmClientService.getTask(callFuture.getController(), request, callFuture);
               }
               try {
                 // wait for an assigning task for 3 seconds
@@ -211,6 +226,11 @@ public class TaskRunner extends AbstractService {
                 }
               } catch (TimeoutException te) {
                 if(stopped) {
+                  break;
+                }
+
+                if(callFuture.getController().failed()){
+                  LOG.error(callFuture.getController().errorText());
                   break;
                 }
                 // if there has been no assigning task for a given period,
@@ -262,6 +282,10 @@ public class TaskRunner extends AbstractService {
                     taskRequest = null;
                   }
                 }
+              } else {
+                stop();
+                //notify to TaskRunnerManager
+                getContext().stopTaskRunner(getId());
               }
             } catch (Throwable t) {
               LOG.fatal(t.getMessage(), t);
