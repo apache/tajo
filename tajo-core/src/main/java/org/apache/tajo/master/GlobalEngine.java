@@ -39,6 +39,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
@@ -750,6 +751,11 @@ public class GlobalEngine extends AbstractService {
 
     TableStats stats = new TableStats();
     stats.setNumBytes(totalSize);
+
+    if (isExternal) { // if it is an external table, there is no way to know the exact row number without processing.
+      stats.setNumRows(TajoClient.UNKNOWN_ROW_NUMBER);
+    }
+
     TableDesc desc = new TableDesc(CatalogUtil.buildFQName(databaseName, simpleTableName),
         schema, meta, path, isExternal);
     desc.setStats(stats);
