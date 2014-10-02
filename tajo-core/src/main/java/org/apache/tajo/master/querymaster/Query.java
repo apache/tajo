@@ -465,7 +465,7 @@ public class Query implements EventHandler<QueryEvent> {
               } catch (IOException ioe) {
                 // Remove created dirs
                 for(Map.Entry<Path, Path> entry : renameDirs.entrySet()) {
-                  fs.deleteOnExit(entry.getValue());
+                  fs.delete(entry.getValue(), true);
                 }
 
                 // Recovery renamed dirs
