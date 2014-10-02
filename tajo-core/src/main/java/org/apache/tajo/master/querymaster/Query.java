@@ -433,9 +433,6 @@ public class Query implements EventHandler<QueryEvent> {
             boolean committed = false;
             Path oldTableDir = new Path(queryContext.getStagingDir(), TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
 
-            // INSERT OVERWRITE INTO always moves the result data into the original table location.
-            // As a result, all existing partitions have been removed. The query should not remove all partitions
-            // because existing partitions may be a data-set for a production cluster.
             if (queryContext.hasPartition()) {
               Map<Path, Path> renameDirs = TUtil.newHashMap();
               Map<Path, Path> recoveryDirs = TUtil.newHashMap();
@@ -460,7 +457,7 @@ public class Query implements EventHandler<QueryEvent> {
                     recoveryDirs.put(entry.getValue(), recoveryPath);
                   }
                   // Delete existing directory
-                  fs.deleteOnExit(entry.getValue());
+                  fs.delete(entry.getValue(), true);
                   // Rename staging directory to final output directory
                   fs.rename(entry.getKey(), entry.getValue());
                 }
@@ -473,7 +470,7 @@ public class Query implements EventHandler<QueryEvent> {
 
                 // Recovery renamed dirs
                 for(Map.Entry<Path, Path> entry : recoveryDirs.entrySet()) {
-                  fs.deleteOnExit(entry.getValue());
+                  fs.delete(entry.getValue(), true);
                   fs.rename(entry.getValue(), entry.getKey());
                 }
                 throw new IOException(ioe.getMessage());
@@ -544,7 +541,7 @@ public class Query implements EventHandler<QueryEvent> {
     }
 
     /**
-     * This method rename staging directory to final output directory recursively.
+     * This method sets a a rename map which includes renamed staging directory to final output directory recursively.
      * If there exists some data files, this delete it for duplicate data.
      *
      *

@@ -484,7 +484,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
         "R,3,3,49.0\n";
     assertEquals(expected, resultSetData);
 
-    // insert overwrite into already exists partitioned table with COLUMN_PARITION_REMOVE_ALL_PARTITIONS is false
+    // Check not to remove existing partition directories.
     res = executeString("insert overwrite into " + tableName
         + " select l_returnflag, l_orderkey, l_partkey, 30.0 as l_quantity from lineitem "
         + " where l_orderkey = 1 and l_partkey = 1 and  l_linenumber = 1");
