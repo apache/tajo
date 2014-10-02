@@ -440,6 +440,8 @@ Release 0.9.0 - unreleased
 
   TASKS
 
+    TAJO-1068: Add SQL Query documentation. (hyunsik)
+
     TAJO-1078: Update contributor list. (hyunsik)
 
     TAJO-1070: BSTIndexScanExec should not seek a negative offset. (jinho)
