@@ -72,7 +72,7 @@ public class StoreIndexExec extends UnaryPhysicalExec {
 //    String[] splits = logicalPlan.getIndexName().split("\\.");
 //    Path indexPath = new Path(conf.getVar(ConfVars.WAREHOUSE_DIR), splits[0] + "/" + splits[1] + "/" +
 //        context.getUniqueKeyFromFragments());
-    Path indexPath = logicalPlan.getIndexPath();
+    Path indexPath = new Path(logicalPlan.getIndexPath(), ""+context.getUniqueKeyFromFragments());
     System.out.println("exec: " + indexPath);
     // TODO: Create factory using reflection
     BSTIndex bst = new BSTIndex(conf);

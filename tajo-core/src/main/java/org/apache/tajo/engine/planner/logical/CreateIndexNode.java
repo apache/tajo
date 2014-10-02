@@ -30,7 +30,7 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 
 public class CreateIndexNode extends UnaryNode implements Cloneable {
   @Expose private boolean isUnique;
-//  @Expose private String indexName;
+  @Expose private String indexName;
   @Expose private Path indexPath;
   @Expose private SortSpec[] sortSpecs;
   @Expose private IndexMethod indexType = IndexMethod.TWO_LEVEL_BIN_TREE;
@@ -48,13 +48,13 @@ public class CreateIndexNode extends UnaryNode implements Cloneable {
     return isUnique;
   }
 
-//  public void setIndexName(String indexName) {
-//    this.indexName = indexName;
-//  }
-//
-//  public String getIndexName() {
-//    return this.indexName;
-//  }
+  public void setIndexName(String indexName) {
+    this.indexName = indexName;
+  }
+
+  public String getIndexName() {
+    return this.indexName;
+  }
 
   public void setIndexPath(Path indexPath) {
     this.indexPath = indexPath;
@@ -90,7 +90,7 @@ public class CreateIndexNode extends UnaryNode implements Cloneable {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(isUnique, indexPath, sortSpecs, indexType, options);
+    return Objects.hashCode(isUnique, indexName, indexPath, sortSpecs, indexType, options);
   }
 
   @Override
@@ -98,6 +98,7 @@ public class CreateIndexNode extends UnaryNode implements Cloneable {
     if (obj instanceof CreateIndexNode) {
       CreateIndexNode other = (CreateIndexNode) obj;
       return this.isUnique == other.isUnique &&
+          TUtil.checkEquals(this.indexName, other.indexName) &&
           TUtil.checkEquals(this.indexPath, other.indexPath) &&
           TUtil.checkEquals(this.sortSpecs, other.sortSpecs) &&
           this.indexType.equals(other.indexType) &&
@@ -110,6 +111,7 @@ public class CreateIndexNode extends UnaryNode implements Cloneable {
   public Object clone() throws CloneNotSupportedException {
     CreateIndexNode createIndexNode = (CreateIndexNode) super.clone();
     createIndexNode.isUnique = isUnique;
+    createIndexNode.indexName = indexName;
     createIndexNode.indexPath = indexPath;
     createIndexNode.sortSpecs = sortSpecs.clone();
     createIndexNode.indexType = indexType;
@@ -132,7 +134,7 @@ public class CreateIndexNode extends UnaryNode implements Cloneable {
 
   @Override
   public String toString() {
-    return "CreateIndex (indexPath=" + indexPath + ", type=" + indexType.name() +
+    return "CreateIndex (indexName=" + indexName + ", indexPath=" + indexPath + ", type=" + indexType.name() +
         ", isUnique=" + isUnique + ", " + getSortSpecString() + ")";
   }
 

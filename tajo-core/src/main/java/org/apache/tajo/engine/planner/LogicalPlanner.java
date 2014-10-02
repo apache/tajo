@@ -36,6 +36,8 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.exception.VerifyException;
@@ -1885,6 +1887,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return alterTableNode;
   }
 
+  private static Path getIndexPath(PlanContext context, String databaseName, String indexName) {
+    return new Path(TajoConf.getWarehouseDir(context.queryContext.getConf()),
+        databaseName + "/" + indexName + "/");
+  }
+
   @Override
   public LogicalNode visitCreateIndex(PlanContext context, Stack<Expr> stack, CreateIndex createIndex)
       throws PlanningException {
@@ -1917,6 +1924,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     createIndexNode.setSortSpecs(annotateSortSpecs(block, referNames, sortSpecs));
     createIndexNode.setIndexType(IndexMethod.valueOf(createIndex.getMethodSpec().getName().toUpperCase()));
+    createIndexNode.setIndexPath(getIndexPath(context, context.queryContext.getCurrentDatabase(),
+        createIndex.getIndexName()));
 
     if (createIndex.getParams() != null) {
       KeyValueSet keyValueSet = new KeyValueSet();
