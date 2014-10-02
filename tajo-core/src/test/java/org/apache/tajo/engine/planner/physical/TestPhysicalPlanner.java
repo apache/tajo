@@ -984,7 +984,7 @@ public class TestPhysicalPlanner {
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testCreateIndex");
 //<<<<<<< HEAD
-    Path indexPath = StorageUtil.concatPath(conf.getVar(ConfVars.ROOT_DIR), "default/idx_employee");
+    Path indexPath = StorageUtil.concatPath(TajoConf.getWarehouseDir(conf), "default/idx_employee");
     if (sm.getFileSystem().exists(indexPath)) {
       sm.getFileSystem().delete(indexPath, true);
     }

@@ -1618,7 +1618,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       String sql = "INSERT INTO " + TB_INDEXES +
           " (" + COL_DATABASES_PK + ", " + COL_TABLES_PK + ", INDEX_NAME, " +
-          "COLUMN_NAME, DATA_TYPE, INDEX_TYPE, IS_UNIQUE, IS_CLUSTERED, IS_ASCENDING) VALUES (?,?,?,?,?,?,?,?,?)";
+          "COLUMN_NAME, DATA_TYPE, INDEX_TYPE, PATH, IS_UNIQUE, IS_CLUSTERED, IS_ASCENDING) " +
+          "VALUES (?,?,?,?,?,?,?,?,?,?)";
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
@@ -1634,9 +1635,10 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setString(4, columnName);
       pstmt.setString(5, proto.getColumn().getDataType().getType().name());
       pstmt.setString(6, proto.getIndexMethod().toString());
-      pstmt.setBoolean(7, proto.hasIsUnique() && proto.getIsUnique());
-      pstmt.setBoolean(8, proto.hasIsClustered() && proto.getIsClustered());
-      pstmt.setBoolean(9, proto.hasIsAscending() && proto.getIsAscending());
+      pstmt.setString(7, proto.getIndexPath().toString());
+      pstmt.setBoolean(8, proto.hasIsUnique() && proto.getIsUnique());
+      pstmt.setBoolean(9, proto.hasIsClustered() && proto.getIsClustered());
+      pstmt.setBoolean(10, proto.hasIsAscending() && proto.getIsAscending());
       pstmt.executeUpdate();
       conn.commit();
     } catch (SQLException se) {
@@ -1690,7 +1692,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   final static String GET_INDEXES_SQL =
-      "SELECT " + COL_TABLES_PK + ", INDEX_NAME, COLUMN_NAME, DATA_TYPE, INDEX_TYPE, IS_UNIQUE, " +
+      "SELECT " + COL_TABLES_PK + ", INDEX_NAME, COLUMN_NAME, DATA_TYPE, INDEX_TYPE, PATH, IS_UNIQUE, " +
           "IS_CLUSTERED, IS_ASCENDING FROM " + TB_INDEXES;
 
 
@@ -1883,9 +1885,10 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   private void resultToIndexDescProtoBuilder(IndexDescProto.Builder builder,
                                              final ResultSet res) throws SQLException {
-    builder.setIndexPath(res.getString("index_name"));
+    builder.setName(res.getString("index_name"));
     builder.setColumn(indexResultToColumnProto(res));
     builder.setIndexMethod(getIndexMethod(res.getString("index_type").trim()));
+    builder.setIndexPath(res.getString("path"));
     builder.setIsUnique(res.getBoolean("is_unique"));
     builder.setIsClustered(res.getBoolean("is_clustered"));
     builder.setIsAscending(res.getBoolean("is_ascending"));
