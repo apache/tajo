@@ -24,6 +24,39 @@ If you want to customize the catalog service, copy ``$TAJO_HOME/conf/catalog-sit
 +-----------------------------------+------------------------------------------------+
 
 =========================
+Derby Configuration
+=========================
+
+By default, Tajo uses `Apache Derby <http://db.apache.org/derby/>`_ as a persistent storage in order to manage table meta data. So, without any configuration, you can use Derby for catalog store.
+
+Also, you can set manually configs in ``conf/catalog-site.xml`` as follows:
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.catalog.store.class</name>
+    <value>org.apache.tajo.catalog.store.DerbyStore</value>
+  </property>
+
+  <property>
+    <name>tajo.catalog.uri</name>
+    <value>jdbc:derby:<absolute directory>;create=true</value>
+  </property>
+
+Since Derby is a file-based embedded database, it stores data into a specified directory. So, you need to specify the directory for storing data files instead of specifying JDBC URI with hostname and port. For example, in case where you use '/var/data/tajo-catalog' as a derby store directory, you should set configs as follows:
+
+.. code-block:: xml
+  
+  <property>
+    <name>tajo.catalog.uri</name>
+    <value>jdbc:derby:/var/data/tajo-catalog;create=true</value>
+  </property>
+
+.. warning::
+
+  By default, *Catalog server* stores catalog data into ``/tmp/tajo-catalog-${username}`` directory. But, some operating systems may remove all contents in ``/tmp`` when booting up. In order to ensure persistent store of your catalog data, you need to set a proper location of derby directory.
+
+=========================
 MySQLStore Configuration
 =========================
 
