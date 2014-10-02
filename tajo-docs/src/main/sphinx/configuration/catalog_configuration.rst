@@ -43,7 +43,7 @@ Also, you can set manually configs in ``conf/catalog-site.xml`` as follows:
     <value>jdbc:derby:<absolute directory>;create=true</value>
   </property>
 
-Since Derby is a file-based embedded database, it stores data into a specified directory. So, you need to specify the directory for storing data files instead of specifing JDBC URI with hostname and port. For example, in case where you use '/var/data/tajo-catalog' as a derby store directory, you should set configs as follows:
+Since Derby is a file-based embedded database, it stores data into a specified directory. So, you need to specify the directory for storing data files instead of specifying JDBC URI with hostname and port. For example, in case where you use '/var/data/tajo-catalog' as a derby store directory, you should set configs as follows:
 
 .. code-block:: xml
   
