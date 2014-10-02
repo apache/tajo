@@ -54,7 +54,8 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
   private String getQuerySuccessMessage(TableDesc tableDesc, float responseTime, int totalPrintedRows, String postfix,
                                         boolean endOfTuple) {
     TableStats stat = tableDesc.getStats();
-    String volume = stat == null ? "unknown bytes" : FileUtil.humanReadableByteCount(stat.getNumBytes(), false);
+    String volume = stat == null ? (endOfTuple ? "0 B" : "unknown bytes") :
+        FileUtil.humanReadableByteCount(stat.getNumBytes(), false);
     long resultRows = stat == null ? TajoClient.UNKNOWN_ROW_NUMBER : stat.getNumRows();
 
     String displayRowNum;
