@@ -20,6 +20,7 @@ package org.apache.tajo.engine.planner.logical;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.engine.planner.PlanString;
 import org.apache.tajo.util.KeyValueSet;
@@ -29,7 +30,8 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 
 public class CreateIndexNode extends UnaryNode implements Cloneable {
   @Expose private boolean isUnique;
-  @Expose private String indexName;
+//  @Expose private String indexName;
+  @Expose private Path indexPath;
   @Expose private SortSpec[] sortSpecs;
   @Expose private IndexMethod indexType = IndexMethod.TWO_LEVEL_BIN_TREE;
   @Expose private KeyValueSet options;
@@ -46,12 +48,20 @@ public class CreateIndexNode extends UnaryNode implements Cloneable {
     return isUnique;
   }
 
-  public void setIndexName(String indexName) {
-    this.indexName = indexName;
+//  public void setIndexName(String indexName) {
+//    this.indexName = indexName;
+//  }
+//
+//  public String getIndexName() {
+//    return this.indexName;
+//  }
+
+  public void setIndexPath(Path indexPath) {
+    this.indexPath = indexPath;
   }
 
-  public String getIndexName() {
-    return this.indexName;
+  public Path getIndexPath() {
+    return this.indexPath;
   }
 
   public void setSortSpecs(SortSpec[] sortSpecs) {
@@ -80,7 +90,7 @@ public class CreateIndexNode extends UnaryNode implements Cloneable {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(isUnique, indexName, sortSpecs, indexType, options);
+    return Objects.hashCode(isUnique, indexPath, sortSpecs, indexType, options);
   }
 
   @Override
@@ -88,7 +98,7 @@ public class CreateIndexNode extends UnaryNode implements Cloneable {
     if (obj instanceof CreateIndexNode) {
       CreateIndexNode other = (CreateIndexNode) obj;
       return this.isUnique == other.isUnique &&
-          TUtil.checkEquals(this.indexName, other.indexName) &&
+          TUtil.checkEquals(this.indexPath, other.indexPath) &&
           TUtil.checkEquals(this.sortSpecs, other.sortSpecs) &&
           this.indexType.equals(other.indexType) &&
           TUtil.checkEquals(this.options, other.options);
@@ -100,7 +110,7 @@ public class CreateIndexNode extends UnaryNode implements Cloneable {
   public Object clone() throws CloneNotSupportedException {
     CreateIndexNode createIndexNode = (CreateIndexNode) super.clone();
     createIndexNode.isUnique = isUnique;
-    createIndexNode.indexName = indexName;
+    createIndexNode.indexPath = indexPath;
     createIndexNode.sortSpecs = sortSpecs.clone();
     createIndexNode.indexType = indexType;
     createIndexNode.options = (KeyValueSet) (options != null ? options.clone() : null);
@@ -122,7 +132,7 @@ public class CreateIndexNode extends UnaryNode implements Cloneable {
 
   @Override
   public String toString() {
-    return "CreateIndex (index=" + indexName + ", type=" + indexType.name() +
+    return "CreateIndex (indexPath=" + indexPath + ", type=" + indexType.name() +
         ", isUnique=" + isUnique + ", " + getSortSpecString() + ")";
   }
 

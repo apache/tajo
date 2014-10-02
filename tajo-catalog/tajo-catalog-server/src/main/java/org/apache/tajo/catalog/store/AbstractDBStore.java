@@ -1630,7 +1630,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
       pstmt.setInt(2, tableId);
-      pstmt.setString(3, proto.getIndexName());
+      pstmt.setString(3, proto.getIndexPath());
       pstmt.setString(4, columnName);
       pstmt.setString(5, proto.getColumn().getDataType().getType().name());
       pstmt.setString(6, proto.getIndexMethod().toString());
@@ -1883,7 +1883,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   private void resultToIndexDescProtoBuilder(IndexDescProto.Builder builder,
                                              final ResultSet res) throws SQLException {
-    builder.setIndexName(res.getString("index_name"));
+    builder.setIndexPath(res.getString("index_name"));
     builder.setColumn(indexResultToColumnProto(res));
     builder.setIndexMethod(getIndexMethod(res.getString("index_type").trim()));
     builder.setIsUnique(res.getBoolean("is_unique"));

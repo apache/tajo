@@ -139,7 +139,7 @@ message FunctionDescProto {
 
 message IndexDescProto {
   required TableIdentifierProto tableIdentifier = 1;
-  required string indexName = 2;
+  required string indexPath = 2;
   required ColumnProto column = 3;
   required IndexMethod indexMethod = 4;
   optional bool isUnique = 5 [default = false];

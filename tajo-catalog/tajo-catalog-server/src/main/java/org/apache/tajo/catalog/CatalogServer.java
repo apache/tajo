@@ -706,12 +706,12 @@ public class CatalogServer extends AbstractService {
       try {
         if (store.existIndexByName(
             indexDesc.getTableIdentifier().getDatabaseName(),
-            indexDesc.getIndexName())) {
-          throw new AlreadyExistsIndexException(indexDesc.getIndexName());
+            indexDesc.getIndexPath())) {
+          throw new AlreadyExistsIndexException(indexDesc.getIndexPath());
         }
         store.createIndex(indexDesc);
       } catch (Exception e) {
-        LOG.error("ERROR : cannot add index " + indexDesc.getIndexName(), e);
+        LOG.error("ERROR : cannot add index " + indexDesc.getIndexPath(), e);
         LOG.error(indexDesc);
         throw new ServiceException(e);
       } finally {
