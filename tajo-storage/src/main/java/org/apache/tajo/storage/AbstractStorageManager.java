@@ -304,7 +304,7 @@ public abstract class AbstractStorageManager {
   // FileInputFormat Area
   /////////////////////////////////////////////////////////////////////////////
 
-  private static final PathFilter hiddenFileFilter = new PathFilter() {
+  public static final PathFilter hiddenFileFilter = new PathFilter() {
     public boolean accept(Path p) {
       String name = p.getName();
       return !name.startsWith("_") && !name.startsWith(".");

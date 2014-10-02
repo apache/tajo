@@ -155,6 +155,8 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1081: Non-forwarded (simple) query shows wrong rows. (hyunsik)
+
     TAJO-981: Help command (\?) in tsql takes too long time. (YeonSu Han via jaehwa)
 
     TAJO-962: Column reference used in LIMIT clause incurs NPE.
@@ -439,6 +441,10 @@ Release 0.9.0 - unreleased
     TAJO-766: Test failures in TestExecExternalShellCommand. (jihoon)
 
   TASKS
+
+    TAJO-1077: Add Derby configuration documentation. (hyunsik)
+
+    TAJO-1068: Add SQL Query documentation. (hyunsik)
 
     TAJO-1078: Update contributor list. (hyunsik)
 
