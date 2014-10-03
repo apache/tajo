@@ -1631,11 +1631,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
       pstmt.setInt(2, tableId);
-      pstmt.setString(3, proto.getIndexPath());
+      pstmt.setString(3, proto.getName());
       pstmt.setString(4, columnName);
       pstmt.setString(5, proto.getColumn().getDataType().getType().name());
       pstmt.setString(6, proto.getIndexMethod().toString());
-      pstmt.setString(7, proto.getIndexPath().toString());
+      pstmt.setString(7, proto.getIndexPath());
       pstmt.setBoolean(8, proto.hasIsUnique() && proto.getIsUnique());
       pstmt.setBoolean(9, proto.hasIsClustered() && proto.getIsClustered());
       pstmt.setBoolean(10, proto.hasIsAscending() && proto.getIsAscending());

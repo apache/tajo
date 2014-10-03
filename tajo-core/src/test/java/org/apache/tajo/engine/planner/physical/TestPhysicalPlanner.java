@@ -983,16 +983,12 @@ public class TestPhysicalPlanner {
     FileFragment[] frags = StorageManager.splitNG(conf, "default.employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testCreateIndex");
-//<<<<<<< HEAD
     Path indexPath = StorageUtil.concatPath(TajoConf.getWarehouseDir(conf), "default/idx_employee");
     if (sm.getFileSystem().exists(indexPath)) {
       sm.getFileSystem().delete(indexPath, true);
     }
 
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
-//=======
-//    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
-//>>>>>>> 644b7cd991ea402115c6dc1d198e7f1d7f41771b
         LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new FileFragment[] {frags[0]}, workDir);
     ctx.setEnforcer(new Enforcer());

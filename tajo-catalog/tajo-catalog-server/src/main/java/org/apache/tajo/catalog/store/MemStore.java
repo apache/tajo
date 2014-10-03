@@ -364,11 +364,11 @@ public class MemStore implements CatalogStore {
     Map<String, IndexDescProto> index = checkAndGetDatabaseNS(indexes, databaseName);
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
 
-    if (index.containsKey(proto.getIndexPath())) {
-      throw new AlreadyExistsIndexException(proto.getIndexPath());
+    if (index.containsKey(proto.getName())) {
+      throw new AlreadyExistsIndexException(proto.getName());
     }
 
-    index.put(proto.getIndexPath(), proto);
+    index.put(proto.getName(), proto);
     indexByColumn.put(proto.getTableIdentifier().getTableName() + "."
         + CatalogUtil.extractSimpleName(proto.getColumn().getName()), proto);
   }
