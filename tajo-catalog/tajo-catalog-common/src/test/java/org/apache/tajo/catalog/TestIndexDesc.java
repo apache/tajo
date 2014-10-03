@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -36,15 +37,15 @@ public class TestIndexDesc {
   
   static {
     desc1 = new IndexDesc(
-        "idx_test", DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
+        "idx_test", new Path("idx_test"), DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
         IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
     
     desc2 = new IndexDesc(
-        "idx_test2", DEFAULT_DATABASE_NAME, "indexed", new Column("score", Type.FLOAT8),
+        "idx_test2", new Path("idx_test2"), DEFAULT_DATABASE_NAME, "indexed", new Column("score", Type.FLOAT8),
         IndexMethod.TWO_LEVEL_BIN_TREE, false, false, false);
     
     desc3 = new IndexDesc(
-        "idx_test", DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
+        "idx_test", new Path("idx_test"), DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
         IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
   }
 
@@ -65,18 +66,20 @@ public class TestIndexDesc {
 
   @Test
   public void testGetFields() {
-    assertEquals("idx_test", desc1.getIndexName());
+    assertEquals("idx_test", desc1.getName());
     assertEquals("indexed", desc1.getTableName());
     assertEquals(new Column("id", Type.INT4), desc1.getColumn());
     assertEquals(IndexMethod.TWO_LEVEL_BIN_TREE, desc1.getIndexMethod());
+    assertEquals(new Path("idx_test"), desc1.getIndexPath());
     assertEquals(true, desc1.isUnique());
     assertEquals(true, desc1.isClustered());
     assertEquals(true, desc1.isAscending());
     
-    assertEquals("idx_test2", desc2.getIndexName());
+    assertEquals("idx_test2", desc2.getName());
     assertEquals("indexed", desc2.getTableName());
     assertEquals(new Column("score", Type.FLOAT8), desc2.getColumn());
     assertEquals(IndexMethod.TWO_LEVEL_BIN_TREE, desc2.getIndexMethod());
+    assertEquals(new Path("idx_test2"), desc2.getIndexPath());
     assertEquals(false, desc2.isUnique());
     assertEquals(false, desc2.isClustered());
     assertEquals(false, desc2.isAscending());

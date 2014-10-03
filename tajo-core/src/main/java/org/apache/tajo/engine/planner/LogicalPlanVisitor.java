@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner;
 
+import org.apache.tajo.engine.planner.LogicalPlan.QueryBlock;
 import org.apache.tajo.engine.planner.logical.*;
 
 import java.util.Stack;
@@ -92,6 +93,9 @@ public interface LogicalPlanVisitor<CONTEXT, RESULT> {
 
   RESULT visitAlterTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, AlterTableNode node,
                          Stack<LogicalNode> stack) throws PlanningException;
+
+  RESULT visitCreateIndex(CONTEXT context, LogicalPlan plan, QueryBlock block, CreateIndexNode node,
+                               Stack<LogicalNode> stack) throws PlanningException;
 
   RESULT visitTruncateTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, TruncateTableNode node,
                          Stack<LogicalNode> stack) throws PlanningException;

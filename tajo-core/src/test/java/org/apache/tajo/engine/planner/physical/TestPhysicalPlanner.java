@@ -975,17 +975,23 @@ public class TestPhysicalPlanner {
   }
 
   public final String [] createIndexStmt = {
-      "create index idx_employee on employee using bst (name null first, empId desc)"
+      "create index idx_employee on employee using TWO_LEVEL_BIN_TREE (name null first, empId desc)"
   };
 
-  //@Test
+  @Test
   public final void testCreateIndex() throws IOException, PlanningException {
     FileFragment[] frags = StorageManager.splitNG(conf, "default.employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testCreateIndex");
+    Path indexPath = StorageUtil.concatPath(TajoConf.getWarehouseDir(conf), "default/idx_employee");
+    if (sm.getFileSystem().exists(indexPath)) {
+      sm.getFileSystem().delete(indexPath, true);
+    }
+
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new FileFragment[] {frags[0]}, workDir);
+    ctx.setEnforcer(new Enforcer());
     Expr context = analyzer.parse(createIndexStmt[0]);
     LogicalPlan plan = planner.createPlan(defaultContext, context);
     LogicalNode rootNode = optimizer.optimize(plan);
@@ -997,7 +1003,7 @@ public class TestPhysicalPlanner {
     }
     exec.close();
 
-    FileStatus [] list = sm.getFileSystem().listStatus(StorageUtil.concatPath(workDir, "index"));
+    FileStatus[] list = sm.getFileSystem().listStatus(indexPath);
     assertEquals(2, list.length);
   }
 

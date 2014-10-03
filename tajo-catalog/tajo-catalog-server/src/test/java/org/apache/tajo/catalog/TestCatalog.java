@@ -374,15 +374,15 @@ public class TestCatalog {
 
   static {
     desc1 = new IndexDesc(
-        "idx_test", DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
+        "idx_test", new Path("idx_test"), DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
         IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
 
     desc2 = new IndexDesc(
-        "idx_test2", DEFAULT_DATABASE_NAME, "indexed", new Column("score", Type.FLOAT8),
+        "idx_test2", new Path("idx_test2"), DEFAULT_DATABASE_NAME, "indexed", new Column("score", Type.FLOAT8),
         IndexMethod.TWO_LEVEL_BIN_TREE, false, false, false);
 
     desc3 = new IndexDesc(
-        "idx_test", DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
+        "idx_test", new Path("idx_test"), DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
         IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
   }
 
@@ -438,23 +438,23 @@ public class TestCatalog {
 	  TableDesc desc = prepareTable();
 	  assertTrue(catalog.createTable(desc));
 	  
-	  assertFalse(catalog.existIndexByName("db1", desc1.getIndexName()));
+	  assertFalse(catalog.existIndexByName("db1", desc1.getName()));
 	  assertFalse(catalog.existIndexByColumn(DEFAULT_DATABASE_NAME, "indexed", "id"));
 	  catalog.createIndex(desc1);
-	  assertTrue(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getIndexName()));
+	  assertTrue(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getName()));
 	  assertTrue(catalog.existIndexByColumn(DEFAULT_DATABASE_NAME, "indexed", "id"));
 
 
-	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getIndexName()));
+	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getName()));
 	  assertFalse(catalog.existIndexByColumn(DEFAULT_DATABASE_NAME, "indexed", "score"));
 	  catalog.createIndex(desc2);
-	  assertTrue(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getIndexName()));
+	  assertTrue(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getName()));
 	  assertTrue(catalog.existIndexByColumn(DEFAULT_DATABASE_NAME, "indexed", "score"));
 	  
-	  catalog.dropIndex(DEFAULT_DATABASE_NAME, desc1.getIndexName());
-	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getIndexName()));
-	  catalog.dropIndex(DEFAULT_DATABASE_NAME, desc2.getIndexName());
-	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getIndexName()));
+	  catalog.dropIndex(DEFAULT_DATABASE_NAME, desc1.getName());
+	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getName()));
+	  catalog.dropIndex(DEFAULT_DATABASE_NAME, desc2.getName());
+	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getName()));
 	  
 	  catalog.dropTable(desc.getName());
     assertFalse(catalog.existsTable(desc.getName()));

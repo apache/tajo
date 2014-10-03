@@ -34,7 +34,10 @@ import org.apache.tajo.algebra.WindowSpec;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.exception.VerifyException;
@@ -821,6 +824,17 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
 
     // Building sort keys
+    SortSpec[] annotatedSortSpecs = annotateSortSpecs(block, referNames, sortSpecs);
+    if (annotatedSortSpecs.length == 0) {
+      return child;
+    } else {
+      sortNode.setSortSpecs(annotatedSortSpecs);
+      return sortNode;
+    }
+  }
+
+  private static SortSpec[] annotateSortSpecs(QueryBlock block, String [] referNames, Sort.SortSpec[] rawSortSpecs) {
+    int sortKeyNum = rawSortSpecs.length;
     Column column;
     List<SortSpec> annotatedSortSpecs = Lists.newArrayList();
     for (int i = 0; i < sortKeyNum; i++) {
@@ -830,17 +844,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       } else if (block.namedExprsMgr.isEvaluated(refName)) {
         column = block.namedExprsMgr.getTarget(refName).getNamedColumn();
       } else {
-        throw new IllegalStateException("Unexpected State: " + TUtil.arrayToString(sortSpecs));
+        throw new IllegalStateException("Unexpected State: " + TUtil.arrayToString(rawSortSpecs));
       }
-      annotatedSortSpecs.add(new SortSpec(column, sortSpecs[i].isAscending(), sortSpecs[i].isNullFirst()));
+      annotatedSortSpecs.add(new SortSpec(column, rawSortSpecs[i].isAscending(), rawSortSpecs[i].isNullFirst()));
     }
-
-    if (annotatedSortSpecs.size() == 0) {
-      return child;
-    } else {
-      sortNode.setSortSpecs(annotatedSortSpecs.toArray(new SortSpec[annotatedSortSpecs.size()]));
-      return sortNode;
-    }
+    return annotatedSortSpecs.toArray(new SortSpec[annotatedSortSpecs.size()]);
   }
 
   /*===============================================================================================
@@ -1877,6 +1885,56 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
     alterTableNode.setAlterTableOpType(alterTable.getAlterTableOpType());
     return alterTableNode;
+  }
+
+  private static Path getIndexPath(PlanContext context, String databaseName, String indexName) {
+    return new Path(TajoConf.getWarehouseDir(context.queryContext.getConf()),
+        databaseName + "/" + indexName + "/");
+  }
+
+  @Override
+  public LogicalNode visitCreateIndex(PlanContext context, Stack<Expr> stack, CreateIndex createIndex)
+      throws PlanningException {
+    stack.push(createIndex);
+    LogicalNode child = visit(context, stack, createIndex.getChild());
+    stack.pop();
+
+    QueryBlock block = context.queryBlock;
+    CreateIndexNode createIndexNode = block.getNodeFromExpr(createIndex);
+    if (CatalogUtil.isFQTableName(createIndex.getIndexName())) {
+      createIndexNode.setIndexName(createIndex.getIndexName());
+    } else {
+      createIndexNode.setIndexName(
+          CatalogUtil.buildFQName(context.queryContext.getCurrentDatabase(), createIndex.getIndexName()));
+    }
+    createIndexNode.setUnique(createIndex.isUnique());
+    Sort.SortSpec[] sortSpecs = createIndex.getSortSpecs();
+    int sortKeyNum = sortSpecs.length;
+    String[] referNames = new String[sortKeyNum];
+
+    ExprNormalizedResult[] normalizedExprList = new ExprNormalizedResult[sortKeyNum];
+    for (int i = 0; i < sortKeyNum; i++) {
+      normalizedExprList[i] = normalizer.normalize(context, sortSpecs[i].getKey());
+    }
+    for (int i = 0; i < sortKeyNum; i++) {
+      referNames[i] = block.namedExprsMgr.addExpr(normalizedExprList[i].baseExpr);
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].aggExprs);
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs);
+    }
+
+    createIndexNode.setSortSpecs(annotateSortSpecs(block, referNames, sortSpecs));
+    createIndexNode.setIndexType(IndexMethod.valueOf(createIndex.getMethodSpec().getName().toUpperCase()));
+    createIndexNode.setIndexPath(getIndexPath(context, context.queryContext.getCurrentDatabase(),
+        createIndex.getIndexName()));
+
+    if (createIndex.getParams() != null) {
+      KeyValueSet keyValueSet = new KeyValueSet();
+      keyValueSet.putAll(createIndex.getParams());
+      createIndexNode.setOptions(keyValueSet);
+    }
+
+    createIndexNode.setChild(child);
+    return createIndexNode;
   }
 
   @Override

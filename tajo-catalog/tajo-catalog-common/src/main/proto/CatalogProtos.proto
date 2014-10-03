@@ -139,12 +139,13 @@ message FunctionDescProto {
 
 message IndexDescProto {
   required TableIdentifierProto tableIdentifier = 1;
-  required string indexName = 2;
-  required ColumnProto column = 3;
-  required IndexMethod indexMethod = 4;
-  optional bool isUnique = 5 [default = false];
-  optional bool isClustered = 6 [default = false];
-  optional bool isAscending = 7 [default = false];
+  required string name = 2;
+  required string indexPath = 3;
+  required ColumnProto column = 4;
+  required IndexMethod indexMethod = 5;
+  optional bool isUnique = 6 [default = false];
+  optional bool isClustered = 7 [default = false];
+  optional bool isAscending = 8 [default = false];
 }
 
 enum IndexMethod {
