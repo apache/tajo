@@ -155,6 +155,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1065: The \admin -cluster argument doesn't run as expected.
+    (Jongyoung Park via hyunsik)
+
     TAJO-1072: CLI gets stuck when wrong host/port is provided. 
     (Jihun Kang via hyunsik)
 
