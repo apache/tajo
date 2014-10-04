@@ -98,8 +98,6 @@ public class Query implements EventHandler<QueryEvent> {
   private final StateMachine<QueryState, QueryEventType, QueryEvent> stateMachine;
   private QueryState queryState;
 
-  private QueryHistory finalQueryHistory;
-
   // Transition Handler
   private static final SingleArcTransition INTERNAL_ERROR_TRANSITION = new InternalErrorTransition();
   private static final DiagnosticsUpdateTransition DIAGNOSTIC_UPDATE_TRANSITION = new DiagnosticsUpdateTransition();
@@ -300,13 +298,9 @@ public class Query implements EventHandler<QueryEvent> {
   }
 
   public QueryHistory getQueryHistory() {
-    if (finalQueryHistory != null) {
-      return finalQueryHistory;
-    } else {
-      QueryHistory queryHistory = makeQueryHistory();
-      queryHistory.setSubQueryHistories(makeSubQueryHistories());
-      return queryHistory;
-    }
+    QueryHistory queryHistory = makeQueryHistory();
+    queryHistory.setSubQueryHistories(makeSubQueryHistories());
+    return queryHistory;
   }
 
   private List<SubQueryHistory> makeSubQueryHistories() {
@@ -321,6 +315,7 @@ public class Query implements EventHandler<QueryEvent> {
   private QueryHistory makeQueryHistory() {
     QueryHistory queryHistory = new QueryHistory();
 
+    queryHistory.setQueryId(getId().toString());
     queryHistory.setQueryMaster(context.getQueryMasterContext().getWorkerContext().getWorkerName());
     queryHistory.setHttpPort(context.getQueryMasterContext().getWorkerContext().getConnectionInfo().getHttpInfoPort());
     queryHistory.setLogicalPlan(plan.toString());
@@ -437,10 +432,6 @@ public class Query implements EventHandler<QueryEvent> {
       query.eventHandler.handle(new QueryMasterQueryCompletedEvent(query.getId()));
       query.setFinishTime();
 
-      query.finalQueryHistory = query.makeQueryHistory();
-      query.finalQueryHistory.setSubQueryHistories(query.makeSubQueryHistories());
-      query.context.getQueryMasterContext().getWorkerContext().
-          getTaskHistoryWriter().appendHistory(query.finalQueryHistory);
       return finalState;
     }
 

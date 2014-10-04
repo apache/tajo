@@ -21,20 +21,13 @@ package org.apache.tajo.util.history;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.service.AbstractService;
-import org.apache.tajo.QueryId;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.master.querymaster.QueryInfo;
-import org.apache.tajo.worker.TajoWorker.WorkerContext;
 import org.apache.tajo.worker.TaskHistory;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -48,19 +41,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *   <tajo.query-history.path>/<yyyyMMdd>/query-list/query-list-<sequence>.hist (TajoMaster's query list, hourly rolling)
  *                                       /query-detail/<QUERY_ID>/query.hist    (QueryMaster's query detail)
  *                                                               /<EB_ID>.hist  (QueryMaster's subquery detail)
- *   <tajo.task-history.path>/<yyyyMMdd>/tasks/<HH>/<WORKER_HOST>_<WORKER_PORT>.hist
+ *   <tajo.task-history.path>/<yyyyMMdd>/tasks/<WORKER_HOST>_<WORKER_PORT>/<WORKER_HOST>_<WORKER_PORT>_<HH>_<seq>.hist
  * History files are kept for "tajo.query-history.preserve.hours" (default value is 68 hours-1 week.)
  */
 public class HistoryWriter extends AbstractService {
   private static final Log LOG = LogFactory.getLog(HistoryWriter.class);
-  private static final String QUERY_LIST = "query-list";
-  private static final String QUERY_DETAIL = "query-detail";
-  private static final String HISTORY_FILE_POSTFIX = ".hist";
-  private static final String QUERY_DELIMITER = "TAJO-QUERY---------------------------" + System.currentTimeMillis();
+  public static final String QUERY_LIST = "query-list";
+  public static final String QUERY_DETAIL = "query-detail";
+  public static final String HISTORY_FILE_POSTFIX = ".hist";
 
   private final LinkedBlockingQueue<History> historyQueue = new LinkedBlockingQueue<History>();
-  private String writerName;
-
   // key: yyyyMMddHH
   private Map<String, WriterHolder> taskWriters = new HashMap<String, WriterHolder>();
 
@@ -73,10 +63,13 @@ public class HistoryWriter extends AbstractService {
   private Path taskHistoryParentPath;
   private String processName;
   private TajoConf tajoConf;
+  private HistoryCleaner historyCleaner;
+  private boolean isMaster;
 
-  public HistoryWriter(String processName) {
+  public HistoryWriter(String processName, boolean isMaster) {
     super(HistoryWriter.class.getName() + ":" + processName);
-    this.processName = processName;
+    this.processName = processName.replaceAll(":", "_").toLowerCase();
+    this.isMaster = isMaster;
   }
 
   @Override
@@ -85,6 +78,7 @@ public class HistoryWriter extends AbstractService {
     historyParentPath = tajoConf.getQueryHistoryDir(tajoConf);
     taskHistoryParentPath = tajoConf.getTaskHistoryDir(tajoConf);
     writerThread = new WriterThread();
+    historyCleaner = new HistoryCleaner(tajoConf, isMaster);
     super.serviceInit(conf);
   }
 
@@ -110,12 +104,17 @@ public class HistoryWriter extends AbstractService {
         LOG.error(err.getMessage(), err);
       }
     }
+
+    if (historyCleaner != null) {
+      historyCleaner.doStop();
+    }
     super.serviceStop();
   }
 
   @Override
   public void serviceStart() throws Exception {
     writerThread.start();
+    historyCleaner.start();
   }
 
   public void appendHistory(History history) {
@@ -125,25 +124,47 @@ public class HistoryWriter extends AbstractService {
     }
   }
 
+  public static FileSystem getNonCrcFileSystem(Path path, Configuration conf) throws IOException {
+    // https://issues.apache.org/jira/browse/HADOOP-7844
+    // If FileSystem is a local and CheckSumFileSystem, flushing doesn't touch file length.
+    // So HistoryReader can't read until closing the file.
+    FileSystem fs = path.getFileSystem(conf);
+    if (path.toUri().getScheme().equals("file")) {
+      fs.setWriteChecksum(false);
+    }
+
+    return fs;
+  }
+
+  public static Path getQueryHistoryPath(Path historyParentPath, String queryId) {
+    SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
+    Path datePath = new Path(historyParentPath, df.format(new Date(System.currentTimeMillis())) + "/" + QUERY_DETAIL);
+    return new Path(datePath, queryId + "/query" + HISTORY_FILE_POSTFIX);
+  }
+
   class WriterThread extends Thread {
     public void run() {
-      LOG.info("HistoryWriter_"+ writerName + " started.");
+      LOG.info("HistoryWriter_"+ processName + " started.");
       SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHH");
       while (!stopped.get()) {
         List<History> histories = new ArrayList<History>();
         synchronized (historyQueue) {
-          try {
-            historyQueue.wait(60 * 1000);
-          } catch (InterruptedException e) {
-            if (stopped.get()) {
-              break;
+          historyQueue.drainTo(histories);
+          if (histories.isEmpty()) {
+            try {
+              historyQueue.wait(60 * 1000);
+            } catch (InterruptedException e) {
+              if (stopped.get()) {
+                break;
+              }
             }
           }
-          historyQueue.drainTo(histories);
         }
 
         try {
-          writeHistory(histories);
+          if (!histories.isEmpty()) {
+            writeHistory(histories);
+          }
         } catch (Exception e) {
           LOG.error(e.getMessage(), e);
         }
@@ -182,7 +203,7 @@ public class HistoryWriter extends AbstractService {
           }
         }
       }
-      LOG.info("HistoryWriter_"+ writerName + " stopped.");
+      LOG.info("HistoryWriter_"+ processName + " stopped.");
     }
 
     public void writeHistory(List<History> histories) {
@@ -214,12 +235,12 @@ public class HistoryWriter extends AbstractService {
               LOG.error("Error while saving query summary: " +
                   ((QueryInfo) eachHistory).getQueryId() + ":" + e.getMessage(), e);
             }
+            break;
           default:
             LOG.warn("Wrong history type: " + eachHistory.getHistoryType());
         }
       }
     }
-
 
     private synchronized void writeQueryHistory(QueryHistory queryHistory) throws Exception {
       // QueryMaster's query detail history (json format)
@@ -228,10 +249,8 @@ public class HistoryWriter extends AbstractService {
       // QueryMaster's subquery detail history(proto binary format)
       // <tajo.query-history.path>/<yyyyMMdd>/query-detail/<QUERY_ID>/<EB_ID>.hist
 
-      SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
-      Path datePath = new Path(historyParentPath, df.format(new Date(System.currentTimeMillis())) + "/" + QUERY_DETAIL);
-      Path queryHistoryFile = new Path(datePath, queryHistory.getQueryId() + "/query" + HISTORY_FILE_POSTFIX);
-      FileSystem fs = queryHistoryFile.getFileSystem(tajoConf);
+      Path queryHistoryFile = getQueryHistoryPath(historyParentPath, queryHistory.getQueryId());
+      FileSystem fs = getNonCrcFileSystem(queryHistoryFile, tajoConf);
 
       if (!fs.exists(queryHistoryFile.getParent())) {
         if (!fs.mkdirs(queryHistoryFile.getParent())) {
@@ -242,6 +261,7 @@ public class HistoryWriter extends AbstractService {
 
       FSDataOutputStream out = null;
       try {
+        LOG.info("Saving query summary: " + queryHistoryFile);
         out = fs.create(queryHistoryFile);
         out.write(queryHistory.toJson().getBytes());
       } finally {
@@ -260,7 +280,8 @@ public class HistoryWriter extends AbstractService {
           out = null;
           try {
             out = fs.create(path);
-            out.write(subQueryHistory.toJson().getBytes());
+            out.write(subQueryHistory.toQueryUnitsJson().getBytes());
+            LOG.info("Saving query unit: " + path);
           } finally {
             if (out != null) {
               try {
@@ -290,7 +311,10 @@ public class HistoryWriter extends AbstractService {
           rollingQuerySummaryWriter();
         }
       }
-      querySummaryWriter.out.write((queryInfo.toJson() + "\n" + QUERY_DELIMITER + "\n").getBytes());
+      byte[] jsonBytes = ("\n" + queryInfo.toJson() + "\n").getBytes();
+
+      querySummaryWriter.out.writeInt(jsonBytes.length);
+      querySummaryWriter.out.write(jsonBytes);
       querySummaryWriter.out.hflush();
     }
 
@@ -298,7 +322,7 @@ public class HistoryWriter extends AbstractService {
       // finding largest file sequence
       SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
       Path datePath = new Path(historyParentPath, df.format(new Date(System.currentTimeMillis())) + "/" + QUERY_LIST);
-      FileSystem fs = datePath.getFileSystem(tajoConf);
+      FileSystem fs = getNonCrcFileSystem(datePath, tajoConf);
       if (!fs.exists(datePath)) {
         if (!fs.mkdirs(datePath)) {
           LOG.error("Can't make QueryList history dir: " + datePath.getParent());
@@ -314,9 +338,12 @@ public class HistoryWriter extends AbstractService {
           String[] nameTokens = eachFile.getPath().getName().split("-");
           if (nameTokens.length == 3) {
             try {
-              int fileSeq = Integer.parseInt(nameTokens[2]);
-              if (fileSeq > maxSeq) {
-                maxSeq = fileSeq;
+              int prefixIndex = nameTokens[2].indexOf(".");
+              if (prefixIndex > 0) {
+                int fileSeq = Integer.parseInt(nameTokens[2].substring(0, prefixIndex));
+                if (fileSeq > maxSeq) {
+                  maxSeq = fileSeq;
+                }
               }
             } catch (NumberFormatException e) {
             }
@@ -349,15 +376,15 @@ public class HistoryWriter extends AbstractService {
 
       if (writerHolder.out != null) {
         byte[] taskHistoryBytes = taskHistory.getProto().toByteArray();
-        writerHolder.out.write(taskHistoryBytes.length);
+        writerHolder.out.writeInt(taskHistoryBytes.length);
         writerHolder.out.write(taskHistoryBytes);
-        writerHolder.out.hflush();
+        writerHolder.out.flush();
       }
     }
 
     private FSDataOutputStream createTaskHistoryFile(String taskStartTime, WriterHolder writerHolder) throws IOException {
-      Path path = getQueryTsaskHistoryPath(taskHistoryParentPath, processName, taskStartTime);
-      FileSystem fs = path.getFileSystem(tajoConf);
+      FileSystem fs = getNonCrcFileSystem(taskHistoryParentPath, tajoConf);
+      Path path = getQueryTaskHistoryPath(fs, taskHistoryParentPath, processName, taskStartTime);
       if (!fs.exists(path)) {
         if (!fs.mkdirs(path.getParent())) {
           LOG.error("Can't make Query history directory: " + path);
@@ -369,10 +396,50 @@ public class HistoryWriter extends AbstractService {
     }
   }
 
-  public static Path getQueryTsaskHistoryPath(Path parent, String processName, String taskStartTime) {
-    //<tajo.task-history.path>/<yyyyMMdd>/tasks/<HH>/<WORKER_HOST>:<WORKER_PORT>.hist
-    return new Path(parent, taskStartTime.substring(0, 8) + "/tasks/" +
-        taskStartTime.substring(8, 10) + "/" + processName + HISTORY_FILE_POSTFIX);
+  public static Path getQueryTaskHistoryPath(FileSystem fs, Path parent,
+                                              String processName, String taskStartTime) throws IOException {
+    // <tajo.task-history.path>/<yyyyMMdd>/tasks/<WORKER_HOST>_<WORKER_PORT>/<WORKER_HOST>_<WORKER_PORT>_<HH>_<seq>.hist
+
+    // finding largest sequence path
+    Path fileParent = new Path(parent, taskStartTime.substring(0, 8) + "/tasks/" + processName);
+
+    String hour = taskStartTime.substring(8, 10);
+    int maxSeq = -1;
+
+    if (!fs.exists(fileParent)) {
+      maxSeq++;
+      return new Path(fileParent, processName + "_" + hour + "_" + maxSeq + HISTORY_FILE_POSTFIX);
+    }
+
+    if (!fs.isDirectory(fileParent)) {
+      throw new IOException("Task history path is not directory: " + fileParent);
+    }
+    FileStatus[] files = fs.listStatus(fileParent);
+    if (files != null) {
+      for (FileStatus eachFile: files) {
+        String[] nameTokens = eachFile.getPath().getName().split("_");
+        if (nameTokens.length != 4) {
+          continue;
+        }
+
+        if (nameTokens[2].equals(hour)) {
+          int prefixIndex = nameTokens[3].indexOf(".");
+          if (prefixIndex > 0) {
+            try {
+              int fileSeq = Integer.parseInt(nameTokens[3].substring(0, prefixIndex));
+              if (fileSeq > maxSeq) {
+                maxSeq = fileSeq;
+              }
+            } catch (NumberFormatException e) {
+            }
+          }
+        }
+      }
+    }
+
+    maxSeq++;
+    return new Path(fileParent, processName + "/" + processName + "_" +
+        taskStartTime.substring(8, 10) + "_" + maxSeq + HISTORY_FILE_POSTFIX);
   }
 
   class WriterHolder {

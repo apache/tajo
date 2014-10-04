@@ -86,6 +86,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
   private QueryUnitAttemptId successfulAttempt;
   private String succeededHost;
+  private int succeededHostPort;
   private int succeededPullServerPort;
 
   private int failedAttempts;
@@ -216,6 +217,9 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
   public QueryUnitHistory getQueryUnitHistory() {
     if (finalQueryUnitHistory != null) {
+      if (finalQueryUnitHistory.getFinishTime() == 0) {
+        finalQueryUnitHistory = makeQueryUnitHistory();
+      }
       return finalQueryUnitHistory;
     } else {
       return makeQueryUnitHistory();
@@ -225,18 +229,24 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   private QueryUnitHistory makeQueryUnitHistory() {
     QueryUnitHistory queryUnitHistory = new QueryUnitHistory();
 
-    queryUnitHistory.setHostAndPort(succeededHost);
-    queryUnitHistory.setState(getState().toString());
+    QueryUnitAttempt lastAttempt = getLastAttempt();
+    if (lastAttempt != null) {
+      queryUnitHistory.setId(lastAttempt.getId().toString());
+      queryUnitHistory.setState(lastAttempt.getState().toString());
+      queryUnitHistory.setProgress(lastAttempt.getProgress());
+    }
+    queryUnitHistory.setHostAndPort(succeededHost + ":" + succeededHostPort);
     queryUnitHistory.setRetryCount(this.getRetryCount());
-    queryUnitHistory.setProgress(getLastAttempt().getProgress());
     queryUnitHistory.setLaunchTime(launchTime);
     queryUnitHistory.setFinishTime(finishTime);
 
     queryUnitHistory.setNumShuffles(getShuffleOutpuNum());
-    ShuffleFileOutput shuffleFileOutputs = getShuffleFileOutputs().get(0);
-    if(queryUnitHistory.getNumShuffles() > 0) {
-      queryUnitHistory.setShuffleKey("" + shuffleFileOutputs.getPartId());
-      queryUnitHistory.setShuffleFileName(shuffleFileOutputs.getFileName());
+    if (!getShuffleFileOutputs().isEmpty()) {
+      ShuffleFileOutput shuffleFileOutputs = getShuffleFileOutputs().get(0);
+      if (queryUnitHistory.getNumShuffles() > 0) {
+        queryUnitHistory.setShuffleKey("" + shuffleFileOutputs.getPartId());
+        queryUnitHistory.setShuffleFileName(shuffleFileOutputs.getFileName());
+      }
     }
 
     List<String> fragmentList = new ArrayList<String>();
@@ -580,6 +590,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
       task.successfulAttempt = attemptEvent.getTaskAttemptId();
       task.succeededHost = attempt.getWorkerConnectionInfo().getHost();
+      task.succeededHostPort = attempt.getWorkerConnectionInfo().getPeerRpcPort();
       task.succeededPullServerPort = attempt.getWorkerConnectionInfo().getPullServerPort();
 
       task.finishTask();
@@ -595,6 +606,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
       QueryUnitAttempt attempt = task.attempts.get(attemptEvent.getTaskAttemptId());
       task.launchTime = System.currentTimeMillis();
       task.succeededHost = attempt.getWorkerConnectionInfo().getHost();
+      task.succeededHostPort = attempt.getWorkerConnectionInfo().getPeerRpcPort();
     }
   }
 

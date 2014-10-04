@@ -391,8 +391,10 @@ public class TajoMaster extends CompositeService {
       LOG.error(e.getMessage(), e);
     }
 
-    historyWriter = new HistoryWriter(getMasterName());
+    historyWriter = new HistoryWriter(getMasterName(), true);
     historyWriter.init(getConfig());
+    addIfService(historyWriter);
+
     historyWriter.start();
   }
 

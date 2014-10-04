@@ -23,6 +23,7 @@ import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.json.GsonObject;
 
 public class QueryUnitHistory implements GsonObject {
+  @Expose private String id;
   @Expose private String hostAndPort;
   @Expose private int httpPort;
   @Expose private String state;
@@ -38,6 +39,14 @@ public class QueryUnitHistory implements GsonObject {
   @Expose private String[] dataLocations;
   @Expose private String[] fragments;
   @Expose private String[][] fetchs;
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(String id) {
+    this.id = id;
+  }
 
   public String getHostAndPort() {
     return hostAndPort;
@@ -146,5 +155,13 @@ public class QueryUnitHistory implements GsonObject {
   @Override
   public String toJson() {
     return CoreGsonHelper.toJson(this, QueryUnitHistory.class);
+  }
+
+  public long getRunningTime() {
+    if(finishTime > 0) {
+      return finishTime - launchTime;
+    } else {
+      return 0;
+    }
   }
 }

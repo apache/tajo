@@ -19,9 +19,11 @@
 package org.apache.tajo.util.history;
 
 import com.google.gson.annotations.Expose;
+import com.google.gson.reflect.TypeToken;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.json.GsonObject;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class SubQueryHistory implements GsonObject {
@@ -29,22 +31,42 @@ public class SubQueryHistory implements GsonObject {
   private String executionBlockId;
   @Expose
   private String state;
-  @Expose private long startTime;
-  @Expose private long finishTime;
-  @Expose private int succeededObjectCount;
-  @Expose private int totalScheduledObjectsCount;
+  @Expose
+  private long startTime;
+  @Expose
+  private long finishTime;
+  @Expose
+  private int succeededObjectCount;
+  @Expose
+  private int failedObjectCount;
+  @Expose
+  private int killedObjectCount;
+  @Expose
+  private int totalScheduledObjectsCount;
 
-  @Expose private long totalInputBytes;
-  @Expose private long totalReadBytes;
-  @Expose private long totalReadRows;
-  @Expose private long totalWriteBytes;
-  @Expose private long totalWriteRows;
-  @Expose private int numShuffles;
-  @Expose private float progress;
+  @Expose
+  private long totalInputBytes;
+  @Expose
+  private long totalReadBytes;
+  @Expose
+  private long totalReadRows;
+  @Expose
+  private long totalWriteBytes;
+  @Expose
+  private long totalWriteRows;
+  @Expose
+  private int numShuffles;
+  @Expose
+  private float progress;
 
-  @Expose private String plan;
+  @Expose
+  private String plan;
+  @Expose
+  private int hostLocalAssigned;
+  @Expose
+  private int rackLocalAssigned;
 
-  @Expose private List<QueryUnitHistory> queryUnits;
+  private List<QueryUnitHistory> queryUnits;
 
   public String getExecutionBlockId() {
     return executionBlockId;
@@ -158,6 +180,38 @@ public class SubQueryHistory implements GsonObject {
     this.plan = plan;
   }
 
+  public int getHostLocalAssigned() {
+    return hostLocalAssigned;
+  }
+
+  public void setHostLocalAssigned(int hostLocalAssigned) {
+    this.hostLocalAssigned = hostLocalAssigned;
+  }
+
+  public int getRackLocalAssigned() {
+    return rackLocalAssigned;
+  }
+
+  public void setRackLocalAssigned(int rackLocalAssigned) {
+    this.rackLocalAssigned = rackLocalAssigned;
+  }
+
+  public int getFailedObjectCount() {
+    return failedObjectCount;
+  }
+
+  public void setFailedObjectCount(int failedObjectCount) {
+    this.failedObjectCount = failedObjectCount;
+  }
+
+  public int getKilledObjectCount() {
+    return killedObjectCount;
+  }
+
+  public void setKilledObjectCount(int killedObjectCount) {
+    this.killedObjectCount = killedObjectCount;
+  }
+
   public List<QueryUnitHistory> getQueryUnits() {
     return queryUnits;
   }
@@ -169,5 +223,21 @@ public class SubQueryHistory implements GsonObject {
   @Override
   public String toJson() {
     return CoreGsonHelper.toJson(this, SubQueryHistory.class);
+  }
+
+  public String toQueryUnitsJson() {
+    if (queryUnits == null) {
+      return "";
+    }
+    return CoreGsonHelper.getInstance().toJson(queryUnits, new TypeToken<List<QueryUnitHistory>>() {
+    }.getType());
+  }
+
+  public static List<QueryUnitHistory> fromJsonQueryUnits(String json) {
+    if (json == null || json.trim().isEmpty()) {
+      return new ArrayList<QueryUnitHistory>();
+    }
+    return CoreGsonHelper.getInstance().fromJson(json, new TypeToken<List<QueryUnitHistory>>() {
+    }.getType());
   }
 }

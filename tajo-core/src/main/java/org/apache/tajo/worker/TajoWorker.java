@@ -259,7 +259,7 @@ public class TajoWorker extends CompositeService {
       System.exit(-1);
     }
 
-    taskHistoryWriter = new HistoryWriter(workerContext.getWorkerName());
+    taskHistoryWriter = new HistoryWriter(workerContext.getWorkerName(), false);
     addIfService(taskHistoryWriter);
     taskHistoryWriter.init(conf);
   }

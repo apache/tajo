@@ -23,10 +23,13 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.master.TajoMaster.MasterContext;
+import org.apache.tajo.master.ha.HAService;
 import org.apache.tajo.master.querymaster.QueryInProgress;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.querymaster.QueryUnit;
 import org.apache.tajo.master.querymaster.SubQuery;
+import org.apache.tajo.util.history.QueryUnitHistory;
 import org.apache.tajo.util.history.SubQueryHistory;
 import org.apache.tajo.worker.TaskRunnerHistory;
 import org.apache.tajo.worker.TaskRunner;
@@ -45,6 +48,14 @@ public class JSPUtil {
     }
 
     Arrays.sort(queryUnits, new QueryUnitComparator(sortField, "asc".equals(sortOrder)));
+  }
+
+  public static void sortQueryUnit(List<QueryUnitHistory> queryUnits, String sortField, String sortOrder) {
+    if(sortField == null || sortField.isEmpty()) {
+      sortField = "id";
+    }
+
+    Collections.sort(queryUnits, new QueryUnitHistoryComparator(sortField, "asc".equals(sortOrder)));
   }
 
   public static void sortTaskRunner(List<TaskRunner> taskRunners) {
@@ -149,7 +160,7 @@ public class JSPUtil {
   }
 
   public static List<SubQueryHistory> sortSubQueryHistory(Collection<SubQueryHistory> subQueries) {
-    List<SubQueryHistory> subQueryList = new ArrayList<SubQueryHistory>();
+    List<SubQueryHistory> subQueryList = new ArrayList<SubQueryHistory>(subQueries);
     Collections.sort(subQueryList, new Comparator<SubQueryHistory>() {
       @Override
       public int compare(SubQueryHistory subQuery1, SubQueryHistory subQuery2) {
@@ -169,6 +180,20 @@ public class JSPUtil {
     });
 
     return subQueryList;
+  }
+
+  public static String getMasterActiveLabel(MasterContext context) {
+    HAService haService = context.getHAService();
+    String activeLabel = "";
+    if (haService != null) {
+      if (haService.isActiveStatus()) {
+        activeLabel = "<font color='#1e90ff'>(active)</font>";
+      } else {
+        activeLabel = "<font color='#1e90ff'>(backup)</font>";
+      }
+    }
+
+    return activeLabel;
   }
 
   static class QueryUnitComparator implements Comparator<QueryUnit> {
@@ -201,6 +226,53 @@ public class JSPUtil {
         } else if("host".equals(sortField)) {
           String host1 = queryUnit.getSucceededHost() == null ? "-" : queryUnit.getSucceededHost();
           String host2 = queryUnit2.getSucceededHost() == null ? "-" : queryUnit2.getSucceededHost();
+          return host2.compareTo(host1);
+        } else if("runTime".equals(sortField)) {
+          if(queryUnit2.getLaunchTime() == 0) {
+            return -1;
+          } else if(queryUnit.getLaunchTime() == 0) {
+            return 1;
+          }
+          return compareLong(queryUnit2.getRunningTime(), queryUnit.getRunningTime());
+        } else if("startTime".equals(sortField)) {
+          return compareLong(queryUnit2.getLaunchTime(), queryUnit.getLaunchTime());
+        } else {
+          return queryUnit2.getId().compareTo(queryUnit.getId());
+        }
+      }
+    }
+  }
+
+  static class QueryUnitHistoryComparator implements Comparator<QueryUnitHistory> {
+    private String sortField;
+    private boolean asc;
+    public QueryUnitHistoryComparator(String sortField, boolean asc) {
+      this.sortField = sortField;
+      this.asc = asc;
+    }
+
+    @Override
+    public int compare(QueryUnitHistory queryUnit, QueryUnitHistory queryUnit2) {
+      if(asc) {
+        if("id".equals(sortField)) {
+          return queryUnit.getId().compareTo(queryUnit2.getId());
+        } else if("host".equals(sortField)) {
+          String host1 = queryUnit.getHostAndPort() == null ? "-" : queryUnit.getHostAndPort();
+          String host2 = queryUnit2.getHostAndPort() == null ? "-" : queryUnit2.getHostAndPort();
+          return host1.compareTo(host2);
+        } else if("runTime".equals(sortField)) {
+          return compareLong(queryUnit.getRunningTime(), queryUnit2.getRunningTime());
+        } else if("startTime".equals(sortField)) {
+          return compareLong(queryUnit.getLaunchTime(), queryUnit2.getLaunchTime());
+        } else {
+          return queryUnit.getId().compareTo(queryUnit2.getId());
+        }
+      } else {
+        if("id".equals(sortField)) {
+          return queryUnit2.getId().compareTo(queryUnit.getId());
+        } else if("host".equals(sortField)) {
+          String host1 = queryUnit.getHostAndPort() == null ? "-" : queryUnit.getHostAndPort();
+          String host2 = queryUnit2.getHostAndPort() == null ? "-" : queryUnit2.getHostAndPort();
           return host2.compareTo(host1);
         } else if("runTime".equals(sortField)) {
           if(queryUnit2.getLaunchTime() == 0) {
@@ -269,5 +341,77 @@ public class JSPUtil {
     result += ", ReadRows: " + (tableStats.getNumRows() == 0 ? "-" : tableStats.getNumRows());
 
     return result;
+  }
+
+  public static String getPageSizeSelection(String id, int pageSize) {
+    int realPageSize = pageSize <= 0 ? 100: pageSize;
+
+    StringBuilder sb = new StringBuilder();
+    sb.append("<select id='" + id + "' name='" + id + "'>");
+
+    for (int i = 0; i < 20; i++) {
+      int value = (i + 1) * 100;
+      String selected = (realPageSize == value) ? "selected" : "";
+      sb.append("<option value='" + value + "' " + selected + ">" + value + "</option >");
+    }
+    sb.append("</select>");
+
+    return sb.toString();
+  }
+
+  public static String getPageNavigation(int currentPage, int totalPage, String url) {
+    StringBuilder sb = new StringBuilder();
+
+    int pageIndex = (currentPage - 1) / 10;
+    int totalPageIndex = (totalPage - 1) / 10;
+
+    String prefix = "";
+
+    if (pageIndex > 0) {
+      int prevPage = pageIndex * 10;
+      sb.append(prefix).append("<a href='").append(url)
+          .append("&page=").append(prevPage).append("'>")
+          .append("&lt;</a>");
+      prefix = "&nbsp;&nbsp;";
+    }
+
+    for (int i = 1; i <= 10; i++) {
+      int printPage = pageIndex * 10 + i;
+      if (printPage == currentPage) {
+        sb.append(prefix).append(printPage);
+      } else {
+        sb.append(prefix).append("<a href='").append(url)
+            .append("&page=").append(printPage).append("'>")
+            .append("[").append(printPage).append("]</a>");
+      }
+      prefix = "&nbsp;&nbsp;";
+      if (printPage >= totalPage) {
+        break;
+      }
+    }
+
+    if(totalPageIndex > pageIndex) {
+      int nextPage = (pageIndex + 1) * 10 + 1;
+      sb.append(prefix).append("<a href='").append(url)
+          .append("&page=").append(nextPage).append("'>")
+          .append("&gt;</a>");
+    }
+    return sb.toString();
+  }
+
+  public static <T extends Object> List<T> getPageNavigationList(List<T> originList, int page, int pageSize) {
+    if (originList == null) {
+      return new ArrayList<T>();
+    }
+    int start = (page - 1) * pageSize;
+    int end = start + pageSize;
+    if (end > originList.size()) {
+      end = originList.size();
+    }
+    if (!originList.isEmpty()) {
+      return originList.subList(start, end);
+    }
+
+    return originList;
   }
 }

@@ -37,7 +37,7 @@ public class QueryHistory implements GsonObject, History {
   private String logicalPlan;
   @Expose
   private String distributedPlan;
-
+  @Expose
   private List<SubQueryHistory> subQueryHistories;
 
   public String getQueryId() {
@@ -104,5 +104,9 @@ public class QueryHistory implements GsonObject, History {
   @Override
   public HistoryType getHistoryType() {
     return HistoryType.QUERY;
+  }
+
+  public static QueryHistory fromJson(String json) {
+    return CoreGsonHelper.fromJson(json, QueryHistory.class);
   }
 }

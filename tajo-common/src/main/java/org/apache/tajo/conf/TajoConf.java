@@ -288,6 +288,7 @@ public class TajoConf extends Configuration {
     // Misc -------------------------------------------------------------------
     QUERY_HISTORY_DIR("tajo.query-history.dir", STAGING_ROOT_DIR.defaultVal + "/history"),
     QUERY_TASK_HISTORY_DIR("tajo.task-history.dir", "file:///tmp/tajo-${user.name}/history"),
+    HISTORY_FILE_LIVENESS_DAY("tajo.history.file.liveness.day", 7),
 
     // Geo IP
     GEOIP_DATA("tajo.function.geoip-database-location", ""),

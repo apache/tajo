@@ -376,6 +376,10 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
   public SubQueryHistory getSubQueryHistory() {
     if (finalSubQueryHistory != null) {
+      if (finalSubQueryHistory.getFinishTime() == 0) {
+        finalSubQueryHistory = makeSubQueryHistory();
+        finalSubQueryHistory.setQueryUnits(makeQueryUnitHistories());
+      }
       return finalSubQueryHistory;
     } else {
       return makeSubQueryHistory();
@@ -409,7 +413,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     subQueryHistory.setStartTime(startTime);
     subQueryHistory.setFinishTime(finishTime);
     subQueryHistory.setSucceededObjectCount(succeededObjectCount);
+    subQueryHistory.setKilledObjectCount(killedObjectCount);
+    subQueryHistory.setFailedObjectCount(failedObjectCount);
     subQueryHistory.setTotalScheduledObjectsCount(totalScheduledObjectsCount);
+    subQueryHistory.setHostLocalAssigned(getTaskScheduler().getHostLocalAssigned());
+    subQueryHistory.setRackLocalAssigned(getTaskScheduler().getRackLocalAssigned());
 
     long totalInputBytes = 0;
     long totalReadBytes = 0;
@@ -1204,9 +1212,6 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
     this.finalSubQueryHistory = makeSubQueryHistory();
     this.finalSubQueryHistory.setQueryUnits(makeQueryUnitHistories());
-
-//    getContext().getQueryMasterContext().getWorkerContext().
-//        getExecutionBlockHistoryWriter().appendHistory(finalSubQueryHistory);
   }
 
   public List<IntermediateEntry> getHashShuffleIntermediateEntries() {

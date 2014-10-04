@@ -24,10 +24,10 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.util.history.History;
 
 public class QueryInfo implements GsonObject, History {
-  @Expose
   private QueryId queryId;
   @Expose
   private String sql;
@@ -49,6 +49,8 @@ public class QueryInfo implements GsonObject, History {
   private int queryMasterClientPort;
   @Expose
   private int queryMasterInfoPort;
+  @Expose
+  private String queryIdStr;
 
   private String jsonExpr;
 
@@ -58,6 +60,7 @@ public class QueryInfo implements GsonObject, History {
 
   public QueryInfo(QueryId queryId, String sql, String jsonExpr) {
     this.queryId = queryId;
+    this.queryIdStr = queryId.toString();
     this.sql = sql;
     this.jsonExpr = jsonExpr;
     this.queryState = TajoProtos.QueryState.QUERY_MASTER_INIT;
@@ -161,5 +164,15 @@ public class QueryInfo implements GsonObject, History {
   @Override
   public HistoryType getHistoryType() {
     return HistoryType.QUERY_SUMMARY;
+  }
+
+  public static QueryInfo fromJson(String json) {
+    QueryInfo queryInfo = CoreGsonHelper.fromJson(json, QueryInfo.class);
+    queryInfo.queryId = TajoIdUtils.parseQueryId(queryInfo.queryIdStr);
+    return queryInfo;
+  }
+
+  public String getQueryIdStr() {
+    return queryIdStr;
   }
 }
