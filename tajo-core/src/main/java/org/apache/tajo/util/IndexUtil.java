@@ -24,6 +24,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.eval.*;
+import org.apache.tajo.engine.eval.EvalTreeUtil.EvalFinder;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.planner.LogicalPlan;
 import org.apache.tajo.engine.planner.logical.IndexScanNode;
@@ -32,7 +33,9 @@ import org.apache.tajo.storage.fragment.FileFragment;
 
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.Stack;
 
 public class IndexUtil {
   public static String getIndexNameOfFrag(FileFragment fragment, SortSpec[] keys) {
@@ -55,30 +58,36 @@ public class IndexUtil {
     }
     return builder.toString();
   }
+
+  public static List<EvalNode> getAllEqualEvals(EvalNode qual) {
+    EvalFinder finder = new EvalFinder(EvalType.EQUAL);
+    finder.visitChild(null, qual, new Stack<EvalNode>());
+    return finder.getEvalNodes();
+  }
   
   public static IndexScanNode indexEval(LogicalPlan plan, ScanNode scanNode,
       Iterator<Entry<String, String>> iter ) {
-   
+
     EvalNode qual = scanNode.getQual();
     Gson gson = CoreGsonHelper.getInstance();
-    
+
     FieldAndValueFinder nodeFinder = new FieldAndValueFinder();
     qual.preOrder(nodeFinder);
     LinkedList<BinaryEval> nodeList = nodeFinder.getNodeList();
-    
+
     int maxSize = Integer.MIN_VALUE;
     SortSpec[] maxIndex = null;
-    
+
     String json;
     while(iter.hasNext()) {
       Entry<String , String> entry = iter.next();
       json = entry.getValue();
       SortSpec[] sortKey = gson.fromJson(json, SortSpec[].class);
       if(sortKey.length > nodeList.size()) {
-        /* If the number of the sort key is greater than where condition, 
+        /* If the number of the sort key is greater than where condition,
          * this index cannot be used
          * */
-        continue; 
+        continue;
       } else {
         boolean[] equal = new boolean[sortKey.length];
         for(int i = 0 ; i < sortKey.length ; i ++) {
@@ -112,7 +121,7 @@ public class IndexUtil {
       for(int i = 0 ; i < nodeList.size() ; i ++ ) {
         datum[i] = ((ConstEval)(nodeList.get(i).getRightExpr())).getValue();
       }
-      
+
       return new IndexScanNode(plan.newPID(), scanNode, keySchema , datum , maxIndex);
     }
 

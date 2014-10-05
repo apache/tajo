@@ -22,15 +22,13 @@ import com.google.common.collect.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.algebra.JoinType;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.exception.InvalidQueryException;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.rewrite.FilterPushDownRule.FilterPushDownContext;
+import org.apache.tajo.util.IndexUtil;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
@@ -43,6 +41,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     implements RewriteRule {
   private final static Log LOG = LogFactory.getLog(FilterPushDownRule.class);
   private static final String NAME = "FilterPushDown";
+
+  private CatalogService catalog;
 
   static class FilterPushDownContext {
     Set<EvalNode> pushingDownFilters = new HashSet<EvalNode>();
@@ -69,6 +69,10 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       }
       setFiltersTobePushed(origins);
     }
+  }
+
+  public FilterPushDownRule(CatalogService catalog) {
+    this.catalog = catalog;
   }
 
   @Override
@@ -881,8 +885,22 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       qual = matched.iterator().next();
     }
 
+    block.addAccessPath(scanNode, new SeqScanInfo(table));
     if (qual != null) { // if a matched qual exists
       scanNode.setQual(qual);
+      // Add access path
+      String databaseName, tableName;
+      databaseName = CatalogUtil.extractQualifier(table.getName());
+      tableName = CatalogUtil.extractSimpleName(table.getName());
+      for (EvalNode eval : IndexUtil.getAllEqualEvals(qual)) {
+        BinaryEval binaryEval = (BinaryEval) eval;
+        Set<Column> leftColumns = EvalTreeUtil.findUniqueColumns(binaryEval.getLeftExpr());
+        Set<Column> rightColumns = EvalTreeUtil.findUniqueColumns(binaryEval.getRightExpr());
+        if (catalog.existIndexByColumn(databaseName, tableName, column.getSimpleName())) {
+          IndexDesc indexDesc = catalog.getIndexByColumn(databaseName, tableName, column.getSimpleName());
+          block.addAccessPath(scanNode, new IndexScanInfo(indexDesc));
+        }
+      }
     }
 
     for (EvalNode matchedEval: matched) {

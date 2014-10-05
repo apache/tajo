@@ -406,7 +406,8 @@ public class LogicalPlan {
     private final Map<String, List<String>> relationAliasMap = TUtil.newHashMap();
     private final Map<String, String> columnAliasMap = TUtil.newHashMap();
     private final Map<OpType, List<Expr>> operatorToExprMap = TUtil.newHashMap();
-    private final List<RelationNode> relationList = TUtil.newList();
+//    private final List<RelationNode> relationList = TUtil.newList();
+    private final Map<RelationNode, List<AccessPathInfo>> relationNodes = TUtil.newHashMap();
     private boolean hasWindowFunction = false;
     private final Map<String, ConstEval> constantPoolByRef = Maps.newHashMap();
     private final Map<Expr, String> constantPool = Maps.newHashMap();
@@ -494,11 +495,31 @@ public class LogicalPlan {
         TUtil.putToNestedList(relationAliasMap, relation.getTableName(), relation.getCanonicalName());
       }
       canonicalNameToRelationMap.put(relation.getCanonicalName(), relation);
-      relationList.add(relation);
+      relationNodes.put(relation, new ArrayList<AccessPathInfo>());
+    }
+
+    public void addRelation(RelationNode relation, List<AccessPathInfo> accessPathInfos) {
+      if (relation.hasAlias()) {
+        TUtil.putToNestedList(relationAliasMap, relation.getTableName(), relation.getCanonicalName());
+      }
+      canonicalNameToRelationMap.put(relation.getCanonicalName(), relation);
+      relationNodes.put(relation, accessPathInfos);
+    }
+
+    public void addAccessPath(RelationNode relation, AccessPathInfo accessPathInfo) {
+      relationNodes.get(relation).add(accessPathInfo);
     }
 
     public Collection<RelationNode> getRelations() {
-      return Collections.unmodifiableList(relationList);
+      return Collections.unmodifiableCollection(relationNodes.keySet());
+    }
+
+    public Map<RelationNode, List<AccessPathInfo>> getRelationAccessInfos() {
+      return Collections.unmodifiableMap(relationNodes);
+    }
+
+    public List<AccessPathInfo> getAccessInfos(RelationNode relation) {
+      return Collections.unmodifiableList(relationNodes.get(relation));
     }
 
     public boolean hasTableExpression() {

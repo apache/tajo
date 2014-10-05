@@ -25,6 +25,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
+import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.eval.AlgebraicUtil;
@@ -52,19 +53,22 @@ import static org.apache.tajo.engine.planner.logical.join.GreedyHeuristicJoinOrd
 public class LogicalOptimizer {
   private static final Log LOG = LogFactory.getLog(LogicalOptimizer.class.getName());
 
+  private CatalogService catalog;
   private BasicQueryRewriteEngine rulesBeforeJoinOpt;
   private BasicQueryRewriteEngine rulesAfterToJoinOpt;
   private JoinOrderAlgorithm joinOrderAlgorithm = new GreedyHeuristicJoinOrderAlgorithm();
 
-  public LogicalOptimizer(TajoConf systemConf) {
+  public LogicalOptimizer(TajoConf systemConf, CatalogService catalog) {
+    this.catalog = catalog;
     rulesBeforeJoinOpt = new BasicQueryRewriteEngine();
     if (systemConf.getBoolVar(ConfVars.$TEST_FILTER_PUSHDOWN_ENABLED)) {
-      rulesBeforeJoinOpt.addRewriteRule(new FilterPushDownRule());
+      rulesBeforeJoinOpt.addRewriteRule(new FilterPushDownRule(catalog));
     }
 
     rulesAfterToJoinOpt = new BasicQueryRewriteEngine();
     rulesAfterToJoinOpt.addRewriteRule(new ProjectionPushDownRule());
     rulesAfterToJoinOpt.addRewriteRule(new PartitionedTableRewriter(systemConf));
+    rulesAfterToJoinOpt.addRewriteRule(new AccessPathRewriter());
 
     // Currently, it is only used for some test cases to inject exception manually.
     String userDefinedRewriterClass = systemConf.get("tajo.plan.rewriter.classes");
