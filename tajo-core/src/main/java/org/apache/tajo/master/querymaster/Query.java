@@ -418,7 +418,7 @@ public class Query implements EventHandler<QueryEvent> {
 
           if (queryContext.isOutputOverwrite()) { // INSERT OVERWRITE INTO
 
-            // it moves the original table into the temporary location.
+            // It moves the original table into the temporary location.
             // Then it moves the new result table into the original table location.
             // Upon failed, it recovers the original table if possible.
             boolean movedToOldTable = false;
@@ -426,7 +426,11 @@ public class Query implements EventHandler<QueryEvent> {
             Path oldTableDir = new Path(queryContext.getStagingDir(), TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
 
             if (queryContext.hasPartition()) {
+              // This is a map for existing non-leaf directory to rename. A key is current directory and a value is
+              // renaming directory.
               Map<Path, Path> renameDirs = TUtil.newHashMap();
+              // This is a map for recovering existing partition directory. A key is current directory and a value is
+              // temporary directory to back up.
               Map<Path, Path> recoveryDirs = TUtil.newHashMap();
 
               try {
@@ -533,7 +537,7 @@ public class Query implements EventHandler<QueryEvent> {
     }
 
     /**
-     * This method sets a a rename map which includes renamed staging directory to final output directory recursively.
+     * This method sets a rename map which includes renamed staging directory to final output directory recursively.
      * If there exists some data files, this delete it for duplicate data.
      *
      *
@@ -566,7 +570,7 @@ public class Query implements EventHandler<QueryEvent> {
           String newPathString = oldPath.toString().replaceAll(stagingParentPathString,
           outputPath.toString());
           Path newPath = new Path(newPathString);
-          if (!hasDirectory(fs, eachFile.getPath())) {
+          if (!isLeafDirectory(fs, eachFile.getPath())) {
            renameDirs.put(eachFile.getPath(), newPath);
           } else {
             if (!fs.exists(newPath)) {
@@ -577,7 +581,7 @@ public class Query implements EventHandler<QueryEvent> {
       }
     }
 
-    private boolean hasDirectory(FileSystem fs, Path path) throws IOException {
+    private boolean isLeafDirectory(FileSystem fs, Path path) throws IOException {
       boolean retValue = false;
 
       FileStatus[] files = fs.listStatus(path);
