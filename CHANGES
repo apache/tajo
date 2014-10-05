@@ -31,6 +31,9 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1030: Not supported JDBC APIs should return empty results instead of 
+    Exception. (Hyoungjun Kim via hyunsik)
+
     TAJO-983: Worker should directly read Intermediate data stored in localhost
     rather than fetching. (Mai Hai Thanh via hyunsik)
 
@@ -155,9 +158,16 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1065: The \admin -cluster argument doesn't run as expected.
+    (Jongyoung Park via hyunsik)
+
+    TAJO-1072: CLI gets stuck when wrong host/port is provided. 
+    (Jihun Kang via hyunsik)
+
     TAJO-1081: Non-forwarded (simple) query shows wrong rows. (hyunsik)
 
-    TAJO-981: Help command (\?) in tsql takes too long time. (YeonSu Han via jaehwa)
+    TAJO-981: Help command (\?) in tsql takes too long time. (YeonSu Han via 
+    jaehwa)
 
     TAJO-962: Column reference used in LIMIT clause incurs NPE.
 
@@ -441,6 +451,8 @@ Release 0.9.0 - unreleased
     TAJO-766: Test failures in TestExecExternalShellCommand. (jihoon)
 
   TASKS
+
+    TAJO-668: Add datetime function documentation. (Jongyoung Park via hyunsik)
 
     TAJO-1077: Add Derby configuration documentation. (hyunsik)
 
