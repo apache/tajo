@@ -21,8 +21,10 @@ package org.apache.tajo.cli;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ServiceException;
+
 import jline.UnsupportedTerminal;
 import jline.console.ConsoleReader;
+
 import org.apache.commons.cli.*;
 import org.apache.tajo.*;
 import org.apache.tajo.TajoProtos.QueryState;
@@ -236,35 +238,45 @@ public class TajoCli {
       client = new TajoClient(conf, baseDatabase);
     }
 
-    checkMasterStatus();
-    context.setCurrentDatabase(client.getCurrentDatabase());
-    initHistory();
-    initCommands();
+    try {
+      checkMasterStatus();
+      context.setCurrentDatabase(client.getCurrentDatabase());
+      initHistory();
+      initCommands();
 
-    if (cmd.getOptionValues("conf") != null) {
-      processSessionVarCommand(cmd.getOptionValues("conf"));
-    }
+      if (cmd.getOptionValues("conf") != null) {
+        processSessionVarCommand(cmd.getOptionValues("conf"));
+      }
 
-    if (cmd.hasOption("c")) {
-      displayFormatter.setScirptMode();
-      int exitCode = executeScript(cmd.getOptionValue("c"));
-      sout.flush();
-      System.exit(exitCode);
-    }
-    if (cmd.hasOption("f")) {
-      displayFormatter.setScirptMode();
-      cmd.getOptionValues("");
-      File sqlFile = new File(cmd.getOptionValue("f"));
-      if (sqlFile.exists()) {
-        String script = FileUtil.readTextFile(new File(cmd.getOptionValue("f")));
-        script = replaceParam(script, cmd.getOptionValues("param"));
-        int exitCode = executeScript(script);
+      if (cmd.hasOption("c")) {
+        displayFormatter.setScirptMode();
+        int exitCode = executeScript(cmd.getOptionValue("c"));
         sout.flush();
         System.exit(exitCode);
-      } else {
-        System.err.println(ERROR_PREFIX + "No such a file \"" + cmd.getOptionValue("f") + "\"");
-        System.exit(-1);
       }
+      if (cmd.hasOption("f")) {
+        displayFormatter.setScirptMode();
+        cmd.getOptionValues("");
+        File sqlFile = new File(cmd.getOptionValue("f"));
+        if (sqlFile.exists()) {
+          String script = FileUtil.readTextFile(new File(cmd.getOptionValue("f")));
+          script = replaceParam(script, cmd.getOptionValues("param"));
+          int exitCode = executeScript(script);
+          sout.flush();
+          System.exit(exitCode);
+        } else {
+          System.err.println(ERROR_PREFIX + "No such a file \"" + cmd.getOptionValue("f") + "\"");
+          System.exit(-1);
+        }
+      }
+    } catch (Exception e) {
+      System.err.println(ERROR_PREFIX + "Exception was thrown. Caused by " + e.getMessage());
+      
+      if (client != null) {
+        client.close();
+      }
+      
+      throw e;
     }
 
     addShutdownHook();
@@ -386,29 +398,40 @@ public class TajoCli {
     sout.write("Try \\? for help.\n");
 
     SimpleParser parser = new SimpleParser();
-    while((line = reader.readLine(currentPrompt + "> ")) != null) {
-      if (line.equals("")) {
-        continue;
-      }
-      wasError = false;
-      if (line.startsWith("{")) {
-        executeJsonQuery(line);
-      } else {
-        List<ParsedResult> parsedResults = parser.parseLines(line);
+    
+    try {
+      while((line = reader.readLine(currentPrompt + "> ")) != null) {
+        if (line.equals("")) {
+          continue;
+        }
+        wasError = false;
+        if (line.startsWith("{")) {
+          executeJsonQuery(line);
+        } else {
+          List<ParsedResult> parsedResults = parser.parseLines(line);
 
-        if (parsedResults.size() > 0) {
-          for (ParsedResult parsed : parsedResults) {
-            history.addStatement(parsed.getHistoryStatement() + (parsed.getType() == STATEMENT ? ";" : ""));
+          if (parsedResults.size() > 0) {
+            for (ParsedResult parsed : parsedResults) {
+              history.addStatement(parsed.getHistoryStatement() + (parsed.getType() == STATEMENT ? ";" : ""));
+            }
+          }
+
+          exitCode = executeParsedResults(parsedResults);
+          currentPrompt = updatePrompt(parser.getState());
+
+          if (exitCode != 0 && context.getBool(SessionVars.ON_ERROR_STOP)) {
+            return exitCode;
           }
         }
-
-        exitCode = executeParsedResults(parsedResults);
-        currentPrompt = updatePrompt(parser.getState());
-
-        if (exitCode != 0 && context.getBool(SessionVars.ON_ERROR_STOP)) {
-          return exitCode;
-        }
       }
+    } catch (Exception e) {
+      System.err.println(ERROR_PREFIX + "Exception was thrown. Casued by " + e.getMessage());
+      
+      if (client != null) {
+        client.close();
+      }
+      
+      throw e;
     }
     return exitCode;
   }
@@ -587,7 +610,7 @@ public class TajoCli {
         if (TajoClient.isInCompleteState(status.getState()) && status.getState() != QueryState.QUERY_KILL_WAIT) {
           break;
         } else {
-          Thread.sleep(Math.min(100 * progressRetries, 1000));
+          Thread.sleep(Math.min(200 * progressRetries, 1000));
           progressRetries += 2;
         }
       }

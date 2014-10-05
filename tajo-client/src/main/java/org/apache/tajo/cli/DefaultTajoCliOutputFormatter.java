@@ -24,6 +24,7 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.QueryStatus;
+import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.util.FileUtil;
 
 import java.io.InputStream;
@@ -50,13 +51,26 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     this.printPause = false;
   }
 
-  private String getQuerySuccessMessage(TableDesc tableDesc, float responseTime, int totalPrintedRows, String postfix) {
+  private String getQuerySuccessMessage(TableDesc tableDesc, float responseTime, int totalPrintedRows, String postfix,
+                                        boolean endOfTuple) {
     TableStats stat = tableDesc.getStats();
-    String volume = stat == null ? "0 B" : FileUtil.humanReadableByteCount(stat.getNumBytes(), false);
-    long resultRows = stat == null ? 0 : stat.getNumRows();
+    String volume = stat == null ? (endOfTuple ? "0 B" : "unknown bytes") :
+        FileUtil.humanReadableByteCount(stat.getNumBytes(), false);
+    long resultRows = stat == null ? TajoClient.UNKNOWN_ROW_NUMBER : stat.getNumRows();
 
-    long realNumRows = resultRows != 0 ? resultRows : totalPrintedRows;
-    return "(" + realNumRows + " rows, " + getResponseTimeReadable(responseTime) + ", " + volume + " " + postfix + ")";
+    String displayRowNum;
+    if (resultRows == TajoClient.UNKNOWN_ROW_NUMBER) {
+
+      if (endOfTuple) {
+        displayRowNum = totalPrintedRows + " rows";
+      } else {
+        displayRowNum = "unknown row number";
+      }
+
+    } else {
+      displayRowNum = resultRows + " rows";
+    }
+    return "(" + displayRowNum + ", " + getResponseTimeReadable(responseTime) + ", " + volume + " " + postfix + ")";
   }
 
   protected String getResponseTimeReadable(float responseTime) {
@@ -66,13 +80,13 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
   @Override
   public void printResult(PrintWriter sout, InputStream sin, TableDesc tableDesc,
                           float responseTime, ResultSet res) throws Exception {
-    long resultRows = tableDesc.getStats() == null ? 0 : tableDesc.getStats().getNumRows();
-    if (resultRows == 0) {
+    long resultRows = tableDesc.getStats() == null ? -1 : tableDesc.getStats().getNumRows();
+    if (resultRows == -1) {
       resultRows = Integer.MAX_VALUE;
     }
 
     if (res == null) {
-      sout.println(getQuerySuccessMessage(tableDesc, responseTime, 0, "inserted"));
+      sout.println(getQuerySuccessMessage(tableDesc, responseTime, 0, "inserted", true));
       return;
     }
     ResultSetMetaData rsmd = res.getMetaData();
@@ -86,6 +100,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
 
     int numOfPrintedRows = 0;
     int totalPrintedRows = 0;
+    boolean endOfTuple = true;
     while (res.next()) {
       for (int i = 1; i <= numOfColumns; i++) {
         if (i > 1) sout.print(",  ");
@@ -109,6 +124,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
         sout.flush();
         if (sin != null) {
           if (sin.read() == 'q') {
+            endOfTuple = false;
             sout.println();
             break;
           }
@@ -117,7 +133,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
         sout.println();
       }
     }
-    sout.println(getQuerySuccessMessage(tableDesc, responseTime, totalPrintedRows, "selected"));
+    sout.println(getQuerySuccessMessage(tableDesc, responseTime, totalPrintedRows, "selected", endOfTuple));
     sout.flush();
   }
 
