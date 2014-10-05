@@ -452,6 +452,8 @@ Release 0.9.0 - unreleased
 
   TASKS
 
+    TAJO-668: Add datetime function documentation. (Jongyoung Park via hyunsik)
+
     TAJO-1077: Add Derby configuration documentation. (hyunsik)
 
     TAJO-1068: Add SQL Query documentation. (hyunsik)
