@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.client.ResultSetUtil;
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.common.type.TajoTypeUtil;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -112,7 +113,7 @@ public class TajoResultSetMetaData implements ResultSetMetaData {
 
   @Override
   public String getSchemaName(int column) throws SQLException {
-    throw new SQLFeatureNotSupportedException("getSchemaName not supported");
+    return "";
   }
 
   @Override
@@ -132,7 +133,7 @@ public class TajoResultSetMetaData implements ResultSetMetaData {
 
   @Override
   public boolean isCurrency(int column) throws SQLException {
-    throw new SQLFeatureNotSupportedException("isCurrency not supported");
+    return false;
   }
 
   @Override
@@ -157,7 +158,8 @@ public class TajoResultSetMetaData implements ResultSetMetaData {
 
   @Override
   public boolean isSigned(int column) throws SQLException {
-    throw new SQLFeatureNotSupportedException("isSigned not supported");
+    DataType type = schema.getColumn(column - 1).getDataType();
+    return TajoTypeUtil.isSigned(type.getType());
   }
 
   @Override

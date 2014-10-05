@@ -31,6 +31,9 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1030: Not supported JDBC APIs should return empty results instead of 
+    Exception. (Hyoungjun Kim via hyunsik)
+
     TAJO-983: Worker should directly read Intermediate data stored in localhost
     rather than fetching. (Mai Hai Thanh via hyunsik)
 
@@ -154,6 +157,21 @@ Release 0.9.0 - unreleased
     (Hyoungjun Kim via hyunsik)
 
   BUG FIXES
+
+    TAJO-1065: The \admin -cluster argument doesn't run as expected.
+    (Jongyoung Park via hyunsik)
+
+    TAJO-1072: CLI gets stuck when wrong host/port is provided. 
+    (Jihun Kang via hyunsik)
+
+    TAJO-1081: Non-forwarded (simple) query shows wrong rows. (hyunsik)
+
+    TAJO-981: Help command (\?) in tsql takes too long time. (YeonSu Han via 
+    jaehwa)
+
+    TAJO-962: Column reference used in LIMIT clause incurs NPE.
+
+    TAJO-1074: Query calculates wrong progress before subquery init. (jinho)
 
     TAJO-1025: Network disconnection during query processing can cause 
     infinite exceptions. (Jihun Kang via jinho)
@@ -434,6 +452,16 @@ Release 0.9.0 - unreleased
 
   TASKS
 
+    TAJO-668: Add datetime function documentation. (Jongyoung Park via hyunsik)
+
+    TAJO-1077: Add Derby configuration documentation. (hyunsik)
+
+    TAJO-1068: Add SQL Query documentation. (hyunsik)
+
+    TAJO-1078: Update contributor list. (hyunsik)
+
+    TAJO-1070: BSTIndexScanExec should not seek a negative offset. (jinho)
+
     TAJO-1054: Wrong comment in ByteUtils.splitWorker(). 
     (Jongyoung Park via jinho)
 
@@ -466,6 +494,11 @@ Release 0.9.0 - unreleased
     TAJO-834: Add Travis notification to issues@tajo.a.o and IRC. hyunsik)
 
   SUB TASKS
+
+    TAJO-1061: TAJO-1061: Update build documentation. (jaehwa)
+
+    TAJO-1060: Apply updated hadoop versions to README and BUILDING files.
+    (jinho)
 
     TAJO-667: Add math function documentation. (Jongyoung Park via hyunsik)
 
