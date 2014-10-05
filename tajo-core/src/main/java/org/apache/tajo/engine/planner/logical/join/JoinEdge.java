@@ -70,6 +70,6 @@ public class JoinEdge {
   }
 
   public String toString() {
-    return leftRelation + " " + joinType + " " + rightRelation + " ON " + TUtil.collectionToString(joinQual);
+    return leftRelation + " " + joinType + " " + rightRelation + " ON " + TUtil.collectionToString(joinQual, ", ");
   }
 }

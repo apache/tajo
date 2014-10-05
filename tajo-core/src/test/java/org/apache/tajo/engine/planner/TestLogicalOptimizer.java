@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.engine.function.builtin.SumInt;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.logical.*;
@@ -57,7 +58,7 @@ public class TestLogicalOptimizer {
     catalog = util.getMiniCatalogCluster().getCatalog();
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-    for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
+    for (FunctionDesc funcDesc : FunctionLoader.findLegacyFunctions()) {
       catalog.createFunction(funcDesc);
     }
     

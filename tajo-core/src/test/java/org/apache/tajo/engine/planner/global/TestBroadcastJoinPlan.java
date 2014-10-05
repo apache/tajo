@@ -34,6 +34,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.LogicalOptimizer;
 import org.apache.tajo.engine.planner.LogicalPlan;
@@ -87,7 +88,7 @@ public class TestBroadcastJoinPlan {
     catalog = util.startCatalogCluster().getCatalog();
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, testDir.toUri().toString());
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-    util.getMiniCatalogCluster().getCatalogServer().reloadBuiltinFunctions(TajoMaster.initBuiltinFunctions());
+    util.getMiniCatalogCluster().getCatalogServer().reloadBuiltinFunctions(FunctionLoader.findLegacyFunctions());
 
     Schema smallTable1Schema = new Schema();
     smallTable1Schema.addColumn("small1_id", TajoDataTypes.Type.INT4);

@@ -164,9 +164,9 @@ public class EvalTreeProtoDeserializer {
             }
           }
         } catch (ClassNotFoundException cnfe) {
-          throw new NoSuchFunctionException(funcDesc.getSignature(), funcDesc.getParamTypes());
+          throw new NoSuchFunctionException(funcDesc.getFunctionName(), funcDesc.getParamTypes());
         } catch (InternalException ie) {
-          throw new NoSuchFunctionException(funcDesc.getSignature(), funcDesc.getParamTypes());
+          throw new NoSuchFunctionException(funcDesc.getFunctionName(), funcDesc.getParamTypes());
         }
       } else {
         throw new RuntimeException("Unknown EvalType: " + type.name());

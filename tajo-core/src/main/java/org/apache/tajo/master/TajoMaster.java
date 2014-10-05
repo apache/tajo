@@ -37,13 +37,9 @@ import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.function.Function;
-import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.engine.function.annotation.Description;
-import org.apache.tajo.engine.function.annotation.ParamOptionTypes;
-import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.master.ha.HAService;
 import org.apache.tajo.master.ha.HAServiceHDFSImpl;
 import org.apache.tajo.master.metrics.CatalogMetricsGaugeSet;
@@ -55,7 +51,6 @@ import org.apache.tajo.master.session.SessionManager;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageManagerFactory;
-import org.apache.tajo.util.ClassUtil;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.StringUtils;
@@ -69,11 +64,9 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Modifier;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
@@ -170,7 +163,7 @@ public class TajoMaster extends CompositeService {
       checkAndInitializeSystemDirectories();
       this.storeManager = StorageManagerFactory.getStorageManager(systemConf);
 
-      catalogServer = new CatalogServer(initBuiltinFunctions());
+      catalogServer = new CatalogServer(FunctionLoader.load());
       addIfService(catalogServer);
       catalog = new LocalCatalogWrapper(catalogServer, systemConf);
 
@@ -279,81 +272,6 @@ public class TajoMaster extends CompositeService {
       defaultFS.mkdirs(stagingPath, new FsPermission(STAGING_ROOTDIR_PERMISSION));
       LOG.info("Staging dir '" + stagingPath + "' is created");
     }
-  }
-
-  @SuppressWarnings("unchecked")
-  public static List<FunctionDesc> initBuiltinFunctions() throws ServiceException {
-    List<FunctionDesc> sqlFuncs = new ArrayList<FunctionDesc>();
-
-    Set<Class> functionClasses = ClassUtil.findClasses(org.apache.tajo.catalog.function.Function.class,
-          "org.apache.tajo.engine.function");
-
-    for (Class eachClass : functionClasses) {
-      if(eachClass.isInterface() || Modifier.isAbstract(eachClass.getModifiers())) {
-        continue;
-      }
-      Function function = null;
-      try {
-        function = (Function)eachClass.newInstance();
-      } catch (Exception e) {
-        LOG.warn(eachClass + " cannot instantiate Function class because of " + e.getMessage());
-        continue;
-      }
-      String functionName = function.getClass().getAnnotation(Description.class).functionName();
-      String[] synonyms = function.getClass().getAnnotation(Description.class).synonyms();
-      String description = function.getClass().getAnnotation(Description.class).description();
-      String detail = function.getClass().getAnnotation(Description.class).detail();
-      String example = function.getClass().getAnnotation(Description.class).example();
-      Type returnType = function.getClass().getAnnotation(Description.class).returnType();
-      ParamTypes[] paramArray = function.getClass().getAnnotation(Description.class).paramTypes();
-
-      String[] allFunctionNames = null;
-      if(synonyms != null && synonyms.length > 0) {
-        allFunctionNames = new String[1 + synonyms.length];
-        allFunctionNames[0] = functionName;
-        System.arraycopy(synonyms, 0, allFunctionNames, 1, synonyms.length);
-      } else {
-        allFunctionNames = new String[]{functionName};
-      }
-
-      for(String eachFunctionName: allFunctionNames) {
-        for (ParamTypes params : paramArray) {
-          ParamOptionTypes[] paramOptionArray;
-          if(params.paramOptionTypes() == null ||
-              params.paramOptionTypes().getClass().getAnnotation(ParamTypes.class) == null) {
-            paramOptionArray = new ParamOptionTypes[0];
-          } else {
-            paramOptionArray = params.paramOptionTypes().getClass().getAnnotation(ParamTypes.class).paramOptionTypes();
-          }
-
-          Type[] paramTypes = params.paramTypes();
-          if (paramOptionArray.length > 0)
-            paramTypes = params.paramTypes().clone();
-
-          for (int i=0; i < paramOptionArray.length + 1; i++) {
-            FunctionDesc functionDesc = new FunctionDesc(eachFunctionName,
-                function.getClass(), function.getFunctionType(),
-                CatalogUtil.newSimpleDataType(returnType),
-                paramTypes.length == 0 ? CatalogUtil.newSimpleDataTypeArray() : CatalogUtil.newSimpleDataTypeArray(paramTypes));
-
-            functionDesc.setDescription(description);
-            functionDesc.setExample(example);
-            functionDesc.setDetail(detail);
-            sqlFuncs.add(functionDesc);
-
-            if (i != paramOptionArray.length) {
-              paramTypes = new Type[paramTypes.length +
-                  paramOptionArray[i].paramOptionTypes().length];
-              System.arraycopy(params.paramTypes(), 0, paramTypes, 0, paramTypes.length);
-              System.arraycopy(paramOptionArray[i].paramOptionTypes(), 0, paramTypes, paramTypes.length,
-                  paramOptionArray[i].paramOptionTypes().length);
-            }
-          }
-        }
-      }
-    }
-
-    return sqlFuncs;
   }
 
   public MasterContext getContext() {

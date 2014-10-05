@@ -29,20 +29,15 @@ import org.apache.tajo.org.objectweb.asm.Opcodes;
 import java.util.List;
 import java.util.Stack;
 
-class CaseWhenEmitter implements EvalCodeEmitter<CaseWhenEval> {
-  public static final CaseWhenEmitter instance;
+/**
+ * It generates case when byte code.
+ *
+ * @see org.apache.tajo.function.StaticMethodInvocationDesc
+ */
+class CaseWhenEmitter {
 
-  static {
-    instance = new CaseWhenEmitter();
-  }
-
-  public static CaseWhenEmitter getInstance() {
-    return instance;
-  }
-
-  @Override
-  public void emit(EvalCodeGenerator codeGen, EvalCodeGenContext context, CaseWhenEval caseWhen,
-                   Stack<EvalNode> stack) {
+  public static void emit(EvalCodeGenerator codeGen, EvalCodeGenContext context, CaseWhenEval caseWhen,
+                          Stack<EvalNode> stack) {
     // TYPE 1: CASE <expr> WHEN x THEN c1 WHEN y THEN c2 WHEN c3 ELSE ... END;
     EvalNode commonTerm = extractCommonTerm(caseWhen.getIfThenEvals());
 
@@ -144,7 +139,7 @@ class CaseWhenEmitter implements EvalCodeEmitter<CaseWhenEval> {
     }
   }
 
-  private EvalNode extractCommonTerm(List<CaseWhenEval.IfThenEval> ifThenEvals) {
+  private static EvalNode extractCommonTerm(List<CaseWhenEval.IfThenEval> ifThenEvals) {
     EvalNode commonTerm = null;
 
     for (int i = 0; i < ifThenEvals.size(); i++) {
@@ -180,7 +175,7 @@ class CaseWhenEmitter implements EvalCodeEmitter<CaseWhenEval> {
    * @param predicate Predicate to be checked
    * @return True if the predicate is a simple form.
    */
-  private boolean checkIfSimplePredicate(EvalNode predicate) {
+  private static boolean checkIfSimplePredicate(EvalNode predicate) {
     if (predicate.getType() == EvalType.EQUAL) {
       BinaryEval binaryEval = (BinaryEval) predicate;
       EvalNode lhs = binaryEval.getLeftExpr();
@@ -195,7 +190,7 @@ class CaseWhenEmitter implements EvalCodeEmitter<CaseWhenEval> {
     }
   }
 
-  private int getSwitchIndex(EvalNode predicate) {
+  private static int getSwitchIndex(EvalNode predicate) {
     Preconditions.checkArgument(checkIfSimplePredicate(predicate),
         "This expression cannot be used for switch table: " + predicate);
 

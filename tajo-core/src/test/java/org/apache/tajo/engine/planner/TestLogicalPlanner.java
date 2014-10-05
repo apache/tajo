@@ -33,6 +33,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.eval.*;
+import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.engine.function.builtin.SumInt;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
@@ -73,7 +74,7 @@ public class TestLogicalPlanner {
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234");
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
 
-    for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
+    for (FunctionDesc funcDesc : FunctionLoader.findLegacyFunctions()) {
       catalog.createFunction(funcDesc);
     }
 
