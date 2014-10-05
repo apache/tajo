@@ -31,6 +31,9 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1030: Not supported JDBC APIs should return empty results instead of 
+    Exception. (Hyoungjun Kim via hyunsik)
+
     TAJO-983: Worker should directly read Intermediate data stored in localhost
     rather than fetching. (Mai Hai Thanh via hyunsik)
 
