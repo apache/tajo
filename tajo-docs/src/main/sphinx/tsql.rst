@@ -1,5 +1,5 @@
 *****************************
-Command-line Interface
+Tajo Shell (TSQL)
 *****************************
 
 Tajo provides a shell utility named Tsql. It is a command-line interface (CLI) where users can create or drop tables, inspect schema and query tables, etc.

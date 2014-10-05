@@ -31,7 +31,7 @@ Table of Contents:
    introduction
    getting_started
    configuration
-   cli
+   tsql
    sql_language
    functions
    table_management
