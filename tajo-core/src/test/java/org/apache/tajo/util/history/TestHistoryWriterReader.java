@@ -178,7 +178,7 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
 
         for (int j = 0; j < 5; j++) {
           QueryUnitHistory queryUnitHistory = queryUnits.get(j);
-          assertEquals(i * 5 + j + 1, TajoIdUtils.parseQueryUnitAttemptId(queryUnitHistory.getId()).getQueryUnitId().getId());
+          assertEquals(subQueries.get(i).getQueryUnits().get(j).getId(), queryUnitHistory.getId());
         }
       }
     } finally {

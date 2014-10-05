@@ -21,6 +21,7 @@ package org.apache.tajo.util.history;
 import com.google.gson.annotations.Expose;
 import com.google.gson.reflect.TypeToken;
 import org.apache.tajo.engine.json.CoreGsonHelper;
+import org.apache.tajo.ipc.ClientProtos.SubQueryHistoryProto;
 import org.apache.tajo.json.GsonObject;
 
 import java.util.ArrayList;
@@ -239,5 +240,31 @@ public class SubQueryHistory implements GsonObject {
     }
     return CoreGsonHelper.getInstance().fromJson(json, new TypeToken<List<QueryUnitHistory>>() {
     }.getType());
+  }
+
+  public SubQueryHistoryProto getProto() {
+    SubQueryHistoryProto.Builder builder = SubQueryHistoryProto.newBuilder();
+    builder.setExecutionBlockId(executionBlockId)
+      .setState(state)
+      .setStartTime(startTime)
+      .setFinishTime(finishTime)
+      .setSucceededObjectCount(succeededObjectCount)
+      .setFailedObjectCount(failedObjectCount)
+      .setKilledObjectCount(killedObjectCount)
+      .setTotalScheduledObjectsCount(totalScheduledObjectsCount)
+
+      .setTotalInputBytes(totalInputBytes)
+      .setTotalReadBytes(totalReadBytes)
+      .setTotalReadRows(totalReadRows)
+      .setTotalWriteBytes(totalWriteBytes)
+      .setTotalWriteRows(totalWriteRows)
+      .setNumShuffles(numShuffles)
+      .setProgress(progress)
+
+      .setPlan(plan)
+      .setHostLocalAssigned(hostLocalAssigned)
+      .setRackLocalAssigned(rackLocalAssigned);
+
+    return builder.build();
   }
 }

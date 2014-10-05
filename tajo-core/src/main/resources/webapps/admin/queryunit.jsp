@@ -30,7 +30,7 @@
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
-  HistoryReader reader = new HistoryReader(master.getMasterName(), master.getContext().getConf());
+  HistoryReader reader = master.getContext().getHistoryReader();
 
   String queryId = request.getParameter("queryId");
   String ebId = request.getParameter("ebid");
@@ -40,13 +40,13 @@
       status = "ALL";
   }
 
-  int queryUnitSeq = Integer.parseInt(request.getParameter("queryUnitSeq"));
+  String queryUnitAttemptId = request.getParameter("queryUnitAttemptId");
 
   List<QueryUnitHistory> allQueryUnits = reader.getQueryUnitHistory(queryId, ebId);
 
   QueryUnitHistory queryUnit = null;
   for(QueryUnitHistory eachQueryUnit: allQueryUnits) {
-    if (TajoIdUtils.parseQueryUnitAttemptId(eachQueryUnit.getId()).getId() == queryUnitSeq) {
+    if (eachQueryUnit.getId().equals(queryUnitAttemptId)) {
       queryUnit = eachQueryUnit;
       break;
     }

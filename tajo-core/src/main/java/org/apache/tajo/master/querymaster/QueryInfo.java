@@ -23,6 +23,8 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.engine.json.CoreGsonHelper;
+import org.apache.tajo.ipc.ClientProtos.QueryInfoProto;
+import org.apache.tajo.ipc.ClientProtos.QueryInfoProtoOrBuilder;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.util.history.History;
@@ -174,5 +176,32 @@ public class QueryInfo implements GsonObject, History {
 
   public String getQueryIdStr() {
     return queryIdStr;
+  }
+
+  public QueryInfoProto getProto() {
+    QueryInfoProto.Builder builder = QueryInfoProto.newBuilder();
+
+    builder.setQueryId(queryId.toString())
+        .setQueryState(queryState)
+        .setProgress(progress)
+        .setStartTime(startTime)
+        .setFinishTime(finishTime)
+        .setQueryMasterPort(queryMasterPort)
+        .setQueryMasterClientPort(queryMasterClientPort)
+        .setQueryMasterInfoPort(queryMasterInfoPort);
+
+    if (sql != null) {
+      builder.setSql(sql);
+    }
+
+    if (lastMessage != null) {
+      builder.setLastMessage(lastMessage);
+    }
+
+    if (hostNameOfQM != null) {
+      builder.setHostNameOfQM(hostNameOfQM);
+    }
+
+    return builder.build();
   }
 }

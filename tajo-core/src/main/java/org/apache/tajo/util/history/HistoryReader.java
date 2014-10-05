@@ -205,6 +205,9 @@ public class HistoryReader {
       String hour = historyFileDate.substring(8, 10);
 
       if (!fs.exists(fileParent)) {
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Task history parent not exists:" + fileParent);
+        }
         continue;
       }
 
@@ -213,10 +216,10 @@ public class HistoryReader {
         return null;
       }
 
-      String filePrefix = fileParent.toString() + "/" + processName + "_" + hour + "_";
+      String filePrefix = processName + "_" + hour + "_";
 
       for (FileStatus eachFile : files) {
-        if (eachFile.getPath().toString().indexOf(filePrefix) < 0) {
+        if (eachFile.getPath().getName().indexOf(filePrefix) != 0) {
           continue;
         }
 
@@ -247,6 +250,20 @@ public class HistoryReader {
         }
       }
     }
+    return null;
+  }
+
+  public QueryInfo getQueryInfo(String queryId) throws IOException {
+    List<QueryInfo> queries = getQueries(null);
+
+    if (queries != null) {
+      for (QueryInfo queryInfo: queries) {
+        if (queryId.equals(queryInfo.getQueryId().toString())) {
+          return queryInfo;
+        }
+      }
+    }
+
     return null;
   }
 }

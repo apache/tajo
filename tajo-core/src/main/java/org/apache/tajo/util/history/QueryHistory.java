@@ -20,8 +20,12 @@ package org.apache.tajo.util.history;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.engine.json.CoreGsonHelper;
+import org.apache.tajo.ipc.ClientProtos.QueryHistoryProto;
+import org.apache.tajo.ipc.ClientProtos.SubQueryHistoryProto;
 import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class QueryHistory implements GsonObject, History {
@@ -108,5 +112,40 @@ public class QueryHistory implements GsonObject, History {
 
   public static QueryHistory fromJson(String json) {
     return CoreGsonHelper.fromJson(json, QueryHistory.class);
+  }
+
+  public QueryHistoryProto getProto() {
+    QueryHistoryProto.Builder builder = QueryHistoryProto.newBuilder();
+
+    builder.setQueryId(queryId)
+      .setQueryMaster(queryMaster)
+      .setHttpPort(httpPort)
+      .setLogicalPlan(logicalPlan)
+      .setDistributedPlan(distributedPlan);
+
+    List<KeyValueProto> sessionProtos = new ArrayList<KeyValueProto>();
+
+    if (sessionVariables != null) {
+      KeyValueProto.Builder keyValueBuilder = KeyValueProto.newBuilder();
+      for (String[] eachSessionVal: sessionVariables) {
+        keyValueBuilder.clear();
+        keyValueBuilder.setKey(eachSessionVal[0]);
+        keyValueBuilder.setValue(eachSessionVal[1]);
+
+        sessionProtos.add(keyValueBuilder.build());
+      }
+    }
+    builder.addAllSessionVariables(sessionProtos);
+
+
+    List<SubQueryHistoryProto> subQueryHistoryProtos = new ArrayList<SubQueryHistoryProto>();
+    if (subQueryHistories != null) {
+      for (SubQueryHistory eachSubQuery: subQueryHistories) {
+        subQueryHistoryProtos.add((eachSubQuery.getProto()));
+      }
+    }
+    builder.addAllSubQueryHistories(subQueryHistoryProtos);
+
+    return builder.build();
   }
 }

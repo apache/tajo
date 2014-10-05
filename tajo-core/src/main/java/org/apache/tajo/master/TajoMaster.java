@@ -60,6 +60,7 @@ import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.VersionInfo;
+import org.apache.tajo.util.history.HistoryReader;
 import org.apache.tajo.util.history.HistoryWriter;
 import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.webapp.QueryExecutorServlet;
@@ -136,6 +137,8 @@ public class TajoMaster extends CompositeService {
   private HAService haService;
 
   private HistoryWriter historyWriter;
+
+  private HistoryReader historyReader;
 
   public TajoMaster() throws Exception {
     super(TajoMaster.class.getName());
@@ -394,8 +397,9 @@ public class TajoMaster extends CompositeService {
     historyWriter = new HistoryWriter(getMasterName(), true);
     historyWriter.init(getConfig());
     addIfService(historyWriter);
-
     historyWriter.start();
+
+    historyReader = new HistoryReader(getMasterName(), context.getConf());
   }
 
   private void writeSystemConf() throws IOException {
@@ -541,6 +545,10 @@ public class TajoMaster extends CompositeService {
 
     public HistoryWriter getHistoryWriter() {
       return historyWriter;
+    }
+
+    public HistoryReader getHistoryReader() {
+      return historyReader;
     }
   }
 

@@ -30,7 +30,7 @@
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
-  HistoryReader reader = new HistoryReader(master.getMasterName(), master.getContext().getConf());
+  HistoryReader reader = master.getContext().getHistoryReader();
 
   String queryId = request.getParameter("queryId");
   QueryHistory queryHistory = reader.getQueryHistory(queryId);

@@ -53,7 +53,7 @@
   }
 
   String keyword = request.getParameter("keyword");
-  HistoryReader historyReader = new HistoryReader(master.getMasterName(), master.getContext().getConf());
+  HistoryReader historyReader = master.getContext().getHistoryReader();
   List<QueryInfo> allFinishedQueries = historyReader.getQueries(keyword);
 
   int numOfFinishedQueries = allFinishedQueries.size();

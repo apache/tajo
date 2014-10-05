@@ -60,24 +60,24 @@ public class TestJSPUtil {
     Collections.shuffle(queryUnits);
 
     QueryUnit[] queryUnitArray = queryUnits.toArray(new QueryUnit[]{});
-    JSPUtil.sortQueryUnit(queryUnitArray, "id", "asc");
+    JSPUtil.sortQueryUnitArray(queryUnitArray, "id", "asc");
     for (int i = 0; i < 10; i++) {
       assertEquals(i, queryUnitArray[i].getId().getId());
     }
 
     queryUnitArray = queryUnits.toArray(new QueryUnit[]{});
-    JSPUtil.sortQueryUnit(queryUnitArray, "id", "desc");
+    JSPUtil.sortQueryUnitArray(queryUnitArray, "id", "desc");
     for (int i = 0; i < 10; i++) {
       assertEquals(9 - i, queryUnitArray[i].getId().getId());
     }
 
     queryUnitArray = queryUnits.toArray(new QueryUnit[]{});
-    JSPUtil.sortQueryUnit(queryUnitArray, "runTime", "asc");
+    JSPUtil.sortQueryUnitArray(queryUnitArray, "runTime", "asc");
     assertEquals(0, queryUnitArray[0].getId().getId());
     assertEquals(9, queryUnitArray[9].getId().getId());
 
     queryUnitArray = queryUnits.toArray(new QueryUnit[]{});
-    JSPUtil.sortQueryUnit(queryUnitArray, "runTime", "desc");
+    JSPUtil.sortQueryUnitArray(queryUnitArray, "runTime", "desc");
     assertEquals(8, queryUnitArray[0].getId().getId());
     assertEquals(9, queryUnitArray[9].getId().getId());
   }

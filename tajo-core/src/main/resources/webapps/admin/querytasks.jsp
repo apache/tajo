@@ -35,7 +35,7 @@
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
-  HistoryReader reader = new HistoryReader(master.getMasterName(), master.getContext().getConf());
+  HistoryReader reader = master.getContext().getHistoryReader();
 
   String queryId = request.getParameter("queryId");
   String ebId = request.getParameter("ebid");
@@ -131,12 +131,6 @@
   String pageUrl = "querytasks.jsp?queryId=" + queryId + "&ebid=" + ebId +
       "&status=" + status + "&sortOrder=" + nextSortOrder + "&sort=";
 
-  int numOfQueryUnits = allQueryUnits != null ? allQueryUnits.size() : 0;
-  int totalPage = numOfQueryUnits % pageSize == 0 ?
-      numOfQueryUnits / pageSize : numOfQueryUnits / pageSize + 1;
-
-  List<QueryUnitHistory> queryUnits = JSPUtil.getPageNavigationList(allQueryUnits, currentPage, pageSize);
-
   NumberFormat nf = NumberFormat.getInstance(Locale.US);
 %>
 
@@ -171,12 +165,12 @@
   </table>
   <hr/>
 
-
   <form action='querytasks.jsp' method='GET'>
   Status:
     <select name="status" onchange="this.form.submit()">
         <option value="ALL" <%="ALL".equals(status) ? "selected" : ""%>>ALL</option>
         <option value="TA_ASSIGNED" <%="TA_ASSIGNED".equals(status) ? "selected" : ""%>>TA_ASSIGNED</option>
+        <option value="TA_PENDING" <%="TA_PENDING".equals(status) ? "selected" : ""%>>TA_PENDING</option>
         <option value="TA_RUNNING" <%="TA_RUNNING".equals(status) ? "selected" : ""%>>TA_RUNNING</option>
         <option value="TA_SUCCEEDED" <%="TA_SUCCEEDED".equals(status) ? "selected" : ""%>>TA_SUCCEEDED</option>
         <option value="TA_FAILED" <%="TA_FAILED".equals(status) ? "selected" : ""%>>TA_FAILED</option>
@@ -190,35 +184,46 @@
     <input type="hidden" name="sort" value="<%=sort%>"/>
     <input type="hidden" name="sortOrder" value="<%=sortOrder%>"/>
   </form>
+<%
+  List<QueryUnitHistory> filteredQueryUnit = new ArrayList<QueryUnitHistory>();
+  for(QueryUnitHistory eachQueryUnit: allQueryUnits) {
+    if (!"ALL".equals(status)) {
+      if (!status.equals(eachQueryUnit.getState().toString())) {
+        continue;
+      }
+    }
+    filteredQueryUnit.add(eachQueryUnit);
+  }
+  JSPUtil.sortQueryUnitHistory(filteredQueryUnit, sort, sortOrder);
+  List<QueryUnitHistory> queryUnits = JSPUtil.getPageNavigationList(filteredQueryUnit, currentPage, pageSize);
+
+  int numOfQueryUnits = filteredQueryUnit.size();
+  int totalPage = numOfQueryUnits % pageSize == 0 ?
+      numOfQueryUnits / pageSize : numOfQueryUnits / pageSize + 1;
+%>
+  <div align="right"># Tasks: <%=numOfQueryUnits%> / # Pages: <%=totalPage%></div>
   <table border="1" width="100%" class="border_table">
     <tr><th>No</th><th><a href='<%=url%>id'>Id</a></th><th>Status</th><th>Progress</th><th><a href='<%=url%>startTime'>Started</a></th><th><a href='<%=url%>runTime'>Running Time</a></th><th><a href='<%=url%>host'>Host</a></th></tr>
-    <%
-      JSPUtil.sortQueryUnit(queryUnits, sort, sortOrder);
-      int rowNo = (currentPage - 1) * pageSize + 1;
-      for(QueryUnitHistory eachQueryUnit: queryUnits) {
-        if(!"ALL".equals(status)) {
-          if(!status.equals(eachQueryUnit.getState().toString())) {
-            continue;
-          }
-        }
-        String queryUnitDetailUrl = "";
-        if (eachQueryUnit.getId() != null) {
-          int queryUnitSeq = TajoIdUtils.parseQueryUnitAttemptId(eachQueryUnit.getId()).getId();
-          queryUnitDetailUrl = "queryunit.jsp?queryId=" + queryId + "&ebid=" + ebId +
-              "&queryUnitSeq=" + queryUnitSeq + "&sort=" + sort + "&sortOrder=" + sortOrder;
-        }
-        String queryUnitHost = eachQueryUnit.getHostAndPort() == null ? "-" : eachQueryUnit.getHostAndPort();
-        if(eachQueryUnit.getHostAndPort() != null) {
-          Worker worker = workerMap.get(eachQueryUnit.getHostAndPort());
-          if (worker != null) {
-            String[] hostTokens = eachQueryUnit.getHostAndPort().split(":");
-            queryUnitHost = "<a href='http://" + hostTokens[0] + ":" + worker.getConnectionInfo().getHttpInfoPort() +
-                "/taskhistory.jsp?queryUnitAttemptId=" + eachQueryUnit.getId() + "&startTime=" + eachQueryUnit.getLaunchTime() +
-                "'>" + eachQueryUnit.getHostAndPort() + "</a>";
-          }
-        }
+<%
+  int rowNo = (currentPage - 1) * pageSize + 1;
+  for (QueryUnitHistory eachQueryUnit: queryUnits) {
+    String queryUnitDetailUrl = "";
+    if (eachQueryUnit.getId() != null) {
+      queryUnitDetailUrl = "queryunit.jsp?queryId=" + queryId + "&ebid=" + ebId +
+          "&queryUnitAttemptId=" + eachQueryUnit.getId() + "&sort=" + sort + "&sortOrder=" + sortOrder;
+    }
+    String queryUnitHost = eachQueryUnit.getHostAndPort() == null ? "-" : eachQueryUnit.getHostAndPort();
+    if (eachQueryUnit.getHostAndPort() != null) {
+      Worker worker = workerMap.get(eachQueryUnit.getHostAndPort());
+      if (worker != null) {
+        String[] hostTokens = eachQueryUnit.getHostAndPort().split(":");
+        queryUnitHost = "<a href='http://" + hostTokens[0] + ":" + worker.getConnectionInfo().getHttpInfoPort() +
+            "/taskhistory.jsp?queryUnitAttemptId=" + eachQueryUnit.getId() + "&startTime=" + eachQueryUnit.getLaunchTime() +
+            "'>" + eachQueryUnit.getHostAndPort() + "</a>";
+      }
+    }
 
-    %>
+%>
     <tr>
       <td><%=rowNo%></td>
       <td><a href="<%=queryUnitDetailUrl%>"><%=eachQueryUnit.getId()%></a></td>

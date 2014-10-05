@@ -34,10 +34,8 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.PartitionMethodProto;
 import org.apache.tajo.cli.InvalidClientSessionException;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -68,8 +66,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
 
 @ThreadSafe
 public class TajoClient implements Closeable {
@@ -1038,6 +1034,58 @@ public class TajoClient implements Closeable {
           return res.getFunctionsList();
         } else {
           throw new SQLException(res.getErrorMessage());
+        }
+      }
+    }.withRetries();
+  }
+
+  public QueryInfoProto getQueryInfo(final QueryId queryId) throws ServiceException {
+    return new ServerCallable<QueryInfoProto>(connPool, getTajoMasterAddr(),
+        TajoMasterClientProtocol.class, false, true) {
+      public QueryInfoProto call(NettyClientBase client) throws ServiceException, SQLException {
+        checkSessionAndGet(client);
+
+        QueryIdRequest.Builder builder = QueryIdRequest.newBuilder();
+        builder.setSessionId(sessionId);
+        builder.setQueryId(queryId.getProto());
+
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        GetQueryInfoResponse res = tajoMasterService.getQueryInfo(null,builder.build());
+        if (res.getResultCode() == ResultCode.OK) {
+          return res.getQueryInfo();
+        } else {
+          abort();
+          throw new ServiceException(res.getErrorMessage());
+        }
+      }
+    }.withRetries();
+  }
+
+  public QueryHistoryProto getQueryHistory(final QueryId queryId) throws ServiceException {
+    final QueryInfoProto queryInfo = getQueryInfo(queryId);
+
+    if (queryInfo.getHostNameOfQM() == null || queryInfo.getQueryMasterClientPort() == 0) {
+      return null;
+    }
+    InetSocketAddress qmAddress = new InetSocketAddress(
+        queryInfo.getHostNameOfQM(), queryInfo.getQueryMasterClientPort());
+
+    return new ServerCallable<QueryHistoryProto>(connPool, qmAddress,
+        QueryMasterClientProtocol.class, false, true) {
+      public QueryHistoryProto call(NettyClientBase client) throws ServiceException, SQLException {
+        checkSessionAndGet(client);
+
+        QueryIdRequest.Builder builder = QueryIdRequest.newBuilder();
+        builder.setSessionId(sessionId);
+        builder.setQueryId(queryId.getProto());
+
+        QueryMasterClientProtocolService.BlockingInterface queryMasterService = client.getStub();
+        GetQueryHistoryResponse res = queryMasterService.getQueryHistory(null,builder.build());
+        if (res.getResultCode() == ResultCode.OK) {
+          return res.getQueryHistory();
+        } else {
+          abort();
+          throw new ServiceException(res.getErrorMessage());
         }
       }
     }.withRetries();

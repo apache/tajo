@@ -32,7 +32,7 @@
 <%@ page import="org.apache.tajo.SessionVars" %>
 <%@ page import="org.apache.tajo.util.history.QueryHistory" %>
 <%@ page import="org.apache.tajo.util.history.SubQueryHistory" %>
-<%@ page import="org.apache.tajo.util.history.QueryHistoryUtil" %>
+<%@ page import="org.apache.tajo.util.history.HistoryReader" %>
 
 <%
   QueryId queryId = TajoIdUtils.parseQueryId(request.getParameter("queryId"));
@@ -52,7 +52,8 @@
       queryHistory = query.getQueryHistory();
     }
   } else {
-    queryHistory = QueryHistoryUtil.getQueryHistory(tajoWorker.getWorkerContext().getConf(), queryId);
+    HistoryReader reader = tajoWorker.getWorkerContext().getHistoryReader();
+    queryHistory = reader.getQueryHistory(queryId.toString());
   }
 
   if (!runningQuery && queryHistory == null) {

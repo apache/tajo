@@ -32,6 +32,7 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.QueryUnitId;
+import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol.FailureIntermediateProto;
@@ -212,6 +213,15 @@ public class QueryUnit implements EventHandler<TaskEvent> {
       return stateMachine.getCurrentState();
     } finally {
       readLock.unlock();
+    }
+  }
+
+  public TaskAttemptState getLastAttemptStatus() {
+    QueryUnitAttempt lastAttempt = getLastAttempt();
+    if (lastAttempt != null) {
+      return lastAttempt.getState();
+    } else {
+      return TaskAttemptState.TA_ASSIGNED;
     }
   }
 

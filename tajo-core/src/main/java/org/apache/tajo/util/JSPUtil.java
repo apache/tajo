@@ -42,7 +42,7 @@ import static org.apache.tajo.conf.TajoConf.ConfVars;
 public class JSPUtil {
   static DecimalFormat decimalF = new DecimalFormat("###.0");
 
-  public static void sortQueryUnit(QueryUnit[] queryUnits, String sortField, String sortOrder) {
+  public static void sortQueryUnitArray(QueryUnit[] queryUnits, String sortField, String sortOrder) {
     if(sortField == null || sortField.isEmpty()) {
       sortField = "id";
     }
@@ -50,7 +50,15 @@ public class JSPUtil {
     Arrays.sort(queryUnits, new QueryUnitComparator(sortField, "asc".equals(sortOrder)));
   }
 
-  public static void sortQueryUnit(List<QueryUnitHistory> queryUnits, String sortField, String sortOrder) {
+  public static void sortQueryUnit(List<QueryUnit> queryUnits, String sortField, String sortOrder) {
+    if(sortField == null || sortField.isEmpty()) {
+      sortField = "id";
+    }
+
+    Collections.sort(queryUnits, new QueryUnitComparator(sortField, "asc".equals(sortOrder)));
+  }
+
+  public static void sortQueryUnitHistory(List<QueryUnitHistory> queryUnits, String sortField, String sortOrder) {
     if(sortField == null || sortField.isEmpty()) {
       sortField = "id";
     }

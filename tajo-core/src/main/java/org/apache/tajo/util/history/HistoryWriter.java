@@ -160,7 +160,9 @@ public class HistoryWriter extends AbstractService {
             }
           }
         }
-
+        if (stopped.get()) {
+          break;
+        }
         try {
           if (!histories.isEmpty()) {
             writeHistory(histories);
@@ -438,8 +440,7 @@ public class HistoryWriter extends AbstractService {
     }
 
     maxSeq++;
-    return new Path(fileParent, processName + "/" + processName + "_" +
-        taskStartTime.substring(8, 10) + "_" + maxSeq + HISTORY_FILE_POSTFIX);
+    return new Path(fileParent, processName + "_" + hour + "_" + maxSeq + HISTORY_FILE_POSTFIX);
   }
 
   class WriterHolder {
