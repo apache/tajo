@@ -7,12 +7,13 @@ Tajo provides a shell utility named Tsql. It is a command-line interface (CLI) w
 .. toctree::
   :maxdepth: 1
 
-  tsql/intro
-  tsql/single_command
-  tsql/execute_file
-  tsql/background_command
   tsql/meta_command
   tsql/dfs_command
   tsql/variables
   tsql/admin_command
 
+
+  tsql/intro
+  tsql/single_command
+  tsql/execute_file
+  tsql/background_command
