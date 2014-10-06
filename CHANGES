@@ -158,6 +158,8 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1067: INSERT OVERWRITE INTO should not remove all partitions. (jaehwa)
+
     TAJO-1065: The \admin -cluster argument doesn't run as expected.
     (Jongyoung Park via hyunsik)
 
@@ -494,6 +496,10 @@ Release 0.9.0 - unreleased
     TAJO-834: Add Travis notification to issues@tajo.a.o and IRC. hyunsik)
 
   SUB TASKS
+
+    TAJO-1096: Update download source documentation (Mai Hai Thanh via jaehwa)
+
+    TAJO-1062: Update TSQL documentation. (jaehwa)
 
     TAJO-1061: TAJO-1061: Update build documentation. (jaehwa)
 
