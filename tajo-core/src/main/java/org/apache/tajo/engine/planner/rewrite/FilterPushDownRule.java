@@ -896,6 +896,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         BinaryEval binaryEval = (BinaryEval) eval;
         Set<Column> leftColumns = EvalTreeUtil.findUniqueColumns(binaryEval.getLeftExpr());
         Set<Column> rightColumns = EvalTreeUtil.findUniqueColumns(binaryEval.getRightExpr());
+
         if (catalog.existIndexByColumn(databaseName, tableName, column.getSimpleName())) {
           IndexDesc indexDesc = catalog.getIndexByColumn(databaseName, tableName, column.getSimpleName());
           block.addAccessPath(scanNode, new IndexScanInfo(indexDesc));

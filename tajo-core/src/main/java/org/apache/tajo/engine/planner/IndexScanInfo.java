@@ -26,4 +26,7 @@ public class IndexScanInfo extends AccessPathInfo {
   public IndexDesc getIndexDesc() {
     return indexDesc;
   }
+  public Datum[] getValues() {
+    return values;
+  }
 }

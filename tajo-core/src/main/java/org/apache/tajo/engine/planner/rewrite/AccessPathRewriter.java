@@ -2,7 +2,10 @@ package org.apache.tajo.engine.planner.rewrite;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.IndexDesc;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.AccessPathInfo.ScanTypeControl;
 import org.apache.tajo.engine.planner.logical.IndexScanNode;
@@ -55,15 +58,24 @@ public class AccessPathRewriter implements RewriteRule {
       IndexScanInfo optimalPath = null;
       for (AccessPathInfo accessPath : accessPaths) {
         if (accessPath.getScanType() == ScanTypeControl.INDEX_SCAN) {
-
+          // estimation selectivity and choose the better path
         }
       }
       //
       plan.addHistory("AccessPathRewriter chooses " + optimalPath.getIndexDesc().getName() + " for "
           + scanNode.getTableName() + " scan");
       IndexDesc indexDesc = optimalPath.getIndexDesc();
-      IndexScanNode indexScanNode = new IndexScanNode(plan.newPID(), scanNode,
-          )
+      Schema indexKeySchema = new Schema(new Column[]{indexDesc.getColumn()});
+      SortSpec[] sortSpecs = new SortSpec[1];
+      sortSpecs[0] = new SortSpec(indexDesc.getColumn(), indexDesc.isAscending(), false);
+      IndexScanNode indexScanNode = new IndexScanNode(plan.newPID(), scanNode, indexKeySchema,
+          optimalPath.getValues(), sortSpecs);
+      if (stack.empty() || block.getRoot().equals(scanNode)) {
+        block.setRoot(indexScanNode);
+      } else {
+        PlannerUtil.replaceNode(plan, stack.peek(), scanNode, indexScanNode);
+      }
+      return null;
     }
   }
 }
