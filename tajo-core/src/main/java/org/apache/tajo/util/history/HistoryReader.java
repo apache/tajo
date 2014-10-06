@@ -189,6 +189,9 @@ public class HistoryReader {
 
   public List<QueryUnitHistory> getQueryUnitHistory(String queryId, String ebId) throws IOException {
     Path queryHistoryFile = getQueryHistoryFilePath(queryId, 0);
+    if (queryHistoryFile == null) {
+      return new ArrayList<QueryUnitHistory>();
+    }
     Path detailFile = new Path(queryHistoryFile.getParent(), ebId + HistoryWriter.HISTORY_FILE_POSTFIX);
     FileSystem fs = HistoryWriter.getNonCrcFileSystem(detailFile, tajoConf);
 
