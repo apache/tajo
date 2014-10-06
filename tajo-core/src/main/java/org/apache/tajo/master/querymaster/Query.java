@@ -34,20 +34,19 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos.QueryState;
-import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.ExecutionBlockCursor;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.engine.planner.logical.CreateTableNode;
-import org.apache.tajo.engine.planner.logical.InsertNode;
-import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.event.*;
+import org.apache.tajo.master.querymaster.QueryMaster.QueryMasterContext;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.StorageUtil;
@@ -606,6 +605,7 @@ public class Query implements EventHandler<QueryEvent> {
         hookList.add(new MaterializedResultHook());
         hookList.add(new CreateTableHook());
         hookList.add(new InsertTableHook());
+        hookList.add(new CreateIndexHook());
       }
 
       public void execute(QueryContext queryContext, Query query,
@@ -615,6 +615,49 @@ public class Query implements EventHandler<QueryEvent> {
           if (hook.isEligible(queryContext, query, finalExecBlockId, finalOutputDir)) {
             hook.execute(context, queryContext, query, finalExecBlockId, finalOutputDir);
           }
+        }
+      }
+    }
+
+    private class CreateIndexHook implements QueryHook {
+
+      @Override
+      public boolean isEligible(QueryContext queryContext, Query query, ExecutionBlockId finalExecBlockId, Path finalOutputDir) {
+        SubQuery lastStage = query.getSubQuery(finalExecBlockId);
+        return  lastStage.getBlock().getPlan().getType() == NodeType.CREATE_INDEX;
+      }
+
+      @Override
+      public void execute(QueryMasterContext context, QueryContext queryContext, Query query, ExecutionBlockId finalExecBlockId, Path finalOutputDir) throws Exception {
+        CatalogService catalog = context.getWorkerContext().getCatalog();
+        SubQuery lastStage = query.getSubQuery(finalExecBlockId);
+
+        CreateIndexNode createIndexNode = (CreateIndexNode) lastStage.getBlock().getPlan();
+        String databaseName, simpleIndexName, qualifiedIndexName;
+        if (CatalogUtil.isFQTableName(createIndexNode.getIndexName())) {
+          String [] splits = CatalogUtil.splitFQTableName(createIndexNode.getIndexName());
+          databaseName = splits[0];
+          simpleIndexName = splits[1];
+          qualifiedIndexName = createIndexNode.getIndexName();
+        } else {
+          databaseName = queryContext.getCurrentDatabase();
+          simpleIndexName = createIndexNode.getIndexName();
+          qualifiedIndexName = CatalogUtil.buildFQName(databaseName, simpleIndexName);
+        }
+        ScanNode scanNode = PlannerUtil.findTopNode(createIndexNode, NodeType.SCAN);
+        if (scanNode == null) {
+          throw new IOException("Cannot find the table of the relation");
+        }
+        SortSpec[] sortSpecs = createIndexNode.getSortSpecs();
+        // TODO: consider the index for two or more columns
+        IndexDesc indexDesc = new IndexDesc(simpleIndexName, createIndexNode.getIndexPath(),
+            databaseName, scanNode.getTableName(), sortSpecs[0].getSortKey(), createIndexNode.getIndexType(),
+            createIndexNode.isUnique(), false, sortSpecs[0].isAscending());
+        if (catalog.createIndex(indexDesc)) {
+          LOG.info("Index " + qualifiedIndexName + " is created for the table " + scanNode.getTableName() + ".");
+        } else {
+          LOG.info("Index creation " + qualifiedIndexName + " is failed.");
+          throw new CatalogException("Cannot create index \"" + qualifiedIndexName + "\".");
         }
       }
     }

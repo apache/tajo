@@ -38,8 +38,8 @@ public class TestCreateIndex extends QueryTestCaseBase {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
   }
 
-  private static void assertIndexExist(String indexName) throws IOException {
-    Path indexPath = new Path(conf.getVar(ConfVars.WAREHOUSE_DIR), "default/" + indexName);
+  private static void assertIndexExist(String databaseName, String indexName) throws IOException {
+    Path indexPath = new Path(conf.getVar(ConfVars.WAREHOUSE_DIR), databaseName + "/" + indexName);
     FileSystem fs = indexPath.getFileSystem(conf);
     assertTrue(fs.exists(indexPath));
     assertEquals(2, fs.listStatus(indexPath).length);
@@ -49,24 +49,31 @@ public class TestCreateIndex extends QueryTestCaseBase {
   @Test
   public final void testCreateIndex() throws Exception {
     executeQuery();
-    assertIndexExist("l_orderkey_idx");
+    assertIndexExist(getCurrentDatabase(), "l_orderkey_idx");
   }
 
   @Test
   public final void testCreateIndexOnMultiAttrs() throws Exception {
     executeQuery();
-    assertIndexExist("l_orderkey_partkey_idx");
+    assertIndexExist(getCurrentDatabase(), "l_orderkey_partkey_idx");
   }
 
   @Test
   public final void testCreateIndexWithCondition() throws Exception {
     executeQuery();
-    assertIndexExist("l_orderkey_partkey_lt10_idx");
+    assertIndexExist(getCurrentDatabase(), "l_orderkey_partkey_lt10_idx");
   }
 
   @Test
   public final void testCreateIndexOnExpression() throws Exception {
     executeQuery();
-    assertIndexExist("l_orderkey_100_lt10_idx");
+    assertIndexExist(getCurrentDatabase(), "l_orderkey_100_lt10_idx");
+  }
+
+  @Test
+  public final void test() throws Exception {
+    executeString("create index l_orderkey_idx2 on lineitem (l_orderkey asc null first);");
+    assertTrue(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_idx2"));
+    executeString("select * from lineitem where l_orderkey = 1");
   }
 }

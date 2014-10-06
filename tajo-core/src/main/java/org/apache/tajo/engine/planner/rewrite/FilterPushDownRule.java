@@ -23,6 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.exception.InvalidQueryException;
 import org.apache.tajo.engine.planner.*;
@@ -894,12 +895,22 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       tableName = CatalogUtil.extractSimpleName(table.getName());
       for (EvalNode eval : IndexUtil.getAllEqualEvals(qual)) {
         BinaryEval binaryEval = (BinaryEval) eval;
-        Set<Column> leftColumns = EvalTreeUtil.findUniqueColumns(binaryEval.getLeftExpr());
-        Set<Column> rightColumns = EvalTreeUtil.findUniqueColumns(binaryEval.getRightExpr());
+        // TODO: consider more complex cases
+        Column column = null;
+        Datum datum = null;
+        if (binaryEval.getLeftExpr().getType() == EvalType.FIELD &&
+            binaryEval.getRightExpr().getType() == EvalType.CONST) {
+          column = ((FieldEval)binaryEval.getLeftExpr()).getColumnRef();
+          datum = ((ConstEval)binaryEval.getRightExpr()).getValue();
+        } else if (binaryEval.getLeftExpr().getType() == EvalType.CONST &&
+            binaryEval.getRightExpr().getType() == EvalType.FIELD) {
+          column = ((FieldEval)binaryEval.getRightExpr()).getColumnRef();
+          datum = ((ConstEval)binaryEval.getLeftExpr()).getValue();
+        }
 
         if (catalog.existIndexByColumn(databaseName, tableName, column.getSimpleName())) {
           IndexDesc indexDesc = catalog.getIndexByColumn(databaseName, tableName, column.getSimpleName());
-          block.addAccessPath(scanNode, new IndexScanInfo(indexDesc));
+          block.addAccessPath(scanNode, new IndexScanInfo(indexDesc, new Datum[]{datum}));
         }
       }
     }

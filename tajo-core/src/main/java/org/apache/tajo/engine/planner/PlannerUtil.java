@@ -65,7 +65,9 @@ public class PlannerUtil {
             baseNode.getType() == NodeType.DROP_TABLE ||
             baseNode.getType() == NodeType.ALTER_TABLESPACE ||
             baseNode.getType() == NodeType.ALTER_TABLE ||
-            baseNode.getType() == NodeType.TRUNCATE_TABLE;
+            baseNode.getType() == NodeType.TRUNCATE_TABLE ||
+            baseNode.getType() == NodeType.CREATE_INDEX ||
+            baseNode.getType() == NodeType.DROP_INDEX;
   }
 
   /**

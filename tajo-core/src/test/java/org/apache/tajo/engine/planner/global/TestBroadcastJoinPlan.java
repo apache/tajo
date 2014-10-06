@@ -183,7 +183,7 @@ public class TestBroadcastJoinPlan {
         "join small2 on small1_id = small2_id";
 
     LogicalPlanner planner = new LogicalPlanner(catalog);
-    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
     Expr expr =  analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
@@ -244,7 +244,7 @@ public class TestBroadcastJoinPlan {
         "join small3 on small1_id = small3_id";
 
     LogicalPlanner planner = new LogicalPlanner(catalog);
-    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
     Expr expr =  analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
@@ -308,7 +308,7 @@ public class TestBroadcastJoinPlan {
         "join large2 on large1_id = large2_id ";
 
     LogicalPlanner planner = new LogicalPlanner(catalog);
-    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
     Expr expr =  analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
@@ -336,7 +336,7 @@ public class TestBroadcastJoinPlan {
         "join small2 on large2_id = small2_id";
 
     LogicalPlanner planner = new LogicalPlanner(catalog);
-    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
     Expr expr =  analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
@@ -386,7 +386,7 @@ public class TestBroadcastJoinPlan {
         "join small2 on a.small1_id = small2_id";
 
     LogicalPlanner planner = new LogicalPlanner(catalog);
-    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
     Expr expr =  analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
@@ -427,7 +427,7 @@ public class TestBroadcastJoinPlan {
         "join (select * from small1) a on large1_id = a.small1_id";
 
     LogicalPlanner planner = new LogicalPlanner(catalog);
-    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
     Expr expr =  analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
@@ -483,7 +483,7 @@ public class TestBroadcastJoinPlan {
         "left outer join large2 on small1_id = large2_id ";
 
         LogicalPlanner planner = new LogicalPlanner(catalog);
-    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
     Expr expr =  analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
@@ -537,7 +537,7 @@ public class TestBroadcastJoinPlan {
         "left outer join small3 on large1_id = small3_id ";
 
     LogicalPlanner planner = new LogicalPlanner(catalog);
-    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
     Expr expr =  analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
@@ -620,7 +620,7 @@ public class TestBroadcastJoinPlan {
         "left outer join small3 on large3_id = small3_id ";
 
     LogicalPlanner planner = new LogicalPlanner(catalog);
-    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
     Expr expr =  analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
@@ -703,7 +703,7 @@ public class TestBroadcastJoinPlan {
         "left outer join small3 on small1_id = small3_id ";
 
     LogicalPlanner planner = new LogicalPlanner(catalog);
-    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
     Expr expr =  analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
@@ -762,7 +762,7 @@ public class TestBroadcastJoinPlan {
         "left outer join small3 on small1_id = small3_id " ;
 
     LogicalPlanner planner = new LogicalPlanner(catalog);
-    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
     Expr expr =  analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
@@ -815,7 +815,7 @@ public class TestBroadcastJoinPlan {
         "left outer join small3 on small1_id = small3_id " ;
 
     LogicalPlanner planner = new LogicalPlanner(catalog);
-    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
     Expr expr =  analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
@@ -907,7 +907,7 @@ public class TestBroadcastJoinPlan {
         "left outer join small3 on small3_id = large1_id " ;
 
     LogicalPlanner planner = new LogicalPlanner(catalog);
-    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
     Expr expr =  analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
@@ -972,7 +972,7 @@ public class TestBroadcastJoinPlan {
         "left outer join small2 on large1_id = small2_id " ;
 
     LogicalPlanner planner = new LogicalPlanner(catalog);
-    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
     Expr expr = analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
 

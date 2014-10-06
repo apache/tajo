@@ -56,6 +56,7 @@ public class MemStore implements CatalogStore {
     databases.clear();
     functions.clear();
     indexes.clear();
+    indexes.clear();
   }
 
   @Override
@@ -120,6 +121,8 @@ public class MemStore implements CatalogStore {
     }
 
     databases.put(databaseName, new HashMap<String, CatalogProtos.TableDescProto>());
+    indexes.put(databaseName, new HashMap<String, IndexDescProto>());
+    indexesByColumn.put(databaseName, new HashMap<String, IndexDescProto>());
   }
 
   @Override
@@ -133,6 +136,8 @@ public class MemStore implements CatalogStore {
       throw new NoSuchDatabaseException(databaseName);
     }
     databases.remove(databaseName);
+    indexes.remove(databaseName);
+    indexesByColumn.remove(databaseName);
   }
 
   @Override

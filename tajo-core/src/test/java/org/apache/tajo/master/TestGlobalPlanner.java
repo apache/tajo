@@ -114,7 +114,7 @@ public class TestGlobalPlanner {
 
     sqlAnalyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
-    optimizer = new LogicalOptimizer(util.getConfiguration());
+    optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
     globalPlanner = new GlobalPlanner(util.getConfiguration(), catalog);
   }
 

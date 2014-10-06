@@ -100,7 +100,7 @@ public class TestLogicalOptimizer {
     catalog.createFunction(funcDesc);
     sqlAnalyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
-    optimizer = new LogicalOptimizer(util.getConfiguration());
+    optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
 
     defaultContext = LocalTajoTestingUtility.createDummyContext(util.getConfiguration());
   }
