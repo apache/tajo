@@ -124,13 +124,48 @@ public class HistoryReader {
     return queryInfos;
   }
 
-  public QueryHistory getQueryHistory(String queryId) throws IOException {
-    Path queryHistoryFile = HistoryWriter.getQueryHistoryPath(historyParentPath, queryId);
-    FileSystem fs = HistoryWriter.getNonCrcFileSystem(queryHistoryFile, tajoConf);
+  private Path getQueryHistoryFilePath(String queryId, long startTime) throws IOException {
+    if (startTime == 0) {
+      String[] tokens = queryId.split("_");
+      if (tokens.length == 3) {
+        startTime = Long.parseLong(tokens[1]);
+      } else {
+        startTime = System.currentTimeMillis();
+      }
+    }
+    Path queryHistoryPath = HistoryWriter.getQueryHistoryFilePath(historyParentPath, queryId, startTime);
+    FileSystem fs = HistoryWriter.getNonCrcFileSystem(queryHistoryPath, tajoConf);
 
-    if (!fs.exists(queryHistoryFile)) {
+    if (!fs.exists(queryHistoryPath)) {
+      LOG.info("No query history file: " + queryHistoryPath);
+      Calendar cal = Calendar.getInstance();
+      cal.setTimeInMillis(startTime);
+      cal.add(Calendar.DAY_OF_MONTH, -1);
+      queryHistoryPath = HistoryWriter.getQueryHistoryFilePath(historyParentPath, queryId, startTime);
+      if (!fs.exists(queryHistoryPath)) {
+        LOG.info("No query history file: " + queryHistoryPath);
+        cal.setTimeInMillis(startTime);
+        cal.add(Calendar.DAY_OF_MONTH, 1);
+        queryHistoryPath = HistoryWriter.getQueryHistoryFilePath(historyParentPath, queryId, startTime);
+      }
+      if (!fs.exists(queryHistoryPath)) {
+        LOG.info("No query history file: " + queryHistoryPath);
+        return null;
+      }
+    }
+    return queryHistoryPath;
+  }
+
+  public QueryHistory getQueryHistory(String queryId) throws IOException {
+    return  getQueryHistory(queryId, 0);
+  }
+
+  public QueryHistory getQueryHistory(String queryId, long startTime) throws IOException {
+    Path queryHistoryFile = getQueryHistoryFilePath(queryId, startTime);
+    if (queryHistoryFile == null) {
       return null;
     }
+    FileSystem fs = HistoryWriter.getNonCrcFileSystem(queryHistoryFile, tajoConf);
 
     FileStatus fileStatus = fs.getFileStatus(queryHistoryFile);
     if (fileStatus.getLen() > 10 * 1024 * 1024) {
@@ -153,7 +188,7 @@ public class HistoryReader {
   }
 
   public List<QueryUnitHistory> getQueryUnitHistory(String queryId, String ebId) throws IOException {
-    Path queryHistoryFile = HistoryWriter.getQueryHistoryPath(historyParentPath, queryId);
+    Path queryHistoryFile = getQueryHistoryFilePath(queryId, 0);
     Path detailFile = new Path(queryHistoryFile.getParent(), ebId + HistoryWriter.HISTORY_FILE_POSTFIX);
     FileSystem fs = HistoryWriter.getNonCrcFileSystem(detailFile, tajoConf);
 
@@ -197,6 +232,7 @@ public class HistoryReader {
     cal.add(Calendar.HOUR_OF_DAY, -1);
     targetHistoryFileDates[1] = df.format(cal.getTime());
 
+    cal.setTime(new Date(startTime));
     cal.add(Calendar.HOUR_OF_DAY, 1);
     targetHistoryFileDates[2] = df.format(cal.getTime());
 

@@ -136,9 +136,28 @@ public class HistoryWriter extends AbstractService {
     return fs;
   }
 
-  public static Path getQueryHistoryPath(Path historyParentPath, String queryId) {
+  public static Path getQueryHistoryFilePath(Path historyParentPath, String queryId, long startTime) {
     SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
-    Path datePath = new Path(historyParentPath, df.format(new Date(System.currentTimeMillis())) + "/" + QUERY_DETAIL);
+
+    Path datePath = new Path(historyParentPath, df.format(startTime) + "/" + QUERY_DETAIL);
+    return new Path(datePath, queryId + "/query" + HISTORY_FILE_POSTFIX);
+  }
+
+  public static Path getQueryHistoryFilePath(Path historyParentPath, String queryId) {
+    SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
+
+    Path datePath = null;
+    try {
+      String[] tokens = queryId.split("_");
+      //q_1412483083972_0005 = q_<timestamp>_<seq>
+      if (tokens.length == 3) {
+        datePath = new Path(historyParentPath, df.format(tokens[1]) + "/" + QUERY_DETAIL);
+      } else {
+        datePath = new Path(historyParentPath, df.format(new Date(System.currentTimeMillis())) + "/" + QUERY_DETAIL);
+      }
+    } catch (Exception e) {
+      datePath = new Path(historyParentPath, df.format(new Date(System.currentTimeMillis())) + "/" + QUERY_DETAIL);
+    }
     return new Path(datePath, queryId + "/query" + HISTORY_FILE_POSTFIX);
   }
 
@@ -251,7 +270,7 @@ public class HistoryWriter extends AbstractService {
       // QueryMaster's subquery detail history(proto binary format)
       // <tajo.query-history.path>/<yyyyMMdd>/query-detail/<QUERY_ID>/<EB_ID>.hist
 
-      Path queryHistoryFile = getQueryHistoryPath(historyParentPath, queryHistory.getQueryId());
+      Path queryHistoryFile = getQueryHistoryFilePath(historyParentPath, queryHistory.getQueryId());
       FileSystem fs = getNonCrcFileSystem(queryHistoryFile, tajoConf);
 
       if (!fs.exists(queryHistoryFile.getParent())) {

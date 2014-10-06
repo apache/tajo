@@ -33,7 +33,8 @@
   HistoryReader reader = master.getContext().getHistoryReader();
 
   String queryId = request.getParameter("queryId");
-  QueryHistory queryHistory = reader.getQueryHistory(queryId);
+  String startTime = request.getParameter("startTime");
+  QueryHistory queryHistory = reader.getQueryHistory(queryId, Long.parseLong(startTime));
 
   List<SubQueryHistory> subQueryHistories =
       queryHistory != null ? JSPUtil.sortSubQueryHistory(queryHistory.getSubQueryHistories()) : null;

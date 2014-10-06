@@ -125,7 +125,7 @@
       for(QueryInProgress eachQuery: runningQueries) {
         long time = System.currentTimeMillis() - eachQuery.getQueryInfo().getStartTime();
         String detailView = "http://" + eachQuery.getQueryInfo().getQueryMasterHost() + ":" + portMap.get(eachQuery.getQueryInfo().getQueryMasterHost()) +
-                "/querydetail.jsp?queryId=" + eachQuery.getQueryId();
+                "/querydetail.jsp?queryId=" + eachQuery.getQueryId() + "&startTime=" + eachQuery.getQueryInfo().getStartTime();
     %>
     <tr>
       <td><a href='<%=detailView%>'><%=eachQuery.getQueryId()%></a></td>
@@ -164,7 +164,7 @@
       for(QueryInfo eachQuery: finishedQueries) {
         long runTime = eachQuery.getFinishTime() > 0 ?
                 eachQuery.getFinishTime() - eachQuery.getStartTime() : -1;
-        String detailView = "querydetail.jsp?queryId=" + eachQuery.getQueryIdStr();
+        String detailView = "querydetail.jsp?queryId=" + eachQuery.getQueryIdStr() + "&startTime=" + eachQuery.getStartTime();
     %>
     <tr>
       <td><a href='<%=detailView%>'><%=eachQuery.getQueryIdStr()%></a></td>
