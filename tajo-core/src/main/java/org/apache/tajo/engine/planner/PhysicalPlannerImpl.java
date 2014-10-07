@@ -55,7 +55,6 @@ import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Stack;
 
@@ -232,7 +231,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         return new LimitExec(ctx, limitNode.getInSchema(),
             limitNode.getOutSchema(), leftExec, limitNode);
 
-      case BST_INDEX_SCAN:
+      case INDEX_SCAN:
         IndexScanNode indexScanNode = (IndexScanNode) logicalNode;
         leftExec = createIndexScanExec(ctx, indexScanNode);
         return leftExec;
@@ -1142,12 +1141,12 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     List<FileFragment> fragments =
         FragmentConvertor.convert(ctx.getConf(), ctx.getDataChannel().getStoreType(), fragmentProtos);
 
-    String indexName = IndexUtil.getIndexNameOfFrag(fragments.get(0), annotation.getSortKeys());
-    Path indexPath = new Path(sm.getTablePath(annotation.getTableName()), "index");
+//    String indexName = IndexUtil.getIndexNameOfFrag(fragments.get(0), annotation.getSortKeys());
+//    Path indexPath = new Path(sm.getTablePath(annotation.getTableName()), "index");
 
     TupleComparator comp = new TupleComparator(annotation.getKeySchema(),
         annotation.getSortKeys());
-    return new BSTIndexScanExec(ctx, sm, annotation, fragments.get(0), new Path(indexPath, indexName),
+    return new BSTIndexScanExec(ctx, sm, annotation, fragments.get(0), annotation.getIndexPath(),
         annotation.getKeySchema(), comp, annotation.getDatum());
 
   }

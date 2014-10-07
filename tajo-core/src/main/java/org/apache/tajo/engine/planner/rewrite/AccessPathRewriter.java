@@ -72,6 +72,7 @@ public class AccessPathRewriter implements RewriteRule {
   }
 
   private final class Rewriter extends BasicLogicalPlanVisitor<Object, Object> {
+
     @Override
     public Object visitScan(Object object, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode scanNode,
                             Stack<LogicalNode> stack) throws PlanningException {
@@ -93,7 +94,7 @@ public class AccessPathRewriter implements RewriteRule {
         SortSpec[] sortSpecs = new SortSpec[1];
         sortSpecs[0] = new SortSpec(indexDesc.getColumn(), indexDesc.isAscending(), false);
         IndexScanNode indexScanNode = new IndexScanNode(plan.newPID(), scanNode, indexKeySchema,
-            optimalPath.getValues(), sortSpecs);
+            optimalPath.getValues(), sortSpecs, indexDesc.getIndexPath());
         if (stack.empty() || block.getRoot().equals(scanNode)) {
           block.setRoot(indexScanNode);
         } else {

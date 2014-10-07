@@ -16,36 +16,39 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.planner;
+package org.apache.tajo.algebra;
 
-import org.apache.tajo.catalog.IndexDesc;
-import org.apache.tajo.datum.Datum;
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
 
-public class IndexScanInfo extends AccessPathInfo {
-  private IndexDesc indexDesc;
-  private Datum[] values;
+public class DropIndex extends Expr {
+  @Expose @SerializedName("IndexName")
+  private String indexName;
 
-  public IndexScanInfo() {
-    super(ScanTypeControl.INDEX_SCAN);
+  public DropIndex(final String indexName) {
+    super(OpType.DropIndex);
+    this.indexName = indexName;
   }
 
-  public IndexScanInfo(IndexDesc indexDesc, Datum[] values) {
-    this();
-    this.setIndexDesc(indexDesc);
-    this.values = values;
+  @Override
+  public int hashCode() {
+    return indexName.hashCode();
   }
 
-  public void setIndexDesc(IndexDesc indexDesc) {
-    this.indexDesc = indexDesc;
-  }
-  public void setValues(Datum[] values) {
-    this.values = values;
+  @Override
+  boolean equalsTo(Expr expr) {
+    DropIndex other = (DropIndex) expr;
+    return this.indexName.equals(other.indexName);
   }
 
-  public IndexDesc getIndexDesc() {
-    return indexDesc;
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    DropIndex clone = (DropIndex) super.clone();
+    clone.indexName = indexName;
+    return clone;
   }
-  public Datum[] getValues() {
-    return values;
+
+  public String getIndexName() {
+    return indexName;
   }
 }

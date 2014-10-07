@@ -359,6 +359,11 @@ public class MemStore implements CatalogStore {
     throw new RuntimeException("not supported!");
   }
 
+  private static String getColumnNameQualifiedByTableName(String tableName, String columnName) {
+    return CatalogUtil.buildFQName(CatalogUtil.extractSimpleName(tableName),
+        CatalogUtil.extractSimpleName(columnName));
+  }
+
   /* (non-Javadoc)
    * @see CatalogStore#createIndex(nta.catalog.proto.CatalogProtos.IndexDescProto)
    */
@@ -374,8 +379,8 @@ public class MemStore implements CatalogStore {
     }
 
     index.put(proto.getName(), proto);
-    indexByColumn.put(proto.getTableIdentifier().getTableName() + "."
-        + CatalogUtil.extractSimpleName(proto.getColumn().getName()), proto);
+    indexByColumn.put(getColumnNameQualifiedByTableName(proto.getTableIdentifier().getTableName(), proto.getColumn().getName()),
+        proto);
   }
 
   /* (non-Javadoc)
@@ -384,10 +389,14 @@ public class MemStore implements CatalogStore {
   @Override
   public void dropIndex(String databaseName, String indexName) throws CatalogException {
     Map<String, IndexDescProto> index = checkAndGetDatabaseNS(indexes, databaseName);
+    Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
     if (!index.containsKey(indexName)) {
       throw new NoSuchIndexException(indexName);
     }
+    IndexDescProto proto = index.get(indexName);
     index.remove(indexName);
+    indexByColumn.remove(getColumnNameQualifiedByTableName(proto.getTableIdentifier().getTableName(),
+        proto.getColumn().getName()));
   }
 
   /* (non-Javadoc)
@@ -411,11 +420,12 @@ public class MemStore implements CatalogStore {
       throws CatalogException {
 
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
-    if (!indexByColumn.containsKey(columnName)) {
-      throw new NoSuchIndexException(columnName);
+    String qualifiedColumnName = getColumnNameQualifiedByTableName(tableName, columnName);
+    if (!indexByColumn.containsKey(qualifiedColumnName)) {
+      throw new NoSuchIndexException(qualifiedColumnName);
     }
 
-    return indexByColumn.get(columnName);
+    return indexByColumn.get(qualifiedColumnName);
   }
 
   @Override
@@ -428,7 +438,7 @@ public class MemStore implements CatalogStore {
   public boolean existIndexByColumn(String databaseName, String tableName, String columnName)
       throws CatalogException {
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
-    return indexByColumn.containsKey(columnName);
+    return indexByColumn.containsKey(getColumnNameQualifiedByTableName(tableName, columnName));
   }
 
   @Override

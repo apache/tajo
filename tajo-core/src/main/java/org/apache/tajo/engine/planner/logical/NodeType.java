@@ -44,7 +44,7 @@ public enum NodeType {
   TABLE_SUBQUERY(TableSubQueryNode.class),
   SCAN(ScanNode.class),
   PARTITIONS_SCAN(PartitionedTableScanNode.class),
-  BST_INDEX_SCAN(IndexScanNode.class),
+  INDEX_SCAN(IndexScanNode.class),
   STORE(StoreTableNode.class),
   INSERT(InsertNode.class),
   DISTINCT_GROUP_BY(DistinctGroupbyNode.class),

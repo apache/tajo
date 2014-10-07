@@ -692,28 +692,36 @@ public class GlobalEngine extends AbstractService {
   }
 
   public void dropIndex(final QueryContext queryContext, final DropIndexNode dropIndexNode) {
-    String databaseName, simpleIndexName, qualifiedIndexName;
+    String databaseName, simpleIndexName;
     if (CatalogUtil.isFQTableName(dropIndexNode.getIndexName())) {
       String [] splits = CatalogUtil.splitFQTableName(dropIndexNode.getIndexName());
       databaseName = splits[0];
       simpleIndexName = splits[1];
-      qualifiedIndexName = dropIndexNode.getIndexName();
     } else {
       databaseName = queryContext.getCurrentDatabase();
       simpleIndexName = dropIndexNode.getIndexName();
-      qualifiedIndexName = CatalogUtil.buildFQName(databaseName, simpleIndexName);
     }
 
-    if (catalog.existIndexByName(databaseName, simpleIndexName)) {
-      throw new NoSuchIndexException(qualifiedIndexName);
+    if (!catalog.existIndexByName(databaseName, simpleIndexName)) {
+      throw new NoSuchIndexException(simpleIndexName);
     }
 
-    if (catalog.dropIndex(databaseName, simpleIndexName)) {
-      LOG.info("Index " + qualifiedIndexName + " is dropped.");
-    } else {
-      LOG.info("Cannot drop index \"" + qualifiedIndexName + "\".");
-      throw new CatalogException("Cannot drop index \"" + qualifiedIndexName + "\".");
+    IndexDesc desc = catalog.getIndexByName(databaseName, simpleIndexName);
+
+    if (!catalog.dropIndex(databaseName, simpleIndexName)) {
+      LOG.info("Cannot drop index \"" + simpleIndexName + "\".");
+      throw new CatalogException("Cannot drop index \"" + simpleIndexName + "\".");
     }
+
+    Path indexPath = desc.getIndexPath();
+    try {
+      FileSystem fs = indexPath.getFileSystem(context.getConf());
+      fs.delete(indexPath, true);
+    } catch (IOException e) {
+      throw new InternalError(e.getMessage());
+    }
+
+    LOG.info("Index " + simpleIndexName + " is dropped.");
   }
 
   public void createIndex(final QueryContext queryContext, final CreateIndexNode createIndexNode)

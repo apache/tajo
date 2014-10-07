@@ -26,6 +26,7 @@ import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.engine.exception.NoSuchColumnException;
 import org.apache.tajo.engine.planner.LogicalPlan.QueryBlock;
+import org.apache.tajo.engine.planner.LogicalPlanner.PlanContext;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.nameresolver.NameResolver;
 import org.apache.tajo.engine.planner.nameresolver.NameResolvingMode;
@@ -450,6 +451,11 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
     createIndex.setInSchema(child.getOutSchema());
     createIndex.setOutSchema(child.getOutSchema());
     return createIndex;
+  }
+
+  @Override
+  public LogicalNode visitDropIndex(PlanContext ctx, Stack<Expr> stack, DropIndex expr) {
+    return ctx.plan.createNode(DropIndexNode.class);
   }
 
   public LogicalNode visitTruncateTable(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, TruncateTable expr)

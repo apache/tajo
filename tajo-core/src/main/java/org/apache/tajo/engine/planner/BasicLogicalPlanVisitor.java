@@ -105,6 +105,9 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
       case PARTITIONS_SCAN:
         current = visitPartitionedTableScan(context, plan, block, (PartitionedTableScanNode) node, stack);
         break;
+      case INDEX_SCAN:
+        current = visitIndexScan(context, plan, block, (IndexScanNode) node, stack);
+        break;
       case STORE:
         current = visitStoreTable(context, plan, block, (StoreTableNode) node, stack);
         break;
@@ -134,6 +137,9 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
         break;
       case TRUNCATE_TABLE:
         current = visitTruncateTable(context, plan, block, (TruncateTableNode) node, stack);
+        break;
+      case DROP_INDEX:
+        current = visitDropIndex(context, plan, block, (DropIndexNode) node, stack);
         break;
       default:
         throw new PlanningException("Unknown logical node type: " + node.getType());
@@ -282,6 +288,12 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
   }
 
   @Override
+  public RESULT visitIndexScan(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, IndexScanNode node,
+                               Stack<LogicalNode> stack) throws PlanningException {
+    return null;
+  }
+
+  @Override
   public RESULT visitPartitionedTableScan(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                           PartitionedTableScanNode node, Stack<LogicalNode> stack)
       throws PlanningException {
@@ -355,6 +367,12 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
     result = visit(context, plan, block, node.getChild(), stack);
     stack.pop();
     return result;
+  }
+
+  @Override
+  public RESULT visitDropIndex(CONTEXT context, LogicalPlan plan, QueryBlock block, DropIndexNode node,
+                               Stack<LogicalNode> stack) {
+    return null;
   }
 
   @Override

@@ -333,6 +333,12 @@ public class PlannerUtil {
         throws PlanningException {
       return node;
     }
+
+    @Override
+    public LogicalNode visitIndexScan(ReplacerContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                      IndexScanNode node, Stack<LogicalNode> stack) throws PlanningException {
+      return node;
+    }
   }
 
   public static void replaceNode(LogicalNode plan, LogicalNode newNode, NodeType type) {

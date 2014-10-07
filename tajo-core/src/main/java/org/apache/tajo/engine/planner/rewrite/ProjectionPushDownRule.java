@@ -1104,6 +1104,12 @@ public class ProjectionPushDownRule extends
   }
 
   @Override
+  public LogicalNode visitIndexScan(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                    IndexScanNode node, Stack<LogicalNode> stack) throws PlanningException {
+    return visitScan(context, plan, block,node, stack);
+  }
+
+  @Override
   public LogicalNode visitTableSubQuery(Context upperContext, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                    TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
     Context childContext = new Context(plan, upperContext.requiredSet);

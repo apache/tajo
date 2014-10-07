@@ -49,7 +49,7 @@ public class BSTIndexScanExec extends PhysicalExec {
 
   public BSTIndexScanExec(TaskAttemptContext context,
                           AbstractStorageManager sm , ScanNode scanNode ,
-       FileFragment fragment, Path fileName , Schema keySchema,
+       FileFragment fragment, Path indexPrefix , Schema keySchema,
        TupleComparator comparator , Datum[] datum) throws IOException {
     super(context, scanNode.getInSchema(), scanNode.getOutSchema());
     this.scanNode = scanNode;
@@ -61,8 +61,9 @@ public class BSTIndexScanExec extends PhysicalExec {
     this.fileScanner.init();
     this.projector = new Projector(context, inSchema, outSchema, scanNode.getTargets());
 
+    Path indexPath = new Path(indexPrefix, ""+context.getUniqueKeyFromFragments());
     this.reader = new BSTIndex(sm.getFileSystem().getConf()).
-        getIndexReader(fileName, keySchema, comparator);
+        getIndexReader(indexPath, keySchema, comparator);
     this.reader.open();
   }
 

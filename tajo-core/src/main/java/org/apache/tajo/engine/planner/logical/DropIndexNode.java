@@ -23,28 +23,25 @@ import org.apache.tajo.engine.planner.PlanString;
 import java.util.Objects;
 
 public class DropIndexNode extends LogicalNode implements Cloneable {
-  private String databaseName;
   private String indexName;
 
   public DropIndexNode(int pid) {
     super(pid, NodeType.DROP_INDEX);
   }
 
-  public void init(String databaseName, String indexName) {
-    this.databaseName = databaseName;
+  public void init(String indexName) {
     this.indexName = indexName;
   }
 
   public int hashCode() {
-    return Objects.hash(databaseName, indexName);
+    return Objects.hash(indexName);
   }
 
   public boolean equals(Object obj) {
     if (obj instanceof DropIndexNode) {
       DropIndexNode other = (DropIndexNode) obj;
       return super.equals(other) &&
-          this.indexName.equals(other.indexName) &&
-          this.databaseName.equals(other.databaseName);
+          this.indexName.equals(other.indexName);
     }
     return false;
   }
@@ -68,20 +65,19 @@ public class DropIndexNode extends LogicalNode implements Cloneable {
   public Object clone() throws CloneNotSupportedException {
     DropIndexNode clone = (DropIndexNode) super.clone();
     clone.indexName = this.indexName;
-    clone.databaseName = this.databaseName;
     return clone;
   }
 
   @Override
   public String toString() {
-    return "DROP INDEX " + databaseName + "." + indexName;
+    return "DROP INDEX " + indexName;
+  }
+
+  public void setIndexName(String indexName) {
+    this.indexName = indexName;
   }
 
   public String getIndexName() {
     return indexName;
-  }
-
-  public String getDatabaseName() {
-    return databaseName;
   }
 }
