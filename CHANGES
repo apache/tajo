@@ -31,6 +31,9 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1093: DateTimeFormat.to_char() is slower than SimpleDateFormat.format().
+    (Jihun Kang via hyunsik)
+
     TAJO-1030: Not supported JDBC APIs should return empty results instead of 
     Exception. (Hyoungjun Kim via hyunsik)
 
