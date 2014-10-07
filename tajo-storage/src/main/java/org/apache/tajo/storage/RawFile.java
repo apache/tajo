@@ -151,7 +151,11 @@ public class RawFile {
         long realRemaining = fragment.getEndKey() - numBytesRead;
         numBytesRead += bytesRead;
         if (realRemaining < bufferSize) {
-          buffer.limit(currentDataSize + (int) realRemaining);
+          int newLimit = currentDataSize + (int) realRemaining;
+          if(newLimit > bufferSize) {
+            newLimit = bufferSize;
+          }
+          buffer.limit(newLimit);
         }
         return true;
       }
