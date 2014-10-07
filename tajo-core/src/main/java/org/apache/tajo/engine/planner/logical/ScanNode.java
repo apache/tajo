@@ -180,22 +180,26 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
 	
 	@Override
 	public Object clone() throws CloneNotSupportedException {
-	  ScanNode scanNode = (ScanNode) super.clone();
-	  
-	  scanNode.tableDesc = (TableDesc) this.tableDesc.clone();
-	  
-	  if (hasQual()) {
-	    scanNode.qual = (EvalNode) this.qual.clone();
-	  }
-	  
-	  if (hasTargets()) {
-	    scanNode.targets = new Target[targets.length];
+    ScanNode scanNode = (ScanNode) super.clone();
+
+    scanNode.tableDesc = (TableDesc) this.tableDesc.clone();
+
+    if (hasQual()) {
+      scanNode.qual = (EvalNode) this.qual.clone();
+    }
+
+    if (hasTargets()) {
+      scanNode.targets = new Target[targets.length];
       for (int i = 0; i < targets.length; i++) {
         scanNode.targets[i] = (Target) targets[i].clone();
       }
-	  }
-	  
-	  return scanNode;
+    }
+
+    if (hasAlias()) {
+      scanNode.alias = alias;
+    }
+
+    return scanNode;
 	}
 	
   @Override

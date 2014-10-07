@@ -41,6 +41,10 @@ public class PartitionedTableScanNode extends ScanNode {
     this.qual = scanNode.qual;
     this.targets = scanNode.targets;
     this.inputPaths = inputPaths;
+
+    if (scanNode.hasAlias()) {
+      alias = scanNode.alias;
+    }
   }
 
   public void setInputPaths(Path [] paths) {

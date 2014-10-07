@@ -646,5 +646,66 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
 
   }
 
+  @Test
+  public final void testSelfJoin2() throws Exception {
+    /*
+     https://issues.apache.org/jira/browse/TAJO-1102
+     See the following case.
+     CREATE TABLE orders_partition
+       (o_orderkey INT8, o_custkey INT8, o_totalprice FLOAT8, o_orderpriority TEXT,
+          o_clerk TEXT, o_shippriority INT4, o_comment TEXT) USING CSV WITH ('csvfile.delimiter'='|')
+       PARTITION BY COLUMN(o_orderdate TEXT, o_orderstatus TEXT);
+
+     select a.o_orderstatus, count(*) as cnt
+      from orders_partition a
+      inner join orders_partition b
+        on a.o_orderdate = b.o_orderdate
+            and a.o_orderstatus = b.o_orderstatus
+            and a.o_orderkey = b.o_orderkey
+      where a.o_orderdate='1995-02-21'
+        and a.o_orderstatus in ('F')
+      group by a.o_orderstatus;
+
+      Because of the where condition[where a.o_orderdate='1995-02-21 and a.o_orderstatus in ('F')],
+        orders_partition table aliased a is small and broadcast target.
+    */
+    String tableName = CatalogUtil.normalizeIdentifier("partitioned_orders_large");
+    ResultSet res = executeString(
+        "create table " + tableName + " (o_orderkey INT8, o_custkey INT8, o_totalprice FLOAT8, o_orderpriority TEXT,\n" +
+            "o_clerk TEXT, o_shippriority INT4, o_comment TEXT) USING CSV WITH ('csvfile.delimiter'='|')\n" +
+            "PARTITION BY COLUMN(o_orderdate TEXT, o_orderstatus TEXT, o_orderkey_mod INT8)");
+    res.close();
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+    res = executeString(
+        "insert overwrite into " + tableName +
+            " select o_orderkey, o_custkey, o_totalprice, " +
+            " o_orderpriority, o_clerk, o_shippriority, o_comment, o_orderdate, o_orderstatus, o_orderkey % 10 " +
+            " from orders_large ");
+    res.close();
+
+    res = executeString(
+        "select a.o_orderdate, a.o_orderstatus, a.o_orderkey % 10 as o_orderkey_mod, a.o_totalprice " +
+            "from orders_large a " +
+            "join orders_large b on a.o_orderkey = b.o_orderkey " +
+            "where a.o_orderdate = '1993-10-14' and a.o_orderstatus = 'F' and a.o_orderkey % 10 = 1" +
+            " order by a.o_orderkey"
+    );
+    String expected = resultSetToString(res);
+    res.close();
+
+    res = executeString(
+        "select a.o_orderdate, a.o_orderstatus, a.o_orderkey_mod, a.o_totalprice " +
+            "from " + tableName +
+            " a join "+ tableName + " b on a.o_orderkey = b.o_orderkey " +
+            "where a.o_orderdate = '1993-10-14' and a.o_orderstatus = 'F' and o_orderkey_mod = 1 " +
+            " order by a.o_orderkey"
+    );
+    String resultSetData = resultSetToString(res);
+    res.close();
+
+    assertEquals(expected, resultSetData);
+
+  }
 
 }
