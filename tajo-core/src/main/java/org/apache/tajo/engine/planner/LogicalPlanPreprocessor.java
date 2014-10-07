@@ -148,13 +148,27 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
     return newTargetExprs;
   }
 
-  private static boolean hasAsterisk(Projection projection) {
-    for (NamedExpr eachTarget : projection.getNamedExprs()) {
+  private static boolean hasAsterisk(NamedExpr [] namedExprs) {
+    for (NamedExpr eachTarget : namedExprs) {
       if (eachTarget.getExpr().getType() == OpType.Asterisk) {
         return true;
       }
     }
     return false;
+  }
+
+  private static NamedExpr [] voidResolveAsteriskNamedExpr(LogicalPlanner.PlanContext context,
+                                                           NamedExpr [] namedExprs) throws PlanningException {
+    List<NamedExpr> rewrittenTargets = TUtil.newList();
+    for (NamedExpr originTarget : namedExprs) {
+      if (originTarget.getExpr().getType() == OpType.Asterisk) {
+        // rewrite targets
+        rewrittenTargets.addAll(resolveAsterisk(context, (QualifiedAsteriskExpr) originTarget.getExpr()));
+      } else {
+        rewrittenTargets.add(originTarget);
+      }
+    }
+    return rewrittenTargets.toArray(new NamedExpr[rewrittenTargets.size()]);
   }
 
   @Override
@@ -169,17 +183,8 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
     LogicalNode child = visit(ctx, stack, expr.getChild());
 
     // Resolve the asterisk expression
-    if (hasAsterisk(expr)) {
-      List<NamedExpr> rewrittenTargets = TUtil.newList();
-      for (NamedExpr originTarget : expr.getNamedExprs()) {
-        if (originTarget.getExpr().getType() == OpType.Asterisk) {
-          // rewrite targets
-          rewrittenTargets.addAll(resolveAsterisk(ctx, (QualifiedAsteriskExpr) originTarget.getExpr()));
-        } else {
-          rewrittenTargets.add(originTarget);
-        }
-      }
-      expr.setNamedExprs(rewrittenTargets.toArray(new NamedExpr[rewrittenTargets.size()]));
+    if (hasAsterisk(expr.getNamedExprs())) {
+      expr.setNamedExprs(voidResolveAsteriskNamedExpr(ctx, expr.getNamedExprs()));
     }
 
     NamedExpr[] projectTargetExprs = expr.getNamedExprs();
@@ -271,6 +276,10 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
     Projection projection = ctx.queryBlock.getSingletonExpr(OpType.Projection);
     int finalTargetNum = projection.getNamedExprs().length;
     Target [] targets = new Target[finalTargetNum];
+
+    if (hasAsterisk(projection.getNamedExprs())) {
+      projection.setNamedExprs(voidResolveAsteriskNamedExpr(ctx, projection.getNamedExprs()));
+    }
 
     for (int i = 0; i < finalTargetNum; i++) {
       NamedExpr namedExpr = projection.getNamedExprs()[i];
