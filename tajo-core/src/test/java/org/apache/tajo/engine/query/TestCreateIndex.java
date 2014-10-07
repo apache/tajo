@@ -23,6 +23,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.catalog.IndexDesc;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;

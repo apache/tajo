@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.Schema;
@@ -33,6 +35,7 @@ import org.apache.tajo.worker.TaskAttemptContext;
 import java.io.IOException;
 
 public class BSTIndexScanExec extends PhysicalExec {
+  private final static Log LOG = LogFactory.getLog(BSTIndexScanExec.class);
   private ScanNode scanNode;
   private SeekableScanner fileScanner;
   
@@ -46,6 +49,7 @@ public class BSTIndexScanExec extends PhysicalExec {
   private boolean initialize = true;
 
   private float progress;
+  private int cnt = 0;
 
   public BSTIndexScanExec(TaskAttemptContext context,
                           AbstractStorageManager sm , ScanNode scanNode ,
@@ -61,7 +65,7 @@ public class BSTIndexScanExec extends PhysicalExec {
     this.fileScanner.init();
     this.projector = new Projector(context, inSchema, outSchema, scanNode.getTargets());
 
-    Path indexPath = new Path(indexPrefix, ""+context.getUniqueKeyFromFragments());
+    Path indexPath = new Path(indexPrefix, context.getUniqueKeyFromFragments());
     this.reader = new BSTIndex(sm.getFileSystem().getConf()).
         getIndexReader(indexPath, keySchema, comparator);
     this.reader.open();
@@ -113,6 +117,7 @@ public class BSTIndexScanExec extends PhysicalExec {
        while(reader.isCurInMemory() && (tuple = fileScanner.next()) != null) {
          if (qual.eval(inSchema, tuple).isTrue()) {
            projector.eval(tuple, outTuple);
+           LOG.info("cnt: " + (++cnt) + ", next offset: " + ((CSVFile.CSVScanner)fileScanner).getPos());
            return outTuple;
          } else {
            long offset = reader.next();
