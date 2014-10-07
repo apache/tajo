@@ -291,7 +291,7 @@ public class TajoConf extends Configuration {
     GEOIP_DATA("tajo.function.geoip-database-location", ""),
 
     // Index configuration
-    INDEX_ENABLED("tajo.query.index.enabled", false),
+    INDEX_ENABLED("tajo.query.index.enabled", true),
 
     /////////////////////////////////////////////////////////////////////////////////
     // User Session Configuration

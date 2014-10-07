@@ -61,6 +61,11 @@ public class LogicalOptimizer {
   public LogicalOptimizer(TajoConf systemConf, CatalogService catalog) {
     this.catalog = catalog;
     boolean index_enabled = systemConf.getBoolVar(ConfVars.INDEX_ENABLED);
+    if (index_enabled) {
+      LOG.info("Index scan is enabled.");
+    } else {
+      LOG.info("Index scan is disabled.");
+    }
     rulesBeforeJoinOpt = new BasicQueryRewriteEngine();
     if (systemConf.getBoolVar(ConfVars.$TEST_FILTER_PUSHDOWN_ENABLED)) {
       rulesBeforeJoinOpt.addRewriteRule(new FilterPushDownRule(catalog, index_enabled));
