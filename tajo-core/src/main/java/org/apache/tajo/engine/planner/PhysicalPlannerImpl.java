@@ -1046,19 +1046,6 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   public PhysicalExec createDistinctGroupByPlan(TaskAttemptContext context,
                                                 DistinctGroupbyNode distinctNode, PhysicalExec subOp)
       throws IOException {
-//    Enforcer enforcer = context.getEnforcer();
-//    EnforceProperty property = getAlgorithmEnforceProperty(enforcer, distinctNode);
-//    if (property != null) {
-//      DistinctAggregationAlgorithm algorithm = property.getDistinct().getAlgorithm();
-//      if (algorithm == DistinctAggregationAlgorithm.HASH_AGGREGATION) {
-//        return createInMemoryDistinctGroupbyExec(context, distinctNode, subOp);
-//      } else {
-//        return createSortAggregationDistinctGroupbyExec(context, distinctNode, subOp, property.getDistinct());
-//      }
-//    } else {
-//      return createInMemoryDistinctGroupbyExec(context, distinctNode, subOp);
-//    }
-
     Enforcer enforcer = context.getEnforcer();
     EnforceProperty property = getAlgorithmEnforceProperty(enforcer, distinctNode);
     if (property != null) {
@@ -1068,12 +1055,9 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         if (stage == MultipleAggregationStage.FIRST_STAGE) {
           return new DistinctGroupbyFirstAggregationExec(context, distinctNode, subOp);
         } else if (stage == MultipleAggregationStage.SECOND_STAGE) {
-          //return new DistinctGroupbySecondAggregationExec(context, distinctNode, subOp);
           return new DistinctGroupbySecondAggregationExec(context, distinctNode,
               createSortExecForDistinctGroupby(context, distinctNode, subOp, 2));
         } else {
-          //ExternalSortExec sortExec = getExternalSortExec(context, property, distinctNode, subOp);
-          //return new DistinctGroupbyThirdWriterExec(context, distinctNode, sortExec);
           return new DistinctGroupbyThirdAggregationExec(context, distinctNode,
               createSortExecForDistinctGroupby(context, distinctNode, subOp, 3));
         }
