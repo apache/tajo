@@ -76,8 +76,13 @@ public class TestHistory {
 
     TaskRunnerHistory history = histories.iterator().next();
     assertEquals(Service.STATE.STOPPED, history.getState());
-
-    assertEquals(history, new TaskRunnerHistory(history.getProto()));
+    TaskRunnerHistory fromProto = new TaskRunnerHistory(history.getProto());
+    assertEquals(history.getExecutionBlockId(), fromProto.getExecutionBlockId());
+    assertEquals(history.getFinishTime(), fromProto.getFinishTime());
+    assertEquals(history.getStartTime(), fromProto.getStartTime());
+    assertEquals(history.getState(), fromProto.getState());
+    assertEquals(history.getContainerId(), fromProto.getContainerId());
+    assertEquals(history.getProto().getTaskHistoriesCount(), fromProto.getProto().getTaskHistoriesCount());
   }
 
   @Test
