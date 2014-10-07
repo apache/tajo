@@ -44,6 +44,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   private static final String NAME = "FilterPushDown";
 
   private CatalogService catalog;
+  private boolean index_enabled;
 
   static class FilterPushDownContext {
     Set<EvalNode> pushingDownFilters = new HashSet<EvalNode>();
@@ -72,8 +73,9 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     }
   }
 
-  public FilterPushDownRule(CatalogService catalog) {
+  public FilterPushDownRule(CatalogService catalog, boolean index_enabled) {
     this.catalog = catalog;
+    this.index_enabled = index_enabled;
   }
 
   @Override
@@ -889,28 +891,30 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     block.addAccessPath(scanNode, new SeqScanInfo(table));
     if (qual != null) { // if a matched qual exists
       scanNode.setQual(qual);
-      // Add access path
-      String databaseName, tableName;
-      databaseName = CatalogUtil.extractQualifier(table.getName());
-      tableName = CatalogUtil.extractSimpleName(table.getName());
-      for (EvalNode eval : IndexUtil.getAllEqualEvals(qual)) {
-        BinaryEval binaryEval = (BinaryEval) eval;
-        // TODO: consider more complex cases
-        Column column = null;
-        Datum datum = null;
-        if (binaryEval.getLeftExpr().getType() == EvalType.FIELD &&
-            binaryEval.getRightExpr().getType() == EvalType.CONST) {
-          column = ((FieldEval)binaryEval.getLeftExpr()).getColumnRef();
-          datum = ((ConstEval)binaryEval.getRightExpr()).getValue();
-        } else if (binaryEval.getLeftExpr().getType() == EvalType.CONST &&
-            binaryEval.getRightExpr().getType() == EvalType.FIELD) {
-          column = ((FieldEval)binaryEval.getRightExpr()).getColumnRef();
-          datum = ((ConstEval)binaryEval.getLeftExpr()).getValue();
-        }
+      if (index_enabled) {
+        // Add access path
+        String databaseName, tableName;
+        databaseName = CatalogUtil.extractQualifier(table.getName());
+        tableName = CatalogUtil.extractSimpleName(table.getName());
+        for (EvalNode eval : IndexUtil.getAllEqualEvals(qual)) {
+          BinaryEval binaryEval = (BinaryEval) eval;
+          // TODO: consider more complex cases
+          Column column = null;
+          Datum datum = null;
+          if (binaryEval.getLeftExpr().getType() == EvalType.FIELD &&
+              binaryEval.getRightExpr().getType() == EvalType.CONST) {
+            column = ((FieldEval)binaryEval.getLeftExpr()).getColumnRef();
+            datum = ((ConstEval)binaryEval.getRightExpr()).getValue();
+          } else if (binaryEval.getLeftExpr().getType() == EvalType.CONST &&
+              binaryEval.getRightExpr().getType() == EvalType.FIELD) {
+            column = ((FieldEval)binaryEval.getRightExpr()).getColumnRef();
+            datum = ((ConstEval)binaryEval.getLeftExpr()).getValue();
+          }
 
-        if (catalog.existIndexByColumn(databaseName, tableName, column.getSimpleName())) {
-          IndexDesc indexDesc = catalog.getIndexByColumn(databaseName, tableName, column.getSimpleName());
-          block.addAccessPath(scanNode, new IndexScanInfo(indexDesc, new Datum[]{datum}));
+          if (catalog.existIndexByColumn(databaseName, tableName, column.getSimpleName())) {
+            IndexDesc indexDesc = catalog.getIndexByColumn(databaseName, tableName, column.getSimpleName());
+            block.addAccessPath(scanNode, new IndexScanInfo(indexDesc, new Datum[]{datum}));
+          }
         }
       }
     }

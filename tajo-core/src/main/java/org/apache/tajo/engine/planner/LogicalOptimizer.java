@@ -60,15 +60,18 @@ public class LogicalOptimizer {
 
   public LogicalOptimizer(TajoConf systemConf, CatalogService catalog) {
     this.catalog = catalog;
+    boolean index_enabled = systemConf.getBoolVar(ConfVars.INDEX_ENABLED);
     rulesBeforeJoinOpt = new BasicQueryRewriteEngine();
     if (systemConf.getBoolVar(ConfVars.$TEST_FILTER_PUSHDOWN_ENABLED)) {
-      rulesBeforeJoinOpt.addRewriteRule(new FilterPushDownRule(catalog));
+      rulesBeforeJoinOpt.addRewriteRule(new FilterPushDownRule(catalog, index_enabled));
     }
 
     rulesAfterToJoinOpt = new BasicQueryRewriteEngine();
     rulesAfterToJoinOpt.addRewriteRule(new ProjectionPushDownRule());
     rulesAfterToJoinOpt.addRewriteRule(new PartitionedTableRewriter(systemConf));
-    rulesAfterToJoinOpt.addRewriteRule(new AccessPathRewriter());
+    if (index_enabled) {
+      rulesAfterToJoinOpt.addRewriteRule(new AccessPathRewriter());
+    }
 
     // Currently, it is only used for some test cases to inject exception manually.
     String userDefinedRewriterClass = systemConf.get("tajo.plan.rewriter.classes");
