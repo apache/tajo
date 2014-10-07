@@ -161,21 +161,6 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
-    TAJO-1067: INSERT OVERWRITE INTO should not remove all partitions. (jaehwa)
-
-    TAJO-1065: The \admin -cluster argument doesn't run as expected.
-    (Jongyoung Park via hyunsik)
-
-    TAJO-1072: CLI gets stuck when wrong host/port is provided. 
-    (Jihun Kang via hyunsik)
-
-    TAJO-1081: Non-forwarded (simple) query shows wrong rows. (hyunsik)
-
-    TAJO-981: Help command (\?) in tsql takes too long time. (YeonSu Han via 
-    jaehwa)
-
-    TAJO-962: Column reference used in LIMIT clause incurs NPE.
-
     TAJO-1074: Query calculates wrong progress before subquery init. (jinho)
 
     TAJO-1025: Network disconnection during query processing can cause 
@@ -457,12 +442,6 @@ Release 0.9.0 - unreleased
 
   TASKS
 
-    TAJO-668: Add datetime function documentation. (Jongyoung Park via hyunsik)
-
-    TAJO-1077: Add Derby configuration documentation. (hyunsik)
-
-    TAJO-1068: Add SQL Query documentation. (hyunsik)
-
     TAJO-1078: Update contributor list. (hyunsik)
 
     TAJO-1070: BSTIndexScanExec should not seek a negative offset. (jinho)
@@ -499,10 +478,6 @@ Release 0.9.0 - unreleased
     TAJO-834: Add Travis notification to issues@tajo.a.o and IRC. hyunsik)
 
   SUB TASKS
-
-    TAJO-1096: Update download source documentation (Mai Hai Thanh via jaehwa)
-
-    TAJO-1062: Update TSQL documentation. (jaehwa)
 
     TAJO-1061: TAJO-1061: Update build documentation. (jaehwa)
 
