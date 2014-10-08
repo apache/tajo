@@ -136,12 +136,11 @@ If you want to initiate HA information, execute ``tajo haadmin -formatHA`` ::
 
 
 ================================================
-  Verify Automatic Failover
+  How to Test Automatic Failover
 ================================================
 
-If you want to verify automatic failover, you must deploy your Tajo cluster with TajoMaster HA enable. And then, you
-need to find which node is active by visiting the Tajo web interfaces.
+If you want to verify automatic failover of TajoMaster, you must deploy your Tajo cluster with TajoMaster HA enable. And then, you need to find which node is active from Tajo web UI.
 
-Once you have located your active TajoMaster, you can cause a failure on that node. For example, you can use kill -9 <pid of TajoMaster> to simulate a JVM crash. Or you can shutdown the machine or disconnect network interface. And then, the backup TajoMaster should automatically become active within 5 seconds. The amount of time required to detect a failure and  trigger a failover depends on the configuration of ``tajo.master.ha.monitor.interval``. If there is running queries, it will be finished successfully. Because your TajoClient will get the result data on TajoWorker. But you can't find already query history. Because TajoMaster stores query history on memory. So, the other master can't access already active master query history. And if there is no running query, the automatic failover run successfully.
+Once you find your active TajoMaster, you can cause a failure on that node. For example, you can use kill -9 <pid of TajoMaster> to simulate a JVM crash. Or you can shutdown the machine or disconnect network interface. And then, the backup TajoMaster will be automatically active within 5 seconds. The amount of time required to detect a failure and  trigger a failover depends on the config ``tajo.master.ha.monitor.interval``. If there is running queries, it will be finished successfully. Because your TajoClient will get the result data on TajoWorker. But you can't find already query history. Because TajoMaster stores query history on memory. So, the other master can't access already active master query history. And if there is no running query, the automatic failover run successfully.
 
 For reference, TajoMaster HA doesn't consider TajoWorker failure. It is related with TajoResourceManager and QueryMaster.
