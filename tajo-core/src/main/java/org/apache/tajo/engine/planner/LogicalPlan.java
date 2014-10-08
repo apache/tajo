@@ -407,6 +407,8 @@ public class LogicalPlan {
     private final Map<String, String> columnAliasMap = TUtil.newHashMap();
     private final Map<OpType, List<Expr>> operatorToExprMap = TUtil.newHashMap();
     private final List<RelationNode> relationList = TUtil.newList();
+//    private final Map<RelationNode, List<AccessPathInfo>> relationNodes = TUtil.newHashMap();
+    private final Map<Integer, List<AccessPathInfo>> relNodePidAccessPathMap = TUtil.newHashMap();
     private boolean hasWindowFunction = false;
     private final Map<String, ConstEval> constantPoolByRef = Maps.newHashMap();
     private final Map<Expr, String> constantPool = Maps.newHashMap();
@@ -495,10 +497,28 @@ public class LogicalPlan {
       }
       canonicalNameToRelationMap.put(relation.getCanonicalName(), relation);
       relationList.add(relation);
+      relNodePidAccessPathMap.put(relation.getPID(), new ArrayList<AccessPathInfo>());
+    }
+
+    public void addRelation(RelationNode relation, List<AccessPathInfo> accessPathInfos) {
+      if (relation.hasAlias()) {
+        TUtil.putToNestedList(relationAliasMap, relation.getTableName(), relation.getCanonicalName());
+      }
+      canonicalNameToRelationMap.put(relation.getCanonicalName(), relation);
+      relationList.add(relation);
+      relNodePidAccessPathMap.put(relation.getPID(), new ArrayList<AccessPathInfo>());
+    }
+
+    public void addAccessPath(RelationNode relation, AccessPathInfo accessPathInfo) {
+      relNodePidAccessPathMap.get(relation.getPID()).add(accessPathInfo);
     }
 
     public Collection<RelationNode> getRelations() {
       return Collections.unmodifiableList(relationList);
+    }
+
+    public List<AccessPathInfo> getAccessInfos(RelationNode relation) {
+      return Collections.unmodifiableList(relNodePidAccessPathMap.get(relation.getPID()));
     }
 
     public boolean hasTableExpression() {

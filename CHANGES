@@ -31,6 +31,14 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1010: Improve multiple DISTINCT aggregation. (Hyoungjun Kim and jaehwa)
+
+    TAJO-1093: DateTimeFormat.to_char() is slower than SimpleDateFormat.format().
+    (Jihun Kang via hyunsik)
+
+    TAJO-1030: Not supported JDBC APIs should return empty results instead of 
+    Exception. (Hyoungjun Kim via hyunsik)
+
     TAJO-983: Worker should directly read Intermediate data stored in localhost
     rather than fetching. (Mai Hai Thanh via hyunsik)
 
@@ -155,9 +163,25 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1097: IllegalArgumentException: RawFileScanner. (Mai Hai Thanh via jinho)
+
+    TAJO-1103: Insert clause of partitioned table loses some FetchImpls. (jinho)
+
+    TAJO-1101: Broadcast join with a zero-length file table returns wrong result data.
+    (Hyoungjun Kim)
+
+    TAJO-1067: INSERT OVERWRITE INTO should not remove all partitions. (jaehwa)
+
+    TAJO-1065: The \admin -cluster argument doesn't run as expected.
+    (Jongyoung Park via hyunsik)
+
+    TAJO-1072: CLI gets stuck when wrong host/port is provided. 
+    (Jihun Kang via hyunsik)
+
     TAJO-1081: Non-forwarded (simple) query shows wrong rows. (hyunsik)
 
-    TAJO-981: Help command (\?) in tsql takes too long time. (YeonSu Han via jaehwa)
+    TAJO-981: Help command (\?) in tsql takes too long time. (YeonSu Han via 
+    jaehwa)
 
     TAJO-962: Column reference used in LIMIT clause incurs NPE.
 
@@ -442,6 +466,8 @@ Release 0.9.0 - unreleased
 
   TASKS
 
+    TAJO-668: Add datetime function documentation. (Jongyoung Park via hyunsik)
+
     TAJO-1077: Add Derby configuration documentation. (hyunsik)
 
     TAJO-1068: Add SQL Query documentation. (hyunsik)
@@ -482,6 +508,10 @@ Release 0.9.0 - unreleased
     TAJO-834: Add Travis notification to issues@tajo.a.o and IRC. hyunsik)
 
   SUB TASKS
+
+    TAJO-1096: Update download source documentation (Mai Hai Thanh via jaehwa)
+
+    TAJO-1062: Update TSQL documentation. (jaehwa)
 
     TAJO-1061: TAJO-1061: Update build documentation. (jaehwa)
 

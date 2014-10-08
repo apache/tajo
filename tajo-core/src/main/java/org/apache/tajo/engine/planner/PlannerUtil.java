@@ -65,7 +65,9 @@ public class PlannerUtil {
             baseNode.getType() == NodeType.DROP_TABLE ||
             baseNode.getType() == NodeType.ALTER_TABLESPACE ||
             baseNode.getType() == NodeType.ALTER_TABLE ||
-            baseNode.getType() == NodeType.TRUNCATE_TABLE;
+            baseNode.getType() == NodeType.TRUNCATE_TABLE ||
+            baseNode.getType() == NodeType.CREATE_INDEX ||
+            baseNode.getType() == NodeType.DROP_INDEX;
   }
 
   /**
@@ -329,6 +331,12 @@ public class PlannerUtil {
         QueryBlock block, PartitionedTableScanNode node, Stack<LogicalNode> stack)
 
         throws PlanningException {
+      return node;
+    }
+
+    @Override
+    public LogicalNode visitIndexScan(ReplacerContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                      IndexScanNode node, Stack<LogicalNode> stack) throws PlanningException {
       return node;
     }
   }

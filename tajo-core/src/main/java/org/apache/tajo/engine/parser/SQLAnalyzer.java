@@ -1142,7 +1142,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
-  public Expr visitIndex_statement(SQLParser.Index_statementContext ctx) {
+  public Expr visitCreate_index_statement(SQLParser.Create_index_statementContext ctx) {
     String indexName = ctx.identifier().getText();
     String tableName = ctx.table_name().getText();
     Relation relation = new Relation(tableName);
@@ -1175,6 +1175,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
     createIndex.setChild(projection);
     return createIndex;
+  }
+
+  @Override
+  public Expr visitDrop_index_statement(SQLParser.Drop_index_statementContext ctx) {
+    String indexName = ctx.identifier().getText();
+    return new DropIndex(indexName);
   }
 
   @Override

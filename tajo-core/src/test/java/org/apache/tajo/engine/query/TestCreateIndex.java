@@ -23,6 +23,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.catalog.IndexDesc;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -38,35 +39,58 @@ public class TestCreateIndex extends QueryTestCaseBase {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
   }
 
-  private static void assertIndexExist(String indexName) throws IOException {
-    Path indexPath = new Path(conf.getVar(ConfVars.WAREHOUSE_DIR), "default/" + indexName);
+  private static void assertIndexNotExist(String databaseName, String indexName) throws IOException {
+    Path indexPath = new Path(conf.getVar(ConfVars.WAREHOUSE_DIR), databaseName + "/" + indexName);
     FileSystem fs = indexPath.getFileSystem(conf);
-    assertTrue(fs.exists(indexPath));
-    assertEquals(2, fs.listStatus(indexPath).length);
-    fs.deleteOnExit(indexPath);
+    if (fs.exists(indexPath)) {
+      fs.deleteOnExit(indexPath);
+      assertFalse("Index is not deleted from the file system.", true);
+    }
   }
 
   @Test
   public final void testCreateIndex() throws Exception {
     executeQuery();
-    assertIndexExist("l_orderkey_idx");
+    assertTrue(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_idx"));
+    executeString("drop index l_orderkey_idx");
+    assertFalse(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_idx"));
+    assertIndexNotExist(getCurrentDatabase(), "l_orderkey_idx");
   }
 
   @Test
   public final void testCreateIndexOnMultiAttrs() throws Exception {
     executeQuery();
-    assertIndexExist("l_orderkey_partkey_idx");
+    assertTrue(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_partkey_idx"));
+    executeString("drop index l_orderkey_partkey_idxl_orderkey_idx");
+    assertFalse(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_partkey_idx"));
+    assertIndexNotExist(getCurrentDatabase(), "l_orderkey_partkey_idxl_orderkey_idx");
   }
 
   @Test
   public final void testCreateIndexWithCondition() throws Exception {
     executeQuery();
-    assertIndexExist("l_orderkey_partkey_lt10_idx");
+    assertTrue(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_partkey_lt10_idx"));
+    executeString("drop index l_orderkey_partkey_lt10_idx");
+    assertFalse(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_partkey_lt10_idx"));
+    assertIndexNotExist(getCurrentDatabase(), "l_orderkey_partkey_lt10_idx");
   }
 
   @Test
   public final void testCreateIndexOnExpression() throws Exception {
     executeQuery();
-    assertIndexExist("l_orderkey_100_lt10_idx");
+    assertTrue(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_partkey_idx"));
+    executeString("drop index l_orderkey_partkey_idx");
+    assertFalse(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_partkey_idx"));
+    assertIndexNotExist(getCurrentDatabase(), "l_orderkey_partkey_idx");
+  }
+
+  @Test
+  public final void test() throws Exception {
+    executeString("create index l_orderkey_idx2 on lineitem (l_orderkey asc null first);");
+    assertTrue(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_idx2"));
+    executeString("select * from lineitem where l_orderkey = 10");
+    executeString("drop index l_orderkey_idx2");
+    assertFalse(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_idx2"));
+    assertIndexNotExist(getCurrentDatabase(), "l_orderkey_idx2");
   }
 }

@@ -658,47 +658,6 @@ public class GlobalPlanner {
     return rewritten;
   }
 
-  public ExecutionBlock buildDistinctGroupbyAndUnionPlan(MasterPlan masterPlan, ExecutionBlock lastBlock,
-                                                  DistinctGroupbyNode firstPhaseGroupBy,
-                                                  DistinctGroupbyNode secondPhaseGroupBy) {
-    DataChannel lastDataChannel = null;
-
-    // It pushes down the first phase group-by operator into all child blocks.
-    //
-    // (second phase)    G (currentBlock)
-    //                  /|\
-    //                / / | \
-    // (first phase) G G  G  G (child block)
-
-    // They are already connected one another.
-    // So, we don't need to connect them again.
-    for (DataChannel dataChannel : masterPlan.getIncomingChannels(lastBlock.getId())) {
-      if (firstPhaseGroupBy.isEmptyGrouping()) {
-        dataChannel.setShuffle(HASH_SHUFFLE, firstPhaseGroupBy.getGroupingColumns(), 1);
-      } else {
-        dataChannel.setShuffle(HASH_SHUFFLE, firstPhaseGroupBy.getGroupingColumns(), 32);
-      }
-      dataChannel.setSchema(firstPhaseGroupBy.getOutSchema());
-      ExecutionBlock childBlock = masterPlan.getExecBlock(dataChannel.getSrcId());
-
-      // Why must firstPhaseGroupby be copied?
-      //
-      // A groupby in each execution block can have different child.
-      // It affects groupby's input schema.
-      DistinctGroupbyNode firstPhaseGroupbyCopy = PlannerUtil.clone(masterPlan.getLogicalPlan(), firstPhaseGroupBy);
-      firstPhaseGroupbyCopy.setChild(childBlock.getPlan());
-      childBlock.setPlan(firstPhaseGroupbyCopy);
-
-      // just keep the last data channel.
-      lastDataChannel = dataChannel;
-    }
-
-    ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), lastDataChannel);
-    secondPhaseGroupBy.setChild(scanNode);
-    lastBlock.setPlan(secondPhaseGroupBy);
-    return lastBlock;
-  }
-
   /**
    * If there are at least one distinct aggregation function, a query works as if the query is rewritten as follows:
    *
@@ -824,8 +783,20 @@ public class GlobalPlanner {
     ExecutionBlock currentBlock;
 
     if (groupbyNode.isDistinct()) { // if there is at one distinct aggregation function
-      DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
-      return builder.buildPlan(context, lastBlock, groupbyNode);
+      boolean multiLevelEnabled = context.getPlan().getContext().getBool(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED);
+
+      if (multiLevelEnabled) {
+        if (PlannerUtil.findTopNode(groupbyNode, NodeType.UNION) == null) {
+          DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
+          return builder.buildMultiLevelPlan(context, lastBlock, groupbyNode);
+        } else {
+          DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
+          return builder.buildPlan(context, lastBlock, groupbyNode);
+        }
+      } else {
+        DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
+        return builder.buildPlan(context, lastBlock, groupbyNode);
+      }
     } else {
       GroupbyNode firstPhaseGroupby = createFirstPhaseGroupBy(masterPlan.getLogicalPlan(), groupbyNode);
 
@@ -968,6 +939,7 @@ public class GlobalPlanner {
         firstPhaseEvals[i].setFirstPhase();
         firstPhaseEvalNames[i] = plan.generateUniqueColumnName(firstPhaseEvals[i]);
         FieldEval param = new FieldEval(firstPhaseEvalNames[i], firstPhaseEvals[i].getValueType());
+        secondPhaseEvals[i].setFinalPhase();
         secondPhaseEvals[i].setArgs(new EvalNode[] {param});
       }
 
@@ -1541,6 +1513,15 @@ public class GlobalPlanner {
       ExecutionBlock newExecBlock = context.plan.newExecutionBlock();
       newExecBlock.setPlan(node);
       context.execBlockMap.put(node.getPID(), newExecBlock);
+      return node;
+    }
+
+    @Override
+    public LogicalNode visitIndexScan(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                      IndexScanNode node, Stack<LogicalNode> stack) throws PlanningException {
+      ExecutionBlock newBlock = context.plan.newExecutionBlock();
+      newBlock.setPlan(node);
+      context.execBlockMap.put(node.getPID(), newBlock);
       return node;
     }
 

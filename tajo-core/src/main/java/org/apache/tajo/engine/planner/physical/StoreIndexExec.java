@@ -26,7 +26,6 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.logical.CreateIndexNode;
 import org.apache.tajo.storage.RowStoreUtil;
@@ -68,8 +67,7 @@ public class StoreIndexExec extends UnaryPhysicalExec {
     }
 
     TajoConf conf = context.getConf();
-    Path indexPath = new Path(logicalPlan.getIndexPath(), ""+context.getUniqueKeyFromFragments());
-    System.out.println("exec: " + indexPath);
+    Path indexPath = new Path(logicalPlan.getIndexPath(), context.getUniqueKeyFromFragments());
     // TODO: Create factory using reflection
     BSTIndex bst = new BSTIndex(conf);
     this.comparator = new TupleComparator(keySchema, sortSpecs);
@@ -89,10 +87,7 @@ public class StoreIndexExec extends UnaryPhysicalExec {
       offset = tuple.getOffset();
       keyTuple = new VTuple(keySchema.size());
       RowStoreUtil.project(tuple, keyTuple, indexKeys);
-      if (prevKeyTuple == null || !prevKeyTuple.equals(keyTuple)) {
-        indexWriter.write(keyTuple, offset);
-        prevKeyTuple = keyTuple;
-      }
+      indexWriter.write(keyTuple, offset);
     }
     return null;
   }

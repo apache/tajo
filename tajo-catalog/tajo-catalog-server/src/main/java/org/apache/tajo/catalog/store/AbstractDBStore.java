@@ -1609,7 +1609,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     PreparedStatement pstmt = null;
 
     String databaseName = proto.getTableIdentifier().getDatabaseName();
-    String tableName = proto.getTableIdentifier().getTableName();
+    String tableName = CatalogUtil.extractSimpleName(proto.getTableIdentifier().getTableName());
     String columnName = CatalogUtil.extractSimpleName(proto.getColumn().getName());
 
     try {

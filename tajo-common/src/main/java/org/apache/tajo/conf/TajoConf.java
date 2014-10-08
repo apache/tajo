@@ -290,6 +290,9 @@ public class TajoConf extends Configuration {
     // Geo IP
     GEOIP_DATA("tajo.function.geoip-database-location", ""),
 
+    // Index configuration
+    INDEX_ENABLED("tajo.query.index.enabled", true),
+
     /////////////////////////////////////////////////////////////////////////////////
     // User Session Configuration
     //
@@ -315,6 +318,8 @@ public class TajoConf extends Configuration {
     $DIST_QUERY_JOIN_PARTITION_VOLUME("tajo.dist-query.join.partition-volume-mb", 128),
     $DIST_QUERY_GROUPBY_PARTITION_VOLUME("tajo.dist-query.groupby.partition-volume-mb", 256),
     $DIST_QUERY_TABLE_PARTITION_VOLUME("tajo.dist-query.table-partition.task-volume-mb", 256),
+
+    $GROUPBY_MULTI_LEVEL_ENABLED("tajo.dist-query.groupby.multi-level-aggr", true),
 
     // for physical Executors
     $EXECUTOR_EXTERNAL_SORT_BUFFER_SIZE("tajo.executor.external-sort.buffer-mb", 200L),
@@ -359,7 +364,7 @@ public class TajoConf extends Configuration {
     $BEHAVIOR_ARITHMETIC_ABORT("tajo.behavior.arithmetic-abort", false),
 
     // ResultSet ---------------------------------------------------------
-    $RESULT_SET_FETCH_ROWNUM("tajo.resultset.fetch.rownum", 200)
+    $RESULT_SET_FETCH_ROWNUM("tajo.resultset.fetch.rownum", 200),
     ;
 
     public final String varname;
