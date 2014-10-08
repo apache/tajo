@@ -163,6 +163,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1099: LogicalPlanner::convertDataType causes NPE in some cases.
+    (hyunsik)
+
     TAJO-1102: Self-join with a partitioned table returns wrong result data.
     (Hyoungjun Kim)
 
