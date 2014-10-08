@@ -571,10 +571,6 @@ public class CSVFile {
       return fileOffsets.get(currentIdx);
     }
 
-    public long getPos() {
-      return pos;
-    }
-
     @Override
     public boolean isSplittable(){
       return splittable;

@@ -45,11 +45,10 @@ public class BSTIndexScanExec extends PhysicalExec {
   private Projector projector;
   
   private Datum[] datum = null;
-  
+
   private boolean initialize = true;
 
   private float progress;
-  private int cnt = 0;
 
   public BSTIndexScanExec(TaskAttemptContext context,
                           AbstractStorageManager sm , ScanNode scanNode ,
@@ -117,12 +116,14 @@ public class BSTIndexScanExec extends PhysicalExec {
        while(reader.isCurInMemory() && (tuple = fileScanner.next()) != null) {
          if (qual.eval(inSchema, tuple).isTrue()) {
            projector.eval(tuple, outTuple);
-           LOG.info("cnt: " + (++cnt) + ", next offset: " + ((CSVFile.CSVScanner)fileScanner).getPos());
            return outTuple;
          } else {
-           long offset = reader.next();
-           if (offset == -1) return null;
-           else fileScanner.seek(offset);
+//           long offset = reader.next();
+//           if (offset == -1) {
+//             return null;
+//           }
+//           else fileScanner.seek(offset);
+           return null;
          }
        }
      }
