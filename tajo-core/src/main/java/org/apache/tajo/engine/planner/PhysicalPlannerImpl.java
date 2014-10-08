@@ -51,16 +51,11 @@ import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.FileUtil;
-import org.apache.tajo.util.IndexUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-<<<<<<< HEAD
-=======
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
->>>>>>> 0b2ea889b06166539aabdc0fdd9029008e5f1f7a
 import java.util.List;
 import java.util.Stack;
 
