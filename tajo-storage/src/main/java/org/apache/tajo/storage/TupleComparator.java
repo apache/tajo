@@ -42,10 +42,6 @@ public class TupleComparator implements Comparator<Tuple>, ProtoObject<TupleComp
   @SuppressWarnings("unused")
   private final boolean[] nullFirsts;  
 
-  private Datum left;
-  private Datum right;
-  private int compVal;
-
   /**
    * @param schema The schema of input tuples
    * @param sortKeys The description of sort keys
@@ -88,6 +84,10 @@ public class TupleComparator implements Comparator<Tuple>, ProtoObject<TupleComp
 
   @Override
   public int compare(Tuple tuple1, Tuple tuple2) {
+    Datum left = null;
+    Datum right = null;
+    int compVal = 0;
+
     for (int i = 0; i < sortKeyIds.length; i++) {
       left = tuple1.get(sortKeyIds[i]);
       right = tuple2.get(sortKeyIds[i]);

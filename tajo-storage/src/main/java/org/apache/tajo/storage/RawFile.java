@@ -108,7 +108,9 @@ public class RawFile {
       headerSize = RECORD_SIZE + 2 + nullFlags.bytesLength(); // The middle 2 bytes is for NullFlagSize
 
       // initial read
-      channel.position(fragment.getStartKey());
+      if (fragment.getStartKey() > 0) {
+	channel.position(fragment.getStartKey());
+      }
       numBytesRead = channel.read(buffer);
       buffer.flip();
 
@@ -151,7 +153,11 @@ public class RawFile {
         long realRemaining = fragment.getEndKey() - numBytesRead;
         numBytesRead += bytesRead;
         if (realRemaining < bufferSize) {
-          buffer.limit(currentDataSize + (int) realRemaining);
+          int newLimit = currentDataSize + (int) realRemaining;
+          if(newLimit > bufferSize) {
+            newLimit = bufferSize;
+          }
+          buffer.limit(newLimit);
         }
         return true;
       }
@@ -382,7 +388,7 @@ public class RawFile {
       // clear the buffer
       buffer.clear();
       // reload initial buffer
-      channel.position(0);
+      channel.position(fragment.getStartKey());
       numBytesRead = channel.read(buffer);
       buffer.flip();
       eof = false;

@@ -33,10 +33,8 @@ import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.engine.planner.PlannerUtil;
-import org.apache.tajo.engine.planner.PlanningException;
-import org.apache.tajo.engine.planner.RangePartitionAlgorithm;
-import org.apache.tajo.engine.planner.UniformRangePartition;
+import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
@@ -45,6 +43,8 @@ import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.MultipleAggregationStage;
+import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty;
 import org.apache.tajo.master.TaskSchedulerContext;
 import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
 import org.apache.tajo.storage.AbstractStorageManager;
@@ -799,13 +799,30 @@ public class Repartitioner {
     }
 
     int groupingColumns = 0;
-    GroupbyNode groupby = PlannerUtil.findMostBottomNode(subQuery.getBlock().getPlan(), NodeType.GROUP_BY);
-    if (groupby != null) {
-      groupingColumns = groupby.getGroupingColumns().length;
-    } else {
-      DistinctGroupbyNode dGroupby = PlannerUtil.findMostBottomNode(subQuery.getBlock().getPlan(), NodeType.DISTINCT_GROUP_BY);
-      if (dGroupby != null) {
-        groupingColumns = dGroupby.getGroupingColumns().length;
+    LogicalNode[] groupbyNodes = PlannerUtil.findAllNodes(subQuery.getBlock().getPlan(),
+        new NodeType[]{NodeType.GROUP_BY, NodeType.DISTINCT_GROUP_BY});
+    if (groupbyNodes != null && groupbyNodes.length > 0) {
+      LogicalNode bottomNode = groupbyNodes[0];
+      if (bottomNode.getType() == NodeType.GROUP_BY) {
+        groupingColumns = ((GroupbyNode)bottomNode).getGroupingColumns().length;
+      } else if (bottomNode.getType() == NodeType.DISTINCT_GROUP_BY) {
+        DistinctGroupbyNode distinctNode = PlannerUtil.findMostBottomNode(subQuery.getBlock().getPlan(), NodeType.DISTINCT_GROUP_BY);
+        if (distinctNode == null) {
+          LOG.warn(subQuery.getId() + ", Can't find current DistinctGroupbyNode");
+          distinctNode = (DistinctGroupbyNode)bottomNode;
+        }
+        groupingColumns = distinctNode.getGroupingColumns().length;
+
+        Enforcer enforcer = execBlock.getEnforcer();
+        EnforceProperty property = PhysicalPlannerImpl.getAlgorithmEnforceProperty(enforcer, distinctNode);
+        if (property != null) {
+          if (property.getDistinct().getIsMultipleAggregation()) {
+            MultipleAggregationStage stage = property.getDistinct().getMultipleAggregationStage();
+            if (stage != MultipleAggregationStage.THRID_STAGE) {
+              groupingColumns = distinctNode.getOutSchema().size();
+            }
+          }
+        }
       }
     }
     // get a proper number of tasks
@@ -1145,7 +1162,8 @@ public class Repartitioner {
 
     // set the partition number for group by and sort
     if (channel.getShuffleType() == HASH_SHUFFLE) {
-      if (execBlock.getPlan().getType() == NodeType.GROUP_BY) {
+      if (execBlock.getPlan().getType() == NodeType.GROUP_BY ||
+          execBlock.getPlan().getType() == NodeType.DISTINCT_GROUP_BY) {
         keys = channel.getShuffleKeys();
       }
     } else if (channel.getShuffleType() == RANGE_SHUFFLE) {
