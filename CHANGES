@@ -163,6 +163,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1106: Missing session check in getFinishedQuery API. 
+    (Yongjun Park via hyunsik)
+
     TAJO-1021: Remove the member variable Builder from all classes inherited 
     from ProtoObject. (hyunsik)
 

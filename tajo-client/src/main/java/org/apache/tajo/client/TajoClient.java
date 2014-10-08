@@ -909,6 +909,7 @@ public class TajoClient implements Closeable {
     return new ServerCallable<List<BriefQueryInfo>>(connPool, getTajoMasterAddr(),
         TajoMasterClientProtocol.class, false, true) {
       public List<BriefQueryInfo> call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
         GetQueryListRequest.Builder builder = GetQueryListRequest.newBuilder();
