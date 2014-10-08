@@ -163,6 +163,8 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1104: Using asterisk with GROUP BY causes NPE. (hyunsik)
+
     TAJO-1099: LogicalPlanner::convertDataType causes NPE in some cases.
     (hyunsik)
 
