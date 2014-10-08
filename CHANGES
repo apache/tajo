@@ -163,6 +163,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1102: Self-join with a partitioned table returns wrong result data.
+    (Hyoungjun Kim)
+
     TAJO-1097: IllegalArgumentException: RawFileScanner. (Mai Hai Thanh via jinho)
 
     TAJO-1103: Insert clause of partitioned table loses some FetchImpls. (jinho)
