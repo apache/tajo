@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.query;
 
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.*;
 import org.apache.tajo.catalog.*;
@@ -39,6 +40,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.io.File;
+import java.io.OutputStream;
 import java.sql.ResultSet;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
@@ -707,5 +709,35 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
     assertEquals(expected, resultSetData);
 
   }
+  @Test
+  public void testMultipleBroadcastDataFileWithZeroLength() throws Exception {
+    createMultiFile("nation", 2, new TupleCreator() {
+      public Tuple createTuple(String[] columnDatas) {
+        return new VTuple(new Datum[]{
+            new Int4Datum(Integer.parseInt(columnDatas[0])),
+            new TextDatum(columnDatas[1]),
+            new Int4Datum(Integer.parseInt(columnDatas[2])),
+            new TextDatum(columnDatas[3])
+        });
+      }
+    });
+    addEmptyDataFile("nation");
 
+    ResultSet res = executeQuery();
+
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    executeString("DROP TABLE nation_multifile PURGE");
+  }
+
+  private void addEmptyDataFile(String tableName) throws Exception {
+    String multiTableName = tableName + "_multifile";
+    TableDesc table = client.getTableDesc(multiTableName);
+
+    Path dataPath = new Path(table.getPath(), 999999 + "_empty.csv");
+    FileSystem fs = dataPath.getFileSystem(conf);
+    OutputStream out = fs.create(dataPath);
+    out.close();
+  }
 }
