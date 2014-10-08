@@ -1686,7 +1686,7 @@ public class DateTimeFormat {
     tempArray = Integer.toString(tempValue).toCharArray();
     targetArraySize = Math.max(tempArray.length, size + (isPositive?0:1));
     targetArray = new char[targetArraySize];
-    if (size > 0) {
+    if (size > tempArray.length) {
       System.arraycopy(zeroStrings[size], 0, targetArray, (targetArraySize-size), size);
     }
     System.arraycopy(tempArray, 0, targetArray, (targetArraySize-tempArray.length), tempArray.length);
@@ -1718,6 +1718,7 @@ public class DateTimeFormat {
       Arrays.fill(targetArray, ' ');
       System.arraycopy(tempArray, 0, targetArray, 
           isLeftJustified?0:(targetArraySize-tempArray.length), tempArray.length);
+      result = new String(targetArray);
     }
     
     return result;
