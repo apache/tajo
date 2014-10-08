@@ -163,6 +163,8 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1097: IllegalArgumentException: RawFileScanner. (Mai Hai Thanh via jinho)
+
     TAJO-1103: Insert clause of partitioned table loses some FetchImpls. (jinho)
 
     TAJO-1101: Broadcast join with a zero-length file table returns wrong result data.
