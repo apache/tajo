@@ -31,6 +31,8 @@ Release 0.9.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1010: Improve multiple DISTINCT aggregation. (Hyoungjun Kim and jaehwa)
+
     TAJO-1093: DateTimeFormat.to_char() is slower than SimpleDateFormat.format().
     (Jihun Kang via hyunsik)
 
