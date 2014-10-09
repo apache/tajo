@@ -274,18 +274,21 @@ public class Repartitioner {
           intermediateFragments[index++] = fragments[eachIdx];
         }
         FileFragment[] broadcastFragments = new FileFragment[broadcastIndexList.size()];
+        ScanNode[] broadcastScans = new ScanNode[broadcastIndexList.size()];
         index = 0;
         for (Integer eachIdx : broadcastIndexList) {
           scans[eachIdx].setBroadcastTable(true);
-          broadcastFragments[index++] = fragments[eachIdx];
+          broadcastScans[index] = scans[eachIdx];
+          broadcastFragments[index] = fragments[eachIdx];
+          index++;
         }
         LOG.info(String.format("[Distributed Join Strategy] : Broadcast Join, join_node=%s", nonLeafScanNames));
         scheduleSymmetricRepartitionJoin(masterContext, schedulerContext, subQuery,
-            intermediateScans, intermediateScanStats, intermediateFragments, broadcastFragments);
+            intermediateScans, intermediateScanStats, intermediateFragments, broadcastScans, broadcastFragments);
       }
     } else {
       LOG.info("[Distributed Join Strategy] : Symmetric Repartition Join");
-      scheduleSymmetricRepartitionJoin(masterContext, schedulerContext, subQuery, scans, stats, fragments, null);
+      scheduleSymmetricRepartitionJoin(masterContext, schedulerContext, subQuery, scans, stats, fragments, null, null);
     }
   }
 
@@ -305,6 +308,7 @@ public class Repartitioner {
                                                        ScanNode[] scans,
                                                        long[] stats,
                                                        FileFragment[] fragments,
+                                                       ScanNode[] broadcastScans,
                                                        FileFragment[] broadcastFragments) throws IOException {
     MasterPlan masterPlan = subQuery.getMasterPlan();
     ExecutionBlock execBlock = subQuery.getBlock();
@@ -388,12 +392,35 @@ public class Repartitioner {
     int joinTaskNum = Math.min(maxTaskNum, hashEntries.size());
     LOG.info("The determined number of join tasks is " + joinTaskNum);
 
-    FileFragment[] rightFragments = new FileFragment[1 + (broadcastFragments == null ? 0 : broadcastFragments.length)];
-    rightFragments[0] = fragments[1];
+    List<FileFragment> rightFragments = new ArrayList<FileFragment>();
+    rightFragments.add(fragments[1]);
+
     if (broadcastFragments != null) {
-      System.arraycopy(broadcastFragments, 0, rightFragments, 1, broadcastFragments.length);
+      //In this phase a ScanNode has a single fragment.
+      //If there are more than one data files, that files should be added to fragments or partition path
+      AbstractStorageManager storageManager = subQuery.getStorageManager();
+      int index = 0;
+      for (FileFragment eachFragment: broadcastFragments) {
+        Path[] partitionScanPaths = null;
+        ScanNode scan = broadcastScans[index];
+        TableDesc tableDesc = masterContext.getTableDescMap().get(scan.getCanonicalName());
+        if (scan.getType() == NodeType.PARTITIONS_SCAN) {
+          PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)scan;
+          partitionScanPaths = partitionScan.getInputPaths();
+          // set null to inputPaths in getFragmentsFromPartitionedTable()
+          getFragmentsFromPartitionedTable(subQuery.getStorageManager(), scan, tableDesc);
+          partitionScan.setInputPaths(partitionScanPaths);
+        } else {
+          Collection<FileFragment> scanFragments = subQuery.getStorageManager().getSplits(scan.getCanonicalName(),
+              tableDesc.getMeta(), tableDesc.getSchema(), tableDesc.getPath());
+          if (scanFragments != null) {
+            rightFragments.addAll(scanFragments);
+          }
+        }
+        index++;
+      }
     }
-    SubQuery.scheduleFragment(subQuery, fragments[0], Arrays.asList(rightFragments));
+    SubQuery.scheduleFragment(subQuery, fragments[0], rightFragments);
 
     // Assign partitions to tasks in a round robin manner.
     for (Entry<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>> entry
