@@ -523,6 +523,8 @@ Release 0.9.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1069: TAJO-1069: Add document to explain High Availability support. (jaehwa)
+
     TAJO-1096: Update download source documentation (Mai Hai Thanh via jaehwa)
 
     TAJO-1062: Update TSQL documentation. (jaehwa)
