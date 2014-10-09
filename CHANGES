@@ -4,6 +4,8 @@ Release 0.9.0 - unreleased
 
   NEW FEATURES 
 
+    TAJO-1105: Add thread which detects JVM pauses like HADOOP's. (jinho)
+
     TAJO-704: TajoMaster HA (jaehwa)
 
     TAJO-20: INSERT INTO ... SELECT. (Hyoungjun Kim via hyunsik)
