@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.query;
 
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.*;
@@ -42,6 +43,8 @@ import org.junit.experimental.categories.Category;
 import java.io.File;
 import java.io.OutputStream;
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
@@ -711,6 +714,8 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
   }
   @Test
   public void testMultipleBroadcastDataFileWithZeroLength() throws Exception {
+    // According to node type(leaf or non-leaf) Broadcast join is determined differently by Repartitioner.
+    // testMultipleBroadcastDataFileWithZeroLength testcase is for the leaf node
     createMultiFile("nation", 2, new TupleCreator() {
       public Tuple createTuple(String[] columnDatas) {
         return new VTuple(new Datum[]{
@@ -721,7 +726,7 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
         });
       }
     });
-    addEmptyDataFile("nation");
+    addEmptyDataFile("nation_multifile", false);
 
     ResultSet res = executeQuery();
 
@@ -731,13 +736,110 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
     executeString("DROP TABLE nation_multifile PURGE");
   }
 
-  private void addEmptyDataFile(String tableName) throws Exception {
-    String multiTableName = tableName + "_multifile";
-    TableDesc table = client.getTableDesc(multiTableName);
+  @Test
+  public void testMultipleBroadcastDataFileWithZeroLength2() throws Exception {
+    // According to node type(leaf or non-leaf) Broadcast join is determined differently by Repartitioner.
+    // testMultipleBroadcastDataFileWithZeroLength2 testcase is for the non-leaf node
+    createMultiFile("nation", 2, new TupleCreator() {
+      public Tuple createTuple(String[] columnDatas) {
+        return new VTuple(new Datum[]{
+            new Int4Datum(Integer.parseInt(columnDatas[0])),
+            new TextDatum(columnDatas[1]),
+            new Int4Datum(Integer.parseInt(columnDatas[2])),
+            new TextDatum(columnDatas[3])
+        });
+      }
+    });
+    addEmptyDataFile("nation_multifile", false);
 
-    Path dataPath = new Path(table.getPath(), 999999 + "_empty.csv");
-    FileSystem fs = dataPath.getFileSystem(conf);
-    OutputStream out = fs.create(dataPath);
-    out.close();
+    ResultSet res = executeQuery();
+
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    executeString("DROP TABLE nation_multifile PURGE");
+  }
+
+  @Test
+  public void testMultiplePartitionedBroadcastDataFileWithZeroLength() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("nation_partitioned");
+    ResultSet res = testBase.execute(
+        "create table " + tableName + " (n_name text) partition by column(n_nationkey int4, n_regionkey int4) ");
+    res.close();
+    TajoTestingCluster cluster = testBase.getTestingCluster();
+    CatalogService catalog = cluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+    res = executeString("insert overwrite into " + tableName
+        + " select n_name, n_nationkey, n_regionkey from nation");
+    res.close();
+
+    addEmptyDataFile("nation_partitioned", true);
+
+    res = executeQuery();
+
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    executeString("DROP TABLE nation_partitioned PURGE");
+  }
+
+  @Test
+  public void testMultiplePartitionedBroadcastDataFileWithZeroLength2() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("nation_partitioned");
+    ResultSet res = testBase.execute(
+        "create table " + tableName + " (n_name text) partition by column(n_nationkey int4, n_regionkey int4) ");
+    res.close();
+    TajoTestingCluster cluster = testBase.getTestingCluster();
+    CatalogService catalog = cluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+    res = executeString("insert overwrite into " + tableName
+        + " select n_name, n_nationkey, n_regionkey from nation");
+    res.close();
+
+    addEmptyDataFile("nation_partitioned", true);
+
+    res = executeQuery();
+
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    executeString("DROP TABLE nation_partitioned PURGE");
+  }
+
+  private void addEmptyDataFile(String tableName, boolean isPartitioned) throws Exception {
+    TableDesc table = client.getTableDesc(tableName);
+
+    FileSystem fs = table.getPath().getFileSystem(conf);
+    if (isPartitioned) {
+      List<Path> partitionPathList = getPartitionPathList(fs, table.getPath());
+      for (Path eachPath: partitionPathList) {
+        Path dataPath = new Path(eachPath, 0 + "_empty.csv");
+        OutputStream out = fs.create(dataPath);
+        out.close();
+      }
+    } else {
+      Path dataPath = new Path(table.getPath(), 0 + "_empty.csv");
+      OutputStream out = fs.create(dataPath);
+      out.close();
+    }
+  }
+
+  private List<Path> getPartitionPathList(FileSystem fs, Path path) throws Exception {
+    FileStatus[] files = fs.listStatus(path);
+    List<Path> paths = new ArrayList<Path>();
+    if (files != null) {
+      for (FileStatus eachFile: files) {
+        if (eachFile.isFile()) {
+          paths.add(path);
+          return paths;
+        } else {
+          paths.addAll(getPartitionPathList(fs, eachFile.getPath()));
+        }
+      }
+    }
+
+    return paths;
   }
 }
