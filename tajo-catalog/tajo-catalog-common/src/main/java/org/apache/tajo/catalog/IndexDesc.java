@@ -41,7 +41,6 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   private boolean isAscending = false; // optional [default = false]
   
   public IndexDesc() {
-    this.builder = IndexDescProto.newBuilder();
   }
   
   public IndexDesc(String name, Path indexPath, String databaseName, String tableName, Column column,
@@ -100,9 +99,7 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
 
   @Override
   public IndexDescProto getProto() {
-    if (builder == null) {
-      builder = IndexDescProto.newBuilder();
-    }
+    IndexDescProto.Builder builder = IndexDescProto.newBuilder();
 
     CatalogProtos.TableIdentifierProto.Builder tableIdentifierBuilder = CatalogProtos.TableIdentifierProto.newBuilder();
     if (databaseName != null) {
