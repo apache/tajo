@@ -194,7 +194,7 @@ public class Query implements EventHandler<QueryEvent> {
               INTERNAL_ERROR_TRANSITION)
           // Ignore-able transitions
           .addTransition(QueryState.QUERY_ERROR, QueryState.QUERY_ERROR,
-              QueryEventType.KILL)
+              EnumSet.of(QueryEventType.KILL, QueryEventType.SUBQUERY_COMPLETED))
 
           .installTopology();
 

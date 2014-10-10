@@ -168,6 +168,9 @@ Release 0.9.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1111: TestKillQuery.testKillQueryFromInitState occasionally fails.
+    (hyunsik)
+
     TAJO-1107: Broadcast join on non-leaf node scans only first data file.
     (Hyoungjun Kim)
 
@@ -185,12 +188,13 @@ Release 0.9.0 - unreleased
     TAJO-1102: Self-join with a partitioned table returns wrong result data.
     (Hyoungjun Kim)
 
-    TAJO-1097: IllegalArgumentException: RawFileScanner. (Mai Hai Thanh via jinho)
+    TAJO-1097: IllegalArgumentException: RawFileScanner. (Mai Hai Thanh via 
+    jinho)
 
     TAJO-1103: Insert clause of partitioned table loses some FetchImpls. (jinho)
 
-    TAJO-1101: Broadcast join with a zero-length file table returns wrong result data.
-    (Hyoungjun Kim)
+    TAJO-1101: Broadcast join with a zero-length file table returns wrong 
+    result data. (Hyoungjun Kim)
 
     TAJO-1067: INSERT OVERWRITE INTO should not remove all partitions. (jaehwa)
 
