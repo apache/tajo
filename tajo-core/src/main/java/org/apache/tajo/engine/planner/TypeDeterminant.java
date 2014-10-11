@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner;
 
+import com.google.common.base.Preconditions;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -77,6 +78,10 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
   }
 
   public DataType computeBinaryType(OpType type, DataType lhsDataType, DataType rhsDataType) throws PlanningException {
+    Preconditions.checkNotNull(type);
+    Preconditions.checkNotNull(lhsDataType);
+    Preconditions.checkNotNull(rhsDataType);
+
     if(OpType.isLogicalType(type) || OpType.isComparisonType(type)) {
       return BOOL_TYPE;
     } else if (OpType.isArithmeticType(type)) {
@@ -300,5 +305,17 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
   public DataType visitTimeLiteral(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, TimeLiteral expr)
       throws PlanningException {
     return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TIME);
+  }
+
+  @Override
+  public DataType visitDateLiteral(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, DateLiteral expr)
+      throws PlanningException {
+    return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.DATE);
+  }
+
+  @Override
+  public DataType visitIntervalLiteral(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, IntervalLiteral expr)
+      throws PlanningException {
+    return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INTERVAL);
   }
 }

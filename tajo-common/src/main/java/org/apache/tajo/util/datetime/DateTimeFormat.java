@@ -20,6 +20,7 @@ package org.apache.tajo.util.datetime;
 
 import org.apache.tajo.datum.TimestampDatum;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -1667,6 +1668,61 @@ public class DateTimeFormat {
       throw new IllegalArgumentException("No format text.");
     }
   }
+  
+  private static final char[][] zeroStrings = {{}, {'0'}, {'0', '0'}, {'0', '0', '0'}, 
+    {'0', '0', '0', '0'}, {'0', '0', '0', '0', '0'}, {'0', '0', '0', '0', '0', '0'}};
+  
+  /**
+   * Format integer value to strings.
+   * @param value - the value to format a string
+   * @param size - minimal width of string
+   */
+  private static String formatInteger(int value, int size) {
+    char[] targetArray, tempArray;
+    final boolean isPositive = value>0;
+    final int tempValue = isPositive?value:-value;
+    int targetArraySize;
+    
+    tempArray = Integer.toString(tempValue).toCharArray();
+    targetArraySize = Math.max(tempArray.length, size + (isPositive?0:1));
+    targetArray = new char[targetArraySize];
+    if (size > tempArray.length) {
+      System.arraycopy(zeroStrings[size], 0, targetArray, (targetArraySize-size), size);
+    }
+    System.arraycopy(tempArray, 0, targetArray, (targetArraySize-tempArray.length), tempArray.length);
+    
+    if (!isPositive) {
+      targetArray[0] = '-';
+    }
+    
+    return new String(targetArray);
+  }
+  
+  /**
+   * Format string value
+   * @param value - the value to format
+   * @param width - minimal width of string
+   * @return
+   */
+  private static String formatString(String value, int width) {
+    char[] targetArray, tempArray;
+    final boolean isLeftJustified = width<0;
+    final int minimalWidth = isLeftJustified?-width:width;
+    String result = value;
+    int targetArraySize;
+    
+    if (minimalWidth > 0 && value != null) {
+      tempArray = value.toCharArray();
+      targetArraySize = Math.max(tempArray.length, minimalWidth);
+      targetArray = new char[targetArraySize];
+      Arrays.fill(targetArray, ' ');
+      System.arraycopy(tempArray, 0, targetArray, 
+          isLeftJustified?0:(targetArraySize-tempArray.length), tempArray.length);
+      result = new String(targetArray);
+    }
+    
+    return result;
+  }
 
   /**
    * Process a TmToChar struct as denoted by a list of FormatNodes.
@@ -1710,53 +1766,50 @@ public class DateTimeFormat {
            * display time as shown on a 12-hour clock, even for
            * intervals
            */
-          String formatStr = (S_FM(node.suffix) != 0 ? "%d" : "%02d");
-          out.append(String.format(formatStr,
-              tm.hours % (HOURS_PER_DAY / 2) == 0 ? HOURS_PER_DAY / 2 : tm.hours % (HOURS_PER_DAY / 2)));
+        out.append(formatInteger(tm.hours % (HOURS_PER_DAY / 2) == 0 ? HOURS_PER_DAY / 2 : tm.hours
+            % (HOURS_PER_DAY / 2), 
+            S_FM(node.suffix)!=0?0:2));
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }
           break;
         }
         case DCH_HH24: {
-          String formatStr = (S_FM(node.suffix) != 0 ? "%d" : "%02d");
-          out.append(String.format(formatStr, tm.hours));
+          out.append(formatInteger(tm.hours, S_FM(node.suffix)!=0?0:2));
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }
           break;
         }
         case DCH_MI: {
-          String formatStr = (S_FM(node.suffix) != 0 ? "%d" : "%02d");
-          out.append(String.format(formatStr, tm.minutes));
+          out.append(formatInteger(tm.minutes, S_FM(node.suffix)!=0?0:2));
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }
           break;
         }
         case DCH_SS: {
-          String formatStr = (S_FM(node.suffix) != 0 ? "%d" : "%02d");
-          out.append(String.format(formatStr, tm.secs));
+          out.append(formatInteger(tm.secs, S_FM(node.suffix)!=0?0:2));
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }
           break;
         }
         case DCH_MS:		/* millisecond */
-          out.append(String.format("%03d", (int) (tm.fsecs / 1000.0)));
+          out.append(formatInteger((int)(tm.fsecs/1000.0), 3));
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }
           break;
         case DCH_US:		/* microsecond */
-          out.append(String.format("%06d", (int) tm.fsecs));
+          out.append(formatInteger((int) tm.fsecs, 6));
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }
           break;
         case DCH_SSSS:
-          out.append(String.format("%d", tm.hours * DateTimeConstants.SECS_PER_HOUR +
-              tm.minutes * DateTimeConstants.SECS_PER_MINUTE + tm.secs));
+          out.append(formatInteger((tm.hours * DateTimeConstants.SECS_PER_HOUR +
+              tm.minutes * DateTimeConstants.SECS_PER_MINUTE + tm.secs), 0));
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }
@@ -1793,8 +1846,8 @@ public class DateTimeFormat {
           if (S_TM(node.suffix) != 0) {
             out.append(months_full[tm.monthOfYear - 1].toUpperCase());
           } else {
-            String formatStr =(S_FM(node.suffix) != 0 ? "%0d": "%-09d");
-            out.append(String.format(formatStr, months_full[tm.monthOfYear - 1].toUpperCase()));
+            out.append(formatString(months_full[tm.monthOfYear - 1].toUpperCase(), 
+                S_FM(node.suffix)!=0?0:-9));
           }
           break;
         case DCH_Month:
@@ -1805,8 +1858,8 @@ public class DateTimeFormat {
           if (S_TM(node.suffix) != 0) {
             out.append(months_full[tm.monthOfYear - 1]);
           } else {
-            String formatStr = (S_FM(node.suffix) != 0 ? "%s": "%-9s");
-            out.append(String.format(formatStr, months_full[tm.monthOfYear - 1]));
+            out.append(formatString(months_full[tm.monthOfYear - 1], 
+                S_FM(node.suffix)!=0?0:-9));
           }
           break;
         case DCH_month:
@@ -1817,8 +1870,8 @@ public class DateTimeFormat {
           if (S_TM(node.suffix) != 0) {
             out.append(months_full[tm.monthOfYear - 1].toLowerCase());
           } else {
-            String formatStr = (S_FM(node.suffix) != 0 ? "%s": "%-9s");
-            out.append(String.format(formatStr, months_full[tm.monthOfYear - 1].toLowerCase()));
+            out.append(formatString(months_full[tm.monthOfYear - 1].toLowerCase(), 
+                S_FM(node.suffix)!=0?0:-9));
           }
           break;
         case DCH_MON:
@@ -1854,8 +1907,7 @@ public class DateTimeFormat {
           }
           break;
         case DCH_MM: {
-          String formatStr = (S_FM(node.suffix) != 0 ? "%d" : "%02d");
-          out.append(String.format(formatStr, tm.monthOfYear));
+          out.append(formatInteger(tm.monthOfYear, S_FM(node.suffix)!=0?0:2));
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }
@@ -1866,8 +1918,8 @@ public class DateTimeFormat {
           if (S_TM(node.suffix) != 0) {
             out.append(days_full[tm.getDayOfWeek()].toUpperCase());
           } else {
-            String formatStr = (S_FM(node.suffix) != 0 ? "%s" : "%-9s");
-            out.append(String.format(formatStr, days_full[tm.getDayOfWeek()].toUpperCase()));
+            out.append(formatString(days_full[tm.getDayOfWeek()].toUpperCase(), 
+                S_FM(node.suffix)!=0?0:-9));
           }
           break;
         }
@@ -1876,8 +1928,8 @@ public class DateTimeFormat {
           if (S_TM(node.suffix) != 0) {
             out.append(days_full[tm.getDayOfWeek()]);
           } else {
-            String formatStr = (S_FM(node.suffix) != 0 ? "%s" : "%-9s");
-            out.append(String.format(formatStr, days_full[tm.getDayOfWeek()]));
+            out.append(formatString(days_full[tm.getDayOfWeek()], 
+                S_FM(node.suffix)!=0?0:-9));
           }
           break;
         case DCH_day:
@@ -1885,8 +1937,8 @@ public class DateTimeFormat {
           if (S_TM(node.suffix) != 0) {
             out.append(days_full[tm.getDayOfWeek()].toLowerCase());
           } else {
-            String formatStr = (S_FM(node.suffix) != 0 ? "%s" : "%-9s");
-            out.append(String.format(formatStr, days_full[tm.getDayOfWeek()].toLowerCase()));
+            out.append(formatString(days_full[tm.getDayOfWeek()].toLowerCase(), 
+                S_FM(node.suffix)!=0?0:-9));
           }
           break;
         case DCH_DY:
@@ -1915,19 +1967,16 @@ public class DateTimeFormat {
           break;
         case DCH_DDD:
         case DCH_IDDD: {
-          String formatStr = (S_FM(node.suffix) != 0 ? "%0d" : "%03d");
-          out.append(String.format(formatStr,
-              (node.key.idType == DCH_poz.DCH_DDD) ?
-                  tm.getDayOfYear() : DateTimeUtil.date2isoyearday(tm.years, tm.monthOfYear, tm.dayOfMonth)
-          ));
+          out.append(formatInteger((node.key.idType == DCH_poz.DCH_DDD) ?
+                  tm.getDayOfYear() : DateTimeUtil.date2isoyearday(tm.years, tm.monthOfYear, tm.dayOfMonth), 
+                  S_FM(node.suffix)!=0?0:3));
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }
           break;
         }
         case DCH_DD: {
-          String formatStr = (S_FM(node.suffix) != 0 ? "%d" : "%02d");
-          out.append(String.format(formatStr, tm.dayOfMonth));
+          out.append(formatInteger(tm.dayOfMonth, S_FM(node.suffix)!=0?0:2));
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }
@@ -1935,30 +1984,28 @@ public class DateTimeFormat {
         }
         case DCH_D:
           invalidForInterval(isInterval, node);
-          out.append(String.format("%d", tm.getDayOfWeek() + 1));
+          out.append(formatInteger(tm.getDayOfWeek()+1, 0));
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }
           break;
         case DCH_ID:
           invalidForInterval(isInterval, node);
-          out.append(String.format("%d", (tm.getDayOfWeek() == 0) ? 7 : tm.getDayOfWeek()));
+          out.append(formatInteger((tm.getDayOfWeek()==0)?7:tm.getDayOfWeek(), 0));
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }
           break;
         case DCH_WW: {
-          String formatStr = (S_FM(node.suffix) != 0 ? "%0d" : "%02d");
-          out.append(String.format(formatStr, (tm.getDayOfYear() - 1) / 7 + 1));
+          out.append(formatInteger((tm.getDayOfYear()-1)/7+1, S_FM(node.suffix)!=0?0:2));
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }
           break;
         }
         case DCH_IW: {
-          String formatStr = (S_FM(node.suffix) != 0 ? "%0d" : "%02d");
-          out.append(String.format(formatStr,
-              DateTimeUtil.date2isoweek(tm.years, tm.monthOfYear, tm.dayOfMonth)));
+          out.append(formatInteger(DateTimeUtil.date2isoweek(tm.years, tm.monthOfYear, tm.dayOfMonth), 
+              S_FM(node.suffix)!=0?0:2));
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }
@@ -1968,7 +2015,7 @@ public class DateTimeFormat {
           if (tm.monthOfYear == 0) {
             break;
           }
-          out.append(String.format("%d", (tm.monthOfYear - 1) / 3 + 1));
+          out.append(formatInteger((tm.monthOfYear-1)/3+1, 0));
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }
@@ -1986,10 +2033,9 @@ public class DateTimeFormat {
             }
           }
           if (i <= 99 && i >= -99) {
-            String formatStr = (S_FM(node.suffix) != 0 ? "%0d" : "%02d");
-            out.append(String.format(formatStr, i));
+            out.append(formatInteger(i, S_FM(node.suffix)!=0?0:2));
           } else {
-            out.append(String.format("%d", i));
+            out.append(formatInteger(i, 0));
           }
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
@@ -1998,18 +2044,18 @@ public class DateTimeFormat {
         }
         case DCH_Y_YYY:
           i = ADJUST_YEAR(tm.years, isInterval) / 1000;
-          out.append(String.format("%d,%03d", i, ADJUST_YEAR(tm.years, isInterval) - (i * 1000)));
+          out.append(formatInteger(i, 0))
+          .append(',')
+          .append(formatInteger(ADJUST_YEAR(tm.years, isInterval) - (i * 1000), 3));
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }
           break;
         case DCH_YYYY:
         case DCH_IYYY: {
-          String formatStr = (S_FM(node.suffix) != 0 ? "%d" : "%04d");
-          out.append(String.format(formatStr,
-              (node.key.idType == DCH_poz.DCH_YYYY ? ADJUST_YEAR(tm.years, isInterval) :
-                  ADJUST_YEAR(DateTimeUtil.date2isoyear(tm.years, tm.monthOfYear, tm.dayOfMonth), isInterval))
-          ));
+          out.append(formatInteger((node.key.idType == DCH_poz.DCH_YYYY ? ADJUST_YEAR(tm.years, isInterval) :
+                  ADJUST_YEAR(DateTimeUtil.date2isoyear(tm.years, tm.monthOfYear, tm.dayOfMonth), isInterval)), 
+                  S_FM(node.suffix)!=0?0:4));
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }
@@ -2017,11 +2063,9 @@ public class DateTimeFormat {
         }
         case DCH_YYY:
         case DCH_IYY: {
-          String formatStr = (S_FM(node.suffix) != 0 ? "%0d" : "%03d");
-          out.append(String.format(formatStr,
-              (node.key.idType == DCH_poz.DCH_YYY ? ADJUST_YEAR(tm.years, isInterval) :
-                  ADJUST_YEAR(DateTimeUtil.date2isoyear(tm.years, tm.monthOfYear, tm.dayOfMonth), isInterval)) % 1000
-          ));
+          out.append(formatInteger((node.key.idType == DCH_poz.DCH_YYY ? ADJUST_YEAR(tm.years, isInterval) :
+                  ADJUST_YEAR(DateTimeUtil.date2isoyear(tm.years, tm.monthOfYear, tm.dayOfMonth), isInterval)) % 1000, 
+                  S_FM(node.suffix)!=0?0:3));
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }
@@ -2029,22 +2073,19 @@ public class DateTimeFormat {
         }
         case DCH_YY:
         case DCH_IY: {
-          String formatStr = (S_FM(node.suffix) != 0 ? "%0d" : "%02d");
-          out.append(String.format(formatStr,
-              (node.key.idType == DCH_poz.DCH_YY ? ADJUST_YEAR(tm.years, isInterval) :
-                  ADJUST_YEAR(DateTimeUtil.date2isoyear(tm.years, tm.monthOfYear, tm.dayOfMonth), isInterval)) % 100
-          ));
+          out.append(formatInteger((node.key.idType == DCH_poz.DCH_YY ? ADJUST_YEAR(tm.years, isInterval) :
+                  ADJUST_YEAR(DateTimeUtil.date2isoyear(tm.years, tm.monthOfYear, tm.dayOfMonth), isInterval)) % 100, 
+                  S_FM(node.suffix)!=0?0:2));
           if (S_THth(node.suffix) != 0)
             str_numth(out, out, S_TH_TYPE(node.suffix));
           break;
         }
         case DCH_Y:
         case DCH_I:
-          out.append(String.format("%1d",
-              (node.key.idType == DCH_poz.DCH_Y ?
+          out.append(formatInteger((node.key.idType == DCH_poz.DCH_Y ?
                   ADJUST_YEAR(tm.years, isInterval) :
                   ADJUST_YEAR(DateTimeUtil.date2isoyear(tm.years, tm.monthOfYear, tm.dayOfMonth),
-                      isInterval)) % 10));
+                      isInterval)) % 10, 1));
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }
@@ -2053,27 +2094,26 @@ public class DateTimeFormat {
           if (tm.monthOfYear == 0) {
             break;
           }
-          String formatStr = (S_FM(node.suffix) != 0 ? "%s" : "%-4s");
-          out.append(String.format(formatStr,
-              rm_months_upper[MONTHS_PER_YEAR - tm.monthOfYear]));
+          out.append(formatString(rm_months_upper[MONTHS_PER_YEAR - tm.monthOfYear],
+              S_FM(node.suffix)!=0?0:-4));
           break;
         }
         case DCH_rm: {
           if (tm.monthOfYear == 0) {
             break;
           }
-          String formatStr = (S_FM(node.suffix) != 0 ? "%s" : "%-4s");
-          out.append(String.format(formatStr, rm_months_lower[MONTHS_PER_YEAR - tm.monthOfYear]));
+          out.append(formatString(rm_months_lower[MONTHS_PER_YEAR - tm.monthOfYear],
+              S_FM(node.suffix)!=0?0:-4));
           break;
         }
         case DCH_W:
-          out.append(String.format("%d", (tm.dayOfMonth - 1) / 7 + 1));
+          out.append(formatInteger((tm.dayOfMonth-1)/7+1, 0));
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }
           break;
         case DCH_J:
-          out.append(String.format("%d", DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth)));
+          out.append(formatInteger(DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth), 0));
           if (S_THth(node.suffix) != 0) {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }

@@ -27,9 +27,14 @@ import org.apache.tajo.engine.planner.Target;
 import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class DistinctGroupbyNode extends UnaryNode implements Projectable, Cloneable {
+  @Expose
+  private GroupbyNode groupbyPlan;
+
   @Expose
   private List<GroupbyNode> groupByNodes;
 
@@ -41,6 +46,9 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
 
   @Expose
   private int[] resultColumnIds;
+
+  /** Aggregation Functions */
+  @Expose private AggregationFunctionCallEval [] aggrFunctions;
 
   public DistinctGroupbyNode(int pid) {
     super(pid, NodeType.DISTINCT_GROUP_BY);
@@ -59,7 +67,11 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
 
   @Override
   public Target[] getTargets() {
-    return new Target[0];
+    if (hasTargets()) {
+      return targets;
+    } else {
+      return new Target[0];
+    }
   }
 
   public void setGroupbyNodes(List<GroupbyNode> groupByNodes) {
@@ -85,6 +97,18 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
   public void setResultColumnIds(int[] resultColumnIds) {
     this.resultColumnIds = resultColumnIds;
   }
+
+  public AggregationFunctionCallEval [] getAggFunctions() {
+    return this.aggrFunctions;
+  }
+
+  public void setAggFunctions(AggregationFunctionCallEval[] evals) {
+    this.aggrFunctions = evals;
+  }
+
+  public void setGroupbyPlan(GroupbyNode groupbyPlan) { this.groupbyPlan = groupbyPlan; }
+
+  public GroupbyNode getGroupbyPlan() { return this.groupbyPlan; }
 
   @Override
   public Object clone() throws CloneNotSupportedException {
@@ -113,6 +137,9 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
       }
     }
 
+    if (groupbyPlan != null) {
+      cloneNode.groupbyPlan = (GroupbyNode)groupbyPlan.clone();
+    }
     return cloneNode;
   }
 
@@ -199,5 +226,28 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
     }
 
     return planStr;
+  }
+
+  public Column[] getFirstStageShuffleKeyColumns() {
+    List<Column> shuffleKeyColumns = new ArrayList<Column>();
+    shuffleKeyColumns.add(getOutSchema().getColumn(0));   //distinctseq column
+    if (groupingColumns != null) {
+      for (Column eachColumn: groupingColumns) {
+        if (!shuffleKeyColumns.contains(eachColumn)) {
+          shuffleKeyColumns.add(eachColumn);
+        }
+      }
+    }
+    for (GroupbyNode eachGroupbyNode: groupByNodes) {
+      if (eachGroupbyNode.getGroupingColumns() != null && eachGroupbyNode.getGroupingColumns().length > 0) {
+        for (Column eachColumn: eachGroupbyNode.getGroupingColumns()) {
+          if (!shuffleKeyColumns.contains(eachColumn)) {
+            shuffleKeyColumns.add(eachColumn);
+          }
+        }
+      }
+    }
+
+    return shuffleKeyColumns.toArray(new Column[]{});
   }
 }

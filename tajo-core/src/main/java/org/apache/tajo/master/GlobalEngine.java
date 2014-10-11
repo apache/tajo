@@ -137,6 +137,10 @@ public class GlobalEngine extends AbstractService {
     return optimizer;
   }
 
+  public LogicalPlanVerifier getLogicalPlanVerifier() {
+    return annotatedPlanVerifier;
+  }
+
   private QueryContext createQueryContext(Session session) {
     QueryContext newQueryContext =  new QueryContext(context.getConf(), session);
 

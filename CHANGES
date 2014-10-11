@@ -4,6 +4,8 @@ Release 0.9.0 - unreleased
 
   NEW FEATURES 
 
+    TAJO-1105: Add thread which detects JVM pauses like HADOOP's. (jinho)
+
     TAJO-704: TajoMaster HA (jaehwa)
 
     TAJO-20: INSERT INTO ... SELECT. (Hyoungjun Kim via hyunsik)
@@ -30,6 +32,17 @@ Release 0.9.0 - unreleased
     TAJO-762: Implements current date/time function (Hyoungjun Kim via hyunsik)
 
   IMPROVEMENT
+
+    TAJO-1110: JAVA_PULLSERVER_HEAP_MAX in bin/tajo should be increased.
+    (hyunsik)
+
+    TAJO-1010: Improve multiple DISTINCT aggregation. (Hyoungjun Kim and jaehwa)
+
+    TAJO-1093: DateTimeFormat.to_char() is slower than SimpleDateFormat.format().
+    (Jihun Kang via hyunsik)
+
+    TAJO-1030: Not supported JDBC APIs should return empty results instead of 
+    Exception. (Hyoungjun Kim via hyunsik)
 
     TAJO-983: Worker should directly read Intermediate data stored in localhost
     rather than fetching. (Mai Hai Thanh via hyunsik)
@@ -154,6 +167,36 @@ Release 0.9.0 - unreleased
     (Hyoungjun Kim via hyunsik)
 
   BUG FIXES
+
+    TAJO-1111: TestKillQuery.testKillQueryFromInitState occasionally fails.
+    (hyunsik)
+
+    TAJO-1107: Broadcast join on non-leaf node scans only first data file.
+    (Hyoungjun Kim)
+
+    TAJO-1106: Missing session check in getFinishedQuery API. 
+    (Yongjun Park via hyunsik)
+
+    TAJO-1021: Remove the member variable Builder from all classes inherited 
+    from ProtoObject. (hyunsik)
+
+    TAJO-1104: Using asterisk with GROUP BY causes NPE. (hyunsik)
+
+    TAJO-1099: LogicalPlanner::convertDataType causes NPE in some cases.
+    (hyunsik)
+
+    TAJO-1102: Self-join with a partitioned table returns wrong result data.
+    (Hyoungjun Kim)
+
+    TAJO-1097: IllegalArgumentException: RawFileScanner. (Mai Hai Thanh via 
+    jinho)
+
+    TAJO-1103: Insert clause of partitioned table loses some FetchImpls. (jinho)
+
+    TAJO-1101: Broadcast join with a zero-length file table returns wrong 
+    result data. (Hyoungjun Kim)
+
+    TAJO-1067: INSERT OVERWRITE INTO should not remove all partitions. (jaehwa)
 
     TAJO-1065: The \admin -cluster argument doesn't run as expected.
     (Jongyoung Park via hyunsik)
@@ -449,6 +492,8 @@ Release 0.9.0 - unreleased
 
   TASKS
 
+    TAJO-668: Add datetime function documentation. (Jongyoung Park via hyunsik)
+
     TAJO-1077: Add Derby configuration documentation. (hyunsik)
 
     TAJO-1068: Add SQL Query documentation. (hyunsik)
@@ -489,6 +534,12 @@ Release 0.9.0 - unreleased
     TAJO-834: Add Travis notification to issues@tajo.a.o and IRC. hyunsik)
 
   SUB TASKS
+
+    TAJO-1069: TAJO-1069: Add document to explain High Availability support. (jaehwa)
+
+    TAJO-1096: Update download source documentation (Mai Hai Thanh via jaehwa)
+
+    TAJO-1062: Update TSQL documentation. (jaehwa)
 
     TAJO-1061: TAJO-1061: Update build documentation. (jaehwa)
 

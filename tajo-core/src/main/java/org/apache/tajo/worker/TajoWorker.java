@@ -32,7 +32,6 @@ import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.CatalogClient;
 import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.common.exception.NotImplementedException;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
@@ -45,10 +44,7 @@ import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
-import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.HAServiceUtil;
-import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.util.*;
 import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.webapp.StaticHttpServer;
 
@@ -130,6 +126,8 @@ public class TajoWorker extends CompositeService {
   private AsyncDispatcher dispatcher;
 
   private LocalDirAllocator lDirAllocator;
+
+  private JvmPauseMonitor pauseMonitor;
 
   public TajoWorker() throws Exception {
     super(TajoWorker.class.getName());
@@ -309,12 +307,18 @@ public class TajoWorker extends CompositeService {
     }
   }
 
+  private void startJvmPauseMonitor(){
+    pauseMonitor = new JvmPauseMonitor(systemConf);
+    pauseMonitor.start();
+  }
+
   public WorkerContext getWorkerContext() {
     return workerContext;
   }
 
   @Override
   public void serviceStart() throws Exception {
+    startJvmPauseMonitor();
 
     tajoMasterInfo = new TajoMasterInfo();
     if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
@@ -372,6 +376,8 @@ public class TajoWorker extends CompositeService {
     }
 
     if(deletionService != null) deletionService.stop();
+
+    if(pauseMonitor != null) pauseMonitor.stop();
     super.serviceStop();
     LOG.info("TajoWorker main thread exiting");
   }

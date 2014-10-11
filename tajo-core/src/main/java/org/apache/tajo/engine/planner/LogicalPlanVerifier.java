@@ -184,6 +184,20 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
   }
 
   @Override
+  public LogicalNode visitTableSubQuery(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                   TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
+    super.visitTableSubQuery(context, plan, block, node, stack);
+    if (node.hasTargets()) {
+      for (Target target : node.getTargets()) {
+        ExprsVerifier.verify(context.state, node, target.getEvalTree());
+      }
+    }
+
+    verifyProjectableOutputSchema(node);
+    return node;
+  }
+
+  @Override
   public LogicalNode visitScan(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode node,
                                Stack<LogicalNode> stack) throws PlanningException {
     if (node.hasTargets()) {
