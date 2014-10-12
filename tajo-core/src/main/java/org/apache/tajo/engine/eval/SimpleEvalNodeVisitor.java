@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.eval;
 
+import com.google.common.base.Preconditions;
 import org.apache.tajo.exception.UnsupportedException;
 
 import java.util.Stack;
@@ -29,6 +30,8 @@ import java.util.Stack;
 public abstract class SimpleEvalNodeVisitor<CONTEXT> {
 
   public EvalNode visit(CONTEXT context, EvalNode evalNode, Stack<EvalNode> stack) {
+    Preconditions.checkNotNull(evalNode);
+
     EvalNode result;
 
     if (evalNode instanceof UnaryEval) {

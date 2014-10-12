@@ -55,11 +55,7 @@ import org.apache.tajo.master.session.SessionManager;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageManagerFactory;
-import org.apache.tajo.util.ClassUtil;
-import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.StringUtils;
-import org.apache.tajo.util.VersionInfo;
+import org.apache.tajo.util.*;
 import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.webapp.QueryExecutorServlet;
 import org.apache.tajo.webapp.StaticHttpServer;
@@ -133,6 +129,8 @@ public class TajoMaster extends CompositeService {
   private TajoSystemMetrics systemMetrics;
 
   private HAService haService;
+
+  private JvmPauseMonitor pauseMonitor;
 
   public TajoMaster() throws Exception {
     super(TajoMaster.class.getName());
@@ -356,6 +354,11 @@ public class TajoMaster extends CompositeService {
     return sqlFuncs;
   }
 
+  private void startJvmPauseMonitor(){
+    pauseMonitor = new JvmPauseMonitor(systemConf);
+    pauseMonitor.start();
+  }
+
   public MasterContext getContext() {
     return this.context;
   }
@@ -363,6 +366,8 @@ public class TajoMaster extends CompositeService {
   @Override
   public void serviceStart() throws Exception {
     LOG.info("TajoMaster is starting up");
+
+    startJvmPauseMonitor();
 
     // check base tablespace and databases
     checkBaseTBSpaceAndDatabase();
@@ -450,6 +455,7 @@ public class TajoMaster extends CompositeService {
 
     RpcChannelFactory.shutdown();
 
+    if(pauseMonitor != null) pauseMonitor.stop();
     super.stop();
     LOG.info("Tajo Master main thread exiting");
   }

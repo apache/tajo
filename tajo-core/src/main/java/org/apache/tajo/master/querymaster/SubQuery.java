@@ -215,6 +215,24 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
                   SubQueryEventType.SQ_KILL,
                   SubQueryEventType.SQ_CONTAINER_ALLOCATED))
 
+          // Transitions from KILLED state
+          .addTransition(SubQueryState.KILLED, SubQueryState.KILLED,
+              SubQueryEventType.SQ_CONTAINER_ALLOCATED,
+              CONTAINERS_CANCEL_TRANSITION)
+          .addTransition(SubQueryState.KILLED, SubQueryState.KILLED,
+              SubQueryEventType.SQ_DIAGNOSTIC_UPDATE,
+              DIAGNOSTIC_UPDATE_TRANSITION)
+          .addTransition(SubQueryState.KILLED, SubQueryState.ERROR,
+              SubQueryEventType.SQ_INTERNAL_ERROR,
+              INTERNAL_ERROR_TRANSITION)
+              // Ignore-able transitions
+          .addTransition(SubQueryState.KILLED, SubQueryState.KILLED,
+              EnumSet.of(
+                  SubQueryEventType.SQ_START,
+                  SubQueryEventType.SQ_KILL,
+                  SubQueryEventType.SQ_CONTAINER_ALLOCATED,
+                  SubQueryEventType.SQ_FAILED))
+
           // Transitions from FAILED state
           .addTransition(SubQueryState.FAILED, SubQueryState.FAILED,
               SubQueryEventType.SQ_CONTAINER_ALLOCATED,
@@ -233,7 +251,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
                   SubQueryEventType.SQ_CONTAINER_ALLOCATED,
                   SubQueryEventType.SQ_FAILED))
 
-          // Transitions from FAILED state
+          // Transitions from ERROR state
           .addTransition(SubQueryState.ERROR, SubQueryState.ERROR,
               SubQueryEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINERS_CANCEL_TRANSITION)
