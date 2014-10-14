@@ -131,7 +131,7 @@ public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>,
           && getNumNulls().equals(other.getNumNulls())
           && TUtil.checkEquals(getMinValue(), other.getMinValue())
           && TUtil.checkEquals(getMaxValue(), other.getMaxValue())
-          && getHistogram().equals(other.getHistogram());
+          && TUtil.checkEquals(getHistogram(), other.getHistogram());
     } else {
       return false;
     }
@@ -148,7 +148,7 @@ public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>,
     stat.numNulls = numNulls;
     stat.minValue = minValue;
     stat.maxValue = maxValue;
-    stat.histogram = this.histogram.clone();
+    stat.histogram = this.histogram;
 
     return stat;
   }
