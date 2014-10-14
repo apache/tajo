@@ -109,7 +109,7 @@ public class TestHistogram {
       dataSet = generateRandomData(dataSize, valueBound);
       System.out.println("Random data\n");
     } else {
-      dataSet = generateGaussianData(dataSize, valueBound, 1);
+      dataSet = generateGaussianData(dataSize, valueBound, dataType);
       System.out.println("\nGaussian data (" + dataType + " clusters)\n");
     }
     List<Double> samples = getRandomSamples(dataSet, samplingRatio);
