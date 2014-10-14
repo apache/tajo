@@ -205,6 +205,18 @@ message ColumnStatsProto {
   optional int64 numNulls = 3;
   optional bytes minValue = 4;
   optional bytes maxValue = 5;
+  optional HistogramProto histogram = 6;
+}
+
+message HistogramProto {
+  optional int64 lastAnalyzed = 1;
+  repeated HistogramBucketProto buckets = 2;
+}
+
+message HistogramBucketProto {
+  required double min = 1;
+  required double max = 2;
+  required uint64 frequency = 3;
 }
 
 enum StatType {
