@@ -17,13 +17,12 @@
   limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.apache.tajo</groupId>
     <artifactId>tajo-main</artifactId>
-    <version>0.9.0-SNAPSHOT</version>
+    <version>0.9.1-SNAPSHOT</version>
   </parent>
   <groupId>org.apache.tajo</groupId>
   <artifactId>tajo-project</artifactId>
@@ -36,7 +35,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <hadoop.version>2.5.1</hadoop.version>
     <protobuf.version>2.5.0</protobuf.version>
-    <tajo.version>0.9.0-SNAPSHOT</tajo.version>
+    <tajo.version>0.9.1-SNAPSHOT</tajo.version>
     <tajo.root>${project.parent.relativePath}/..</tajo.root>
     <extra.source.path>src/main/hadoop-${hadoop.version}</extra.source.path>
   </properties>
@@ -58,21 +57,21 @@
       <id>akarasulu</id>
       <name>Alex Karasulu</name>
       <email>akarasulu@apache.org</email>
-      <organization></organization>
+      <organization />
       <roles>
         <role>PMC</role>
       </roles>
-      <timezone></timezone>
+      <timezone />
     </developer>
     <developer>
       <id>ahenrick</id>
       <name>Alvin Derek Henrick</name>
       <email>ahenrick@apache.org</email>
-      <organization></organization>
+      <organization />
       <roles>
         <role>Committer</role>
       </roles>
-      <timezone></timezone>
+      <timezone />
     </developer>
     <developer>
       <id>mattmann</id>
@@ -267,7 +266,7 @@
     </contributor>
     <contributor>
       <name>Jihun Kang</name>
-      <organization></organization>
+      <organization />
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
@@ -282,7 +281,7 @@
     </contributor>        
     <contributor>
       <name>Prafulla T.</name>
-      <organization></organization>
+      <organization />
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
@@ -325,6 +324,7 @@
     <url>https://git-wip-us.apache.org/repos/asf/tajo.git</url>
     <connection>scm:git:https://git-wip-us.apache.org/repos/asf/tajo.git</connection>
     <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/tajo.git</developerConnection>
+    <tag>HEAD</tag>
   </scm>
 
   <mailingLists>
@@ -489,7 +489,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -503,7 +503,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -517,7 +517,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -530,7 +530,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -544,7 +544,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -557,7 +557,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -570,7 +570,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
               </pluginExecutions>

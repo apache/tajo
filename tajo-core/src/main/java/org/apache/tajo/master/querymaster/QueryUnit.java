@@ -152,17 +152,21 @@ public class QueryUnit implements EventHandler<TaskEvent> {
           // Transitions from SUCCEEDED state
           // Ignore-able transitions
           .addTransition(TaskState.SUCCEEDED, TaskState.SUCCEEDED,
-              EnumSet.of(TaskEventType.T_KILL, TaskEventType.T_ATTEMPT_KILLED, TaskEventType.T_ATTEMPT_SUCCEEDED))
+              EnumSet.of(TaskEventType.T_KILL,
+                  TaskEventType.T_ATTEMPT_KILLED, TaskEventType.T_ATTEMPT_SUCCEEDED, TaskEventType.T_ATTEMPT_FAILED))
 
           // Transitions from FAILED state
           // Ignore-able transitions
           .addTransition(TaskState.FAILED, TaskState.FAILED,
-              EnumSet.of(TaskEventType.T_KILL, TaskEventType.T_ATTEMPT_KILLED, TaskEventType.T_ATTEMPT_SUCCEEDED))
+              EnumSet.of(TaskEventType.T_KILL,
+                  TaskEventType.T_ATTEMPT_KILLED, TaskEventType.T_ATTEMPT_SUCCEEDED, TaskEventType.T_ATTEMPT_FAILED))
 
           // Transitions from KILLED state
+          .addTransition(TaskState.KILLED, TaskState.KILLED, TaskEventType.T_ATTEMPT_KILLED, new KillTaskTransition())
+          // Ignore-able transitions
           .addTransition(TaskState.KILLED, TaskState.KILLED,
-              TaskEventType.T_ATTEMPT_KILLED,
-              new KillTaskTransition())
+              EnumSet.of(
+                  TaskEventType.T_KILL, TaskEventType.T_ATTEMPT_SUCCEEDED, TaskEventType.T_ATTEMPT_FAILED))
 
           .installTopology();
 
