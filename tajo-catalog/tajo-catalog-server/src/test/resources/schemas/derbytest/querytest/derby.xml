@@ -70,4 +70,9 @@ xsi:schemaLocation="http://tajo.apache.org/catalogstore ../../../../../main/reso
 	    ]]></tns:sql>
 	  </tns:existQuery>
 	</tns:existQueries>
+	<tns:dropStatements>
+		<tns:dropStatement type="sequence">
+			<tns:sql>DROP SEQUENCE ? RESTRICT</tns:sql>
+		</tns:dropStatement>
+	</tns:dropStatements>
 </tns:store>

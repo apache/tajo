@@ -34,7 +34,10 @@ public class StoreObject {
   private BaseSchema schema = new BaseSchema();
   @XmlElementWrapper(name="existQueries",namespace="http://tajo.apache.org/catalogstore")
   @XmlElement(name="existQuery",namespace="http://tajo.apache.org/catalogstore")
-  private final List<ExistQuery> queries = new ArrayList<ExistQuery>();
+  private final List<SQLObject> existQueries = new ArrayList<SQLObject>();
+  @XmlElementWrapper(name="dropStatements",namespace="http://tajo.apache.org/catalogstore")
+  @XmlElement(name="dropStatement",namespace="http://tajo.apache.org/catalogstore")
+  private final List<SQLObject> dropStatements = new ArrayList<SQLObject>();
   @XmlElementWrapper(name="patches",namespace="http://tajo.apache.org/catalogstore")
   @XmlElement(name="patch",namespace="http://tajo.apache.org/catalogstore")
   private final List<SchemaPatch> patches = new ArrayList<SchemaPatch>();
@@ -45,17 +48,29 @@ public class StoreObject {
   public void setSchema(BaseSchema schema) {
     this.schema = schema;
   }
-  public List<ExistQuery> getQueries() {
-    return queries;
+  public List<SQLObject> getExistQueries() {
+    return existQueries;
   }
-  public void addQuery(ExistQuery query) {
-    this.queries.add(query);
+  public void addExistQuery(SQLObject query) {
+    this.existQueries.add(query);
   }
-  public void addQueries(Collection<ExistQuery> queries) {
-    this.queries.addAll(queries);
+  public void addExistQueries(Collection<SQLObject> queries) {
+    this.existQueries.addAll(queries);
   }
-  public void clearQueries() {
-    this.queries.clear();
+  public void clearExistQueries() {
+    this.existQueries.clear();
+  }
+  public List<SQLObject> getDropStatements() {
+    return dropStatements;
+  }
+  public void addDropStatement(SQLObject query) {
+    this.dropStatements.add(query);
+  }
+  public void addDropStatements(Collection<SQLObject> queries) {
+    this.dropStatements.addAll(queries);
+  }
+  public void clearDropStatements() {
+    this.dropStatements.clear();
   }
   public List<SchemaPatch> getPatches() {
     return patches;

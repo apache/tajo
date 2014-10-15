@@ -24,7 +24,7 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 
 @XmlAccessorType(XmlAccessType.FIELD)
-public class ExistQuery {
+public class SQLObject {
 
   @XmlAttribute
   private DatabaseObjectType type;

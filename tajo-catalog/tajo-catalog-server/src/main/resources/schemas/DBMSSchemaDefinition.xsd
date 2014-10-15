@@ -136,7 +136,10 @@
     		<element name="patches" type="tns:PatchesType" minOccurs="0"
     			maxOccurs="1">
     		</element>
-    		<element name="existQueries" type="tns:ExistsQueriesType" minOccurs="0" maxOccurs="1"></element>
+    		<element name="existQueries" type="tns:ExistsQueriesType"
+    			minOccurs="0" maxOccurs="1">
+    		</element>
+    		<element name="dropStatements" type="tns:DropStatementsType" minOccurs="0" maxOccurs="1"></element>
     	</sequence>
     </complexType>
 
@@ -155,5 +158,20 @@
     	<sequence>
     		<element name="existQuery" type="tns:ExistsQueryType" minOccurs="0" maxOccurs="unbounded"></element>
     	</sequence>
+    </complexType>
+
+    <complexType name="DropStatementsType">
+    	<sequence>
+    		<element name="dropStatement" type="tns:DropStatementType" minOccurs="0" maxOccurs="unbounded"></element>
+    	</sequence>
+    </complexType>
+
+    <complexType name="DropStatementType">
+    	<sequence>
+    		<element name="sql" type="tns:SqlType" minOccurs="1" maxOccurs="1"></element>
+    	</sequence>
+    	<attribute name="type" type="tns:DatabaseObjectsType"
+    		use="required">
+    	</attribute>
     </complexType>
 </schema>
