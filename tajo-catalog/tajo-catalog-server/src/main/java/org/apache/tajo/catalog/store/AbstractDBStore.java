@@ -58,14 +58,22 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   protected final String catalogUri;
 
   private Connection conn;
-  protected final XMLCatalogSchemaManager catalogSchemaManager;
+  
+  protected Map<String, Boolean> baseTableMaps = new HashMap<String, Boolean>();
+  
+  protected XMLCatalogSchemaManager catalogSchemaManager;
 
   protected abstract String getCatalogDriverName();
-  protected abstract String getCatalogSchemaPath();
+  
+  protected String getCatalogSchemaPath() {
+    return "";
+  }
 
   protected abstract Connection createConnection(final Configuration conf) throws SQLException;
   
-  protected abstract void createDatabaseDependants() throws CatalogException;
+  protected void createDatabaseDependants() throws CatalogException {
+    
+  }
   
   protected boolean isInitialized() throws CatalogException {
     return catalogSchemaManager.isInitialized(getConnection());
@@ -127,7 +135,10 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           + ")", e);
     }
 
-    this.catalogSchemaManager = new XMLCatalogSchemaManager(getCatalogSchemaPath());
+    String schemaPath = getCatalogSchemaPath();
+    if (schemaPath != null && !schemaPath.isEmpty()) {
+      this.catalogSchemaManager = new XMLCatalogSchemaManager(schemaPath);
+    }
     
     try {
       if (isInitialized()) {
@@ -151,7 +162,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
   }
 
-  public final int getDriverVersion() {
+  public int getDriverVersion() {
     return catalogSchemaManager.getCatalogStore().getSchema().getVersion();
   }
 
