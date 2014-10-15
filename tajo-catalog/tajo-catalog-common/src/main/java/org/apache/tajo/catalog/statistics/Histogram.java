@@ -32,7 +32,10 @@ import com.google.gson.annotations.Expose;
 
 public class Histogram implements ProtoObject<CatalogProtos.HistogramProto>, Cloneable, GsonObject {
   
-  @Expose protected Long lastAnalyzed = null; // optional
+  @Expose
+  protected Long lastAnalyzed = null; // optional, store the last time point that this histogram is constructed,
+				      // will be used together with the "last-updated time" of the column data
+				      // to decide whether this histogram needs to be reconstructed or not
   @Expose protected List<HistogramBucket> buckets = null; // repeated
   @Expose protected boolean isReady; // whether this histogram is ready to be used for selectivity estimation
   protected int DEFAULT_MAX_BUCKETS = 100; // Same as PostgreSQL
