@@ -20,8 +20,9 @@ package org.apache.tajo.catalog;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.annotation.NotNull;
+import org.apache.tajo.function.*;
 import org.apache.tajo.json.GsonObject;
-import org.apache.tajo.catalog.function.Function;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
@@ -30,53 +31,58 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.InternalException;
 
 import java.lang.reflect.Constructor;
-import java.util.Arrays;
-import java.util.List;
 
-public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, GsonObject {
+/**
+ * FunctionDesc specifies the description of a function used in Tajo. It consists of three parts:
+ * function definition, invocation description (how to invoke this function), and supplement.
+ *
+ */
+public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, GsonObject, Comparable<FunctionDesc> {
   private FunctionDescProto.Builder builder = FunctionDescProto.newBuilder();
-  
-  @Expose private String signature;
-  @Expose private Class<? extends Function> funcClass;
-  @Expose private FunctionType funcType;
-  @Expose private DataType returnType;
-  @Expose private DataType [] params;
-  @Expose private String description;
-  @Expose private String detail;
-  @Expose private String example;
+
+  @Expose private FunctionSignature signature;
+  @Expose private FunctionInvocation invocation;
+  @Expose private FunctionSupplement supplement;
 
   public FunctionDesc() {
   }
 
   public FunctionDesc(String signature, Class<? extends Function> clazz,
-      FunctionType funcType, DataType retType,
-      DataType [] params) {
-    this.signature = signature.toLowerCase();
-    this.funcClass = clazz;
-    this.funcType = funcType;
-    this.returnType = retType;
-    this.params = params;
+      FunctionType funcType, DataType retType, @NotNull DataType [] params) {
+    this.signature = new FunctionSignature(funcType, signature.toLowerCase(), retType, params);
+    this.invocation = new FunctionInvocation();
+    this.invocation.setLegacy(new ClassBaseInvocationDesc<Function>(clazz));
+    this.supplement = new FunctionSupplement();
   }
 
   public FunctionDesc(FunctionDescProto proto) throws ClassNotFoundException {
-    this(proto.getSignature(), proto.getClassName(), proto.getType(),
-        proto.getReturnType(),
-        proto.getParameterTypesList().toArray(new DataType[proto.getParameterTypesCount()]));
-    if (proto.hasDescription()) {
-      this.description = proto.getDescription();
-    }
-    if (proto.hasDetail()) {
-      this.detail = proto.getDetail();
-    }
-    if (proto.hasExample()) {
-      this.example = proto.getExample();
-    }
+    this.signature = new FunctionSignature(proto.getSignature());
+    this.invocation = new FunctionInvocation(proto.getInvocation());
+    this.supplement = new FunctionSupplement(proto.getSupplement());
   }
 
   public FunctionDesc(String signature, String className, FunctionType type,
                       DataType retType,
-                      DataType... argTypes) throws ClassNotFoundException {
+                      @NotNull DataType... argTypes) throws ClassNotFoundException {
     this(signature, (Class<? extends Function>) Class.forName(className), type, retType, argTypes);
+  }
+
+  public FunctionDesc(FunctionSignature signature, FunctionInvocation invocation, FunctionSupplement supplement) {
+    this.signature = signature;
+    this.invocation = invocation;
+    this.supplement = supplement;
+  }
+
+  public FunctionSignature getSignature() {
+    return signature;
+  }
+
+  public FunctionInvocation getInvocation() {
+    return invocation;
+  }
+
+  public FunctionSupplement getSupplement() {
+    return supplement;
   }
 
   /**
@@ -93,54 +99,66 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
     }
   }
 
-  public String getSignature() {
-    return this.signature;
-  }
-
-  @SuppressWarnings("unchecked")
-  public Class<? extends Function> getFuncClass() {
-    return this.funcClass;
-  }
+  ////////////////////////////////////////
+  // Function Signature
+  ////////////////////////////////////////
 
   public FunctionType getFuncType() {
-    return this.funcType;
+    return signature.getFunctionType();
+  }
+
+  public String getFunctionName() {
+    return signature.getName();
   }
 
   public DataType [] getParamTypes() {
-    return this.params;
+    return signature.getParamTypes();
   }
 
   public DataType getReturnType() {
-    return this.returnType;
+    return signature.getReturnType();
   }
 
+  ////////////////////////////////////////
+  // Invocation
+  ////////////////////////////////////////
+
+  @SuppressWarnings("unchecked")
+  public Class<? extends Function> getFuncClass() {
+    return invocation.getLegacy().getFunctionClass();
+  }
+
+  ////////////////////////////////////////
+  // Supplement
+  ////////////////////////////////////////
+
   public String getDescription() {
-    return description;
+    return supplement.getShortDescription();
   }
 
   public String getDetail() {
-    return detail;
+    return supplement.getDetail();
   }
 
   public String getExample() {
-    return example;
+    return supplement.getExample();
   }
 
   public void setDescription(String description) {
-    this.description = description;
+    supplement.setShortDescription(description);
   }
 
   public void setDetail(String detail) {
-    this.detail = detail;
+    supplement.setDetail(detail);
   }
 
   public void setExample(String example) {
-    this.example = example;
+    supplement.setExample(example);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(signature, Objects.hashCode(params));
+    return Objects.hashCode(signature);
   }
   
   @Override
@@ -157,14 +175,10 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
   public Object clone() throws CloneNotSupportedException{
     FunctionDesc desc  = (FunctionDesc)super.clone();
     
-    desc.signature = this.signature;
-    desc.params = params.clone();
-    desc.description = this.description;
-    desc.example = this.example;
-    desc.detail = this.detail;
-    desc.returnType = this.returnType;
-    desc.funcClass = this.funcClass;
-    
+    desc.signature = signature.clone();
+    desc.supplement = supplement.clone();
+    desc.invocation = this.invocation;
+
     return desc;
   }
 
@@ -175,22 +189,9 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
     } else {
       builder.clear();
     }
-    builder.setSignature(this.signature);
-    builder.setClassName(this.funcClass.getName());
-    builder.setType(this.funcType);
-    builder.setReturnType(this.returnType);
-    if(this.description != null) {
-      builder.setDescription(this.description);
-    }
-    if (this.detail != null) {
-      builder.setDetail(this.detail);
-    }
-    if (this.example != null) {
-      builder.setExample(this.example);
-    }
-    if (this.params != null) { // repeated field
-      builder.addAllParameterTypes(Arrays.asList(params));
-    }
+    builder.setSignature(signature.getProto());
+    builder.setSupplement(supplement.getProto());
+    builder.setInvocation(invocation.getProto());
     return builder.build();
   }
   
@@ -204,21 +205,11 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
   }
 
   public String getHelpSignature() {
-    return returnType.getType() + " " + CatalogUtil.getCanonicalSignature(signature, getParamTypes());
+    return signature.toString();
   }
 
-  public static String dataTypesToStr(List<DataType> parameterTypesList) {
-    StringBuilder result = new StringBuilder();
-    for (int i = 0; i < parameterTypesList.size(); i++) {
-      DataType eachType = parameterTypesList.get(i);
-
-      if (i > 0) {
-        result.append(",");
-      }
-      result.append(eachType.getType().toString());
-
-    }
-
-    return result.toString();
+  @Override
+  public int compareTo(FunctionDesc o) {
+    return signature.compareTo(o.getSignature());
   }
 }

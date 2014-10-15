@@ -28,6 +28,8 @@ import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
+import static org.apache.tajo.common.TajoDataTypes.Type.FLOAT8;
+
 /**
  * Function definition
  *
@@ -38,30 +40,16 @@ import org.apache.tajo.storage.Tuple;
   description = "x raised to the power of y",
   example = "> SELECT pow(9.0, 3.0)\n"
            + "729",
-  returnType = TajoDataTypes.Type.FLOAT8,
-  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT4, TajoDataTypes.Type.FLOAT4}),
-      @ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT4, TajoDataTypes.Type.FLOAT8}),
-      @ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT8, TajoDataTypes.Type.FLOAT4}),
-      @ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT8, TajoDataTypes.Type.FLOAT8}),
-      @ParamTypes(paramTypes = {TajoDataTypes.Type.INT4, TajoDataTypes.Type.INT4}),
-      @ParamTypes(paramTypes = {TajoDataTypes.Type.INT4, TajoDataTypes.Type.INT8}),
-      @ParamTypes(paramTypes = {TajoDataTypes.Type.INT8, TajoDataTypes.Type.INT4}),
-      @ParamTypes(paramTypes = {TajoDataTypes.Type.INT8, TajoDataTypes.Type.INT8}),
-      @ParamTypes(paramTypes = {TajoDataTypes.Type.INT4, TajoDataTypes.Type.FLOAT4}),
-      @ParamTypes(paramTypes = {TajoDataTypes.Type.INT4, TajoDataTypes.Type.FLOAT8}),
-      @ParamTypes(paramTypes = {TajoDataTypes.Type.INT8, TajoDataTypes.Type.FLOAT4}),
-      @ParamTypes(paramTypes = {TajoDataTypes.Type.INT8, TajoDataTypes.Type.FLOAT8}),
-      @ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT4, TajoDataTypes.Type.INT4}),
-      @ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT4, TajoDataTypes.Type.INT8}),
-      @ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT8, TajoDataTypes.Type.INT4}),
-      @ParamTypes(paramTypes = {TajoDataTypes.Type.FLOAT8, TajoDataTypes.Type.INT8})
+  returnType = FLOAT8,
+  paramTypes = {
+      @ParamTypes(paramTypes = {FLOAT8, FLOAT8})
   }
 )
 public class Pow extends GeneralFunction {
   public Pow() {
     super(new Column[] {
-        new Column("x", TajoDataTypes.Type.FLOAT8),
-        new Column("y", TajoDataTypes.Type.FLOAT8)
+        new Column("x", FLOAT8),
+        new Column("y", FLOAT8)
     });
   }
 

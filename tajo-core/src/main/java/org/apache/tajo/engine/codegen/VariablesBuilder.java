@@ -79,7 +79,7 @@ class VariablesBuilder extends SimpleEvalNodeVisitor<Variables> {
     super.visitFuncCall(context, function, stack);
 
     if (!context.symbols.containsKey(function)) {
-      String fieldName = function.getFuncDesc().getSignature() + "_" + context.seqId++;
+      String fieldName = function.getFuncDesc().getFunctionName() + "_" + context.seqId++;
       context.symbols.put(function, fieldName);
       classWriter.visitField(Opcodes.ACC_PRIVATE, fieldName,
           "L" + TajoGeneratorAdapter.getInternalName(function.getFuncDesc().getFuncClass()) + ";", null, null);

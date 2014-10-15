@@ -18,7 +18,9 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.common.collect.Maps;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.DataTypeUtil;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -30,15 +32,13 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.util.TUtil;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
@@ -257,25 +257,6 @@ public class CatalogUtil {
     return sb.toString();
   }
 
-  public static String getCanonicalSignature(String functionName, Collection<DataType> paramTypes) {
-    DataType [] types = paramTypes.toArray(new DataType[paramTypes.size()]);
-    return getCanonicalSignature(functionName, types);
-  }
-  public static String getCanonicalSignature(String signature, DataType... paramTypes) {
-    StringBuilder sb = new StringBuilder(signature);
-    sb.append("(");
-    int i = 0;
-    for (DataType type : paramTypes) {
-      sb.append(type.getType().name().toLowerCase());
-      if(i < paramTypes.length - 1) {
-        sb.append(",");
-      }
-      i++;
-    }
-    sb.append(")");
-    return sb.toString();
-  }
-
   public static StoreType getStoreType(final String typeStr) {
     return StoreType.valueOf(typeStr.toUpperCase());
   }
@@ -443,9 +424,14 @@ public class CatalogUtil {
       for (int i = 0,j = (definedSize - 1); j < givenParamSize; i++, j++) {
         varLengthTypesOfGivenParams[i] = givenTypes.get(j).getType();
 
-        // chooses one basis type for checking the variable part
-        if (givenTypes.get(j).getType() != Type.NULL_TYPE) {
+        // chooses the first non-null type as the basis type.
+        if (givenTypes.get(j).getType() != Type.NULL_TYPE && basisTypeOfVarLengthType == null) {
           basisTypeOfVarLengthType = givenTypes.get(j).getType();
+        } else if (basisTypeOfVarLengthType != null) {
+          // If there are more than one type, we choose the most widen type as the basis type.
+          basisTypeOfVarLengthType =
+              getWidestType(CatalogUtil.newSimpleDataTypeArray(basisTypeOfVarLengthType, givenTypes.get(j).getType()))
+              .getType();
         }
       }
 
@@ -463,7 +449,7 @@ public class CatalogUtil {
 
       // If all parameters are equivalent to the basis type
       for (TajoDataTypes.Type type : varLengthTypesOfGivenParams) {
-        if (type != Type.NULL_TYPE && !isCompatibleType(basisTypeOfVarLengthType, type)) {
+        if (type != Type.NULL_TYPE && !isCompatibleType(primitiveTypeOfLastDefinedParam, type)) {
           return false;
         }
       }
@@ -578,79 +564,67 @@ public class CatalogUtil {
   }
 
   public static boolean isCompatibleType(final Type definedType, final Type givenType) {
-    boolean flag = false;
-    if (givenType == Type.NULL_TYPE) {
-      flag = true;
-    } else if (definedType == Type.ANY) {
-      flag = true;
-    } else if (givenType.getNumber() > definedType.getNumber()) {
-      // NO POINT IN GOING FORWARD BECAUSE THE DATA TYPE CANNOT BE UPPER CASTED
-      flag = false;
-    } else {
-      //argType.getNumber() < exitingType.getNumber()
-      int exitingTypeNumber = definedType.getNumber();
-      int argTypeNumber = givenType.getNumber();
 
-      if (Type.INT1.getNumber() <= exitingTypeNumber && exitingTypeNumber <= Type.INT8.getNumber()) {
-        // INT1 ==> INT2 ==> INT4 ==> INT8
-        if (Type.INT1.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
-          flag = true;
+    // No point in going forward because the data type cannot be upper casted.
+    if (givenType.getNumber() > definedType.getNumber()) {
+      return false;
+    }
+
+    boolean flag = definedType == givenType; // if both are the same to each other
+    flag |= givenType == Type.NULL_TYPE;     // NULL value is acceptable in any parameter type
+    flag |= definedType == Type.ANY;         // ANY can accept any given value.
+
+    if (flag) {
+      return true;
+    }
+
+    // Checking if a given type can be casted to a corresponding defined type.
+
+    Type actualType = definedType;
+    // if definedType is variable length or array, get a primitive type.
+    if (CatalogUtil.isArrayType(definedType)) {
+      actualType = CatalogUtil.getPrimitiveTypeOf(definedType);
+    }
+
+    flag |= DataTypeUtil.isUpperCastable(actualType, givenType);
+
+    return flag;
+  }
+
+  /**
+   * It picks out the widest range type among given <code>types</code>.
+   *
+   * Example:
+   * <ul>
+   *   <li>int, int8  -> int8 </li>
+   *   <li>int4, int8, float4  -> float4 </li>
+   *   <li>float4, float8 -> float8</li>
+   *   <li>float4, text -> exception!</li>
+   * </ul>
+   *
+   * @param types A list of DataTypes
+   * @return The widest DataType
+   */
+  public static DataType getWidestType(DataType...types) {
+    DataType widest = types[0];
+    for (int i = 1; i < types.length; i++) {
+
+      if (widest.getType() == Type.NULL_TYPE) { // if null, skip this type
+        widest = types[i];
+        continue;
+      }
+
+      if (types[i].getType() != Type.NULL_TYPE) {
+        Type candidate = TUtil.getFromNestedMap(OPERATION_CASTING_MAP, widest.getType(), types[i].getType());
+        if (candidate == null) {
+          throw new InvalidOperationException("No matched operation for those types: " + TUtil.arrayToString
+              (types));
         }
-      } else if (Type.UINT1.getNumber() <= exitingTypeNumber && exitingTypeNumber <= Type.UINT8.getNumber()) {
-        // UINT1 ==> UINT2 ==> UINT4 ==> UINT8
-        if (Type.UINT1.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
-          flag = true;
-        }
-      } else if (Type.FLOAT4.getNumber() <= exitingTypeNumber && exitingTypeNumber <= Type.NUMERIC.getNumber()) {
-        // FLOAT4 ==> FLOAT8 ==> NUMERIC ==> DECIMAL
-        if (Type.FLOAT4.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
-          flag = true;
-        }
-      } else if (Type.CHAR.getNumber() <= exitingTypeNumber && exitingTypeNumber <= Type.TEXT.getNumber()) {
-        // CHAR ==> NCHAR ==> VARCHAR ==> NVARCHAR ==> TEXT
-        if (Type.CHAR.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
-          flag = true;
-        }
-      } else if (Type.BIT.getNumber() <= exitingTypeNumber && exitingTypeNumber <= Type.VARBINARY.getNumber()) {
-        // BIT ==> VARBIT ==> BINARY ==> VARBINARY
-        if (Type.BIT.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
-          flag = true;
-        }
-      } else if (Type.INT1_ARRAY.getNumber() <= exitingTypeNumber
-          && exitingTypeNumber <= Type.INT8_ARRAY.getNumber()) {
-        // INT1_ARRAY ==> INT2_ARRAY ==> INT4_ARRAY ==> INT8_ARRAY
-        if (Type.INT1_ARRAY.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
-          flag = true;
-        }
-      } else if (Type.UINT1_ARRAY.getNumber() <= exitingTypeNumber
-          && exitingTypeNumber <= Type.UINT8_ARRAY.getNumber()) {
-        // UINT1_ARRAY ==> UINT2_ARRAY ==> UINT4_ARRAY ==> UINT8_ARRAY
-        if (Type.UINT1_ARRAY.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
-          flag = true;
-        }
-      } else if (Type.FLOAT4_ARRAY.getNumber() <= exitingTypeNumber
-          && exitingTypeNumber <= Type.FLOAT8_ARRAY.getNumber()) {
-        // FLOAT4_ARRAY ==> FLOAT8_ARRAY ==> NUMERIC_ARRAY ==> DECIMAL_ARRAY
-        if (Type.FLOAT4_ARRAY.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
-          flag = true;
-        }
-      } else if (Type.CHAR_ARRAY.getNumber() <= exitingTypeNumber
-          && exitingTypeNumber <= Type.TEXT_ARRAY.getNumber()) {
-        // CHAR_ARRAY ==> NCHAR_ARRAY ==> VARCHAR_ARRAY ==> NVARCHAR_ARRAY ==> TEXT_ARRAY
-        if (Type.TEXT_ARRAY.getNumber() <= argTypeNumber && argTypeNumber <= exitingTypeNumber) {
-          flag = true;
-        }
-      } else if (givenType == Type.BOOLEAN && (definedType == Type.BOOLEAN || definedType == Type.BOOLEAN_ARRAY)) {
-        flag = true;
-      } else if (givenType == Type.DATE && (definedType == Type.DATE || definedType == Type.DATE_ARRAY)) {
-        flag = true;
-      } else if (givenType == Type.TIME && (definedType == Type.TIME || definedType == Type.TIME_ARRAY)) {
-        flag = true;
-      } else if (givenType == Type.TIMESTAMP && (definedType == Type.TIMESTAMP || definedType == Type.TIMESTAMP_ARRAY)) {
-        flag = true;
+        widest = newSimpleDataType(candidate);
       }
     }
-    return flag;
+
+    return widest;
   }
 
   public static CatalogProtos.TableIdentifierProto buildTableIdentifier(String databaseName, String tableName) {
@@ -746,5 +720,71 @@ public class CatalogUtil {
     alterTableDesc.setAddColumn(column);
     alterTableDesc.setAlterTableType(alterTableType);
     return alterTableDesc;
+  }
+
+  /* It is the relationship graph of type conversions. */
+  public static final Map<Type, Map<Type, Type>> OPERATION_CASTING_MAP = Maps.newHashMap();
+
+  static {
+    // Type Conversion Map
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.BOOLEAN, Type.BOOLEAN, Type.BOOLEAN);
+
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT1, Type.INT1, Type.INT1);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT1, Type.INT2, Type.INT2);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT1, Type.INT4, Type.INT4);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT1, Type.INT8, Type.INT8);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT1, Type.FLOAT4, Type.FLOAT4);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT1, Type.FLOAT8, Type.FLOAT8);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT1, Type.TEXT, Type.TEXT);
+
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT2, Type.INT1, Type.INT2);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT2, Type.INT2, Type.INT2);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT2, Type.INT4, Type.INT4);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT2, Type.INT8, Type.INT8);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT2, Type.FLOAT4, Type.FLOAT4);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT2, Type.FLOAT8, Type.FLOAT8);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT2, Type.TEXT, Type.TEXT);
+
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT4, Type.INT1, Type.INT4);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT4, Type.INT2, Type.INT4);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT4, Type.INT4, Type.INT4);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT4, Type.INT8, Type.INT8);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT4, Type.FLOAT4, Type.FLOAT4);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT4, Type.FLOAT8, Type.FLOAT8);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT4, Type.TEXT, Type.TEXT);
+
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT8, Type.INT1, Type.INT8);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT8, Type.INT2, Type.INT8);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT8, Type.INT4, Type.INT8);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT8, Type.INT8, Type.INT8);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT8, Type.FLOAT4, Type.FLOAT4);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT8, Type.FLOAT8, Type.FLOAT8);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INT8, Type.TEXT, Type.TEXT);
+
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.FLOAT4, Type.INT1, Type.FLOAT4);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.FLOAT4, Type.INT2, Type.FLOAT4);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.FLOAT4, Type.INT4, Type.FLOAT4);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.FLOAT4, Type.INT8, Type.FLOAT4);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.FLOAT4, Type.FLOAT4, Type.FLOAT4);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.FLOAT4, Type.FLOAT8, Type.FLOAT8);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.FLOAT4, Type.TEXT, Type.TEXT);
+
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.FLOAT8, Type.INT1, Type.FLOAT8);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.FLOAT8, Type.INT2, Type.FLOAT8);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.FLOAT8, Type.INT4, Type.FLOAT8);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.FLOAT8, Type.INT8, Type.FLOAT8);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.FLOAT8, Type.FLOAT4, Type.FLOAT8);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.FLOAT8, Type.FLOAT8, Type.FLOAT8);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.FLOAT8, Type.TEXT, Type.TEXT);
+
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TEXT, Type.TIMESTAMP, Type.TIMESTAMP);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TIMESTAMP, Type.TIMESTAMP, Type.TIMESTAMP);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TIMESTAMP, Type.TEXT, Type.TEXT);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TEXT, Type.TEXT, Type.TEXT);
+
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.TIME, Type.TIME, Type.TIME);
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.DATE, Type.DATE, Type.DATE);
+
+    TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INET4, Type.INET4, Type.INET4);
   }
 }
