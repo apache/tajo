@@ -35,6 +35,7 @@ import java.io.DataInput;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -227,5 +228,87 @@ public class StorageUtil extends StorageConstants {
       }
       amt -= ret;
     }
+  }
+
+  /**
+   * Decode a ZigZag-encoded 32-bit value.  ZigZag encodes signed integers
+   * into values that can be efficiently encoded with varint.  (Otherwise,
+   * negative values must be sign-extended to 64 bits to be varint encoded,
+   * thus always taking 10 bytes on the wire.)
+   *
+   * @param n An unsigned 32-bit integer, stored in a signed int because
+   *          Java has no explicit unsigned support.
+   * @return A signed 32-bit integer.
+   */
+  public static int decodeZigZag32(final int n) {
+    return (n >>> 1) ^ -(n & 1);
+  }
+
+  /**
+   * Decode a ZigZag-encoded 64-bit value.  ZigZag encodes signed integers
+   * into values that can be efficiently encoded with varint.  (Otherwise,
+   * negative values must be sign-extended to 64 bits to be varint encoded,
+   * thus always taking 10 bytes on the wire.)
+   *
+   * @param n An unsigned 64-bit integer, stored in a signed int because
+   *          Java has no explicit unsigned support.
+   * @return A signed 64-bit integer.
+   */
+  public static long decodeZigZag64(final long n) {
+    return (n >>> 1) ^ -(n & 1);
+  }
+
+
+  /**
+   * Read a raw Varint from the stream.  If larger than 32 bits, discard the
+   * upper bits.
+   */
+  public static int readRawVarint32(ByteBuffer buffer) throws IOException {
+    byte tmp = buffer.get();
+    if (tmp >= 0) {
+      return tmp;
+    }
+    int result = tmp & 0x7f;
+    if ((tmp = buffer.get()) >= 0) {
+      result |= tmp << 7;
+    } else {
+      result |= (tmp & 0x7f) << 7;
+      if ((tmp = buffer.get()) >= 0) {
+        result |= tmp << 14;
+      } else {
+        result |= (tmp & 0x7f) << 14;
+        if ((tmp = buffer.get()) >= 0) {
+          result |= tmp << 21;
+        } else {
+          result |= (tmp & 0x7f) << 21;
+          result |= (tmp = buffer.get()) << 28;
+          if (tmp < 0) {
+            // Discard upper 32 bits.
+            for (int i = 0; i < 5; i++) {
+              if (buffer.get() >= 0) {
+                return result;
+              }
+            }
+            throw new IOException("Invalid Variable int32");
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  /** Read a raw Varint from the stream. */
+  public static long readRawVarint64(ByteBuffer buffer) throws IOException {
+    int shift = 0;
+    long result = 0;
+    while (shift < 64) {
+      final byte b = buffer.get();
+      result |= (long)(b & 0x7F) << shift;
+      if ((b & 0x80) == 0) {
+        return result;
+      }
+      shift += 7;
+    }
+    throw new IOException("Invalid Variable int64");
   }
 }
