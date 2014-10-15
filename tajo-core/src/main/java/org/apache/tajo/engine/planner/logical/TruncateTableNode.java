@@ -42,7 +42,7 @@ public class TruncateTableNode extends LogicalNode {
 
   @Override
   public String toString() {
-    return "TruncateTable (table=" + TUtil.collectionToString(tableNames) + ")";
+    return "TruncateTable (table=" + TUtil.collectionToString(tableNames, ", ") + ")";
   }
 
   @Override

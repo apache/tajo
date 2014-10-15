@@ -18,8 +18,10 @@
 
 package org.apache.tajo.util;
 
+import org.apache.commons.collections.Predicate;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.annotation.Nullable;
 
 import java.io.File;
 import java.util.Enumeration;
@@ -31,7 +33,11 @@ import java.util.jar.JarFile;
 public abstract class ClassUtil {
   private static final Log LOG = LogFactory.getLog(ClassUtil.class);
 
-  public static Set<Class> findClasses(Class type, String packageFilter) {
+  public static Set<Class> findClasses(@Nullable Class targetClass, String packageFilter) {
+    return findClasses(targetClass, packageFilter, null);
+  }
+
+  public static Set<Class> findClasses(@Nullable Class targetClass, String packageFilter, Predicate predicate) {
     Set<Class> classSet = new HashSet<Class>();
 
     String classpath = System.getProperty("java.class.path");
@@ -40,18 +46,18 @@ public abstract class ClassUtil {
     for (String path : paths) {
       File file = new File(path);
       if (file.exists()) {
-        findClasses(classSet, file, file, true, type, packageFilter);
+        findClasses(classSet, file, file, true, targetClass, packageFilter, predicate);
       }
     }
 
     return classSet;
   }
 
-  private static void findClasses(Set<Class> matchedClassSet, File root, File file, boolean includeJars, Class type,
-                                  String packageFilter) {
+  private static void findClasses(Set<Class> matchedClassSet, File root, File file, boolean includeJars,
+                                  @Nullable Class type, String packageFilter, @Nullable Predicate predicate) {
     if (file.isDirectory()) {
       for (File child : file.listFiles()) {
-        findClasses(matchedClassSet, root, child, includeJars, type, packageFilter);
+        findClasses(matchedClassSet, root, child, includeJars, type, packageFilter, predicate);
       }
     } else {
       if (file.getName().toLowerCase().endsWith(".jar") && includeJars) {
@@ -73,7 +79,7 @@ public abstract class ClassUtil {
               try {
                 Class clazz = Class.forName(qualifiedClassName);
 
-                if (!clazz.isInterface() && isMatch(type, clazz)) {
+                if (isMatched(clazz, type, predicate)) {
                   matchedClassSet.add(clazz);
                 }
               } catch (ClassNotFoundException e) {
@@ -87,7 +93,7 @@ public abstract class ClassUtil {
         if (qualifiedClassName.indexOf(packageFilter) >= 0 && !isTestClass(qualifiedClassName)) {
           try {
             Class clazz = Class.forName(qualifiedClassName);
-            if (!clazz.isInterface() && isMatch(type, clazz)) {
+            if (isMatched(clazz, type, predicate)) {
               matchedClassSet.add(clazz);
             }
           } catch (ClassNotFoundException e) {
@@ -96,6 +102,13 @@ public abstract class ClassUtil {
         }
       }
     }
+  }
+
+  private static boolean isMatched(Class clazz, Class targetClass, Predicate predicate) {
+    return
+        !clazz.isInterface() &&
+        (targetClass == null || isClassMatched(targetClass, clazz)) &&
+        (predicate == null || predicate.evaluate(clazz));
   }
 
   private static boolean isTestClass(String qualifiedClassName) {
@@ -107,7 +120,7 @@ public abstract class ClassUtil {
     return className.startsWith("Test");
   }
 
-  private static boolean isMatch(Class targetClass, Class loadedClass) {
+  private static boolean isClassMatched(Class targetClass, Class loadedClass) {
     if (targetClass.equals(loadedClass)) {
       return true;
     }
@@ -119,7 +132,7 @@ public abstract class ClassUtil {
           return true;
         }
 
-        if (isMatch(targetClass, eachInterfaceClass)) {
+        if (isClassMatched(targetClass, eachInterfaceClass)) {
           return true;
         }
       }
@@ -127,7 +140,7 @@ public abstract class ClassUtil {
 
     Class superClass = loadedClass.getSuperclass();
     if (superClass != null) {
-      if (isMatch(targetClass, superClass)) {
+      if (isClassMatched(targetClass, superClass)) {
         return true;
       }
     }
@@ -152,5 +165,37 @@ public abstract class ClassUtil {
       file = file.getParentFile();
     }
     return sb.toString();
+  }
+
+  public static Class<?> forName(String name) throws ClassNotFoundException {
+    if (name.equals("byte")) {
+      return byte.class;
+    }
+    if (name.equals("short")) {
+      return short.class;
+    }
+    if (name.equals("int")) {
+      return int.class;
+    }
+    if (name.equals("long")) {
+      return long.class;
+    }
+    if (name.equals("char")) {
+      return char.class;
+    }
+    if (name.equals("float")) {
+      return float.class;
+    }
+    if (name.equals("double")) {
+      return double.class;
+    }
+    if (name.equals("boolean")) {
+      return boolean.class;
+    }
+    if (name.equals("void")) {
+      return void.class;
+    }
+
+    return Class.forName(name);
   }
 }

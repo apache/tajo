@@ -1,4 +1,4 @@
-/**
+/***
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,32 +16,29 @@
  * limitations under the License.
  */
 
-/**
- * 
- */
-package org.apache.tajo.json;
+package org.apache.tajo.function;
 
-import com.google.gson.*;
-import org.apache.tajo.util.ClassUtil;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import java.lang.reflect.Type;
+import static org.apache.tajo.common.TajoDataTypes.Type;
 
-public class ClassNameSerializer implements GsonSerDerAdapter<Class> {
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.METHOD})
+public @interface ScalarFunction {
+  String name();
 
-	@Override
-	public JsonElement serialize(Class clazz, Type type,
-			JsonSerializationContext ctx) {
-		return new JsonPrimitive(clazz.getName());
-	}
+  String [] synonyms() default {};
 
-  @Override
-  public Class deserialize(JsonElement json, Type type,
-                           JsonDeserializationContext ctx) throws JsonParseException {
-    try {
-      return ClassUtil.forName(json.getAsString());
-    } catch (ClassNotFoundException e) {
-      e.printStackTrace();
-    }
-    return null;
-  }
+  Type returnType();
+
+  Type [] paramTypes() default {};
+
+  String shortDescription() default "";
+
+  String detail() default "";
+
+  String example() default "";
 }

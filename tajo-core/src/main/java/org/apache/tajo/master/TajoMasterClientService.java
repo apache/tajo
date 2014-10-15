@@ -57,7 +57,6 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
-import org.apache.tajo.util.StringUtils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -814,7 +813,7 @@ public class TajoMasterClientService extends AbstractService {
           if (functionName == null || functionName.isEmpty()) {
             functionProtos.add(eachFunction.getProto());
           } else {
-            if(functionName.equals(eachFunction.getSignature())) {
+            if(functionName.equals(eachFunction.getFunctionName())) {
               functionProtos.add(eachFunction.getProto());
             }
           }

@@ -107,7 +107,7 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
 
 	@Override
 	public String getName() {
-		return funcDesc.getSignature();
+		return funcDesc.getFunctionName();
 	}
 
   @Override
@@ -118,7 +118,7 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
 			if(i+1 < argEvals.length)
 				sb.append(",");
 		}
-		return funcDesc.getSignature() + "(" + (isDistinct() ? " distinct " : "") + sb+")";
+		return funcDesc.getFunctionName() + "(" + (isDistinct() ? " distinct " : "") + sb+")";
 	}
 	
 	@Override

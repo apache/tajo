@@ -1,4 +1,4 @@
-/**
+/***
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,31 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.function.builtin;
+package org.apache.tajo.function;
 
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.engine.function.FunctionContext;
-import org.apache.tajo.engine.function.annotation.Description;
-import org.apache.tajo.engine.function.annotation.ParamTypes;
-import org.apache.tajo.storage.Tuple;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-@Description(
-  functionName = "avg",
-  description = "the mean of a set of numbers.",
-  example = "> SELECT avg(expr);",
-  returnType = TajoDataTypes.Type.FLOAT8,
-  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.INT4})}
-)
-public class AvgInt extends AvgLong {
-
-  public AvgInt() {
-    super();
-  }
-
-  @Override
-  public void eval(FunctionContext ctx, Tuple params) {
-    AvgContext avgCtx = (AvgContext) ctx;
-    avgCtx.sum += params.get(0).asInt4();
-    avgCtx.count++;
-  }
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE})
+public @interface FunctionCollection {
 }

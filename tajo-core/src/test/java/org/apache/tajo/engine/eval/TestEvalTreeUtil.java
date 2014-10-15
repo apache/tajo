@@ -31,6 +31,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.optimizer.eval.EvalTreeOptimizer;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
@@ -93,7 +94,7 @@ public class TestEvalTreeUtil {
     util = new TajoTestingCluster();
     util.startCatalogCluster();
     catalog = util.getMiniCatalogCluster().getCatalog();
-    for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
+    for (FunctionDesc funcDesc : FunctionLoader.findLegacyFunctions()) {
       catalog.createFunction(funcDesc);
     }
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.catalog.function;
+package org.apache.tajo.function;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
@@ -27,6 +27,7 @@ import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.util.TUtil;
 
+@Deprecated
 public abstract class Function<T extends Datum> implements Cloneable, GsonObject {
   @Expose protected Column[] definedParams;
   public final static Column [] NoArgs = new Column [] {};
