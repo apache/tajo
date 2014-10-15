@@ -316,6 +316,8 @@ public class TajoConf extends Configuration {
     $DIST_QUERY_GROUPBY_PARTITION_VOLUME("tajo.dist-query.groupby.partition-volume-mb", 256),
     $DIST_QUERY_TABLE_PARTITION_VOLUME("tajo.dist-query.table-partition.task-volume-mb", 256),
 
+    $GROUPBY_MULTI_LEVEL_ENABLED("tajo.dist-query.groupby.multi-level-aggr", true),
+
     // execution engine
     $EXECUTION_ENGINE("tajo.executor.engine", "volcano"), // volcano, and block
 
@@ -362,7 +364,7 @@ public class TajoConf extends Configuration {
     $BEHAVIOR_ARITHMETIC_ABORT("tajo.behavior.arithmetic-abort", false),
 
     // ResultSet ---------------------------------------------------------
-    $RESULT_SET_FETCH_ROWNUM("tajo.resultset.fetch.rownum", 200)
+    $RESULT_SET_FETCH_ROWNUM("tajo.resultset.fetch.rownum", 200),
     ;
 
     public final String varname;

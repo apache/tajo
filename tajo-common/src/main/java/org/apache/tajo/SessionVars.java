@@ -98,6 +98,8 @@ public enum SessionVars implements ConfigKey {
   TABLE_PARTITION_PER_SHUFFLE_SIZE(ConfVars.$DIST_QUERY_TABLE_PARTITION_VOLUME,
       "shuffle output size for partition table write (mb)", DEFAULT),
 
+  GROUPBY_MULTI_LEVEL_ENABLED(ConfVars.$GROUPBY_MULTI_LEVEL_ENABLED, "Multiple level groupby enabled", DEFAULT),
+
   // for physical Executors
   EXECUTION_ENGINE(ConfVars.$EXECUTION_ENGINE,
       "executor engine types that queries will use. Types: volcano and block (default is volcano)", DEFAULT),

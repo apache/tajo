@@ -26,10 +26,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -37,8 +34,8 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.exception.InvalidQueryException;
 import org.apache.tajo.engine.planner.logical.*;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.storage.BaseTupleComparator;
+import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.TUtil;
@@ -855,7 +852,7 @@ public class PlannerUtil {
                                          int startFileIndex, int numResultFiles,
                                          AtomicInteger currentFileIndex) throws IOException {
     if (fs.isDirectory(path)) {
-      FileStatus[] files = fs.listStatus(path);
+      FileStatus[] files = fs.listStatus(path, StorageManager.hiddenFileFilter);
       if (files != null && files.length > 0) {
         for (FileStatus eachFile : files) {
           if (result.size() >= numResultFiles) {

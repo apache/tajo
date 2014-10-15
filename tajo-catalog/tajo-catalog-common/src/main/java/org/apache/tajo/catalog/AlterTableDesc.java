@@ -25,11 +25,10 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.json.GsonObject;
 
+import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTableDescProto;
 
-public class AlterTableDesc implements ProtoObject<CatalogProtos.AlterTableDescProto>, GsonObject, Cloneable {
 
-  protected CatalogProtos.AlterTableDescProto.Builder builder = null;
-
+public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObject, Cloneable {
   @Expose
   protected AlterTableType alterTableType; //required
   @Expose
@@ -44,7 +43,6 @@ public class AlterTableDesc implements ProtoObject<CatalogProtos.AlterTableDescP
   protected Column addColumn = null; //optiona
 
   public AlterTableDesc() {
-    builder = CatalogProtos.AlterTableDescProto.newBuilder();
   }
 
 
@@ -106,7 +104,6 @@ public class AlterTableDesc implements ProtoObject<CatalogProtos.AlterTableDescP
   @Override
   public AlterTableDesc clone() throws CloneNotSupportedException {
     AlterTableDesc newAlter = (AlterTableDesc) super.clone();
-    newAlter.builder = CatalogProtos.AlterTableDescProto.newBuilder();
     newAlter.alterTableType = alterTableType;
     newAlter.tableName = tableName;
     newAlter.newTableName = newTableName;
@@ -121,10 +118,9 @@ public class AlterTableDesc implements ProtoObject<CatalogProtos.AlterTableDescP
   }
 
   @Override
-  public CatalogProtos.AlterTableDescProto getProto() {
-    if (null == builder) {
-      builder = CatalogProtos.AlterTableDescProto.newBuilder();
-    }
+  public AlterTableDescProto getProto() {
+    AlterTableDescProto.Builder builder = AlterTableDescProto.newBuilder();
+
     if (null != this.tableName) {
       builder.setTableName(this.tableName);
     }

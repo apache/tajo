@@ -30,7 +30,10 @@ import org.apache.tajo.storage.VTuple;
 
 public class AggregationFunctionCallEval extends FunctionEval implements Cloneable {
   @Expose protected AggFunction instance;
-  @Expose boolean firstPhase = false;
+  @Expose boolean intermediatePhase = false;
+  @Expose boolean finalPhase = true;
+  @Expose String alias;
+
   private Tuple params;
 
   protected AggregationFunctionCallEval(EvalType type, FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs) {
@@ -58,7 +61,8 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
       }
     }
 
-    if (firstPhase) {
+    if (!intermediatePhase && !finalPhase) {
+      // firstPhase
       instance.eval(context, params);
     } else {
       instance.merge(context, params);
@@ -71,7 +75,7 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   }
 
   public Datum terminate(FunctionContext context) {
-    if (firstPhase) {
+    if (!finalPhase) {
       return instance.getPartialResult(context);
     } else {
       return instance.terminate(context);
@@ -80,18 +84,40 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
 
   @Override
   public DataType getValueType() {
-    if (firstPhase) {
+    if (!finalPhase) {
       return instance.getPartialResultType();
     } else {
       return funcDesc.getReturnType();
     }
   }
 
+  public void setAlias(String alias) { this.alias = alias; }
+
+  public String getAlias() { return  this.alias; }
+
   public Object clone() throws CloneNotSupportedException {
-    return super.clone();
+    AggregationFunctionCallEval clone = (AggregationFunctionCallEval)super.clone();
+
+    clone.finalPhase = finalPhase;
+    clone.intermediatePhase = intermediatePhase;
+    clone.alias = alias;
+    clone.instance = (AggFunction)instance.clone();
+
+    return clone;
   }
 
   public void setFirstPhase() {
-    this.firstPhase = true;
+    this.finalPhase = false;
+    this.intermediatePhase = false;
+  }
+
+  public void setFinalPhase() {
+    this.finalPhase = true;
+    this.intermediatePhase = false;
+  }
+
+  public void setIntermediatePhase() {
+    this.finalPhase = false;
+    this.intermediatePhase = true;
   }
 }

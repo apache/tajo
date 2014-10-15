@@ -73,6 +73,8 @@ import static org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
 
 @ThreadSafe
 public class TajoClient implements Closeable {
+  public static final int UNKNOWN_ROW_NUMBER = -1;
+
   private final Log LOG = LogFactory.getLog(TajoClient.class);
 
   private final TajoConf conf;
@@ -413,7 +415,7 @@ public class TajoClient implements Closeable {
       }
     } else {
       // If a non-forwarded insert into query
-      if (queryId.equals(QueryIdFactory.NULL_QUERY_ID) && response.getMaxRowNum() < 0) {
+      if (queryId.equals(QueryIdFactory.NULL_QUERY_ID) && response.getMaxRowNum() == 0) {
         return this.createNullResultSet(queryId);
       } else {
         if (response.hasResultSet() || response.hasTableDesc()) {
@@ -907,6 +909,7 @@ public class TajoClient implements Closeable {
     return new ServerCallable<List<BriefQueryInfo>>(connPool, getTajoMasterAddr(),
         TajoMasterClientProtocol.class, false, true) {
       public List<BriefQueryInfo> call(NettyClientBase client) throws ServiceException {
+        checkSessionAndGet(client);
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
         GetQueryListRequest.Builder builder = GetQueryListRequest.newBuilder();

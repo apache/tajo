@@ -44,15 +44,15 @@ public class TajoAdmin {
   private static final org.apache.commons.cli.Options options;
   private static DecimalFormat decimalF = new DecimalFormat("###.0");
   private enum WorkerStatus {
-    LIVE,
-    DEAD,
-    DECOMMISSION
+    RUNNING,
+    LOST,
+    DECOMMISSIONED
   }
 
-  final static String line5   = "-----";
-  final static String line10  = "----------";
-  final static String line12  = "------------";
-  final static String line25  = "-------------------------";
+  final static String DASHLINE_LEN5 = "-----";
+  final static String DASHLINE_LEN10 = "----------";
+  final static String DASHLINE_LEN12 = "------------";
+  final static String DASHLINE_LEN25 = "-------------------------";
   final static String DATE_FORMAT  = "yyyy-MM-dd HH:mm:ss";
 
   static {
@@ -228,21 +228,21 @@ public class TajoAdmin {
 
     for (WorkerResourceInfo eachWorker : workerList) {
       if(eachWorker.getQueryMasterMode() == true) {
-        if(eachWorker.getWorkerStatus().equals(WorkerStatus.LIVE.toString())) {
+        if(eachWorker.getWorkerStatus().equals(WorkerStatus.RUNNING.toString())) {
           liveQueryMasters.add(eachWorker);
           runningQueryMasterTasks += eachWorker.getNumQueryMasterTasks();
         }
-        if(eachWorker.getWorkerStatus().equals(WorkerStatus.DEAD.toString())) {
+        if(eachWorker.getWorkerStatus().equals(WorkerStatus.LOST.toString())) {
           deadQueryMasters.add(eachWorker);
         }
       }
 
       if(eachWorker.getTaskRunnerMode() == true) {
-        if(eachWorker.getWorkerStatus().equals(WorkerStatus.LIVE.toString())) {
+        if(eachWorker.getWorkerStatus().equals(WorkerStatus.RUNNING.toString())) {
           liveWorkers.add(eachWorker);
-        } else if(eachWorker.getWorkerStatus().equals(WorkerStatus.DEAD.toString())) {
+        } else if(eachWorker.getWorkerStatus().equals(WorkerStatus.LOST.toString())) {
           deadWorkers.add(eachWorker);
-        } else if(eachWorker.getWorkerStatus().equals(WorkerStatus.DECOMMISSION.toString())) {
+        } else if(eachWorker.getWorkerStatus().equals(WorkerStatus.DECOMMISSIONED.toString())) {
           decommissionWorkers.add(eachWorker);
         }
       }
@@ -254,7 +254,7 @@ public class TajoAdmin {
     writer.write("Query Master\n");
     writer.write("============\n\n");
     writer.write(infoLine);
-    String line = String.format(fmtInfo, line5, line5, line5);
+    String line = String.format(fmtInfo, DASHLINE_LEN5, DASHLINE_LEN5, DASHLINE_LEN5);
     writer.write(line);
 
     line = String.format(fmtInfo, liveQueryMasters.size(),
@@ -272,8 +272,8 @@ public class TajoAdmin {
       line = String.format(fmtQueryMasterLine, "QueryMaster", "Port", "Query",
                            "Heap", "Status");
       writer.write(line);
-      line = String.format(fmtQueryMasterLine, line25, line5,
-                           line5, line10, line10);
+      line = String.format(fmtQueryMasterLine, DASHLINE_LEN25, DASHLINE_LEN5,
+              DASHLINE_LEN5, DASHLINE_LEN10, DASHLINE_LEN10);
       writer.write(line);
       for (WorkerResourceInfo queryMaster : liveQueryMasters) {
         TajoProtos.WorkerConnectionInfoProto connInfo = queryMaster.getConnectionInfo();
@@ -298,7 +298,7 @@ public class TajoAdmin {
       String fmtQueryMasterLine = "%1$-25s %2$-5s %3$-10s%n";
       line = String.format(fmtQueryMasterLine, "QueryMaster", "Port", "Status");
       writer.write(line);
-      line = String.format(fmtQueryMasterLine, line25, line5, line10);
+      line = String.format(fmtQueryMasterLine, DASHLINE_LEN25, DASHLINE_LEN5, DASHLINE_LEN10);
       writer.write(line);
 
       for (WorkerResourceInfo queryMaster : deadQueryMasters) {
@@ -320,7 +320,7 @@ public class TajoAdmin {
     String fmtWorkerInfo = "%1$-5s %2$-5s%n";
     String workerInfoLine = String.format(fmtWorkerInfo, "Live", "Dead");
     writer.write(workerInfoLine);
-    line = String.format(fmtWorkerInfo, line5, line5);
+    line = String.format(fmtWorkerInfo, DASHLINE_LEN5, DASHLINE_LEN5);
     writer.write(line);
 
     line = String.format(fmtWorkerInfo, liveWorkers.size(), deadWorkers.size());
@@ -353,9 +353,9 @@ public class TajoAdmin {
         "Heap", "Status");
     writer.write(line);
     line = String.format(fmtWorkerLine,
-        line25, line5, line5,
-        line10, line10,
-        line12, line10);
+        DASHLINE_LEN25, DASHLINE_LEN5, DASHLINE_LEN5,
+        DASHLINE_LEN10, DASHLINE_LEN10,
+        DASHLINE_LEN12, DASHLINE_LEN10);
     writer.write(line);
 
     for (WorkerResourceInfo worker : workers) {
