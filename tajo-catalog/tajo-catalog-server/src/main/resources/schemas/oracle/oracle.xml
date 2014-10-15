@@ -17,7 +17,8 @@
   limitations under the License.
   -->
 <tns:store xmlns:tns="http://tajo.apache.org/catalogstore" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.xsd ">
-  <tns:base version="2" schemaname="tajo"><tns:objects>
+  <tns:base version="2">
+    <tns:objects>
   		<tns:Object order="0" type="table" name="meta">
   			<tns:sql><![CDATA[
   			CREATE TABLE META (VERSION INT NOT NULL)]]>
@@ -104,10 +105,10 @@
 				END;]]>
 				</tns:sql>
   		</tns:Object>
-  		<tns:Object order="10" type="index" name="TABLES_IDX_DB_ID">
+  		<tns:Object order="10" type="index" name="TABLES_IDX_DB_ID" dependsOn="TABLES">
   			<tns:sql><![CDATA[CREATE INDEX TABLES_IDX_DB_ID on TABLES (DB_ID)]]></tns:sql>
   		</tns:Object>
-  		<tns:Object order="11" type="index" name="TABLES_IDX_TABLE_ID">
+  		<tns:Object order="11" type="index" name="TABLES_IDX_TABLE_ID" dependsOn="TABLES">
   			<tns:sql><![CDATA[CREATE UNIQUE INDEX TABLES_IDX_TABLE_ID on TABLES (DB_ID, TABLE_NAME)]]></tns:sql>
   		</tns:Object>
   		<tns:Object order="12" type="table" name="COLUMNS">
@@ -152,7 +153,7 @@
 				)]]>
 				</tns:sql>
   		</tns:Object>
-  		<tns:Object order="15" type="index" name="INDEXES_IDX_TID_COLUMN_NAME">
+  		<tns:Object order="15" type="index" name="INDEXES_IDX_TID_COLUMN_NAME" dependsOn="INDEXES">
   			<tns:sql><![CDATA[CREATE INDEX INDEXES_IDX_TID_COLUMN_NAME on INDEXES (TID, COLUMN_NAME)]]></tns:sql>
   		</tns:Object>
   		<tns:Object order="16" type="table" name="STATS">
@@ -190,13 +191,28 @@
 				)]]>
 				</tns:sql>
   		</tns:Object>
-  		<tns:Object order="19" type="index" name="PARTITIONS_IDX_TID">
+  		<tns:Object order="19" type="index" name="PARTITIONS_IDX_TID" dependsOn="PARTITIONS">
   			<tns:sql><![CDATA[CREATE INDEX PARTITIONS_IDX_TID on PARTITIONS (TID)]]></tns:sql>
   		</tns:Object>
-</tns:objects>
+    </tns:objects>
   </tns:base>
-  <tns:existQuries>
-  	<tns:existQuery type="table">
-  		<tns:sql><![CDATA[select table_name from user_tables]]></tns:sql>
-  	</tns:existQuery></tns:existQuries>
+  <tns:existQueries>
+  	<tns:existQuery type="trigger">
+  		<tns:sql><![CDATA[SELECT TRIGGER_NAME FROM USER_TRIGGERS]]></tns:sql>
+  	</tns:existQuery>
+  	<tns:existQuery type="sequence">
+  		<tns:sql><![CDATA[SELECT SEQUENCE_NAME FROM USER_SEQUENCES]]></tns:sql>
+  	</tns:existQuery>
+  	<tns:existQuery type="view">
+  		<tns:sql><![CDATA[SELECT VIEW_NAME FROM USER_VIEWS]]></tns:sql>
+  	</tns:existQuery>
+  	<tns:existQuery type="index">
+  		<tns:sql><![CDATA[SELECT INDEX_NAME FROM USER_INDEXES]]></tns:sql>
+  	</tns:existQuery>
+  </tns:existQueries>
+  <tns:dropStatements>
+  	<tns:dropStatement type="table">
+  		<tns:sql><![CDATA[DROP TABLE ? CASCADE CONSTRAINT]]></tns:sql>
+  	</tns:dropStatement>
+  </tns:dropStatements>
 </tns:store>

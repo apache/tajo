@@ -17,7 +17,7 @@
   limitations under the License.
   -->
 <tns:store xmlns:tns="http://tajo.apache.org/catalogstore" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.xsd ">
-	<tns:base version="2" schemaname="tajo">
+	<tns:base version="2">
 		<tns:objects>
 			<tns:Object order="0" type="table" name="META">
 				<tns:sql><![CDATA[CREATE TABLE META (VERSION INT NOT NULL)]]></tns:sql>
@@ -142,50 +142,45 @@
 			<tns:Object order="17" type="index" name="IDX_PARTITION_METHODS_TABLE_ID" dependsOn="PARTITION_METHODS">
 				<tns:sql><![CDATA[CREATE INDEX idx_partition_methods_table_id ON PARTITION_METHODS (TID)]]></tns:sql>
 			</tns:Object>
-			<tns:Object order="18" type="table" name="TABLESPACES_HIST">
+			<tns:Object name="PARTITIONS" type="table" order="18">
 				<tns:sql><![CDATA[
-				CREATE TABLE TABLESPACES_HIST (
-  				SPACE_HIST_ID int NOT NULL GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1),
-  				SPACE_NAME VARCHAR(128) NOT NULL CONSTRAINT SPACE_HIST_UNIQUE UNIQUE,
-  				SPACE_HANDLER VARCHAR (1024) DEFAULT 'HDFS',
-  				SPACE_URI VARCHAR (4096) NOT NULL,
-  				CONSTRAINT C_SPACE_HIST_PK PRIMARY KEY (SPACE_HIST_ID)
+				CREATE TABLE PARTITIONS (
+  				PID INT NOT NULL GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1),
+  				TID INT NOT NULL REFERENCES TABLES (TID) ON DELETE CASCADE,
+  				PARTITION_NAME VARCHAR(255),
+  				ORDINAL_POSITION INT NOT NULL,
+  				PARTITION_VALUE VARCHAR(1024),
+  				PATH VARCHAR(1024),
+  				CONSTRAINT C_PARTITION_PK PRIMARY KEY (PID),
+  				CONSTRAINT C_PARTITION_UNIQUE UNIQUE (TID, PARTITION_NAME)
 				)]]>
 				</tns:sql>
 			</tns:Object>
-			<tns:Object order="19" type="trigger" name="TABLESPACES_HIST_TRG">
-				<tns:sql><![CDATA[
-				CREATE TRIGGER TABLESPACES_HIST_TRG
-				AFTER INSERT ON TABLESPACES
-				REFERENCING NEW AS NEWROW
-				FOR EACH ROW
-				  INSERT INTO TABLESPACES_HIST
-				  (SPACE_NAME, SPACE_URI)
-				  VALUES
-				  (NEWROW.SPACE_NAME, NEWROW.SPACE_URI)
-				]]>
-				</tns:sql>
+			<tns:Object name="IDX_PARTITIONS_TABLE_NAME" type="index" dependsOn="PARTITIONS" order="19">
+				<tns:sql><![CDATA[CREATE INDEX idx_partitions_table_name ON PARTITIONS(TID)]]></tns:sql>
 			</tns:Object>
 		</tns:objects>
 	</tns:base>
 	<tns:existQueries>
 	  <tns:existQuery type="trigger">
 	    <tns:sql><![CDATA[
-	    select a.TRIGGERNAME from SYS.SYSTRIGGERS a inner join SYS.SYSSCHEMAS b
-           on a.SCHEMAID = b.SCHEMAID where b.SCHEMANAME = ?
+	    select a.TRIGGERNAME from SYS.SYSTRIGGERS a
 	    ]]></tns:sql>
 	  </tns:existQuery>
 	  <tns:existQuery type="sequence">
 	    <tns:sql><![CDATA[
-	    select a.SEQUENCENAME from SYS.SYSSEQUENCES a inner join SYS.SYSSCHEMAS b
-           on a.SCHEMAID = b.SCHEMAID where b.SCHEMANAME = ?
+	    select a.SEQUENCENAME from SYS.SYSSEQUENCES a
 	    ]]></tns:sql>
 	  </tns:existQuery>
 	  <tns:existQuery type="view">
 	    <tns:sql><![CDATA[
-	    select a.TABLENAME from SYS.SYSTABLES a inner join SYS.SYSSCHEMAS b
-           on a.SCHEMAID = b.SCHEMAID where b.SCHEMANAME = ? and a.TABLETYPE = 'V'
+	    select a.TABLENAME from SYS.SYSTABLES a where a.TABLETYPE = 'V'
 	    ]]></tns:sql>
 	  </tns:existQuery>
-	</tns:existQueries>	
+	</tns:existQueries>
+	<tns:dropStatements>
+		<tns:dropStatement type="sequence">
+			<tns:sql><![CDATA[DROP SEQUENCE ? RESTRICT]]></tns:sql>
+		</tns:dropStatement>
+	</tns:dropStatements>
 </tns:store>

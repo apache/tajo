@@ -49,6 +49,7 @@ import java.util.jar.Manifest;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogConstants;
+import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.store.object.DatabaseObject;
 import org.apache.tajo.catalog.store.object.DatabaseObjectType;
 import org.apache.tajo.catalog.store.object.SchemaPatch;
@@ -148,31 +149,6 @@ public class TestXMLCatalogSchemaManager {
     DriverManager.deregisterDriver(driver);
   }
   
-  protected Path createTestJar() throws Exception {
-    Path jarPath = new Path(testPath, "testxml.jar");
-    Manifest manifest = new Manifest();
-    manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
-    JarOutputStream jarOut = new JarOutputStream(new FileOutputStream(new File(jarPath.toUri())), manifest);
-    JarEntry entry = new JarEntry("schemas/jartest/");
-    jarOut.putNextEntry(entry);
-    jarOut.closeEntry();
-    entry = new JarEntry("schemas/jartest/test.xml");
-    jarOut.putNextEntry(entry);
-    InputStream xmlInputStream = 
-        new BufferedInputStream(ClassLoader.getSystemResourceAsStream("schemas/derby/loadtest/derby.xml"));
-    byte[] buffer = new byte[1024];
-    int readSize = -1;
-    
-    while ((readSize = xmlInputStream.read(buffer)) > -1) {
-      jarOut.write(buffer, 0, readSize);
-    }
-    jarOut.closeEntry();
-    jarOut.close();
-    xmlInputStream.close();
-    
-    return jarPath;
-  }
-  
   protected <T> BaseMatcher<T> hasItemInResultSet(final String expected, final String columnName) {
     return new BaseMatcher<T>() {
       private final List<String> results = new ArrayList<String>();
@@ -211,6 +187,31 @@ public class TestXMLCatalogSchemaManager {
     };
   }
   
+  protected Path createTestJar() throws Exception {
+    Path jarPath = new Path(testPath, "testxml.jar");
+    Manifest manifest = new Manifest();
+    manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
+    JarOutputStream jarOut = new JarOutputStream(new FileOutputStream(new File(jarPath.toUri())), manifest);
+    JarEntry entry = new JarEntry("schemas/jartest/");
+    jarOut.putNextEntry(entry);
+    jarOut.closeEntry();
+    entry = new JarEntry("schemas/jartest/test.xml");
+    jarOut.putNextEntry(entry);
+    InputStream xmlInputStream = 
+        new BufferedInputStream(ClassLoader.getSystemResourceAsStream("schemas/derbytest/loadtest/derby.xml"));
+    byte[] buffer = new byte[1024];
+    int readSize = -1;
+    
+    while ((readSize = xmlInputStream.read(buffer)) > -1) {
+      jarOut.write(buffer, 0, readSize);
+    }
+    jarOut.closeEntry();
+    jarOut.close();
+    xmlInputStream.close();
+    
+    return jarPath;
+  }
+
   @Test
   @SetupPrepMethods(makeJDBCConnection=false)
   public void testListJarResources() throws Exception {
@@ -240,7 +241,7 @@ public class TestXMLCatalogSchemaManager {
     XMLCatalogSchemaManager manager;
     Statement stmt;
     
-    manager = new XMLCatalogSchemaManager("schemas/derby/loadtest");
+    manager = new XMLCatalogSchemaManager("schemas/derbytest/loadtest");
     assertThat(manager.isLoaded(), is(true));
     
     stmt = conn.createStatement();
@@ -269,7 +270,7 @@ public class TestXMLCatalogSchemaManager {
     XMLCatalogSchemaManager manager;
     Statement stmt;
     
-    manager = new XMLCatalogSchemaManager("schemas/derby/querytest");
+    manager = new XMLCatalogSchemaManager("schemas/derbytest/querytest");
     assertThat(manager.isLoaded(), is(true));
     
     stmt = conn.createStatement();
@@ -302,8 +303,9 @@ public class TestXMLCatalogSchemaManager {
     DatabaseMetaData meta;
     Statement stmt;
     
-    manager = new XMLCatalogSchemaManager("schemas/derby/querytest");
+    manager = new XMLCatalogSchemaManager("schemas/derbytest/querytest");
     assertThat(manager.isLoaded(), is(true));
+    assertThat(manager.getCatalogStore().getDropStatements(), hasSize(1));
     
     stmt = conn.createStatement();
     stmt.addBatch("CREATE SCHEMA " + manager.getCatalogStore().getSchema().getSchemaName());
@@ -354,7 +356,7 @@ public class TestXMLCatalogSchemaManager {
     XMLCatalogSchemaManager manager;
     Statement stmt;
     
-    manager = new XMLCatalogSchemaManager("schemas/derby/querytest");
+    manager = new XMLCatalogSchemaManager("schemas/derbytest/querytest");
     assertThat(manager.isLoaded(), is(true));
     
     stmt = conn.createStatement();
@@ -364,6 +366,7 @@ public class TestXMLCatalogSchemaManager {
     manager.createBaseSchema(conn);
     
     assertThat(manager.checkExistance(conn, DatabaseObjectType.TABLE, "TESTTABLE1"), is(true));
+    assertThat(manager.checkExistance(conn, DatabaseObjectType.TABLE, "TESTTABLE3"), is(false));
     assertThat(manager.checkExistance(conn, DatabaseObjectType.INDEX, "testtable1", "TESTINDEX1"), is(true));
     assertThat(manager.checkExistance(conn, DatabaseObjectType.TRIGGER, "TESTTRIGGER1"), is(true));
     assertThat(manager.checkExistance(conn, DatabaseObjectType.SEQUENCE, "TESTSEQ"), is(true));
@@ -375,7 +378,7 @@ public class TestXMLCatalogSchemaManager {
     XMLCatalogSchemaManager manager;
     Statement stmt;
     
-    manager = new XMLCatalogSchemaManager("schemas/derby/querytest");
+    manager = new XMLCatalogSchemaManager("schemas/derbytest/querytest");
     assertThat(manager.isLoaded(), is(true));
     
     stmt = conn.createStatement();
@@ -394,7 +397,7 @@ public class TestXMLCatalogSchemaManager {
   public void testMergeSchemaFile() throws Exception {
     XMLCatalogSchemaManager manager;
     
-    manager = new XMLCatalogSchemaManager("schemas/derby/mergetest");
+    manager = new XMLCatalogSchemaManager("schemas/derbytest/mergetest");
     assertThat(manager.isLoaded(), is(true));
     
     assertThat(manager.getCatalogStore().getSchema().getObjects(), hasSize(4));
@@ -416,7 +419,7 @@ public class TestXMLCatalogSchemaManager {
     XMLCatalogSchemaManager manager;
     Statement stmt;
     
-    manager = new XMLCatalogSchemaManager("schemas/derby/upgradetest");
+    manager = new XMLCatalogSchemaManager("schemas/derbytest/upgradetest");
     assertThat(manager.isLoaded(), is(true));
     assertThat(manager.getCatalogStore().getPatches(), hasSize(1));
     assertThat(manager.getCatalogStore().getPatches().get(0).getObjects(), hasSize(2));

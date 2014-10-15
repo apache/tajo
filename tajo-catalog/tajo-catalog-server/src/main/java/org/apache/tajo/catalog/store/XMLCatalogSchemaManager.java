@@ -31,6 +31,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
@@ -50,13 +51,9 @@ import javax.xml.stream.XMLStreamReader;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.exception.CatalogException;
-import org.apache.tajo.catalog.store.object.BaseSchema;
-import org.apache.tajo.catalog.store.object.DatabaseObject;
-import org.apache.tajo.catalog.store.object.DatabaseObjectType;
-import org.apache.tajo.catalog.store.object.ExistQuery;
-import org.apache.tajo.catalog.store.object.SchemaPatch;
-import org.apache.tajo.catalog.store.object.StoreObject;
+import org.apache.tajo.catalog.store.object.*;
 
 public class XMLCatalogSchemaManager {
   protected final Log LOG = LogFactory.getLog(getClass());
@@ -74,6 +71,31 @@ public class XMLCatalogSchemaManager {
     } catch (Exception e) {
       throw new CatalogException(e.getMessage(), e);
     }
+  }
+  
+  protected String getDropSQL(DatabaseObjectType type, String name) 
+      throws CatalogException {
+    SQLObject foundDropQuery = null;
+    String sqlStatement = "DROP " + type.toString() + " " + name;
+    
+    for (SQLObject dropQuery: catalogStore.getDropStatements()) {
+      if (type == dropQuery.getType()) {
+        foundDropQuery = dropQuery;
+        break;
+      }
+    }
+    
+    if (foundDropQuery != null && foundDropQuery.getSql() != null && !foundDropQuery.getSql().isEmpty()) {
+      String dropStatement = foundDropQuery.getSql();
+      StringBuffer sqlBuffer = new StringBuffer(dropStatement.length()+name.length());
+      int identifier = dropStatement.indexOf('?');
+      
+      sqlBuffer.append(dropStatement.substring(0, identifier)).append(name)
+        .append(dropStatement.substring(identifier+1));
+      sqlStatement = sqlBuffer.toString();
+    }
+    
+    return sqlStatement;
   }
 
   public void dropBaseSchema(Connection conn) throws CatalogException {
@@ -95,7 +117,7 @@ public class XMLCatalogSchemaManager {
         if (DatabaseObjectType.TABLE == object.getType() ||
             DatabaseObjectType.SEQUENCE == object.getType() ||
             DatabaseObjectType.VIEW == object.getType()) {
-          stmt.executeUpdate("drop " + object.getType().toString() + " " + object.getName());
+          stmt.executeUpdate(getDropSQL(object.getType(), object.getName()));
         }
       } catch (SQLException e) {
         failedObjects.add(object);
@@ -123,7 +145,7 @@ public class XMLCatalogSchemaManager {
       throws SQLException {
     PreparedStatement pstmt = null;
     
-    for (ExistQuery existQuery: catalogStore.getQueries()) {
+    for (SQLObject existQuery: catalogStore.getExistQueries()) {
       if (type.equals(existQuery.getType())) {
         pstmt = conn.prepareStatement(existQuery.getSql());
         break;
@@ -140,6 +162,10 @@ public class XMLCatalogSchemaManager {
     PreparedStatement pstmt = null;
     BaseSchema baseSchema = catalogStore.getSchema();
     
+    if (params == null || params.length < 1) {
+      throw new IllegalArgumentException("checkExistance function needs at least one argument.");
+    }
+    
     switch(type) {
     case DATA:
       metadata = conn.getMetaData();
@@ -147,7 +173,7 @@ public class XMLCatalogSchemaManager {
           baseSchema.getSchemaName().toUpperCase():null, 
           params[0].toUpperCase(), null);
       result = data.next();
-      data.close();
+      CatalogUtil.closeQuietly(data);
       break;
     case FUNCTION:
       metadata = conn.getMetaData();
@@ -155,32 +181,42 @@ public class XMLCatalogSchemaManager {
           baseSchema.getSchemaName().toUpperCase():null,
           params[0].toUpperCase());
       result = functions.next();
-      functions.close();
+      CatalogUtil.closeQuietly(functions);
       break;
     case INDEX:
       if (params.length != 2) {
         throw new IllegalArgumentException("Finding index object is needed two strings, table name and index name");
       }
       
-      metadata = conn.getMetaData();
-      ResultSet indexes = metadata.getIndexInfo(null, baseSchema.getSchemaName() != null && !baseSchema.getSchemaName().isEmpty()?
-          baseSchema.getSchemaName().toUpperCase():null, 
-          params[0].toUpperCase(), false, true);
-      while (indexes.next()) {
-        if (indexes.getString("INDEX_NAME").equals(params[1].toUpperCase())) {
-          result = true;
-          break;
+      pstmt = getExistQuery(conn, type);
+      if (pstmt != null) {
+        result = checkExistanceByQuery(pstmt, baseSchema, params);
+      } else {
+        metadata = conn.getMetaData();
+        ResultSet indexes = metadata.getIndexInfo(null, baseSchema.getSchemaName() != null
+            && !baseSchema.getSchemaName().isEmpty() ? baseSchema.getSchemaName().toUpperCase() : null,
+            params[0].toUpperCase(), false, true);
+        while (indexes.next()) {
+          if (indexes.getString("INDEX_NAME").equals(params[1].toUpperCase())) {
+            result = true;
+            break;
+          }
         }
+        CatalogUtil.closeQuietly(indexes);
       }
-      indexes.close();
       break;
     case TABLE:
-      metadata = conn.getMetaData();
-      ResultSet tables = metadata.getTables(null, baseSchema.getSchemaName() != null && !baseSchema.getSchemaName().isEmpty()?
-          baseSchema.getSchemaName().toUpperCase():null, 
-          params[0].toUpperCase(), new String[] {"TABLE"});
-      result = tables.next();
-      tables.close();
+      pstmt = getExistQuery(conn, type);
+      if (pstmt != null) {
+        result = checkExistanceByQuery(pstmt, baseSchema, params);
+      } else {
+        metadata = conn.getMetaData();
+        ResultSet tables = metadata.getTables(null, baseSchema.getSchemaName() != null
+            && !baseSchema.getSchemaName().isEmpty() ? baseSchema.getSchemaName().toUpperCase() : null,
+            params[0].toUpperCase(), new String[] { "TABLE" });
+        result = tables.next();
+        CatalogUtil.closeQuietly(tables);
+      }
       break;
     case DOMAIN:
     case OPERATOR:
@@ -195,27 +231,34 @@ public class XMLCatalogSchemaManager {
             + " type of database object is not supported on this database system.");
       }
       
-      int paramIdx = 1;
-      
-      if (baseSchema.getSchemaName() != null && !baseSchema.getSchemaName().isEmpty()) {
-        pstmt.setString(paramIdx++, baseSchema.getSchemaName().toUpperCase());
-      }
-      
-      for (; paramIdx <= pstmt.getParameterMetaData().getParameterCount(); paramIdx++) {
-        pstmt.setString(paramIdx, params[paramIdx-1]);
-      }
-      
-      ResultSet rs = pstmt.executeQuery();
-      while (rs.next()) {
-        if (rs.getString(1).equals(params[params.length-1].toUpperCase())) {
-          result = true;
-          break;
-        }
-      }
-      rs.close();
+      result = checkExistanceByQuery(pstmt, baseSchema, params);
       break;
     }
     
+    return result;
+  }
+
+  private boolean checkExistanceByQuery(PreparedStatement pstmt, BaseSchema baseSchema,
+      String... params) throws SQLException {
+    int paramIdx = 1;
+    boolean result = false;
+    
+    if (baseSchema.getSchemaName() != null && !baseSchema.getSchemaName().isEmpty()) {
+      pstmt.setString(paramIdx++, baseSchema.getSchemaName().toUpperCase());
+    }
+    
+    for (; paramIdx <= pstmt.getParameterMetaData().getParameterCount(); paramIdx++) {
+      pstmt.setString(paramIdx, params[paramIdx-1]);
+    }
+    
+    ResultSet rs = pstmt.executeQuery();
+    while (rs.next()) {
+      if (rs.getString(1).equals(params[params.length-1].toUpperCase())) {
+        result = true;
+        break;
+      }
+    }
+    CatalogUtil.closeQuietly(rs);
     return result;
   }
 
@@ -291,18 +334,23 @@ public class XMLCatalogSchemaManager {
     }
   }
 
-  public boolean isInitialized(Connection conn) throws CatalogException, SQLException {
+  public boolean isInitialized(Connection conn) throws CatalogException {
     if (!isLoaded()) {
       throw new CatalogException("Database schema files are not loaded.");
     }
+    
     boolean result = true;
     
     for (DatabaseObject object: catalogStore.getSchema().getObjects()) {
-      if (DatabaseObjectType.INDEX == object.getType()) {
-        result &= checkExistance(conn, object.getType(), object.getDependsOn(), object.getName());
-      }
-      else {
-        result &= checkExistance(conn, object.getType(), object.getName());
+      try {
+        if (DatabaseObjectType.INDEX == object.getType()) {
+          result &= checkExistance(conn, object.getType(), object.getDependsOn(), object.getName());
+        }
+        else {
+          result &= checkExistance(conn, object.getType(), object.getName());
+        }
+      } catch (SQLException e) {
+        throw new CatalogException(e.getMessage(), e);
       }
       
       if (!result) {
@@ -500,10 +548,22 @@ public class XMLCatalogSchemaManager {
       }
     }
     
+    private List<DatabaseObject> createListAndFillNull(int maxIdx) {
+      DatabaseObject[] objects = new DatabaseObject[maxIdx];
+      Arrays.fill(objects, null);
+      return new ArrayList<DatabaseObject>(Arrays.asList(objects));
+    }
+    
     protected List<DatabaseObject> mergeDatabaseObjects(List<DatabaseObject> objects) {
-      final List<DatabaseObject> orderedObjects = new ArrayList<DatabaseObject>(objects.size());
-      final List<DatabaseObject> unorderedObjects = new ArrayList<DatabaseObject>(objects.size());
-      final List<DatabaseObject> mergedObjects = new ArrayList<DatabaseObject>(objects.size());
+      int maxIdx = -1;
+      
+      for (DatabaseObject object: objects) {
+        maxIdx = Math.max(maxIdx, object.getOrder());
+      }
+      
+      final List<DatabaseObject> orderedObjects = createListAndFillNull(maxIdx);
+      final List<DatabaseObject> unorderedObjects = new ArrayList<DatabaseObject>();
+      final List<DatabaseObject> mergedObjects = new ArrayList<DatabaseObject>();
       
       for (DatabaseObject object: objects) {
         if (object.getOrder() > -1) {
@@ -577,10 +637,10 @@ public class XMLCatalogSchemaManager {
       }
     }
     
-    protected void validateExistQuery(List<ExistQuery> queries, ExistQuery testQuery) {
+    protected void validateSQLObject(List<SQLObject> queries, SQLObject testQuery) {
       int occurredCount = 0;
       
-      for (ExistQuery query: queries) {
+      for (SQLObject query: queries) {
         if (query.getType() == testQuery.getType()) {
           occurredCount++;
         }
@@ -591,11 +651,19 @@ public class XMLCatalogSchemaManager {
       }
     }
     
-    protected void mergeExistQueries(List<ExistQuery> queries) {
-      for (ExistQuery query: queries) {
-        validateExistQuery(queries, query);
+    protected void mergeExistQueries(List<SQLObject> queries) {
+      for (SQLObject query: queries) {
+        validateSQLObject(queries, query);
         
-        targetStore.addQuery(query);
+        targetStore.addExistQuery(query);
+      }
+    }
+    
+    protected void mergeDropStatements(List<SQLObject> queries) {
+      for (SQLObject query: queries) {
+        validateSQLObject(queries, query);
+        
+        targetStore.addDropStatement(query);
       }
     }
     
@@ -619,7 +687,8 @@ public class XMLCatalogSchemaManager {
         }
         
         mergePatches(store.getPatches());
-        mergeExistQueries(store.getQueries());
+        mergeExistQueries(store.getExistQueries());
+        mergeDropStatements(store.getDropStatements());
       }
       
       return this.targetStore;
