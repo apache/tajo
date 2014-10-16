@@ -110,7 +110,10 @@ public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
       SortedSet<String> rightNodeRelationName =
           new TreeSet<String>(PlannerUtil.getRelationLineageWithinQueryBlock(plan, joinNode.getRightChild()));
 
-      addEdge(TUtil.collectionToString(leftNodeRelationName), TUtil.collectionToString(rightNodeRelationName), edge);
+      addEdge(
+          TUtil.collectionToString(leftNodeRelationName, ", "),
+          TUtil.collectionToString(rightNodeRelationName, ", "),
+          edge);
 
       Set<EvalNode> allInOneCnf = new HashSet<EvalNode>();
       allInOneCnf.add(joinNode.getJoinQual());

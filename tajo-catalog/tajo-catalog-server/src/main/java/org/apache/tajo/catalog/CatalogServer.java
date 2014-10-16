@@ -20,6 +20,7 @@ package org.apache.tajo.catalog;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
@@ -94,7 +95,7 @@ public class CatalogServer extends AbstractService {
   private static BoolProto BOOL_FALSE = BoolProto.newBuilder().
       setValue(false).build();
 
-  private List<FunctionDesc> builtingFuncs;
+  private Collection<FunctionDesc> builtingFuncs;
 
   public CatalogServer() throws IOException {
     super(CatalogServer.class.getName());
@@ -102,7 +103,7 @@ public class CatalogServer extends AbstractService {
     this.builtingFuncs = new ArrayList<FunctionDesc>();
   }
 
-  public CatalogServer(List<FunctionDesc> sqlFuncs) throws IOException {
+  public CatalogServer(Collection<FunctionDesc> sqlFuncs) throws IOException {
     this();
     this.builtingFuncs = sqlFuncs;
   }
@@ -162,7 +163,7 @@ public class CatalogServer extends AbstractService {
         + catalogUri;
   }
 
-  private void initBuiltinFunctions(List<FunctionDesc> functions)
+  private void initBuiltinFunctions(Collection<FunctionDesc> functions)
       throws ServiceException {
     for (FunctionDesc desc : functions) {
       handler.createFunction(null, desc.getProto());
@@ -847,10 +848,13 @@ public class CatalogServer extends AbstractService {
     }
 
     private FunctionDescProto findFunction(String signature, List<TajoDataTypes.DataType> params) {
+      List<FunctionDescProto> candidates = Lists.newArrayList();
+
       if (functions.containsKey(signature)) {
-        for (FunctionDescProto existing : functions.get(signature)) {
-          if (existing.getParameterTypesList() != null && existing.getParameterTypesList().equals(params)) {
-            return existing;
+        for (FunctionDescProto func : functions.get(signature)) {
+          if (func.getSignature().getParameterTypesList() != null &&
+              func.getSignature().getParameterTypesList().equals(params)) {
+            candidates.add(func);
           }
         }
       }
@@ -865,39 +869,88 @@ public class CatalogServer extends AbstractService {
        *
        * */
       if (functions.containsKey(signature)) {
-        for (FunctionDescProto existing : functions.get(signature)) {
-          if (existing.getParameterTypesList() != null &&
-              CatalogUtil.isMatchedFunction(existing.getParameterTypesList(), params)) {
-            return existing;
+        for (FunctionDescProto func : functions.get(signature)) {
+          if (func.getSignature().getParameterTypesList() != null &&
+              CatalogUtil.isMatchedFunction(func.getSignature().getParameterTypesList(), params)) {
+            candidates.add(func);
           }
         }
+
+        // if there are more than one function candidates, we choose the nearest matched function.
+        if (candidates.size() > 0) {
+          return findNearestMatchedFunction(candidates);
+        } else {
+          return null;
+        }
       }
+
       return null;
     }
 
     private FunctionDescProto findFunction(String signature, FunctionType type, List<TajoDataTypes.DataType> params,
                                            boolean strictTypeCheck) {
+      List<FunctionDescProto> candidates = Lists.newArrayList();
+
       if (functions.containsKey(signature)) {
         if (strictTypeCheck) {
-          for (FunctionDescProto existing : functions.get(signature)) {
-            if (existing.getType() == type && existing.getParameterTypesList().equals(params)) {
-              return existing;
+          for (FunctionDescProto func : functions.get(signature)) {
+            if (func.getSignature().getType() == type &&
+                func.getSignature().getParameterTypesList().equals(params)) {
+              candidates.add(func);
             }
           }
         } else {
-          for (FunctionDescProto existing : functions.get(signature)) {
-            if (existing.getParameterTypesList() != null &&
-                CatalogUtil.isMatchedFunction(existing.getParameterTypesList(), params)) {
-              return existing;
+          for (FunctionDescProto func : functions.get(signature)) {
+            if (func.getSignature().getParameterTypesList() != null &&
+                CatalogUtil.isMatchedFunction(func.getSignature().getParameterTypesList(), params)) {
+              candidates.add(func);
             }
           }
         }
       }
-      return null;
+
+      // if there are more than one function candidates, we choose the nearest matched function.
+      if (candidates.size() > 0) {
+        return findNearestMatchedFunction(candidates);
+      } else {
+        return null;
+      }
+    }
+
+    /**
+     * Find the nearest matched function
+     *
+     * @param candidates Candidate Functions
+     * @return
+     */
+    private FunctionDescProto findNearestMatchedFunction(List<FunctionDescProto> candidates) {
+      Collections.sort(candidates, new NearestParamsComparator());
+      return candidates.get(0);
+    }
+
+    private class NearestParamsComparator implements Comparator<FunctionDescProto> {
+      @Override
+      public int compare(FunctionDescProto o1, FunctionDescProto o2) {
+        List<DataType> types1 = o1.getSignature().getParameterTypesList();
+        List<DataType> types2 = o2.getSignature().getParameterTypesList();
+
+        int minLen = Math.min(types1.size(), types2.size());
+
+        for (int i = 0; i < minLen; i++) {
+          int cmpVal = types1.get(i).getType().getNumber() - types2.get(i).getType().getNumber();
+
+          if (cmpVal != 0) {
+            return cmpVal;
+          }
+        }
+
+        return types1.size() - types2.size();
+      }
     }
 
     private FunctionDescProto findFunctionStrictType(FunctionDescProto target, boolean strictTypeCheck) {
-      return findFunction(target.getSignature(), target.getType(), target.getParameterTypesList(), strictTypeCheck);
+      return findFunction(target.getSignature().getName(), target.getSignature().getType(),
+          target.getSignature().getParameterTypesList(), strictTypeCheck);
     }
 
     @Override
@@ -912,7 +965,7 @@ public class CatalogServer extends AbstractService {
         }
       }
 
-      TUtil.putToNestedList(functions, funcDesc.getSignature(), funcDesc);
+      TUtil.putToNestedList(functions, funcDesc.getSignature().getName(), funcDesc);
       if (LOG.isDebugEnabled()) {
         LOG.info("Function " + signature + " is registered.");
       }
@@ -979,7 +1032,8 @@ public class CatalogServer extends AbstractService {
     }
 
     public static FunctionSignature create(FunctionDescProto proto) {
-      return new FunctionSignature(proto.getSignature(), proto.getType(), proto.getParameterTypesList());
+      return new FunctionSignature(proto.getSignature().getName(),
+          proto.getSignature().getType(), proto.getSignature().getParameterTypesList());
     }
 
     public static FunctionSignature create (GetFunctionMetaRequest proto) {

@@ -1,4 +1,4 @@
-/**
+/***
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,31 +16,31 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.function.builtin;
+package org.apache.tajo.engine.function.math;
 
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.engine.function.FunctionContext;
-import org.apache.tajo.engine.function.annotation.Description;
-import org.apache.tajo.engine.function.annotation.ParamTypes;
-import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.function.FunctionCollection;
+import org.apache.tajo.function.ScalarFunction;
 
-@Description(
-  functionName = "avg",
-  description = "the mean of a set of numbers.",
-  example = "> SELECT avg(expr);",
-  returnType = TajoDataTypes.Type.FLOAT8,
-  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.INT4})}
-)
-public class AvgInt extends AvgLong {
+import static org.apache.tajo.common.TajoDataTypes.Type.FLOAT8;
 
-  public AvgInt() {
-    super();
+@FunctionCollection
+public class MathFunctions {
+
+  @ScalarFunction(name = "pi", returnType = FLOAT8)
+  public static double pi() {
+    return Math.PI;
   }
 
-  @Override
-  public void eval(FunctionContext ctx, Tuple params) {
-    AvgContext avgCtx = (AvgContext) ctx;
-    avgCtx.sum += params.get(0).asInt4();
-    avgCtx.count++;
+  @ScalarFunction(name = "pow", returnType = FLOAT8, paramTypes = {FLOAT8, FLOAT8})
+  public static Double pow(Double x, Double y) {
+    if (x == null || y == null) {
+      return null;
+    }
+    return Math.pow(x, y);
   }
+
+//  @ScalarFunction(name = "pow", returnType = FLOAT8, paramTypes = {FLOAT8, FLOAT8})
+//  public static double pow(double x, double y) {
+//    return Math.pow(x, y);
+//  }
 }

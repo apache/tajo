@@ -585,7 +585,7 @@ public class TestTajoClient {
     String functionName = "sum";
     int numFunctions = 0;
     for(FunctionDesc eachFunction: catalogFunctions) {
-      if(functionName.equals(eachFunction.getSignature())) {
+      if(functionName.equals(eachFunction.getFunctionName())) {
         numFunctions++;
       }
     }

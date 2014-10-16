@@ -27,7 +27,7 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.engine.utils.DataTypeUtil;
+import org.apache.tajo.DataTypeUtil;
 
 import java.util.Stack;
 
@@ -115,7 +115,7 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
     for (CaseWhenPredicate.WhenExpr when : caseWhen.getWhens()) {
       DataType resultType = visit(ctx, stack, when.getResult());
       if (lastDataType != null) {
-        lastDataType = ExprAnnotator.getWidestType(lastDataType, resultType);
+        lastDataType = CatalogUtil.getWidestType(lastDataType, resultType);
       } else {
         lastDataType = resultType;
       }
@@ -123,7 +123,7 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
 
     if (caseWhen.hasElseResult()) {
       DataType elseResultType = visit(ctx, stack, caseWhen.getElseResult());
-      lastDataType = ExprAnnotator.getWidestType(lastDataType, elseResultType);
+      lastDataType = CatalogUtil.getWidestType(lastDataType, elseResultType);
     }
 
     return lastDataType;
