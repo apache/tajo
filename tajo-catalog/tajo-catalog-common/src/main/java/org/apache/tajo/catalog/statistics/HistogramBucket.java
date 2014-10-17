@@ -22,46 +22,54 @@ import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.HistogramBucketProto;
 import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.util.TUtil;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
+import com.google.protobuf.ByteString;
 
 public class HistogramBucket implements ProtoObject<CatalogProtos.HistogramBucketProto>, Cloneable, GsonObject {
   
-  @Expose private Double min = null; // required
-  @Expose private Double max = null; // required
-  @Expose private Long frequency = null; // required
+  @Expose private Datum min = null; // required
+  @Expose private Datum max = null; // required
+  @Expose private Long frequency = null; // required 
 
-  public HistogramBucket(double min, double max) {
+  public HistogramBucket(Datum min, Datum max) {
     this.min = min;
     this.max = max;
     this.frequency = 0l;
   }
   
-  public HistogramBucket(double min, double max, long frequency) {
-    this.min = min;
-    this.max = max;
+  public HistogramBucket(Datum min, Datum max, long frequency) {
+    this(min, max);
     this.frequency = frequency;
   }
 
-  public HistogramBucket(CatalogProtos.HistogramBucketProto proto) {
+  public HistogramBucket(CatalogProtos.HistogramBucketProto proto, Type dataType) {
+    DataType.Builder typeBuilder = DataType.newBuilder();
+    typeBuilder.setType(dataType);
+    
     if (proto.hasMin()) {
-      this.min = proto.getMin();
+      this.min = DatumFactory.createFromBytes(typeBuilder.build(), proto.getMin().toByteArray());
     }
     if (proto.hasMax()) {
-      this.max = proto.getMax();
+      this.max = DatumFactory.createFromBytes(typeBuilder.build(), proto.getMax().toByteArray());
     }
     if (proto.hasFrequency()) {
       this.frequency = proto.getFrequency();
     }
   }
 
-  public Double getMin() {
+  public Datum getMin() {
     return this.min;
   }
 
-  public Double getMax() {
+  public Datum getMax() {
     return this.max;
   }
 
@@ -69,11 +77,11 @@ public class HistogramBucket implements ProtoObject<CatalogProtos.HistogramBucke
     return this.frequency;
   }
 
-  public void setMin(Double minVal) {
+  public void setMin(Datum minVal) {
     this.min = minVal;
   }
   
-  public void setMax(Double maxVal) {
+  public void setMax(Datum maxVal) {
     this.max = maxVal;
   }
   
@@ -88,8 +96,8 @@ public class HistogramBucket implements ProtoObject<CatalogProtos.HistogramBucke
   public boolean equals(Object obj) {
     if (obj instanceof HistogramBucket) {
       HistogramBucket other = (HistogramBucket) obj;
-      return getMin().equals(other.getMin())
-          && getMax().equals(other.getMax())
+      return TUtil.checkEquals(getMin(), other.getMin())
+          && TUtil.checkEquals(getMax(), other.getMax())
           && getFrequency().equals(other.getFrequency());
     } else {
       return false;
@@ -123,10 +131,10 @@ public class HistogramBucket implements ProtoObject<CatalogProtos.HistogramBucke
   public HistogramBucketProto getProto() {
     CatalogProtos.HistogramBucketProto.Builder builder = CatalogProtos.HistogramBucketProto.newBuilder();
     if (this.min != null) {
-      builder.setMin(this.min);
+      builder.setMin(ByteString.copyFrom(this.min.asByteArray()));
     }
     if (this.max != null) {
-      builder.setMax(this.max);
+      builder.setMax(ByteString.copyFrom(this.max.asByteArray()));
     }
     if (this.frequency != null) {
       builder.setFrequency(this.frequency);

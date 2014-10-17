@@ -23,14 +23,16 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.tajo.catalog.proto.CatalogProtos.HistogramProto;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.datum.Datum;
 import org.apache.tajo.util.TUtil;
 
 import com.google.common.annotations.VisibleForTesting;
 
 public class EquiDepthHistogram extends Histogram {
 
-  public EquiDepthHistogram() {
-    super();
+  public EquiDepthHistogram(Type dataType) {
+    super(dataType);
   }
 
   public EquiDepthHistogram(HistogramProto proto) {
@@ -38,7 +40,7 @@ public class EquiDepthHistogram extends Histogram {
   }
 
   @Override
-  public boolean construct(List<Double> samples) {
+  public boolean construct(List<Datum> samples) {
     int numBuckets = samples.size() > DEFAULT_MAX_BUCKETS ? DEFAULT_MAX_BUCKETS : samples.size();
     return construct(samples, numBuckets);
   }
@@ -51,17 +53,17 @@ public class EquiDepthHistogram extends Histogram {
    * directly only in the unit tests. In non-test cases, the construct(samples) version above should be used.
    */
   @VisibleForTesting
-  public boolean construct(List<Double> srcSamples, int numBuckets) {
+  public boolean construct(List<Datum> srcSamples, int numBuckets) {
     isReady = false;
     buckets = TUtil.newList();
 
-    ArrayList<Double> samples = new ArrayList<Double>(srcSamples); // sorted samples
+    ArrayList<Datum> samples = new ArrayList<Datum>(srcSamples); // sorted samples
     Collections.sort(samples);
 
     int averageFrequency = Math.round((float) samples.size() / numBuckets);
     int bFrequency;
     int bMinIndex = 0, bMaxIndex;
-    Double bMin, bMax;
+    Datum bMin, bMax;
 
     for (int i = 0; i < numBuckets && bMinIndex < samples.size(); i++) {
       bMin = samples.get(bMinIndex);

@@ -22,14 +22,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.tajo.catalog.proto.CatalogProtos.HistogramProto;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.datum.Datum;
 import org.apache.tajo.util.TUtil;
 
 import com.google.common.annotations.VisibleForTesting;
 
 public class EquiWidthHistogram extends Histogram {
 
-  public EquiWidthHistogram() {
-    super();
+  public EquiWidthHistogram(Type dataType) {
+    super(dataType);
   }
 
   public EquiWidthHistogram(HistogramProto proto) {
@@ -37,7 +39,7 @@ public class EquiWidthHistogram extends Histogram {
   }
 
   @Override
-  public boolean construct(List<Double> samples) {
+  public boolean construct(List<Datum> samples) {
     int numBuckets = samples.size() > DEFAULT_MAX_BUCKETS ? DEFAULT_MAX_BUCKETS : samples.size();
     return construct(samples, numBuckets);
   }
@@ -51,34 +53,34 @@ public class EquiWidthHistogram extends Histogram {
    * directly only in the unit tests. In non-test cases, the construct(samples) version above should be used.
    */
   @VisibleForTesting
-  public boolean construct(List<Double> samples, int numBuckets) {
+  public boolean construct(List<Datum> samples, int numBuckets) {
     isReady = false;
     buckets = TUtil.newList();
-    Double globalMin = Double.MAX_VALUE;
-    Double globalMax = -Double.MAX_VALUE;
-    List<Double> bMinValues = new ArrayList<Double>(numBuckets);
-    List<Double> bMaxValues = new ArrayList<Double>(numBuckets);
+    Datum globalMin = Datum.getRangeMax(this.dataType);
+    Datum globalMax = Datum.getRangeMin(this.dataType);
+    List<Datum> bMinValues = new ArrayList<Datum>(numBuckets);
+    List<Datum> bMaxValues = new ArrayList<Datum>(numBuckets);
     List<Long> bFrequencies = new ArrayList<Long>(numBuckets);
 
-    for (Double p : samples) {
-      if (p < globalMin) globalMin = p;
-      if (p > globalMax) globalMax = p;
+    for (Datum p : samples) {
+      if (p.lessThan(globalMin).asBool() == true) globalMin = p;
+      if (p.greaterThan(globalMax).asBool() == true) globalMax = p;
     }
-    double bWidth = (globalMax - globalMin) / numBuckets;
+    double bWidth = (globalMax.asFloat8() - globalMin.asFloat8()) / numBuckets;
 
     for (int i = 0; i < numBuckets; i++) {
-      bMinValues.add(Double.MAX_VALUE);
-      bMaxValues.add(-Double.MAX_VALUE);
+      bMinValues.add(Datum.getRangeMax(this.dataType));
+      bMaxValues.add(Datum.getRangeMin(this.dataType));
       bFrequencies.add(0l);
     }
 
-    for (Double p : samples) {
-      int bIndex = (int) Math.round(Math.floor((p - globalMin) / bWidth));
+    for (Datum p : samples) {
+      int bIndex = (int) Math.round(Math.floor((p.asFloat8() - globalMin.asFloat8()) / bWidth));
       if (bIndex > numBuckets - 1) bIndex = numBuckets - 1;
       bFrequencies.set(bIndex, bFrequencies.get(bIndex) + 1);
 
-      if (p < bMinValues.get(bIndex)) bMinValues.set(bIndex, p);
-      if (p > bMaxValues.get(bIndex)) bMaxValues.set(bIndex, p);
+      if (p.lessThan(bMinValues.get(bIndex)).asBool() == true) bMinValues.set(bIndex, p);
+      if (p.greaterThan(bMaxValues.get(bIndex)).asBool() == true) bMaxValues.set(bIndex, p);
     }
 
     for (int i = 0; i < numBuckets; i++) {

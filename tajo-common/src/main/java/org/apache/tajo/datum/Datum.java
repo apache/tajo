@@ -19,6 +19,7 @@
 package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
+
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.exception.InvalidCastException;
@@ -267,6 +268,40 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
       }
     } else {
       return true;
+    }
+  }
+  
+  public static Datum getRangeMax(Type type) {
+    switch (type) {
+    case INT2:
+      return DatumFactory.createInt2(Short.MAX_VALUE);
+    case INT4:
+      return DatumFactory.createInt4(Integer.MAX_VALUE);
+    case INT8:
+      return DatumFactory.createInt8(Long.MAX_VALUE);
+    case FLOAT4:
+      return DatumFactory.createFloat4(Float.MAX_VALUE);
+    case FLOAT8:
+      return DatumFactory.createFloat8(Double.MAX_VALUE);
+    default:
+      throw new InvalidOperationException(type);
+    }
+  }
+  
+  public static Datum getRangeMin(Type type) {
+    switch (type) {
+    case INT2:
+      return DatumFactory.createInt2(Short.MIN_VALUE);
+    case INT4:
+      return DatumFactory.createInt4(Integer.MIN_VALUE);
+    case INT8:
+      return DatumFactory.createInt8(Long.MIN_VALUE);
+    case FLOAT4:
+      return DatumFactory.createFloat4(-Float.MAX_VALUE);
+    case FLOAT8:
+      return DatumFactory.createFloat8(-Double.MAX_VALUE);
+    default:
+      throw new InvalidOperationException(type);
     }
   }
 }

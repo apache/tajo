@@ -24,6 +24,9 @@ import java.util.List;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.TUtil;
 
@@ -36,22 +39,31 @@ public class Histogram implements ProtoObject<CatalogProtos.HistogramProto>, Clo
   protected Long lastAnalyzed = null; // optional, store the last time point that this histogram is constructed,
 				      // will be used together with the "last-updated time" of the column data
 				      // to decide whether this histogram needs to be reconstructed or not
+  @Expose protected Type dataType = null; // required
   @Expose protected List<HistogramBucket> buckets = null; // repeated
   @Expose protected boolean isReady; // whether this histogram is ready to be used for selectivity estimation
-  protected int DEFAULT_MAX_BUCKETS = 100; // Same as PostgreSQL
+  protected int DEFAULT_MAX_BUCKETS = 100; // same as PostgreSQL
 
-  public Histogram() {
-    buckets = TUtil.newList();
-    isReady = false;
+  public Histogram(Type dataType) {
+    if (dataType != Type.INT2 && dataType != Type.INT4 && dataType != Type.INT8 && dataType != Type.FLOAT4
+	&& dataType != Type.FLOAT8) {
+      throw new UnsupportedException();
+    }
+    this.dataType = dataType;
+    this.buckets = TUtil.newList();
+    this.isReady = false;
   }
   
   public Histogram(CatalogProtos.HistogramProto proto) {
+    if (proto.hasDataType()) {
+      this.dataType = proto.getDataType();
+    }
     if (proto.hasLastAnalyzed()) {
       this.lastAnalyzed = proto.getLastAnalyzed();
-    }    
+    }
     buckets = TUtil.newList();
     for (CatalogProtos.HistogramBucketProto bucketProto : proto.getBucketsList()) {
-      this.buckets.add(new HistogramBucket(bucketProto));
+      this.buckets.add(new HistogramBucket(bucketProto, dataType));
     }
     isReady = true;
   }
@@ -62,6 +74,14 @@ public class Histogram implements ProtoObject<CatalogProtos.HistogramProto>, Clo
   
   public void setLastAnalyzed(Long lastAnalyzed) {
     this.lastAnalyzed = lastAnalyzed;
+  }
+  
+  public Type getDataType() {
+    return this.dataType;
+  }
+  
+  public void setDataType(Type dataType) {
+    this.dataType = dataType;
   }
   
   public List<HistogramBucket> getBuckets() {
@@ -92,6 +112,7 @@ public class Histogram implements ProtoObject<CatalogProtos.HistogramProto>, Clo
     if (obj instanceof Histogram) {
       Histogram other = (Histogram) obj;
       return getLastAnalyzed().equals(other.getLastAnalyzed())
+	  && TUtil.checkEquals(getDataType(), other.getDataType())
           && TUtil.checkEquals(this.buckets, other.buckets);
     } else {
       return false;
@@ -105,6 +126,7 @@ public class Histogram implements ProtoObject<CatalogProtos.HistogramProto>, Clo
   public Histogram clone() throws CloneNotSupportedException {
     Histogram hist = (Histogram) super.clone();
     hist.lastAnalyzed = this.lastAnalyzed;
+    hist.dataType = this.dataType;
     hist.buckets = new ArrayList<HistogramBucket>(this.buckets);
     hist.isReady = this.isReady;
     return hist;
@@ -126,6 +148,9 @@ public class Histogram implements ProtoObject<CatalogProtos.HistogramProto>, Clo
     if (this.lastAnalyzed != null) {
       builder.setLastAnalyzed(this.lastAnalyzed);
     }
+    if (this.dataType != null) {
+      builder.setDataType(this.dataType);
+    }
     if (this.buckets != null) {
       for (HistogramBucket bucket : buckets) {
         builder.addBuckets(bucket.getProto());
@@ -144,7 +169,7 @@ public class Histogram implements ProtoObject<CatalogProtos.HistogramProto>, Clo
    *          should never appear in it.
    * @return Return true if the computation is done without any problem. Otherwise, return false
    */
-  public boolean construct(List<Double> samples) {
+  public boolean construct(List<Datum> samples) {
     // When overridden in sub-classes, remember to update lastAnalyzed and isReady before returning
     return false;
   }
@@ -152,10 +177,10 @@ public class Histogram implements ProtoObject<CatalogProtos.HistogramProto>, Clo
   /**
    * Estimate the selectivity. "from" must be less than or equal to "to". For example, in the query
    * "SELECT * from Employee WHERE age >= 20 and age <= 30", "from" is 20 and "to" is 30. If "from" is not specified in
-   * the predicate, (-Double.MAX_VALUE) should be used. Similarly, if "to" is not specified in the predicate,
-   * Double.MAX_VALUE should be used. "from" and "to" are inclusive, which means that an epsilon value should be added
-   * to "from", or subtracted from "to", if the comparison in the predicate is exclusive. For example, if the selection
-   * condition in the above query is "age > 20", "from" should be 20 + E where E is any number that satisfies
+   * the predicate, the minimum possible value should be used. Similarly, if "to" is not specified in the predicate, the
+   * maximum possible value should be used. "from" and "to" are inclusive, which means that an epsilon value should be
+   * added to "from", or subtracted from "to", if the comparison in the predicate is exclusive. For example, if the
+   * selection condition in the above query is "age > 20", "from" should be 20 + E where E is any number that satisfies
    * "0 < E < 1".
    * 
    * @param from
@@ -164,8 +189,8 @@ public class Histogram implements ProtoObject<CatalogProtos.HistogramProto>, Clo
    *          The inclusive upper bound
    * @return The selectivity in range [0..1]. If the histogram is not ready (i.e., being constructed), return -1
    */
-  public double estimateSelectivity(Double from, Double to) {
-    if(from > to) return 0;
+  public double estimateSelectivity(Datum from, Datum to) {
+    if(from.greaterThan(to).asBool() == true) return 0;
     if(!isReady) return -1;
     Double freq = estimateFrequency(from, to);
     Double totalFreq = 0.0;
@@ -175,19 +200,7 @@ public class Histogram implements ProtoObject<CatalogProtos.HistogramProto>, Clo
     double selectivity = freq / totalFreq;
     return selectivity;
   }
-  
-  public double estimateSelectivity(Float from, Float to) {
-    return estimateSelectivity(from.doubleValue(), to.doubleValue());
-  }
-  
-  public double estimateSelectivity(Long from, Long to) {
-    return estimateSelectivity(from.doubleValue(), to.doubleValue());
-  }
-  
-  public double estimateSelectivity(Integer from, Integer to) {
-    return estimateSelectivity(from.doubleValue(), to.doubleValue());
-  }
-  
+
   /**
    * Based on the histogram's buckets, estimate the number of rows whose values (of the corresponding column) are
    * between "from" and "to".
@@ -196,7 +209,7 @@ public class Histogram implements ProtoObject<CatalogProtos.HistogramProto>, Clo
    * @param to
    * @return 
    */
-  private Double estimateFrequency(Double from, Double to) {
+  private Double estimateFrequency(Datum from, Datum to) {
     Double estimate = 0.0;
     for(HistogramBucket bucket : buckets) {
       estimate += estimateFrequency(bucket, from, to);
@@ -204,32 +217,32 @@ public class Histogram implements ProtoObject<CatalogProtos.HistogramProto>, Clo
     return estimate;
   }
   
-  private Double estimateFrequency(HistogramBucket bucket, Double from, Double to) {
-    Double min = bucket.getMin();
-    Double max = bucket.getMax();
-    Double width = max - min;
+  private Double estimateFrequency(HistogramBucket bucket, Datum from, Datum to) {
+    Datum min = bucket.getMin();
+    Datum max = bucket.getMax();
+    Double width = max.asFloat8() - min.asFloat8();
     Double overlap = 0.0;
     
-    if (min < max) {
-      if (from < min) {
-	if (to < min) {
+    if (min.lessThan(max).asBool() == true) {
+      if (from.lessThan(min).asBool() == true) {
+	if (to.lessThan(min).asBool() == true) {
 	  overlap = 0.0;
-	} else if (to >= min && to <= max) {
-	  overlap = (to - min) / width;
+	} else if (to.greaterThanEqual(min).asBool() == true && to.lessThanEqual(max).asBool() == true) {
+	  overlap = (to.asFloat8() - min.asFloat8()) / width;
 	} else {
 	  overlap = 1.0;
 	}
-      } else if (from >= min && from <= max) {
-	if (to <= max) {
-	  overlap = (to - from) / width;
+      } else if (from.greaterThanEqual(min).asBool() == true && from.lessThanEqual(max).asBool() == true) {
+	if (to.lessThanEqual(max).asBool() == true) {
+	  overlap = (to.asFloat8() - from.asFloat8()) / width;
 	} else {
-	  overlap = (max - from) / width;
+	  overlap = (max.asFloat8() - from.asFloat8()) / width;
 	}
       } else {
 	overlap = 0.0;
       }
     } else { // min == max
-      if(min >= from && min <= to) {
+      if(min.greaterThanEqual(from).asBool() == true && min.lessThanEqual(to).asBool() == true) {
 	overlap = 1.0;
       } else {
 	overlap = 0.0;

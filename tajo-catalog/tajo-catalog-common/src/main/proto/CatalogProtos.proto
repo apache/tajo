@@ -210,12 +210,13 @@ message ColumnStatsProto {
 
 message HistogramProto {
   optional int64 lastAnalyzed = 1;
-  repeated HistogramBucketProto buckets = 2;
+  required Type dataType = 2;
+  repeated HistogramBucketProto buckets = 3;
 }
 
 message HistogramBucketProto {
-  required double min = 1;
-  required double max = 2;
+  required bytes min = 1;
+  required bytes max = 2;
   required uint64 frequency = 3;
 }
 
