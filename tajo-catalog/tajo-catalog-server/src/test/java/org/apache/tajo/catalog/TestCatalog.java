@@ -23,6 +23,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
+import org.apache.tajo.catalog.store.PostgreSQLStore;
 import org.apache.tajo.function.Function;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -86,8 +87,8 @@ public class TestCatalog {
     conf.set(CATALOG_URI, catalogURI);
     conf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS, "127.0.0.1:0");
 
-    // MySQLStore/MariaDB requires password
-    if (driverClass.equals(MySQLStore.class.getCanonicalName()) || driverClass.equals(MariaDBStore.class.getCanonicalName())) {
+    // MySQLStore/MariaDB/PostgreSQL requires username (and password).
+    if (isConnectionIdRequired(driverClass)) {
       if (connectionId == null) {
         throw new CatalogException(String.format("%s driver requires %s", driverClass, CatalogConstants.CONNECTION_ID));
       }
@@ -114,6 +115,12 @@ public class TestCatalog {
       catalog.dropTable(table);
     }
 	}
+
+  public static boolean isConnectionIdRequired(String driverClass) {
+    return driverClass.equals(MySQLStore.class.getCanonicalName()) ||
+           driverClass.equals(MariaDBStore.class.getCanonicalName()) ||
+           driverClass.equals(PostgreSQLStore.class.getCanonicalName());
+  }
 	
 	@AfterClass
 	public static void tearDown() throws IOException {
