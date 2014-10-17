@@ -377,4 +377,4 @@ public class OracleStore extends AbstractDBStore {
   public String readSchemaFile(String path) throws CatalogException {
     return super.readSchemaFile("oracle/" + path);
   }
-
+}
