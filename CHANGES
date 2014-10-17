@@ -5,6 +5,7 @@ Release 0.9.1 - unreleased
 
   NEW FEATURES
 
+    TAJO-233: Support PostgreSQL CatalogStore. (Jihun Kang via hyunsik)
 
   IMPROVEMENT
 
