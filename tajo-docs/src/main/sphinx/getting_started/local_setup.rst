@@ -23,3 +23,9 @@ To launch the tajo master, execute start-tajo.sh.
 .. note::
 
   If you want to how to setup a fully distributed mode of Tajo, please see :doc:`/configuration/cluster_setup`.
+
+.. warning::
+
+  By default, *Catalog server* which manages table meta data uses `Apache Derby <http://db.apache.org/derby/>`_ as a persistent storage, and Derby stores data into ``/tmp/tajo-catalog-${username}`` directory. But, some operating systems may remove all contents in ``/tmp`` when booting up. In order to ensure persistent store of your catalog data, you need to set a proper location of derby directory. To learn Catalog configuration, please refer to :doc:`/configuration/catalog_configuration`.
+
+

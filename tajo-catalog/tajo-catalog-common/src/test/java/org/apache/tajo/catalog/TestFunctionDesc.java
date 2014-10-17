@@ -18,7 +18,7 @@
 
 package org.apache.tajo.catalog;
 
-import org.apache.tajo.catalog.function.Function;
+import org.apache.tajo.function.Function;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionDescProto;
@@ -67,7 +67,7 @@ public class TestFunctionDesc {
     desc.setExample("example");
     desc.setDetail("detail");
 
-    assertEquals("sum", desc.getSignature());
+    assertEquals("sum", desc.getFunctionName());
     assertEquals(TestSum.class, desc.getFuncClass());
     assertEquals(FunctionType.GENERAL, desc.getFuncType());
     assertEquals(Type.INT4, desc.getReturnType().getType());
@@ -83,7 +83,7 @@ public class TestFunctionDesc {
 
     FunctionDesc newDesc = new FunctionDesc(proto);
 
-    assertEquals("sum", newDesc.getSignature());
+    assertEquals("sum", newDesc.getFunctionName());
     assertEquals(TestSum.class, newDesc.getFuncClass());
     assertEquals(FunctionType.GENERAL, newDesc.getFuncType());
     assertEquals(Type.INT4, newDesc.getReturnType().getType());

@@ -23,6 +23,7 @@ import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
+import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.TUtil;
 
@@ -79,7 +80,10 @@ public class DescTableCommand extends TajoShellCommand {
     sb.append("table path: ").append(desc.getPath()).append("\n");
     sb.append("store type: ").append(desc.getMeta().getStoreType()).append("\n");
     if (desc.getStats() != null) {
-      sb.append("number of rows: ").append(desc.getStats().getNumRows()).append("\n");
+
+      long row = desc.getStats().getNumRows();
+      String rowText = row == TajoClient.UNKNOWN_ROW_NUMBER ? "unknown" : row + "";
+      sb.append("number of rows: ").append(rowText).append("\n");
       sb.append("volume: ").append(
           FileUtil.humanReadableByteCount(desc.getStats().getNumBytes(),
               true)).append("\n");

@@ -1,0 +1,2 @@
+float8 pi()
+float8 pow(float8,float8)

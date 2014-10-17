@@ -644,14 +644,14 @@ public class TajoPullServerService extends AbstractService {
         spill = new RandomAccessFile(file.getFile(), "r");
         if (ch.getPipeline().get(SslHandler.class) == null) {
           final FadvisedFileRegion filePart = new FadvisedFileRegion(spill,
-              file.startOffset, file.length(), manageOsCache, readaheadLength,
+              file.startOffset(), file.length(), manageOsCache, readaheadLength,
               readaheadPool, file.getFile().getAbsolutePath());
           writeFuture = ch.write(filePart);
           writeFuture.addListener(new FileCloseListener(filePart, requestUri, startTime, TajoPullServerService.this));
         } else {
           // HTTPS cannot be done with zero copy.
           final FadvisedChunkedFile chunk = new FadvisedChunkedFile(spill,
-              file.startOffset, file.length, sslFileBufferSize,
+              file.startOffset(), file.length(), sslFileBufferSize,
               manageOsCache, readaheadLength, readaheadPool,
               file.getFile().getAbsolutePath());
           writeFuture = ch.write(chunk);
@@ -667,7 +667,7 @@ public class TajoPullServerService extends AbstractService {
         return null;
       }
       metrics.shuffleConnections.incr();
-      metrics.shuffleOutputBytes.incr(file.length); // optimistic
+      metrics.shuffleOutputBytes.incr(file.length()); // optimistic
       return writeFuture;
     }
 
@@ -698,7 +698,7 @@ public class TajoPullServerService extends AbstractService {
     }
   }
 
-  public FileChunk getFileCunks(Path outDir,
+  public static FileChunk getFileCunks(Path outDir,
                                       String startKey,
                                       String endKey,
                                       boolean last) throws IOException {

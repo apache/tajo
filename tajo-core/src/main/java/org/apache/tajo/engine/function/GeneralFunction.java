@@ -19,7 +19,7 @@
 package org.apache.tajo.engine.function;
 
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.function.Function;
+import org.apache.tajo.function.Function;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.datum.Datum;
@@ -27,6 +27,7 @@ import org.apache.tajo.engine.eval.FunctionEval;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.storage.Tuple;
 
+@Deprecated
 public abstract class GeneralFunction extends Function implements GsonObject {
   public GeneralFunction(Column[] definedArgs) {
     super(definedArgs);

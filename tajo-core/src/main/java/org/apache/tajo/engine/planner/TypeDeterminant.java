@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner;
 
+import com.google.common.base.Preconditions;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -26,7 +27,7 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.engine.utils.DataTypeUtil;
+import org.apache.tajo.DataTypeUtil;
 
 import java.util.Stack;
 
@@ -77,6 +78,10 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
   }
 
   public DataType computeBinaryType(OpType type, DataType lhsDataType, DataType rhsDataType) throws PlanningException {
+    Preconditions.checkNotNull(type);
+    Preconditions.checkNotNull(lhsDataType);
+    Preconditions.checkNotNull(rhsDataType);
+
     if(OpType.isLogicalType(type) || OpType.isComparisonType(type)) {
       return BOOL_TYPE;
     } else if (OpType.isArithmeticType(type)) {
@@ -110,7 +115,7 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
     for (CaseWhenPredicate.WhenExpr when : caseWhen.getWhens()) {
       DataType resultType = visit(ctx, stack, when.getResult());
       if (lastDataType != null) {
-        lastDataType = ExprAnnotator.getWidestType(lastDataType, resultType);
+        lastDataType = CatalogUtil.getWidestType(lastDataType, resultType);
       } else {
         lastDataType = resultType;
       }
@@ -118,7 +123,7 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
 
     if (caseWhen.hasElseResult()) {
       DataType elseResultType = visit(ctx, stack, caseWhen.getElseResult());
-      lastDataType = ExprAnnotator.getWidestType(lastDataType, elseResultType);
+      lastDataType = CatalogUtil.getWidestType(lastDataType, elseResultType);
     }
 
     return lastDataType;
@@ -300,5 +305,17 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
   public DataType visitTimeLiteral(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, TimeLiteral expr)
       throws PlanningException {
     return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TIME);
+  }
+
+  @Override
+  public DataType visitDateLiteral(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, DateLiteral expr)
+      throws PlanningException {
+    return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.DATE);
+  }
+
+  @Override
+  public DataType visitIntervalLiteral(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, IntervalLiteral expr)
+      throws PlanningException {
+    return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INTERVAL);
   }
 }

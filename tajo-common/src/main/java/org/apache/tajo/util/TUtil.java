@@ -199,14 +199,14 @@ public class TUtil {
     }
   }
 
-  public static String collectionToString(Collection objects) {
+  public static String collectionToString(Collection objects, String delimiter) {
     boolean first = true;
     StringBuilder sb = new StringBuilder();
     for(Object object : objects) {
       if (first) {
         first = false;
       } else {
-        sb.append(", ");
+        sb.append(delimiter);
       }
 
       sb.append(object.toString());

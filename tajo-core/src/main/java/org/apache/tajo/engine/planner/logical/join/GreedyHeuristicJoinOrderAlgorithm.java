@@ -169,7 +169,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     // If outer is outer join, make edge key using all relation names in outer.
     SortedSet<String> relationNames =
         new TreeSet<String>(PlannerUtil.getRelationLineageWithinQueryBlock(plan, outer));
-    String outerEdgeKey = TUtil.collectionToString(relationNames);
+    String outerEdgeKey = TUtil.collectionToString(relationNames, ", ");
     for (String innerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, inner)) {
       if (graph.hasEdge(outerEdgeKey, innerName)) {
         JoinEdge existJoinEdge = graph.getEdge(outerEdgeKey, innerName);
@@ -188,7 +188,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
 
     relationNames =
         new TreeSet<String>(PlannerUtil.getRelationLineageWithinQueryBlock(plan, inner));
-    outerEdgeKey = TUtil.collectionToString(relationNames);
+    outerEdgeKey = TUtil.collectionToString(relationNames, ", ");
     for (String outerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, outer)) {
       if (graph.hasEdge(outerEdgeKey, outerName)) {
         JoinEdge existJoinEdge = graph.getEdge(outerEdgeKey, outerName);

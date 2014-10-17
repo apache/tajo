@@ -18,14 +18,9 @@
 
 package org.apache.tajo.cli;
 
-import org.apache.tajo.util.VersionInfo;
-
-import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
-import java.net.URL;
+
+import org.apache.tajo.util.VersionInfo;
 
 public class HelpCommand extends TajoShellCommand {
   private String targetDocVersion = "";
@@ -115,28 +110,11 @@ public class HelpCommand extends TajoShellCommand {
     } else {
       tajoVersion = tajoFullVersion;
     }
-
+    
     if(tajoVersion.equalsIgnoreCase("")) {
       docVersion = docDefaultVersion;
     } else {
-      try {
-        URL u = new URL("http://tajo.apache.org/docs/"+ tajoVersion + "/");
-        HttpURLConnection huc =  (HttpURLConnection) u.openConnection();
-        huc.setConnectTimeout(1000);
-        huc.setReadTimeout(1000);
-        huc.setRequestMethod("HEAD");
-        if(huc.getResponseCode() == HttpURLConnection.HTTP_OK) {
-          docVersion = tajoVersion;
-        } else {
-          docVersion = docDefaultVersion;
-        }
-      } catch (MalformedURLException e0) {
-        docVersion = docDefaultVersion;
-      } catch (ProtocolException e1) {
-        docVersion = docDefaultVersion;
-      } catch (IOException e2) {
-        docVersion = docDefaultVersion;
-      }
+    	docVersion = tajoVersion;
     }
 
     return docVersion;
