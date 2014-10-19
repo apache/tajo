@@ -397,6 +397,8 @@ public class TestMathFunctions extends ExprTestBase {
     testSimpleEval("select pow(9,3) as col1 ", new String[]{String.valueOf(Math.pow(9,3))});
     testSimpleEval("select pow(1.0,3) as col1 ", new String[]{String.valueOf(Math.pow(1.0,3))});
     testSimpleEval("select pow(20.1,3.1) as col1 ", new String[]{String.valueOf(Math.pow(20.1,3.1))});
+    testSimpleEval("select pow(null,3.1) as col1 ", new String[]{""});
+    testSimpleEval("select pow(20.1,null) as col1 ", new String[]{""});
 
     Schema schema = new Schema();
     schema.addColumn("col1", FLOAT4);

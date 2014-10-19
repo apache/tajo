@@ -354,6 +354,10 @@ class TajoGeneratorAdapter {
     return new Label();
   }
 
+  public void markLabel(Label label) {
+    methodvisitor.visitLabel(label);
+  }
+
   public void gotoLabel(Label label) {
     methodvisitor.visitJumpInsn(Opcodes.GOTO, label);
   }
@@ -864,6 +868,10 @@ class TajoGeneratorAdapter {
 
   public int istore() {
     int varId = getCurVarIdAndIncrease();
+    return istore(varId);
+  }
+
+  public int istore(int varId) {
     methodvisitor.visitVarInsn(Opcodes.ISTORE, varId);
     return varId;
   }
@@ -917,6 +925,58 @@ class TajoGeneratorAdapter {
     }
 
     return varId;
+  }
+
+  public void emitBoxing(EvalCodeGenContext context, TajoDataTypes.DataType dataType) {
+    switch (dataType.getType()) {
+    case CHAR:
+    case TEXT:
+
+    case INT2:
+      context.invokeStatic(Short.class, "valueOf", Short.class, new Class[]{short.class});
+      break;
+    case INT4:
+      context.invokeStatic(Integer.class, "valueOf", Integer.class, new Class[]{int.class});
+      break;
+    case INT8:
+      context.invokeStatic(Long.class, "valueOf", Long.class, new Class[]{long.class});
+      break;
+    case FLOAT4:
+      context.invokeStatic(Float.class, "valueOf", Float.class, new Class[]{float.class});
+      break;
+    case FLOAT8:
+      context.invokeStatic(Double.class, "valueOf", Double.class, new Class[]{double.class});
+      break;
+
+    default:
+      throw new RuntimeException(dataType.getType().name() + " is not supported yet");
+    }
+  }
+
+  public void emitUnboxing(EvalCodeGenContext context, TajoDataTypes.DataType dataType) {
+    switch (dataType.getType()) {
+    case CHAR:
+    case TEXT:
+
+    case INT2:
+      context.invokeVirtual(Short.class, "shortValue", short.class, new Class[]{});
+      break;
+    case INT4:
+      context.invokeVirtual(Integer.class, "intValue", int.class, new Class[]{});
+      break;
+    case INT8:
+      context.invokeVirtual(Long.class, "longValue", long.class, new Class[]{});
+      break;
+    case FLOAT4:
+      context.invokeVirtual(Float.class, "floatValue", float.class, new Class[]{});
+      break;
+    case FLOAT8:
+      context.invokeVirtual(Double.class, "doubleValue", double.class, new Class[]{});
+      break;
+
+    default:
+      throw new RuntimeException(dataType.getType().name() + " is not supported yet");
+    }
   }
 
   public static interface SwitchCaseGenerator extends TableSwitchGenerator {

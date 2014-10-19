@@ -43,5 +43,4 @@ public class AvgInt extends AvgLong {
     avgCtx.sum += params.get(0).asInt4();
     avgCtx.count++;
   }
-
 }

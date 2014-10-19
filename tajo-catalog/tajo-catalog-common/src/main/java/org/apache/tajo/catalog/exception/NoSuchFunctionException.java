@@ -18,8 +18,8 @@
 
 package org.apache.tajo.catalog.exception;
 
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.function.FunctionUtil;
 
 import java.util.Collection;
 
@@ -31,10 +31,10 @@ public class NoSuchFunctionException extends RuntimeException {
   }
 
   public NoSuchFunctionException(String funcName, TajoDataTypes.DataType [] parameters) {
-    super("function " + CatalogUtil.getCanonicalSignature(funcName, parameters) + " does not exist");
+    super("function " + FunctionUtil.buildSimpleFunctionSignature(funcName, parameters) + " does not exist");
   }
 
 	public NoSuchFunctionException(String funcName, Collection<TajoDataTypes.DataType> parameters) {
-		super("function " + CatalogUtil.getCanonicalSignature(funcName, parameters) + " does not exist");
+		super("function " + FunctionUtil.buildSimpleFunctionSignature(funcName, parameters) + " does not exist");
 	}
 }

@@ -1,5 +1,25 @@
 Tajo Change Log 
 
+
+Release 0.9.1 - unreleased
+
+  NEW FEATURES
+
+    TAJO-233: Support PostgreSQL CatalogStore. (Jihun Kang via hyunsik)
+
+  IMPROVEMENT
+
+    TAJO-1092: Improve the function system to allow other function 
+    implementation types. (hyunsik)
+
+
+  BUG FIXES
+
+
+  TASKS
+
+
+
 Release 0.9.0 - unreleased
 
   NEW FEATURES 
