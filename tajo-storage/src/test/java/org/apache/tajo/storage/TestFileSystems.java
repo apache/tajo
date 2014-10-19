@@ -54,7 +54,7 @@ public class TestFileSystems {
 
   private static String TEST_PATH = "target/test-data/TestFileSystem";
   private TajoConf conf = null;
-  private AbstractStorageManager sm = null;
+  private StorageManager sm = null;
   private FileSystem fs = null;
   Path testDir;
 
@@ -66,7 +66,7 @@ public class TestFileSystems {
       fs.initialize(URI.create(fs.getScheme() + ":///"), conf);
     }
     this.fs = fs;
-    sm = StorageManagerFactory.getStorageManager(conf);
+    sm = StorageManager.getStorageManager(conf);
     testDir = getTestDir(this.fs, TEST_PATH);
   }
 

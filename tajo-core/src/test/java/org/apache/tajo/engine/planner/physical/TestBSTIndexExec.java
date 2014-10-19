@@ -66,7 +66,7 @@ public class TestBSTIndexExec {
   private SQLAnalyzer analyzer;
   private LogicalPlanner planner;
   private LogicalOptimizer optimizer;
-  private AbstractStorageManager sm;
+  private StorageManager sm;
   private Schema idxSchema;
   private TupleComparator comp;
   private BSTIndex.BSTIndexWriter writer;
@@ -91,7 +91,7 @@ public class TestBSTIndexExec {
     Path workDir = CommonTestingUtil.getTestDir();
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, workDir.toUri().toString());
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-    sm = StorageManagerFactory.getStorageManager(conf, workDir);
+    sm = StorageManager.getStorageManager(conf, workDir);
 
     idxPath = new Path(workDir, "test.idx");
 
@@ -117,7 +117,7 @@ public class TestBSTIndexExec {
     fs = tablePath.getFileSystem(conf);
     fs.mkdirs(tablePath.getParent());
 
-    FileAppender appender = (FileAppender)StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema,
+    FileAppender appender = (FileAppender)StorageManager.getStorageManager(conf).getAppender(meta, schema,
         tablePath);
     appender.init();
     Tuple tuple = new VTuple(schema.size());
@@ -189,7 +189,7 @@ public class TestBSTIndexExec {
   }
 
   private class TmpPlanner extends PhysicalPlannerImpl {
-    public TmpPlanner(TajoConf conf, AbstractStorageManager sm) {
+    public TmpPlanner(TajoConf conf, StorageManager sm) {
       super(conf, sm);
     }
 

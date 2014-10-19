@@ -45,8 +45,8 @@ import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer;
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.DistinctAggregationAlgorithm;
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.SortSpecArray;
-import org.apache.tajo.storage.AbstractStorageManager;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
@@ -75,9 +75,9 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   private static final int UNGENERATED_PID = -1;
 
   protected final TajoConf conf;
-  protected final AbstractStorageManager sm;
+  protected final StorageManager sm;
 
-  public PhysicalPlannerImpl(final TajoConf conf, final AbstractStorageManager sm) {
+  public PhysicalPlannerImpl(final TajoConf conf, final StorageManager sm) {
     this.conf = conf;
     this.sm = sm;
   }
