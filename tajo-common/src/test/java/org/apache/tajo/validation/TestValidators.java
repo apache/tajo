@@ -62,7 +62,7 @@ public class TestValidators {
     
   }
   
-  private <T extends Validator> org.hamcrest.Matcher<? super ConstraintViolation> 
+  private <T extends Validator> Matcher<? super ConstraintViolation> 
       hasAClass(Matcher<Class<T>> matcher) {
     return new ValidatorClazzMatcher<T>(matcher);
   }
@@ -74,7 +74,7 @@ public class TestValidators {
     assertThat(new NotNullValidator().validateInternal(testValue), is(false));
     assertThat(new NotNullValidator().validate(testValue).size(), is(1));
     assertThat(new NotNullValidator().validate(testValue),
-        hasItem(new ValidatorClazzMatcher<NotNullValidator>(equalTo(NotNullValidator.class))));
+        hasItem(hasAClass(equalTo(NotNullValidator.class))));
   }
 
   @Test
