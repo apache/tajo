@@ -31,13 +31,14 @@ import java.util.UUID;
 import org.apache.tajo.util.TUtil;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeDiagnosingMatcher;
 import org.junit.Test;
 
 public class TestValidators {
   
-  private class ValidatorClazzMatcher<T extends Validator> extends org.hamcrest.TypeSafeDiagnosingMatcher<ConstraintViolation> {
+  private class ValidatorClazzMatcher<T extends Validator> extends TypeSafeDiagnosingMatcher<ConstraintViolation> {
     
-    private final org.hamcrest.Matcher<Class<T>> matcher;
+    private final Matcher<Class<T>> matcher;
     
     public ValidatorClazzMatcher(Matcher<Class<T>> matcher) {
       this.matcher = matcher;
@@ -327,6 +328,10 @@ public class TestValidators {
     assertThat(new PathValidator().validateInternal(validUrl), is(true));
     assertThat(new PathValidator().validate(validUrl).size(), is(0));
     
+    validUrl = "file:/home/tajo/test-data/TestExternalSortExec";
+    assertThat(new PathValidator().validateInternal(validUrl), is(true));
+    assertThat(new PathValidator().validate(validUrl).size(), is(0));
+    
     validUrl = "file:///C:/Windows/System32";
     assertThat(new PathValidator().validateInternal(validUrl), is(true));
     assertThat(new PathValidator().validate(validUrl).size(), is(0));
@@ -387,11 +392,23 @@ public class TestValidators {
     assertThat(new NetworkAddressValidator().validateInternal(validNetworkAddress), is(true));
     assertThat(new NetworkAddressValidator().validate(validNetworkAddress).size(), is(0));
     
-    validNetworkAddress = "tajo.apache.org";
+    validNetworkAddress = "Tajo-Test.apache.org";
     assertThat(new NetworkAddressValidator().validateInternal(validNetworkAddress), is(true));
     assertThat(new NetworkAddressValidator().validate(validNetworkAddress).size(), is(0));
     
     validNetworkAddress = "192.168.122.1";
+    assertThat(new NetworkAddressValidator().validateInternal(validNetworkAddress), is(true));
+    assertThat(new NetworkAddressValidator().validate(validNetworkAddress).size(), is(0));
+    
+    validNetworkAddress = "[2001:db8::ff00:42:8329]:20089";
+    assertThat(new NetworkAddressValidator().validateInternal(validNetworkAddress), is(true));
+    assertThat(new NetworkAddressValidator().validate(validNetworkAddress).size(), is(0));
+    
+    validNetworkAddress = "2001:db8::ff00:42:8330:20089";
+    assertThat(new NetworkAddressValidator().validateInternal(validNetworkAddress), is(true));
+    assertThat(new NetworkAddressValidator().validate(validNetworkAddress).size(), is(0));
+    
+    validNetworkAddress = "2001:db8::ff00:42:8331.20089";
     assertThat(new NetworkAddressValidator().validateInternal(validNetworkAddress), is(true));
     assertThat(new NetworkAddressValidator().validate(validNetworkAddress).size(), is(0));
     
@@ -401,7 +418,7 @@ public class TestValidators {
     assertThat(new NetworkAddressValidator().validate(invalidNetAddr),
         hasItem(hasAClass(equalTo(NetworkAddressValidator.class))));
     
-    invalidNetAddr = "192.168.";
+    invalidNetAddr = "192.168.:";
     assertThat(new NetworkAddressValidator().validateInternal(invalidNetAddr), is(false));
     assertThat(new NetworkAddressValidator().validate(invalidNetAddr).size(), is(1));
     assertThat(new NetworkAddressValidator().validate(invalidNetAddr),
@@ -447,6 +464,23 @@ public class TestValidators {
     assertThat(new BooleanValidator().validate(invalidBoolean).size(), is(1));
     assertThat(new BooleanValidator().validate(invalidBoolean), 
         hasItem(hasAClass(equalTo(BooleanValidator.class))));
+  }
+  
+  @Test
+  public void testClassValidator() {
+    String clazzName = "org.apache.tajo.validation.ClassValidator";
+    assertThat(new ClassValidator().validateInternal(clazzName), is(true));
+    assertThat(new ClassValidator().validate(clazzName).size(), is(0));
+    
+    clazzName = "org.apache.tajo.ConfigKey";
+    assertThat(new ClassValidator().validateInternal(clazzName), is(true));
+    assertThat(new ClassValidator().validate(clazzName).size(), is(0));
+    
+    String invalidClazzName = "invalid-.class.name";
+    assertThat(new ClassValidator().validateInternal(invalidClazzName), is(false));
+    assertThat(new ClassValidator().validate(invalidClazzName).size(), is(1));
+    assertThat(new ClassValidator().validate(invalidClazzName), 
+        hasItem(hasAClass(equalTo(ClassValidator.class))));
   }
 
 }

@@ -23,6 +23,7 @@ import com.google.common.collect.Maps;
 import java.util.Map;
 
 import org.apache.tajo.validation.Validator;
+import org.apache.tajo.validation.Validators;
 
 import static org.apache.tajo.SessionVars.VariableMode.*;
 import static org.apache.tajo.conf.TajoConf.ConfVars;
@@ -42,8 +43,8 @@ public enum SessionVars implements ConfigKey {
   //-------------------------------------------------------------------------------
   // Server Side Only Variables
   //-------------------------------------------------------------------------------
-  SESSION_ID(ConfVars.$EMPTY, "session variable", SERVER_SIDE_VAR),
-  SESSION_LAST_ACCESS_TIME(ConfVars.$EMPTY, "last access time", SERVER_SIDE_VAR),
+  SESSION_ID(ConfVars.$EMPTY, "session variable", SERVER_SIDE_VAR, String.class, Validators.notNull()),
+  SESSION_LAST_ACCESS_TIME(ConfVars.$EMPTY, "last access time", SERVER_SIDE_VAR, Long.class, Validators.min("0")),
 
   USERNAME(ConfVars.USERNAME, "username", SERVER_SIDE_VAR),
   CLIENT_HOST(ConfVars.$EMPTY, "client hostname", SERVER_SIDE_VAR),
@@ -55,7 +56,8 @@ public enum SessionVars implements ConfigKey {
   //-------------------------------------------------------------------------------
 
   // Client --------------------------------------------------------
-  SESSION_EXPIRY_TIME(ConfVars.$CLIENT_SESSION_EXPIRY_TIME, "session expiry time (secs)", DEFAULT),
+  SESSION_EXPIRY_TIME(ConfVars.$CLIENT_SESSION_EXPIRY_TIME, "session expiry time (secs)", DEFAULT,
+      Integer.class, Validators.min("0")),
 
   // Command line interface and its behavior --------------------------------
   CLI_COLUMNS(ConfVars.$CLI_MAX_COLUMN, "Sets the width for the wrapped format", CLI_SIDE_VAR),
@@ -89,29 +91,36 @@ public enum SessionVars implements ConfigKey {
 
   // for distributed query strategies
   BROADCAST_TABLE_SIZE_LIMIT(ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD, "limited size (bytes) of broadcast table",
-      DEFAULT),
+      DEFAULT, Long.class, Validators.min("0")),
 
-  JOIN_TASK_INPUT_SIZE(ConfVars.$DIST_QUERY_JOIN_TASK_VOLUME, "join task input size (mb) ", DEFAULT),
+  JOIN_TASK_INPUT_SIZE(ConfVars.$DIST_QUERY_JOIN_TASK_VOLUME, "join task input size (mb) ", DEFAULT,
+      Integer.class, Validators.min("1")),
   SORT_TASK_INPUT_SIZE(ConfVars.$DIST_QUERY_SORT_TASK_VOLUME, "sort task input size (mb)", DEFAULT),
   GROUPBY_TASK_INPUT_SIZE(ConfVars.$DIST_QUERY_GROUPBY_TASK_VOLUME, "group by task input size (mb)", DEFAULT),
 
-  JOIN_PER_SHUFFLE_SIZE(ConfVars.$DIST_QUERY_JOIN_PARTITION_VOLUME, "shuffle output size for join (mb)", DEFAULT),
-  GROUPBY_PER_SHUFFLE_SIZE(ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME, "shuffle output size for sort (mb)", DEFAULT),
+  JOIN_PER_SHUFFLE_SIZE(ConfVars.$DIST_QUERY_JOIN_PARTITION_VOLUME, "shuffle output size for join (mb)", DEFAULT,
+      Integer.class, Validators.min("1")),
+  GROUPBY_PER_SHUFFLE_SIZE(ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME, "shuffle output size for sort (mb)", DEFAULT,
+      Integer.class, Validators.min("1")),
   TABLE_PARTITION_PER_SHUFFLE_SIZE(ConfVars.$DIST_QUERY_TABLE_PARTITION_VOLUME,
-      "shuffle output size for partition table write (mb)", DEFAULT),
+      "shuffle output size for partition table write (mb)", DEFAULT, Long.class, Validators.min("1")),
 
-  GROUPBY_MULTI_LEVEL_ENABLED(ConfVars.$GROUPBY_MULTI_LEVEL_ENABLED, "Multiple level groupby enabled", DEFAULT),
+  GROUPBY_MULTI_LEVEL_ENABLED(ConfVars.$GROUPBY_MULTI_LEVEL_ENABLED, "Multiple level groupby enabled", DEFAULT,
+      Boolean.class, Validators.bool()),
 
   // for physical Executors
-  EXTSORT_BUFFER_SIZE(ConfVars.$EXECUTOR_EXTERNAL_SORT_BUFFER_SIZE, "sort buffer size for external sort (mb)", DEFAULT),
-  HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD, "limited size for hash join (mb)", DEFAULT),
+  EXTSORT_BUFFER_SIZE(ConfVars.$EXECUTOR_EXTERNAL_SORT_BUFFER_SIZE, "sort buffer size for external sort (mb)", DEFAULT,
+      Long.class, Validators.min("0")),
+  HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD, "limited size for hash join (mb)", DEFAULT,
+      Long.class, Validators.min("0")),
   INNER_HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_INNER_HASH_JOIN_SIZE_THRESHOLD,
-      "limited size for hash inner join (mb)", DEFAULT),
+      "limited size for hash inner join (mb)", DEFAULT, Long.class, Validators.min("0")),
   OUTER_HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_OUTER_HASH_JOIN_SIZE_THRESHOLD, "limited size for hash outer join (mb)",
-      DEFAULT),
+      DEFAULT, Long.class, Validators.min("0")),
   HASH_GROUPBY_SIZE_LIMIT(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD, "limited size for hash groupby (mb)",
-      DEFAULT),
-  MAX_OUTPUT_FILE_SIZE(ConfVars.$MAX_OUTPUT_FILE_SIZE, "Maximum per-output file size (mb). 0 means infinite.", DEFAULT),
+      DEFAULT, Long.class, Validators.min("0")),
+  MAX_OUTPUT_FILE_SIZE(ConfVars.$MAX_OUTPUT_FILE_SIZE, "Maximum per-output file size (mb). 0 means infinite.", DEFAULT,
+      Long.class, Validators.min("0")),
   NULL_CHAR(ConfVars.$CSVFILE_NULL, "null char of text file output", DEFAULT),
   CODEGEN(ConfVars.$CODEGEN, "Runtime code generation enabled (experiment)", DEFAULT),
 
@@ -120,7 +129,8 @@ public enum SessionVars implements ConfigKey {
       "If true, a running query will be terminated when an overflow or divide-by-zero occurs.", DEFAULT),
 
   // ResultSet ----------------------------------------------------------------
-  FETCH_ROWNUM(ConfVars.$RESULT_SET_FETCH_ROWNUM, "Sets the number of rows at a time from Master", DEFAULT),
+  FETCH_ROWNUM(ConfVars.$RESULT_SET_FETCH_ROWNUM, "Sets the number of rows at a time from Master", DEFAULT,
+      Integer.class, Validators.min("0")),
 
   //-------------------------------------------------------------------------------
   // Only for Unit Testing
