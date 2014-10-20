@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.protobuf.Message;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.datum.*;
+import org.apache.tajo.tuple.offheap.RowWriter;
 import org.apache.tajo.util.Bytes;
 
 import java.io.IOException;
@@ -155,6 +156,68 @@ public class BinarySerializerDeserializer implements SerializerDeserializer {
         datum = NullDatum.get();
     }
     return datum;
+  }
+
+  public void write(RowWriter writer, Column col, byte [] bytes, int offset, int length, byte [] nullChar)
+      throws IOException {
+
+    if (length == 0) {
+      writer.skipField();
+      return;
+    } else {
+      switch (col.getDataType().getType()) {
+        case BOOLEAN:
+          writer.putBool(BooleanDatum.TRUE_INT == bytes[offset]);
+          break;
+        case BIT:
+          writer.putByte(bytes[offset]);
+          break;
+        case CHAR:
+        case TEXT:
+          if (Bytes.equals(INVALID_UTF__SINGLE_BYTE, 0, INVALID_UTF__SINGLE_BYTE.length, bytes, offset, length)) {
+            writer.putText(new byte[0]);
+          } else {
+            writer.putText(bytes, offset, length);
+          }
+          break;
+
+        case INT1:
+        case INT2:
+          writer.putInt2(Bytes.toShort(bytes, offset, length));
+          break;
+
+        case INT4:
+          writer.putInt4((int) Bytes.readVLong(bytes, offset));
+          break;
+
+        case INT8:
+          writer.putInt8(Bytes.readVLong(bytes, offset));
+          break;
+
+        case FLOAT4:
+          writer.putFloat4(toFloat(bytes, offset, length));
+          break;
+
+        case FLOAT8:
+          writer.putFloat8(toDouble(bytes, offset, length));
+          break;
+
+        case PROTOBUF:
+          writer.putBlob(bytes, offset, length);
+          break;
+
+        case INET4:
+          writer.putInet4(Inet4Datum.readAsInt(bytes, offset, length));
+          break;
+
+        case BLOB:
+          writer.putBlob(bytes, offset, length);
+          break;
+
+        default:
+          writer.skipField();
+      }
+    }
   }
 
   private byte[] shortBytes = new byte[2];

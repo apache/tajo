@@ -216,7 +216,8 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
     return datum;
   }
 
-  public static void write(RowWriter writer, Column col, byte [] bytes, int offset, int length, byte [] nullChar) throws IOException {
+  public void write(RowWriter writer, Column col, byte [] bytes, int offset, int length, byte [] nullChar)
+      throws IOException {
     TajoDataTypes.Type type = col.getDataType().getType();
     boolean nullField;
     if (type == TajoDataTypes.Type.TEXT || type == TajoDataTypes.Type.CHAR) {
@@ -236,7 +237,7 @@ public class TextSerializerDeserializer implements SerializerDeserializer {
 
       case CHAR:
       case TEXT:
-        writer.putText(bytes);
+        writer.putText(bytes, offset, length);
         break;
 
       case INT1:

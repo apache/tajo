@@ -20,6 +20,7 @@ package org.apache.tajo.storage;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.tuple.offheap.RowWriter;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -30,5 +31,8 @@ public interface SerializerDeserializer {
   public int serialize(Column col, Datum datum, OutputStream out, byte[] nullCharacters) throws IOException;
 
   public Datum deserialize(Column col, byte[] bytes, int offset, int length, byte[] nullCharacters) throws IOException;
+
+  public void write(RowWriter writer, Column col, byte[] bytes, int offset, int length, byte[] nullCharacters)
+      throws IOException;
 
 }

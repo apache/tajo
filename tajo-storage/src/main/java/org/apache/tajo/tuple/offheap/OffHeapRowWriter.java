@@ -26,7 +26,6 @@ import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.util.SizeOf;
 import org.apache.tajo.util.UnsafeUtil;
-import sun.misc.Unsafe;
 
 /**
  *
@@ -146,12 +145,17 @@ public abstract class OffHeapRowWriter implements RowWriter {
 
   @UsedByJIT
   public void putBool(byte val) {
-    ensureSize(SizeOf.SIZE_OF_BOOL);
+    putByte(val);
+  }
+
+  @UsedByJIT
+  public void putByte(byte val) {
+    ensureSize(SizeOf.SIZE_OF_BYTE);
     forwardField();
 
     OffHeapMemory.UNSAFE.putByte(recordStartAddr() + curOffset, val);
 
-    curOffset += SizeOf.SIZE_OF_BOOL;
+    curOffset += SizeOf.SIZE_OF_BYTE;
   }
 
   @UsedByJIT
