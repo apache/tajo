@@ -41,7 +41,12 @@ public class PatternValidator extends AbstractValidator {
     
     if (object != null) {
       if (object instanceof CharSequence) {
-        result = pattern.matcher((CharSequence) object).find();
+        String valueString = object.toString();
+        if (valueString.isEmpty()) {
+          result = true;
+        } else {
+          result = pattern.matcher((CharSequence) object).find();
+        }
       }
     } else {
       result = true;

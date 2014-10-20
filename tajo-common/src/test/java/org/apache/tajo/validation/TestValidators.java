@@ -1,3 +1,21 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.tajo.validation;
 
 import static org.junit.Assert.*;
@@ -266,7 +284,7 @@ public class TestValidators {
     validators.add(new PatternValidator("^[a-zA-Z]+://"));
     validators.add(new LengthValidator(255));
     assertThat(new GroupValidator(validators).validate(httpUrl).size(), is(0));
-    assertThat(new GroupValidator(validators).validate("tajo").size(), is(2));
+    assertThat(new GroupValidator(validators).validate("tajo").size(), is(1));
     assertThat(new GroupValidator(validators).validate("tajo"),
         hasItem(hasAClass(equalTo(PatternValidator.class))));
     
@@ -297,6 +315,138 @@ public class TestValidators {
     new GroupValidator(validators).validate("tajo", true);
     
     fail();
+  }
+  
+  @Test
+  public void testPathValidator() {
+    String validUrl = "file:///tmp/tajo-$root/";    
+    assertThat(new PathValidator().validateInternal(validUrl), is(true));
+    assertThat(new PathValidator().validate(validUrl).size(), is(0));
+    
+    validUrl = "file:///tmp/tajo-${user.name}/";
+    assertThat(new PathValidator().validateInternal(validUrl), is(true));
+    assertThat(new PathValidator().validate(validUrl).size(), is(0));
+    
+    validUrl = "file:///C:/Windows/System32";
+    assertThat(new PathValidator().validateInternal(validUrl), is(true));
+    assertThat(new PathValidator().validate(validUrl).size(), is(0));
+    
+    validUrl = "/C:/Windows/system32/driver";
+    assertThat(new PathValidator().validateInternal(validUrl), is(true));
+    assertThat(new PathValidator().validate(validUrl).size(), is(0));
+    
+    validUrl = "/tmp/tajo-root/";
+    assertThat(new PathValidator().validateInternal(validUrl), is(true));
+    assertThat(new PathValidator().validate(validUrl).size(), is(0));
+    
+    String invalidUrl = "t!ef:///tmp/tajo-root";
+    assertThat(new PathValidator().validateInternal(invalidUrl), is(false));
+    assertThat(new PathValidator().validate(invalidUrl).size(), is(1));
+    assertThat(new PathValidator().validate(invalidUrl),
+        hasItem(hasAClass(equalTo(PathValidator.class))));
+    
+    invalidUrl = "This is not a valid url.";
+    assertThat(new PathValidator().validateInternal(invalidUrl), is(false));
+    assertThat(new PathValidator().validate(invalidUrl).size(), is(1));
+    assertThat(new PathValidator().validate(invalidUrl),
+        hasItem(hasAClass(equalTo(PathValidator.class))));
+  }
+  
+  @Test
+  public void testShellVariableValidator() {
+    String validVariable = "${user.name}";
+    assertThat(new ShellVariableValidator().validateInternal(validVariable), is(true));
+    assertThat(new ShellVariableValidator().validate(validVariable).size(), is(0));
+    
+    validVariable = "$SHELL";
+    assertThat(new ShellVariableValidator().validateInternal(validVariable), is(true));
+    assertThat(new ShellVariableValidator().validate(validVariable).size(), is(0));
+    
+    validVariable = "STRING";
+    assertThat(new ShellVariableValidator().validateInternal(validVariable), is(true));
+    assertThat(new ShellVariableValidator().validate(validVariable).size(), is(0));
+    
+    String invalidVariable = "Invalid Shell Variable Name";
+    assertThat(new ShellVariableValidator().validateInternal(invalidVariable), is(false));
+    assertThat(new ShellVariableValidator().validate(invalidVariable).size(), is(1));
+    assertThat(new ShellVariableValidator().validate(invalidVariable),
+        hasItem(hasAClass(equalTo(ShellVariableValidator.class))));
+  }
+  
+  @Test
+  public void testNetworkAddressValidator() {
+    String validNetworkAddress = "localhost:5000";
+    assertThat(new NetworkAddressValidator().validateInternal(validNetworkAddress), is(true));
+    assertThat(new NetworkAddressValidator().validate(validNetworkAddress).size(), is(0));
+    
+    validNetworkAddress = "192.168.0.1:5000";
+    assertThat(new NetworkAddressValidator().validateInternal(validNetworkAddress), is(true));
+    assertThat(new NetworkAddressValidator().validate(validNetworkAddress).size(), is(0));
+    
+    validNetworkAddress = "0.0.0.0:28094";
+    assertThat(new NetworkAddressValidator().validateInternal(validNetworkAddress), is(true));
+    assertThat(new NetworkAddressValidator().validate(validNetworkAddress).size(), is(0));
+    
+    validNetworkAddress = "tajo.apache.org";
+    assertThat(new NetworkAddressValidator().validateInternal(validNetworkAddress), is(true));
+    assertThat(new NetworkAddressValidator().validate(validNetworkAddress).size(), is(0));
+    
+    validNetworkAddress = "192.168.122.1";
+    assertThat(new NetworkAddressValidator().validateInternal(validNetworkAddress), is(true));
+    assertThat(new NetworkAddressValidator().validate(validNetworkAddress).size(), is(0));
+    
+    String invalidNetAddr = "5000";
+    assertThat(new NetworkAddressValidator().validateInternal(invalidNetAddr), is(false));
+    assertThat(new NetworkAddressValidator().validate(invalidNetAddr).size(), is(1));
+    assertThat(new NetworkAddressValidator().validate(invalidNetAddr),
+        hasItem(hasAClass(equalTo(NetworkAddressValidator.class))));
+    
+    invalidNetAddr = "192.168.";
+    assertThat(new NetworkAddressValidator().validateInternal(invalidNetAddr), is(false));
+    assertThat(new NetworkAddressValidator().validate(invalidNetAddr).size(), is(1));
+    assertThat(new NetworkAddressValidator().validate(invalidNetAddr),
+        hasItem(hasAClass(equalTo(NetworkAddressValidator.class))));
+    
+    invalidNetAddr = "localhost:98765";
+    assertThat(new NetworkAddressValidator().validateInternal(invalidNetAddr), is(false));
+    assertThat(new NetworkAddressValidator().validate(invalidNetAddr).size(), is(1));
+    assertThat(new NetworkAddressValidator().validate(invalidNetAddr),
+        hasItem(hasAClass(equalTo(NetworkAddressValidator.class))));
+  }
+  
+  @Test
+  public void testBooleanValidator() {
+    String validBoolean = "true";
+    assertThat(new BooleanValidator().validateInternal(validBoolean), is(true));
+    assertThat(new BooleanValidator().validate(validBoolean).size(), is(0));
+    
+    validBoolean = "false";
+    assertThat(new BooleanValidator().validateInternal(validBoolean), is(true));
+    assertThat(new BooleanValidator().validate(validBoolean).size(), is(0));
+    
+    assertThat(new BooleanValidator().validateInternal(true), is(true));
+    assertThat(new BooleanValidator().validate(true).size(), is(0));
+    
+    assertThat(new BooleanValidator().validateInternal(false), is(true));
+    assertThat(new BooleanValidator().validate(false).size(), is(0));
+    
+    String invalidBoolean = "yes";
+    assertThat(new BooleanValidator().validateInternal(invalidBoolean), is(false));
+    assertThat(new BooleanValidator().validate(invalidBoolean).size(), is(1));
+    assertThat(new BooleanValidator().validate(invalidBoolean), 
+        hasItem(hasAClass(equalTo(BooleanValidator.class))));
+    
+    invalidBoolean = "nope";
+    assertThat(new BooleanValidator().validateInternal(invalidBoolean), is(false));
+    assertThat(new BooleanValidator().validate(invalidBoolean).size(), is(1));
+    assertThat(new BooleanValidator().validate(invalidBoolean), 
+        hasItem(hasAClass(equalTo(BooleanValidator.class))));
+    
+    invalidBoolean = "invalid";
+    assertThat(new BooleanValidator().validateInternal(invalidBoolean), is(false));
+    assertThat(new BooleanValidator().validate(invalidBoolean).size(), is(1));
+    assertThat(new BooleanValidator().validate(invalidBoolean), 
+        hasItem(hasAClass(equalTo(BooleanValidator.class))));
   }
 
 }

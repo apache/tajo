@@ -73,6 +73,9 @@ public class OverridableConf extends KeyValueSet {
   }
 
   public void setBool(ConfigKey key, boolean val) {
+    if (key.validator() != null) {
+      key.validator().validate(val, true);
+    }
     setBool(key.keyname(), val);
   }
 
@@ -100,6 +103,9 @@ public class OverridableConf extends KeyValueSet {
   }
 
   public void setInt(ConfigKey key, int val) {
+    if (key.validator() != null) {
+      key.validator().validate(val, true);
+    }
     setInt(key.keyname(), val);
   }
 
@@ -125,6 +131,9 @@ public class OverridableConf extends KeyValueSet {
   }
 
   public void setLong(ConfigKey key, long val) {
+    if (key.validator() != null) {
+      key.validator().validate(val, true);
+    }
     setLong(key.keyname(), val);
   }
 
@@ -150,6 +159,9 @@ public class OverridableConf extends KeyValueSet {
   }
 
   public void setFloat(ConfigKey key, float val) {
+    if (key.validator() != null) {
+      key.validator().validate(val, true);
+    }
     setFloat(key.keyname(), val);
   }
 
@@ -175,6 +187,9 @@ public class OverridableConf extends KeyValueSet {
   }
 
   public void put(ConfigKey key, String val) {
+    if (key.validator() != null) {
+      key.validator().validate(val, true);
+    }
     set(key.keyname(), val);
   }
 

@@ -50,4 +50,20 @@ public class Validators {
     return new RangeValidator(minValue, maxValue);
   }
   
+  public static Validator pathUrl() {
+    return new PathValidator();
+  }
+  
+  public static Validator shellVar() {
+    return new ShellVariableValidator();
+  }
+  
+  public static Validator networkAddr() {
+    return new NetworkAddressValidator();
+  }
+  
+  public static Validator bool() {
+    return new BooleanValidator();
+  }
+  
 }
