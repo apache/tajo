@@ -28,19 +28,19 @@ public class TestExprAnnotator {
   @Test
   public void testGetWidestType() throws Exception {
     assertEquals(Type.INT1,
-        ExprAnnotator.getWidestType(CatalogUtil.newSimpleDataType(Type.INT1)).getType());
+        CatalogUtil.getWidestType(CatalogUtil.newSimpleDataType(Type.INT1)).getType());
     assertEquals(Type.INT2,
-        ExprAnnotator.getWidestType(CatalogUtil.newSimpleDataTypeArray(Type.INT1, Type.INT2)).getType());
+        CatalogUtil.getWidestType(CatalogUtil.newSimpleDataTypeArray(Type.INT1, Type.INT2)).getType());
     assertEquals(Type.INT4,
-        ExprAnnotator.getWidestType(CatalogUtil.newSimpleDataTypeArray(Type.INT1, Type.INT2, Type.INT4)).getType());
+        CatalogUtil.getWidestType(CatalogUtil.newSimpleDataTypeArray(Type.INT1, Type.INT2, Type.INT4)).getType());
     assertEquals(Type.INT8,
-        ExprAnnotator.getWidestType(CatalogUtil.newSimpleDataTypeArray(Type.INT1, Type.INT2, Type.INT4,
+        CatalogUtil.getWidestType(CatalogUtil.newSimpleDataTypeArray(Type.INT1, Type.INT2, Type.INT4,
             Type.INT8)).getType());
     assertEquals(Type.FLOAT4,
-        ExprAnnotator.getWidestType(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.INT2, Type.INT4,
+        CatalogUtil.getWidestType(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.INT2, Type.INT4,
             Type.INT8)).getType());
     assertEquals(Type.FLOAT8,
-        ExprAnnotator.getWidestType(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.FLOAT8, Type.INT4,
+        CatalogUtil.getWidestType(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.FLOAT8, Type.INT4,
             Type.INT8)).getType());
   }
 }

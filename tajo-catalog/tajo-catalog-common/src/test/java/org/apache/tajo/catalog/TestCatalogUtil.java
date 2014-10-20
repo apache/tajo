@@ -19,6 +19,7 @@
 package org.apache.tajo.catalog;
 
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.function.FunctionUtil;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -28,7 +29,7 @@ import static org.junit.Assert.*;
 public class TestCatalogUtil {
   @Test
   public final void testGetCanonicalName() {
-    String canonical = CatalogUtil.getCanonicalSignature("sum", CatalogUtil.newSimpleDataTypeArray(Type.INT4,
+    String canonical = FunctionUtil.buildSimpleFunctionSignature("sum", CatalogUtil.newSimpleDataTypeArray(Type.INT4,
         Type.INT8));
     assertEquals("sum(int4,int8)", canonical);
   }
@@ -61,7 +62,7 @@ public class TestCatalogUtil {
     assertFalse(CatalogUtil.isCompatibleType(Type.FLOAT4, Type.FLOAT8));
     assertTrue(CatalogUtil.isCompatibleType(Type.FLOAT8, Type.FLOAT4));
 
-    assertFalse(CatalogUtil.isCompatibleType(Type.FLOAT8, Type.INT4));
+    assertTrue(CatalogUtil.isCompatibleType(Type.FLOAT8, Type.INT4));
 
     assertFalse(CatalogUtil.isCompatibleType(Type.FLOAT8_ARRAY, Type.TEXT_ARRAY));
     assertFalse(CatalogUtil.isCompatibleType(Type.TEXT_ARRAY, Type.FLOAT8_ARRAY));
@@ -70,15 +71,18 @@ public class TestCatalogUtil {
   @Test
   public final void testCompareDataTypeIncludeVariableLength() {
     assertTrue(CatalogUtil.isMatchedFunction(
-        Arrays.asList(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.INT4)), Arrays.asList(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.INT4))
+        Arrays.asList(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.INT4)),
+        Arrays.asList(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.INT4))
     ));
 
   assertFalse(CatalogUtil.isMatchedFunction(
-      Arrays.asList(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.INT4)), Arrays.asList(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.INT4))
+      Arrays.asList(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.INT4)),
+      Arrays.asList(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.INT4))
   ));
 
     assertTrue(CatalogUtil.isMatchedFunction(
-        Arrays.asList(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.INT8_ARRAY)), Arrays.asList(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.INT4, Type.INT4))
+        Arrays.asList(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT8, Type.INT8_ARRAY)),
+        Arrays.asList(CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.INT4, Type.INT4))
     ));
   }
 }

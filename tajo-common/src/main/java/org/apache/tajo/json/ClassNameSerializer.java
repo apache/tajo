@@ -22,6 +22,7 @@
 package org.apache.tajo.json;
 
 import com.google.gson.*;
+import org.apache.tajo.util.ClassUtil;
 
 import java.lang.reflect.Type;
 
@@ -37,7 +38,7 @@ public class ClassNameSerializer implements GsonSerDerAdapter<Class> {
   public Class deserialize(JsonElement json, Type type,
                            JsonDeserializationContext ctx) throws JsonParseException {
     try {
-      return Class.forName(json.getAsString());
+      return ClassUtil.forName(json.getAsString());
     } catch (ClassNotFoundException e) {
       e.printStackTrace();
     }

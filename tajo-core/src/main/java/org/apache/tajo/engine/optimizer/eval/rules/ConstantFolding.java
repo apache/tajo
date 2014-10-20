@@ -72,7 +72,7 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
   public EvalNode visitFuncCall(LogicalPlanner.PlanContext context, FunctionEval evalNode, Stack<EvalNode> stack) {
     boolean constantOfAllDescendents = true;
 
-    if ("sleep".equals(evalNode.getFuncDesc().getSignature())) {
+    if ("sleep".equals(evalNode.getFuncDesc().getFunctionName())) {
       constantOfAllDescendents = false;
     } else {
       if (evalNode.getArgs() != null) {

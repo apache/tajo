@@ -22,7 +22,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.function.Function;
+import org.apache.tajo.function.Function;
 import org.apache.tajo.catalog.json.FunctionAdapter;
 import org.apache.tajo.catalog.json.TableMetaAdapter;
 import org.apache.tajo.common.TajoDataTypes.DataType;

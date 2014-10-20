@@ -172,7 +172,7 @@ public class AlgebraicUtil {
     public EvalNode visitFuncCall(Object context, FunctionEval evalNode, Stack<EvalNode> stack) {
       boolean constantOfAllDescendents = true;
 
-      if ("sleep".equals(evalNode.funcDesc.getSignature())) {
+      if ("sleep".equals(evalNode.funcDesc.getFunctionName())) {
         constantOfAllDescendents = false;
       } else {
         if (evalNode.getArgs() != null) {
