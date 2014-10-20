@@ -33,6 +33,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.store.DerbyStore;
 import org.apache.tajo.catalog.store.MySQLStore;
 import org.apache.tajo.catalog.store.MariaDBStore;
+import org.apache.tajo.catalog.store.OracleStore;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -119,7 +120,8 @@ public class TestCatalog {
   public static boolean isConnectionIdRequired(String driverClass) {
     return driverClass.equals(MySQLStore.class.getCanonicalName()) ||
            driverClass.equals(MariaDBStore.class.getCanonicalName()) ||
-           driverClass.equals(PostgreSQLStore.class.getCanonicalName());
+           driverClass.equals(PostgreSQLStore.class.getCanonicalName()) ||
+	   driverClass.equals(OracleStore.class.getCanonicalName());
   }
 	
 	@AfterClass
