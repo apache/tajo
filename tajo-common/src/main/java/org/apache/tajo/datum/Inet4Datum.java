@@ -42,17 +42,17 @@ public class Inet4Datum extends Datum {
 
 	public Inet4Datum(byte[] addr) {
     super(Type.INET4);
-		Preconditions.checkArgument(addr.length == size);
-    address = addr[3] & 0xFF
-        | ((addr[2] << 8) & 0xFF00)
-        | ((addr[1] << 16) & 0xFF0000)
-        | ((addr[0] << 24) & 0xFF000000);
+    address = readAsInt(addr, 0, addr.length);
   }
 
   public Inet4Datum(byte[] addr, int offset, int length) {
     super(Type.INET4);
+    address = readAsInt(addr, offset, length);
+  }
+
+  public static int readAsInt(byte[] addr, int offset, int length) {
     Preconditions.checkArgument(length == size);
-    address = addr[offset + 3] & 0xFF
+    return addr[offset + 3] & 0xFF
         | ((addr[offset + 2] << 8) & 0xFF00)
         | ((addr[offset + 1] << 16) & 0xFF0000)
         | ((addr[offset] << 24) & 0xFF000000);
