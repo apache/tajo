@@ -23,6 +23,9 @@ Block Iteration - branch
     TAJO-1092: Improve the function system to allow other function 
     implementation types. (hyunsik)
 
+    TAJO-1124: RowWriter::putText and RowWriter::putBlob should take offset 
+    and length params. (hyunsik)
+
 
 Release 0.9.1 - unreleased
 
@@ -42,7 +45,7 @@ Release 0.9.1 - unreleased
 
 
 
-Release 0.9.0 - unreleased
+Release 0.9.0
 
   NEW FEATURES 
 

@@ -46,6 +46,7 @@ import static org.junit.Assert.assertTrue;
 public class TestOffHeapRowBlock {
   private static final Log LOG = LogFactory.getLog(TestOffHeapRowBlock.class);
   public static String UNICODE_FIELD_PREFIX = "abc_가나다_";
+  public static String TEXTS_PARTS = "abcdefghijk";
   public static Schema schema;
 
   static {
@@ -57,12 +58,13 @@ public class TestOffHeapRowBlock {
     schema.addColumn("col4", Type.FLOAT4);
     schema.addColumn("col5", Type.FLOAT8);
     schema.addColumn("col6", Type.TEXT);
-    schema.addColumn("col7", Type.TIMESTAMP);
-    schema.addColumn("col8", Type.DATE);
-    schema.addColumn("col9", Type.TIME);
-    schema.addColumn("col10", Type.INTERVAL);
-    schema.addColumn("col11", Type.INET4);
-    schema.addColumn("col12",
+    schema.addColumn("col7", Type.TEXT);
+    schema.addColumn("col8", Type.TIMESTAMP);
+    schema.addColumn("col9", Type.DATE);
+    schema.addColumn("col10", Type.TIME);
+    schema.addColumn("col11", Type.INTERVAL);
+    schema.addColumn("col12", Type.INET4);
+    schema.addColumn("col13",
         CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, PrimitiveProtos.StringProto.class.getName()));
   }
 
@@ -357,12 +359,15 @@ public class TestOffHeapRowBlock {
     builder.putFloat4(i);                       // 4
     builder.putFloat8(i);                       // 5
     builder.putText((UNICODE_FIELD_PREFIX + i).getBytes());  // 6
-    builder.putTimestamp(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + i); // 7
-    builder.putDate(DatumFactory.createDate("2014-04-16").asInt4() + i); // 8
-    builder.putTime(DatumFactory.createTime("08:48:00").asInt8() + i); // 9
-    builder.putInterval(DatumFactory.createInterval((i + 1) + " hours")); // 10
-    builder.putInet4(DatumFactory.createInet4("192.168.0.1").asInt4() + i); // 11
-    builder.putProtoDatum(new ProtobufDatum(ProtoUtil.convertString(i + ""))); // 12
+    int offset = i % (TEXTS_PARTS.length() - 1); // 0 ~ (length -1)
+    int length = TEXTS_PARTS.length() - offset;
+    builder.putText(TEXTS_PARTS.getBytes(), offset, length);  // 7
+    builder.putTimestamp(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + i); // 8
+    builder.putDate(DatumFactory.createDate("2014-04-16").asInt4() + i); // 9
+    builder.putTime(DatumFactory.createTime("08:48:00").asInt8() + i); // 10
+    builder.putInterval(DatumFactory.createInterval((i + 1) + " hours")); // 11
+    builder.putInet4(DatumFactory.createInet4("192.168.0.1").asInt4() + i); // 12
+    builder.putProtoDatum(new ProtobufDatum(ProtoUtil.convertString(i + ""))); // 13
     builder.endRow();
   }
 
@@ -413,37 +418,45 @@ public class TestOffHeapRowBlock {
     if (i % 7 == 0) {
       writer.skipField();
     } else {
-      writer.putTimestamp(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + i); // 7
+      int offset = i % (TEXTS_PARTS.length() - 1); // 0 ~ (length -1)
+      int length = TEXTS_PARTS.length() - offset;
+      writer.putText(TEXTS_PARTS.getBytes(), offset, length);  // 7
     }
 
     if (i % 8 == 0) {
       writer.skipField();
     } else {
-      writer.putDate(DatumFactory.createDate("2014-04-16").asInt4() + i); // 8
+      writer.putTimestamp(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + i); // 8
     }
 
     if (i % 9 == 0) {
       writer.skipField();
     } else {
-      writer.putTime(DatumFactory.createTime("08:48:00").asInt8() + i); // 9
+      writer.putDate(DatumFactory.createDate("2014-04-16").asInt4() + i); // 9
     }
 
     if (i % 10 == 0) {
       writer.skipField();
     } else {
-      writer.putInterval(DatumFactory.createInterval((i + 1) + " hours")); // 10
+      writer.putTime(DatumFactory.createTime("08:48:00").asInt8() + i); // 10
     }
 
     if (i % 11 == 0) {
       writer.skipField();
     } else {
-      writer.putInet4(DatumFactory.createInet4("192.168.0.1").asInt4() + i); // 11
+      writer.putInterval(DatumFactory.createInterval((i + 1) + " hours")); // 11
     }
 
     if (i % 12 == 0) {
       writer.skipField();
     } else {
-      writer.putProtoDatum(new ProtobufDatum(ProtoUtil.convertString(i + ""))); // 12
+      writer.putInet4(DatumFactory.createInet4("192.168.0.1").asInt4() + i); // 12
+    }
+
+    if (i % 13 == 0) {
+      writer.skipField();
+    } else {
+      writer.putProtoDatum(new ProtobufDatum(ProtoUtil.convertString(i + ""))); // 13
     }
 
     writer.endRow();
@@ -457,12 +470,17 @@ public class TestOffHeapRowBlock {
     tuple.put(4, DatumFactory.createFloat4(i));
     tuple.put(5, DatumFactory.createFloat8(i));
     tuple.put(6, DatumFactory.createText((UNICODE_FIELD_PREFIX + i).getBytes()));
-    tuple.put(7, DatumFactory.createTimestamp(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + i)); // 7
-    tuple.put(8, DatumFactory.createDate(DatumFactory.createDate("2014-04-16").asInt4() + i)); // 8
-    tuple.put(9, DatumFactory.createTime(DatumFactory.createTime("08:48:00").asInt8() + i)); // 9
-    tuple.put(10, DatumFactory.createInterval((i + 1) + " hours")); // 10
-    tuple.put(11, DatumFactory.createInet4(DatumFactory.createInet4("192.168.0.1").asInt4() + i)); // 11
-    tuple.put(12, new ProtobufDatum(ProtoUtil.convertString(i + ""))); // 12;
+    int offset = i % (TEXTS_PARTS.length() - 1); // 0 ~ (length -1)
+    int length = TEXTS_PARTS.length() - offset;
+    byte [] textPart = new byte[length];
+    System.arraycopy(TEXTS_PARTS.getBytes(), offset, textPart, 0, length);
+    tuple.put(7, DatumFactory.createText(textPart));
+    tuple.put(8, DatumFactory.createTimestamp(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + i)); // 7
+    tuple.put(9, DatumFactory.createDate(DatumFactory.createDate("2014-04-16").asInt4() + i)); // 8
+    tuple.put(10, DatumFactory.createTime(DatumFactory.createTime("08:48:00").asInt8() + i)); // 9
+    tuple.put(11, DatumFactory.createInterval((i + 1) + " hours")); // 10
+    tuple.put(12, DatumFactory.createInet4(DatumFactory.createInet4("192.168.0.1").asInt4() + i)); // 11
+    tuple.put(13, new ProtobufDatum(ProtoUtil.convertString(i + ""))); // 12;
   }
 
   public static void validateResults(OffHeapRowBlock rowBlock) {
@@ -487,12 +505,17 @@ public class TestOffHeapRowBlock {
     assertTrue(j == t.getFloat4(4));
     assertTrue(j == t.getFloat8(5));
     assertEquals(new String(UNICODE_FIELD_PREFIX + j), t.getText(6));
-    assertEquals(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + (long) j, t.getInt8(7));
-    assertEquals(DatumFactory.createDate("2014-04-16").asInt4() + j, t.getInt4(8));
-    assertEquals(DatumFactory.createTime("08:48:00").asInt8() + j, t.getInt8(9));
-    assertEquals(DatumFactory.createInterval((j + 1) + " hours"), t.getInterval(10));
-    assertEquals(DatumFactory.createInet4("192.168.0.1").asInt4() + j, t.getInt4(11));
-    assertEquals(new ProtobufDatum(ProtoUtil.convertString(j + "")), t.getProtobufDatum(12));
+    int offset = j % (TEXTS_PARTS.length() - 1); // 0 ~ (length -1)
+    int length = (TEXTS_PARTS.length() - offset);
+    byte [] textPart = new byte[length];
+    System.arraycopy(TEXTS_PARTS.getBytes(), offset, textPart, 0, length);
+    assertEquals(new String(textPart), t.getText(7));
+    assertEquals(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + (long) j, t.getInt8(8));
+    assertEquals(DatumFactory.createDate("2014-04-16").asInt4() + j, t.getInt4(9));
+    assertEquals(DatumFactory.createTime("08:48:00").asInt8() + j, t.getInt8(10));
+    assertEquals(DatumFactory.createInterval((j + 1) + " hours"), t.getInterval(11));
+    assertEquals(DatumFactory.createInet4("192.168.0.1").asInt4() + j, t.getInt4(12));
+    assertEquals(new ProtobufDatum(ProtoUtil.convertString(j + "")), t.getProtobufDatum(13));
   }
 
   public static void validateNullity(int j, Tuple tuple) {
@@ -541,37 +564,47 @@ public class TestOffHeapRowBlock {
     if (j % 7 == 0) {
       tuple.isNull(7);
     } else {
-      assertEquals(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + (long) j, tuple.getInt8(7));
+      int offset = j % (TEXTS_PARTS.length() - 1); // 0 ~ (length -1)
+      int length = TEXTS_PARTS.length() - offset;
+      byte [] textPart = new byte[length];
+      System.arraycopy(TEXTS_PARTS.getBytes(), offset, textPart, 0, length);
+      assertEquals(new String(textPart), tuple.getText(7));
     }
 
     if (j % 8 == 0) {
       tuple.isNull(8);
     } else {
-      assertEquals(DatumFactory.createDate("2014-04-16").asInt4() + j, tuple.getInt4(8));
+      assertEquals(DatumFactory.createTimestamp("2014-04-16 08:48:00").asInt8() + (long) j, tuple.getInt8(8));
     }
 
     if (j % 9 == 0) {
       tuple.isNull(9);
     } else {
-      assertEquals(DatumFactory.createTime("08:48:00").asInt8() + j, tuple.getInt8(9));
+      assertEquals(DatumFactory.createDate("2014-04-16").asInt4() + j, tuple.getInt4(9));
     }
 
     if (j % 10 == 0) {
       tuple.isNull(10);
     } else {
-      assertEquals(DatumFactory.createInterval((j + 1) + " hours"), tuple.getInterval(10));
+      assertEquals(DatumFactory.createTime("08:48:00").asInt8() + j, tuple.getInt8(10));
     }
 
     if (j % 11 == 0) {
       tuple.isNull(11);
     } else {
-      assertEquals(DatumFactory.createInet4("192.168.0.1").asInt4() + j, tuple.getInt4(11));
+      assertEquals(DatumFactory.createInterval((j + 1) + " hours"), tuple.getInterval(11));
     }
 
     if (j % 12 == 0) {
       tuple.isNull(12);
     } else {
-      assertEquals(new ProtobufDatum(ProtoUtil.convertString(j + "")), tuple.getProtobufDatum(12));
+      assertEquals(DatumFactory.createInet4("192.168.0.1").asInt4() + j, tuple.getInt4(12));
+    }
+
+    if (j % 13 == 0) {
+      tuple.isNull(13);
+    } else {
+      assertEquals(new ProtobufDatum(ProtoUtil.convertString(j + "")), tuple.getProtobufDatum(13));
     }
   }
 }
