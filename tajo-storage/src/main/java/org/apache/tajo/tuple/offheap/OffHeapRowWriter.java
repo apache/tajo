@@ -145,17 +145,12 @@ public abstract class OffHeapRowWriter implements RowWriter {
 
   @UsedByJIT
   public void putBool(byte val) {
-    ensureSize(SizeOf.SIZE_OF_BOOL);
-    forwardField();
-
-    OffHeapMemory.UNSAFE.putByte(recordStartAddr() + curOffset, val);
-
-    curOffset += SizeOf.SIZE_OF_BOOL;
+    putByte(val);
   }
 
   @UsedByJIT
   public void putByte(byte val) {
-    ensureSize(SizeOf.SIZE_OF_BOOL);
+    ensureSize(SizeOf.SIZE_OF_BYTE);
     forwardField();
 
     OffHeapMemory.UNSAFE.putByte(recordStartAddr() + curOffset, val);
