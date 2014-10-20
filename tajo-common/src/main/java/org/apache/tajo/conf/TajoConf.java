@@ -19,30 +19,41 @@
 package org.apache.tajo.conf;
 
 import com.google.common.base.Preconditions;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ConfigKey;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.NumberUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.datetime.DateTimeConstants;
+import org.apache.tajo.validation.ConstraintViolationException;
+import org.apache.tajo.validation.Validator;
+import org.apache.tajo.validation.Validators;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.util.Map;
+import java.util.Properties;
 import java.util.TimeZone;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class TajoConf extends Configuration {
-
+  
   private static TimeZone CURRENT_TIMEZONE;
   private static int DATE_ORDER = -1;
   private static final ReentrantReadWriteLock confLock = new ReentrantReadWriteLock();
   private static final Lock writeLock = confLock.writeLock();
   private static final Lock readLock = confLock.readLock();
+  private final AtomicBoolean isReloaded = new AtomicBoolean(true);
+  
+  private static final Map<String, ConfVars> vars = TUtil.newHashMap();
 
   static {
     Configuration.addDefaultResource("catalog-default.xml");
@@ -53,11 +64,13 @@ public class TajoConf extends Configuration {
     Configuration.addDefaultResource("tajo-site.xml");
 
     confStaticInit();
+    
+    for (ConfVars confVars: ConfVars.values()) {
+      vars.put(confVars.keyname(), confVars);
+    }
   }
 
   private static final String EMPTY_VALUE = "";
-
-  private static final Map<String, ConfVars> vars = TUtil.newHashMap();
 
   public TajoConf() {
     super();
@@ -143,8 +156,8 @@ public class TajoConf extends Configuration {
     ///////////////////////////////////////////////////////////////////////////////////////
 
     // a username for a running Tajo cluster
-    ROOT_DIR("tajo.rootdir", "file:///tmp/tajo-${user.name}/"),
-    USERNAME("tajo.username", "${user.name}"),
+    ROOT_DIR("tajo.rootdir", "file:///tmp/tajo-${user.name}/", Validators.pathUrl()),
+    USERNAME("tajo.username", "${user.name}", Validators.shellVar()),
 
     // Configurable System Directories
     WAREHOUSE_DIR("tajo.warehouse.directory", EMPTY_VALUE),
@@ -154,16 +167,19 @@ public class TajoConf extends Configuration {
     SYSTEM_CONF_REPLICA_COUNT("tajo.system-conf.replica-count", 20),
 
     // Tajo Master Service Addresses
-    TAJO_MASTER_UMBILICAL_RPC_ADDRESS("tajo.master.umbilical-rpc.address", "localhost:26001"),
-    TAJO_MASTER_CLIENT_RPC_ADDRESS("tajo.master.client-rpc.address", "localhost:26002"),
-    TAJO_MASTER_INFO_ADDRESS("tajo.master.info-http.address", "0.0.0.0:26080"),
+    TAJO_MASTER_UMBILICAL_RPC_ADDRESS("tajo.master.umbilical-rpc.address", "localhost:26001",
+        Validators.networkAddr()),
+    TAJO_MASTER_CLIENT_RPC_ADDRESS("tajo.master.client-rpc.address", "localhost:26002",
+        Validators.networkAddr()),
+    TAJO_MASTER_INFO_ADDRESS("tajo.master.info-http.address", "0.0.0.0:26080", Validators.networkAddr()),
 
     // Tajo Master HA Configurations
-    TAJO_MASTER_HA_ENABLE("tajo.master.ha.enable", false),
+    TAJO_MASTER_HA_ENABLE("tajo.master.ha.enable", false, Validators.bool()),
     TAJO_MASTER_HA_MONITOR_INTERVAL("tajo.master.ha.monitor.interval", 5 * 1000), // 5 sec
 
     // Resource tracker service
-    RESOURCE_TRACKER_RPC_ADDRESS("tajo.resource-tracker.rpc.address", "localhost:26003"),
+    RESOURCE_TRACKER_RPC_ADDRESS("tajo.resource-tracker.rpc.address", "localhost:26003",
+        Validators.networkAddr()),
     RESOURCE_TRACKER_HEARTBEAT_TIMEOUT("tajo.resource-tracker.heartbeat.timeout-secs", 120 * 1000), // seconds
 
     // QueryMaster resource
@@ -171,25 +187,26 @@ public class TajoConf extends Configuration {
     TAJO_QUERYMASTER_MEMORY_MB("tajo.qm.resource.memory-mb", 512),
 
     // Tajo Worker Service Addresses
-    WORKER_INFO_ADDRESS("tajo.worker.info-http.address", "0.0.0.0:28080"),
-    WORKER_QM_INFO_ADDRESS("tajo.worker.qm-info-http.address", "0.0.0.0:28081"),
-    WORKER_PEER_RPC_ADDRESS("tajo.worker.peer-rpc.address", "0.0.0.0:28091"),
-    WORKER_CLIENT_RPC_ADDRESS("tajo.worker.client-rpc.address", "0.0.0.0:28092"),
-    WORKER_QM_RPC_ADDRESS("tajo.worker.qm-rpc.address", "0.0.0.0:28093"),
+    WORKER_INFO_ADDRESS("tajo.worker.info-http.address", "0.0.0.0:28080", Validators.networkAddr()),
+    WORKER_QM_INFO_ADDRESS("tajo.worker.qm-info-http.address", "0.0.0.0:28081", Validators.networkAddr()),
+    WORKER_PEER_RPC_ADDRESS("tajo.worker.peer-rpc.address", "0.0.0.0:28091", Validators.networkAddr()),
+    WORKER_CLIENT_RPC_ADDRESS("tajo.worker.client-rpc.address", "0.0.0.0:28092", Validators.networkAddr()),
+    WORKER_QM_RPC_ADDRESS("tajo.worker.qm-rpc.address", "0.0.0.0:28093", Validators.networkAddr()),
 
     // Tajo Worker Temporal Directories
-    WORKER_TEMPORAL_DIR("tajo.worker.tmpdir.locations", "/tmp/tajo-${user.name}/tmpdir"),
-    WORKER_TEMPORAL_DIR_CLEANUP("tajo.worker.tmpdir.cleanup-at-startup", false),
+    WORKER_TEMPORAL_DIR("tajo.worker.tmpdir.locations", "/tmp/tajo-${user.name}/tmpdir", 
+        Validators.pathUrl()),
+    WORKER_TEMPORAL_DIR_CLEANUP("tajo.worker.tmpdir.cleanup-at-startup", false, Validators.bool()),
 
     // Tajo Worker Resources
     WORKER_RESOURCE_AVAILABLE_CPU_CORES("tajo.worker.resource.cpu-cores", 1),
     WORKER_RESOURCE_AVAILABLE_MEMORY_MB("tajo.worker.resource.memory-mb", 1024),
     WORKER_RESOURCE_AVAILABLE_DISKS("tajo.worker.resource.disks", 1.0f),
     WORKER_EXECUTION_MAX_SLOTS("tajo.worker.parallel-execution.max-num", 2),
-    WORKER_RESOURCE_DFS_DIR_AWARE("tajo.worker.resource.dfs-dir-aware", false),
+    WORKER_RESOURCE_DFS_DIR_AWARE("tajo.worker.resource.dfs-dir-aware", false, Validators.bool()),
 
     // Tajo Worker Dedicated Resources
-    WORKER_RESOURCE_DEDICATED("tajo.worker.resource.dedicated", false),
+    WORKER_RESOURCE_DEDICATED("tajo.worker.resource.dedicated", false, Validators.bool()),
     WORKER_RESOURCE_DEDICATED_MEMORY_RATIO("tajo.worker.resource.dedicated-memory-ratio", 0.8f),
 
     // Tajo Worker History
@@ -201,7 +218,7 @@ public class TajoConf extends Configuration {
     RESOURCE_MANAGER_CLASS("tajo.resource.manager", "org.apache.tajo.master.rm.TajoWorkerResourceManager"),
 
     // Catalog
-    CATALOG_ADDRESS("tajo.catalog.client-rpc.address", "localhost:26005"),
+    CATALOG_ADDRESS("tajo.catalog.client-rpc.address", "localhost:26005", Validators.networkAddr()),
 
 
     // for Yarn Resource Manager ----------------------------------------------
@@ -217,7 +234,7 @@ public class TajoConf extends Configuration {
 
     // Shuffle Configuration --------------------------------------------------
     PULLSERVER_PORT("tajo.pullserver.port", 0),
-    SHUFFLE_SSL_ENABLED_KEY("tajo.pullserver.ssl.enabled", false),
+    SHUFFLE_SSL_ENABLED_KEY("tajo.pullserver.ssl.enabled", false, Validators.bool()),
     SHUFFLE_FILE_FORMAT("tajo.shuffle.file-format", "RAW"),
     SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM("tajo.shuffle.fetcher.parallel-execution.max-num", 2),
     SHUFFLE_FETCHER_CHUNK_MAX_SIZE("tajo.shuffle.fetcher.chunk.max-size",  8192),
@@ -231,10 +248,10 @@ public class TajoConf extends Configuration {
     ROWFILE_SYNC_INTERVAL("rowfile.sync.interval", 100),
     MINIMUM_SPLIT_SIZE("tajo.min.split.size", (long) 1),
     // for RCFile
-    HIVEUSEEXPLICITRCFILEHEADER("tajo.exec.rcfile.use.explicit.header", true),
+    HIVEUSEEXPLICITRCFILEHEADER("tajo.exec.rcfile.use.explicit.header", true, Validators.bool()),
 
     // for Storage Manager v2
-    STORAGE_MANAGER_VERSION_2("tajo.storage-manager.v2", false),
+    STORAGE_MANAGER_VERSION_2("tajo.storage-manager.v2", false, Validators.bool()),
     STORAGE_MANAGER_DISK_SCHEDULER_MAX_READ_BYTES_PER_SLOT("tajo.storage-manager.max-read-bytes", 8 * 1024 * 1024),
     STORAGE_MANAGER_DISK_SCHEDULER_REPORT_INTERVAL("tajo.storage-manager.disk-scheduler.report-interval", 60 * 1000),
     STORAGE_MANAGER_CONCURRENCY_PER_DISK("tajo.storage-manager.disk-scheduler.per-disk-concurrency", 2),
@@ -373,6 +390,7 @@ public class TajoConf extends Configuration {
     public final boolean defaultBoolVal;
 
     private final VarType type;
+    private Validator validator;
 
     ConfVars(String varname, String defaultVal) {
       this.varname = varname;
@@ -383,6 +401,11 @@ public class TajoConf extends Configuration {
       this.defaultFloatVal = -1;
       this.defaultBoolVal = false;
       this.type = VarType.STRING;
+    }
+    
+    ConfVars(String varname, String defaultVal, Validator validator) {
+      this(varname, defaultVal);
+      this.validator = validator;
     }
 
     ConfVars(String varname, int defaultIntVal) {
@@ -395,6 +418,11 @@ public class TajoConf extends Configuration {
       this.defaultBoolVal = false;
       this.type = VarType.INT;
     }
+    
+    ConfVars(String varname, int defaultIntVal, Validator validator) {
+      this(varname, defaultIntVal);
+      this.validator = validator;
+    }
 
     ConfVars(String varname, long defaultLongVal) {
       this.varname = varname;
@@ -405,6 +433,11 @@ public class TajoConf extends Configuration {
       this.defaultFloatVal = -1;
       this.defaultBoolVal = false;
       this.type = VarType.LONG;
+    }
+    
+    ConfVars(String varname, long defaultLongVal, Validator validator) {
+      this(varname, defaultLongVal);
+      this.validator = validator;
     }
 
     ConfVars(String varname, float defaultFloatVal) {
@@ -417,6 +450,11 @@ public class TajoConf extends Configuration {
       this.defaultBoolVal = false;
       this.type = VarType.FLOAT;
     }
+    
+    ConfVars(String varname, float defaultFloatVal, Validator validator) {
+      this(varname, defaultFloatVal);
+      this.validator = validator;
+    }
 
     ConfVars(String varname, boolean defaultBoolVal) {
       this.varname = varname;
@@ -427,6 +465,11 @@ public class TajoConf extends Configuration {
       this.defaultFloatVal = -1;
       this.defaultBoolVal = defaultBoolVal;
       this.type = VarType.BOOLEAN;
+    }
+    
+    ConfVars(String varname, boolean defaultBoolVal, Validator validator) {
+      this(varname, defaultBoolVal);
+      this.validator = validator;
     }
 
     enum VarType {
@@ -452,6 +495,16 @@ public class TajoConf extends Configuration {
     @Override
     public ConfigType type() {
       return ConfigType.SYSTEM;
+    }
+
+    @Override
+    public Class<?> valueClass() {
+      return valClass;
+    }
+
+    @Override
+    public Validator validator() {
+      return validator;
     }
   }
 
@@ -642,4 +695,59 @@ public class TajoConf extends Configuration {
       return new Path(systemConfPathStr);
     }
   }
+  
+  private void validateProperty(String name, String value) throws ConstraintViolationException {
+    ConfigKey configKey = null;
+    
+    configKey = TajoConf.getConfVars(name);
+    if (configKey == null) {
+      configKey = SessionVars.get(name);
+    }
+    
+    if (configKey != null && configKey.validator() != null && configKey.valueClass() != null) {
+      Object valueObj = value;
+      if (Number.class.isAssignableFrom(configKey.valueClass())) {
+        valueObj = NumberUtil.numberValue(configKey.valueClass(), value);
+        if (valueObj == null) {
+          return;
+        }
+      }
+      
+      configKey.validator().validate(valueObj, true);
+    }
+  }
+
+  @Override
+  protected synchronized Properties getProps() {
+    Properties properties = super.getProps();
+    
+    if (isReloaded.getAndSet(false)) {
+      
+      for (String key: properties.stringPropertyNames()) {
+        String value = properties.getProperty(key);
+        
+        validateProperty(key, value);
+      }
+    }
+    
+    return properties;
+  }
+
+  @Override
+  public synchronized void reloadConfiguration() {
+    super.reloadConfiguration();
+    isReloaded.set(true);
+  }
+
+  @Override
+  public void set(String name, String value, String source) {
+    validateProperty(name, value);
+    super.set(name, value, source);
+  }
+
+  @Override
+  public void set(String name, String value) {
+    set(name, value, null);
+  }
+  
 }

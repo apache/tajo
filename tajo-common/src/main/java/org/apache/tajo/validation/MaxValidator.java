@@ -55,6 +55,10 @@ public class MaxValidator extends AbstractValidator {
         Long objLong = Long.decode(object.toString());
         Long maxLong = Long.decode(maxValue);
         result = objLong.compareTo(maxLong) <= 0;
+      } else if ((object instanceof Float) || (object instanceof Double)) {
+        Double objDouble = Double.valueOf(object.toString());
+        Double maxDouble = Double.valueOf(maxValue);
+        result = objDouble.compareTo(maxDouble) <= 0;
       } else if (object instanceof BigInteger) {
         BigInteger objInteger = (BigInteger) object;
         BigInteger maxInteger = new BigInteger(maxValue);

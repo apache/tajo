@@ -22,6 +22,8 @@ import com.google.common.collect.Maps;
 
 import java.util.Map;
 
+import org.apache.tajo.validation.Validator;
+
 import static org.apache.tajo.SessionVars.VariableMode.*;
 import static org.apache.tajo.conf.TajoConf.ConfVars;
 
@@ -143,6 +145,9 @@ public enum SessionVars implements ConfigKey {
   private final ConfVars key;
   private final String description;
   private final VariableMode mode;
+  
+  private Class<?> valClass;
+  private Validator validator;
 
   public static enum VariableMode {
     DEFAULT,         // Client can set or change variables of this mode..
@@ -156,6 +161,12 @@ public enum SessionVars implements ConfigKey {
     this.key = key;
     this.description = description;
     this.mode = mode;
+  }
+  
+  SessionVars(ConfVars key, String description, VariableMode mode, Class<?> valueClass, Validator validator) {
+    this(key, description, mode);
+    this.valClass = valueClass;
+    this.validator = validator;
   }
 
   public String keyname() {
@@ -212,5 +223,15 @@ public enum SessionVars implements ConfigKey {
    */
   public static String handleDeprecatedName(String keyname) {
     return SessionVars.exists(keyname) ? SessionVars.get(keyname).keyname() : keyname;
+  }
+
+  @Override
+  public Class<?> valueClass() {
+    return valClass;
+  }
+
+  @Override
+  public Validator validator() {
+    return validator;
   }
 }
