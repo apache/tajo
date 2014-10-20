@@ -66,4 +66,8 @@ public class Validators {
     return new BooleanValidator();
   }
   
+  public static Validator clazz() {
+    return new ClassValidator();
+  }
+  
 }

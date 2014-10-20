@@ -18,15 +18,40 @@
 
 package org.apache.tajo.validation;
 
-public class PathValidator extends PatternValidator {
+import java.util.Collection;
+import java.util.Collections;
 
-  public PathValidator() {
-    super("^(?:[a-zA-Z][a-zA-Z0-9+-.]+:[/]{1,2}[a-zA-Z-.]*[:0-9]*)?(?:/?[a-zA-Z]:)?[/a-zA-Z0-9-_\\\\.\\\\$\\\\{\\\\}]*$");
-  }
+public class ClassValidator extends AbstractValidator {
 
   @Override
   protected <T> String getErrorMessage(T object) {
-    return object + " is not valid path.";
+    return "ClassLoader cannot find " + object + " class.";
+  }
+
+  @Override
+  protected <T> boolean validateInternal(T object) {
+    boolean result = false;
+    
+    if (object != null) {
+      if (object instanceof CharSequence) {
+        String valueString = object.toString();
+        try {
+          Class.forName(valueString);
+          result = true;
+        } catch (ClassNotFoundException e) {
+          result = false;
+        }
+      }
+    } else {
+      result = true;
+    }
+    
+    return result;
+  }
+
+  @Override
+  protected Collection<Validator> getDependantValidators() {
+    return Collections.emptySet();
   }
 
 }

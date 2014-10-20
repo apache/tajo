@@ -38,8 +38,13 @@ public class ConstraintViolationException extends RuntimeException {
   public String getMessage() {
     if (violations != null) {
       String errorMessage = "ConstraintViolationException [";
+      int elemIdx = 1;
+      int elemCount = violations.size();
       for (ConstraintViolation violation: violations) {
-        errorMessage += violation.getMessage() + ",";
+        errorMessage += violation.getMessage();
+        if (elemIdx > elemCount) {
+          errorMessage += ",";
+        }
       }
       errorMessage += "]";
       return errorMessage;
