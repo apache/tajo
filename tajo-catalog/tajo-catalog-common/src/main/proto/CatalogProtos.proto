@@ -117,28 +117,6 @@ message NamespaceProto {
   optional string namespace = 2;
 }
 
-enum FunctionType {
-  GENERAL = 0;
-  AGGREGATION = 1;
-  DISTINCT_AGGREGATION = 2;
-  WINDOW = 3;
-  UDF = 4;
-  UDA = 5;
-  DISTINCT_UDA = 6;
-  WINDOW_UDA = 7;
-}
-
-message FunctionDescProto {
-  required string signature = 1;
-  required string className = 2;
-  required FunctionType type = 3;
-  repeated DataType parameterTypes = 4;
-  required DataType returnType = 5;
-  optional string description = 6;
-  optional string example = 7;
-  optional string detail = 8;
-}
-
 message IndexDescProto {
   required TableIdentifierProto tableIdentifier = 1;
   required string indexName = 2;
@@ -301,4 +279,57 @@ message AlterTableDescProto {
 message AlterColumnProto {
   required string oldColumnName = 1;
   required string newColumnName = 2;
+}
+
+////////////////////////////////////////////////
+// Function and UDF Section
+////////////////////////////////////////////////
+
+enum FunctionType {
+  GENERAL = 0;
+  AGGREGATION = 1;
+  DISTINCT_AGGREGATION = 2;
+  WINDOW = 3;
+  UDF = 4;
+  UDA = 5;
+  DISTINCT_UDA = 6;
+  WINDOW_UDA = 7;
+}
+
+message FunctionDescProto {
+  required FunctionSignatureProto signature = 1;
+  required FunctionSupplementProto supplement = 2;
+  required FunctionInvocationProto invocation = 3;
+}
+
+message FunctionSignatureProto {
+  required FunctionType type = 1;
+  required string name = 2;
+  required DataType returnType = 3;
+  repeated DataType parameterTypes = 4;
+}
+
+message FunctionSupplementProto {
+  optional string shortDescription = 1;
+  optional string detail = 2;
+  optional string example = 3;
+}
+
+message FunctionInvocationProto {
+  optional ClassBaseInvocationDescProto legacy = 1;
+  optional StaticMethodInvocationDescProto scalar = 2;
+  optional ClassBaseInvocationDescProto aggregation = 3;
+  optional StaticMethodInvocationDescProto scalarJIT = 4;
+  optional ClassBaseInvocationDescProto aggregationJIT = 5;
+}
+
+message ClassBaseInvocationDescProto {
+  required string className = 1;
+}
+
+message StaticMethodInvocationDescProto {
+  required string className = 1;
+  required string methodName = 2;
+  required string returnClass = 3;
+  repeated string paramClasses = 4;
 }

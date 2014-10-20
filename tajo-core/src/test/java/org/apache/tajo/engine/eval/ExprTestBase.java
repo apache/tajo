@@ -34,6 +34,7 @@ import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.codegen.EvalCodeGenerator;
 import org.apache.tajo.engine.codegen.EvalNodeCompiler;
 import org.apache.tajo.engine.codegen.TajoClassLoader;
+import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.plan.EvalTreeProtoDeserializer;
@@ -85,7 +86,7 @@ public class ExprTestBase {
     cat = util.getMiniCatalogCluster().getCatalog();
     cat.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
     cat.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-    for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
+    for (FunctionDesc funcDesc : FunctionLoader.load()) {
       cat.createFunction(funcDesc);
     }
 

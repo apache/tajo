@@ -18,6 +18,7 @@
 
 package org.apache.tajo.tuple.offheap;
 
+import com.google.common.base.Preconditions;
 import org.apache.tajo.annotation.UsedByJIT;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.IntervalDatum;
@@ -215,17 +216,12 @@ public abstract class OffHeapRowWriter implements RowWriter {
 
   @UsedByJIT
   public void putText(byte[] val) {
-    int bytesLen = val.length;
+    putText(val, 0, val.length);
+  }
 
-    ensureSize(SizeOf.SIZE_OF_INT + bytesLen);
-    forwardField();
-
-    OffHeapMemory.UNSAFE.putInt(recordStartAddr() + curOffset, bytesLen);
-    curOffset += SizeOf.SIZE_OF_INT;
-
-    OffHeapMemory.UNSAFE.copyMemory(val, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET, null,
-        recordStartAddr() + curOffset, bytesLen);
-    curOffset += bytesLen;
+  @UsedByJIT
+  public void putText(byte[] val, int offset, int length) {
+    putBlob(val, offset, length);
   }
 
   @UsedByJIT
@@ -246,7 +242,14 @@ public abstract class OffHeapRowWriter implements RowWriter {
 
   @UsedByJIT
   public void putBlob(byte[] val) {
-    int bytesLen = val.length;
+    putBlob(val, 0, val.length);
+  }
+
+  @UsedByJIT
+  public void putBlob(byte[] val, int offset, int length) {
+    Preconditions.checkArgument(offset >= 0 && offset <= val.length);
+
+    int bytesLen = length;
 
     ensureSize(SizeOf.SIZE_OF_INT + bytesLen);
     forwardField();
@@ -254,7 +257,7 @@ public abstract class OffHeapRowWriter implements RowWriter {
     OffHeapMemory.UNSAFE.putInt(recordStartAddr() + curOffset, bytesLen);
     curOffset += SizeOf.SIZE_OF_INT;
 
-    OffHeapMemory.UNSAFE.copyMemory(val, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET, null,
+    OffHeapMemory.UNSAFE.copyMemory(val, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET + offset, null,
         recordStartAddr() + curOffset, bytesLen);
     curOffset += bytesLen;
   }

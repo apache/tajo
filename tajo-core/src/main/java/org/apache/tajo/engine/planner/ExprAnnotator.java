@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.planner;
 
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogService;
@@ -35,12 +34,12 @@ import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.engine.planner.nameresolver.NameResolvingMode;
 import org.apache.tajo.engine.planner.nameresolver.NameResolver;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
-import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
@@ -106,7 +105,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       return new Pair<EvalNode, EvalNode>(lhs, rhs);
     }
 
-    Type toBeCasted = TUtil.getFromNestedMap(TYPE_CONVERSION_MAP, lhsType, rhsType);
+    Type toBeCasted = TUtil.getFromNestedMap(CatalogUtil.OPERATION_CASTING_MAP, lhsType, rhsType);
     if (toBeCasted != null) { // if not null, one of either should be converted to another type.
       // Overwrite lhs, rhs, or both with cast expression.
       if (lhsType != toBeCasted) {
@@ -118,40 +117,6 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
 
     return new Pair<EvalNode, EvalNode>(lhs, rhs);
-  }
-
-  /**
-   * It picks out the widest range type among given <code>types</code>.
-   *
-   * Example:
-   * <ul>
-   *   <li>int, int8  -> int8 </li>
-   *   <li>int4, int8, float4  -> float4 </li>
-   *   <li>float4, float8 -> float8</li>
-   *   <li>float4, text -> exception!</li>
-   * </ul>
-   *
-   * @param types A list of DataTypes
-   * @return The widest DataType
-   * @throws PlanningException when types are not compatible, it throws the exception.
-   */
-  public static DataType getWidestType(DataType...types) throws PlanningException {
-    DataType widest = types[0];
-    for (int i = 1; i < types.length; i++) {
-
-      if (widest.getType() == Type.NULL_TYPE) { // if null, skip this type
-        widest = types[i];
-        continue;
-      }
-
-      if (types[i].getType() != Type.NULL_TYPE) {
-        Type candidate = TUtil.getFromNestedMap(TYPE_CONVERSION_MAP, widest.getType(), types[i].getType());
-        assertEval(candidate != null, "No matched operation for those types: " + TUtil.arrayToString(types));
-        widest = CatalogUtil.newSimpleDataType(candidate);
-      }
-    }
-
-    return widest;
   }
 
   /**
@@ -331,7 +296,13 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     stack.pop();
 
     // implicit type conversion
-    DataType widestType = getWidestType(predicand.getValueType(), begin.getValueType(), end.getValueType());
+    DataType widestType = null;
+
+    try {
+      widestType = CatalogUtil.getWidestType(predicand.getValueType(), begin.getValueType(), end.getValueType());
+    } catch (InvalidOperationException ioe) {
+      throw new PlanningException(ioe);
+    }
 
     BetweenPredicateEval betweenEval = new BetweenPredicateEval(
         between.isNot(),
@@ -362,10 +333,11 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     // Getting the widest type from all if-then expressions and else expression.
     DataType widestType = caseWhenEval.getIfThenEvals().get(0).getResult().getValueType();
     for (int i = 1; i < caseWhenEval.getIfThenEvals().size(); i++) {
-      widestType = getWidestType(caseWhenEval.getIfThenEvals().get(i).getResult().getValueType(), widestType);
+      widestType = CatalogUtil.getWidestType(caseWhenEval.getIfThenEvals().get(i).getResult().getValueType(),
+          widestType);
     }
     if (caseWhen.hasElseResult()) {
-      widestType = getWidestType(widestType, caseWhenEval.getElse().getValueType());
+      widestType = CatalogUtil.getWidestType(widestType, caseWhenEval.getElse().getValueType());
     }
 
     assertEval(widestType != null, "Invalid Type Conversion for CaseWhen");
@@ -662,7 +634,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       return new AggregationFunctionCallEval(countRows, (AggFunction) countRows.newInstance(),
           new EvalNode[] {});
     } catch (InternalException e) {
-      throw new NoSuchFunctionException(countRows.getSignature(), new DataType[]{});
+      throw new NoSuchFunctionException(countRows.getFunctionName(), new DataType[]{});
     }
   }
 
@@ -959,64 +931,5 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     results[3] = fraction;
 
     return results;
-  }
-
-  /** It is the relationship graph of type conversions. It represents each type can be converted to which types. */
-  static final Map<Type, Map<Type, Type>> TYPE_CONVERSION_MAP = Maps.newHashMap();
-  static {
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT1, Type.INT1, Type.INT1);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT1, Type.INT2, Type.INT2);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT1, Type.INT4, Type.INT4);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT1, Type.INT8, Type.INT8);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT1, Type.FLOAT4, Type.FLOAT4);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT1, Type.FLOAT8, Type.FLOAT8);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT1, Type.TEXT, Type.TEXT);
-
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT2, Type.INT1, Type.INT2);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT2, Type.INT2, Type.INT2);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT2, Type.INT4, Type.INT4);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT2, Type.INT8, Type.INT8);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT2, Type.FLOAT4, Type.FLOAT4);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT2, Type.FLOAT8, Type.FLOAT8);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT2, Type.TEXT, Type.TEXT);
-
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT4, Type.INT1, Type.INT4);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT4, Type.INT2, Type.INT4);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT4, Type.INT4, Type.INT4);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT4, Type.INT8, Type.INT8);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT4, Type.FLOAT4, Type.FLOAT4);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT4, Type.FLOAT8, Type.FLOAT8);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT4, Type.TEXT, Type.TEXT);
-
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT8, Type.INT1, Type.INT8);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT8, Type.INT2, Type.INT8);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT8, Type.INT4, Type.INT8);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT8, Type.INT8, Type.INT8);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT8, Type.FLOAT4, Type.FLOAT4);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT8, Type.FLOAT8, Type.FLOAT8);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INT8, Type.TEXT, Type.TEXT);
-
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.FLOAT4, Type.INT1, Type.FLOAT4);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.FLOAT4, Type.INT2, Type.FLOAT4);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.FLOAT4, Type.INT4, Type.FLOAT4);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.FLOAT4, Type.INT8, Type.FLOAT4);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.FLOAT4, Type.FLOAT4, Type.FLOAT4);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.FLOAT4, Type.FLOAT8, Type.FLOAT8);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.FLOAT4, Type.TEXT, Type.TEXT);
-
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.FLOAT8, Type.INT1, Type.FLOAT8);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.FLOAT8, Type.INT2, Type.FLOAT8);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.FLOAT8, Type.INT4, Type.FLOAT8);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.FLOAT8, Type.INT8, Type.FLOAT8);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.FLOAT8, Type.FLOAT4, Type.FLOAT8);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.FLOAT8, Type.FLOAT8, Type.FLOAT8);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.FLOAT8, Type.TEXT, Type.TEXT);
-
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.TEXT, Type.TIMESTAMP, Type.TIMESTAMP);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.TIMESTAMP, Type.TIMESTAMP, Type.TIMESTAMP);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.TIMESTAMP, Type.TEXT, Type.TEXT);
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.TEXT, Type.TEXT, Type.TEXT);
-
-    TUtil.putToNestedMap(TYPE_CONVERSION_MAP, Type.INET4, Type.INET4, Type.INET4);
   }
 }

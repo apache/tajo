@@ -63,7 +63,11 @@ public interface RowWriter {
 
   public void putText(byte [] val);
 
+  public void putText(byte [] val, int offset, int length);
+
   public void putBlob(byte[] val);
+
+  public void putBlob(byte[] val, int offset, int length);
 
   public void putTimestamp(long val);
 

@@ -77,6 +77,7 @@ public interface Tuple extends Cloneable {
   @SuppressWarnings("unused")
 	public String getText(int fieldId);
 
+  @SuppressWarnings("unused")
   public IntervalDatum getInterval(int fieldId);
 
   @SuppressWarnings("unused")

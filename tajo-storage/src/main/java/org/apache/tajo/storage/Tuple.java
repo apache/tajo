@@ -19,6 +19,7 @@
 package org.apache.tajo.storage;
 
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.IntervalDatum;
 
 public interface Tuple extends Cloneable {
   
@@ -69,7 +70,7 @@ public interface Tuple extends Cloneable {
 
   public Datum getProtobufDatum(int fieldId);
 
-  public Datum getInterval(int fieldId);
+  public IntervalDatum getInterval(int fieldId);
 
   public char [] getUnicodeChars(int fieldId);
 

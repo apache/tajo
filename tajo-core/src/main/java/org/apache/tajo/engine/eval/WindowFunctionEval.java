@@ -107,7 +107,7 @@ public class WindowFunctionEval extends AggregationFunctionCallEval implements C
           sb.append(",");
       }
     }
-    sb.append(funcDesc.getSignature()).append("(").append(isDistinct() ? " distinct" : "").append(sb)
+    sb.append(funcDesc.getFunctionName()).append("(").append(isDistinct() ? " distinct" : "").append(sb)
         .append(")");
     if (hasSortSpecs()) {
       sb.append("ORDER BY ").append(TUtil.arrayToString(sortSpecs));

@@ -636,40 +636,17 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
 
   @Override
   public EvalNode visitFuncCall(EvalCodeGenContext context, FunctionEval func, Stack<EvalNode> stack) {
-    int paramNum = func.getArgs().length;
-    context.push(paramNum);
-    context.newArray(Datum.class); // new Datum[paramNum]
-    final int DATUM_ARRAY = context.astore();
 
-    stack.push(func);
-    EvalNode[] params = func.getArgs();
-    for (int paramIdx = 0; paramIdx < func.getArgs().length; paramIdx++) {
-      context.aload(DATUM_ARRAY);       // array ref
-      context.methodvisitor.visitLdcInsn(paramIdx); // array idx
-      visit(context, params[paramIdx], stack);
-      context.convertToDatum(params[paramIdx].getValueType(), true);  // value
-      context.methodvisitor.visitInsn(Opcodes.AASTORE);
+    if (func.getFuncDesc().getInvocation().hasScalar()) {
+      ScalarFunctionBindingEmitter.emit(this, context, func, stack);
+      return func;
     }
-    stack.pop();
 
-    context.methodvisitor.visitTypeInsn(Opcodes.NEW, TajoGeneratorAdapter.getInternalName(VTuple.class));
-    context.methodvisitor.visitInsn(Opcodes.DUP);
-    context.aload(DATUM_ARRAY);
-    context.newInstance(VTuple.class, new Class[]{Datum[].class});  // new VTuple(datum [])
-    context.methodvisitor.visitTypeInsn(Opcodes.CHECKCAST, TajoGeneratorAdapter.getInternalName(Tuple.class)); // cast to Tuple
-    final int TUPLE = context.astore();
+    if (func.getFuncDesc().getInvocation().hasLegacy()) {
+      LegacyFunctionBindingEmitter.emit(this, context, func, stack);
+      return func;
+    }
 
-    FunctionDesc desc = func.getFuncDesc();
-
-    String fieldName = context.variables.symbols.get(func);
-    String funcDescName = "L" + TajoGeneratorAdapter.getInternalName(desc.getFuncClass()) + ";";
-
-    context.aload(0);
-    context.methodvisitor.visitFieldInsn(Opcodes.GETFIELD, context.owner, fieldName, funcDescName);
-    context.aload(TUPLE);
-    context.invokeVirtual(desc.getFuncClass(), "eval", Datum.class, new Class[] {Tuple.class});
-
-    context.convertToPrimitive(func.getValueType());
     return func;
   }
 
@@ -741,7 +718,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
 
   @Override
   protected EvalNode visitCaseWhen(EvalCodeGenContext context, CaseWhenEval caseWhen, Stack<EvalNode> stack) {
-    CaseWhenEmitter.getInstance().emit(this, context, caseWhen, stack);
+    CaseWhenEmitter.emit(this, context, caseWhen, stack);
     return caseWhen;
   }
 
