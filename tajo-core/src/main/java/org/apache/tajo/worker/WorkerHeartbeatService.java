@@ -32,9 +32,9 @@ import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
-import org.apache.tajo.storage.v2.DiskDeviceInfo;
-import org.apache.tajo.storage.v2.DiskMountInfo;
-import org.apache.tajo.storage.v2.DiskUtil;
+import org.apache.tajo.storage.DiskDeviceInfo;
+import org.apache.tajo.storage.DiskMountInfo;
+import org.apache.tajo.storage.DiskUtil;
 import org.apache.tajo.util.HAServiceUtil;
 
 import java.io.File;
