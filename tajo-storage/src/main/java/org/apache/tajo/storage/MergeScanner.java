@@ -128,7 +128,7 @@ public class MergeScanner implements Scanner {
   private Scanner getNextScanner() throws IOException {
     if (iterator.hasNext()) {
       currentFragment = iterator.next();
-      currentScanner = StorageManagerFactory.getStorageManager((TajoConf)conf).getScanner(meta, schema,
+      currentScanner = StorageManager.getStorageManager((TajoConf)conf).getScanner(meta, schema,
           currentFragment, target);
       currentScanner.init();
       return currentScanner;

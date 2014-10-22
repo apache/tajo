@@ -14,6 +14,7 @@ Release 0.9.1 - unreleased
     TAJO-1092: Improve the function system to allow other function 
     implementation types. (hyunsik)
 
+    TAJO-1121: Remove the 'v2' storage package. (Hyoungjun Kim)
 
   BUG FIXES
 

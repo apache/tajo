@@ -23,7 +23,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.logical.ScanNode;
-import org.apache.tajo.storage.AbstractStorageManager;
+import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -44,12 +44,12 @@ public class PartitionMergeScanExec extends PhysicalExec {
   private List<SeqScanExec> scanners = Lists.newArrayList();
   private Iterator<SeqScanExec> iterator;
 
-  private AbstractStorageManager sm;
+  private StorageManager sm;
 
   private float progress;
   protected TableStats inputStats;
 
-  public PartitionMergeScanExec(TaskAttemptContext context, AbstractStorageManager sm,
+  public PartitionMergeScanExec(TaskAttemptContext context, StorageManager sm,
                                 ScanNode plan, CatalogProtos.FragmentProto[] fragments) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema());
 

@@ -79,7 +79,7 @@ public class GlobalEngine extends AbstractService {
   private final static Log LOG = LogFactory.getLog(GlobalEngine.class);
 
   private final MasterContext context;
-  private final AbstractStorageManager sm;
+  private final StorageManager sm;
 
   private SQLAnalyzer analyzer;
   private CatalogService catalog;
