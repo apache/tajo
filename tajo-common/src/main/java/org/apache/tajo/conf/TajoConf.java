@@ -233,13 +233,6 @@ public class TajoConf extends Configuration {
     // for RCFile
     HIVEUSEEXPLICITRCFILEHEADER("tajo.exec.rcfile.use.explicit.header", true),
 
-    // for Storage Manager v2
-    STORAGE_MANAGER_VERSION_2("tajo.storage-manager.v2", false),
-    STORAGE_MANAGER_DISK_SCHEDULER_MAX_READ_BYTES_PER_SLOT("tajo.storage-manager.max-read-bytes", 8 * 1024 * 1024),
-    STORAGE_MANAGER_DISK_SCHEDULER_REPORT_INTERVAL("tajo.storage-manager.disk-scheduler.report-interval", 60 * 1000),
-    STORAGE_MANAGER_CONCURRENCY_PER_DISK("tajo.storage-manager.disk-scheduler.per-disk-concurrency", 2),
-
-
     // RPC --------------------------------------------------------------------
     RPC_POOL_MAX_IDLE("tajo.rpc.pool.idle.max", 10),
 

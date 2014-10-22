@@ -47,7 +47,7 @@ import static org.junit.Assert.*;
 public class TestStorageManager {
 	private TajoConf conf;
 	private static String TEST_PATH = "target/test-data/TestStorageManager";
-	AbstractStorageManager sm = null;
+  StorageManager sm = null;
   private Path testDir;
   private FileSystem fs;
 
@@ -56,7 +56,7 @@ public class TestStorageManager {
 		conf = new TajoConf();
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     fs = testDir.getFileSystem(conf);
-    sm = StorageManagerFactory.getStorageManager(conf, testDir);
+    sm = StorageManager.getStorageManager(conf, testDir);
 	}
 
 	@After
@@ -83,14 +83,14 @@ public class TestStorageManager {
 
     Path path = StorageUtil.concatPath(testDir, "testGetScannerAndAppender", "table.csv");
     fs.mkdirs(path.getParent());
-		Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, path);
+		Appender appender = StorageManager.getStorageManager(conf).getAppender(meta, schema, path);
     appender.init();
 		for(Tuple t : tuples) {
 		  appender.addTuple(t);
 		}
 		appender.close();
 
-		Scanner scanner = StorageManagerFactory.getStorageManager(conf).getFileScanner(meta, schema, path);
+		Scanner scanner = StorageManager.getStorageManager(conf).getFileScanner(meta, schema, path);
     scanner.init();
 		int i=0;
 		while(scanner.next() != null) {
@@ -124,7 +124,7 @@ public class TestStorageManager {
       }
 
       assertTrue(fs.exists(tablePath));
-      AbstractStorageManager sm = StorageManagerFactory.getStorageManager(new TajoConf(conf), tablePath);
+      StorageManager sm = StorageManager.getStorageManager(new TajoConf(conf), tablePath);
 
       Schema schema = new Schema();
       schema.addColumn("id", Type.INT4);
@@ -176,7 +176,7 @@ public class TestStorageManager {
         DFSTestUtil.createFile(fs, tmpFile, 10, (short) 2, 0xDEADDEADl);
       }
       assertTrue(fs.exists(tablePath));
-      AbstractStorageManager sm = StorageManagerFactory.getStorageManager(new TajoConf(conf), tablePath);
+      StorageManager sm = StorageManager.getStorageManager(new TajoConf(conf), tablePath);
 
       Schema schema = new Schema();
       schema.addColumn("id", Type.INT4);

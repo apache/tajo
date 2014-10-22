@@ -106,7 +106,7 @@ public class ExternalSortExec extends SortExec {
   /** total bytes of input data */
   private long sortAndStoredBytes;
 
-  private ExternalSortExec(final TaskAttemptContext context, final AbstractStorageManager sm, final SortNode plan)
+  private ExternalSortExec(final TaskAttemptContext context, final StorageManager sm, final SortNode plan)
       throws PhysicalPlanningException {
     super(context, plan.getInSchema(), plan.getOutSchema(), null, plan.getSortKeys());
 
@@ -129,7 +129,7 @@ public class ExternalSortExec extends SortExec {
   }
 
   public ExternalSortExec(final TaskAttemptContext context,
-                          final AbstractStorageManager sm, final SortNode plan,
+                          final StorageManager sm, final SortNode plan,
                           final CatalogProtos.FragmentProto[] fragments) throws PhysicalPlanningException {
     this(context, sm, plan);
 
@@ -141,7 +141,7 @@ public class ExternalSortExec extends SortExec {
   }
 
   public ExternalSortExec(final TaskAttemptContext context,
-                          final AbstractStorageManager sm, final SortNode plan, final PhysicalExec child)
+                          final StorageManager sm, final SortNode plan, final PhysicalExec child)
       throws IOException {
     this(context, sm, plan);
     setChild(child);
