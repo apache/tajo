@@ -36,6 +36,7 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.FileUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -69,7 +70,7 @@ public class TestRowFile {
 
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.ROWFILE);
 
-    StorageManager sm = StorageManager.getStorageManager(conf, new Path(conf.getVar(ConfVars.ROOT_DIR)));
+    FileStorageManager sm = StorageManager.getFileStorageManager(conf, new Path(conf.getVar(ConfVars.ROOT_DIR)));
 
     Path tablePath = new Path("/test");
     Path metaPath = new Path(tablePath, ".meta");
@@ -79,7 +80,7 @@ public class TestRowFile {
 
     FileUtil.writeProto(fs, metaPath, meta.getProto());
 
-    Appender appender = StorageManager.getStorageManager(conf).getAppender(meta, schema, dataPath);
+    Appender appender = StorageManager.getFileStorageManager(conf).getAppender(meta, schema, dataPath);
     appender.enableStats();
     appender.init();
 
@@ -110,7 +111,7 @@ public class TestRowFile {
 
     int tupleCnt = 0;
     start = System.currentTimeMillis();
-    Scanner scanner = StorageManager.getStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner = StorageManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
     while ((tuple=scanner.next()) != null) {
       tupleCnt++;

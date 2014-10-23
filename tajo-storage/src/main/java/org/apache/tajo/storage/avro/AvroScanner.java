@@ -39,6 +39,7 @@ import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -63,7 +64,7 @@ public class AvroScanner extends FileScanner {
    */
   public AvroScanner(Configuration conf,
                      final org.apache.tajo.catalog.Schema schema,
-                     final TableMeta meta, final FileFragment fragment) {
+                     final TableMeta meta, final Fragment fragment) {
     super(conf, schema, meta, fragment);
   }
 

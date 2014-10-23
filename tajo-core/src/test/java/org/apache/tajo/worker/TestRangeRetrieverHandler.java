@@ -86,7 +86,7 @@ public class TestRangeRetrieverHandler {
     catalog = util.getMiniCatalogCluster().getCatalog();
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, testDir.toUri().toString());
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-    sm = StorageManager.getStorageManager(conf, testDir);
+    sm = StorageManager.getFileStorageManager(conf, testDir);
 
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
@@ -141,7 +141,7 @@ public class TestRangeRetrieverHandler {
         tableDir);
     catalog.createTable(employee);
 
-    FileFragment[] frags = StorageManager.splitNG(conf, "default.employee", employeeMeta, tableDir, Integer.MAX_VALUE);
+    FileFragment[] frags = FileStorageManager.splitNG(conf, "default.employee", employeeMeta, tableDir, Integer.MAX_VALUE);
 
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(),
@@ -151,7 +151,7 @@ public class TestRangeRetrieverHandler {
     LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     ExternalSortExec sort = null;
@@ -165,7 +165,7 @@ public class TestRangeRetrieverHandler {
     }
 
     SortSpec[] sortSpecs = sort.getPlan().getSortKeys();
-    RangeShuffleFileWriteExec idxStoreExec = new RangeShuffleFileWriteExec(ctx, sm, sort, sort.getSchema(),
+    RangeShuffleFileWriteExec idxStoreExec = new RangeShuffleFileWriteExec(ctx, sort, sort.getSchema(),
         sort.getSchema(), sortSpecs);
 
     exec = idxStoreExec;
@@ -264,7 +264,7 @@ public class TestRangeRetrieverHandler {
         CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta, tablePath);
     catalog.createTable(employee);
 
-    FileFragment[] frags = sm.splitNG(conf, "default.employee", meta, tablePath, Integer.MAX_VALUE);
+    FileFragment[] frags = FileStorageManager.splitNG(conf, "default.employee", meta, tablePath, Integer.MAX_VALUE);
 
     TaskAttemptContext
         ctx = new TaskAttemptContext(new QueryContext(conf),
@@ -275,7 +275,7 @@ public class TestRangeRetrieverHandler {
     LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf,sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     ExternalSortExec sort = null;
@@ -289,7 +289,7 @@ public class TestRangeRetrieverHandler {
     }
 
     SortSpec[] sortSpecs = sort.getPlan().getSortKeys();
-    RangeShuffleFileWriteExec idxStoreExec = new RangeShuffleFileWriteExec(ctx, sm, sort,
+    RangeShuffleFileWriteExec idxStoreExec = new RangeShuffleFileWriteExec(ctx, sort,
         sort.getSchema(), sort.getSchema(), sortSpecs);
 
     exec = idxStoreExec;

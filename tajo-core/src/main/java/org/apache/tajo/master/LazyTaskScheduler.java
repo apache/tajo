@@ -39,6 +39,7 @@ import org.apache.tajo.master.querymaster.QueryUnit;
 import org.apache.tajo.master.querymaster.QueryUnitAttempt;
 import org.apache.tajo.master.querymaster.SubQuery;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.FetchImpl;
 
@@ -197,15 +198,17 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
     if (event.getType() == EventType.T_SCHEDULE) {
       if (event instanceof FragmentScheduleEvent) {
         FragmentScheduleEvent castEvent = (FragmentScheduleEvent) event;
-        Collection<FileFragment> rightFragments = castEvent.getRightFragments();
+        Collection<Fragment> rightFragments = castEvent.getRightFragments();
         if (rightFragments == null || rightFragments.isEmpty()) {
           scheduledFragments.addFragment(new FragmentPair(castEvent.getLeftFragment(), null));
         } else {
-          for (FileFragment eachFragment: rightFragments) {
+          for (Fragment eachFragment: rightFragments) {
             scheduledFragments.addFragment(new FragmentPair(castEvent.getLeftFragment(), eachFragment));
           }
         }
-        initDiskBalancer(castEvent.getLeftFragment().getHosts(), castEvent.getLeftFragment().getDiskIds());
+        if (castEvent.getLeftFragment() instanceof FileFragment) {
+          initDiskBalancer(castEvent.getLeftFragment().getHosts(), ((FileFragment)castEvent.getLeftFragment()).getDiskIds());
+        }
       } else if (event instanceof FetchScheduleEvent) {
         FetchScheduleEvent castEvent = (FetchScheduleEvent) event;
         scheduledFetches.addFetch(castEvent.getFetches());
@@ -375,13 +378,13 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
             break;
           }
 
-          if (assignedFragmentSize + fragmentPair.getLeftFragment().getEndKey() > taskSize) {
+          if (assignedFragmentSize + fragmentPair.getLeftFragment().getLength() > taskSize) {
             break;
           } else {
             fragmentPairs.add(fragmentPair);
-            assignedFragmentSize += fragmentPair.getLeftFragment().getEndKey();
+            assignedFragmentSize += fragmentPair.getLeftFragment().getLength();
             if (fragmentPair.getRightFragment() != null) {
-              assignedFragmentSize += fragmentPair.getRightFragment().getEndKey();
+              assignedFragmentSize += fragmentPair.getRightFragment().getLength();
             }
           }
           scheduledFragments.removeFragment(fragmentPair);
@@ -397,13 +400,13 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
             break;
           }
 
-          if (assignedFragmentSize + fragmentPair.getLeftFragment().getEndKey() > taskSize) {
+          if (assignedFragmentSize + fragmentPair.getLeftFragment().getLength() > taskSize) {
             break;
           } else {
             fragmentPairs.add(fragmentPair);
-            assignedFragmentSize += fragmentPair.getLeftFragment().getEndKey();
+            assignedFragmentSize += fragmentPair.getLeftFragment().getLength();
             if (fragmentPair.getRightFragment() != null) {
-              assignedFragmentSize += fragmentPair.getRightFragment().getEndKey();
+              assignedFragmentSize += fragmentPair.getRightFragment().getLength();
             }
           }
           scheduledFragments.removeFragment(fragmentPair);

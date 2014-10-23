@@ -24,6 +24,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.master.DefaultFragmentScheduleAlgorithm.FragmentsPerDisk;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TUtil;
 
@@ -101,7 +102,10 @@ public class GreedyFragmentScheduleAlgorithm implements FragmentScheduleAlgorith
   @Override
   public void addFragment(FragmentPair fragmentPair) {
     String[] hosts = fragmentPair.getLeftFragment().getHosts();
-    int[] diskIds = fragmentPair.getLeftFragment().getDiskIds();
+    int[] diskIds = null;
+    if (fragmentPair.getLeftFragment() instanceof FileFragment) {
+      diskIds = ((FileFragment)fragmentPair.getLeftFragment()).getDiskIds();
+    }
     for (int i = 0; i < hosts.length; i++) {
       addFragment(hosts[i], diskIds[i], fragmentPair);
     }
@@ -276,7 +280,10 @@ public class GreedyFragmentScheduleAlgorithm implements FragmentScheduleAlgorith
 
   public void removeFragment(FragmentPair fragmentPair) {
     String [] hosts = fragmentPair.getLeftFragment().getHosts();
-    int[] diskIds = fragmentPair.getLeftFragment().getDiskIds();
+    int[] diskIds = null;
+    if (fragmentPair.getLeftFragment() instanceof FileFragment) {
+      diskIds = ((FileFragment)fragmentPair.getLeftFragment()).getDiskIds();
+    }
     for (int i = 0; i < hosts.length; i++) {
       String normalizedHost = NetUtils.normalizeHost(hosts[i]);
       Map<Integer, FragmentsPerDisk> diskFragmentMap = fragmentHostMapping.get(normalizedHost);

@@ -186,7 +186,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
     fetches.add(fetch);
   }
 
-  public QueryContext getQueryContext() {
+  public QueryContext getQueryContext(TajoConf baseConf) {
     QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
     if (queryContext != null) {
       return queryContext;
@@ -194,7 +194,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
     if (!p.hasQueryContext()) {
       return null;
     }
-    this.queryContext = new QueryContext(new TajoConf(), p.getQueryContext());
+    this.queryContext = new QueryContext(new TajoConf(baseConf), p.getQueryContext());
     return this.queryContext;
   }
 

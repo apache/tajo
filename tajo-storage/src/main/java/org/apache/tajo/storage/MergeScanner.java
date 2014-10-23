@@ -18,7 +18,6 @@
 
 package org.apache.tajo.storage;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -26,7 +25,7 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,9 +36,9 @@ public class MergeScanner implements Scanner {
   private Configuration conf;
   private TableMeta meta;
   private Schema schema;
-  private List<FileFragment> fragments;
-  private Iterator<FileFragment> iterator;
-  private FileFragment currentFragment;
+  private List<Fragment> fragments;
+  private Iterator<Fragment> iterator;
+  private Fragment currentFragment;
   private Scanner currentScanner;
   private Tuple tuple;
   private boolean projectable = false;
@@ -48,12 +47,12 @@ public class MergeScanner implements Scanner {
   private float progress;
   protected TableStats tableStats;
 
-  public MergeScanner(Configuration conf, Schema schema, TableMeta meta, List<FileFragment> rawFragmentList)
+  public MergeScanner(Configuration conf, Schema schema, TableMeta meta, List<Fragment> rawFragmentList)
       throws IOException {
     this(conf, schema, meta, rawFragmentList, schema);
   }
 
-  public MergeScanner(Configuration conf, Schema schema, TableMeta meta, List<FileFragment> rawFragmentList,
+  public MergeScanner(Configuration conf, Schema schema, TableMeta meta, List<Fragment> rawFragmentList,
                       Schema target)
       throws IOException {
     this.conf = conf;
@@ -61,12 +60,12 @@ public class MergeScanner implements Scanner {
     this.meta = meta;
     this.target = target;
 
-    this.fragments = new ArrayList<FileFragment>();
+    this.fragments = new ArrayList<Fragment>();
 
     long numBytes = 0;
-    for (FileFragment eachFileFragment: rawFragmentList) {
-      numBytes += eachFileFragment.getEndKey();
-      if (eachFileFragment.getEndKey() > 0) {
+    for (Fragment eachFileFragment: rawFragmentList) {
+      if (eachFileFragment.getLength() > 0) {
+        numBytes += eachFileFragment.getLength();
         fragments.add(eachFileFragment);
       }
     }
@@ -128,7 +127,7 @@ public class MergeScanner implements Scanner {
   private Scanner getNextScanner() throws IOException {
     if (iterator.hasNext()) {
       currentFragment = iterator.next();
-      currentScanner = StorageManager.getStorageManager((TajoConf)conf).getScanner(meta, schema,
+      currentScanner = StorageManager.getStorageManager((TajoConf)conf, meta.getStoreType()).getScanner(meta, schema,
           currentFragment, target);
       currentScanner.init();
       return currentScanner;

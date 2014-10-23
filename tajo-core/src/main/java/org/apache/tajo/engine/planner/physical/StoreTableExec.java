@@ -89,10 +89,11 @@ public class StoreTableExec extends UnaryPhysicalExec {
 
     if (plan instanceof InsertNode) {
       InsertNode createTableNode = (InsertNode) plan;
-      appender = StorageManager.getStorageManager(context.getConf()).getAppender(meta,
+      appender = StorageManager.getStorageManager(context.getConf(), meta.getStoreType()).getAppender(meta,
           createTableNode.getTableSchema(), context.getOutputPath());
     } else {
-      appender = StorageManager.getStorageManager(context.getConf()).getAppender(meta, outSchema, lastFileName);
+      appender = StorageManager.getStorageManager(context.getConf(), meta.getStoreType()).getAppender(meta,
+          outSchema, lastFileName);
     }
 
     appender.enableStats();

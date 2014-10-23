@@ -87,8 +87,7 @@ public class NonForwardQueryResultScanner {
 
       try {
         // scanNode must be clone cause SeqScanExec change target in the case of a partitioned table.
-        scanExec = new SeqScanExec(taskContext,
-            StorageManager.getStorageManager(tajoConf), (ScanNode)scanNode.clone(), fragments);
+        scanExec = new SeqScanExec(taskContext, (ScanNode)scanNode.clone(), fragments);
       } catch (CloneNotSupportedException e) {
         throw new IOException(e.getMessage(), e);
       }

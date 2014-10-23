@@ -51,7 +51,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
   private FileAppender appender;
   private TableMeta meta;
 
-  public RangeShuffleFileWriteExec(final TaskAttemptContext context, final StorageManager sm,
+  public RangeShuffleFileWriteExec(final TaskAttemptContext context,
                                    final PhysicalExec child, final Schema inSchema, final Schema outSchema,
                                    final SortSpec[] sortSpecs) throws IOException {
     super(context, inSchema, outSchema, child);
@@ -70,7 +70,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
       indexKeys[i] = inSchema.getColumnId(col.getQualifiedName());
     }
 
-    BSTIndex bst = new BSTIndex(new TajoConf());
+    BSTIndex bst = new BSTIndex(new TajoConf(context.getConf()));
     this.comp = new TupleComparator(keySchema, sortSpecs);
     Path storeTablePath = new Path(context.getWorkDir(), "output");
     LOG.info("Output data directory: " + storeTablePath);
@@ -78,7 +78,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
         context.getDataChannel().getStoreType() : CatalogProtos.StoreType.RAW);
     FileSystem fs = new RawLocalFileSystem();
     fs.mkdirs(storeTablePath);
-    this.appender = (FileAppender) StorageManager.getStorageManager(context.getConf()).getAppender(meta,
+    this.appender = (FileAppender) StorageManager.getFileStorageManager(context.getConf()).getAppender(meta,
         outSchema, new Path(storeTablePath, "output"));
     this.appender.enableStats();
     this.appender.init();

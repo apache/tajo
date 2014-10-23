@@ -38,6 +38,7 @@ public class TajoConstants {
   public static final String SYSTEM_HA_ACTIVE_DIR_NAME = "active";
   public static final String SYSTEM_HA_BACKUP_DIR_NAME = "backup";
 
+  public static final int UNKNOWN_ROW_NUMBER = -1;
 
   private TajoConstants() {}
 }

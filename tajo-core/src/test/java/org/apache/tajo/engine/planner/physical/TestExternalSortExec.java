@@ -56,7 +56,7 @@ public class TestExternalSortExec {
   private CatalogService catalog;
   private SQLAnalyzer analyzer;
   private LogicalPlanner planner;
-  private StorageManager sm;
+  private FileStorageManager sm;
   private Path testDir;
 
   private final int numTuple = 100000;
@@ -73,7 +73,7 @@ public class TestExternalSortExec {
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, testDir.toUri().toString());
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     conf.setVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR, testDir.toString());
-    sm = StorageManager.getStorageManager(conf, testDir);
+    sm = StorageManager.getFileStorageManager(conf, testDir);
 
     Schema schema = new Schema();
     schema.addColumn("managerid", Type.INT4);
@@ -82,7 +82,7 @@ public class TestExternalSortExec {
 
     TableMeta employeeMeta = CatalogUtil.newTableMeta(StoreType.CSV);
     Path employeePath = new Path(testDir, "employee.csv");
-    Appender appender = StorageManager.getStorageManager(conf).getAppender(employeeMeta, schema, employeePath);
+    Appender appender = StorageManager.getFileStorageManager(conf).getAppender(employeeMeta, schema, employeePath);
     appender.enableStats();
     appender.init();
     Tuple tuple = new VTuple(schema.size());
@@ -118,7 +118,7 @@ public class TestExternalSortExec {
 
   @Test
   public final void testNext() throws IOException, PlanningException {
-    FileFragment[] frags = StorageManager.splitNG(conf, "default.employee", employee.getMeta(), employee.getPath(),
+    FileFragment[] frags = FileStorageManager.splitNG(conf, "default.employee", employee.getMeta(), employee.getPath(),
         Integer.MAX_VALUE);
     Path workDir = new Path(testDir, TestExternalSortExec.class.getName());
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
@@ -128,7 +128,7 @@ public class TestExternalSortExec {
     LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
     LogicalNode rootNode = plan.getRootBlock().getRoot();
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     
     ProjectionExec proj = (ProjectionExec) exec;
@@ -138,8 +138,7 @@ public class TestExternalSortExec {
       UnaryPhysicalExec sortExec = proj.getChild();
       SeqScanExec scan = sortExec.getChild();
 
-      ExternalSortExec extSort = new ExternalSortExec(ctx, sm,
-          ((MemSortExec)sortExec).getPlan(), scan);
+      ExternalSortExec extSort = new ExternalSortExec(ctx, ((MemSortExec)sortExec).getPlan(), scan);
       proj.setChild(extSort);
     }
 

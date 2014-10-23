@@ -148,7 +148,7 @@ public class Task {
     this.taskId = taskId;
 
     this.systemConf = executionBlockContext.getConf();
-    this.queryContext = request.getQueryContext();
+    this.queryContext = request.getQueryContext(systemConf);
     this.executionBlockContext = executionBlockContext;
     this.taskDir = StorageUtil.concatPath(baseDir,
         taskId.getQueryUnitId().getId() + "_" + taskId.getId());

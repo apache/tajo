@@ -44,25 +44,22 @@ public class PartitionMergeScanExec extends PhysicalExec {
   private List<SeqScanExec> scanners = Lists.newArrayList();
   private Iterator<SeqScanExec> iterator;
 
-  private StorageManager sm;
-
   private float progress;
   protected TableStats inputStats;
 
-  public PartitionMergeScanExec(TaskAttemptContext context, StorageManager sm,
+  public PartitionMergeScanExec(TaskAttemptContext context,
                                 ScanNode plan, CatalogProtos.FragmentProto[] fragments) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema());
 
     this.plan = plan;
     this.fragments = fragments;
-    this.sm = sm;
 
     inputStats = new TableStats();
   }
 
   public void init() throws IOException {
     for (CatalogProtos.FragmentProto fragment : fragments) {
-      SeqScanExec scanExec = new SeqScanExec(context, sm, (ScanNode) PlannerUtil.clone(null, plan),
+      SeqScanExec scanExec = new SeqScanExec(context, (ScanNode) PlannerUtil.clone(null, plan),
           new CatalogProtos.FragmentProto[] {fragment});
       scanners.add(scanExec);
     }

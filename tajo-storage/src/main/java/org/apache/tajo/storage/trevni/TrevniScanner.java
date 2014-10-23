@@ -30,7 +30,7 @@ import org.apache.tajo.datum.ProtobufDatumFactory;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.trevni.ColumnFileReader;
 import org.apache.trevni.ColumnValues;
 import org.apache.trevni.avro.HadoopInput;
@@ -45,9 +45,9 @@ public class TrevniScanner extends FileScanner {
   private int [] projectionMap;
   private ColumnValues [] columns;
 
-  public TrevniScanner(Configuration conf, Schema schema, TableMeta meta, FileFragment fragment) throws IOException {
+  public TrevniScanner(Configuration conf, Schema schema, TableMeta meta, Fragment fragment) throws IOException {
     super(conf, schema, meta, fragment);
-    reader = new ColumnFileReader(new HadoopInput(fragment.getPath(), conf));
+    reader = new ColumnFileReader(new HadoopInput(this.fragment.getPath(), conf));
   }
 
   @Override

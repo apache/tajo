@@ -41,7 +41,6 @@ import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
-import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.util.HAServiceUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.TajoWorker;
@@ -69,8 +68,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
   private TajoAsyncDispatcher dispatcher;
 
   private GlobalPlanner globalPlanner;
-
-  private StorageManager storageManager;
 
   private TajoConf systemConf;
 
@@ -114,8 +111,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
       this.dispatcher = new TajoAsyncDispatcher("querymaster_" + System.currentTimeMillis());
       addIfService(dispatcher);
-
-      this.storageManager = StorageManager.getStorageManager(systemConf);
 
       globalPlanner = new GlobalPlanner(systemConf, workerContext);
 
@@ -370,10 +365,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
     public Clock getClock() {
       return clock;
-    }
-
-    public StorageManager getStorageManager() {
-      return storageManager;
     }
 
     public QueryMaster getQueryMaster() {

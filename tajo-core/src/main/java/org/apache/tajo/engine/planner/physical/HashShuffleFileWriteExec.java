@@ -55,7 +55,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
   private HashShuffleAppenderManager hashShuffleAppenderManager;
   private int numHashShuffleBufferTuples;
 
-  public HashShuffleFileWriteExec(TaskAttemptContext context, final StorageManager sm,
+  public HashShuffleFileWriteExec(TaskAttemptContext context,
                                   final ShuffleFileWriteNode plan, final PhysicalExec child) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
     Preconditions.checkArgument(plan.hasShuffleKeys());

@@ -55,7 +55,7 @@ public class TestSortExec {
   private static SQLAnalyzer analyzer;
   private static LogicalPlanner planner;
   private static LogicalOptimizer optimizer;
-  private static StorageManager sm;
+  private static FileStorageManager sm;
   private static Path workDir;
   private static Path tablePath;
   private static TableMeta employeeMeta;
@@ -68,7 +68,7 @@ public class TestSortExec {
     util = TpchTestBase.getInstance().getTestingCluster();
     catalog = util.getMaster().getCatalog();
     workDir = CommonTestingUtil.getTestDir(TEST_PATH);
-    sm = StorageManager.getStorageManager(conf, workDir);
+    sm = StorageManager.getFileStorageManager(conf, workDir);
 
     Schema schema = new Schema();
     schema.addColumn("managerid", Type.INT4);
@@ -80,7 +80,7 @@ public class TestSortExec {
     tablePath = StorageUtil.concatPath(workDir, "employee", "table1");
     sm.getFileSystem().mkdirs(tablePath.getParent());
 
-    Appender appender = StorageManager.getStorageManager(conf).getAppender(employeeMeta, schema, tablePath);
+    Appender appender = StorageManager.getFileStorageManager(conf).getAppender(employeeMeta, schema, tablePath);
     appender.init();
     Tuple tuple = new VTuple(schema.size());
     for (int i = 0; i < 100; i++) {
@@ -108,7 +108,7 @@ public class TestSortExec {
 
   @Test
   public final void testNext() throws IOException, PlanningException {
-    FileFragment[] frags = StorageManager.splitNG(conf, "default.employee", employeeMeta, tablePath, Integer.MAX_VALUE);
+    FileFragment[] frags = FileStorageManager.splitNG(conf, "default.employee", employeeMeta, tablePath, Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestSortExec");
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility
@@ -118,7 +118,7 @@ public class TestSortExec {
     LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), context);
     LogicalNode rootNode = optimizer.optimize(plan);
 
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf, sm);
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     Tuple tuple;

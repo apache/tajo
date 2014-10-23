@@ -120,6 +120,7 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
     this.diskIds = diskIds;
   }
 
+  @Override
   public String getTableName() {
     return this.tableName;
   }
@@ -136,10 +137,20 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
     return this.startOffset;
   }
 
-  public Long getEndKey() {
+  @Override
+  public String getKey() {
+    return this.uri.toString();
+  }
+
+  @Override
+  public long getLength() {
     return this.length;
   }
 
+  @Override
+  public boolean isEmpty() {
+    return this.length <= 0;
+  }
   /**
    * 
    * The offset range of tablets <b>MUST NOT</b> be overlapped.
@@ -169,7 +180,7 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
       FileFragment t = (FileFragment) o;
       if (getPath().equals(t.getPath())
           && TUtil.checkEquals(t.getStartKey(), this.getStartKey())
-          && TUtil.checkEquals(t.getEndKey(), this.getEndKey())) {
+          && TUtil.checkEquals(t.getLength(), this.getLength())) {
         return true;
       }
     }
@@ -195,7 +206,7 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
   public String toString() {
     return "\"fragment\": {\"id\": \""+ tableName +"\", \"path\": "
     		+getPath() + "\", \"start\": " + this.getStartKey() + ",\"length\": "
-        + getEndKey() + "}" ;
+        + getLength() + "}" ;
   }
 
   public FragmentProto getProto() {

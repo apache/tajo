@@ -30,6 +30,7 @@ import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 
 import java.io.IOException;
 
@@ -49,11 +50,11 @@ public abstract class FileScanner implements Scanner {
 
   protected TableStats tableStats;
 
-  public FileScanner(Configuration conf, final Schema schema, final TableMeta meta, final FileFragment fragment) {
+  public FileScanner(Configuration conf, final Schema schema, final TableMeta meta, final Fragment fragment) {
     this.conf = conf;
     this.meta = meta;
     this.schema = schema;
-    this.fragment = fragment;
+    this.fragment = (FileFragment)fragment;
     this.tableStats = new TableStats();
     this.columnNum = this.schema.size();
   }
@@ -63,7 +64,7 @@ public abstract class FileScanner implements Scanner {
     progress = 0.0f;
 
     if (fragment != null) {
-      tableStats.setNumBytes(fragment.getEndKey());
+      tableStats.setNumBytes(fragment.getLength());
       tableStats.setNumBlocks(1);
     }
 
