@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.v2;
+package org.apache.tajo.storage;
 
 import java.util.ArrayList;
 import java.util.List;

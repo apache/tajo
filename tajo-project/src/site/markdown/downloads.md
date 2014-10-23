@@ -18,8 +18,18 @@
 
 ## Most Recent Releases
 
-### Release 0.8.0 (May 1, 2014)
+### Latest Release 0.9.0 (Oct 21, 2014)
 
+ * [Announcement] (releases/0.9.0/announcement.html)
+ * [Release Notes] (releases/0.9.0/relnotes.html)
+ * [User Documentation] (http://tajo.apache.org/docs/0.9.0/index.html)
+ * Source: [tajo-0.9.0-src.tar.gz](http://apache.org/dyn/closer.cgi/tajo/tajo-0.9.0/tajo-0.9.0-src.tar.gz) ([MD5](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0-src.tar.gz.md5)) ([SHA1](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0-src.tar.gz.sha)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * Source: [tajo-0.9.0-src.tar.bz2](http://apache.org/dyn/closer.cgi/tajo/tajo-0.9.0/tajo-0.9.0-src.tar.bz2) ([MD5](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0-src.tar.bz2.md5)) ([SHA1](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0-src.tar.bz2.sha)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0-src.tar.bz2.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * Source: [tajo-0.9.0-src.zip](http://apache.org/dyn/closer.cgi/tajo/tajo-0.9.0/tajo-0.9.0-src.zip) ([MD5](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0-src.zip.md5)) ([SHA1](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0-src.zip.sha)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0-src.zip.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * Binary Tarball: [tajo-0.9.0.tar.gz] (http://apache.org/dyn/closer.cgi/tajo/tajo-0.9.0/tajo-0.9.0.tar.gz) ([MD5](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0.tar.gz.md5)) ([SHA1](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0.tar.gz.sha)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.9.0/tajo-0.9.0.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+
+
+### Release 0.8.0 (May 1, 2014)
 
  * [Announcement] (releases/0.8.0/announcement.html)
  * [Release Notes] (releases/0.8.0/relnotes.html)

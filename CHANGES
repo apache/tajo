@@ -7,11 +7,14 @@ Release 0.9.1 - unreleased
 
     TAJO-233: Support PostgreSQL CatalogStore. (Jihun Kang via hyunsik)
 
+    TAJO-235: Support Oracle CatalogStore. (Jihun Kang via hyunsik)
+
   IMPROVEMENT
 
     TAJO-1092: Improve the function system to allow other function 
     implementation types. (hyunsik)
 
+    TAJO-1121: Remove the 'v2' storage package. (Hyoungjun Kim)
 
   BUG FIXES
 
@@ -20,7 +23,7 @@ Release 0.9.1 - unreleased
 
 
 
-Release 0.9.0 - unreleased
+Release 0.9.0
 
   NEW FEATURES 
 

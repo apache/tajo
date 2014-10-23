@@ -48,7 +48,7 @@ public class BSTIndexScanExec extends PhysicalExec {
   private float progress;
 
   public BSTIndexScanExec(TaskAttemptContext context,
-                          AbstractStorageManager sm , ScanNode scanNode ,
+                          StorageManager sm , ScanNode scanNode ,
        FileFragment fragment, Path fileName , Schema keySchema,
        TupleComparator comparator , Datum[] datum) throws IOException {
     super(context, scanNode.getInSchema(), scanNode.getOutSchema());
@@ -56,7 +56,7 @@ public class BSTIndexScanExec extends PhysicalExec {
     this.qual = scanNode.getQual();
     this.datum = datum;
 
-    this.fileScanner = StorageManagerFactory.getSeekableScanner(context.getConf(),
+    this.fileScanner = StorageManager.getSeekableScanner(context.getConf(),
         scanNode.getTableDesc().getMeta(), scanNode.getInSchema(), fragment, outSchema);
     this.fileScanner.init();
     this.projector = new Projector(context, inSchema, outSchema, scanNode.getTargets());

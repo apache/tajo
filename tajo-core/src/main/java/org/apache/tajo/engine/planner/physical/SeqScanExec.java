@@ -67,7 +67,7 @@ public class SeqScanExec extends PhysicalExec {
 
   private boolean cacheRead = false;
 
-  public SeqScanExec(TaskAttemptContext context, AbstractStorageManager sm, ScanNode plan,
+  public SeqScanExec(TaskAttemptContext context, StorageManager sm, ScanNode plan,
                      CatalogProtos.FragmentProto [] fragments) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema());
 
@@ -218,7 +218,7 @@ public class SeqScanExec extends PhysicalExec {
                 fragments), projected
         );
       } else {
-        this.scanner = StorageManagerFactory.getStorageManager(
+        this.scanner = StorageManager.getStorageManager(
             context.getConf()).getScanner(plan.getTableDesc().getMeta(), plan.getPhysicalSchema(), fragments[0],
             projected);
       }

@@ -55,7 +55,7 @@ public class TestResultSet {
   private static TajoTestingCluster util;
   private static TajoConf conf;
   private static TableDesc desc;
-  private static AbstractStorageManager sm;
+  private static StorageManager sm;
   private static TableMeta scoreMeta;
   private static Schema scoreSchema;
 
@@ -63,7 +63,7 @@ public class TestResultSet {
   public static void setup() throws Exception {
     util = TpchTestBase.getInstance().getTestingCluster();
     conf = util.getConfiguration();
-    sm = StorageManagerFactory.getStorageManager(conf);
+    sm = StorageManager.getStorageManager(conf);
 
     scoreSchema = new Schema();
     scoreSchema.addColumn("deptname", Type.TEXT);
@@ -73,7 +73,7 @@ public class TestResultSet {
 
     Path p = sm.getTablePath("score");
     sm.getFileSystem().mkdirs(p);
-    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(scoreMeta, scoreSchema,
+    Appender appender = StorageManager.getStorageManager(conf).getAppender(scoreMeta, scoreSchema,
         new Path(p, "score"));
     appender.init();
     int deptSize = 100;
