@@ -18,22 +18,22 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
-import org.apache.tajo.engine.function.FunctionContext;
-import org.apache.tajo.engine.planner.logical.DistinctGroupbyNode;
-import org.apache.tajo.engine.planner.logical.GroupbyNode;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.worker.TaskAttemptContext;
+  import org.apache.commons.logging.Log;
+  import org.apache.commons.logging.LogFactory;
+  import org.apache.tajo.catalog.Column;
+  import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
+  import org.apache.tajo.plan.function.FunctionContext;
+  import org.apache.tajo.plan.logical.DistinctGroupbyNode;
+  import org.apache.tajo.plan.logical.GroupbyNode;
+  import org.apache.tajo.storage.Tuple;
+  import org.apache.tajo.storage.VTuple;
+  import org.apache.tajo.worker.TaskAttemptContext;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+  import java.io.IOException;
+  import java.util.ArrayList;
+  import java.util.HashSet;
+  import java.util.List;
+  import java.util.Set;
 
 /**
  * This class adjusts shuffle columns between DistinctGroupbyFirstAggregationExec and
