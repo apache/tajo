@@ -35,15 +35,18 @@ import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.exception.InvalidQueryException;
 import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.storage.FileStorageManager;
+import org.apache.tajo.storage.IndexPredication;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
@@ -180,9 +183,20 @@ public class PlannerUtil {
     return visitor.getFoundRelations();
   }
 
+  public static boolean isFileStorageType(String storageType) {
+    if (storageType.equalsIgnoreCase("hbase")) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
   public static boolean isFileStorageType(StoreType storageType) {
-    //Currently all storage type are a file storage.
-    return true;
+    if (storageType== StoreType.HBASE) {
+      return false;
+    } else {
+      return true;
+    }
   }
 
   public static class RelationFinderVisitor extends BasicLogicalPlanVisitor<Object, LogicalNode> {
@@ -890,6 +904,181 @@ public class PlannerUtil {
           return;
         }
       }
+    }
+  }
+
+  public static List<IndexPredication> getIndexPredications(StorageManager storageHandler,
+                                                            TableDesc tableDesc, ScanNode scan) throws IOException {
+    List<IndexPredication> indexPredications = new ArrayList<IndexPredication>();
+    Column[] indexableColumns = storageHandler.getIndexableColumns(tableDesc);
+    if (indexableColumns != null && indexableColumns.length == 1) {
+      // Currently supports only single index column.
+      Set<EvalNode> indexablePredicateSet = PlannerUtil.findIndexablePredicateSet(scan, indexableColumns, true);
+      Pair<Datum, Datum> indexPredicationValues = PlannerUtil.getIndexablePredicateValue(indexablePredicateSet);
+      if (indexPredicationValues != null) {
+        IndexPredication indexPredication = new IndexPredication();
+        indexPredication.setColumn(indexableColumns[0]);
+        indexPredication.setColumnId(tableDesc.getLogicalSchema().getColumnId(indexableColumns[0].getQualifiedName()));
+        indexPredication.setStartValue(indexPredicationValues.getFirst());
+        indexPredication.setStopValue(indexPredicationValues.getSecond());
+
+        indexPredications.add(indexPredication);
+      }
+    }
+    return indexPredications;
+  }
+
+  public static Set<EvalNode> findIndexablePredicateSet(ScanNode scanNode, Column[] indexableColumns,
+                                                        boolean preserveFoundPredicate) throws IOException {
+    Set<EvalNode> indexablePredicateSet = Sets.newHashSet();
+    // if a query statement has a search condition, try to find indexable predicates
+    if (indexableColumns != null && scanNode.hasQual()) {
+      EvalNode[] conjunctiveForms = AlgebraicUtil.toConjunctiveNormalFormArray(scanNode.getQual());
+      Set<EvalNode> remainExprs = Sets.newHashSet(conjunctiveForms);
+
+      // add qualifier to schema for qual
+      for (Column column : indexableColumns) {
+        for (EvalNode simpleExpr : conjunctiveForms) {
+          if (checkIfIndexablePredicateOnTargetColumn(simpleExpr, column)) {
+            indexablePredicateSet.add(simpleExpr);
+          }
+        }
+      }
+
+      // Partitions which are not matched to the partition filter conditions are pruned immediately.
+      // So, the partition filter conditions are not necessary later, and they are removed from
+      // original search condition for simplicity and efficiency.
+      remainExprs.removeAll(indexablePredicateSet);
+      if (!preserveFoundPredicate) {
+        if (remainExprs.isEmpty()) {
+          scanNode.setQual(null);
+        } else {
+          scanNode.setQual(
+              AlgebraicUtil.createSingletonExprFromCNF(remainExprs.toArray(new EvalNode[remainExprs.size()])));
+        }
+      }
+    }
+
+    return indexablePredicateSet;
+  }
+
+  public static boolean checkIfIndexablePredicateOnTargetColumn(EvalNode evalNode, Column targetColumn) {
+    if (checkIfIndexablePredicate(evalNode) || checkIfDisjunctiveButOneVariable(evalNode)) {
+      Set<Column> variables = EvalTreeUtil.findUniqueColumns(evalNode);
+      // if it contains only single variable matched to a target column
+      return variables.size() == 1 && variables.contains(targetColumn);
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   *
+   * @param evalNode The expression to be checked
+   * @return true if an disjunctive expression, consisting of indexable expressions
+   */
+  public static boolean checkIfDisjunctiveButOneVariable(EvalNode evalNode) {
+    if (evalNode.getType() == EvalType.OR) {
+      BinaryEval orEval = (BinaryEval) evalNode;
+      boolean indexable =
+          checkIfIndexablePredicate(orEval.getLeftExpr()) &&
+              checkIfIndexablePredicate(orEval.getRightExpr());
+
+      boolean sameVariable =
+          EvalTreeUtil.findUniqueColumns(orEval.getLeftExpr())
+              .equals(EvalTreeUtil.findUniqueColumns(orEval.getRightExpr()));
+
+      return indexable && sameVariable;
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   * Check if an expression consists of one variable and one constant and
+   * the expression is a comparison operator.
+   *
+   * @param evalNode The expression to be checked
+   * @return true if an expression consists of one variable and one constant
+   * and the expression is a comparison operator. Other, false.
+   */
+  public static boolean checkIfIndexablePredicate(EvalNode evalNode) {
+    // TODO - LIKE with a trailing wild-card character and IN with an array can be indexable
+    return AlgebraicUtil.containSingleVar(evalNode) && AlgebraicUtil.isIndexableOperator(evalNode);
+  }
+
+  public static Pair<Datum, Datum> getIndexablePredicateValue(Set<EvalNode> indexablePredicateSet) {
+    if (indexablePredicateSet.size() > 2) {
+      return null;
+    }
+
+    Datum startDatum = null;
+    Datum endDatum = null;
+    for (EvalNode evalNode: indexablePredicateSet) {
+      if (evalNode instanceof BinaryEval) {
+        BinaryEval binaryEval = (BinaryEval) evalNode;
+        EvalNode left = binaryEval.getLeftExpr();
+        EvalNode right = binaryEval.getRightExpr();
+
+        Datum constValue = null;
+        if (left.getType() == EvalType.CONST) {
+          constValue = ((ConstEval) left).getValue();
+        } else if (right.getType() == EvalType.CONST) {
+          constValue = ((ConstEval) right).getValue();
+        }
+
+        if (evalNode.getType() == EvalType.EQUAL ||
+            evalNode.getType() == EvalType.GEQ ||
+            evalNode.getType() == EvalType.GTH) {
+          if (startDatum != null) {
+            if (constValue.compareTo(startDatum) < 0) {
+              startDatum = constValue;
+            }
+          } else {
+            startDatum = constValue;
+          }
+        }
+
+        if (evalNode.getType() == EvalType.EQUAL ||
+            evalNode.getType() == EvalType.LEQ ||
+            evalNode.getType() == EvalType.LTH) {
+          if (endDatum != null) {
+            if (constValue.compareTo(endDatum) > 0) {
+              endDatum = constValue;
+            }
+          } else {
+            endDatum = constValue;
+          }
+        }
+      } else if (evalNode instanceof BetweenPredicateEval) {
+        BetweenPredicateEval betweenEval = (BetweenPredicateEval) evalNode;
+        if (betweenEval.getBegin().getType() == EvalType.CONST) {
+          Datum value = ((ConstEval) betweenEval.getBegin()).getValue();
+          if (startDatum != null) {
+            if (value.compareTo(startDatum) < 0) {
+              startDatum = value;
+            }
+          } else {
+            startDatum = value;
+          }
+        }
+        if (betweenEval.getEnd().getType() == EvalType.CONST) {
+          Datum value = ((ConstEval) betweenEval.getEnd()).getValue();
+          if (endDatum != null) {
+            if (value.compareTo(endDatum) > 0) {
+              endDatum = value;
+            }
+          } else {
+            endDatum = value;
+          }
+        }
+      }
+    }
+
+    if (startDatum != null || endDatum != null) {
+      return new Pair<Datum, Datum>(startDatum, endDatum);
+    } else {
+      return null;
     }
   }
 }

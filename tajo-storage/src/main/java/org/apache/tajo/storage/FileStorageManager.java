@@ -27,10 +27,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.tajo.TajoConstants;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -639,7 +636,8 @@ public class FileStorageManager extends StorageManager {
   }
 
   @Override
-  public List<Fragment> getSplits(String tableName, TableDesc table) throws IOException {
+  public List<Fragment> getSplits(String tableName, TableDesc table,
+                                  List<IndexPredication> indexPredications) throws IOException {
     return getSplits(tableName, table.getMeta(), table.getSchema(), table.getPath());
   }
 
@@ -699,4 +697,8 @@ public class FileStorageManager extends StorageManager {
     }
   }
 
+  @Override
+  public Column[] getIndexableColumns(TableDesc tableDesc) throws IOException {
+    return null;
+  }
 }

@@ -26,6 +26,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
@@ -37,6 +38,7 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
+import org.apache.tajo.storage.hbase.HBaseStorageManager;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.FileUtil;
 
@@ -79,11 +81,17 @@ public abstract class StorageManager {
   protected abstract void storageInit() throws IOException ;
   public abstract void createTable(TableDesc tableDesc) throws IOException;
   public abstract void purgeTable(TableDesc tableDesc) throws IOException;
-  public abstract List<Fragment> getSplits(String fragmentId, TableDesc tableDesc) throws IOException;
+  public abstract List<Fragment> getSplits(String fragmentId, TableDesc tableDesc,
+                                           List<IndexPredication> indexPredications) throws IOException;
+  public abstract Column[] getIndexableColumns(TableDesc tableDesc) throws IOException;
 
   public void init(TajoConf tajoConf) throws IOException {
     this.conf = tajoConf;
     storageInit();
+  }
+
+  public List<Fragment> getSplits(String fragmentId, TableDesc tableDesc) throws IOException {
+    return getSplits(fragmentId, tableDesc, null);
   }
 
   public static FileStorageManager getFileStorageManager(TajoConf tajoConf) throws IOException {
@@ -112,6 +120,9 @@ public abstract class StorageManager {
       StorageManager manager = storageManagers.get(storeKey);
       if (manager == null) {
         switch (storeType) {
+          case HBASE:
+            manager = new HBaseStorageManager();
+            break;
           default:
             manager = new FileStorageManager();
         }
@@ -125,7 +136,7 @@ public abstract class StorageManager {
   }
 
   public Scanner getScanner(TableMeta meta, Schema schema, FragmentProto fragment, Schema target) throws IOException {
-    return getScanner(meta, schema, FragmentConvertor.convert(conf, meta.getStoreType(), fragment), target);
+    return getScanner(meta, schema, FragmentConvertor.convert(conf, fragment), target);
   }
 
   public Scanner getScanner(TableMeta meta, Schema schema, Fragment fragment) throws IOException {

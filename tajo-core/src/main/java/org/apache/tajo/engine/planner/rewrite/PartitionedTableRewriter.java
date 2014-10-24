@@ -240,7 +240,7 @@ public class PartitionedTableRewriter implements RewriteRule {
       paritionValuesSchema.setQualifier(scanNode.getCanonicalName());
       for (Column column : paritionValuesSchema.getColumns()) {
         for (EvalNode simpleExpr : conjunctiveForms) {
-          if (checkIfIndexablePredicateOnTargetColumn(simpleExpr, column)) {
+          if (PlannerUtil.checkIfIndexablePredicateOnTargetColumn(simpleExpr, column)) {
             indexablePredicateSet.add(simpleExpr);
           }
         }
@@ -263,51 +263,6 @@ public class PartitionedTableRewriter implements RewriteRule {
           indexablePredicateSet.toArray(new EvalNode[indexablePredicateSet.size()]), table.getPath());
     } else { // otherwise, we will get all partition paths.
       return findFilteredPaths(paritionValuesSchema, null, table.getPath());
-    }
-  }
-
-  private boolean checkIfIndexablePredicateOnTargetColumn(EvalNode evalNode, Column targetColumn) {
-    if (checkIfIndexablePredicate(evalNode) || checkIfDisjunctiveButOneVariable(evalNode)) {
-      Set<Column> variables = EvalTreeUtil.findUniqueColumns(evalNode);
-      // if it contains only single variable matched to a target column
-      return variables.size() == 1 && variables.contains(targetColumn);
-    } else {
-      return false;
-    }
-  }
-
-  /**
-   * Check if an expression consists of one variable and one constant and
-   * the expression is a comparison operator.
-   *
-   * @param evalNode The expression to be checked
-   * @return true if an expression consists of one variable and one constant
-   * and the expression is a comparison operator. Other, false.
-   */
-  private boolean checkIfIndexablePredicate(EvalNode evalNode) {
-    // TODO - LIKE with a trailing wild-card character and IN with an array can be indexable
-    return AlgebraicUtil.containSingleVar(evalNode) && AlgebraicUtil.isIndexableOperator(evalNode);
-  }
-
-  /**
-   *
-   * @param evalNode The expression to be checked
-   * @return true if an disjunctive expression, consisting of indexable expressions
-   */
-  private boolean checkIfDisjunctiveButOneVariable(EvalNode evalNode) {
-    if (evalNode.getType() == EvalType.OR) {
-      BinaryEval orEval = (BinaryEval) evalNode;
-      boolean indexable =
-          checkIfIndexablePredicate(orEval.getLeftExpr()) &&
-              checkIfIndexablePredicate(orEval.getRightExpr());
-
-      boolean sameVariable =
-          EvalTreeUtil.findUniqueColumns(orEval.getLeftExpr())
-          .equals(EvalTreeUtil.findUniqueColumns(orEval.getRightExpr()));
-
-      return indexable && sameVariable;
-    } else {
-      return false;
     }
   }
 

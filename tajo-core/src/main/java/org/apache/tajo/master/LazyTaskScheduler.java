@@ -26,7 +26,9 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryUnitRequest;
@@ -368,6 +370,7 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
       long taskSize = adjustTaskSize();
       LOG.info("Adjusted task size: " + taskSize);
 
+      TajoConf conf = subQuery.getContext().getConf();
       // host local, disk local
       String normalized = NetUtils.normalizeHost(host);
       Integer diskId = hostDiskBalancerMap.get(normalized).getDiskId(container.containerID);
@@ -378,13 +381,14 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
             break;
           }
 
-          if (assignedFragmentSize + fragmentPair.getLeftFragment().getLength() > taskSize) {
+          if (assignedFragmentSize +
+              PhysicalPlannerImpl.getFragmentLength(conf, fragmentPair.getLeftFragment()) > taskSize) {
             break;
           } else {
             fragmentPairs.add(fragmentPair);
-            assignedFragmentSize += fragmentPair.getLeftFragment().getLength();
+            assignedFragmentSize += PhysicalPlannerImpl.getFragmentLength(conf, fragmentPair.getLeftFragment());
             if (fragmentPair.getRightFragment() != null) {
-              assignedFragmentSize += fragmentPair.getRightFragment().getLength();
+              assignedFragmentSize += PhysicalPlannerImpl.getFragmentLength(conf, fragmentPair.getRightFragment());
             }
           }
           scheduledFragments.removeFragment(fragmentPair);
@@ -400,13 +404,14 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
             break;
           }
 
-          if (assignedFragmentSize + fragmentPair.getLeftFragment().getLength() > taskSize) {
+          if (assignedFragmentSize +
+              PhysicalPlannerImpl.getFragmentLength(conf, fragmentPair.getLeftFragment()) > taskSize) {
             break;
           } else {
             fragmentPairs.add(fragmentPair);
-            assignedFragmentSize += fragmentPair.getLeftFragment().getLength();
+            assignedFragmentSize += PhysicalPlannerImpl.getFragmentLength(conf, fragmentPair.getLeftFragment());
             if (fragmentPair.getRightFragment() != null) {
-              assignedFragmentSize += fragmentPair.getRightFragment().getLength();
+              assignedFragmentSize += PhysicalPlannerImpl.getFragmentLength(conf, fragmentPair.getRightFragment());
             }
           }
           scheduledFragments.removeFragment(fragmentPair);

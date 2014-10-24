@@ -245,7 +245,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
       diskIds = ((FileFragment)fragment).getDiskIds();
     }
     for (int i = 0; i < hosts.length; i++) {
-      dataLocations.add(new DataLocation(hosts[i], diskIds[i]));
+      dataLocations.add(new DataLocation(hosts[i], diskIds == null ? -1 : diskIds[i]));
     }
   }
 

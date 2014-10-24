@@ -80,8 +80,7 @@ public class SeqScanExec extends PhysicalExec {
       String pathNameKey = "";
       if (fragments != null) {
         for (FragmentProto f : fragments) {
-          Fragment fragement = FragmentConvertor.convert(
-              context.getConf(), plan.getTableDesc().getMeta().getStoreType(), f);
+          Fragment fragement = FragmentConvertor.convert(context.getConf(), f);
           pathNameKey += fragement.getKey();
         }
       }
@@ -215,8 +214,7 @@ public class SeqScanExec extends PhysicalExec {
     if (fragments != null) {
       if (fragments.length > 1) {
         this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), plan.getTableDesc().getMeta(),
-            FragmentConvertor.convert(context.getConf(), plan.getTableDesc().getMeta().getStoreType(),
-                fragments), projected
+            FragmentConvertor.convert(context.getConf(), fragments), projected
         );
       } else {
         StorageManager storageManager = StorageManager.getStorageManager(

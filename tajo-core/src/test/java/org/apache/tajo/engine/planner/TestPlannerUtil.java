@@ -376,7 +376,7 @@ public class TestPlannerUtil {
     int index = 0;
 
     for (int i = startIndex; i < startIndex + expectedSize; i++, index++) {
-      FileFragment fragment = FragmentConvertor.convert(util.getConfiguration(), StoreType.CSV, fragments[index]);
+      FileFragment fragment = FragmentConvertor.convert(util.getConfiguration(), fragments[index]);
       assertEquals(expectedFiles.get(i), fragment.getPath());
     }
   }
