@@ -487,4 +487,47 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       }
     }
   }
+
+  @Test
+  public void testExecuteUpdate() throws Exception {
+    String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+        DEFAULT_DATABASE_NAME);
+    Connection conn = DriverManager.getConnection(connUri);
+    assertTrue(conn.isValid(100));
+
+    int result;
+    Statement stmt = null;
+    ResultSet res = null;
+
+    try {
+      stmt = conn.createStatement();
+      result = stmt.executeUpdate("create table table1 (id int, name text, score double, regdate timestamp)");
+      assertEquals(result, 1);
+
+      res = stmt.executeQuery("select * from table1");
+      assertFalse(res.next());
+
+      ResultSetMetaData rsmd = res.getMetaData();
+      assertNotNull(rsmd);
+      assertEquals(4, rsmd.getColumnCount());
+
+      assertEquals("id", rsmd.getColumnName(1));
+      assertEquals("name", rsmd.getColumnName(2));
+      assertEquals("score", rsmd.getColumnName(3));
+      assertEquals("regdate", rsmd.getColumnName(4));
+
+      assertEquals("integer", rsmd.getColumnTypeName(1));
+      assertEquals("varchar", rsmd.getColumnTypeName(2));
+      assertEquals("float8", rsmd.getColumnTypeName(3));
+      assertEquals("timestamp", rsmd.getColumnTypeName(4));
+    } finally {
+      if(res != null) {
+        res.close();
+      }
+      if(stmt != null) {
+        stmt.close();
+      }
+    }
+  }
+
 }

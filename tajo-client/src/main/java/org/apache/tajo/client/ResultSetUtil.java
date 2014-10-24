@@ -75,6 +75,8 @@ public class ResultSetUtil {
       return "character";
     case DATE:
       return "date";
+    case TIMESTAMP:
+      return "timestamp";
     case VARCHAR:
       return "varchar";
     case TEXT:
@@ -103,6 +105,8 @@ public class ResultSetUtil {
     case NUMERIC:
       return Types.NUMERIC;
     case DATE:
+      return Types.DATE;
+    case TIMESTAMP:
       return Types.TIMESTAMP;
     case VARCHAR:
       return Types.VARCHAR;
