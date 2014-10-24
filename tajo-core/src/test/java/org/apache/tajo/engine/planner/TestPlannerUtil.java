@@ -29,15 +29,18 @@ import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.function.builtin.SumInt;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -352,18 +355,19 @@ public class TestPlannerUtil {
     for (int i = 0; i <= 5; i++) {
       int start = i * fileNum;
 
-      FragmentProto[] fragments =
-          PlannerUtil.getNonZeroLengthDataFiles(util.getConfiguration(), tableDesc, start, fileNum);
+      List<Fragment> fragments =
+          StorageManager.getFileStorageManager(util.getConfiguration()).getNonForwardSplit(tableDesc, start, fileNum);
       assertNotNull(fragments);
 
-      numResultFiles += fragments.length;
+      FragmentProto[] fragmentProtos = FragmentConvertor.toFragmentProtoArray(fragments.toArray(new Fragment[]{}));
+      numResultFiles += fragmentProtos.length;
       int expectedSize = fileNum;
       if (i == 5) {
         //last
         expectedSize = expectedFiles.size() - (fileNum * 5);
       }
 
-      comparePath(expectedFiles, fragments, start, expectedSize);
+      comparePath(expectedFiles, fragmentProtos, start, expectedSize);
     }
 
     assertEquals(expectedFiles.size(), numResultFiles);

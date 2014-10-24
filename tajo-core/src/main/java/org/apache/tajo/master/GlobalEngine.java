@@ -296,6 +296,12 @@ public class GlobalEngine extends AbstractService {
         responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
       }
     } else { // it requires distributed execution. So, the query is forwarded to a query master.
+      if (rootNode.getChild().getType() == NodeType.CREATE_TABLE) {
+        StoreType storeType =  ((CreateTableNode)rootNode.getChild()).getStorageType();
+        if (!StorageManager.getStorageManager(context.getConf(), storeType).canCreateAsSelect(storeType)) {
+          throw new VerifyException("Inserting into non-file storage is not supported.");
+        }
+      }
       context.getSystemMetrics().counter("Query", "numDMLQuery").inc();
       hookManager.doHooks(queryContext, plan);
 

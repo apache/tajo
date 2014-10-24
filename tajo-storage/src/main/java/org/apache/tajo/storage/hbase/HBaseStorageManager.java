@@ -30,6 +30,7 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
@@ -342,7 +343,7 @@ public class HBaseStorageManager extends StorageManager {
         for (Map.Entry<byte[], RegionLoad> entry : serverLoad.getRegionsLoad().entrySet()) {
           if (regionName.equals(Bytes.toString(entry.getKey()))) {
             RegionLoad regionLoad = entry.getValue();
-            long storeFileSize = regionLoad.getStorefileSizeMB();
+            long storeFileSize = (regionLoad.getStorefileSizeMB() + regionLoad.getMemStoreSizeMB()) * 1024L * 1024L;
             fragment.setLength(storeFileSize);
             foundLength = true;
             break;
@@ -395,5 +396,79 @@ public class HBaseStorageManager extends StorageManager {
     } else {
       return HBaseTextSerializerDeserializer.serialize(indexPredication.getColumn(), datum);
     }
+  }
+
+  @Override
+  public List<Fragment> getNonForwardSplit(TableDesc tableDesc, int currentPage, int numFragments)
+      throws IOException {
+    Configuration hconf = getHBaseConfiguration(conf, tableDesc.getMeta());
+    HTable htable = new HTable(hconf, tableDesc.getMeta().getOption(META_TABLE_KEY));
+
+    org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> keys = htable.getStartEndKeys();
+    if (keys == null || keys.getFirst() == null || keys.getFirst().length == 0) {
+      return new ArrayList<Fragment>(1);
+    }
+
+    HBaseAdmin hAdmin = new HBaseAdmin(conf);
+    Map<ServerName, ServerLoad> serverLoadMap = new HashMap<ServerName, ServerLoad>();
+
+    List<Fragment> fragments = new ArrayList<Fragment>(keys.getFirst().length);
+
+    int start = currentPage * numFragments;
+    if (start >= keys.getFirst().length) {
+      return new ArrayList<Fragment>(1);
+    }
+    int end = (currentPage + 1) * numFragments;
+    if (end > keys.getFirst().length) {
+      end = keys.getFirst().length;
+    }
+    for (int i = start; i < end; i++) {
+      HRegionLocation location = htable.getRegionLocation(keys.getFirst()[i], false);
+
+      String regionName = location.getRegionInfo().getRegionNameAsString();
+      ServerLoad serverLoad = serverLoadMap.get(location.getServerName());
+      if (serverLoad == null) {
+        serverLoad = hAdmin.getClusterStatus().getLoad(location.getServerName());
+        serverLoadMap.put(location.getServerName(), serverLoad);
+      }
+
+      HBaseFragment fragment = new HBaseFragment(tableDesc.getName(), htable.getName().getNameAsString(),
+          location.getRegionInfo().getStartKey(), location.getRegionInfo().getEndKey(), location.getHostname());
+
+      // get region size
+      boolean foundLength = false;
+      for (Map.Entry<byte[], RegionLoad> entry : serverLoad.getRegionsLoad().entrySet()) {
+        if (regionName.equals(Bytes.toString(entry.getKey()))) {
+          RegionLoad regionLoad = entry.getValue();
+          long storeLength = (regionLoad.getStorefileSizeMB() + regionLoad.getMemStoreSizeMB()) * 1024L * 1024L;
+          if (storeLength == 0) {
+            // If store size is smaller than 1 MB, storeLength is zero
+            storeLength = 1 * 1024 * 1024;  //default 1MB
+          }
+          fragment.setLength(storeLength);
+          foundLength = true;
+          break;
+        }
+      }
+
+      if (!foundLength) {
+        fragment.setLength(TajoConstants.UNKNOWN_LENGTH);
+      }
+
+      fragments.add(fragment);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("getFragments: fragment -> " + i + " -> " + fragment);
+      }
+    }
+
+    if (!fragments.isEmpty()) {
+      ((HBaseFragment)fragments.get(fragments.size() - 1)).setLast(true);
+    }
+    return fragments;
+  }
+
+  @Override
+  public boolean canCreateAsSelect(StoreType storeType) {
+    return false;
   }
 }

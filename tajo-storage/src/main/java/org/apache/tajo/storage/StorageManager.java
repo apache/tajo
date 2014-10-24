@@ -26,6 +26,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
@@ -83,7 +84,10 @@ public abstract class StorageManager {
   public abstract void purgeTable(TableDesc tableDesc) throws IOException;
   public abstract List<Fragment> getSplits(String fragmentId, TableDesc tableDesc,
                                            List<IndexPredication> indexPredications) throws IOException;
+  public abstract List<Fragment> getNonForwardSplit(TableDesc tableDesc, int currentPage, int numFragments)
+      throws IOException;
   public abstract Column[] getIndexableColumns(TableDesc tableDesc) throws IOException;
+  public abstract boolean canCreateAsSelect(StoreType storeType);
 
   public void init(TajoConf tajoConf) throws IOException {
     this.conf = tajoConf;
@@ -272,5 +276,13 @@ public abstract class StorageManager {
     FileFragment fragment = new FileFragment(path.getName(), path, 0, status.getLen());
 
     return getSeekableScanner(conf, meta, schema, fragment, schema);
+  }
+
+  public static long getFragmentLength(TajoConf conf, Fragment fragment) {
+    if (fragment.getLength() == TajoConstants.UNKNOWN_LENGTH) {
+      return conf.getLongVar(ConfVars.FRAGMENT_ALTERNATIVE_UNKNOWN_LENGTH);
+    } else {
+      return fragment.getLength();
+    }
   }
 }

@@ -40,6 +40,7 @@ import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 import org.apache.tajo.master.querymaster.QueryUnit;
 import org.apache.tajo.master.querymaster.QueryUnitAttempt;
 import org.apache.tajo.master.querymaster.SubQuery;
+import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.NetUtils;
@@ -382,13 +383,13 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
           }
 
           if (assignedFragmentSize +
-              PhysicalPlannerImpl.getFragmentLength(conf, fragmentPair.getLeftFragment()) > taskSize) {
+              StorageManager.getFragmentLength(conf, fragmentPair.getLeftFragment()) > taskSize) {
             break;
           } else {
             fragmentPairs.add(fragmentPair);
-            assignedFragmentSize += PhysicalPlannerImpl.getFragmentLength(conf, fragmentPair.getLeftFragment());
+            assignedFragmentSize += StorageManager.getFragmentLength(conf, fragmentPair.getLeftFragment());
             if (fragmentPair.getRightFragment() != null) {
-              assignedFragmentSize += PhysicalPlannerImpl.getFragmentLength(conf, fragmentPair.getRightFragment());
+              assignedFragmentSize += StorageManager.getFragmentLength(conf, fragmentPair.getRightFragment());
             }
           }
           scheduledFragments.removeFragment(fragmentPair);
@@ -405,13 +406,13 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
           }
 
           if (assignedFragmentSize +
-              PhysicalPlannerImpl.getFragmentLength(conf, fragmentPair.getLeftFragment()) > taskSize) {
+              StorageManager.getFragmentLength(conf, fragmentPair.getLeftFragment()) > taskSize) {
             break;
           } else {
             fragmentPairs.add(fragmentPair);
-            assignedFragmentSize += PhysicalPlannerImpl.getFragmentLength(conf, fragmentPair.getLeftFragment());
+            assignedFragmentSize += StorageManager.getFragmentLength(conf, fragmentPair.getLeftFragment());
             if (fragmentPair.getRightFragment() != null) {
-              assignedFragmentSize += PhysicalPlannerImpl.getFragmentLength(conf, fragmentPair.getRightFragment());
+              assignedFragmentSize += StorageManager.getFragmentLength(conf, fragmentPair.getRightFragment());
             }
           }
           scheduledFragments.removeFragment(fragmentPair);

@@ -64,8 +64,9 @@ public class MergeScanner implements Scanner {
 
     long numBytes = 0;
     for (Fragment eachFileFragment: rawFragmentList) {
-      if (eachFileFragment.getLength() > 0) {
-        numBytes += eachFileFragment.getLength();
+      long fragmentLength = StorageManager.getFragmentLength((TajoConf)conf, eachFileFragment);
+      if (fragmentLength > 0) {
+        numBytes += fragmentLength;
         fragments.add(eachFileFragment);
       }
     }

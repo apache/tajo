@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
-import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 
 @ThreadSafe
 public class FragmentConvertor {
@@ -46,12 +45,6 @@ public class FragmentConvertor {
    * default parameter for all constructors
    */
   private static final Class<?>[] DEFAULT_FRAGMENT_PARAMS = { ByteString.class };
-
-  public static Class<? extends Fragment> getFragmentClass(Configuration conf, StoreType storeType)
-      throws IOException {
-    String name = storeType.name().toLowerCase();
-    return getFragmentClass(conf, name);
-  }
 
   public static Class<? extends Fragment> getFragmentClass(Configuration conf, String storeType)
   throws IOException {

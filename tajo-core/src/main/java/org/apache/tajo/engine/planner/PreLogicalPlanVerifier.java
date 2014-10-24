@@ -27,6 +27,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.util.TUtil;
 
+import java.io.IOException;
 import java.util.Set;
 import java.util.Stack;
 
@@ -270,6 +271,10 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor <PreLogicalPlanVe
           TableDesc table = catalog.getTableDesc(qualifiedName);
           if (table == null) {
             context.state.addVerification(String.format("relation \"%s\" does not exist", qualifiedName));
+            return null;
+          }
+          if (!PlannerUtil.isFileStorageType(table.getMeta().getStoreType())) {
+            context.state.addVerification("Inserting into non-file storage is not supported.");
             return null;
           }
           if (table.hasPartition()) {

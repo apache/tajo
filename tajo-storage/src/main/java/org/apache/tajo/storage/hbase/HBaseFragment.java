@@ -66,6 +66,7 @@ public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Clone
     this.startRow = proto.getStartRow().toByteArray();
     this.stopRow = proto.getStopRow().toByteArray();
     this.regionLocation = proto.getRegionLocation();
+    this.length = proto.getLength();
     this.last = proto.getLast();
   }
 
