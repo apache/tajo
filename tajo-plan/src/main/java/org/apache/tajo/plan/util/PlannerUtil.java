@@ -597,7 +597,7 @@ public class PlannerUtil {
 
     @Override
     public void visit(EvalNode node) {
-      if (EvalTreeUtil.isJoinQual(node, includeThetaJoin)) {
+      if (EvalTreeUtil.isJoinQual(null, schemas[0], schemas[1], node, includeThetaJoin)) {
         BinaryEval binaryEval = (BinaryEval) node;
         Column[] pair = new Column[2];
 
