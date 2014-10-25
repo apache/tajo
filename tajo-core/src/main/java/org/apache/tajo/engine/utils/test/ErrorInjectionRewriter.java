@@ -18,9 +18,9 @@
 
 package org.apache.tajo.engine.utils.test;
 
-import org.apache.tajo.engine.planner.LogicalPlan;
-import org.apache.tajo.engine.planner.PlanningException;
-import org.apache.tajo.engine.planner.rewrite.RewriteRule;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.plan.rewrite.RewriteRule;
 
 public class ErrorInjectionRewriter implements RewriteRule {
   @Override

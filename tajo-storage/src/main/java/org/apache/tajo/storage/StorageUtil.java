@@ -111,26 +111,6 @@ public class StorageUtil extends StorageConstants {
     return new Path(parent, sb.toString());
   }
 
-  public static KeyValueSet newPhysicalProperties(CatalogProtos.StoreType type) {
-    KeyValueSet options = new KeyValueSet();
-    if (CatalogProtos.StoreType.CSV == type) {
-      options.set(CSVFILE_DELIMITER, DEFAULT_FIELD_DELIMITER);
-    } else if (CatalogProtos.StoreType.RCFILE == type) {
-      options.set(RCFILE_SERDE, DEFAULT_BINARY_SERDE);
-    } else if (CatalogProtos.StoreType.SEQUENCEFILE == type) {
-      options.set(SEQUENCEFILE_SERDE, DEFAULT_TEXT_SERDE);
-      options.set(SEQUENCEFILE_DELIMITER, DEFAULT_FIELD_DELIMITER);
-    } else if (type == CatalogProtos.StoreType.PARQUET) {
-      options.set(ParquetOutputFormat.BLOCK_SIZE, PARQUET_DEFAULT_BLOCK_SIZE);
-      options.set(ParquetOutputFormat.PAGE_SIZE, PARQUET_DEFAULT_PAGE_SIZE);
-      options.set(ParquetOutputFormat.COMPRESSION, PARQUET_DEFAULT_COMPRESSION_CODEC_NAME);
-      options.set(ParquetOutputFormat.ENABLE_DICTIONARY, PARQUET_DEFAULT_IS_DICTIONARY_ENABLED);
-      options.set(ParquetOutputFormat.VALIDATION, PARQUET_DEFAULT_IS_VALIDATION_ENABLED);
-    }
-
-    return options;
-  }
-
   static final String fileNamePatternV08 = "part-[0-9]*-[0-9]*";
   static final String fileNamePatternV09 = "part-[0-9]*-[0-9]*-[0-9]*";
 

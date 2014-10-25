@@ -20,7 +20,7 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.engine.planner.logical.LimitNode;
+import org.apache.tajo.plan.logical.LimitNode;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;

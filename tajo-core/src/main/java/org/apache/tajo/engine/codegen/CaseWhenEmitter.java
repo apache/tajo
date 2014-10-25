@@ -19,12 +19,12 @@
 package org.apache.tajo.engine.codegen;
 
 import com.google.common.base.Preconditions;
-import org.apache.tajo.engine.eval.BinaryEval;
-import org.apache.tajo.engine.eval.CaseWhenEval;
-import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.eval.EvalType;
 import org.apache.tajo.org.objectweb.asm.Label;
 import org.apache.tajo.org.objectweb.asm.Opcodes;
+import org.apache.tajo.plan.expr.BinaryEval;
+import org.apache.tajo.plan.expr.CaseWhenEval;
+import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.expr.EvalType;
 
 import java.util.List;
 import java.util.Stack;
