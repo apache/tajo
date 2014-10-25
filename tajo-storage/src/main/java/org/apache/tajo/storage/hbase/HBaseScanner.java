@@ -21,19 +21,18 @@ package org.apache.tajo.storage.hbase;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.client.HTable;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.Filter;
 import org.apache.hadoop.hbase.filter.InclusiveStopFilter;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.Scanner;
+import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.Bytes;
@@ -51,7 +50,7 @@ public class HBaseScanner implements Scanner {
   private TableMeta meta;
   private HBaseFragment fragment;
   private Scan scan;
-  private HTable htable;
+  private HTableInterface htable;
   private Configuration hbaseConf;
   private Column[] targets;
   private TableStats tableStats;
@@ -140,7 +139,11 @@ public class HBaseScanner implements Scanner {
       }
     }
 
-    htable = new HTable(hbaseConf, fragment.getHbaseTableName());
+    if (htable == null) {
+      HConnection hconn = ((HBaseStorageManager)StorageManager.getStorageManager(conf, StoreType.HBASE))
+          .getConnection(hbaseConf);
+      htable = hconn.getTable(fragment.getHbaseTableName());
+    }
     scanner = htable.getScanner(scan);
   }
 
@@ -175,6 +178,7 @@ public class HBaseScanner implements Scanner {
 
     if (scanner != null) {
       scanner.close();
+      scanner = null;
     }
 
     initScanner();
@@ -187,12 +191,14 @@ public class HBaseScanner implements Scanner {
     if (scanner != null) {
       try {
         scanner.close();
+        scanner = null;
       } catch (Exception e) {
         LOG.warn("Error while closing hbase scanner: " + e.getMessage(), e);
       }
     }
     if (htable != null) {
       htable.close();
+      htable = null;
     }
   }
 

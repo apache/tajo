@@ -797,4 +797,8 @@ public class FileStorageManager extends StorageManager {
       return true;
     }
   }
+
+  @Override
+  public void closeStorageManager() {
+  }
 }

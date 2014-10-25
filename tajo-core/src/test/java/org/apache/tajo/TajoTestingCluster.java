@@ -470,7 +470,6 @@ public class TajoTestingCluster {
     this.dfsCluster.waitClusterUp();
 
     hbaseUtil = new HBaseTestClusterUtil(conf, clusterTestBuildDir);
-    hbaseUtil.startHBaseCluster();
 
     if(!standbyWorkerMode) {
       startMiniYarnCluster();
@@ -559,21 +558,12 @@ public class TajoTestingCluster {
     }
 
     if(this.dfsCluster != null) {
-
       try {
         FileSystem fs = this.dfsCluster.getFileSystem();
         if (fs != null) fs.close();
         this.dfsCluster.shutdown();
       } catch (IOException e) {
         System.err.println("error closing file system: " + e);
-      }
-    }
-
-    if (this.hbaseUtil != null) {
-      try {
-        this.hbaseUtil.stopHBaseCluster();
-      } catch (Exception e) {
-        System.err.println("error stopping hbase cluster: " + e);
       }
     }
 
@@ -586,6 +576,10 @@ public class TajoTestingCluster {
       }
       this.clusterTestBuildDir = null;
     }
+
+    hbaseUtil.stopZooKeeperCluster();
+    hbaseUtil.stopHBaseCluster();
+
     LOG.info("Minicluster is down");
   }
 

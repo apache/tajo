@@ -18,6 +18,8 @@
 
 package org.apache.tajo;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -37,6 +39,7 @@ import java.io.IOException;
 import static org.apache.hadoop.hbase.HConstants.REPLICATION_ENABLE_KEY;
 
 public class HBaseTestClusterUtil {
+  private static final Log LOG = LogFactory.getLog(HBaseTestClusterUtil.class);
   private Configuration conf;
   private MiniHBaseCluster hbaseCluster;
   private MiniZooKeeperCluster zkCluster;
@@ -73,19 +76,22 @@ public class HBaseTestClusterUtil {
     return hbaseRootdir;
   }
 
-  public void stopHBaseCluster() throws Exception {
+  public void stopHBaseCluster() throws IOException {
     if (hbaseCluster != null) {
+      LOG.info("MiniHBaseCluster stopped");
       hbaseCluster.shutdown();
-    }
-
-    if (zkCluster != null) {
-      zkCluster.shutdown();
+      hbaseCluster.waitUntilShutDown();
+      hbaseCluster = null;
     }
   }
 
   public void startHBaseCluster() throws Exception {
-    File zkDataPath = new File(testBaseDir, "zk");
-    startMiniZKCluster(zkDataPath);
+    if (zkCluster == null) {
+      startMiniZKCluster();
+    }
+    if (hbaseCluster != null) {
+      return;
+    }
 
     System.setProperty("HBASE_ZNODE_FILE", testBaseDir + "/hbase_znode_file");
     if (conf.getInt(ServerManager.WAIT_ON_REGIONSERVERS_MINTOSTART, -1) == -1) {
@@ -109,16 +115,19 @@ public class HBaseTestClusterUtil {
     }
     s.close();
     t.close();
+    LOG.info("MiniHBaseCluster started");
+
   }
 
   /**
    * Start a mini ZK cluster. If the property "test.hbase.zookeeper.property.clientPort" is set
    *  the port mentionned is used as the default port for ZooKeeper.
    */
-  private MiniZooKeeperCluster startMiniZKCluster(final File dir)
+  public MiniZooKeeperCluster startMiniZKCluster()
       throws Exception {
+    File zkDataPath = new File(testBaseDir, "zk");
     if (this.zkCluster != null) {
-      throw new IOException("Cluster already running at " + dir);
+      throw new IOException("Cluster already running at " + zkDataPath);
     }
     this.zkCluster = new MiniZooKeeperCluster(conf);
     final int defPort = this.conf.getInt("test.hbase.zookeeper.property.clientPort", 0);
@@ -126,9 +135,19 @@ public class HBaseTestClusterUtil {
       // If there is a port in the config file, we use it.
       this.zkCluster.setDefaultClientPort(defPort);
     }
-    int clientPort =  this.zkCluster.startup(dir, 1);
+    int clientPort =  this.zkCluster.startup(zkDataPath, 1);
     this.conf.set(HConstants.ZOOKEEPER_CLIENT_PORT, Integer.toString(clientPort));
+    LOG.info("MiniZooKeeperCluster started");
+
     return this.zkCluster;
+  }
+
+  public void stopZooKeeperCluster() throws IOException {
+    if (zkCluster != null) {
+      LOG.info("MiniZooKeeperCluster stopped");
+      zkCluster.shutdown();
+      zkCluster = null;
+    }
   }
 
   public Configuration getConf() {
@@ -145,11 +164,19 @@ public class HBaseTestClusterUtil {
 
   public HTableDescriptor getTableDescriptor(String tableName) throws IOException {
     HBaseAdmin admin = new HBaseAdmin(conf);
-    return admin.getTableDescriptor(Bytes.toBytes(tableName));
+    try {
+      return admin.getTableDescriptor(Bytes.toBytes(tableName));
+    } finally {
+      admin.close();
+    }
   }
 
   public void createTable(HTableDescriptor hTableDesc) throws IOException {
     HBaseAdmin admin = new HBaseAdmin(conf);
-    admin.createTable(hTableDesc);
+    try {
+      admin.createTable(hTableDesc);
+    } finally {
+      admin.close();
+    }
   }
 }

@@ -88,10 +88,19 @@ public abstract class StorageManager {
       throws IOException;
   public abstract Column[] getIndexableColumns(TableDesc tableDesc) throws IOException;
   public abstract boolean canCreateAsSelect(StoreType storeType);
+  public abstract void closeStorageManager();
 
   public void init(TajoConf tajoConf) throws IOException {
     this.conf = tajoConf;
     storageInit();
+  }
+
+  public void close() throws IOException {
+    synchronized(storageManagers) {
+      for (StorageManager eachStorageManager: storageManagers.values()) {
+        eachStorageManager.closeStorageManager();
+      }
+    }
   }
 
   public List<Fragment> getSplits(String fragmentId, TableDesc tableDesc) throws IOException {

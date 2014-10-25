@@ -122,6 +122,9 @@ public class MergeScanner implements Scanner {
   @Override
   public void reset() throws IOException {
     this.iterator = fragments.iterator();
+    if (currentScanner != null) {
+      currentScanner.close();
+    }
     this.currentScanner = getNextScanner();
   }
 
