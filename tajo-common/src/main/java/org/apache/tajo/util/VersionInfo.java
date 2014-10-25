@@ -29,7 +29,7 @@ import java.io.InputStream;
 import java.util.Properties;
 
 /**
- * This class returns build information about Hadoop components.
+ * This class returns build information about Tajo components.
  */
 @InterfaceAudience.Private
 @InterfaceStability.Unstable
@@ -95,8 +95,8 @@ public class VersionInfo {
 
   private static VersionInfo TAJO_VERSION_INFO = new VersionInfo("tajo");
   /**
-   * Get the Hadoop version.
-   * @return the Hadoop version string, eg. "0.6.3-dev"
+   * Get the Tajo version.
+   * @return the Tajo version string, eg. "0.9.0-SNAPSHOT"
    */
   public static String getVersion() {
     return TAJO_VERSION_INFO._getVersion();
@@ -119,7 +119,7 @@ public class VersionInfo {
   }
 
   /**
-   * The date that Hadoop was compiled.
+   * The date that Tajo was compiled.
    * @return the compilation date in unix date format
    */
   public static String getDate() {
@@ -127,7 +127,7 @@ public class VersionInfo {
   }
 
   /**
-   * The user that compiled Hadoop.
+   * The user that compiled Tajo.
    * @return the username of the user
    */
   public static String getUser() {
@@ -135,14 +135,14 @@ public class VersionInfo {
   }
 
   /**
-   * Get the subversion URL for the root Hadoop directory.
+   * Get the git repository URL for the root Tajo directory.
    */
   public static String getUrl() {
     return TAJO_VERSION_INFO._getUrl();
   }
 
   /**
-   * Get the checksum of the source files from which Hadoop was
+   * Get the checksum of the source files from which Tajo was
    * built.
    **/
   public static String getSrcChecksum() {
@@ -162,6 +162,20 @@ public class VersionInfo {
    */
   public static String getProtocVersion(){
     return TAJO_VERSION_INFO._getProtocVersion();
+  }
+
+  /**
+   * Returns the display version including all information.
+   * @return
+   */
+  public static String getDisplayVersion() {
+    StringBuilder displayVersion = new StringBuilder("Tajo ")
+        .append(VersionInfo.getVersion()).append(" (")
+        .append("rev. " + VersionInfo.getRevision().substring(0, 7))
+        .append(" source checksum ").append(VersionInfo.getSrcChecksum().substring(0, 7))
+        .append(" compiled by ").append(VersionInfo.getUser()).append(" ")
+        .append(VersionInfo.getDate()).append(")");
+    return displayVersion.toString();
   }
 
   public static void main(String[] args) {

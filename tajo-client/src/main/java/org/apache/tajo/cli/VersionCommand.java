@@ -33,7 +33,7 @@ public class VersionCommand extends TajoShellCommand {
 
   @Override
   public void invoke(String[] cmd) throws Exception {
-    context.getOutput().println(VersionInfo.getVersion());
+    context.getOutput().println(VersionInfo.getDisplayVersion());
   }
 
   @Override
@@ -43,6 +43,6 @@ public class VersionCommand extends TajoShellCommand {
 
   @Override
   public String getDescription() {
-    return "show Apache License 2.0";
+    return "show Tajo version";
   }
 }
