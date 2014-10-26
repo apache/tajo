@@ -22,9 +22,13 @@ import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.planner.*;
-import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.plan.Target;
+import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.Pair;
 
 import java.util.Collections;
@@ -87,7 +91,7 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
   }
 
   private static void compileProjectableNode(CompilationContext context, Schema schema, Projectable node) {
-    Target [] targets;
+    Target[] targets;
     if (node.hasTargets()) {
       targets = node.getTargets();
     } else {

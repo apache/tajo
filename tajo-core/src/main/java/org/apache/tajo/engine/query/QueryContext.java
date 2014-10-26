@@ -24,8 +24,8 @@ import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.master.session.Session;
+import org.apache.tajo.plan.logical.NodeType;
 
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
 
@@ -132,9 +132,9 @@ public class QueryContext extends OverridableConf {
     put(QueryVars.OUTPUT_PARTITIONS, partitionMethodDesc != null ? partitionMethodDesc.toJson() : null);
   }
 
-  public PartitionMethodDesc getPartitionMethod() {
-    return PartitionMethodDesc.fromJson(get(QueryVars.OUTPUT_PARTITIONS));
-  }
+//  public PartitionMethodDesc getPartitionMethod() {
+//    return PartitionMethodDesc.fromJson(get(QueryVars.OUTPUT_PARTITIONS));
+//  }
 
   public void setOutputOverwrite() {
     setBool(QueryVars.OUTPUT_OVERWRITE, true);
@@ -160,8 +160,8 @@ public class QueryContext extends OverridableConf {
     }
   }
 
-  public boolean isCommandType(NodeType commandType) {
-    return equalKey(QueryVars.COMMAND_TYPE, commandType.name());
+  public boolean isCommandType(String commandType) {
+    return equalKey(QueryVars.COMMAND_TYPE, commandType);
   }
 
   public void setCommandType(NodeType nodeType) {
@@ -178,7 +178,7 @@ public class QueryContext extends OverridableConf {
   }
 
   public boolean isCreateTable() {
-    return isCommandType(NodeType.CREATE_TABLE);
+    return isCommandType(NodeType.CREATE_TABLE.name());
   }
 
   public void setInsert() {
@@ -186,6 +186,6 @@ public class QueryContext extends OverridableConf {
   }
 
   public boolean isInsert() {
-    return isCommandType(NodeType.INSERT);
+    return isCommandType(NodeType.INSERT.name());
   }
 }

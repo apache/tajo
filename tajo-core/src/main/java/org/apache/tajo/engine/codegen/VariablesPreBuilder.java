@@ -20,8 +20,8 @@ package org.apache.tajo.engine.codegen;
 
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.IntervalDatum;
-import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.org.objectweb.asm.Opcodes;
+import org.apache.tajo.plan.expr.*;
 
 import java.util.Stack;
 

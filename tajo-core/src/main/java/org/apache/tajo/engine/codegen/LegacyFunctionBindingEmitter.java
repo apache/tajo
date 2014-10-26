@@ -20,9 +20,9 @@ package org.apache.tajo.engine.codegen;
 
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.eval.FunctionEval;
 import org.apache.tajo.org.objectweb.asm.Opcodes;
+import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.expr.FunctionEval;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 

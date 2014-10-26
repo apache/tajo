@@ -246,7 +246,7 @@ public class TestStorages {
     schema.addColumn("score", Type.FLOAT4);
 
     TableMeta meta = CatalogUtil.newTableMeta(storeType);
-    meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
+    meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
     if (storeType == StoreType.AVRO) {
       meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
                      TEST_PROJECTION_AVRO_SCHEMA);
@@ -314,7 +314,7 @@ public class TestStorages {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
+    meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
     if (storeType == StoreType.AVRO) {
       String path = FileUtil.getResourcePath("testVariousTypes.avsc").toString();
       meta.putOption(StorageConstants.AVRO_SCHEMA_URL, path);
@@ -380,7 +380,7 @@ public class TestStorages {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
+    meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
     meta.putOption(StorageConstants.CSVFILE_NULL, "\\\\N");
     meta.putOption(StorageConstants.RCFILE_NULL, "\\\\N");
     meta.putOption(StorageConstants.RCFILE_SERDE, TextSerializerDeserializer.class.getName());

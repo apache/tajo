@@ -30,6 +30,8 @@ import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
@@ -804,5 +806,32 @@ public class CatalogUtil {
     TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.DATE, Type.DATE, Type.DATE);
 
     TUtil.putToNestedMap(OPERATION_CASTING_MAP, Type.INET4, Type.INET4, Type.INET4);
+  }
+
+  // table default properties
+  public static final String BLOCK_SIZE           = "parquet.block.size";
+  public static final String PAGE_SIZE            = "parquet.page.size";
+  public static final String COMPRESSION          = "parquet.compression";
+  public static final String ENABLE_DICTIONARY    = "parquet.enable.dictionary";
+  public static final String VALIDATION           = "parquet.validation";
+
+  public static KeyValueSet newPhysicalProperties(StoreType type) {
+    KeyValueSet options = new KeyValueSet();
+    if (StoreType.CSV == type) {
+      options.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    } else if (StoreType.RCFILE == type) {
+      options.set(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
+    } else if (StoreType.SEQUENCEFILE == type) {
+      options.set(StorageConstants.SEQUENCEFILE_SERDE, StorageConstants.DEFAULT_TEXT_SERDE);
+      options.set(StorageConstants.SEQUENCEFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    } else if (type == StoreType.PARQUET) {
+      options.set(BLOCK_SIZE, StorageConstants.PARQUET_DEFAULT_BLOCK_SIZE);
+      options.set(PAGE_SIZE, StorageConstants.PARQUET_DEFAULT_PAGE_SIZE);
+      options.set(COMPRESSION, StorageConstants.PARQUET_DEFAULT_COMPRESSION_CODEC_NAME);
+      options.set(ENABLE_DICTIONARY, StorageConstants.PARQUET_DEFAULT_IS_DICTIONARY_ENABLED);
+      options.set(VALIDATION, StorageConstants.PARQUET_DEFAULT_IS_VALIDATION_ENABLED);
+    }
+
+    return options;
   }
 }
