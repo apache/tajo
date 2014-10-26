@@ -33,13 +33,19 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.eval.*;
-import org.apache.tajo.engine.function.AggFunction;
-import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.planner.BroadcastJoinMarkCandidateVisitor;
+import org.apache.tajo.engine.planner.BroadcastJoinPlanVisitor;
 import org.apache.tajo.engine.planner.global.builder.DistinctGroupbyBuilder;
-import org.apache.tajo.engine.planner.logical.*;
-import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.plan.Target;
+import org.apache.tajo.plan.expr.*;
+import org.apache.tajo.plan.function.AggFunction;
+import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
+import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TajoWorker;
@@ -48,7 +54,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.apache.tajo.conf.TajoConf.ConfVars;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.*;
+import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.*;
 
 /**
  * Build DAG
@@ -520,7 +526,7 @@ public class GlobalPlanner {
     }
   }
 
-  private AggregationFunctionCallEval createSumFunction(EvalNode [] args) throws InternalException {
+  private AggregationFunctionCallEval createSumFunction(EvalNode[] args) throws InternalException {
     FunctionDesc functionDesc = getCatalog().getFunction("sum", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
     return new AggregationFunctionCallEval(functionDesc, (AggFunction) functionDesc.newInstance(), args);
@@ -556,7 +562,7 @@ public class GlobalPlanner {
    */
   private static class RewrittenFunctions {
     AggregationFunctionCallEval [] firstStageEvals;
-    Target [] firstStageTargets;
+    Target[] firstStageTargets;
     AggregationFunctionCallEval secondStageEvals;
 
     public RewrittenFunctions(int firstStageEvalNum) {

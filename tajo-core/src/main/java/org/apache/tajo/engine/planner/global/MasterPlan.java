@@ -23,10 +23,10 @@ package org.apache.tajo.engine.planner.global;
 
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
-import org.apache.tajo.engine.planner.LogicalPlan;
-import org.apache.tajo.engine.planner.PlannerUtil;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
-import org.apache.tajo.engine.planner.graph.SimpleDirectedGraph;
+import org.apache.tajo.util.graph.SimpleDirectedGraph;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 
@@ -35,6 +35,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 
 public class MasterPlan {
   private final QueryId queryId;
@@ -110,11 +112,11 @@ public class MasterPlan {
     execBlockGraph.addEdge(dataChannel.getSrcId(), dataChannel.getTargetId(), dataChannel);
   }
 
-  public void addConnect(ExecutionBlock src, ExecutionBlock target, TajoWorkerProtocol.ShuffleType type) {
+  public void addConnect(ExecutionBlock src, ExecutionBlock target, ShuffleType type) {
     addConnect(src.getId(), target.getId(), type);
   }
 
-  public void addConnect(ExecutionBlockId src, ExecutionBlockId target, TajoWorkerProtocol.ShuffleType type) {
+  public void addConnect(ExecutionBlockId src, ExecutionBlockId target, ShuffleType type) {
     addConnect(new DataChannel(src, target, type));
   }
 

@@ -24,12 +24,12 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
-import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.org.objectweb.asm.ClassWriter;
 import org.apache.tajo.org.objectweb.asm.Label;
 import org.apache.tajo.org.objectweb.asm.Opcodes;
 import org.apache.tajo.org.objectweb.asm.Type;
+import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.PrintStream;
@@ -38,7 +38,7 @@ import java.util.Stack;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 import static org.apache.tajo.engine.codegen.TajoGeneratorAdapter.getDescription;
-import static org.apache.tajo.engine.eval.FunctionEval.ParamType;
+import static org.apache.tajo.plan.expr.FunctionEval.ParamType;
 
 public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext> {
 
@@ -701,7 +701,7 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     return constEval;
   }
 
-  public static ParamType [] getParamTypes(EvalNode [] arguments) {
+  public static ParamType[] getParamTypes(EvalNode [] arguments) {
     ParamType[] paramTypes = new ParamType[arguments.length];
     for (int i = 0; i < arguments.length; i++) {
       if (arguments[i].getType() == EvalType.CONST) {

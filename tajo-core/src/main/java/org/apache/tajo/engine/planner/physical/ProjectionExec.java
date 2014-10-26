@@ -22,7 +22,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.engine.planner.Projector;
-import org.apache.tajo.engine.planner.logical.Projectable;
+import org.apache.tajo.plan.logical.Projectable;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;

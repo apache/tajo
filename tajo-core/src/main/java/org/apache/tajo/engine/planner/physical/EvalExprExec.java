@@ -18,8 +18,8 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.engine.planner.Target;
-import org.apache.tajo.engine.planner.logical.EvalExprNode;
+import org.apache.tajo.plan.Target;
+import org.apache.tajo.plan.logical.EvalExprNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
