@@ -32,6 +32,7 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.event.QueryEvent;
 import org.apache.tajo.master.event.QueryEventType;
 import org.apache.tajo.master.session.Session;
+import org.apache.tajo.plan.rewrite.rules.AccessPathRewriter.AccessPathRewriterContext;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -59,7 +60,7 @@ public class TestKillQuery {
     String query = "select l_orderkey from lineitem group by l_orderkey";
 
     LogicalPlanner planner = new LogicalPlanner(catalog);
-    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog, new AccessPathRewriterContext(false));
     Expr expr =  analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
 

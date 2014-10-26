@@ -113,6 +113,10 @@ public enum SessionVars implements ConfigKey {
   NULL_CHAR(ConfVars.$CSVFILE_NULL, "null char of text file output", DEFAULT),
   CODEGEN(ConfVars.$CODEGEN, "Runtime code generation enabled (experiment)", DEFAULT),
 
+  // for index
+  INDEX_ENABLED(ConfVars.$INDEX_ENABLED, "index scan enabled", DEFAULT),
+  INDEX_SELECTIVITY_THRESHOLD(ConfVars.$INDEX_SELECTIVITY_THRESHOLD, "the selectivity threshold for index scan", DEFAULT),
+
   // Behavior Control ---------------------------------------------------------
   ARITHABORT(ConfVars.$BEHAVIOR_ARITHMETIC_ABORT,
       "If true, a running query will be terminated when an overflow or divide-by-zero occurs.", DEFAULT),

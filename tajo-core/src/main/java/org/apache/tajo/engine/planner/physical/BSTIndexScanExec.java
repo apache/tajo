@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.Schema;
@@ -33,6 +35,7 @@ import org.apache.tajo.worker.TaskAttemptContext;
 import java.io.IOException;
 
 public class BSTIndexScanExec extends PhysicalExec {
+  private final static Log LOG = LogFactory.getLog(BSTIndexScanExec.class);
   private ScanNode scanNode;
   private SeekableScanner fileScanner;
   
@@ -42,14 +45,14 @@ public class BSTIndexScanExec extends PhysicalExec {
   private Projector projector;
   
   private Datum[] datum = null;
-  
+
   private boolean initialize = true;
 
   private float progress;
 
   public BSTIndexScanExec(TaskAttemptContext context,
                           StorageManager sm , ScanNode scanNode ,
-       FileFragment fragment, Path fileName , Schema keySchema,
+       FileFragment fragment, Path indexPrefix , Schema keySchema,
        TupleComparator comparator , Datum[] datum) throws IOException {
     super(context, scanNode.getInSchema(), scanNode.getOutSchema());
     this.scanNode = scanNode;
@@ -61,8 +64,9 @@ public class BSTIndexScanExec extends PhysicalExec {
     this.fileScanner.init();
     this.projector = new Projector(context, inSchema, outSchema, scanNode.getTargets());
 
+    Path indexPath = new Path(indexPrefix, context.getUniqueKeyFromFragments());
     this.reader = new BSTIndex(sm.getFileSystem().getConf()).
-        getIndexReader(fileName, keySchema, comparator);
+        getIndexReader(indexPath, keySchema, comparator);
     this.reader.open();
   }
 
@@ -114,9 +118,12 @@ public class BSTIndexScanExec extends PhysicalExec {
            projector.eval(tuple, outTuple);
            return outTuple;
          } else {
-           long offset = reader.next();
-           if (offset == -1) return null;
-           else fileScanner.seek(offset);
+//           long offset = reader.next();
+//           if (offset == -1) {
+//             return null;
+//           }
+//           else fileScanner.seek(offset);
+           return null;
          }
        }
      }

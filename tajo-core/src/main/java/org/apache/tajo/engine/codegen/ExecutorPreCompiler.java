@@ -214,4 +214,11 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
 
     return node;
   }
+
+  @Override
+  public LogicalNode visitIndexScan(CompilationContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                    IndexScanNode node, Stack<LogicalNode> stack) throws PlanningException {
+    visitScan(context, plan, block, node, stack);
+    return node;
+  }
 }

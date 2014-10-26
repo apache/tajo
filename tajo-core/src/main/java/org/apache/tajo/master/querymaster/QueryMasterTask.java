@@ -39,6 +39,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
+import org.apache.tajo.plan.rewrite.rules.AccessPathRewriter;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.plan.logical.LogicalNode;
@@ -352,7 +353,9 @@ public class QueryMasterTask extends CompositeService {
       }
       CatalogService catalog = getQueryTaskContext().getQueryMasterContext().getWorkerContext().getCatalog();
       LogicalPlanner planner = new LogicalPlanner(catalog);
-      LogicalOptimizer optimizer = new LogicalOptimizer(systemConf);
+      LogicalOptimizer optimizer = new LogicalOptimizer(systemConf, catalog,
+          new AccessPathRewriter.AccessPathRewriterContext(queryContext.getBool(SessionVars.INDEX_ENABLED),
+              queryContext.getFloat(SessionVars.INDEX_SELECTIVITY_THRESHOLD)));
       Expr expr = JsonHelper.fromJson(jsonExpr, Expr.class);
       LogicalPlan plan = planner.createPlan(queryContext, expr);
       optimizer.optimize(queryContext, plan);
@@ -371,6 +374,14 @@ public class QueryMasterTask extends CompositeService {
         }
 
         scanNodes = PlannerUtil.findAllNodes(block.getRoot(), NodeType.PARTITIONS_SCAN);
+        if (scanNodes != null) {
+          for (LogicalNode eachScanNode : scanNodes) {
+            ScanNode scanNode = (ScanNode) eachScanNode;
+            tableDescMap.put(scanNode.getCanonicalName(), scanNode.getTableDesc());
+          }
+        }
+
+        scanNodes = PlannerUtil.findAllNodes(block.getRoot(), NodeType.INDEX_SCAN);
         if (scanNodes != null) {
           for (LogicalNode eachScanNode : scanNodes) {
             ScanNode scanNode = (ScanNode) eachScanNode;

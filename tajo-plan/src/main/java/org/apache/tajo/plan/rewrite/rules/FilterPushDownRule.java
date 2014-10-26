@@ -22,15 +22,14 @@ import com.google.common.collect.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.algebra.JoinType;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.*;
+import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.rules.FilterPushDownRule.FilterPushDownContext;
 import org.apache.tajo.plan.rewrite.RewriteRule;
+import org.apache.tajo.plan.util.IndexUtil;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
@@ -45,6 +44,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     implements RewriteRule {
   private final static Log LOG = LogFactory.getLog(FilterPushDownRule.class);
   private static final String NAME = "FilterPushDown";
+
+  private CatalogService catalog;
 
   static class FilterPushDownContext {
     Set<EvalNode> pushingDownFilters = new HashSet<EvalNode>();
@@ -71,6 +72,10 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       }
       setFiltersTobePushed(origins);
     }
+  }
+
+  public FilterPushDownRule(CatalogService catalog) {
+    this.catalog = catalog;
   }
 
   @Override
@@ -883,8 +888,35 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       qual = matched.iterator().next();
     }
 
+    block.addAccessPath(scanNode, new SeqScanInfo(table));
     if (qual != null) { // if a matched qual exists
       scanNode.setQual(qual);
+
+      // Add the index path
+      String databaseName, tableName;
+      databaseName = CatalogUtil.extractQualifier(table.getName());
+      tableName = CatalogUtil.extractSimpleName(table.getName());
+      for (EvalNode eval : IndexUtil.getAllEqualEvals(qual)) {
+        BinaryEval binaryEval = (BinaryEval) eval;
+        // TODO: consider more complex cases
+        Column column = null;
+        Datum datum = null;
+        if (binaryEval.getLeftExpr().getType() == EvalType.FIELD &&
+            binaryEval.getRightExpr().getType() == EvalType.CONST) {
+          column = ((FieldEval)binaryEval.getLeftExpr()).getColumnRef();
+          datum = ((ConstEval)binaryEval.getRightExpr()).getValue();
+        } else if (binaryEval.getLeftExpr().getType() == EvalType.CONST &&
+            binaryEval.getRightExpr().getType() == EvalType.FIELD) {
+          column = ((FieldEval)binaryEval.getRightExpr()).getColumnRef();
+          datum = ((ConstEval)binaryEval.getLeftExpr()).getValue();
+        }
+
+        if (catalog.existIndexByColumn(databaseName, tableName, column.getSimpleName())) {
+          IndexDesc indexDesc = catalog.getIndexByColumn(databaseName, tableName, column.getSimpleName());
+          block.addAccessPath(scanNode, new IndexScanInfo(table.getStats(), indexDesc, new Datum[]{datum}));
+        }
+      }
+
     }
 
     for (EvalNode matchedEval: matched) {

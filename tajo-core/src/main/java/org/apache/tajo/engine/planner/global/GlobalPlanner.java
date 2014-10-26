@@ -1523,6 +1523,15 @@ public class GlobalPlanner {
     }
 
     @Override
+    public LogicalNode visitIndexScan(GlobalPlanContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                      IndexScanNode node, Stack<LogicalNode> stack) throws PlanningException {
+      ExecutionBlock newBlock = context.plan.newExecutionBlock();
+      newBlock.setPlan(node);
+      context.execBlockMap.put(node.getPID(), newBlock);
+      return node;
+    }
+
+    @Override
     public LogicalNode visitPartitionedTableScan(GlobalPlanContext context, LogicalPlan plan,
                                                  LogicalPlan.QueryBlock block, PartitionedTableScanNode node,
                                                  Stack<LogicalNode> stack)throws PlanningException {

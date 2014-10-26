@@ -34,6 +34,7 @@ import org.apache.tajo.engine.planner.global.ExecutionBlockCursor;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.plan.rewrite.rules.AccessPathRewriter.AccessPathRewriterContext;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.AfterClass;
@@ -80,7 +81,7 @@ public class TestExecutionBlockCursor {
 
     analyzer = new SQLAnalyzer();
     logicalPlanner = new LogicalPlanner(catalog);
-    optimizer = new LogicalOptimizer(conf);
+    optimizer = new LogicalOptimizer(conf, catalog, new AccessPathRewriterContext(false));
 
     StorageManager sm  = StorageManager.getStorageManager(conf);
     dispatcher = new AsyncDispatcher();

@@ -59,6 +59,7 @@ import org.apache.tajo.master.session.Session;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.rewrite.rules.AccessPathRewriter.AccessPathRewriterContext;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
@@ -105,7 +106,8 @@ public class GlobalEngine extends AbstractService {
       analyzer = new SQLAnalyzer();
       preVerifier = new PreLogicalPlanVerifier(context.getCatalog());
       planner = new LogicalPlanner(context.getCatalog());
-      optimizer = new LogicalOptimizer(context.getConf());
+      // Access path rewriter is enabled only in QueryMasterTask
+      optimizer = new LogicalOptimizer(context.getConf(), context.getCatalog(), new AccessPathRewriterContext(false));
       annotatedPlanVerifier = new LogicalPlanVerifier(context.getConf(), context.getCatalog());
 
       hookManager = new DistributedQueryHookManager();
@@ -209,14 +211,19 @@ public class GlobalEngine extends AbstractService {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
     SubmitQueryResponse.Builder responseBuilder = SubmitQueryResponse.newBuilder();
+    SubmitQueryResponse response = null;
     responseBuilder.setIsForwarded(false);
     responseBuilder.setUserName(queryContext.get(SessionVars.USERNAME));
 
     if (PlannerUtil.checkIfDDLPlan(rootNode)) {
       context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
-      updateQuery(queryContext, rootNode.getChild());
-      responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+      boolean requireForward = updateQuery(queryContext, rootNode.getChild());
+      if (requireForward) {
+        response = submitForwardQuery(session, queryContext, sql, jsonExpr, rootNode, responseBuilder);
+      } else {
+        responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+        responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+      }
 
     } else if (plan.isExplain()) { // explain query
       String explainStr = PlannerUtil.buildExplainString(plan.getRootBlock().getRoot());
@@ -302,28 +309,37 @@ public class GlobalEngine extends AbstractService {
       context.getSystemMetrics().counter("Query", "numDMLQuery").inc();
       hookManager.doHooks(queryContext, plan);
 
-      QueryJobManager queryJobManager = this.context.getQueryJobManager();
-      QueryInfo queryInfo;
-
-      queryInfo = queryJobManager.createNewQueryJob(session, queryContext, sql, jsonExpr, rootNode);
-
-      if(queryInfo == null) {
-        responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-        responseBuilder.setResultCode(ClientProtos.ResultCode.ERROR);
-        responseBuilder.setErrorMessage("Fail starting QueryMaster.");
-      } else {
-        responseBuilder.setIsForwarded(true);
-        responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
-        responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
-        if(queryInfo.getQueryMasterHost() != null) {
-          responseBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
-        }
-        responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
-        LOG.info("Query is forwarded to " + queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
-      }
+      response = submitForwardQuery(session, queryContext, sql, jsonExpr, rootNode, responseBuilder);
     }
-    SubmitQueryResponse response = responseBuilder.build();
+    if (response == null) {
+      response = responseBuilder.build();
+    }
     return response;
+  }
+
+  private SubmitQueryResponse submitForwardQuery(Session session, QueryContext queryContext, String sql,
+                                                         String jsonExpr, LogicalRootNode rootNode,
+                                                         SubmitQueryResponse.Builder responseBuilder) throws Exception {
+    QueryJobManager queryJobManager = this.context.getQueryJobManager();
+    QueryInfo queryInfo;
+
+    queryInfo = queryJobManager.createNewQueryJob(session, queryContext, sql, jsonExpr, rootNode);
+
+    if(queryInfo == null) {
+      responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+      responseBuilder.setResultCode(ClientProtos.ResultCode.ERROR);
+      responseBuilder.setErrorMessage("Fail starting QueryMaster.");
+    } else {
+      responseBuilder.setIsForwarded(true);
+      responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
+      responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+      if(queryInfo.getQueryMasterHost() != null) {
+        responseBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
+      }
+      responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
+      LOG.info("Query is forwarded to " + queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
+    }
+    return responseBuilder.build();
   }
 
   private void insertNonFromQuery(QueryContext queryContext, InsertNode insertNode, SubmitQueryResponse.Builder responseBuilder)
@@ -455,39 +471,49 @@ public class GlobalEngine extends AbstractService {
   }
 
   private boolean updateQuery(QueryContext queryContext, LogicalNode root) throws IOException {
-
+    boolean requireForward = false;
     switch (root.getType()) {
       case CREATE_DATABASE:
         CreateDatabaseNode createDatabase = (CreateDatabaseNode) root;
         createDatabase(queryContext, createDatabase.getDatabaseName(), null, createDatabase.isIfNotExists());
-        return true;
+        break;
       case DROP_DATABASE:
         DropDatabaseNode dropDatabaseNode = (DropDatabaseNode) root;
         dropDatabase(queryContext, dropDatabaseNode.getDatabaseName(), dropDatabaseNode.isIfExists());
-        return true;
+        break;
       case CREATE_TABLE:
         CreateTableNode createTable = (CreateTableNode) root;
         createTable(queryContext, createTable, createTable.isIfNotExists());
-        return true;
+        break;
       case DROP_TABLE:
         DropTableNode dropTable = (DropTableNode) root;
         dropTable(queryContext, dropTable.getTableName(), dropTable.isIfExists(), dropTable.isPurge());
-        return true;
+        break;
       case ALTER_TABLESPACE:
         AlterTablespaceNode alterTablespace = (AlterTablespaceNode) root;
         alterTablespace(queryContext, alterTablespace);
-        return true;
+        break;
       case ALTER_TABLE:
         AlterTableNode alterTable = (AlterTableNode) root;
         alterTable(queryContext,alterTable);
-        return true;
+        break;
       case TRUNCATE_TABLE:
         TruncateTableNode truncateTable = (TruncateTableNode) root;
         truncateTable(queryContext, truncateTable);
-        return true;
+        break;
+      case CREATE_INDEX:
+        CreateIndexNode createIndexNode = (CreateIndexNode) root;
+        createIndex(queryContext, createIndexNode);
+        requireForward = true;
+        break;
+      case DROP_INDEX:
+        DropIndexNode dropIndexNode = (DropIndexNode) root;
+        dropIndex(queryContext, dropIndexNode);
+        break;
       default:
         throw new InternalError("updateQuery cannot handle such query: \n" + root.toJson());
     }
+    return requireForward;
   }
 
   private LogicalPlan createLogicalPlan(QueryContext queryContext, Expr expression) throws PlanningException {
@@ -673,6 +699,74 @@ public class GlobalEngine extends AbstractService {
         }
       }
     }
+  }
+
+  public void dropIndex(final QueryContext queryContext, final DropIndexNode dropIndexNode) {
+    String databaseName, simpleIndexName;
+    if (CatalogUtil.isFQTableName(dropIndexNode.getIndexName())) {
+      String [] splits = CatalogUtil.splitFQTableName(dropIndexNode.getIndexName());
+      databaseName = splits[0];
+      simpleIndexName = splits[1];
+    } else {
+      databaseName = queryContext.getCurrentDatabase();
+      simpleIndexName = dropIndexNode.getIndexName();
+    }
+
+    if (!catalog.existIndexByName(databaseName, simpleIndexName)) {
+      throw new NoSuchIndexException(simpleIndexName);
+    }
+
+    IndexDesc desc = catalog.getIndexByName(databaseName, simpleIndexName);
+
+    if (!catalog.dropIndex(databaseName, simpleIndexName)) {
+      LOG.info("Cannot drop index \"" + simpleIndexName + "\".");
+      throw new CatalogException("Cannot drop index \"" + simpleIndexName + "\".");
+    }
+
+    Path indexPath = desc.getIndexPath();
+    try {
+      FileSystem fs = indexPath.getFileSystem(context.getConf());
+      fs.delete(indexPath, true);
+    } catch (IOException e) {
+      throw new InternalError(e.getMessage());
+    }
+
+    LOG.info("Index " + simpleIndexName + " is dropped.");
+  }
+
+  public void createIndex(final QueryContext queryContext, final CreateIndexNode createIndexNode)
+      throws IOException {
+    String databaseName, simpleIndexName, qualifiedIndexName;
+    if (CatalogUtil.isFQTableName(createIndexNode.getIndexName())) {
+      String [] splits = CatalogUtil.splitFQTableName(createIndexNode.getIndexName());
+      databaseName = splits[0];
+      simpleIndexName = splits[1];
+      qualifiedIndexName = createIndexNode.getIndexName();
+    } else {
+      databaseName = queryContext.getCurrentDatabase();
+      simpleIndexName = createIndexNode.getIndexName();
+      qualifiedIndexName = CatalogUtil.buildFQName(databaseName, simpleIndexName);
+    }
+
+    if (catalog.existIndexByName(databaseName, simpleIndexName)) {
+      throw new AlreadyExistsIndexException(qualifiedIndexName);
+    }
+//    ScanNode scanNode = PlannerUtil.findTopNode(createIndexNode, NodeType.SCAN);
+//    if (scanNode == null) {
+//      throw new IOException("Cannot find the table of the relation");
+//    }
+//    simpleTableName = CatalogUtil.extractSimpleName(scanNode.getTableName());
+//    SortSpec[] sortSpecs = createIndexNode.getSortSpecs();
+//    // TODO: consider the index for two or more columns
+//    IndexDesc indexDesc = new IndexDesc(createIndexNode.getIndexName(), createIndexNode.getIndexPath(),
+//        databaseName, simpleTableName, sortSpecs[0].getSortKey(), createIndexNode.getIndexType(),
+//        createIndexNode.isUnique(), false, sortSpecs[0].isAscending());
+//    if (catalog.createIndex(indexDesc)) {
+//      LOG.info("Index " + qualifiedIndexName + " is created for the table " + simpleTableName + ".");
+//    } else {
+//      LOG.info("Index creation " + qualifiedIndexName + " is failed.");
+//      throw new CatalogException("Cannot create index \"" + qualifiedIndexName + "\".");
+//    }
   }
 
   private boolean existColumnName(String tableName, String columnName) {

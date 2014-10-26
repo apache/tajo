@@ -20,27 +20,31 @@ package org.apache.tajo.plan.logical;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.serder.PlanGsonHelper;
+import org.apache.tajo.util.TUtil;
 
 public class IndexScanNode extends ScanNode {
   @Expose private SortSpec [] sortKeys;
   @Expose private Schema keySchema = null;
   @Expose private Datum[] datum = null;
+  @Expose private Path indexPath = null;
   
   public IndexScanNode(int pid, ScanNode scanNode ,
-      Schema keySchema , Datum[] datum, SortSpec[] sortKeys ) {
+      Schema keySchema , Datum[] datum, SortSpec[] sortKeys, Path indexPath) {
     super(pid);
     init(scanNode.getTableDesc());
     setQual(scanNode.getQual());
     setInSchema(scanNode.getInSchema());
     setTargets(scanNode.getTargets());
-    setType(NodeType.BST_INDEX_SCAN);
+    setType(NodeType.INDEX_SCAN);
     this.sortKeys = sortKeys;
     this.keySchema = keySchema;
     this.datum = datum;
+    this.indexPath = indexPath;
   }
   
   public SortSpec[] getSortKeys() {
@@ -68,6 +72,7 @@ public class IndexScanNode extends ScanNode {
     Gson gson = PlanGsonHelper.getInstance();
     StringBuilder builder = new StringBuilder();
     builder.append("IndexScanNode : {\n");
+    builder.append("  \"indexPath\" : \"" + gson.toJson(this.indexPath) + "\"\n");
     builder.append("  \"keySchema\" : \"" + gson.toJson(this.keySchema) + "\"\n");
     builder.append("  \"sortKeys\" : \"" + gson.toJson(this.sortKeys) + " \"\n");
     builder.append("  \"datums\" : \"" + gson.toJson(this.datum) + "\"\n");
@@ -81,25 +86,11 @@ public class IndexScanNode extends ScanNode {
   public boolean equals(Object obj) {
     if (obj instanceof IndexScanNode) {
       IndexScanNode other = (IndexScanNode) obj;
-      
-      boolean eq = super.equals(other);
-      eq = eq && this.sortKeys.length == other.sortKeys.length;
-      if(eq) {
-        for(int i = 0 ; i < this.sortKeys.length ; i ++) {
-          eq = eq && this.sortKeys[i].getSortKey().equals(
-              other.sortKeys[i].getSortKey());
-          eq = eq && this.sortKeys[i].isAscending()
-              == other.sortKeys[i].isAscending();
-          eq = eq && this.sortKeys[i].isNullFirst()
-              == other.sortKeys[i].isNullFirst();
-        }
-      }
-      if(eq) {
-        for(int i = 0 ; i < this.datum.length ; i ++ ) {
-          eq = eq && this.datum[i].equals(other.datum[i]);
-        }
-      }
-     return eq;
+      return super.equals(other) &&
+          this.indexPath.equals(other.indexPath) &&
+          TUtil.checkEquals(this.sortKeys, other.sortKeys) &&
+          TUtil.checkEquals(this.datum, other.datum) &&
+          this.keySchema.equals(other.keySchema);
     }   
     return false;
   } 
@@ -115,7 +106,16 @@ public class IndexScanNode extends ScanNode {
     for(int i = 0 ; i < datum.length ; i ++ ) {
       indexNode.datum[i] = this.datum[i];
     }
+    indexNode.indexPath = this.indexPath;
     return indexNode;
+  }
+
+  public Path getIndexPath() {
+    return indexPath;
+  }
+
+  public void setIndexPath(Path indexPath) {
+    this.indexPath = indexPath;
   }
 }
 
