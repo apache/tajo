@@ -109,7 +109,7 @@ public class TestMergeScanner {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
+    meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
     if (storeType == StoreType.AVRO) {
       meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
                      TEST_MULTIPLE_FILES_AVRO_SCHEMA);

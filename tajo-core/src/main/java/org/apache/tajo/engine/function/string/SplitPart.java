@@ -20,7 +20,7 @@ package org.apache.tajo.engine.function.string;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;

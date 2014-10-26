@@ -18,7 +18,7 @@
 
 package org.apache.tajo.engine.codegen;
 
-import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.plan.expr.EvalNode;
 
 public class CompilationError extends RuntimeException {
   public CompilationError(String message) {

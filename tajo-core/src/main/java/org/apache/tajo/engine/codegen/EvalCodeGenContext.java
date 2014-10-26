@@ -23,11 +23,11 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.IntervalDatum;
-import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.org.objectweb.asm.ClassWriter;
 import org.apache.tajo.org.objectweb.asm.MethodVisitor;
 import org.apache.tajo.org.objectweb.asm.Opcodes;
 import org.apache.tajo.org.objectweb.asm.commons.GeneratorAdapter;
+import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.storage.Tuple;
 
 import java.util.Map;

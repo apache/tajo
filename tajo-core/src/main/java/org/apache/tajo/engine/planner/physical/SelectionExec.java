@@ -19,8 +19,8 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.engine.codegen.CompilationError;
-import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.planner.logical.SelectionNode;
+import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.logical.SelectionNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 

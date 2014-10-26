@@ -27,6 +27,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
 import parquet.hadoop.ParquetOutputFormat;
@@ -144,7 +145,7 @@ public class StorageUtil extends StorageConstants {
    * @param path
    * @param recursive
    * @return The maximum sequence number
-   * @throws IOException
+   * @throws java.io.IOException
    */
   public static int getMaxFileSequence(FileSystem fs, Path path, boolean recursive) throws IOException {
     if (!fs.isDirectory(path)) {

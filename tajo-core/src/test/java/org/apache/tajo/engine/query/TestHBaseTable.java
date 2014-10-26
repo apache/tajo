@@ -27,9 +27,9 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.engine.eval.*;
-import org.apache.tajo.engine.planner.PlannerUtil;
-import org.apache.tajo.engine.planner.logical.ScanNode;
+import org.apache.tajo.plan.expr.*;
+import org.apache.tajo.plan.logical.ScanNode;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.hbase.HBaseFragment;
@@ -351,7 +351,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
       StorageManager storageManager = StorageManager.getStorageManager(conf, StoreType.HBASE);
       List<Fragment> fragments = storageManager.getSplits("external_hbase_mapped_table", tableDesc,
-          PlannerUtil.getIndexPredications(storageManager, tableDesc, scanNode));
+          HBaseStorageManager.getIndexPredications(storageManager, tableDesc, scanNode));
 
       assertEquals(2, fragments.size());
       HBaseFragment fragment1 = (HBaseFragment) fragments.get(0);

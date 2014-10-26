@@ -20,7 +20,6 @@ package org.apache.tajo.master.querymaster;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
-import com.google.common.primitives.Ints;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
@@ -31,22 +30,24 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
+import org.apache.tajo.engine.planner.RangePartitionAlgorithm;
+import org.apache.tajo.engine.planner.UniformRangePartition;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty;
 import org.apache.tajo.master.TaskSchedulerContext;
 import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
+import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.storage.FileStorageManager;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.RowStoreUtil;
@@ -66,7 +67,8 @@ import java.net.URI;
 import java.util.*;
 import java.util.Map.Entry;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.*;
+import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
+import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.*;
 
 /**
  * Repartitioner creates non-leaf tasks and shuffles intermediate data.
@@ -588,7 +590,7 @@ public class Repartitioner {
    * @return key: pullserver's address, value: a list of requests
    */
   private static Collection<FetchImpl> mergeShuffleRequest(int partitionId,
-                                                          TajoWorkerProtocol.ShuffleType type,
+                                                          ShuffleType type,
                                                           List<IntermediateEntry> partitions) {
     // ebId + pullhost -> FetchImmpl
     Map<String, FetchImpl> mergedPartitions = new HashMap<String, FetchImpl>();

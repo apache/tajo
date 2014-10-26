@@ -29,7 +29,7 @@ import org.apache.tajo.algebra.Aggregation.GroupType;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.engine.parser.SQLParser.*;
-import org.apache.tajo.engine.planner.PlannerUtil;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.StringUtils;
 

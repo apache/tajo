@@ -161,13 +161,13 @@
                 <argument>--proto_path=../tajo-common/src/main/proto</argument>
                 <argument>--proto_path=../tajo-catalog/tajo-catalog-common/src/main/proto</argument>
                 <argument>--proto_path=../tajo-client/src/main/proto</argument>
+                <argument>--proto_path=../tajo-plan/src/main/proto</argument>
                 <argument>--java_out=target/generated-sources/proto</argument>
                 <argument>src/main/proto/ResourceTrackerProtocol.proto</argument>
                 <argument>src/main/proto/QueryMasterProtocol.proto</argument>
                 <argument>src/main/proto/TajoMasterProtocol.proto</argument>
                 <argument>src/main/proto/TajoWorkerProtocol.proto</argument>
                 <argument>src/main/proto/InternalTypes.proto</argument>
-                <argument>src/main/proto/Plan.proto</argument>
               </arguments>
             </configuration>
             <goals>
@@ -231,6 +231,10 @@
     <dependency>
       <groupId>org.apache.tajo</groupId>
       <artifactId>tajo-catalog-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-plan</artifactId>
     </dependency>
     <dependency>
       <groupId>org.apache.tajo</groupId>

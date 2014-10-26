@@ -28,7 +28,10 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.util.StringUtils;
-import org.apache.tajo.*;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryIdFactory;
+import org.apache.tajo.SessionVars;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.algebra.AlterTablespaceSetType;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.JsonHelper;
@@ -44,14 +47,8 @@ import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.exception.IllegalQueryStatusException;
-import org.apache.tajo.engine.exception.VerifyException;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.planner.*;
-import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.planner.physical.EvalExprExec;
-import org.apache.tajo.engine.planner.physical.SeqScanExec;
 import org.apache.tajo.engine.planner.physical.StoreTableExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.ClientProtos;
@@ -61,6 +58,14 @@ import org.apache.tajo.master.querymaster.QueryInfo;
 import org.apache.tajo.master.querymaster.QueryJobManager;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.session.Session;
+import org.apache.tajo.plan.*;
+import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
+import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
+import org.apache.tajo.plan.verifier.VerificationState;
+import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -72,8 +77,8 @@ import java.util.List;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
-import static org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 import static org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
+import static org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 
 public class GlobalEngine extends AbstractService {
   /** Class Logger */
@@ -268,7 +273,7 @@ public class GlobalEngine extends AbstractService {
 
       // NonFromQuery indicates a form of 'select a, x+y;'
     } else if (PlannerUtil.checkIfNonFromQuery(plan)) {
-      Target [] targets = plan.getRootBlock().getRawTargets();
+      Target[] targets = plan.getRootBlock().getRawTargets();
       if (targets == null) {
         throw new PlanningException("No targets");
       }
