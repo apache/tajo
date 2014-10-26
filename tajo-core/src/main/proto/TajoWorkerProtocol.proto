@@ -27,6 +27,7 @@ import "tajo_protos.proto";
 import "TajoIdProtos.proto";
 import "CatalogProtos.proto";
 import "PrimitiveProtos.proto";
+import "Plan.proto";
 
 message SessionProto {
   required string session_id = 1;
@@ -171,19 +172,6 @@ message GetTaskRequestProto {
     required int32 workerId = 1;
     required hadoop.yarn.ContainerIdProto containerId = 2;
     required ExecutionBlockIdProto executionBlockId = 3;
-}
-
-enum ShuffleType {
-  NONE_SHUFFLE = 0;
-  HASH_SHUFFLE = 1;
-  RANGE_SHUFFLE = 2;
-  SCATTERED_HASH_SHUFFLE = 3;
-}
-
-enum TransmitType {
-  PUSH_TRANSMIT = 0;
-  PULL_TRANSMIT = 1;
-  FILE_WRITE = 2;
 }
 
 message DataChannelProto {

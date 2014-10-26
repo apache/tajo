@@ -19,23 +19,16 @@
 package org.apache.tajo.engine.planner;
 
 import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.benchmark.TPCH;
-import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.planner.graph.SimpleDirectedGraph;
-import org.apache.tajo.master.TajoMaster;
-import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.graph.SimpleDirectedGraph;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.LogicalPlanner;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
-import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
-import static org.apache.tajo.engine.planner.LogicalPlan.BlockType;
+import static org.apache.tajo.plan.LogicalPlan.BlockType;
 import static org.junit.Assert.*;
 
 public class TestLogicalPlan {

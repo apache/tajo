@@ -18,10 +18,10 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.Projector;
-import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.engine.utils.TupleUtil;
+import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;

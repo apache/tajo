@@ -82,6 +82,7 @@
     <module>tajo-project</module>
     <module>tajo-common</module>
     <module>tajo-algebra</module>
+    <module>tajo-plan</module>
     <module>tajo-core</module>
     <module>tajo-rpc</module>
     <module>tajo-catalog</module>

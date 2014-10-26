@@ -18,8 +18,8 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.engine.function.FunctionContext;
-import org.apache.tajo.engine.planner.logical.GroupbyNode;
+import org.apache.tajo.plan.function.FunctionContext;
+import org.apache.tajo.plan.logical.GroupbyNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;

@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner;
 
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.plan.PlanningException;
 import org.junit.Test;
 
 import java.io.IOException;

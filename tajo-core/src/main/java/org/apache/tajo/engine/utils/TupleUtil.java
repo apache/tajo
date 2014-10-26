@@ -31,7 +31,7 @@ import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.Tuple;
@@ -214,69 +214,5 @@ public class TupleUtil {
       }
       return results;
     }
-  }
-
-  /**
-   * Take a look at a column partition path. A partition path consists
-   * of a table path part and column values part. This method transforms
-   * a partition path into a tuple with a given partition column schema.
-   *
-   * hdfs://192.168.0.1/tajo/warehouse/table1/col1=abc/col2=def/col3=ghi
-   *                   ^^^^^^^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^^^^^^^
-   *                      table path part        column values part
-   *
-   * When a file path is given, it can perform two ways depending on beNullIfFile flag.
-   * If it is true, it returns NULL when a given path is a file.
-   * Otherwise, it returns a built tuple regardless of file or directory.
-   *
-   * @param partitionColumnSchema The partition column schema
-   * @param partitionPath The partition path
-   * @param beNullIfFile If true, this method returns NULL when a given path is a file.
-   * @return The tuple transformed from a column values part.
-   */
-  public static Tuple buildTupleFromPartitionPath(Schema partitionColumnSchema, Path partitionPath,
-                                                  boolean beNullIfFile) {
-    int startIdx = partitionPath.toString().indexOf(getColumnPartitionPathPrefix(partitionColumnSchema));
-
-    if (startIdx == -1) { // if there is no partition column in the patch
-      return null;
-    }
-    String columnValuesPart = partitionPath.toString().substring(startIdx);
-
-    String [] columnValues = columnValuesPart.split("/");
-
-    // true means this is a file.
-    if (beNullIfFile && partitionColumnSchema.size() < columnValues.length) {
-      return null;
-    }
-
-    Tuple tuple = new VTuple(partitionColumnSchema.size());
-    int i = 0;
-    for (; i < columnValues.length && i < partitionColumnSchema.size(); i++) {
-      String [] parts = columnValues[i].split("=");
-      if (parts.length != 2) {
-        return null;
-      }
-      int columnId = partitionColumnSchema.getColumnIdByName(parts[0]);
-      Column keyColumn = partitionColumnSchema.getColumn(columnId);
-      tuple.put(columnId, DatumFactory.createFromString(keyColumn.getDataType(), StringUtils.unescapePathName(parts[1])));
-    }
-    for (; i < partitionColumnSchema.size(); i++) {
-      tuple.put(i, NullDatum.get());
-    }
-    return tuple;
-  }
-
-  /**
-   * Get a prefix of column partition path. For example, consider a column partition (col1, col2).
-   * Then, you will get a string 'col1='.
-   *
-   * @param partitionColumn the schema of column partition
-   * @return The first part string of column partition path.
-   */
-  private static String getColumnPartitionPathPrefix(Schema partitionColumn) {
-    StringBuilder sb = new StringBuilder();
-    sb.append(partitionColumn.getColumn(0).getSimpleName()).append("=");
-    return sb.toString();
   }
 }

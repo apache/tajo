@@ -19,10 +19,13 @@
 package org.apache.tajo.engine.planner;
 
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
-import org.apache.tajo.engine.planner.logical.JoinNode;
-import org.apache.tajo.engine.planner.logical.LogicalNode;
-import org.apache.tajo.engine.planner.logical.NodeType;
-import org.apache.tajo.engine.planner.logical.ScanNode;
+import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.plan.logical.JoinNode;
+import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.plan.logical.NodeType;
+import org.apache.tajo.plan.logical.ScanNode;
 
 import java.util.Stack;
 

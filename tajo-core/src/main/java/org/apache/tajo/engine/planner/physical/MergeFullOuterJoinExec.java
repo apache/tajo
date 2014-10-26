@@ -20,11 +20,10 @@ package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.base.Preconditions;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.planner.PlannerUtil;
 import org.apache.tajo.engine.planner.Projector;
-import org.apache.tajo.engine.planner.logical.JoinNode;
 import org.apache.tajo.engine.utils.TupleUtil;
+import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
@@ -84,7 +83,7 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
 
     this.joincomparator = new JoinTupleComparator(leftChild.getSchema(),
         rightChild.getSchema(), sortSpecs);
-    this.tupleComparator = PlannerUtil.getComparatorsFromJoinQual(
+    this.tupleComparator = PhysicalPlanUtil.getComparatorsFromJoinQual(
         plan.getJoinQual(), leftChild.getSchema(), rightChild.getSchema());
 
     // for projection

@@ -20,8 +20,8 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.engine.eval.AggregationFunctionCallEval;
-import org.apache.tajo.engine.planner.logical.GroupbyNode;
+import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
+import org.apache.tajo.plan.logical.GroupbyNode;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
