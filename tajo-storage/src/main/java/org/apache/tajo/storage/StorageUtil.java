@@ -241,4 +241,8 @@ public class StorageUtil extends StorageConstants {
       amt -= ret;
     }
   }
+
+  public static boolean isFileStorageType(StoreType storageType) {
+    return true;
+  }
 }

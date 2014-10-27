@@ -11,6 +11,8 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1123: Use Fragment instead of FileFragment.(Hyoungjun Kim)
+
     TAJO-1125: Separate logical plan and optimizer into a maven module.
     (hyunsik)
 
