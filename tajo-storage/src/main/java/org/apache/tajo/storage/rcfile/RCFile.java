@@ -741,7 +741,7 @@ public class RCFile {
         try {
           Class<? extends CompressionCodec> codecClass = conf.getClassByName(
               codecClassname).asSubclass(CompressionCodec.class);
-          codec = ReflectionUtil.newInstance(codecClass);
+          codec = ReflectionUtils.newInstance(codecClass, conf);
         } catch (ClassNotFoundException cnfe) {
           throw new IllegalArgumentException(
               "Unknown codec: " + codecClassname, cnfe);
