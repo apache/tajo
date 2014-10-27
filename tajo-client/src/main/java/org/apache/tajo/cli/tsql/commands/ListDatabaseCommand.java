@@ -16,23 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli;
+package org.apache.tajo.cli.tsql.commands;
 
-public class ExitCommand extends TajoShellCommand {
+import org.apache.tajo.cli.tsql.TajoCli;
 
-  public ExitCommand(TajoCli.TajoCliContext context) {
+public class ListDatabaseCommand extends TajoShellCommand {
+
+  public ListDatabaseCommand(TajoCli.TajoCliContext context) {
     super(context);
   }
 
   @Override
   public String getCommand() {
-    return "\\q";
+    return "\\l";
   }
 
   @Override
   public void invoke(String[] cmd) throws Exception {
-    context.getOutput().println("bye!");
-    System.exit(0);
+    for (String databaseName : client.getAllDatabaseNames()) {
+      context.getOutput().println(databaseName);
+    }
   }
 
   @Override
@@ -42,6 +45,6 @@ public class ExitCommand extends TajoShellCommand {
 
   @Override
   public String getDescription() {
-    return "quit";
+    return "list all databases";
   }
 }

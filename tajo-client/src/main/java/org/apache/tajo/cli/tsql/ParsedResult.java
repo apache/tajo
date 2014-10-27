@@ -16,24 +16,38 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli;
+package org.apache.tajo.cli.tsql;
 
-import jline.console.history.FileHistory;
 
-import java.io.File;
-import java.io.IOException;
-
-public class TajoFileHistory extends FileHistory {
-
-  public TajoFileHistory(File file) throws IOException {
-    super(file);
+public class ParsedResult {
+  public static enum StatementType {
+    META,
+    STATEMENT
   }
 
-  public void add(CharSequence item) {
-    // skip add
+  private final StatementType type;
+  private final String historyStatement;
+  private final String statement;
+
+  public ParsedResult(StatementType type, String statement, String historyStatement) {
+    this.type = type;
+    this.statement = statement;
+    this.historyStatement = historyStatement;
   }
 
-  public void addStatement(String item) {
-    internalAdd(item);
+  public StatementType getType() {
+    return type;
+  }
+
+  public String getHistoryStatement() {
+    return historyStatement.trim();
+  }
+
+  public String getStatement() {
+    return statement.trim();
+  }
+
+  public String toString() {
+    return "(" + type.name() + ") " + historyStatement;
   }
 }

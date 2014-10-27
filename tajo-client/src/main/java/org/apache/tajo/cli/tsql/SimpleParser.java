@@ -16,13 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli;
+package org.apache.tajo.cli.tsql;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.apache.tajo.cli.ParsedResult.StatementType.META;
-import static org.apache.tajo.cli.ParsedResult.StatementType.STATEMENT;
+import static org.apache.tajo.cli.tsql.ParsedResult.StatementType.META;
+import static org.apache.tajo.cli.tsql.ParsedResult.StatementType.STATEMENT;
 
 /**
  * This is a parser used in tsql to parse multiple SQL lines into SQL statements.

@@ -19,6 +19,7 @@
 package org.apache.tajo.cli;
 
 import org.apache.tajo.TpchTestBase;
+import org.apache.tajo.cli.tsql.TajoCli;
 import org.apache.tajo.conf.TajoConf;
 import org.junit.Test;
 

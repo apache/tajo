@@ -16,18 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client;
+package org.apache.tajo.cli.tools;
 
 import com.google.protobuf.ServiceException;
 import org.apache.commons.cli.*;
+import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoClientImpl;
+import org.apache.tajo.client.TajoHAClientUtil;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.util.HAServiceUtil;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
-import java.util.List;
 
 public class TajoHAAdmin {
   private static final Options options;

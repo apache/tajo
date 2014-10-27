@@ -27,6 +27,8 @@ import org.apache.tajo.ConfigKey;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
+import org.apache.tajo.cli.tsql.DefaultTajoCliOutputFormatter;
+import org.apache.tajo.cli.tsql.TajoCli;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageUtil;

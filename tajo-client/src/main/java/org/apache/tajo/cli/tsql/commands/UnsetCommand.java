@@ -16,10 +16,38 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli;
+package org.apache.tajo.cli.tsql.commands;
 
-public class InvalidStatementException extends Exception {
-  public InvalidStatementException(String message) {
-    super(message);
+import com.google.common.collect.Lists;
+import org.apache.tajo.cli.tsql.TajoCli;
+
+public class UnsetCommand extends TajoShellCommand {
+
+  public UnsetCommand(TajoCli.TajoCliContext context) {
+    super(context);
+  }
+
+  @Override
+  public String getCommand() {
+    return "\\unset";
+  }
+
+  @Override
+  public void invoke(String[] cmd) throws Exception {
+    if (cmd.length == 2) {
+      client.unsetSessionVariables(Lists.newArrayList(cmd[1]));
+    } else {
+      context.getOutput().println("usage: \\unset NAME");
+    }
+  }
+
+  @Override
+  public String getUsage() {
+    return "";
+  }
+
+  @Override
+  public String getDescription() {
+    return "unset a session variable";
   }
 }

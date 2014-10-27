@@ -16,10 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli;
+package org.apache.tajo.cli.tsql.commands;
 
 import java.io.PrintWriter;
 
+import org.apache.tajo.cli.tsql.TajoCli;
 import org.apache.tajo.util.VersionInfo;
 
 public class HelpCommand extends TajoShellCommand {

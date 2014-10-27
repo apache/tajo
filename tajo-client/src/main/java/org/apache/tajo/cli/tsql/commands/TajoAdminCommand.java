@@ -16,9 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli;
+package org.apache.tajo.cli.tsql.commands;
 
-import org.apache.tajo.client.TajoAdmin;
+import org.apache.tajo.cli.tools.TajoAdmin;
+import org.apache.tajo.cli.tsql.TajoCli;
 
 public class TajoAdminCommand extends TajoShellCommand {
   private TajoAdmin admin;

@@ -16,10 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli;
+package org.apache.tajo.cli.tsql.commands;
 
 import com.google.protobuf.ServiceException;
 import org.apache.tajo.SessionVars;
+import org.apache.tajo.cli.tsql.TajoCli;
 import org.apache.tajo.util.StringUtils;
 
 import java.util.HashMap;

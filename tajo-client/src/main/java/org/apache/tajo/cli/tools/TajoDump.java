@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client;
+package org.apache.tajo.cli.tools;
 
 import com.google.protobuf.ServiceException;
 import org.apache.commons.cli.*;
@@ -24,6 +24,8 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.DDLBuilder;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;

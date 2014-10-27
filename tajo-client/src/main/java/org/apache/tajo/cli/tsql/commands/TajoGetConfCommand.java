@@ -16,30 +16,31 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli;
+package org.apache.tajo.cli.tsql.commands;
 
-import org.apache.hadoop.fs.FsShell;
+import org.apache.tajo.cli.tsql.TajoCli;
+import org.apache.tajo.cli.tools.TajoGetConf;
 
-public class HdfsCommand extends TajoShellCommand {
-  private FsShell fsShell;
+public class TajoGetConfCommand extends TajoShellCommand {
+  private TajoGetConf getconf;
 
-  public HdfsCommand(TajoCli.TajoCliContext context) {
+  public TajoGetConfCommand(TajoCli.TajoCliContext context) {
     super(context);
-    fsShell = new FsShell(context.getConf());
+    getconf = new TajoGetConf(context.getConf(), context.getOutput(), context.getTajoClient());
   }
 
   @Override
   public String getCommand() {
-    return "\\dfs";
+    return "\\getconf";
   }
 
   @Override
   public void invoke(String[] command) throws Exception {
     try {
-      String[] dfsCommands = new String[command.length - 1];
-      System.arraycopy(command, 1, dfsCommands, 0, dfsCommands.length);
+      String[] getConfCommands = new String[command.length - 1];
+      System.arraycopy(command, 1, getConfCommands, 0, getConfCommands.length);
 
-      fsShell.run(dfsCommands);
+      getconf.runCommand(getConfCommands);
     } catch (Exception e) {
       context.getOutput().println("ERROR: " + e.getMessage());
     }
@@ -47,11 +48,11 @@ public class HdfsCommand extends TajoShellCommand {
 
   @Override
   public String getUsage() {
-    return "<hdfs command> [options]";
+    return "<command> [options]";
   }
 
   @Override
   public String getDescription() {
-    return "executes a dfs command in TAJO shell ";
+    return "execute a tajo getconf command.";
   }
 }

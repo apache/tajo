@@ -16,7 +16,9 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli;
+package org.apache.tajo.cli.tsql.commands;
+
+import org.apache.tajo.cli.tsql.TajoCli;
 
 import java.io.*;
 import java.util.concurrent.CountDownLatch;

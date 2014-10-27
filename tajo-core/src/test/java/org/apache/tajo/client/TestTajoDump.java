@@ -20,6 +20,7 @@ package org.apache.tajo.client;
 
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.cli.tools.TajoDump;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;

@@ -16,10 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client;
+package org.apache.tajo.cli.tools;
 
 import com.google.protobuf.ServiceException;
 import org.apache.commons.cli.*;
+import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 
 import java.io.IOException;

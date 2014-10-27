@@ -23,6 +23,8 @@ import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.cli.tsql.DefaultTajoCliOutputFormatter;
+import org.apache.tajo.cli.tsql.TajoCli;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Float8Datum;
@@ -88,11 +90,11 @@ public class TestDefaultCliOutputFormatter {
         "com.google.protobuf.ServiceException: java.sql.SQLException: ERROR: no such a table: table1\n" +
         "\tat org.apache.tajo.rpc.ServerCallable.withRetries(ServerCallable.java:107)\n" +
         "\tat org.apache.tajo.client.TajoClient.getTableDesc(TajoClient.java:777)\n" +
-        "\tat org.apache.tajo.cli.DescTableCommand.invoke(DescTableCommand.java:43)\n" +
-        "\tat org.apache.tajo.cli.TajoCli.executeMetaCommand(TajoCli.java:300)\n" +
-        "\tat org.apache.tajo.cli.TajoCli.executeParsedResults(TajoCli.java:280)\n" +
-        "\tat org.apache.tajo.cli.TajoCli.runShell(TajoCli.java:271)\n" +
-        "\tat org.apache.tajo.cli.TajoCli.main(TajoCli.java:420)\n" +
+        "\tat org.apache.tajo.cli.tsql.commands.DescTableCommand.invoke(DescTableCommand.java:43)\n" +
+        "\tat org.apache.tajo.cli.tsql.TajoCli.executeMetaCommand(TajoCli.java:300)\n" +
+        "\tat org.apache.tajo.cli.tsql.TajoCli.executeParsedResults(TajoCli.java:280)\n" +
+        "\tat org.apache.tajo.cli.tsql.TajoCli.runShell(TajoCli.java:271)\n" +
+        "\tat org.apache.tajo.cli.tsql.TajoCli.main(TajoCli.java:420)\n" +
         "Caused by: java.sql.SQLException: ERROR: no such a table: table1\n" +
         "\tat org.apache.tajo.client.TajoClient$22.call(TajoClient.java:791)\n" +
         "\tat org.apache.tajo.client.TajoClient$22.call(TajoClient.java:778)\n" +

@@ -16,33 +16,24 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli;
+package org.apache.tajo.cli.tsql;
 
-import org.apache.tajo.util.VersionInfo;
+import jline.console.history.FileHistory;
 
-public class VersionCommand extends TajoShellCommand {
+import java.io.File;
+import java.io.IOException;
 
-  public VersionCommand(TajoCli.TajoCliContext context) {
-    super(context);
+public class TajoFileHistory extends FileHistory {
+
+  public TajoFileHistory(File file) throws IOException {
+    super(file);
   }
 
-  @Override
-  public String getCommand() {
-    return "\\version";
+  public void add(CharSequence item) {
+    // skip add
   }
 
-  @Override
-  public void invoke(String[] cmd) throws Exception {
-    context.getOutput().println(VersionInfo.getVersion());
-  }
-
-  @Override
-  public String getUsage() {
-    return "";
-  }
-
-  @Override
-  public String getDescription() {
-    return "show Apache License 2.0";
+  public void addStatement(String item) {
+    internalAdd(item);
   }
 }

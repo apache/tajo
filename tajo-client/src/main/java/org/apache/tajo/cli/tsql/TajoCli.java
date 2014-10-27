@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli;
+package org.apache.tajo.cli.tsql;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -27,6 +27,7 @@ import org.apache.commons.cli.*;
 import org.apache.tajo.*;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.cli.tsql.commands.*;
 import org.apache.tajo.client.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -42,9 +43,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static org.apache.tajo.cli.ParsedResult.StatementType.META;
-import static org.apache.tajo.cli.ParsedResult.StatementType.STATEMENT;
-import static org.apache.tajo.cli.SimpleParser.ParsingState;
+import static org.apache.tajo.cli.tsql.ParsedResult.StatementType.META;
+import static org.apache.tajo.cli.tsql.ParsedResult.StatementType.STATEMENT;
+import static org.apache.tajo.cli.tsql.SimpleParser.ParsingState;
 
 public class TajoCli {
   public static final String ERROR_PREFIX = "ERROR: ";

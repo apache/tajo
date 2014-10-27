@@ -16,28 +16,25 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli;
+package org.apache.tajo.cli.tsql.commands;
 
-import com.google.common.collect.Lists;
+import org.apache.tajo.cli.tsql.TajoCli;
+import org.apache.tajo.util.VersionInfo;
 
-public class UnsetCommand extends TajoShellCommand {
+public class VersionCommand extends TajoShellCommand {
 
-  public UnsetCommand(TajoCli.TajoCliContext context) {
+  public VersionCommand(TajoCli.TajoCliContext context) {
     super(context);
   }
 
   @Override
   public String getCommand() {
-    return "\\unset";
+    return "\\version";
   }
 
   @Override
   public void invoke(String[] cmd) throws Exception {
-    if (cmd.length == 2) {
-      client.unsetSessionVariables(Lists.newArrayList(cmd[1]));
-    } else {
-      context.getOutput().println("usage: \\unset NAME");
-    }
+    context.getOutput().println(VersionInfo.getVersion());
   }
 
   @Override
@@ -47,6 +44,6 @@ public class UnsetCommand extends TajoShellCommand {
 
   @Override
   public String getDescription() {
-    return "unset a session variable";
+    return "show Apache License 2.0";
   }
 }

@@ -18,6 +18,9 @@
 
 package org.apache.tajo.cli;
 
+import org.apache.tajo.cli.tsql.InvalidStatementException;
+import org.apache.tajo.cli.tsql.ParsedResult;
+import org.apache.tajo.cli.tsql.SimpleParser;
 import org.junit.Test;
 
 import java.util.List;
