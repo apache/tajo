@@ -187,4 +187,12 @@ public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Clone
   public void setHbaseTableName(String hbaseTableName) {
     this.hbaseTableName = hbaseTableName;
   }
+
+  public void setStartRow(byte[] startRow) {
+    this.startRow = startRow;
+  }
+
+  public void setStopRow(byte[] stopRow) {
+    this.stopRow = stopRow;
+  }
 }

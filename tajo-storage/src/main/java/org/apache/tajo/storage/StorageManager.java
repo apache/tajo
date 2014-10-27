@@ -36,6 +36,8 @@ import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
@@ -83,7 +85,7 @@ public abstract class StorageManager {
   public abstract void createTable(TableDesc tableDesc) throws IOException;
   public abstract void purgeTable(TableDesc tableDesc) throws IOException;
   public abstract List<Fragment> getSplits(String fragmentId, TableDesc tableDesc,
-                                           List<IndexPredication> indexPredications) throws IOException;
+                                           ScanNode scanNode) throws IOException;
   public abstract List<Fragment> getNonForwardSplit(TableDesc tableDesc, int currentPage, int numFragments)
       throws IOException;
   public abstract Column[] getIndexableColumns(TableDesc tableDesc) throws IOException;

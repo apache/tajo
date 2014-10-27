@@ -419,7 +419,8 @@ public class Repartitioner {
         } else {
           StorageManager storageManager = StorageManager.getStorageManager(subQuery.getContext().getConf(),
               tableDesc.getMeta().getStoreType());
-          Collection<Fragment> scanFragments = storageManager.getSplits(eachScan.getCanonicalName(), tableDesc);
+          Collection<Fragment> scanFragments = storageManager.getSplits(eachScan.getCanonicalName(),
+              tableDesc, eachScan);
           if (scanFragments != null) {
             rightFragments.addAll(scanFragments);
           }
@@ -539,7 +540,7 @@ public class Repartitioner {
         StorageManager storageManager =
             StorageManager.getStorageManager(subQuery.getContext().getConf(), desc.getMeta().getStoreType());
 
-        scanFragments = storageManager.getSplits(scan.getCanonicalName(), desc);
+        scanFragments = storageManager.getSplits(scan.getCanonicalName(), desc, scan);
       }
 
       if (scanFragments != null) {

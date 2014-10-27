@@ -985,7 +985,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       } else {
         StorageManager storageManager =
             StorageManager.getStorageManager(subQuery.getContext().getConf(), meta.getStoreType());
-        fragments = storageManager.getSplits(scan.getCanonicalName(), table);
+        fragments = storageManager.getSplits(scan.getCanonicalName(), table, scan);
       }
 
       SubQuery.scheduleFragments(subQuery, fragments);

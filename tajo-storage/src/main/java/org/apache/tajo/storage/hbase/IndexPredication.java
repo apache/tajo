@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage;
+package org.apache.tajo.storage.hbase;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.datum.Datum;

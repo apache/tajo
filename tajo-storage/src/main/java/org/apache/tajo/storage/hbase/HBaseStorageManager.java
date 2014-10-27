@@ -38,12 +38,11 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.IndexPredication;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.TUtil;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -308,8 +307,8 @@ public class HBaseStorageManager extends StorageManager {
   }
 
   @Override
-  public List<Fragment> getSplits(String fragmentId, TableDesc tableDesc,
-                                     List<IndexPredication> indexPredications) throws IOException {
+  public List<Fragment> getSplits(String fragmentId, TableDesc tableDesc, ScanNode scanNode) throws IOException {
+    List<IndexPredication> indexPredications = getIndexPredications(tableDesc, scanNode);
     Configuration hconf = getHBaseConfiguration(conf, tableDesc.getMeta());
     HTable htable = null;
     HBaseAdmin hAdmin = null;
@@ -331,75 +330,109 @@ public class HBaseStorageManager extends StorageManager {
       }
 
       ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta());
-      byte[] startRow = HConstants.EMPTY_START_ROW;
-      byte[] stopRow = HConstants.EMPTY_END_ROW;
-      IndexPredication indexPredication = null;
-      if (indexPredications != null && !indexPredications.isEmpty()) {
-        // Currently only supports rowkey
-        indexPredication = indexPredications.get(0);
+      List<byte[]> startRows;
+      List<byte[]> stopRows;
 
-        if (indexPredication.getStartValue() != null) {
-          startRow = serialize(columnMapping, indexPredication, indexPredication.getStartValue());
+      if (indexPredications != null && !indexPredications.isEmpty()) {
+        // indexPredications is Disjunctive set
+        startRows = new ArrayList<byte[]>();
+        stopRows = new ArrayList<byte[]>();
+        for (IndexPredication indexPredication: indexPredications) {
+          byte[] startRow;
+          byte[] stopRow;
+          if (indexPredication.getStartValue() != null) {
+            startRow = serialize(columnMapping, indexPredication, indexPredication.getStartValue());
+          } else {
+            startRow = HConstants.EMPTY_START_ROW;
+          }
+          if (indexPredication.getStopValue() != null) {
+            stopRow = serialize(columnMapping, indexPredication, indexPredication.getStopValue());
+          } else {
+            stopRow = HConstants.EMPTY_END_ROW;
+          }
+          startRows.add(startRow);
+          stopRows.add(stopRow);
         }
-        if (indexPredication.getStopValue() != null) {
-          stopRow = serialize(columnMapping, indexPredication, indexPredication.getStopValue());
-        }
+      } else {
+        startRows = TUtil.newList(HConstants.EMPTY_START_ROW);
+        stopRows = TUtil.newList(HConstants.EMPTY_END_ROW);
       }
 
       hAdmin =  new HBaseAdmin(hconf);
       Map<ServerName, ServerLoad> serverLoadMap = new HashMap<ServerName, ServerLoad>();
 
-      List<Fragment> fragments = new ArrayList<Fragment>(keys.getFirst().length);
+      // region startkey -> HBaseFragment
+      Map<byte[], HBaseFragment> fragmentMap = new HashMap<byte[], HBaseFragment>();
       for (int i = 0; i < keys.getFirst().length; i++) {
         HRegionLocation location = htable.getRegionLocation(keys.getFirst()[i], false);
 
-        // determine if the given start an stop key fall into the region
-        if ((startRow.length == 0 || keys.getSecond()[i].length == 0 || Bytes.compareTo(startRow, keys.getSecond()[i]) < 0)
-            && (stopRow.length == 0 || Bytes.compareTo(stopRow, keys.getFirst()[i]) > 0)) {
-          byte[] fragmentStart = (startRow.length == 0 || Bytes.compareTo(keys.getFirst()[i], startRow) >= 0) ?
-              keys.getFirst()[i] : startRow;
+        byte[] regionStartKey = keys.getFirst()[i];
+        byte[] regionStopKey = keys.getSecond()[i];
 
-          byte[] fragmentStop = (stopRow.length == 0 || Bytes.compareTo(keys.getSecond()[i], stopRow) <= 0) &&
-              keys.getSecond()[i].length > 0 ? keys.getSecond()[i] : stopRow;
+        int startRowsSize = startRows.size();
+        for (int j = 0; j < startRowsSize; j++) {
+          byte[] startRow = startRows.get(j);
+          byte[] stopRow = stopRows.get(j);
+          // determine if the given start an stop key fall into the region
+          if ((startRow.length == 0 || regionStopKey.length == 0 || Bytes.compareTo(startRow, regionStopKey) < 0)
+              && (stopRow.length == 0 || Bytes.compareTo(stopRow, regionStartKey) > 0)) {
+            byte[] fragmentStart = (startRow.length == 0 || Bytes.compareTo(regionStartKey, startRow) >= 0) ?
+                regionStartKey : startRow;
 
-          String regionName = location.getRegionInfo().getRegionNameAsString();
+            byte[] fragmentStop = (stopRow.length == 0 || Bytes.compareTo(regionStopKey, stopRow) <= 0) &&
+                regionStopKey.length > 0 ? regionStopKey : stopRow;
 
-          ServerLoad serverLoad = serverLoadMap.get(location.getServerName());
-          if (serverLoad == null) {
-            serverLoad = hAdmin.getClusterStatus().getLoad(location.getServerName());
-            serverLoadMap.put(location.getServerName(), serverLoad);
-          }
+            String regionName = location.getRegionInfo().getRegionNameAsString();
 
-          HBaseFragment fragment = new HBaseFragment(fragmentId, htable.getName().getNameAsString(),
-              fragmentStart, fragmentStop, location.getHostname());
-
-          // get region size
-          boolean foundLength = false;
-          for (Map.Entry<byte[], RegionLoad> entry : serverLoad.getRegionsLoad().entrySet()) {
-            if (regionName.equals(Bytes.toString(entry.getKey()))) {
-              RegionLoad regionLoad = entry.getValue();
-              long storeFileSize = (regionLoad.getStorefileSizeMB() + regionLoad.getMemStoreSizeMB()) * 1024L * 1024L;
-              fragment.setLength(storeFileSize);
-              foundLength = true;
-              break;
+            ServerLoad serverLoad = serverLoadMap.get(location.getServerName());
+            if (serverLoad == null) {
+              serverLoad = hAdmin.getClusterStatus().getLoad(location.getServerName());
+              serverLoadMap.put(location.getServerName(), serverLoad);
             }
-          }
 
-          if (!foundLength) {
-            fragment.setLength(TajoConstants.UNKNOWN_LENGTH);
-          }
+            if (fragmentMap.containsKey(regionStartKey)) {
+              HBaseFragment prevFragment = fragmentMap.get(regionStartKey);
+              if (Bytes.compareTo(fragmentStart, prevFragment.getStartRow()) < 0) {
+                prevFragment.setStartRow(fragmentStart);
+              }
+              if (Bytes.compareTo(fragmentStop, prevFragment.getStopRow()) > 0) {
+                prevFragment.setStopRow(fragmentStop);
+              }
+            } else {
+              HBaseFragment fragment = new HBaseFragment(fragmentId, htable.getName().getNameAsString(),
+                  fragmentStart, fragmentStop, location.getHostname());
 
-          fragments.add(fragment);
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("getFragments: fragment -> " + i + " -> " + fragment);
+              // get region size
+              boolean foundLength = false;
+              for (Map.Entry<byte[], RegionLoad> entry : serverLoad.getRegionsLoad().entrySet()) {
+                if (regionName.equals(Bytes.toString(entry.getKey()))) {
+                  RegionLoad regionLoad = entry.getValue();
+                  long storeFileSize = (regionLoad.getStorefileSizeMB() + regionLoad.getMemStoreSizeMB()) * 1024L * 1024L;
+                  fragment.setLength(storeFileSize);
+                  foundLength = true;
+                  break;
+                }
+              }
+
+              if (!foundLength) {
+                fragment.setLength(TajoConstants.UNKNOWN_LENGTH);
+              }
+
+              fragmentMap.put(regionStartKey, fragment);
+              if (LOG.isDebugEnabled()) {
+                LOG.debug("getFragments: fragment -> " + i + " -> " + fragment);
+              }
+            }
           }
         }
       }
 
+      List<HBaseFragment> fragments = new ArrayList<HBaseFragment>(fragmentMap.values());
+      Collections.sort(fragments);
       if (!fragments.isEmpty()) {
-        ((HBaseFragment)fragments.get(fragments.size() - 1)).setLast(true);
+        fragments.get(fragments.size() - 1).setLast(true);
       }
-      return fragments;
+      return (ArrayList<Fragment>) (ArrayList) fragments;
     } finally {
       if (htable != null) {
         htable.close();
@@ -639,63 +672,57 @@ public class HBaseStorageManager extends StorageManager {
     }
   }
 
-  public static List<IndexPredication> getIndexPredications(StorageManager storageHandler,
-                                                            TableDesc tableDesc, ScanNode scan) throws IOException {
+  public List<IndexPredication> getIndexPredications(TableDesc tableDesc, ScanNode scanNode) throws IOException {
     List<IndexPredication> indexPredications = new ArrayList<IndexPredication>();
-    Column[] indexableColumns = storageHandler.getIndexableColumns(tableDesc);
+    Column[] indexableColumns = getIndexableColumns(tableDesc);
     if (indexableColumns != null && indexableColumns.length == 1) {
       // Currently supports only single index column.
-      Set<EvalNode> indexablePredicateSet = findIndexablePredicateSet(scan, indexableColumns, true);
-      Pair<Datum, Datum> indexPredicationValues = getIndexablePredicateValue(indexablePredicateSet);
-      if (indexPredicationValues != null) {
-        IndexPredication indexPredication = new IndexPredication();
-        indexPredication.setColumn(indexableColumns[0]);
-        indexPredication.setColumnId(tableDesc.getLogicalSchema().getColumnId(indexableColumns[0].getQualifiedName()));
-        indexPredication.setStartValue(indexPredicationValues.getFirst());
-        indexPredication.setStopValue(indexPredicationValues.getSecond());
+      List<Set<EvalNode>> indexablePredicateList = findIndexablePredicateSet(scanNode, indexableColumns);
+      for (Set<EvalNode> eachEvalSet: indexablePredicateList) {
+        Pair<Datum, Datum> indexPredicationValues = getIndexablePredicateValue(eachEvalSet);
+        if (indexPredicationValues != null) {
+          IndexPredication indexPredication = new IndexPredication();
+          indexPredication.setColumn(indexableColumns[0]);
+          indexPredication.setColumnId(tableDesc.getLogicalSchema().getColumnId(indexableColumns[0].getQualifiedName()));
+          indexPredication.setStartValue(indexPredicationValues.getFirst());
+          indexPredication.setStopValue(indexPredicationValues.getSecond());
 
-        indexPredications.add(indexPredication);
+          indexPredications.add(indexPredication);
+        }
       }
     }
     return indexPredications;
   }
 
-  public static Set<EvalNode> findIndexablePredicateSet(ScanNode scanNode, Column[] indexableColumns,
-                                                        boolean preserveFoundPredicate) throws IOException {
-    Set<EvalNode> indexablePredicateSet = Sets.newHashSet();
+  public List<Set<EvalNode>> findIndexablePredicateSet(ScanNode scanNode, Column[] indexableColumns) throws IOException {
+    List<Set<EvalNode>> indexablePredicateList = new ArrayList<Set<EvalNode>>();
+
     // if a query statement has a search condition, try to find indexable predicates
-    if (indexableColumns != null && scanNode.hasQual()) {
-      EvalNode[] conjunctiveForms = AlgebraicUtil.toConjunctiveNormalFormArray(scanNode.getQual());
-      Set<EvalNode> remainExprs = Sets.newHashSet(conjunctiveForms);
+    if (indexableColumns != null && scanNode.getQual() != null) {
+      EvalNode[] disjunctiveForms = AlgebraicUtil.toDisjunctiveNormalFormArray(scanNode.getQual());
 
       // add qualifier to schema for qual
       for (Column column : indexableColumns) {
-        for (EvalNode simpleExpr : conjunctiveForms) {
-          if (checkIfIndexablePredicateOnTargetColumn(simpleExpr, column)) {
-            indexablePredicateSet.add(simpleExpr);
+        for (EvalNode disjunctiveExpr : disjunctiveForms) {
+          EvalNode[] conjunctiveForms = AlgebraicUtil.toConjunctiveNormalFormArray(disjunctiveExpr);
+          Set<EvalNode> indexablePredicateSet = Sets.newHashSet();
+          for (EvalNode conjunctiveExpr : conjunctiveForms) {
+            if (checkIfIndexablePredicateOnTargetColumn(conjunctiveExpr, column)) {
+              indexablePredicateSet.add(conjunctiveExpr);
+            }
           }
-        }
-      }
-
-      // Partitions which are not matched to the partition filter conditions are pruned immediately.
-      // So, the partition filter conditions are not necessary later, and they are removed from
-      // original search condition for simplicity and efficiency.
-      remainExprs.removeAll(indexablePredicateSet);
-      if (!preserveFoundPredicate) {
-        if (remainExprs.isEmpty()) {
-          scanNode.setQual(null);
-        } else {
-          scanNode.setQual(
-              AlgebraicUtil.createSingletonExprFromCNF(remainExprs.toArray(new EvalNode[remainExprs.size()])));
+          if (!indexablePredicateSet.isEmpty()) {
+            indexablePredicateList.add(indexablePredicateSet);
+          }
         }
       }
     }
 
-    return indexablePredicateSet;
+    return indexablePredicateList;
   }
 
-  public static boolean checkIfIndexablePredicateOnTargetColumn(EvalNode evalNode, Column targetColumn) {
-    if (checkIfIndexablePredicate(evalNode) || checkIfDisjunctiveButOneVariable(evalNode)) {
+  private boolean checkIfIndexablePredicateOnTargetColumn(EvalNode evalNode, Column targetColumn) {
+    if (checkIfIndexablePredicate(evalNode) || checkIfConjunctiveButOneVariable(evalNode)) {
       Set<Column> variables = EvalTreeUtil.findUniqueColumns(evalNode);
       // if it contains only single variable matched to a target column
       return variables.size() == 1 && variables.contains(targetColumn);
@@ -707,10 +734,10 @@ public class HBaseStorageManager extends StorageManager {
   /**
    *
    * @param evalNode The expression to be checked
-   * @return true if an disjunctive expression, consisting of indexable expressions
+   * @return true if an conjunctive expression, consisting of indexable expressions
    */
-  public static boolean checkIfDisjunctiveButOneVariable(EvalNode evalNode) {
-    if (evalNode.getType() == EvalType.OR) {
+  private boolean checkIfConjunctiveButOneVariable(EvalNode evalNode) {
+    if (evalNode.getType() == EvalType.AND) {
       BinaryEval orEval = (BinaryEval) evalNode;
       boolean indexable =
           checkIfIndexablePredicate(orEval.getLeftExpr()) &&
@@ -734,19 +761,23 @@ public class HBaseStorageManager extends StorageManager {
    * @return true if an expression consists of one variable and one constant
    * and the expression is a comparison operator. Other, false.
    */
-  public static boolean checkIfIndexablePredicate(EvalNode evalNode) {
-    // TODO - LIKE with a trailing wild-card character and IN with an array can be indexable
-    return AlgebraicUtil.containSingleVar(evalNode) && AlgebraicUtil.isIndexableOperator(evalNode);
+  private boolean checkIfIndexablePredicate(EvalNode evalNode) {
+    return AlgebraicUtil.containSingleVar(evalNode) && isIndexableOperator(evalNode);
   }
 
-  public static Pair<Datum, Datum> getIndexablePredicateValue(Set<EvalNode> indexablePredicateSet) {
-    if (indexablePredicateSet.size() > 2) {
-      return null;
-    }
+  public static boolean isIndexableOperator(EvalNode expr) {
+    return expr.getType() == EvalType.EQUAL ||
+        expr.getType() == EvalType.LEQ ||
+        expr.getType() == EvalType.LTH ||
+        expr.getType() == EvalType.GEQ ||
+        expr.getType() == EvalType.GTH ||
+        expr.getType() == EvalType.BETWEEN;
+  }
 
+  public Pair<Datum, Datum> getIndexablePredicateValue(Set<EvalNode> evalNodes) {
     Datum startDatum = null;
     Datum endDatum = null;
-    for (EvalNode evalNode: indexablePredicateSet) {
+    for (EvalNode evalNode: evalNodes) {
       if (evalNode instanceof BinaryEval) {
         BinaryEval binaryEval = (BinaryEval) evalNode;
         EvalNode left = binaryEval.getLeftExpr();
@@ -759,45 +790,46 @@ public class HBaseStorageManager extends StorageManager {
           constValue = ((ConstEval) right).getValue();
         }
 
-        if (evalNode.getType() == EvalType.EQUAL ||
-            evalNode.getType() == EvalType.GEQ ||
-            evalNode.getType() == EvalType.GTH) {
-          if (startDatum != null) {
-            if (constValue.compareTo(startDatum) < 0) {
+        if (constValue != null) {
+          if (evalNode.getType() == EvalType.EQUAL ||
+              evalNode.getType() == EvalType.GEQ ||
+              evalNode.getType() == EvalType.GTH) {
+            if (startDatum != null) {
+              if (constValue.compareTo(startDatum) > 0) {
+                startDatum = constValue;
+              }
+            } else {
               startDatum = constValue;
             }
-          } else {
-            startDatum = constValue;
           }
-        }
 
-        if (evalNode.getType() == EvalType.EQUAL ||
-            evalNode.getType() == EvalType.LEQ ||
-            evalNode.getType() == EvalType.LTH) {
-          if (endDatum != null) {
-            if (constValue.compareTo(endDatum) > 0) {
+          if (evalNode.getType() == EvalType.EQUAL ||
+              evalNode.getType() == EvalType.LEQ ||
+              evalNode.getType() == EvalType.LTH) {
+            if (endDatum != null) {
+              if (constValue.compareTo(endDatum) < 0) {
+                endDatum = constValue;
+              }
+            } else {
               endDatum = constValue;
             }
-          } else {
-            endDatum = constValue;
           }
         }
       } else if (evalNode instanceof BetweenPredicateEval) {
         BetweenPredicateEval betweenEval = (BetweenPredicateEval) evalNode;
-        if (betweenEval.getBegin().getType() == EvalType.CONST) {
+        if (betweenEval.getBegin().getType() == EvalType.CONST && betweenEval.getEnd().getType() == EvalType.CONST) {
           Datum value = ((ConstEval) betweenEval.getBegin()).getValue();
           if (startDatum != null) {
-            if (value.compareTo(startDatum) < 0) {
+            if (value.compareTo(startDatum) > 0) {
               startDatum = value;
             }
           } else {
             startDatum = value;
           }
-        }
-        if (betweenEval.getEnd().getType() == EvalType.CONST) {
-          Datum value = ((ConstEval) betweenEval.getEnd()).getValue();
+
+          value = ((ConstEval) betweenEval.getEnd()).getValue();
           if (endDatum != null) {
-            if (value.compareTo(endDatum) > 0) {
+            if (value.compareTo(endDatum) < 0) {
               endDatum = value;
             }
           } else {

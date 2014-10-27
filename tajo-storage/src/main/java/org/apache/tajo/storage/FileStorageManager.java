@@ -29,20 +29,17 @@ import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.storage.fragment.FragmentConvertor;
+import org.apache.tajo.storage.hbase.IndexPredication;
 import org.apache.tajo.util.*;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.net.URI;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -638,8 +635,7 @@ public class FileStorageManager extends StorageManager {
   }
 
   @Override
-  public List<Fragment> getSplits(String tableName, TableDesc table,
-                                  List<IndexPredication> indexPredications) throws IOException {
+  public List<Fragment> getSplits(String tableName, TableDesc table, ScanNode scanNode) throws IOException {
     return getSplits(tableName, table.getMeta(), table.getSchema(), table.getPath());
   }
 

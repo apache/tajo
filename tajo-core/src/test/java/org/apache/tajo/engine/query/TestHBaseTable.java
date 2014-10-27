@@ -29,7 +29,6 @@ import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.hbase.HBaseFragment;
@@ -44,8 +43,10 @@ import java.net.InetAddress;
 import java.sql.ResultSet;
 import java.text.DecimalFormat;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
 public class TestHBaseTable extends QueryTestCaseBase {
@@ -350,8 +351,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       scanNode.setQual(evalNodeA);
 
       StorageManager storageManager = StorageManager.getStorageManager(conf, StoreType.HBASE);
-      List<Fragment> fragments = storageManager.getSplits("external_hbase_mapped_table", tableDesc,
-          HBaseStorageManager.getIndexPredications(storageManager, tableDesc, scanNode));
+      List<Fragment> fragments = storageManager.getSplits("external_hbase_mapped_table", tableDesc, scanNode);
 
       assertEquals(2, fragments.size());
       HBaseFragment fragment1 = (HBaseFragment) fragments.get(0);
@@ -361,6 +361,69 @@ public class TestHBaseTable extends QueryTestCaseBase {
       HBaseFragment fragment2 = (HBaseFragment) fragments.get(1);
       assertEquals("040", new String(fragment2.getStartRow()));
       assertEquals("055", new String(fragment2.getStopRow()));
+
+
+      // where (rk >= '020' and rk <= '055') or rk = '075'
+      EvalNode evalNode3 = new BinaryEval(EvalType.EQUAL, new FieldEval(tableDesc.getLogicalSchema().getColumn("rk")),
+          new ConstEval(new TextDatum("075")));
+      EvalNode evalNodeB = new BinaryEval(EvalType.OR, evalNodeA, evalNode3);
+      scanNode.setQual(evalNodeB);
+      fragments = storageManager.getSplits("external_hbase_mapped_table", tableDesc, scanNode);
+      assertEquals(3, fragments.size());
+      fragment1 = (HBaseFragment) fragments.get(0);
+      assertEquals("020", new String(fragment1.getStartRow()));
+      assertEquals("040", new String(fragment1.getStopRow()));
+
+      fragment2 = (HBaseFragment) fragments.get(1);
+      assertEquals("040", new String(fragment2.getStartRow()));
+      assertEquals("055", new String(fragment2.getStopRow()));
+
+      HBaseFragment fragment3 = (HBaseFragment) fragments.get(2);
+      assertEquals("075", new String(fragment3.getStartRow()));
+      assertEquals("075", new String(fragment3.getStopRow()));
+
+
+      // where (rk >= '020' and rk <= '055') or (rk >= '072' and rk <= '078')
+      EvalNode evalNode4 = new BinaryEval(EvalType.GEQ, new FieldEval(tableDesc.getLogicalSchema().getColumn("rk")),
+          new ConstEval(new TextDatum("072")));
+      EvalNode evalNode5 = new BinaryEval(EvalType.LEQ, new FieldEval(tableDesc.getLogicalSchema().getColumn("rk")),
+          new ConstEval(new TextDatum("078")));
+      EvalNode evalNodeC = new BinaryEval(EvalType.AND, evalNode4, evalNode5);
+      EvalNode evalNodeD = new BinaryEval(EvalType.OR, evalNodeA, evalNodeC);
+      scanNode.setQual(evalNodeD);
+      fragments = storageManager.getSplits("external_hbase_mapped_table", tableDesc, scanNode);
+      assertEquals(3, fragments.size());
+
+      fragment1 = (HBaseFragment) fragments.get(0);
+      assertEquals("020", new String(fragment1.getStartRow()));
+      assertEquals("040", new String(fragment1.getStopRow()));
+
+      fragment2 = (HBaseFragment) fragments.get(1);
+      assertEquals("040", new String(fragment2.getStartRow()));
+      assertEquals("055", new String(fragment2.getStopRow()));
+
+      fragment3 = (HBaseFragment) fragments.get(2);
+      assertEquals("072", new String(fragment3.getStartRow()));
+      assertEquals("078", new String(fragment3.getStopRow()));
+
+      // where (rk >= '020' and rk <= '055') or (rk >= '057' and rk <= '059')
+      evalNode4 = new BinaryEval(EvalType.GEQ, new FieldEval(tableDesc.getLogicalSchema().getColumn("rk")),
+          new ConstEval(new TextDatum("057")));
+      evalNode5 = new BinaryEval(EvalType.LEQ, new FieldEval(tableDesc.getLogicalSchema().getColumn("rk")),
+          new ConstEval(new TextDatum("059")));
+      evalNodeC = new BinaryEval(EvalType.AND, evalNode4, evalNode5);
+      evalNodeD = new BinaryEval(EvalType.OR, evalNodeA, evalNodeC);
+      scanNode.setQual(evalNodeD);
+      fragments = storageManager.getSplits("external_hbase_mapped_table", tableDesc, scanNode);
+      assertEquals(2, fragments.size());
+
+      fragment1 = (HBaseFragment) fragments.get(0);
+      assertEquals("020", new String(fragment1.getStartRow()));
+      assertEquals("040", new String(fragment1.getStopRow()));
+
+      fragment2 = (HBaseFragment) fragments.get(1);
+      assertEquals("040", new String(fragment2.getStartRow()));
+      assertEquals("059", new String(fragment2.getStopRow()));
 
       ResultSet res = executeString("select * from external_hbase_mapped_table where rk >= '020' and rk <= '055'");
       assertResultSet(res);
