@@ -159,7 +159,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   }
 
   @Override
-  public LogicalNode visitJoin(FilterPushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, JoinNode joinNode,
+  public LogicalNode visitJoin(FilterPushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                               JoinNode joinNode,
                                Stack<LogicalNode> stack) throws PlanningException {
     // here we should stop selection pushdown on the null supplying side(s) of an outer join
     // get the two operands of the join operation as well as the join type
@@ -243,7 +244,10 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
       List<EvalNode> removedFromFilter = new ArrayList<EvalNode>();
       for (EvalNode eachEval: context.pushingDownFilters) {
-        if (EvalTreeUtil.isJoinQual(block, eachEval, true)) {
+        if (EvalTreeUtil.isJoinQual(block,
+            joinNode.getLeftChild().getOutSchema(),
+            joinNode.getRightChild().getOutSchema(),
+            eachEval, true)) {
           outerJoinPredicationEvals.add(eachEval);
           removedFromFilter.add(eachEval);
         } else {
@@ -589,7 +593,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     BiMap<EvalNode, EvalNode> matched = HashBiMap.create();
 
     for (EvalNode eval : context.pushingDownFilters) {
-      if (ignoreJoin && EvalTreeUtil.isJoinQual(block, eval, true)) {
+      if (ignoreJoin && EvalTreeUtil.isJoinQual(block, null, null, eval, true)) {
         notMatched.add(eval);
         continue;
       }
