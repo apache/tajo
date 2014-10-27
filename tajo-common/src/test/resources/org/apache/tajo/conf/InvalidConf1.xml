@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<configuration>
-  <property>
-  	<name>tajo.master.umbilical-rpc.address</name>
-  	<value>localhost:98475</value>
-  </property>
-</configuration>
