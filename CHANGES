@@ -21,6 +21,9 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1126: Join condition including functions throws 
+    IllegalArgumentException. (hyunsik)
+
 
   TASKS
 
