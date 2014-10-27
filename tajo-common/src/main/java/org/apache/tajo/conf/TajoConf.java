@@ -19,7 +19,6 @@
 package org.apache.tajo.conf;
 
 import com.google.common.base.Preconditions;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -686,5 +685,4 @@ public class TajoConf extends Configuration {
       return new Path(systemConfPathStr);
     }
   }
-  
 }
