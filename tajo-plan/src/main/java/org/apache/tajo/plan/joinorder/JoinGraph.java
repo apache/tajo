@@ -123,7 +123,10 @@ public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
       Set<EvalNode> cnf = Sets.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual()));
 
       for (EvalNode singleQual : cnf) {
-        if (EvalTreeUtil.isJoinQual(block, singleQual, true)) {
+        if (EvalTreeUtil.isJoinQual(block,
+            joinNode.getLeftChild().getOutSchema(),
+            joinNode.getRightChild().getOutSchema(),
+            singleQual, true)) {
           String[] relations = guessRelationsFromJoinQual(block, (BinaryEval) singleQual);
           String leftExprRelName = relations[0];
           String rightExprRelName = relations[1];
