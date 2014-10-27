@@ -23,8 +23,8 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.QueryStatus;
-import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.util.FileUtil;
 
 import java.io.InputStream;
@@ -56,10 +56,10 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     TableStats stat = tableDesc.getStats();
     String volume = stat == null ? (endOfTuple ? "0 B" : "unknown bytes") :
         FileUtil.humanReadableByteCount(stat.getNumBytes(), false);
-    long resultRows = stat == null ? TajoClient.UNKNOWN_ROW_NUMBER : stat.getNumRows();
+    long resultRows = stat == null ? QueryClient.UNKNOWN_ROW_NUMBER : stat.getNumRows();
 
     String displayRowNum;
-    if (resultRows == TajoClient.UNKNOWN_ROW_NUMBER) {
+    if (resultRows == QueryClient.UNKNOWN_ROW_NUMBER) {
 
       if (endOfTuple) {
         displayRowNum = totalPrintedRows + " rows";

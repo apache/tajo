@@ -21,15 +21,13 @@ import com.google.common.collect.Lists;
 import com.google.protobuf.ServiceException;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.client.CatalogAdminClient;
 import org.apache.tajo.client.ResultSetUtil;
-import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.common.type.TajoTypeUtil;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.VersionInfo;
 
 import java.sql.*;
@@ -49,9 +47,9 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
       "radians,round,sign,sin,sqrt,tan";
   private static final String STRING_FUNCTIONS = "ascii,chr,concat,left,length,ltrim,repeat,rtrim,substring";
 
-  private final TajoConnection conn;
+  private final JdbcConnection conn;
 
-  public TajoDatabaseMetaData(TajoConnection conn) {
+  public TajoDatabaseMetaData(JdbcConnection conn) {
     this.conn = conn;
   }
 
@@ -375,15 +373,15 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
     }
 
     try {
-      TajoClient tajoClient = conn.getTajoClient();
+      CatalogAdminClient catalogAdmin = conn.getCatalogAdminClient();
 
       // if catalog is null, all databases are targets.
       if (targetCatalogs.isEmpty()) {
-        targetCatalogs.addAll(tajoClient.getAllDatabaseNames());
+        targetCatalogs.addAll(catalogAdmin.getAllDatabaseNames());
       }
 
       for (String databaseName : targetCatalogs) {
-        List<String> tableNames = tajoClient.getTableList(databaseName);
+        List<String> tableNames = catalogAdmin.getTableList(databaseName);
         for (String eachTableName: tableNames) {
           if (eachTableName.matches(regtableNamePattern)) {
             MetaDataTuple tuple = new MetaDataTuple(5);
@@ -424,7 +422,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   public ResultSet getSchemas() throws SQLException {
     String databaseName;
     try {
-      databaseName = conn.getTajoClient().getCurrentDatabase();
+      databaseName = conn.getQueryClient().getCurrentDatabase();
     } catch (ServiceException e) {
       throw new SQLException(e);
     }
@@ -443,7 +441,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   public ResultSet getCatalogs() throws SQLException {
     Collection<String> databaseNames;
     try {
-      databaseNames = conn.getTajoClient().getAllDatabaseNames();
+      databaseNames = conn.getCatalogAdminClient().getAllDatabaseNames();
     } catch (ServiceException e) {
       throw new SQLException(e);
     }
@@ -501,16 +499,17 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
     List<MetaDataTuple> columns = new ArrayList<MetaDataTuple>();
     try {
       if (targetCatalogs.isEmpty()) {
-        targetCatalogs.addAll(conn.getTajoClient().getAllDatabaseNames());
+        targetCatalogs.addAll(conn.getCatalogAdminClient().getAllDatabaseNames());
       }
       for (String databaseName : targetCatalogs) {
         String regtableNamePattern = convertPattern(tableNamePattern == null ? null : tableNamePattern);
         String regcolumnNamePattern = convertPattern(columnNamePattern == null ? null : columnNamePattern);
 
-        List<String> tables = conn.getTajoClient().getTableList(databaseName);
+        List<String> tables = conn.getCatalogAdminClient().getTableList(databaseName);
         for (String table: tables) {
           if (table.matches(regtableNamePattern)) {
-            TableDesc tableDesc = conn.getTajoClient().getTableDesc(CatalogUtil.buildFQName(databaseName, table));
+            TableDesc tableDesc = conn.getCatalogAdminClient().getTableDesc(
+                CatalogUtil.buildFQName(databaseName, table));
             int pos = 0;
 
             for (Column column: tableDesc.getLogicalSchema().getColumns()) {
@@ -766,7 +765,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
   public ResultSet getSchemas(String catalog, String schemaPattern) throws SQLException {
     String databaseName;
     try {
-      databaseName = conn.getTajoClient().getCurrentDatabase();
+      databaseName = conn.getQueryClient().getCurrentDatabase();
     } catch (ServiceException e) {
       throw new SQLException(e);
     }

@@ -143,9 +143,9 @@ public class TajoAdmin {
       return;
     } else if (hostName != null && port != null) {
       tajoConf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName + ":" + port);
-      tajoClient = new TajoClient(tajoConf);
+      tajoClient = new TajoClientImpl(tajoConf);
     } else if (hostName == null && port == null) {
-      tajoClient = new TajoClient(tajoConf);
+      tajoClient = new TajoClientImpl(tajoConf);
     }
 
     switch (cmdType) {
@@ -196,7 +196,7 @@ public class TajoAdmin {
         long end = queryInfo.getFinishTime();
         long start = queryInfo.getStartTime();
         String executionTime = decimalF.format((end-start) / 1000) + " sec";
-        if (TajoClient.isInCompleteState(queryInfo.getState())) {
+        if (TajoClientUtil.isQueryComplete(queryInfo.getState())) {
           writer.write("Finished Time: " + df.format(queryInfo.getFinishTime()));
           writer.write("\n");
         }
@@ -434,7 +434,7 @@ public class TajoAdmin {
       }
       writer.write("\n");
     } else {
-      String confMasterServiceAddr = tajoClient.getConf().getVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
+      String confMasterServiceAddr = tajoConf.getVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
       InetSocketAddress masterAddress = NetUtils.createSocketAddr(confMasterServiceAddr);
       writer.write(masterAddress.getHostName());
       writer.write("\n");

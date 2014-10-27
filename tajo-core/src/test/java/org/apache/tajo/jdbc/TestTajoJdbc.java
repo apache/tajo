@@ -25,7 +25,7 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.QueryClient;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -419,7 +419,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       assertNotNull(rsmd);
       assertEquals(0, rsmd.getColumnCount());
 
-      TajoClient connTajoClient = ((TajoConnection)stmt.getConnection()).getTajoClient();
+      QueryClient connTajoClient = ((JdbcConnection)stmt.getConnection()).getQueryClient();
       Map<String, String> variables = connTajoClient.getAllSessionVariables();
       String value = variables.get("JOIN_TASK_INPUT_SIZE");
       assertNotNull(value);
@@ -461,7 +461,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       assertNotNull(rsmd);
       assertEquals(0, rsmd.getColumnCount());
 
-      TajoClient connTajoClient = ((TajoConnection)stmt.getConnection()).getTajoClient();
+      QueryClient connTajoClient = ((JdbcConnection)stmt.getConnection()).getQueryClient();
       Map<String, String> variables = connTajoClient.getAllSessionVariables();
       String value = variables.get("JOIN_TASK_INPUT_SIZE");
       assertNotNull(value);

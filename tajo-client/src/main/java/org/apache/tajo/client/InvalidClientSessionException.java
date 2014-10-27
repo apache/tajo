@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli;
+package org.apache.tajo.client;
 
 import com.google.protobuf.ServiceException;
 
