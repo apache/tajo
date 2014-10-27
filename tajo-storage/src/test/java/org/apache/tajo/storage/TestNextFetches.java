@@ -151,7 +151,7 @@ public class TestNextFetches {
         DatumFactory.createFloat4(77.9f),
         DatumFactory.createFloat8(271.9f),
         DatumFactory.createText("hyunsik"),
-        DatumFactory.createBlob("hyunsik baaaabo".getBytes()),
+        DatumFactory.createBlob("emiya muljomdao".getBytes()),
         DatumFactory.createInet4("192.168.0.1"),
         NullDatum.get(),
         factory.createDatum(queryid.getProto())
@@ -164,7 +164,7 @@ public class TestNextFetches {
         {StoreType.CSV, true, true, true},
         // TODO - to be implemented
         {StoreType.RAW, false, true, true},
-//        {StoreType.RCFILE, true, true, false},
+        {StoreType.RCFILE, true, true, false},
         {StoreType.BLOCK_PARQUET, false, false, false},
 //        {StoreType.SEQUENCEFILE, true, true, false},
 //        {StoreType.AVRO, false, false, false},

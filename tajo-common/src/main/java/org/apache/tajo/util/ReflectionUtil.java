@@ -32,8 +32,25 @@ public class ReflectionUtil {
   private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE =
       new ConcurrentHashMap<Class<?>, Constructor<?>>();
 
-	public static Object newInstance(Class<?> clazz) 
-			throws InstantiationException, IllegalAccessException {         
-		return clazz.newInstance();
-	}
+  /** Create an object for the given class and initialize it
+   *
+   * @param theClass class of which an object is created
+   * @return a new object
+   */
+  @SuppressWarnings("unchecked")
+  public static <T> T newInstance(Class<T> theClass) {
+    T result;
+    try {
+      Constructor<T> meth = (Constructor<T>) CONSTRUCTOR_CACHE.get(theClass);
+      if (meth == null) {
+        meth = theClass.getDeclaredConstructor(EMPTY_ARRAY);
+        meth.setAccessible(true);
+        CONSTRUCTOR_CACHE.put(theClass, meth);
+      }
+      result = meth.newInstance();
+    } catch (Throwable e) {
+      throw new RuntimeException(e);
+    }
+    return result;
+  }
 }

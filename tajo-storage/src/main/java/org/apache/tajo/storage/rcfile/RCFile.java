@@ -39,6 +39,9 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlockWriter;
+import org.apache.tajo.util.ReflectionUtil;
 
 import java.io.Closeable;
 import java.io.*;
@@ -738,7 +741,7 @@ public class RCFile {
         try {
           Class<? extends CompressionCodec> codecClass = conf.getClassByName(
               codecClassname).asSubclass(CompressionCodec.class);
-          codec = ReflectionUtils.newInstance(codecClass, conf);
+          codec = ReflectionUtil.newInstance(codecClass);
         } catch (ClassNotFoundException cnfe) {
           throw new IllegalArgumentException(
               "Unknown codec: " + codecClassname, cnfe);
@@ -762,7 +765,7 @@ public class RCFile {
       String serdeClass = this.meta.getOption(StorageConstants.RCFILE_SERDE,
           BinarySerializerDeserializer.class.getName());
       try {
-        serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
+        serde = (SerializerDeserializer) ReflectionUtil.newInstance(Class.forName(serdeClass));
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
         throw new IOException(e);
@@ -1373,7 +1376,7 @@ public class RCFile {
         } else{
           serdeClass = this.meta.getOption(StorageConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
         }
-        serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
+        serde = (SerializerDeserializer) ReflectionUtil.newInstance(Class.forName(serdeClass));
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
         throw new IOException(e);
@@ -1620,24 +1623,38 @@ public class RCFile {
 
     @Override
     public Tuple next() throws IOException {
+      if(!hasNext()) return null;
+
+      Tuple tuple = new VTuple(schema.size());
+      getCurrentRow(tuple);
+      return tuple;
+    }
+
+    public boolean hasNext() throws IOException {
       if (!more) {
-        return null;
+        return false;
       }
 
       more = nextBuffer(rowId);
       long lastSeenSyncPos = lastSeenSyncPos();
       if (lastSeenSyncPos >= endOffset) {
         more = false;
-        return null;
+        return more;
       }
 
-      if (!more) {
-        return null;
+      return more;
+    }
+
+    @Override
+    public boolean nextFetch(OffHeapRowBlock rowBlock) throws IOException {
+      rowBlock.clear();
+
+      OffHeapRowBlockWriter writer = (OffHeapRowBlockWriter) rowBlock.getWriter();
+      while(rowBlock.rows() < rowBlock.maxRowNum() && hasNext()) {
+        getCurrentRowBlock(writer);
       }
 
-      Tuple tuple = new VTuple(schema.size());
-      getCurrentRow(tuple);
-      return tuple;
+      return rowBlock.rows() > 0;
     }
 
     @Override
@@ -1718,6 +1735,51 @@ public class RCFile {
           col.rowReadIndex += col.prvLength;
         }
       }
+      rowFetched = true;
+    }
+
+    /**
+     * get the current row used,make sure called {@link #nextFetch(OffHeapRowBlock rowBlock)}
+     * first.
+     *
+     * @throws IOException
+     */
+    public void getCurrentRowBlock(OffHeapRowBlockWriter writer) throws IOException {
+      if (!keyInit || rowFetched) {
+        return;
+      }
+
+      if (!currentValue.inited) {
+        currentValueBuffer();
+      }
+      writer.startRow();
+      int currentSchemaIndex = 0;
+      for (int j = 0; j < selectedColumns.length; ++j) {
+        SelectedColumn col = selectedColumns[j];
+        int i = col.colIndex;
+
+        while(i > currentSchemaIndex){
+          writer.skipField();
+          currentSchemaIndex++;
+        }
+
+        if (col.isNulled) {
+          writer.skipField();
+        } else {
+          colAdvanceRow(j, col);
+
+          serde.write(writer, schema.getColumn(i),
+              currentValue.loadedColumnsValueBuffer[j].getData(), col.rowReadIndex, col.prvLength, nullChars);
+          col.rowReadIndex += col.prvLength;
+        }
+        currentSchemaIndex++;
+      }
+
+      while(schema.size() > currentSchemaIndex){
+        writer.skipField();
+        currentSchemaIndex++;
+      }
+      writer.endRow();
       rowFetched = true;
     }
 
