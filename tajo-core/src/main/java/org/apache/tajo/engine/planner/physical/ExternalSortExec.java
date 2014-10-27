@@ -106,7 +106,7 @@ public class ExternalSortExec extends SortExec {
   /** total bytes of input data */
   private long sortAndStoredBytes;
 
-  private ExternalSortExec(final TaskAttemptContext context, final StorageManager sm, final SortNode plan)
+  private ExternalSortExec(final TaskAttemptContext context, final SortNode plan)
       throws PhysicalPlanningException {
     super(context, plan.getInSchema(), plan.getOutSchema(), null, plan.getSortKeys());
 
@@ -128,10 +128,9 @@ public class ExternalSortExec extends SortExec {
     localFS = new RawLocalFileSystem();
   }
 
-  public ExternalSortExec(final TaskAttemptContext context,
-                          final StorageManager sm, final SortNode plan,
+  public ExternalSortExec(final TaskAttemptContext context,final SortNode plan,
                           final CatalogProtos.FragmentProto[] fragments) throws PhysicalPlanningException {
-    this(context, sm, plan);
+    this(context, plan);
 
     mergedInputFragments = TUtil.newList();
     for (CatalogProtos.FragmentProto proto : fragments) {
@@ -140,10 +139,9 @@ public class ExternalSortExec extends SortExec {
     }
   }
 
-  public ExternalSortExec(final TaskAttemptContext context,
-                          final StorageManager sm, final SortNode plan, final PhysicalExec child)
+  public ExternalSortExec(final TaskAttemptContext context, final SortNode plan, final PhysicalExec child)
       throws IOException {
-    this(context, sm, plan);
+    this(context, plan);
     setChild(child);
   }
 
@@ -777,7 +775,7 @@ public class ExternalSortExec extends SortExec {
     if (finalOutputFiles != null) {
       for (FileFragment frag : finalOutputFiles) {
         File tmpFile = new File(localFS.makeQualified(frag.getPath()).toUri());
-        if (frag.getStartKey() == 0 && frag.getEndKey() == tmpFile.length()) {
+        if (frag.getStartKey() == 0 && frag.getLength() == tmpFile.length()) {
           localFS.delete(frag.getPath(), true);
           LOG.info("Delete file: " + frag);
         }

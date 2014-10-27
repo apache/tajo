@@ -27,6 +27,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
 import parquet.hadoop.ParquetOutputFormat;
@@ -111,6 +112,26 @@ public class StorageUtil extends StorageConstants {
     return new Path(parent, sb.toString());
   }
 
+  public static KeyValueSet newPhysicalProperties(CatalogProtos.StoreType type) {
+    KeyValueSet options = new KeyValueSet();
+    if (CatalogProtos.StoreType.CSV == type) {
+      options.set(CSVFILE_DELIMITER, DEFAULT_FIELD_DELIMITER);
+    } else if (CatalogProtos.StoreType.RCFILE == type) {
+      options.set(RCFILE_SERDE, DEFAULT_BINARY_SERDE);
+    } else if (CatalogProtos.StoreType.SEQUENCEFILE == type) {
+      options.set(SEQUENCEFILE_SERDE, DEFAULT_TEXT_SERDE);
+      options.set(SEQUENCEFILE_DELIMITER, DEFAULT_FIELD_DELIMITER);
+    } else if (type == CatalogProtos.StoreType.PARQUET) {
+      options.set(ParquetOutputFormat.BLOCK_SIZE, PARQUET_DEFAULT_BLOCK_SIZE);
+      options.set(ParquetOutputFormat.PAGE_SIZE, PARQUET_DEFAULT_PAGE_SIZE);
+      options.set(ParquetOutputFormat.COMPRESSION, PARQUET_DEFAULT_COMPRESSION_CODEC_NAME);
+      options.set(ParquetOutputFormat.ENABLE_DICTIONARY, PARQUET_DEFAULT_IS_DICTIONARY_ENABLED);
+      options.set(ParquetOutputFormat.VALIDATION, PARQUET_DEFAULT_IS_VALIDATION_ENABLED);
+    }
+
+    return options;
+  }
+
   static final String fileNamePatternV08 = "part-[0-9]*-[0-9]*";
   static final String fileNamePatternV09 = "part-[0-9]*-[0-9]*-[0-9]*";
 
@@ -124,7 +145,7 @@ public class StorageUtil extends StorageConstants {
    * @param path
    * @param recursive
    * @return The maximum sequence number
-   * @throws IOException
+   * @throws java.io.IOException
    */
   public static int getMaxFileSequence(FileSystem fs, Path path, boolean recursive) throws IOException {
     if (!fs.isDirectory(path)) {
@@ -219,5 +240,9 @@ public class StorageUtil extends StorageConstants {
       }
       amt -= ret;
     }
+  }
+
+  public static boolean isFileStorageType(StoreType storageType) {
+    return true;
   }
 }

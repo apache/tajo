@@ -556,10 +556,6 @@ public class QueryMasterTask extends CompositeService {
       return queryId;
     }
 
-    public StorageManager getStorageManager() {
-      return queryMasterContext.getStorageManager();
-    }
-
     public Path getStagingDir() {
       return queryContext.getStagingDir();
     }

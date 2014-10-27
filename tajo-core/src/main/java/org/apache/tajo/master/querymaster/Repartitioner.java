@@ -48,12 +48,14 @@ import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.storage.RowStoreUtil;
+import org.apache.tajo.storage.FileStorageManager;
 import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.unit.StorageUnit;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.worker.FetchImpl;
@@ -83,18 +85,19 @@ public class Repartitioner {
     MasterPlan masterPlan = subQuery.getMasterPlan();
     ExecutionBlock execBlock = subQuery.getBlock();
     QueryMasterTask.QueryMasterTaskContext masterContext = subQuery.getContext();
-    StorageManager storageManager = subQuery.getStorageManager();
 
     ScanNode[] scans = execBlock.getScanNodes();
 
     Path tablePath;
-    FileFragment[] fragments = new FileFragment[scans.length];
+    Fragment[] fragments = new Fragment[scans.length];
     long[] stats = new long[scans.length];
 
     // initialize variables from the child operators
     for (int i = 0; i < scans.length; i++) {
       TableDesc tableDesc = masterContext.getTableDescMap().get(scans[i].getCanonicalName());
       if (tableDesc == null) { // if it is a real table stored on storage
+        FileStorageManager storageManager = StorageManager.getFileStorageManager(subQuery.getContext().getConf());
+
         tablePath = storageManager.getTablePath(scans[i].getTableName());
         if (execBlock.getUnionScanMap() != null && !execBlock.getUnionScanMap().isEmpty()) {
           for (Map.Entry<ExecutionBlockId, ExecutionBlockId> unionScanEntry: execBlock.getUnionScanMap().entrySet()) {
@@ -107,21 +110,23 @@ public class Repartitioner {
         }
         fragments[i] = new FileFragment(scans[i].getCanonicalName(), tablePath, 0, 0, new String[]{UNKNOWN_HOST});
       } else {
-        tablePath = tableDesc.getPath();
         try {
           stats[i] = GlobalPlanner.computeDescendentVolume(scans[i]);
         } catch (PlanningException e) {
           throw new IOException(e);
         }
 
+        StorageManager storageManager =
+            StorageManager.getStorageManager(subQuery.getContext().getConf(), tableDesc.getMeta().getStoreType());
+
         // if table has no data, storageManager will return empty FileFragment.
         // So, we need to handle FileFragment by its size.
         // If we don't check its size, it can cause IndexOutOfBoundsException.
-        List<FileFragment> fileFragments = storageManager.getSplits(scans[i].getCanonicalName(), tableDesc.getMeta(), tableDesc.getSchema(), tablePath);
+        List<Fragment> fileFragments = storageManager.getSplits(scans[i].getCanonicalName(), tableDesc);
         if (fileFragments.size() > 0) {
           fragments[i] = fileFragments.get(0);
         } else {
-          fragments[i] = new FileFragment(scans[i].getCanonicalName(), tablePath, 0, 0, new String[]{UNKNOWN_HOST});
+          fragments[i] = new FileFragment(scans[i].getCanonicalName(), tableDesc.getPath(), 0, 0, new String[]{UNKNOWN_HOST});
         }
       }
     }
@@ -268,14 +273,14 @@ public class Repartitioner {
         //select intermediate scan and stats
         ScanNode[] intermediateScans = new ScanNode[largeScanIndexList.size()];
         long[] intermediateScanStats = new long[largeScanIndexList.size()];
-        FileFragment[] intermediateFragments = new FileFragment[largeScanIndexList.size()];
+        Fragment[] intermediateFragments = new Fragment[largeScanIndexList.size()];
         int index = 0;
         for (Integer eachIdx : largeScanIndexList) {
           intermediateScans[index] = scans[eachIdx];
           intermediateScanStats[index] = stats[eachIdx];
           intermediateFragments[index++] = fragments[eachIdx];
         }
-        FileFragment[] broadcastFragments = new FileFragment[broadcastIndexList.size()];
+        Fragment[] broadcastFragments = new Fragment[broadcastIndexList.size()];
         ScanNode[] broadcastScans = new ScanNode[broadcastIndexList.size()];
         index = 0;
         for (Integer eachIdx : broadcastIndexList) {
@@ -309,9 +314,9 @@ public class Repartitioner {
                                                        SubQuery subQuery,
                                                        ScanNode[] scans,
                                                        long[] stats,
-                                                       FileFragment[] fragments,
+                                                       Fragment[] fragments,
                                                        ScanNode[] broadcastScans,
-                                                       FileFragment[] broadcastFragments) throws IOException {
+                                                       Fragment[] broadcastFragments) throws IOException {
     MasterPlan masterPlan = subQuery.getMasterPlan();
     ExecutionBlock execBlock = subQuery.getBlock();
     // The hash map is modeling as follows:
@@ -394,7 +399,7 @@ public class Repartitioner {
     int joinTaskNum = Math.min(maxTaskNum, hashEntries.size());
     LOG.info("The determined number of join tasks is " + joinTaskNum);
 
-    List<FileFragment> rightFragments = new ArrayList<FileFragment>();
+    List<Fragment> rightFragments = new ArrayList<Fragment>();
     rightFragments.add(fragments[1]);
 
     if (broadcastFragments != null) {
@@ -404,14 +409,17 @@ public class Repartitioner {
         Path[] partitionScanPaths = null;
         TableDesc tableDesc = masterContext.getTableDescMap().get(eachScan.getCanonicalName());
         if (eachScan.getType() == NodeType.PARTITIONS_SCAN) {
+          FileStorageManager storageManager = StorageManager.getFileStorageManager(subQuery.getContext().getConf());
+
           PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)eachScan;
           partitionScanPaths = partitionScan.getInputPaths();
           // set null to inputPaths in getFragmentsFromPartitionedTable()
-          getFragmentsFromPartitionedTable(subQuery.getStorageManager(), eachScan, tableDesc);
+          getFragmentsFromPartitionedTable(storageManager, eachScan, tableDesc);
           partitionScan.setInputPaths(partitionScanPaths);
         } else {
-          Collection<FileFragment> scanFragments = subQuery.getStorageManager().getSplits(eachScan.getCanonicalName(),
-              tableDesc.getMeta(), tableDesc.getSchema(), tableDesc.getPath());
+          StorageManager storageManager = StorageManager.getStorageManager(subQuery.getContext().getConf(),
+              tableDesc.getMeta().getStoreType());
+          Collection<Fragment> scanFragments = storageManager.getSplits(eachScan.getCanonicalName(), tableDesc);
           if (scanFragments != null) {
             rightFragments.addAll(scanFragments);
           }
@@ -480,10 +488,10 @@ public class Repartitioner {
   /**
    * It creates a number of fragments for all partitions.
    */
-  public static List<FileFragment> getFragmentsFromPartitionedTable(StorageManager sm,
+  public static List<Fragment> getFragmentsFromPartitionedTable(FileStorageManager sm,
                                                                           ScanNode scan,
                                                                           TableDesc table) throws IOException {
-    List<FileFragment> fragments = Lists.newArrayList();
+    List<Fragment> fragments = Lists.newArrayList();
     PartitionedTableScanNode partitionsScan = (PartitionedTableScanNode) scan;
     fragments.addAll(sm.getSplits(
         scan.getCanonicalName(), table.getMeta(), table.getSchema(), partitionsScan.getInputPaths()));
@@ -492,7 +500,7 @@ public class Repartitioner {
   }
 
   private static void scheduleLeafTasksWithBroadcastTable(TaskSchedulerContext schedulerContext, SubQuery subQuery,
-                                                          int baseScanId, FileFragment[] fragments) throws IOException {
+                                                          int baseScanId, Fragment[] fragments) throws IOException {
     ExecutionBlock execBlock = subQuery.getBlock();
     ScanNode[] scans = execBlock.getScanNodes();
 
@@ -511,23 +519,27 @@ public class Repartitioner {
     //     . add all partition paths to node's inputPaths variable
     //  -> SCAN
     //     . add all fragments to broadcastFragments
-    Collection<FileFragment> baseFragments = null;
-    List<FileFragment> broadcastFragments = new ArrayList<FileFragment>();
+    Collection<Fragment> baseFragments = null;
+    List<Fragment> broadcastFragments = new ArrayList<Fragment>();
     for (int i = 0; i < scans.length; i++) {
       ScanNode scan = scans[i];
       TableDesc desc = subQuery.getContext().getTableDescMap().get(scan.getCanonicalName());
       TableMeta meta = desc.getMeta();
 
-      Collection<FileFragment> scanFragments;
+      Collection<Fragment> scanFragments;
       Path[] partitionScanPaths = null;
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
         PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)scan;
         partitionScanPaths = partitionScan.getInputPaths();
         // set null to inputPaths in getFragmentsFromPartitionedTable()
-        scanFragments = getFragmentsFromPartitionedTable(subQuery.getStorageManager(), scan, desc);
+        FileStorageManager storageManager =
+            StorageManager.getFileStorageManager(subQuery.getContext().getConf());
+        scanFragments = getFragmentsFromPartitionedTable(storageManager, scan, desc);
       } else {
-        scanFragments = subQuery.getStorageManager().getSplits(scan.getCanonicalName(), meta, desc.getSchema(),
-            desc.getPath());
+        StorageManager storageManager =
+            StorageManager.getStorageManager(subQuery.getContext().getConf(), desc.getMeta().getStoreType());
+
+        scanFragments = storageManager.getSplits(scan.getCanonicalName(), desc);
       }
 
       if (scanFragments != null) {
@@ -630,7 +642,7 @@ public class Repartitioner {
     ExecutionBlock execBlock = subQuery.getBlock();
     ScanNode scan = execBlock.getScanNodes()[0];
     Path tablePath;
-    tablePath = subQuery.getContext().getStorageManager().getTablePath(scan.getTableName());
+    tablePath = StorageManager.getFileStorageManager(subQuery.getContext().getConf()).getTablePath(scan.getTableName());
 
     ExecutionBlock sampleChildBlock = masterPlan.getChild(subQuery.getId(), 0);
     SortNode sortNode = PlannerUtil.findTopNode(sampleChildBlock.getPlan(), NodeType.SORT);
@@ -772,14 +784,14 @@ public class Repartitioner {
 
   public static void scheduleHashShuffledFetches(TaskSchedulerContext schedulerContext, MasterPlan masterPlan,
                                                  SubQuery subQuery, DataChannel channel,
-                                                 int maxNum) {
+                                                 int maxNum) throws IOException {
     ExecutionBlock execBlock = subQuery.getBlock();
     ScanNode scan = execBlock.getScanNodes()[0];
     Path tablePath;
-    tablePath = subQuery.getContext().getStorageManager().getTablePath(scan.getTableName());
+    tablePath = StorageManager.getFileStorageManager(subQuery.getContext().getConf()).getTablePath(scan.getTableName());
 
-    FileFragment frag = new FileFragment(scan.getCanonicalName(), tablePath, 0, 0, new String[]{UNKNOWN_HOST});
-    List<FileFragment> fragments = new ArrayList<FileFragment>();
+    Fragment frag = new FileFragment(scan.getCanonicalName(), tablePath, 0, 0, new String[]{UNKNOWN_HOST});
+    List<Fragment> fragments = new ArrayList<Fragment>();
     fragments.add(frag);
     SubQuery.scheduleFragments(subQuery, fragments);
 

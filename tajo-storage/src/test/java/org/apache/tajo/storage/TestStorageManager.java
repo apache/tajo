@@ -32,6 +32,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -56,7 +57,7 @@ public class TestStorageManager {
 		conf = new TajoConf();
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     fs = testDir.getFileSystem(conf);
-    sm = StorageManager.getStorageManager(conf, testDir);
+    sm = StorageManager.getFileStorageManager(conf, testDir);
 	}
 
 	@After
@@ -83,14 +84,14 @@ public class TestStorageManager {
 
     Path path = StorageUtil.concatPath(testDir, "testGetScannerAndAppender", "table.csv");
     fs.mkdirs(path.getParent());
-		Appender appender = StorageManager.getStorageManager(conf).getAppender(meta, schema, path);
+		Appender appender = StorageManager.getFileStorageManager(conf).getAppender(meta, schema, path);
     appender.init();
 		for(Tuple t : tuples) {
 		  appender.addTuple(t);
 		}
 		appender.close();
 
-		Scanner scanner = StorageManager.getStorageManager(conf).getFileScanner(meta, schema, path);
+		Scanner scanner = StorageManager.getFileStorageManager(conf).getFileScanner(meta, schema, path);
     scanner.init();
 		int i=0;
 		while(scanner.next() != null) {
@@ -124,7 +125,7 @@ public class TestStorageManager {
       }
 
       assertTrue(fs.exists(tablePath));
-      StorageManager sm = StorageManager.getStorageManager(new TajoConf(conf), tablePath);
+      FileStorageManager sm = StorageManager.getFileStorageManager(new TajoConf(conf), tablePath);
 
       Schema schema = new Schema();
       schema.addColumn("id", Type.INT4);
@@ -132,19 +133,19 @@ public class TestStorageManager {
       schema.addColumn("name",Type.TEXT);
       TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
 
-      List<FileFragment> splits = Lists.newArrayList();
+      List<Fragment> splits = Lists.newArrayList();
       // Get FileFragments in partition batch
       splits.addAll(sm.getSplits("data", meta, schema, partitions.toArray(new Path[partitions.size()])));
       assertEquals(testCount, splits.size());
       // -1 is unknown volumeId
-      assertEquals(-1, splits.get(0).getDiskIds()[0]);
+      assertEquals(-1, ((FileFragment)splits.get(0)).getDiskIds()[0]);
 
       splits.clear();
       splits.addAll(sm.getSplits("data", meta, schema,
           partitions.subList(0, partitions.size() / 2).toArray(new Path[partitions.size() / 2])));
       assertEquals(testCount / 2, splits.size());
       assertEquals(1, splits.get(0).getHosts().length);
-      assertEquals(-1, splits.get(0).getDiskIds()[0]);
+      assertEquals(-1, ((FileFragment)splits.get(0)).getDiskIds()[0]);
       fs.close();
     } finally {
       cluster.shutdown();
@@ -176,7 +177,7 @@ public class TestStorageManager {
         DFSTestUtil.createFile(fs, tmpFile, 10, (short) 2, 0xDEADDEADl);
       }
       assertTrue(fs.exists(tablePath));
-      StorageManager sm = StorageManager.getStorageManager(new TajoConf(conf), tablePath);
+      FileStorageManager sm = StorageManager.getFileStorageManager(new TajoConf(conf), tablePath);
 
       Schema schema = new Schema();
       schema.addColumn("id", Type.INT4);
@@ -184,13 +185,13 @@ public class TestStorageManager {
       schema.addColumn("name", Type.TEXT);
       TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
 
-      List<FileFragment> splits = Lists.newArrayList();
+      List<Fragment> splits = Lists.newArrayList();
       splits.addAll(sm.getSplits("data", meta, schema, tablePath));
 
       assertEquals(testCount, splits.size());
       assertEquals(2, splits.get(0).getHosts().length);
-      assertEquals(2, splits.get(0).getDiskIds().length);
-      assertNotEquals(-1, splits.get(0).getDiskIds()[0]);
+      assertEquals(2, ((FileFragment)splits.get(0)).getDiskIds().length);
+      assertNotEquals(-1, ((FileFragment)splits.get(0)).getDiskIds()[0]);
       fs.close();
     } finally {
       cluster.shutdown();

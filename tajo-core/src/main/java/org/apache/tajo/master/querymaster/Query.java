@@ -70,7 +70,6 @@ public class Query implements EventHandler<QueryEvent> {
   private Map<ExecutionBlockId, SubQuery> subqueries;
   private final EventHandler eventHandler;
   private final MasterPlan plan;
-  private final StorageManager sm;
   QueryMasterTask.QueryMasterTaskContext context;
   private ExecutionBlockCursor cursor;
 
@@ -212,7 +211,6 @@ public class Query implements EventHandler<QueryEvent> {
     subqueries = Maps.newHashMap();
     this.eventHandler = eventHandler;
     this.plan = plan;
-    this.sm = context.getStorageManager();
     this.cursor = new ExecutionBlockCursor(plan, true);
 
     StringBuilder sb = new StringBuilder("\n=======================================================");
@@ -358,7 +356,7 @@ public class Query implements EventHandler<QueryEvent> {
 
       query.setStartTime();
       SubQuery subQuery = new SubQuery(query.context, query.getPlan(),
-          query.getExecutionBlockCursor().nextBlock(), query.sm);
+          query.getExecutionBlockCursor().nextBlock());
       subQuery.setPriority(query.priority--);
       query.addSubQuery(subQuery);
 
@@ -864,7 +862,7 @@ public class Query implements EventHandler<QueryEvent> {
     private void executeNextBlock(Query query) {
       ExecutionBlockCursor cursor = query.getExecutionBlockCursor();
       ExecutionBlock nextBlock = cursor.nextBlock();
-      SubQuery nextSubQuery = new SubQuery(query.context, query.getPlan(), nextBlock, query.sm);
+      SubQuery nextSubQuery = new SubQuery(query.context, query.getPlan(), nextBlock);
       nextSubQuery.setPriority(query.priority--);
       query.addSubQuery(nextSubQuery);
       nextSubQuery.handle(new SubQueryEvent(nextSubQuery.getId(), SubQueryEventType.SQ_INIT));

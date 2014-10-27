@@ -22,6 +22,7 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -95,7 +96,7 @@ public class TestMergeScanner {
     conf.setStrings("tajo.storage.projectable-scanner", "rcfile", "trevni", "parquet", "avro");
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     fs = testDir.getFileSystem(conf);
-    sm = StorageManager.getStorageManager(conf, testDir);
+    sm = StorageManager.getFileStorageManager(conf, testDir);
   }
 
   @Test
@@ -115,7 +116,7 @@ public class TestMergeScanner {
     }
 
     Path table1Path = new Path(testDir, storeType + "_1.data");
-    Appender appender1 = StorageManager.getStorageManager(conf).getAppender(meta, schema, table1Path);
+    Appender appender1 = StorageManager.getFileStorageManager(conf).getAppender(meta, schema, table1Path);
     appender1.enableStats();
     appender1.init();
     int tupleNum = 10000;
@@ -137,7 +138,7 @@ public class TestMergeScanner {
     }
 
     Path table2Path = new Path(testDir, storeType + "_2.data");
-    Appender appender2 = StorageManager.getStorageManager(conf).getAppender(meta, schema, table2Path);
+    Appender appender2 = StorageManager.getFileStorageManager(conf).getAppender(meta, schema, table2Path);
     appender2.enableStats();
     appender2.init();
 
@@ -159,7 +160,7 @@ public class TestMergeScanner {
 
     FileStatus status1 = fs.getFileStatus(table1Path);
     FileStatus status2 = fs.getFileStatus(table2Path);
-    FileFragment[] fragment = new FileFragment[2];
+    Fragment[] fragment = new Fragment[2];
     fragment[0] = new FileFragment("tablet1", table1Path, 0, status1.getLen());
     fragment[1] = new FileFragment("tablet1", table2Path, 0, status2.getLen());
 
@@ -167,7 +168,7 @@ public class TestMergeScanner {
     targetSchema.addColumn(schema.getColumn(0));
     targetSchema.addColumn(schema.getColumn(2));
 
-    Scanner scanner = new MergeScanner(conf, schema, meta, TUtil.<FileFragment>newList(fragment), targetSchema);
+    Scanner scanner = new MergeScanner(conf, schema, meta, TUtil.newList(fragment), targetSchema);
     assertEquals(isProjectableStorage(meta.getStoreType()), scanner.isProjectable());
 
     scanner.init();

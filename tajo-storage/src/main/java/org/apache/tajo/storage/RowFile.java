@@ -33,7 +33,7 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
-import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.BitArray;
 
 import java.io.FileNotFoundException;
@@ -66,7 +66,7 @@ public class RowFile {
     private BitArray nullFlags;
     private long bufferStartPos;
 
-    public RowFileScanner(Configuration conf, final Schema schema, final TableMeta meta, final FileFragment fragment)
+    public RowFileScanner(Configuration conf, final Schema schema, final TableMeta meta, final Fragment fragment)
         throws IOException {
       super(conf, schema, meta, fragment);
 
@@ -75,8 +75,8 @@ public class RowFile {
 
       nullFlags = new BitArray(schema.size());
       tupleHeaderSize = nullFlags.bytesLength() + (2 * Short.SIZE / 8);
-      this.start = fragment.getStartKey();
-      this.end = this.start + fragment.getEndKey();
+      this.start = this.fragment.getStartKey();
+      this.end = this.start + this.fragment.getLength();
     }
 
     public void init() throws IOException {

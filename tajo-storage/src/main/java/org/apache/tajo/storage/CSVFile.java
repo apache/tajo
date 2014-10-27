@@ -38,7 +38,7 @@ import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
-import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.rcfile.NonSyncByteArrayOutputStream;
 import org.apache.tajo.util.BytesUtils;
 
@@ -251,11 +251,11 @@ public class CSVFile {
   }
 
   public static class CSVScanner extends FileScanner implements SeekableScanner {
-    public CSVScanner(Configuration conf, final Schema schema, final TableMeta meta, final FileFragment fragment)
+    public CSVScanner(Configuration conf, final Schema schema, final TableMeta meta, final Fragment fragment)
         throws IOException {
       super(conf, schema, meta, fragment);
       factory = new CompressionCodecFactory(conf);
-      codec = factory.getCodec(fragment.getPath());
+      codec = factory.getCodec(this.fragment.getPath());
       if (codec == null || codec instanceof SplittableCompressionCodec) {
         splittable = true;
       }
@@ -310,7 +310,7 @@ public class CSVFile {
 
       recordCount = 0;
       pos = startOffset = fragment.getStartKey();
-      end = startOffset + fragment.getEndKey();
+      end = startOffset + fragment.getLength();
 
       if (codec != null) {
         decompressor = CodecPool.getDecompressor(codec);

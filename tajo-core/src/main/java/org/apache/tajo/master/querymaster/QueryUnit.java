@@ -42,6 +42,7 @@ import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttem
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.worker.FetchImpl;
@@ -237,15 +238,18 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	  }
 	}
 
-  private void addDataLocation(FileFragment fragment) {
+  private void addDataLocation(Fragment fragment) {
     String[] hosts = fragment.getHosts();
-    int[] diskIds = fragment.getDiskIds();
+    int[] diskIds = null;
+    if (fragment instanceof FileFragment) {
+      diskIds = ((FileFragment)fragment).getDiskIds();
+    }
     for (int i = 0; i < hosts.length; i++) {
       dataLocations.add(new DataLocation(hosts[i], diskIds[i]));
     }
   }
 
-  public void addFragment(FileFragment fragment, boolean useDataLocation) {
+  public void addFragment(Fragment fragment, boolean useDataLocation) {
     Set<FragmentProto> fragmentProtos;
     if (fragMap.containsKey(fragment.getTableName())) {
       fragmentProtos = fragMap.get(fragment.getTableName());
@@ -260,8 +264,8 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     totalFragmentNum++;
   }
 
-  public void addFragments(Collection<FileFragment> fragments) {
-    for (FileFragment eachFragment: fragments) {
+  public void addFragments(Collection<Fragment> fragments) {
+    for (Fragment eachFragment: fragments) {
       addFragment(eachFragment, false);
     }
   }

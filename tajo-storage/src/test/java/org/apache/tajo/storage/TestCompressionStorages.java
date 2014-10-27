@@ -124,7 +124,7 @@ public class TestCompressionStorages {
     meta.putOption("compression.codec", BZip2Codec.class.getCanonicalName());
 
     Path tablePath = new Path(testDir, "SplitCompression");
-    Appender appender = StorageManager.getStorageManager(conf).getAppender(meta, schema, tablePath);
+    Appender appender = StorageManager.getFileStorageManager(conf).getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
 
@@ -156,7 +156,7 @@ public class TestCompressionStorages {
     tablets[0] = new FileFragment("SplitCompression", tablePath, 0, randomNum);
     tablets[1] = new FileFragment("SplitCompression", tablePath, randomNum, (fileLen - randomNum));
 
-    Scanner scanner = StorageManager.getStorageManager(conf).getScanner(meta, schema, tablets[0], schema);
+    Scanner scanner = StorageManager.getFileStorageManager(conf).getScanner(meta, schema, tablets[0], schema);
     assertTrue(scanner.isSplittable());
     scanner.init();
     int tupleCnt = 0;
@@ -166,7 +166,7 @@ public class TestCompressionStorages {
     }
     scanner.close();
 
-    scanner = StorageManager.getStorageManager(conf).getScanner(meta, schema, tablets[1], schema);
+    scanner = StorageManager.getFileStorageManager(conf).getScanner(meta, schema, tablets[1], schema);
     assertTrue(scanner.isSplittable());
     scanner.init();
     while ((tuple = scanner.next()) != null) {
@@ -191,7 +191,7 @@ public class TestCompressionStorages {
 
     String fileName = "Compression_" + codec.getSimpleName();
     Path tablePath = new Path(testDir, fileName);
-    Appender appender = StorageManager.getStorageManager(conf).getAppender(meta, schema, tablePath);
+    Appender appender = StorageManager.getFileStorageManager(conf).getAppender(meta, schema, tablePath);
     appender.enableStats();
 
     appender.init();
@@ -221,7 +221,7 @@ public class TestCompressionStorages {
     FileFragment[] tablets = new FileFragment[1];
     tablets[0] = new FileFragment(fileName, tablePath, 0, fileLen);
 
-    Scanner scanner = StorageManager.getStorageManager(conf).getScanner(meta, schema, tablets[0], schema);
+    Scanner scanner = StorageManager.getFileStorageManager(conf).getScanner(meta, schema, tablets[0], schema);
 
     if (StoreType.CSV == storeType) {
       if (SplittableCompressionCodec.class.isAssignableFrom(codec)) {
