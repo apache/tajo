@@ -16,34 +16,42 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli.tsql.commands;
+package org.apache.tajo.validation;
 
-import org.apache.tajo.cli.tsql.TajoCli;
-import org.apache.tajo.util.VersionInfo;
+import java.util.Collection;
+import java.util.Collections;
 
-public class VersionCommand extends TajoShellCommand {
+public class ClassValidator extends AbstractValidator {
 
-  public VersionCommand(TajoCli.TajoCliContext context) {
-    super(context);
+  @Override
+  protected <T> String getErrorMessage(T object) {
+    return "ClassLoader cannot find " + object + " class.";
   }
 
   @Override
-  public String getCommand() {
-    return "\\version";
+  protected <T> boolean validateInternal(T object) {
+    boolean result = false;
+    
+    if (object != null) {
+      if (object instanceof CharSequence) {
+        String valueString = object.toString();
+        try {
+          Class.forName(valueString);
+          result = true;
+        } catch (ClassNotFoundException e) {
+          result = false;
+        }
+      }
+    } else {
+      result = true;
+    }
+    
+    return result;
   }
 
   @Override
-  public void invoke(String[] cmd) throws Exception {
-    context.getOutput().println(VersionInfo.getDisplayVersion());
+  protected Collection<Validator> getDependantValidators() {
+    return Collections.emptySet();
   }
 
-  @Override
-  public String getUsage() {
-    return "";
-  }
-
-  @Override
-  public String getDescription() {
-    return "show Tajo version";
-  }
 }

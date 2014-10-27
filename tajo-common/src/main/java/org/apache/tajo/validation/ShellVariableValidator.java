@@ -16,34 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli.tsql.commands;
+package org.apache.tajo.validation;
 
-import org.apache.tajo.cli.tsql.TajoCli;
-import org.apache.tajo.util.VersionInfo;
+public class ShellVariableValidator extends PatternValidator {
 
-public class VersionCommand extends TajoShellCommand {
-
-  public VersionCommand(TajoCli.TajoCliContext context) {
-    super(context);
+  public ShellVariableValidator() {
+    super("^[\\\\$]?[\\\\{]?[a-zA-Z0-9.]+[\\\\}]?$");
   }
 
   @Override
-  public String getCommand() {
-    return "\\version";
+  protected <T> String getErrorMessage(T object) {
+    return object + " is not a valid shell variable";
   }
 
-  @Override
-  public void invoke(String[] cmd) throws Exception {
-    context.getOutput().println(VersionInfo.getDisplayVersion());
-  }
-
-  @Override
-  public String getUsage() {
-    return "";
-  }
-
-  @Override
-  public String getDescription() {
-    return "show Tajo version";
-  }
 }

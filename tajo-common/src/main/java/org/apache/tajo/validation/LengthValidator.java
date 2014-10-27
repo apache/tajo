@@ -16,34 +16,42 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli.tsql.commands;
+package org.apache.tajo.validation;
 
-import org.apache.tajo.cli.tsql.TajoCli;
-import org.apache.tajo.util.VersionInfo;
+import java.util.Collection;
+import java.util.Collections;
 
-public class VersionCommand extends TajoShellCommand {
-
-  public VersionCommand(TajoCli.TajoCliContext context) {
-    super(context);
+public class LengthValidator extends AbstractValidator {
+  
+  private final int maxLength;
+  
+  public LengthValidator(int maxLen) {
+    this.maxLength = maxLen;
   }
 
   @Override
-  public String getCommand() {
-    return "\\version";
+  protected <T> String getErrorMessage(T object) {
+    return "Length of " + object + " is greater than " + maxLength;
   }
 
   @Override
-  public void invoke(String[] cmd) throws Exception {
-    context.getOutput().println(VersionInfo.getDisplayVersion());
+  protected <T> boolean validateInternal(T object) {
+    boolean result = false;
+    
+    if (object != null) {
+      if (object instanceof CharSequence) {
+        result = ((CharSequence)object).length() <= maxLength;
+      }
+    } else {
+      result = true;
+    }
+    
+    return result;
   }
 
   @Override
-  public String getUsage() {
-    return "";
+  protected Collection<Validator> getDependantValidators() {
+    return Collections.emptySet();
   }
 
-  @Override
-  public String getDescription() {
-    return "show Tajo version";
-  }
 }

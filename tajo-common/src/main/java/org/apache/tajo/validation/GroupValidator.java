@@ -16,34 +16,34 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli.tsql.commands;
+package org.apache.tajo.validation;
 
-import org.apache.tajo.cli.tsql.TajoCli;
-import org.apache.tajo.util.VersionInfo;
+import java.util.Collection;
 
-public class VersionCommand extends TajoShellCommand {
-
-  public VersionCommand(TajoCli.TajoCliContext context) {
-    super(context);
+public class GroupValidator extends AbstractValidator {
+  
+  private final Collection<Validator> dependants;
+  
+  public GroupValidator(Collection<Validator> validators) {
+    if (validators.size() == 0) {
+      throw new IllegalArgumentException("Needs at least 1 or more validators.");
+    }
+    this.dependants = validators;
   }
 
   @Override
-  public String getCommand() {
-    return "\\version";
-  }
-
-  @Override
-  public void invoke(String[] cmd) throws Exception {
-    context.getOutput().println(VersionInfo.getDisplayVersion());
-  }
-
-  @Override
-  public String getUsage() {
+  protected <T> String getErrorMessage(T object) {
     return "";
   }
 
   @Override
-  public String getDescription() {
-    return "show Tajo version";
+  protected <T> boolean validateInternal(T object) {
+    return true;
   }
+
+  @Override
+  protected Collection<Validator> getDependantValidators() {
+    return dependants;
+  }
+
 }

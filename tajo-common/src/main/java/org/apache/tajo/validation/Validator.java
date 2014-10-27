@@ -16,34 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli.tsql.commands;
+package org.apache.tajo.validation;
 
-import org.apache.tajo.cli.tsql.TajoCli;
-import org.apache.tajo.util.VersionInfo;
+import java.util.Collection;
 
-public class VersionCommand extends TajoShellCommand {
+public interface Validator {
 
-  public VersionCommand(TajoCli.TajoCliContext context) {
-    super(context);
-  }
-
-  @Override
-  public String getCommand() {
-    return "\\version";
-  }
-
-  @Override
-  public void invoke(String[] cmd) throws Exception {
-    context.getOutput().println(VersionInfo.getDisplayVersion());
-  }
-
-  @Override
-  public String getUsage() {
-    return "";
-  }
-
-  @Override
-  public String getDescription() {
-    return "show Tajo version";
-  }
+  public <T> Collection<ConstraintViolation> validate(T object);
+  
+  public <T> void validate(T object, boolean generateThrow);
+  
 }

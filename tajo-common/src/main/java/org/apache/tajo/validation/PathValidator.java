@@ -16,34 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli.tsql.commands;
+package org.apache.tajo.validation;
 
-import org.apache.tajo.cli.tsql.TajoCli;
-import org.apache.tajo.util.VersionInfo;
+public class PathValidator extends PatternValidator {
 
-public class VersionCommand extends TajoShellCommand {
-
-  public VersionCommand(TajoCli.TajoCliContext context) {
-    super(context);
+  public PathValidator() {
+    super("^(?:[a-zA-Z][a-zA-Z0-9+-.]+:[/]{1,2}[a-zA-Z-.]*[:0-9]*)?(?:/?[a-zA-Z]:)?[/a-zA-Z0-9-_\\\\.\\\\$\\\\{\\\\}]*$");
   }
 
   @Override
-  public String getCommand() {
-    return "\\version";
+  protected <T> String getErrorMessage(T object) {
+    return object + " is not valid path.";
   }
 
-  @Override
-  public void invoke(String[] cmd) throws Exception {
-    context.getOutput().println(VersionInfo.getDisplayVersion());
-  }
-
-  @Override
-  public String getUsage() {
-    return "";
-  }
-
-  @Override
-  public String getDescription() {
-    return "show Tajo version";
-  }
 }
