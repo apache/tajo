@@ -19,14 +19,18 @@
 package org.apache.tajo.conf;
 
 import com.google.common.base.Preconditions;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ConfigKey;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.NumberUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.datetime.DateTimeConstants;
+import org.apache.tajo.validation.ConstraintViolationException;
 import org.apache.tajo.validation.Validator;
 import org.apache.tajo.validation.Validators;
 
@@ -685,4 +689,31 @@ public class TajoConf extends Configuration {
       return new Path(systemConfPathStr);
     }
   }
+  
+  /**
+   * validateProperty function will fetch pre-defined configuration property by keyname.
+   * If found, it will validate the supplied value with these validators.
+   * 
+   * @param name - a string containing specific key
+   * @param value - a string containing value
+   * @throws ConstraintViolationException
+   */
+  public void validateProperty(String name, String value) throws ConstraintViolationException {
+    ConfigKey configKey = null;
+    configKey = TajoConf.getConfVars(name);
+    if (configKey == null) {
+      configKey = SessionVars.get(name);
+    }
+    if (configKey != null && configKey.validator() != null && configKey.valueClass() != null) {
+      Object valueObj = value;
+      if (Number.class.isAssignableFrom(configKey.valueClass())) {
+        valueObj = NumberUtil.numberValue(configKey.valueClass(), value);
+        if (valueObj == null) {
+          return;
+        }
+      }
+      configKey.validator().validate(valueObj, true);
+    }
+  }
+
 }
