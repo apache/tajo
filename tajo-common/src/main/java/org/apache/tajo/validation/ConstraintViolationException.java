@@ -42,7 +42,7 @@ public class ConstraintViolationException extends RuntimeException {
       int elemCount = violations.size();
       for (ConstraintViolation violation: violations) {
         errorMessage += violation.getMessage();
-        if (elemIdx > elemCount) {
+        if (elemIdx++ > elemCount) {
           errorMessage += ",";
         }
       }
