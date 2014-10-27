@@ -2,6 +2,8 @@ Tajo Change Log
 
 Block Iteration - branch
 
+    TAJO-1082: Implement nextFetch(RowBlock) of RawFileScanner. (jinho)
+
     TAJO-1044: Implement nextFetch(RowBlock) of Parquer scanner. (hyunsik)
 
     TAJO-1084: Generated classes should access directly UnSafeTuple and 

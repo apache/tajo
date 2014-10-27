@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage;
 
+import com.google.common.collect.Lists;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -54,6 +55,7 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -102,14 +104,16 @@ public class TestNextFetches {
   private StoreType storeType;
   private boolean splitable;
   private boolean statsable;
+  private boolean seekable;
   private Path testDir;
   private FileSystem fs;
   private Tuple allTypedTuple;
 
-  public TestNextFetches(StoreType type, boolean splitable, boolean statsable) throws IOException {
+  public TestNextFetches(StoreType type, boolean splitable, boolean statsable, boolean seekable) throws IOException {
     this.storeType = type;
     this.splitable = splitable;
     this.statsable = statsable;
+    this.seekable = seekable;
 
     conf = new TajoConf();
 
@@ -132,42 +136,38 @@ public class TestNextFetches {
     schema.addColumn("col9", Type.BLOB);
     schema.addColumn("col10", Type.INET4);
     schema.addColumn("col11", Type.NULL_TYPE);
-    if (storeType == StoreType.RAW) {
-      schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
-    }
+    schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
 
     QueryId queryid = new QueryId("12345", 5);
     ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
-    int columnNum = 11 + (storeType == StoreType.RAW ? 1 : 0);
+    int columnNum = 12;
     allTypedTuple = new VTuple(columnNum);
     allTypedTuple.put(new Datum[]{
         DatumFactory.createBool(true),
-        DatumFactory.createChar("jinho"),
+        DatumFactory.createChar("hyunsik"),
         DatumFactory.createInt2((short) 17),
         DatumFactory.createInt4(59),
         DatumFactory.createInt8(23l),
         DatumFactory.createFloat4(77.9f),
         DatumFactory.createFloat8(271.9f),
-        DatumFactory.createText("jinho"),
-        DatumFactory.createBlob("jinho babo".getBytes()),
+        DatumFactory.createText("hyunsik"),
+        DatumFactory.createBlob("hyunsik baaaabo".getBytes()),
         DatumFactory.createInet4("192.168.0.1"),
         NullDatum.get(),
+        factory.createDatum(queryid.getProto())
     });
-    if (storeType == StoreType.RAW) {
-      allTypedTuple.put(11, factory.createDatum(queryid.getProto()));
-    }
   }
 
   @Parameterized.Parameters
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][] {
-        {StoreType.CSV, true, true},
+        {StoreType.CSV, true, true, true},
         // TODO - to be implemented
-//        {StoreType.RAW, false, false},
-//        {StoreType.RCFILE, true, true},
-        {StoreType.BLOCK_PARQUET, false, false},
-//        {StoreType.SEQUENCEFILE, true, true},
-//        {StoreType.AVRO, false, false},
+        {StoreType.RAW, false, true, true},
+//        {StoreType.RCFILE, true, true, false},
+        {StoreType.BLOCK_PARQUET, false, false, false},
+//        {StoreType.SEQUENCEFILE, true, true, false},
+//        {StoreType.AVRO, false, false, false},
     });
   }
 
@@ -705,4 +705,85 @@ public class TestNextFetches {
     }
   }
 
+  @Test
+  public void testSeekableScanner() throws IOException {
+    if (!seekable) {
+      return;
+    }
+
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("age", Type.INT8);
+    schema.addColumn("comment", Type.TEXT);
+
+    TableMeta meta = CatalogUtil.newTableMeta(storeType);
+    Path tablePath = new Path(testDir, "Seekable.data");
+    FileAppender appender = (FileAppender) StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema,
+        tablePath);
+    appender.enableStats();
+    appender.init();
+    int tupleNum = 100000;
+    VTuple vTuple;
+
+    List<Long> offsets = Lists.newArrayList();
+    offsets.add(0L);
+    for (int i = 0; i < tupleNum; i++) {
+      vTuple = new VTuple(3);
+      vTuple.put(0, DatumFactory.createInt4(i + 1));
+      vTuple.put(1, DatumFactory.createInt8(25l));
+      vTuple.put(2, DatumFactory.createText("test"));
+      appender.addTuple(vTuple);
+
+      // find a seek position
+      if (i % (tupleNum / 3) == 0) {
+        offsets.add(appender.getOffset());
+      }
+    }
+
+    // end of file
+    if (!offsets.contains(appender.getOffset())) {
+      offsets.add(appender.getOffset());
+    }
+
+    appender.close();
+    if (statsable) {
+      TableStats stat = appender.getStats();
+      assertEquals(tupleNum, stat.getNumRows().longValue());
+    }
+
+    FileStatus status = fs.getFileStatus(tablePath);
+    assertEquals(status.getLen(), appender.getOffset());
+
+    Scanner scanner;
+    int tupleCnt = 0;
+    long prevOffset = 0;
+    long readBytes = 0;
+    long readRows = 0;
+    for (long offset : offsets) {
+      scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema,
+          new FileFragment("table", tablePath, prevOffset, offset - prevOffset), schema);
+      scanner.init();
+
+      OffHeapRowBlock rowBlock = new OffHeapRowBlock(schema, 64 * StorageUnit.KB);
+      rowBlock.setMaxRow(1024);
+
+      while (scanner.nextFetch(rowBlock)) {
+        tupleCnt += rowBlock.rows();
+      }
+      scanner.close();
+
+      if (statsable) {
+        readBytes += scanner.getInputStats().getNumBytes();
+        readRows += scanner.getInputStats().getNumRows();
+      }
+      prevOffset = offset;
+      rowBlock.release();
+    }
+
+    assertEquals(tupleNum, tupleCnt);
+    if (statsable) {
+      assertEquals(appender.getStats().getNumBytes().longValue(), readBytes);
+      assertEquals(appender.getStats().getNumRows().longValue(), readRows);
+    }
+  }
 }

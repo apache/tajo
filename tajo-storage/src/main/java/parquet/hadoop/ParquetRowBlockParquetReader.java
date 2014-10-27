@@ -24,6 +24,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
 import org.apache.tajo.tuple.offheap.RowWriter;
 import parquet.filter.UnboundRecordFilter;
@@ -154,41 +155,43 @@ public class ParquetRowBlockParquetReader implements Closeable {
 
             if (values[actualId] != null) {
               switch (tajoTypes[actualId]) {
-              case BOOLEAN:
-                writer.putBool((Boolean) values[actualId]);
-                break;
-              case CHAR:
-                writer.putText(((Binary) values[actualId]).getBytes());
-                break;
-              case INT1:
-              case INT2:
-                writer.putInt2((Short) values[actualId]);
-                break;
-              case INT4:
-              case INET4:
-              case DATE:
-                 writer.putInt4((Integer) values[actualId]);
-                break;
-              case INT8:
-              case TIMESTAMP:
-              case TIME:
-                writer.putInt8((Long) values[actualId]);
-                break;
-              case FLOAT4:
-                writer.putFloat4((Float) values[actualId]);
-                break;
-              case FLOAT8:
-                writer.putFloat8((Double) values[actualId]);
-                break;
-              case TEXT:
-                writer.putText(((Binary) values[actualId]).getBytes());
-                break;
-              case BLOB:
-                writer.putBlob(((Binary) values[actualId]).getBytes());
-                break;
-
-              default:
-                throw new IOException("Not supported type: " + tajoTypes[actualId].name());
+                case BOOLEAN:
+                  writer.putBool((Boolean) values[actualId]);
+                  break;
+                case CHAR:
+                  writer.putText(((Binary) values[actualId]).getBytes());
+                  break;
+                case INT1:
+                case INT2:
+                  writer.putInt2((Short) values[actualId]);
+                  break;
+                case INT4:
+                case INET4:
+                case DATE:
+                  writer.putInt4((Integer) values[actualId]);
+                  break;
+                case INT8:
+                case TIMESTAMP:
+                case TIME:
+                  writer.putInt8((Long) values[actualId]);
+                  break;
+                case FLOAT4:
+                  writer.putFloat4((Float) values[actualId]);
+                  break;
+                case FLOAT8:
+                  writer.putFloat8((Double) values[actualId]);
+                  break;
+                case TEXT:
+                  writer.putText(((Binary) values[actualId]).getBytes());
+                  break;
+                case BLOB:
+                  writer.putBlob(((Binary) values[actualId]).getBytes());
+                  break;
+                case PROTOBUF:
+                  writer.putProtoDatum((ProtobufDatum)values[actualId]);
+                  break;
+                default:
+                  throw new IOException("Not supported type: " + tajoTypes[actualId].name());
               }
             } else {
               writer.skipField();
