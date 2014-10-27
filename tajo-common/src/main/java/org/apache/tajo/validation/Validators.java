@@ -70,4 +70,8 @@ public class Validators {
     return new ClassValidator();
   }
   
+  public static Validator javaString() {
+    return new JavaStringValidator();
+  }
+  
 }

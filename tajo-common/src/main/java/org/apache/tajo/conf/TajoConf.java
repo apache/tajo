@@ -24,13 +24,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ConfigKey;
-import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.NumberUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.datetime.DateTimeConstants;
-import org.apache.tajo.validation.ConstraintViolationException;
 import org.apache.tajo.validation.Validator;
 import org.apache.tajo.validation.Validators;
 
@@ -38,9 +35,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.util.Map;
-import java.util.Properties;
 import java.util.TimeZone;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -51,7 +46,6 @@ public class TajoConf extends Configuration {
   private static final ReentrantReadWriteLock confLock = new ReentrantReadWriteLock();
   private static final Lock writeLock = confLock.writeLock();
   private static final Lock readLock = confLock.readLock();
-  private final AtomicBoolean isReloaded = new AtomicBoolean(true);
   
   private static final Map<String, ConfVars> vars = TUtil.newHashMap();
 
@@ -159,7 +153,7 @@ public class TajoConf extends Configuration {
     ROOT_DIR("tajo.rootdir", "file:///tmp/tajo-${user.name}/", 
         Validators.groups(Validators.notNull(), Validators.pathUrl())),
     USERNAME("tajo.username", "${user.name}", 
-        Validators.groups(Validators.notNull(), Validators.shellVar())),
+        Validators.groups(Validators.notNull(), Validators.javaString())),
 
     // Configurable System Directories
     WAREHOUSE_DIR("tajo.warehouse.directory", EMPTY_VALUE, Validators.pathUrl()),
@@ -387,6 +381,7 @@ public class TajoConf extends Configuration {
     public final boolean defaultBoolVal;
 
     private final VarType type;
+    private Validator validator;
 
     ConfVars(String varname, String defaultVal) {
       this.varname = varname;
@@ -690,60 +685,6 @@ public class TajoConf extends Configuration {
     } else {
       return new Path(systemConfPathStr);
     }
-  }
-  
-  private void validateProperty(String name, String value) throws ConstraintViolationException {
-    ConfigKey configKey = null;
-    
-    configKey = TajoConf.getConfVars(name);
-    if (configKey == null) {
-      configKey = SessionVars.get(name);
-    }
-    
-    if (configKey != null && configKey.validator() != null && configKey.valueClass() != null) {
-      Object valueObj = value;
-      if (Number.class.isAssignableFrom(configKey.valueClass())) {
-        valueObj = NumberUtil.numberValue(configKey.valueClass(), value);
-        if (valueObj == null) {
-          return;
-        }
-      }
-      
-      configKey.validator().validate(valueObj, true);
-    }
-  }
-
-  @Override
-  protected synchronized Properties getProps() {
-    Properties properties = super.getProps();
-    
-    if (isReloaded.getAndSet(false)) {
-      
-      for (String key: properties.stringPropertyNames()) {
-        String value = properties.getProperty(key);
-        
-        validateProperty(key, value);
-      }
-    }
-    
-    return properties;
-  }
-
-  @Override
-  public synchronized void reloadConfiguration() {
-    super.reloadConfiguration();
-    isReloaded.set(true);
-  }
-
-  @Override
-  public void set(String name, String value, String source) {
-    validateProperty(name, value);
-    super.set(name, value, source);
-  }
-
-  @Override
-  public void set(String name, String value) {
-    set(name, value, null);
   }
   
 }

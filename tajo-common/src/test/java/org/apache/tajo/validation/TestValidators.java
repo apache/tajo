@@ -482,5 +482,22 @@ public class TestValidators {
     assertThat(new ClassValidator().validate(invalidClazzName), 
         hasItem(hasAClass(equalTo(ClassValidator.class))));
   }
+  
+  @Test
+  public void testStringValidator() {
+    String validAsciiString = "tajo-root900";
+    assertThat(new JavaStringValidator().validateInternal(validAsciiString), is(true));
+    assertThat(new JavaStringValidator().validate(validAsciiString).size(), is(0));
+    
+    String validMultibyteString = "타조009";
+    assertThat(new JavaStringValidator().validateInternal(validMultibyteString), is(true));
+    assertThat(new JavaStringValidator().validate(validMultibyteString).size(), is(0));
+    
+    String invalidAsciiString = "   inva - ";
+    assertThat(new JavaStringValidator().validateInternal(invalidAsciiString), is(false));
+    assertThat(new JavaStringValidator().validate(invalidAsciiString).size(), is(1));
+    assertThat(new JavaStringValidator().validate(invalidAsciiString),
+        hasItem(hasAClass(equalTo(JavaStringValidator.class))));
+  }
 
 }
