@@ -26,6 +26,7 @@ import org.apache.hadoop.net.NetUtils;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.TajoMaster;
 import org.junit.Test;
@@ -55,7 +56,7 @@ public class TestHAServiceHDFSImpl  {
     cluster.startMiniCluster(1);
 
     conf = cluster.getConfiguration();
-    client = new TajoClient(conf);
+    client = new TajoClientImpl(conf);
 
     FileSystem fs = cluster.getDefaultFileSystem();
     startBackupMasters();

@@ -20,6 +20,8 @@ package org.apache.tajo.scheduler;
 
 import org.apache.tajo.*;
 import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoClientImpl;
+import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
 import org.junit.AfterClass;
@@ -41,7 +43,7 @@ public class TestFifoScheduler {
   public static void setUp() throws Exception {
     cluster = TpchTestBase.getInstance().getTestingCluster();
     conf = cluster.getConfiguration();
-    client = new TajoClient(conf);
+    client = new TajoClientImpl(conf);
   }
 
   @AfterClass
@@ -75,7 +77,7 @@ public class TestFifoScheduler {
     cluster.waitForQueryRunning(queryId);
 
     assertEquals(TajoProtos.QueryState.QUERY_SUCCEEDED, client.getQueryStatus(queryId2).getState());
-    ResultSet resSet = TajoClient.createResultSet(client, res2);
+    ResultSet resSet = TajoClientUtil.createResultSet(conf, client, res2);
     assertNotNull(resSet);
 
     client.killQuery(queryId); //cleanup
@@ -95,7 +97,7 @@ public class TestFifoScheduler {
 
     cluster.waitForQueryRunning(queryId);
 
-    assertTrue(TajoClient.isInRunningState(client.getQueryStatus(queryId).getState()));
+    assertTrue(TajoClientUtil.isQueryRunning(client.getQueryStatus(queryId).getState()));
 
     assertEquals(TajoProtos.QueryState.QUERY_MASTER_INIT, client.getQueryStatus(queryId2).getState());
     assertEquals(TajoProtos.QueryState.QUERY_MASTER_INIT, client.getQueryStatus(queryId3).getState());

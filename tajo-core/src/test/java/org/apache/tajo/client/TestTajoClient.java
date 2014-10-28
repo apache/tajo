@@ -62,7 +62,7 @@ public class TestTajoClient {
   public static void setUp() throws Exception {
     cluster = TpchTestBase.getInstance().getTestingCluster();
     conf = cluster.getConfiguration();
-    client = new TajoClient(conf);
+    client = new TajoClientImpl(conf);
     testDir = CommonTestingUtil.getTestDir();
   }
 
@@ -658,7 +658,7 @@ public class TestTajoClient {
 
       QueryStatus queryStatus = client.getQueryStatus(queryId);
       assertNotNull(queryStatus);
-      assertTrue(TajoClient.isInCompleteState(queryStatus.getState()));
+      assertTrue(TajoClientUtil.isQueryComplete(queryStatus.getState()));
 
       TajoResultSet resultSet = (TajoResultSet) client.getQueryResult(queryId);
       assertNotNull(resultSet);

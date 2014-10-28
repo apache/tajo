@@ -27,6 +27,7 @@ import org.apache.hadoop.fs.PathFilter;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.FileScanner;
@@ -47,20 +48,20 @@ public class TajoResultSet extends TajoResultSetBase {
 
   private FileSystem fs;
   private Scanner scanner;
-  private TajoClient tajoClient;
+  private QueryClient tajoClient;
   private TajoConf conf;
   private TableDesc desc;
   private Long maxRowNum = null;
   private QueryId queryId;
   private AtomicBoolean closed = new AtomicBoolean(false);
 
-  public TajoResultSet(TajoClient tajoClient, QueryId queryId) {
+  public TajoResultSet(QueryClient tajoClient, QueryId queryId) {
     this.tajoClient = tajoClient;
     this.queryId = queryId;
     init();
   }
 
-  public TajoResultSet(TajoClient tajoClient, QueryId queryId, TajoConf conf, TableDesc table) throws IOException {
+  public TajoResultSet(QueryClient tajoClient, QueryId queryId, TajoConf conf, TableDesc table) throws IOException {
     this.tajoClient = tajoClient;
     this.queryId = queryId;
     this.conf = conf;

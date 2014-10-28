@@ -126,9 +126,9 @@ public class TajoHAAdmin {
       return;
     } else if (hostName != null && port != null) {
       tajoConf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName + ":" + port);
-      tajoClient = new TajoClient(tajoConf);
+      tajoClient = new TajoClientImpl(tajoConf);
     } else if (hostName == null && port == null) {
-      tajoClient = new TajoClient(tajoConf);
+      tajoClient = new TajoClientImpl(tajoConf);
     }
 
     if (!tajoConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
@@ -159,7 +159,7 @@ public class TajoHAAdmin {
   private void getState(Writer writer, String param) throws ParseException, IOException,
       ServiceException {
     tajoClient = TajoHAClientUtil.getTajoClient(tajoConf, tajoClient);
-    int retValue = HAServiceUtil.getState(param, tajoClient.getConf());
+    int retValue = HAServiceUtil.getState(param, tajoConf);
 
     switch (retValue) {
       case 1:
@@ -179,7 +179,7 @@ public class TajoHAAdmin {
 
   private void formatHA(Writer writer) throws ParseException, IOException,
       ServiceException {
-    int retValue = HAServiceUtil.formatHA(tajoClient.getConf());
+    int retValue = HAServiceUtil.formatHA(tajoConf);
 
     switch (retValue) {
       case 1:
