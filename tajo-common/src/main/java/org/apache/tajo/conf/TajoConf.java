@@ -351,7 +351,7 @@ public class TajoConf extends Configuration {
     $CLI_PRINT_PAUSE_NUM_RECORDS("tajo.cli.print.pause.num.records", 100),
     $CLI_PRINT_PAUSE("tajo.cli.print.pause", true),
     $CLI_PRINT_ERROR_TRACE("tajo.cli.print.error.trace", true),
-    $CLI_OUTPUT_FORMATTER_CLASS("tajo.cli.output.formatter", "org.apache.tajo.cli.DefaultTajoCliOutputFormatter"),
+    $CLI_OUTPUT_FORMATTER_CLASS("tajo.cli.output.formatter", "org.apache.tajo.cli.tsql.DefaultTajoCliOutputFormatter"),
     $CLI_ERROR_STOP("tajo.cli.error.stop", false),
 
     // Timezone & Date ----------------------------------------------------------
