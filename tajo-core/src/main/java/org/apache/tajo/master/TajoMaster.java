@@ -134,7 +134,7 @@ public class TajoMaster extends CompositeService {
   }
 
   public String getVersion() {
-    return VersionInfo.getVersion();
+    return VersionInfo.getDisplayVersion();
   }
 
   public TajoMasterClientService getTajoMasterClientService() {
