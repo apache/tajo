@@ -18,6 +18,7 @@
 
 package org.apache.tajo.validation;
 
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.*;
 
@@ -29,6 +30,7 @@ import java.util.Random;
 import java.util.UUID;
 
 import org.apache.tajo.util.TUtil;
+import org.hamcrest.CoreMatchers;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
@@ -74,7 +76,7 @@ public class TestValidators {
     assertThat(new NotNullValidator().validateInternal(testValue), is(false));
     assertThat(new NotNullValidator().validate(testValue).size(), is(1));
     assertThat(new NotNullValidator().validate(testValue),
-        hasItem(hasAClass(equalTo(NotNullValidator.class))));
+        CoreMatchers.hasItem(hasAClass(equalTo(NotNullValidator.class))));
   }
 
   @Test
@@ -87,55 +89,52 @@ public class TestValidators {
     double doubleValue;
     BigInteger bigIntegerValue;
     BigDecimal bigDecimalValue;
+
+    Matcher<Iterable<? super ConstraintViolation>> matcher =  hasItem(hasAClass(equalTo(MinValidator.class)));
     
     byteValue = 2;
     assertThat(new MinValidator(Byte.toString(Byte.MIN_VALUE)).validateInternal(byteValue), is(true));
     assertThat(new MinValidator(Byte.toString(Byte.MIN_VALUE)).validate(byteValue).size(), is(0));
     assertThat(new MinValidator(Byte.toString(Byte.MAX_VALUE)).validateInternal(byteValue), is(false));
     assertThat(new MinValidator(Byte.toString(Byte.MAX_VALUE)).validate(byteValue).size(), is(1));
-    assertThat(new MinValidator(Byte.toString(Byte.MAX_VALUE)).validate(byteValue), 
-        hasItem(hasAClass(equalTo(MinValidator.class))));
+    assertThat(new MinValidator(Byte.toString(Byte.MAX_VALUE)).validate(byteValue), matcher);
     
     shortValue = 3;
     assertThat(new MinValidator(Short.toString(Short.MIN_VALUE)).validateInternal(shortValue), is(true));
     assertThat(new MinValidator(Short.toString(Short.MIN_VALUE)).validate(shortValue).size(), is(0));
     assertThat(new MinValidator(Short.toString(Short.MAX_VALUE)).validateInternal(shortValue), is(false));
     assertThat(new MinValidator(Short.toString(Short.MAX_VALUE)).validate(shortValue).size(), is(1));
-    assertThat(new MinValidator(Short.toString(Short.MAX_VALUE)).validate(shortValue),
-        hasItem(hasAClass(equalTo(MinValidator.class))));
+    assertThat(new MinValidator(Short.toString(Short.MAX_VALUE)).validate(shortValue), matcher);
     
     intValue = 4;
     assertThat(new MinValidator(Integer.toString(Integer.MIN_VALUE)).validateInternal(intValue), is(true));
     assertThat(new MinValidator(Integer.toString(Integer.MIN_VALUE)).validate(intValue).size(), is(0));
     assertThat(new MinValidator(Integer.toString(Integer.MAX_VALUE)).validateInternal(intValue), is(false));
     assertThat(new MinValidator(Integer.toString(Integer.MAX_VALUE)).validate(intValue).size(), is(1));
-    assertThat(new MinValidator(Integer.toString(Integer.MAX_VALUE)).validate(intValue),
-        hasItem(hasAClass(equalTo(MinValidator.class))));
+    assertThat(new MinValidator(Integer.toString(Integer.MAX_VALUE)).validate(intValue), matcher);
     
     longValue = 5;
     assertThat(new MinValidator(Long.toString(Long.MIN_VALUE)).validateInternal(longValue), is(true));
     assertThat(new MinValidator(Long.toString(Long.MIN_VALUE)).validate(longValue).size(), is(0));
     assertThat(new MinValidator(Long.toString(Long.MAX_VALUE)).validateInternal(longValue), is(false));
     assertThat(new MinValidator(Long.toString(Long.MAX_VALUE)).validate(longValue).size(), is(1));
-    assertThat(new MinValidator(Long.toString(Long.MAX_VALUE)).validate(longValue),
-        hasItem(hasAClass(equalTo(MinValidator.class))));
+    assertThat(new MinValidator(Long.toString(Long.MAX_VALUE)).validate(longValue), matcher);
     
     floatValue = 4.7f;
     assertThat(new MinValidator(Float.toString(Float.MIN_VALUE)).validateInternal(floatValue), is(true));
     assertThat(new MinValidator(Float.toString(Float.MIN_VALUE)).validate(floatValue).size(), is(0));
     assertThat(new MinValidator(Float.toString(Float.MAX_VALUE)).validateInternal(floatValue), is(false));
     assertThat(new MinValidator(Float.toString(Float.MAX_VALUE)).validate(floatValue).size(), is(1));
-    assertThat(new MinValidator(Float.toString(Float.MAX_VALUE)).validate(floatValue),
-        hasItem(hasAClass(equalTo(MinValidator.class))));
+    assertThat(new MinValidator(Float.toString(Float.MAX_VALUE)).validate(floatValue), matcher);
     
     doubleValue = 7.5e10;
     assertThat(new MinValidator(Double.toString(Double.MIN_VALUE)).validateInternal(doubleValue), is(true));
     assertThat(new MinValidator(Double.toString(Double.MIN_VALUE)).validate(doubleValue).size(), is(0));
     assertThat(new MinValidator(Double.toString(Double.MAX_VALUE)).validateInternal(doubleValue), is(false));
     assertThat(new MinValidator(Double.toString(Double.MAX_VALUE)).validate(doubleValue).size(), is(1));
-    assertThat(new MinValidator(Double.toString(Double.MAX_VALUE)).validate(doubleValue),
-        hasItem(hasAClass(equalTo(MinValidator.class))));
-    
+    assertThat(new MinValidator(Double.toString(Double.MAX_VALUE)).validate(doubleValue), matcher);
+
+
     bigIntegerValue = new BigInteger(10, new Random());
     assertThat(new MinValidator(new BigInteger(Long.toString(Long.MIN_VALUE)).toString(10))
       .validateInternal(bigIntegerValue), is(true));
@@ -146,7 +145,7 @@ public class TestValidators {
     assertThat(new MinValidator(new BigInteger(Long.toString(Long.MAX_VALUE)).toString(10))
       .validate(bigIntegerValue).size(), is(1));
     assertThat(new MinValidator(new BigInteger(Long.toString(Long.MAX_VALUE)).toString(10))
-      .validate(bigIntegerValue), hasItem(hasAClass(equalTo(MinValidator.class))));
+      .validate(bigIntegerValue), matcher);
     
     bigDecimalValue = new BigDecimal(new BigInteger(10, new Random()), MathContext.DECIMAL64);
     assertThat(new MinValidator(new BigDecimal(Double.MIN_VALUE).toString())
@@ -158,7 +157,7 @@ public class TestValidators {
     assertThat(new MinValidator(new BigDecimal(Double.MAX_VALUE).toString())
       .validate(bigDecimalValue).size(), is(1));
     assertThat(new MinValidator(new BigDecimal(Double.MAX_VALUE).toString())
-      .validate(bigDecimalValue), hasItem(hasAClass(equalTo(MinValidator.class))));
+      .validate(bigDecimalValue), matcher);
   }
   
   @Test
@@ -171,54 +170,50 @@ public class TestValidators {
     double doubleValue;
     BigInteger bigIntegerValue;
     BigDecimal bigDecimalValue;
-    
+
+    Matcher<Iterable<? super ConstraintViolation>> matcher =  hasItem(hasAClass(equalTo(MaxValidator.class)));
+
     byteValue = 2;
     assertThat(new MaxValidator(Byte.toString(Byte.MAX_VALUE)).validateInternal(byteValue), is(true));
     assertThat(new MaxValidator(Byte.toString(Byte.MAX_VALUE)).validate(byteValue).size(), is(0));
     assertThat(new MaxValidator(Byte.toString(Byte.MIN_VALUE)).validateInternal(byteValue), is(false));
     assertThat(new MaxValidator(Byte.toString(Byte.MIN_VALUE)).validate(byteValue).size(), is(1));
-    assertThat(new MaxValidator(Byte.toString(Byte.MIN_VALUE)).validate(byteValue), 
-        hasItem(hasAClass(equalTo(MaxValidator.class))));
+    assertThat(new MaxValidator(Byte.toString(Byte.MIN_VALUE)).validate(byteValue), matcher);
     
     shortValue = 3;
     assertThat(new MaxValidator(Short.toString(Short.MAX_VALUE)).validateInternal(shortValue), is(true));
     assertThat(new MaxValidator(Short.toString(Short.MAX_VALUE)).validate(shortValue).size(), is(0));
     assertThat(new MaxValidator(Short.toString(Short.MIN_VALUE)).validateInternal(shortValue), is(false));
     assertThat(new MaxValidator(Short.toString(Short.MIN_VALUE)).validate(shortValue).size(), is(1));
-    assertThat(new MaxValidator(Short.toString(Short.MIN_VALUE)).validate(shortValue),
-        hasItem(hasAClass(equalTo(MaxValidator.class))));
+    assertThat(new MaxValidator(Short.toString(Short.MIN_VALUE)).validate(shortValue), matcher);
     
     intValue = 4;
     assertThat(new MaxValidator(Integer.toString(Integer.MAX_VALUE)).validateInternal(intValue), is(true));
     assertThat(new MaxValidator(Integer.toString(Integer.MAX_VALUE)).validate(intValue).size(), is(0));
     assertThat(new MaxValidator(Integer.toString(Integer.MIN_VALUE)).validateInternal(intValue), is(false));
     assertThat(new MaxValidator(Integer.toString(Integer.MIN_VALUE)).validate(intValue).size(), is(1));
-    assertThat(new MaxValidator(Integer.toString(Integer.MIN_VALUE)).validate(intValue),
-        hasItem(hasAClass(equalTo(MaxValidator.class))));
+    assertThat(new MaxValidator(Integer.toString(Integer.MIN_VALUE)).validate(intValue), matcher);
     
     longValue = 5;
     assertThat(new MaxValidator(Long.toString(Long.MAX_VALUE)).validateInternal(longValue), is(true));
     assertThat(new MaxValidator(Long.toString(Long.MAX_VALUE)).validate(longValue).size(), is(0));
     assertThat(new MaxValidator(Long.toString(Long.MIN_VALUE)).validateInternal(longValue), is(false));
     assertThat(new MaxValidator(Long.toString(Long.MIN_VALUE)).validate(longValue).size(), is(1));
-    assertThat(new MaxValidator(Long.toString(Long.MIN_VALUE)).validate(longValue),
-        hasItem(hasAClass(equalTo(MaxValidator.class))));
+    assertThat(new MaxValidator(Long.toString(Long.MIN_VALUE)).validate(longValue), matcher);
     
     floatValue = 4.7f;
     assertThat(new MaxValidator(Float.toString(Float.MAX_VALUE)).validateInternal(floatValue), is(true));
     assertThat(new MaxValidator(Float.toString(Float.MAX_VALUE)).validate(floatValue).size(), is(0));
     assertThat(new MaxValidator(Float.toString(Float.MIN_VALUE)).validateInternal(floatValue), is(false));
     assertThat(new MaxValidator(Float.toString(Float.MIN_VALUE)).validate(floatValue).size(), is(1));
-    assertThat(new MaxValidator(Float.toString(Float.MIN_VALUE)).validate(floatValue),
-        hasItem(hasAClass(equalTo(MaxValidator.class))));
+    assertThat(new MaxValidator(Float.toString(Float.MIN_VALUE)).validate(floatValue), matcher);
     
     doubleValue = 7.5e10;
     assertThat(new MaxValidator(Double.toString(Double.MAX_VALUE)).validateInternal(doubleValue), is(true));
     assertThat(new MaxValidator(Double.toString(Double.MAX_VALUE)).validate(doubleValue).size(), is(0));
     assertThat(new MaxValidator(Double.toString(Double.MIN_VALUE)).validateInternal(doubleValue), is(false));
     assertThat(new MaxValidator(Double.toString(Double.MIN_VALUE)).validate(doubleValue).size(), is(1));
-    assertThat(new MaxValidator(Double.toString(Double.MIN_VALUE)).validate(doubleValue),
-        hasItem(hasAClass(equalTo(MaxValidator.class))));
+    assertThat(new MaxValidator(Double.toString(Double.MIN_VALUE)).validate(doubleValue), matcher);
     
     bigIntegerValue = new BigInteger(10, new Random());
     assertThat(new MaxValidator(new BigInteger(Long.toString(Long.MAX_VALUE)).toString(10))
@@ -229,8 +224,8 @@ public class TestValidators {
       .validateInternal(bigIntegerValue), is(false));
     assertThat(new MaxValidator(new BigInteger(Long.toString(Long.MIN_VALUE)).toString(10))
       .validate(bigIntegerValue).size(), is(1));
-    assertThat(new MaxValidator(new BigInteger(Long.toString(Long.MIN_VALUE)).toString(10))
-      .validate(bigIntegerValue), hasItem(hasAClass(equalTo(MaxValidator.class))));
+    assertThat(new MaxValidator(new BigInteger(Long.toString(Long.MIN_VALUE)).toString(10)).validate(bigIntegerValue),
+        matcher);
     
     bigDecimalValue = new BigDecimal(new BigInteger(10, new Random()), MathContext.DECIMAL64);
     assertThat(new MaxValidator(new BigDecimal(Double.MAX_VALUE).toString())
@@ -241,8 +236,8 @@ public class TestValidators {
       .validateInternal(bigDecimalValue), is(false));
     assertThat(new MaxValidator(new BigDecimal(Double.MIN_VALUE).toString())
       .validate(bigDecimalValue).size(), is(1));
-    assertThat(new MaxValidator(new BigDecimal(Double.MIN_VALUE).toString())
-      .validate(bigDecimalValue), hasItem(hasAClass(equalTo(MaxValidator.class))));
+
+    assertThat(new MaxValidator(new BigDecimal(Double.MIN_VALUE).toString()).validate(bigDecimalValue), matcher);
   }
   
   @Test
@@ -252,8 +247,9 @@ public class TestValidators {
     assertThat(new PatternValidator("^([a-zA-Z])+://").validate(schemeString).size(), is(0));
     assertThat(new PatternValidator("([a-zA-Z])+://$").validateInternal(schemeString), is(false));
     assertThat(new PatternValidator("([a-zA-Z])+://$").validate(schemeString).size(), is(1));
-    assertThat(new PatternValidator("([a-zA-Z])+://$").validate(schemeString),
-        hasItem(hasAClass(equalTo(PatternValidator.class))));
+
+    Matcher<Iterable<? super ConstraintViolation>> matcher =  hasItem(hasAClass(equalTo(PatternValidator.class)));
+    assertThat(new PatternValidator("([a-zA-Z])+://$").validate(schemeString), matcher);
   }
   
   @Test
@@ -265,15 +261,14 @@ public class TestValidators {
     assertThat(new LengthValidator(10).validate(shortString).size(), is(0));
     assertThat(new LengthValidator(3).validateInternal(shortString), is(false));
     assertThat(new LengthValidator(3).validate(shortString).size(), is(1));
-    assertThat(new LengthValidator(3).validate(shortString), 
-        hasItem(hasAClass(equalTo(LengthValidator.class))));
+    Matcher<Iterable<? super ConstraintViolation>> matcher =  hasItem(hasAClass(equalTo(LengthValidator.class)));
+    assertThat(new LengthValidator(3).validate(shortString), matcher);
     
     assertThat(new LengthValidator(40).validateInternal(longString), is(true));
     assertThat(new LengthValidator(40).validate(longString).size(), is(0));
     assertThat(new LengthValidator(10).validateInternal(longString), is(false));
     assertThat(new LengthValidator(10).validate(longString).size(), is(1));
-    assertThat(new LengthValidator(10).validate(longString), 
-        hasItem(hasAClass(equalTo(LengthValidator.class))));
+    assertThat(new LengthValidator(10).validate(longString), matcher);
   }
   
   @Test
@@ -286,15 +281,16 @@ public class TestValidators {
     validators.add(new LengthValidator(255));
     assertThat(new GroupValidator(validators).validate(httpUrl).size(), is(0));
     assertThat(new GroupValidator(validators).validate("tajo").size(), is(1));
-    assertThat(new GroupValidator(validators).validate("tajo"),
-        hasItem(hasAClass(equalTo(PatternValidator.class))));
+    Matcher<Iterable<? super ConstraintViolation>> matcher1 =  hasItem(hasAClass(equalTo(PatternValidator.class)));
+    assertThat(new GroupValidator(validators).validate("tajo"),  matcher1);
     
     validators = TUtil.newHashSet();
     validators.add(new PatternValidator("^[a-zA-Z]+://"));
     validators.add(new LengthValidator(7));
     assertThat(new GroupValidator(validators).validate(httpUrl).size(), is(1));
-    assertThat(new GroupValidator(validators).validate(httpUrl),
-        hasItem(hasAClass(equalTo(LengthValidator.class))));
+
+    Matcher<Iterable<? super ConstraintViolation>> matcher2 =  hasItem(hasAClass(equalTo(LengthValidator.class)));
+    assertThat(new GroupValidator(validators).validate(httpUrl), matcher2);
   }
   
   @Test
@@ -347,14 +343,14 @@ public class TestValidators {
     String invalidUrl = "t!ef:///tmp/tajo-root";
     assertThat(new PathValidator().validateInternal(invalidUrl), is(false));
     assertThat(new PathValidator().validate(invalidUrl).size(), is(1));
-    assertThat(new PathValidator().validate(invalidUrl),
-        hasItem(hasAClass(equalTo(PathValidator.class))));
+
+    Matcher<Iterable<? super ConstraintViolation>> matcher =  hasItem(hasAClass(equalTo(PathValidator.class)));
+    assertThat(new PathValidator().validate(invalidUrl), matcher);
     
     invalidUrl = "This is not a valid url.";
     assertThat(new PathValidator().validateInternal(invalidUrl), is(false));
     assertThat(new PathValidator().validate(invalidUrl).size(), is(1));
-    assertThat(new PathValidator().validate(invalidUrl),
-        hasItem(hasAClass(equalTo(PathValidator.class))));
+    assertThat(new PathValidator().validate(invalidUrl), matcher);
   }
   
   @Test
@@ -374,8 +370,9 @@ public class TestValidators {
     String invalidVariable = "Invalid Shell Variable Name";
     assertThat(new ShellVariableValidator().validateInternal(invalidVariable), is(false));
     assertThat(new ShellVariableValidator().validate(invalidVariable).size(), is(1));
-    assertThat(new ShellVariableValidator().validate(invalidVariable),
-        hasItem(hasAClass(equalTo(ShellVariableValidator.class))));
+
+    Matcher<Iterable<? super ConstraintViolation>> matcher =  hasItem(hasAClass(equalTo(ShellVariableValidator.class)));
+    assertThat(new ShellVariableValidator().validate(invalidVariable), matcher);
   }
   
   @Test
@@ -415,20 +412,19 @@ public class TestValidators {
     String invalidNetAddr = "5000";
     assertThat(new NetworkAddressValidator().validateInternal(invalidNetAddr), is(false));
     assertThat(new NetworkAddressValidator().validate(invalidNetAddr).size(), is(1));
-    assertThat(new NetworkAddressValidator().validate(invalidNetAddr),
-        hasItem(hasAClass(equalTo(NetworkAddressValidator.class))));
+
+    Matcher<Iterable<? super ConstraintViolation>> matcher = hasItem(hasAClass(equalTo(NetworkAddressValidator.class)));
+    assertThat(new NetworkAddressValidator().validate(invalidNetAddr), matcher);
     
     invalidNetAddr = "192.168.:";
     assertThat(new NetworkAddressValidator().validateInternal(invalidNetAddr), is(false));
     assertThat(new NetworkAddressValidator().validate(invalidNetAddr).size(), is(1));
-    assertThat(new NetworkAddressValidator().validate(invalidNetAddr),
-        hasItem(hasAClass(equalTo(NetworkAddressValidator.class))));
+    assertThat(new NetworkAddressValidator().validate(invalidNetAddr), matcher);
     
     invalidNetAddr = "localhost:98765";
     assertThat(new NetworkAddressValidator().validateInternal(invalidNetAddr), is(false));
     assertThat(new NetworkAddressValidator().validate(invalidNetAddr).size(), is(1));
-    assertThat(new NetworkAddressValidator().validate(invalidNetAddr),
-        hasItem(hasAClass(equalTo(NetworkAddressValidator.class))));
+    assertThat(new NetworkAddressValidator().validate(invalidNetAddr), matcher);
   }
   
   @Test
@@ -450,20 +446,19 @@ public class TestValidators {
     String invalidBoolean = "yes";
     assertThat(new BooleanValidator().validateInternal(invalidBoolean), is(false));
     assertThat(new BooleanValidator().validate(invalidBoolean).size(), is(1));
-    assertThat(new BooleanValidator().validate(invalidBoolean), 
-        hasItem(hasAClass(equalTo(BooleanValidator.class))));
+
+    Matcher<Iterable<? super ConstraintViolation>> matcher = hasItem(hasAClass(equalTo(BooleanValidator.class)));
+    assertThat(new BooleanValidator().validate(invalidBoolean), matcher);
     
     invalidBoolean = "nope";
     assertThat(new BooleanValidator().validateInternal(invalidBoolean), is(false));
     assertThat(new BooleanValidator().validate(invalidBoolean).size(), is(1));
-    assertThat(new BooleanValidator().validate(invalidBoolean), 
-        hasItem(hasAClass(equalTo(BooleanValidator.class))));
+    assertThat(new BooleanValidator().validate(invalidBoolean), matcher);
     
     invalidBoolean = "invalid";
     assertThat(new BooleanValidator().validateInternal(invalidBoolean), is(false));
     assertThat(new BooleanValidator().validate(invalidBoolean).size(), is(1));
-    assertThat(new BooleanValidator().validate(invalidBoolean), 
-        hasItem(hasAClass(equalTo(BooleanValidator.class))));
+    assertThat(new BooleanValidator().validate(invalidBoolean), matcher);
   }
   
   @Test
@@ -479,8 +474,9 @@ public class TestValidators {
     String invalidClazzName = "invalid-.class.name";
     assertThat(new ClassValidator().validateInternal(invalidClazzName), is(false));
     assertThat(new ClassValidator().validate(invalidClazzName).size(), is(1));
-    assertThat(new ClassValidator().validate(invalidClazzName), 
-        hasItem(hasAClass(equalTo(ClassValidator.class))));
+
+    Matcher<Iterable<? super ConstraintViolation>> matcher = hasItem(hasAClass(equalTo(ClassValidator.class)));
+    assertThat(new ClassValidator().validate(invalidClazzName), matcher);
   }
   
   @Test
@@ -496,8 +492,9 @@ public class TestValidators {
     String invalidAsciiString = "   inva - ";
     assertThat(new JavaStringValidator().validateInternal(invalidAsciiString), is(false));
     assertThat(new JavaStringValidator().validate(invalidAsciiString).size(), is(1));
-    assertThat(new JavaStringValidator().validate(invalidAsciiString),
-        hasItem(hasAClass(equalTo(JavaStringValidator.class))));
+
+    Matcher<Iterable<? super ConstraintViolation>> matcher = hasItem(hasAClass(equalTo(JavaStringValidator.class)));
+    assertThat(new JavaStringValidator().validate(invalidAsciiString), matcher);
   }
 
 }
