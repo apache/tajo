@@ -18,8 +18,6 @@
 
 package org.apache.tajo;
 
-import org.apache.tajo.validation.Validator;
-
 public interface ConfigKey {
 
   // Client can set or change variables of this mode.
@@ -51,8 +49,4 @@ public interface ConfigKey {
   public String keyname();
 
   public ConfigType type();
-  
-  public Class<?> valueClass();
-  
-  public Validator validator();
 }
