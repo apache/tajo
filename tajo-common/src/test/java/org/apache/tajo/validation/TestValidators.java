@@ -18,13 +18,15 @@
 
 package org.apache.tajo.validation;
 
-import static org.junit.Assert.*;
 import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Random;
 import java.util.UUID;
 
@@ -62,9 +64,48 @@ public class TestValidators {
     
   }
   
-  private <T extends Validator> Matcher<? super ConstraintViolation> 
-      hasAClass(Matcher<Class<T>> matcher) {
+  private class CollectionMatcher<T> extends TypeSafeDiagnosingMatcher<Iterable<? extends T>> {
+    
+    private final Matcher<? extends T> matcher;
+    
+    public CollectionMatcher(Matcher<? extends T> matcher) {
+      this.matcher = matcher;
+    }
+
+    @Override
+    public void describeTo(Description description) {
+      description.appendText("a collection containing ").appendDescriptionOf(this.matcher);
+    }
+
+    @Override
+    protected boolean matchesSafely(Iterable<? extends T> item, Description mismatchDescription) {
+      boolean isFirst = true;
+      Iterator<? extends T> iterator = item.iterator();
+      
+      while (iterator.hasNext()) {
+        T obj = iterator.next();
+        if (this.matcher.matches(obj)) {
+          return true;
+        }
+        
+        if (!isFirst) {
+          mismatchDescription.appendText(", ");
+        }
+        
+        this.matcher.describeMismatch(obj, mismatchDescription);
+        isFirst = false;
+      }
+      return false;
+    }
+    
+  }
+  
+  private <T extends Validator> Matcher<? super ConstraintViolation> hasAClass(Matcher<Class<T>> matcher) {
     return new ValidatorClazzMatcher<T>(matcher);
+  }
+  
+  private <T> Matcher<Iterable<? extends T>> hasItem(Matcher<? extends T> matcher) {
+    return new CollectionMatcher<T>(matcher);
   }
   
   @Test

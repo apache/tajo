@@ -21,7 +21,7 @@ package org.apache.tajo.validation;
 public class JavaStringValidator extends PatternValidator {
 
   public JavaStringValidator() {
-    super("^(?sU:\\p{Graph})+$");
+    super("^[\\p{Graph}\\p{L}]+$");
   }
   
   @Override
