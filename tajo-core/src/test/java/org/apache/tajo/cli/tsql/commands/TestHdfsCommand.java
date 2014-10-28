@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli;
+package org.apache.tajo.cli.tsql.commands;
 
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.cli.tsql.TajoCli;
@@ -24,22 +24,24 @@ import org.apache.tajo.conf.TajoConf;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 
 import static org.junit.Assert.assertEquals;
 
-public class TestExecExternalShellCommand {
+public class TestHdfsCommand {
   @Test
-  public void testCommand() throws Exception {
+  public void testHdfCommand() throws Exception {
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
 
+    System.setOut(new PrintStream(out));
+    System.setErr(new PrintStream(out));
     TajoCli cli = new TajoCli(tajoConf, new String[]{}, null, out);
 
-    cli.executeMetaCommand("\\! echo \"this is test\"");
+    cli.executeMetaCommand("\\dfs -test");
     String consoleResult = new String(out.toByteArray());
-    assertEquals("this is test\n", consoleResult);
-
-    assertEquals(-1, cli.executeMetaCommand("\\! error_command"));
+    assertEquals("-test: Not enough arguments: expected 1 but got 0\n" +
+        "Usage: hadoop fs [generic options] -test -[defsz] <path>\n", consoleResult);
   }
 }

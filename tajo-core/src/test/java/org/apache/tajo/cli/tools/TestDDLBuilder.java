@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client;
+package org.apache.tajo.cli.tools;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.compress.GzipCodec;

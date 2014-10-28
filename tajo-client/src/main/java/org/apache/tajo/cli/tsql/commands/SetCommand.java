@@ -51,7 +51,7 @@ public class SetCommand extends TajoShellCommand {
     client.updateSessionVariables(variables);
   }
 
-  void set(String key, String val) throws ServiceException {
+  public void set(String key, String val) throws ServiceException {
     SessionVars sessionVar = null;
 
     if (SessionVars.exists(key)) { // if the variable is one of the session variables

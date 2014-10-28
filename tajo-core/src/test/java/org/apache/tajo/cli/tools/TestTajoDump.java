@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client;
+package org.apache.tajo.cli.tools;
 
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.tajo.QueryTestCaseBase;
