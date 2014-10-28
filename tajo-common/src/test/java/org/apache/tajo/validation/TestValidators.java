@@ -75,8 +75,8 @@ public class TestValidators {
     
     assertThat(new NotNullValidator().validateInternal(testValue), is(false));
     assertThat(new NotNullValidator().validate(testValue).size(), is(1));
-    assertThat(new NotNullValidator().validate(testValue),
-        CoreMatchers.hasItem(hasAClass(equalTo(NotNullValidator.class))));
+    Matcher<Iterable<? super ConstraintViolation>> matcher =  hasItem(hasAClass(equalTo(NotNullValidator.class)));
+    assertThat(new NotNullValidator().validate(testValue), matcher);
   }
 
   @Test
