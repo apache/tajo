@@ -18,9 +18,6 @@
 
 package org.apache.tajo.util;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-
 public class NumberUtil {
 
   public static final double[] powersOf10 = {	/* Table giving binary powers of 10.  Entry */
@@ -410,23 +407,5 @@ public class NumberUtil {
       }
     }
     return result;
-  }
-  
-  public static Number numberValue(Class<?> numberClazz, String value) {
-    Number returnNumber = null;
-    
-    if (numberClazz == null && value == null) {
-      return returnNumber;
-    }
-    
-    if (Number.class.isAssignableFrom(numberClazz)) {
-      try {
-        Constructor<?> constructor = numberClazz.getConstructor(String.class);
-        returnNumber = (Number) constructor.newInstance(value);
-      } catch (Exception ignored) {   
-      }
-    }
-    
-    return returnNumber;
   }
 }
