@@ -16,12 +16,34 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client;
+package org.apache.tajo.validation;
 
-import org.apache.tajo.annotation.ThreadSafe;
+import java.util.Collection;
 
-import java.io.Closeable;
+public class GroupValidator extends AbstractValidator {
+  
+  private final Collection<Validator> dependants;
+  
+  public GroupValidator(Collection<Validator> validators) {
+    if (validators.size() == 0) {
+      throw new IllegalArgumentException("Needs at least 1 or more validators.");
+    }
+    this.dependants = validators;
+  }
 
-@ThreadSafe
-public interface TajoClient extends QueryClient, CatalogAdminClient, Closeable {
+  @Override
+  protected <T> String getErrorMessage(T object) {
+    return "";
+  }
+
+  @Override
+  protected <T> boolean validateInternal(T object) {
+    return true;
+  }
+
+  @Override
+  protected Collection<Validator> getDependantValidators() {
+    return dependants;
+  }
+
 }

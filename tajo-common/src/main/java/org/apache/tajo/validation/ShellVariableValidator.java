@@ -16,12 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client;
+package org.apache.tajo.validation;
 
-import org.apache.tajo.annotation.ThreadSafe;
+public class ShellVariableValidator extends PatternValidator {
 
-import java.io.Closeable;
+  public ShellVariableValidator() {
+    super("^[\\\\$]?[\\\\{]?[a-zA-Z0-9.]+[\\\\}]?$");
+  }
 
-@ThreadSafe
-public interface TajoClient extends QueryClient, CatalogAdminClient, Closeable {
+  @Override
+  protected <T> String getErrorMessage(T object) {
+    return object + " is not a valid shell variable";
+  }
+
 }

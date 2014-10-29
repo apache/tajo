@@ -104,9 +104,9 @@ public class TajoDump {
       System.exit(-1);
     } else if (hostName != null && port != null) {
       conf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName+":"+port);
-      client = new TajoClient(conf);
+      client = new TajoClientImpl(conf);
     } else {
-      client = new TajoClient(conf);
+      client = new TajoClientImpl(conf);
     }
 
     PrintWriter writer = new PrintWriter(System.out);

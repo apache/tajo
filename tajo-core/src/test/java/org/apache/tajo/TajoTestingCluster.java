@@ -35,6 +35,8 @@ import org.apache.hadoop.yarn.server.resourcemanager.ResourceManager;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoClientImpl;
+import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.master.TajoMaster;
@@ -583,7 +585,7 @@ public class TajoTestingCluster {
       Thread.sleep(1000);
     }
     TajoConf conf = util.getConfiguration();
-    return new TajoClient(conf);
+    return new TajoClientImpl(conf);
   }
 
   public static ResultSet run(String[] names,
@@ -620,7 +622,7 @@ public class TajoTestingCluster {
       Thread.sleep(1000);
     }
     TajoConf conf = util.getConfiguration();
-    TajoClient client = new TajoClient(conf);
+    TajoClient client = new TajoClientImpl(conf);
 
     try {
       return run(names, schemas, tableOption, tables, query, client);
@@ -645,7 +647,7 @@ public class TajoTestingCluster {
       Thread.sleep(1000);
     }
     TajoConf conf = util.getConfiguration();
-    TajoClient client = new TajoClient(conf);
+    TajoClient client = new TajoClientImpl(conf);
     try {
       FileSystem fs = util.getDefaultFileSystem();
       Path rootDir = util.getMaster().
@@ -721,7 +723,7 @@ public class TajoTestingCluster {
     QueryMasterTask qmt = null;
 
     int i = 0;
-    while (qmt == null || TajoClient.isInPreNewState(qmt.getState())) {
+    while (qmt == null || TajoClientUtil.isQueryWaitingForSchedule(qmt.getState())) {
       try {
         Thread.sleep(delay);
         if(qmt == null){

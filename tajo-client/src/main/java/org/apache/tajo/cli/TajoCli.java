@@ -21,17 +21,13 @@ package org.apache.tajo.cli;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ServiceException;
-
 import jline.UnsupportedTerminal;
 import jline.console.ConsoleReader;
-
 import org.apache.commons.cli.*;
 import org.apache.tajo.*;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.client.QueryStatus;
-import org.apache.tajo.client.TajoClient;
-import org.apache.tajo.client.TajoHAClientUtil;
+import org.apache.tajo.client.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos;
@@ -233,9 +229,9 @@ public class TajoCli {
       throw new RuntimeException("cannot find valid Tajo server address");
     } else if (hostName != null && port != null) {
       conf.setVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName+":"+port);
-      client = new TajoClient(conf, baseDatabase);
+      client = new TajoClientImpl(conf, baseDatabase);
     } else if (hostName == null && port == null) {
-      client = new TajoClient(conf, baseDatabase);
+      client = new TajoClientImpl(conf, baseDatabase);
     }
 
     try {
@@ -565,7 +561,7 @@ public class TajoCli {
       if (response.getMaxRowNum() < 0 && queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
         displayFormatter.printResult(sout, sin, desc, responseTime, res);
       } else {
-        res = TajoClient.createResultSet(client, response);
+        res = TajoClientUtil.createResultSet(conf, client, response);
         displayFormatter.printResult(sout, sin, desc, responseTime, res);
       }
     } catch (Throwable t) {
@@ -597,17 +593,17 @@ public class TajoCli {
       while (true) {
         // TODO - configurable
         status = client.getQueryStatus(queryId);
-        if(TajoClient.isInPreNewState(status.getState())) {
+        if(TajoClientUtil.isQueryWaitingForSchedule(status.getState())) {
           Thread.sleep(Math.min(20 * initRetries, 1000));
           initRetries++;
           continue;
         }
 
-        if (TajoClient.isInRunningState(status.getState()) || status.getState() == QueryState.QUERY_SUCCEEDED) {
+        if (TajoClientUtil.isQueryRunning(status.getState()) || status.getState() == QueryState.QUERY_SUCCEEDED) {
           displayFormatter.printProgress(sout, status);
         }
 
-        if (TajoClient.isInCompleteState(status.getState()) && status.getState() != QueryState.QUERY_KILL_WAIT) {
+        if (TajoClientUtil.isQueryComplete(status.getState()) && status.getState() != QueryState.QUERY_KILL_WAIT) {
           break;
         } else {
           Thread.sleep(Math.min(200 * progressRetries, 1000));
@@ -626,7 +622,7 @@ public class TajoCli {
           float responseTime = ((float)(status.getFinishTime() - status.getSubmitTime()) / 1000.0f);
           ClientProtos.GetQueryResultResponse response = client.getResultResponse(queryId);
           if (status.hasResult()) {
-            res = TajoClient.createResultSet(client, queryId, response);
+            res = TajoClientUtil.createResultSet(conf, client, queryId, response);
             TableDesc desc = new TableDesc(response.getTableDesc());
             displayFormatter.printResult(sout, sin, desc, responseTime, res);
           } else {

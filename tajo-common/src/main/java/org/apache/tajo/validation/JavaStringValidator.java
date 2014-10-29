@@ -16,12 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client;
+package org.apache.tajo.validation;
 
-import org.apache.tajo.annotation.ThreadSafe;
+public class JavaStringValidator extends PatternValidator {
 
-import java.io.Closeable;
+  public JavaStringValidator() {
+    super("^[\\p{Graph}\\p{L}]+$");
+  }
+  
+  @Override
+  protected <T> String getErrorMessage(T object) {
+    return object + " is not a valid string";
+  }
 
-@ThreadSafe
-public interface TajoClient extends QueryClient, CatalogAdminClient, Closeable {
 }

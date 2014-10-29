@@ -24,6 +24,7 @@ import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.store.MemStore;
 import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.util.FileUtil;
@@ -43,11 +44,11 @@ public abstract class BenchmarkSet {
   public void init(TajoConf conf, String dataDir) throws IOException {
     this.dataDir = dataDir;
     if (System.getProperty(ConfVars.WORKER_PEER_RPC_ADDRESS.varname) != null) {
-      tajo = new TajoClient(NetUtils.createSocketAddr(
+      tajo = new TajoClientImpl(NetUtils.createSocketAddr(
           System.getProperty(ConfVars.WORKER_PEER_RPC_ADDRESS.varname)));
     } else {
       conf.set(CatalogConstants.STORE_CLASS, MemStore.class.getCanonicalName());
-      tajo = new TajoClient(conf);
+      tajo = new TajoClientImpl(conf);
     }
   }
 

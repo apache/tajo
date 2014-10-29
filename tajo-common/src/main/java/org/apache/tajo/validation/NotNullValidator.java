@@ -16,12 +16,32 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client;
+package org.apache.tajo.validation;
 
-import org.apache.tajo.annotation.ThreadSafe;
+import java.util.Collection;
+import java.util.Collections;
 
-import java.io.Closeable;
+public class NotNullValidator extends AbstractValidator {
 
-@ThreadSafe
-public interface TajoClient extends QueryClient, CatalogAdminClient, Closeable {
+  @Override
+  protected Collection<Validator> getDependantValidators() {
+    return Collections.emptySet();
+  }
+  
+  @Override
+  protected <T> String getErrorMessage(T object) {
+    return "Object is null";
+  }
+
+  @Override
+  protected <T> boolean validateInternal(T object) {
+    boolean result = false;
+    
+    if (object != null) {
+      result = true;
+    }
+    
+    return result;
+  }
+
 }
