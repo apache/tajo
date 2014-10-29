@@ -112,9 +112,9 @@ public class TajoGetConf {
       return;
     } else if (hostName != null && port != null) {
       tajoConf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName + ":" + port);
-      tajoClient = new TajoClient(tajoConf);
+      tajoClient = new TajoClientImpl(tajoConf);
     } else if (hostName == null && port == null) {
-      tajoClient = new TajoClient(tajoConf);
+      tajoClient = new TajoClientImpl(tajoConf);
     }
 
     processConfKey(writer, param);
@@ -123,13 +123,13 @@ public class TajoGetConf {
 
   private void processConfKey(Writer writer, String param) throws ParseException, IOException,
       ServiceException, SQLException {
-    String value = tajoClient.getConf().getTrimmed(param);
+    String value = tajoConf.getTrimmed(param);
 
     // If there is no value in the configuration file, we need to find all ConfVars.
     if (value == null) {
       for(TajoConf.ConfVars vars : TajoConf.ConfVars.values()) {
         if (vars.varname.equalsIgnoreCase(param)) {
-          value = tajoClient.getConf().getVar(vars);
+          value = tajoConf.getVar(vars);
           break;
         }
       }

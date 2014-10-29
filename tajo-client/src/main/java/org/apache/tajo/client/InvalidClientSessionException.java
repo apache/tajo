@@ -18,10 +18,10 @@
 
 package org.apache.tajo.client;
 
-import org.apache.tajo.annotation.ThreadSafe;
+import com.google.protobuf.ServiceException;
 
-import java.io.Closeable;
-
-@ThreadSafe
-public interface TajoClient extends QueryClient, CatalogAdminClient, Closeable {
+public class InvalidClientSessionException extends ServiceException {
+  public InvalidClientSessionException(String message) {
+    super(message);
+  }
 }

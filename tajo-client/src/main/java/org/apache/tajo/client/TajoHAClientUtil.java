@@ -71,7 +71,7 @@ public class TajoHAClientUtil {
         conf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS,
             HAServiceUtil.getMasterClientName(conf));
         client.close();
-        tajoClient = new TajoClient(conf, baseDatabase);
+        tajoClient = new TajoClientImpl(conf, baseDatabase);
 
         if (context != null && context.getCurrentDatabase() != null) {
           tajoClient.selectDatabase(context.getCurrentDatabase());

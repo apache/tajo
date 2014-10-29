@@ -19,14 +19,20 @@
 package org.apache.tajo.conf;
 
 import com.google.common.base.Preconditions;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ConfigKey;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.NumberUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.datetime.DateTimeConstants;
+import org.apache.tajo.validation.ConstraintViolationException;
+import org.apache.tajo.validation.Validator;
+import org.apache.tajo.validation.Validators;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -43,6 +49,8 @@ public class TajoConf extends Configuration {
   private static final ReentrantReadWriteLock confLock = new ReentrantReadWriteLock();
   private static final Lock writeLock = confLock.writeLock();
   private static final Lock readLock = confLock.readLock();
+  
+  private static final Map<String, ConfVars> vars = TUtil.newHashMap();
 
   static {
     Configuration.addDefaultResource("catalog-default.xml");
@@ -53,11 +61,13 @@ public class TajoConf extends Configuration {
     Configuration.addDefaultResource("tajo-site.xml");
 
     confStaticInit();
+    
+    for (ConfVars confVars: ConfVars.values()) {
+      vars.put(confVars.keyname(), confVars);
+    }
   }
 
   private static final String EMPTY_VALUE = "";
-
-  private static final Map<String, ConfVars> vars = TUtil.newHashMap();
 
   public TajoConf() {
     super();
@@ -143,54 +153,61 @@ public class TajoConf extends Configuration {
     ///////////////////////////////////////////////////////////////////////////////////////
 
     // a username for a running Tajo cluster
-    ROOT_DIR("tajo.rootdir", "file:///tmp/tajo-${user.name}/"),
-    USERNAME("tajo.username", "${user.name}"),
+    ROOT_DIR("tajo.rootdir", "file:///tmp/tajo-${user.name}/", 
+        Validators.groups(Validators.notNull(), Validators.pathUrl())),
+    USERNAME("tajo.username", "${user.name}", 
+        Validators.groups(Validators.notNull(), Validators.javaString())),
 
     // Configurable System Directories
-    WAREHOUSE_DIR("tajo.warehouse.directory", EMPTY_VALUE),
-    STAGING_ROOT_DIR("tajo.staging.directory", "/tmp/tajo-${user.name}/staging"),
+    WAREHOUSE_DIR("tajo.warehouse.directory", EMPTY_VALUE, Validators.pathUrl()),
+    STAGING_ROOT_DIR("tajo.staging.directory", "/tmp/tajo-${user.name}/staging", Validators.pathUrl()),
 
-    SYSTEM_CONF_PATH("tajo.system-conf.path", EMPTY_VALUE),
-    SYSTEM_CONF_REPLICA_COUNT("tajo.system-conf.replica-count", 20),
+    SYSTEM_CONF_PATH("tajo.system-conf.path", EMPTY_VALUE, Validators.pathUrl()),
+    SYSTEM_CONF_REPLICA_COUNT("tajo.system-conf.replica-count", 20, Validators.min("1")),
 
     // Tajo Master Service Addresses
-    TAJO_MASTER_UMBILICAL_RPC_ADDRESS("tajo.master.umbilical-rpc.address", "localhost:26001"),
-    TAJO_MASTER_CLIENT_RPC_ADDRESS("tajo.master.client-rpc.address", "localhost:26002"),
-    TAJO_MASTER_INFO_ADDRESS("tajo.master.info-http.address", "0.0.0.0:26080"),
+    TAJO_MASTER_UMBILICAL_RPC_ADDRESS("tajo.master.umbilical-rpc.address", "localhost:26001",
+        Validators.networkAddr()),
+    TAJO_MASTER_CLIENT_RPC_ADDRESS("tajo.master.client-rpc.address", "localhost:26002",
+        Validators.networkAddr()),
+    TAJO_MASTER_INFO_ADDRESS("tajo.master.info-http.address", "0.0.0.0:26080", Validators.networkAddr()),
 
     // Tajo Master HA Configurations
-    TAJO_MASTER_HA_ENABLE("tajo.master.ha.enable", false),
+    TAJO_MASTER_HA_ENABLE("tajo.master.ha.enable", false, Validators.bool()),
     TAJO_MASTER_HA_MONITOR_INTERVAL("tajo.master.ha.monitor.interval", 5 * 1000), // 5 sec
 
     // Resource tracker service
-    RESOURCE_TRACKER_RPC_ADDRESS("tajo.resource-tracker.rpc.address", "localhost:26003"),
+    RESOURCE_TRACKER_RPC_ADDRESS("tajo.resource-tracker.rpc.address", "localhost:26003",
+        Validators.networkAddr()),
     RESOURCE_TRACKER_HEARTBEAT_TIMEOUT("tajo.resource-tracker.heartbeat.timeout-secs", 120 * 1000), // seconds
 
     // QueryMaster resource
-    TAJO_QUERYMASTER_DISK_SLOT("tajo.qm.resource.disk.slots", 0.0f),
-    TAJO_QUERYMASTER_MEMORY_MB("tajo.qm.resource.memory-mb", 512),
+    TAJO_QUERYMASTER_DISK_SLOT("tajo.qm.resource.disk.slots", 0.0f, Validators.min("0.0f")),
+    TAJO_QUERYMASTER_MEMORY_MB("tajo.qm.resource.memory-mb", 512, Validators.min("64")),
 
     // Tajo Worker Service Addresses
-    WORKER_INFO_ADDRESS("tajo.worker.info-http.address", "0.0.0.0:28080"),
-    WORKER_QM_INFO_ADDRESS("tajo.worker.qm-info-http.address", "0.0.0.0:28081"),
-    WORKER_PEER_RPC_ADDRESS("tajo.worker.peer-rpc.address", "0.0.0.0:28091"),
-    WORKER_CLIENT_RPC_ADDRESS("tajo.worker.client-rpc.address", "0.0.0.0:28092"),
-    WORKER_QM_RPC_ADDRESS("tajo.worker.qm-rpc.address", "0.0.0.0:28093"),
+    WORKER_INFO_ADDRESS("tajo.worker.info-http.address", "0.0.0.0:28080", Validators.networkAddr()),
+    WORKER_QM_INFO_ADDRESS("tajo.worker.qm-info-http.address", "0.0.0.0:28081", Validators.networkAddr()),
+    WORKER_PEER_RPC_ADDRESS("tajo.worker.peer-rpc.address", "0.0.0.0:28091", Validators.networkAddr()),
+    WORKER_CLIENT_RPC_ADDRESS("tajo.worker.client-rpc.address", "0.0.0.0:28092", Validators.networkAddr()),
+    WORKER_QM_RPC_ADDRESS("tajo.worker.qm-rpc.address", "0.0.0.0:28093", Validators.networkAddr()),
 
     // Tajo Worker Temporal Directories
-    WORKER_TEMPORAL_DIR("tajo.worker.tmpdir.locations", "/tmp/tajo-${user.name}/tmpdir"),
-    WORKER_TEMPORAL_DIR_CLEANUP("tajo.worker.tmpdir.cleanup-at-startup", false),
+    WORKER_TEMPORAL_DIR("tajo.worker.tmpdir.locations", "/tmp/tajo-${user.name}/tmpdir", 
+        Validators.pathUrl()),
+    WORKER_TEMPORAL_DIR_CLEANUP("tajo.worker.tmpdir.cleanup-at-startup", false, Validators.bool()),
 
     // Tajo Worker Resources
-    WORKER_RESOURCE_AVAILABLE_CPU_CORES("tajo.worker.resource.cpu-cores", 1),
-    WORKER_RESOURCE_AVAILABLE_MEMORY_MB("tajo.worker.resource.memory-mb", 1024),
+    WORKER_RESOURCE_AVAILABLE_CPU_CORES("tajo.worker.resource.cpu-cores", 1, Validators.min("1")),
+    WORKER_RESOURCE_AVAILABLE_MEMORY_MB("tajo.worker.resource.memory-mb", 1024, Validators.min("64")),
     WORKER_RESOURCE_AVAILABLE_DISKS("tajo.worker.resource.disks", 1.0f),
     WORKER_EXECUTION_MAX_SLOTS("tajo.worker.parallel-execution.max-num", 2),
-    WORKER_RESOURCE_DFS_DIR_AWARE("tajo.worker.resource.dfs-dir-aware", false),
+    WORKER_RESOURCE_DFS_DIR_AWARE("tajo.worker.resource.dfs-dir-aware", false, Validators.bool()),
 
     // Tajo Worker Dedicated Resources
-    WORKER_RESOURCE_DEDICATED("tajo.worker.resource.dedicated", false),
-    WORKER_RESOURCE_DEDICATED_MEMORY_RATIO("tajo.worker.resource.dedicated-memory-ratio", 0.8f),
+    WORKER_RESOURCE_DEDICATED("tajo.worker.resource.dedicated", false, Validators.bool()),
+    WORKER_RESOURCE_DEDICATED_MEMORY_RATIO("tajo.worker.resource.dedicated-memory-ratio", 0.8f, 
+        Validators.range("0.0f", "1.0f")),
 
     // Tajo Worker History
     WORKER_HISTORY_EXPIRE_PERIOD("tajo.worker.history.expire-interval-minutes", 12 * 60), // 12 hours
@@ -198,26 +215,27 @@ public class TajoConf extends Configuration {
     WORKER_HEARTBEAT_TIMEOUT("tajo.worker.heartbeat.timeout", 120 * 1000),  // 120 sec
 
     // Resource Manager
-    RESOURCE_MANAGER_CLASS("tajo.resource.manager", "org.apache.tajo.master.rm.TajoWorkerResourceManager"),
+    RESOURCE_MANAGER_CLASS("tajo.resource.manager", "org.apache.tajo.master.rm.TajoWorkerResourceManager",
+        Validators.groups(Validators.notNull(), Validators.clazz())),
 
     // Catalog
-    CATALOG_ADDRESS("tajo.catalog.client-rpc.address", "localhost:26005"),
+    CATALOG_ADDRESS("tajo.catalog.client-rpc.address", "localhost:26005", Validators.networkAddr()),
 
 
     // for Yarn Resource Manager ----------------------------------------------
 
     /** how many launching TaskRunners in parallel */
-    YARN_RM_QUERY_MASTER_MEMORY_MB("tajo.querymaster.memory-mb", 512),
+    YARN_RM_QUERY_MASTER_MEMORY_MB("tajo.querymaster.memory-mb", 512, Validators.min("64")),
     YARN_RM_QUERY_MASTER_DISKS("tajo.yarn-rm.querymaster.disks", 1),
     YARN_RM_TASKRUNNER_LAUNCH_PARALLEL_NUM("tajo.yarn-rm.parallel-task-runner-launcher-num", 16),
     YARN_RM_WORKER_NUMBER_PER_NODE("tajo.yarn-rm.max-worker-num-per-node", 8),
 
     // Query Configuration
-    QUERY_SESSION_TIMEOUT("tajo.query.session.timeout-sec", 60),
+    QUERY_SESSION_TIMEOUT("tajo.query.session.timeout-sec", 60, Validators.min("0")),
 
     // Shuffle Configuration --------------------------------------------------
-    PULLSERVER_PORT("tajo.pullserver.port", 0),
-    SHUFFLE_SSL_ENABLED_KEY("tajo.pullserver.ssl.enabled", false),
+    PULLSERVER_PORT("tajo.pullserver.port", 0, Validators.range("0", "65535")),
+    SHUFFLE_SSL_ENABLED_KEY("tajo.pullserver.ssl.enabled", false, Validators.bool()),
     SHUFFLE_FILE_FORMAT("tajo.shuffle.file-format", "RAW"),
     SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM("tajo.shuffle.fetcher.parallel-execution.max-num", 2),
     SHUFFLE_FETCHER_CHUNK_MAX_SIZE("tajo.shuffle.fetcher.chunk.max-size",  8192),
@@ -231,7 +249,7 @@ public class TajoConf extends Configuration {
     ROWFILE_SYNC_INTERVAL("rowfile.sync.interval", 100),
     MINIMUM_SPLIT_SIZE("tajo.min.split.size", (long) 1),
     // for RCFile
-    HIVEUSEEXPLICITRCFILEHEADER("tajo.exec.rcfile.use.explicit.header", true),
+    HIVEUSEEXPLICITRCFILEHEADER("tajo.exec.rcfile.use.explicit.header", true, Validators.bool()),
 
     // RPC --------------------------------------------------------------------
     RPC_POOL_MAX_IDLE("tajo.rpc.pool.idle.max", 10),
@@ -305,9 +323,9 @@ public class TajoConf extends Configuration {
     $DIST_QUERY_SORT_TASK_VOLUME("tajo.dist-query.sort.task-volume-mb", 128),
     $DIST_QUERY_GROUPBY_TASK_VOLUME("tajo.dist-query.groupby.task-volume-mb", 128),
 
-    $DIST_QUERY_JOIN_PARTITION_VOLUME("tajo.dist-query.join.partition-volume-mb", 128),
-    $DIST_QUERY_GROUPBY_PARTITION_VOLUME("tajo.dist-query.groupby.partition-volume-mb", 256),
-    $DIST_QUERY_TABLE_PARTITION_VOLUME("tajo.dist-query.table-partition.task-volume-mb", 256),
+    $DIST_QUERY_JOIN_PARTITION_VOLUME("tajo.dist-query.join.partition-volume-mb", 128, Validators.min("1")),
+    $DIST_QUERY_GROUPBY_PARTITION_VOLUME("tajo.dist-query.groupby.partition-volume-mb", 256, Validators.min("1")),
+    $DIST_QUERY_TABLE_PARTITION_VOLUME("tajo.dist-query.table-partition.task-volume-mb", 256, Validators.min("1")),
 
     $GROUPBY_MULTI_LEVEL_ENABLED("tajo.dist-query.groupby.multi-level-aggr", true),
 
@@ -366,6 +384,7 @@ public class TajoConf extends Configuration {
     public final boolean defaultBoolVal;
 
     private final VarType type;
+    private Validator validator;
 
     ConfVars(String varname, String defaultVal) {
       this.varname = varname;
@@ -376,6 +395,11 @@ public class TajoConf extends Configuration {
       this.defaultFloatVal = -1;
       this.defaultBoolVal = false;
       this.type = VarType.STRING;
+    }
+    
+    ConfVars(String varname, String defaultVal, Validator validator) {
+      this(varname, defaultVal);
+      this.validator = validator;
     }
 
     ConfVars(String varname, int defaultIntVal) {
@@ -388,6 +412,11 @@ public class TajoConf extends Configuration {
       this.defaultBoolVal = false;
       this.type = VarType.INT;
     }
+    
+    ConfVars(String varname, int defaultIntVal, Validator validator) {
+      this(varname, defaultIntVal);
+      this.validator = validator;
+    }
 
     ConfVars(String varname, long defaultLongVal) {
       this.varname = varname;
@@ -398,6 +427,11 @@ public class TajoConf extends Configuration {
       this.defaultFloatVal = -1;
       this.defaultBoolVal = false;
       this.type = VarType.LONG;
+    }
+    
+    ConfVars(String varname, long defaultLongVal, Validator validator) {
+      this(varname, defaultLongVal);
+      this.validator = validator;
     }
 
     ConfVars(String varname, float defaultFloatVal) {
@@ -410,6 +444,11 @@ public class TajoConf extends Configuration {
       this.defaultBoolVal = false;
       this.type = VarType.FLOAT;
     }
+    
+    ConfVars(String varname, float defaultFloatVal, Validator validator) {
+      this(varname, defaultFloatVal);
+      this.validator = validator;
+    }
 
     ConfVars(String varname, boolean defaultBoolVal) {
       this.varname = varname;
@@ -420,6 +459,11 @@ public class TajoConf extends Configuration {
       this.defaultFloatVal = -1;
       this.defaultBoolVal = defaultBoolVal;
       this.type = VarType.BOOLEAN;
+    }
+    
+    ConfVars(String varname, boolean defaultBoolVal, Validator validator) {
+      this(varname, defaultBoolVal);
+      this.validator = validator;
     }
 
     enum VarType {
@@ -445,6 +489,16 @@ public class TajoConf extends Configuration {
     @Override
     public ConfigType type() {
       return ConfigType.SYSTEM;
+    }
+
+    @Override
+    public Class<?> valueClass() {
+      return valClass;
+    }
+
+    @Override
+    public Validator validator() {
+      return validator;
     }
   }
 
@@ -635,4 +689,31 @@ public class TajoConf extends Configuration {
       return new Path(systemConfPathStr);
     }
   }
+  
+  /**
+   * validateProperty function will fetch pre-defined configuration property by keyname.
+   * If found, it will validate the supplied value with these validators.
+   * 
+   * @param name - a string containing specific key
+   * @param value - a string containing value
+   * @throws ConstraintViolationException
+   */
+  public void validateProperty(String name, String value) throws ConstraintViolationException {
+    ConfigKey configKey = null;
+    configKey = TajoConf.getConfVars(name);
+    if (configKey == null) {
+      configKey = SessionVars.get(name);
+    }
+    if (configKey != null && configKey.validator() != null && configKey.valueClass() != null) {
+      Object valueObj = value;
+      if (Number.class.isAssignableFrom(configKey.valueClass())) {
+        valueObj = NumberUtil.numberValue(configKey.valueClass(), value);
+        if (valueObj == null) {
+          return;
+        }
+      }
+      configKey.validator().validate(valueObj, true);
+    }
+  }
+
 }

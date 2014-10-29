@@ -16,12 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client;
+package org.apache.tajo.validation;
 
-import org.apache.tajo.annotation.ThreadSafe;
+public class PathValidator extends PatternValidator {
 
-import java.io.Closeable;
+  public PathValidator() {
+    super("^(?:[a-zA-Z][a-zA-Z0-9+-.]+:[/]{1,2}[a-zA-Z-.]*[:0-9]*)?(?:/?[a-zA-Z]:)?[/a-zA-Z0-9-_\\\\.\\\\$\\\\{\\\\}]*$");
+  }
 
-@ThreadSafe
-public interface TajoClient extends QueryClient, CatalogAdminClient, Closeable {
+  @Override
+  protected <T> String getErrorMessage(T object) {
+    return object + " is not valid path.";
+  }
+
 }

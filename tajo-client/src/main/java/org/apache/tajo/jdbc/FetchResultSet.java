@@ -20,6 +20,7 @@ package org.apache.tajo.jdbc;
 
 import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.storage.Tuple;
 
@@ -27,13 +28,13 @@ import java.io.IOException;
 import java.sql.SQLException;
 
 public class FetchResultSet extends TajoResultSetBase {
-  private TajoClient tajoClient;
+  private QueryClient tajoClient;
   private QueryId queryId;
   private int fetchRowNum;
   private TajoMemoryResultSet currentResultSet;
   private boolean finished = false;
 
-  public FetchResultSet(TajoClient tajoClient, Schema schema, QueryId queryId, int fetchRowNum) {
+  public FetchResultSet(QueryClient tajoClient, Schema schema, QueryId queryId, int fetchRowNum) {
     this.tajoClient = tajoClient;
     this.queryId = queryId;
     this.fetchRowNum = fetchRowNum;

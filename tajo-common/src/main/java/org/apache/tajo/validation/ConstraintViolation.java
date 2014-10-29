@@ -16,12 +16,32 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli;
+package org.apache.tajo.validation;
 
-import com.google.protobuf.ServiceException;
+public class ConstraintViolation {
 
-public class InvalidClientSessionException extends ServiceException {
-  public InvalidClientSessionException(String message) {
-    super(message);
+  private String message;
+  private Class<? extends Validator> validatorClazz;
+
+  public String getMessage() {
+    return message;
   }
+
+  public void setMessage(String message) {
+    this.message = message;
+  }
+
+  public Class<? extends Validator> getValidatorClazz() {
+    return validatorClazz;
+  }
+
+  public void setValidatorClazz(Class<? extends Validator> validatorClazz) {
+    this.validatorClazz = validatorClazz;
+  }
+
+  @Override
+  public String toString() {
+    return "ConstraintViolation [message=" + message + ", validatorClazz=" + validatorClazz + "]";
+  }
+  
 }

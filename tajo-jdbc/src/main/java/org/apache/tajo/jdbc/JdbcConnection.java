@@ -22,7 +22,10 @@ import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.client.CatalogAdminClient;
+import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 
@@ -35,8 +38,8 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class TajoConnection implements Connection {
-  private static Log LOG = LogFactory.getLog(TajoConnection.class);
+public class JdbcConnection implements Connection {
+  private static Log LOG = LogFactory.getLog(JdbcConnection.class);
 
   private final TajoClient tajoClient;
   private final AtomicBoolean closed = new AtomicBoolean(true);
@@ -51,7 +54,7 @@ public class TajoConnection implements Connection {
   /** it will be used soon. */
   private final Map<String, List<String>> params;
 
-  public TajoConnection(String rawURI, Properties properties) throws SQLException {
+  public JdbcConnection(String rawURI, Properties properties) throws SQLException {
     this.rawURI = rawURI;
     this.properties = properties;
 
@@ -105,7 +108,7 @@ public class TajoConnection implements Connection {
     }
 
     try {
-      tajoClient = new TajoClient(hostName, port, databaseName);
+      tajoClient = new TajoClientImpl(hostName, port, databaseName);
     } catch (Exception e) {
       throw new SQLException("Cannot create TajoClient instance:" + e.getMessage(), "TAJO-002");
     }
@@ -116,7 +119,11 @@ public class TajoConnection implements Connection {
     return this.rawURI;
   }
 
-  public TajoClient getTajoClient() {
+  public QueryClient getQueryClient() {
+    return tajoClient;
+  }
+
+  public CatalogAdminClient getCatalogAdminClient() {
     return tajoClient;
   }
 

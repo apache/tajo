@@ -21,6 +21,8 @@ package org.apache.tajo.master.querymaster;
 import org.apache.tajo.*;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoClientImpl;
+import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
 
@@ -41,7 +43,7 @@ public class TestQueryProgress {
   public static void setUp() throws Exception {
     cluster = TpchTestBase.getInstance().getTestingCluster();
     conf = cluster.getConfiguration();
-    client = new TajoClient(conf);
+    client = new TajoClientImpl(conf);
   }
 
   @AfterClass
@@ -67,7 +69,7 @@ public class TestQueryProgress {
       prevProgress = progress;
       assertTrue(progress <= 1.0f);
 
-      if (TajoClient.isInCompleteState(status.getState())) break;
+      if (TajoClientUtil.isQueryComplete(status.getState())) break;
     }
   }
 }

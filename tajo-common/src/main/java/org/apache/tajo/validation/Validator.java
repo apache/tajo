@@ -16,12 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.client;
+package org.apache.tajo.validation;
 
-import org.apache.tajo.annotation.ThreadSafe;
+import java.util.Collection;
 
-import java.io.Closeable;
+public interface Validator {
 
-@ThreadSafe
-public interface TajoClient extends QueryClient, CatalogAdminClient, Closeable {
+  public <T> Collection<ConstraintViolation> validate(T object);
+  
+  public <T> void validate(T object, boolean generateThrow);
+  
 }
