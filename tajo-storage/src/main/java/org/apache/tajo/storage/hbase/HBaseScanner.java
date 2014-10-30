@@ -65,9 +65,6 @@ public class HBaseScanner implements Scanner {
   private ColumnMapping columnMapping;
   private int[] targetIndexes;
 
-  private HBaseTextSerializerDeserializer textSerde;
-  private HBaseBinarySerializerDeserializer binarySerde;
-
   private int numRows = 0;
 
   public HBaseScanner (Configuration conf, Schema schema, TableMeta meta, Fragment fragment) throws IOException {
@@ -92,9 +89,6 @@ public class HBaseScanner implements Scanner {
         tableStats.addColumnStat(columnStats);
       }
     }
-
-    textSerde = new HBaseTextSerializerDeserializer();
-    binarySerde = new HBaseBinarySerializerDeserializer();
 
     scanFetchSize = Integer.parseInt(meta.getOption("hbase.scanner.fetch,size", "" + DEFAULT_FETCH_SZIE));
     if (targets == null) {
@@ -165,7 +159,7 @@ public class HBaseScanner implements Scanner {
 
     Result result = scanResults[scanResultIndex++];
     numRows++;
-    return new HBaseLazyTuple(columnMapping, schemaColumns, targetIndexes, textSerde, binarySerde, result);
+    return new HBaseLazyTuple(columnMapping, schemaColumns, targetIndexes, result);
   }
 
   @Override

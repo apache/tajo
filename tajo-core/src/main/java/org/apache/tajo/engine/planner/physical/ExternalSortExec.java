@@ -173,7 +173,7 @@ public class ExternalSortExec extends SortExec {
 
     long chunkWriteStart = System.currentTimeMillis();
     Path outputPath = getChunkPathForWrite(0, chunkId);
-    final RawFileAppender appender = new RawFileAppender(context.getConf(), inSchema, meta, outputPath);
+    final RawFileAppender appender = new RawFileAppender(context.getConf(), null, inSchema, meta, outputPath);
     appender.init();
     for (Tuple t : tupleBlock) {
       appender.addTuple(t);
@@ -471,7 +471,7 @@ public class ExternalSortExec extends SortExec {
       final Path outputPath = getChunkPathForWrite(level + 1, nextRunId);
       info(LOG, mergeFanout + " files are being merged to an output file " + outputPath.getName());
       long mergeStartTime = System.currentTimeMillis();
-      final RawFileAppender output = new RawFileAppender(context.getConf(), inSchema, meta, outputPath);
+      final RawFileAppender output = new RawFileAppender(context.getConf(), null, inSchema, meta, outputPath);
       output.init();
       final Scanner merger = createKWayMerger(inputFiles, startIdx, mergeFanout);
       merger.init();

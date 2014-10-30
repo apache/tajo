@@ -43,15 +43,11 @@ public class HBaseLazyTuple implements Tuple, Cloneable {
   private boolean[] isBinaryColumns;
   private int[] rowKeyFieldIndexes;
   private char rowKeyDelimiter;
-  private HBaseTextSerializerDeserializer textSerde;
-  private HBaseBinarySerializerDeserializer binarySerde;
   private Column[] schemaColumns;
 
   public HBaseLazyTuple(ColumnMapping columnMapping,
                         Column[] schemaColumns,
                         int[] targetIndexes,
-                        HBaseTextSerializerDeserializer textSerde,
-                        HBaseBinarySerializerDeserializer binarySerde,
                         Result result) {
     values = new Datum[schemaColumns.length];
     mappingColumnFamilies = columnMapping.getMappingColumns();
@@ -62,8 +58,6 @@ public class HBaseLazyTuple implements Tuple, Cloneable {
 
     this.result = result;
     this.schemaColumns = schemaColumns;
-    this.textSerde = textSerde;
-    this.binarySerde = binarySerde;
   }
 
   @Override
@@ -149,11 +143,9 @@ public class HBaseLazyTuple implements Tuple, Cloneable {
             if (entryValue != null) {
               try {
                 if (isBinaryColumns[fieldId]) {
-                  valueText = binarySerde.deserialize(
-                      schemaColumns[fieldId], entryValue, 0, entryValue.length, null).asChars();
+                  valueText = HBaseBinarySerializerDeserializer.deserialize(schemaColumns[fieldId], entryValue).asChars();
                 } else {
-                  valueText = textSerde.deserialize(
-                      schemaColumns[fieldId], entryValue, 0, entryValue.length, null).asChars();
+                  valueText = HBaseTextSerializerDeserializer.deserialize(schemaColumns[fieldId], entryValue).asChars();
                 }
               } catch (Exception e) {
                 LOG.error(e.getMessage(), e);
@@ -182,9 +174,9 @@ public class HBaseLazyTuple implements Tuple, Cloneable {
     } else {
       try {
         if (isBinaryColumns[fieldId]) {
-          values[fieldId] = binarySerde.deserialize(schemaColumns[fieldId], value, 0, value.length, null);
+          values[fieldId] = HBaseBinarySerializerDeserializer.deserialize(schemaColumns[fieldId], value);
         } else {
-          values[fieldId] = textSerde.deserialize(schemaColumns[fieldId], value, 0, value.length, null);
+          values[fieldId] = HBaseTextSerializerDeserializer.deserialize(schemaColumns[fieldId], value);
         }
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);

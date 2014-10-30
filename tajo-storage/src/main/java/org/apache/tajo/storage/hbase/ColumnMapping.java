@@ -32,6 +32,8 @@ public class ColumnMapping {
   private Schema schema;
   private char rowKeyDelimiter;
 
+  private String hbaseTableName;
+
   private int[] rowKeyFieldIndexes;
   private boolean[] isRowKeyMappings;
   private boolean[] isBinaryColumns;
@@ -47,6 +49,7 @@ public class ColumnMapping {
   }
 
   public void init() throws IOException {
+    hbaseTableName = tableMeta.getOption(HBaseStorageManager.META_TABLE_KEY);
     String delim = tableMeta.getOption(HBaseStorageManager.META_ROWKEY_DELIMITER, "").trim();
     if (delim.length() > 0) {
       rowKeyDelimiter = delim.charAt(0);
@@ -167,5 +170,9 @@ public class ColumnMapping {
     }
 
     return columnMappings;
+  }
+
+  public String getHbaseTableName() {
+    return hbaseTableName;
   }
 }

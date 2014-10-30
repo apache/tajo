@@ -120,7 +120,7 @@ public class TestRangeRetrieverHandler {
 
     Path tableDir = StorageUtil.concatPath(testDir, "testGet", "table.csv");
     fs.mkdirs(tableDir.getParent());
-    Appender appender = sm.getAppender(employeeMeta, schema, tableDir);
+    Appender appender = ((FileStorageManager)sm).getAppender(employeeMeta, schema, tableDir);
     appender.init();
 
     Tuple tuple = new VTuple(schema.size());
@@ -245,7 +245,7 @@ public class TestRangeRetrieverHandler {
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
     Path tablePath = StorageUtil.concatPath(testDir, "testGetFromDescendingOrder", "table.csv");
     fs.mkdirs(tablePath.getParent());
-    Appender appender = sm.getAppender(meta, schema, tablePath);
+    Appender appender = ((FileStorageManager)sm).getAppender(meta, schema, tablePath);
     appender.init();
     Tuple tuple = new VTuple(schema.size());
     for (int i = (TEST_TUPLE - 1); i >= 0 ; i--) {

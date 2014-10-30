@@ -302,7 +302,7 @@ public class QueryTestCaseBase {
     return executeFile(getMethodName() + ".sql");
   }
 
-  private String getMethodName() {
+  protected String getMethodName() {
     String methodName = name.getMethodName();
     // In the case of parameter execution name's pattern is methodName[0]
     if (methodName.endsWith("]")) {

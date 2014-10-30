@@ -21,6 +21,7 @@ package org.apache.tajo.engine.query;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ConfigKey;
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.QueryVars;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.conf.TajoConf;
@@ -33,31 +34,6 @@ import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetPro
  * QueryContent is a overridable config, and it provides a set of various configs for a query instance.
  */
 public class QueryContext extends OverridableConf {
-  public static enum QueryVars implements ConfigKey {
-    COMMAND_TYPE,
-    STAGING_DIR,
-    OUTPUT_TABLE_NAME,
-    OUTPUT_TABLE_PATH,
-    OUTPUT_PARTITIONS,
-    OUTPUT_OVERWRITE,
-    OUTPUT_AS_DIRECTORY,
-    OUTPUT_PER_FILE_SIZE,
-    ;
-
-    QueryVars() {
-    }
-
-    @Override
-    public String keyname() {
-      return name().toLowerCase();
-    }
-
-    @Override
-    public ConfigType type() {
-      return ConfigType.QUERY;
-    }
-  }
-
   public QueryContext(TajoConf conf) {
     super(conf, ConfigKey.ConfigType.QUERY);
   }
@@ -116,7 +92,9 @@ public class QueryContext extends OverridableConf {
   }
 
   public void setOutputPath(Path path) {
-    put(QueryVars.OUTPUT_TABLE_PATH, path.toUri().toString());
+    if (path != null) {
+      put(QueryVars.OUTPUT_TABLE_PATH, path.toUri().toString());
+    }
   }
 
   public Path getOutputPath() {

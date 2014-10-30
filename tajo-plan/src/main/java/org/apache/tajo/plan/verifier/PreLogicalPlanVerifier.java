@@ -279,10 +279,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
             context.state.addVerification(String.format("relation \"%s\" does not exist", qualifiedName));
             return null;
           }
-          if (!PlannerUtil.isFileStorageType(table.getMeta().getStoreType())) {
-            context.state.addVerification("Inserting into non-file storage is not supported.");
-            return null;
-          }
+
           if (table.hasPartition()) {
             int columnSize = table.getSchema().getColumns().size();
             columnSize += table.getPartitionMethod().getExpressionSchema().getColumns().size();

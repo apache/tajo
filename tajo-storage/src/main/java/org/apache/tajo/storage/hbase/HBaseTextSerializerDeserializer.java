@@ -28,32 +28,30 @@ import org.apache.tajo.util.NumberUtil;
 import java.io.IOException;
 import java.io.OutputStream;
 
-public class HBaseTextSerializerDeserializer implements SerializerDeserializer {
-
-  @Override
-  public int serialize(Column col, Datum datum, OutputStream out, byte[] nullCharacters) throws IOException {
-    return 0;
-  }
-
-  @Override
-  public Datum deserialize(Column col, byte[] bytes, int offset, int length, byte[] nullCharacters) throws IOException {
+public class HBaseTextSerializerDeserializer {
+  public static Datum deserialize(Column col, byte[] bytes) throws IOException {
     Datum datum;
     switch (col.getDataType().getType()) {
       case INT1:
       case INT2:
-        datum = bytes == null ? NullDatum.get() : DatumFactory.createInt2((short) NumberUtil.parseInt(bytes, offset, length));
+        datum = bytes == null ? NullDatum.get() :
+            DatumFactory.createInt2((short)NumberUtil.parseInt(bytes, 0, bytes.length));
         break;
       case INT4:
-        datum = bytes == null ? NullDatum.get() : DatumFactory.createInt4(NumberUtil.parseInt(bytes, offset, length));
+        datum = bytes == null ? NullDatum.get() :
+            DatumFactory.createInt4(NumberUtil.parseInt(bytes, 0, bytes.length));
         break;
       case INT8:
-        datum = bytes == null ? NullDatum.get() : DatumFactory.createInt8(new String(bytes, offset, length));
+        datum = bytes == null ? NullDatum.get() :
+            DatumFactory.createInt8(new String(bytes, 0, bytes.length));
         break;
       case FLOAT4:
-        datum = bytes == null ? NullDatum.get() : DatumFactory.createFloat4(new String(bytes, offset, length));
+        datum = bytes == null ? NullDatum.get() :
+            DatumFactory.createFloat4(new String(bytes, 0, bytes.length));
         break;
       case FLOAT8:
-        datum = bytes == null ? NullDatum.get() : DatumFactory.createFloat8(NumberUtil.parseDouble(bytes, offset, length));
+        datum = bytes == null ? NullDatum.get() :
+            DatumFactory.createFloat8(NumberUtil.parseDouble(bytes, 0, bytes.length));
         break;
       case TEXT:
         datum = bytes == null ? NullDatum.get() : DatumFactory.createText(bytes);

@@ -18,28 +18,48 @@
 
 package org.apache.tajo.storage;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.conf.TajoConf;
 
 import java.io.IOException;
 
 public abstract class FileAppender implements Appender {
+  private static final Log LOG = LogFactory.getLog(FileAppender.class);
+
   protected boolean inited = false;
 
   protected final Configuration conf;
   protected final TableMeta meta;
   protected final Schema schema;
-  protected final Path path;
+  protected final Path workDir;
+  protected final QueryUnitAttemptId taskAttemptId;
 
   protected boolean enabledStats;
-  
-  public FileAppender(Configuration conf, Schema schema, TableMeta meta, Path path) {
+  protected Path path;
+
+  public FileAppender(Configuration conf, QueryUnitAttemptId taskAttemptId, Schema schema,
+                      TableMeta meta, Path workDir) {
     this.conf = conf;
     this.meta = meta;
     this.schema = schema;
-    this.path = path;
+    this.workDir = workDir;
+    this.taskAttemptId = taskAttemptId;
+
+    try {
+      if (taskAttemptId != null) {
+        this.path = StorageManager.getFileStorageManager((TajoConf) conf).getAppenderFilePath(taskAttemptId, workDir);
+      } else {
+        this.path = workDir;
+      }
+    } catch (IOException e) {
+      LOG.error(e.getMessage(), e);
+    }
   }
 
   public void init() throws IOException {

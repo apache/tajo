@@ -26,23 +26,27 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.mapreduce.LoadIncrementalHFiles;
 import org.apache.hadoop.hbase.security.User;
 import org.apache.hadoop.hbase.security.UserProvider;
+import org.apache.hadoop.mapreduce.JobID;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
+import org.apache.hadoop.mapreduce.task.JobContextImpl;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.OverridableConf;
+import org.apache.tajo.QueryVars;
 import org.apache.tajo.TajoConstants;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.plan.expr.*;
-import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.util.Bytes;
-import org.apache.tajo.util.Pair;
-import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -62,6 +66,10 @@ public class HBaseStorageManager extends StorageManager {
 
   private Map<HConnectionKey, HConnection> connMap = new HashMap<HConnectionKey, HConnection>();
 
+  public HBaseStorageManager (StoreType storeType) {
+    super(storeType);
+  }
+
   @Override
   public void storageInit() throws IOException {
   }
@@ -80,9 +88,15 @@ public class HBaseStorageManager extends StorageManager {
   }
 
   @Override
-  public void createTable(TableDesc tableDesc) throws IOException {
-    TableMeta tableMeta = tableDesc.getMeta();
+  public void createTable(TableDesc tableDesc, boolean ifNotExists) throws IOException {
+    createTable(tableDesc.getMeta(), tableDesc.getSchema(), tableDesc.isExternal(), ifNotExists);
+    TableStats stats = new TableStats();
+    stats.setNumRows(TajoConstants.UNKNOWN_ROW_NUMBER);
+    tableDesc.setStats(stats);
+  }
 
+  private void createTable(TableMeta tableMeta, Schema schema,
+                           boolean isExternal, boolean ifNotExists) throws IOException {
     String hbaseTableName = tableMeta.getOption(META_TABLE_KEY, "");
     if (hbaseTableName == null || hbaseTableName.trim().isEmpty()) {
       throw new IOException("HBase mapped table is required a '" + META_TABLE_KEY + "' attribute.");
@@ -90,7 +104,7 @@ public class HBaseStorageManager extends StorageManager {
     TableName hTableName = TableName.valueOf(hbaseTableName);
 
     String columnMapping = tableMeta.getOption(META_COLUMNS_KEY, "");
-    if (columnMapping != null && columnMapping.split(",").length > tableDesc.getSchema().size()) {
+    if (columnMapping != null && columnMapping.split(",").length > schema.size()) {
       throw new IOException("Columns property has more entry than Tajo table columns");
     }
 
@@ -98,7 +112,7 @@ public class HBaseStorageManager extends StorageManager {
     HBaseAdmin hAdmin =  new HBaseAdmin(hConf);
 
     try {
-      if (tableDesc.isExternal()) {
+      if (isExternal) {
         // If tajo table is external table, only check validation.
         if (columnMapping == null || columnMapping.isEmpty()) {
           throw new IOException("HBase mapped table is required a '" + META_COLUMNS_KEY + "' attribute.");
@@ -125,10 +139,14 @@ public class HBaseStorageManager extends StorageManager {
         }
       } else {
         if (hAdmin.tableExists(hbaseTableName)) {
-          throw new IOException("HBase table [" + hbaseTableName + "] already exists.");
+          if (ifNotExists) {
+            return;
+          } else {
+            throw new IOException("HBase table [" + hbaseTableName + "] already exists.");
+          }
         }
         // Creating hbase table
-        HTableDescriptor hTableDescriptor = parseHTableDescriptor(tableDesc);
+        HTableDescriptor hTableDescriptor = parseHTableDescriptor(tableMeta, schema);
 
         byte[][] splitKeys = getSplitKeys(conf, tableMeta);
         if (splitKeys == null) {
@@ -137,10 +155,6 @@ public class HBaseStorageManager extends StorageManager {
           hAdmin.createTable(hTableDescriptor, splitKeys);
         }
       }
-
-      TableStats stats = new TableStats();
-      stats.setNumRows(TajoConstants.UNKNOWN_ROW_NUMBER);
-      tableDesc.setStats(stats);
     } finally {
       hAdmin.close();
     }
@@ -227,13 +241,13 @@ public class HBaseStorageManager extends StorageManager {
     return columnFamilies;
   }
 
-  public static Configuration getHBaseConfiguration(TajoConf tajoConf, TableMeta tableMeta) throws IOException {
+  public static Configuration getHBaseConfiguration(Configuration conf, TableMeta tableMeta) throws IOException {
     String zkQuorum = tableMeta.getOption(META_ZK_QUORUM_KEY, "");
     if (zkQuorum == null || zkQuorum.trim().isEmpty()) {
       throw new IOException("HBase mapped table is required a '" + META_ZK_QUORUM_KEY + "' attribute.");
     }
 
-    Configuration hbaseConf = (tajoConf == null) ? HBaseConfiguration.create() : HBaseConfiguration.create(tajoConf);
+    Configuration hbaseConf = (conf == null) ? HBaseConfiguration.create() : HBaseConfiguration.create(conf);
     hbaseConf.set(HConstants.ZOOKEEPER_QUORUM, zkQuorum);
 
     for (Map.Entry<String, String> eachOption: tableMeta.getOptions().getAllKeyValus().entrySet()) {
@@ -245,9 +259,7 @@ public class HBaseStorageManager extends StorageManager {
     return hbaseConf;
   }
 
-  public static HTableDescriptor parseHTableDescriptor(TableDesc tableDesc) throws IOException {
-    TableMeta tableMeta = tableDesc.getMeta();
-
+  public static HTableDescriptor parseHTableDescriptor(TableMeta tableMeta, Schema schema) throws IOException {
     String hbaseTableName = tableMeta.getOption(META_TABLE_KEY, "");
     if (hbaseTableName == null || hbaseTableName.trim().isEmpty()) {
       throw new IOException("HBase mapped table is required a '" + META_TABLE_KEY + "' attribute.");
@@ -255,7 +267,7 @@ public class HBaseStorageManager extends StorageManager {
     TableName hTableName = TableName.valueOf(hbaseTableName);
 
     String columnMapping = tableMeta.getOption(META_COLUMNS_KEY, "");
-    if (columnMapping != null && columnMapping.split(",").length > tableDesc.getSchema().size()) {
+    if (columnMapping != null && columnMapping.split(",").length > schema.size()) {
       throw new IOException("Columns property has more entry than Tajo table columns");
     }
     HTableDescriptor hTableDescriptor = new HTableDescriptor(hTableName);
@@ -263,7 +275,7 @@ public class HBaseStorageManager extends StorageManager {
     Collection<String> columnFamilies = getColumnFamilies(columnMapping);
     //If 'columns' attribute is empty, Tajo table columns are mapped to all HBase table column.
     if (columnFamilies.isEmpty()) {
-      for (Column eachColumn: tableDesc.getSchema().getColumns()) {
+      for (Column eachColumn: schema.getColumns()) {
         columnFamilies.add(eachColumn.getSimpleName());
       }
     }
@@ -280,7 +292,7 @@ public class HBaseStorageManager extends StorageManager {
     HBaseAdmin hAdmin =  new HBaseAdmin(getHBaseConfiguration(conf, tableDesc.getMeta()));
 
     try {
-      HTableDescriptor hTableDesc = parseHTableDescriptor(tableDesc);
+      HTableDescriptor hTableDesc = parseHTableDescriptor(tableDesc.getMeta(), tableDesc.getSchema());
       hAdmin.disableTable(hTableDesc.getName());
       hAdmin.deleteTable(hTableDesc.getName());
     } finally {
@@ -288,8 +300,7 @@ public class HBaseStorageManager extends StorageManager {
     }
   }
 
-  @Override
-  public Column[] getIndexableColumns(TableDesc tableDesc) throws IOException {
+  private Column[] getIndexableColumns(TableDesc tableDesc) throws IOException {
     ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta());
     boolean[] isRowKeyMappings = columnMapping.getIsRowKeyMappings();
 
@@ -551,11 +562,6 @@ public class HBaseStorageManager extends StorageManager {
         hAdmin.close();
       }
     }
-  }
-
-  @Override
-  public boolean canCreateAsSelect(StoreType storeType) {
-    return false;
   }
 
   public HConnection getConnection(Configuration hbaseConf) throws IOException {
@@ -843,6 +849,171 @@ public class HBaseStorageManager extends StorageManager {
       return new Pair<Datum, Datum>(startDatum, endDatum);
     } else {
       return null;
+    }
+  }
+
+  @Override
+  public Path commitOutputData(OverridableConf queryContext, ExecutionBlockId finalEbId, Schema schema,
+                               TableDesc tableDesc) throws IOException {
+    if (tableDesc == null) {
+      throw new IOException("TableDesc is null while calling loadIncrementalHFiles: " + finalEbId);
+    }
+    Path finalOutputDir = new Path(queryContext.get(QueryVars.STAGING_DIR));
+
+    Configuration hbaseConf = HBaseStorageManager.getHBaseConfiguration(queryContext.getConf(), tableDesc.getMeta());
+    hbaseConf.set("hbase.loadincremental.threads.max", "2");
+
+    JobContextImpl jobContext = new JobContextImpl(hbaseConf,
+        new JobID(finalEbId.getQueryId().toString(), finalEbId.getId()));
+
+    FileOutputCommitter committer = new FileOutputCommitter(finalOutputDir, jobContext);
+    Path jobAttemptPath = committer.getJobAttemptPath(jobContext);
+    FileSystem fs = jobAttemptPath.getFileSystem(queryContext.getConf());
+    if (!fs.exists(jobAttemptPath) || fs.listStatus(jobAttemptPath) == null) {
+      LOG.warn("No query attempt file in " + jobAttemptPath);
+      return finalOutputDir;
+    }
+    committer.commitJob(jobContext);
+
+    String tableName = tableDesc.getMeta().getOption(HBaseStorageManager.META_TABLE_KEY);
+
+    HTable htable = new HTable(hbaseConf, tableName);
+    try {
+      LoadIncrementalHFiles loadIncrementalHFiles = null;
+      try {
+        loadIncrementalHFiles = new LoadIncrementalHFiles(hbaseConf);
+      } catch (Exception e) {
+        LOG.error(e.getMessage(), e);
+        throw new IOException(e.getMessage(), e);
+      }
+      loadIncrementalHFiles.doBulkLoad(finalOutputDir, htable);
+
+      return finalOutputDir;
+    } finally {
+      htable.close();
+    }
+  }
+
+  @Override
+  public TupleRange[] getInsertSortRanges(OverridableConf queryContext, TableDesc tableDesc,
+                                          Schema inputSchema, SortSpec[] sortSpecs, TupleRange dataRange)
+      throws IOException {
+    int[] sortKeyIndexes = new int[sortSpecs.length];
+    for (int i = 0; i < sortSpecs.length; i++) {
+      sortKeyIndexes[i] = inputSchema.getColumnId(sortSpecs[i].getSortKey().getQualifiedName());
+    }
+
+    ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta());
+    Configuration hbaseConf = HBaseStorageManager.getHBaseConfiguration(queryContext.getConf(), tableDesc.getMeta());
+
+    HTable htable = new HTable(hbaseConf, columnMapping.getHbaseTableName());
+    try {
+      byte[][] endKeys = htable.getEndKeys();
+      if (endKeys.length == 1) {
+        return new TupleRange[]{dataRange};
+      }
+      List<TupleRange> tupleRanges = new ArrayList<TupleRange>(endKeys.length);
+
+      TupleComparator comparator = new TupleComparator(inputSchema, sortSpecs);
+      Tuple previousTuple = new VTuple(sortSpecs.length);
+      for (int i = 0; i < sortSpecs.length; i++) {
+        previousTuple.put(i, NullDatum.get());
+      }
+
+      for (byte[] eachEndKey: endKeys) {
+        Tuple endTuple = new VTuple(sortSpecs.length);
+        byte[][] rowKeyFields;
+        if (sortSpecs.length > 1) {
+          rowKeyFields = BytesUtils.splitPreserveAllTokens(eachEndKey, columnMapping.getRowKeyDelimiter());
+        } else {
+          rowKeyFields = new byte[1][];
+          rowKeyFields[0] = eachEndKey;
+        }
+
+        for (int i = 0; i < sortSpecs.length; i++) {
+          if (columnMapping.getIsBinaryColumns()[sortKeyIndexes[i]]) {
+            endTuple.put(i,
+                HBaseBinarySerializerDeserializer.deserialize(inputSchema.getColumn(sortKeyIndexes[i]),
+                    rowKeyFields[i]));
+          } else {
+            endTuple.put(i,
+                HBaseTextSerializerDeserializer.deserialize(inputSchema.getColumn(sortKeyIndexes[i]),
+                    rowKeyFields[i]));
+          }
+        }
+        if (comparator.compare(dataRange.getStart(), endTuple) < 0) {
+          if (comparator.compare(dataRange.getStart(), previousTuple) >= 0) {
+            previousTuple = dataRange.getStart();
+          }
+          tupleRanges.add(new TupleRange(sortSpecs, previousTuple, endTuple));
+          previousTuple = endTuple;
+        }
+      }
+
+      // Last region endkey is empty. Tajo ignores empty key, so endkey is replaced with max data value.
+      if (comparator.compare(dataRange.getEnd(), tupleRanges.get(tupleRanges.size() - 1).getStart()) >= 0) {
+        tupleRanges.get(tupleRanges.size() - 1).setEnd(dataRange.getEnd());
+      } else {
+        tupleRanges.remove(tupleRanges.size() - 1);
+      }
+      return tupleRanges.toArray(new TupleRange[]{});
+    } finally {
+      htable.close();
+    }
+  }
+
+  @Override
+  public Column[] getIndexColumns(TableDesc tableDesc) throws IOException {
+    List<Column> indexColumns = new ArrayList<Column>();
+
+    ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta());
+
+    boolean[] isRowKeys = columnMapping.getIsRowKeyMappings();
+    for (int i = 0; i < isRowKeys.length; i++) {
+      if (isRowKeys[i]) {
+        indexColumns.add(tableDesc.getSchema().getColumn(i));
+      }
+    }
+
+    return indexColumns.toArray(new Column[]{});
+  }
+
+  @Override
+  public StorageProperty getStorageProperty() {
+    StorageProperty storageProperty = new StorageProperty();
+    storageProperty.setSortedInsert(true);
+    storageProperty.setSupportsInsertInto(true);
+    return storageProperty;
+  }
+
+  public void verifyTableCreation(LogicalNode node) throws IOException {
+    if (node.getType() == NodeType.CREATE_TABLE) {
+      CreateTableNode cNode = (CreateTableNode)node;
+      if (!cNode.isExternal()) {
+        TableMeta tableMeta = new TableMeta(cNode.getStorageType(), cNode.getOptions());
+        createTable(tableMeta, cNode.getTableSchema(), cNode.isExternal(), cNode.isIfNotExists());
+      }
+    }
+  }
+
+  @Override
+  public void queryFailed(LogicalNode node) throws IOException {
+    if (node.getType() == NodeType.CREATE_TABLE) {
+      CreateTableNode cNode = (CreateTableNode)node;
+      if (cNode.isExternal()) {
+        return;
+      }
+      TableMeta tableMeta = new TableMeta(cNode.getStorageType(), cNode.getOptions());
+      HBaseAdmin hAdmin =  new HBaseAdmin(getHBaseConfiguration(conf, tableMeta));
+
+      try {
+        HTableDescriptor hTableDesc = parseHTableDescriptor(tableMeta, cNode.getTableSchema());
+        LOG.info("Delete table cause query failed:" + hTableDesc.getName());
+        hAdmin.disableTable(hTableDesc.getName());
+        hAdmin.deleteTable(hTableDesc.getName());
+      } finally {
+        hAdmin.close();
+      }
     }
   }
 }

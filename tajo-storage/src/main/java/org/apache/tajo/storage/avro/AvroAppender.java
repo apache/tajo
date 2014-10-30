@@ -33,6 +33,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.catalog.TableMeta;
@@ -58,12 +59,13 @@ public class AvroAppender extends FileAppender {
    * @param conf Configuration properties.
    * @param schema The table schema.
    * @param meta The table metadata.
-   * @param path The path of the Parquet file to write to.
+   * @param workDir The path of the Parquet file to write to.
    */
   public AvroAppender(Configuration conf,
+                      QueryUnitAttemptId taskAttemptId,
                       org.apache.tajo.catalog.Schema schema,
-                      TableMeta meta, Path path) throws IOException {
-    super(conf, schema, meta, path);
+                      TableMeta meta, Path workDir) throws IOException {
+    super(conf, taskAttemptId, schema, meta, workDir);
   }
 
   /**

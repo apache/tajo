@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage;
+package org.apache.tajo.storage.hbase;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -26,6 +26,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.ScanNode;
+import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.hbase.HBaseStorageManager;
 import org.apache.tajo.util.Pair;
 import org.junit.Test;
@@ -50,7 +51,7 @@ public class TestHBaseStorageManager {
     scanNode.setQual(evalNodeA);
 
     HBaseStorageManager storageManager =
-        (HBaseStorageManager)StorageManager.getStorageManager(new TajoConf(), StoreType.HBASE);
+        (HBaseStorageManager) StorageManager.getStorageManager(new TajoConf(), StoreType.HBASE);
     List<Set<EvalNode>> indexEvals = storageManager.findIndexablePredicateSet(scanNode, new Column[]{rowkeyColumn});
     assertNotNull(indexEvals);
     assertEquals(1, indexEvals.size());

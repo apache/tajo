@@ -23,9 +23,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -37,6 +35,7 @@ import org.apache.tajo.plan.visitor.ExplainLogicalPlanVisitor;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 import org.apache.tajo.util.TUtil;
 
+import java.io.IOException;
 import java.util.*;
 
 public class PlannerUtil {
@@ -791,5 +790,72 @@ public class PlannerUtil {
     } else {
       return true;
     }
+  }
+
+  public static StoreType getStoreType(LogicalPlan plan) {
+    LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+    NodeType nodeType = rootNode.getChild().getType();
+    if (nodeType == NodeType.CREATE_TABLE) {
+      return ((CreateTableNode)rootNode.getChild()).getStorageType();
+    } else if (nodeType == NodeType.INSERT) {
+      return ((InsertNode)rootNode.getChild()).getStorageType();
+    } else {
+      return null;
+    }
+  }
+
+  public static String getStoreTableName(LogicalPlan plan) {
+    LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+    NodeType nodeType = rootNode.getChild().getType();
+    if (nodeType == NodeType.CREATE_TABLE) {
+      return ((CreateTableNode)rootNode.getChild()).getTableName();
+    } else if (nodeType == NodeType.INSERT) {
+      return ((InsertNode)rootNode.getChild()).getTableName();
+    } else {
+      return null;
+    }
+  }
+
+  public static TableDesc getTableDesc(CatalogService catalog, LogicalNode node) throws IOException {
+    if (node.getType() == NodeType.CREATE_TABLE) {
+      return createTableDesc((CreateTableNode)node);
+    }
+    String tableName = null;
+    if (node.getType() == NodeType.CREATE_TABLE) {
+      tableName = ((CreateTableNode)node).getTableName();
+    } else if (node.getType() == NodeType.INSERT) {
+      tableName = ((InsertNode)node).getTableName();
+    } else {
+      return null;
+    }
+
+    if (tableName != null) {
+      String[] tableTokens = tableName.split("\\.");
+      if (tableTokens.length >= 2) {
+        if (catalog.existsTable(tableTokens[0], tableTokens[1])) {
+          return catalog.getTableDesc(tableTokens[0], tableTokens[1]);
+        }
+      }
+    }
+    return null;
+  }
+
+  private static TableDesc createTableDesc(CreateTableNode createTableNode) {
+    TableMeta meta = new TableMeta(createTableNode.getStorageType(), createTableNode.getOptions());
+
+    TableDesc tableDescTobeCreated =
+        new TableDesc(
+            createTableNode.getTableName(),
+            createTableNode.getTableSchema(),
+            meta,
+            createTableNode.getPath());
+
+    tableDescTobeCreated.setExternal(createTableNode.isExternal());
+
+    if (createTableNode.hasPartition()) {
+      tableDescTobeCreated.setPartitionMethod(createTableNode.getPartitionMethod());
+    }
+
+    return tableDescTobeCreated;
   }
 }

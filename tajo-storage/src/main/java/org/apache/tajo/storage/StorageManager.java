@@ -18,34 +18,30 @@
 
 package org.apache.tajo.storage;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
-import org.apache.hadoop.hdfs.DFSConfigKeys;
-import org.apache.hadoop.hdfs.DistributedFileSystem;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.OverridableConf;
+import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.TajoConstants;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.logical.ScanNode;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.rewrite.RewriteRule;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.storage.hbase.HBaseStorageManager;
-import org.apache.tajo.util.Bytes;
-import org.apache.tajo.util.FileUtil;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.URI;
@@ -59,6 +55,7 @@ public abstract class StorageManager {
   private final Log LOG = LogFactory.getLog(StorageManager.class);
 
   protected TajoConf conf;
+  protected StoreType storeType;
 
   private static final Map<String, StorageManager> storageManagers = Maps.newHashMap();
 
@@ -71,8 +68,8 @@ public abstract class StorageManager {
   /**
    * Cache of appender handlers for each storage type.
    */
-  protected static final Map<String, Class<? extends FileAppender>> APPENDER_HANDLER_CACHE
-      = new ConcurrentHashMap<String, Class<? extends FileAppender>>();
+  protected static final Map<String, Class<? extends Appender>> APPENDER_HANDLER_CACHE
+      = new ConcurrentHashMap<String, Class<? extends Appender>>();
 
   /**
    * Cache of constructors for each class. Pins the classes so they
@@ -81,16 +78,111 @@ public abstract class StorageManager {
   private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE =
       new ConcurrentHashMap<Class<?>, Constructor<?>>();
 
-  protected abstract void storageInit() throws IOException ;
-  public abstract void createTable(TableDesc tableDesc) throws IOException;
+  public StorageManager(StoreType storeType) {
+    this.storeType = storeType;
+  }
+  /**
+   *
+   * @throws IOException
+   */
+  protected abstract void storageInit() throws IOException;
+
+  /**
+   *
+   * @param tableDesc
+   * @param ifNotExists
+   * @throws IOException
+   */
+  public abstract void createTable(TableDesc tableDesc, boolean ifNotExists) throws IOException;
+
+  /**
+   *
+   * @param tableDesc
+   * @throws IOException
+   */
   public abstract void purgeTable(TableDesc tableDesc) throws IOException;
+
+  /**
+   *
+   * @param fragmentId
+   * @param tableDesc
+   * @param scanNode
+   * @return
+   * @throws IOException
+   */
   public abstract List<Fragment> getSplits(String fragmentId, TableDesc tableDesc,
                                            ScanNode scanNode) throws IOException;
+
+  /**
+   *
+   * @param tableDesc
+   * @param currentPage
+   * @param numFragments
+   * @return
+   * @throws IOException
+   */
   public abstract List<Fragment> getNonForwardSplit(TableDesc tableDesc, int currentPage, int numFragments)
       throws IOException;
-  public abstract Column[] getIndexableColumns(TableDesc tableDesc) throws IOException;
-  public abstract boolean canCreateAsSelect(StoreType storeType);
+
+  /**
+   * @return
+   */
+  public abstract StorageProperty getStorageProperty();
+
+  /**
+   * Release storage manager resource
+   */
   public abstract void closeStorageManager();
+
+  /**
+   * It moves a result data stored in a staging output dir into a final output dir.
+   * @param queryContext
+   * @param finalEbId
+   * @param schema
+   * @param tableDesc
+   * @return
+   * @throws IOException
+   */
+  public abstract Path commitOutputData(OverridableConf queryContext, ExecutionBlockId finalEbId, Schema schema,
+                                        TableDesc tableDesc) throws IOException;
+
+  /**
+   *
+   * @param queryContext
+   * @param tableDesc
+   * @param inputSchema
+   * @param sortSpecs
+   * @return
+   * @throws IOException
+   */
+  public abstract TupleRange[] getInsertSortRanges(OverridableConf queryContext, TableDesc tableDesc,
+                                                   Schema inputSchema, SortSpec[] sortSpecs,
+                                                   TupleRange dataRange) throws IOException;
+
+  /**
+   *
+   * @param tableDesc
+   * @throws IOException
+   */
+  public abstract Column[] getIndexColumns(TableDesc tableDesc) throws IOException;
+
+  /**
+   *
+   * @param node
+   * @throws IOException
+   */
+  public abstract void verifyTableCreation(LogicalNode node) throws IOException;
+
+  /**
+   *
+   * @param node
+   * @throws IOException
+   */
+  public abstract void queryFailed(LogicalNode node) throws IOException;
+
+  public StoreType getStoreType() {
+    return storeType;
+  }
 
   public void init(TajoConf tajoConf) throws IOException {
     this.conf = tajoConf;
@@ -124,6 +216,14 @@ public abstract class StorageManager {
     return (FileStorageManager) getStorageManager(copiedConf, StoreType.CSV, key);
   }
 
+  public static StorageManager getStorageManager(TajoConf tajoConf, String storeType) throws IOException {
+    if ("HBASE".equals(storeType)) {
+      return getStorageManager(tajoConf, StoreType.HBASE);
+    } else {
+      return getStorageManager(tajoConf, StoreType.CSV);
+    }
+  }
+
   public static StorageManager getStorageManager(TajoConf tajoConf, StoreType storeType) throws IOException {
     return getStorageManager(tajoConf, storeType, null);
   }
@@ -136,10 +236,10 @@ public abstract class StorageManager {
       if (manager == null) {
         switch (storeType) {
           case HBASE:
-            manager = new HBaseStorageManager();
+            manager = new HBaseStorageManager(storeType);
             break;
           default:
-            manager = new FileStorageManager();
+            manager = new FileStorageManager(storeType);
         }
 
         manager.init(conf);
@@ -158,19 +258,18 @@ public abstract class StorageManager {
     return getScanner(meta, schema, fragment, schema);
   }
 
-  public Appender getAppender(TableMeta meta, Schema schema, Path path)
+  public Appender getAppender(QueryUnitAttemptId taskAttemptId, TableMeta meta, Schema schema, Path workDir)
       throws IOException {
     Appender appender;
 
-    Class<? extends FileAppender> appenderClass;
+    Class<? extends Appender> appenderClass;
 
     String handlerName = meta.getStoreType().name().toLowerCase();
     appenderClass = APPENDER_HANDLER_CACHE.get(handlerName);
     if (appenderClass == null) {
       appenderClass = conf.getClass(
           String.format("tajo.storage.appender-handler.%s.class",
-              meta.getStoreType().name().toLowerCase()), null,
-          FileAppender.class);
+              meta.getStoreType().name().toLowerCase()), null, Appender.class);
       APPENDER_HANDLER_CACHE.put(handlerName, appenderClass);
     }
 
@@ -178,7 +277,7 @@ public abstract class StorageManager {
       throw new IOException("Unknown Storage Type: " + meta.getStoreType());
     }
 
-    appender = newAppenderInstance(appenderClass, conf, meta, schema, path);
+    appender = newAppenderInstance(appenderClass, conf, taskAttemptId, meta, schema, workDir);
 
     return appender;
   }
@@ -192,6 +291,7 @@ public abstract class StorageManager {
 
   private static final Class<?>[] DEFAULT_APPENDER_PARAMS = {
       Configuration.class,
+      QueryUnitAttemptId.class,
       Schema.class,
       TableMeta.class,
       Path.class
@@ -221,8 +321,8 @@ public abstract class StorageManager {
   /**
    * create a scanner instance.
    */
-  public static <T> T newAppenderInstance(Class<T> theClass, Configuration conf, TableMeta meta, Schema schema,
-                                          Path path) {
+  public static <T> T newAppenderInstance(Class<T> theClass, Configuration conf, QueryUnitAttemptId taskAttemptId,
+                                          TableMeta meta, Schema schema, Path workDir) {
     T result;
     try {
       Constructor<T> meth = (Constructor<T>) CONSTRUCTOR_CACHE.get(theClass);
@@ -231,7 +331,7 @@ public abstract class StorageManager {
         meth.setAccessible(true);
         CONSTRUCTOR_CACHE.put(theClass, meth);
       }
-      result = meth.newInstance(new Object[]{conf, schema, meta, path});
+      result = meth.newInstance(new Object[]{conf, taskAttemptId, schema, meta, workDir});
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

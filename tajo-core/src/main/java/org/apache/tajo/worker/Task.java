@@ -106,39 +106,6 @@ public class Task {
   private Schema finalSchema = null;
   private TupleComparator sortComp = null;
 
-  static final String OUTPUT_FILE_PREFIX="part-";
-  static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_SUBQUERY =
-      new ThreadLocal<NumberFormat>() {
-        @Override
-        public NumberFormat initialValue() {
-          NumberFormat fmt = NumberFormat.getInstance();
-          fmt.setGroupingUsed(false);
-          fmt.setMinimumIntegerDigits(2);
-          return fmt;
-        }
-      };
-  static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_TASK =
-      new ThreadLocal<NumberFormat>() {
-        @Override
-        public NumberFormat initialValue() {
-          NumberFormat fmt = NumberFormat.getInstance();
-          fmt.setGroupingUsed(false);
-          fmt.setMinimumIntegerDigits(6);
-          return fmt;
-        }
-      };
-
-  static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_SEQ =
-      new ThreadLocal<NumberFormat>() {
-        @Override
-        public NumberFormat initialValue() {
-          NumberFormat fmt = NumberFormat.getInstance();
-          fmt.setGroupingUsed(false);
-          fmt.setMinimumIntegerDigits(3);
-          return fmt;
-        }
-      };
-
   public Task(String taskRunnerId,
               Path baseDir,
               QueryUnitAttemptId taskId,
@@ -187,16 +154,6 @@ public class Task {
         this.finalSchema = PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys());
         this.sortComp = new TupleComparator(finalSchema, sortNode.getSortKeys());
       }
-    } else {
-      // The final result of a task will be written in a file named part-ss-nnnnnnn,
-      // where ss is the subquery id associated with this task, and nnnnnn is the task id.
-      Path outFilePath = StorageUtil.concatPath(queryContext.getStagingDir(), TajoConstants.RESULT_DIR_NAME,
-          OUTPUT_FILE_PREFIX +
-          OUTPUT_FILE_FORMAT_SUBQUERY.get().format(taskId.getQueryUnitId().getExecutionBlockId().getId()) + "-" +
-          OUTPUT_FILE_FORMAT_TASK.get().format(taskId.getQueryUnitId().getId()) + "-" +
-          OUTPUT_FILE_FORMAT_SEQ.get().format(0));
-      LOG.info("Output File Path: " + outFilePath);
-      context.setOutputPath(outFilePath);
     }
 
     this.localChunks = Collections.synchronizedList(new ArrayList<FileChunk>());
@@ -527,10 +484,6 @@ public class Task {
     try {
       taskHistory = new TaskHistory(getTaskId(), getStatus(), context.getProgress(),
           startTime, finishTime, reloadInputStats());
-
-      if (context.getOutputPath() != null) {
-        taskHistory.setOutputPath(context.getOutputPath().toString());
-      }
 
       if (context.getWorkDir() != null) {
         taskHistory.setWorkingPath(context.getWorkDir().toString());

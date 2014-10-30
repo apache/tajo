@@ -28,10 +28,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.util.StringUtils;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.QueryIdFactory;
-import org.apache.tajo.SessionVars;
-import org.apache.tajo.TajoConstants;
+import org.apache.tajo.*;
 import org.apache.tajo.algebra.AlterTablespaceSetType;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.JsonHelper;
@@ -40,10 +37,8 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
@@ -61,6 +56,7 @@ import org.apache.tajo.master.session.Session;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.rewrite.RewriteRule;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
@@ -301,11 +297,14 @@ public class GlobalEngine extends AbstractService {
         responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
       }
     } else { // it requires distributed execution. So, the query is forwarded to a query master.
-      if (rootNode.getChild().getType() == NodeType.CREATE_TABLE) {
-        StoreType storeType =  ((CreateTableNode)rootNode.getChild()).getStorageType();
-        if (!StorageManager.getStorageManager(context.getConf(), storeType).canCreateAsSelect(storeType)) {
+      StoreType storeType = PlannerUtil.getStoreType(plan);
+      if (storeType != null) {
+        StorageManager sm = StorageManager.getStorageManager(context.getConf(), storeType);
+        StorageProperty storageProperty = sm.getStorageProperty();
+        if (!storageProperty.isSupportsInsertInto()) {
           throw new VerifyException("Inserting into non-file storage is not supported.");
         }
+        sm.verifyTableCreation(rootNode.getChild());
       }
       context.getSystemMetrics().counter("Query", "numDMLQuery").inc();
       hookManager.doHooks(queryContext, plan);
@@ -355,8 +354,7 @@ public class GlobalEngine extends AbstractService {
     }
 
     TaskAttemptContext taskAttemptContext =
-        new TaskAttemptContext(queryContext, null, null, (CatalogProtos.FragmentProto[]) null, stagingDir);
-    taskAttemptContext.setOutputPath(new Path(stagingResultDir, "part-01-000000"));
+        new TaskAttemptContext(queryContext, null, null, (CatalogProtos.FragmentProto[]) null, stagingResultDir);
 
     EvalExprExec evalExprExec = new EvalExprExec(taskAttemptContext, (EvalExprNode) insertNode.getChild());
     StoreTableExec exec = new StoreTableExec(taskAttemptContext, insertNode, evalExprExec);
@@ -739,7 +737,7 @@ public class GlobalEngine extends AbstractService {
       desc.setPartitionMethod(partitionDesc);
     }
 
-    StorageManager.getStorageManager(queryContext.getConf(), storeType).createTable(desc);
+    StorageManager.getStorageManager(queryContext.getConf(), storeType).createTable(desc, ifNotExists);
 
     if (catalog.createTable(desc)) {
       LOG.info("Table " + desc.getName() + " is created (" + desc.getStats().getNumBytes() + ")");
