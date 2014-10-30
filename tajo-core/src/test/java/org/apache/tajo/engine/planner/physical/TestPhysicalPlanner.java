@@ -435,11 +435,11 @@ public class TestPhysicalPlanner {
         LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new FileFragment[] { frags[0] }, workDir);
     ctx.setEnforcer(new Enforcer());
+    ctx.setOutputPath(new Path(workDir, "grouped1"));
 
     Expr context = analyzer.parse(CreateTableAsStmts[0]);
     LogicalPlan plan = planner.createPlan(defaultContext, context);
     LogicalNode rootNode = optimizer.optimize(plan);
-
 
     TableMeta outputMeta = CatalogUtil.newTableMeta(StoreType.CSV);
 
@@ -450,7 +450,7 @@ public class TestPhysicalPlanner {
     exec.close();
 
     Scanner scanner = StorageManager.getFileStorageManager(conf).getFileScanner(outputMeta, rootNode.getOutSchema(),
-        new Path(workDir, "grouped1"));
+        ctx.getOutputPath());
     scanner.init();
     Tuple tuple;
     int i = 0;
@@ -486,7 +486,7 @@ public class TestPhysicalPlanner {
         LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new FileFragment[] { frags[0] }, workDir);
     ctx.setEnforcer(new Enforcer());
-    Path outputPath = new Path(workDir, "maxOutput");
+    ctx.setOutputPath(new Path(workDir, "maxOutput"));
 
     Expr context = analyzer.parse(CreateTableAsStmts[3]);
 
@@ -502,13 +502,13 @@ public class TestPhysicalPlanner {
 
     // checking the number of punctuated files
     int expectedFileNum = (int) (stats.getNumBytes() / (float) StorageUnit.MB);
-    FileSystem fs = outputPath.getFileSystem(conf);
-    FileStatus [] statuses = fs.listStatus(outputPath.getParent());
+    FileSystem fs = ctx.getOutputPath().getFileSystem(conf);
+    FileStatus [] statuses = fs.listStatus(ctx.getOutputPath().getParent());
     assertEquals(expectedFileNum, statuses.length);
 
     // checking the file contents
     long totalNum = 0;
-    for (FileStatus status : fs.listStatus(outputPath.getParent())) {
+    for (FileStatus status : fs.listStatus(ctx.getOutputPath().getParent())) {
       Scanner scanner = StorageManager.getFileStorageManager(conf).getFileScanner(
           CatalogUtil.newTableMeta(StoreType.CSV),
           rootNode.getOutSchema(),
@@ -532,6 +532,7 @@ public class TestPhysicalPlanner {
         LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new FileFragment[] { frags[0] }, workDir);
     ctx.setEnforcer(new Enforcer());
+    ctx.setOutputPath(new Path(workDir, "grouped2"));
 
     Expr context = analyzer.parse(CreateTableAsStmts[1]);
     LogicalPlan plan = planner.createPlan(defaultContext, context);
@@ -546,7 +547,7 @@ public class TestPhysicalPlanner {
     exec.close();
 
     Scanner scanner = StorageManager.getFileStorageManager(conf).getFileScanner(outputMeta, rootNode.getOutSchema(),
-        new Path(workDir, "grouped2"));
+        ctx.getOutputPath());
     scanner.init();
     Tuple tuple;
     int i = 0;
@@ -572,6 +573,7 @@ public class TestPhysicalPlanner {
         LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new FileFragment[] { frags[0] }, workDir);
     ctx.setEnforcer(new Enforcer());
+    ctx.setOutputPath(new Path(workDir, "grouped3"));
 
     Expr context = analyzer.parse(CreateTableAsStmts[2]);
     LogicalPlan plan = planner.createPlan(defaultContext, context);
@@ -598,6 +600,7 @@ public class TestPhysicalPlanner {
         LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new FileFragment[] { frags[0] }, workDir);
     ctx.setEnforcer(enforcer);
+    ctx.setOutputPath(new Path(workDir, "grouped4"));
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -621,6 +624,7 @@ public class TestPhysicalPlanner {
         LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan),
         new FileFragment[] { frags[0] }, workDir);
     ctx.setEnforcer(enforcer);
+    ctx.setOutputPath(new Path(workDir, "grouped5"));
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
@@ -709,6 +713,7 @@ public class TestPhysicalPlanner {
 
     // Preparing task context
     TaskAttemptContext ctx = new TaskAttemptContext(queryContext, id, new FileFragment[] { frags[0] }, workDir);
+    ctx.setOutputPath(new Path(workDir, "part-01-000000"));
     // SortBasedColumnPartitionStoreExec will be chosen by default.
     ctx.setEnforcer(new Enforcer());
     Expr context = analyzer.parse(CreateTableAsStmts[4]);

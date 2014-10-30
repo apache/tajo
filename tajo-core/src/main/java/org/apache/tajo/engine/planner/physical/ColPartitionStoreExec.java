@@ -119,8 +119,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
   public void init() throws IOException {
     super.init();
 
-    storeTablePath = StorageManager.getFileStorageManager(context.getConf())
-        .getAppenderFilePath(context.getTaskId(), context.getWorkDir());
+    storeTablePath = context.getOutputPath();
 
     FileSystem fs = storeTablePath.getFileSystem(context.getConf());
     if (!fs.exists(storeTablePath.getParent())) {

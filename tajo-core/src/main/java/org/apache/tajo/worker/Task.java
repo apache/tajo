@@ -53,6 +53,7 @@ import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.pullserver.retriever.FileChunk;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
+import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -154,6 +155,11 @@ public class Task {
         this.finalSchema = PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys());
         this.sortComp = new TupleComparator(finalSchema, sortNode.getSortKeys());
       }
+    } else {
+      Path outFilePath = StorageManager.getFileStorageManager(systemConf).getAppenderFilePath(
+          taskId, queryContext.getStagingDir());
+      LOG.info("Output File Path: " + outFilePath);
+      context.setOutputPath(outFilePath);
     }
 
     this.localChunks = Collections.synchronizedList(new ArrayList<FileChunk>());
@@ -484,6 +490,10 @@ public class Task {
     try {
       taskHistory = new TaskHistory(getTaskId(), getStatus(), context.getProgress(),
           startTime, finishTime, reloadInputStats());
+
+      if (context.getOutputPath() != null) {
+        taskHistory.setOutputPath(context.getOutputPath().toString());
+      }
 
       if (context.getWorkDir() != null) {
         taskHistory.setWorkingPath(context.getWorkDir().toString());

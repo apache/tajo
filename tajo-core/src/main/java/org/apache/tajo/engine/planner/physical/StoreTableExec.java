@@ -85,8 +85,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
     if (PlannerUtil.isFileStorageType(meta.getStoreType())) {
       String prevFile = null;
 
-      lastFileName = StorageManager.getFileStorageManager(context.getConf()).getAppenderFilePath(
-          context.getTaskId(), context.getQueryContext().getStagingDir());
+      lastFileName = context.getOutputPath();
 
       if (suffixId > 0) {
         prevFile = lastFileName.toString();

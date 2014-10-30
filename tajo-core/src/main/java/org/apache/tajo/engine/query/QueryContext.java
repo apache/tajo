@@ -68,8 +68,8 @@ public class QueryContext extends OverridableConf {
   }
 
   public Path getStagingDir() {
-    String strVal = get(QueryVars.STAGING_DIR);
-    return strVal != null ? new Path(strVal) : null;
+    String strVal = get(QueryVars.STAGING_DIR, "");
+    return strVal != null && !strVal.isEmpty() ? new Path(strVal) : null;
   }
 
   /**

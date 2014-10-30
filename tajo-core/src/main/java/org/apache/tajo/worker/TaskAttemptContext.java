@@ -72,7 +72,7 @@ public class TaskAttemptContext {
   private File fetchIn;
   private boolean stopped = false;
   private boolean interQuery = false;
-//  private Path outputPath;
+  private Path outputPath;
   private DataChannel dataChannel;
   private Enforcer enforcer;
   private QueryContext queryContext;
@@ -198,13 +198,13 @@ public class TaskAttemptContext {
     this.interQuery = true;
   }
 
-//  public void setOutputPath(Path outputPath) {
-//    this.outputPath = outputPath;
-//  }
-//
-//  public Path getOutputPath() {
-//    return this.outputPath;
-//  }
+  public void setOutputPath(Path outputPath) {
+    this.outputPath = outputPath;
+  }
+
+  public Path getOutputPath() {
+    return this.outputPath;
+  }
 
   public boolean isInterQuery() {
     return this.interQuery;

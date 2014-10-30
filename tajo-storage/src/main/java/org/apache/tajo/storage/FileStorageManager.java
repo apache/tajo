@@ -823,7 +823,7 @@ public class FileStorageManager extends StorageManager {
     Path stagingDir = new Path(queryContext.get(QueryVars.STAGING_DIR));
     Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
     Path finalOutputDir;
-    if (queryContext.get(QueryVars.OUTPUT_TABLE_PATH) != null) {
+    if (!queryContext.get(QueryVars.OUTPUT_TABLE_PATH, "").isEmpty()) {
       finalOutputDir = new Path(queryContext.get(QueryVars.OUTPUT_TABLE_PATH));
       try {
         FileSystem fs = stagingResultDir.getFileSystem(conf);
@@ -837,7 +837,7 @@ public class FileStorageManager extends StorageManager {
           boolean committed = false;
           Path oldTableDir = new Path(stagingDir, TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
 
-          if (queryContext.get(QueryVars.OUTPUT_PARTITIONS) != null) {
+          if (!queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty()) {
             // This is a map for existing non-leaf directory to rename. A key is current directory and a value is
             // renaming directory.
             Map<Path, Path> renameDirs = TUtil.newHashMap();
@@ -910,7 +910,7 @@ public class FileStorageManager extends StorageManager {
             fmt.setGroupingUsed(false);
             fmt.setMinimumIntegerDigits(3);
 
-            if (queryContext.get(QueryVars.OUTPUT_PARTITIONS) != null) {
+            if (!queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty()) {
               for(FileStatus eachFile: fs.listStatus(stagingResultDir)) {
                 if (eachFile.isFile()) {
                   LOG.warn("Partition table can't have file in a staging dir: " + eachFile.getPath());

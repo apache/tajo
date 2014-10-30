@@ -386,12 +386,16 @@ public class Query implements EventHandler<QueryEvent> {
       }
       if (finalState != QueryState.QUERY_SUCCEEDED) {
         SubQuery lastStage = query.getSubQuery(subQueryEvent.getExecutionBlockId());
-        StoreType storeType = lastStage.getTableMeta().getStoreType();
-        LogicalRootNode rootNode = lastStage.getMasterPlan().getLogicalPlan().getRootBlock().getRoot();
-        try {
-          StorageManager.getStorageManager(query.systemConf, storeType).queryFailed(rootNode.getChild());
-        } catch (IOException e) {
-          LOG.warn(query.getId() + ", failed processing cleanup storage when query failed:" + e.getMessage(), e);
+        if (lastStage != null && lastStage.getTableMeta() != null) {
+          StoreType storeType = lastStage.getTableMeta().getStoreType();
+          if (storeType != null) {
+            LogicalRootNode rootNode = lastStage.getMasterPlan().getLogicalPlan().getRootBlock().getRoot();
+            try {
+              StorageManager.getStorageManager(query.systemConf, storeType).queryFailed(rootNode.getChild());
+            } catch (IOException e) {
+              LOG.warn(query.getId() + ", failed processing cleanup storage when query failed:" + e.getMessage(), e);
+            }
+          }
         }
       }
       query.eventHandler.handle(new QueryMasterQueryCompletedEvent(query.getId()));

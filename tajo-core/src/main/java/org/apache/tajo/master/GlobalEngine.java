@@ -354,7 +354,8 @@ public class GlobalEngine extends AbstractService {
     }
 
     TaskAttemptContext taskAttemptContext =
-        new TaskAttemptContext(queryContext, null, null, (CatalogProtos.FragmentProto[]) null, stagingResultDir);
+        new TaskAttemptContext(queryContext, null, null, (CatalogProtos.FragmentProto[]) null, stagingDir);
+    taskAttemptContext.setOutputPath(new Path(stagingResultDir, "part-01-000000"));
 
     EvalExprExec evalExprExec = new EvalExprExec(taskAttemptContext, (EvalExprNode) insertNode.getChild());
     StoreTableExec exec = new StoreTableExec(taskAttemptContext, insertNode, evalExprExec);

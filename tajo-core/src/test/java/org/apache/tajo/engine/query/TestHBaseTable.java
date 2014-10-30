@@ -134,7 +134,14 @@ public class TestHBaseTable extends QueryTestCaseBase {
     assertEquals("col2", hColumns[0].getNameAsString());
     assertEquals("col3", hColumns[1].getNameAsString());
 
-    executeString("DROP TABLE hbase_mapped_table1 PURGE");
+    executeString("DROP TABLE hbase_mapped_table1 PURGE").close();
+
+    HBaseAdmin hAdmin =  new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
+    try {
+      assertFalse(hAdmin.tableExists("hbase_table"));
+    } finally {
+      hAdmin.close();
+    }
   }
 
   @Test
@@ -156,7 +163,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testCreateExternalHBaseTable() throws Exception {
-    HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("external_hbase_table"));
+    HTableDescriptor hTableDesc = new HTableDescriptor(TableName.valueOf("external_hbase_table_not_purge"));
     hTableDesc.addFamily(new HColumnDescriptor("col1"));
     hTableDesc.addFamily(new HColumnDescriptor("col2"));
     hTableDesc.addFamily(new HColumnDescriptor("col3"));
@@ -167,13 +174,22 @@ public class TestHBaseTable extends QueryTestCaseBase {
     assertNotNull(zkPort);
 
     executeString("CREATE EXTERNAL TABLE external_hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
-        "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col1:a,col2:,col3:b', " +
+        "USING hbase WITH ('table'='external_hbase_table_not_purge', 'columns'=':key,col1:a,col2:,col3:b', " +
         "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
         "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
 
     assertTableExists("external_hbase_mapped_table");
 
-    executeString("DROP TABLE external_hbase_mapped_table PURGE");
+    executeString("DROP TABLE external_hbase_mapped_table").close();
+
+    HBaseAdmin hAdmin =  new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
+    try {
+      assertTrue(hAdmin.tableExists("external_hbase_table_not_purge"));
+      hAdmin.disableTable("external_hbase_table_not_purge");
+      hAdmin.deleteTable("external_hbase_table_not_purge");
+    } finally {
+      hAdmin.close();
+    }
   }
 
   @Test
@@ -213,7 +229,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       ResultSet res = executeString("select * from external_hbase_mapped_table where rk > '20'");
       assertResultSet(res);
       cleanupQuery(res);
-      executeString("DROP TABLE external_hbase_mapped_table PURGE");
+      executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
     } finally {
       htable.close();
     }
@@ -270,7 +286,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       assertEquals(expected, resultSetToString(res));
       res.close();
 
-      executeString("DROP TABLE external_hbase_mapped_table PURGE");
+      executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
     } finally {
       htable.close();
     }
@@ -308,7 +324,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       ResultSet res = executeString("select * from external_hbase_mapped_table where rk1 > 'field1-20'");
       assertResultSet(res);
       cleanupQuery(res);
-      executeString("DROP TABLE external_hbase_mapped_table PURGE");
+      executeString("DROP TABLE external_hbase_mapped_table PURGE").close();
     } finally {
       htable.close();
     }
@@ -320,18 +336,18 @@ public class TestHBaseTable extends QueryTestCaseBase {
     String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
     assertNotNull(zkPort);
 
-    executeString("CREATE TABLE external_hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
-        "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col1:a,col2:,col3:b', " +
+    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b', " +
         "'hbase.split.rowkeys'='010,040,060,080', " +
         "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
         "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
 
 
-    assertTableExists("external_hbase_mapped_table");
+    assertTableExists("hbase_mapped_table");
     HBaseAdmin hAdmin =  new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
-    hAdmin.tableExists("external_hbase_table");
+    hAdmin.tableExists("hbase_table");
 
-    HTable htable = new HTable(testingCluster.getHBaseUtil().getConf(), "external_hbase_table");
+    HTable htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
     try {
       org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> keys = htable.getStartEndKeys();
       assertEquals(5, keys.getFirst().length);
@@ -347,7 +363,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
         htable.put(put);
       }
 
-      TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "external_hbase_mapped_table");
+      TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
       // where rk >= '020' and rk <= '055'
       ScanNode scanNode = new ScanNode(1);
@@ -360,7 +376,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       scanNode.setQual(evalNodeA);
 
       StorageManager storageManager = StorageManager.getStorageManager(conf, StoreType.HBASE);
-      List<Fragment> fragments = storageManager.getSplits("external_hbase_mapped_table", tableDesc, scanNode);
+      List<Fragment> fragments = storageManager.getSplits("hbase_mapped_table", tableDesc, scanNode);
 
       assertEquals(2, fragments.size());
       HBaseFragment fragment1 = (HBaseFragment) fragments.get(0);
@@ -377,7 +393,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
           new ConstEval(new TextDatum("075")));
       EvalNode evalNodeB = new BinaryEval(EvalType.OR, evalNodeA, evalNode3);
       scanNode.setQual(evalNodeB);
-      fragments = storageManager.getSplits("external_hbase_mapped_table", tableDesc, scanNode);
+      fragments = storageManager.getSplits("hbase_mapped_table", tableDesc, scanNode);
       assertEquals(3, fragments.size());
       fragment1 = (HBaseFragment) fragments.get(0);
       assertEquals("020", new String(fragment1.getStartRow()));
@@ -400,7 +416,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       EvalNode evalNodeC = new BinaryEval(EvalType.AND, evalNode4, evalNode5);
       EvalNode evalNodeD = new BinaryEval(EvalType.OR, evalNodeA, evalNodeC);
       scanNode.setQual(evalNodeD);
-      fragments = storageManager.getSplits("external_hbase_mapped_table", tableDesc, scanNode);
+      fragments = storageManager.getSplits("hbase_mapped_table", tableDesc, scanNode);
       assertEquals(3, fragments.size());
 
       fragment1 = (HBaseFragment) fragments.get(0);
@@ -423,7 +439,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
       evalNodeC = new BinaryEval(EvalType.AND, evalNode4, evalNode5);
       evalNodeD = new BinaryEval(EvalType.OR, evalNodeA, evalNodeC);
       scanNode.setQual(evalNodeD);
-      fragments = storageManager.getSplits("external_hbase_mapped_table", tableDesc, scanNode);
+      fragments = storageManager.getSplits("hbase_mapped_table", tableDesc, scanNode);
       assertEquals(2, fragments.size());
 
       fragment1 = (HBaseFragment) fragments.get(0);
@@ -434,10 +450,10 @@ public class TestHBaseTable extends QueryTestCaseBase {
       assertEquals("040", new String(fragment2.getStartRow()));
       assertEquals("059", new String(fragment2.getStopRow()));
 
-      ResultSet res = executeString("select * from external_hbase_mapped_table where rk >= '020' and rk <= '055'");
+      ResultSet res = executeString("select * from hbase_mapped_table where rk >= '020' and rk <= '055'");
       assertResultSet(res);
       res.close();
-      executeString("DROP TABLE external_hbase_mapped_table PURGE");
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
     } finally {
       htable.close();
       hAdmin.close();
@@ -450,19 +466,19 @@ public class TestHBaseTable extends QueryTestCaseBase {
     String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
     assertNotNull(zkPort);
 
-    executeString("CREATE TABLE external_hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
-        "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col1:a,col2:,col3:b', " +
+    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b', " +
         "'hbase.split.rowkeys'='010,040,060,080', " +
         "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
         "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
 
 
-    assertTableExists("external_hbase_mapped_table");
+    assertTableExists("hbase_mapped_table");
     HBaseAdmin hAdmin =  new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
     HTable htable = null;
     try {
-      hAdmin.tableExists("external_hbase_table");
-      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "external_hbase_table");
+      hAdmin.tableExists("hbase_table");
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
       org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> keys = htable.getStartEndKeys();
       assertEquals(5, keys.getFirst().length);
 
@@ -477,10 +493,10 @@ public class TestHBaseTable extends QueryTestCaseBase {
         htable.put(put);
       }
 
-      ResultSet res = executeString("select * from external_hbase_mapped_table");
+      ResultSet res = executeString("select * from hbase_mapped_table");
       assertResultSet(res);
       res.close();
-      executeString("DROP TABLE external_hbase_mapped_table PURGE");
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
     } finally {
       hAdmin.close();
       if (htable == null) {
@@ -495,19 +511,19 @@ public class TestHBaseTable extends QueryTestCaseBase {
     String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
     assertNotNull(zkPort);
 
-    executeString("CREATE TABLE external_hbase_mapped_table (rk text, col1 text, col2 text, col3 int8) " +
-        "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col1:a,col2:,col3:b#b', " +
+    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 int8) " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b#b', " +
         "'hbase.split.rowkeys'='010,040,060,080', " +
         "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
         "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
 
 
-    assertTableExists("external_hbase_mapped_table");
+    assertTableExists("hbase_mapped_table");
     HBaseAdmin hAdmin =  new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
     HTable htable = null;
     try {
-      hAdmin.tableExists("external_hbase_table");
-      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "external_hbase_table");
+      hAdmin.tableExists("hbase_table");
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
       org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> keys = htable.getStartEndKeys();
       assertEquals(5, keys.getFirst().length);
 
@@ -523,11 +539,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
       }
 
       ResultSet res = executeString("select a.rk, a.col1, a.col2, a.col3, b.l_orderkey, b.l_linestatus " +
-          "from external_hbase_mapped_table a " +
+          "from hbase_mapped_table a " +
           "join default.lineitem b on a.col3 = b.l_orderkey");
       assertResultSet(res);
       res.close();
-      executeString("DROP TABLE external_hbase_mapped_table PURGE");
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
     } finally {
       hAdmin.close();
       if (htable != null) {
@@ -568,6 +584,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
           new byte[][]{null, Bytes.toBytes("col1"), Bytes.toBytes("col2"), Bytes.toBytes("col3")},
           new byte[][]{null, Bytes.toBytes("a"), null, Bytes.toBytes("b")},
           new boolean[]{false, false, false, true}, tableDesc.getSchema()));
+
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
     } finally {
       if (scanner != null) {
         scanner.close();
@@ -626,6 +644,9 @@ public class TestHBaseTable extends QueryTestCaseBase {
           new byte[][]{null, Bytes.toBytes("col1")},
           new byte[][]{null, Bytes.toBytes("a")},
           new boolean[]{false, false}, tableDesc.getSchema()));
+
+      executeString("DROP TABLE base_table PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
     } finally {
       if (scanner != null) {
         scanner.close();
@@ -671,6 +692,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
           new byte[][]{null, Bytes.toBytes("col1"), Bytes.toBytes("col2"), Bytes.toBytes("col3")},
           new byte[][]{null, Bytes.toBytes("a"), Bytes.toBytes(""), Bytes.toBytes("b")},
           new boolean[]{false, false, false, false}, tableDesc.getSchema()));
+
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
     } finally {
       if (scanner != null) {
         scanner.close();
@@ -729,6 +752,9 @@ public class TestHBaseTable extends QueryTestCaseBase {
           new byte[][]{null, Bytes.toBytes("col1")},
           new byte[][]{null, Bytes.toBytes("a")},
           new boolean[]{false, false}, tableDesc.getSchema()));
+
+      executeString("DROP TABLE base_table PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
     } finally {
       if (scanner != null) {
         scanner.close();

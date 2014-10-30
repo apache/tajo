@@ -27,12 +27,9 @@ import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.StorageManager;
-import org.apache.tajo.storage.hbase.HBaseStorageManager;
 import org.apache.tajo.util.Pair;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 

@@ -27,6 +27,7 @@ import jline.console.ConsoleReader;
 
 import org.apache.commons.cli.*;
 import org.apache.tajo.*;
+import org.apache.tajo.ipc.*;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
@@ -34,7 +35,6 @@ import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoHAClientUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.util.FileUtil;
 
 import java.io.*;

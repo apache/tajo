@@ -99,7 +99,7 @@ public class CSVFile {
     @Override
     public void init() throws IOException {
       if (!fs.exists(path.getParent())) {
-        throw new FileNotFoundException(path.toString());
+        throw new FileNotFoundException(path.getParent().toString());
       }
 
       //determine the intermediate file type
