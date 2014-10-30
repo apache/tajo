@@ -73,6 +73,7 @@ if [ $# = 0 ]; then
   echo "  getconf              print tajo configuration"
   echo "  jar <jar>            run a jar file"
   echo "  benchmark            run the benchmark driver"
+  echo "  version              print the version"
   echo " or"
   echo "  CLASSNAME            run the class named CLASSNAME"
   echo "Most commands print help when invoked w/o parameters."
@@ -372,6 +373,10 @@ elif [ "$COMMAND" = "dump" ] ; then
   CLASS='org.apache.tajo.client.TajoDump'
   TAJO_ROOT_LOGGER_APPENDER="${TAJO_ROOT_LOGGER_APPENDER:-NullAppender}"
   TAJO_OPTS="$TAJO_OPTS $TAJO_DUMP_OPTS"
+elif [ "$COMMAND" = "version" ] ; then
+  CLASS='org.apache.tajo.util.VersionInfo'
+  TAJO_ROOT_LOGGER_APPENDER="${TAJO_ROOT_LOGGER_APPENDER:-NullAppender}"
+  TAJO_OPTS="$TAJO_OPTS $TAJO_CLI_OPTS"
 else
   CLASS=$COMMAND
 fi
