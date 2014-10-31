@@ -11,6 +11,8 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1133: Add 'bin/tajo version' command. (Jihun Kang via hyunsik)
+
     TAJO-1145: Add 'bin/tajo --help' command. (Jihun Kang via hyunsik)
 
     TAJO-1114: Improve ConfVars (SessionVar) to take a validator 
