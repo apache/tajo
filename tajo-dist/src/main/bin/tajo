@@ -58,8 +58,7 @@ case "`uname`" in
 CYGWIN*) cygwin=true;;
 esac
 
-# if no args specified, show usage
-if [ $# = 0 ]; then
+function print_usage() {
   echo "Usage: tajo [--config confdir] COMMAND"
   echo "where COMMAND is one of:"
   echo "  master               run the Master Server"
@@ -76,12 +75,22 @@ if [ $# = 0 ]; then
   echo " or"
   echo "  CLASSNAME            run the class named CLASSNAME"
   echo "Most commands print help when invoked w/o parameters."
+}
+
+# if no args specified, show usage
+if [ $# = 0 ]; then
+  print_usage
   exit 1
 fi
 
 # get arguments
 COMMAND=$1
 shift
+
+if [ "$COMMAND" == "--help" ] || [ "$COMMAND" == "-help" ] || [ "$COMMAND" == "-h" ] ; then
+  print_usage
+  exit
+fi
 
 if [ -f "${TAJO_CONF_DIR}/tajo-env.sh" ]; then
   . "${TAJO_CONF_DIR}/tajo-env.sh"
