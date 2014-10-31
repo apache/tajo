@@ -1118,7 +1118,7 @@ public class FileStorageManager extends StorageManager {
   }
 
   @Override
-  public void verifyTableCreation(LogicalNode node) throws IOException {
+  public void beforeCATS(LogicalNode node) throws IOException {
   }
 
   @Override

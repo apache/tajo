@@ -132,9 +132,32 @@ public class HBaseLazyTuple implements Tuple, Cloneable {
           int count = 0;
           String delim = "";
 
+          if (cfMap.size() == 0) {
+            values[fieldId] = NullDatum.get();
+            return values[fieldId];
+          } else if (cfMap.size() == 1) {
+            // If a column family is mapped without column name like "cf1:" and the number of cells is one,
+            // return value is flat format not json format.
+            NavigableMap.Entry<byte[], byte[]> entry = cfMap.entrySet().iterator().next();
+            byte[] entryKey = entry.getKey();
+            byte[] entryValue = entry.getValue();
+            if (entryKey == null || entryKey.length == 0) {
+              try {
+                if (isBinaryColumns[fieldId]) {
+                  values[fieldId] = HBaseBinarySerializerDeserializer.deserialize(schemaColumns[fieldId], entryValue);
+                } else {
+                  values[fieldId] = HBaseTextSerializerDeserializer.deserialize(schemaColumns[fieldId], entryValue);
+                }
+                return values[fieldId];
+              } catch (Exception e) {
+                LOG.error(e.getMessage(), e);
+                throw new RuntimeException(e.getMessage(), e);
+              }
+            }
+          }
           StringBuilder sb = new StringBuilder();
           sb.append("{");
-          for (NavigableMap.Entry<byte[], byte[]> entry: cfMap.entrySet()) {
+          for (NavigableMap.Entry<byte[], byte[]> entry : cfMap.entrySet()) {
             byte[] entryKey = entry.getKey();
             byte[] entryValue = entry.getValue();
 
@@ -157,7 +180,7 @@ public class HBaseLazyTuple implements Tuple, Cloneable {
             if (count > 100) {
               break;
             }
-          }
+          } //end of for
           sb.append("}");
           values[fieldId] = new TextDatum(sb.toString());
           return values[fieldId];

@@ -56,7 +56,6 @@ import org.apache.tajo.master.session.Session;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.plan.rewrite.RewriteRule;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
@@ -304,7 +303,7 @@ public class GlobalEngine extends AbstractService {
         if (!storageProperty.isSupportsInsertInto()) {
           throw new VerifyException("Inserting into non-file storage is not supported.");
         }
-        sm.verifyTableCreation(rootNode.getChild());
+        sm.beforeCATS(rootNode.getChild());
       }
       context.getSystemMetrics().counter("Query", "numDMLQuery").inc();
       hookManager.doHooks(queryContext, plan);
@@ -531,7 +530,27 @@ public class GlobalEngine extends AbstractService {
       throw new VerifyException(sb.toString());
     }
 
+    verifyInsertTableSchema(queryContext, state, plan);
     return plan;
+  }
+
+  private void verifyInsertTableSchema(QueryContext queryContext, VerificationState state, LogicalPlan plan) {
+    StoreType storeType = PlannerUtil.getStoreType(plan);
+    if (storeType != null) {
+      // CATS or INSERT
+      String tableName = PlannerUtil.getStoreTableName(plan);
+      TableDesc tableDesc = catalog.getTableDesc(tableName);
+
+      LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+      Schema outSchema = rootNode.getChild().getOutSchema();
+
+      try {
+        StorageManager.getStorageManager(queryContext.getConf(), storeType)
+            .verifyInsertTableSchema(tableDesc, outSchema);
+      } catch (Throwable t) {
+        state.addVerification(t.getMessage());
+      }
+    }
   }
 
   /**

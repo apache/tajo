@@ -167,11 +167,10 @@ public abstract class StorageManager {
   public abstract Column[] getIndexColumns(TableDesc tableDesc) throws IOException;
 
   /**
-   *
    * @param node
    * @throws IOException
    */
-  public abstract void verifyTableCreation(LogicalNode node) throws IOException;
+  public abstract void beforeCATS(LogicalNode node) throws IOException;
 
   /**
    *
@@ -395,5 +394,9 @@ public abstract class StorageManager {
     } else {
       return fragment.getLength();
     }
+  }
+
+  public void verifyInsertTableSchema(TableDesc tableDesc, Schema outSchema) throws IOException {
+    // nothing to do
   }
 }

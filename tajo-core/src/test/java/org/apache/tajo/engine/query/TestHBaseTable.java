@@ -466,8 +466,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
     String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
     assertNotNull(zkPort);
 
-    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
-        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b', " +
+    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 int) " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:#b', " +
         "'hbase.split.rowkeys'='010,040,060,080', " +
         "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
         "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
@@ -489,7 +489,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
         put.add("col1".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
         put.add("col2".getBytes(), "k1".getBytes(), ("k1-" + i).getBytes());
         put.add("col2".getBytes(), "k2".getBytes(), ("k2-" + i).getBytes());
-        put.add("col3".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
+        put.add("col3".getBytes(), "".getBytes(), Bytes.toBytes(i));
         htable.put(put);
       }
 

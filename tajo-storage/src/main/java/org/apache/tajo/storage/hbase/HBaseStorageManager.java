@@ -986,7 +986,7 @@ public class HBaseStorageManager extends StorageManager {
     return storageProperty;
   }
 
-  public void verifyTableCreation(LogicalNode node) throws IOException {
+  public void beforeCATS(LogicalNode node) throws IOException {
     if (node.getType() == NodeType.CREATE_TABLE) {
       CreateTableNode cNode = (CreateTableNode)node;
       if (!cNode.isExternal()) {
@@ -1013,6 +1013,23 @@ public class HBaseStorageManager extends StorageManager {
         hAdmin.deleteTable(hTableDesc.getName());
       } finally {
         hAdmin.close();
+      }
+    }
+  }
+
+  @Override
+  public void verifyInsertTableSchema(TableDesc tableDesc, Schema outSchema) throws IOException  {
+    Schema tableSchema = tableDesc.getSchema();
+    if (tableSchema.size() != outSchema.size()) {
+      throw new IOException("The number of table columns is different from SELECT columns");
+    }
+
+    for (int i = 0; i < tableSchema.size(); i++) {
+      if (!tableSchema.getColumn(i).getDataType().equals(outSchema.getColumn(i).getDataType())) {
+        throw new IOException(outSchema.getColumn(i).getQualifiedName() +
+            "(" + outSchema.getColumn(i).getDataType() + ")" +
+            " is different column type with " + tableSchema.getColumn(i).getSimpleName() +
+            "(" + tableSchema.getColumn(i).getDataType() + ")");
       }
     }
   }
