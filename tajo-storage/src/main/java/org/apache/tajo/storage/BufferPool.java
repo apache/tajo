@@ -18,17 +18,22 @@
 
 package org.apache.tajo.storage;
 
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.datum.Datum;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.util.internal.PlatformDependent;
 
-import java.io.IOException;
-import java.io.OutputStream;
+public class BufferPool {
 
-@Deprecated
-public interface SerializerDeserializer {
+  private static final PooledByteBufAllocator allocator;
 
-  public int serialize(Column col, Datum datum, OutputStream out, byte[] nullCharacters) throws IOException;
+  static {
+    //TODO we need determine the default params
+    allocator = new PooledByteBufAllocator(PlatformDependent.directBufferPreferred());
+  }
+  public static PooledByteBufAllocator getAllocator(){
+    return allocator;
+  }
 
-  public Datum deserialize(Column col, byte[] bytes, int offset, int length, byte[] nullCharacters) throws IOException;
-
+  public static long getMaxDirectMemory() {
+    return PlatformDependent.maxDirectMemory();
+  }
 }

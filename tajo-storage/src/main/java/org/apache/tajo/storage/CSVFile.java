@@ -46,6 +46,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+@Deprecated
 public class CSVFile {
 
   public static final byte LF = '\n';
@@ -81,12 +82,16 @@ public class CSVFile {
       this.fs = path.getFileSystem(conf);
       this.meta = meta;
       this.schema = schema;
-      this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.CSVFILE_DELIMITER,
-          StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
+      this.delimiter = StringEscapeUtils.unescapeJava(
+          this.meta.getOption(StorageConstants.CSVFILE_DELIMITER,
+          this.meta.getOption(StorageConstants.TEXTFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER))).charAt(0);
+
       this.columnNum = schema.size();
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.CSVFILE_NULL,
-          NullDatum.DEFAULT_TEXT));
+      String nullCharacters = StringEscapeUtils.unescapeJava(
+          this.meta.getOption(StorageConstants.CSVFILE_NULL,
+          this.meta.getOption(StorageConstants.TEXTFILE_NULL, NullDatum.DEFAULT_TEXT)));
+
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {
@@ -261,11 +266,14 @@ public class CSVFile {
       }
 
       //Delimiter
-      String delim  = meta.getOption(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-      this.delimiter = StringEscapeUtils.unescapeJava(delim).charAt(0);
+      this.delimiter = StringEscapeUtils.unescapeJava(
+          meta.getOption(StorageConstants.CSVFILE_DELIMITER,
+          meta.getOption(StorageConstants.TEXTFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER))).charAt(0);
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.CSVFILE_NULL,
-          NullDatum.DEFAULT_TEXT));
+      String nullCharacters = StringEscapeUtils.unescapeJava(
+          meta.getOption(StorageConstants.CSVFILE_NULL,
+          meta.getOption(StorageConstants.TEXTFILE_NULL, NullDatum.DEFAULT_TEXT)));
+
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {

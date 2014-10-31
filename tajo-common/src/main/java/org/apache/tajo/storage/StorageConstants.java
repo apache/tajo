@@ -23,10 +23,16 @@ public class StorageConstants {
   public static final String COMPRESSION_CODEC = "compression.codec";
   public static final String COMPRESSION_TYPE = "compression.type";
 
+  @Deprecated
   public static final String CSVFILE_DELIMITER = "csvfile.delimiter";
+  @Deprecated
   public static final String CSVFILE_NULL = "csvfile.null";
+  @Deprecated
   public static final String CSVFILE_SERDE = "csvfile.serde";
 
+  public static final String TEXTFILE_DELIMITER = "text.delimiter";
+  public static final String TEXTFILE_NULL = "text.null";
+  public static final String TEXTFILE_SERDE = "text.serde";
 
   public static final String SEQUENCEFILE_DELIMITER = "sequencefile.delimiter";
   public static final String SEQUENCEFILE_NULL = "sequencefile.null";

@@ -747,6 +747,7 @@ public class Query implements EventHandler<QueryEvent> {
 
         String nullChar = queryContext.get(SessionVars.NULL_CHAR);
         meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
+        meta.putOption(StorageConstants.TEXTFILE_NULL, nullChar);
 
         TableStats stats = lastStage.getResultStats();
 

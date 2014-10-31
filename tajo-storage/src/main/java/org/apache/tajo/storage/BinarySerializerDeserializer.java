@@ -27,6 +27,7 @@ import org.apache.tajo.util.Bytes;
 import java.io.IOException;
 import java.io.OutputStream;
 
+@Deprecated
 public class BinarySerializerDeserializer implements SerializerDeserializer {
 
   static final byte[] INVALID_UTF__SINGLE_BYTE = {(byte) Integer.parseInt("10111111", 2)};
