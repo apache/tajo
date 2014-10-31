@@ -131,12 +131,12 @@ public class ByteBufLineReader implements Closeable {
         if (!buf.isReadable()) {
           return null;
         } else {
-          startIndex = 0; // reset the buffer position
+          startIndex = 0; // reset the line start position
         }
         readable = buffer.readableBytes();
       }
 
-      int endIndex = buffer.forEachByte(startIndex, readable, processor);
+      int endIndex = buffer.forEachByte(buffer.readerIndex(), readable, processor);
       if (endIndex < 0) {
         buffer.readerIndex(buffer.writerIndex());
       } else {

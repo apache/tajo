@@ -42,9 +42,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestLineReader {
 	private static String TEST_PATH = "target/test-data/TestLineReader";
