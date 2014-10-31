@@ -11,6 +11,10 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1133: Add 'bin/tajo version' command. (Jihun Kang via hyunsik)
+
+    TAJO-1145: Add 'bin/tajo --help' command. (Jihun Kang via hyunsik)
+
     TAJO-1114: Improve ConfVars (SessionVar) to take a validator 
     interface to check its input. (Jihun Kang via hyunsik)
 
@@ -27,6 +31,9 @@ Release 0.9.1 - unreleased
     TAJO-1121: Remove the 'v2' storage package. (Hyoungjun Kim)
 
   BUG FIXES
+
+    TAJO-1139: ExternalSortExec should delete the intermediate files. 
+    (jinho via hyunsik)
 
     TAJO-1126: Join condition including functions throws 
     IllegalArgumentException. (hyunsik)
