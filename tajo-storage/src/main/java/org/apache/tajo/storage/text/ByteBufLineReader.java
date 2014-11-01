@@ -70,19 +70,12 @@ public class ByteBufLineReader implements Closeable {
     return null;
   }
 
-  private void compactBuf(ByteBuf buf) {
-    int remainBytes = buf.readableBytes();
-    ByteBuf tailBuf = buf.slice(buf.readerIndex(), remainBytes);
-    buf.resetReaderIndex();
-    buf.resetWriterIndex();
-    buf.writeBytes(tailBuf);
-  }
-
-  private ByteBuf readNextBuffer() throws IOException {
+  private void fillBuffer() throws IOException {
 
     int remainBytes = 0;
     if (this.readBytes > 0) {
-      compactBuf(this.buffer);
+      this.buffer.markReaderIndex();
+      this.buffer.discardReadBytes();
       if (!this.buffer.isWritable()) {
         // a line bytes is large than the buffer
         this.buffer.ensureWritable(bufferSize);
@@ -105,7 +98,6 @@ public class ByteBufLineReader implements Closeable {
       this.readBytes += readBytes;
       release = false;
       this.buffer.readerIndex(this.buffer.readerIndex() + remainBytes);
-      return buffer;
     } finally {
       if (release) {
         buffer.release();
@@ -127,8 +119,8 @@ public class ByteBufLineReader implements Closeable {
       readable = buffer.readableBytes();
       if (readable <= 0) {
         buffer.readerIndex(startIndex);
-        ByteBuf buf = readNextBuffer(); //fill buffer
-        if (!buf.isReadable()) {
+        fillBuffer(); //compact and fill buffer
+        if (!buffer.isReadable()) {
           return null;
         } else {
           startIndex = 0; // reset the line start position

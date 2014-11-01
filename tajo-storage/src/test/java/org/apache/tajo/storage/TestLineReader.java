@@ -142,7 +142,7 @@ public class TestLineReader {
 
     tablePath = tablePath.suffix(extension);
     FileFragment fragment = new FileFragment("table", tablePath, 0, splitOffset);
-    LineDelimitedReader reader = new LineDelimitedReader(conf, fragment);
+    LineDelimitedReader reader = new LineDelimitedReader(conf, fragment); // if file is compressed, will read to EOF
     assertTrue(reader.isCompressed());
     assertFalse(reader.isReadable());
     reader.init();
