@@ -21,7 +21,6 @@ package org.apache.tajo.storage.hbase;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
 import org.apache.hadoop.hbase.Cell;
@@ -50,6 +49,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeSet;
 
 public class HBaseAppender implements Appender {
   private static final Log LOG = LogFactory.getLog(HBaseAppender.class);
@@ -138,6 +138,9 @@ public class HBaseAppender implements Appender {
   long totalNumBytes = 0;
   ByteArrayOutputStream bout = new ByteArrayOutputStream();
   ImmutableBytesWritable keyWritable = new ImmutableBytesWritable();
+  boolean first = true;
+  TreeSet<KeyValue> kvSet = new TreeSet<KeyValue>(KeyValue.COMPARATOR);
+
   @Override
   public void addTuple(Tuple tuple) throws IOException {
     Datum datum;
@@ -168,6 +171,24 @@ public class HBaseAppender implements Appender {
         rowkey = HBaseTextSerializerDeserializer.serialize(schema.getColumn(index), datum);
       }
     }
+    if (!first && !Bytes.equals(keyWritable.get(), 0, keyWritable.getLength(), rowkey, 0, rowkey.length)) {
+      try {
+        for (KeyValue kv : kvSet) {
+          writer.write(keyWritable, kv);
+          totalNumBytes += keyWritable.getLength() + keyWritable.getLength();
+        }
+        kvSet.clear();
+        // Statistical section
+        if (enabledStats) {
+          stats.incrementRow();
+        }
+      } catch (InterruptedException e) {
+        LOG.error(e.getMessage(), e);
+      }
+    }
+
+    first = false;
+
     keyWritable.set(rowkey);
     for (int i = 0; i < columnNum; i++) {
       if (isRowKeyMappings[i]) {
@@ -181,17 +202,7 @@ public class HBaseAppender implements Appender {
         value = HBaseTextSerializerDeserializer.serialize(schema.getColumn(i), datum);
       }
       KeyValue keyValue = new KeyValue(rowkey, mappingColumnFamilies[i][0], mappingColumnFamilies[i][1], value);
-
-      try {
-        writer.write(keyWritable, keyValue);
-      } catch (InterruptedException e) {
-        LOG.error(e.getMessage(), e);
-      }
-      totalNumBytes += keyWritable.getLength() + keyValue.getLength();
-    }
-    // Statistical section
-    if (enabledStats) {
-      stats.incrementRow();
+      kvSet.add(keyValue);
     }
   }
 
@@ -208,6 +219,22 @@ public class HBaseAppender implements Appender {
 
   @Override
   public void close() throws IOException {
+    if (!kvSet.isEmpty()) {
+      try {
+        for (KeyValue kv : kvSet) {
+          writer.write(keyWritable, kv);
+          totalNumBytes += keyWritable.getLength() + keyWritable.getLength();
+        }
+        kvSet.clear();
+        // Statistical section
+        if (enabledStats) {
+          stats.incrementRow();
+        }
+      } catch (InterruptedException e) {
+        LOG.error(e.getMessage(), e);
+      }
+    }
+
     if (enabledStats) {
       stats.setNumBytes(totalNumBytes);
     }
