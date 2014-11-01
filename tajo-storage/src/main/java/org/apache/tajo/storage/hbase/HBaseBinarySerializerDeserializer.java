@@ -35,23 +35,23 @@ public class HBaseBinarySerializerDeserializer {
     switch (col.getDataType().getType()) {
       case INT1:
       case INT2:
-        datum = bytes == null ? NullDatum.get() : DatumFactory.createInt2(Bytes.toShort(bytes));
+        datum = bytes == null || bytes.length == 0 ? NullDatum.get() : DatumFactory.createInt2(Bytes.toShort(bytes));
         break;
       case INT4:
-        datum = bytes == null ? NullDatum.get() : DatumFactory.createInt4(Bytes.toInt(bytes));
+        datum = bytes == null || bytes.length == 0 ? NullDatum.get() : DatumFactory.createInt4(Bytes.toInt(bytes));
         break;
       case INT8:
         if (bytes.length == 4) {
-          datum = bytes == null ? NullDatum.get() : DatumFactory.createInt8(Bytes.toInt(bytes));
+          datum = bytes == null || bytes.length == 0 ? NullDatum.get() : DatumFactory.createInt8(Bytes.toInt(bytes));
         } else {
-          datum = bytes == null ? NullDatum.get() : DatumFactory.createInt8(Bytes.toLong(bytes));
+          datum = bytes == null || bytes.length == 0 ? NullDatum.get() : DatumFactory.createInt8(Bytes.toLong(bytes));
         }
         break;
       case FLOAT4:
-        datum = bytes == null ? NullDatum.get() : DatumFactory.createFloat4(Bytes.toFloat(bytes));
+        datum = bytes == null || bytes.length == 0 ? NullDatum.get() : DatumFactory.createFloat4(Bytes.toFloat(bytes));
         break;
       case FLOAT8:
-        datum = bytes == null ? NullDatum.get() : DatumFactory.createFloat8(Bytes.toDouble(bytes));
+        datum = bytes == null || bytes.length == 0 ? NullDatum.get() : DatumFactory.createFloat8(Bytes.toDouble(bytes));
         break;
       case TEXT:
         datum = bytes == null ? NullDatum.get() : DatumFactory.createText(bytes);

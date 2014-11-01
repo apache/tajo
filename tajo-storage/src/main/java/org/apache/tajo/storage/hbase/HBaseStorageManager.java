@@ -42,6 +42,7 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.storage.*;
@@ -148,7 +149,7 @@ public class HBaseStorageManager extends StorageManager {
         // Creating hbase table
         HTableDescriptor hTableDescriptor = parseHTableDescriptor(tableMeta, schema);
 
-        byte[][] splitKeys = getSplitKeys(conf, tableMeta);
+        byte[][] splitKeys = getSplitKeys(conf, schema, tableMeta);
         if (splitKeys == null) {
           hAdmin.createTable(hTableDescriptor);
         } else {
@@ -160,7 +161,7 @@ public class HBaseStorageManager extends StorageManager {
     }
   }
 
-  private byte[][] getSplitKeys(TajoConf conf, TableMeta meta) throws IOException {
+  private byte[][] getSplitKeys(TajoConf conf, Schema schema, TableMeta meta) throws IOException {
     String splitRowKeys = meta.getOption(META_SPLIT_ROW_KEYS_KEY, "");
     String splitRowKeysFile = meta.getOption(META_SPLIT_ROW_KEYS_FILE_KEY, "");
 
@@ -169,11 +170,37 @@ public class HBaseStorageManager extends StorageManager {
       return null;
     }
 
+    ColumnMapping columnMapping = new ColumnMapping(schema, meta);
+    boolean[] isBinaryColumns = columnMapping.getIsBinaryColumns();
+    boolean[] isRowKeys = columnMapping.getIsRowKeyMappings();
+
+    boolean rowkeyBinary = false;
+    int numRowKeys = 0;
+    Column rowKeyColumn = null;
+    for (int i = 0; i < isBinaryColumns.length; i++) {
+      if (isBinaryColumns[i] && isRowKeys[i]) {
+        rowkeyBinary = true;
+      }
+      if (isRowKeys[i]) {
+        numRowKeys++;
+        rowKeyColumn = schema.getColumn(i);
+      }
+    }
+
+    if (rowkeyBinary && numRowKeys > 1) {
+      throw new IOException("If rowkey is mapped to multi column and a rowkey is binary, " +
+          "Multiple region for creation is not support.");
+    }
+
     if (splitRowKeys != null && !splitRowKeys.isEmpty()) {
       String[] splitKeyTokens = splitRowKeys.split(",");
       byte[][] splitKeys = new byte[splitKeyTokens.length][];
       for (int i = 0; i < splitKeyTokens.length; i++) {
-        splitKeys[i] = Bytes.toBytes(splitKeyTokens[i]);
+        if (numRowKeys == 1 && rowkeyBinary) {
+          splitKeys[i] = HBaseBinarySerializerDeserializer.serialize(rowKeyColumn, new TextDatum(splitKeyTokens[i]));
+        } else {
+          splitKeys[i] = HBaseTextSerializerDeserializer.serialize(rowKeyColumn, new TextDatum(splitKeyTokens[i]));
+        }
       }
       return splitKeys;
     }
@@ -210,6 +237,11 @@ public class HBaseStorageManager extends StorageManager {
       int index = 0;
       for (String eachKey: splitKeySet) {
         splitKeys[index++] = Bytes.toBytes(eachKey);
+        if (numRowKeys == 1 && rowkeyBinary) {
+          splitKeys[index++] = HBaseBinarySerializerDeserializer.serialize(rowKeyColumn, new TextDatum(eachKey));
+        } else {
+          splitKeys[index++] = HBaseTextSerializerDeserializer.serialize(rowKeyColumn, new TextDatum(eachKey));
+        }
       }
 
       return splitKeys;
@@ -898,67 +930,71 @@ public class HBaseStorageManager extends StorageManager {
   public TupleRange[] getInsertSortRanges(OverridableConf queryContext, TableDesc tableDesc,
                                           Schema inputSchema, SortSpec[] sortSpecs, TupleRange dataRange)
       throws IOException {
-    int[] sortKeyIndexes = new int[sortSpecs.length];
-    for (int i = 0; i < sortSpecs.length; i++) {
-      sortKeyIndexes[i] = inputSchema.getColumnId(sortSpecs[i].getSortKey().getQualifiedName());
-    }
-
-    ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta());
-    Configuration hbaseConf = HBaseStorageManager.getHBaseConfiguration(queryContext.getConf(), tableDesc.getMeta());
-
-    HTable htable = new HTable(hbaseConf, columnMapping.getHbaseTableName());
     try {
-      byte[][] endKeys = htable.getEndKeys();
-      if (endKeys.length == 1) {
-        return new TupleRange[]{dataRange};
-      }
-      List<TupleRange> tupleRanges = new ArrayList<TupleRange>(endKeys.length);
-
-      TupleComparator comparator = new TupleComparator(inputSchema, sortSpecs);
-      Tuple previousTuple = new VTuple(sortSpecs.length);
+      int[] sortKeyIndexes = new int[sortSpecs.length];
       for (int i = 0; i < sortSpecs.length; i++) {
-        previousTuple.put(i, NullDatum.get());
+        sortKeyIndexes[i] = inputSchema.getColumnId(sortSpecs[i].getSortKey().getQualifiedName());
       }
 
-      for (byte[] eachEndKey: endKeys) {
-        Tuple endTuple = new VTuple(sortSpecs.length);
-        byte[][] rowKeyFields;
-        if (sortSpecs.length > 1) {
-          rowKeyFields = BytesUtils.splitPreserveAllTokens(eachEndKey, columnMapping.getRowKeyDelimiter());
-        } else {
-          rowKeyFields = new byte[1][];
-          rowKeyFields[0] = eachEndKey;
-        }
+      ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta());
+      Configuration hbaseConf = HBaseStorageManager.getHBaseConfiguration(queryContext.getConf(), tableDesc.getMeta());
 
+      HTable htable = new HTable(hbaseConf, columnMapping.getHbaseTableName());
+      try {
+        byte[][] endKeys = htable.getEndKeys();
+        if (endKeys.length == 1) {
+          return new TupleRange[]{dataRange};
+        }
+        List<TupleRange> tupleRanges = new ArrayList<TupleRange>(endKeys.length);
+
+        TupleComparator comparator = new TupleComparator(inputSchema, sortSpecs);
+        Tuple previousTuple = new VTuple(sortSpecs.length);
         for (int i = 0; i < sortSpecs.length; i++) {
-          if (columnMapping.getIsBinaryColumns()[sortKeyIndexes[i]]) {
-            endTuple.put(i,
-                HBaseBinarySerializerDeserializer.deserialize(inputSchema.getColumn(sortKeyIndexes[i]),
-                    rowKeyFields[i]));
-          } else {
-            endTuple.put(i,
-                HBaseTextSerializerDeserializer.deserialize(inputSchema.getColumn(sortKeyIndexes[i]),
-                    rowKeyFields[i]));
-          }
+          previousTuple.put(i, NullDatum.get());
         }
-        if (comparator.compare(dataRange.getStart(), endTuple) < 0) {
-          if (comparator.compare(dataRange.getStart(), previousTuple) >= 0) {
-            previousTuple = dataRange.getStart();
-          }
-          tupleRanges.add(new TupleRange(sortSpecs, previousTuple, endTuple));
-          previousTuple = endTuple;
-        }
-      }
 
-      // Last region endkey is empty. Tajo ignores empty key, so endkey is replaced with max data value.
-      if (comparator.compare(dataRange.getEnd(), tupleRanges.get(tupleRanges.size() - 1).getStart()) >= 0) {
-        tupleRanges.get(tupleRanges.size() - 1).setEnd(dataRange.getEnd());
-      } else {
-        tupleRanges.remove(tupleRanges.size() - 1);
+        for (byte[] eachEndKey : endKeys) {
+          Tuple endTuple = new VTuple(sortSpecs.length);
+          byte[][] rowKeyFields;
+          if (sortSpecs.length > 1) {
+            rowKeyFields = BytesUtils.splitPreserveAllTokens(eachEndKey, columnMapping.getRowKeyDelimiter());
+          } else {
+            rowKeyFields = new byte[1][];
+            rowKeyFields[0] = eachEndKey;
+          }
+
+          for (int i = 0; i < sortSpecs.length; i++) {
+            if (columnMapping.getIsBinaryColumns()[sortKeyIndexes[i]]) {
+              endTuple.put(i,
+                  HBaseBinarySerializerDeserializer.deserialize(inputSchema.getColumn(sortKeyIndexes[i]),
+                      rowKeyFields[i]));
+            } else {
+              endTuple.put(i,
+                  HBaseTextSerializerDeserializer.deserialize(inputSchema.getColumn(sortKeyIndexes[i]),
+                      rowKeyFields[i]));
+            }
+          }
+          if (comparator.compare(dataRange.getStart(), endTuple) < 0) {
+            if (comparator.compare(dataRange.getStart(), previousTuple) >= 0) {
+              previousTuple = dataRange.getStart();
+            }
+            tupleRanges.add(new TupleRange(sortSpecs, previousTuple, endTuple));
+            previousTuple = endTuple;
+          }
+        }
+
+        // Last region endkey is empty. Tajo ignores empty key, so endkey is replaced with max data value.
+        if (comparator.compare(dataRange.getEnd(), tupleRanges.get(tupleRanges.size() - 1).getStart()) >= 0) {
+          tupleRanges.get(tupleRanges.size() - 1).setEnd(dataRange.getEnd());
+        } else {
+          tupleRanges.remove(tupleRanges.size() - 1);
+        }
+        return tupleRanges.toArray(new TupleRange[]{});
+      } finally {
+        htable.close();
       }
-      return tupleRanges.toArray(new TupleRange[]{});
-    } finally {
-      htable.close();
+    } catch (Throwable t) {
+      throw new IOException(t.getMessage(), t);
     }
   }
 
@@ -1027,9 +1063,9 @@ public class HBaseStorageManager extends StorageManager {
     for (int i = 0; i < tableSchema.size(); i++) {
       if (!tableSchema.getColumn(i).getDataType().equals(outSchema.getColumn(i).getDataType())) {
         throw new IOException(outSchema.getColumn(i).getQualifiedName() +
-            "(" + outSchema.getColumn(i).getDataType() + ")" +
+            "(" + outSchema.getColumn(i).getDataType().getType() + ")" +
             " is different column type with " + tableSchema.getColumn(i).getSimpleName() +
-            "(" + tableSchema.getColumn(i).getDataType() + ")");
+            "(" + tableSchema.getColumn(i).getDataType().getType() + ")");
       }
     }
   }

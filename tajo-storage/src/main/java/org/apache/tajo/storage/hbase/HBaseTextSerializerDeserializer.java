@@ -34,23 +34,23 @@ public class HBaseTextSerializerDeserializer {
     switch (col.getDataType().getType()) {
       case INT1:
       case INT2:
-        datum = bytes == null ? NullDatum.get() :
+        datum = bytes == null  || bytes.length == 0 ? NullDatum.get() :
             DatumFactory.createInt2((short)NumberUtil.parseInt(bytes, 0, bytes.length));
         break;
       case INT4:
-        datum = bytes == null ? NullDatum.get() :
+        datum = bytes == null || bytes.length == 0 ? NullDatum.get() :
             DatumFactory.createInt4(NumberUtil.parseInt(bytes, 0, bytes.length));
         break;
       case INT8:
-        datum = bytes == null ? NullDatum.get() :
+        datum = bytes == null || bytes.length == 0 ? NullDatum.get() :
             DatumFactory.createInt8(new String(bytes, 0, bytes.length));
         break;
       case FLOAT4:
-        datum = bytes == null ? NullDatum.get() :
+        datum = bytes == null || bytes.length == 0 ? NullDatum.get() :
             DatumFactory.createFloat4(new String(bytes, 0, bytes.length));
         break;
       case FLOAT8:
-        datum = bytes == null ? NullDatum.get() :
+        datum = bytes == null || bytes.length == 0 ? NullDatum.get() :
             DatumFactory.createFloat8(NumberUtil.parseDouble(bytes, 0, bytes.length));
         break;
       case TEXT:

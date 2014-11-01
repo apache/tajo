@@ -567,7 +567,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
     executeString("insert into hbase_mapped_table " +
-        "select l_orderkey::text, l_shipdate, l_returnflag, l_suppkey from default.lineitem ");
+        "select l_orderkey::text, l_shipdate, l_returnflag, l_suppkey from default.lineitem ").close();
 
     HTable htable = null;
     ResultScanner scanner = null;
@@ -629,7 +629,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
         schema, tableOptions, datas.toArray(new String[]{}), 2);
 
     executeString("insert into hbase_mapped_table " +
-        "select id, name from base_table ");
+        "select id, name from base_table ").close();
 
     HTable htable = null;
     ResultScanner scanner = null;
@@ -655,6 +655,167 @@ public class TestHBaseTable extends QueryTestCaseBase {
       if (htable != null) {
         htable.close();
       }
+    }
+  }
+
+  @Test
+  public void testInsertIntoMultiRegion2() throws Exception {
+    String hostName = InetAddress.getLocalHost().getHostName();
+    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
+    assertNotNull(zkPort);
+
+    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text) " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a', " +
+        "'hbase.split.rowkeys'='1,2,3,4,5,6,7,8,9', " +
+        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
+        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+
+    assertTableExists("hbase_mapped_table");
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
+
+    // create test table
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.TEXT);
+    schema.addColumn("name", Type.TEXT);
+    List<String> datas = new ArrayList<String>();
+    for (int i = 99; i >= 0; i--) {
+      datas.add(i + "|value" + i);
+    }
+    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
+        schema, tableOptions, datas.toArray(new String[]{}), 2);
+
+    executeString("insert into hbase_mapped_table " +
+        "select id, name from base_table ").close();
+
+    HTable htable = null;
+    ResultScanner scanner = null;
+    try {
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
+
+      Scan scan = new Scan();
+      scan.addFamily(Bytes.toBytes("col1"));
+      scanner = htable.getScanner(scan);
+
+      assertStrings(resultSetToString(scanner,
+          new byte[][]{null, Bytes.toBytes("col1")},
+          new byte[][]{null, Bytes.toBytes("a")},
+          new boolean[]{false, false}, tableDesc.getSchema()));
+
+      executeString("DROP TABLE base_table PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
+    } finally {
+      if (scanner != null) {
+        scanner.close();
+      }
+
+      if (htable != null) {
+        htable.close();
+      }
+    }
+  }
+
+  @Test
+  public void testInsertIntoBinaryMultiRegion() throws Exception {
+    String hostName = InetAddress.getLocalHost().getHostName();
+    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
+    assertNotNull(zkPort);
+
+    executeString("CREATE TABLE hbase_mapped_table (rk int4, col1 text) " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'=':key#b,col1:a', " +
+        "'hbase.split.rowkeys'='1,2,3,4,5,6,7,8,9', " +
+        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
+        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+
+    assertTableExists("hbase_mapped_table");
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
+
+    // create test table
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("name", Type.TEXT);
+    List<String> datas = new ArrayList<String>();
+    for (int i = 99; i >= 0; i--) {
+      datas.add(i + "|value" + i);
+    }
+    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
+        schema, tableOptions, datas.toArray(new String[]{}), 2);
+
+    executeString("insert into hbase_mapped_table " +
+        "select id, name from base_table ").close();
+
+    HTable htable = null;
+    ResultScanner scanner = null;
+    try {
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
+
+      Scan scan = new Scan();
+      scan.addFamily(Bytes.toBytes("col1"));
+      scanner = htable.getScanner(scan);
+
+      assertStrings(resultSetToString(scanner,
+          new byte[][]{null, Bytes.toBytes("col1")},
+          new byte[][]{null, Bytes.toBytes("a")},
+          new boolean[]{true, false}, tableDesc.getSchema()));
+
+      executeString("DROP TABLE base_table PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
+    } finally {
+      if (scanner != null) {
+        scanner.close();
+      }
+
+      if (htable != null) {
+        htable.close();
+      }
+    }
+  }
+
+  @Test
+  public void testInsertIntoDifferentType() throws Exception {
+    String hostName = InetAddress.getLocalHost().getHostName();
+    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
+    assertNotNull(zkPort);
+
+    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text) " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a', " +
+        "'hbase.split.rowkeys'='1,2,3,4,5,6,7,8,9', " +
+        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
+        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+
+    assertTableExists("hbase_mapped_table");
+
+    // create test table
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("name", Type.TEXT);
+    List<String> datas = new ArrayList<String>();
+    for (int i = 99; i >= 0; i--) {
+      datas.add(i + "|value" + i);
+    }
+    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
+        schema, tableOptions, datas.toArray(new String[]{}), 2);
+
+    try {
+      executeString("insert into hbase_mapped_table " +
+          "select id, name from base_table ").close();
+      fail("If inserting data type different with target table data type, should throw exception");
+    } catch (Exception e) {
+      assertTrue(e.getMessage().indexOf("VerifyException") >= 0);
+    } finally {
+      executeString("DROP TABLE base_table PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
     }
   }
 
@@ -774,7 +935,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     Result result = null;
     while ( (result = scanner.next()) != null ) {
       if (binaries[0]) {
-        sb.append(Bytes.toLong(result.getRow()));
+        sb.append(HBaseBinarySerializerDeserializer.deserialize(schema.getColumn(0), result.getRow()).asChar());
       } else {
         sb.append(new String(result.getRow()));
       }
