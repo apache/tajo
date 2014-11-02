@@ -38,8 +38,8 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneable {
   @Expose private String tableName; // required
   @Expose private Path uri; // required
-  @Expose private Long startOffset; // required
-  @Expose private Long length; // required
+  @Expose public Long startOffset; // required
+  @Expose public Long length; // required
 
   private String[] hosts; // Datanode hostnames
   @Expose private int[] diskIds;

@@ -1113,11 +1113,6 @@ public class FileStorageManager extends StorageManager {
   }
 
   @Override
-  public Column[] getIndexColumns(TableDesc tableDesc) throws IOException {
-    return null;
-  }
-
-  @Override
   public void beforeCATS(LogicalNode node) throws IOException {
   }
 

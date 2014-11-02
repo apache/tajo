@@ -68,7 +68,7 @@ public class ColumnMapping {
 
     List<Pair<String, String>> hbaseColumnMappings = parseColumnMapping(tableMeta);
     if (hbaseColumnMappings == null || hbaseColumnMappings.isEmpty()) {
-      throw new IOException("columns property is required.");
+      throw new IOException("'columns' property is required.");
     }
 
     if (hbaseColumnMappings.size() != schema.getColumns().size()) {

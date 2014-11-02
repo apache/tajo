@@ -71,8 +71,7 @@ public final class SortNode extends UnaryNode implements Cloneable {
     PlanString planStr = new PlanString(this);
     StringBuilder sb = new StringBuilder("Sort Keys: ");
     for (int i = 0; i < sortKeys.length; i++) {
-      sb.append(sortKeys[i].getSortKey().getSimpleName()).append(" ")
-          .append(sortKeys[i].isAscending() ? "asc" : "desc");
+      sb.append(sortKeys[i].toString());
       if( i < sortKeys.length - 1) {
         sb.append(",");
       }
@@ -84,8 +83,7 @@ public final class SortNode extends UnaryNode implements Cloneable {
   public String toString() {
     StringBuilder sb = new StringBuilder("Sort [key= ");
     for (int i = 0; i < sortKeys.length; i++) {    
-      sb.append(sortKeys[i].getSortKey().getQualifiedName()).append(" ")
-          .append(sortKeys[i].isAscending() ? "asc" : "desc");
+      sb.append(sortKeys[i].toString());
       if(i < sortKeys.length - 1) {
         sb.append(",");
       }

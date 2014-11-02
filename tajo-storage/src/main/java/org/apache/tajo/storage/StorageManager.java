@@ -33,10 +33,8 @@ import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.RewriteRule;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
@@ -158,13 +156,6 @@ public abstract class StorageManager {
   public abstract TupleRange[] getInsertSortRanges(OverridableConf queryContext, TableDesc tableDesc,
                                                    Schema inputSchema, SortSpec[] sortSpecs,
                                                    TupleRange dataRange) throws IOException;
-
-  /**
-   *
-   * @param tableDesc
-   * @throws IOException
-   */
-  public abstract Column[] getIndexColumns(TableDesc tableDesc) throws IOException;
 
   /**
    * @param node
@@ -398,5 +389,9 @@ public abstract class StorageManager {
 
   public void verifyInsertTableSchema(TableDesc tableDesc, Schema outSchema) throws IOException {
     // nothing to do
+  }
+
+  public List<RewriteRule> getRewriteRules(OverridableConf queryContext, TableDesc tableDesc) throws IOException {
+    return null;
   }
 }

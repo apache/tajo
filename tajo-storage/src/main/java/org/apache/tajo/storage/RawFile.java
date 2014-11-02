@@ -79,7 +79,6 @@ public class RawFile {
       } catch (IllegalArgumentException iae) {
         throw new IOException(iae);
       }
-
       fis = new FileInputStream(file);
       channel = fis.getChannel();
       fileLimit = fragment.getStartKey() + fragment.getLength(); // fileLimit is less than or equal to fileSize

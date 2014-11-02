@@ -97,7 +97,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
       fail("hbase table must have 'columns' meta");
     } catch (Exception e) {
-      assertTrue(e.getMessage().indexOf("HBase mapped table") >= 0);
+      assertTrue(e.getMessage().indexOf("'columns' property is required") >= 0);
     }
 
     try {
@@ -158,6 +158,24 @@ public class TestHBaseTable extends QueryTestCaseBase {
       fail("External table should be a existed table.");
     } catch (Exception e) {
       assertTrue(e.getMessage().indexOf("External table should be a existed table.") >= 0);
+    }
+  }
+
+  @Test
+  public void testCreateRowFieldWithNonText() throws Exception {
+    String hostName = InetAddress.getLocalHost().getHostName();
+    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
+    assertNotNull(zkPort);
+
+    try {
+      executeString("CREATE TABLE hbase_mapped_table2 (rk1 int4, rk2 text, col3 text, col4 text) " +
+          "USING hbase WITH ('table'='hbase_table', 'columns'='0:key#b,1:key,col3:,col2:b', " +
+          "'hbase.rowkey.delimiter'='_', " +
+          "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
+          "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+      fail("Key field type should be TEXT type");
+    } catch (Exception e) {
+      assertTrue(e.getMessage().indexOf("Key field type should be TEXT type") >= 0);
     }
   }
 
@@ -704,6 +722,69 @@ public class TestHBaseTable extends QueryTestCaseBase {
           new byte[][]{null, Bytes.toBytes("col1")},
           new byte[][]{null, Bytes.toBytes("a")},
           new boolean[]{false, false}, tableDesc.getSchema()));
+
+      executeString("DROP TABLE base_table PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
+    } finally {
+      if (scanner != null) {
+        scanner.close();
+      }
+
+      if (htable != null) {
+        htable.close();
+      }
+    }
+  }
+
+  @Test
+  public void testInsertIntoMultiRegionMultiRowFields() throws Exception {
+    String hostName = InetAddress.getLocalHost().getHostName();
+    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
+    assertNotNull(zkPort);
+
+    executeString("CREATE TABLE hbase_mapped_table (rk1 text, rk2 text, col1 text) " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'='0:key,1:key,col1:a', " +
+        "'hbase.split.rowkeys'='001,002,003,004,005,006,007,008,009', " +
+        "'hbase.rowkey.delimiter'='_', " +
+        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
+        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+
+    assertTableExists("hbase_mapped_table");
+    TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
+
+    // create test table
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id1", Type.TEXT);
+    schema.addColumn("id2", Type.TEXT);
+    schema.addColumn("name", Type.TEXT);
+    DecimalFormat df = new DecimalFormat("000");
+    List<String> datas = new ArrayList<String>();
+    for (int i = 99; i >= 0; i--) {
+      datas.add(df.format(i) + "|" + (i + 100) + "|value" + i);
+    }
+    TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
+        schema, tableOptions, datas.toArray(new String[]{}), 2);
+
+    executeString("insert into hbase_mapped_table " +
+        "select id1, id2, name from base_table ").close();
+
+    HTable htable = null;
+    ResultScanner scanner = null;
+    try {
+      htable = new HTable(testingCluster.getHBaseUtil().getConf(), "hbase_table");
+
+      Scan scan = new Scan();
+      scan.addFamily(Bytes.toBytes("col1"));
+      scanner = htable.getScanner(scan);
+
+      assertStrings(resultSetToString(scanner,
+          new byte[][]{null, null, Bytes.toBytes("col1")},
+          new byte[][]{null, null, Bytes.toBytes("a")},
+          new boolean[]{false, false, false}, tableDesc.getSchema()));
 
       executeString("DROP TABLE base_table PURGE").close();
       executeString("DROP TABLE hbase_mapped_table PURGE").close();

@@ -39,12 +39,14 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.rewrite.RewriteRule;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.*;
@@ -104,9 +106,25 @@ public class HBaseStorageManager extends StorageManager {
     }
     TableName hTableName = TableName.valueOf(hbaseTableName);
 
-    String columnMapping = tableMeta.getOption(META_COLUMNS_KEY, "");
-    if (columnMapping != null && columnMapping.split(",").length > schema.size()) {
+    String mappedColumns = tableMeta.getOption(META_COLUMNS_KEY, "");
+    if (mappedColumns != null && mappedColumns.split(",").length > schema.size()) {
       throw new IOException("Columns property has more entry than Tajo table columns");
+    }
+
+    ColumnMapping columnMapping = new ColumnMapping(schema, tableMeta);
+    int numRowKeys = 0;
+    boolean[] isRowKeyMappings = columnMapping.getIsRowKeyMappings();
+    for (int i = 0; i < isRowKeyMappings.length; i++) {
+      if (isRowKeyMappings[i]) {
+        numRowKeys++;
+      }
+    }
+    if (numRowKeys > 1) {
+      for (int i = 0; i < isRowKeyMappings.length; i++) {
+        if (schema.getColumn(i).getDataType().getType() != Type.TEXT) {
+          throw new IOException("Key field type should be TEXT type.");
+        }
+      }
     }
 
     Configuration hConf = getHBaseConfiguration(conf, tableMeta);
@@ -115,7 +133,7 @@ public class HBaseStorageManager extends StorageManager {
     try {
       if (isExternal) {
         // If tajo table is external table, only check validation.
-        if (columnMapping == null || columnMapping.isEmpty()) {
+        if (mappedColumns == null || mappedColumns.isEmpty()) {
           throw new IOException("HBase mapped table is required a '" + META_COLUMNS_KEY + "' attribute.");
         }
         if (!hAdmin.tableExists(hTableName)) {
@@ -128,7 +146,7 @@ public class HBaseStorageManager extends StorageManager {
           tableColumnFamilies.add(eachColumn.getNameAsString());
         }
 
-        Collection<String> mappingColumnFamilies = getColumnFamilies(columnMapping);
+        Collection<String> mappingColumnFamilies = getColumnFamilies(mappedColumns);
         if (mappingColumnFamilies.isEmpty()) {
           throw new IOException("HBase mapped table is required a '" + META_COLUMNS_KEY + "' attribute.");
         }
@@ -957,7 +975,20 @@ public class HBaseStorageManager extends StorageManager {
           Tuple endTuple = new VTuple(sortSpecs.length);
           byte[][] rowKeyFields;
           if (sortSpecs.length > 1) {
-            rowKeyFields = BytesUtils.splitPreserveAllTokens(eachEndKey, columnMapping.getRowKeyDelimiter());
+            byte[][] splitValues = BytesUtils.splitPreserveAllTokens(eachEndKey, columnMapping.getRowKeyDelimiter());
+            if (splitValues.length == sortSpecs.length) {
+              rowKeyFields = splitValues;
+            } else {
+              rowKeyFields = new byte[sortSpecs.length][];
+              for (int j = 0; j < sortSpecs.length; j++) {
+                if (j < splitValues.length) {
+                  rowKeyFields[j] = splitValues[j];
+                } else {
+                  rowKeyFields[j] = null;
+                }
+              }
+            }
+
           } else {
             rowKeyFields = new byte[1][];
             rowKeyFields[0] = eachEndKey;
@@ -994,12 +1025,18 @@ public class HBaseStorageManager extends StorageManager {
         htable.close();
       }
     } catch (Throwable t) {
+      LOG.error(t.getMessage(), t);
       throw new IOException(t.getMessage(), t);
     }
   }
 
-  @Override
-  public Column[] getIndexColumns(TableDesc tableDesc) throws IOException {
+  public List<RewriteRule> getRewriteRules(OverridableConf queryContext, TableDesc tableDesc) throws IOException {
+    List<RewriteRule> rules = new ArrayList<RewriteRule>();
+    rules.add(new AddSortForInsertRewriter(tableDesc, getIndexColumns(tableDesc)));
+    return rules;
+  }
+
+  private Column[] getIndexColumns(TableDesc tableDesc) throws IOException {
     List<Column> indexColumns = new ArrayList<Column>();
 
     ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta());

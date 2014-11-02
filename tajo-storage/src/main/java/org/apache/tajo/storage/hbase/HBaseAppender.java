@@ -146,7 +146,6 @@ public class HBaseAppender implements Appender {
     Datum datum;
 
     byte[] rowkey;
-    // make rowkey
     if (rowkeyColumnIndexes.length > 1) {
       bout.reset();
       for (int i = 0; i < rowkeyColumnIndexes.length; i++) {

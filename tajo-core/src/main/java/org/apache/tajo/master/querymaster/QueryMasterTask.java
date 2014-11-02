@@ -42,7 +42,7 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.rewrite.RewriteRule;
-import org.apache.tajo.plan.rewrite.rules.AddSortForInsertRewriter;
+import org.apache.tajo.storage.hbase.AddSortForInsertRewriter;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.plan.logical.LogicalNode;
@@ -375,8 +375,13 @@ public class QueryMasterTask extends CompositeService {
           if (tableDesc == null) {
             throw new VerifyException("Can't get table meta data from catalog: " + tableName);
           }
-          optimizer.addRuleAfterToJoinOpt(new AddSortForInsertRewriter(
-              getQueryTaskContext().getQueryContext(), tableDesc, sm.getIndexColumns(tableDesc)));
+          List<RewriteRule> storageSpecifiedRewriteRules = sm.getRewriteRules(
+              getQueryTaskContext().getQueryContext(), tableDesc);
+          if (storageSpecifiedRewriteRules != null) {
+            for (RewriteRule eachRule: storageSpecifiedRewriteRules) {
+              optimizer.addRuleAfterToJoinOpt(eachRule);
+            }
+          }
         }
       }
 
