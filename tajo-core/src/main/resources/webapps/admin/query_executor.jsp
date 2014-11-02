@@ -290,16 +290,17 @@ function getPage() {
   <h2>Tajo Master: <%=master.getMasterName()%> <%=activeLabel%></h2>
   <hr/>
   <h3>Query</h3>
-	<select id="selectDatabase" name="database" width="190" style="width: 190px">
-		<%
-		  for (String databaseName : master.getCatalog().getAllDatabaseNames()) {
-		%>
-		    <option value="<%=databaseName%>"><%=databaseName%></option>
-		<%
-		  }
-		%>
-	</select>
-	<p />
+  Database :  
+  <select id="selectDatabase" name="database" width="190" style="width: 190px">
+    <%
+	for (String databaseName : master.getCatalog().getAllDatabaseNames()) {
+	%>
+	  <option value="<%=databaseName%>"><%=databaseName%></option>
+	<%
+	}
+	%>
+  </select>
+  <p />
 <textarea id="query" style="width:800px; height:250px; font-family:Tahoma; font-size:12px;"></textarea>
   <p />
   Limit : <input id="sizeLimit" type="text" value="10" style="width:30px; text-align:center;" /> MB
