@@ -88,6 +88,23 @@ public class TupleComparator implements Comparator<Tuple>, ProtoObject<TupleComp
     Datum right = null;
     int compVal = 0;
 
+    String sb1 = "";
+    String sb2 = "";
+    for (int i = 0; i < sortKeyIds.length; i++) {
+      left = tuple1.get(sortKeyIds[i]);
+      right = tuple2.get(sortKeyIds[i]);
+      if (i > 0) {
+        sb1 += "_" + left.asChars();
+        sb2 += "_" + right.asChars();
+      } else {
+        sb1 += "_" + left.asChars();
+        sb2 += "_" + right.asChars();
+      }
+    }
+    if (1==1) {
+      return sb1.compareTo(sb2);
+    }
+
     for (int i = 0; i < sortKeyIds.length; i++) {
       left = tuple1.get(sortKeyIds[i]);
       right = tuple2.get(sortKeyIds[i]);

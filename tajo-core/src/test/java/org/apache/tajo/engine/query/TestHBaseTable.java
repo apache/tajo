@@ -744,7 +744,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     executeString("CREATE TABLE hbase_mapped_table (rk1 text, rk2 text, col1 text) " +
         "USING hbase WITH ('table'='hbase_table', 'columns'='0:key,1:key,col1:a', " +
-        "'hbase.split.rowkeys'='001,002,003,004,005,006,007,008,009', " +
+        "'hbase.split.rowkeys'='1,2,3,4,5,6,7,8,9', " +
         "'hbase.rowkey.delimiter'='_', " +
         "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
         "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
@@ -761,10 +761,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
     schema.addColumn("id1", Type.TEXT);
     schema.addColumn("id2", Type.TEXT);
     schema.addColumn("name", Type.TEXT);
-    DecimalFormat df = new DecimalFormat("000");
+    //DecimalFormat df = new DecimalFormat("000");
     List<String> datas = new ArrayList<String>();
     for (int i = 99; i >= 0; i--) {
-      datas.add(df.format(i) + "|" + (i + 100) + "|value" + i);
+//      datas.add(df.format(i) + "|" + (i + 100) + "|value" + i);
+      datas.add(i + "|" + (i + 100) + "|value" + i);
     }
     TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
         schema, tableOptions, datas.toArray(new String[]{}), 2);
