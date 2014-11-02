@@ -31,6 +31,7 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
@@ -102,7 +103,7 @@ public class LocalTajoTestingUtility {
     util = new TajoTestingCluster();
     util.startMiniCluster(1);
     conf = util.getConfiguration();
-    client = new TajoClient(conf);
+    client = new TajoClientImpl(conf);
 
     FileSystem fs = util.getDefaultFileSystem();
     Path rootDir = util.getMaster().getStorageManager().getWarehouseDir();

@@ -51,7 +51,7 @@ import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetPro
 public class OverridableConf extends KeyValueSet {
   private static final Log LOG = LogFactory.getLog(OverridableConf.class);
   private ConfigType [] configTypes;
-  private TajoConf conf;
+  protected TajoConf conf;
 
   public OverridableConf(final TajoConf conf, ConfigType...configTypes) {
     this.conf = conf;

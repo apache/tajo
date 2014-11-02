@@ -11,6 +11,17 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1133: Add 'bin/tajo version' command. (Jihun Kang via hyunsik)
+
+    TAJO-1145: Add 'bin/tajo --help' command. (Jihun Kang via hyunsik)
+
+    TAJO-1114: Improve ConfVars (SessionVar) to take a validator 
+    interface to check its input. (Jihun Kang via hyunsik)
+
+    TAJO-1140: Separate TajoClient into fine grained parts. (hyunsik)
+
+    TAJO-1132: More detailed version info in tsql. (hyunsik)
+
     TAJO-1125: Separate logical plan and optimizer into a maven module.
     (hyunsik)
 
@@ -21,8 +32,16 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1139: ExternalSortExec should delete the intermediate files. 
+    (jinho via hyunsik)
+
+    TAJO-1126: Join condition including functions throws 
+    IllegalArgumentException. (hyunsik)
+
 
   TASKS
+
+    TAJO-1141: Refactor the packages hierarchy of tajo-client. (hyunsik)
 
 
 

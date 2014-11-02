@@ -24,6 +24,7 @@ package org.apache.tajo.engine.query;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -44,7 +45,7 @@ public interface QueryUnitRequest extends ProtoObject<TajoWorkerProtocol.QueryUn
 	public List<FetchImpl> getFetches();
   public boolean shouldDie();
   public void setShouldDie();
-  public QueryContext getQueryContext();
+  public QueryContext getQueryContext(TajoConf conf);
   public DataChannel getDataChannel();
   public Enforcer getEnforcer();
 }

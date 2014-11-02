@@ -29,9 +29,10 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.cli.ParsedResult;
-import org.apache.tajo.cli.SimpleParser;
+import org.apache.tajo.cli.tsql.ParsedResult;
+import org.apache.tajo.cli.tsql.SimpleParser;
 import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
@@ -178,7 +179,7 @@ public class QueryTestCaseBase {
   @BeforeClass
   public static void setUpClass() throws IOException {
     conf = testBase.getTestingCluster().getConfiguration();
-    client = new TajoClient(conf);
+    client = new TajoClientImpl(conf);
   }
 
   @AfterClass
