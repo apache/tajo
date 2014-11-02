@@ -41,6 +41,8 @@ Release 0.9.1 - unreleased
 
   TASKS
 
+    TAJO-1141: Refactor the packages hierarchy of tajo-client. (hyunsik)
+
 
 
 Release 0.9.0
