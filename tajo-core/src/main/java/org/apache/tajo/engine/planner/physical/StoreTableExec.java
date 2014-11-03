@@ -100,6 +100,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
       }
     } else {
       appender = StorageManager.getStorageManager(context.getConf(), meta.getStoreType()).getAppender(
+          context.getQueryContext(),
           context.getTaskId(), meta, appenderSchema, context.getQueryContext().getStagingDir());
     }
 

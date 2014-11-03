@@ -153,7 +153,7 @@ public class FileStorageManager extends StorageManager {
   @VisibleForTesting
   public Appender getAppender(TableMeta meta, Schema schema, Path filePath)
       throws IOException {
-    return getAppender(null, meta, schema, filePath);
+    return getAppender(null, null, meta, schema, filePath);
   }
 
   public FileFragment[] split(String tableName) throws IOException {

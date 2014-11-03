@@ -51,68 +51,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
 
-public class HBaseAppender implements Appender {
-  private static final Log LOG = LogFactory.getLog(HBaseAppender.class);
+public class HFileAppender extends AbstractHBaseAppender {
+  private static final Log LOG = LogFactory.getLog(HFileAppender.class);
 
   private RecordWriter<ImmutableBytesWritable, Cell> writer;
-  private Configuration conf;
-  private Schema schema;
-  private TableMeta meta;
-  private QueryUnitAttemptId taskAttemptId;
-  private Path stagingDir;
-  private boolean inited = false;
   private TaskAttemptContext writerContext;
-  private int columnNum;
-  private ColumnMapping columnMapping;
-  private TableStatistics stats;
-  private boolean enabledStats;
-
-  private byte[][][] mappingColumnFamilies;
-  private boolean[] isBinaryColumns;
-  private boolean[] isRowKeyMappings;
-  private int[] rowKeyFieldIndexes;
-  private int[] rowkeyColumnIndexes;
-  private char rowKeyDelimiter;
-
   private Path workingFilePath;
   private FileOutputCommitter committer;
 
-  public HBaseAppender (Configuration conf, QueryUnitAttemptId taskAttemptId,
-                        Schema schema, TableMeta meta, Path stagingDir) {
-    this.conf = conf;
-    this.schema = schema;
-    this.meta = meta;
-    this.stagingDir = stagingDir;
-    this.taskAttemptId = taskAttemptId;
+  public HFileAppender(Configuration conf, QueryUnitAttemptId taskAttemptId,
+                       Schema schema, TableMeta meta, Path stagingDir) {
+    super(conf, taskAttemptId, schema, meta, stagingDir);
   }
 
   @Override
   public void init() throws IOException {
-    if (inited) {
-      throw new IllegalStateException("FileAppender is already initialized.");
-    }
-    inited = true;
-    if (enabledStats) {
-      stats = new TableStatistics(this.schema);
-    }
-
-    columnMapping = new ColumnMapping(schema, meta);
-    mappingColumnFamilies = columnMapping.getMappingColumns();
-
-    isRowKeyMappings = columnMapping.getIsRowKeyMappings();
-    List<Integer> rowkeyColumnIndexList = new ArrayList<Integer>();
-    for (int i = 0; i < isRowKeyMappings.length; i++) {
-      if (isRowKeyMappings[i]) {
-        rowkeyColumnIndexList.add(i);
-      }
-    }
-    rowkeyColumnIndexes = TUtil.toArray(rowkeyColumnIndexList);
-
-    isBinaryColumns = columnMapping.getIsBinaryColumns();
-    rowKeyDelimiter = columnMapping.getRowKeyDelimiter();
-    rowKeyFieldIndexes = columnMapping.getRowKeyFieldIndexes();
-
-    this.columnNum = schema.size();
+    super.init();
 
     Configuration taskConf = new Configuration();
     taskConf.set(FileOutputFormat.OUTDIR, stagingDir.toString());
@@ -136,7 +90,6 @@ public class HBaseAppender implements Appender {
   }
 
   long totalNumBytes = 0;
-  ByteArrayOutputStream bout = new ByteArrayOutputStream();
   ImmutableBytesWritable keyWritable = new ImmutableBytesWritable();
   boolean first = true;
   TreeSet<KeyValue> kvSet = new TreeSet<KeyValue>(KeyValue.COMPARATOR);
@@ -145,36 +98,13 @@ public class HBaseAppender implements Appender {
   public void addTuple(Tuple tuple) throws IOException {
     Datum datum;
 
-    byte[] rowkey;
-    if (rowkeyColumnIndexes.length > 1) {
-      bout.reset();
-      for (int i = 0; i < rowkeyColumnIndexes.length; i++) {
-        datum = tuple.get(rowkeyColumnIndexes[i]);
-        if (isBinaryColumns[rowkeyColumnIndexes[i]]) {
-          rowkey = HBaseBinarySerializerDeserializer.serialize(schema.getColumn(rowkeyColumnIndexes[i]), datum);
-        } else {
-          rowkey = HBaseTextSerializerDeserializer.serialize(schema.getColumn(rowkeyColumnIndexes[i]), datum);
-        }
-        bout.write(rowkey);
-        if (i < rowkeyColumnIndexes.length - 1) {
-          bout.write(rowKeyDelimiter);
-        }
-      }
-      rowkey = bout.toByteArray();
-    } else {
-      int index = rowkeyColumnIndexes[0];
-      datum = tuple.get(index);
-      if (isBinaryColumns[index]) {
-        rowkey = HBaseBinarySerializerDeserializer.serialize(schema.getColumn(index), datum);
-      } else {
-        rowkey = HBaseTextSerializerDeserializer.serialize(schema.getColumn(index), datum);
-      }
-    }
+    byte[] rowkey = getRowKeyBytes(tuple);
+
     if (!first && !Bytes.equals(keyWritable.get(), 0, keyWritable.getLength(), rowkey, 0, rowkey.length)) {
       try {
         for (KeyValue kv : kvSet) {
           writer.write(keyWritable, kv);
-          totalNumBytes += keyWritable.getLength() + keyWritable.getLength();
+          totalNumBytes += keyWritable.getLength() + kv.getLength();
         }
         kvSet.clear();
         // Statistical section
@@ -193,15 +123,7 @@ public class HBaseAppender implements Appender {
       if (isRowKeyMappings[i]) {
         continue;
       }
-      datum = tuple.get(i);
-      byte[] value;
-      if (isBinaryColumns[i]) {
-        value = HBaseBinarySerializerDeserializer.serialize(schema.getColumn(i), datum);
-      } else {
-        value = HBaseTextSerializerDeserializer.serialize(schema.getColumn(i), datum);
-      }
-      KeyValue keyValue = new KeyValue(rowkey, mappingColumnFamilies[i][0], mappingColumnFamilies[i][1], value);
-      kvSet.add(keyValue);
+      kvSet.add(getKeyValue(tuple, i, rowkey));
     }
   }
 
@@ -243,20 +165,6 @@ public class HBaseAppender implements Appender {
         committer.commitTask(writerContext);
       } catch (InterruptedException e) {
       }
-    }
-  }
-
-  @Override
-  public void enableStats() {
-    enabledStats = true;
-  }
-
-  @Override
-  public TableStats getStats() {
-    if (enabledStats) {
-      return stats.getTableStat();
-    } else {
-      return null;
     }
   }
 }

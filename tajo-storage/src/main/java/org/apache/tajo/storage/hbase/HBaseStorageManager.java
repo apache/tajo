@@ -32,17 +32,13 @@ import org.apache.hadoop.hbase.security.UserProvider;
 import org.apache.hadoop.mapreduce.JobID;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
 import org.apache.hadoop.mapreduce.task.JobContextImpl;
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.OverridableConf;
-import org.apache.tajo.QueryVars;
-import org.apache.tajo.TajoConstants;
+import org.apache.tajo.*;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
@@ -66,6 +62,8 @@ public class HBaseStorageManager extends StorageManager {
   public static final String META_ZK_QUORUM_KEY = "hbase.zookeeper.quorum";
   public static final String ROWKEY_COLUMN_MAPPING = "key";
   public static final String META_ROWKEY_DELIMITER = "hbase.rowkey.delimiter";
+
+  public static final String INSERT_PUT_MODE = "tajo.hbase.insert.put.mode";
 
   private Map<HConnectionKey, HConnection> connMap = new HashMap<HConnectionKey, HConnection>();
 
@@ -536,6 +534,17 @@ public class HBaseStorageManager extends StorageManager {
   }
 
   @Override
+  public Appender getAppender(OverridableConf queryContext,
+                              QueryUnitAttemptId taskAttemptId, TableMeta meta, Schema schema, Path workDir)
+      throws IOException {
+    if ("true".equalsIgnoreCase(queryContext.get(INSERT_PUT_MODE, "false"))) {
+      return new HBasePutAppender(conf, taskAttemptId, schema, meta, workDir);
+    } else {
+      return super.getAppender(queryContext, taskAttemptId, meta, schema, workDir);
+    }
+  }
+
+  @Override
   public List<Fragment> getNonForwardSplit(TableDesc tableDesc, int currentPage, int numFragments)
       throws IOException {
     Configuration hconf = getHBaseConfiguration(conf, tableDesc.getMeta());
@@ -966,10 +975,7 @@ public class HBaseStorageManager extends StorageManager {
         List<TupleRange> tupleRanges = new ArrayList<TupleRange>(endKeys.length);
 
         TupleComparator comparator = new TupleComparator(inputSchema, sortSpecs);
-        Tuple previousTuple = new VTuple(sortSpecs.length);
-        for (int i = 0; i < sortSpecs.length; i++) {
-          previousTuple.put(i, NullDatum.get());
-        }
+        Tuple previousTuple = dataRange.getStart();
 
         for (byte[] eachEndKey : endKeys) {
           Tuple endTuple = new VTuple(sortSpecs.length);
@@ -1005,13 +1011,8 @@ public class HBaseStorageManager extends StorageManager {
                       rowKeyFields[i]));
             }
           }
-          if (comparator.compare(dataRange.getStart(), endTuple) < 0) {
-            if (comparator.compare(dataRange.getStart(), previousTuple) >= 0) {
-              previousTuple = dataRange.getStart();
-            }
-            tupleRanges.add(new TupleRange(sortSpecs, previousTuple, endTuple));
-            previousTuple = endTuple;
-          }
+          tupleRanges.add(new TupleRange(sortSpecs, previousTuple, endTuple));
+          previousTuple = endTuple;
         }
 
         // Last region endkey is empty. Tajo ignores empty key, so endkey is replaced with max data value.
@@ -1031,9 +1032,13 @@ public class HBaseStorageManager extends StorageManager {
   }
 
   public List<RewriteRule> getRewriteRules(OverridableConf queryContext, TableDesc tableDesc) throws IOException {
-    List<RewriteRule> rules = new ArrayList<RewriteRule>();
-    rules.add(new AddSortForInsertRewriter(tableDesc, getIndexColumns(tableDesc)));
-    return rules;
+    if ("false".equalsIgnoreCase(queryContext.get(INSERT_PUT_MODE, "false"))) {
+      List<RewriteRule> rules = new ArrayList<RewriteRule>();
+      rules.add(new AddSortForInsertRewriter(tableDesc, getIndexColumns(tableDesc)));
+      return rules;
+    } else {
+      return null;
+    }
   }
 
   private Column[] getIndexColumns(TableDesc tableDesc) throws IOException {

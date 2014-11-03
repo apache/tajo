@@ -248,7 +248,8 @@ public abstract class StorageManager {
     return getScanner(meta, schema, fragment, schema);
   }
 
-  public Appender getAppender(QueryUnitAttemptId taskAttemptId, TableMeta meta, Schema schema, Path workDir)
+  public Appender getAppender(OverridableConf queryContext,
+                              QueryUnitAttemptId taskAttemptId, TableMeta meta, Schema schema, Path workDir)
       throws IOException {
     Appender appender;
 
