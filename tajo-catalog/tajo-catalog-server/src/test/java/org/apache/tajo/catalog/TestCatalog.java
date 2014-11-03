@@ -23,20 +23,16 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
-import org.apache.tajo.catalog.store.PostgreSQLStore;
-import org.apache.tajo.function.Function;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
-import org.apache.tajo.catalog.store.DerbyStore;
-import org.apache.tajo.catalog.store.MySQLStore;
-import org.apache.tajo.catalog.store.MariaDBStore;
-import org.apache.tajo.catalog.store.OracleStore;
+import org.apache.tajo.catalog.store.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.function.Function;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
@@ -53,7 +49,6 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceType;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.SetLocation;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 public class TestCatalog {
 	static final String FieldName1="f1";
@@ -382,17 +377,23 @@ public class TestCatalog {
   static IndexDesc desc3;
 
   static {
+    SortSpec[] colSpecs1 = new SortSpec[1];
+    colSpecs1[0] = new SortSpec(new Column("id", Type.INT4), true, true);
     desc1 = new IndexDesc(
-        "idx_test", new Path("idx_test"), DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
-        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
+        "idx_test", new Path("idx_test"), DEFAULT_DATABASE_NAME, "indexed", colSpecs1,
+        IndexMethod.TWO_LEVEL_BIN_TREE, true, true);
 
+    SortSpec[] colSpecs2 = new SortSpec[1];
+    colSpecs2[0] = new SortSpec(new Column("score", Type.FLOAT8), false, false);
     desc2 = new IndexDesc(
-        "idx_test2", new Path("idx_test2"), DEFAULT_DATABASE_NAME, "indexed", new Column("score", Type.FLOAT8),
-        IndexMethod.TWO_LEVEL_BIN_TREE, false, false, false);
+        "idx_test2", new Path("idx_test2"), DEFAULT_DATABASE_NAME, "indexed", colSpecs2,
+        IndexMethod.TWO_LEVEL_BIN_TREE, false, false);
 
+    SortSpec[] colSpecs3 = new SortSpec[1];
+    colSpecs3[0] = new SortSpec(new Column("id", Type.INT4), true, false);
     desc3 = new IndexDesc(
-        "idx_test", new Path("idx_test"), DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
-        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
+        "idx_test", new Path("idx_test"), DEFAULT_DATABASE_NAME, "indexed", colSpecs3,
+        IndexMethod.TWO_LEVEL_BIN_TREE, true, true);
   }
 
   public static TableDesc prepareTable() throws IOException {

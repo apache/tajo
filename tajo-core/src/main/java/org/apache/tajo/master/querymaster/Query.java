@@ -759,8 +759,8 @@ public class Query implements EventHandler<QueryEvent> {
         SortSpec[] sortSpecs = createIndexNode.getSortSpecs();
         // TODO: consider the index for two or more columns
         IndexDesc indexDesc = new IndexDesc(simpleIndexName, createIndexNode.getIndexPath(),
-            databaseName, scanNode.getTableName(), sortSpecs[0].getSortKey(), createIndexNode.getIndexType(),
-            createIndexNode.isUnique(), false, sortSpecs[0].isAscending());
+            databaseName, scanNode.getTableName(), sortSpecs, createIndexNode.getIndexType(),
+            createIndexNode.isUnique(), false);
         if (catalog.createIndex(indexDesc)) {
           LOG.info("Index " + qualifiedIndexName + " is created for the table " + scanNode.getTableName() + ".");
         } else {

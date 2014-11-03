@@ -34,19 +34,25 @@ public class TestIndexDesc {
   static IndexDesc desc1;
   static IndexDesc desc2;
   static IndexDesc desc3;
-  
+
   static {
+    SortSpec[] colSpecs1 = new SortSpec[1];
+    colSpecs1[0] = new SortSpec(new Column("id", Type.INT4), true, true);
     desc1 = new IndexDesc(
-        "idx_test", new Path("idx_test"), DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
-        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
-    
+        "idx_test", new Path("idx_test"), DEFAULT_DATABASE_NAME, "indexed", colSpecs1,
+        IndexMethod.TWO_LEVEL_BIN_TREE, true, true);
+
+    SortSpec[] colSpecs2 = new SortSpec[1];
+    colSpecs2[0] = new SortSpec(new Column("score", Type.FLOAT8), false, false);
     desc2 = new IndexDesc(
-        "idx_test2", new Path("idx_test2"), DEFAULT_DATABASE_NAME, "indexed", new Column("score", Type.FLOAT8),
-        IndexMethod.TWO_LEVEL_BIN_TREE, false, false, false);
-    
+        "idx_test2", new Path("idx_test2"), DEFAULT_DATABASE_NAME, "indexed", colSpecs2,
+        IndexMethod.TWO_LEVEL_BIN_TREE, false, false);
+
+    SortSpec[] colSpecs3 = new SortSpec[1];
+    colSpecs3[0] = new SortSpec(new Column("id", Type.INT4), true, false);
     desc3 = new IndexDesc(
-        "idx_test", new Path("idx_test"), DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
-        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
+        "idx_test", new Path("idx_test"), DEFAULT_DATABASE_NAME, "indexed", colSpecs3,
+        IndexMethod.TWO_LEVEL_BIN_TREE, true, true);
   }
 
   @BeforeClass
@@ -68,21 +74,25 @@ public class TestIndexDesc {
   public void testGetFields() {
     assertEquals("idx_test", desc1.getName());
     assertEquals("indexed", desc1.getTableName());
-    assertEquals(new Column("id", Type.INT4), desc1.getColumn());
+    assertEquals(1, desc1.getColumnSpecs().length);
+    assertEquals(new Column("id", Type.INT4), desc1.getColumnSpecs()[0].getSortKey());
+    assertEquals(true, desc1.getColumnSpecs()[0].isAscending());
+    assertEquals(true, desc1.getColumnSpecs()[0].isNullFirst());
     assertEquals(IndexMethod.TWO_LEVEL_BIN_TREE, desc1.getIndexMethod());
     assertEquals(new Path("idx_test"), desc1.getIndexPath());
     assertEquals(true, desc1.isUnique());
     assertEquals(true, desc1.isClustered());
-    assertEquals(true, desc1.isAscending());
-    
+
     assertEquals("idx_test2", desc2.getName());
     assertEquals("indexed", desc2.getTableName());
-    assertEquals(new Column("score", Type.FLOAT8), desc2.getColumn());
+    assertEquals(1, desc2.getColumnSpecs().length);
+    assertEquals(new Column("score", Type.FLOAT8), desc2.getColumnSpecs()[0].getSortKey());
+    assertEquals(true, desc2.getColumnSpecs()[0].isAscending());
+    assertEquals(true, desc2.getColumnSpecs()[0].isNullFirst());
     assertEquals(IndexMethod.TWO_LEVEL_BIN_TREE, desc2.getIndexMethod());
     assertEquals(new Path("idx_test2"), desc2.getIndexPath());
     assertEquals(false, desc2.isUnique());
     assertEquals(false, desc2.isClustered());
-    assertEquals(false, desc2.isAscending());
   }
 
   @Test

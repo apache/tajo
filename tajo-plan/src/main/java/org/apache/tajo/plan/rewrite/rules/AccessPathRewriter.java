@@ -20,7 +20,6 @@ package org.apache.tajo.plan.rewrite.rules;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.IndexDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
@@ -127,9 +126,11 @@ public class AccessPathRewriter implements RewriteRule {
         plan.addHistory("AccessPathRewriter chooses " + indexScanInfo.getIndexDesc().getName() + " for "
             + scanNode.getTableName() + " scan");
         IndexDesc indexDesc = indexScanInfo.getIndexDesc();
-        Schema indexKeySchema = new Schema(new Column[]{indexDesc.getColumn()});
-        SortSpec[] sortSpecs = new SortSpec[1];
-        sortSpecs[0] = new SortSpec(indexDesc.getColumn(), indexDesc.isAscending(), false);
+        SortSpec[] sortSpecs = indexDesc.getColumnSpecs();
+        Schema indexKeySchema = new Schema();
+        for (SortSpec colSpec : sortSpecs) {
+          indexKeySchema.addColumn(colSpec.getSortKey());
+        }
         IndexScanNode indexScanNode = new IndexScanNode(plan.newPID(), scanNode, indexKeySchema,
             indexScanInfo.getValues(), sortSpecs, indexDesc.getIndexPath());
         if (stack.empty() || block.getRoot().equals(scanNode)) {

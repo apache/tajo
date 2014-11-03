@@ -30,6 +30,7 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
 
 import java.io.IOException;
 import java.util.*;
@@ -379,8 +380,10 @@ public class MemStore implements CatalogStore {
     }
 
     index.put(proto.getName(), proto);
-    indexByColumn.put(getColumnNameQualifiedByTableName(proto.getTableIdentifier().getTableName(), proto.getColumn().getName()),
-        proto);
+    for (SortSpecProto colSpecProto : proto.getColumnSpecsList()) {
+      indexByColumn.put(getColumnNameQualifiedByTableName(proto.getTableIdentifier().getTableName(),
+              colSpecProto.getColumn().getName()), proto);
+    }
   }
 
   /* (non-Javadoc)
@@ -395,8 +398,10 @@ public class MemStore implements CatalogStore {
     }
     IndexDescProto proto = index.get(indexName);
     index.remove(indexName);
-    indexByColumn.remove(getColumnNameQualifiedByTableName(proto.getTableIdentifier().getTableName(),
-        proto.getColumn().getName()));
+    for (SortSpecProto colSpecProto : proto.getColumnSpecsList()) {
+      indexByColumn.remove(getColumnNameQualifiedByTableName(proto.getTableIdentifier().getTableName(),
+          colSpecProto.getColumn().getName()));
+    }
   }
 
   /* (non-Javadoc)

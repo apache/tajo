@@ -28,41 +28,49 @@ import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.common.ProtoObject;
 
 public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
-  private IndexDescProto.Builder builder;
-
-  private String name;
-  private Path indexPath;            // required
   private String databaseName;         // required
   private String tableName;            // required
-  private Column column;               // required
+  private String name;                 // required
   private IndexMethod indexMethod;     // required
+  private Path indexPath;              // required
+  private SortSpec[] columnSpecs;  // required
   private boolean isUnique = false;    // optional [default = false]
   private boolean isClustered = false; // optional [default = false]
-  private boolean isAscending = false; // optional [default = false]
-  
+
   public IndexDesc() {
   }
   
-  public IndexDesc(String name, Path indexPath, String databaseName, String tableName, Column column,
-                   IndexMethod type,  boolean isUnique, boolean isClustered, boolean isAscending) {
+  public IndexDesc(String name, Path indexPath, String databaseName, String tableName, SortSpec[] columnSpecs,
+                   IndexMethod type,  boolean isUnique, boolean isClustered) {
     this();
+    this.set(name, indexPath, databaseName, tableName, columnSpecs, type, isUnique, isClustered);
+  }
+  
+  public IndexDesc(IndexDescProto proto) {
+    this();
+
+    SortSpec[] columnSpecs = new SortSpec[proto.getColumnSpecsCount()];
+    for (int i = 0; i < columnSpecs.length; i++) {
+      columnSpecs[i] = new SortSpec(proto.getColumnSpecs(i));
+    }
+
+    this.set(proto.getName(), new Path(proto.getIndexPath()),
+        proto.getTableIdentifier().getDatabaseName(),
+        proto.getTableIdentifier().getTableName(),
+        columnSpecs,
+        proto.getIndexMethod(), proto.getIsUnique(), proto.getIsClustered());
+  }
+
+  public void set(String name, Path indexPath, String databaseName, String tableName, SortSpec[] columnSpecs,
+                  IndexMethod type,  boolean isUnique, boolean isClustered) {
     this.name = name;
     this.indexPath = indexPath;
     this.databaseName = databaseName;
     this.tableName = tableName;
-    this.column = column;
     this.indexMethod = type;
+    this.columnSpecs = columnSpecs;
     this.isUnique = isUnique;
     this.isClustered = isClustered;
-    this.isAscending = isAscending;
-  }
-  
-  public IndexDesc(IndexDescProto proto) {
-    this(proto.getName(), new Path(proto.getIndexPath()),
-        proto.getTableIdentifier().getDatabaseName(),
-        proto.getTableIdentifier().getTableName(),
-        new Column(proto.getColumn()),
-        proto.getIndexMethod(), proto.getIsUnique(), proto.getIsClustered(), proto.getIsAscending());
   }
 
   public String getName() {
@@ -77,8 +85,8 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
     return tableName;
   }
   
-  public Column getColumn() {
-    return column;
+  public SortSpec[] getColumnSpecs() {
+    return columnSpecs;
   }
   
   public IndexMethod getIndexMethod() {
@@ -91,10 +99,6 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   
   public boolean isUnique() {
     return this.isUnique;
-  }
-  
-  public boolean isAscending() {
-    return this.isAscending;
   }
 
   @Override
@@ -112,11 +116,12 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
     builder.setTableIdentifier(tableIdentifierBuilder.build());
     builder.setName(this.name);
     builder.setIndexPath(this.indexPath.toString());
-    builder.setColumn(this.column.getProto());
+    for (SortSpec colSpec : columnSpecs) {
+      builder.addColumnSpecs(colSpec.getProto());
+    }
     builder.setIndexMethod(indexMethod);
     builder.setIsUnique(this.isUnique);
     builder.setIsClustered(this.isClustered);
-    builder.setIsAscending(this.isAscending);
 
     return builder.build();
   }
@@ -127,19 +132,18 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
       return getIndexPath().equals(other.getIndexPath())
           && getName().equals(other.getName())
           && getTableName().equals(other.getTableName())
-          && getColumn().equals(other.getColumn())
+          && getColumnSpecs().equals(other.getColumnSpecs())
           && getIndexMethod().equals(other.getIndexMethod())
           && isUnique() == other.isUnique()
-          && isClustered() == other.isClustered()
-          && isAscending() == other.isAscending();
+          && isClustered() == other.isClustered();
     } else {
       return false;
     }
   }
   
   public int hashCode() {
-    return Objects.hashCode(getName(), getIndexPath(), getTableName(), getColumn(),
-        getIndexMethod(), isUnique(), isClustered(), isAscending());
+    return Objects.hashCode(getName(), getIndexPath(), getTableName(), getColumnSpecs(),
+        getIndexMethod(), isUnique(), isClustered());
   }
 
   public Object clone() throws CloneNotSupportedException {
@@ -147,11 +151,10 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
     desc.name = name;
     desc.indexPath = indexPath;
     desc.tableName = tableName;
-    desc.column = column;
+    desc.columnSpecs = columnSpecs;
     desc.indexMethod = indexMethod;
     desc.isUnique = isUnique;
     desc.isClustered = isClustered;
-    desc.isAscending = isAscending;
     return desc;
   }
   

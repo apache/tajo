@@ -1610,7 +1610,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     String databaseName = proto.getTableIdentifier().getDatabaseName();
     String tableName = CatalogUtil.extractSimpleName(proto.getTableIdentifier().getTableName());
-    String columnName = CatalogUtil.extractSimpleName(proto.getColumn().getName());
 
     try {
       int databaseId = getDatabaseId(databaseName);
@@ -1618,12 +1617,27 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       String sql = "INSERT INTO " + TB_INDEXES +
           " (" + COL_DATABASES_PK + ", " + COL_TABLES_PK + ", INDEX_NAME, " +
-          "COLUMN_NAME, DATA_TYPE, INDEX_TYPE, PATH, IS_UNIQUE, IS_CLUSTERED, IS_ASCENDING) " +
-          "VALUES (?,?,?,?,?,?,?,?,?,?)";
+          "INDEX_TYPE, PATH, COLUMN_NAMES, DATA_TYPES, ORDERS, NULL_ORDERS, IS_UNIQUE, IS_CLUSTERED) " +
+          "VALUES (?,?,?,?,?,?,?,?,?,?,?)";
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
+
+      StringBuilder columnNamesBuilder = new StringBuilder();
+      StringBuilder dataTypesBuilder= new StringBuilder();
+      StringBuilder ordersBuilder = new StringBuilder();
+      StringBuilder nullOrdersBuilder = new StringBuilder();
+      for (SortSpecProto columnSpec : proto.getColumnSpecsList()) {
+        columnNamesBuilder.append(columnSpec.getColumn().getName()).append(",");
+        dataTypesBuilder.append(columnSpec.getColumn().getDataType().getType().name()).append(",");
+        ordersBuilder.append(columnSpec.getAscending()).append(",");
+        nullOrdersBuilder.append(columnSpec.getNullFirst()).append(",");
+      }
+      columnNamesBuilder.deleteCharAt(columnNamesBuilder.length()-1);
+      dataTypesBuilder.deleteCharAt(dataTypesBuilder.length()-1);
+      ordersBuilder.deleteCharAt(ordersBuilder.length()-1);
+      nullOrdersBuilder.deleteCharAt(nullOrdersBuilder.length()-1);
 
       conn = getConnection();
       conn.setAutoCommit(false);
@@ -1631,14 +1645,15 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
       pstmt.setInt(2, tableId);
-      pstmt.setString(3, proto.getName());
-      pstmt.setString(4, columnName);
-      pstmt.setString(5, proto.getColumn().getDataType().getType().name());
-      pstmt.setString(6, proto.getIndexMethod().toString());
-      pstmt.setString(7, proto.getIndexPath());
-      pstmt.setBoolean(8, proto.hasIsUnique() && proto.getIsUnique());
-      pstmt.setBoolean(9, proto.hasIsClustered() && proto.getIsClustered());
-      pstmt.setBoolean(10, proto.hasIsAscending() && proto.getIsAscending());
+      pstmt.setString(3, proto.getName()); // index name
+      pstmt.setString(4, proto.getIndexMethod().toString()); // index type
+      pstmt.setString(5, proto.getIndexPath()); // index path
+      pstmt.setString(6, columnNamesBuilder.toString());
+      pstmt.setString(7, dataTypesBuilder.toString());
+      pstmt.setString(8, ordersBuilder.toString());
+      pstmt.setString(9, nullOrdersBuilder.toString());
+      pstmt.setBoolean(10, proto.hasIsUnique() && proto.getIsUnique());
+      pstmt.setBoolean(11, proto.hasIsClustered() && proto.getIsClustered());
       pstmt.executeUpdate();
       conn.commit();
     } catch (SQLException se) {
@@ -1735,6 +1750,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return proto;
   }
 
+  // TODO: create another table, called indexes_by_col
   @Override
   public IndexDescProto getIndexByColumn(final String databaseName,
                                          final String tableName,
@@ -1756,7 +1772,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       conn = getConnection();
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
-      ;
       pstmt.setString(2, columnName);
       res = pstmt.executeQuery();
       if (!res.next()) {
@@ -1886,12 +1901,24 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   private void resultToIndexDescProtoBuilder(IndexDescProto.Builder builder,
                                              final ResultSet res) throws SQLException {
     builder.setName(res.getString("index_name"));
-    builder.setColumn(indexResultToColumnProto(res));
     builder.setIndexMethod(getIndexMethod(res.getString("index_type").trim()));
     builder.setIndexPath(res.getString("path"));
+    String[] columnNames, dataTypes, orders, nullOrders;
+    columnNames = res.getString("column_names").trim().split(",");
+    dataTypes = res.getString("data_types").trim().split(",");
+    orders = res.getString("orders").trim().split(",");
+    nullOrders = res.getString("null_orders").trim().split(",");
+    int columnNum = columnNames.length;
+    for (int i = 0; i < columnNum; i++) {
+      SortSpecProto.Builder colSpecBuilder = SortSpecProto.newBuilder();
+      colSpecBuilder.setColumn(ColumnProto.newBuilder().setName(columnNames[i])
+          .setDataType(CatalogUtil.newSimpleDataType(getDataType(dataTypes[i]))).build());
+      colSpecBuilder.setAscending(orders[i].equals("true"));
+      colSpecBuilder.setNullFirst(nullOrders[i].equals("true"));
+      builder.addColumnSpecs(colSpecBuilder.build());
+    }
     builder.setIsUnique(res.getBoolean("is_unique"));
     builder.setIsClustered(res.getBoolean("is_clustered"));
-    builder.setIsAscending(res.getBoolean("is_ascending"));
   }
 
   /**

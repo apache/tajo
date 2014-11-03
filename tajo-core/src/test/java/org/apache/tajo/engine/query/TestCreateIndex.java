@@ -88,7 +88,6 @@ public class TestCreateIndex extends QueryTestCaseBase {
   public final void test() throws Exception {
     executeString("create index l_orderkey_idx2 on lineitem (l_orderkey asc null first);");
     assertTrue(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_idx2"));
-    executeString("select * from lineitem where l_orderkey = 10");
     executeString("drop index l_orderkey_idx2");
     assertFalse(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_idx2"));
     assertIndexNotExist(getCurrentDatabase(), "l_orderkey_idx2");
