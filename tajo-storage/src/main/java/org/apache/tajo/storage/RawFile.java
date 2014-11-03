@@ -19,7 +19,7 @@
 package org.apache.tajo.storage;
 
 import com.google.protobuf.Message;
-
+import io.netty.buffer.ByteBuf;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -51,14 +51,15 @@ public class RawFile {
     private DataType[] columnTypes;
 
     private ByteBuffer buffer;
-    private int bufferSize;
+    private ByteBuf buf;
     private Tuple tuple;
 
     private int headerSize = 0; // Header size of a tuple
     private BitArray nullFlags;
     private static final int RECORD_SIZE = 4;
     private boolean eof = false;
-    private long fileLimit; // If this.fragment represents a complete file, this value is equal to the file's size
+    private long length;
+    private long startOffset;
     private long numBytesRead;
     private FileInputStream fis;
     private long recordCount;
@@ -81,22 +82,15 @@ public class RawFile {
 
       fis = new FileInputStream(file);
       channel = fis.getChannel();
-      fileLimit = fragment.getStartKey() + fragment.getEndKey(); // fileLimit is less than or equal to fileSize
+      length = fragment.getEndKey();
 
-      if (tableStats != null) {
-        tableStats.setNumBytes(fragment.getEndKey());
-      }
       if (LOG.isDebugEnabled()) {
-        LOG.debug("RawFileScanner open:" + fragment + "," + channel.position() + ", total file size :" + channel.size()
-            + ", fragment size :" + fragment.getEndKey() + ", fileLimit: " + fileLimit);
+        LOG.debug("RawFileScanner open:" + fragment + "," + channel.position() + ", file size :" + channel.size()
+            + ", fragment length :" + fragment.getEndKey());
       }
 
-      if (fragment.getEndKey() < 64 * StorageUnit.KB) {
-	      bufferSize = fragment.getEndKey().intValue();
-      } else {
-	      bufferSize = 64 * StorageUnit.KB;
-      }
-      buffer = ByteBuffer.allocateDirect(bufferSize);
+      buf = BufferPool.directBuffer(64 * StorageUnit.KB);
+      buffer = buf.nioBuffer(0, buf.capacity());
 
       columnTypes = new DataType[schema.size()];
       for (int i = 0; i < schema.size(); i++) {
@@ -109,8 +103,9 @@ public class RawFile {
 
       // initial read
       if (fragment.getStartKey() > 0) {
-	channel.position(fragment.getStartKey());
+        channel.position(fragment.getStartKey());
       }
+      startOffset = fragment.getStartKey();
       numBytesRead = channel.read(buffer);
       buffer.flip();
 
@@ -119,7 +114,7 @@ public class RawFile {
 
     @Override
     public long getNextOffset() throws IOException {
-      return channel.position() - buffer.remaining();
+      return startOffset + numBytesRead - buffer.remaining();
     }
 
     @Override
@@ -128,37 +123,33 @@ public class RawFile {
       if(currentPos < offset &&  offset < currentPos + buffer.limit()){
         buffer.position((int)(offset - currentPos));
       } else {
-        buffer.clear();
+        if(offset < startOffset || offset > startOffset + length){
+          throw new IndexOutOfBoundsException(String.format("range(%d, %d), offset: ",
+              startOffset, startOffset + length, offset));
+        }
         channel.position(offset);
+        numBytesRead = offset - startOffset;
+        buffer.clear();
         int bytesRead = channel.read(buffer);
-        numBytesRead = bytesRead;
-        buffer.flip();
-        eof = false;
+        if(bytesRead == -1) {
+          eof = true;
+        } else {
+          numBytesRead += bytesRead;
+          buffer.flip();
+          eof = false;
+        }
       }
     }
 
     private boolean fillBuffer() throws IOException {
-      if (numBytesRead >= fragment.getEndKey()) {
-        eof = true;
-        return false;
-      }
-      int currentDataSize = buffer.remaining();
       buffer.compact();
       int bytesRead = channel.read(buffer);
       if (bytesRead == -1) {
         eof = true;
         return false;
       } else {
-        buffer.flip();
-        long realRemaining = fragment.getEndKey() - numBytesRead;
+        buffer.flip(); //The limit is set to the current position and then the position is set to zero
         numBytesRead += bytesRead;
-        if (realRemaining < bufferSize) {
-          int newLimit = currentDataSize + (int) realRemaining;
-          if(newLimit > bufferSize) {
-            newLimit = bufferSize;
-          }
-          buffer.limit(newLimit);
-        }
         return true;
       }
     }
@@ -264,14 +255,22 @@ public class RawFile {
       nullFlags.fromByteBuffer(buffer);
       // restore the start of record contents
       buffer.limit(bufferLimit);
-      //buffer.position(recordOffset + headerSize);
       if (buffer.remaining() < (recordSize - headerSize)) {
+
+        //if the buffer reaches the readable size, the buffer increase the record size
+        if (buffer.capacity() - buffer.remaining()  <  recordSize) {
+          buf.setIndex(buffer.position(), buffer.limit());
+          buf.markReaderIndex();
+          buf.discardSomeReadBytes();
+          buf.ensureWritable(recordSize);
+          buffer = buf.nioBuffer(0, buf.capacity());
+          buffer.limit(buf.writerIndex());
+        }
+
         if (!fillBuffer()) {
           return null;
         }
       }
-
-      recordCount++;
 
       for (int i = 0; i < columnTypes.length; i++) {
         // check if the i'th column is null
@@ -320,7 +319,7 @@ public class RawFile {
             int len = readRawVarint32();
             byte [] strBytes = new byte[len];
             buffer.get(strBytes);
-            tuple.put(i, DatumFactory.createText(new String(strBytes)));
+            tuple.put(i, DatumFactory.createText(strBytes));
             break;
           }
 
@@ -377,7 +376,9 @@ public class RawFile {
         }
       }
 
-      if(!buffer.hasRemaining() && channel.position() == fileLimit){
+      recordCount++;
+
+      if(numBytesRead - buffer.remaining() >= length){
         eof = true;
       }
       return new VTuple(tuple);
@@ -389,6 +390,7 @@ public class RawFile {
       buffer.clear();
       // reload initial buffer
       channel.position(fragment.getStartKey());
+      startOffset = fragment.getStartKey();
       numBytesRead = channel.read(buffer);
       buffer.flip();
       eof = false;
@@ -397,11 +399,18 @@ public class RawFile {
     @Override
     public void close() throws IOException {
       if (tableStats != null) {
-        tableStats.setReadBytes(fragment.getEndKey());
+        tableStats.setReadBytes(length);
         tableStats.setNumRows(recordCount);
       }
 
-      StorageUtil.closeBuffer(buffer);
+      if(buf != null){
+        buffer.clear();
+        buffer = null;
+
+        buf.release();
+        buf = null;
+      }
+
       IOUtils.cleanup(LOG, channel, fis);
     }
 
@@ -421,26 +430,30 @@ public class RawFile {
     }
 
     @Override
+    public TableStats getInputStats() {
+      if(tableStats != null){
+        tableStats.setNumRows(recordCount);
+        tableStats.setReadBytes(numBytesRead);
+      }
+      return tableStats;
+    }
+
+    @Override
     public float getProgress() {
       try {
-        tableStats.setNumRows(recordCount);
-        long filePos = 0;
-        if (channel != null) {
-          filePos = channel.position();
-          tableStats.setReadBytes(filePos);
-        }
+        tableStats.setReadBytes(numBytesRead);
 
-        if(eof || channel == null) {
-          tableStats.setReadBytes(fragment.getEndKey());
+        if(eof) {
+          tableStats.setReadBytes(length);
           return 1.0f;
         }
 
-        if (filePos == 0) {
+        if (numBytesRead == 0) {
           return 0.0f;
         } else {
-          return Math.min(1.0f, ((float)filePos / fragment.getEndKey().floatValue()));
+          return Math.min(1.0f, ((float)numBytesRead / fragment.getEndKey().floatValue()));
         }
-      } catch (IOException e) {
+      } catch (Throwable e) {
         LOG.error(e.getMessage(), e);
         return 0.0f;
       }
@@ -453,6 +466,7 @@ public class RawFile {
     private DataType[] columnTypes;
 
     private ByteBuffer buffer;
+    private ByteBuf buf;
     private BitArray nullFlags;
     private int headerSize = 0;
     private static final int RECORD_SIZE = 4;
@@ -485,7 +499,8 @@ public class RawFile {
         columnTypes[i] = schema.getColumn(i).getDataType();
       }
 
-      buffer = ByteBuffer.allocateDirect(64 * 1024);
+      buf = BufferPool.directBuffer(64 * StorageUnit.KB);
+      buffer = buf.nioBuffer(0, buf.capacity());
 
       // comput the number of bytes, representing the null flags
 
@@ -505,7 +520,6 @@ public class RawFile {
     }
 
     private void flushBuffer() throws IOException {
-      buffer.limit(buffer.position());
       buffer.flip();
       channel.write(buffer);
       buffer.clear();
@@ -743,7 +757,14 @@ public class RawFile {
         LOG.debug("RawFileAppender written: " + getOffset() + " bytes, path: " + path);
       }
 
-      StorageUtil.closeBuffer(buffer);
+      if(buf != null){
+        buffer.clear();
+        buffer = null;
+
+        buf.release();
+        buf = null;
+      }
+
       IOUtils.cleanup(LOG, channel, randomAccessFile);
     }
 
