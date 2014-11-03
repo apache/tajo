@@ -91,7 +91,7 @@ public class TpchTestBase {
   private void setUp() throws Exception {
     util = new LocalTajoTestingUtility();
     KeyValueSet opt = new KeyValueSet();
-    opt.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    opt.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     util.setup(names, paths, schemas, opt);
   }
 

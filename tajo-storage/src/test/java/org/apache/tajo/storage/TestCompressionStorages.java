@@ -37,7 +37,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.sequencefile.SequenceFileScanner;
-import org.apache.tajo.storage.text.FieldDelimitedFile;
+import org.apache.tajo.storage.text.DelimitedTextFile;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -131,8 +131,8 @@ public class TestCompressionStorages {
     String extension = "";
     if (appender instanceof CSVFile.CSVAppender) {
       extension = ((CSVFile.CSVAppender) appender).getExtension();
-    } else if (appender instanceof FieldDelimitedFile.FieldDelimitedFileAppender) {
-      extension = ((FieldDelimitedFile.FieldDelimitedFileAppender) appender).getExtension();
+    } else if (appender instanceof DelimitedTextFile.DelimitedTextFileAppender) {
+      extension = ((DelimitedTextFile.DelimitedTextFileAppender) appender).getExtension();
     }
 
     int tupleNum = 100000;

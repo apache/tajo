@@ -30,9 +30,9 @@ public class StorageConstants {
   @Deprecated
   public static final String CSVFILE_SERDE = "csvfile.serde";
 
-  public static final String TEXTFILE_DELIMITER = "text.delimiter";
-  public static final String TEXTFILE_NULL = "text.null";
-  public static final String TEXTFILE_SERDE = "text.serde";
+  public static final String TEXT_DELIMITER = "text.delimiter";
+  public static final String TEXT_NULL = "text.null";
+  public static final String TEXTFILE_SERDE = "textfile.serde";
 
   @Deprecated
   public static final String SEQUENCEFILE_DELIMITER = "sequencefile.delimiter";

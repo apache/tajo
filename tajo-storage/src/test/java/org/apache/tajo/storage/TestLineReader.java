@@ -34,7 +34,7 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.text.ByteBufLineReader;
-import org.apache.tajo.storage.text.FieldDelimitedFile;
+import org.apache.tajo.storage.text.DelimitedTextFile;
 import org.apache.tajo.storage.text.DelimitedLineReader;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Test;
@@ -137,7 +137,7 @@ public class TestLineReader {
         splitOffset = appender.getOffset();
       }
     }
-    String extension = ((FieldDelimitedFile.FieldDelimitedFileAppender) appender).getExtension();
+    String extension = ((DelimitedTextFile.DelimitedTextFileAppender) appender).getExtension();
     appender.close();
 
     tablePath = tablePath.suffix(extension);

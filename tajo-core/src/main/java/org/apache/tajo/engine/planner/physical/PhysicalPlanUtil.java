@@ -173,10 +173,10 @@ public class PhysicalPlanUtil {
   private static void setNullCharForTextSerializer(TableMeta meta, String nullChar) {
     switch (meta.getStoreType()) {
       case CSV:
-        meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
+        meta.putOption(StorageConstants.TEXT_NULL, nullChar);
         break;
       case TEXTFILE:
-        meta.putOption(StorageConstants.TEXTFILE_NULL, nullChar);
+        meta.putOption(StorageConstants.TEXT_NULL, nullChar);
         break;
       case RCFILE:
         meta.putOption(StorageConstants.RCFILE_NULL, nullChar);
@@ -197,9 +197,9 @@ public class PhysicalPlanUtil {
   public static boolean containsNullChar(TableMeta meta) {
     switch (meta.getStoreType()) {
       case CSV:
-        return meta.containsOption(StorageConstants.CSVFILE_NULL);
+        return meta.containsOption(StorageConstants.TEXT_NULL);
       case TEXTFILE:
-        return meta.containsOption(StorageConstants.TEXTFILE_NULL);
+        return meta.containsOption(StorageConstants.TEXT_NULL);
       case RCFILE:
         return meta.containsOption(StorageConstants.RCFILE_NULL);
       case SEQUENCEFILE:

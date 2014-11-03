@@ -50,14 +50,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 
-public class FieldDelimitedFile {
+public class DelimitedTextFile {
 
   public static final byte LF = '\n';
   public static int EOF = -1;
 
-  private static final Log LOG = LogFactory.getLog(FieldDelimitedFile.class);
+  private static final Log LOG = LogFactory.getLog(DelimitedTextFile.class);
 
-  public static class FieldDelimitedFileAppender extends FileAppender {
+  public static class DelimitedTextFileAppender extends FileAppender {
     private final TableMeta meta;
     private final Schema schema;
     private final int columnNum;
@@ -79,17 +79,17 @@ public class FieldDelimitedFile {
     private NonSyncByteArrayOutputStream os;
     private FieldSerializerDeserializer serde;
 
-    public FieldDelimitedFileAppender(Configuration conf, final Schema schema, final TableMeta meta, final Path path)
+    public DelimitedTextFileAppender(Configuration conf, final Schema schema, final TableMeta meta, final Path path)
         throws IOException {
       super(conf, schema, meta, path);
       this.fs = path.getFileSystem(conf);
       this.meta = meta;
       this.schema = schema;
-      this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.TEXTFILE_DELIMITER,
+      this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.TEXT_DELIMITER,
           StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
       this.columnNum = schema.size();
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.TEXTFILE_NULL,
+      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.TEXT_NULL,
           NullDatum.DEFAULT_TEXT));
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
@@ -249,7 +249,7 @@ public class FieldDelimitedFile {
     }
   }
 
-  public static class FieldDelimitedFileScanner extends FileScanner {
+  public static class DelimitedTextFileScanner extends FileScanner {
 
     private boolean splittable = false;
     private final long startOffset;
@@ -263,8 +263,8 @@ public class FieldDelimitedFile {
     private DelimitedLineReader reader;
     private FieldSplitProcessor processor;
 
-    public FieldDelimitedFileScanner(Configuration conf, final Schema schema, final TableMeta meta,
-                                     final FileFragment fragment)
+    public DelimitedTextFileScanner(Configuration conf, final Schema schema, final TableMeta meta,
+                                    final FileFragment fragment)
         throws IOException {
       super(conf, schema, meta, fragment);
       reader = new DelimitedLineReader(conf, fragment);
@@ -276,7 +276,7 @@ public class FieldDelimitedFile {
       endOffset = startOffset + fragment.getEndKey();
 
       //Delimiter
-      String delim = meta.getOption(StorageConstants.TEXTFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+      String delim = meta.getOption(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
       this.processor = new FieldSplitProcessor(StringEscapeUtils.unescapeJava(delim).charAt(0));
     }
 
@@ -286,7 +286,7 @@ public class FieldDelimitedFile {
         nullChars.release();
       }
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.TEXTFILE_NULL,
+      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.TEXT_NULL,
           NullDatum.DEFAULT_TEXT));
       byte[] bytes;
       if (StringUtils.isEmpty(nullCharacters)) {
@@ -327,7 +327,7 @@ public class FieldDelimitedFile {
       super.init();
       Arrays.sort(targetColumnIndexes);
       if (LOG.isDebugEnabled()) {
-        LOG.debug("FieldDelimitedFileScanner open:" + fragment.getPath() + "," + startOffset + "," + endOffset);
+        LOG.debug("DelimitedTextFileScanner open:" + fragment.getPath() + "," + startOffset + "," + endOffset);
       }
 
       if (startOffset > 0) {
@@ -448,7 +448,7 @@ public class FieldDelimitedFile {
           tableStats.setNumRows(recordCount);
         }
         if (LOG.isDebugEnabled()) {
-          LOG.debug("FieldDelimitedFileScanner processed record:" + recordCount);
+          LOG.debug("DelimitedTextFileScanner processed record:" + recordCount);
         }
       } finally {
         IOUtils.cleanup(LOG, reader);

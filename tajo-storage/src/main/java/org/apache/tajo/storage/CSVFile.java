@@ -46,7 +46,6 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-@Deprecated
 public class CSVFile {
 
   public static final byte LF = '\n';
@@ -83,14 +82,12 @@ public class CSVFile {
       this.meta = meta;
       this.schema = schema;
       this.delimiter = StringEscapeUtils.unescapeJava(
-          this.meta.getOption(StorageConstants.TEXTFILE_DELIMITER,
-          this.meta.getOption(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER))).charAt(0);
+          this.meta.getOption(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
 
       this.columnNum = schema.size();
 
       String nullCharacters = StringEscapeUtils.unescapeJava(
-          this.meta.getOption(StorageConstants.TEXTFILE_NULL,
-          this.meta.getOption(StorageConstants.CSVFILE_NULL, NullDatum.DEFAULT_TEXT)));
+          this.meta.getOption(StorageConstants.TEXT_NULL, NullDatum.DEFAULT_TEXT));
 
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
@@ -268,11 +265,11 @@ public class CSVFile {
 
       //Delimiter
       this.delimiter = StringEscapeUtils.unescapeJava(
-          meta.getOption(StorageConstants.TEXTFILE_DELIMITER,
+          meta.getOption(StorageConstants.TEXT_DELIMITER,
           meta.getOption(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER))).charAt(0);
 
       String nullCharacters = StringEscapeUtils.unescapeJava(
-          meta.getOption(StorageConstants.TEXTFILE_NULL,
+          meta.getOption(StorageConstants.TEXT_NULL,
           meta.getOption(StorageConstants.CSVFILE_NULL, NullDatum.DEFAULT_TEXT)));
 
       if (StringUtils.isEmpty(nullCharacters)) {

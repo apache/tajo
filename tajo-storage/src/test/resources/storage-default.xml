@@ -72,7 +72,7 @@
   <!--- Scanner Handler -->
   <property>
     <name>tajo.storage.scanner-handler.textfile.class</name>
-    <value>org.apache.tajo.storage.text.FieldDelimitedFile$FieldDelimitedFileScanner</value>
+    <value>org.apache.tajo.storage.text.DelimitedTextFile$DelimitedTextFileScanner</value>
   </property>
 
   <property>
@@ -123,7 +123,7 @@
 
   <property>
     <name>tajo.storage.appender-handler.textfile.class</name>
-    <value>org.apache.tajo.storage.text.FieldDelimitedFile$FieldDelimitedFileAppender</value>
+    <value>org.apache.tajo.storage.text.DelimitedTextFile$DelimitedTextFileAppender</value>
   </property>
 
   <property>
