@@ -25,6 +25,7 @@ import org.apache.tajo.engine.eval.ExprTestBase;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
 
@@ -612,5 +613,13 @@ public class TestStringOperatorsAndFunctions extends ExprTestBase {
     testSimpleEval("select concat_ws(',', '22', null) ", new String[]{"22"});
     testSimpleEval("select concat_ws(',', '22', '33', '33') ", new String[]{"22,33,33"});
     testSimpleEval("select concat_ws(',', null, '22') ", new String[]{"22"});
+  }
+
+  @Test
+  public void testToChar() throws IOException {
+    DecimalFormat df = new DecimalFormat("0000000000");
+    System.out.println(">>>>>>>>>>>" + df.format(1234));
+    testSimpleEval("select to_char('123456'::INT8, '0000000000') ", new String[]{"0000123456"});
+
   }
 }

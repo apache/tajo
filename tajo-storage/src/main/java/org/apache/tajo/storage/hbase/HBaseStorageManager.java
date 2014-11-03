@@ -334,15 +334,15 @@ public class HBaseStorageManager extends StorageManager {
   private Column[] getIndexableColumns(TableDesc tableDesc) throws IOException {
     ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta());
     boolean[] isRowKeyMappings = columnMapping.getIsRowKeyMappings();
+    int[] rowKeyIndexes = columnMapping.getRowKeyFieldIndexes();
 
     Column indexColumn = null;
     for (int i = 0; i < isRowKeyMappings.length; i++) {
       if (isRowKeyMappings[i]) {
-        if (indexColumn != null) {
-          //Currently only supports single rowkey.
-          return null;
+        if (columnMapping.getNumRowKeys() == 1 ||
+            rowKeyIndexes[i] == 0) {
+          indexColumn = tableDesc.getSchema().getColumn(i);
         }
-        indexColumn = tableDesc.getSchema().getColumn(i);
       }
     }
     return new Column[]{indexColumn};

@@ -46,6 +46,8 @@ public class ColumnMapping {
   // schema order -> 0: cf name, 1: column name -> name bytes
   private byte[][][] mappingColumns;
 
+  private int numRowKeys;
+
   public ColumnMapping(Schema schema, TableMeta tableMeta) throws IOException {
     this.schema = schema;
     this.tableMeta = tableMeta;
@@ -120,6 +122,7 @@ public class ColumnMapping {
         RowKeyMapping rowKeyMapping = getRowKeyMapping(cfName, columnName);
         if (rowKeyMapping != null) {
           isRowKeyMappings[index] = true;
+          numRowKeys++;
           isBinaryColumns[index] = rowKeyMapping.isBinary();
           if (!cfName.isEmpty()) {
             if (rowKeyDelimiter == 0) {
@@ -224,6 +227,10 @@ public class ColumnMapping {
 
   public boolean[] getIsColumnKeys() {
     return isColumnKeys;
+  }
+
+  public int getNumRowKeys() {
+    return numRowKeys;
   }
 
   public boolean[] getIsColumnValues() {
