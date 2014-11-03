@@ -60,7 +60,6 @@ public class HBaseStorageManager extends StorageManager {
   public static final String META_SPLIT_ROW_KEYS_KEY = "hbase.split.rowkeys";
   public static final String META_SPLIT_ROW_KEYS_FILE_KEY = "hbase.split.rowkeys.file";
   public static final String META_ZK_QUORUM_KEY = "hbase.zookeeper.quorum";
-  public static final String ROWKEY_COLUMN_MAPPING = "key";
   public static final String META_ROWKEY_DELIMITER = "hbase.rowkey.delimiter";
 
   public static final String INSERT_PUT_MODE = "tajo.hbase.insert.put.mode";
@@ -119,9 +118,18 @@ public class HBaseStorageManager extends StorageManager {
     }
     if (numRowKeys > 1) {
       for (int i = 0; i < isRowKeyMappings.length; i++) {
-        if (schema.getColumn(i).getDataType().getType() != Type.TEXT) {
+        if (isRowKeyMappings[i] && schema.getColumn(i).getDataType().getType() != Type.TEXT) {
           throw new IOException("Key field type should be TEXT type.");
         }
+      }
+    }
+
+    for (int i = 0; i < isRowKeyMappings.length; i++) {
+      if (columnMapping.getIsColumnKeys()[i] && schema.getColumn(i).getDataType().getType() != Type.TEXT) {
+        throw new IOException("Column key field('<cfname>:key:') type should be TEXT type.");
+      }
+      if (columnMapping.getIsColumnValues()[i] && schema.getColumn(i).getDataType().getType() != Type.TEXT) {
+        throw new IOException("Column value field(('<cfname>:value:') type should be TEXT type.");
       }
     }
 
@@ -144,7 +152,7 @@ public class HBaseStorageManager extends StorageManager {
           tableColumnFamilies.add(eachColumn.getNameAsString());
         }
 
-        Collection<String> mappingColumnFamilies = getColumnFamilies(mappedColumns);
+        Collection<String> mappingColumnFamilies =columnMapping.getColumnFamilyNames();
         if (mappingColumnFamilies.isEmpty()) {
           throw new IOException("HBase mapped table is required a '" + META_COLUMNS_KEY + "' attribute.");
         }
@@ -266,29 +274,6 @@ public class HBaseStorageManager extends StorageManager {
     return null;
   }
 
-  private static List<String> getColumnFamilies(String columnMapping) {
-    // columnMapping can have a duplicated column name as CF1:a, CF1:b
-    List<String> columnFamilies = new ArrayList<String>();
-
-    if (columnMapping == null) {
-      return columnFamilies;
-    }
-
-    for (String eachToken: columnMapping.split(",")) {
-      String[] cfTokens = eachToken.trim().split(":");
-      if (cfTokens.length == 2 && cfTokens[1] != null && getRowKeyMapping(cfTokens[0], cfTokens[1].trim()) != null) {
-        // rowkey
-        continue;
-      }
-      if (!columnFamilies.contains(cfTokens[0])) {
-        String[] binaryTokens = cfTokens[0].split("#");
-        columnFamilies.add(binaryTokens[0]);
-      }
-    }
-
-    return columnFamilies;
-  }
-
   public static Configuration getHBaseConfiguration(Configuration conf, TableMeta tableMeta) throws IOException {
     String zkQuorum = tableMeta.getOption(META_ZK_QUORUM_KEY, "");
     if (zkQuorum == null || zkQuorum.trim().isEmpty()) {
@@ -314,13 +299,11 @@ public class HBaseStorageManager extends StorageManager {
     }
     TableName hTableName = TableName.valueOf(hbaseTableName);
 
-    String columnMapping = tableMeta.getOption(META_COLUMNS_KEY, "");
-    if (columnMapping != null && columnMapping.split(",").length > schema.size()) {
-      throw new IOException("Columns property has more entry than Tajo table columns");
-    }
+    ColumnMapping columnMapping = new ColumnMapping(schema, tableMeta);
+
     HTableDescriptor hTableDescriptor = new HTableDescriptor(hTableName);
 
-    Collection<String> columnFamilies = getColumnFamilies(columnMapping);
+    Collection<String> columnFamilies = columnMapping.getColumnFamilyNames();
     //If 'columns' attribute is empty, Tajo table columns are mapped to all HBase table column.
     if (columnFamilies.isEmpty()) {
       for (Column eachColumn: schema.getColumns()) {
@@ -500,28 +483,6 @@ public class HBaseStorageManager extends StorageManager {
         hAdmin.close();
       }
     }
-  }
-
-  public static RowKeyMapping getRowKeyMapping(String cfName, String columnName) {
-    if (columnName == null || columnName.isEmpty()) {
-      return null;
-    }
-
-    String[] tokens = columnName.split("#");
-    if (!tokens[0].equalsIgnoreCase(ROWKEY_COLUMN_MAPPING)) {
-      return null;
-    }
-
-    RowKeyMapping rowKeyMapping = new RowKeyMapping();
-
-    if (tokens.length == 2 && "b".equals(tokens[1])) {
-      rowKeyMapping.setBinary(true);
-    }
-
-    if (cfName != null && !cfName.isEmpty()) {
-      rowKeyMapping.setKeyFieldIndex(Integer.parseInt(cfName));
-    }
-    return rowKeyMapping;
   }
 
   private byte[] serialize(ColumnMapping columnMapping,

@@ -94,6 +94,7 @@ public class HFileAppender extends AbstractHBaseAppender {
   boolean first = true;
   TreeSet<KeyValue> kvSet = new TreeSet<KeyValue>(KeyValue.COMPARATOR);
 
+
   @Override
   public void addTuple(Tuple tuple) throws IOException {
     Datum datum;
@@ -119,11 +120,12 @@ public class HFileAppender extends AbstractHBaseAppender {
     first = false;
 
     keyWritable.set(rowkey);
-    for (int i = 0; i < columnNum; i++) {
-      if (isRowKeyMappings[i]) {
-        continue;
+
+    readKeyValues(tuple, rowkey);
+    if (keyValues != null) {
+      for (KeyValue eachKeyVal: keyValues) {
+        kvSet.add(eachKeyVal);
       }
-      kvSet.add(getKeyValue(tuple, i, rowkey));
     }
   }
 

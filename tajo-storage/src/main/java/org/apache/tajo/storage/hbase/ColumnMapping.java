@@ -21,13 +21,16 @@ package org.apache.tajo.storage.hbase;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.BytesUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ColumnMapping {
+  public static final String KEY_COLUMN_MAPPING = "key";
+  public static final String VALUE_COLUMN_MAPPING = "value";
+
   private TableMeta tableMeta;
   private Schema schema;
   private char rowKeyDelimiter;
@@ -37,6 +40,8 @@ public class ColumnMapping {
   private int[] rowKeyFieldIndexes;
   private boolean[] isRowKeyMappings;
   private boolean[] isBinaryColumns;
+  private boolean[] isColumnKeys;
+  private boolean[] isColumnValues;
 
   // schema order -> 0: cf name, 1: column name -> name bytes
   private byte[][][] mappingColumns;
@@ -57,65 +62,136 @@ public class ColumnMapping {
     isRowKeyMappings = new boolean[schema.size()];
     rowKeyFieldIndexes = new int[schema.size()];
     isBinaryColumns = new boolean[schema.size()];
+    isColumnKeys = new boolean[schema.size()];
+    isColumnValues = new boolean[schema.size()];
 
     mappingColumns = new byte[schema.size()][][];
 
     for (int i = 0; i < schema.size(); i++) {
-      isRowKeyMappings[i] = false;
       rowKeyFieldIndexes[i] = -1;
-      isBinaryColumns[i] = false;
     }
 
-    List<Pair<String, String>> hbaseColumnMappings = parseColumnMapping(tableMeta);
-    if (hbaseColumnMappings == null || hbaseColumnMappings.isEmpty()) {
+    String columnMapping = tableMeta.getOption(HBaseStorageManager.META_COLUMNS_KEY, "");
+    if (columnMapping == null || columnMapping.isEmpty()) {
       throw new IOException("'columns' property is required.");
     }
 
-    if (hbaseColumnMappings.size() != schema.getColumns().size()) {
+    String[] columnMappingTokens = columnMapping.split(",");
+
+    if (columnMappingTokens.length != schema.getColumns().size()) {
       throw new IOException("The number of mapped HBase columns is great than the number of Tajo table columns");
     }
 
     int index = 0;
-    for (Pair<String, String> eachMapping: hbaseColumnMappings) {
-      String cfName = eachMapping.getFirst();
-      String columnName = eachMapping.getSecond();
-
+    for (String eachToken: columnMappingTokens) {
       mappingColumns[index] = new byte[2][];
 
-      RowKeyMapping rowKeyMapping = HBaseStorageManager.getRowKeyMapping(cfName, columnName);
-      if (rowKeyMapping != null) {
-        isRowKeyMappings[index] = true;
-        isBinaryColumns[index] = rowKeyMapping.isBinary();
-        if (!cfName.isEmpty()) {
-          if (rowKeyDelimiter == 0) {
-            throw new IOException("hbase.rowkey.delimiter is required.");
+      byte[][] mappingTokens = BytesUtils.splitPreserveAllTokens(eachToken.trim().getBytes(), ':');
+
+      if (mappingTokens.length == 3) {
+        if (mappingTokens[0].length == 0) {
+          // cfname
+          throw new IOException("'column' attribute should be '<cfname>:key:' or '<cfname>:key:#b' " +
+              "or '<cfname>:value:' or '<cfname>:value:#b'");
+        }
+        //<cfname>:key: or <cfname>:value:
+        if (mappingTokens[2].length != 0) {
+          String binaryOption = new String(mappingTokens[2]);
+          if ("#b".equals(binaryOption)) {
+            isBinaryColumns[index] = true;
+          } else {
+            throw new IOException("'column' attribute should be '<cfname>:key:' or '<cfname>:key:#b' " +
+                "or '<cfname>:value:' or '<cfname>:value:#b'");
           }
-          rowKeyFieldIndexes[index] = Integer.parseInt(cfName);
+        }
+        mappingColumns[index][0] = mappingTokens[0];
+        String keyOrValue = new String(mappingTokens[1]);
+        if (KEY_COLUMN_MAPPING.equalsIgnoreCase(keyOrValue)) {
+          isColumnKeys[index] = true;
+        } else if (VALUE_COLUMN_MAPPING.equalsIgnoreCase(keyOrValue)) {
+          isColumnValues[index] = true;
         } else {
-          rowKeyFieldIndexes[index] = -1; //rowkey is mapped a single column.
+          throw new IOException("'column' attribute should be '<cfname>:key:' or '<cfname>:value:'");
+        }
+      } else if (mappingTokens.length == 2) {
+        //<cfname>: or <cfname>:<qualifier> or :key
+        String cfName = new String(mappingTokens[0]);
+        String columnName = new String(mappingTokens[1]);
+        RowKeyMapping rowKeyMapping = getRowKeyMapping(cfName, columnName);
+        if (rowKeyMapping != null) {
+          isRowKeyMappings[index] = true;
+          isBinaryColumns[index] = rowKeyMapping.isBinary();
+          if (!cfName.isEmpty()) {
+            if (rowKeyDelimiter == 0) {
+              throw new IOException("hbase.rowkey.delimiter is required.");
+            }
+            rowKeyFieldIndexes[index] = Integer.parseInt(cfName);
+          } else {
+            rowKeyFieldIndexes[index] = -1; //rowkey is mapped a single column.
+          }
+        } else {
+          if (cfName.isEmpty()) {
+            throw new IOException("'column' attribute should be '<cfname>:key:' or '<cfname>:value:'");
+          }
+          if (cfName != null) {
+            mappingColumns[index][0] = Bytes.toBytes(cfName);
+          }
+
+          if (columnName != null && !columnName.isEmpty()) {
+            String[] columnNameTokens = columnName.split("#");
+            if (columnNameTokens[0].isEmpty()) {
+              mappingColumns[index][1] = null;
+            } else {
+              mappingColumns[index][1] = Bytes.toBytes(columnNameTokens[0]);
+            }
+            if (columnNameTokens.length == 2 && "b".equals(columnNameTokens[1])) {
+              isBinaryColumns[index] = true;
+            }
+          }
         }
       } else {
-        isRowKeyMappings[index] = false;
-
-        if (cfName != null) {
-          mappingColumns[index][0] = Bytes.toBytes(cfName);
-        }
-
-        if (columnName != null) {
-          String[] columnNameTokens = columnName.split("#");
-          if (columnNameTokens[0].isEmpty()) {
-            mappingColumns[index][1] = null;
-          } else {
-            mappingColumns[index][1] = Bytes.toBytes(columnNameTokens[0]);
-          }
-          if (columnNameTokens.length == 2 && "b".equals(columnNameTokens[1])) {
-            isBinaryColumns[index] = true;
-          }
-        }
+        throw new IOException("'column' attribute '[cfname]:[qualfier]:");
       }
 
       index++;
+    } // for loop
+  }
+
+  public List<String> getColumnFamilyNames() {
+    List<String> cfNames = new ArrayList<String>();
+
+    for (byte[][] eachCfName: mappingColumns) {
+      if (eachCfName != null && eachCfName.length > 0 && eachCfName[0] != null) {
+        String cfName = new String(eachCfName[0]);
+        if (!cfNames.contains(cfName)) {
+          cfNames.add(cfName);
+        }
+      }
     }
+
+    return cfNames;
+  }
+
+  private RowKeyMapping getRowKeyMapping(String cfName, String columnName) {
+    if (columnName == null || columnName.isEmpty()) {
+      return null;
+    }
+
+    String[] tokens = columnName.split("#");
+    if (!tokens[0].equalsIgnoreCase(KEY_COLUMN_MAPPING)) {
+      return null;
+    }
+
+    RowKeyMapping rowKeyMapping = new RowKeyMapping();
+
+    if (tokens.length == 2 && "b".equals(tokens[1])) {
+      rowKeyMapping.setBinary(true);
+    }
+
+    if (cfName != null && !cfName.isEmpty()) {
+      rowKeyMapping.setKeyFieldIndex(Integer.parseInt(cfName));
+    }
+    return rowKeyMapping;
   }
 
   public char getRowKeyDelimiter() {
@@ -142,37 +218,15 @@ public class ColumnMapping {
     return isBinaryColumns;
   }
 
-  /**
-   * Get column mapping data from tableMeta's option.
-   * First value of return is column family name and second value is column name which can be null.
-   * @param tableMeta
-   * @return
-   * @throws java.io.IOException
-   */
-  public static List<Pair<String, String>> parseColumnMapping(TableMeta tableMeta) throws IOException {
-    List<Pair<String, String>> columnMappings = new ArrayList<Pair<String, String>>();
-
-    String columnMapping = tableMeta.getOption(HBaseStorageManager.META_COLUMNS_KEY, "");
-    if (columnMapping == null || columnMapping.trim().isEmpty()) {
-      return columnMappings;
-    }
-
-    for (String eachToken: columnMapping.split(",")) {
-      String[] cfToken = eachToken.split(":");
-
-      String cfName = cfToken[0];
-      String columnName = null;
-      if (cfToken.length == 2 && !cfToken[1].trim().isEmpty()) {
-        columnName = cfToken[1].trim();
-      }
-      Pair<String, String> mappingEntry = new Pair<String, String>(cfName, columnName);
-      columnMappings.add(mappingEntry);
-    }
-
-    return columnMappings;
-  }
-
   public String getHbaseTableName() {
     return hbaseTableName;
+  }
+
+  public boolean[] getIsColumnKeys() {
+    return isColumnKeys;
+  }
+
+  public boolean[] getIsColumnValues() {
+    return isColumnValues;
   }
 }

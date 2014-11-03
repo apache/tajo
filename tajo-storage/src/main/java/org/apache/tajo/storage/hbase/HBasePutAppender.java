@@ -37,6 +37,7 @@ import java.io.IOException;
 
 public class HBasePutAppender extends AbstractHBaseAppender {
   private HTableInterface htable;
+  private long totalNumBytes;
 
   public HBasePutAppender(Configuration conf, QueryUnitAttemptId taskAttemptId,
                           Schema schema, TableMeta meta, Path stagingDir) {
@@ -55,12 +56,13 @@ public class HBasePutAppender extends AbstractHBaseAppender {
     htable.setWriteBufferSize(5 * 1024 * 1024);
   }
 
-  long totalNumBytes;
   @Override
   public void addTuple(Tuple tuple) throws IOException {
     byte[] rowkey = getRowKeyBytes(tuple);
     totalNumBytes += rowkey.length;
     Put put = new Put(rowkey);
+    readKeyValues(tuple, rowkey);
+
     for (int i = 0; i < columnNum; i++) {
       if (isRowKeyMappings[i]) {
         continue;
@@ -72,8 +74,20 @@ public class HBasePutAppender extends AbstractHBaseAppender {
       } else {
         value = HBaseTextSerializerDeserializer.serialize(schema.getColumn(i), datum);
       }
-      put.add(mappingColumnFamilies[i][0], mappingColumnFamilies[i][1], value);
-      totalNumBytes += value.length;
+
+      if (isColumnKeys[i]) {
+        columnKeyDatas[columnKeyValueDataIndexes[i]] = value;
+      } else if (isColumnValues[i]) {
+        columnValueDatas[columnKeyValueDataIndexes[i]] = value;
+      } else {
+        put.add(mappingColumnFamilies[i][0], mappingColumnFamilies[i][1], value);
+        totalNumBytes += value.length;
+      }
+    }
+
+    for (int i = 0; i < columnKeyDatas.length; i++) {
+     put.add(columnKeyCfNames[i], columnKeyDatas[i], columnValueDatas[i]);
+      totalNumBytes += columnKeyDatas[i].length + columnValueDatas[i].length;
     }
 
     htable.put(put);

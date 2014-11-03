@@ -38,7 +38,9 @@ import org.apache.tajo.util.TUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public abstract class AbstractHBaseAppender implements Appender {
   protected Configuration conf;
@@ -57,9 +59,19 @@ public abstract class AbstractHBaseAppender implements Appender {
   protected byte[][][] mappingColumnFamilies;
   protected boolean[] isBinaryColumns;
   protected boolean[] isRowKeyMappings;
+  protected boolean[] isColumnKeys;
+  protected boolean[] isColumnValues;
   protected int[] rowKeyFieldIndexes;
   protected int[] rowkeyColumnIndexes;
   protected char rowKeyDelimiter;
+
+  // the following four variables are used for '<cfname>:key:' or '<cfname>:value:' mapping
+  protected int[] columnKeyValueDataIndexes;
+  protected byte[][] columnKeyDatas;
+  protected byte[][] columnValueDatas;
+  protected byte[][] columnKeyCfNames;
+
+  protected KeyValue[] keyValues;
 
   public AbstractHBaseAppender(Configuration conf, QueryUnitAttemptId taskAttemptId,
                        Schema schema, TableMeta meta, Path stagingDir) {
@@ -93,10 +105,45 @@ public abstract class AbstractHBaseAppender implements Appender {
     rowkeyColumnIndexes = TUtil.toArray(rowkeyColumnIndexList);
 
     isBinaryColumns = columnMapping.getIsBinaryColumns();
+    isColumnKeys = columnMapping.getIsColumnKeys();
+    isColumnValues = columnMapping.getIsColumnValues();
     rowKeyDelimiter = columnMapping.getRowKeyDelimiter();
     rowKeyFieldIndexes = columnMapping.getRowKeyFieldIndexes();
 
     this.columnNum = schema.size();
+
+    // In the case of '<cfname>:key:' or '<cfname>:value:' KeyValue object should be set with the qualifier and value
+    // which are mapped to the same column family.
+    columnKeyValueDataIndexes = new int[isColumnKeys.length];
+    int index = 0;
+    int numKeyValues = 0;
+    Map<String, Integer> cfNameIndexMap = new HashMap<String, Integer>();
+    for (int i = 0; i < isColumnKeys.length; i++) {
+      if (isRowKeyMappings[i]) {
+        continue;
+      }
+      if (isColumnKeys[i] || isColumnValues[i]) {
+        String cfName = new String(mappingColumnFamilies[i][0]);
+        if (!cfNameIndexMap.containsKey(cfName)) {
+          cfNameIndexMap.put(cfName, index);
+          columnKeyValueDataIndexes[i] = index;
+          index++;
+          numKeyValues++;
+        } else {
+          columnKeyValueDataIndexes[i] = cfNameIndexMap.get(cfName);
+        }
+      } else {
+        numKeyValues++;
+      }
+    }
+    columnKeyCfNames = new byte[cfNameIndexMap.size()][];
+    for (Map.Entry<String, Integer> entry: cfNameIndexMap.entrySet()) {
+      columnKeyCfNames[entry.getValue()] = entry.getKey().getBytes();
+    }
+    columnKeyDatas = new byte[cfNameIndexMap.size()][];
+    columnValueDatas = new byte[cfNameIndexMap.size()][];
+
+    keyValues = new KeyValue[numKeyValues];
   }
 
   private ByteArrayOutputStream bout = new ByteArrayOutputStream();
@@ -132,15 +179,33 @@ public abstract class AbstractHBaseAppender implements Appender {
     return rowkey;
   }
 
-  protected KeyValue getKeyValue(Tuple tuple, int index, byte[] rowkey) throws IOException {
-    Datum datum = tuple.get(index);
-    byte[] value;
-    if (isBinaryColumns[index]) {
-      value = HBaseBinarySerializerDeserializer.serialize(schema.getColumn(index), datum);
-    } else {
-      value = HBaseTextSerializerDeserializer.serialize(schema.getColumn(index), datum);
+  protected void readKeyValues(Tuple tuple, byte[] rowkey) throws IOException {
+    int keyValIndex = 0;
+    for (int i = 0; i < columnNum; i++) {
+      if (isRowKeyMappings[i]) {
+        continue;
+      }
+      Datum datum = tuple.get(i);
+      byte[] value;
+      if (isBinaryColumns[i]) {
+        value = HBaseBinarySerializerDeserializer.serialize(schema.getColumn(i), datum);
+      } else {
+        value = HBaseTextSerializerDeserializer.serialize(schema.getColumn(i), datum);
+      }
+
+      if (isColumnKeys[i]) {
+        columnKeyDatas[columnKeyValueDataIndexes[i]] = value;
+      } else if (isColumnValues[i]) {
+        columnValueDatas[columnKeyValueDataIndexes[i]] = value;
+      } else {
+        keyValues[keyValIndex] = new KeyValue(rowkey, mappingColumnFamilies[i][0], mappingColumnFamilies[i][1], value);
+        keyValIndex++;
+      }
     }
-    return new KeyValue(rowkey, mappingColumnFamilies[index][0], mappingColumnFamilies[index][1], value);
+
+    for (int i = 0; i < columnKeyDatas.length; i++) {
+      keyValues[keyValIndex++] = new KeyValue(rowkey, columnKeyCfNames[i], columnKeyDatas[i], columnValueDatas[i]);
+    }
   }
 
   @Override
