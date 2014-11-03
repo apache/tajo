@@ -52,7 +52,7 @@ public class TestHBaseStorageManager {
     List<Set<EvalNode>> indexEvals = storageManager.findIndexablePredicateSet(scanNode, new Column[]{rowkeyColumn});
     assertNotNull(indexEvals);
     assertEquals(1, indexEvals.size());
-    Pair<Datum, Datum> indexPredicateValue = storageManager.getIndexablePredicateValue(indexEvals.get(0));
+    Pair<Datum, Datum> indexPredicateValue = storageManager.getIndexablePredicateValue(null, indexEvals.get(0));
     assertEquals("020", indexPredicateValue.getFirst().asChars());
     assertEquals("055", indexPredicateValue.getSecond().asChars());
 
@@ -62,11 +62,11 @@ public class TestHBaseStorageManager {
     scanNode.setQual(evalNodeB);
     indexEvals = storageManager.findIndexablePredicateSet(scanNode, new Column[]{rowkeyColumn});
     assertEquals(2, indexEvals.size());
-    indexPredicateValue = storageManager.getIndexablePredicateValue(indexEvals.get(0));
+    indexPredicateValue = storageManager.getIndexablePredicateValue(null, indexEvals.get(0));
     assertEquals("020", indexPredicateValue.getFirst().asChars());
     assertEquals("055", indexPredicateValue.getSecond().asChars());
 
-    indexPredicateValue = storageManager.getIndexablePredicateValue(indexEvals.get(1));
+    indexPredicateValue = storageManager.getIndexablePredicateValue(null, indexEvals.get(1));
     assertEquals("075", indexPredicateValue.getFirst().asChars());
     assertEquals("075", indexPredicateValue.getSecond().asChars());
 
@@ -79,11 +79,11 @@ public class TestHBaseStorageManager {
     indexEvals = storageManager.findIndexablePredicateSet(scanNode, new Column[]{rowkeyColumn});
     assertEquals(2, indexEvals.size());
 
-    indexPredicateValue = storageManager.getIndexablePredicateValue(indexEvals.get(0));
+    indexPredicateValue = storageManager.getIndexablePredicateValue(null, indexEvals.get(0));
     assertEquals("020", indexPredicateValue.getFirst().asChars());
     assertEquals("055", indexPredicateValue.getSecond().asChars());
 
-    indexPredicateValue = storageManager.getIndexablePredicateValue(indexEvals.get(1));
+    indexPredicateValue = storageManager.getIndexablePredicateValue(null, indexEvals.get(1));
     assertEquals("072", indexPredicateValue.getFirst().asChars());
     assertEquals("078", indexPredicateValue.getSecond().asChars());
 
@@ -98,11 +98,11 @@ public class TestHBaseStorageManager {
     indexEvals = storageManager.findIndexablePredicateSet(scanNode, new Column[]{rowkeyColumn});
     assertEquals(2, indexEvals.size());
 
-    indexPredicateValue = storageManager.getIndexablePredicateValue(indexEvals.get(0));
+    indexPredicateValue = storageManager.getIndexablePredicateValue(null, indexEvals.get(0));
     assertEquals("020", indexPredicateValue.getFirst().asChars());
     assertEquals("055", indexPredicateValue.getSecond().asChars());
 
-    indexPredicateValue = storageManager.getIndexablePredicateValue(indexEvals.get(1));
+    indexPredicateValue = storageManager.getIndexablePredicateValue(null, indexEvals.get(1));
     assertEquals("073", indexPredicateValue.getFirst().asChars());
     assertEquals("078", indexPredicateValue.getSecond().asChars());
   }

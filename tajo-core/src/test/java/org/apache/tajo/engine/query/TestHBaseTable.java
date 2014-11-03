@@ -22,6 +22,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.filter.Filter;
+import org.apache.hadoop.hbase.filter.InclusiveStopFilter;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoTestingCluster;
@@ -420,10 +422,18 @@ public class TestHBaseTable extends QueryTestCaseBase {
         put.add("col3".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
         htable.put(put);
       }
-      assertIndexPredication();
+      assertIndexPredication(false);
 
       ResultSet res = executeString("select * from hbase_mapped_table where rk >= '020' and rk <= '055'");
       assertResultSet(res);
+      res.close();
+
+      res = executeString("select * from hbase_mapped_table where rk = '021'");
+      String expected = "rk,col1,col2,col3\n" +
+          "-------------------------------\n" +
+          "021,a-21,{\"k1\":\"k1-21\", \"k2\":\"k2-21\"},b-21\n";
+
+      assertEquals(expected, resultSetToString(res));
       res.close();
     } finally {
       executeString("DROP TABLE hbase_mapped_table PURGE").close();
@@ -465,7 +475,28 @@ public class TestHBaseTable extends QueryTestCaseBase {
         put.add("col3".getBytes(), "b".getBytes(), ("b-" + i).getBytes());
         htable.put(put);
       }
-      assertIndexPredication();
+
+      Scan scan = new Scan();
+      scan.setStartRow("021".getBytes());
+      scan.setStopRow(("021_" + new String(new char[]{Character.MAX_VALUE})).getBytes());
+      Filter filter = new InclusiveStopFilter(scan.getStopRow());
+      scan.setFilter(filter);
+
+      ResultScanner scanner = htable.getScanner(scan);
+      Result result = scanner.next();
+      assertNotNull(result);
+      assertEquals("021_021", new String(result.getRow()));
+      scanner.close();
+
+      assertIndexPredication(true);
+
+      ResultSet res = executeString("select * from hbase_mapped_table where rk = '021'");
+      String expected = "rk,rk2,col1,col2,col3\n" +
+          "-------------------------------\n" +
+          "021,021,a-21,{\"k1\":\"k1-21\", \"k2\":\"k2-21\"},b-21\n";
+
+      assertEquals(expected, resultSetToString(res));
+      res.close();
     } finally {
       executeString("DROP TABLE hbase_mapped_table PURGE").close();
       htable.close();
@@ -473,7 +504,8 @@ public class TestHBaseTable extends QueryTestCaseBase {
     }
   }
 
-  private void assertIndexPredication() throws Exception {
+  private void assertIndexPredication(boolean isCompositeRowKey) throws Exception {
+    String postFix = isCompositeRowKey ? "_" + new String(new char[]{Character.MAX_VALUE}) : "";
     TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
     ScanNode scanNode = new ScanNode(1);
@@ -486,7 +518,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     List<Fragment> fragments = storageManager.getSplits("hbase_mapped_table", tableDesc, scanNode);
     assertEquals(1, fragments.size());
     assertEquals("021", new String(((HBaseFragment)fragments.get(0)).getStartRow()));
-    assertEquals("021", new String(((HBaseFragment)fragments.get(0)).getStopRow()));
+    assertEquals("021" + postFix, new String(((HBaseFragment)fragments.get(0)).getStopRow()));
 
     // where rk >= '020' and rk <= '055'
     EvalNode evalNode1 = new BinaryEval(EvalType.GEQ, new FieldEval(tableDesc.getLogicalSchema().getColumn("rk")),
@@ -504,8 +536,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     HBaseFragment fragment2 = (HBaseFragment) fragments.get(1);
     assertEquals("040", new String(fragment2.getStartRow()));
-    assertEquals("055", new String(fragment2.getStopRow()));
-
+    assertEquals("055" + postFix, new String(fragment2.getStopRow()));
 
     // where (rk >= '020' and rk <= '055') or rk = '075'
     EvalNode evalNode3 = new BinaryEval(EvalType.EQUAL, new FieldEval(tableDesc.getLogicalSchema().getColumn("rk")),
@@ -520,11 +551,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     fragment2 = (HBaseFragment) fragments.get(1);
     assertEquals("040", new String(fragment2.getStartRow()));
-    assertEquals("055", new String(fragment2.getStopRow()));
+    assertEquals("055" + postFix, new String(fragment2.getStopRow()));
 
     HBaseFragment fragment3 = (HBaseFragment) fragments.get(2);
     assertEquals("075", new String(fragment3.getStartRow()));
-    assertEquals("075", new String(fragment3.getStopRow()));
+    assertEquals("075" + postFix, new String(fragment3.getStopRow()));
 
 
     // where (rk >= '020' and rk <= '055') or (rk >= '072' and rk <= '078')
@@ -544,11 +575,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     fragment2 = (HBaseFragment) fragments.get(1);
     assertEquals("040", new String(fragment2.getStartRow()));
-    assertEquals("055", new String(fragment2.getStopRow()));
+    assertEquals("055" + postFix, new String(fragment2.getStopRow()));
 
     fragment3 = (HBaseFragment) fragments.get(2);
     assertEquals("072", new String(fragment3.getStartRow()));
-    assertEquals("078", new String(fragment3.getStopRow()));
+    assertEquals("078" + postFix, new String(fragment3.getStopRow()));
 
     // where (rk >= '020' and rk <= '055') or (rk >= '057' and rk <= '059')
     evalNode4 = new BinaryEval(EvalType.GEQ, new FieldEval(tableDesc.getLogicalSchema().getColumn("rk")),
@@ -567,7 +598,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     fragment2 = (HBaseFragment) fragments.get(1);
     assertEquals("040", new String(fragment2.getStartRow()));
-    assertEquals("059", new String(fragment2.getStopRow()));
+    assertEquals("059" + postFix, new String(fragment2.getStopRow()));
   }
 
   @Test

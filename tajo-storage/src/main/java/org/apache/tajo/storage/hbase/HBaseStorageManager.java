@@ -350,7 +350,9 @@ public class HBaseStorageManager extends StorageManager {
 
   @Override
   public List<Fragment> getSplits(String fragmentId, TableDesc tableDesc, ScanNode scanNode) throws IOException {
-    List<IndexPredication> indexPredications = getIndexPredications(tableDesc, scanNode);
+    ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta());
+
+    List<IndexPredication> indexPredications = getIndexPredications(columnMapping, tableDesc, scanNode);
     Configuration hconf = getHBaseConfiguration(conf, tableDesc.getMeta());
     HTable htable = null;
     HBaseAdmin hAdmin = null;
@@ -371,7 +373,6 @@ public class HBaseStorageManager extends StorageManager {
         return fragments;
       }
 
-      ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta());
       List<byte[]> startRows;
       List<byte[]> stopRows;
 
@@ -698,14 +699,15 @@ public class HBaseStorageManager extends StorageManager {
     }
   }
 
-  public List<IndexPredication> getIndexPredications(TableDesc tableDesc, ScanNode scanNode) throws IOException {
+  public List<IndexPredication> getIndexPredications(ColumnMapping columnMapping,
+                                                     TableDesc tableDesc, ScanNode scanNode) throws IOException {
     List<IndexPredication> indexPredications = new ArrayList<IndexPredication>();
     Column[] indexableColumns = getIndexableColumns(tableDesc);
     if (indexableColumns != null && indexableColumns.length == 1) {
       // Currently supports only single index column.
       List<Set<EvalNode>> indexablePredicateList = findIndexablePredicateSet(scanNode, indexableColumns);
       for (Set<EvalNode> eachEvalSet: indexablePredicateList) {
-        Pair<Datum, Datum> indexPredicationValues = getIndexablePredicateValue(eachEvalSet);
+        Pair<Datum, Datum> indexPredicationValues = getIndexablePredicateValue(columnMapping, eachEvalSet);
         if (indexPredicationValues != null) {
           IndexPredication indexPredication = new IndexPredication();
           indexPredication.setColumn(indexableColumns[0]);
@@ -800,7 +802,8 @@ public class HBaseStorageManager extends StorageManager {
         expr.getType() == EvalType.BETWEEN;
   }
 
-  public Pair<Datum, Datum> getIndexablePredicateValue(Set<EvalNode> evalNodes) {
+  public Pair<Datum, Datum> getIndexablePredicateValue(ColumnMapping columnMapping,
+                                                       Set<EvalNode> evalNodes) {
     Datum startDatum = null;
     Datum endDatum = null;
     for (EvalNode evalNode: evalNodes) {
@@ -865,6 +868,10 @@ public class HBaseStorageManager extends StorageManager {
       }
     }
 
+    if (endDatum != null && columnMapping != null && columnMapping.getNumRowKeys() > 1) {
+      endDatum = new TextDatum(endDatum.asChars() +
+          new String(new char[]{columnMapping.getRowKeyDelimiter(), Character.MAX_VALUE}));
+    }
     if (startDatum != null || endDatum != null) {
       return new Pair<Datum, Datum>(startDatum, endDatum);
     } else {
