@@ -356,11 +356,6 @@ public class DelimitedTextFile {
         if (startOffset == filePos) {
           return 0.0f;
         } else {
-          if (tableStats != null && reader != null) {
-            tableStats.setReadBytes(reader.getReadBytes());
-            tableStats.setNumRows(recordCount);
-          }
-
           long readBytes = filePos - startOffset;
           long remainingBytes = Math.max(endOffset - filePos, 0);
           return Math.min(1.0f, (float) (readBytes) / (float) (readBytes + remainingBytes));
@@ -473,6 +468,15 @@ public class DelimitedTextFile {
     @Override
     public boolean isSplittable() {
       return splittable;
+    }
+
+    @Override
+    public TableStats getInputStats() {
+      if (tableStats != null && reader != null) {
+        tableStats.setReadBytes(reader.getReadBytes());  //Actual Processed Bytes. (decompressed bytes + overhead)
+        tableStats.setNumRows(recordCount);
+      }
+      return tableStats;
     }
   }
 }
