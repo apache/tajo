@@ -18,22 +18,57 @@
 
 package org.apache.tajo.storage;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.util.internal.PlatformDependent;
+import org.apache.hadoop.classification.InterfaceStability;
 
+/* this class is PooledBuffer holder */
 public class BufferPool {
 
   private static final PooledByteBufAllocator allocator;
 
+  private BufferPool() {
+  }
+
   static {
     //TODO we need determine the default params
     allocator = new PooledByteBufAllocator(PlatformDependent.directBufferPreferred());
-  }
-  public static PooledByteBufAllocator getAllocator(){
-    return allocator;
+
+    /* if you are finding memory leak, please enable this line */
+    //ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
   }
 
-  public static long getMaxDirectMemory() {
+  public static long maxDirectMemory() {
     return PlatformDependent.maxDirectMemory();
+  }
+
+
+  public synchronized static ByteBuf directBuffer(int size) {
+    return allocator.directBuffer(size);
+  }
+
+  /**
+   *
+   * @param size the initial capacity
+   * @param max the max capacity
+   * @return allocated ByteBuf from pool
+   */
+  public static ByteBuf directBuffer(int size, int max) {
+    return allocator.directBuffer(size, max);
+  }
+
+  @InterfaceStability.Unstable
+  public static void forceRelease(ByteBuf buf) {
+    buf.release(buf.refCnt());
+  }
+
+  /**
+   * the ByteBuf will increase to writable size
+   * @param buf
+   * @param minWritableBytes required minimum writable size
+   */
+  public static void ensureWritable(ByteBuf buf, int minWritableBytes) {
+    buf.ensureWritable(minWritableBytes);
   }
 }

@@ -135,10 +135,11 @@ public class FieldDelimitedFile {
       }
 
       try {
+        // we need to discuss the De/Serializer interface. so custom serde is to disable
         String serdeClass = this.meta.getOption(StorageConstants.TEXTFILE_SERDE,
             TextFieldSerializerDeserializer.class.getName());
-        serde = (FieldSerializerDeserializer) ReflectionUtils.newInstance(Class.forName(serdeClass), conf);
-      } catch (Exception e) {
+        serde = (TextFieldSerializerDeserializer) ReflectionUtils.newInstance(Class.forName(serdeClass), conf);
+      } catch (Throwable e) {
         LOG.error(e.getMessage(), e);
         throw new IOException(e);
       }
@@ -259,14 +260,14 @@ public class FieldDelimitedFile {
 
     private ByteBuf nullChars;
     private FieldSerializerDeserializer serde;
-    private LineDelimitedReader reader;
+    private DelimitedLineReader reader;
     private FieldSplitProcessor processor;
 
     public FieldDelimitedFileScanner(Configuration conf, final Schema schema, final TableMeta meta,
                                      final FileFragment fragment)
         throws IOException {
       super(conf, schema, meta, fragment);
-      reader = new LineDelimitedReader(conf, fragment);
+      reader = new DelimitedLineReader(conf, fragment);
       if (!reader.isCompressed()) {
         splittable = true;
       }
@@ -294,12 +295,12 @@ public class FieldDelimitedFile {
         bytes = nullCharacters.getBytes();
       }
 
-      nullChars = BufferPool.getAllocator().directBuffer(bytes.length, bytes.length);
+      nullChars = BufferPool.directBuffer(bytes.length, bytes.length);
       nullChars.writeBytes(bytes);
 
       if (reader != null) {
         reader.close();
-        reader = new LineDelimitedReader(conf, fragment);
+        reader = new DelimitedLineReader(conf, fragment);
       }
       reader.init();
       recordCount = 0;
@@ -314,10 +315,11 @@ public class FieldDelimitedFile {
       }
 
       try {
+        // we need to discuss the De/Serializer interface. so custom serde is to disable
         String serdeClass = this.meta.getOption(StorageConstants.TEXTFILE_SERDE,
             TextFieldSerializerDeserializer.class.getName());
-        serde = (FieldSerializerDeserializer) ReflectionUtils.newInstance(Class.forName(serdeClass), conf);
-      } catch (Exception e) {
+        serde = (TextFieldSerializerDeserializer) ReflectionUtils.newInstance(Class.forName(serdeClass), conf);
+      } catch (Throwable e) {
         LOG.error(e.getMessage(), e);
         throw new IOException(e);
       }
@@ -341,10 +343,6 @@ public class FieldDelimitedFile {
         recordCount++;
       }
 
-      if ((recordCount % 1000) == 0 && tableStats != null) {
-        tableStats.setReadBytes(reader.getReadBytes());
-        tableStats.setNumRows(recordCount);
-      }
       return buf;
     }
 
@@ -358,6 +356,11 @@ public class FieldDelimitedFile {
         if (startOffset == filePos) {
           return 0.0f;
         } else {
+          if (tableStats != null && reader != null) {
+            tableStats.setReadBytes(reader.getReadBytes());
+            tableStats.setNumRows(recordCount);
+          }
+
           long readBytes = filePos - startOffset;
           long remainingBytes = Math.max(endOffset - filePos, 0);
           return Math.min(1.0f, (float) (readBytes) / (float) (readBytes + remainingBytes));
@@ -395,7 +398,7 @@ public class FieldDelimitedFile {
         return;
       }
 
-      final int rowlength = lineBuf.readableBytes();
+      final int rowLength = lineBuf.readableBytes();
       int start = 0, fieldLength = 0, end = 0;
 
       //Projection
@@ -403,10 +406,10 @@ public class FieldDelimitedFile {
       int currentIndex = 0;
 
       while (end != -1) {
-        end = lineBuf.forEachByte(start, rowlength - start, processor);
+        end = lineBuf.forEachByte(start, rowLength - start, processor);
 
         if (end < 0) {
-          fieldLength = rowlength - start;
+          fieldLength = rowLength - start;
         } else {
           fieldLength = end - start;
         }

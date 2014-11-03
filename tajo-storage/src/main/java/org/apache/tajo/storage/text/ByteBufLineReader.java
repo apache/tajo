@@ -32,13 +32,13 @@ public class ByteBufLineReader implements Closeable {
 
   private int bufferSize;
   private long readBytes;
-  private final ByteBuf buffer;
+  private ByteBuf buffer;
   private final ByteBufInputChannel channel;
   private final AtomicInteger tempReadBytes = new AtomicInteger();
   private final LineSplitProcessor processor = new LineSplitProcessor();
 
   public ByteBufLineReader(ByteBufInputChannel channel) {
-    this(channel, BufferPool.getAllocator().directBuffer(DEFAULT_BUFFER));
+    this(channel, BufferPool.directBuffer(DEFAULT_BUFFER));
   }
 
   public ByteBufLineReader(ByteBufInputChannel channel, ByteBuf buf) {
@@ -58,7 +58,9 @@ public class ByteBufLineReader implements Closeable {
 
   @Override
   public void close() throws IOException {
-    this.buffer.release();
+    if (this.buffer.refCnt() > 0) {
+      this.buffer.release();
+    }
     this.channel.close();
   }
 
@@ -72,19 +74,21 @@ public class ByteBufLineReader implements Closeable {
 
   private void fillBuffer() throws IOException {
 
-    int remainBytes = 0;
+    int tailBytes = 0;
     if (this.readBytes > 0) {
       this.buffer.markReaderIndex();
-      this.buffer.discardReadBytes();
+      this.buffer.discardSomeReadBytes();  // compact the buffer
+      tailBytes = this.buffer.writerIndex();
       if (!this.buffer.isWritable()) {
         // a line bytes is large than the buffer
-        this.buffer.ensureWritable(bufferSize);
+        BufferPool.ensureWritable(buffer, bufferSize);
+        this.bufferSize = buffer.capacity();
       }
     }
 
     boolean release = true;
     try {
-      int readBytes = 0;
+      int readBytes = tailBytes;
       for (; ; ) {
         int localReadBytes = buffer.writeBytes(channel, bufferSize - readBytes);
         if (localReadBytes < 0) {
@@ -95,9 +99,9 @@ public class ByteBufLineReader implements Closeable {
           break;
         }
       }
-      this.readBytes += readBytes;
+      this.readBytes += (readBytes - tailBytes);
       release = false;
-      this.buffer.readerIndex(this.buffer.readerIndex() + remainBytes);
+      this.buffer.readerIndex(this.buffer.readerIndex() + tailBytes); //skip past buffer (tail)
     } finally {
       if (release) {
         buffer.release();

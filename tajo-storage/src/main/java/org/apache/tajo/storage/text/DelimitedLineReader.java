@@ -43,8 +43,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class LineDelimitedReader implements Closeable {
-  private static final Log LOG = LogFactory.getLog(LineDelimitedReader.class);
+public class DelimitedLineReader implements Closeable {
+  private static final Log LOG = LogFactory.getLog(DelimitedLineReader.class);
   private final static int DEFAULT_PAGE_SIZE = 128 * 1024;
 
   private FileSystem fs;
@@ -61,7 +61,7 @@ public class LineDelimitedReader implements Closeable {
   private FileFragment fragment;
   private Configuration conf;
 
-  public LineDelimitedReader(Configuration conf, final FileFragment fragment) throws IOException {
+  public DelimitedLineReader(Configuration conf, final FileFragment fragment) throws IOException {
     this.fragment = fragment;
     this.conf = conf;
     this.factory = new CompressionCodecFactory(conf);
@@ -83,14 +83,14 @@ public class LineDelimitedReader implements Closeable {
       decompressor = CodecPool.getDecompressor(codec);
       is = new DataInputStream(codec.createInputStream(fis, decompressor));
       ByteBufInputChannel channel = new ByteBufInputChannel(is);
-      lineReader = new ByteBufLineReader(channel, BufferPool.getAllocator().directBuffer(DEFAULT_PAGE_SIZE));
+      lineReader = new ByteBufLineReader(channel, BufferPool.directBuffer(DEFAULT_PAGE_SIZE));
     } else {
       fis.seek(startOffset);
       is = fis;
 
       ByteBufInputChannel channel = new ByteBufInputChannel(is);
       lineReader = new ByteBufLineReader(channel,
-          BufferPool.getAllocator().directBuffer((int) Math.min(DEFAULT_PAGE_SIZE, end)));
+          BufferPool.directBuffer((int) Math.min(DEFAULT_PAGE_SIZE, end)));
     }
     eof = false;
   }

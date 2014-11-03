@@ -35,7 +35,7 @@ import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.text.ByteBufLineReader;
 import org.apache.tajo.storage.text.FieldDelimitedFile;
-import org.apache.tajo.storage.text.LineDelimitedReader;
+import org.apache.tajo.storage.text.DelimitedLineReader;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Test;
 
@@ -142,7 +142,7 @@ public class TestLineReader {
 
     tablePath = tablePath.suffix(extension);
     FileFragment fragment = new FileFragment("table", tablePath, 0, splitOffset);
-    LineDelimitedReader reader = new LineDelimitedReader(conf, fragment); // if file is compressed, will read to EOF
+    DelimitedLineReader reader = new DelimitedLineReader(conf, fragment); // if file is compressed, will read to EOF
     assertTrue(reader.isCompressed());
     assertFalse(reader.isReadable());
     reader.init();

@@ -34,10 +34,13 @@ public class StorageConstants {
   public static final String TEXTFILE_NULL = "text.null";
   public static final String TEXTFILE_SERDE = "text.serde";
 
+  @Deprecated
   public static final String SEQUENCEFILE_DELIMITER = "sequencefile.delimiter";
+  @Deprecated
   public static final String SEQUENCEFILE_NULL = "sequencefile.null";
   public static final String SEQUENCEFILE_SERDE = "sequencefile.serde";
 
+  @Deprecated
   public static final String RCFILE_NULL = "rcfile.null";
   public static final String RCFILE_SERDE = "rcfile.serde";
 
