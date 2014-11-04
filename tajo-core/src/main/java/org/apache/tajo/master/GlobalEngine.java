@@ -303,7 +303,7 @@ public class GlobalEngine extends AbstractService {
         if (!storageProperty.isSupportsInsertInto()) {
           throw new VerifyException("Inserting into non-file storage is not supported.");
         }
-        sm.beforeCATS(rootNode.getChild());
+        sm.beforeInsertOrCATS(rootNode.getChild());
       }
       context.getSystemMetrics().counter("Query", "numDMLQuery").inc();
       hookManager.doHooks(queryContext, plan);
@@ -539,13 +539,11 @@ public class GlobalEngine extends AbstractService {
     if (storeType != null) {
       LogicalRootNode rootNode = plan.getRootBlock().getRoot();
       if (rootNode.getChild().getType() == NodeType.INSERT) {
-        String tableName = PlannerUtil.getStoreTableName(plan);
-        TableDesc tableDesc = catalog.getTableDesc(tableName);
-
-        InsertNode iNode = rootNode.getChild();
-        Schema outSchema = iNode.getChild().getOutSchema();
-
         try {
+          TableDesc tableDesc = PlannerUtil.getTableDesc(catalog, rootNode.getChild());
+          InsertNode iNode = rootNode.getChild();
+          Schema outSchema = iNode.getChild().getOutSchema();
+
           StorageManager.getStorageManager(queryContext.getConf(), storeType)
               .verifyInsertTableSchema(tableDesc, outSchema);
         } catch (Throwable t) {

@@ -40,6 +40,7 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.TextDatum;
+import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.RewriteRule;
@@ -324,6 +325,7 @@ public class HBaseStorageManager extends StorageManager {
 
     try {
       HTableDescriptor hTableDesc = parseHTableDescriptor(tableDesc.getMeta(), tableDesc.getSchema());
+      LOG.info("Deleting hbase table: " + new String(hTableDesc.getName()));
       hAdmin.disableTable(hTableDesc.getName());
       hAdmin.deleteTable(hTableDesc.getName());
     } finally {
@@ -880,12 +882,14 @@ public class HBaseStorageManager extends StorageManager {
   }
 
   @Override
-  public Path commitOutputData(OverridableConf queryContext, ExecutionBlockId finalEbId, Schema schema,
+  public Path commitOutputData(OverridableConf queryContext, ExecutionBlockId finalEbId,
+                               LogicalPlan plan, Schema schema,
                                TableDesc tableDesc) throws IOException {
     if (tableDesc == null) {
       throw new IOException("TableDesc is null while calling loadIncrementalHFiles: " + finalEbId);
     }
-    Path finalOutputDir = new Path(queryContext.get(QueryVars.STAGING_DIR));
+    Path stagingDir = new Path(queryContext.get(QueryVars.STAGING_DIR));
+    Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
 
     Configuration hbaseConf = HBaseStorageManager.getHBaseConfiguration(queryContext.getConf(), tableDesc.getMeta());
     hbaseConf.set("hbase.loadincremental.threads.max", "2");
@@ -893,31 +897,38 @@ public class HBaseStorageManager extends StorageManager {
     JobContextImpl jobContext = new JobContextImpl(hbaseConf,
         new JobID(finalEbId.getQueryId().toString(), finalEbId.getId()));
 
-    FileOutputCommitter committer = new FileOutputCommitter(finalOutputDir, jobContext);
+    FileOutputCommitter committer = new FileOutputCommitter(stagingResultDir, jobContext);
     Path jobAttemptPath = committer.getJobAttemptPath(jobContext);
     FileSystem fs = jobAttemptPath.getFileSystem(queryContext.getConf());
     if (!fs.exists(jobAttemptPath) || fs.listStatus(jobAttemptPath) == null) {
       LOG.warn("No query attempt file in " + jobAttemptPath);
-      return finalOutputDir;
+      return stagingResultDir;
     }
     committer.commitJob(jobContext);
 
-    String tableName = tableDesc.getMeta().getOption(HBaseStorageManager.META_TABLE_KEY);
+    if (tableDesc.getName() == null && tableDesc.getPath() != null) {
 
-    HTable htable = new HTable(hbaseConf, tableName);
-    try {
-      LoadIncrementalHFiles loadIncrementalHFiles = null;
+      // insert into location
+      return super.commitOutputData(queryContext, finalEbId, plan, schema, tableDesc, false);
+    } else {
+      // insert into table
+      String tableName = tableDesc.getMeta().getOption(HBaseStorageManager.META_TABLE_KEY);
+
+      HTable htable = new HTable(hbaseConf, tableName);
       try {
-        loadIncrementalHFiles = new LoadIncrementalHFiles(hbaseConf);
-      } catch (Exception e) {
-        LOG.error(e.getMessage(), e);
-        throw new IOException(e.getMessage(), e);
-      }
-      loadIncrementalHFiles.doBulkLoad(finalOutputDir, htable);
+        LoadIncrementalHFiles loadIncrementalHFiles = null;
+        try {
+          loadIncrementalHFiles = new LoadIncrementalHFiles(hbaseConf);
+        } catch (Exception e) {
+          LOG.error(e.getMessage(), e);
+          throw new IOException(e.getMessage(), e);
+        }
+        loadIncrementalHFiles.doBulkLoad(stagingResultDir, htable);
 
-      return finalOutputDir;
-    } finally {
-      htable.close();
+        return stagingResultDir;
+      } finally {
+        htable.close();
+      }
     }
   }
 
@@ -1032,7 +1043,7 @@ public class HBaseStorageManager extends StorageManager {
     return storageProperty;
   }
 
-  public void beforeCATS(LogicalNode node) throws IOException {
+  public void beforeInsertOrCATS(LogicalNode node) throws IOException {
     if (node.getType() == NodeType.CREATE_TABLE) {
       CreateTableNode cNode = (CreateTableNode)node;
       if (!cNode.isExternal()) {
@@ -1065,17 +1076,19 @@ public class HBaseStorageManager extends StorageManager {
 
   @Override
   public void verifyInsertTableSchema(TableDesc tableDesc, Schema outSchema) throws IOException  {
-    Schema tableSchema = tableDesc.getSchema();
-    if (tableSchema.size() != outSchema.size()) {
-      throw new IOException("The number of table columns is different from SELECT columns");
-    }
+    if (tableDesc != null) {
+      Schema tableSchema = tableDesc.getSchema();
+      if (tableSchema.size() != outSchema.size()) {
+        throw new IOException("The number of table columns is different from SELECT columns");
+      }
 
-    for (int i = 0; i < tableSchema.size(); i++) {
-      if (!tableSchema.getColumn(i).getDataType().equals(outSchema.getColumn(i).getDataType())) {
-        throw new IOException(outSchema.getColumn(i).getQualifiedName() +
-            "(" + outSchema.getColumn(i).getDataType().getType() + ")" +
-            " is different column type with " + tableSchema.getColumn(i).getSimpleName() +
-            "(" + tableSchema.getColumn(i).getDataType().getType() + ")");
+      for (int i = 0; i < tableSchema.size(); i++) {
+        if (!tableSchema.getColumn(i).getDataType().equals(outSchema.getColumn(i).getDataType())) {
+          throw new IOException(outSchema.getColumn(i).getQualifiedName() +
+              "(" + outSchema.getColumn(i).getDataType().getType() + ")" +
+              " is different column type with " + tableSchema.getColumn(i).getSimpleName() +
+              "(" + tableSchema.getColumn(i).getDataType().getType() + ")");
+        }
       }
     }
   }

@@ -20,6 +20,9 @@ package org.apache.tajo.engine.query;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.Filter;
@@ -965,7 +968,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
     executeString("CREATE TABLE hbase_mapped_table (rk1 text, rk2 text, col1 text) " +
         "USING hbase WITH ('table'='hbase_table', 'columns'='0:key,1:key,col1:a', " +
-        "'hbase.split.rowkeys'='1,2,3,4,5,6,7,8,9', " +
+        "'hbase.split.rowkeys'='001,002,003,004,005,006,007,008,009', " +
         "'hbase.rowkey.delimiter'='_', " +
         "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
         "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
@@ -982,11 +985,10 @@ public class TestHBaseTable extends QueryTestCaseBase {
     schema.addColumn("id1", Type.TEXT);
     schema.addColumn("id2", Type.TEXT);
     schema.addColumn("name", Type.TEXT);
-    //DecimalFormat df = new DecimalFormat("000");
+    DecimalFormat df = new DecimalFormat("000");
     List<String> datas = new ArrayList<String>();
     for (int i = 99; i >= 0; i--) {
-//      datas.add(df.format(i) + "|" + (i + 100) + "|value" + i);
-      datas.add(i + "|" + (i + 100) + "|value" + i);
+      datas.add(df.format(i) + "|" + (i + 100) + "|value" + i);
     }
     TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
         schema, tableOptions, datas.toArray(new String[]{}), 2);
@@ -1284,6 +1286,69 @@ public class TestHBaseTable extends QueryTestCaseBase {
       if (htable != null) {
         htable.close();
       }
+    }
+  }
+
+  @Test
+  public void testInsertIntoLocation() throws Exception {
+    String hostName = InetAddress.getLocalHost().getHostName();
+    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
+    assertNotNull(zkPort);
+
+    executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text) " +
+        "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:', " +
+        "'hbase.split.rowkeys'='010,040,060,080', " +
+        "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
+        "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
+
+    assertTableExists("hbase_mapped_table");
+
+    try {
+      // create test table
+      KeyValueSet tableOptions = new KeyValueSet();
+      tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+      tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+
+      Schema schema = new Schema();
+      schema.addColumn("id", Type.TEXT);
+      schema.addColumn("name", Type.TEXT);
+      schema.addColumn("comment", Type.TEXT);
+      List<String> datas = new ArrayList<String>();
+      DecimalFormat df = new DecimalFormat("000");
+      for (int i = 99; i >= 0; i--) {
+        datas.add(df.format(i) + "|value" + i + "|comment-" + i);
+      }
+      TajoTestingCluster.createTable(getCurrentDatabase() + ".base_table",
+          schema, tableOptions, datas.toArray(new String[]{}), 2);
+
+      executeString("insert into location '/tmp/hfile_test' " +
+          "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:', " +
+          "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
+          "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')" +
+          "select id, name, comment from base_table ").close();
+
+      FileSystem fs = testingCluster.getDefaultFileSystem();
+      Path path = new Path("/tmp/hfile_test");
+      assertTrue(fs.exists(path));
+
+      FileStatus[] files = fs.listStatus(path);
+      assertNotNull(files);
+      assertEquals(2, files.length);
+
+      assertEquals("/tmp/hfile_test/col2", files[1].getPath().toUri().getPath());
+
+      int index = 1;
+      for (FileStatus eachFile: files) {
+        assertEquals("/tmp/hfile_test/col" + index, eachFile.getPath().toUri().getPath());
+        for (FileStatus subFile: fs.listStatus(eachFile.getPath())) {
+          assertTrue(subFile.isFile());
+          assertTrue(subFile.getLen() > 0);
+        }
+        index++;
+      }
+    } finally {
+      executeString("DROP TABLE base_table PURGE").close();
+      executeString("DROP TABLE hbase_mapped_table PURGE").close();
     }
   }
 

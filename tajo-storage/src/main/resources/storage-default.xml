@@ -161,4 +161,8 @@
     <value>org.apache.tajo.storage.hbase.HFileAppender</value>
   </property>
 
+  <property>
+    <name>tajo.storage.appender-handler.hfile.class</name>
+    <value>org.apache.tajo.storage.hbase.HFileAppender</value>
+  </property>
 </configuration>

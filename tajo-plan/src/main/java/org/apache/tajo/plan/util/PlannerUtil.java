@@ -821,10 +821,10 @@ public class PlannerUtil {
       return createTableDesc((CreateTableNode)node);
     }
     String tableName = null;
-    if (node.getType() == NodeType.CREATE_TABLE) {
-      tableName = ((CreateTableNode)node).getTableName();
-    } else if (node.getType() == NodeType.INSERT) {
-      tableName = ((InsertNode)node).getTableName();
+    InsertNode insertNode = null;
+    if (node.getType() == NodeType.INSERT) {
+      insertNode = (InsertNode)node;
+      tableName = insertNode.getTableName();
     } else {
       return null;
     }
@@ -835,6 +835,11 @@ public class PlannerUtil {
         if (catalog.existsTable(tableTokens[0], tableTokens[1])) {
           return catalog.getTableDesc(tableTokens[0], tableTokens[1]);
         }
+      }
+    } else {
+      if (insertNode.getPath() != null) {
+        //insert ... location
+        return createTableDesc(insertNode);
       }
     }
     return null;
@@ -854,6 +859,23 @@ public class PlannerUtil {
 
     if (createTableNode.hasPartition()) {
       tableDescTobeCreated.setPartitionMethod(createTableNode.getPartitionMethod());
+    }
+
+    return tableDescTobeCreated;
+  }
+
+  private static TableDesc createTableDesc(InsertNode insertNode) {
+    TableMeta meta = new TableMeta(insertNode.getStorageType(), insertNode.getOptions());
+
+    TableDesc tableDescTobeCreated =
+        new TableDesc(
+            insertNode.getTableName(),
+            insertNode.getTableSchema(),
+            meta,
+            insertNode.getPath());
+
+    if (insertNode.hasPartition()) {
+      tableDescTobeCreated.setPartitionMethod(insertNode.getPartitionMethod());
     }
 
     return tableDescTobeCreated;

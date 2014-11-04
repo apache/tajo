@@ -412,7 +412,8 @@ public class Query implements EventHandler<QueryEvent> {
         TableDesc tableDesc =  PlannerUtil.getTableDesc(catalog, rootNode.getChild());
 
         Path finalOutputDir = StorageManager.getStorageManager(query.systemConf, storeType)
-            .commitOutputData(query.context.getQueryContext(), lastStage.getId(), lastStage.getSchema(), tableDesc);
+            .commitOutputData(query.context.getQueryContext(),
+                lastStage.getId(), lastStage.getMasterPlan().getLogicalPlan(), lastStage.getSchema(), tableDesc);
 
         QueryHookExecutor hookExecutor = new QueryHookExecutor(query.context.getQueryMasterContext());
           hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(), finalOutputDir);

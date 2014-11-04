@@ -35,6 +35,8 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.QueryVars;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -69,7 +71,8 @@ public class HFileAppender extends AbstractHBaseAppender {
     super.init();
 
     Configuration taskConf = new Configuration();
-    taskConf.set(FileOutputFormat.OUTDIR, stagingDir.toString());
+    Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
+    taskConf.set(FileOutputFormat.OUTDIR, stagingResultDir.toString());
 
     ExecutionBlockId ebId = taskAttemptId.getQueryUnitId().getExecutionBlockId();
     writerContext = new TaskAttemptContextImpl(taskConf,
