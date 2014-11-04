@@ -529,9 +529,9 @@ public class ExternalSortExec extends SortExec {
       throws IOException {
     if (num > 1) {
       final int mid = (int) Math.ceil((float)num / 2);
-      return new PairWiseMerger(
+      return new PairWiseMerger(inSchema,
           createKWayMergerInternal(sources, startIdx, mid),
-          createKWayMergerInternal(sources, startIdx + mid, num - mid));
+          createKWayMergerInternal(sources, startIdx + mid, num - mid), getComparator());
     } else {
       return sources[startIdx];
     }
@@ -626,6 +626,12 @@ public class ExternalSortExec extends SortExec {
     }
   }
 
+  enum State {
+    NEW,
+    INITED,
+    CLOSED
+  }
+
   /**
    * Two-way merger scanner that reads two input sources and outputs one output tuples sorted in some order.
    */
@@ -633,59 +639,132 @@ public class ExternalSortExec extends SortExec {
     private Scanner leftScan;
     private Scanner rightScan;
 
-    private Tuple leftTuple;
-    private Tuple rightTuple;
+    private VTuple outTuple;
+    private VTuple leftTuple;
+    private VTuple rightTuple;
 
-    private final Comparator<Tuple> comparator = getComparator();
+    private final Schema schema;
+    private final Comparator<Tuple> comparator;
 
     private float mergerProgress;
     private TableStats mergerInputStats;
 
-    public PairWiseMerger(Scanner leftScanner, Scanner rightScanner) throws IOException {
+    private State state = State.NEW;
+
+    public PairWiseMerger(Schema schema, Scanner leftScanner, Scanner rightScanner, Comparator<Tuple> comparator)
+        throws IOException {
+      this.schema = schema;
       this.leftScan = leftScanner;
       this.rightScan = rightScanner;
+      this.comparator = comparator;
+    }
+
+    private void setState(State state) {
+      this.state = state;
     }
 
     @Override
     public void init() throws IOException {
-      leftScan.init();
-      rightScan.init();
+      if (state == State.NEW) {
+        leftScan.init();
+        rightScan.init();
 
-      leftTuple = leftScan.next();
-      rightTuple = rightScan.next();
+        prepareTuplesForFirstComparison();
 
-      mergerInputStats = new TableStats();
-      mergerProgress = 0.0f;
+        mergerInputStats = new TableStats();
+        mergerProgress = 0.0f;
+
+        setState(State.INITED);
+      } else {
+        throw new IllegalStateException("Illegal State: init() is not allowed in " + state.name());
+      }
+    }
+
+    private void prepareTuplesForFirstComparison() throws IOException {
+      Tuple lt = leftScan.next();
+      if (lt != null) {
+        leftTuple = new VTuple(lt);
+      } else {
+        leftTuple = null; // TODO - missed free
+      }
+
+      Tuple rt = rightScan.next();
+      if (rt != null) {
+        rightTuple = new VTuple(rt);
+      } else {
+        rightTuple = null; // TODO - missed free
+      }
     }
 
     public Tuple next() throws IOException {
-      Tuple outTuple;
+
       if (leftTuple != null && rightTuple != null) {
         if (comparator.compare(leftTuple, rightTuple) < 0) {
-          outTuple = leftTuple;
-          leftTuple = leftScan.next();
+          outTuple = new VTuple(leftTuple);
+
+          Tuple lt = leftScan.next();
+          if (lt != null) {
+            leftTuple = new VTuple(lt);
+          } else {
+            leftTuple = null; // TODO - missed free
+          }
         } else {
-          outTuple = rightTuple;
-          rightTuple = rightScan.next();
+          outTuple = new VTuple(rightTuple);
+
+          Tuple rt = rightScan.next();
+          if (rt != null) {
+            rightTuple = new VTuple(rt);
+          } else {
+            rightTuple = null; // TODO - missed free
+          }
         }
         return outTuple;
       }
 
       if (leftTuple == null) {
-        outTuple = rightTuple;
-        rightTuple = rightScan.next();
+        if (rightTuple != null) {
+          outTuple = new VTuple(rightTuple);
+        } else {
+          outTuple = null;
+        }
+
+        Tuple rt = rightScan.next();
+        if (rt != null) {
+          rightTuple = new VTuple(rt);
+        } else {
+          rightTuple = null; // TODO - missed free
+        }
       } else {
-        outTuple = leftTuple;
-        leftTuple = leftScan.next();
+        if (leftTuple != null) {
+          outTuple = new VTuple(leftTuple);
+        } else {
+          outTuple = null;
+        }
+
+        Tuple lt = leftScan.next();
+        if (lt != null) {
+          leftTuple = new VTuple(lt);
+        } else {
+          leftTuple = null; // TODO - missed free
+        }
       }
       return outTuple;
     }
 
     @Override
     public void reset() throws IOException {
-      leftScan.reset();
-      rightScan.reset();
-      init();
+      if (state == State.INITED) {
+        leftScan.reset();
+        rightScan.reset();
+
+        outTuple = null;
+        leftTuple = null;
+        rightTuple = null;
+
+        prepareTuplesForFirstComparison();
+      } else {
+        throw new IllegalStateException("Illegal State: init() is not allowed in " + state.name());
+      }
     }
 
     public void close() throws IOException {
@@ -694,6 +773,7 @@ public class ExternalSortExec extends SortExec {
       leftScan = null;
       rightScan = null;
       mergerProgress = 1.0f;
+      setState(State.CLOSED);
     }
 
     @Override
@@ -721,7 +801,7 @@ public class ExternalSortExec extends SortExec {
 
     @Override
     public Schema getSchema() {
-      return inSchema;
+      return schema;
     }
 
     @Override
