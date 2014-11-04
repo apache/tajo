@@ -27,6 +27,7 @@ import org.apache.tajo.plan.expr.WindowFunctionEval;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.logical.WindowAggNode;
 import org.apache.tajo.plan.logical.WindowSpec;
+import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
@@ -285,9 +286,9 @@ public class WindowAggExec extends UnaryPhysicalExec {
 
     for (int idx = 0; idx < functions.length; idx++) {
       if (orderedFuncFlags[idx]) {
-        comp = new TupleComparator(inSchema, functions[idx].getSortSpecs());
+        comp = new BaseTupleComparator(inSchema, functions[idx].getSortSpecs());
         Collections.sort(accumulatedInTuples, comp);
-        comp = new TupleComparator(schemaForOrderBy, functions[idx].getSortSpecs());
+        comp = new BaseTupleComparator(schemaForOrderBy, functions[idx].getSortSpecs());
         Collections.sort(evaluatedTuples, comp);
       }
 

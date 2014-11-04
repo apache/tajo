@@ -27,12 +27,9 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
-import org.apache.tajo.storage.RowStoreUtil;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
-import org.apache.tajo.storage.StorageUtil;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.index.IndexMethod;
 import org.apache.tajo.storage.index.IndexWriter;
 import org.apache.tajo.storage.index.OrderIndexReader;
@@ -72,8 +69,7 @@ public class BSTIndex implements IndexMethod {
   }
 
   @Override
-  public BSTIndexReader getIndexReader(Path fileName, Schema keySchema,
-      TupleComparator comparator) throws IOException {
+  public BSTIndexReader getIndexReader(Path fileName, Schema keySchema, TupleComparator comparator) throws IOException {
     return new BSTIndexReader(fileName, keySchema, comparator);
   }
 
@@ -350,7 +346,7 @@ public class BSTIndex implements IndexMethod {
 
       TupleComparatorProto.Builder compProto = TupleComparatorProto.newBuilder();
       compProto.mergeFrom(compBytes);
-      this.comparator = new TupleComparator(compProto.build());
+      this.comparator = new BaseTupleComparator(compProto.build());
 
       // level
       this.level = indexIn.readInt();

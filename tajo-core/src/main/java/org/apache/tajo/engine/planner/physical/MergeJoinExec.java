@@ -52,7 +52,7 @@ public class MergeJoinExec extends BinaryPhysicalExec {
   private Iterator<Tuple> innerIterator;
 
   private JoinTupleComparator joincomparator = null;
-  private TupleComparator[] tupleComparator = null;
+  private TupleComparator [] tupleComparator = null;
 
   private final static int INITIAL_TUPLE_SLOT = 10000;
 

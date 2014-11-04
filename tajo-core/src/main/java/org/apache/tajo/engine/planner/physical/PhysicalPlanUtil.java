@@ -34,6 +34,7 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.PersistentStoreNode;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.TupleComparator;
@@ -53,11 +54,11 @@ public class PhysicalPlanUtil {
     return (T) new FindVisitor().visit(plan, new Stack<PhysicalExec>(), clazz);
   }
 
-  public static TupleComparator[] getComparatorsFromJoinQual(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
+  public static TupleComparator [] getComparatorsFromJoinQual(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
     SortSpec[][] sortSpecs = PlannerUtil.getSortKeysFromJoinQual(joinQual, leftSchema, rightSchema);
-    TupleComparator[] comparators = new TupleComparator[2];
-    comparators[0] = new TupleComparator(leftSchema, sortSpecs[0]);
-    comparators[1] = new TupleComparator(rightSchema, sortSpecs[1]);
+    BaseTupleComparator[] comparators = new BaseTupleComparator[2];
+    comparators[0] = new BaseTupleComparator(leftSchema, sortSpecs[0]);
+    comparators[1] = new BaseTupleComparator(rightSchema, sortSpecs[1]);
     return comparators;
   }
 
