@@ -25,6 +25,7 @@ import org.apache.tajo.datum.ProtobufDatum;
 public class EmptyTuple implements Tuple, Cloneable {
 
   private static EmptyTuple tuple;
+  private static Datum[] EMPTY_VALUES = new Datum[0];
 
   static {
     tuple = new EmptyTuple();
@@ -49,6 +50,11 @@ public class EmptyTuple implements Tuple, Cloneable {
   @Override
   public boolean isNull(int fieldid) {
     return true;
+  }
+
+  @Override
+  public boolean isNotNull(int fieldid) {
+    return false;
   }
 
   @Override
@@ -146,6 +152,11 @@ public class EmptyTuple implements Tuple, Cloneable {
   }
 
   @Override
+  public Datum getInterval(int fieldId) {
+    return NullDatum.get();
+  }
+
+  @Override
   public char[] getUnicodeChars(int fieldId) {
     return NullDatum.get().asUnicodeChars();
   }
@@ -157,6 +168,6 @@ public class EmptyTuple implements Tuple, Cloneable {
 
   @Override
   public Datum[] getValues() {
-    return new Datum[0];
+    return EMPTY_VALUES;
   }
 }
