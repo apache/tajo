@@ -69,7 +69,7 @@ public class TestTupleComparator {
     SortSpec sortKey1 = new SortSpec(schema.getColumn("col4"), true, false);
     SortSpec sortKey2 = new SortSpec(schema.getColumn("col5"), true, false);
 
-    TupleComparator tc = new TupleComparator(schema,
+    BaseTupleComparator tc = new BaseTupleComparator(schema,
         new SortSpec[] {sortKey1, sortKey2});
     assertEquals(-1, tc.compare(tuple1, tuple2));
     assertEquals(1, tc.compare(tuple2, tuple1));

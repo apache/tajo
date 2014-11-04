@@ -41,7 +41,7 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.serder.EvalTreeProtoDeserializer;
 import org.apache.tajo.plan.serder.EvalTreeProtoSerializer;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.plan.util.SchemaUtil;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;

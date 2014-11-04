@@ -33,7 +33,7 @@ public class TupleRange implements Comparable<TupleRange>, Cloneable {
   private final TupleComparator comp;
 
   public TupleRange(final SortSpec[] sortSpecs, final Tuple start, final Tuple end) {
-    this.comp = new TupleComparator(sortSpecsToSchema(sortSpecs), sortSpecs);
+    this.comp = new BaseTupleComparator(sortSpecsToSchema(sortSpecs), sortSpecs);
     // if there is only one value, start == end
     this.start = start;
     this.end = end;
