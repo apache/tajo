@@ -22,6 +22,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.io.Closeables;
 import com.google.common.io.Files;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.*;
@@ -32,6 +33,8 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.server.resourcemanager.ResourceManager;
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.client.TajoClient;
@@ -90,6 +93,12 @@ public class TajoTestingCluster {
    */
   public Boolean isHCatalogStoreUse = false;
 
+  private static final String LOG_LEVEL;
+
+  static {
+    LOG_LEVEL = System.getProperty("LOG_LEVEL");
+  }
+
   public TajoTestingCluster() {
     this(false);
   }
@@ -118,6 +127,13 @@ public class TajoTestingCluster {
 
     this.standbyWorkerMode = conf.getVar(ConfVars.RESOURCE_MANAGER_CLASS)
         .indexOf(TajoWorkerResourceManager.class.getName()) >= 0;
+
+    /* Since Travi CI limits the size of standard output log up to 4MB */
+    if (!StringUtils.isEmpty(LOG_LEVEL)) {
+      Level defaultLevel = Logger.getRootLogger().getLevel();
+      Logger.getLogger("org.apache.tajo").setLevel(Level.toLevel(LOG_LEVEL.toUpperCase(), defaultLevel));
+      Logger.getLogger("org.apache.hadoop").setLevel(Level.toLevel(LOG_LEVEL.toUpperCase(), defaultLevel));
+    }
   }
 
 	public TajoConf getConfiguration() {

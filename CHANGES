@@ -44,6 +44,8 @@ Release 0.9.1 - unreleased
 
   TASKS
 
+    TAJO-1032: Improve TravisCI scripts to adjust log4j log level. (jinho)
+
     TAJO-1141: Refactor the packages hierarchy of tajo-client. (hyunsik)
 
 
