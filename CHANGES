@@ -32,6 +32,9 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1150: Some weird methods in QueryClientImpl should be fixed. 
+    (Jongyoung Park via hyunsik)
+
     TAJO-1139: ExternalSortExec should delete the intermediate files. 
     (jinho via hyunsik)
 
@@ -40,6 +43,8 @@ Release 0.9.1 - unreleased
 
 
   TASKS
+
+    TAJO-1032: Improve TravisCI scripts to adjust log4j log level. (jinho)
 
     TAJO-1141: Refactor the packages hierarchy of tajo-client. (hyunsik)
 
