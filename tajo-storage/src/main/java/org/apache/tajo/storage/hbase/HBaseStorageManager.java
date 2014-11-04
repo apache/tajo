@@ -261,7 +261,6 @@ public class HBaseStorageManager extends StorageManager {
       byte[][] splitKeys = new byte[splitKeySet.size()][];
       int index = 0;
       for (String eachKey: splitKeySet) {
-        splitKeys[index++] = Bytes.toBytes(eachKey);
         if (numRowKeys == 1 && rowkeyBinary) {
           splitKeys[index++] = HBaseBinarySerializerDeserializer.serialize(rowKeyColumn, new TextDatum(eachKey));
         } else {
