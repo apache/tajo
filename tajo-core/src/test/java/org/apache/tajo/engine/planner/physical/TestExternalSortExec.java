@@ -152,7 +152,7 @@ public class TestExternalSortExec {
     int cnt = 0;
     exec.init();
     long start = System.currentTimeMillis();
-    TupleComparator comparator = new TupleComparator(proj.getSchema(),
+    BaseTupleComparator comparator = new BaseTupleComparator(proj.getSchema(),
         new SortSpec[]{
             new SortSpec(new Column("managerid", Type.INT4)),
             new SortSpec(new Column("empid", Type.INT4))

@@ -43,7 +43,6 @@ import org.apache.tajo.plan.rewrite.rules.AccessPathRewriter.AccessPathRewriterC
 import org.apache.tajo.plan.serder.EvalTreeProtoDeserializer;
 import org.apache.tajo.plan.serder.EvalTreeProtoSerializer;
 import org.apache.tajo.plan.serder.PlanProto;
-import org.apache.tajo.plan.util.SchemaUtil;
 import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.VerificationState;
