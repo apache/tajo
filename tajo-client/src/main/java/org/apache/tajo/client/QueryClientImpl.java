@@ -29,7 +29,6 @@ import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
@@ -147,17 +146,17 @@ public class QueryClientImpl implements QueryClient {
 
   @Override
   public String getSessionVariable(String varname) throws ServiceException {
-    return getSessionVariable(varname);
+    return connection.getSessionVariable(varname);
   }
 
   @Override
   public Boolean existSessionVariable(String varname) throws ServiceException {
-    return existSessionVariable(varname);
+    return connection.existSessionVariable(varname);
   }
 
   @Override
   public Map<String, String> getAllSessionVariables() throws ServiceException {
-    return getAllSessionVariables();
+    return connection.getAllSessionVariables();
   }
 
   @Override

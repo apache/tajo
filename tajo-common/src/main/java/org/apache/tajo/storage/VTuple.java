@@ -21,7 +21,7 @@ package org.apache.tajo.storage;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.Inet4Datum;
-import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.UnimplementedException;
 
@@ -38,10 +38,9 @@ public class VTuple implements Tuple, Cloneable {
 
   public VTuple(Tuple tuple) {
     this.values = tuple.getValues().clone();
-    this.offset = ((VTuple)tuple).offset;
   }
 
-  public VTuple(Datum [] datum) {
+  public VTuple(Datum[] datum) {
     this(datum.length);
     put(datum);
   }
@@ -57,7 +56,12 @@ public class VTuple implements Tuple, Cloneable {
 
   @Override
   public boolean isNull(int fieldid) {
-    return values[fieldid] instanceof NullDatum;
+    return values[fieldid].isNull();
+  }
+
+  @Override
+  public boolean isNotNull(int fieldid) {
+    return !isNull(fieldid);
   }
 
   @Override
@@ -179,6 +183,11 @@ public class VTuple implements Tuple, Cloneable {
   }
 
   @Override
+  public IntervalDatum getInterval(int fieldId) {
+    return (IntervalDatum) values[fieldId];
+  }
+
+  @Override
   public char[] getUnicodeChars(int fieldId) {
     return values[fieldId].asUnicodeChars();
   }
@@ -193,23 +202,7 @@ public class VTuple implements Tuple, Cloneable {
   }
 
   public String toString() {
-		boolean first = true;
-		StringBuilder str = new StringBuilder();
-		str.append("(");
-		for(int i=0; i < values.length; i++) {			
-			if(values[i] != null) {
-				if(first) {
-					first = false;
-				} else {
-					str.append(", ");
-				}
-				str.append(i)
-				.append("=>")
-				.append(values[i]);
-			}
-		}
-		str.append(")");
-		return str.toString();
+		return toDisplayString(getValues());
 	}
 
 	@Override
@@ -229,5 +222,25 @@ public class VTuple implements Tuple, Cloneable {
       return Arrays.equals(getValues(), other.getValues());
     }
     return false;
+  }
+
+  public static String toDisplayString(Datum [] values) {
+    boolean first = true;
+    StringBuilder str = new StringBuilder();
+    str.append("(");
+    for(int i=0; i < values.length; i++) {
+      if(values[i] != null) {
+        if(first) {
+          first = false;
+        } else {
+          str.append(", ");
+        }
+        str.append(i)
+            .append("=>")
+            .append(values[i]);
+      }
+    }
+    str.append(")");
+    return str.toString();
   }
 }

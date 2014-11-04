@@ -26,10 +26,10 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.worker.dataserver.retriever.FileChunk;
 import org.apache.tajo.worker.dataserver.retriever.RetrieverHandler;
@@ -57,10 +57,10 @@ public class RangeRetrieverHandler implements RetrieverHandler {
   private final File file;
   private final BSTIndex.BSTIndexReader idxReader;
   private final Schema schema;
-  private final TupleComparator comp;
+  private final BaseTupleComparator comp;
   private final RowStoreDecoder decoder;
 
-  public RangeRetrieverHandler(File outDir, Schema schema, TupleComparator comp) throws IOException {
+  public RangeRetrieverHandler(File outDir, Schema schema, BaseTupleComparator comp) throws IOException {
     this.file = outDir;
     BSTIndex index = new BSTIndex(new TajoConf());
     this.schema = schema;

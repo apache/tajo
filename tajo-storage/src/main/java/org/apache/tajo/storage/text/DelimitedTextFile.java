@@ -300,8 +300,8 @@ public class DelimitedTextFile {
 
       if (reader != null) {
         reader.close();
-        reader = new DelimitedLineReader(conf, fragment);
       }
+      reader = new DelimitedLineReader(conf, fragment);
       reader.init();
       recordCount = 0;
 
@@ -335,7 +335,7 @@ public class DelimitedTextFile {
       }
     }
 
-    private ByteBuf readLine() throws IOException {
+    public ByteBuf readLine() throws IOException {
       ByteBuf buf = reader.readLine();
       if (buf == null) {
         return null;
