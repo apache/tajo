@@ -93,7 +93,7 @@ public class ColumnMapping {
       if (mappingTokens.length == 3) {
         if (mappingTokens[0].length == 0) {
           // cfname
-          throw new IOException("'column' attribute should be '<cfname>:key:' or '<cfname>:key:#b' " +
+          throw new IOException(eachToken + " 'column' attribute should be '<cfname>:key:' or '<cfname>:key:#b' " +
               "or '<cfname>:value:' or '<cfname>:value:#b'");
         }
         //<cfname>:key: or <cfname>:value:
@@ -102,7 +102,7 @@ public class ColumnMapping {
           if ("#b".equals(binaryOption)) {
             isBinaryColumns[index] = true;
           } else {
-            throw new IOException("'column' attribute should be '<cfname>:key:' or '<cfname>:key:#b' " +
+            throw new IOException(eachToken + " 'column' attribute should be '<cfname>:key:' or '<cfname>:key:#b' " +
                 "or '<cfname>:value:' or '<cfname>:value:#b'");
           }
         }
@@ -113,7 +113,7 @@ public class ColumnMapping {
         } else if (VALUE_COLUMN_MAPPING.equalsIgnoreCase(keyOrValue)) {
           isColumnValues[index] = true;
         } else {
-          throw new IOException("'column' attribute should be '<cfname>:key:' or '<cfname>:value:'");
+          throw new IOException(eachToken + " 'column' attribute should be '<cfname>:key:' or '<cfname>:value:'");
         }
       } else if (mappingTokens.length == 2) {
         //<cfname>: or <cfname>:<qualifier> or :key
@@ -134,7 +134,7 @@ public class ColumnMapping {
           }
         } else {
           if (cfName.isEmpty()) {
-            throw new IOException("'column' attribute should be '<cfname>:key:' or '<cfname>:value:'");
+            throw new IOException(eachToken + " 'column' attribute should be '<cfname>:key:' or '<cfname>:value:'");
           }
           if (cfName != null) {
             mappingColumns[index][0] = Bytes.toBytes(cfName);
@@ -153,7 +153,7 @@ public class ColumnMapping {
           }
         }
       } else {
-        throw new IOException("'column' attribute '[cfname]:[qualfier]:");
+        throw new IOException(eachToken + " 'column' attribute '[cfname]:[qualfier]:'");
       }
 
       index++;

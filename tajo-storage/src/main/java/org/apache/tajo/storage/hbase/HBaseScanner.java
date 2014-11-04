@@ -22,8 +22,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.filter.Filter;
-import org.apache.hadoop.hbase.filter.InclusiveStopFilter;
+import org.apache.hadoop.hbase.filter.*;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -137,27 +136,43 @@ public class HBaseScanner implements Scanner {
   private void initScanner() throws IOException {
     scan = new Scan();
     scan.setBatch(scanFetchSize);
+    scan.setCacheBlocks(false);
+    scan.setCaching(scanFetchSize);
+
+    FilterList filters = null;
+    if (targetIndexes == null || targetIndexes.length == 0) {
+      filters = new FilterList(FilterList.Operator.MUST_PASS_ALL);
+      filters.addFilter(new FirstKeyOnlyFilter());
+      filters.addFilter(new KeyOnlyFilter());
+    } else {
+      boolean[] isRowKeyMappings = columnMapping.getIsRowKeyMappings();
+      for (int eachIndex : targetIndexes) {
+        if (isRowKeyMappings[eachIndex]) {
+          continue;
+        }
+        byte[][] mappingColumn = columnMapping.getMappingColumns()[eachIndex];
+        if (mappingColumn[1] == null) {
+          scan.addFamily(mappingColumn[0]);
+        } else {
+          scan.addColumn(mappingColumn[0], mappingColumn[1]);
+        }
+      }
+    }
+
     scan.setStartRow(fragment.getStartRow());
     if (fragment.isLast() && fragment.getStopRow() != null &&
         fragment.getStopRow().length > 0) {
       // last and stopRow is not empty
-      Filter filter = new InclusiveStopFilter(fragment.getStopRow());
-      scan.setFilter(filter);
+      if (filters == null) {
+        filters = new FilterList();
+      }
+      filters.addFilter(new InclusiveStopFilter(fragment.getStopRow()));
     } else {
       scan.setStopRow(fragment.getStopRow());
     }
 
-    boolean[] isRowKeyMappings = columnMapping.getIsRowKeyMappings();
-    for (int eachIndex: targetIndexes) {
-      if (isRowKeyMappings[eachIndex]) {
-        continue;
-      }
-      byte[][] mappingColumn = columnMapping.getMappingColumns()[eachIndex];
-      if (mappingColumn[1] == null) {
-        scan.addFamily(mappingColumn[0]);
-      } else {
-        scan.addColumn(mappingColumn[0], mappingColumn[1]);
-      }
+    if (filters != null) {
+      scan.setFilter(filters);
     }
 
     if (htable == null) {

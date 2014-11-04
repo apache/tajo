@@ -252,6 +252,9 @@ public class GlobalEngine extends AbstractService {
         LimitNode limitNode = plan.getRootBlock().getNode(NodeType.LIMIT);
         maxRow = (int) limitNode.getFetchFirstNum();
       }
+      if (desc.getStats().getNumRows() == 0) {
+        desc.getStats().setNumRows(-1);
+      }
       QueryId queryId = QueryIdFactory.newQueryId(context.getResourceManager().getSeedQueryId());
 
       NonForwardQueryResultScanner queryResultScanner =
