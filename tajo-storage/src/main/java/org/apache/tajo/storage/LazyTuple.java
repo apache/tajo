@@ -20,6 +20,7 @@ package org.apache.tajo.storage;
 
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.UnsupportedException;
@@ -68,7 +69,12 @@ public class LazyTuple implements Tuple, Cloneable {
 
   @Override
   public boolean isNull(int fieldid) {
-    return get(fieldid) instanceof NullDatum;
+    return get(fieldid).isNull();
+  }
+
+  @Override
+  public boolean isNotNull(int fieldid) {
+    return !isNull(fieldid);
   }
 
   @Override
@@ -196,6 +202,11 @@ public class LazyTuple implements Tuple, Cloneable {
   @Override
   public ProtobufDatum getProtobufDatum(int fieldId) {
     throw new UnsupportedException();
+  }
+
+  @Override
+  public IntervalDatum getInterval(int fieldId) {
+    return (IntervalDatum) get(fieldId);
   }
 
   @Override

@@ -70,8 +70,8 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
       indexKeys[i] = inSchema.getColumnId(col.getQualifiedName());
     }
 
-    BSTIndex bst = new BSTIndex(new TajoConf(context.getConf()));
-    this.comp = new TupleComparator(keySchema, sortSpecs);
+    BSTIndex bst = new BSTIndex(new TajoConf());
+    this.comp = new BaseTupleComparator(keySchema, sortSpecs);
     Path storeTablePath = new Path(context.getWorkDir(), "output");
     LOG.info("Output data directory: " + storeTablePath);
     this.meta = CatalogUtil.newTableMeta(context.getDataChannel() != null ?

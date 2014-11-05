@@ -25,6 +25,7 @@ import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -597,7 +598,7 @@ public class PlannerUtil {
 
     @Override
     public void visit(EvalNode node) {
-      if (EvalTreeUtil.isJoinQual(node, includeThetaJoin)) {
+      if (EvalTreeUtil.isJoinQual(null, schemas[0], schemas[1], node, includeThetaJoin)) {
         BinaryEval binaryEval = (BinaryEval) node;
         Column[] pair = new Column[2];
 

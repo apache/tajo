@@ -52,7 +52,7 @@ public class TajoDriver implements Driver, Closeable {
 
   @Override
   public Connection connect(String url, Properties properties) throws SQLException {
-    return acceptsURL(url) ? new TajoConnection(url, properties) : null;
+    return acceptsURL(url) ? new JdbcConnection(url, properties) : null;
   }
 
   @Override
