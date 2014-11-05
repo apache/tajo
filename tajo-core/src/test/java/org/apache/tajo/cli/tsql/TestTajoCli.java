@@ -27,6 +27,7 @@ import org.apache.tajo.ConfigKey;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
+import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.cli.tsql.DefaultTajoCliOutputFormatter;
 import org.apache.tajo.cli.tsql.TajoCli;
 import org.apache.tajo.client.QueryStatus;
@@ -341,6 +342,41 @@ public class TestTajoCli {
   public void testHelpSessionVars() throws Exception {
     tajoCli.executeMetaCommand("\\help set");
     assertOutputResult(new String(out.toByteArray()));
+  }
+
+  @Test
+  public void testNonForwardQueryPause() throws Exception {
+    final String sql = "select * from default.lineitem";
+    try {
+      TableDesc tableDesc = cluster.getMaster().getCatalog().getTableDesc("default", "lineitem");
+      assertNotNull(tableDesc);
+      assertEquals(0L, tableDesc.getStats().getNumRows().longValue());
+      setVar(tajoCli, SessionVars.CLI_PAGE_ROWS, "2");
+      setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+      Thread t = new Thread() {
+        public void run() {
+          try {
+            tajoCli.executeScript(sql);
+          } catch (Exception e) {
+            e.printStackTrace();
+            fail(e.getMessage());
+          }
+        }
+      };
+      t.start();
+      String consoleResult;
+      while (true) {
+        Thread.sleep(3 * 1000);
+        consoleResult = new String(out.toByteArray());
+        if (consoleResult.indexOf("row") >= 0) {
+          t.interrupt();
+          break;
+        }
+      }
+      assertOutputResult(consoleResult);
+    } finally {
+      setVar(tajoCli, SessionVars.CLI_PAGE_ROWS, "100");
+    }
   }
 
   public static class TajoCliOutputTestFormatter extends DefaultTajoCliOutputFormatter {
