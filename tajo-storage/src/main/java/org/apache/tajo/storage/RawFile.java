@@ -57,12 +57,14 @@ public class RawFile {
     private int headerSize = 0; // Header size of a tuple
     private BitArray nullFlags;
     private static final int RECORD_SIZE = 4;
-    private boolean eof = false;
-    private long length;
+    private boolean eos = false;
     private long startOffset;
-    private long numBytesRead;
+    private long endOffset;
     private FileInputStream fis;
     private long recordCount;
+    private long totalReadBytes;
+    private long filePosition;
+    private boolean forceFillBuffer;
 
     public RawFileScanner(Configuration conf, Schema schema, TableMeta meta, FileFragment fragment) throws IOException {
       super(conf, schema, meta, fragment);
@@ -82,7 +84,8 @@ public class RawFile {
 
       fis = new FileInputStream(file);
       channel = fis.getChannel();
-      length = fragment.getEndKey();
+      filePosition = startOffset = fragment.getStartKey();
+      endOffset = fragment.getStartKey() + fragment.getEndKey();
 
       if (LOG.isDebugEnabled()) {
         LOG.debug("RawFileScanner open:" + fragment + "," + channel.position() + ", file size :" + channel.size()
@@ -105,51 +108,48 @@ public class RawFile {
       if (fragment.getStartKey() > 0) {
         channel.position(fragment.getStartKey());
       }
-      startOffset = fragment.getStartKey();
-      numBytesRead = channel.read(buffer);
-      buffer.flip();
 
+      forceFillBuffer = true;
       super.init();
     }
 
     @Override
     public long getNextOffset() throws IOException {
-      return startOffset + numBytesRead - buffer.remaining();
+      return filePosition - (forceFillBuffer ? 0 : buffer.remaining());
     }
 
     @Override
     public void seek(long offset) throws IOException {
-      long currentPos = channel.position();
-      if(currentPos < offset &&  offset < currentPos + buffer.limit()){
-        buffer.position((int)(offset - currentPos));
+      eos = false;
+      filePosition = channel.position();
+
+      if(!forceFillBuffer && filePosition > offset && offset > filePosition - buffer.limit()){
+        buffer.position((int)(offset - (filePosition - buffer.limit())));
       } else {
-        if(offset < startOffset || offset > startOffset + length){
-          throw new IndexOutOfBoundsException(String.format("range(%d, %d), offset: ",
-              startOffset, startOffset + length, offset));
+        if(offset < startOffset || offset > startOffset + fragment.getEndKey()){
+          throw new IndexOutOfBoundsException(String.format("range(%d, %d), offset: %d",
+              startOffset, startOffset + fragment.getEndKey(), offset));
         }
         channel.position(offset);
-        numBytesRead = offset - startOffset;
+        filePosition = offset;
         buffer.clear();
-        int bytesRead = channel.read(buffer);
-        if(bytesRead == -1) {
-          eof = true;
-        } else {
-          numBytesRead += bytesRead;
-          buffer.flip();
-          eof = false;
-        }
+        forceFillBuffer = true;
+        fillBuffer();
       }
     }
 
     private boolean fillBuffer() throws IOException {
-      buffer.compact();
+      if(!forceFillBuffer) buffer.compact();
+
       int bytesRead = channel.read(buffer);
+      forceFillBuffer = false;
       if (bytesRead == -1) {
-        eof = true;
+        eos = true;
         return false;
       } else {
-        buffer.flip(); //The limit is set to the current position and then the position is set to zero
-        numBytesRead += bytesRead;
+        buffer.flip(); //The limit is set to the current filePosition and then the filePosition is set to zero
+        filePosition += bytesRead;
+        totalReadBytes += bytesRead;
         return true;
       }
     }
@@ -238,9 +238,9 @@ public class RawFile {
 
     @Override
     public Tuple next() throws IOException {
-      if(eof) return null;
+      if(eos) return null;
 
-      if (buffer.remaining() < headerSize) {
+      if (forceFillBuffer || buffer.remaining() < headerSize) {
         if (!fillBuffer()) {
           return null;
         }
@@ -257,15 +257,8 @@ public class RawFile {
       buffer.limit(bufferLimit);
       if (buffer.remaining() < (recordSize - headerSize)) {
 
-        //if the buffer reaches the readable size, the buffer increase the record size
-        if (buffer.capacity() - buffer.remaining()  <  recordSize) {
-          buf.setIndex(buffer.position(), buffer.limit());
-          buf.markReaderIndex();
-          buf.discardSomeReadBytes();
-          buf.ensureWritable(recordSize);
-          buffer = buf.nioBuffer(0, buf.capacity());
-          buffer.limit(buf.writerIndex());
-        }
+        //if the buffer reaches the writable size, the buffer increase the record size
+        reSizeBuffer(recordSize);
 
         if (!fillBuffer()) {
           return null;
@@ -378,31 +371,35 @@ public class RawFile {
 
       recordCount++;
 
-      if(numBytesRead - buffer.remaining() >= length){
-        eof = true;
+      if(filePosition - buffer.remaining() >= endOffset){
+        eos = true;
       }
       return new VTuple(tuple);
     }
 
+    private void reSizeBuffer(int writableBytes){
+      if (buffer.capacity() - buffer.remaining()  <  writableBytes) {
+        buf.setIndex(buffer.position(), buffer.limit());
+        buf.markReaderIndex();
+        buf.discardSomeReadBytes();
+        buf.ensureWritable(writableBytes);
+        buffer = buf.nioBuffer(0, buf.capacity());
+        buffer.limit(buf.writerIndex());
+      }
+    }
+
     @Override
     public void reset() throws IOException {
-      // clear the buffer
+      // reset the buffer
       buffer.clear();
-      // reload initial buffer
-      channel.position(fragment.getStartKey());
-      startOffset = fragment.getStartKey();
-      numBytesRead = channel.read(buffer);
-      buffer.flip();
-      eof = false;
+      forceFillBuffer = true;
+      filePosition = fragment.getStartKey();
+      channel.position(filePosition);
+      eos = false;
     }
 
     @Override
     public void close() throws IOException {
-      if (tableStats != null) {
-        tableStats.setReadBytes(length);
-        tableStats.setNumRows(recordCount);
-      }
-
       if(buf != null){
         buffer.clear();
         buffer = null;
@@ -433,29 +430,22 @@ public class RawFile {
     public TableStats getInputStats() {
       if(tableStats != null){
         tableStats.setNumRows(recordCount);
-        tableStats.setReadBytes(numBytesRead);
+        tableStats.setReadBytes(totalReadBytes); // actual read bytes (scan + rescan * n)
+        tableStats.setNumBytes(fragment.getEndKey());
       }
       return tableStats;
     }
 
     @Override
     public float getProgress() {
-      try {
-        tableStats.setReadBytes(numBytesRead);
+      if(eos) {
+        return 1.0f;
+      }
 
-        if(eof) {
-          tableStats.setReadBytes(length);
-          return 1.0f;
-        }
-
-        if (numBytesRead == 0) {
-          return 0.0f;
-        } else {
-          return Math.min(1.0f, ((float)numBytesRead / fragment.getEndKey().floatValue()));
-        }
-      } catch (Throwable e) {
-        LOG.error(e.getMessage(), e);
+      if (filePosition - startOffset == 0) {
         return 0.0f;
+      } else {
+        return Math.min(1.0f, ((float) filePosition / endOffset));
       }
     }
   }
