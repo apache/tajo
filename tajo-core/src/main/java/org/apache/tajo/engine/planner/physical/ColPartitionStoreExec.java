@@ -120,6 +120,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
     super.init();
 
     storeTablePath = context.getOutputPath();
+
     FileSystem fs = storeTablePath.getFileSystem(context.getConf());
     if (!fs.exists(storeTablePath.getParent())) {
       fs.mkdirs(storeTablePath.getParent());
@@ -160,7 +161,8 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
       actualFilePath = new Path(lastFileName + "_" + suffixId);
     }
 
-    appender = StorageManager.getStorageManager(context.getConf()).getAppender(meta, outSchema, actualFilePath);
+    appender = StorageManager.getFileStorageManager(context.getConf())
+        .getAppender(meta, outSchema, actualFilePath);
 
     appender.enableStats();
     appender.init();

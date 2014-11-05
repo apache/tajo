@@ -36,6 +36,7 @@ enum StoreType {
   PARQUET = 7;
   SEQUENCEFILE = 8;
   AVRO = 9;
+  HBASE = 10;
 }
 
 enum OrderType {
@@ -68,7 +69,8 @@ message SchemaProto {
 
 message FragmentProto {
   required string id = 1;
-  required bytes contents = 2;
+  required string storeType = 2;
+  required bytes contents = 3;
 }
 
 message FileFragmentProto {

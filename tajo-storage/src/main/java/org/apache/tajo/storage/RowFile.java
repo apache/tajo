@@ -25,6 +25,7 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -33,7 +34,7 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
-import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.BitArray;
 
 import java.io.FileNotFoundException;
@@ -66,7 +67,7 @@ public class RowFile {
     private BitArray nullFlags;
     private long bufferStartPos;
 
-    public RowFileScanner(Configuration conf, final Schema schema, final TableMeta meta, final FileFragment fragment)
+    public RowFileScanner(Configuration conf, final Schema schema, final TableMeta meta, final Fragment fragment)
         throws IOException {
       super(conf, schema, meta, fragment);
 
@@ -75,8 +76,8 @@ public class RowFile {
 
       nullFlags = new BitArray(schema.size());
       tupleHeaderSize = nullFlags.bytesLength() + (2 * Short.SIZE / 8);
-      this.start = fragment.getStartKey();
-      this.end = this.start + fragment.getEndKey();
+      this.start = this.fragment.getStartKey();
+      this.end = this.start + this.fragment.getLength();
     }
 
     public void init() throws IOException {
@@ -313,9 +314,10 @@ public class RowFile {
     // statistics
     private TableStatistics stats;
 
-    public RowFileAppender(Configuration conf, final Schema schema, final TableMeta meta, final Path path)
+    public RowFileAppender(Configuration conf, final QueryUnitAttemptId taskAttemptId,
+                           final Schema schema, final TableMeta meta, final Path workDir)
         throws IOException {
-      super(conf, schema, meta, path);
+      super(conf, taskAttemptId, schema, meta, workDir);
     }
 
     public void init() throws IOException {

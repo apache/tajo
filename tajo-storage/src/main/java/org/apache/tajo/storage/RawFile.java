@@ -25,6 +25,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
+import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -32,7 +33,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatumFactory;
-import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.BitArray;
 
@@ -63,7 +64,7 @@ public class RawFile {
     private FileInputStream fis;
     private long recordCount;
 
-    public RawFileScanner(Configuration conf, Schema schema, TableMeta meta, FileFragment fragment) throws IOException {
+    public RawFileScanner(Configuration conf, Schema schema, TableMeta meta, Fragment fragment) throws IOException {
       super(conf, schema, meta, fragment);
     }
 
@@ -78,21 +79,20 @@ public class RawFile {
       } catch (IllegalArgumentException iae) {
         throw new IOException(iae);
       }
-
       fis = new FileInputStream(file);
       channel = fis.getChannel();
-      fileLimit = fragment.getStartKey() + fragment.getEndKey(); // fileLimit is less than or equal to fileSize
+      fileLimit = fragment.getStartKey() + fragment.getLength(); // fileLimit is less than or equal to fileSize
 
       if (tableStats != null) {
-        tableStats.setNumBytes(fragment.getEndKey());
+        tableStats.setNumBytes(fragment.getLength());
       }
       if (LOG.isDebugEnabled()) {
         LOG.debug("RawFileScanner open:" + fragment + "," + channel.position() + ", total file size :" + channel.size()
-            + ", fragment size :" + fragment.getEndKey() + ", fileLimit: " + fileLimit);
+            + ", fragment size :" + fragment.getLength() + ", fileLimit: " + fileLimit);
       }
 
-      if (fragment.getEndKey() < 64 * StorageUnit.KB) {
-	      bufferSize = fragment.getEndKey().intValue();
+      if (fragment.getLength() < 64 * StorageUnit.KB) {
+	      bufferSize = (int)fragment.getLength();
       } else {
 	      bufferSize = 64 * StorageUnit.KB;
       }
@@ -138,7 +138,7 @@ public class RawFile {
     }
 
     private boolean fillBuffer() throws IOException {
-      if (numBytesRead >= fragment.getEndKey()) {
+      if (numBytesRead >= fragment.getLength()) {
         eof = true;
         return false;
       }
@@ -150,7 +150,7 @@ public class RawFile {
         return false;
       } else {
         buffer.flip();
-        long realRemaining = fragment.getEndKey() - numBytesRead;
+        long realRemaining = fragment.getLength() - numBytesRead;
         numBytesRead += bytesRead;
         if (realRemaining < bufferSize) {
           int newLimit = currentDataSize + (int) realRemaining;
@@ -397,7 +397,7 @@ public class RawFile {
     @Override
     public void close() throws IOException {
       if (tableStats != null) {
-        tableStats.setReadBytes(fragment.getEndKey());
+        tableStats.setReadBytes(fragment.getLength());
         tableStats.setNumRows(recordCount);
       }
 
@@ -431,14 +431,14 @@ public class RawFile {
         }
 
         if(eof || channel == null) {
-          tableStats.setReadBytes(fragment.getEndKey());
+          tableStats.setReadBytes(fragment.getLength());
           return 1.0f;
         }
 
         if (filePos == 0) {
           return 0.0f;
         } else {
-          return Math.min(1.0f, ((float)filePos / fragment.getEndKey().floatValue()));
+          return Math.min(1.0f, ((float)filePos / (float)fragment.getLength()));
         }
       } catch (IOException e) {
         LOG.error(e.getMessage(), e);
@@ -460,8 +460,9 @@ public class RawFile {
 
     private TableStatistics stats;
 
-    public RawFileAppender(Configuration conf, Schema schema, TableMeta meta, Path path) throws IOException {
-      super(conf, schema, meta, path);
+    public RawFileAppender(Configuration conf, QueryUnitAttemptId taskAttemptId,
+                           Schema schema, TableMeta meta, Path workDir) throws IOException {
+      super(conf, taskAttemptId, schema, meta, workDir);
     }
 
     public void init() throws IOException {

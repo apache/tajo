@@ -38,7 +38,7 @@ public class IndexUtil {
   public static String getIndexNameOfFrag(FileFragment fragment, SortSpec[] keys) {
     StringBuilder builder = new StringBuilder(); 
     builder.append(fragment.getPath().getName() + "_");
-    builder.append(fragment.getStartKey() + "_" + fragment.getEndKey() + "_");
+    builder.append(fragment.getStartKey() + "_" + fragment.getLength() + "_");
     for(int i = 0 ; i < keys.length ; i ++) {
       builder.append(keys[i].getSortKey().getSimpleName()+"_");
     }

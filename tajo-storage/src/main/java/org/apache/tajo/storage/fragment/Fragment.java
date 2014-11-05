@@ -28,4 +28,12 @@ public interface Fragment extends ProtoObject<FragmentProto> {
 
   @Override
   public abstract FragmentProto getProto();
+
+  public abstract long getLength();
+
+  public abstract String getKey();
+
+  public String[] getHosts();
+
+  public abstract boolean isEmpty();
 }

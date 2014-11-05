@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
@@ -37,8 +38,8 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneable {
   @Expose private String tableName; // required
   @Expose private Path uri; // required
-  @Expose private Long startOffset; // required
-  @Expose private Long length; // required
+  @Expose public Long startOffset; // required
+  @Expose public Long length; // required
 
   private String[] hosts; // Datanode hostnames
   @Expose private int[] diskIds;
@@ -120,6 +121,7 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
     this.diskIds = diskIds;
   }
 
+  @Override
   public String getTableName() {
     return this.tableName;
   }
@@ -136,10 +138,20 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
     return this.startOffset;
   }
 
-  public Long getEndKey() {
+  @Override
+  public String getKey() {
+    return this.uri.toString();
+  }
+
+  @Override
+  public long getLength() {
     return this.length;
   }
 
+  @Override
+  public boolean isEmpty() {
+    return this.length <= 0;
+  }
   /**
    * 
    * The offset range of tablets <b>MUST NOT</b> be overlapped.
@@ -169,7 +181,7 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
       FileFragment t = (FileFragment) o;
       if (getPath().equals(t.getPath())
           && TUtil.checkEquals(t.getStartKey(), this.getStartKey())
-          && TUtil.checkEquals(t.getEndKey(), this.getEndKey())) {
+          && TUtil.checkEquals(t.getLength(), this.getLength())) {
         return true;
       }
     }
@@ -195,7 +207,7 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
   public String toString() {
     return "\"fragment\": {\"id\": \""+ tableName +"\", \"path\": "
     		+getPath() + "\", \"start\": " + this.getStartKey() + ",\"length\": "
-        + getEndKey() + "}" ;
+        + getLength() + "}" ;
   }
 
   public FragmentProto getProto() {
@@ -218,6 +230,7 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
 
     FragmentProto.Builder fragmentBuilder = FragmentProto.newBuilder();
     fragmentBuilder.setId(this.tableName);
+    fragmentBuilder.setStoreType(StoreType.CSV.name());
     fragmentBuilder.setContents(builder.buildPartial().toByteString());
     return fragmentBuilder.build();
   }

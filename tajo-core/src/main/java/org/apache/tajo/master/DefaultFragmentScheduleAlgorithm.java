@@ -21,6 +21,7 @@ package org.apache.tajo.master;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.util.RackResolver;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.NetUtils;
 
 import java.util.*;
@@ -81,9 +82,12 @@ public class DefaultFragmentScheduleAlgorithm implements FragmentScheduleAlgorit
   @Override
   public void addFragment(FragmentPair fragmentPair) {
     String[] hosts = fragmentPair.getLeftFragment().getHosts();
-    int[] diskIds = fragmentPair.getLeftFragment().getDiskIds();
+    int[] diskIds = null;
+    if (fragmentPair.getLeftFragment() instanceof FileFragment) {
+      diskIds = ((FileFragment)fragmentPair.getLeftFragment()).getDiskIds();
+    }
     for (int i = 0; i < hosts.length; i++) {
-      addFragment(hosts[i], diskIds[i], fragmentPair);
+      addFragment(hosts[i], diskIds != null ? diskIds[i] : -1, fragmentPair);
     }
     fragmentNum++;
   }

@@ -19,12 +19,12 @@ package org.apache.tajo.storage; /**
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 
 import java.io.IOException;
 
 public class NullScanner extends FileScanner {
-  public NullScanner(Configuration conf, Schema schema, TableMeta meta, FileFragment fragment) {
+  public NullScanner(Configuration conf, Schema schema, TableMeta meta, Fragment fragment) {
     super(conf, schema, meta, fragment);
   }
 

@@ -28,6 +28,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.*;
+import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -38,7 +39,7 @@ import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
-import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.rcfile.NonSyncByteArrayOutputStream;
 import org.apache.tajo.util.BytesUtils;
 
@@ -76,9 +77,10 @@ public class CSVFile {
     private NonSyncByteArrayOutputStream os = new NonSyncByteArrayOutputStream(BUFFER_SIZE);
     private SerializerDeserializer serde;
 
-    public CSVAppender(Configuration conf, final Schema schema, final TableMeta meta, final Path path) throws IOException {
-      super(conf, schema, meta, path);
-      this.fs = path.getFileSystem(conf);
+    public CSVAppender(Configuration conf, final QueryUnitAttemptId taskAttemptId,
+                       final Schema schema, final TableMeta meta, final Path workDir) throws IOException {
+      super(conf, taskAttemptId, schema, meta, workDir);
+      this.fs = workDir.getFileSystem(conf);
       this.meta = meta;
       this.schema = schema;
       this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.CSVFILE_DELIMITER,
@@ -97,7 +99,7 @@ public class CSVFile {
     @Override
     public void init() throws IOException {
       if (!fs.exists(path.getParent())) {
-        throw new FileNotFoundException(path.toString());
+        throw new FileNotFoundException(path.getParent().toString());
       }
 
       //determine the intermediate file type
@@ -251,11 +253,11 @@ public class CSVFile {
   }
 
   public static class CSVScanner extends FileScanner implements SeekableScanner {
-    public CSVScanner(Configuration conf, final Schema schema, final TableMeta meta, final FileFragment fragment)
+    public CSVScanner(Configuration conf, final Schema schema, final TableMeta meta, final Fragment fragment)
         throws IOException {
       super(conf, schema, meta, fragment);
       factory = new CompressionCodecFactory(conf);
-      codec = factory.getCodec(fragment.getPath());
+      codec = factory.getCodec(this.fragment.getPath());
       if (codec == null || codec instanceof SplittableCompressionCodec) {
         splittable = true;
       }
@@ -310,7 +312,7 @@ public class CSVFile {
 
       recordCount = 0;
       pos = startOffset = fragment.getStartKey();
-      end = startOffset + fragment.getEndKey();
+      end = startOffset + fragment.getLength();
 
       if (codec != null) {
         decompressor = CodecPool.getDecompressor(codec);

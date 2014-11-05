@@ -29,8 +29,10 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.TUtil;
 
+import java.io.IOException;
 import java.util.Set;
 import java.util.Stack;
 
@@ -277,6 +279,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
             context.state.addVerification(String.format("relation \"%s\" does not exist", qualifiedName));
             return null;
           }
+
           if (table.hasPartition()) {
             int columnSize = table.getSchema().getColumns().size();
             columnSize += table.getPartitionMethod().getExpressionSchema().getColumns().size();

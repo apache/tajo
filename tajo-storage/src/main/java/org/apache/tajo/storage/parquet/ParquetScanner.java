@@ -23,7 +23,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 
 import java.io.IOException;
 
@@ -42,7 +42,7 @@ public class ParquetScanner extends FileScanner {
    * @param fragment
    */
   public ParquetScanner(Configuration conf, final Schema schema,
-                        final TableMeta meta, final FileFragment fragment) {
+                        final TableMeta meta, final Fragment fragment) {
     super(conf, schema, meta, fragment);
   }
 

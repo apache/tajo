@@ -276,6 +276,8 @@ public class CatalogUtil {
       return StoreType.SEQUENCEFILE;
     } else if (typeStr.equalsIgnoreCase(StoreType.AVRO.name())) {
       return StoreType.AVRO;
+    } else if (typeStr.equalsIgnoreCase(StoreType.HBASE.name())) {
+      return StoreType.HBASE;
     } else {
       return null;
     }

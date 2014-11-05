@@ -32,6 +32,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.s3.InMemoryFileSystemStore;
 import org.apache.tajo.storage.s3.SmallBlockS3FileSystem;
 import org.junit.Test;
@@ -54,7 +55,7 @@ public class TestFileSystems {
 
   private static String TEST_PATH = "target/test-data/TestFileSystem";
   private TajoConf conf = null;
-  private StorageManager sm = null;
+  private FileStorageManager sm = null;
   private FileSystem fs = null;
   Path testDir;
 
@@ -66,7 +67,7 @@ public class TestFileSystems {
       fs.initialize(URI.create(fs.getScheme() + ":///"), conf);
     }
     this.fs = fs;
-    sm = StorageManager.getStorageManager(conf);
+    sm = StorageManager.getFileStorageManager(conf);
     testDir = getTestDir(this.fs, TEST_PATH);
   }
 
@@ -118,12 +119,12 @@ public class TestFileSystems {
     appender.close();
     FileStatus fileStatus = fs.getFileStatus(path);
 
-    List<FileFragment> splits = sm.getSplits("table", meta, schema, path);
+    List<Fragment> splits = sm.getSplits("table", meta, schema, path);
     int splitSize = (int) Math.ceil(fileStatus.getLen() / (double) fileStatus.getBlockSize());
     assertEquals(splitSize, splits.size());
 
-    for (FileFragment fragment : splits) {
-      assertTrue(fragment.getEndKey() <= fileStatus.getBlockSize());
+    for (Fragment fragment : splits) {
+      assertTrue(fragment.getLength() <= fileStatus.getBlockSize());
     }
   }
 }

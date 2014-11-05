@@ -297,6 +297,8 @@ public class TajoConf extends Configuration {
     METRICS_PROPERTY_FILENAME("tajo.metrics.property.file", "tajo-metrics.properties"),
 
     // Misc -------------------------------------------------------------------
+    // Fragment
+    FRAGMENT_ALTERNATIVE_UNKNOWN_LENGTH("tajo.fragment.alternative.unknown.length", (long)(512 * 1024 * 1024)),
 
     // Geo IP
     GEOIP_DATA("tajo.function.geoip-database-location", ""),

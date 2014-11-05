@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
-import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 
 @ThreadSafe
 public class FragmentConvertor {
@@ -47,18 +46,17 @@ public class FragmentConvertor {
    */
   private static final Class<?>[] DEFAULT_FRAGMENT_PARAMS = { ByteString.class };
 
-  public static Class<? extends Fragment> getFragmentClass(Configuration conf, StoreType storeType)
-      throws IOException {
-    String handlerName = storeType.name().toLowerCase();
-    Class<? extends Fragment> fragmentClass = CACHED_FRAGMENT_CLASSES.get(handlerName);
+  public static Class<? extends Fragment> getFragmentClass(Configuration conf, String storeType)
+  throws IOException {
+    Class<? extends Fragment> fragmentClass = CACHED_FRAGMENT_CLASSES.get(storeType.toLowerCase());
     if (fragmentClass == null) {
       fragmentClass = conf.getClass(
-          String.format("tajo.storage.fragment.%s.class", storeType.name().toLowerCase()), null, Fragment.class);
-      CACHED_FRAGMENT_CLASSES.put(handlerName, fragmentClass);
+          String.format("tajo.storage.fragment.%s.class", storeType.toLowerCase()), null, Fragment.class);
+      CACHED_FRAGMENT_CLASSES.put(storeType.toLowerCase(), fragmentClass);
     }
 
     if (fragmentClass == null) {
-      throw new IOException("No such a fragment for " + storeType.name());
+      throw new IOException("No such a fragment for " + storeType.toLowerCase());
     }
 
     return fragmentClass;
@@ -81,11 +79,11 @@ public class FragmentConvertor {
     return result;
   }
 
-  public static <T extends Fragment> T convert(Configuration conf, StoreType storeType, FragmentProto fragment)
+  public static <T extends Fragment> T convert(Configuration conf, FragmentProto fragment)
       throws IOException {
-    Class<T> fragmentClass = (Class<T>) getFragmentClass(conf, storeType);
+    Class<T> fragmentClass = (Class<T>) getFragmentClass(conf, fragment.getStoreType().toLowerCase());
     if (fragmentClass == null) {
-      throw new IOException("No such a fragment class for " + storeType.name());
+      throw new IOException("No such a fragment class for " + fragment.getStoreType());
     }
     return convert(fragmentClass, fragment);
   }
@@ -102,14 +100,13 @@ public class FragmentConvertor {
     return list;
   }
 
-  public static <T extends Fragment> List<T> convert(Configuration conf, StoreType storeType,
-                                                           FragmentProto...fragments) throws IOException {
+  public static <T extends Fragment> List<T> convert(Configuration conf, FragmentProto...fragments) throws IOException {
     List<T> list = Lists.newArrayList();
     if (fragments == null) {
       return list;
     }
     for (FragmentProto proto : fragments) {
-      list.add((T) convert(conf, storeType, proto));
+      list.add((T) convert(conf, proto));
     }
     return list;
   }

@@ -31,7 +31,6 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.util.Pair;
-import org.apache.tajo.storage.StorageManager;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -85,8 +84,8 @@ public class HashShuffleAppenderManager {
         if (!fs.exists(dataFile.getParent())) {
           fs.mkdirs(dataFile.getParent());
         }
-        FileAppender appender = (FileAppender) StorageManager.getStorageManager(
-            tajoConf).getAppender(meta, outSchema, dataFile);
+        FileAppender appender = (FileAppender) StorageManager.getFileStorageManager(
+            tajoConf, null).getAppender(meta, outSchema, dataFile);
         appender.enableStats();
         appender.init();
 

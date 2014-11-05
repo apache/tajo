@@ -47,7 +47,7 @@ public class TestFileFragment {
     assertEquals("table1_1", fragment1.getTableName());
     assertEquals(new Path(path, "table0"), fragment1.getPath());
     assertTrue(0 == fragment1.getStartKey());
-    assertTrue(500 == fragment1.getEndKey());
+    assertTrue(500 == fragment1.getLength());
   }
 
   @Test
@@ -58,7 +58,7 @@ public class TestFileFragment {
     assertEquals("table1_1", fragment1.getTableName());
     assertEquals(new Path(path, "table0"), fragment1.getPath());
     assertTrue(0 == fragment1.getStartKey());
-    assertTrue(500 == fragment1.getEndKey());
+    assertTrue(500 == fragment1.getLength());
   }
 
   @Test

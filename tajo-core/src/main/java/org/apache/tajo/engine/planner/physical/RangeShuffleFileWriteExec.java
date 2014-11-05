@@ -27,6 +27,8 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.index.bst.BSTIndex;
@@ -51,7 +53,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
   private FileAppender appender;
   private TableMeta meta;
 
-  public RangeShuffleFileWriteExec(final TaskAttemptContext context, final StorageManager sm,
+  public RangeShuffleFileWriteExec(final TaskAttemptContext context,
                                    final PhysicalExec child, final Schema inSchema, final Schema outSchema,
                                    final SortSpec[] sortSpecs) throws IOException {
     super(context, inSchema, outSchema, child);
@@ -78,7 +80,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
         context.getDataChannel().getStoreType() : CatalogProtos.StoreType.RAW);
     FileSystem fs = new RawLocalFileSystem();
     fs.mkdirs(storeTablePath);
-    this.appender = (FileAppender) StorageManager.getStorageManager(context.getConf()).getAppender(meta,
+    this.appender = (FileAppender) StorageManager.getFileStorageManager(context.getConf()).getAppender(meta,
         outSchema, new Path(storeTablePath, "output"));
     this.appender.enableStats();
     this.appender.init();

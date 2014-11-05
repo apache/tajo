@@ -29,6 +29,7 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.SequenceFile.Metadata;
 import org.apache.hadoop.io.compress.*;
 import org.apache.hadoop.util.ReflectionUtils;
+import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -39,6 +40,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 
 import java.io.Closeable;
 import java.io.*;
@@ -709,8 +711,9 @@ public class RCFile {
       return out.getPos();
     }
 
-    public RCFileAppender(Configuration conf, final Schema schema, final TableMeta meta, final Path path) throws IOException {
-      super(conf, schema, meta, path);
+    public RCFileAppender(Configuration conf, final QueryUnitAttemptId taskAttemptId,
+                          final Schema schema, final TableMeta meta, final Path workDir) throws IOException {
+      super(conf, taskAttemptId, schema, meta, workDir);
 
       RECORD_INTERVAL = conf.getInt(RECORD_INTERVAL_CONF_STR, RECORD_INTERVAL);
       COLUMNS_BUFFER_SIZE = conf.getInt(COLUMNS_BUFFER_SIZE_CONF_STR, COLUMNS_BUFFER_SIZE);
@@ -1176,12 +1179,12 @@ public class RCFile {
     private SerializerDeserializer serde;
 
     public RCFileScanner(Configuration conf, final Schema schema, final TableMeta meta,
-                         final FileFragment fragment) throws IOException {
+                         final Fragment fragment) throws IOException {
       super(conf, schema, meta, fragment);
       conf.setInt("io.file.buffer.size", 4096); //TODO remove
 
-      startOffset = fragment.getStartKey();
-      endOffset = startOffset + fragment.getEndKey();
+      startOffset = this.fragment.getStartKey();
+      endOffset = startOffset + this.fragment.getLength();
       start = 0;
     }
 
@@ -1651,7 +1654,7 @@ public class RCFile {
           return 0.0f;
         } else {
           //if scanner read the header, filePos moved to zero
-          return Math.min(1.0f, (float)(Math.max(filePos - startOffset, 0)) / (float)(fragment.getEndKey()));
+          return Math.min(1.0f, (float)(Math.max(filePos - startOffset, 0)) / (float)(fragment.getLength()));
         }
       } catch (IOException e) {
         LOG.error(e.getMessage(), e);
