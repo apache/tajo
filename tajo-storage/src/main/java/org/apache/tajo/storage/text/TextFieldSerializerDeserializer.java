@@ -122,7 +122,7 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
   }
 
   @Override
-  public Datum deserialize(ByteBuf buf, Column col, int columnIndex, ByteBuf nullChars) throws IOException{
+  public Datum deserialize(ByteBuf buf, Column col, int columnIndex, ByteBuf nullChars) throws IOException {
     Datum datum;
     TajoDataTypes.Type type = col.getDataType().getType();
     boolean nullField;
@@ -147,35 +147,21 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
           datum = DatumFactory.createChar(buf.toString(CharsetUtil.UTF_8).trim());
           break;
         case INT1:
-        case INT2: {
-          //TODO zero-copy
-          byte[] bytes = new byte[buf.readableBytes()];
-          buf.readBytes(bytes);
-          datum = DatumFactory.createInt2((short) NumberUtil.parseInt(bytes, 0, bytes.length));
+        case INT2:
+          datum = DatumFactory.createInt2((short) NumberUtil.parseInt(buf, 0, buf.writerIndex()));
           break;
-        }
-        case INT4: {
-          //TODO zero-copy
-          byte[] bytes = new byte[buf.readableBytes()];
-          buf.readBytes(bytes);
-          datum = DatumFactory.createInt4(NumberUtil.parseInt(bytes, 0, bytes.length));
+        case INT4:
+          datum = DatumFactory.createInt4(NumberUtil.parseInt(buf, 0, buf.writerIndex()));
           break;
-        }
         case INT8:
-          //TODO zero-copy
-          datum = DatumFactory.createInt8(buf.toString(CharsetUtil.UTF_8));
+          datum = DatumFactory.createInt8(NumberUtil.parseLong(buf, 0, buf.writerIndex()));
           break;
         case FLOAT4:
-          //TODO zero-copy
           datum = DatumFactory.createFloat4(buf.toString(CharsetUtil.UTF_8));
           break;
-        case FLOAT8: {
-          //TODO zero-copy
-          byte[] bytes = new byte[buf.readableBytes()];
-          buf.readBytes(bytes);
-          datum = DatumFactory.createFloat8(NumberUtil.parseDouble(bytes, 0, bytes.length));
+        case FLOAT8:
+          datum = DatumFactory.createFloat8(NumberUtil.parseDouble(buf, 0, buf.writerIndex()));
           break;
-        }
         case TEXT: {
           byte[] bytes = new byte[buf.readableBytes()];
           buf.readBytes(bytes);
