@@ -58,8 +58,7 @@ case "`uname`" in
 CYGWIN*) cygwin=true;;
 esac
 
-# if no args specified, show usage
-if [ $# = 0 ]; then
+function print_usage() {
   echo "Usage: tajo [--config confdir] COMMAND"
   echo "where COMMAND is one of:"
   echo "  master               run the Master Server"
@@ -73,15 +72,26 @@ if [ $# = 0 ]; then
   echo "  getconf              print tajo configuration"
   echo "  jar <jar>            run a jar file"
   echo "  benchmark            run the benchmark driver"
+  echo "  version              print the version"
   echo " or"
   echo "  CLASSNAME            run the class named CLASSNAME"
   echo "Most commands print help when invoked w/o parameters."
+}
+
+# if no args specified, show usage
+if [ $# = 0 ]; then
+  print_usage
   exit 1
 fi
 
 # get arguments
 COMMAND=$1
 shift
+
+if [ "$COMMAND" == "--help" ] || [ "$COMMAND" == "-help" ] || [ "$COMMAND" == "-h" ] ; then
+  print_usage
+  exit
+fi
 
 if [ -f "${TAJO_CONF_DIR}/tajo-env.sh" ]; then
   . "${TAJO_CONF_DIR}/tajo-env.sh"
@@ -353,25 +363,29 @@ elif [ "$COMMAND" = "catalog" ] ; then
   CLASS='org.apache.tajo.catalog.CatalogServer'
   TAJO_OPTS="$TAJO_OPTS $TAJO_CATALOG_OPTS"
 elif [ "$COMMAND" = "cli" ] ; then
-  CLASS='org.apache.tajo.cli.TajoCli'
+  CLASS='org.apache.tajo.cli.tsql.TajoCli'
   TAJO_ROOT_LOGGER_APPENDER="${TAJO_ROOT_LOGGER_APPENDER:-NullAppender}"
   TAJO_OPTS="$TAJO_OPTS $TAJO_CLI_OPTS"
 elif [ "$COMMAND" = "admin" ] ; then
-  CLASS='org.apache.tajo.client.TajoAdmin'
+  CLASS='org.apache.tajo.cli.tools.TajoAdmin'
   TAJO_ROOT_LOGGER_APPENDER="${TAJO_ROOT_LOGGER_APPENDER:-NullAppender}"
   TAJO_OPTS="$TAJO_OPTS $TAJO_CLI_OPTS"
 elif [ "$COMMAND" = "haadmin" ] ; then
-  CLASS='org.apache.tajo.client.TajoHAAdmin'
+  CLASS='org.apache.tajo.cli.tools.TajoHAAdmin'
   TAJO_ROOT_LOGGER_APPENDER="${TAJO_ROOT_LOGGER_APPENDER:-NullAppender}"
   TAJO_OPTS="$TAJO_OPTS $TAJO_CLI_OPTS"
 elif [ "$COMMAND" = "getconf" ] ; then
-  CLASS='org.apache.tajo.client.TajoGetConf'
+  CLASS='org.apache.tajo.cli.tools.TajoGetConf'
   TAJO_ROOT_LOGGER_APPENDER="${TAJO_ROOT_LOGGER_APPENDER:-NullAppender}"
   TAJO_OPTS="$TAJO_OPTS $TAJO_CLI_OPTS"
 elif [ "$COMMAND" = "dump" ] ; then
-  CLASS='org.apache.tajo.client.TajoDump'
+  CLASS='org.apache.tajo.cli.tools.TajoDump'
   TAJO_ROOT_LOGGER_APPENDER="${TAJO_ROOT_LOGGER_APPENDER:-NullAppender}"
   TAJO_OPTS="$TAJO_OPTS $TAJO_DUMP_OPTS"
+elif [ "$COMMAND" = "version" ] ; then
+  CLASS='org.apache.tajo.util.VersionInfo'
+  TAJO_ROOT_LOGGER_APPENDER="${TAJO_ROOT_LOGGER_APPENDER:-NullAppender}"
+  TAJO_OPTS="$TAJO_OPTS $TAJO_CLI_OPTS"
 else
   CLASS=$COMMAND
 fi

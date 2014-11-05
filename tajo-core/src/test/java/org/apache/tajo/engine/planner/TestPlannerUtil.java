@@ -36,10 +36,10 @@ import org.apache.tajo.engine.function.builtin.SumInt;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.physical.PhysicalPlanUtil;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
@@ -299,7 +299,7 @@ public class TestPlannerUtil {
     FieldEval f4 = new FieldEval("people.fid2", CatalogUtil.newSimpleDataType(Type.INT4));
 
     EvalNode joinQual = new BinaryEval(EvalType.EQUAL, f1, f2);
-    TupleComparator [] comparators = PhysicalPlanUtil.getComparatorsFromJoinQual(joinQual, outerSchema, innerSchema);
+    TupleComparator[] comparators = PhysicalPlanUtil.getComparatorsFromJoinQual(joinQual, outerSchema, innerSchema);
 
     Tuple t1 = new VTuple(2);
     t1.put(0, DatumFactory.createInt4(1));

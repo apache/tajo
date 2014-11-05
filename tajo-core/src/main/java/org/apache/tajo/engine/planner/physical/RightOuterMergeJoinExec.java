@@ -51,7 +51,7 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
   private List<Tuple> innerTupleSlots;
 
   private JoinTupleComparator joinComparator = null;
-  private TupleComparator[] tupleComparator = null;
+  private TupleComparator [] tupleComparator = null;
 
   private final static int INITIAL_TUPLE_SLOT = 10000;
 

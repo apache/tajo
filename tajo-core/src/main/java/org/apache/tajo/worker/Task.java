@@ -51,6 +51,7 @@ import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.pullserver.retriever.FileChunk;
 import org.apache.tajo.rpc.NullCallback;
+import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.StorageUtil;
@@ -152,7 +153,7 @@ public class Task {
       if (shuffleType == ShuffleType.RANGE_SHUFFLE) {
         SortNode sortNode = PlannerUtil.findTopNode(plan, NodeType.SORT);
         this.finalSchema = PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys());
-        this.sortComp = new TupleComparator(finalSchema, sortNode.getSortKeys());
+        this.sortComp = new BaseTupleComparator(finalSchema, sortNode.getSortKeys());
       }
     } else {
       Path outFilePath = StorageManager.getFileStorageManager(systemConf).getAppenderFilePath(

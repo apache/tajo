@@ -50,59 +50,59 @@ public class TestKillQuery {
     conf = cluster.getConfiguration();
   }
 
-//  @Test
-//  public final void testKillQueryFromInitState() throws Exception {
-//    SQLAnalyzer analyzer = new SQLAnalyzer();
-//    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(conf);
-//    Session session = LocalTajoTestingUtility.createDummySession();
-//    CatalogService catalog = cluster.getMaster().getCatalog();
-//    String query = "select l_orderkey from lineitem group by l_orderkey";
-//
-//    LogicalPlanner planner = new LogicalPlanner(catalog);
-//    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
-//    Expr expr =  analyzer.parse(query);
-//    LogicalPlan plan = planner.createPlan(defaultContext, expr);
-//
-//    optimizer.optimize(plan);
-//
-//    QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-//    QueryContext queryContext = new QueryContext(conf);
-//    MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
-//    GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
-//    globalPlanner.build(masterPlan);
-//
-//    QueryMaster qm = cluster.getTajoWorkers().get(0).getWorkerContext().getQueryMaster();
-//    QueryMasterTask queryMasterTask = new QueryMasterTask(qm.getContext(),
-//        queryId, session, defaultContext, expr.toJson(), plan.getRootBlock().getRoot().toJson());
-//
-//    queryMasterTask.init(conf);
-//    queryMasterTask.getQueryTaskContext().getDispatcher().start();
-//    queryMasterTask.startQuery();
-//
-//    try{
-//      cluster.waitForQueryState(queryMasterTask.getQuery(), TajoProtos.QueryState.QUERY_RUNNING, 2);
-//    } finally {
-//      assertEquals(TajoProtos.QueryState.QUERY_RUNNING, queryMasterTask.getQuery().getSynchronizedState());
-//    }
-//
-//    SubQuery subQuery = queryMasterTask.getQuery().getSubQueries().iterator().next();
-//    assertNotNull(subQuery);
-//
-//    try{
-//      cluster.waitForSubQueryState(subQuery, SubQueryState.INITED, 2);
-//    } finally {
-//      assertEquals(SubQueryState.INITED, subQuery.getSynchronizedState());
-//    }
-//
-//    // fire kill event
-//    Query q = queryMasterTask.getQuery();
-//    q.handle(new QueryEvent(queryId, QueryEventType.KILL));
-//
-//    try{
-//      cluster.waitForQueryState(queryMasterTask.getQuery(), TajoProtos.QueryState.QUERY_KILLED, 10);
-//    } finally {
-//      assertEquals(TajoProtos.QueryState.QUERY_KILLED, queryMasterTask.getQuery().getSynchronizedState());
-//    }
-//    queryMasterTask.stop();
-//  }
+  @Test
+  public final void testKillQueryFromInitState() throws Exception {
+    SQLAnalyzer analyzer = new SQLAnalyzer();
+    QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(conf);
+    Session session = LocalTajoTestingUtility.createDummySession();
+    CatalogService catalog = cluster.getMaster().getCatalog();
+    String query = "select l_orderkey from lineitem group by l_orderkey";
+
+    LogicalPlanner planner = new LogicalPlanner(catalog);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    Expr expr =  analyzer.parse(query);
+    LogicalPlan plan = planner.createPlan(defaultContext, expr);
+
+    optimizer.optimize(plan);
+
+    QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
+    QueryContext queryContext = new QueryContext(conf);
+    MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
+    GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
+    globalPlanner.build(masterPlan);
+
+    QueryMaster qm = cluster.getTajoWorkers().get(0).getWorkerContext().getQueryMaster();
+    QueryMasterTask queryMasterTask = new QueryMasterTask(qm.getContext(),
+        queryId, session, defaultContext, expr.toJson(), plan.getRootBlock().getRoot().toJson());
+
+    queryMasterTask.init(conf);
+    queryMasterTask.getQueryTaskContext().getDispatcher().start();
+    queryMasterTask.startQuery();
+
+    try{
+      cluster.waitForQueryState(queryMasterTask.getQuery(), TajoProtos.QueryState.QUERY_RUNNING, 2);
+    } finally {
+      assertEquals(TajoProtos.QueryState.QUERY_RUNNING, queryMasterTask.getQuery().getSynchronizedState());
+    }
+
+    SubQuery subQuery = queryMasterTask.getQuery().getSubQueries().iterator().next();
+    assertNotNull(subQuery);
+
+    try{
+      cluster.waitForSubQueryState(subQuery, SubQueryState.INITED, 2);
+    } finally {
+      assertEquals(SubQueryState.INITED, subQuery.getSynchronizedState());
+    }
+
+    // fire kill event
+    Query q = queryMasterTask.getQuery();
+    q.handle(new QueryEvent(queryId, QueryEventType.KILL));
+
+    try{
+      cluster.waitForQueryState(queryMasterTask.getQuery(), TajoProtos.QueryState.QUERY_KILLED, 10);
+    } finally {
+      assertEquals(TajoProtos.QueryState.QUERY_KILLED, queryMasterTask.getQuery().getSynchronizedState());
+    }
+    queryMasterTask.stop();
+  }
 }

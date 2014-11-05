@@ -45,7 +45,7 @@ public interface QueryUnitRequest extends ProtoObject<TajoWorkerProtocol.QueryUn
 	public List<FetchImpl> getFetches();
   public boolean shouldDie();
   public void setShouldDie();
-  public QueryContext getQueryContext(TajoConf baseConf);
+  public QueryContext getQueryContext(TajoConf conf);
   public DataChannel getDataChannel();
   public Enforcer getEnforcer();
 }

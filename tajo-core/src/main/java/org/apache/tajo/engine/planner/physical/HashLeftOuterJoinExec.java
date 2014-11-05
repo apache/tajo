@@ -25,7 +25,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.util.SchemaUtil;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalTreeUtil;

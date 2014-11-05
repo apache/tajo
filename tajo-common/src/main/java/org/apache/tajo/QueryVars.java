@@ -18,6 +18,8 @@
 
 package org.apache.tajo;
 
+import org.apache.tajo.validation.Validator;
+
 public enum QueryVars implements ConfigKey {
   COMMAND_TYPE,
   STAGING_DIR,
@@ -41,5 +43,16 @@ public enum QueryVars implements ConfigKey {
   public ConfigType type() {
     return ConfigType.QUERY;
   }
+
+  @Override
+  public Class<?> valueClass() {
+    return null;
+  }
+
+  @Override
+  public Validator validator() {
+    return null;
+  }
 }
+
 

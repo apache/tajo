@@ -178,7 +178,7 @@ public class TestRangeRetrieverHandler {
     exec.close();
 
     Schema keySchema = PlannerUtil.sortSpecsToSchema(sortSpecs);
-    TupleComparator comp = new TupleComparator(keySchema, sortSpecs);
+    BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortSpecs);
     BSTIndex bst = new BSTIndex(conf);
     BSTIndex.BSTIndexReader reader = bst.getIndexReader(
         new Path(testDir, "output/index"), keySchema, comp);
@@ -302,7 +302,7 @@ public class TestRangeRetrieverHandler {
     exec.close();
 
     Schema keySchema = PlannerUtil.sortSpecsToSchema(sortSpecs);
-    TupleComparator comp = new TupleComparator(keySchema, sortSpecs);
+    BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortSpecs);
     BSTIndex bst = new BSTIndex(conf);
     BSTIndex.BSTIndexReader reader = bst.getIndexReader(
         new Path(testDir, "output/index"), keySchema, comp);

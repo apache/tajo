@@ -1073,7 +1073,7 @@ public class TestPhysicalPlanner {
     keySchema.addColumn("?empId", Type.INT4);
     SortSpec[] sortSpec = new SortSpec[1];
     sortSpec[0] = new SortSpec(keySchema.getColumn(0), true, false);
-    TupleComparator comp = new TupleComparator(keySchema, sortSpec);
+    BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortSpec);
     BSTIndex bst = new BSTIndex(conf);
     BSTIndex.BSTIndexReader reader = bst.getIndexReader(new Path(workDir, "output/index"),
         keySchema, comp);

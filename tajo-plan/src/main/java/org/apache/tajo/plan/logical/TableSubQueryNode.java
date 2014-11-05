@@ -23,7 +23,7 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.util.SchemaUtil;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.Target;
 
 public class TableSubQueryNode extends RelationNode implements Projectable {
