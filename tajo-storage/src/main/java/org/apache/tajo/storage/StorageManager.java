@@ -47,14 +47,36 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * StorageManager
+ * StorageManager manages the functions of storing and reading data.
+ * StorageManager is a abstract class.
+ * For supporting such as HDFS, HBASE, a specific StorageManager should be implemented by inheriting this class.
+ *
  */
 public abstract class StorageManager {
   private final Log LOG = LogFactory.getLog(StorageManager.class);
 
+  private static final Class<?>[] DEFAULT_SCANNER_PARAMS = {
+      Configuration.class,
+      Schema.class,
+      TableMeta.class,
+      Fragment.class
+  };
+
+  private static final Class<?>[] DEFAULT_APPENDER_PARAMS = {
+      Configuration.class,
+      QueryUnitAttemptId.class,
+      Schema.class,
+      TableMeta.class,
+      Path.class
+  };
+
   protected TajoConf conf;
   protected StoreType storeType;
 
+  /**
+   * Cache of StorageManager.
+   * Key is manager key(warehouse path) + store type
+   */
   private static final Map<String, StorageManager> storageManagers = Maps.newHashMap();
 
   /**
@@ -79,21 +101,26 @@ public abstract class StorageManager {
   public StorageManager(StoreType storeType) {
     this.storeType = storeType;
   }
+
   /**
-   *
+   * Initialize storage manager.
    * @throws IOException
    */
   protected abstract void storageInit() throws IOException;
 
   /**
+   * This method is called after executing "CREATE TABLE" statement.
+   * If a storage is a file based storage, a storage manager may create directory.
    *
-   * @param tableDesc
-   * @param ifNotExists
+   * @param tableDesc Table description which is created.
+   * @param ifNotExists Creates the table only when the table does not exist.
    * @throws IOException
    */
   public abstract void createTable(TableDesc tableDesc, boolean ifNotExists) throws IOException;
 
   /**
+   * This method is called after executing "DROP TABLE" statement with the 'PURGE' option
+   * which is the option to delete all the data.
    *
    * @param tableDesc
    * @throws IOException
@@ -101,29 +128,32 @@ public abstract class StorageManager {
   public abstract void purgeTable(TableDesc tableDesc) throws IOException;
 
   /**
-   *
-   * @param fragmentId
-   * @param tableDesc
-   * @param scanNode
-   * @return
+   * Returns the splits that will serve as input for the scan tasks. The
+   * number of splits matches the number of regions in a table.
+   * @param fragmentId The table name or previous ExecutionBlockId
+   * @param tableDesc The table description for the target data.
+   * @param scanNode The logical node for scanning.
+   * @return The list of input fragments.
    * @throws IOException
    */
   public abstract List<Fragment> getSplits(String fragmentId, TableDesc tableDesc,
                                            ScanNode scanNode) throws IOException;
 
   /**
-   *
-   * @param tableDesc
-   * @param currentPage
-   * @param numFragments
-   * @return
+   * It returns the splits that will serve as input for the non-forward query scanner such as 'select * from table1'.
+   * The result list should be small. If there is many fragments for scanning, TajoMaster uses the paging navigation.
+   * @param tableDesc The table description for the target data.
+   * @param currentPage The current page number within the entire list.
+   * @param numFragments The number of fragments in the result.
+   * @return The list of input fragments.
    * @throws IOException
    */
   public abstract List<Fragment> getNonForwardSplit(TableDesc tableDesc, int currentPage, int numFragments)
       throws IOException;
 
   /**
-   * @return
+   * It returns the storage property.
+   * @return The storage property
    */
   public abstract StorageProperty getStorageProperty();
 
@@ -133,12 +163,15 @@ public abstract class StorageManager {
   public abstract void closeStorageManager();
 
   /**
+   * It is called by a Repartitioner for range shuffling when the SortRangeType of SortNode is USING_STORAGE_MANAGER.
+   * In general Repartitioner determines the partition range using previous output statistics data.
+   * In the special cases, such as HBase Repartitioner uses the result of this method.
    *
-   * @param queryContext
-   * @param tableDesc
-   * @param inputSchema
-   * @param sortSpecs
-   * @return
+   * @param queryContext The current query context which contains query properties.
+   * @param tableDesc The table description for the target data.
+   * @param inputSchema The input schema
+   * @param sortSpecs The sort specification that contains the sort column and sort order.
+   * @return The list of sort ranges.
    * @throws IOException
    */
   public abstract TupleRange[] getInsertSortRanges(OverridableConf queryContext, TableDesc tableDesc,
@@ -146,27 +179,48 @@ public abstract class StorageManager {
                                                    TupleRange dataRange) throws IOException;
 
   /**
-   * @param node
+   * This method is called before executing 'INSERT' or 'CREATE TABLE as SELECT'.
+   * In general Tajo creates the target table after finishing the final sub-query of CATS.
+   * But In the special cases, such as HBase INSERT or CAST query uses the target table information.
+   * That kind of the storage should implements the logic related to creating table in this method.
+   *
+   * @param node The child node of the root node.
    * @throws IOException
    */
   public abstract void beforeInsertOrCATS(LogicalNode node) throws IOException;
 
   /**
+   * It is called when the query failed.
+   * Each storage manager should implement to be processed when the query fails in this method.
    *
-   * @param node
+   * @param node The child node of the root node.
    * @throws IOException
    */
   public abstract void queryFailed(LogicalNode node) throws IOException;
 
+  /**
+   * Returns the current storage type.
+   * @return
+   */
   public StoreType getStoreType() {
     return storeType;
   }
 
+  /**
+   * Initialize StorageManager instance. It should be called before using.
+   *
+   * @param tajoConf
+   * @throws IOException
+   */
   public void init(TajoConf tajoConf) throws IOException {
     this.conf = tajoConf;
     storageInit();
   }
 
+  /**
+   * Close StorageManager
+   * @throws IOException
+   */
   public void close() throws IOException {
     synchronized(storageManagers) {
       for (StorageManager eachStorageManager: storageManagers.values()) {
@@ -175,14 +229,38 @@ public abstract class StorageManager {
     }
   }
 
+  /**
+   * Returns the splits that will serve as input for the scan tasks. The
+   * number of splits matches the number of regions in a table.
+   *
+   * @param fragmentId The table name or previous ExecutionBlockId
+   * @param tableDesc The table description for the target data.
+   * @return The list of input fragments.
+   * @throws IOException
+   */
   public List<Fragment> getSplits(String fragmentId, TableDesc tableDesc) throws IOException {
     return getSplits(fragmentId, tableDesc, null);
   }
 
+  /**
+   * Returns FileStorageManager instance.
+   *
+   * @param tajoConf Tajo system property.
+   * @return
+   * @throws IOException
+   */
   public static FileStorageManager getFileStorageManager(TajoConf tajoConf) throws IOException {
     return getFileStorageManager(tajoConf, null);
   }
 
+  /**
+   * Returns FileStorageManager instance and sets WAREHOUSE_DIR property in tajoConf with warehousePath parameter.
+   *
+   * @param tajoConf Tajo system property.
+   * @param warehousePath The warehouse directory to be set in the tajoConf.
+   * @return
+   * @throws IOException
+   */
   public static FileStorageManager getFileStorageManager(TajoConf tajoConf, Path warehousePath) throws IOException {
     URI uri;
     TajoConf copiedConf = new TajoConf(tajoConf);
@@ -194,6 +272,14 @@ public abstract class StorageManager {
     return (FileStorageManager) getStorageManager(copiedConf, StoreType.CSV, key);
   }
 
+  /**
+   * Returns the proper StorageManager instance according to the storeType.
+   *
+   * @param tajoConf Tajo system property.
+   * @param storeType Storage type
+   * @return
+   * @throws IOException
+   */
   public static StorageManager getStorageManager(TajoConf tajoConf, String storeType) throws IOException {
     if ("HBASE".equals(storeType)) {
       return getStorageManager(tajoConf, StoreType.HBASE);
@@ -202,12 +288,29 @@ public abstract class StorageManager {
     }
   }
 
+  /**
+   * Returns the proper StorageManager instance according to the storeType.
+   *
+   * @param tajoConf Tajo system property.
+   * @param storeType Storage type
+   * @return
+   * @throws IOException
+   */
   public static StorageManager getStorageManager(TajoConf tajoConf, StoreType storeType) throws IOException {
     return getStorageManager(tajoConf, storeType, null);
   }
 
+  /**
+   * Returns the proper StorageManager instance according to the storeType
+   *
+   * @param tajoConf Tajo system property.
+   * @param storeType Storage type
+   * @param managerKey Key that can identify each storage manager(may be a path)
+   * @return
+   * @throws IOException
+   */
   public static synchronized StorageManager getStorageManager (
-      TajoConf conf, StoreType storeType, String managerKey) throws IOException {
+      TajoConf tajoConf, StoreType storeType, String managerKey) throws IOException {
     synchronized (storageManagers) {
       String storeKey = storeType + managerKey;
       StorageManager manager = storageManagers.get(storeKey);
@@ -220,7 +323,7 @@ public abstract class StorageManager {
             manager = new FileStorageManager(storeType);
         }
 
-        manager.init(conf);
+        manager.init(tajoConf);
         storageManagers.put(storeKey, manager);
       }
 
@@ -228,14 +331,108 @@ public abstract class StorageManager {
     }
   }
 
+  /**
+   * Returns Scanner instance.
+   *
+   * @param meta The table meta
+   * @param schema The input schema
+   * @param fragment The fragment for scanning
+   * @param target Columns which are selected.
+   * @return Scanner instance
+   * @throws IOException
+   */
   public Scanner getScanner(TableMeta meta, Schema schema, FragmentProto fragment, Schema target) throws IOException {
     return getScanner(meta, schema, FragmentConvertor.convert(conf, fragment), target);
   }
 
+  /**
+   * Returns Scanner instance.
+   *
+   * @param meta The table meta
+   * @param schema The input schema
+   * @param fragment The fragment for scanning
+   * @return Scanner instance
+   * @throws IOException
+   */
   public Scanner getScanner(TableMeta meta, Schema schema, Fragment fragment) throws IOException {
     return getScanner(meta, schema, fragment, schema);
   }
 
+  /**
+   * Returns Scanner instance.
+   *
+   * @param meta The table meta
+   * @param schema The input schema
+   * @param fragment The fragment for scanning
+   * @param target The output schema
+   * @return Scanner instance
+   * @throws IOException
+   */
+  public Scanner getScanner(TableMeta meta, Schema schema, Fragment fragment, Schema target) throws IOException {
+    if (fragment.isEmpty()) {
+      Scanner scanner = new NullScanner(conf, schema, meta, fragment);
+      scanner.setTarget(target.toArray());
+
+      return scanner;
+    }
+
+    Scanner scanner;
+
+    Class<? extends Scanner> scannerClass = getScannerClass(meta.getStoreType());
+    scanner = newScannerInstance(scannerClass, conf, schema, meta, fragment);
+    if (scanner.isProjectable()) {
+      scanner.setTarget(target.toArray());
+    }
+
+    return scanner;
+  }
+
+  /**
+   * Returns Scanner instance.
+   *
+   * @param conf The system property
+   * @param meta The table meta
+   * @param schema The input schema
+   * @param fragment The fragment for scanning
+   * @param target The output schema
+   * @return Scanner instance
+   * @throws IOException
+   */
+  public static synchronized SeekableScanner getSeekableScanner(
+      TajoConf conf, TableMeta meta, Schema schema, FileFragment fragment, Schema target) throws IOException {
+    return (SeekableScanner)getStorageManager(conf, meta.getStoreType()).getScanner(meta, schema, fragment, target);
+  }
+
+  /**
+   * Returns Scanner instance.
+   *
+   * @param conf The system property
+   * @param meta The table meta
+   * @param schema The input schema
+   * @param path The data file path
+   * @return Scanner instance
+   * @throws IOException
+   */
+  public static synchronized SeekableScanner getSeekableScanner(
+      TajoConf conf, TableMeta meta, Schema schema, Path path) throws IOException {
+
+    FileSystem fs = path.getFileSystem(conf);
+    FileStatus status = fs.getFileStatus(path);
+    FileFragment fragment = new FileFragment(path.getName(), path, 0, status.getLen());
+
+    return getSeekableScanner(conf, meta, schema, fragment, schema);
+  }
+
+  /**
+   * Returns Appender instance.
+   * @param queryContext Query property.
+   * @param taskAttemptId Task id.
+   * @param meta Table meta data.
+   * @param schema Output schema.
+   * @param workDir Working directory
+   * @return Appender instance
+   * @throws IOException
+   */
   public Appender getAppender(OverridableConf queryContext,
                               QueryUnitAttemptId taskAttemptId, TableMeta meta, Schema schema, Path workDir)
       throws IOException {
@@ -261,23 +458,16 @@ public abstract class StorageManager {
     return appender;
   }
 
-  private static final Class<?>[] DEFAULT_SCANNER_PARAMS = {
-      Configuration.class,
-      Schema.class,
-      TableMeta.class,
-      Fragment.class
-  };
-
-  private static final Class<?>[] DEFAULT_APPENDER_PARAMS = {
-      Configuration.class,
-      QueryUnitAttemptId.class,
-      Schema.class,
-      TableMeta.class,
-      Path.class
-  };
-
   /**
-   * create a scanner instance.
+   * Creates a scanner instance.
+   *
+   * @param theClass Concrete class of scanner
+   * @param conf System property
+   * @param schema Input schema
+   * @param meta Table meta data
+   * @param fragment The fragment for scanning
+   * @param <T>
+   * @return The scanner instance
    */
   public static <T> T newScannerInstance(Class<T> theClass, Configuration conf, Schema schema, TableMeta meta,
                                          Fragment fragment) {
@@ -298,7 +488,16 @@ public abstract class StorageManager {
   }
 
   /**
-   * create a scanner instance.
+   * Creates a scanner instance.
+   *
+   * @param theClass Concrete class of scanner
+   * @param conf System property
+   * @param taskAttemptId Task id
+   * @param meta Table meta data
+   * @param schema Input schema
+   * @param workDir Working directory
+   * @param <T>
+   * @return The scanner instance
    */
   public static <T> T newAppenderInstance(Class<T> theClass, Configuration conf, QueryUnitAttemptId taskAttemptId,
                                           TableMeta meta, Schema schema, Path workDir) {
@@ -318,6 +517,13 @@ public abstract class StorageManager {
     return result;
   }
 
+  /**
+   * Return the Scanner class for the StoreType that is defined in storage-default.xml.
+   *
+   * @param storeType store type
+   * @return The Scanner class
+   * @throws IOException
+   */
   public Class<? extends Scanner> getScannerClass(CatalogProtos.StoreType storeType) throws IOException {
     String handlerName = storeType.name().toLowerCase();
     Class<? extends Scanner> scannerClass = SCANNER_HANDLER_CACHE.get(handlerName);
@@ -334,40 +540,14 @@ public abstract class StorageManager {
     return scannerClass;
   }
 
-  public Scanner getScanner(TableMeta meta, Schema schema, Fragment fragment, Schema target) throws IOException {
-    if (fragment.isEmpty()) {
-      Scanner scanner = new NullScanner(conf, schema, meta, fragment);
-      scanner.setTarget(target.toArray());
-
-      return scanner;
-    }
-
-    Scanner scanner;
-
-    Class<? extends Scanner> scannerClass = getScannerClass(meta.getStoreType());
-    scanner = newScannerInstance(scannerClass, conf, schema, meta, fragment);
-    if (scanner.isProjectable()) {
-      scanner.setTarget(target.toArray());
-    }
-
-    return scanner;
-  }
-
-  public static synchronized SeekableScanner getSeekableScanner(
-      TajoConf conf, TableMeta meta, Schema schema, FileFragment fragment, Schema target) throws IOException {
-    return (SeekableScanner)getStorageManager(conf, meta.getStoreType()).getScanner(meta, schema, fragment, target);
-  }
-
-  public static synchronized SeekableScanner getSeekableScanner(
-      TajoConf conf, TableMeta meta, Schema schema, Path path) throws IOException {
-
-    FileSystem fs = path.getFileSystem(conf);
-    FileStatus status = fs.getFileStatus(path);
-    FileFragment fragment = new FileFragment(path.getName(), path, 0, status.getLen());
-
-    return getSeekableScanner(conf, meta, schema, fragment, schema);
-  }
-
+  /**
+   * Return length of the fragment.
+   * In the UNKNOWN_LENGTH case get FRAGMENT_ALTERNATIVE_UNKNOWN_LENGTH from the configuration.
+   *
+   * @param conf Tajo system property
+   * @param fragment Fragment
+   * @return
+   */
   public static long getFragmentLength(TajoConf conf, Fragment fragment) {
     if (fragment.getLength() == TajoConstants.UNKNOWN_LENGTH) {
       return conf.getLongVar(ConfVars.FRAGMENT_ALTERNATIVE_UNKNOWN_LENGTH);
@@ -376,20 +556,63 @@ public abstract class StorageManager {
     }
   }
 
+  /**
+   * It is called after making logical plan. Storage manager should verify the schema for inserting.
+   *
+   * @param tableDesc The table description of insert target.
+   * @param outSchema  The output schema of select query for inserting.
+   * @throws IOException
+   */
   public void verifyInsertTableSchema(TableDesc tableDesc, Schema outSchema) throws IOException {
     // nothing to do
   }
 
+  /**
+   * Returns the list of storage specified rewrite rules.
+   * This values are used by LogicalOptimizer.
+   *
+   * @param queryContext The query property
+   * @param tableDesc The description of the target table.
+   * @return The list of storage specified rewrite rules
+   * @throws IOException
+   */
   public List<RewriteRule> getRewriteRules(OverridableConf queryContext, TableDesc tableDesc) throws IOException {
     return null;
   }
 
+  /**
+   * Finalizes result data. Tajo stores result data in the staging directory.
+   * If the query fails, clean up the staging directory.
+   * Otherwise the query is successful, move to the final directory from the staging directory.
+   *
+   * @param queryContext The query property
+   * @param finalEbId The final execution block id
+   * @param plan The query plan
+   * @param schema The final output schema
+   * @param tableDesc The description of the target table
+   * @return Saved path
+   * @throws IOException
+   */
   public Path commitOutputData(OverridableConf queryContext, ExecutionBlockId finalEbId,
                                LogicalPlan plan, Schema schema,
                                TableDesc tableDesc) throws IOException {
     return commitOutputData(queryContext, finalEbId, plan, schema, tableDesc, true);
   }
 
+  /**
+   * Finalizes result data. Tajo stores result data in the staging directory.
+   * If the query fails, clean up the staging directory.
+   * Otherwise the query is successful, move to the final directory from the staging directory.
+   *
+   * @param queryContext The query property
+   * @param finalEbId The final execution block id
+   * @param plan The query plan
+   * @param schema The final output schema
+   * @param tableDesc The description of the target table
+   * @param changeFileSeq If true change result file name with max sequence.
+   * @return Saved path
+   * @throws IOException
+   */
   protected Path commitOutputData(OverridableConf queryContext, ExecutionBlockId finalEbId,
                                LogicalPlan plan, Schema schema,
                                TableDesc tableDesc, boolean changeFileSeq) throws IOException {
@@ -576,6 +799,12 @@ public abstract class StorageManager {
     }
   }
 
+  /**
+   * Removes the path of the parent.
+   * @param parentPath
+   * @param childPath
+   * @return
+   */
   private String extractSubPath(Path parentPath, Path childPath) {
     String parentPathStr = parentPath.toUri().getPath();
     String childPathStr = childPath.toUri().getPath();
@@ -609,6 +838,13 @@ public abstract class StorageManager {
     return tokens[0] + "-" + tokens[1] + "-" + tokens[2] + "-" + nf.format(seq);
   }
 
+  /**
+   * Make sure all files are moved.
+   * @param fs FileSystem
+   * @param stagingPath The stagind directory
+   * @return
+   * @throws IOException
+   */
   private boolean verifyAllFileMoved(FileSystem fs, Path stagingPath) throws IOException {
     FileStatus[] files = fs.listStatus(stagingPath);
     if (files != null && files.length != 0) {

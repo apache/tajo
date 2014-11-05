@@ -38,7 +38,6 @@ import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.BytesUtils;
 
 import java.io.IOException;

@@ -53,6 +53,9 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
 
+/**
+ * StorageManager for HBase table.
+ */
 public class HBaseStorageManager extends StorageManager {
   private static final Log LOG = LogFactory.getLog(HBaseStorageManager.class);
 
@@ -186,6 +189,15 @@ public class HBaseStorageManager extends StorageManager {
     }
   }
 
+  /**
+   * Returns initial region split keys.
+   *
+   * @param conf
+   * @param schema
+   * @param meta
+   * @return
+   * @throws IOException
+   */
   private byte[][] getSplitKeys(TajoConf conf, Schema schema, TableMeta meta) throws IOException {
     String splitRowKeys = meta.getOption(META_SPLIT_ROW_KEYS_KEY, "");
     String splitRowKeysFile = meta.getOption(META_SPLIT_ROW_KEYS_FILE_KEY, "");
@@ -231,6 +243,7 @@ public class HBaseStorageManager extends StorageManager {
     }
 
     if (splitRowKeysFile != null && !splitRowKeysFile.isEmpty()) {
+      // If there is many split keys, Tajo allows to define in the file.
       Path path = new Path(splitRowKeysFile);
       FileSystem fs = path.getFileSystem(conf);
       if (!fs.exists(path)) {
@@ -274,6 +287,14 @@ public class HBaseStorageManager extends StorageManager {
     return null;
   }
 
+  /**
+   * Creates Configuration instance and sets with hbase connection options.
+   *
+   * @param conf
+   * @param tableMeta
+   * @return
+   * @throws IOException
+   */
   public static Configuration getHBaseConfiguration(Configuration conf, TableMeta tableMeta) throws IOException {
     String zkQuorum = tableMeta.getOption(META_ZK_QUORUM_KEY, "");
     if (zkQuorum == null || zkQuorum.trim().isEmpty()) {
@@ -292,6 +313,14 @@ public class HBaseStorageManager extends StorageManager {
     return hbaseConf;
   }
 
+  /**
+   * Creates HTableDescription using table meta data.
+   *
+   * @param tableMeta
+   * @param schema
+   * @return
+   * @throws IOException
+   */
   public static HTableDescriptor parseHTableDescriptor(TableMeta tableMeta, Schema schema) throws IOException {
     String hbaseTableName = tableMeta.getOption(META_TABLE_KEY, "");
     if (hbaseTableName == null || hbaseTableName.trim().isEmpty()) {
@@ -332,6 +361,13 @@ public class HBaseStorageManager extends StorageManager {
     }
   }
 
+  /**
+   * Returns columns which are mapped to the rowkey of the hbase table.
+   *
+   * @param tableDesc
+   * @return
+   * @throws IOException
+   */
   private Column[] getIndexableColumns(TableDesc tableDesc) throws IOException {
     ColumnMapping columnMapping = new ColumnMapping(tableDesc.getSchema(), tableDesc.getMeta());
     boolean[] isRowKeyMappings = columnMapping.getIsRowKeyMappings();

@@ -18,10 +18,12 @@
 
 package org.apache.tajo.storage.hbase;
 
+import org.apache.hadoop.hbase.protobuf.generated.HBaseProtos.RegionInfo;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
 
@@ -34,14 +36,6 @@ import static org.junit.Assert.assertTrue;
 public class TestColumnMapping {
   @Test
   public void testColumnKeyValueMapping() throws Exception {
-    if (1 == 1) {
-      long interval = 600000000L/50;
-
-      for (int i = 0; i < 50; i++) {
-        System.out.println(interval * (i + 1));
-      }
-      return;
-    }
     KeyValueSet keyValueSet = new KeyValueSet();
     keyValueSet.set(HBaseStorageManager.META_TABLE_KEY, "test");
     keyValueSet.set(HBaseStorageManager.META_COLUMNS_KEY, ":key,col2:key:,col2:value:#b,col3:");

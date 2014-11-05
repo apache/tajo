@@ -22,11 +22,9 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.storage.SerializerDeserializer;
 import org.apache.tajo.util.Bytes;
 
 import java.io.IOException;
-import java.io.OutputStream;
 
 public class HBaseBinarySerializerDeserializer {
 
