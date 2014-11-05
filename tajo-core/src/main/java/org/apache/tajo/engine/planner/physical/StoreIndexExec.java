@@ -28,10 +28,7 @@ import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.plan.logical.CreateIndexNode;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.RowStoreUtil;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.TupleComparator;
-import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.storage.index.bst.BSTIndex.BSTIndexWriter;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -70,7 +67,7 @@ public class StoreIndexExec extends UnaryPhysicalExec {
     Path indexPath = new Path(logicalPlan.getIndexPath(), context.getUniqueKeyFromFragments());
     // TODO: Create factory using reflection
     BSTIndex bst = new BSTIndex(conf);
-    this.comparator = new TupleComparator(keySchema, sortSpecs);
+    this.comparator = new BaseTupleComparator(keySchema, sortSpecs);
     this.indexWriter = bst.getIndexWriter(indexPath, BSTIndex.TWO_LEVEL_INDEX, keySchema, comparator);
     this.indexWriter.setLoadNum(100);
     this.indexWriter.open();

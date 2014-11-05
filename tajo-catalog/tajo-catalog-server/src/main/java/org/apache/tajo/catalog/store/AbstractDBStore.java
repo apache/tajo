@@ -1612,6 +1612,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     String tableName = CatalogUtil.extractSimpleName(proto.getTableIdentifier().getTableName());
 
     try {
+      // indexes table
       int databaseId = getDatabaseId(databaseName);
       int tableId = getTableId(databaseId, databaseName, tableName);
 
@@ -1656,6 +1657,47 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setBoolean(11, proto.hasIsClustered() && proto.getIsClustered());
       pstmt.executeUpdate();
       conn.commit();
+
+      sql = "SELECT " + COL_INDEXES_PK + " FROM " + TB_INDEXES + " WHERE " +
+          COL_DATABASES_PK + " =?" + " AND INDEX_NAME =?";
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
+
+      pstmt = conn.prepareStatement(sql);
+      pstmt.setInt(1, databaseId);
+      pstmt.setString(2, proto.getName());
+
+      ResultSet rs = pstmt.executeQuery();
+      int index_id = -1;
+      if (rs.next()) {
+        index_id = rs.getInt(COL_INDEXES_PK);
+      } else {
+        // error
+        throw new CatalogException("Cannot find an index: " +
+            COL_DATABASES_PK + " = " + databaseId + " AND INDEX_NAME = " + proto.getName());
+      }
+
+      sql = "INSERT INTO " + TB_INDEXES_BY_COL +
+          " (" + COL_DATABASES_PK + ", " + COL_TABLES_PK +
+          ", COLUMN_NAME, " + COL_INDEXES_PK + ") " +
+          "VALUES (?,?,?,?)";
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
+
+      pstmt = conn.prepareStatement(sql);
+      pstmt.setInt(1, databaseId);
+      pstmt.setInt(2, tableId);
+      pstmt.setString(3, proto.getName());
+      pstmt.setInt(4, index_id);
+      pstmt.executeUpdate();
+      conn.commit();
+
+      sql = "SELECT * FROM " + TB_INDEXES_BY_COL;
+      pstmt = conn.prepareStatement(sql);
+      rs = pstmt.executeQuery();
+      if (rs.next()) rs.getString(3);
     } catch (SQLException se) {
       throw new CatalogException(se);
     } finally {
@@ -1710,6 +1752,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       "SELECT " + COL_TABLES_PK + ", INDEX_NAME, COLUMN_NAME, DATA_TYPE, INDEX_TYPE, PATH, IS_UNIQUE, " +
           "IS_CLUSTERED, IS_ASCENDING FROM " + TB_INDEXES;
 
+  final static String GET_INDEXE_ID_BY_COL_SQL =
+      "SELECT " + COL_INDEXES_PK + " FROM " + TB_INDEXES_BY_COL;
 
   @Override
   public IndexDescProto getIndexByName(String databaseName, final String indexName)
@@ -1762,8 +1806,10 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     try {
       int databaseId = getDatabaseId(databaseName);
+      int tableId = getTableId(databaseId, databaseName, tableName);
 
-      String sql = GET_INDEXES_SQL + " WHERE " + COL_DATABASES_PK + "=? AND COLUMN_NAME=?";
+      String sql = GET_INDEXE_ID_BY_COL_SQL + " WHERE " + COL_DATABASES_PK + "=? AND " +
+          COL_TABLES_PK + "=? AND COLUMN_NAME=?";
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
@@ -1772,11 +1818,19 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       conn = getConnection();
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
-      pstmt.setString(2, columnName);
+      pstmt.setInt(2, tableId);
+      pstmt.setString(3, columnName);
       res = pstmt.executeQuery();
       if (!res.next()) {
         throw new CatalogException("ERROR: there is no index matched to " + columnName);
       }
+      int indexId = res.getInt(COL_INDEXES_PK);
+
+      sql = GET_INDEXES_SQL + " WHERE " + COL_INDEXES_PK + " =?";
+      pstmt = conn.prepareStatement(sql);
+      pstmt.setInt(1, indexId);
+      res = pstmt.executeQuery();
+
       IndexDescProto.Builder builder = IndexDescProto.newBuilder();
       resultToIndexDescProtoBuilder(builder, res);
       builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
@@ -1834,9 +1888,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     try {
       int databaseId = getDatabaseId(databaseName);
+      int tableId = getTableId(databaseId, databaseName, tableName);
 
       String sql =
-          "SELECT INDEX_NAME FROM " + TB_INDEXES + " WHERE " + COL_DATABASES_PK + "=? AND COLUMN_NAME=?";
+          "SELECT " + COL_INDEXES_PK + " FROM " + TB_INDEXES_BY_COL +
+              " WHERE " + COL_DATABASES_PK + "=? AND " + COL_TABLES_PK + "=? AND COLUMN_NAME=?";
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
@@ -1845,7 +1901,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       conn = getConnection();
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
-      pstmt.setString(2, columnName);
+      pstmt.setInt(2, tableId);
+      pstmt.setString(3, columnName);
       res = pstmt.executeQuery();
       exist = res.next();
     } catch (SQLException se) {

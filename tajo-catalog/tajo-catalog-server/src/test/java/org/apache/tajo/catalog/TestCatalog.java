@@ -448,7 +448,7 @@ public class TestCatalog {
 	  TableDesc desc = prepareTable();
 	  assertTrue(catalog.createTable(desc));
 	  
-	  assertFalse(catalog.existIndexByName("db1", desc1.getName()));
+	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getName()));
 	  assertFalse(catalog.existIndexByColumn(DEFAULT_DATABASE_NAME, "indexed", "id"));
 	  catalog.createIndex(desc1);
 	  assertTrue(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getName()));
