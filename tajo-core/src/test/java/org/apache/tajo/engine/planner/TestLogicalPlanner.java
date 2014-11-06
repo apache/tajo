@@ -32,14 +32,16 @@ import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.engine.eval.*;
+import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.engine.function.builtin.SumInt;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.session.Session;
+import org.apache.tajo.plan.*;
+import org.apache.tajo.plan.expr.*;
+import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -73,7 +75,7 @@ public class TestLogicalPlanner {
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234");
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
 
-    for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
+    for (FunctionDesc funcDesc : FunctionLoader.findLegacyFunctions()) {
       catalog.createFunction(funcDesc);
     }
 
@@ -153,6 +155,11 @@ public class TestLogicalPlanner {
       "select length(name), length(deptname), *, empid+10 from employee where empId > 500", // 13
   };
 
+  public static final void testCloneLogicalNode(LogicalNode n1) throws CloneNotSupportedException {
+    LogicalNode copy = (LogicalNode) n1.clone();
+    assertTrue(n1.deepEquals(copy));
+  }
+
   @Test
   public final void testSingleRelation() throws CloneNotSupportedException, PlanningException {
     QueryContext qc = new QueryContext(util.getConfiguration(), session);
@@ -161,7 +168,7 @@ public class TestLogicalPlanner {
     LogicalPlan planNode = planner.createPlan(qc, expr);
     LogicalNode plan = planNode.getRootBlock().getRoot();
     assertEquals(NodeType.ROOT, plan.getType());
-    TestLogicalNode.testCloneLogicalNode(plan);
+    testCloneLogicalNode(plan);
     LogicalRootNode root = (LogicalRootNode) plan;
     testJsonSerDerObject(root);
 
@@ -199,7 +206,7 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
     testJsonSerDerObject(root);
-    TestLogicalNode.testCloneLogicalNode(root);
+    testCloneLogicalNode(root);
 
     Schema expectedSchema = new Schema();
     expectedSchema.addColumn("name", Type.TEXT);
@@ -228,7 +235,7 @@ public class TestLogicalPlanner {
     expr = sqlAnalyzer.parse(QUERIES[2]);
     plan = planner.createPlan(qc, expr).getRootBlock().getRoot();
     testJsonSerDerObject(plan);
-    TestLogicalNode.testCloneLogicalNode(plan);
+    testCloneLogicalNode(plan);
 
     expectedSchema.addColumn("score", Type.INT4);
     assertSchema(expectedSchema, plan.getOutSchema());
@@ -392,7 +399,7 @@ public class TestLogicalPlanner {
     // with having clause
     context = sqlAnalyzer.parse(QUERIES[3]);
     plan = planner.createPlan(qc, context).getRootBlock().getRoot();
-    TestLogicalNode.testCloneLogicalNode(plan);
+    testCloneLogicalNode(plan);
 
     assertEquals(NodeType.ROOT, plan.getType());
     root = (LogicalRootNode) plan;
@@ -704,7 +711,7 @@ public class TestLogicalPlanner {
     Expr context = sqlAnalyzer.parse(QUERIES[8]);
 
     LogicalNode plan = planner.createPlan(qc, context).getRootBlock().getRoot();
-    TestLogicalNode.testCloneLogicalNode(plan);
+    testCloneLogicalNode(plan);
     testJsonSerDerObject(plan);
 
     assertEquals(NodeType.ROOT, plan.getType());
@@ -723,7 +730,7 @@ public class TestLogicalPlanner {
 
     LogicalNode plan = planner.createPlan(qc, expr).getRootBlock().getRoot();
     testJsonSerDerObject(plan);
-    TestLogicalNode.testCloneLogicalNode(plan);
+    testCloneLogicalNode(plan);
 
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
@@ -753,7 +760,7 @@ public class TestLogicalPlanner {
 
     LogicalNode plan = planner.createPlan(qc, expr).getRootBlock().getRoot();
     testJsonSerDerObject(plan);
-    TestLogicalNode.testCloneLogicalNode(plan);
+    testCloneLogicalNode(plan);
 
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
@@ -774,7 +781,7 @@ public class TestLogicalPlanner {
     Expr expr = sqlAnalyzer.parse(QUERIES[5]);
     LogicalNode plan = planner.createPlan(qc, expr).getRootBlock().getRoot();
     testJsonSerDerObject(plan);
-    TestLogicalNode.testCloneLogicalNode(plan);
+    testCloneLogicalNode(plan);
 
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
@@ -796,7 +803,7 @@ public class TestLogicalPlanner {
     Expr expr = sqlAnalyzer.parse(QUERIES[6]);
     LogicalNode plan = planner.createPlan(qc, expr).getRootBlock().getRoot();
     testJsonSerDerObject(plan);
-    TestLogicalNode.testCloneLogicalNode(plan);
+    testCloneLogicalNode(plan);
   }
 
   @Test
@@ -878,7 +885,7 @@ public class TestLogicalPlanner {
     LogicalPlan planNode = planner.createPlan(qc, expr);
     LogicalNode plan = planNode.getRootBlock().getRoot();
     assertEquals(NodeType.ROOT, plan.getType());
-    TestLogicalNode.testCloneLogicalNode(plan);
+    testCloneLogicalNode(plan);
     LogicalRootNode root = (LogicalRootNode) plan;
     testJsonSerDerObject(root);
 

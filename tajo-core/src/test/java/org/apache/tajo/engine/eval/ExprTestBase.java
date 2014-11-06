@@ -25,23 +25,27 @@ import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.cli.InvalidStatementException;
-import org.apache.tajo.cli.ParsedResult;
-import org.apache.tajo.cli.SimpleParser;
+import org.apache.tajo.cli.tsql.InvalidStatementException;
+import org.apache.tajo.cli.tsql.ParsedResult;
+import org.apache.tajo.cli.tsql.SimpleParser;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.codegen.EvalCodeGenerator;
 import org.apache.tajo.engine.codegen.TajoClassLoader;
+import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.plan.EvalTreeProtoDeserializer;
-import org.apache.tajo.engine.plan.EvalTreeProtoSerializer;
-import org.apache.tajo.engine.plan.proto.PlanProto;
-import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.plan.*;
+import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.serder.EvalTreeProtoDeserializer;
+import org.apache.tajo.plan.serder.EvalTreeProtoSerializer;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.engine.utils.SchemaUtil;
-import org.apache.tajo.master.TajoMaster;
+import org.apache.tajo.catalog.SchemaUtil;
+import org.apache.tajo.plan.serder.PlanProto;
+import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
+import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
+import org.apache.tajo.plan.verifier.VerificationState;
 import org.apache.tajo.storage.LazyTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -84,7 +88,7 @@ public class ExprTestBase {
     cat = util.getMiniCatalogCluster().getCatalog();
     cat.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
     cat.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-    for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
+    for (FunctionDesc funcDesc : FunctionLoader.load()) {
       cat.createFunction(funcDesc);
     }
 

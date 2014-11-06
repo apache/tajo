@@ -846,7 +846,7 @@ public class TajoMasterClientService extends AbstractService {
           if (functionName == null || functionName.isEmpty()) {
             functionProtos.add(eachFunction.getProto());
           } else {
-            if(functionName.equals(eachFunction.getSignature())) {
+            if(functionName.equals(eachFunction.getFunctionName())) {
               functionProtos.add(eachFunction.getProto());
             }
           }

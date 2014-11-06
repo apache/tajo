@@ -38,7 +38,6 @@ import org.apache.tajo.util.TUtil;
 public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Cloneable {
   private final Log LOG = LogFactory.getLog(TableDesc.class);
 
-  protected TableDescProto.Builder builder = null;
 	@Expose protected String tableName;                        // required
   @Expose protected Schema schema;
   @Expose protected TableMeta meta;                          // required
@@ -51,7 +50,6 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
   @Expose protected Boolean external;                        // optional
 
 	public TableDesc() {
-		builder = TableDescProto.newBuilder();
 	}
 
   public TableDesc(String tableName, Schema schema, TableMeta meta,
@@ -180,7 +178,6 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
 	
 	public Object clone() throws CloneNotSupportedException {
 	  TableDesc desc = (TableDesc) super.clone();
-	  desc.builder = TableDescProto.newBuilder();
 	  desc.tableName = tableName;
     desc.schema = (Schema) schema.clone();
     desc.meta = (TableMeta) meta.clone();
@@ -202,9 +199,7 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
 	}
 
   public TableDescProto getProto() {
-    if (builder == null) {
-      builder = TableDescProto.newBuilder();
-    }
+    TableDescProto.Builder builder = TableDescProto.newBuilder();
 
     if (this.tableName != null) {
       builder.setTableName(this.tableName);

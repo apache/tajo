@@ -31,7 +31,7 @@ import java.util.HashMap;
  *
  */
 public class TajoPreparedStatement implements PreparedStatement {
-  private TajoConnection conn;
+  private JdbcConnection conn;
   private final String sql;
   private TajoClient tajoClient;
   /**
@@ -66,7 +66,7 @@ public class TajoPreparedStatement implements PreparedStatement {
   /**
    *
    */
-  public TajoPreparedStatement(TajoConnection conn,
+  public TajoPreparedStatement(JdbcConnection conn,
                                TajoClient tajoClient,
                                String sql) {
     this.conn = conn;

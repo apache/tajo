@@ -18,6 +18,8 @@
 
 package org.apache.tajo.engine.query;
 
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.*;
 import org.apache.tajo.catalog.*;
@@ -28,7 +30,7 @@ import org.apache.tajo.datum.Int4Datum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.storage.*;
@@ -39,7 +41,10 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.io.File;
+import java.io.OutputStream;
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
@@ -560,7 +565,7 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
         }
         Path dataPath = new Path(table.getPath(), fileIndex + ".csv");
         fileIndex++;
-        appender = StorageManagerFactory.getStorageManager(conf).getAppender(tableMeta, schema,
+        appender = StorageManager.getStorageManager(conf).getAppender(tableMeta, schema,
             dataPath);
         appender.init();
       }
@@ -646,5 +651,195 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
 
   }
 
+  @Test
+  public final void testSelfJoin2() throws Exception {
+    /*
+     https://issues.apache.org/jira/browse/TAJO-1102
+     See the following case.
+     CREATE TABLE orders_partition
+       (o_orderkey INT8, o_custkey INT8, o_totalprice FLOAT8, o_orderpriority TEXT,
+          o_clerk TEXT, o_shippriority INT4, o_comment TEXT) USING CSV WITH ('csvfile.delimiter'='|')
+       PARTITION BY COLUMN(o_orderdate TEXT, o_orderstatus TEXT);
 
+     select a.o_orderstatus, count(*) as cnt
+      from orders_partition a
+      inner join orders_partition b
+        on a.o_orderdate = b.o_orderdate
+            and a.o_orderstatus = b.o_orderstatus
+            and a.o_orderkey = b.o_orderkey
+      where a.o_orderdate='1995-02-21'
+        and a.o_orderstatus in ('F')
+      group by a.o_orderstatus;
+
+      Because of the where condition[where a.o_orderdate='1995-02-21 and a.o_orderstatus in ('F')],
+        orders_partition table aliased a is small and broadcast target.
+    */
+    String tableName = CatalogUtil.normalizeIdentifier("partitioned_orders_large");
+    ResultSet res = executeString(
+        "create table " + tableName + " (o_orderkey INT8, o_custkey INT8, o_totalprice FLOAT8, o_orderpriority TEXT,\n" +
+            "o_clerk TEXT, o_shippriority INT4, o_comment TEXT) USING CSV WITH ('csvfile.delimiter'='|')\n" +
+            "PARTITION BY COLUMN(o_orderdate TEXT, o_orderstatus TEXT, o_orderkey_mod INT8)");
+    res.close();
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+    res = executeString(
+        "insert overwrite into " + tableName +
+            " select o_orderkey, o_custkey, o_totalprice, " +
+            " o_orderpriority, o_clerk, o_shippriority, o_comment, o_orderdate, o_orderstatus, o_orderkey % 10 " +
+            " from orders_large ");
+    res.close();
+
+    res = executeString(
+        "select a.o_orderdate, a.o_orderstatus, a.o_orderkey % 10 as o_orderkey_mod, a.o_totalprice " +
+            "from orders_large a " +
+            "join orders_large b on a.o_orderkey = b.o_orderkey " +
+            "where a.o_orderdate = '1993-10-14' and a.o_orderstatus = 'F' and a.o_orderkey % 10 = 1" +
+            " order by a.o_orderkey"
+    );
+    String expected = resultSetToString(res);
+    res.close();
+
+    res = executeString(
+        "select a.o_orderdate, a.o_orderstatus, a.o_orderkey_mod, a.o_totalprice " +
+            "from " + tableName +
+            " a join "+ tableName + " b on a.o_orderkey = b.o_orderkey " +
+            "where a.o_orderdate = '1993-10-14' and a.o_orderstatus = 'F' and o_orderkey_mod = 1 " +
+            " order by a.o_orderkey"
+    );
+    String resultSetData = resultSetToString(res);
+    res.close();
+
+    assertEquals(expected, resultSetData);
+
+  }
+  @Test
+  public void testMultipleBroadcastDataFileWithZeroLength() throws Exception {
+    // According to node type(leaf or non-leaf) Broadcast join is determined differently by Repartitioner.
+    // testMultipleBroadcastDataFileWithZeroLength testcase is for the leaf node
+    createMultiFile("nation", 2, new TupleCreator() {
+      public Tuple createTuple(String[] columnDatas) {
+        return new VTuple(new Datum[]{
+            new Int4Datum(Integer.parseInt(columnDatas[0])),
+            new TextDatum(columnDatas[1]),
+            new Int4Datum(Integer.parseInt(columnDatas[2])),
+            new TextDatum(columnDatas[3])
+        });
+      }
+    });
+    addEmptyDataFile("nation_multifile", false);
+
+    ResultSet res = executeQuery();
+
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    executeString("DROP TABLE nation_multifile PURGE");
+  }
+
+  @Test
+  public void testMultipleBroadcastDataFileWithZeroLength2() throws Exception {
+    // According to node type(leaf or non-leaf) Broadcast join is determined differently by Repartitioner.
+    // testMultipleBroadcastDataFileWithZeroLength2 testcase is for the non-leaf node
+    createMultiFile("nation", 2, new TupleCreator() {
+      public Tuple createTuple(String[] columnDatas) {
+        return new VTuple(new Datum[]{
+            new Int4Datum(Integer.parseInt(columnDatas[0])),
+            new TextDatum(columnDatas[1]),
+            new Int4Datum(Integer.parseInt(columnDatas[2])),
+            new TextDatum(columnDatas[3])
+        });
+      }
+    });
+    addEmptyDataFile("nation_multifile", false);
+
+    ResultSet res = executeQuery();
+
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    executeString("DROP TABLE nation_multifile PURGE");
+  }
+
+  @Test
+  public void testMultiplePartitionedBroadcastDataFileWithZeroLength() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("nation_partitioned");
+    ResultSet res = testBase.execute(
+        "create table " + tableName + " (n_name text) partition by column(n_nationkey int4, n_regionkey int4) ");
+    res.close();
+    TajoTestingCluster cluster = testBase.getTestingCluster();
+    CatalogService catalog = cluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+    res = executeString("insert overwrite into " + tableName
+        + " select n_name, n_nationkey, n_regionkey from nation");
+    res.close();
+
+    addEmptyDataFile("nation_partitioned", true);
+
+    res = executeQuery();
+
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    executeString("DROP TABLE nation_partitioned PURGE");
+  }
+
+  @Test
+  public void testMultiplePartitionedBroadcastDataFileWithZeroLength2() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("nation_partitioned");
+    ResultSet res = testBase.execute(
+        "create table " + tableName + " (n_name text) partition by column(n_nationkey int4, n_regionkey int4) ");
+    res.close();
+    TajoTestingCluster cluster = testBase.getTestingCluster();
+    CatalogService catalog = cluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+    res = executeString("insert overwrite into " + tableName
+        + " select n_name, n_nationkey, n_regionkey from nation");
+    res.close();
+
+    addEmptyDataFile("nation_partitioned", true);
+
+    res = executeQuery();
+
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    executeString("DROP TABLE nation_partitioned PURGE");
+  }
+
+  private void addEmptyDataFile(String tableName, boolean isPartitioned) throws Exception {
+    TableDesc table = client.getTableDesc(tableName);
+
+    FileSystem fs = table.getPath().getFileSystem(conf);
+    if (isPartitioned) {
+      List<Path> partitionPathList = getPartitionPathList(fs, table.getPath());
+      for (Path eachPath: partitionPathList) {
+        Path dataPath = new Path(eachPath, 0 + "_empty.csv");
+        OutputStream out = fs.create(dataPath);
+        out.close();
+      }
+    } else {
+      Path dataPath = new Path(table.getPath(), 0 + "_empty.csv");
+      OutputStream out = fs.create(dataPath);
+      out.close();
+    }
+  }
+
+  private List<Path> getPartitionPathList(FileSystem fs, Path path) throws Exception {
+    FileStatus[] files = fs.listStatus(path);
+    List<Path> paths = new ArrayList<Path>();
+    if (files != null) {
+      for (FileStatus eachFile: files) {
+        if (eachFile.isFile()) {
+          paths.add(path);
+          return paths;
+        } else {
+          paths.addAll(getPartitionPathList(fs, eachFile.getPath()));
+        }
+      }
+    }
+
+    return paths;
+  }
 }

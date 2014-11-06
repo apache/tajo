@@ -23,7 +23,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
-import org.apache.tajo.catalog.function.Function;
+import org.apache.tajo.catalog.store.PostgreSQLStore;
+import org.apache.tajo.function.Function;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
@@ -32,6 +33,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.store.DerbyStore;
 import org.apache.tajo.catalog.store.MySQLStore;
 import org.apache.tajo.catalog.store.MariaDBStore;
+import org.apache.tajo.catalog.store.OracleStore;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -86,8 +88,8 @@ public class TestCatalog {
     conf.set(CATALOG_URI, catalogURI);
     conf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS, "127.0.0.1:0");
 
-    // MySQLStore/MariaDB requires password
-    if (driverClass.equals(MySQLStore.class.getCanonicalName()) || driverClass.equals(MariaDBStore.class.getCanonicalName())) {
+    // MySQLStore/MariaDB/PostgreSQL requires username (and password).
+    if (isConnectionIdRequired(driverClass)) {
       if (connectionId == null) {
         throw new CatalogException(String.format("%s driver requires %s", driverClass, CatalogConstants.CONNECTION_ID));
       }
@@ -114,6 +116,13 @@ public class TestCatalog {
       catalog.dropTable(table);
     }
 	}
+
+  public static boolean isConnectionIdRequired(String driverClass) {
+    return driverClass.equals(MySQLStore.class.getCanonicalName()) ||
+           driverClass.equals(MariaDBStore.class.getCanonicalName()) ||
+           driverClass.equals(PostgreSQLStore.class.getCanonicalName()) ||
+	   driverClass.equals(OracleStore.class.getCanonicalName());
+  }
 	
 	@AfterClass
 	public static void tearDown() throws IOException {
@@ -499,7 +508,7 @@ public class TestCatalog {
     assertTrue(catalog.containFunction("test10", CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.BLOB)));
     FunctionDesc retrived = catalog.getFunction("test10", CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.BLOB));
 
-    assertEquals(retrived.getSignature(), "test10");
+    assertEquals(retrived.getFunctionName(), "test10");
     assertEquals(retrived.getFuncClass(), TestFunc2.class);
     assertEquals(retrived.getFuncType(), FunctionType.GENERAL);
 
@@ -518,7 +527,7 @@ public class TestCatalog {
 		assertTrue(catalog.containFunction("test2", CatalogUtil.newSimpleDataTypeArray(Type.INT4)));
 		FunctionDesc retrived = catalog.getFunction("test2", CatalogUtil.newSimpleDataTypeArray(Type.INT4));
 
-		assertEquals(retrived.getSignature(),"test2");
+		assertEquals(retrived.getFunctionName(),"test2");
 		assertEquals(retrived.getFuncClass(),TestFunc1.class);
 		assertEquals(retrived.getFuncType(),FunctionType.UDF);
 	}
@@ -845,7 +854,7 @@ public class TestCatalog {
     // UPGRADE TO INT4 SUCCESS==> LOOK AT SECOND PARAM BELOW
     FunctionDesc retrieved = catalog.getFunction("testint", CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT2));
 
-    assertEquals(retrieved.getSignature(), "testint");
+    assertEquals(retrieved.getFunctionName(), "testint");
     assertEquals(retrieved.getParamTypes()[0], CatalogUtil.newSimpleDataType(Type.INT4));
     assertEquals(retrieved.getParamTypes()[1] , CatalogUtil.newSimpleDataType(Type.INT4));
   }
@@ -874,7 +883,7 @@ public class TestCatalog {
     FunctionDesc retrieved = catalog.getFunction("testfloat",
         CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4, Type.INT4));
 
-    assertEquals(retrieved.getSignature(), "testfloat");
+    assertEquals(retrieved.getFunctionName(), "testfloat");
     assertEquals(retrieved.getParamTypes()[0], CatalogUtil.newSimpleDataType(Type.FLOAT8));
     assertEquals(retrieved.getParamTypes()[1] , CatalogUtil.newSimpleDataType(Type.INT4));
   }
@@ -900,19 +909,19 @@ public class TestCatalog {
     assertTrue(catalog.createFunction(meta));
 
     FunctionDesc retrieved = catalog.getFunction("testany", CatalogUtil.newSimpleDataTypeArray(Type.INT1));
-    assertEquals(retrieved.getSignature(), "testany");
+    assertEquals(retrieved.getFunctionName(), "testany");
     assertEquals(retrieved.getParamTypes()[0], CatalogUtil.newSimpleDataType(Type.ANY));
 
     retrieved = catalog.getFunction("testany", CatalogUtil.newSimpleDataTypeArray(Type.INT8));
-    assertEquals(retrieved.getSignature(), "testany");
+    assertEquals(retrieved.getFunctionName(), "testany");
     assertEquals(retrieved.getParamTypes()[0], CatalogUtil.newSimpleDataType(Type.ANY));
 
     retrieved = catalog.getFunction("testany", CatalogUtil.newSimpleDataTypeArray(Type.FLOAT4));
-    assertEquals(retrieved.getSignature(), "testany");
+    assertEquals(retrieved.getFunctionName(), "testany");
     assertEquals(retrieved.getParamTypes()[0], CatalogUtil.newSimpleDataType(Type.ANY));
 
     retrieved = catalog.getFunction("testany", CatalogUtil.newSimpleDataTypeArray(Type.TEXT));
-    assertEquals(retrieved.getSignature(), "testany");
+    assertEquals(retrieved.getFunctionName(), "testany");
     assertEquals(retrieved.getParamTypes()[0], CatalogUtil.newSimpleDataType(Type.ANY));
   }
 }

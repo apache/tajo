@@ -20,8 +20,8 @@ package org.apache.tajo.engine.codegen;
 
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.IntervalDatum;
-import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.org.objectweb.asm.Opcodes;
+import org.apache.tajo.plan.expr.*;
 
 import java.util.Stack;
 
@@ -72,7 +72,7 @@ class VariablesPreBuilder extends SimpleEvalNodeVisitor<EvalCodeGenContext> {
     super.visitFuncCall(context, function, stack);
 
     if (!context.symbols.containsKey(function)) {
-      String fieldName = function.getFuncDesc().getSignature() + "_" + context.seqId++;
+      String fieldName = function.getFuncDesc().getFunctionName() + "_" + context.seqId++;
       context.symbols.put(function, fieldName);
       context.classWriter.visitField(Opcodes.ACC_PRIVATE, fieldName,
           "L" + TajoGeneratorAdapter.getInternalName(function.getFuncDesc().getFuncClass()) + ";", null, null);

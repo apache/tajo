@@ -20,7 +20,6 @@ package org.apache.tajo.master.querymaster;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
-import com.google.common.primitives.Ints;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
@@ -31,28 +30,30 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.engine.planner.PlannerUtil;
-import org.apache.tajo.engine.planner.PlanningException;
+import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
 import org.apache.tajo.engine.planner.RangePartitionAlgorithm;
 import org.apache.tajo.engine.planner.UniformRangePartition;
+import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.MultipleAggregationStage;
+import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty;
 import org.apache.tajo.master.TaskSchedulerContext;
 import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
-import org.apache.tajo.storage.AbstractStorageManager;
+import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.storage.RowStoreUtil;
+import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.util.Pair;
 import org.apache.tajo.unit.StorageUnit;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.worker.FetchImpl;
@@ -64,7 +65,8 @@ import java.net.URI;
 import java.util.*;
 import java.util.Map.Entry;
 
-import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.*;
+import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
+import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.*;
 
 /**
  * Repartitioner creates non-leaf tasks and shuffles intermediate data.
@@ -81,7 +83,7 @@ public class Repartitioner {
     MasterPlan masterPlan = subQuery.getMasterPlan();
     ExecutionBlock execBlock = subQuery.getBlock();
     QueryMasterTask.QueryMasterTaskContext masterContext = subQuery.getContext();
-    AbstractStorageManager storageManager = subQuery.getStorageManager();
+    StorageManager storageManager = subQuery.getStorageManager();
 
     ScanNode[] scans = execBlock.getScanNodes();
 
@@ -274,18 +276,21 @@ public class Repartitioner {
           intermediateFragments[index++] = fragments[eachIdx];
         }
         FileFragment[] broadcastFragments = new FileFragment[broadcastIndexList.size()];
+        ScanNode[] broadcastScans = new ScanNode[broadcastIndexList.size()];
         index = 0;
         for (Integer eachIdx : broadcastIndexList) {
           scans[eachIdx].setBroadcastTable(true);
-          broadcastFragments[index++] = fragments[eachIdx];
+          broadcastScans[index] = scans[eachIdx];
+          broadcastFragments[index] = fragments[eachIdx];
+          index++;
         }
         LOG.info(String.format("[Distributed Join Strategy] : Broadcast Join, join_node=%s", nonLeafScanNames));
         scheduleSymmetricRepartitionJoin(masterContext, schedulerContext, subQuery,
-            intermediateScans, intermediateScanStats, intermediateFragments, broadcastFragments);
+            intermediateScans, intermediateScanStats, intermediateFragments, broadcastScans, broadcastFragments);
       }
     } else {
       LOG.info("[Distributed Join Strategy] : Symmetric Repartition Join");
-      scheduleSymmetricRepartitionJoin(masterContext, schedulerContext, subQuery, scans, stats, fragments, null);
+      scheduleSymmetricRepartitionJoin(masterContext, schedulerContext, subQuery, scans, stats, fragments, null, null);
     }
   }
 
@@ -305,6 +310,7 @@ public class Repartitioner {
                                                        ScanNode[] scans,
                                                        long[] stats,
                                                        FileFragment[] fragments,
+                                                       ScanNode[] broadcastScans,
                                                        FileFragment[] broadcastFragments) throws IOException {
     MasterPlan masterPlan = subQuery.getMasterPlan();
     ExecutionBlock execBlock = subQuery.getBlock();
@@ -388,12 +394,31 @@ public class Repartitioner {
     int joinTaskNum = Math.min(maxTaskNum, hashEntries.size());
     LOG.info("The determined number of join tasks is " + joinTaskNum);
 
-    FileFragment[] rightFragments = new FileFragment[1 + (broadcastFragments == null ? 0 : broadcastFragments.length)];
-    rightFragments[0] = fragments[1];
+    List<FileFragment> rightFragments = new ArrayList<FileFragment>();
+    rightFragments.add(fragments[1]);
+
     if (broadcastFragments != null) {
-      System.arraycopy(broadcastFragments, 0, rightFragments, 1, broadcastFragments.length);
+      //In this phase a ScanNode has a single fragment.
+      //If there are more than one data files, that files should be added to fragments or partition path
+      for (ScanNode eachScan: broadcastScans) {
+        Path[] partitionScanPaths = null;
+        TableDesc tableDesc = masterContext.getTableDescMap().get(eachScan.getCanonicalName());
+        if (eachScan.getType() == NodeType.PARTITIONS_SCAN) {
+          PartitionedTableScanNode partitionScan = (PartitionedTableScanNode)eachScan;
+          partitionScanPaths = partitionScan.getInputPaths();
+          // set null to inputPaths in getFragmentsFromPartitionedTable()
+          getFragmentsFromPartitionedTable(subQuery.getStorageManager(), eachScan, tableDesc);
+          partitionScan.setInputPaths(partitionScanPaths);
+        } else {
+          Collection<FileFragment> scanFragments = subQuery.getStorageManager().getSplits(eachScan.getCanonicalName(),
+              tableDesc.getMeta(), tableDesc.getSchema(), tableDesc.getPath());
+          if (scanFragments != null) {
+            rightFragments.addAll(scanFragments);
+          }
+        }
+      }
     }
-    SubQuery.scheduleFragment(subQuery, fragments[0], Arrays.asList(rightFragments));
+    SubQuery.scheduleFragment(subQuery, fragments[0], rightFragments);
 
     // Assign partitions to tasks in a round robin manner.
     for (Entry<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>> entry
@@ -455,7 +480,7 @@ public class Repartitioner {
   /**
    * It creates a number of fragments for all partitions.
    */
-  public static List<FileFragment> getFragmentsFromPartitionedTable(AbstractStorageManager sm,
+  public static List<FileFragment> getFragmentsFromPartitionedTable(StorageManager sm,
                                                                           ScanNode scan,
                                                                           TableDesc table) throws IOException {
     List<FileFragment> fragments = Lists.newArrayList();
@@ -553,7 +578,7 @@ public class Repartitioner {
    * @return key: pullserver's address, value: a list of requests
    */
   private static Collection<FetchImpl> mergeShuffleRequest(int partitionId,
-                                                          TajoWorkerProtocol.ShuffleType type,
+                                                          ShuffleType type,
                                                           List<IntermediateEntry> partitions) {
     // ebId + pullhost -> FetchImmpl
     Map<String, FetchImpl> mergedPartitions = new HashMap<String, FetchImpl>();
@@ -799,13 +824,30 @@ public class Repartitioner {
     }
 
     int groupingColumns = 0;
-    GroupbyNode groupby = PlannerUtil.findMostBottomNode(subQuery.getBlock().getPlan(), NodeType.GROUP_BY);
-    if (groupby != null) {
-      groupingColumns = groupby.getGroupingColumns().length;
-    } else {
-      DistinctGroupbyNode dGroupby = PlannerUtil.findMostBottomNode(subQuery.getBlock().getPlan(), NodeType.DISTINCT_GROUP_BY);
-      if (dGroupby != null) {
-        groupingColumns = dGroupby.getGroupingColumns().length;
+    LogicalNode[] groupbyNodes = PlannerUtil.findAllNodes(subQuery.getBlock().getPlan(),
+        new NodeType[]{NodeType.GROUP_BY, NodeType.DISTINCT_GROUP_BY});
+    if (groupbyNodes != null && groupbyNodes.length > 0) {
+      LogicalNode bottomNode = groupbyNodes[0];
+      if (bottomNode.getType() == NodeType.GROUP_BY) {
+        groupingColumns = ((GroupbyNode)bottomNode).getGroupingColumns().length;
+      } else if (bottomNode.getType() == NodeType.DISTINCT_GROUP_BY) {
+        DistinctGroupbyNode distinctNode = PlannerUtil.findMostBottomNode(subQuery.getBlock().getPlan(), NodeType.DISTINCT_GROUP_BY);
+        if (distinctNode == null) {
+          LOG.warn(subQuery.getId() + ", Can't find current DistinctGroupbyNode");
+          distinctNode = (DistinctGroupbyNode)bottomNode;
+        }
+        groupingColumns = distinctNode.getGroupingColumns().length;
+
+        Enforcer enforcer = execBlock.getEnforcer();
+        EnforceProperty property = PhysicalPlannerImpl.getAlgorithmEnforceProperty(enforcer, distinctNode);
+        if (property != null) {
+          if (property.getDistinct().getIsMultipleAggregation()) {
+            MultipleAggregationStage stage = property.getDistinct().getMultipleAggregationStage();
+            if (stage != MultipleAggregationStage.THRID_STAGE) {
+              groupingColumns = distinctNode.getOutSchema().size();
+            }
+          }
+        }
       }
     }
     // get a proper number of tasks
@@ -1145,7 +1187,8 @@ public class Repartitioner {
 
     // set the partition number for group by and sort
     if (channel.getShuffleType() == HASH_SHUFFLE) {
-      if (execBlock.getPlan().getType() == NodeType.GROUP_BY) {
+      if (execBlock.getPlan().getType() == NodeType.GROUP_BY ||
+          execBlock.getPlan().getType() == NodeType.DISTINCT_GROUP_BY) {
         keys = channel.getShuffleKeys();
       }
     } else if (channel.getShuffleType() == RANGE_SHUFFLE) {

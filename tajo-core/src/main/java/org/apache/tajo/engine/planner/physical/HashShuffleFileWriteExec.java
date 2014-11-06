@@ -26,8 +26,8 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.engine.planner.logical.ShuffleFileWriteNode;
-import org.apache.tajo.storage.AbstractStorageManager;
+import org.apache.tajo.plan.logical.ShuffleFileWriteNode;
+import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.HashShuffleAppender;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.Tuple;
@@ -55,7 +55,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
   private HashShuffleAppenderManager hashShuffleAppenderManager;
   private int numHashShuffleBufferTuples;
 
-  public HashShuffleFileWriteExec(TaskAttemptContext context, final AbstractStorageManager sm,
+  public HashShuffleFileWriteExec(TaskAttemptContext context, final StorageManager sm,
                                   final ShuffleFileWriteNode plan, final PhysicalExec child) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema(), child);
     Preconditions.checkArgument(plan.hasShuffleKeys());

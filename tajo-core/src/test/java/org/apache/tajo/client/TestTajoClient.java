@@ -70,7 +70,7 @@ public class TestTajoClient {
   public static void setUp() throws Exception {
     cluster = TpchTestBase.getInstance().getTestingCluster();
     conf = cluster.getConfiguration();
-    client = new TajoClient(conf);
+    client = new TajoClientImpl(conf);
     testDir = CommonTestingUtil.getTestDir();
   }
 
@@ -593,7 +593,7 @@ public class TestTajoClient {
     String functionName = "sum";
     int numFunctions = 0;
     for(FunctionDesc eachFunction: catalogFunctions) {
-      if(functionName.equals(eachFunction.getSignature())) {
+      if(functionName.equals(eachFunction.getFunctionName())) {
         numFunctions++;
       }
     }
@@ -666,7 +666,7 @@ public class TestTajoClient {
 
       QueryStatus queryStatus = client.getQueryStatus(queryId);
       assertNotNull(queryStatus);
-      assertTrue(TajoClient.isInCompleteState(queryStatus.getState()));
+      assertTrue(TajoClientUtil.isQueryComplete(queryStatus.getState()));
 
       TajoResultSet resultSet = (TajoResultSet) client.getQueryResult(queryId);
       assertNotNull(resultSet);

@@ -28,7 +28,9 @@ import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.querymaster.QueryUnit;
 import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
 import org.apache.tajo.master.querymaster.Repartitioner;
+import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.FetchImpl;
 import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.junit.Test;
@@ -37,8 +39,11 @@ import java.net.URI;
 import java.util.*;
 
 import static junit.framework.Assert.assertEquals;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType;
 import static org.apache.tajo.master.querymaster.Repartitioner.FetchGroupMeta;
+import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
+import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.HASH_SHUFFLE;
+import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.SCATTERED_HASH_SHUFFLE;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TestRepartitioner {
@@ -66,7 +71,7 @@ public class TestRepartitioner {
         new HashMap<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>>();
 
     for (Map.Entry<Integer, List<IntermediateEntry>> eachEntry: intermediateEntries.entrySet()) {
-      FetchImpl fetch = new FetchImpl(new QueryUnit.PullHost(hostName, port), TajoWorkerProtocol.ShuffleType.HASH_SHUFFLE,
+      FetchImpl fetch = new FetchImpl(new QueryUnit.PullHost(hostName, port), ShuffleType.HASH_SHUFFLE,
           sid, eachEntry.getKey(), eachEntry.getValue());
 
       fetch.setName(sid.toString());
@@ -115,7 +120,7 @@ public class TestRepartitioner {
     ExecutionBlockId ebId = new ExecutionBlockId(LocalTajoTestingUtility.newQueryId(), 0);
     FetchImpl [] fetches = new FetchImpl[12];
     for (int i = 0; i < 12; i++) {
-      fetches[i] = new FetchImpl(new QueryUnit.PullHost("localhost", 10000 + i), ShuffleType.HASH_SHUFFLE, ebId, i / 2);
+      fetches[i] = new FetchImpl(new QueryUnit.PullHost("localhost", 10000 + i), HASH_SHUFFLE, ebId, i / 2);
     }
 
     int [] VOLUMES = {100, 80, 70, 30, 10, 5};
@@ -401,6 +406,89 @@ public class TestRepartitioner {
         index++;
       }
     }
+  }
+
+  @Test
+  public void testSplitIntermediatesWithUniqueHost() {
+    List<IntermediateEntry> intermediateEntries = new ArrayList<IntermediateEntry>();
+
+    int[] pageLengths = new int[20];  //195MB
+    for (int i = 0 ; i < pageLengths.length; i++) {
+      if (i < pageLengths.length - 1) {
+        pageLengths[i] =  10 * 1024 * 1024;
+      } else {
+        pageLengths[i] =  5 * 1024 * 1024;
+      }
+    }
+
+    long expectedTotalLength = 0;
+    QueryUnit.PullHost pullHost = new QueryUnit.PullHost("host", 0);
+
+    for (int i = 0; i < 20; i++) {
+      List<Pair<Long, Integer>> pages = new ArrayList<Pair<Long, Integer>>();
+      long offset = 0;
+      for (int j = 0; j < pageLengths.length; j++) {
+        pages.add(new Pair(offset, pageLengths[j]));
+        offset += pageLengths[j];
+        expectedTotalLength += pageLengths[j];
+      }
+      IntermediateEntry interm = new IntermediateEntry(i, -1, 0, pullHost);
+      interm.setPages(pages);
+      interm.setVolume(offset);
+      intermediateEntries.add(interm);
+    }
+
+    long splitVolume = 128 * 1024 * 1024;
+    List<List<FetchImpl>> fetches = Repartitioner.splitOrMergeIntermediates(null, intermediateEntries,
+        splitVolume, 10 * 1024 * 1024);
+    assertEquals(32, fetches.size());
+
+    int expectedSize = 0;
+    Set<FetchImpl> fetchSet = TUtil.newHashSet();
+    for(List<FetchImpl> list : fetches){
+      expectedSize += list.size();
+      fetchSet.addAll(list);
+    }
+    assertEquals(expectedSize, fetchSet.size());
+
+
+    int index = 0;
+    int numZeroPosFetcher = 0;
+    long totalLength = 0;
+    Set<String> uniqPullHost = new HashSet<String>();
+
+    for (List<FetchImpl> eachFetchList: fetches) {
+      long length = 0;
+      for (FetchImpl eachFetch: eachFetchList) {
+        if (eachFetch.getOffset() == 0) {
+          numZeroPosFetcher++;
+        }
+        totalLength += eachFetch.getLength();
+        length += eachFetch.getLength();
+        uniqPullHost.add(eachFetch.getPullHost().toString());
+      }
+      assertTrue(length + " should be smaller than splitVolume", length < splitVolume);
+      if (index < fetches.size() - 1) {
+        assertTrue(length + " should be great than 100MB" + fetches.size() + "," + index, length >= 100 * 1024 * 1024);
+      }
+      index++;
+    }
+    assertEquals(20, numZeroPosFetcher);
+    assertEquals(1, uniqPullHost.size());
+    assertEquals(expectedTotalLength, totalLength);
+  }
+
+  @Test
+  public void testFetchImpl() {
+    ExecutionBlockId ebId = new ExecutionBlockId(LocalTajoTestingUtility.newQueryId(), 0);
+    QueryUnit.PullHost pullHost = new QueryUnit.PullHost("localhost", 0);
+
+    FetchImpl expected = new FetchImpl(pullHost, SCATTERED_HASH_SHUFFLE, ebId, 1);
+    FetchImpl fetch2 = new FetchImpl(pullHost, SCATTERED_HASH_SHUFFLE, ebId, 1);
+    assertEquals(expected, fetch2);
+    fetch2.setOffset(5);
+    fetch2.setLength(10);
+    assertNotEquals(expected, fetch2);
   }
 
   private static void assertFetchImpl(FetchImpl [] expected, Map<String, List<FetchImpl>>[] result) {

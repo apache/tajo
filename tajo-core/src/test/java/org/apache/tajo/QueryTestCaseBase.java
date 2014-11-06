@@ -29,11 +29,18 @@ import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.cli.ParsedResult;
-import org.apache.tajo.cli.SimpleParser;
+import org.apache.tajo.cli.tsql.ParsedResult;
+import org.apache.tajo.cli.tsql.SimpleParser;
 import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.master.GlobalEngine;
+import org.apache.tajo.plan.*;
+import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
+import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
+import org.apache.tajo.plan.verifier.VerificationState;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.FileUtil;
 import org.junit.*;
@@ -125,7 +132,11 @@ public class QueryTestCaseBase {
   protected static TajoConf conf;
   protected static TajoClient client;
   protected static final CatalogService catalog;
-  protected static final SQLAnalyzer sqlParser = new SQLAnalyzer();
+  protected static final SQLAnalyzer sqlParser;
+  protected static PreLogicalPlanVerifier verifier;
+  protected static LogicalPlanner planner;
+  protected static LogicalOptimizer optimizer;
+  protected static LogicalPlanVerifier postVerifier;
 
   /** the base path of dataset directories */
   protected static final Path datasetBasePath;
@@ -145,6 +156,13 @@ public class QueryTestCaseBase {
     queryBasePath = new Path(queryBaseURL.toString());
     URL resultBaseURL = ClassLoader.getSystemResource("results");
     resultBasePath = new Path(resultBaseURL.toString());
+
+    GlobalEngine engine = testingCluster.getMaster().getContext().getGlobalEngine();
+    sqlParser = engine.getAnalyzer();
+    verifier = engine.getPreLogicalPlanVerifier();
+    planner = engine.getLogicalPlanner();
+    optimizer = engine.getLogicalOptimizer();
+    postVerifier = engine.getLogicalPlanVerifier();
   }
 
   /** It transiently contains created tables for the running test class. */
@@ -161,7 +179,7 @@ public class QueryTestCaseBase {
   @BeforeClass
   public static void setUpClass() throws IOException {
     conf = testBase.getTestingCluster().getConfiguration();
-    client = new TajoClient(conf);
+    client = new TajoClientImpl(conf);
   }
 
   @AfterClass
@@ -225,6 +243,52 @@ public class QueryTestCaseBase {
     return currentDatabase;
   }
 
+  private static VerificationState verify(String query) throws PlanningException {
+
+    VerificationState state = new VerificationState();
+    QueryContext context = LocalTajoTestingUtility.createDummyContext(conf);
+
+    Expr expr = sqlParser.parse(query);
+    verifier.verify(context, state, expr);
+    if (state.getErrorMessages().size() > 0) {
+      return state;
+    }
+    LogicalPlan plan = planner.createPlan(context, expr);
+    optimizer.optimize(plan);
+    postVerifier.verify(context, state, plan);
+
+    return state;
+  }
+
+  public void assertValidSQL(String fileName) throws PlanningException, IOException {
+    Path queryFilePath = getQueryFilePath(fileName);
+    String query = FileUtil.readTextFile(new File(queryFilePath.toUri()));
+    VerificationState state = verify(query);
+    if (state.getErrorMessages().size() > 0) {
+      fail(state.getErrorMessages().get(0));
+    }
+  }
+
+  public void assertInvalidSQL(String fileName) throws PlanningException, IOException {
+    Path queryFilePath = getQueryFilePath(fileName);
+    String query = FileUtil.readTextFile(new File(queryFilePath.toUri()));
+    VerificationState state = verify(query);
+    if (state.getErrorMessages().size() == 0) {
+      fail(PreLogicalPlanVerifier.class.getSimpleName() + " cannot catch any verification error: " + query);
+    }
+  }
+
+  public void assertPlanError(String fileName) throws PlanningException, IOException {
+    Path queryFilePath = getQueryFilePath(fileName);
+    String query = FileUtil.readTextFile(new File(queryFilePath.toUri()));
+    try {
+      verify(query);
+    } catch (PlanningException e) {
+      return;
+    }
+    fail("Cannot catch any planning error from: " + query);
+  }
+
   protected ResultSet executeString(String sql) throws Exception {
     return client.executeQueryAndGetResult(sql);
   }
@@ -261,8 +325,6 @@ public class QueryTestCaseBase {
    */
   public ResultSet executeFile(String queryFileName) throws Exception {
     Path queryFilePath = getQueryFilePath(queryFileName);
-    FileSystem fs = currentQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
-    assertTrue(queryFilePath.toString() + " existence check", fs.exists(queryFilePath));
 
     List<ParsedResult> parsedResults = SimpleParser.parseScript(FileUtil.readTextFile(new File(queryFilePath.toUri())));
     if (parsedResults.size() > 1) {
@@ -275,8 +337,6 @@ public class QueryTestCaseBase {
 
   public ResultSet executeJsonFile(String jsonFileName) throws Exception {
     Path queryFilePath = getQueryFilePath(jsonFileName);
-    FileSystem fs = currentQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
-    assertTrue(queryFilePath.toString() + " existence check", fs.exists(queryFilePath));
 
     ResultSet result = client.executeJsonQueryAndGetResult(FileUtil.readTextFile(new File(queryFilePath.toUri())));
     assertNotNull("Query succeeded test", result);
@@ -314,7 +374,6 @@ public class QueryTestCaseBase {
   public final void assertResultSet(String message, ResultSet result, String resultFileName) throws IOException {
     FileSystem fs = currentQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
     Path resultFile = getResultFile(resultFileName);
-    assertTrue(resultFile.toString() + " existence check", fs.exists(resultFile));
     try {
       verifyResultText(message, result, resultFile);
     } catch (SQLException e) {
@@ -331,10 +390,7 @@ public class QueryTestCaseBase {
   }
 
   public final void assertStrings(String message, String actual, String resultFileName) throws IOException {
-    FileSystem fs = currentQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
     Path resultFile = getResultFile(resultFileName);
-    assertTrue(resultFile.toString() + " existence check", fs.exists(resultFile));
-
     String expectedResult = FileUtil.readTextFile(new File(resultFile.toUri()));
     assertEquals(message, expectedResult, actual);
   }
@@ -438,16 +494,25 @@ public class QueryTestCaseBase {
     assertEquals(message, expectedResult.trim(), actualResult.trim());
   }
 
-  private Path getQueryFilePath(String fileName) {
-    return StorageUtil.concatPath(currentQueryPath, fileName);
+  private Path getQueryFilePath(String fileName) throws IOException {
+    Path queryFilePath = StorageUtil.concatPath(currentQueryPath, fileName);
+    FileSystem fs = currentQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
+    assertTrue(queryFilePath.toString() + " existence check", fs.exists(queryFilePath));
+    return queryFilePath;
   }
 
-  private Path getResultFile(String fileName) {
-    return StorageUtil.concatPath(currentResultPath, fileName);
+  private Path getResultFile(String fileName) throws IOException {
+    Path resultPath = StorageUtil.concatPath(currentResultPath, fileName);
+    FileSystem fs = currentResultPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
+    assertTrue(resultPath.toString() + " existence check", fs.exists(resultPath));
+    return resultPath;
   }
 
-  private Path getDataSetFile(String fileName) {
-    return StorageUtil.concatPath(currentDatasetPath, fileName);
+  private Path getDataSetFile(String fileName) throws IOException {
+    Path dataFilePath = StorageUtil.concatPath(currentDatasetPath, fileName);
+    FileSystem fs = currentDatasetPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
+    assertTrue(dataFilePath.toString() + " existence check", fs.exists(dataFilePath));
+    return dataFilePath;
   }
 
   public List<String> executeDDL(String ddlFileName, @Nullable String [] args) throws Exception {

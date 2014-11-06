@@ -19,7 +19,7 @@
 package org.apache.tajo.engine.function.builtin;
 
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.engine.function.FunctionContext;
+import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
@@ -43,5 +43,4 @@ public class AvgInt extends AvgLong {
     avgCtx.sum += params.get(0).asInt4();
     avgCtx.count++;
   }
-
 }

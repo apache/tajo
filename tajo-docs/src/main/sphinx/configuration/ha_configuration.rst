@@ -60,7 +60,7 @@ And then, you need to setup tarball and set configuration files on backup master
 
 .. note::
 
-  If you want to run active master and backup master on the same host, you may find tajo master port conflicts. To avoid this problem, you must convert backup master primary ports to another port in ``tajo-site.xml`` as follows:
+  If you want to run active master and backup master on the same host, you may find TajoMaster port conflicts. To avoid this problem, you must convert backup master primary ports to another port in ``tajo-site.xml`` as follows:
 
   .. code-block:: xml
 
@@ -108,7 +108,7 @@ Then, execute ``start-tajo.sh`` ::
 
 .. note::
 
-  You can't use HA mode in DerbyStore. Currently, just one tajo master invoke the derby. If another master try to invoke it, it never run itself. Also, if you set another catalog uri for backup master, it is a incorrect configuration. Because they are unequal in every way.
+  You can't use HA mode in DerbyStore. Currently, just one TajoMaster invoke the derby. If another master try to invoke it, it never run itself. Also, if you set another catalog uri for backup master, it is a incorrect configuration. Because they are unequal in every way.
 
 ================================================
   Administration HA state
@@ -132,4 +132,17 @@ If you want to initiate HA information, execute ``tajo haadmin -formatHA`` ::
 
 .. note::
 
-  Before format HA, you must shutdown the tajo cluster.
+  Before format HA, you must shutdown the Tajo cluster.
+
+
+================================================
+  How to Test Automatic Failover
+================================================
+
+If you want to verify automatic failover of TajoMaster, you must deploy your Tajo cluster with TajoMaster HA enable. And then, you need to find which node is active from Tajo web UI.
+
+Once you find your active TajoMaster, you can cause a failure on that node. For example, you can use kill -9 <pid of TajoMaster> to simulate a JVM crash. Or you can shutdown the machine or disconnect network interface. And then, the backup TajoMaster will be automatically active within 5 seconds. The amount of time required to detect a failure and  trigger a failover depends on the config ``tajo.master.ha.monitor.interval``. If there is running queries, it will be finished successfully. Because your TajoClient will get the result data on TajoWorker. But you can't find already query history. Because TajoMaster stores query history on memory. So, the other master can't access already active master query history. And if there is no running query, the automatic failover run successfully.
+
+.. note::
+
+  TajoMaster HA does not consider TajoWorker failure. It guarantees the high availability of both TajoResourceManager and QueryMaster.

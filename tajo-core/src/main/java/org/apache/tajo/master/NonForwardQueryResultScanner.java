@@ -26,14 +26,13 @@ import org.apache.tajo.QueryUnitId;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.planner.PlannerUtil;
-import org.apache.tajo.engine.planner.logical.ScanNode;
+import org.apache.tajo.engine.planner.physical.PhysicalPlanUtil;
+import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.engine.planner.physical.SeqScanExec;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.master.session.Session;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
-import org.apache.tajo.storage.StorageManagerFactory;
+import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -77,7 +76,7 @@ public class NonForwardQueryResultScanner {
   }
 
   private void initSeqScanExec() throws IOException {
-    FragmentProto[] fragments = PlannerUtil.getNonZeroLengthDataFiles(tajoConf, tableDesc,
+    FragmentProto[] fragments = PhysicalPlanUtil.getNonZeroLengthDataFiles(tajoConf, tableDesc,
         currentFileIndex, MAX_FILE_NUM_PER_SCAN);
     if (fragments != null && fragments.length > 0) {
       this.taskContext = new TaskAttemptContext(
@@ -88,7 +87,7 @@ public class NonForwardQueryResultScanner {
       try {
         // scanNode must be clone cause SeqScanExec change target in the case of a partitioned table.
         scanExec = new SeqScanExec(taskContext,
-            StorageManagerFactory.getStorageManager(tajoConf), (ScanNode)scanNode.clone(), fragments);
+            StorageManager.getStorageManager(tajoConf), (ScanNode)scanNode.clone(), fragments);
       } catch (CloneNotSupportedException e) {
         throw new IOException(e.getMessage(), e);
       }

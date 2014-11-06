@@ -20,14 +20,16 @@ package org.apache.tajo.engine.planner;
 
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.engine.eval.EvalNode;
+import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.plan.Target;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 public class Projector {
   private final TaskAttemptContext context;
   private final Schema inSchema;
-  private final Target [] targets;
+  private final Target[] targets;
 
   // for projection
   private final int targetNum;

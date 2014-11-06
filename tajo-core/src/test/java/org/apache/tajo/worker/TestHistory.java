@@ -25,6 +25,7 @@ import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.querymaster.QueryInProgress;
@@ -49,7 +50,7 @@ public class TestHistory {
     cluster = TpchTestBase.getInstance().getTestingCluster();
     master = cluster.getMaster();
     conf = cluster.getConfiguration();
-    client = new TajoClient(conf);
+    client = new TajoClientImpl(conf);
   }
 
   @After
@@ -76,8 +77,13 @@ public class TestHistory {
 
     TaskRunnerHistory history = histories.iterator().next();
     assertEquals(Service.STATE.STOPPED, history.getState());
-
-    assertEquals(history, new TaskRunnerHistory(history.getProto()));
+    TaskRunnerHistory fromProto = new TaskRunnerHistory(history.getProto());
+    assertEquals(history.getExecutionBlockId(), fromProto.getExecutionBlockId());
+    assertEquals(history.getFinishTime(), fromProto.getFinishTime());
+    assertEquals(history.getStartTime(), fromProto.getStartTime());
+    assertEquals(history.getState(), fromProto.getState());
+    assertEquals(history.getContainerId(), fromProto.getContainerId());
+    assertEquals(history.getProto().getTaskHistoriesCount(), fromProto.getProto().getTaskHistoriesCount());
   }
 
   @Test

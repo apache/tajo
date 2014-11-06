@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage;
 
+import com.google.common.collect.Lists;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -50,9 +51,9 @@ import org.junit.runners.Parameterized;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
@@ -97,13 +98,15 @@ public class TestStorages {
   private StoreType storeType;
   private boolean splitable;
   private boolean statsable;
+  private boolean seekable;
   private Path testDir;
   private FileSystem fs;
 
-  public TestStorages(StoreType type, boolean splitable, boolean statsable) throws IOException {
+  public TestStorages(StoreType type, boolean splitable, boolean statsable, boolean seekable) throws IOException {
     this.storeType = type;
     this.splitable = splitable;
     this.statsable = statsable;
+    this.seekable = seekable;
 
     conf = new TajoConf();
 
@@ -118,12 +121,12 @@ public class TestStorages {
   @Parameterized.Parameters
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][] {
-        {StoreType.CSV, true, true},
-        {StoreType.RAW, false, false},
-        {StoreType.RCFILE, true, true},
-        {StoreType.PARQUET, false, false},
-        {StoreType.SEQUENCEFILE, true, true},
-        {StoreType.AVRO, false, false},
+        {StoreType.CSV, true, true, true},
+        {StoreType.RAW, false, false, true},
+        {StoreType.RCFILE, true, true, false},
+        {StoreType.PARQUET, false, false, false},
+        {StoreType.SEQUENCEFILE, true, true, false},
+        {StoreType.AVRO, false, false, false},
     });
   }
 
@@ -136,7 +139,7 @@ public class TestStorages {
 
       TableMeta meta = CatalogUtil.newTableMeta(storeType);
       Path tablePath = new Path(testDir, "Splitable.data");
-      Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
+      Appender appender = StorageManager.getStorageManager(conf).getAppender(meta, schema, tablePath);
       appender.enableStats();
       appender.init();
       int tupleNum = 10000;
@@ -160,7 +163,7 @@ public class TestStorages {
       tablets[0] = new FileFragment("Splitable", tablePath, 0, randomNum);
       tablets[1] = new FileFragment("Splitable", tablePath, randomNum, (fileLen - randomNum));
 
-      Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, tablets[0], schema);
+      Scanner scanner = StorageManager.getStorageManager(conf).getScanner(meta, schema, tablets[0], schema);
       assertTrue(scanner.isSplittable());
       scanner.init();
       int tupleCnt = 0;
@@ -169,7 +172,7 @@ public class TestStorages {
       }
       scanner.close();
 
-      scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, tablets[1], schema);
+      scanner = StorageManager.getStorageManager(conf).getScanner(meta, schema, tablets[1], schema);
       assertTrue(scanner.isSplittable());
       scanner.init();
       while (scanner.next() != null) {
@@ -190,7 +193,7 @@ public class TestStorages {
 
       TableMeta meta = CatalogUtil.newTableMeta(storeType);
       Path tablePath = new Path(testDir, "Splitable.data");
-      Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
+      Appender appender = StorageManager.getStorageManager(conf).getAppender(meta, schema, tablePath);
       appender.enableStats();
       appender.init();
       int tupleNum = 10000;
@@ -214,7 +217,7 @@ public class TestStorages {
       tablets[0] = new FileFragment("Splitable", tablePath, 0, randomNum);
       tablets[1] = new FileFragment("Splitable", tablePath, randomNum, (fileLen - randomNum));
 
-      Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, tablets[0], schema);
+      Scanner scanner = StorageManager.getStorageManager(conf).getScanner(meta, schema, tablets[0], schema);
       assertTrue(scanner.isSplittable());
       scanner.init();
       int tupleCnt = 0;
@@ -223,7 +226,7 @@ public class TestStorages {
       }
       scanner.close();
 
-      scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, tablets[1], schema);
+      scanner = StorageManager.getStorageManager(conf).getScanner(meta, schema, tablets[1], schema);
       assertTrue(scanner.isSplittable());
       scanner.init();
       while (scanner.next() != null) {
@@ -243,14 +246,14 @@ public class TestStorages {
     schema.addColumn("score", Type.FLOAT4);
 
     TableMeta meta = CatalogUtil.newTableMeta(storeType);
-    meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
+    meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
     if (storeType == StoreType.AVRO) {
       meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
                      TEST_PROJECTION_AVRO_SCHEMA);
     }
 
     Path tablePath = new Path(testDir, "testProjection.data");
-    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
+    Appender appender = StorageManager.getStorageManager(conf).getAppender(meta, schema, tablePath);
     appender.init();
     int tupleNum = 10000;
     VTuple vTuple;
@@ -270,7 +273,7 @@ public class TestStorages {
     Schema target = new Schema();
     target.addColumn("age", Type.INT8);
     target.addColumn("score", Type.FLOAT4);
-    Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, fragment, target);
+    Scanner scanner = StorageManager.getStorageManager(conf).getScanner(meta, schema, fragment, target);
     scanner.init();
     int tupleCnt = 0;
     Tuple tuple;
@@ -311,14 +314,14 @@ public class TestStorages {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
+    meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
     if (storeType == StoreType.AVRO) {
       String path = FileUtil.getResourcePath("testVariousTypes.avsc").toString();
       meta.putOption(StorageConstants.AVRO_SCHEMA_URL, path);
     }
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
+    Appender appender = StorageManager.getStorageManager(conf).getAppender(meta, schema, tablePath);
     appender.init();
 
     QueryId queryid = new QueryId("12345", 5);
@@ -346,7 +349,7 @@ public class TestStorages {
 
     FileStatus status = fs.getFileStatus(tablePath);
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner =  StorageManager.getStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
 
     Tuple retrieved;
@@ -377,7 +380,7 @@ public class TestStorages {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
+    meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
     meta.putOption(StorageConstants.CSVFILE_NULL, "\\\\N");
     meta.putOption(StorageConstants.RCFILE_NULL, "\\\\N");
     meta.putOption(StorageConstants.RCFILE_SERDE, TextSerializerDeserializer.class.getName());
@@ -388,7 +391,7 @@ public class TestStorages {
     }
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
+    Appender appender = StorageManager.getStorageManager(conf).getAppender(meta, schema, tablePath);
     appender.init();
 
     QueryId queryid = new QueryId("12345", 5);
@@ -429,7 +432,7 @@ public class TestStorages {
 
     FileStatus status = fs.getFileStatus(tablePath);
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner = StorageManager.getStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
 
     Tuple retrieved;
@@ -473,7 +476,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.CSVFILE_SERDE, TextSerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
+    Appender appender = StorageManager.getStorageManager(conf).getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
 
@@ -504,7 +507,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner =  StorageManager.getStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
 
     Tuple retrieved;
@@ -542,7 +545,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.RCFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
+    Appender appender = StorageManager.getStorageManager(conf).getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
 
@@ -573,7 +576,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner =  StorageManager.getStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
 
     Tuple retrieved;
@@ -611,7 +614,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
+    Appender appender = StorageManager.getStorageManager(conf).getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
 
@@ -642,7 +645,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner =  StorageManager.getStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
 
     assertTrue(scanner instanceof SequenceFileScanner);
@@ -684,7 +687,7 @@ public class TestStorages {
     meta.putOption(StorageConstants.SEQUENCEFILE_SERDE, BinarySerializerDeserializer.class.getName());
 
     Path tablePath = new Path(testDir, "testVariousTypes.data");
-    Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
+    Appender appender = StorageManager.getStorageManager(conf).getAppender(meta, schema, tablePath);
     appender.enableStats();
     appender.init();
 
@@ -715,7 +718,7 @@ public class TestStorages {
     assertEquals(appender.getStats().getNumBytes().longValue(), status.getLen());
 
     FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-    Scanner scanner =  StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner = StorageManager.getStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
 
     assertTrue(scanner instanceof SequenceFileScanner);
@@ -745,7 +748,7 @@ public class TestStorages {
       TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
 
       Path tablePath = new Path(testDir, "testTime.data");
-      Appender appender = StorageManagerFactory.getStorageManager(conf).getAppender(meta, schema, tablePath);
+      Appender appender = StorageManager.getStorageManager(conf).getAppender(meta, schema, tablePath);
       appender.init();
 
       Tuple tuple = new VTuple(3);
@@ -760,7 +763,7 @@ public class TestStorages {
 
       FileStatus status = fs.getFileStatus(tablePath);
       FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
-      Scanner scanner = StorageManagerFactory.getStorageManager(conf).getScanner(meta, schema, fragment);
+      Scanner scanner = StorageManager.getStorageManager(conf).getScanner(meta, schema, fragment);
       scanner.init();
 
       Tuple retrieved;
@@ -773,4 +776,81 @@ public class TestStorages {
     }
   }
 
+  @Test
+  public void testSeekableScanner() throws IOException {
+    if (!seekable) {
+      return;
+    }
+
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("age", Type.INT8);
+    schema.addColumn("comment", Type.TEXT);
+
+    TableMeta meta = CatalogUtil.newTableMeta(storeType);
+    Path tablePath = new Path(testDir, "Seekable.data");
+    FileAppender appender = (FileAppender) StorageManager.getStorageManager(conf).getAppender(meta, schema,
+	tablePath);
+    appender.enableStats();
+    appender.init();
+    int tupleNum = 100000;
+    VTuple vTuple;
+
+    List<Long> offsets = Lists.newArrayList();
+    offsets.add(0L);
+    for (int i = 0; i < tupleNum; i++) {
+      vTuple = new VTuple(3);
+      vTuple.put(0, DatumFactory.createInt4(i + 1));
+      vTuple.put(1, DatumFactory.createInt8(25l));
+      vTuple.put(2, DatumFactory.createText("test"));
+      appender.addTuple(vTuple);
+
+      // find a seek position
+      if (i % (tupleNum / 3) == 0) {
+	offsets.add(appender.getOffset());
+      }
+    }
+
+    // end of file
+    if (!offsets.contains(appender.getOffset())) {
+      offsets.add(appender.getOffset());
+    }
+
+    appender.close();
+    if (statsable) {
+      TableStats stat = appender.getStats();
+      assertEquals(tupleNum, stat.getNumRows().longValue());
+    }
+
+    FileStatus status = fs.getFileStatus(tablePath);
+    assertEquals(status.getLen(), appender.getOffset());
+
+    Scanner scanner;
+    int tupleCnt = 0;
+    long prevOffset = 0;
+    long readBytes = 0;
+    long readRows = 0;
+    for (long offset : offsets) {
+      scanner = StorageManager.getStorageManager(conf).getScanner(meta, schema,
+	  new FileFragment("table", tablePath, prevOffset, offset - prevOffset), schema);
+      scanner.init();
+
+      while (scanner.next() != null) {
+	tupleCnt++;
+      }
+
+      scanner.close();
+      if (statsable) {
+	readBytes += scanner.getInputStats().getNumBytes();
+	readRows += scanner.getInputStats().getNumRows();
+      }
+      prevOffset = offset;
+    }
+
+    assertEquals(tupleNum, tupleCnt);
+    if (statsable) {
+      assertEquals(appender.getStats().getNumBytes().longValue(), readBytes);
+      assertEquals(appender.getStats().getNumRows().longValue(), readRows);
+    }
+  }
 }

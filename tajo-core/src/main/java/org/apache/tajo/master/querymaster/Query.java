@@ -43,12 +43,12 @@ import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.ExecutionBlockCursor;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.engine.planner.logical.CreateTableNode;
-import org.apache.tajo.engine.planner.logical.InsertNode;
-import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.plan.logical.CreateTableNode;
+import org.apache.tajo.plan.logical.InsertNode;
+import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.event.*;
-import org.apache.tajo.storage.AbstractStorageManager;
+import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.TUtil;
@@ -72,7 +72,7 @@ public class Query implements EventHandler<QueryEvent> {
   private Map<ExecutionBlockId, SubQuery> subqueries;
   private final EventHandler eventHandler;
   private final MasterPlan plan;
-  private final AbstractStorageManager sm;
+  private final StorageManager sm;
   QueryMasterTask.QueryMasterTaskContext context;
   private ExecutionBlockCursor cursor;
 
@@ -196,7 +196,7 @@ public class Query implements EventHandler<QueryEvent> {
               INTERNAL_ERROR_TRANSITION)
           // Ignore-able transitions
           .addTransition(QueryState.QUERY_ERROR, QueryState.QUERY_ERROR,
-              QueryEventType.KILL)
+              EnumSet.of(QueryEventType.KILL, QueryEventType.SUBQUERY_COMPLETED))
 
           .installTopology();
 
@@ -457,25 +457,75 @@ public class Query implements EventHandler<QueryEvent> {
 
           if (queryContext.isOutputOverwrite()) { // INSERT OVERWRITE INTO
 
-            // it moves the original table into the temporary location.
+            // It moves the original table into the temporary location.
             // Then it moves the new result table into the original table location.
             // Upon failed, it recovers the original table if possible.
             boolean movedToOldTable = false;
             boolean committed = false;
             Path oldTableDir = new Path(queryContext.getStagingDir(), TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
-            try {
-              if (fs.exists(finalOutputDir)) {
-                fs.rename(finalOutputDir, oldTableDir);
-                movedToOldTable = fs.exists(oldTableDir);
-              } else { // if the parent does not exist, make its parent directory.
-                fs.mkdirs(finalOutputDir.getParent());
+
+            if (queryContext.hasPartition()) {
+              // This is a map for existing non-leaf directory to rename. A key is current directory and a value is
+              // renaming directory.
+              Map<Path, Path> renameDirs = TUtil.newHashMap();
+              // This is a map for recovering existing partition directory. A key is current directory and a value is
+              // temporary directory to back up.
+              Map<Path, Path> recoveryDirs = TUtil.newHashMap();
+
+              try {
+                if (!fs.exists(finalOutputDir)) {
+                  fs.mkdirs(finalOutputDir);
+                }
+
+                visitPartitionedDirectory(fs, stagingResultDir, finalOutputDir, stagingResultDir.toString(),
+                    renameDirs, oldTableDir);
+
+                // Rename target partition directories
+                for(Map.Entry<Path, Path> entry : renameDirs.entrySet()) {
+                  // Backup existing data files for recovering
+                  if (fs.exists(entry.getValue())) {
+                    String recoveryPathString = entry.getValue().toString().replaceAll(finalOutputDir.toString(),
+                        oldTableDir.toString());
+                    Path recoveryPath = new Path(recoveryPathString);
+                    fs.rename(entry.getValue(), recoveryPath);
+                    fs.exists(recoveryPath);
+                    recoveryDirs.put(entry.getValue(), recoveryPath);
+                  }
+                  // Delete existing directory
+                  fs.delete(entry.getValue(), true);
+                  // Rename staging directory to final output directory
+                  fs.rename(entry.getKey(), entry.getValue());
+                }
+
+              } catch (IOException ioe) {
+                // Remove created dirs
+                for(Map.Entry<Path, Path> entry : renameDirs.entrySet()) {
+                  fs.delete(entry.getValue(), true);
+                }
+
+                // Recovery renamed dirs
+                for(Map.Entry<Path, Path> entry : recoveryDirs.entrySet()) {
+                  fs.delete(entry.getValue(), true);
+                  fs.rename(entry.getValue(), entry.getKey());
+                }
+                throw new IOException(ioe.getMessage());
               }
-              fs.rename(stagingResultDir, finalOutputDir);
-              committed = fs.exists(finalOutputDir);
-            } catch (IOException ioe) {
-              // recover the old table
-              if (movedToOldTable && !committed) {
-                fs.rename(oldTableDir, finalOutputDir);
+            } else {
+              try {
+                if (fs.exists(finalOutputDir)) {
+                  fs.rename(finalOutputDir, oldTableDir);
+                  movedToOldTable = fs.exists(oldTableDir);
+                } else { // if the parent does not exist, make its parent directory.
+                  fs.mkdirs(finalOutputDir.getParent());
+                }
+
+                fs.rename(stagingResultDir, finalOutputDir);
+                committed = fs.exists(finalOutputDir);
+              } catch (IOException ioe) {
+                // recover the old table
+                if (movedToOldTable && !committed) {
+                  fs.rename(oldTableDir, finalOutputDir);
+                }
               }
             }
           } else {
@@ -523,6 +573,65 @@ public class Query implements EventHandler<QueryEvent> {
       }
 
       return finalOutputDir;
+    }
+
+    /**
+     * This method sets a rename map which includes renamed staging directory to final output directory recursively.
+     * If there exists some data files, this delete it for duplicate data.
+     *
+     *
+     * @param fs
+     * @param stagingPath
+     * @param outputPath
+     * @param stagingParentPathString
+     * @throws IOException
+     */
+    private void visitPartitionedDirectory(FileSystem fs, Path stagingPath, Path outputPath,
+                                        String stagingParentPathString,
+                                        Map<Path, Path> renameDirs, Path oldTableDir) throws IOException {
+      FileStatus[] files = fs.listStatus(stagingPath);
+
+      for(FileStatus eachFile : files) {
+        if (eachFile.isDirectory()) {
+          Path oldPath = eachFile.getPath();
+
+          // Make recover directory.
+          String recoverPathString = oldPath.toString().replaceAll(stagingParentPathString,
+          oldTableDir.toString());
+          Path recoveryPath = new Path(recoverPathString);
+          if (!fs.exists(recoveryPath)) {
+            fs.mkdirs(recoveryPath);
+          }
+
+          visitPartitionedDirectory(fs, eachFile.getPath(), outputPath, stagingParentPathString,
+          renameDirs, oldTableDir);
+          // Find last order partition for renaming
+          String newPathString = oldPath.toString().replaceAll(stagingParentPathString,
+          outputPath.toString());
+          Path newPath = new Path(newPathString);
+          if (!isLeafDirectory(fs, eachFile.getPath())) {
+           renameDirs.put(eachFile.getPath(), newPath);
+          } else {
+            if (!fs.exists(newPath)) {
+             fs.mkdirs(newPath);
+            }
+          }
+        }
+      }
+    }
+
+    private boolean isLeafDirectory(FileSystem fs, Path path) throws IOException {
+      boolean retValue = false;
+
+      FileStatus[] files = fs.listStatus(path);
+      for (FileStatus file : files) {
+        if (fs.isDirectory(file.getPath())) {
+          retValue = true;
+          break;
+        }
+      }
+
+      return retValue;
     }
 
     private boolean verifyAllFileMoved(FileSystem fs, Path stagingPath) throws IOException {

@@ -34,8 +34,6 @@ import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.TUtil;
 
 public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>, Cloneable, GsonObject {
-  private CatalogProtos.ColumnStatsProto.Builder builder = CatalogProtos.ColumnStatsProto.newBuilder();
-
   @Expose private Column column = null; // required
   @Expose private Long numDistVals = null; // optional
   @Expose private Long numNulls = null; // optional
@@ -132,7 +130,6 @@ public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>,
 
   public Object clone() throws CloneNotSupportedException {
     ColumnStats stat = (ColumnStats) super.clone();
-    stat.builder = CatalogProtos.ColumnStatsProto.newBuilder();
     stat.column = this.column;
     stat.numDistVals = numDistVals;
     stat.numNulls = numNulls;
@@ -154,9 +151,8 @@ public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>,
 
   @Override
   public CatalogProtos.ColumnStatsProto getProto() {
-    if (builder == null) {
-      builder = CatalogProtos.ColumnStatsProto.newBuilder();
-    }
+    CatalogProtos.ColumnStatsProto.Builder builder = CatalogProtos.ColumnStatsProto.newBuilder();
+
     if (this.column != null) {
       builder.setColumn(this.column.getProto());
     }

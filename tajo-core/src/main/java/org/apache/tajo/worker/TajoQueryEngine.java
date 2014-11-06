@@ -21,21 +21,20 @@ package org.apache.tajo.worker;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.PhysicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
-import org.apache.tajo.engine.planner.logical.LogicalNode;
+import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.storage.AbstractStorageManager;
-import org.apache.tajo.storage.StorageManagerFactory;
+import org.apache.tajo.storage.StorageManager;
 
 import java.io.IOException;
 
 public class TajoQueryEngine {
 
-  private final AbstractStorageManager storageManager;
+  private final StorageManager storageManager;
   private final PhysicalPlanner phyPlanner;
 
   public TajoQueryEngine(TajoConf conf) throws IOException {
-    this.storageManager = StorageManagerFactory.getStorageManager(conf);
+    this.storageManager = StorageManager.getStorageManager(conf);
     this.phyPlanner = new PhysicalPlannerImpl(conf, storageManager);
   }
   

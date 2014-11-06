@@ -18,9 +18,11 @@
 
 package org.apache.tajo;
 
+import com.google.common.base.Preconditions;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -29,15 +31,19 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TajoIdUtils;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.sql.ResultSet;
 import java.util.UUID;
 
@@ -97,7 +103,7 @@ public class LocalTajoTestingUtility {
     util = new TajoTestingCluster();
     util.startMiniCluster(1);
     conf = util.getConfiguration();
-    client = new TajoClient(conf);
+    client = new TajoClientImpl(conf);
 
     FileSystem fs = util.getDefaultFileSystem();
     Path rootDir = util.getMaster().getStorageManager().getWarehouseDir();
@@ -142,5 +148,21 @@ public class LocalTajoTestingUtility {
     if(util != null) {
       util.shutdownMiniCluster();
     }
+  }
+
+  public static Path getResourcePath(String path, String suffix) {
+    URL resultBaseURL = ClassLoader.getSystemResource(path);
+    return new Path(resultBaseURL.toString(), suffix);
+  }
+
+  public static Path getResultPath(Class clazz, String fileName) {
+    return new Path (getResourcePath("results", clazz.getSimpleName()), fileName);
+  }
+
+  public static String getResultText(Class clazz, String fileName) throws IOException {
+    FileSystem localFS = FileSystem.getLocal(new Configuration());
+    Path path = getResultPath(clazz, fileName);
+    Preconditions.checkState(localFS.exists(path) && localFS.isFile(path));
+    return FileUtil.readTextFile(new File(path.toUri()));
   }
 }

@@ -29,6 +29,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.fragment.FileFragment;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -60,8 +61,17 @@ public class MergeScanner implements Scanner {
     this.meta = meta;
     this.target = target;
 
+    this.fragments = new ArrayList<FileFragment>();
+
+    long numBytes = 0;
+    for (FileFragment eachFileFragment: rawFragmentList) {
+      numBytes += eachFileFragment.getEndKey();
+      if (eachFileFragment.getEndKey() > 0) {
+        fragments.add(eachFileFragment);
+      }
+    }
+
     // it should keep the input order. Otherwise, it causes wrong result of sort queries.
-    this.fragments = ImmutableList.copyOf(rawFragmentList);
     this.reset();
 
     if (currentScanner != null) {
@@ -70,13 +80,9 @@ public class MergeScanner implements Scanner {
     }
 
     tableStats = new TableStats();
-    long numBytes = 0;
 
-    for (FileFragment eachFileFragment: rawFragmentList) {
-      numBytes += (eachFileFragment.getEndKey() - eachFileFragment.getStartKey());
-    }
     tableStats.setNumBytes(numBytes);
-    tableStats.setNumBlocks(rawFragmentList.size());
+    tableStats.setNumBlocks(fragments.size());
 
     for(Column eachColumn: schema.getColumns()) {
       ColumnStats columnStats = new ColumnStats(eachColumn);
@@ -122,7 +128,7 @@ public class MergeScanner implements Scanner {
   private Scanner getNextScanner() throws IOException {
     if (iterator.hasNext()) {
       currentFragment = iterator.next();
-      currentScanner = StorageManagerFactory.getStorageManager((TajoConf)conf).getScanner(meta, schema,
+      currentScanner = StorageManager.getStorageManager((TajoConf)conf).getScanner(meta, schema,
           currentFragment, target);
       currentScanner.init();
       return currentScanner;

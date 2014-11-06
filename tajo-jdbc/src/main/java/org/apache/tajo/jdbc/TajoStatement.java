@@ -21,13 +21,12 @@ import com.google.common.collect.Lists;
 import com.google.protobuf.ServiceException;
 import org.apache.tajo.client.TajoClient;
 
-import java.io.IOException;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
 
 public class TajoStatement implements Statement {
-  private TajoConnection conn;
+  private JdbcConnection conn;
   private TajoClient tajoClient;
   private int fetchSize = 200;
 
@@ -50,7 +49,7 @@ public class TajoStatement implements Statement {
    */
   private boolean isClosed = false;
 
-  public TajoStatement(TajoConnection conn, TajoClient tajoClient) {
+  public TajoStatement(JdbcConnection conn, TajoClient tajoClient) {
     this.conn = conn;
     this.tajoClient = tajoClient;
   }

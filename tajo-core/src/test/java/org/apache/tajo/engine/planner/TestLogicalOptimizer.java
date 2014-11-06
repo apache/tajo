@@ -26,11 +26,15 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.engine.function.builtin.SumInt;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.planner.logical.*;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.master.TajoMaster;
+import org.apache.tajo.plan.LogicalOptimizer;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.LogicalPlanner;
+import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
@@ -57,7 +61,7 @@ public class TestLogicalOptimizer {
     catalog = util.getMiniCatalogCluster().getCatalog();
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-    for (FunctionDesc funcDesc : TajoMaster.initBuiltinFunctions()) {
+    for (FunctionDesc funcDesc : FunctionLoader.findLegacyFunctions()) {
       catalog.createFunction(funcDesc);
     }
     
@@ -127,7 +131,7 @@ public class TestLogicalOptimizer {
     LogicalNode plan = newPlan.getRootBlock().getRoot();
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
-    TestLogicalNode.testCloneLogicalNode(root);
+    TestLogicalPlanner.testCloneLogicalNode(root);
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
     ProjectionNode projNode = root.getChild();
     assertEquals(NodeType.JOIN, projNode.getChild().getType());
@@ -139,7 +143,7 @@ public class TestLogicalOptimizer {
 
     assertEquals(NodeType.ROOT, optimized.getType());
     root = (LogicalRootNode) optimized;
-    TestLogicalNode.testCloneLogicalNode(root);
+    TestLogicalPlanner.testCloneLogicalNode(root);
     assertEquals(NodeType.JOIN, root.getChild().getType());
     joinNode = root.getChild();
     assertEquals(NodeType.SCAN, joinNode.getLeftChild().getType());
@@ -163,7 +167,7 @@ public class TestLogicalOptimizer {
     
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
-    TestLogicalNode.testCloneLogicalNode(root);
+    TestLogicalPlanner.testCloneLogicalNode(root);
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
     ProjectionNode projNode = root.getChild();
     assertEquals(NodeType.SELECTION, projNode.getChild().getType());
@@ -173,7 +177,7 @@ public class TestLogicalOptimizer {
     LogicalNode optimized = optimizer.optimize(newPlan);
     assertEquals(NodeType.ROOT, optimized.getType());
     root = (LogicalRootNode) optimized;
-    TestLogicalNode.testCloneLogicalNode(root);
+    TestLogicalPlanner.testCloneLogicalNode(root);
     assertEquals(NodeType.SCAN, root.getChild().getType());
   }
   
@@ -185,7 +189,7 @@ public class TestLogicalOptimizer {
         
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
-    TestLogicalNode.testCloneLogicalNode(root);
+    TestLogicalPlanner.testCloneLogicalNode(root);
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
     ProjectionNode projNode = root.getChild();
     assertEquals(NodeType.GROUP_BY, projNode.getChild().getType());
@@ -197,7 +201,7 @@ public class TestLogicalOptimizer {
     LogicalNode optimized = optimizer.optimize(newPlan);
     assertEquals(NodeType.ROOT, optimized.getType());
     root = (LogicalRootNode) optimized;
-    TestLogicalNode.testCloneLogicalNode(root);
+    TestLogicalPlanner.testCloneLogicalNode(root);
     assertEquals(NodeType.GROUP_BY, root.getChild().getType());
     groupbyNode = root.getChild();
     assertEquals(NodeType.SCAN, groupbyNode.getChild().getType());
@@ -212,7 +216,7 @@ public class TestLogicalOptimizer {
     
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
-    TestLogicalNode.testCloneLogicalNode(root);
+    TestLogicalPlanner.testCloneLogicalNode(root);
 
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
     ProjectionNode projNode = root.getChild();
@@ -243,7 +247,7 @@ public class TestLogicalOptimizer {
     
     assertEquals(NodeType.ROOT, plan.getType());
     root = (LogicalRootNode) plan;
-    TestLogicalNode.testCloneLogicalNode(root);
+    TestLogicalPlanner.testCloneLogicalNode(root);
 
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
     projNode = root.getChild();
@@ -263,4 +267,5 @@ public class TestLogicalOptimizer {
     LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
     optimizer.optimize(newPlan);
   }
+
 }
