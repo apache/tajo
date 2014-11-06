@@ -148,19 +148,19 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
           break;
         case INT1:
         case INT2:
-          datum = DatumFactory.createInt2((short) NumberUtil.parseInt(buf, 0, buf.writerIndex()));
+          datum = DatumFactory.createInt2((short) NumberUtil.parseInt(buf));
           break;
         case INT4:
-          datum = DatumFactory.createInt4(NumberUtil.parseInt(buf, 0, buf.writerIndex()));
+          datum = DatumFactory.createInt4(NumberUtil.parseInt(buf));
           break;
         case INT8:
-          datum = DatumFactory.createInt8(NumberUtil.parseLong(buf, 0, buf.writerIndex()));
+          datum = DatumFactory.createInt8(NumberUtil.parseLong(buf));
           break;
         case FLOAT4:
           datum = DatumFactory.createFloat4(buf.toString(CharsetUtil.UTF_8));
           break;
         case FLOAT8:
-          datum = DatumFactory.createFloat8(NumberUtil.parseDouble(buf, 0, buf.writerIndex()));
+          datum = DatumFactory.createFloat8(NumberUtil.parseDouble(buf));
           break;
         case TEXT: {
           byte[] bytes = new byte[buf.readableBytes()];

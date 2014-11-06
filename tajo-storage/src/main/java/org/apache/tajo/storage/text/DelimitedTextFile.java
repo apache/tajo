@@ -410,8 +410,8 @@ public class DelimitedTextFile {
         }
 
         if (projection.length > currentTarget && currentIndex == projection[currentTarget]) {
-          Datum datum = serde.deserialize(lineBuf.slice(start, fieldLength),
-              schema.getColumn(currentIndex), currentIndex, nullChars);
+          lineBuf.setIndex(start, start + fieldLength);
+          Datum datum = serde.deserialize(lineBuf, schema.getColumn(currentIndex), currentIndex, nullChars);
           dst.put(currentIndex, datum);
           currentTarget++;
         }

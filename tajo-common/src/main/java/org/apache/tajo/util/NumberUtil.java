@@ -585,7 +585,19 @@ public class NumberUtil {
 
   /**
    * Parses the byte array argument as if it was a double value and returns the
-   * result. Throws NumberFormatException if the byte array does not represent a
+   * result. Throws NumberFormatException if the byte buffer does not represent a
+   * double value.
+   *
+   * @return double, the value represented by the argument
+   * @throws NumberFormatException if the argument could not be parsed as a double
+   */
+  public static double parseDouble(ByteBuf bytes) {
+    return parseDouble(bytes, bytes.readerIndex(), bytes.readableBytes());
+  }
+
+  /**
+   * Parses the byte array argument as if it was a double value and returns the
+   * result. Throws NumberFormatException if the byte buffer does not represent a
    * double value.
    *
    * @return double, the value represented by the argument
@@ -767,8 +779,21 @@ public class NumberUtil {
     return sign ? (-fraction) : fraction;
   }
 
+
   /**
-   * Parses the byte array argument as if it was an int value and returns the
+   * Parses the byte buffer argument as if it was an int value and returns the
+   * result. Throws NumberFormatException if the byte array does not represent an
+   * int quantity.
+   *
+   * @return int the value represented by the argument
+   * @throws NumberFormatException if the argument could not be parsed as an int quantity.
+   */
+  public static int parseInt(ByteBuf bytes) {
+    return parseInt(bytes, bytes.readerIndex(), bytes.readableBytes());
+  }
+
+  /**
+   * Parses the byte buffer argument as if it was an int value and returns the
    * result. Throws NumberFormatException if the byte array does not represent an
    * int quantity.
    *
@@ -780,7 +805,7 @@ public class NumberUtil {
   }
 
   /**
-   * Parses the byte array argument as if it was an int value and returns the
+   * Parses the byte buffer argument as if it was an int value and returns the
    * result. Throws NumberFormatException if the byte array does not represent an
    * int quantity. The second argument specifies the radix to use when parsing
    * the value.
@@ -819,7 +844,7 @@ public class NumberUtil {
   }
 
   /**
-   * @param bytes         the offheap byte buffer
+   * @param bytes         the string byte buffer
    * @param memoryAddress the offheap memory address
    * @param start
    * @param length
@@ -876,11 +901,24 @@ public class NumberUtil {
   }
 
   /**
-   * Parses the string argument as if it was a long value and returns the
+   * Parses the byte buffer argument as if it was a long value and returns the
    * result. Throws NumberFormatException if the string does not represent a
    * long quantity.
    *
-   * @param bytes
+   * @param bytes the string byte buffer
+   * @return long the value represented by the argument
+   * @throws NumberFormatException if the argument could not be parsed as a long quantity.
+   */
+  public static long parseLong(ByteBuf bytes) {
+    return parseLong(bytes, bytes.readerIndex(), bytes.readableBytes());
+  }
+
+  /**
+   * Parses the byte buffer argument as if it was a long value and returns the
+   * result. Throws NumberFormatException if the string does not represent a
+   * long quantity.
+   *
+   * @param bytes  the string byte buffer
    * @param start
    * @param length a UTF-8 encoded string representation of a long quantity.
    * @return long the value represented by the argument
@@ -891,12 +929,12 @@ public class NumberUtil {
   }
 
   /**
-   * Parses the string argument as if it was an long value and returns the
+   * Parses the byte buffer argument as if it was an long value and returns the
    * result. Throws NumberFormatException if the string does not represent an
    * long quantity. The second argument specifies the radix to use when parsing
    * the value.
    *
-   * @param bytes
+   * @param bytes  the string byte buffer
    * @param start
    * @param length a UTF-8 encoded string representation of a long quantity.
    * @param radix  the base to use for conversion.
@@ -933,12 +971,12 @@ public class NumberUtil {
   }
 
   /**
-   * /** Parses the string argument as if it was an long value and returns the
+   * /** Parses the byte buffer argument as if it was an long value and returns the
    * result. Throws NumberFormatException if the string does not represent an
    * long quantity. The second argument specifies the radix to use when parsing
    * the value.
    *
-   * @param bytes         the offheap byte buffer
+   * @param bytes         the string byte buffer
    * @param memoryAddress the offheap memory address
    * @param start
    * @param length        a UTF-8 encoded string representation of a long quantity.
