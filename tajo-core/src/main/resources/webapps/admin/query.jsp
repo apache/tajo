@@ -182,6 +182,7 @@
   <div align="center">
     <%=JSPUtil.getPageNavigation(currentPage, totalPage, "query.jsp?pageSize=" + pageSize)%>
   </div>
+  <p/>
 <%
   }
 %>

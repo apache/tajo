@@ -241,6 +241,7 @@
   <div align="center">
     <%=JSPUtil.getPageNavigation(currentPage, totalPage, pageUrl + "&pageSize=" + pageSize)%>
   </div>
+  <p/>
 </div>
 </body>
 </html>
