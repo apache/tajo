@@ -380,10 +380,8 @@ public class MemStore implements CatalogStore {
     }
 
     index.put(proto.getName(), proto);
-    for (SortSpecProto colSpecProto : proto.getColumnSpecsList()) {
-      indexByColumn.put(getColumnNameQualifiedByTableName(proto.getTableIdentifier().getTableName(),
-              colSpecProto.getColumn().getName()), proto);
-    }
+    indexByColumn.put(getColumnNameQualifiedByTableName(proto.getTableIdentifier().getTableName(),
+        CatalogUtil.getUnifiedColumnName(proto.getColumnSpecsList())), proto);
   }
 
   /* (non-Javadoc)
@@ -423,9 +421,13 @@ public class MemStore implements CatalogStore {
   @Override
   public IndexDescProto getIndexByColumn(String databaseName, String tableName, String columnName)
       throws CatalogException {
+    return getIndexByColumns(databaseName, tableName, new String[]{columnName});
+  }
 
+  @Override
+  public IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames) throws CatalogException {
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
-    String qualifiedColumnName = getColumnNameQualifiedByTableName(tableName, columnName);
+    String qualifiedColumnName = getColumnNameQualifiedByTableName(tableName, CatalogUtil.getUnifiedColumnName(columnNames));
     if (!indexByColumn.containsKey(qualifiedColumnName)) {
       throw new NoSuchIndexException(qualifiedColumnName);
     }
@@ -442,8 +444,14 @@ public class MemStore implements CatalogStore {
   @Override
   public boolean existIndexByColumn(String databaseName, String tableName, String columnName)
       throws CatalogException {
+    return existIndexByColumns(databaseName, tableName, new String[]{columnName});
+  }
+
+  @Override
+  public boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames) throws CatalogException {
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
-    return indexByColumn.containsKey(getColumnNameQualifiedByTableName(tableName, columnName));
+    return indexByColumn.containsKey(
+        getColumnNameQualifiedByTableName(tableName, CatalogUtil.getUnifiedColumnName(columnNames)));
   }
 
   @Override

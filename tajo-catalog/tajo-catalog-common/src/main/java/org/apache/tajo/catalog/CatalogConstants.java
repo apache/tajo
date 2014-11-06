@@ -45,7 +45,6 @@ public class CatalogConstants {
   public static final String TB_COLUMNS = "COLUMNS";
   public static final String TB_OPTIONS = "OPTIONS";
   public static final String TB_INDEXES = "INDEXES";
-  public static final String TB_INDEXES_BY_COL = "INDEXES_BY_COL";
   public static final String TB_STATISTICS = "STATS";
   public static final String TB_PARTITION_METHODS = "PARTITION_METHODS";
   public static final String TB_PARTTIONS = "PARTITIONS";

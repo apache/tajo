@@ -69,7 +69,6 @@ public class OracleStore extends AbstractDBStore {
       baseTableMaps.put(TB_OPTIONS, false);
       baseTableMaps.put(TB_STATISTICS, false);
       baseTableMaps.put(TB_INDEXES, false);
-      baseTableMaps.put(TB_INDEXES_BY_COL, false);
       baseTableMaps.put(TB_PARTITION_METHODS, false);
       baseTableMaps.put(TB_PARTTIONS, false);
       

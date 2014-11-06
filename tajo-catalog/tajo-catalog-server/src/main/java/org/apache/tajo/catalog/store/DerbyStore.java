@@ -204,29 +204,17 @@ public class DerbyStore extends AbstractDBStore {
         }
         stmt.addBatch(sql);
         stmt.executeBatch();
-        LOG.info("Table '" + TB_INDEXES + "' is created.");
-        baseTableMaps.put(TB_INDEXES, true);
-      }
 
-      // INDEXES_BY_COL
-      if (!baseTableMaps.get(TB_INDEXES_BY_COL)) {
-        String sql = readSchemaFile("indexes_by_col.sql");
-
-        if (LOG.isDebugEnabled()) {
-          LOG.debug(sql);
-        }
-        stmt.addBatch(sql);
-
-        sql = "CREATE INDEX idx_indexes_columns ON " + TB_INDEXES_BY_COL + "(" + COL_DATABASES_PK + "," +
-            COL_TABLES_PK + ",column_name)";
+        sql = "CREATE INDEX idx_col_names ON " + TB_INDEXES + "(" + COL_DATABASES_PK + "," +
+            COL_TABLES_PK + ",column_names)";
 
         if (LOG.isDebugEnabled()) {
           LOG.debug(sql);
         }
         stmt.addBatch(sql);
         stmt.executeBatch();
-        LOG.info("Table '" + TB_INDEXES_BY_COL + "' is created.");
-        baseTableMaps.put(TB_INDEXES_BY_COL, true);
+        LOG.info("Table '" + TB_INDEXES + "' is created.");
+        baseTableMaps.put(TB_INDEXES, true);
       }
 
       if (!baseTableMaps.get(TB_STATISTICS)) {
@@ -351,7 +339,6 @@ public class DerbyStore extends AbstractDBStore {
       baseTableMaps.put(TB_OPTIONS, false);
       baseTableMaps.put(TB_STATISTICS, false);
       baseTableMaps.put(TB_INDEXES, false);
-      baseTableMaps.put(TB_INDEXES_BY_COL, false);
       baseTableMaps.put(TB_PARTITION_METHODS, false);
       baseTableMaps.put(TB_PARTTIONS, false);
 

@@ -61,9 +61,9 @@ public class TestCreateIndex extends QueryTestCaseBase {
   public final void testCreateIndexOnMultiAttrs() throws Exception {
     executeQuery();
     assertTrue(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_partkey_idx"));
-    executeString("drop index l_orderkey_partkey_idxl_orderkey_idx");
+    executeString("drop index l_orderkey_partkey_idx");
     assertFalse(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_partkey_idx"));
-    assertIndexNotExist(getCurrentDatabase(), "l_orderkey_partkey_idxl_orderkey_idx");
+    assertIndexNotExist(getCurrentDatabase(), "l_orderkey_partkey_idx");
   }
 
   @Test
@@ -82,14 +82,5 @@ public class TestCreateIndex extends QueryTestCaseBase {
     executeString("drop index l_orderkey_partkey_idx");
     assertFalse(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_partkey_idx"));
     assertIndexNotExist(getCurrentDatabase(), "l_orderkey_partkey_idx");
-  }
-
-  @Test
-  public final void test() throws Exception {
-    executeString("create index l_orderkey_idx2 on lineitem (l_orderkey asc null first);");
-    assertTrue(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_idx2"));
-    executeString("drop index l_orderkey_idx2");
-    assertFalse(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_idx2"));
-    assertIndexNotExist(getCurrentDatabase(), "l_orderkey_idx2");
   }
 }

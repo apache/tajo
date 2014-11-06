@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -833,5 +834,23 @@ public class CatalogUtil {
     }
 
     return options;
+  }
+
+  public static String getUnifiedColumnName(String[] columnNames) {
+    StringBuilder sb = new StringBuilder();
+    for (String colName : columnNames) {
+      sb.append(colName).append(",");
+    }
+    sb.deleteCharAt(sb.length()-1);
+    return sb.toString();
+  }
+
+  public static String getUnifiedColumnName(List<SortSpecProto> colSpecProtos) {
+    StringBuilder sb = new StringBuilder();
+    for (SortSpecProto columnSpec : colSpecProtos) {
+      sb.append(columnSpec.getColumn().getName()).append(",");
+    }
+    sb.deleteCharAt(sb.length()-1);
+    return sb.toString();
   }
 }
