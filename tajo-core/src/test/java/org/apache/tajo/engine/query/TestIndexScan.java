@@ -57,4 +57,13 @@ public class TestIndexScan extends QueryTestCaseBase {
     cleanupQuery(res);
     executeString("drop index l_shipdate_idx");
   }
+
+  @Test
+  public final void testOnMultipleKeys() throws Exception {
+    executeString("create index multikey_idx on lineitem (l_shipdate asc null last, l_tax desc null first, l_shipmode, l_linenumber desc null last)");
+    ResultSet res = executeString("select l_orderkey, l_shipdate, l_comment from lineitem where l_shipdate = '1997-01-28' and l_tax = 0.05 and l_shipmode = 'RAIL' and l_linenumber = 1;");
+    assertResultSet(res);
+    cleanupQuery(res);
+    executeString("drop index multikey_idx");
+  }
 }

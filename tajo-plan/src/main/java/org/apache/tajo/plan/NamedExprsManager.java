@@ -142,7 +142,11 @@ public class NamedExprsManager {
   /**
    * Adds an expression and returns a reference name.
    */
-  public String addExpr(Expr expr) throws PlanningException {
+//  public String addExpr(Expr expr) throws PlanningException {
+//    return addExpr(expr, false);
+//  }
+
+  public String addExpr(Expr expr, boolean identifiable) throws PlanningException {
     if (idToExprBiMap.inverse().containsKey(expr)) {
       int refId = idToExprBiMap.inverse().get(expr);
       return idToNamesMap.get(refId).get(0);
@@ -152,7 +156,7 @@ public class NamedExprsManager {
       return block.getConstReference(expr);
     }
 
-    String generatedName = plan.generateUniqueColumnName(expr);
+    String generatedName = plan.generateUniqueColumnName(expr, identifiable);
     return addExpr(expr, generatedName);
   }
 
@@ -193,11 +197,11 @@ public class NamedExprsManager {
    * Adds an expression and returns a reference name.
    * If an alias is given, it specifies the alias as an reference name.
    */
-  public String addNamedExpr(NamedExpr namedExpr) throws PlanningException {
+  public String addNamedExpr(NamedExpr namedExpr, boolean identifiable) throws PlanningException {
     if (namedExpr.hasAlias()) {
       return addExpr(namedExpr.getExpr(), namedExpr.getAlias());
     } else {
-      return addExpr(namedExpr.getExpr());
+      return addExpr(namedExpr.getExpr(), identifiable);
     }
   }
 
@@ -205,12 +209,13 @@ public class NamedExprsManager {
    * Adds a list of expressions and returns a list of reference names.
    * If some NamedExpr has an alias, NamedExprsManager specifies the alias for the NamedExpr.
    */
-  public String [] addNamedExprArray(@Nullable Collection<NamedExpr> namedExprs) throws PlanningException {
+  public String [] addNamedExprArray(@Nullable Collection<NamedExpr> namedExprs, boolean identifiable)
+      throws PlanningException {
     if (namedExprs != null && namedExprs.size() > 0) {
       String [] names = new String[namedExprs.size()];
       int i = 0;
       for (NamedExpr target : namedExprs) {
-        names[i++] = addNamedExpr(target);
+        names[i++] = addNamedExpr(target, identifiable);
       }
       return names;
     } else {

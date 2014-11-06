@@ -39,7 +39,6 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
@@ -50,8 +49,8 @@ import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.verifier.VerifyException;
+import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
@@ -381,15 +380,15 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       // Get all projecting references
       if (namedExpr.hasAlias()) {
         NamedExpr aliasedExpr = new NamedExpr(normalizedExprList[i].baseExpr, namedExpr.getAlias());
-        referenceNames[i] = block.namedExprsMgr.addNamedExpr(aliasedExpr);
+        referenceNames[i] = block.namedExprsMgr.addNamedExpr(aliasedExpr, block.isNeedIdentifiableTargets());
       } else {
-        referenceNames[i] = block.namedExprsMgr.addExpr(normalizedExprList[i].baseExpr);
+        referenceNames[i] = block.namedExprsMgr.addExpr(normalizedExprList[i].baseExpr, block.isNeedIdentifiableTargets());
       }
 
       // Add sub-expressions (i.e., aggregation part and scalar part) from dissected parts.
-      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].aggExprs);
-      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs);
-      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].windowAggExprs);
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].aggExprs, block.isNeedIdentifiableTargets());
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs, block.isNeedIdentifiableTargets());
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].windowAggExprs, block.isNeedIdentifiableTargets());
 
       windowSpecReferencesList.addAll(normalizedExprList[i].windowSpecs);
     }
@@ -761,9 +760,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       ////////////////////////////////////////////////////////
     } else {
       ExprNormalizedResult normalizedResult = normalizer.normalize(context, limit.getFetchFirstNum());
-      String referName = block.namedExprsMgr.addExpr(normalizedResult.baseExpr);
-      block.namedExprsMgr.addNamedExprArray(normalizedResult.aggExprs);
-      block.namedExprsMgr.addNamedExprArray(normalizedResult.scalarExprs);
+      String referName = block.namedExprsMgr.addExpr(normalizedResult.baseExpr, false);
+      block.namedExprsMgr.addNamedExprArray(normalizedResult.aggExprs, false);
+      block.namedExprsMgr.addNamedExprArray(normalizedResult.scalarExprs, false);
 
       ////////////////////////////////////////////////////////
       // Visit and Build Child Plan
@@ -804,9 +803,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       normalizedExprList[i] = normalizer.normalize(context, sortSpecs[i].getKey());
     }
     for (int i = 0; i < sortKeyNum; i++) {
-      referNames[i] = block.namedExprsMgr.addExpr(normalizedExprList[i].baseExpr);
-      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].aggExprs);
-      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs);
+      referNames[i] = block.namedExprsMgr.addExpr(normalizedExprList[i].baseExpr, false);
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].aggExprs, false);
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs, false);
     }
 
     ////////////////////////////////////////////////////////
@@ -863,9 +862,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock block = context.queryBlock;
 
     ExprNormalizedResult normalizedResult = normalizer.normalize(context, expr.getQual());
-    String referName = block.namedExprsMgr.addExpr(normalizedResult.baseExpr);
-    block.namedExprsMgr.addNamedExprArray(normalizedResult.aggExprs);
-    block.namedExprsMgr.addNamedExprArray(normalizedResult.scalarExprs);
+    String referName = block.namedExprsMgr.addExpr(normalizedResult.baseExpr, false);
+    block.namedExprsMgr.addNamedExprArray(normalizedResult.aggExprs, false);
+    block.namedExprsMgr.addNamedExprArray(normalizedResult.scalarExprs, false);
 
     ////////////////////////////////////////////////////////
     // Visit and Build Child Plan
@@ -914,9 +913,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     String [] groupingKeyRefNames = new String[groupingKeyNum];
     for (int i = 0; i < groupingKeyNum; i++) {
-      groupingKeyRefNames[i] = block.namedExprsMgr.addExpr(normalizedResults[i].baseExpr);
-      block.namedExprsMgr.addNamedExprArray(normalizedResults[i].aggExprs);
-      block.namedExprsMgr.addNamedExprArray(normalizedResults[i].scalarExprs);
+      groupingKeyRefNames[i] = block.namedExprsMgr.addExpr(normalizedResults[i].baseExpr, false);
+      block.namedExprsMgr.addNamedExprArray(normalizedResults[i].aggExprs, false);
+      block.namedExprsMgr.addNamedExprArray(normalizedResults[i].scalarExprs, false);
     }
 
     ////////////////////////////////////////////////////////
@@ -1026,7 +1025,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock block = context.queryBlock;
 
     ExprNormalizedResult normalizedResult = normalizer.normalize(context, selection.getQual());
-    block.namedExprsMgr.addExpr(normalizedResult.baseExpr);
+    block.namedExprsMgr.addExpr(normalizedResult.baseExpr, false);
     if (normalizedResult.aggExprs.size() > 0 || normalizedResult.scalarExprs.size() > 0) {
       throw new VerifyException("Filter condition cannot include aggregation function");
     }
@@ -1067,7 +1066,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     if (join.hasQual()) {
       ExprNormalizedResult normalizedResult = normalizer.normalize(context, join.getQual(), true);
-      block.namedExprsMgr.addExpr(normalizedResult.baseExpr);
+      block.namedExprsMgr.addExpr(normalizedResult.baseExpr, false);
       if (normalizedResult.aggExprs.size() > 0 || normalizedResult.scalarExprs.size() > 0) {
         throw new VerifyException("Filter condition cannot include aggregation function");
       }
@@ -1919,15 +1918,17 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       normalizedExprList[i] = normalizer.normalize(context, sortSpecs[i].getKey());
     }
     for (int i = 0; i < sortKeyNum; i++) {
-      referNames[i] = block.namedExprsMgr.addExpr(normalizedExprList[i].baseExpr);
-      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].aggExprs);
-      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs);
+      referNames[i] = block.namedExprsMgr.addExpr(normalizedExprList[i].baseExpr, true);
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].aggExprs,
+          context.queryBlock.isNeedIdentifiableTargets());
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs,
+          context.queryBlock.isNeedIdentifiableTargets());
     }
 
     createIndexNode.setSortSpecs(annotateSortSpecs(block, referNames, sortSpecs));
     createIndexNode.setIndexType(IndexMethod.valueOf(createIndex.getMethodSpec().getName().toUpperCase()));
-    createIndexNode.setIndexPath(getIndexPath(context, context.queryContext.get(SessionVars.CURRENT_DATABASE),
-        createIndex.getIndexName()));
+    createIndexNode.setIndexPath(
+        getIndexPath(context, context.queryContext.get(SessionVars.CURRENT_DATABASE), createIndex.getIndexName()));
 
     if (createIndex.getParams() != null) {
       KeyValueSet keyValueSet = new KeyValueSet();

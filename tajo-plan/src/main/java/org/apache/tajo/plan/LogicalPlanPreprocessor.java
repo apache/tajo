@@ -182,7 +182,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
     // If Non-from statement, it immediately returns.
     if (!expr.hasChild()) {
       EvalExprNode exprNode = ctx.plan.createNode(EvalExprNode.class);
-      exprNode.setTargets(buildTargets(ctx, expr.getNamedExprs()));
+      exprNode.setTargets(buildTargets(ctx, expr.getNamedExprs(), false));
       return exprNode;
     }
 
@@ -212,7 +212,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
       }
     }
 
-    Target[] targets = buildTargets(ctx, expr.getNamedExprs());
+    Target[] targets = buildTargets(ctx, expr.getNamedExprs(), ctx.queryBlock.isNeedIdentifiableTargets());
 
     stack.pop(); // <--- Pop
 
@@ -224,7 +224,8 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
     return projectionNode;
   }
 
-  private Target [] buildTargets(LogicalPlanner.PlanContext context, NamedExpr [] exprs) throws PlanningException {
+  private Target [] buildTargets(LogicalPlanner.PlanContext context, NamedExpr [] exprs, boolean identifiable)
+      throws PlanningException {
     Target [] targets = new Target[exprs.length];
     for (int i = 0; i < exprs.length; i++) {
       NamedExpr namedExpr = exprs[i];
@@ -233,7 +234,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
       if (namedExpr.hasAlias()) {
         targets[i] = new Target(new FieldEval(new Column(namedExpr.getAlias(), dataType)));
       } else {
-        String generatedName = context.plan.generateUniqueColumnName(namedExpr.getExpr());
+        String generatedName = context.plan.generateUniqueColumnName(namedExpr.getExpr(), identifiable);
         targets[i] = new Target(new FieldEval(new Column(generatedName, dataType)));
       }
     }
@@ -463,6 +464,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
   @Override
   public LogicalNode visitCreateIndex(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, CreateIndex expr)
       throws PlanningException {
+    ctx.queryBlock.setNeedIdentifiableTargets(true);
     stack.push(expr);
     LogicalNode child = visit(ctx, stack, expr.getChild());
     stack.pop();

@@ -25,6 +25,7 @@ import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.NotThreadSafe;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.plan.expr.AlgebraicUtil.IdentifiableNameBuilder;
 import org.apache.tajo.plan.rewrite.rules.AccessPathInfo;
 import org.apache.tajo.util.graph.DirectedGraphCursor;
 import org.apache.tajo.util.graph.SimpleDirectedGraph;
@@ -148,18 +149,29 @@ public class LogicalPlan {
     return attachSeqIdToGeneratedColumnName(prefix).toLowerCase();
   }
 
+  public String generateUniqueColumnName(Expr expr) {
+    return generateUniqueColumnName(expr, false);
+  }
+
   /**
    * It generates an unique column name from Expr. It is usually used for an expression or predicate without
    * a specified name (i.e., alias).
    */
-  public String generateUniqueColumnName(Expr expr) {
+  public String generateUniqueColumnName(Expr expr, boolean identifiable) {
     String generatedName;
     if (expr.getType() == OpType.Column) {
       generatedName = ((ColumnReferenceExpr) expr).getCanonicalName();
+    } else if (identifiable) {
+      generatedName = generateUniqueIdentifiableColumnName(expr);
     } else { // if a generated column name
       generatedName = attachSeqIdToGeneratedColumnName(getGeneratedPrefixFromExpr(expr));
     }
     return generatedName;
+  }
+
+  private String generateUniqueIdentifiableColumnName(Expr expr) {
+    IdentifiableNameBuilder nameBuilder = new IdentifiableNameBuilder(expr);
+    return nameBuilder.build();
   }
 
   /**
@@ -421,6 +433,7 @@ public class LogicalPlan {
     private final Map<NodeType, LogicalNode> nodeTypeToNodeMap = TUtil.newHashMap();
     private final Map<String, LogicalNode> exprToNodeMap = TUtil.newHashMap();
     final NamedExprsManager namedExprsMgr;
+    private boolean needIdentifiableTargets = false;
 
     private LogicalNode currentNode;
     private LogicalNode latestNode;
@@ -439,6 +452,14 @@ public class LogicalPlan {
     public QueryBlock(String blockName) {
       this.blockName = blockName;
       this.namedExprsMgr = new NamedExprsManager(LogicalPlan.this, this);
+    }
+
+    public void setNeedIdentifiableTargets(boolean need) {
+      this.needIdentifiableTargets = need;
+    }
+
+    public boolean isNeedIdentifiableTargets() {
+      return this.needIdentifiableTargets;
     }
 
     public String getName() {

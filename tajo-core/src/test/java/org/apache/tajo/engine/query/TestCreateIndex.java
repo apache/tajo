@@ -78,9 +78,18 @@ public class TestCreateIndex extends QueryTestCaseBase {
   @Test
   public final void testCreateIndexOnExpression() throws Exception {
     executeQuery();
-    assertTrue(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_partkey_idx"));
-    executeString("drop index l_orderkey_partkey_idx");
-    assertFalse(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_partkey_idx"));
-    assertIndexNotExist(getCurrentDatabase(), "l_orderkey_partkey_idx");
+    assertTrue(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_100_lt10_idx"));
+    executeString("drop index l_orderkey_100_lt10_idx");
+    assertFalse(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_100_lt10_idx"));
+    assertIndexNotExist(getCurrentDatabase(), "l_orderkey_100_lt10_idx");
+  }
+
+  @Test
+  public final void testCreateIndexOnMultiExprs() throws Exception {
+    executeQuery();
+    assertTrue(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_100_l_linenumber_10_lt10_idx"));
+    executeString("drop index l_orderkey_100_l_linenumber_10_lt10_idx");
+    assertFalse(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_100_l_linenumber_10_lt10_idx"));
+    assertIndexNotExist(getCurrentDatabase(), "l_orderkey_100_l_linenumber_10_lt10_idx");
   }
 }
