@@ -1189,13 +1189,13 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     List<FileFragment> fragments =
         FragmentConvertor.convert(ctx.getConf(), ctx.getDataChannel().getStoreType(), fragmentProtos);
 
-//    String indexName = IndexUtil.getIndexNameOfFrag(fragments.get(0), annotation.getSortKeys());
+//    String indexName = IndexUtil.getIndexNameOfFrag(fragments.get(0), annotation.getKeySortSpecs());
 //    Path indexPath = new Path(sm.getTablePath(annotation.getTableName()), "index");
 
     TupleComparator comp = new BaseTupleComparator(annotation.getKeySchema(),
-        annotation.getSortKeys());
+        annotation.getKeySortSpecs());
     return new BSTIndexScanExec(ctx, sm, annotation, fragments.get(0), annotation.getIndexPath(),
-        annotation.getKeySchema(), comp, annotation.getDatum());
+        annotation.getKeySchema(), comp, annotation.getPredicateValues());
 
   }
 

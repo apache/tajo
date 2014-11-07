@@ -448,14 +448,19 @@ public abstract class AbstractCatalogClient implements CatalogService {
   }
 
   @Override
-  public boolean existIndexByColumn(final String databaseName, final String tableName, final String columnName) {
+  public boolean existIndexByColumns(final String databaseName, final String tableName, final Column [] columns) {
+    return existIndexByColumnNames(databaseName, tableName, extractColumnNames(columns));
+  }
+
+  @Override
+  public boolean existIndexByColumnNames(final String databaseName, final String tableName, final String [] columnNames) {
     try {
       return new ServerCallable<Boolean>(this.pool, getCatalogServerAddr(), CatalogProtocol.class, false) {
         public Boolean call(NettyClientBase client) throws ServiceException {
 
           GetIndexByColumnRequest.Builder builder = GetIndexByColumnRequest.newBuilder();
           builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
-          builder.setColumnName(columnName);
+          builder.setColumnName(CatalogUtil.getUnifiedSimpleColumnName(columnNames));
 
           CatalogProtocolService.BlockingInterface stub = getStub(client);
           return stub.existIndexByColumn(null, builder.build()).getValue();
@@ -487,17 +492,32 @@ public abstract class AbstractCatalogClient implements CatalogService {
     }
   }
 
+  private static String[] extractColumnNames(Column[] columns) {
+    String[] columnNames = new String [columns.length];
+    for (int i = 0; i < columnNames.length; i++) {
+      columnNames[i] = columns[i].getSimpleName();
+    }
+    return columnNames;
+  }
+
   @Override
-  public final IndexDesc getIndexByColumn(final String databaseName,
-                                          final String tableName,
-                                          final String columnName) {
+  public final IndexDesc getIndexByColumns(final String databaseName,
+                                               final String tableName,
+                                               final Column [] columns) {
+    return getIndexByColumnNames(databaseName, tableName, extractColumnNames(columns));
+  }
+
+  @Override
+  public final IndexDesc getIndexByColumnNames(final String databaseName,
+                                           final String tableName,
+                                           final String [] columnNames) {
     try {
       return new ServerCallable<IndexDesc>(this.pool, getCatalogServerAddr(), CatalogProtocol.class, false) {
         public IndexDesc call(NettyClientBase client) throws ServiceException {
 
           GetIndexByColumnRequest.Builder builder = GetIndexByColumnRequest.newBuilder();
           builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
-          builder.setColumnName(columnName);
+          builder.setColumnName(CatalogUtil.getUnifiedSimpleColumnName(columnNames));
 
           CatalogProtocolService.BlockingInterface stub = getStub(client);
           return new IndexDesc(stub.getIndexByColumn(null, builder.build()));

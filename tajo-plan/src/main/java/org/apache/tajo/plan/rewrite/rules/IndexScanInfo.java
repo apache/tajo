@@ -18,13 +18,44 @@
 
 package org.apache.tajo.plan.rewrite.rules;
 
+import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.CatalogUtil.ColumnNameComparatorOfSortSpec;
 import org.apache.tajo.catalog.IndexDesc;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.util.TUtil;
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 
 public class IndexScanInfo extends AccessPathInfo {
-  private IndexDesc indexDesc;
-  private Datum[] values;
+
+  public static class SimplePredicate {
+    private SortSpec sortSpec;
+    private Datum value;
+
+    public SimplePredicate(SortSpec sortSpec, Datum value) {
+      this.sortSpec = sortSpec;
+      this.value = value;
+    }
+
+    public SortSpec getSortSpec() {
+      return sortSpec;
+    }
+
+    public Datum getValue() {
+      return value;
+    }
+  }
+
+  private Path indexPath;
+  private Schema keySchema;
+  private SimplePredicate[] predicates;
 
   public IndexScanInfo(TableStats tableStats) {
     super(ScanTypeControl.INDEX_SCAN, tableStats);
@@ -32,21 +63,37 @@ public class IndexScanInfo extends AccessPathInfo {
 
   public IndexScanInfo(TableStats tableStats, IndexDesc indexDesc, Datum[] values) {
     this(tableStats);
-    this.setIndexDesc(indexDesc);
-    this.values = values;
+    this.indexPath = indexDesc.getIndexPath();
+    initPredicates(indexDesc, values);
   }
 
-  public void setIndexDesc(IndexDesc indexDesc) {
-    this.indexDesc = indexDesc;
-  }
-  public void setValues(Datum[] values) {
-    this.values = values;
+  private void initPredicates(IndexDesc desc, Datum[] values) {
+    this.predicates = new SimplePredicate[values.length];
+    Map<TajoDataTypes.Type, Datum> valueMap = TUtil.newHashMap();
+    for (Datum val : values) {
+      valueMap.put(val.type(), val);
+    }
+    List<SortSpec> modifiableKeySortSpecs = TUtil.newList(desc.getKeySortSpecs());
+    Collections.sort(modifiableKeySortSpecs, new ColumnNameComparatorOfSortSpec());
+
+    keySchema = new Schema();
+    int i = 0;
+    for (SortSpec keySortSpec : modifiableKeySortSpecs) {
+      predicates[i++] = new SimplePredicate(keySortSpec,
+          valueMap.get(keySortSpec.getSortKey().getDataType().getType()));
+      keySchema.addColumn(keySortSpec.getSortKey());
+    }
   }
 
-  public IndexDesc getIndexDesc() {
-    return indexDesc;
+  public Path getIndexPath() {
+    return indexPath;
   }
-  public Datum[] getValues() {
-    return values;
+
+  public Schema getKeySchema() {
+    return keySchema;
+  }
+
+  public SimplePredicate[] getPredicates() {
+    return predicates;
   }
 }

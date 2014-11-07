@@ -31,6 +31,7 @@ import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.RelationNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.rewrite.RewriteRule;
+import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 
@@ -123,16 +124,9 @@ public class AccessPathRewriter implements RewriteRule {
 
       if (optimalPath != null && optimalPath.getScanType() == AccessPathInfo.ScanTypeControl.INDEX_SCAN) {
         IndexScanInfo indexScanInfo = (IndexScanInfo) optimalPath;
-        plan.addHistory("AccessPathRewriter chooses " + indexScanInfo.getIndexDesc().getName() + " for "
-            + scanNode.getTableName() + " scan");
-        IndexDesc indexDesc = indexScanInfo.getIndexDesc();
-        SortSpec[] sortSpecs = indexDesc.getColumnSpecs();
-        Schema indexKeySchema = new Schema();
-        for (SortSpec colSpec : sortSpecs) {
-          indexKeySchema.addColumn(colSpec.getSortKey());
-        }
-        IndexScanNode indexScanNode = new IndexScanNode(plan.newPID(), scanNode, indexKeySchema,
-            indexScanInfo.getValues(), sortSpecs, indexDesc.getIndexPath());
+        plan.addHistory("AccessPathRewriter chooses the index scan for " + scanNode.getTableName());
+        IndexScanNode indexScanNode = new IndexScanNode(plan.newPID(), scanNode, indexScanInfo.getKeySchema(),
+            indexScanInfo.getPredicates(), indexScanInfo.getIndexPath());
         if (stack.empty() || block.getRoot().equals(scanNode)) {
           block.setRoot(indexScanNode);
         } else {

@@ -900,27 +900,33 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       String databaseName, tableName;
       databaseName = CatalogUtil.extractQualifier(table.getName());
       tableName = CatalogUtil.extractSimpleName(table.getName());
+      List<Predicate> predicates = TUtil.newList();
       for (EvalNode eval : IndexUtil.getAllEqualEvals(qual)) {
         BinaryEval binaryEval = (BinaryEval) eval;
-        // TODO: consider more complex cases
-        Column column = null;
-        Datum datum = null;
+        // TODO: consider more complex predicates
         if (binaryEval.getLeftExpr().getType() == EvalType.FIELD &&
             binaryEval.getRightExpr().getType() == EvalType.CONST) {
-          column = ((FieldEval)binaryEval.getLeftExpr()).getColumnRef();
-          datum = ((ConstEval)binaryEval.getRightExpr()).getValue();
+          predicates.add(new Predicate(binaryEval.getType(),
+              ((FieldEval) binaryEval.getLeftExpr()).getColumnRef(),
+              ((ConstEval)binaryEval.getRightExpr()).getValue()));
         } else if (binaryEval.getLeftExpr().getType() == EvalType.CONST &&
             binaryEval.getRightExpr().getType() == EvalType.FIELD) {
-          column = ((FieldEval)binaryEval.getRightExpr()).getColumnRef();
-          datum = ((ConstEval)binaryEval.getLeftExpr()).getValue();
-        }
-
-        if (catalog.existIndexByColumn(databaseName, tableName, column.getSimpleName())) {
-          IndexDesc indexDesc = catalog.getIndexByColumn(databaseName, tableName, column.getSimpleName());
-          block.addAccessPath(scanNode, new IndexScanInfo(table.getStats(), indexDesc, new Datum[]{datum}));
+          predicates.add(new Predicate(binaryEval.getType(),
+              ((FieldEval) binaryEval.getRightExpr()).getColumnRef(),
+              ((ConstEval)binaryEval.getLeftExpr()).getValue()));
         }
       }
 
+      // for every subset of the set of columns, find all matched index paths
+      for (List<Predicate> subset : TUtil.powerSet(predicates)) {
+        if (subset.size() == 0)
+          continue;
+        Column[] columns = extractColumns(subset);
+        if (catalog.existIndexByColumns(databaseName, tableName, columns)) {
+          IndexDesc indexDesc = catalog.getIndexByColumns(databaseName, tableName, columns);
+          block.addAccessPath(scanNode, new IndexScanInfo(table.getStats(), indexDesc, extractPredicateValues((subset))));
+        }
+      }
     }
 
     for (EvalNode matchedEval: matched) {
@@ -931,6 +937,34 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     context.addFiltersTobePushed(notMatched);
 
     return scanNode;
+  }
+
+  private static class Predicate {
+    Column column;
+    Datum value;
+    EvalType evalType;
+
+    public Predicate(EvalType evalType, Column column, Datum value) {
+      this.evalType = evalType;
+      this.column = column;
+      this.value = value;
+    }
+  }
+
+  private static Datum[] extractPredicateValues(List<Predicate> predicates) {
+    Datum[] values = new Datum[predicates.size()];
+    for (int i = 0; i < values.length; i++) {
+      values[i] = predicates.get(i).value;
+    }
+    return values;
+  }
+
+  private static Column[] extractColumns(List<Predicate> predicates) {
+    Column[] columns = new Column[predicates.size()];
+    for (int i = 0; i < columns.length; i++) {
+      columns[i] = predicates.get(i).column;
+    }
+    return columns;
   }
 
   private void errorFilterPushDown(LogicalPlan plan, LogicalNode node,

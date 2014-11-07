@@ -258,4 +258,30 @@ public class TUtil {
     StackTraceElement element = ste[2 + depth];
     return element.getClassName() + ":" + element.getMethodName() + "(" + element.getLineNumber() +")";
   }
+
+  /**
+   * It returns every subsets of the given original set.
+   *
+   * @param originalSet an input set
+   * @param <T> the type of elements of the input set
+   * @return every subsets of the given original set.
+   */
+  public static <T> List<List<T>> powerSet(List<T> originalSet) {
+    List<List<T>> sets = new ArrayList<List<T>>();
+    if (originalSet.isEmpty()) {
+      sets.add(new ArrayList<T>());
+      return sets;
+    }
+    List<T> list = new ArrayList<T>(originalSet);
+    T head = list.get(0);
+    List<T> rest = list.subList(1, list.size());
+    for (List<T> set : powerSet(rest)) {
+      List<T> newSet = new ArrayList<T>();
+      newSet.add(head);
+      newSet.addAll(set);
+      sets.add(newSet);
+      sets.add(set);
+    }
+    return sets;
+  }
 }

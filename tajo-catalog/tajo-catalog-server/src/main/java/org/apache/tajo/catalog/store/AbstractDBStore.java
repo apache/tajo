@@ -28,6 +28,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.CatalogUtil.ColumnNameComparatorOfSortSpec;
+import org.apache.tajo.catalog.CatalogUtil.ColumnNameComparatorOfSortSpecProto;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -35,7 +37,6 @@ import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.exception.UnimplementedException;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.Pair;
 
@@ -1625,11 +1626,15 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         LOG.debug(sql);
       }
 
+      SortSpecProto[] columnSpecArray = new SortSpecProto[proto.getColumnSpecsCount()];
+      columnSpecArray = proto.getColumnSpecsList().toArray(columnSpecArray);
+      Arrays.sort(columnSpecArray, new ColumnNameComparatorOfSortSpecProto());
+
       StringBuilder columnNamesBuilder = new StringBuilder();
       StringBuilder dataTypesBuilder= new StringBuilder();
       StringBuilder ordersBuilder = new StringBuilder();
       StringBuilder nullOrdersBuilder = new StringBuilder();
-      for (SortSpecProto columnSpec : proto.getColumnSpecsList()) {
+      for (SortSpecProto columnSpec : columnSpecArray) {
         columnNamesBuilder.append(columnSpec.getColumn().getName()).append(",");
         dataTypesBuilder.append(columnSpec.getColumn().getDataType().getType().name()).append(",");
         ordersBuilder.append(columnSpec.getAscending()).append(",");
@@ -1781,11 +1786,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
       pstmt.setInt(2, tableId);
-      pstmt.setString(3, CatalogUtil.getUnifiedColumnName(columnNames));
+      pstmt.setString(3, CatalogUtil.getUnifiedSimpleColumnName(columnNames));
       res = pstmt.executeQuery();
       if (!res.next()) {
         throw new CatalogException("ERROR: there is no index matched to " +
-            CatalogUtil.getUnifiedColumnName(columnNames));
+            CatalogUtil.getUnifiedSimpleColumnName(columnNames));
       }
       int indexId = res.getInt(COL_INDEXES_PK);
 
@@ -1871,7 +1876,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
       pstmt.setInt(2, tableId);
-      pstmt.setString(3, CatalogUtil.getUnifiedColumnName(columnNames));
+      pstmt.setString(3, CatalogUtil.getUnifiedSimpleColumnName(columnNames));
       res = pstmt.executeQuery();
       exist = res.next();
     } catch (SQLException se) {

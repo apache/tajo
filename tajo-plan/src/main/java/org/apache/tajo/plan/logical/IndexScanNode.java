@@ -24,43 +24,48 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.plan.serder.PlanGsonHelper;
 import org.apache.tajo.util.TUtil;
 
 public class IndexScanNode extends ScanNode {
-  @Expose private SortSpec [] sortKeys;
+  @Expose private SortSpec [] keySortSpecs;
   @Expose private Schema keySchema = null;
-  @Expose private Datum[] datum = null;
+  @Expose private Datum[] predicateValues = null;
   @Expose private Path indexPath = null;
   
   public IndexScanNode(int pid, ScanNode scanNode ,
-      Schema keySchema , Datum[] datum, SortSpec[] sortKeys, Path indexPath) {
+      Schema keySchema , SimplePredicate[] predicates, Path indexPath) {
     super(pid);
     init(scanNode.getTableDesc());
     setQual(scanNode.getQual());
     setInSchema(scanNode.getInSchema());
     setTargets(scanNode.getTargets());
     setType(NodeType.INDEX_SCAN);
-    this.sortKeys = sortKeys;
     this.keySchema = keySchema;
-    this.datum = datum;
     this.indexPath = indexPath;
+    keySortSpecs = new SortSpec[predicates.length];
+    predicateValues = new Datum[predicates.length];
+    for (int i = 0; i < predicates.length; i++) {
+      keySortSpecs[i] = predicates[i].getSortSpec();
+      predicateValues[i] = predicates[i].getValue();
+    }
   }
   
-  public SortSpec[] getSortKeys() {
-    return this.sortKeys;
+  public SortSpec[] getKeySortSpecs() {
+    return this.keySortSpecs;
   }
   
   public Schema getKeySchema() {
     return this.keySchema;
   }
   
-  public Datum[] getDatum() {
-    return this.datum;
+  public Datum[] getPredicateValues() {
+    return this.predicateValues;
   }
   
-  public void setSortKeys(SortSpec[] sortKeys) {
-    this.sortKeys = sortKeys;
+  public void setKeySortSpecs(SortSpec[] keySortSpecs) {
+    this.keySortSpecs = keySortSpecs;
   }
   
   public void setKeySchema( Schema keySchema ) {
@@ -74,8 +79,8 @@ public class IndexScanNode extends ScanNode {
     builder.append("IndexScanNode : {\n");
     builder.append("  \"indexPath\" : \"" + gson.toJson(this.indexPath) + "\"\n");
     builder.append("  \"keySchema\" : \"" + gson.toJson(this.keySchema) + "\"\n");
-    builder.append("  \"sortKeys\" : \"" + gson.toJson(this.sortKeys) + " \"\n");
-    builder.append("  \"datums\" : \"" + gson.toJson(this.datum) + "\"\n");
+    builder.append("  \"keySortSpecs\" : \"" + gson.toJson(this.keySortSpecs) + " \"\n");
+    builder.append("  \"datums\" : \"" + gson.toJson(this.predicateValues) + "\"\n");
     builder.append("      <<\"superClass\" : " + super.toString());
     builder.append(">>}");
     builder.append("}");
@@ -88,8 +93,8 @@ public class IndexScanNode extends ScanNode {
       IndexScanNode other = (IndexScanNode) obj;
       return super.equals(other) &&
           this.indexPath.equals(other.indexPath) &&
-          TUtil.checkEquals(this.sortKeys, other.sortKeys) &&
-          TUtil.checkEquals(this.datum, other.datum) &&
+          TUtil.checkEquals(this.keySortSpecs, other.keySortSpecs) &&
+          TUtil.checkEquals(this.predicateValues, other.predicateValues) &&
           this.keySchema.equals(other.keySchema);
     }   
     return false;
@@ -99,12 +104,12 @@ public class IndexScanNode extends ScanNode {
   public Object clone() throws CloneNotSupportedException {
     IndexScanNode indexNode = (IndexScanNode) super.clone();
     indexNode.keySchema = (Schema) this.keySchema.clone();
-    indexNode.sortKeys = new SortSpec[this.sortKeys.length];
-    for(int i = 0 ; i < sortKeys.length ; i ++ )
-      indexNode.sortKeys[i] = (SortSpec) this.sortKeys[i].clone();
-    indexNode.datum = new Datum[this.datum.length];
-    for(int i = 0 ; i < datum.length ; i ++ ) {
-      indexNode.datum[i] = this.datum[i];
+    indexNode.keySortSpecs = new SortSpec[this.keySortSpecs.length];
+    for(int i = 0 ; i < keySortSpecs.length ; i ++ )
+      indexNode.keySortSpecs[i] = (SortSpec) this.keySortSpecs[i].clone();
+    indexNode.predicateValues = new Datum[this.predicateValues.length];
+    for(int i = 0 ; i < predicateValues.length ; i ++ ) {
+      indexNode.predicateValues[i] = this.predicateValues[i];
     }
     indexNode.indexPath = this.indexPath;
     return indexNode;

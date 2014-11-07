@@ -30,7 +30,6 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
 
 import java.io.IOException;
 import java.util.*;
@@ -360,11 +359,6 @@ public class MemStore implements CatalogStore {
     throw new RuntimeException("not supported!");
   }
 
-  private static String getColumnNameQualifiedByTableName(String tableName, String columnName) {
-    return CatalogUtil.buildFQName(CatalogUtil.extractSimpleName(tableName),
-        CatalogUtil.extractSimpleName(columnName));
-  }
-
   /* (non-Javadoc)
    * @see CatalogStore#createIndex(nta.catalog.proto.CatalogProtos.IndexDescProto)
    */
@@ -380,8 +374,12 @@ public class MemStore implements CatalogStore {
     }
 
     index.put(proto.getName(), proto);
-    indexByColumn.put(getColumnNameQualifiedByTableName(proto.getTableIdentifier().getTableName(),
-        CatalogUtil.getUnifiedColumnName(proto.getColumnSpecsList())), proto);
+    String originalTableName = proto.getTableIdentifier().getTableName();
+    String simpleTableName = CatalogUtil.extractSimpleName(originalTableName);
+    indexByColumn.put(CatalogUtil.buildFQName(proto.getTableIdentifier().getDatabaseName(),
+            simpleTableName,
+            CatalogUtil.getUnifiedSimpleColumnName(proto.getColumnSpecsList())),
+        proto);
   }
 
   /* (non-Javadoc)
@@ -396,10 +394,11 @@ public class MemStore implements CatalogStore {
     }
     IndexDescProto proto = index.get(indexName);
     index.remove(indexName);
-    for (SortSpecProto colSpecProto : proto.getColumnSpecsList()) {
-      indexByColumn.remove(getColumnNameQualifiedByTableName(proto.getTableIdentifier().getTableName(),
-          colSpecProto.getColumn().getName()));
-    }
+    String originalTableName = proto.getTableIdentifier().getTableName();
+    String simpleTableName = CatalogUtil.extractSimpleName(originalTableName);
+    indexByColumn.remove(CatalogUtil.buildFQName(proto.getTableIdentifier().getDatabaseName(),
+        simpleTableName,
+        CatalogUtil.getUnifiedSimpleColumnName(proto.getColumnSpecsList())));
   }
 
   /* (non-Javadoc)
@@ -427,7 +426,9 @@ public class MemStore implements CatalogStore {
   @Override
   public IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames) throws CatalogException {
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
-    String qualifiedColumnName = getColumnNameQualifiedByTableName(tableName, CatalogUtil.getUnifiedColumnName(columnNames));
+    String simpleTableName = CatalogUtil.extractSimpleName(tableName);
+    String qualifiedColumnName = CatalogUtil.buildFQName(databaseName, simpleTableName,
+        CatalogUtil.getUnifiedSimpleColumnName(columnNames));
     if (!indexByColumn.containsKey(qualifiedColumnName)) {
       throw new NoSuchIndexException(qualifiedColumnName);
     }
@@ -451,15 +452,17 @@ public class MemStore implements CatalogStore {
   public boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames) throws CatalogException {
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
     return indexByColumn.containsKey(
-        getColumnNameQualifiedByTableName(tableName, CatalogUtil.getUnifiedColumnName(columnNames)));
+        CatalogUtil.buildFQName(databaseName, CatalogUtil.extractSimpleName(tableName),
+            CatalogUtil.getUnifiedSimpleColumnName(columnNames)));
   }
 
   @Override
   public IndexDescProto[] getIndexes(String databaseName, String tableName) throws CatalogException {
     List<IndexDescProto> protos = new ArrayList<IndexDescProto>();
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
+    String simpleTableName = CatalogUtil.extractSimpleName(tableName);
     for (IndexDescProto proto : indexByColumn.values()) {
-      if (proto.getTableIdentifier().getTableName().equals(tableName)) {
+      if (proto.getTableIdentifier().getTableName().equals(simpleTableName)) {
         protos.add(proto);
       }
     }

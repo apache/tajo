@@ -33,42 +33,42 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   private String name;                 // required
   private IndexMethod indexMethod;     // required
   private Path indexPath;              // required
-  private SortSpec[] columnSpecs;  // required
+  private SortSpec[] keySortSpecs;  // required
   private boolean isUnique = false;    // optional [default = false]
   private boolean isClustered = false; // optional [default = false]
 
   public IndexDesc() {
   }
   
-  public IndexDesc(String name, Path indexPath, String databaseName, String tableName, SortSpec[] columnSpecs,
+  public IndexDesc(String name, Path indexPath, String databaseName, String tableName, SortSpec[] keySortSpecs,
                    IndexMethod type,  boolean isUnique, boolean isClustered) {
     this();
-    this.set(name, indexPath, databaseName, tableName, columnSpecs, type, isUnique, isClustered);
+    this.set(name, indexPath, databaseName, tableName, keySortSpecs, type, isUnique, isClustered);
   }
   
   public IndexDesc(IndexDescProto proto) {
     this();
 
-    SortSpec[] columnSpecs = new SortSpec[proto.getColumnSpecsCount()];
-    for (int i = 0; i < columnSpecs.length; i++) {
-      columnSpecs[i] = new SortSpec(proto.getColumnSpecs(i));
+    SortSpec[] keySortSpecs = new SortSpec[proto.getColumnSpecsCount()];
+    for (int i = 0; i < keySortSpecs.length; i++) {
+      keySortSpecs[i] = new SortSpec(proto.getColumnSpecs(i));
     }
 
     this.set(proto.getName(), new Path(proto.getIndexPath()),
         proto.getTableIdentifier().getDatabaseName(),
         proto.getTableIdentifier().getTableName(),
-        columnSpecs,
+        keySortSpecs,
         proto.getIndexMethod(), proto.getIsUnique(), proto.getIsClustered());
   }
 
-  public void set(String name, Path indexPath, String databaseName, String tableName, SortSpec[] columnSpecs,
+  public void set(String name, Path indexPath, String databaseName, String tableName, SortSpec[] keySortSpecs,
                   IndexMethod type,  boolean isUnique, boolean isClustered) {
     this.name = name;
     this.indexPath = indexPath;
     this.databaseName = databaseName;
     this.tableName = tableName;
     this.indexMethod = type;
-    this.columnSpecs = columnSpecs;
+    this.keySortSpecs = keySortSpecs;
     this.isUnique = isUnique;
     this.isClustered = isClustered;
   }
@@ -85,8 +85,8 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
     return tableName;
   }
   
-  public SortSpec[] getColumnSpecs() {
-    return columnSpecs;
+  public SortSpec[] getKeySortSpecs() {
+    return keySortSpecs;
   }
   
   public IndexMethod getIndexMethod() {
@@ -116,7 +116,7 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
     builder.setTableIdentifier(tableIdentifierBuilder.build());
     builder.setName(this.name);
     builder.setIndexPath(this.indexPath.toString());
-    for (SortSpec colSpec : columnSpecs) {
+    for (SortSpec colSpec : keySortSpecs) {
       builder.addColumnSpecs(colSpec.getProto());
     }
     builder.setIndexMethod(indexMethod);
@@ -132,7 +132,7 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
       return getIndexPath().equals(other.getIndexPath())
           && getName().equals(other.getName())
           && getTableName().equals(other.getTableName())
-          && getColumnSpecs().equals(other.getColumnSpecs())
+          && getKeySortSpecs().equals(other.getKeySortSpecs())
           && getIndexMethod().equals(other.getIndexMethod())
           && isUnique() == other.isUnique()
           && isClustered() == other.isClustered();
@@ -142,7 +142,7 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   }
   
   public int hashCode() {
-    return Objects.hashCode(getName(), getIndexPath(), getTableName(), getColumnSpecs(),
+    return Objects.hashCode(getName(), getIndexPath(), getTableName(), getKeySortSpecs(),
         getIndexMethod(), isUnique(), isClustered());
   }
 
@@ -151,7 +151,7 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
     desc.name = name;
     desc.indexPath = indexPath;
     desc.tableName = tableName;
-    desc.columnSpecs = columnSpecs;
+    desc.keySortSpecs = keySortSpecs;
     desc.indexMethod = indexMethod;
     desc.isUnique = isUnique;
     desc.isClustered = isClustered;

@@ -74,10 +74,10 @@ public class TestIndexDesc {
   public void testGetFields() {
     assertEquals("idx_test", desc1.getName());
     assertEquals("indexed", desc1.getTableName());
-    assertEquals(1, desc1.getColumnSpecs().length);
-    assertEquals(new Column("id", Type.INT4), desc1.getColumnSpecs()[0].getSortKey());
-    assertEquals(true, desc1.getColumnSpecs()[0].isAscending());
-    assertEquals(true, desc1.getColumnSpecs()[0].isNullFirst());
+    assertEquals(1, desc1.getKeySortSpecs().length);
+    assertEquals(new Column("id", Type.INT4), desc1.getKeySortSpecs()[0].getSortKey());
+    assertEquals(true, desc1.getKeySortSpecs()[0].isAscending());
+    assertEquals(true, desc1.getKeySortSpecs()[0].isNullFirst());
     assertEquals(IndexMethod.TWO_LEVEL_BIN_TREE, desc1.getIndexMethod());
     assertEquals(new Path("idx_test"), desc1.getIndexPath());
     assertEquals(true, desc1.isUnique());
@@ -85,10 +85,10 @@ public class TestIndexDesc {
 
     assertEquals("idx_test2", desc2.getName());
     assertEquals("indexed", desc2.getTableName());
-    assertEquals(1, desc2.getColumnSpecs().length);
-    assertEquals(new Column("score", Type.FLOAT8), desc2.getColumnSpecs()[0].getSortKey());
-    assertEquals(true, desc2.getColumnSpecs()[0].isAscending());
-    assertEquals(true, desc2.getColumnSpecs()[0].isNullFirst());
+    assertEquals(1, desc2.getKeySortSpecs().length);
+    assertEquals(new Column("score", Type.FLOAT8), desc2.getKeySortSpecs()[0].getSortKey());
+    assertEquals(true, desc2.getKeySortSpecs()[0].isAscending());
+    assertEquals(true, desc2.getKeySortSpecs()[0].isNullFirst());
     assertEquals(IndexMethod.TWO_LEVEL_BIN_TREE, desc2.getIndexMethod());
     assertEquals(new Path("idx_test2"), desc2.getIndexPath());
     assertEquals(false, desc2.isUnique());

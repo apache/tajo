@@ -449,17 +449,17 @@ public class TestCatalog {
 	  assertTrue(catalog.createTable(desc));
 	  
 	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getName()));
-	  assertFalse(catalog.existIndexByColumn(DEFAULT_DATABASE_NAME, "indexed", "id"));
+	  assertFalse(catalog.existIndexByColumnNames(DEFAULT_DATABASE_NAME, "indexed", new String[]{"id"}));
 	  catalog.createIndex(desc1);
 	  assertTrue(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getName()));
-	  assertTrue(catalog.existIndexByColumn(DEFAULT_DATABASE_NAME, "indexed", "id"));
+	  assertTrue(catalog.existIndexByColumnNames(DEFAULT_DATABASE_NAME, "indexed", new String[]{"id"}));
 
 
 	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getName()));
-	  assertFalse(catalog.existIndexByColumn(DEFAULT_DATABASE_NAME, "indexed", "score"));
+	  assertFalse(catalog.existIndexByColumnNames(DEFAULT_DATABASE_NAME, "indexed", new String[]{"score"}));
 	  catalog.createIndex(desc2);
 	  assertTrue(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getName()));
-	  assertTrue(catalog.existIndexByColumn(DEFAULT_DATABASE_NAME, "indexed", "score"));
+	  assertTrue(catalog.existIndexByColumnNames(DEFAULT_DATABASE_NAME, "indexed", new String[]{"score"}));
 	  
 	  catalog.dropIndex(DEFAULT_DATABASE_NAME, desc1.getName());
 	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getName()));
