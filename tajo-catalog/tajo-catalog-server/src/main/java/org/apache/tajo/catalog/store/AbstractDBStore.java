@@ -28,9 +28,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.CatalogUtil.ColumnNameComparatorOfSortSpec;
-import org.apache.tajo.catalog.CatalogUtil.ColumnNameComparatorOfSortSpecProto;
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
@@ -1609,13 +1608,14 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     Connection conn = null;
     PreparedStatement pstmt = null;
 
-    String databaseName = proto.getTableIdentifier().getDatabaseName();
-    String tableName = CatalogUtil.extractSimpleName(proto.getTableIdentifier().getTableName());
+    final String databaseName = proto.getTableIdentifier().getDatabaseName();
+    final String tableName = CatalogUtil.extractSimpleName(proto.getTableIdentifier().getTableName());
 
     try {
       // indexes table
       int databaseId = getDatabaseId(databaseName);
       int tableId = getTableId(databaseId, databaseName, tableName);
+      TableDescProto tableDescProto = getTable(databaseName, tableName);
 
       String sql = "INSERT INTO " + TB_INDEXES +
           " (" + COL_DATABASES_PK + ", " + COL_TABLES_PK + ", INDEX_NAME, " +
@@ -1626,15 +1626,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         LOG.debug(sql);
       }
 
-      SortSpecProto[] columnSpecArray = new SortSpecProto[proto.getColumnSpecsCount()];
-      columnSpecArray = proto.getColumnSpecsList().toArray(columnSpecArray);
-      Arrays.sort(columnSpecArray, new ColumnNameComparatorOfSortSpecProto());
-
       StringBuilder columnNamesBuilder = new StringBuilder();
       StringBuilder dataTypesBuilder= new StringBuilder();
       StringBuilder ordersBuilder = new StringBuilder();
       StringBuilder nullOrdersBuilder = new StringBuilder();
-      for (SortSpecProto columnSpec : columnSpecArray) {
+      for (SortSpecProto columnSpec : proto.getKeySortSpecsList()) {
         columnNamesBuilder.append(columnSpec.getColumn().getName()).append(",");
         dataTypesBuilder.append(columnSpec.getColumn().getDataType().getType().name()).append(",");
         ordersBuilder.append(columnSpec.getAscending()).append(",");
@@ -1651,7 +1647,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
       pstmt.setInt(2, tableId);
-      pstmt.setString(3, proto.getName()); // index name
+      pstmt.setString(3, proto.getIndexName()); // index name
       pstmt.setString(4, proto.getIndexMethod().toString()); // index type
       pstmt.setString(5, proto.getIndexPath()); // index path
       pstmt.setString(6, columnNamesBuilder.toString());
@@ -1774,6 +1770,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     try {
       int databaseId = getDatabaseId(databaseName);
       int tableId = getTableId(databaseId, databaseName, tableName);
+      TableDescProto tableDescProto = getTable(databaseName, tableName);
 
       String sql = GET_INDEXES_SQL + " WHERE " + COL_DATABASES_PK + "=? AND " +
           COL_TABLES_PK + "=? AND COLUMN_NAMES=?";
@@ -1782,15 +1779,16 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         LOG.debug(sql);
       }
 
+      String unifiedColumnName = CatalogUtil.getUnifiedSimpleColumnName(new Schema(tableDescProto.getSchema()),
+          columnNames);
       conn = getConnection();
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
       pstmt.setInt(2, tableId);
-      pstmt.setString(3, CatalogUtil.getUnifiedSimpleColumnName(columnNames));
+      pstmt.setString(3, unifiedColumnName);
       res = pstmt.executeQuery();
       if (!res.next()) {
-        throw new CatalogException("ERROR: there is no index matched to " +
-            CatalogUtil.getUnifiedSimpleColumnName(columnNames));
+        throw new CatalogException("ERROR: there is no index matched to " + unifiedColumnName);
       }
       int indexId = res.getInt(COL_INDEXES_PK);
 
@@ -1863,6 +1861,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     try {
       int databaseId = getDatabaseId(databaseName);
       int tableId = getTableId(databaseId, databaseName, tableName);
+      Schema relationSchema = new Schema(getTable(databaseName, tableName).getSchema());
 
       String sql =
           "SELECT " + COL_INDEXES_PK + " FROM " + TB_INDEXES +
@@ -1876,7 +1875,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
       pstmt.setInt(2, tableId);
-      pstmt.setString(3, CatalogUtil.getUnifiedSimpleColumnName(columnNames));
+      pstmt.setString(3, CatalogUtil.getUnifiedSimpleColumnName(relationSchema, columnNames));
       res = pstmt.executeQuery();
       exist = res.next();
     } catch (SQLException se) {
@@ -1931,7 +1930,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
   private void resultToIndexDescProtoBuilder(IndexDescProto.Builder builder,
                                              final ResultSet res) throws SQLException {
-    builder.setName(res.getString("index_name"));
+    builder.setIndexName(res.getString("index_name"));
     builder.setIndexMethod(getIndexMethod(res.getString("index_type").trim()));
     builder.setIndexPath(res.getString("path"));
     String[] columnNames, dataTypes, orders, nullOrders;
@@ -1946,7 +1945,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           .setDataType(CatalogUtil.newSimpleDataType(getDataType(dataTypes[i]))).build());
       colSpecBuilder.setAscending(orders[i].equals("true"));
       colSpecBuilder.setNullFirst(nullOrders[i].equals("true"));
-      builder.addColumnSpecs(colSpecBuilder.build());
+      builder.addKeySortSpecs(colSpecBuilder.build());
     }
     builder.setIsUnique(res.getBoolean("is_unique"));
     builder.setIsClustered(res.getBoolean("is_clustered"));

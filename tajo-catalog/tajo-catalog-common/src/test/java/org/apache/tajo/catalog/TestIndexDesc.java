@@ -34,29 +34,29 @@ public class TestIndexDesc {
   static IndexDesc desc1;
   static IndexDesc desc2;
   static IndexDesc desc3;
-
-  static {
-    SortSpec[] colSpecs1 = new SortSpec[1];
-    colSpecs1[0] = new SortSpec(new Column("id", Type.INT4), true, true);
-    desc1 = new IndexDesc(
-        "idx_test", new Path("idx_test"), DEFAULT_DATABASE_NAME, "indexed", colSpecs1,
-        IndexMethod.TWO_LEVEL_BIN_TREE, true, true);
-
-    SortSpec[] colSpecs2 = new SortSpec[1];
-    colSpecs2[0] = new SortSpec(new Column("score", Type.FLOAT8), false, false);
-    desc2 = new IndexDesc(
-        "idx_test2", new Path("idx_test2"), DEFAULT_DATABASE_NAME, "indexed", colSpecs2,
-        IndexMethod.TWO_LEVEL_BIN_TREE, false, false);
-
-    SortSpec[] colSpecs3 = new SortSpec[1];
-    colSpecs3[0] = new SortSpec(new Column("id", Type.INT4), true, false);
-    desc3 = new IndexDesc(
-        "idx_test", new Path("idx_test"), DEFAULT_DATABASE_NAME, "indexed", colSpecs3,
-        IndexMethod.TWO_LEVEL_BIN_TREE, true, true);
-  }
+  static Schema relationSchema;
 
   @BeforeClass
   public static void setUp() throws Exception {
+    relationSchema = new Schema(new Column[]{new Column("id", Type.INT4),
+        new Column("score", Type.FLOAT8), new Column("name", Type.TEXT)});
+    SortSpec[] colSpecs1 = new SortSpec[1];
+    colSpecs1[0] = new SortSpec(new Column("id", Type.INT4), true, true);
+    desc1 = new IndexDesc(DEFAULT_DATABASE_NAME, "indexed",
+        "idx_test", new Path("idx_test"), colSpecs1,
+        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, relationSchema);
+
+    SortSpec[] colSpecs2 = new SortSpec[1];
+    colSpecs2[0] = new SortSpec(new Column("score", Type.FLOAT8), false, false);
+    desc2 = new IndexDesc(DEFAULT_DATABASE_NAME, "indexed",
+        "idx_test2", new Path("idx_test2"), colSpecs2,
+        IndexMethod.TWO_LEVEL_BIN_TREE, false, false, relationSchema);
+
+    SortSpec[] colSpecs3 = new SortSpec[1];
+    colSpecs3[0] = new SortSpec(new Column("id", Type.INT4), true, false);
+    desc3 = new IndexDesc(DEFAULT_DATABASE_NAME, "indexed",
+        "idx_test", new Path("idx_test"), colSpecs3,
+        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, relationSchema);
   }
 
   @AfterClass

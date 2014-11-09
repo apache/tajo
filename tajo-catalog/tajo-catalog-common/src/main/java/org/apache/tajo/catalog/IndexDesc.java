@@ -30,55 +30,48 @@ import org.apache.tajo.common.ProtoObject;
 public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   private String databaseName;         // required
   private String tableName;            // required
-  private String name;                 // required
-  private IndexMethod indexMethod;     // required
-  private Path indexPath;              // required
-  private SortSpec[] keySortSpecs;  // required
-  private boolean isUnique = false;    // optional [default = false]
-  private boolean isClustered = false; // optional [default = false]
+  private IndexMeta indexMeta;         // required
 
   public IndexDesc() {
   }
   
-  public IndexDesc(String name, Path indexPath, String databaseName, String tableName, SortSpec[] keySortSpecs,
-                   IndexMethod type,  boolean isUnique, boolean isClustered) {
+  public IndexDesc(String databaseName, String tableName, String indexName, Path indexPath, SortSpec[] keySortSpecs,
+                   IndexMethod type,  boolean isUnique, boolean isClustered, Schema targetRelationSchema) {
     this();
-    this.set(name, indexPath, databaseName, tableName, keySortSpecs, type, isUnique, isClustered);
+    this.set(databaseName, tableName, indexName, indexPath, keySortSpecs, type, isUnique, isClustered,
+        targetRelationSchema);
   }
   
   public IndexDesc(IndexDescProto proto) {
     this();
 
-    SortSpec[] keySortSpecs = new SortSpec[proto.getColumnSpecsCount()];
+    SortSpec[] keySortSpecs = new SortSpec[proto.getKeySortSpecsCount()];
     for (int i = 0; i < keySortSpecs.length; i++) {
-      keySortSpecs[i] = new SortSpec(proto.getColumnSpecs(i));
+      keySortSpecs[i] = new SortSpec(proto.getKeySortSpecs(i));
     }
 
-    this.set(proto.getName(), new Path(proto.getIndexPath()),
-        proto.getTableIdentifier().getDatabaseName(),
+    this.set(proto.getTableIdentifier().getDatabaseName(),
         proto.getTableIdentifier().getTableName(),
+        proto.getIndexName(), new Path(proto.getIndexPath()),
         keySortSpecs,
-        proto.getIndexMethod(), proto.getIsUnique(), proto.getIsClustered());
+        proto.getIndexMethod(), proto.getIsUnique(), proto.getIsClustered(),
+        new Schema(proto.getTargetRelationSchema()));
   }
 
-  public void set(String name, Path indexPath, String databaseName, String tableName, SortSpec[] keySortSpecs,
-                  IndexMethod type,  boolean isUnique, boolean isClustered) {
-    this.name = name;
-    this.indexPath = indexPath;
+  public void set(String databaseName, String tableName, String indexName, Path indexPath, SortSpec[] keySortSpecs,
+                  IndexMethod type,  boolean isUnique, boolean isClustered, Schema targetRelationSchema) {
     this.databaseName = databaseName;
     this.tableName = tableName;
-    this.indexMethod = type;
-    this.keySortSpecs = keySortSpecs;
-    this.isUnique = isUnique;
-    this.isClustered = isClustered;
+    this.indexMeta = new IndexMeta(indexName, indexPath, keySortSpecs, type, isUnique, isClustered,
+        targetRelationSchema);
   }
 
   public String getName() {
-    return name;
+    return indexMeta.getIndexName();
   }
   
   public Path getIndexPath() {
-    return indexPath;
+    return indexMeta.getIndexPath();
   }
   
   public String getTableName() {
@@ -86,19 +79,23 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   }
   
   public SortSpec[] getKeySortSpecs() {
-    return keySortSpecs;
+    return indexMeta.getKeySortSpecs();
   }
   
   public IndexMethod getIndexMethod() {
-    return this.indexMethod;
+    return indexMeta.getIndexMethod();
   }
   
   public boolean isClustered() {
-    return this.isClustered;
+    return indexMeta.isClustered();
   }
   
   public boolean isUnique() {
-    return this.isUnique;
+    return indexMeta.isUnique();
+  }
+
+  public Schema getTargetRelationSchema() {
+    return indexMeta.getTargetRelationSchema();
   }
 
   @Override
@@ -114,14 +111,15 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
     }
 
     builder.setTableIdentifier(tableIdentifierBuilder.build());
-    builder.setName(this.name);
-    builder.setIndexPath(this.indexPath.toString());
-    for (SortSpec colSpec : keySortSpecs) {
-      builder.addColumnSpecs(colSpec.getProto());
+    builder.setIndexName(indexMeta.getIndexName());
+    builder.setIndexPath(indexMeta.getIndexPath().toString());
+    for (SortSpec colSpec : indexMeta.getKeySortSpecs()) {
+      builder.addKeySortSpecs(colSpec.getProto());
     }
-    builder.setIndexMethod(indexMethod);
-    builder.setIsUnique(this.isUnique);
-    builder.setIsClustered(this.isClustered);
+    builder.setIndexMethod(indexMeta.getIndexMethod());
+    builder.setIsUnique(indexMeta.isUnique());
+    builder.setIsClustered(indexMeta.isClustered());
+    builder.setTargetRelationSchema(indexMeta.getTargetRelationSchema().getProto());
 
     return builder.build();
   }
@@ -135,7 +133,8 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
           && getKeySortSpecs().equals(other.getKeySortSpecs())
           && getIndexMethod().equals(other.getIndexMethod())
           && isUnique() == other.isUnique()
-          && isClustered() == other.isClustered();
+          && isClustered() == other.isClustered()
+          && getTargetRelationSchema().equals(other.getTargetRelationSchema());
     } else {
       return false;
     }
@@ -143,18 +142,14 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   
   public int hashCode() {
     return Objects.hashCode(getName(), getIndexPath(), getTableName(), getKeySortSpecs(),
-        getIndexMethod(), isUnique(), isClustered());
+        getIndexMethod(), isUnique(), isClustered(), getTargetRelationSchema());
   }
 
   public Object clone() throws CloneNotSupportedException {
     IndexDesc desc = (IndexDesc) super.clone();
-    desc.name = name;
-    desc.indexPath = indexPath;
-    desc.tableName = tableName;
-    desc.keySortSpecs = keySortSpecs;
-    desc.indexMethod = indexMethod;
-    desc.isUnique = isUnique;
-    desc.isClustered = isClustered;
+    desc.databaseName = this.databaseName;
+    desc.tableName = this.tableName;
+    desc.indexMeta = (IndexMeta) this.indexMeta.clone();
     return desc;
   }
   

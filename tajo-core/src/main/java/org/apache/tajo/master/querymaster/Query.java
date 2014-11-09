@@ -756,11 +756,10 @@ public class Query implements EventHandler<QueryEvent> {
         if (scanNode == null) {
           throw new IOException("Cannot find the table of the relation");
         }
-        SortSpec[] sortSpecs = createIndexNode.getSortSpecs();
-        // TODO: consider the index for two or more columns
-        IndexDesc indexDesc = new IndexDesc(simpleIndexName, createIndexNode.getIndexPath(),
-            databaseName, scanNode.getTableName(), sortSpecs, createIndexNode.getIndexType(),
-            createIndexNode.isUnique(), false);
+        IndexDesc indexDesc = new IndexDesc(databaseName, scanNode.getTableName(),
+            simpleIndexName, createIndexNode.getIndexPath(),
+            createIndexNode.getKeySortSpecs(), createIndexNode.getIndexMethod(),
+            createIndexNode.isUnique(), false, scanNode.getTableSchema());
         if (catalog.createIndex(indexDesc)) {
           LOG.info("Index " + qualifiedIndexName + " is created for the table " + scanNode.getTableName() + ".");
         } else {

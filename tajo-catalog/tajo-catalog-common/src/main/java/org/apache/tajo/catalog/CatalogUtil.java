@@ -24,7 +24,10 @@ import org.apache.tajo.DataTypeUtil;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.*;
+import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.InvalidOperationException;
@@ -831,13 +834,13 @@ public class CatalogUtil {
     return options;
   }
 
-  public static String getUnifiedSimpleColumnName(String[] columnNames) {
+  public static String getUnifiedSimpleColumnName(Schema originalSchema, String[] columnNames) {
     String[] simpleNames = new String[columnNames.length];
     for (int i = 0; i < simpleNames.length; i++) {
       String[] identifiers = columnNames[i].split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP);
       simpleNames[i] = identifiers[identifiers.length-1];
     }
-    Arrays.sort(simpleNames);
+    Arrays.sort(simpleNames, new ColumnPosComparator(originalSchema));
     StringBuilder sb = new StringBuilder();
     for (String colName : simpleNames) {
       sb.append(colName).append("_");
@@ -846,32 +849,16 @@ public class CatalogUtil {
     return sb.toString();
   }
 
-  public static class ColumnNameComparatorOfSortSpec implements Comparator<SortSpec> {
+  public static class ColumnPosComparator implements Comparator<String> {
+
+    private Schema originlSchema;
+    public ColumnPosComparator(Schema originalSchema) {
+      this.originlSchema = originalSchema;
+    }
 
     @Override
-    public int compare(SortSpec s1, SortSpec s2) {
-      return s1.getSortKey().getSimpleName().compareTo(s2.getSortKey().getSimpleName());
+    public int compare(String o1, String o2) {
+      return originlSchema.getColumnId(o1) - originlSchema.getColumnId(o2);
     }
-  }
-
-  public static class ColumnNameComparatorOfSortSpecProto implements Comparator<SortSpecProto> {
-    private ColumnNameComparatorOfSortSpec comparator = new ColumnNameComparatorOfSortSpec();
-
-    @Override
-    public int compare(SortSpecProto s1, SortSpecProto s2) {
-      return comparator.compare(new SortSpec(s1), new SortSpec(s2));
-    }
-  }
-
-  public static String getUnifiedSimpleColumnName(List<SortSpecProto> colSpecProtos) {
-    List<SortSpecProto> modifiableClone = TUtil.newList(colSpecProtos);
-    Collections.sort(modifiableClone, new ColumnNameComparatorOfSortSpecProto());
-    StringBuilder sb = new StringBuilder();
-    for (SortSpecProto columnSpec : modifiableClone) {
-      String[] identifiers = columnSpec.getColumn().getName().split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP);
-      sb.append(identifiers[identifiers.length-1]).append("_");
-    }
-    sb.deleteCharAt(sb.length()-1);
-    return sb.toString();
   }
 }

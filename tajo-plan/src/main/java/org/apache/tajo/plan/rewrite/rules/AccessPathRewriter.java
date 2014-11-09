@@ -105,6 +105,7 @@ public class AccessPathRewriter implements RewriteRule {
       for (AccessPathInfo accessPath : accessPaths) {
         if (accessPath.getScanType() == AccessPathInfo.ScanTypeControl.SEQ_SCAN) {
           optimalPath = accessPath;
+          break;
         }
       }
       // find the optimal path

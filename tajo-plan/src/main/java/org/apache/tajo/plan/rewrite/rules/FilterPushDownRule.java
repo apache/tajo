@@ -29,6 +29,7 @@ import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.rules.FilterPushDownRule.FilterPushDownContext;
 import org.apache.tajo.plan.rewrite.RewriteRule;
+import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.plan.util.IndexUtil;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
@@ -822,7 +823,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
   @Override
   public LogicalNode visitScan(FilterPushDownContext context, LogicalPlan plan,
-                               LogicalPlan.QueryBlock block, ScanNode scanNode,
+                               LogicalPlan.QueryBlock block, final ScanNode scanNode,
                                Stack<LogicalNode> stack) throws PlanningException {
     List<EvalNode> matched = Lists.newArrayList();
 
@@ -924,7 +925,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         Column[] columns = extractColumns(subset);
         if (catalog.existIndexByColumns(databaseName, tableName, columns)) {
           IndexDesc indexDesc = catalog.getIndexByColumns(databaseName, tableName, columns);
-          block.addAccessPath(scanNode, new IndexScanInfo(table.getStats(), indexDesc, extractPredicateValues((subset))));
+          block.addAccessPath(scanNode, new IndexScanInfo(
+              table.getStats(), indexDesc, getSimplePredicates(indexDesc, subset)));
         }
       }
     }
@@ -949,6 +951,20 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       this.column = column;
       this.value = value;
     }
+  }
+
+  private static SimplePredicate[] getSimplePredicates(IndexDesc desc, List<Predicate> predicates) {
+    SimplePredicate[] simplePredicates = new SimplePredicate[predicates.size()];
+    Map<Column, Datum> colToValue = TUtil.newHashMap();
+    for (Predicate predicate : predicates) {
+      colToValue.put(predicate.column, predicate.value);
+    }
+    SortSpec [] keySortSpecs = desc.getKeySortSpecs();
+    for (int i = 0; i < keySortSpecs.length; i++) {
+      simplePredicates[i] = new SimplePredicate(keySortSpecs[i],
+          colToValue.get(keySortSpecs[i].getSortKey()));
+    }
+    return simplePredicates;
   }
 
   private static Datum[] extractPredicateValues(List<Predicate> predicates) {

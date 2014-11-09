@@ -18,26 +18,24 @@
 
 package org.apache.tajo.plan.rewrite.rules;
 
+import com.google.gson.annotations.Expose;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.catalog.CatalogUtil.ColumnNameComparatorOfSortSpec;
 import org.apache.tajo.catalog.IndexDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.util.TUtil;
-
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
 
 public class IndexScanInfo extends AccessPathInfo {
 
+  /**
+   * Simple predicate represents an equal eval expression which consists of
+   * a column and a value.
+   */
+  // TODO: extend to represent more complex expressions
   public static class SimplePredicate {
-    private SortSpec sortSpec;
-    private Datum value;
+    @Expose private SortSpec sortSpec;
+    @Expose private Datum value;
 
     public SimplePredicate(SortSpec sortSpec, Datum value) {
       this.sortSpec = sortSpec;
@@ -51,37 +49,39 @@ public class IndexScanInfo extends AccessPathInfo {
     public Datum getValue() {
       return value;
     }
-  }
 
-  private Path indexPath;
-  private Schema keySchema;
-  private SimplePredicate[] predicates;
-
-  public IndexScanInfo(TableStats tableStats) {
-    super(ScanTypeControl.INDEX_SCAN, tableStats);
-  }
-
-  public IndexScanInfo(TableStats tableStats, IndexDesc indexDesc, Datum[] values) {
-    this(tableStats);
-    this.indexPath = indexDesc.getIndexPath();
-    initPredicates(indexDesc, values);
-  }
-
-  private void initPredicates(IndexDesc desc, Datum[] values) {
-    this.predicates = new SimplePredicate[values.length];
-    Map<TajoDataTypes.Type, Datum> valueMap = TUtil.newHashMap();
-    for (Datum val : values) {
-      valueMap.put(val.type(), val);
+    @Override
+    public boolean equals(Object o) {
+      if (o instanceof SimplePredicate) {
+        SimplePredicate other = (SimplePredicate) o;
+        return this.sortSpec.equals(other.sortSpec) && this.value.equals(other.sortSpec);
+      } else {
+        return false;
+      }
     }
-    List<SortSpec> modifiableKeySortSpecs = TUtil.newList(desc.getKeySortSpecs());
-    Collections.sort(modifiableKeySortSpecs, new ColumnNameComparatorOfSortSpec());
 
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+      SimplePredicate clone = new SimplePredicate(this.sortSpec, this.value);
+      return clone;
+    }
+  }
+
+  private final Path indexPath;
+  private final Schema keySchema;
+  private final SimplePredicate[] predicates;
+
+//  public IndexScanInfo(TableStats tableStats) {
+//    super(ScanTypeControl.INDEX_SCAN, tableStats);
+//  }
+
+  public IndexScanInfo(TableStats tableStats, IndexDesc indexDesc, SimplePredicate[] predicates) {
+    super(ScanTypeControl.INDEX_SCAN, tableStats);
+    this.indexPath = indexDesc.getIndexPath();
     keySchema = new Schema();
-    int i = 0;
-    for (SortSpec keySortSpec : modifiableKeySortSpecs) {
-      predicates[i++] = new SimplePredicate(keySortSpec,
-          valueMap.get(keySortSpec.getSortKey().getDataType().getType()));
-      keySchema.addColumn(keySortSpec.getSortKey());
+    this.predicates = predicates;
+    for (SimplePredicate predicate : predicates) {
+      keySchema.addColumn(predicate.getSortSpec().getSortKey());
     }
   }
 

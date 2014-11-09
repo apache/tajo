@@ -18,91 +18,86 @@
 
 package org.apache.tajo.plan.logical;
 
-import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.IndexMeta;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.TUtil;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 
 public class CreateIndexNode extends UnaryNode implements Cloneable {
-  @Expose private boolean isUnique;
-  @Expose private String indexName;
-  @Expose private Path indexPath;
-  @Expose private SortSpec[] sortSpecs;
-  @Expose private IndexMethod indexType = IndexMethod.TWO_LEVEL_BIN_TREE;
-  @Expose private KeyValueSet options;
+  @Expose private IndexMeta indexMeta;
 
   public CreateIndexNode(int pid) {
     super(pid, NodeType.CREATE_INDEX);
+    this.indexMeta = new IndexMeta();
   }
 
   public void setUnique(boolean unique) {
-    this.isUnique = unique;
+    indexMeta.setUnique(unique);
   }
 
   public boolean isUnique() {
-    return isUnique;
+    return indexMeta.isUnique();
   }
 
   public void setIndexName(String indexName) {
-    this.indexName = indexName;
+    indexMeta.setIndexName(indexName);
   }
 
   public String getIndexName() {
-    return this.indexName;
+    return indexMeta.getIndexName();
   }
 
   public void setIndexPath(Path indexPath) {
-    this.indexPath = indexPath;
+    indexMeta.setIndexPath(indexPath);
   }
 
   public Path getIndexPath() {
-    return this.indexPath;
+    return indexMeta.getIndexPath();
   }
 
-  public void setSortSpecs(SortSpec[] sortSpecs) {
-    this.sortSpecs = sortSpecs;
+  public void setKeySortSpecs(Schema targetRelationSchema, SortSpec[] sortSpecs) {
+    indexMeta.setKeySortSpecs(targetRelationSchema, sortSpecs);
   }
 
-  public SortSpec[] getSortSpecs() {
-    return this.sortSpecs;
+  public SortSpec[] getKeySortSpecs() {
+    return indexMeta.getKeySortSpecs();
   }
 
-  public void setIndexType(IndexMethod indexType) {
-    this.indexType = indexType;
+  public void setIndexMethod(IndexMethod indexType) {
+    indexMeta.setIndexMethod(indexType);
   }
 
-  public IndexMethod getIndexType() {
-    return this.indexType;
+  public IndexMethod getIndexMethod() {
+    return indexMeta.getIndexMethod();
   }
 
   public void setOptions(KeyValueSet options) {
-    this.options = options;
+    indexMeta.setOptions(options);
   }
 
   public KeyValueSet getOptions() {
-    return this.options;
+    return indexMeta.getOptions();
+  }
+
+  public Schema getTargetRelationSchema() {
+    return indexMeta.getTargetRelationSchema();
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(isUnique, indexName, indexPath, sortSpecs, indexType, options);
+    return indexMeta.hashCode();
   }
 
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof CreateIndexNode) {
       CreateIndexNode other = (CreateIndexNode) obj;
-      return this.isUnique == other.isUnique &&
-          TUtil.checkEquals(this.indexName, other.indexName) &&
-          TUtil.checkEquals(this.indexPath, other.indexPath) &&
-          TUtil.checkEquals(this.sortSpecs, other.sortSpecs) &&
-          this.indexType.equals(other.indexType) &&
-          TUtil.checkEquals(this.options, other.options);
+      return this.indexMeta.equals(other.indexMeta);
     }
     return false;
   }
@@ -110,17 +105,13 @@ public class CreateIndexNode extends UnaryNode implements Cloneable {
   @Override
   public Object clone() throws CloneNotSupportedException {
     CreateIndexNode createIndexNode = (CreateIndexNode) super.clone();
-    createIndexNode.isUnique = isUnique;
-    createIndexNode.indexName = indexName;
-    createIndexNode.indexPath = indexPath;
-    createIndexNode.sortSpecs = sortSpecs.clone();
-    createIndexNode.indexType = indexType;
-    createIndexNode.options = (KeyValueSet) (options != null ? options.clone() : null);
+    createIndexNode.indexMeta = (IndexMeta) this.indexMeta.clone();
     return createIndexNode;
   }
 
   private String getSortSpecString() {
     StringBuilder sb = new StringBuilder("Column [key= ");
+    SortSpec[] sortSpecs = indexMeta.getKeySortSpecs();
     for (int i = 0; i < sortSpecs.length; i++) {
       sb.append(sortSpecs[i].getSortKey().getQualifiedName()).append(" ")
           .append(sortSpecs[i].isAscending() ? "asc" : "desc");
@@ -134,8 +125,9 @@ public class CreateIndexNode extends UnaryNode implements Cloneable {
 
   @Override
   public String toString() {
-    return "CreateIndex (indexName=" + indexName + ", indexPath=" + indexPath + ", type=" + indexType.name() +
-        ", isUnique=" + isUnique + ", " + getSortSpecString() + ")";
+    return "CreateIndex (indexName=" + indexMeta.getIndexName() + ", indexPath=" + indexMeta.getIndexPath() +
+        ", type=" + indexMeta.getIndexMethod().name() +
+        ", isUnique=" + indexMeta.isUnique() + ", " + getSortSpecString() + ")";
   }
 
   @Override

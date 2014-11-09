@@ -22,21 +22,28 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.logical.ScanNode;
+import org.apache.tajo.plan.logical.IndexScanNode;
+import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.index.bst.BSTIndex;
+import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Map;
 
 public class BSTIndexScanExec extends PhysicalExec {
   private final static Log LOG = LogFactory.getLog(BSTIndexScanExec.class);
-  private ScanNode scanNode;
+  private IndexScanNode scanNode;
   private SeekableScanner fileScanner;
   
   private EvalNode qual;
@@ -44,23 +51,34 @@ public class BSTIndexScanExec extends PhysicalExec {
   
   private Projector projector;
   
-  private Datum[] datum = null;
+  private Datum[] values = null;
 
   private boolean initialize = true;
 
   private float progress;
 
   public BSTIndexScanExec(TaskAttemptContext context,
-                          StorageManager sm , ScanNode scanNode ,
+                          StorageManager sm , IndexScanNode scanNode ,
        FileFragment fragment, Path indexPrefix , Schema keySchema,
-       TupleComparator comparator , Datum[] datum) throws IOException {
+       SimplePredicate [] predicates) throws IOException {
     super(context, scanNode.getInSchema(), scanNode.getOutSchema());
     this.scanNode = scanNode;
     this.qual = scanNode.getQual();
-    this.datum = datum;
+
+    SortSpec[] keySortSpecs = new SortSpec[predicates.length];
+    values = new Datum[predicates.length];
+    for (int i = 0; i < predicates.length; i++) {
+      keySortSpecs[i] = predicates[i].getSortSpec();
+      values[i] = predicates[i].getValue();
+    }
+
+    TupleComparator comparator = new BaseTupleComparator(keySchema,
+        keySortSpecs);
+
+    Schema fileOutSchema = mergeSubSchemas(inSchema, keySchema, outSchema);
 
     this.fileScanner = StorageManager.getSeekableScanner(context.getConf(),
-        scanNode.getTableDesc().getMeta(), scanNode.getInSchema(), fragment, outSchema);
+        scanNode.getTableDesc().getMeta(), inSchema, fragment, fileOutSchema);
     this.fileScanner.init();
     this.projector = new Projector(context, inSchema, outSchema, scanNode.getTargets());
 
@@ -68,6 +86,33 @@ public class BSTIndexScanExec extends PhysicalExec {
     this.reader = new BSTIndex(sm.getFileSystem().getConf()).
         getIndexReader(indexPath, keySchema, comparator);
     this.reader.open();
+  }
+
+  private static Schema mergeSubSchemas(Schema originalSchema, Schema subSchema1, Schema subSchema2) {
+    int i1 = 0, i2 = 0;
+    Schema mergedSchema = new Schema();
+    while (i1 < subSchema1.size() && i2 < subSchema2.size()) {
+      int columnId1 = originalSchema.getColumnId(subSchema1.getColumn(i1).getQualifiedName());
+      int columnId2 = originalSchema.getColumnId(subSchema2.getColumn(i2).getQualifiedName());
+      if (columnId1 < columnId2) {
+        mergedSchema.addColumn(originalSchema.getColumn(columnId1));
+        i1++;
+      } else if (columnId1 > columnId2) {
+        mergedSchema.addColumn(originalSchema.getColumn(columnId2));
+        i2++;
+      } else {
+        mergedSchema.addColumn(originalSchema.getColumn(columnId1));
+        i1++;
+        i2++;
+      }
+    }
+    for (; i1 < subSchema1.size(); i1++) {
+      mergedSchema.addColumn(subSchema1.getColumn(i1));
+    }
+    for (; i2 < subSchema2.size(); i2++) {
+      mergedSchema.addColumn(subSchema2.getColumn(i2));
+    }
+    return mergedSchema;
   }
 
   @Override
@@ -79,8 +124,8 @@ public class BSTIndexScanExec extends PhysicalExec {
   public Tuple next() throws IOException {
     if(initialize) {
       //TODO : more complicated condition
-      Tuple key = new VTuple(datum.length);
-      key.put(datum);
+      Tuple key = new VTuple(values.length);
+      key.put(values);
       long offset = reader.find(key);
       if (offset == -1) {
         reader.close();

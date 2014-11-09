@@ -67,4 +67,13 @@ public class TestIndexScan extends QueryTestCaseBase {
     cleanupQuery(res);
     executeString("drop index multikey_idx");
   }
+
+  @Test
+  public final void testOnMultipleExprs() throws Exception {
+    executeString("create index l_orderkey_100_l_linenumber_10_idx on lineitem (l_orderkey*100-l_linenumber*10 asc null first);");
+    ResultSet res = executeString("select l_orderkey, l_linenumber from lineitem where l_orderkey*100-l_linenumber*10 = 280");
+    assertResultSet(res);
+    cleanupQuery(res);
+    executeString("drop index l_orderkey_100_l_linenumber_10_idx");
+  }
 }

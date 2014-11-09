@@ -458,12 +458,14 @@ public abstract class AbstractCatalogClient implements CatalogService {
       return new ServerCallable<Boolean>(this.pool, getCatalogServerAddr(), CatalogProtocol.class, false) {
         public Boolean call(NettyClientBase client) throws ServiceException {
 
-          GetIndexByColumnRequest.Builder builder = GetIndexByColumnRequest.newBuilder();
+          GetIndexByColumnNamesRequest.Builder builder = GetIndexByColumnNamesRequest.newBuilder();
           builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
-          builder.setColumnName(CatalogUtil.getUnifiedSimpleColumnName(columnNames));
+          for (String colunName : columnNames) {
+            builder.addColumnNames(colunName);
+          }
 
           CatalogProtocolService.BlockingInterface stub = getStub(client);
-          return stub.existIndexByColumn(null, builder.build()).getValue();
+          return stub.existIndexByColumnNames(null, builder.build()).getValue();
         }
       }.withRetries();
     } catch (ServiceException e) {
@@ -515,12 +517,14 @@ public abstract class AbstractCatalogClient implements CatalogService {
       return new ServerCallable<IndexDesc>(this.pool, getCatalogServerAddr(), CatalogProtocol.class, false) {
         public IndexDesc call(NettyClientBase client) throws ServiceException {
 
-          GetIndexByColumnRequest.Builder builder = GetIndexByColumnRequest.newBuilder();
+          GetIndexByColumnNamesRequest.Builder builder = GetIndexByColumnNamesRequest.newBuilder();
           builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
-          builder.setColumnName(CatalogUtil.getUnifiedSimpleColumnName(columnNames));
+          for (String columnName : columnNames) {
+            builder.addColumnNames(columnName);
+          }
 
           CatalogProtocolService.BlockingInterface stub = getStub(client);
-          return new IndexDesc(stub.getIndexByColumn(null, builder.build()));
+          return new IndexDesc(stub.getIndexByColumnNames(null, builder.build()));
         }
       }.withRetries();
     } catch (ServiceException e) {

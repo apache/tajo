@@ -25,11 +25,15 @@ import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 
 import java.io.IOException;
 import java.util.*;
@@ -365,20 +369,22 @@ public class MemStore implements CatalogStore {
   @Override
   public void createIndex(IndexDescProto proto) throws CatalogException {
     final String databaseName = proto.getTableIdentifier().getDatabaseName();
+    final String tableName = CatalogUtil.extractSimpleName(proto.getTableIdentifier().getTableName());
 
     Map<String, IndexDescProto> index = checkAndGetDatabaseNS(indexes, databaseName);
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
+    TableDescProto tableDescProto = getTable(databaseName, tableName);
 
-    if (index.containsKey(proto.getName())) {
-      throw new AlreadyExistsIndexException(proto.getName());
+    if (index.containsKey(proto.getIndexName())) {
+      throw new AlreadyExistsIndexException(proto.getIndexName());
     }
 
-    index.put(proto.getName(), proto);
+    index.put(proto.getIndexName(), proto);
     String originalTableName = proto.getTableIdentifier().getTableName();
     String simpleTableName = CatalogUtil.extractSimpleName(originalTableName);
     indexByColumn.put(CatalogUtil.buildFQName(proto.getTableIdentifier().getDatabaseName(),
             simpleTableName,
-            CatalogUtil.getUnifiedSimpleColumnName(proto.getColumnSpecsList())),
+            getUnifiedNameForIndexByColumn(proto)),
         proto);
   }
 
@@ -393,12 +399,14 @@ public class MemStore implements CatalogStore {
       throw new NoSuchIndexException(indexName);
     }
     IndexDescProto proto = index.get(indexName);
+    final String tableName = CatalogUtil.extractSimpleName(proto.getTableIdentifier().getTableName());
+    TableDescProto tableDescProto = getTable(databaseName, tableName);
     index.remove(indexName);
     String originalTableName = proto.getTableIdentifier().getTableName();
     String simpleTableName = CatalogUtil.extractSimpleName(originalTableName);
     indexByColumn.remove(CatalogUtil.buildFQName(proto.getTableIdentifier().getDatabaseName(),
         simpleTableName,
-        CatalogUtil.getUnifiedSimpleColumnName(proto.getColumnSpecsList())));
+        getUnifiedNameForIndexByColumn(proto)));
   }
 
   /* (non-Javadoc)
@@ -427,8 +435,9 @@ public class MemStore implements CatalogStore {
   public IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames) throws CatalogException {
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
     String simpleTableName = CatalogUtil.extractSimpleName(tableName);
+    TableDescProto tableDescProto = getTable(databaseName, simpleTableName);
     String qualifiedColumnName = CatalogUtil.buildFQName(databaseName, simpleTableName,
-        CatalogUtil.getUnifiedSimpleColumnName(columnNames));
+        CatalogUtil.getUnifiedSimpleColumnName(new Schema(tableDescProto.getSchema()), columnNames));
     if (!indexByColumn.containsKey(qualifiedColumnName)) {
       throw new NoSuchIndexException(qualifiedColumnName);
     }
@@ -451,9 +460,10 @@ public class MemStore implements CatalogStore {
   @Override
   public boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames) throws CatalogException {
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
+    TableDescProto tableDescProto = getTable(databaseName, tableName);
     return indexByColumn.containsKey(
         CatalogUtil.buildFQName(databaseName, CatalogUtil.extractSimpleName(tableName),
-            CatalogUtil.getUnifiedSimpleColumnName(columnNames)));
+            CatalogUtil.getUnifiedSimpleColumnName(new Schema(tableDescProto.getSchema()), columnNames)));
   }
 
   @Override
@@ -491,4 +501,13 @@ public class MemStore implements CatalogStore {
     return null;
   }
 
+  public static String getUnifiedNameForIndexByColumn(IndexDescProto proto) {
+    StringBuilder sb = new StringBuilder();
+    for (SortSpecProto columnSpec : proto.getKeySortSpecsList()) {
+      String[] identifiers = columnSpec.getColumn().getName().split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP);
+      sb.append(identifiers[identifiers.length-1]).append("_");
+    }
+    sb.deleteCharAt(sb.length()-1);
+    return sb.toString();
+  }
 }

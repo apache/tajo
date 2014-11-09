@@ -707,12 +707,12 @@ public class CatalogServer extends AbstractService {
       try {
         if (store.existIndexByName(
             indexDesc.getTableIdentifier().getDatabaseName(),
-            indexDesc.getName())) {
-          throw new AlreadyExistsIndexException(indexDesc.getName());
+            indexDesc.getIndexName())) {
+          throw new AlreadyExistsIndexException(indexDesc.getIndexName());
         }
         store.createIndex(indexDesc);
       } catch (Exception e) {
-        LOG.error("ERROR : cannot add index " + indexDesc.getName(), e);
+        LOG.error("ERROR : cannot add index " + indexDesc.getIndexName(), e);
         LOG.error(indexDesc);
         throw new ServiceException(e);
       } finally {
@@ -740,17 +740,18 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public BoolProto existIndexByColumn(RpcController controller, GetIndexByColumnRequest request)
+    public BoolProto existIndexByColumnNames(RpcController controller, GetIndexByColumnNamesRequest request)
         throws ServiceException {
 
       TableIdentifierProto identifier = request.getTableIdentifier();
       String databaseName = identifier.getDatabaseName();
       String tableName = identifier.getTableName();
-      String columnName = request.getColumnName();
+      List<String> columnNames = request.getColumnNamesList();
 
       rlock.lock();
       try {
-        return store.existIndexByColumn(databaseName, tableName, columnName) ?
+        return store.existIndexByColumns(databaseName, tableName,
+            columnNames.toArray(new String[columnNames.size()])) ?
             ProtoUtil.TRUE : ProtoUtil.FALSE;
       } catch (Exception e) {
         LOG.error(e);
@@ -770,7 +771,7 @@ public class CatalogServer extends AbstractService {
       rlock.lock();
       try {
         if (!store.existIndexByName(databaseName, indexName)) {
-          throw new NoSuchIndexException(databaseName, indexName);
+          throw new NoSuchIndexException(indexName);
         }
         return store.getIndexByName(databaseName, indexName);
       } catch (Exception e) {
@@ -782,22 +783,24 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
-    public IndexDescProto getIndexByColumn(RpcController controller, GetIndexByColumnRequest request)
+    public IndexDescProto getIndexByColumnNames(RpcController controller, GetIndexByColumnNamesRequest request)
         throws ServiceException {
 
       TableIdentifierProto identifier = request.getTableIdentifier();
       String databaseName = identifier.getDatabaseName();
       String tableName = identifier.getTableName();
-      String columnName = request.getColumnName();
+      List<String> columnNamesList = request.getColumnNamesList();
+      String[] columnNames = new String[columnNamesList.size()];
+      columnNames = columnNamesList.toArray(columnNames);
 
       rlock.lock();
       try {
-        if (!store.existIndexByColumn(databaseName, tableName, columnName)) {
-          throw new NoSuchIndexException(databaseName, columnName);
+        if (!store.existIndexByColumns(databaseName, tableName, columnNames)) {
+          throw new NoSuchIndexException(databaseName, columnNames);
         }
-        return store.getIndexByColumn(databaseName, tableName, columnName);
+        return store.getIndexByColumns(databaseName, tableName, columnNames);
       } catch (Exception e) {
-        LOG.error("ERROR : cannot get index for " + tableName + "." + columnName, e);
+        LOG.error("ERROR : cannot get index for " + tableName + "." + columnNames, e);
         return null;
       } finally {
         rlock.unlock();

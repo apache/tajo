@@ -117,12 +117,13 @@ message NamespaceProto {
 
 message IndexDescProto {
   required TableIdentifierProto tableIdentifier = 1;
-  required string name = 2;
+  required string indexName = 2;
   required IndexMethod indexMethod = 3;
   required string indexPath = 4;
-  repeated SortSpecProto column_specs = 5;
-  optional bool isUnique = 6 [default = false];
-  optional bool isClustered = 7 [default = false];
+  repeated SortSpecProto key_sort_specs = 5;
+  required SchemaProto targetRelationSchema = 6;
+  optional bool isUnique = 7 [default = false];
+  optional bool isClustered = 8 [default = false];
 }
 
 enum IndexMethod {
@@ -136,9 +137,9 @@ message GetAllTableNamesResponse {
   repeated string tableName = 1;
 }
 
-message GetIndexByColumnRequest {
+message GetIndexByColumnNamesRequest {
   required TableIdentifierProto tableIdentifier = 1;
-  required string columnName = 2;
+  repeated string columnNames = 2;
 }
 
 message IndexNameProto {

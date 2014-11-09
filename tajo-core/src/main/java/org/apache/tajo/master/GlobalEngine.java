@@ -756,10 +756,10 @@ public class GlobalEngine extends AbstractService {
 //      throw new IOException("Cannot find the table of the relation");
 //    }
 //    simpleTableName = CatalogUtil.extractSimpleName(scanNode.getTableName());
-//    SortSpec[] sortSpecs = createIndexNode.getSortSpecs();
+//    SortSpec[] sortSpecs = createIndexNode.getKeySortSpecs();
 //    // TODO: consider the index for two or more columns
 //    IndexDesc indexDesc = new IndexDesc(createIndexNode.getIndexName(), createIndexNode.getIndexPath(),
-//        databaseName, simpleTableName, sortSpecs[0].getSortKey(), createIndexNode.getIndexType(),
+//        databaseName, simpleTableName, sortSpecs[0].getSortKey(), createIndexNode.getIndexMethod(),
 //        createIndexNode.isUnique(), false, sortSpecs[0].isAscending());
 //    if (catalog.createIndex(indexDesc)) {
 //      LOG.info("Index " + qualifiedIndexName + " is created for the table " + simpleTableName + ".");

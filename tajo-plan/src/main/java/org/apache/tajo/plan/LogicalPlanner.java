@@ -50,7 +50,6 @@ import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.verifier.VerifyException;
-import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
@@ -1925,8 +1924,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           context.queryBlock.isNeedIdentifiableTargets());
     }
 
-    createIndexNode.setSortSpecs(annotateSortSpecs(block, referNames, sortSpecs));
-    createIndexNode.setIndexType(IndexMethod.valueOf(createIndex.getMethodSpec().getName().toUpperCase()));
+    Collection<RelationNode> relations = block.getRelations();
+    assert relations.size() == 1;
+    createIndexNode.setKeySortSpecs(relations.iterator().next().getTableSchema(),
+        annotateSortSpecs(block, referNames, sortSpecs));
+    createIndexNode.setIndexMethod(IndexMethod.valueOf(createIndex.getMethodSpec().getName().toUpperCase()));
     createIndexNode.setIndexPath(
         getIndexPath(context, context.queryContext.get(SessionVars.CURRENT_DATABASE), createIndex.getIndexName()));
 
