@@ -1751,7 +1751,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return proto;
   }
 
-  // TODO: create another table, called indexes_by_col
   @Override
   public IndexDescProto getIndexByColumn(final String databaseName,
                                          final String tableName,

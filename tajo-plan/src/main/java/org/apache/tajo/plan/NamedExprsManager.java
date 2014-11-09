@@ -142,10 +142,6 @@ public class NamedExprsManager {
   /**
    * Adds an expression and returns a reference name.
    */
-//  public String addExpr(Expr expr) throws PlanningException {
-//    return addExpr(expr, false);
-//  }
-
   public String addExpr(Expr expr, boolean identifiable) throws PlanningException {
     if (idToExprBiMap.inverse().containsKey(expr)) {
       int refId = idToExprBiMap.inverse().get(expr);
