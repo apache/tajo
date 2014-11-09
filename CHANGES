@@ -32,6 +32,9 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1154: TajoCli doesn't pause while running the non-forwarded 
+    query. (Hyoungjun Kim via hyunsik)
+
     TAJO-1150: Some weird methods in QueryClientImpl should be fixed. 
     (Jongyoung Park via hyunsik)
 
