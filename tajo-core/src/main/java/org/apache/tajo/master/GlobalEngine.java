@@ -41,7 +41,6 @@ import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
@@ -262,6 +261,10 @@ public class GlobalEngine extends AbstractService {
         LimitNode limitNode = plan.getRootBlock().getNode(NodeType.LIMIT);
         maxRow = (int) limitNode.getFetchFirstNum();
       }
+      if (desc.getStats().getNumRows() == 0) {
+        desc.getStats().setNumRows(TajoConstants.UNKNOWN_ROW_NUMBER);
+      }
+
       QueryId queryId = QueryIdFactory.newQueryId(context.getResourceManager().getSeedQueryId());
 
       NonForwardQueryResultScanner queryResultScanner =
@@ -855,7 +858,7 @@ public class GlobalEngine extends AbstractService {
     stats.setNumBytes(totalSize);
 
     if (isExternal) { // if it is an external table, there is no way to know the exact row number without processing.
-      stats.setNumRows(QueryClient.UNKNOWN_ROW_NUMBER);
+      stats.setNumRows(TajoConstants.UNKNOWN_ROW_NUMBER);
     }
 
     TableDesc desc = new TableDesc(CatalogUtil.buildFQName(databaseName, simpleTableName),
