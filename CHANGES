@@ -44,6 +44,8 @@ Release 0.9.1 - unreleased
 
   TASKS
 
+    TAJO-1129: Remove hadoop 2.2.0 support. (jinho via hyunsik)
+
     TAJO-1153: Merge off-heap package in block_iteration branch to master 
     branch. (hyunsik)
 
