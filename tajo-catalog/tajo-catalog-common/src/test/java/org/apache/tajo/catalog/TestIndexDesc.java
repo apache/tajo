@@ -53,7 +53,7 @@ public class TestIndexDesc {
         IndexMethod.TWO_LEVEL_BIN_TREE, false, false, relationSchema);
 
     SortSpec[] colSpecs3 = new SortSpec[1];
-    colSpecs3[0] = new SortSpec(new Column("id", Type.INT4), true, false);
+    colSpecs3[0] = new SortSpec(new Column("id", Type.INT4), true, true);
     desc3 = new IndexDesc(DEFAULT_DATABASE_NAME, "indexed",
         "idx_test", new Path("idx_test"), colSpecs3,
         IndexMethod.TWO_LEVEL_BIN_TREE, true, true, relationSchema);
@@ -87,8 +87,8 @@ public class TestIndexDesc {
     assertEquals("indexed", desc2.getTableName());
     assertEquals(1, desc2.getKeySortSpecs().length);
     assertEquals(new Column("score", Type.FLOAT8), desc2.getKeySortSpecs()[0].getSortKey());
-    assertEquals(true, desc2.getKeySortSpecs()[0].isAscending());
-    assertEquals(true, desc2.getKeySortSpecs()[0].isNullFirst());
+    assertEquals(false, desc2.getKeySortSpecs()[0].isAscending());
+    assertEquals(false, desc2.getKeySortSpecs()[0].isNullFirst());
     assertEquals(IndexMethod.TWO_LEVEL_BIN_TREE, desc2.getIndexMethod());
     assertEquals(new Path("idx_test2"), desc2.getIndexPath());
     assertEquals(false, desc2.isUnique());

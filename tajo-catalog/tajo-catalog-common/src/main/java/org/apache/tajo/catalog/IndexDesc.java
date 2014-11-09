@@ -66,6 +66,14 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
         targetRelationSchema);
   }
 
+  public String getDatabaseName() {
+    return databaseName;
+  }
+
+  public String getTableName() {
+    return tableName;
+  }
+
   public String getName() {
     return indexMeta.getIndexName();
   }
@@ -73,11 +81,7 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   public Path getIndexPath() {
     return indexMeta.getIndexPath();
   }
-  
-  public String getTableName() {
-    return tableName;
-  }
-  
+
   public SortSpec[] getKeySortSpecs() {
     return indexMeta.getKeySortSpecs();
   }
@@ -127,14 +131,9 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   public boolean equals(Object obj) {
     if (obj instanceof IndexDesc) {
       IndexDesc other = (IndexDesc) obj;
-      return getIndexPath().equals(other.getIndexPath())
-          && getName().equals(other.getName())
+      return getDatabaseName().equals(other.getDatabaseName())
           && getTableName().equals(other.getTableName())
-          && getKeySortSpecs().equals(other.getKeySortSpecs())
-          && getIndexMethod().equals(other.getIndexMethod())
-          && isUnique() == other.isUnique()
-          && isClustered() == other.isClustered()
-          && getTargetRelationSchema().equals(other.getTargetRelationSchema());
+          && this.indexMeta.equals(other.indexMeta);
     } else {
       return false;
     }
