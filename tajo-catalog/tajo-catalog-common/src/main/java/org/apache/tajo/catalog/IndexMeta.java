@@ -56,6 +56,7 @@ public class IndexMeta implements Cloneable {
   }
 
   private void initKeySortSpecs(final Schema targetRelationSchema, final SortSpec[] keySortSpecs) {
+    this.targetRelationSchema = targetRelationSchema;
     this.keySortSpecs = new SortSpec[keySortSpecs.length];
     for (int i = 0; i < keySortSpecs.length; i++) {
       this.keySortSpecs[i] = new SortSpec(keySortSpecs[i].getSortKey(), keySortSpecs[i].isAscending(),
