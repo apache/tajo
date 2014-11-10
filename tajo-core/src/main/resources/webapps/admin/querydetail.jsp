@@ -71,7 +71,7 @@ if (queryHistory == null) {
     <tr><th>ID</th><th>State</th><th>Started</th><th>Finished</th><th>Running time</th><th>Progress</th><th>Succeeded/Total</th><th>Failed/Killed</th></tr>
 <%
     for(SubQueryHistory eachSubQuery: subQueryHistories) {
-        String detailLink = "querytasks.jsp?queryId=" + queryId + "&ebid=" + eachSubQuery.getExecutionBlockId();
+        String detailLink = "querytasks.jsp?queryId=" + queryId + "&ebid=" + eachSubQuery.getExecutionBlockId() + "&startTime=" + startTime;
 %>
   <tr>
     <td><a href='<%=detailLink%>'><%=eachSubQuery.getExecutionBlockId()%></a></td>

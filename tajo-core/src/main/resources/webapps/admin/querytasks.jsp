@@ -38,6 +38,7 @@
   HistoryReader reader = master.getContext().getHistoryReader();
 
   String queryId = request.getParameter("queryId");
+  String startTime = request.getParameter("startTime");
   String ebId = request.getParameter("ebid");
 
   QueryHistory queryHistory = reader.getQueryHistory(queryId);
@@ -124,11 +125,11 @@
     }
   }
 
-  String url = "querytasks.jsp?queryId=" + queryId + "&ebid=" + ebId +
+  String url = "querytasks.jsp?queryId=" + queryId + "&ebid=" + ebId + "&startTime=" + startTime +
       "&page=" + currentPage + "&pageSize=" + pageSize +
       "&status=" + status + "&sortOrder=" + nextSortOrder + "&sort=";
 
-  String pageUrl = "querytasks.jsp?queryId=" + queryId + "&ebid=" + ebId +
+  String pageUrl = "querytasks.jsp?queryId=" + queryId + "&ebid=" + ebId + "&startTime=" + startTime +
       "&status=" + status + "&sortOrder=" + nextSortOrder + "&sort=";
 
   NumberFormat nf = NumberFormat.getInstance(Locale.US);
@@ -146,7 +147,7 @@
 <div class='contents'>
   <h2>Tajo Master: <%=master.getMasterName()%> <%=JSPUtil.getMasterActiveLabel(master.getContext())%></h2>
   <hr/>
-  <h3><a href='querydetail.jsp?queryId=<%=queryId%>'><%=ebId.toString()%></a></h3>
+  <h3><a href='querydetail.jsp?queryId=<%=queryId%>&startTime=<%=startTime%>'><%=ebId.toString()%></a></h3>
   <hr/>
   <p/>
   <pre style="white-space:pre-wrap;"><%=subQuery.getPlan()%></pre>
@@ -183,6 +184,7 @@
     <input type="hidden" name="ebid" value="<%=ebId%>"/>
     <input type="hidden" name="sort" value="<%=sort%>"/>
     <input type="hidden" name="sortOrder" value="<%=sortOrder%>"/>
+    <input type="hidden" name="startTime" value="<%=startTime%>"/>
   </form>
 <%
   List<QueryUnitHistory> filteredQueryUnit = new ArrayList<QueryUnitHistory>();
@@ -209,7 +211,7 @@
   for (QueryUnitHistory eachQueryUnit: queryUnits) {
     String queryUnitDetailUrl = "";
     if (eachQueryUnit.getId() != null) {
-      queryUnitDetailUrl = "queryunit.jsp?queryId=" + queryId + "&ebid=" + ebId +
+      queryUnitDetailUrl = "queryunit.jsp?queryId=" + queryId + "&ebid=" + ebId + "&startTime=" + startTime +
           "&queryUnitAttemptId=" + eachQueryUnit.getId() + "&sort=" + sort + "&sortOrder=" + sortOrder;
     }
     String queryUnitHost = eachQueryUnit.getHostAndPort() == null ? "-" : eachQueryUnit.getHostAndPort();
