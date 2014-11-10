@@ -316,9 +316,10 @@ public class DelimitedTextFile {
 
       try {
         // we need to discuss the De/Serializer interface. so custom serde is to disable
-        String serdeClass = this.meta.getOption(StorageConstants.TEXTFILE_SERDE,
+        /*String serdeClass = this.meta.getOption(StorageConstants.TEXTFILE_SERDE,
             TextFieldSerializerDeserializer.class.getName());
-        serde = (TextFieldSerializerDeserializer) ReflectionUtils.newInstance(Class.forName(serdeClass), conf);
+        serde = (TextFieldSerializerDeserializer) ReflectionUtils.newInstance(Class.forName(serdeClass), conf);*/
+        serde = new TextFieldSerializerDeserializer();
       } catch (Throwable e) {
         LOG.error(e.getMessage(), e);
         throw new IOException(e);
