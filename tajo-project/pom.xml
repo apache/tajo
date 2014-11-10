@@ -1006,11 +1006,6 @@
         <version>3.6.6.Final</version>
       </dependency>
       <dependency>
-        <groupId>joda-time</groupId>
-        <artifactId>joda-time</artifactId>
-        <version>2.3</version>
-      </dependency>
-      <dependency>
         <groupId>org.apache.derby</groupId>
         <artifactId>derby</artifactId>
         <version>10.8.2.2</version>
