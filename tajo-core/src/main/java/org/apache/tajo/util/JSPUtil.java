@@ -351,22 +351,6 @@ public class JSPUtil {
     return result;
   }
 
-  public static String getPageSizeSelection(String id, int pageSize) {
-    int realPageSize = pageSize <= 0 ? 100: pageSize;
-
-    StringBuilder sb = new StringBuilder();
-    sb.append("<select id='" + id + "' name='" + id + "'>");
-
-    for (int i = 0; i < 20; i++) {
-      int value = (i + 1) * 100;
-      String selected = (realPageSize == value) ? "selected" : "";
-      sb.append("<option value='" + value + "' " + selected + ">" + value + "</option >");
-    }
-    sb.append("</select>");
-
-    return sb.toString();
-  }
-
   public static String getPageNavigation(int currentPage, int totalPage, String url) {
     StringBuilder sb = new StringBuilder();
 

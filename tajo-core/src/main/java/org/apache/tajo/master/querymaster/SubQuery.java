@@ -409,14 +409,6 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
   }
 
-  public List<QueryUnitHistory> getQueryUnitHistories() {
-    if (finalSubQueryHistory != null) {
-      return finalSubQueryHistory.getQueryUnits();
-    } else {
-      return makeQueryUnitHistories();
-    }
-  }
-
   private List<QueryUnitHistory> makeQueryUnitHistories() {
     List<QueryUnitHistory> queryUnitHistories = new ArrayList<QueryUnitHistory>();
 

@@ -48,7 +48,7 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
   @Before
   public void setUp() throws Exception {
     tajoConf = new TajoConf(testingCluster.getConfiguration());
-    tajoConf.setVar(ConfVars.QUERY_HISTORY_DIR, HISTORY_DIR);
+    tajoConf.setVar(ConfVars.HISTORY_QUERY_DIR, HISTORY_DIR);
   }
 
   @After
@@ -83,7 +83,7 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
       Thread.sleep(5 * 1000);
 
       SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
-      Path path = new Path(tajoConf.getVar(ConfVars.QUERY_HISTORY_DIR));
+      Path path = new Path(tajoConf.getVar(ConfVars.HISTORY_QUERY_DIR));
 
       FileSystem fs = path.getFileSystem(tajoConf);
 
@@ -145,7 +145,7 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
       Thread.sleep(5 * 1000);
 
       SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
-      Path path = new Path(tajoConf.getVar(ConfVars.QUERY_HISTORY_DIR));
+      Path path = new Path(tajoConf.getVar(ConfVars.HISTORY_QUERY_DIR));
 
       FileSystem fs = path.getFileSystem(tajoConf);
 
@@ -191,7 +191,7 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
     TajoConf tajoConf = new TajoConf();
     File historyParentDir = Files.createTempDir();
     historyParentDir.deleteOnExit();
-    tajoConf.setVar(ConfVars.QUERY_TASK_HISTORY_DIR, "file://" + historyParentDir.getCanonicalPath());
+    tajoConf.setVar(ConfVars.HISTORY_TASK_DIR, "file://" + historyParentDir.getCanonicalPath());
 
     HistoryWriter writer = new HistoryWriter("127.0.0.1:28090", false);
     writer.init(tajoConf);
@@ -219,7 +219,7 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
 
       SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHH");
       String startDate = df.format(new Date(startTime));
-      Path taskParentPath = new Path(tajoConf.getVar(ConfVars.QUERY_TASK_HISTORY_DIR),
+      Path taskParentPath = new Path(tajoConf.getVar(ConfVars.HISTORY_TASK_DIR),
           startDate.substring(0, 8) + "/tasks/127.0.0.1_28090");
 
       FileSystem fs = taskParentPath.getFileSystem(tajoConf);

@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class HistoryCleaner extends Thread {
   private static final Log LOG = LogFactory.getLog(HistoryCleaner.class);
 
-  private int historyLivenessDays;
+  private int historyExpireDays;
   private AtomicBoolean stopped = new AtomicBoolean(false);
   private Path historyParentPath;
   private Path taskHistoryParentPath;
@@ -47,7 +47,7 @@ public class HistoryCleaner extends Thread {
 
     this.tajoConf = tajoConf;
     this.isMaster = isMaster;
-    historyLivenessDays = tajoConf.getIntVar(ConfVars.HISTORY_FILE_LIVENESS_DAY);
+    historyExpireDays = tajoConf.getIntVar(ConfVars.HISTORY_EXPIRY_TIME_DAY);
     historyParentPath = tajoConf.getQueryHistoryDir(tajoConf);
     taskHistoryParentPath = tajoConf.getTaskHistoryDir(tajoConf);
   }
@@ -59,7 +59,7 @@ public class HistoryCleaner extends Thread {
 
   @Override
   public void run() {
-    LOG.info("History cleaner started: liveness day=" + historyLivenessDays);
+    LOG.info("History cleaner started: expiry day=" + historyExpireDays);
     SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
 
     while (!stopped.get()) {
@@ -74,7 +74,7 @@ public class HistoryCleaner extends Thread {
 
       try {
         Calendar cal = Calendar.getInstance();
-        cal.add(Calendar.DAY_OF_MONTH, -historyLivenessDays);
+        cal.add(Calendar.DAY_OF_MONTH, -historyExpireDays);
 
         long cleanTargetTime = cal.getTime().getTime();
 

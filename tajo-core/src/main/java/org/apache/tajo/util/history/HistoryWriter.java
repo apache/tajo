@@ -38,11 +38,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *   tajo.query-history.path: hdfs
  *   tajo.task-history.path: local or hdfs
  *
- *   <tajo.query-history.path>/<yyyyMMdd>/query-list/query-list-<sequence>.hist (TajoMaster's query list, hourly rolling)
- *                                       /query-detail/<QUERY_ID>/query.hist    (QueryMaster's query detail)
+ *   <tajo.history.query.dir>/<yyyyMMdd>/query-list/query-list-<HHmmss>.hist (TajoMaster's query list, hourly rolling)
+ *                                      /query-detail/<QUERY_ID>/query.hist    (QueryMaster's query detail)
  *                                                               /<EB_ID>.hist  (QueryMaster's subquery detail)
- *   <tajo.task-history.path>/<yyyyMMdd>/tasks/<WORKER_HOST>_<WORKER_PORT>/<WORKER_HOST>_<WORKER_PORT>_<HH>_<seq>.hist
- * History files are kept for "tajo.query-history.preserve.hours" (default value is 68 hours-1 week.)
+ *   <tajo.history.task.dir>/<yyyyMMdd>/tasks/<WORKER_HOST>_<WORKER_PORT>/<WORKER_HOST>_<WORKER_PORT>_<HH>_<seq>.hist
+ * History files are kept for "tajo.history.expiry-time-day" (default value is 7 days)
  */
 public class HistoryWriter extends AbstractService {
   private static final Log LOG = LogFactory.getLog(HistoryWriter.class);
@@ -341,8 +341,10 @@ public class HistoryWriter extends AbstractService {
 
     private synchronized void rollingQuerySummaryWriter() throws Exception {
       // finding largest file sequence
-      SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
-      Path datePath = new Path(historyParentPath, df.format(new Date(System.currentTimeMillis())) + "/" + QUERY_LIST);
+      SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHHmmss");
+      String currentDateTime = df.format(new Date(System.currentTimeMillis()));
+
+      Path datePath = new Path(historyParentPath, currentDateTime.substring(0, 8) + "/" + QUERY_LIST);
       FileSystem fs = getNonCrcFileSystem(datePath, tajoConf);
       if (!fs.exists(datePath)) {
         if (!fs.mkdirs(datePath)) {
@@ -351,29 +353,7 @@ public class HistoryWriter extends AbstractService {
         }
       }
 
-      FileStatus[] files = fs.listStatus(datePath);
-      int maxSeq = -1;
-      if (files != null) {
-        for (FileStatus eachFile: files) {
-          //query-list-<sequence>.hist
-          String[] nameTokens = eachFile.getPath().getName().split("-");
-          if (nameTokens.length == 3) {
-            try {
-              int prefixIndex = nameTokens[2].indexOf(".");
-              if (prefixIndex > 0) {
-                int fileSeq = Integer.parseInt(nameTokens[2].substring(0, prefixIndex));
-                if (fileSeq > maxSeq) {
-                  maxSeq = fileSeq;
-                }
-              }
-            } catch (NumberFormatException e) {
-            }
-          }
-        }
-      }
-
-      maxSeq++;
-      Path historyFile = new Path(datePath, QUERY_LIST + "-" + maxSeq + HISTORY_FILE_POSTFIX);
+      Path historyFile = new Path(datePath, QUERY_LIST + "-" + currentDateTime.substring(8, 14) + HISTORY_FILE_POSTFIX);
       querySummaryWriter.path = historyFile;
       querySummaryWriter.lastWritingTime = System.currentTimeMillis();
       LOG.info("Create query history file: " + historyFile);

@@ -24,7 +24,6 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.ipc.ClientProtos.QueryInfoProto;
-import org.apache.tajo.ipc.ClientProtos.QueryInfoProtoOrBuilder;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.util.history.History;
