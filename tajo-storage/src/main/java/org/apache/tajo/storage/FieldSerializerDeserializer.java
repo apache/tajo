@@ -18,17 +18,18 @@
 
 package org.apache.tajo.storage;
 
+import io.netty.buffer.ByteBuf;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.datum.Datum;
 
 import java.io.IOException;
 import java.io.OutputStream;
 
-@Deprecated
-public interface SerializerDeserializer {
 
-  public int serialize(Column col, Datum datum, OutputStream out, byte[] nullCharacters) throws IOException;
+public interface FieldSerializerDeserializer {
 
-  public Datum deserialize(Column col, byte[] bytes, int offset, int length, byte[] nullCharacters) throws IOException;
+  public int serialize(OutputStream out, Datum datum, Column col, int columnIndex, byte[] nullChars) throws IOException;
+
+  public Datum deserialize(ByteBuf buf, Column col, int columnIndex, ByteBuf nullChars) throws IOException;
 
 }

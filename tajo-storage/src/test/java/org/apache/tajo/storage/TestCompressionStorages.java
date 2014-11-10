@@ -37,6 +37,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.sequencefile.SequenceFileScanner;
+import org.apache.tajo.storage.text.DelimitedTextFile;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -70,7 +71,8 @@ public class TestCompressionStorages {
     return Arrays.asList(new Object[][]{
         {StoreType.CSV},
         {StoreType.RCFILE},
-        {StoreType.SEQUENCEFILE}
+        {StoreType.SEQUENCEFILE},
+        {StoreType.TEXTFILE}
     });
   }
 
@@ -102,79 +104,9 @@ public class TestCompressionStorages {
   }
 
   @Test
-  public void testBzip2CodecCompressionData() throws IOException {
-    storageCompressionTest(storeType, BZip2Codec.class);
-  }
-
-  @Test
   public void testLz4CodecCompressionData() throws IOException {
     if(NativeCodeLoader.isNativeCodeLoaded() && Lz4Codec.isNativeCodeLoaded())
     storageCompressionTest(storeType, Lz4Codec.class);
-  }
-
-  @Test
-  public void testSplitCompressionData() throws IOException {
-    if(StoreType.CSV != storeType) return;
-
-    Schema schema = new Schema();
-    schema.addColumn("id", Type.INT4);
-    schema.addColumn("age", Type.INT8);
-
-    TableMeta meta = CatalogUtil.newTableMeta(storeType);
-    meta.putOption("compression.codec", BZip2Codec.class.getCanonicalName());
-
-    Path tablePath = new Path(testDir, "SplitCompression");
-    Appender appender = StorageManager.getStorageManager(conf).getAppender(meta, schema, tablePath);
-    appender.enableStats();
-    appender.init();
-
-    String extention = "";
-    if (appender instanceof CSVFile.CSVAppender) {
-      extention = ((CSVFile.CSVAppender) appender).getExtension();
-    }
-
-    int tupleNum = 100000;
-    VTuple vTuple;
-
-    for (int i = 0; i < tupleNum; i++) {
-      vTuple = new VTuple(2);
-      vTuple.put(0, DatumFactory.createInt4(i + 1));
-      vTuple.put(1, DatumFactory.createInt8(25l));
-      appender.addTuple(vTuple);
-    }
-    appender.close();
-
-    TableStats stat = appender.getStats();
-    assertEquals(tupleNum, stat.getNumRows().longValue());
-    tablePath = tablePath.suffix(extention);
-
-    FileStatus status = fs.getFileStatus(tablePath);
-    long fileLen = status.getLen();
-    long randomNum = (long) (Math.random() * fileLen) + 1;
-
-    FileFragment[] tablets = new FileFragment[2];
-    tablets[0] = new FileFragment("SplitCompression", tablePath, 0, randomNum);
-    tablets[1] = new FileFragment("SplitCompression", tablePath, randomNum, (fileLen - randomNum));
-
-    Scanner scanner = StorageManager.getStorageManager(conf).getScanner(meta, schema, tablets[0], schema);
-    assertTrue(scanner.isSplittable());
-    scanner.init();
-    int tupleCnt = 0;
-    Tuple tuple;
-    while ((tuple = scanner.next()) != null) {
-      tupleCnt++;
-    }
-    scanner.close();
-
-    scanner = StorageManager.getStorageManager(conf).getScanner(meta, schema, tablets[1], schema);
-    assertTrue(scanner.isSplittable());
-    scanner.init();
-    while ((tuple = scanner.next()) != null) {
-      tupleCnt++;
-    }
-
-    scanner.close();
-    assertEquals(tupleNum, tupleCnt);
   }
 
   private void storageCompressionTest(StoreType storeType, Class<? extends CompressionCodec> codec) throws IOException {
@@ -199,6 +131,8 @@ public class TestCompressionStorages {
     String extension = "";
     if (appender instanceof CSVFile.CSVAppender) {
       extension = ((CSVFile.CSVAppender) appender).getExtension();
+    } else if (appender instanceof DelimitedTextFile.DelimitedTextFileAppender) {
+      extension = ((DelimitedTextFile.DelimitedTextFileAppender) appender).getExtension();
     }
 
     int tupleNum = 100000;

@@ -205,7 +205,7 @@ public class TPCH extends BenchmarkSet {
 
   public void loadTable(String tableName) throws ServiceException {
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
-    meta.putOption(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    meta.putOption(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
 
     PartitionMethodDesc partitionMethodDesc = null;
     if (tableName.equals(CUSTOMER_PARTS)) {

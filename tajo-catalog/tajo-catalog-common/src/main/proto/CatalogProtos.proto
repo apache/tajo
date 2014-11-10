@@ -36,6 +36,7 @@ enum StoreType {
   PARQUET = 7;
   SEQUENCEFILE = 8;
   AVRO = 9;
+  TEXTFILE = 10;
 }
 
 enum OrderType {
