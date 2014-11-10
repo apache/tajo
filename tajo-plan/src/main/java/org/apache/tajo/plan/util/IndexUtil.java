@@ -26,17 +26,6 @@ import java.util.List;
 import java.util.Stack;
 
 public class IndexUtil {
-//  public static String getIndexNameOfFrag(FileFragment fragment, SortSpec[] keys) {
-//    StringBuilder builder = new StringBuilder();
-//    builder.append(fragment.getPath().getName() + "_");
-//    builder.append(fragment.getStartKey() + "_" + fragment.getEndKey() + "_");
-//    for(int i = 0 ; i < keys.length ; i ++) {
-//      builder.append(keys[i].getSortKey().getSimpleName()+"_");
-//    }
-//    builder.append("_index");
-//    return builder.toString();
-//
-//  }
   
   public static String getIndexName(String indexName , SortSpec[] keys) {
     StringBuilder builder = new StringBuilder();
@@ -52,69 +41,6 @@ public class IndexUtil {
     finder.visitChild(null, qual, new Stack<EvalNode>());
     return finder.getEvalNodes();
   }
-  
-//  public static IndexScanNode indexEval(LogicalPlan plan, ScanNode scanNode,
-//      Iterator<Entry<String, String>> iter ) {
-//
-//    EvalNode qual = scanNode.getQual();
-//    Gson gson = CoreGsonHelper.getInstance();
-//
-//    FieldAndValueFinder nodeFinder = new FieldAndValueFinder();
-//    qual.preOrder(nodeFinder);
-//    LinkedList<BinaryEval> nodeList = nodeFinder.getNodeList();
-//
-//    int maxSize = Integer.MIN_VALUE;
-//    SortSpec[] maxIndex = null;
-//
-//    String json;
-//    while(iter.hasNext()) {
-//      Entry<String , String> entry = iter.next();
-//      json = entry.getValue();
-//      SortSpec[] sortKey = gson.fromJson(json, SortSpec[].class);
-//      if(sortKey.length > nodeList.size()) {
-//        /* If the number of the sort key is greater than where condition,
-//         * this index cannot be used
-//         * */
-//        continue;
-//      } else {
-//        boolean[] equal = new boolean[sortKey.length];
-//        for(int i = 0 ; i < sortKey.length ; i ++) {
-//          for(int j = 0 ; j < nodeList.size() ; j ++) {
-//            Column col = ((FieldEval)(nodeList.get(j).getLeftExpr())).getColumnRef();
-//            if(col.equals(sortKey[i].getSortKey())) {
-//              equal[i] = true;
-//            }
-//          }
-//        }
-//        boolean chk = true;
-//        for(int i = 0 ; i < equal.length ; i ++) {
-//          chk = chk && equal[i];
-//        }
-//        if(chk) {
-//          if(maxSize < sortKey.length) {
-//            maxSize = sortKey.length;
-//            maxIndex = sortKey;
-//          }
-//        }
-//      }
-//    }
-//    if(maxIndex == null) {
-//      return null;
-//    } else {
-//      Schema keySchema = new Schema();
-//      for(int i = 0 ; i < maxIndex.length ; i ++ ) {
-//        keySchema.addColumn(maxIndex[i].getSortKey());
-//      }
-//      Datum[] datum = new Datum[nodeList.size()];
-//      for(int i = 0 ; i < nodeList.size() ; i ++ ) {
-//        datum[i] = ((ConstEval)(nodeList.get(i).getRightExpr())).getValue();
-//      }
-//
-//      return new IndexScanNode(plan.newPID(), scanNode, keySchema , datum , maxIndex);
-//    }
-//
-//  }
-  
   
   private static class FieldAndValueFinder implements EvalNodeVisitor {
     private LinkedList<BinaryEval> nodeList = new LinkedList<BinaryEval>();

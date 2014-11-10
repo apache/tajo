@@ -71,10 +71,6 @@ public class IndexScanInfo extends AccessPathInfo {
   private final Schema keySchema;
   private final SimplePredicate[] predicates;
 
-//  public IndexScanInfo(TableStats tableStats) {
-//    super(ScanTypeControl.INDEX_SCAN, tableStats);
-//  }
-
   public IndexScanInfo(TableStats tableStats, IndexDesc indexDesc, SimplePredicate[] predicates) {
     super(ScanTypeControl.INDEX_SCAN, tableStats);
     this.indexPath = indexDesc.getIndexPath();

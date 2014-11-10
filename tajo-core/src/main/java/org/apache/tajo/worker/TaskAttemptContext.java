@@ -380,11 +380,6 @@ public class TaskAttemptContext {
   }
 
   public String getUniqueKeyFromFragments() {
-//    List<FragmentProto> totalFragments = new ArrayList<FragmentProto>();
-//    for (List<FragmentProto> eachFragments : fragmentMap.values()) {
-//      totalFragments.addAll(eachFragments);
-//    }
-//    return Objects.hashCode(totalFragments.toArray(new FragmentProto[totalFragments.size()]));
     StringBuilder sb = new StringBuilder();
     for (List<FragmentProto> fragments : fragmentMap.values()) {
       for (FragmentProto f : fragments) {

@@ -25,9 +25,12 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.planner.Projector;
+import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.logical.IndexScanNode;
 import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.storage.*;
@@ -35,11 +38,13 @@ import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
+import org.apache.tools.ant.taskdefs.Tar;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Set;
 
 public class BSTIndexScanExec extends PhysicalExec {
   private final static Log LOG = LogFactory.getLog(BSTIndexScanExec.class);
@@ -56,6 +61,8 @@ public class BSTIndexScanExec extends PhysicalExec {
   private boolean initialize = true;
 
   private float progress;
+
+  private TableStats inputStats;
 
   public BSTIndexScanExec(TaskAttemptContext context,
                           StorageManager sm , IndexScanNode scanNode ,
@@ -75,10 +82,10 @@ public class BSTIndexScanExec extends PhysicalExec {
     TupleComparator comparator = new BaseTupleComparator(keySchema,
         keySortSpecs);
 
-    Schema fileOutSchema = mergeSubSchemas(inSchema, keySchema, outSchema);
+    Schema fileScanOutSchema = mergeSubSchemas(inSchema, keySchema, scanNode.getTargets(), qual);
 
     this.fileScanner = StorageManager.getSeekableScanner(context.getConf(),
-        scanNode.getTableDesc().getMeta(), inSchema, fragment, fileOutSchema);
+        scanNode.getTableDesc().getMeta(), inSchema, fragment, fileScanOutSchema);
     this.fileScanner.init();
     this.projector = new Projector(context, inSchema, outSchema, scanNode.getTargets());
 
@@ -88,29 +95,19 @@ public class BSTIndexScanExec extends PhysicalExec {
     this.reader.open();
   }
 
-  private static Schema mergeSubSchemas(Schema originalSchema, Schema subSchema1, Schema subSchema2) {
-    int i1 = 0, i2 = 0;
+  private static Schema mergeSubSchemas(Schema originalSchema, Schema subSchema, Target[] targets, EvalNode qual) {
     Schema mergedSchema = new Schema();
-    while (i1 < subSchema1.size() && i2 < subSchema2.size()) {
-      int columnId1 = originalSchema.getColumnId(subSchema1.getColumn(i1).getQualifiedName());
-      int columnId2 = originalSchema.getColumnId(subSchema2.getColumn(i2).getQualifiedName());
-      if (columnId1 < columnId2) {
-        mergedSchema.addColumn(originalSchema.getColumn(columnId1));
-        i1++;
-      } else if (columnId1 > columnId2) {
-        mergedSchema.addColumn(originalSchema.getColumn(columnId2));
-        i2++;
-      } else {
-        mergedSchema.addColumn(originalSchema.getColumn(columnId1));
-        i1++;
-        i2++;
+    Set<Column> qualAndTargets = TUtil.newHashSet();
+    qualAndTargets.addAll(EvalTreeUtil.findUniqueColumns(qual));
+    for (Target target : targets) {
+      qualAndTargets.addAll(EvalTreeUtil.findUniqueColumns(target.getEvalTree()));
+    }
+    for (Column column : originalSchema.getColumns()) {
+      if (subSchema.contains(column)
+          || qualAndTargets.contains(column)
+          || qualAndTargets.contains(column)) {
+        mergedSchema.addColumn(column);
       }
-    }
-    for (; i1 < subSchema1.size(); i1++) {
-      mergedSchema.addColumn(subSchema1.getColumn(i1));
-    }
-    for (; i2 < subSchema2.size(); i2++) {
-      mergedSchema.addColumn(subSchema2.getColumn(i2));
     }
     return mergedSchema;
   }
@@ -163,11 +160,11 @@ public class BSTIndexScanExec extends PhysicalExec {
            projector.eval(tuple, outTuple);
            return outTuple;
          } else {
-//           long offset = reader.next();
-//           if (offset == -1) {
-//             return null;
-//           }
-//           else fileScanner.seek(offset);
+           long offset = reader.next();
+           if (offset == -1) {
+             return null;
+           }
+           else fileScanner.seek(offset);
            return null;
          }
        }
@@ -183,6 +180,16 @@ public class BSTIndexScanExec extends PhysicalExec {
   @Override
   public void close() throws IOException {
     IOUtils.cleanup(null, reader, fileScanner);
+    if (fileScanner != null) {
+      try {
+        TableStats stats = fileScanner.getInputStats();
+        if (stats != null) {
+          inputStats = (TableStats) stats.clone();
+        }
+      } catch (CloneNotSupportedException e) {
+        e.printStackTrace();
+      }
+    }
     reader = null;
     fileScanner = null;
     scanNode = null;
@@ -193,5 +200,14 @@ public class BSTIndexScanExec extends PhysicalExec {
   @Override
   public float getProgress() {
     return progress;
+  }
+
+  @Override
+  public TableStats getInputStats() {
+    if (fileScanner != null) {
+      return fileScanner.getInputStats();
+    } else {
+      return inputStats;
+    }
   }
 }

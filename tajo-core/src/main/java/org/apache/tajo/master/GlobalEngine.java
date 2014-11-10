@@ -754,22 +754,6 @@ public class GlobalEngine extends AbstractService {
     if (catalog.existIndexByName(databaseName, simpleIndexName)) {
       throw new AlreadyExistsIndexException(qualifiedIndexName);
     }
-//    ScanNode scanNode = PlannerUtil.findTopNode(createIndexNode, NodeType.SCAN);
-//    if (scanNode == null) {
-//      throw new IOException("Cannot find the table of the relation");
-//    }
-//    simpleTableName = CatalogUtil.extractSimpleName(scanNode.getTableName());
-//    SortSpec[] sortSpecs = createIndexNode.getKeySortSpecs();
-//    // TODO: consider the index for two or more columns
-//    IndexDesc indexDesc = new IndexDesc(createIndexNode.getIndexName(), createIndexNode.getIndexPath(),
-//        databaseName, simpleTableName, sortSpecs[0].getSortKey(), createIndexNode.getIndexMethod(),
-//        createIndexNode.isUnique(), false, sortSpecs[0].isAscending());
-//    if (catalog.createIndex(indexDesc)) {
-//      LOG.info("Index " + qualifiedIndexName + " is created for the table " + simpleTableName + ".");
-//    } else {
-//      LOG.info("Index creation " + qualifiedIndexName + " is failed.");
-//      throw new CatalogException("Cannot create index \"" + qualifiedIndexName + "\".");
-//    }
   }
 
   private boolean existColumnName(String tableName, String columnName) {

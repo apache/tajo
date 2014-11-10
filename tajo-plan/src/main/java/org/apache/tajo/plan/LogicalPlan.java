@@ -421,7 +421,6 @@ public class LogicalPlan {
     private final Map<String, String> columnAliasMap = TUtil.newHashMap();
     private final Map<OpType, List<Expr>> operatorToExprMap = TUtil.newHashMap();
     private final List<RelationNode> relationList = TUtil.newList();
-//    private final Map<RelationNode, List<AccessPathInfo>> relationNodes = TUtil.newHashMap();
     private final Map<Integer, List<AccessPathInfo>> relNodePidAccessPathMap = TUtil.newHashMap();
     private boolean hasWindowFunction = false;
     private final Map<String, ConstEval> constantPoolByRef = Maps.newHashMap();

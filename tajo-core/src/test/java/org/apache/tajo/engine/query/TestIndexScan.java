@@ -69,11 +69,50 @@ public class TestIndexScan extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testOnMultipleKeys2() throws Exception {
+    executeString("create index multikey_idx on lineitem (l_shipdate asc null last, l_tax desc null first)");
+    ResultSet res = executeString("select l_orderkey, l_shipdate, l_comment from lineitem " +
+        "where l_shipdate = '1997-01-28' and l_tax = 0.05 and l_shipmode = 'RAIL' and l_linenumber = 1;");
+    assertResultSet(res);
+    cleanupQuery(res);
+    executeString("drop index multikey_idx");
+  }
+
+  @Test
   public final void testOnMultipleExprs() throws Exception {
     executeString("create index l_orderkey_100_l_linenumber_10_idx on lineitem (l_orderkey*100-l_linenumber*10 asc null first);");
     ResultSet res = executeString("select l_orderkey, l_linenumber from lineitem where l_orderkey*100-l_linenumber*10 = 280");
     assertResultSet(res);
     cleanupQuery(res);
     executeString("drop index l_orderkey_100_l_linenumber_10_idx");
+  }
+
+  @Test
+  public final void testWithGroupBy() throws Exception {
+    executeString("create index l_shipdate_idx on lineitem (l_shipdate)");
+    ResultSet res = executeString("select l_shipdate, count(*) from lineitem where l_shipdate = '1997-01-28' group by l_shipdate;");
+    assertResultSet(res);
+    cleanupQuery(res);
+    executeString("drop index l_shipdate_idx");
+  }
+
+  @Test
+  public final void testWithSort() throws Exception {
+    executeString("create index l_orderkey_idx on lineitem (l_orderkey)");
+    ResultSet res = executeString("select l_shipdate from lineitem where l_orderkey = 1 order by l_shipdate;");
+    assertResultSet(res);
+    cleanupQuery(res);
+    executeString("drop index l_orderkey_idx");
+  }
+
+  @Test
+  public final void testWithJoin() throws Exception {
+    executeString("create index l_orderkey_idx on lineitem (l_orderkey)");
+    executeString("create index o_orderkey_idx on orders (o_orderkey)");
+    ResultSet res = executeString("select l_shipdate, o_orderstatus from lineitem, orders where l_orderkey = o_orderkey and l_orderkey = 1 and o_orderkey = 1;");
+    assertResultSet(res);
+    cleanupQuery(res);
+    executeString("drop index l_orderkey_idx");
+    executeString("drop index o_orderkey_idx");
   }
 }
