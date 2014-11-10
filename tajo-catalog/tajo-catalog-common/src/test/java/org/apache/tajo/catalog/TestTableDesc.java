@@ -79,7 +79,7 @@ public class TestTableDesc {
     TableDesc desc = new TableDesc("table1", schema, info, path.toUri());
     assertEquals("table1", desc.getName());
     
-    assertEquals(path, desc.getPath());
+    assertEquals(path.toUri(), desc.getPath());
     assertEquals(info, desc.getMeta());
     testClone(desc);
   }
