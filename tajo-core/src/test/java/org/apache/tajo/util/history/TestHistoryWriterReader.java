@@ -19,6 +19,7 @@
 package org.apache.tajo.util.history;
 
 import com.google.common.io.Files;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.*;
@@ -41,6 +42,7 @@ import java.util.Date;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 public class TestHistoryWriterReader extends QueryTestCaseBase {
   public static final String HISTORY_DIR = "/tmp/tajo-test-history";
@@ -86,8 +88,12 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
       Path path = new Path(tajoConf.getVar(ConfVars.HISTORY_QUERY_DIR));
 
       FileSystem fs = path.getFileSystem(tajoConf);
-
-      assertTrue(fs.exists(new Path(path, df.format(startTime) + "/query-list/query-list-0.hist")));
+      Path parentPath = new Path(path, df.format(startTime) + "/query-list");
+      FileStatus[] histFiles = fs.listStatus(parentPath);
+      assertNotNull(histFiles);
+      assertEquals(1, histFiles.length);
+      assertTrue(histFiles[0].isFile());
+      assertTrue(histFiles[0].getPath().getName().endsWith(".hist"));
 
       HistoryReader reader = new HistoryReader("127.0.0.1:28090", tajoConf);
       List<QueryInfo> queryInfos = reader.getQueries(null);
