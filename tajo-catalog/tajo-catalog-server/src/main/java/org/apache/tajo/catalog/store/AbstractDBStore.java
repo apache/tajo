@@ -1615,7 +1615,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       // indexes table
       int databaseId = getDatabaseId(databaseName);
       int tableId = getTableId(databaseId, databaseName, tableName);
-      TableDescProto tableDescProto = getTable(databaseName, tableName);
 
       String sql = "INSERT INTO " + TB_INDEXES +
           " (" + COL_DATABASES_PK + ", " + COL_TABLES_PK + ", INDEX_NAME, " +
@@ -1709,8 +1708,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   final static String GET_INDEXES_SQL =
-      "SELECT " + COL_TABLES_PK + ", INDEX_NAME, COLUMN_NAME, DATA_TYPE, INDEX_TYPE, PATH, IS_UNIQUE, " +
-          "IS_CLUSTERED, IS_ASCENDING FROM " + TB_INDEXES;
+      "SELECT * FROM " + TB_INDEXES;
 
   @Override
   public IndexDescProto getIndexByName(String databaseName, final String indexName)
@@ -1741,6 +1739,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       resultToIndexDescProtoBuilder(builder, res);
       String tableName = getTableName(conn, res.getInt(COL_TABLES_PK));
       builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
+      builder.setTargetRelationSchema(getTable(databaseName, tableName).getSchema());
       proto = builder.build();
     } catch (SQLException se) {
       throw new CatalogException(se);
@@ -1778,27 +1777,22 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         LOG.debug(sql);
       }
 
-      String unifiedColumnName = CatalogUtil.getUnifiedSimpleColumnName(new Schema(tableDescProto.getSchema()),
-          columnNames);
+      String FQUnifiedColumnName = CatalogUtil.buildFQName(databaseName, tableName,
+          CatalogUtil.getUnifiedSimpleColumnName(new Schema(tableDescProto.getSchema()), columnNames));
       conn = getConnection();
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
       pstmt.setInt(2, tableId);
-      pstmt.setString(3, unifiedColumnName);
+      pstmt.setString(3, FQUnifiedColumnName);
       res = pstmt.executeQuery();
       if (!res.next()) {
-        throw new CatalogException("ERROR: there is no index matched to " + unifiedColumnName);
+        throw new CatalogException("ERROR: there is no index matched to " + FQUnifiedColumnName);
       }
-      int indexId = res.getInt(COL_INDEXES_PK);
-
-      sql = GET_INDEXES_SQL + " WHERE " + COL_INDEXES_PK + " =?";
-      pstmt = conn.prepareStatement(sql);
-      pstmt.setInt(1, indexId);
-      res = pstmt.executeQuery();
 
       IndexDescProto.Builder builder = IndexDescProto.newBuilder();
       resultToIndexDescProtoBuilder(builder, res);
       builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
+      builder.setTargetRelationSchema(tableDescProto.getSchema());
       proto = builder.build();
     } catch (SQLException se) {
       throw new CatalogException(se);
@@ -1870,11 +1864,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         LOG.debug(sql);
       }
 
+      String FQUnifiedColumnName = CatalogUtil.buildFQName(databaseName, tableName,
+          CatalogUtil.getUnifiedSimpleColumnName(new Schema(relationSchema), columnNames));
       conn = getConnection();
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
       pstmt.setInt(2, tableId);
-      pstmt.setString(3, CatalogUtil.getUnifiedSimpleColumnName(relationSchema, columnNames));
+      pstmt.setString(3, FQUnifiedColumnName);
       res = pstmt.executeQuery();
       exist = res.next();
     } catch (SQLException se) {
@@ -1897,7 +1893,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       final int databaseId = getDatabaseId(databaseName);
       final int tableId = getTableId(databaseId, databaseName, tableName);
       final TableIdentifierProto tableIdentifier = CatalogUtil.buildTableIdentifier(databaseName, tableName);
-
+      final TableDescProto tableDescProto = getTable(databaseName, tableName);
 
       String sql = GET_INDEXES_SQL + " WHERE " + COL_DATABASES_PK + "=? AND " + COL_TABLES_PK + "=?";
 
@@ -1916,6 +1912,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         IndexDescProto.Builder builder = IndexDescProto.newBuilder();
         resultToIndexDescProtoBuilder(builder, res);
         builder.setTableIdentifier(tableIdentifier);
+        builder.setTargetRelationSchema(tableDescProto.getSchema());
         protos.add(builder.build());
       }
     } catch (SQLException se) {

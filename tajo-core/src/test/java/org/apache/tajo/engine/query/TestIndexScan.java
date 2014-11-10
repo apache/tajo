@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
+import java.util.HashMap;
 import java.util.Map;
 
 @Category(IntegrationTest.class)
@@ -34,7 +35,7 @@ public class TestIndexScan extends QueryTestCaseBase {
 
   public TestIndexScan() throws ServiceException {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
-    Map<String,String> sessionVars = client.getAllSessionVariables();
+    Map<String,String> sessionVars = new HashMap<String, String>();
     sessionVars.put(SessionVars.INDEX_ENABLED.keyname(), "true");
     sessionVars.put(SessionVars.INDEX_SELECTIVITY_THRESHOLD.keyname(), "0.01f");
     client.updateSessionVariables(sessionVars);
