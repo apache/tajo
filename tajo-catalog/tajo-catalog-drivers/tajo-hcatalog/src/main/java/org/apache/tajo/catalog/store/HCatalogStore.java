@@ -788,14 +788,14 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public CatalogProtos.IndexDescProto getIndexByColumn(String databaseName, String tableName, String columnName)
+  public CatalogProtos.IndexDescProto getIndexByColumns(String databaseName, String tableName, String []columnName)
       throws CatalogException {
     // TODO - not implemented yet
     return null;
   }
 
   @Override
-  public boolean existIndexByColumn(String databaseName, String tableName, String columnName) throws CatalogException {
+  public boolean existIndexByColumns(String databaseName, String tableName, String []columnName) throws CatalogException {
     // TODO - not implemented yet
     return false;
   }

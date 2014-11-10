@@ -1751,13 +1751,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public IndexDescProto getIndexByColumn(final String databaseName,
-                                         final String tableName,
-                                         final String columnName) throws CatalogException {
-    return getIndexByColumns(databaseName, tableName, new String[]{columnName});
-  }
-
-  @Override
   public IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames)
       throws CatalogException {
     Connection conn = null;
@@ -1834,12 +1827,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
 
     return exist;
-  }
-
-  @Override
-  public boolean existIndexByColumn(String databaseName, String tableName, String columnName)
-      throws CatalogException {
-    return existIndexByColumns(databaseName, tableName, new String[]{columnName});
   }
 
   @Override

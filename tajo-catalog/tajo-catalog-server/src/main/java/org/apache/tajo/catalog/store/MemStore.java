@@ -422,15 +422,6 @@ public class MemStore implements CatalogStore {
     return index.get(indexName);
   }
 
-  /* (non-Javadoc)
-   * @see CatalogStore#getIndexByName(java.lang.String, java.lang.String)
-   */
-  @Override
-  public IndexDescProto getIndexByColumn(String databaseName, String tableName, String columnName)
-      throws CatalogException {
-    return getIndexByColumns(databaseName, tableName, new String[]{columnName});
-  }
-
   @Override
   public IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames) throws CatalogException {
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
@@ -449,12 +440,6 @@ public class MemStore implements CatalogStore {
   public boolean existIndexByName(String databaseName, String indexName) throws CatalogException {
     Map<String, IndexDescProto> index = checkAndGetDatabaseNS(indexes, databaseName);
     return index.containsKey(indexName);
-  }
-
-  @Override
-  public boolean existIndexByColumn(String databaseName, String tableName, String columnName)
-      throws CatalogException {
-    return existIndexByColumns(databaseName, tableName, new String[]{columnName});
   }
 
   @Override
