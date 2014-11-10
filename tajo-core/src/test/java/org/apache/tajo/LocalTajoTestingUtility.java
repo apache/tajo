@@ -122,7 +122,7 @@ public class LocalTajoTestingUtility {
       stats.setNumBytes(TPCH.tableVolumes.get(names[i]));
       TableDesc tableDesc = new TableDesc(
           CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, names[i]), schemas[i], meta,
-          tablePath);
+          tablePath.toUri());
       tableDesc.setStats(stats);
       util.getMaster().getCatalog().createTable(tableDesc);
     }

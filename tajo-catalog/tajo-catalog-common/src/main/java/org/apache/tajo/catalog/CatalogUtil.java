@@ -294,7 +294,7 @@ public class CatalogUtil {
   }
 
   public static TableDesc newTableDesc(String tableName, Schema schema, TableMeta meta, Path path) {
-    return new TableDesc(tableName, schema, meta, path);
+    return new TableDesc(tableName, schema, meta, path.toUri());
   }
 
   public static TableDesc newTableDesc(TableDescProto proto) {

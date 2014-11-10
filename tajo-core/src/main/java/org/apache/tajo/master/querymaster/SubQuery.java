@@ -986,7 +986,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         // After calling this method, partition paths are removed from the physical plan.
         fragments = Repartitioner.getFragmentsFromPartitionedTable(subQuery.getStorageManager(), scan, table);
       } else {
-        Path inputPath = table.getPath();
+        Path inputPath = new Path(table.getPath());
         fragments = subQuery.getStorageManager().getSplits(scan.getCanonicalName(), meta, table.getSchema(), inputPath);
       }
 

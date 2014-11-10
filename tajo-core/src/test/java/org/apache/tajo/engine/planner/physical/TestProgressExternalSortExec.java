@@ -109,7 +109,7 @@ public class TestProgressExternalSortExec {
     testDataStats = appender.getStats();
     employee = new TableDesc(
         CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, employeeMeta,
-        employeePath);
+        employeePath.toUri());
     catalog.createTable(employee);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
@@ -136,8 +136,8 @@ public class TestProgressExternalSortExec {
   }
 
   private void testProgress(int sortBufferBytesNum) throws Exception {
-    FileFragment[] frags = StorageManager.splitNG(conf, "default.employee", employee.getMeta(), employee.getPath(),
-        Integer.MAX_VALUE);
+    FileFragment[] frags = StorageManager.splitNG(conf, "default.employee", employee.getMeta(),
+        new Path(employee.getPath()), Integer.MAX_VALUE);
     Path workDir = new Path(testDir, TestExternalSortExec.class.getName());
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newQueryUnitAttemptId(), new FileFragment[] { frags[0] }, workDir);
