@@ -32,6 +32,9 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1154: TajoCli doesn't pause while running the non-forwarded 
+    query. (Hyoungjun Kim via hyunsik)
+
     TAJO-1150: Some weird methods in QueryClientImpl should be fixed. 
     (Jongyoung Park via hyunsik)
 
@@ -43,6 +46,8 @@ Release 0.9.1 - unreleased
 
 
   TASKS
+
+    TAJO-1129: Remove hadoop 2.2.0 support. (jinho via hyunsik)
 
     TAJO-1153: Merge off-heap package in block_iteration branch to master 
     branch. (hyunsik)

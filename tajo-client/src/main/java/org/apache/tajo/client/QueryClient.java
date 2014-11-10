@@ -34,8 +34,6 @@ import static org.apache.tajo.TajoIdProtos.SessionIdProto;
 
 public interface QueryClient extends Closeable {
 
-  int UNKNOWN_ROW_NUMBER = -1;
-
   public void setSessionId(SessionIdProto sessionId);
 
   public boolean isConnected();
