@@ -30,6 +30,9 @@ Release 0.9.1 - unreleased
 
     TAJO-1121: Remove the 'v2' storage package. (Hyoungjun Kim)
 
+    TAJO-1128: Implement a select box for database at web interface. 
+    (Jongyoung Park via hyunsik)
+
   BUG FIXES
 
     TAJO-1154: TajoCli doesn't pause while running the non-forwarded 
