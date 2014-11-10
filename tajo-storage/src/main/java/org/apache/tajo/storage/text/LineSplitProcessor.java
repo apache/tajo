@@ -16,19 +16,30 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage;
+package org.apache.tajo.storage.text;
 
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.datum.Datum;
+import io.netty.buffer.ByteBufProcessor;
 
-import java.io.IOException;
-import java.io.OutputStream;
+public class LineSplitProcessor implements ByteBufProcessor {
+  public static final byte CR = '\r';
+  public static final byte LF = '\n';
+  private boolean prevCharCR = false; //true of prev char was CR
 
-@Deprecated
-public interface SerializerDeserializer {
+  @Override
+  public boolean process(byte value) throws Exception {
+    switch (value) {
+      case LF:
+        return false;
+      case CR:
+        prevCharCR = true;
+        return false;
+      default:
+        prevCharCR = false;
+        return true;
+    }
+  }
 
-  public int serialize(Column col, Datum datum, OutputStream out, byte[] nullCharacters) throws IOException;
-
-  public Datum deserialize(Column col, byte[] bytes, int offset, int length, byte[] nullCharacters) throws IOException;
-
+  public boolean isPrevCharCR() {
+    return prevCharCR;
+  }
 }

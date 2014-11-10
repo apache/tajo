@@ -420,8 +420,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
   public final void testLeftOuterJoinWithEmptySubquery1() throws Exception {
     // Empty Null Supplying table
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);
@@ -462,8 +462,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
   public final void testLeftOuterJoinWithEmptySubquery2() throws Exception {
     //Empty Preserved Row table
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);
@@ -951,8 +951,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
 
   private void createOuterJoinTestTable() throws Exception {
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);
@@ -1085,8 +1085,8 @@ public class TestJoinQuery extends QueryTestCaseBase {
   @Test
   public void testJoinWithDifferentShuffleKey() throws Exception {
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);

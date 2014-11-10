@@ -193,9 +193,9 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         String fileOutputformat = properties.getProperty(hive_metastoreConstants.FILE_OUTPUT_FORMAT);
         storeType = CatalogUtil.getStoreType(HCatalogUtil.getStoreType(fileOutputformat));
 
-        if (storeType.equals(CatalogProtos.StoreType.CSV)) {
-          options.set(StorageConstants.CSVFILE_DELIMITER, StringEscapeUtils.escapeJava(fieldDelimiter));
-          options.set(StorageConstants.CSVFILE_NULL, StringEscapeUtils.escapeJava(nullFormat));
+        if (storeType.equals(CatalogProtos.StoreType.TEXTFILE)) {
+          options.set(StorageConstants.TEXT_DELIMITER, StringEscapeUtils.escapeJava(fieldDelimiter));
+          options.set(StorageConstants.TEXT_NULL, StringEscapeUtils.escapeJava(nullFormat));
         } else if (storeType.equals(CatalogProtos.StoreType.RCFILE)) {
           options.set(StorageConstants.RCFILE_NULL, StringEscapeUtils.escapeJava(nullFormat));
           String serde = properties.getProperty(serdeConstants.SERIALIZATION_LIB);
@@ -491,7 +491,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         sd.setInputFormat(org.apache.hadoop.mapred.TextInputFormat.class.getName());
         sd.setOutputFormat(org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat.class.getName());
 
-        String fieldDelimiter = tableDesc.getMeta().getOption(StorageConstants.CSVFILE_DELIMITER,
+        String fieldDelimiter = tableDesc.getMeta().getOption(StorageConstants.TEXT_DELIMITER,
             StorageConstants.DEFAULT_FIELD_DELIMITER);
 
         // User can use an unicode for filed delimiter such as \u0001, \001.
@@ -503,12 +503,12 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
             StringEscapeUtils.unescapeJava(fieldDelimiter));
         sd.getSerdeInfo().putToParameters(serdeConstants.FIELD_DELIM,
             StringEscapeUtils.unescapeJava(fieldDelimiter));
-        table.getParameters().remove(StorageConstants.CSVFILE_DELIMITER);
+        table.getParameters().remove(StorageConstants.TEXT_DELIMITER);
 
-        if (tableDesc.getMeta().containsOption(StorageConstants.CSVFILE_NULL)) {
+        if (tableDesc.getMeta().containsOption(StorageConstants.TEXT_NULL)) {
           table.putToParameters(serdeConstants.SERIALIZATION_NULL_FORMAT,
-              StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(StorageConstants.CSVFILE_NULL)));
-          table.getParameters().remove(StorageConstants.CSVFILE_NULL);
+              StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(StorageConstants.TEXT_NULL)));
+          table.getParameters().remove(StorageConstants.TEXT_NULL);
         }
       } else if (tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.SEQUENCEFILE)) {
         String serde = tableDesc.getMeta().getOption(StorageConstants.SEQUENCEFILE_SERDE);
