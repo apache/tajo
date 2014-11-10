@@ -22,6 +22,9 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 
+/* This class doesn’t have content datum. if selected column is zero, this is useful
+*  e.g. select count(*) from table
+* */
 public class EmptyTuple implements Tuple, Cloneable {
 
   private static EmptyTuple tuple;
