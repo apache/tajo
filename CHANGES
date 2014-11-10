@@ -47,6 +47,9 @@ Release 0.9.1 - unreleased
 
   TASKS
 
+    TAJO-1157: Required Java version in tutorial doc needs to be updated.
+    (hyunsik)
+
     TAJO-1129: Remove hadoop 2.2.0 support. (jinho via hyunsik)
 
     TAJO-1153: Merge off-heap package in block_iteration branch to master 
@@ -55,6 +58,11 @@ Release 0.9.1 - unreleased
     TAJO-1032: Improve TravisCI scripts to adjust log4j log level. (jinho)
 
     TAJO-1141: Refactor the packages hierarchy of tajo-client. (hyunsik)
+
+
+  SUB TASKS
+
+    TAJO-1149: Implement direct read of DelimitedTextFile. (jinho)
 
 
 
