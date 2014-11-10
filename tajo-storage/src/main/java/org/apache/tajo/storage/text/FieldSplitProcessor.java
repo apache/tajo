@@ -16,19 +16,23 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage;
+package org.apache.tajo.storage.text;
 
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.datum.Datum;
+import io.netty.buffer.ByteBufProcessor;
 
-import java.io.IOException;
-import java.io.OutputStream;
+public class FieldSplitProcessor implements ByteBufProcessor {
+  private char delimiter; //the ascii separate character
 
-@Deprecated
-public interface SerializerDeserializer {
+  public FieldSplitProcessor(char recordDelimiterByte) {
+    this.delimiter = recordDelimiterByte;
+  }
 
-  public int serialize(Column col, Datum datum, OutputStream out, byte[] nullCharacters) throws IOException;
+  @Override
+  public boolean process(byte value) throws Exception {
+    return delimiter != value;
+  }
 
-  public Datum deserialize(Column col, byte[] bytes, int offset, int length, byte[] nullCharacters) throws IOException;
-
+  public char getDelimiter() {
+    return delimiter;
+  }
 }

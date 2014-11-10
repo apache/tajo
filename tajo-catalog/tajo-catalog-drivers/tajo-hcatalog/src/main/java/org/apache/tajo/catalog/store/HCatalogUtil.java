@@ -128,7 +128,7 @@ public class HCatalogUtil {
 
     String outputFormatClass = fileFormatArrary[fileFormatArrary.length-1];
     if(outputFormatClass.equals(HiveIgnoreKeyTextOutputFormat.class.getSimpleName())) {
-      return CatalogProtos.StoreType.CSV.name();
+      return CatalogProtos.StoreType.TEXTFILE.name();
     } else if(outputFormatClass.equals(HiveSequenceFileOutputFormat.class.getSimpleName())) {
       return CatalogProtos.StoreType.SEQUENCEFILE.name();
     } else if(outputFormatClass.equals(RCFileOutputFormat.class.getSimpleName())) {

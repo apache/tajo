@@ -31,7 +31,7 @@ Here, we assume the schema as (int, text, float, text). ::
         name text, 
         score float, 
         type text) 
-        using csv with ('csvfile.delimiter'='|') location 'file:/home/x/table1';
+        using csv with ('text.delimiter'='|') location 'file:/home/x/table1';
 
 To load an external table, you need to use ‘create external table’ statement. 
 In the location clause, you should use the absolute directory path with an appropriate scheme. 
