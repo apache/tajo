@@ -475,6 +475,7 @@ public class DelimitedTextFile {
       if (tableStats != null && reader != null) {
         tableStats.setReadBytes(reader.getReadBytes());  //Actual Processed Bytes. (decompressed bytes + overhead)
         tableStats.setNumRows(recordCount);
+        tableStats.setNumBytes(fragment.getEndKey());
       }
       return tableStats;
     }

@@ -20,11 +20,11 @@ package org.apache.tajo.cli.tsql.commands;
 
 import org.apache.commons.lang.CharUtils;
 import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.cli.tsql.TajoCli;
-import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.TUtil;
 
@@ -83,7 +83,7 @@ public class DescTableCommand extends TajoShellCommand {
     if (desc.getStats() != null) {
 
       long row = desc.getStats().getNumRows();
-      String rowText = row == QueryClient.UNKNOWN_ROW_NUMBER ? "unknown" : row + "";
+      String rowText = row == TajoConstants.UNKNOWN_ROW_NUMBER ? "unknown" : row + "";
       sb.append("number of rows: ").append(rowText).append("\n");
       sb.append("volume: ").append(
           FileUtil.humanReadableByteCount(desc.getStats().getNumBytes(),
