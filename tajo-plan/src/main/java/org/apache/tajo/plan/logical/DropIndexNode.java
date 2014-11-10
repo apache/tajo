@@ -18,9 +18,8 @@
 
 package org.apache.tajo.plan.logical;
 
+import com.google.common.base.Objects;
 import org.apache.tajo.plan.PlanString;
-
-import java.util.Objects;
 
 public class DropIndexNode extends LogicalNode implements Cloneable {
   private String indexName;
@@ -34,7 +33,7 @@ public class DropIndexNode extends LogicalNode implements Cloneable {
   }
 
   public int hashCode() {
-    return Objects.hash(indexName);
+    return Objects.hashCode(indexName);
   }
 
   public boolean equals(Object obj) {
