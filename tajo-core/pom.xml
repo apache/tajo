@@ -34,7 +34,6 @@
     <antlr4.visitor>true</antlr4.visitor>
     <antlr4.listener>true</antlr4.listener>
     <metrics.version>3.0.1</metrics.version>
-    <hbase.version>0.98.6.1-hadoop2</hbase.version>
   </properties>
 
   <repositories>
