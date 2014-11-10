@@ -314,6 +314,10 @@
       <artifactId>parquet-format</artifactId>
       <version>${parquet.format.version}</version>
     </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-buffer</artifactId>
+    </dependency>
   </dependencies>
 
   <profiles>

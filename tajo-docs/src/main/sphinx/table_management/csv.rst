@@ -36,8 +36,8 @@ The ``WITH`` clause in the CREATE TABLE statement allows users to set those para
 
 Now, the CSV storage format provides the following physical properties.
 
-* ``csvfile.delimiter``: delimiter character. ``|`` or ``\u0001`` is usually used, and the default field delimiter is ``|``.
-* ``csvfile.null``: NULL character. The default NULL character is an empty string ``''``. Hive's default NULL character is ``'\\N'``.
+* ``text.delimiter``: delimiter character. ``|`` or ``\u0001`` is usually used, and the default field delimiter is ``|``.
+* ``text.null``: NULL character. The default NULL character is an empty string ``''``. Hive's default NULL character is ``'\\N'``.
 * ``compression.codec``: Compression codec. You can enable compression feature and set specified compression algorithm. The compression algorithm used to compress files. The compression codec name should be the fully qualified class name inherited from `org.apache.hadoop.io.compress.CompressionCodec <https://hadoop.apache.org/docs/current/api/org/apache/hadoop/io/compress/CompressionCodec.html>`_. By default, compression is disabled.
 * ``csvfile.serde``: custom (De)serializer class. ``org.apache.tajo.storage.TextSerializerDeserializer`` is the default (De)serializer class.
 
@@ -50,8 +50,8 @@ The following example is to set a custom field delimiter, NULL character, and co
   name text,
   score float,
   type text
- ) USING CSV WITH('csvfile.delimiter'='\u0001',
-                  'csvfile.null'='\\N',
+ ) USING CSV WITH('text.delimiter'='\u0001',
+                  'text.null'='\\N',
                   'compression.codec'='org.apache.hadoop.io.compress.SnappyCodec');
 
 .. warning::
@@ -88,7 +88,7 @@ Null Value Handling Issues
 In default, NULL character in CSV files is an empty string ``''``.
 In other words, an empty field is basically recognized as a NULL value in Tajo.
 If a field domain is ``TEXT``, an empty field is recognized as a string value ``''`` instead of NULL value.
-Besides, You can also use your own NULL character by specifying a physical property ``csvfile.null``.
+Besides, You can also use your own NULL character by specifying a physical property ``text.null``.
 
 =========================================
 Compatibility Issues with Apache Hive™

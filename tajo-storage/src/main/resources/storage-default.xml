@@ -21,11 +21,6 @@
 
 <configuration>
   <property>
-    <name>tajo.storage.manager.v2</name>
-    <value>false</value>
-  </property>
-
-  <property>
     <name>tajo.storage.manager.maxReadBytes</name>
     <value>8388608</value>
     <description></description>
@@ -40,10 +35,14 @@
   <!--- Registered Scanner Handler -->
   <property>
     <name>tajo.storage.scanner-handler</name>
-    <value>csv,raw,rcfile,row,trevni,parquet,sequencefile,avro</value>
+    <value>textfile,csv,raw,rcfile,row,trevni,parquet,sequencefile,avro</value>
   </property>
 
   <!--- Fragment Class Configurations -->
+  <property>
+    <name>tajo.storage.fragment.textfile.class</name>
+    <value>org.apache.tajo.storage.fragment.FileFragment</value>
+  </property>
   <property>
     <name>tajo.storage.fragment.csv.class</name>
     <value>org.apache.tajo.storage.fragment.FileFragment</value>
@@ -79,22 +78,17 @@
 
   <!--- Scanner Handler -->
   <property>
+    <name>tajo.storage.scanner-handler.textfile.class</name>
+    <value>org.apache.tajo.storage.text.DelimitedTextFile$DelimitedTextFileScanner</value>
+  </property>
+
+  <property>
     <name>tajo.storage.scanner-handler.csv.class</name>
     <value>org.apache.tajo.storage.CSVFile$CSVScanner</value>
   </property>
 
   <property>
-    <name>tajo.storage.scanner-handler.v2.csv.class</name>
-    <value>org.apache.tajo.storage.v2.CSVFileScanner</value>
-  </property>
-
-  <property>
     <name>tajo.storage.scanner-handler.raw.class</name>
-    <value>org.apache.tajo.storage.RawFile$RawFileScanner</value>
-  </property>
-
-  <property>
-    <name>tajo.storage.scanner-handler.v2.raw.class</name>
     <value>org.apache.tajo.storage.RawFile$RawFileScanner</value>
   </property>
 
@@ -104,17 +98,7 @@
   </property>
 
   <property>
-    <name>tajo.storage.scanner-handler.v2.rcfile.class</name>
-    <value>org.apache.tajo.storage.v2.RCFileScanner</value>
-  </property>
-
-  <property>
     <name>tajo.storage.scanner-handler.rowfile.class</name>
-    <value>org.apache.tajo.storage.RowFile$RowFileScanner</value>
-  </property>
-
-  <property>
-    <name>tajo.storage.scanner-handler.v2.rowfile.class</name>
     <value>org.apache.tajo.storage.RowFile$RowFileScanner</value>
   </property>
 
@@ -124,17 +108,7 @@
   </property>
 
   <property>
-    <name>tajo.storage.scanner-handler.v2.trevni.class</name>
-    <value>org.apache.tajo.storage.trevni.TrevniScanner</value>
-  </property>
-
-  <property>
     <name>tajo.storage.scanner-handler.parquet.class</name>
-    <value>org.apache.tajo.storage.parquet.ParquetScanner</value>
-  </property>
-
-  <property>
-    <name>tajo.storage.scanner-handler.v2.parquet.class</name>
     <value>org.apache.tajo.storage.parquet.ParquetScanner</value>
   </property>
 
@@ -144,24 +118,19 @@
   </property>
 
   <property>
-    <name>tajo.storage.scanner-handler.v2.sequencefile.class</name>
-    <value>org.apache.tajo.storage.sequencefile.SequenceFileScanner</value>
-  </property>
-
-  <property>
     <name>tajo.storage.scanner-handler.avro.class</name>
-    <value>org.apache.tajo.storage.avro.AvroScanner</value>
-  </property>
-
-  <property>
-    <name>tajo.storage.scanner-handler.v2.avro.class</name>
     <value>org.apache.tajo.storage.avro.AvroScanner</value>
   </property>
 
   <!--- Appender Handler -->
   <property>
     <name>tajo.storage.appender-handler</name>
-    <value>csv,raw,rcfile,row,trevni,parquet,sequencefile,avro</value>
+    <value>textfile,csv,raw,rcfile,row,trevni,parquet,sequencefile,avro</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.appender-handler.textfile.class</name>
+    <value>org.apache.tajo.storage.text.DelimitedTextFile$DelimitedTextFileAppender</value>
   </property>
 
   <property>

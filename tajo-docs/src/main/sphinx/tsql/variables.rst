@@ -54,7 +54,7 @@ Now, tajo provides the following session variables.
 * ``CLI_ERROR_STOP``
 * ``TIMEZONE``
 * ``DATE_ORDER``
-* ``CSVFILE_NULL``
+* ``TEXT_NULL``
 * ``DEBUG_ENABLED``
 * ``TEST_BROADCAST_JOIN_ENABLED``
 * ``TEST_JOIN_OPT_ENABLED``

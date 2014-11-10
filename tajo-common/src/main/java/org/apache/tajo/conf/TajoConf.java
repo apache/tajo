@@ -364,7 +364,7 @@ public class TajoConf extends Configuration {
     $DATE_ORDER("tajo.date.order", "YMD"),
 
     // FILE FORMAT
-    $CSVFILE_NULL("tajo.csvfile.null", "\\\\N"),
+    $TEXT_NULL("tajo.text.null", "\\\\N"),
 
     // Only for Debug and Testing
     $DEBUG_ENABLED("tajo.debug.enabled", false),

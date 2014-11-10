@@ -703,7 +703,7 @@ public class TestTajoClient {
 
     TajoResultSet res = (TajoResultSet)client.executeQueryAndGetResult(sql);
 
-    assertEquals(res.getTableDesc().getMeta().getOption(StorageConstants.CSVFILE_NULL), "\\\\T");
+    assertEquals(res.getTableDesc().getMeta().getOption(StorageConstants.TEXT_NULL), "\\\\T");
 
     Path path = res.getTableDesc().getPath();
     FileSystem fs = path.getFileSystem(tajoConf);
