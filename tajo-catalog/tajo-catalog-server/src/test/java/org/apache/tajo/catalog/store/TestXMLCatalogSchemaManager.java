@@ -41,6 +41,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
@@ -49,13 +50,14 @@ import java.util.jar.Manifest;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.CatalogConstants;
-import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.store.object.DatabaseObject;
 import org.apache.tajo.catalog.store.object.DatabaseObjectType;
 import org.apache.tajo.catalog.store.object.SchemaPatch;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.hamcrest.BaseMatcher;
+import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
+import org.hamcrest.TypeSafeDiagnosingMatcher;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -112,6 +114,46 @@ public class TestXMLCatalogSchemaManager {
     }
     
   };
+  
+  private class CollectionMatcher<T> extends TypeSafeDiagnosingMatcher<Iterable<? extends T>> {
+    
+    private final Matcher<? extends T> matcher;
+    
+    public CollectionMatcher(Matcher<? extends T> matcher) {
+      this.matcher = matcher;
+    }
+
+    @Override
+    public void describeTo(org.hamcrest.Description description) {
+      description.appendText("a collection containing ").appendDescriptionOf(this.matcher);
+    }
+
+    @Override
+    protected boolean matchesSafely(Iterable<? extends T> item, org.hamcrest.Description mismatchDescription) {
+      boolean isFirst = true;
+      Iterator<? extends T> iterator = item.iterator();
+      
+      while (iterator.hasNext()) {
+        T obj = iterator.next();
+        if (this.matcher.matches(obj)) {
+          return true;
+        }
+        
+        if (!isFirst) {
+          mismatchDescription.appendText(", ");
+        }
+        
+        this.matcher.describeMismatch(obj, mismatchDescription);
+        isFirst = false;
+      }
+      return false;
+    }
+    
+  }
+  
+  private <T> Matcher<Iterable<? extends T>> hasItem(Matcher<? extends T> matcher) {
+    return new CollectionMatcher<T>(matcher);
+  }
   
   @BeforeClass
   public static void setUpClass() throws Exception {
