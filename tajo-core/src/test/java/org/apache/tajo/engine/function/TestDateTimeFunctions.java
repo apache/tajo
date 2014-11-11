@@ -104,6 +104,12 @@ public class TestDateTimeFunctions extends ExprTestBase {
     // (expectedTimestamp / 1000) means the translation from millis seconds to unix timestamp
     String q = String.format("select to_char(to_timestamp(%d), 'yyyy-MM');", (expectedTimestamp / 1000));
     testSimpleEval(q, new String[]{expectedDateTime.toString(dateFormatStr)});
+
+    q = "select to_char(to_timestamp('1997-12-30 11:40:00', 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS')";
+    testSimpleEval(q, new String[]{"1997-12-30 11:40:00"});
+
+    q = "select to_char(to_timestamp('1997-12-30 00:00:00', 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS')";
+    testSimpleEval(q, new String[]{"1997-12-30 00:00:00"});
   }
 
   @Test

@@ -296,6 +296,11 @@ public class TajoConf extends Configuration {
     // Metrics ----------------------------------------------------------------
     METRICS_PROPERTY_FILENAME("tajo.metrics.property.file", "tajo-metrics.properties"),
 
+    // Query History  ---------------------------------------------------------
+    HISTORY_QUERY_DIR("tajo.history.query.dir", STAGING_ROOT_DIR.defaultVal + "/history"),
+    HISTORY_TASK_DIR("tajo.history.task.dir", "file:///tmp/tajo-${user.name}/history"),
+    HISTORY_EXPIRY_TIME_DAY("tajo.history.expiry-time-day", 7),
+
     // Misc -------------------------------------------------------------------
 
     // Geo IP
@@ -676,6 +681,27 @@ public class TajoConf extends Configuration {
       return path;
     }
     return new Path(stagingDirString);
+  }
+
+  public static Path getQueryHistoryDir(TajoConf conf) throws IOException {
+    String historyDirString = conf.getVar(ConfVars.HISTORY_QUERY_DIR);
+    if (!hasScheme(historyDirString)) {
+      Path stagingPath = getStagingDir(conf);
+      FileSystem fs = stagingPath.getFileSystem(conf);
+      Path path = new Path(fs.getUri().toString(), historyDirString);
+      conf.setVar(ConfVars.HISTORY_QUERY_DIR, path.toString());
+      return path;
+    }
+    return new Path(historyDirString);
+  }
+
+  public static Path getTaskHistoryDir(TajoConf conf) throws IOException {
+    String historyDirString = conf.getVar(ConfVars.HISTORY_TASK_DIR);
+    if (!hasScheme(historyDirString)) {
+      //Local dir
+      historyDirString = "file://" + historyDirString;
+    }
+    return new Path(historyDirString);
   }
 
   public static Path getSystemConfPath(TajoConf conf) {

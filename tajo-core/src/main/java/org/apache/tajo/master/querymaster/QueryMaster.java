@@ -44,6 +44,7 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.util.HAServiceUtil;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.history.QueryHistory;
 import org.apache.tajo.worker.TajoWorker;
 
 import java.util.ArrayList;
@@ -393,58 +394,64 @@ public class QueryMaster extends CompositeService implements EventHandler {
     }
 
     public void stopQuery(QueryId queryId) {
-      QueryMasterTask queryMasterTask;
-      queryMasterTask = queryMasterTasks.remove(queryId);
-      if(queryMasterTask == null) return;
+      QueryMasterTask queryMasterTask = queryMasterTasks.remove(queryId);
+      if(queryMasterTask == null) {
+        LOG.warn("No query info:" + queryId);
+        return;
+      }
 
       finishedQueryMasterTasks.put(queryId, queryMasterTask);
 
-      if(queryMasterTask != null) {
-        TajoHeartbeat queryHeartbeat = buildTajoHeartBeat(queryMasterTask);
-        CallFuture<TajoHeartbeatResponse> future = new CallFuture<TajoHeartbeatResponse>();
+      TajoHeartbeat queryHeartbeat = buildTajoHeartBeat(queryMasterTask);
+      CallFuture<TajoHeartbeatResponse> future = new CallFuture<TajoHeartbeatResponse>();
 
-        NettyClientBase tmClient = null;
-        try {
-          // In TajoMaster HA mode, if backup master be active status,
-          // worker may fail to connect existing active master. Thus,
-          // if worker can't connect the master, worker should try to connect another master and
-          // update master address in worker context.
-          if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
-            try {
-              tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
-                  TajoMasterProtocol.class, true);
-            } catch (Exception e) {
-              queryMasterContext.getWorkerContext().setWorkerResourceTrackerAddr(HAServiceUtil.getResourceTrackerAddress(systemConf));
-              queryMasterContext.getWorkerContext().setTajoMasterAddress(HAServiceUtil.getMasterUmbilicalAddress(systemConf));
-              tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
-                  TajoMasterProtocol.class, true);
-            }
-          } else {
+      NettyClientBase tmClient = null;
+      try {
+        // In TajoMaster HA mode, if backup master be active status,
+        // worker may fail to connect existing active master. Thus,
+        // if worker can't connect the master, worker should try to connect another master and
+        // update master address in worker context.
+        if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+          try {
+            tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+                TajoMasterProtocol.class, true);
+          } catch (Exception e) {
+            queryMasterContext.getWorkerContext().setWorkerResourceTrackerAddr(HAServiceUtil.getResourceTrackerAddress(systemConf));
+            queryMasterContext.getWorkerContext().setTajoMasterAddress(HAServiceUtil.getMasterUmbilicalAddress(systemConf));
             tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
                 TajoMasterProtocol.class, true);
           }
-
-          TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
-          masterClientService.heartbeat(future.getController(), queryHeartbeat, future);
-        }  catch (Exception e) {
-          //this function will be closed in new thread.
-          //When tajo do stop cluster, tajo master maybe throw closed connection exception
-
-          LOG.error(e.getMessage(), e);
-        } finally {
-          connPool.releaseConnection(tmClient);
+        } else {
+          tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
+              TajoMasterProtocol.class, true);
         }
 
-        try {
-          queryMasterTask.stop();
-          if (!queryContext.getBool(SessionVars.DEBUG_ENABLED)) {
-            cleanup(queryId);
-          }
-        } catch (Exception e) {
-          LOG.error(e.getMessage(), e);
+        TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
+        masterClientService.heartbeat(future.getController(), queryHeartbeat, future);
+      }  catch (Exception e) {
+        //this function will be closed in new thread.
+        //When tajo do stop cluster, tajo master maybe throw closed connection exception
+
+        LOG.error(e.getMessage(), e);
+      } finally {
+        connPool.releaseConnection(tmClient);
+      }
+
+      try {
+        queryMasterTask.stop();
+        if (!queryContext.getBool(SessionVars.DEBUG_ENABLED)) {
+          cleanup(queryId);
         }
-      } else {
-        LOG.warn("No query info:" + queryId);
+      } catch (Exception e) {
+        LOG.error(e.getMessage(), e);
+      }
+      Query query = queryMasterTask.getQuery();
+      if (query != null) {
+        QueryHistory queryHisory = query.getQueryHistory();
+        if (queryHisory != null) {
+          query.context.getQueryMasterContext().getWorkerContext().
+              getTaskHistoryWriter().appendHistory(queryHisory);
+        }
       }
       if(workerContext.isYarnContainerMode()) {
         stop();
