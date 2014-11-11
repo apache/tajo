@@ -42,7 +42,6 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.rewrite.RewriteRule;
-import org.apache.tajo.storage.hbase.AddSortForInsertRewriter;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.plan.logical.LogicalNode;

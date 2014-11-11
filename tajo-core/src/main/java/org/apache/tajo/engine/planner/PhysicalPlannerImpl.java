@@ -29,13 +29,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.SessionVars;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.physical.*;
@@ -49,11 +47,7 @@ import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.SortSpecAr
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.BaseTupleComparator;
-import org.apache.tajo.storage.FileStorageManager;
-import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.storage.StorageManager;
-import org.apache.tajo.storage.TupleComparator;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
@@ -921,7 +915,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           if (broadcastFlag) {
             PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) scanNode;
             List<Fragment> fileFragments = TUtil.newList();
-            FileStorageManager fileStorageManager = StorageManager.getFileStorageManager(ctx.getConf());
+            FileStorageManager fileStorageManager = (FileStorageManager)StorageManager.getFileStorageManager(ctx.getConf());
             for (Path path : partitionedTableScanNode.getInputPaths()) {
               fileFragments.addAll(TUtil.newList(fileStorageManager.split(scanNode.getCanonicalName(), path)));
             }
@@ -1186,8 +1180,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         FragmentConvertor.convert(ctx.getConf(), fragmentProtos);
 
     String indexName = IndexUtil.getIndexNameOfFrag(fragments.get(0), annotation.getSortKeys());
-    Path indexPath = new Path(
-        StorageManager.getFileStorageManager(ctx.getConf()).getTablePath(annotation.getTableName()), "index");
+    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(ctx.getConf());
+    Path indexPath = new Path(sm.getTablePath(annotation.getTableName()), "index");
 
     TupleComparator comp = new BaseTupleComparator(annotation.getKeySchema(),
         annotation.getSortKeys());

@@ -31,6 +31,7 @@ import org.apache.tajo.plan.logical.InsertNode;
 import org.apache.tajo.plan.logical.PersistentStoreNode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.Appender;
+import org.apache.tajo.storage.FileStorageManager;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.unit.StorageUnit;
@@ -92,7 +93,8 @@ public class StoreTableExec extends UnaryPhysicalExec {
         lastFileName = new Path(lastFileName + "_" + suffixId);
       }
 
-      appender = StorageManager.getFileStorageManager(context.getConf()).getAppender(meta, appenderSchema, lastFileName);
+      appender = ((FileStorageManager)StorageManager.getFileStorageManager(context.getConf()))
+          .getAppender(meta, appenderSchema, lastFileName);
 
       if (suffixId > 0) {
         LOG.info(prevFile + " exceeds " + SessionVars.MAX_OUTPUT_FILE_SIZE.keyname() + " (" + maxPerFileSize + " MB), " +
