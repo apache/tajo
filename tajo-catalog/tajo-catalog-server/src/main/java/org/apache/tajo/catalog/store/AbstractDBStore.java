@@ -236,12 +236,17 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     schemaVersion = getSchemaVersion();
 
     if (schemaVersion == -1 || schemaVersion != getDriverVersion()) {
-      LOG.info(String.format("Catalog version (%d) and current driver version (%d) are mismatch to each other",
+      LOG.error(String.format("Catalog version (%d) and current driver version (%d) are mismatch to each other",
           schemaVersion, getDriverVersion()));
-      LOG.info("It will start upgrade process on catalog stores.");
-      
-      catalogSchemaManager.upgradeBaseSchema(getConnection(), schemaVersion);
-      insertSchemaVersion();
+      LOG.error("=========================================================================");
+      LOG.error("| Catalog Store Migration Is Needed |");
+      LOG.error("=========================================================================");
+      LOG.error("| You might downgrade or upgrade Apache Tajo. Downgrading or upgrading |");
+      LOG.error("| Tajo without migration process is only available in some versions. |");
+      LOG.error("| In order to learn how to migration Apache Tajo instance, |");
+      LOG.error("| please refer http://s.apache.org/0_8_migration. |");
+      LOG.error("=========================================================================");
+      throw new CatalogException("Migration Needed. Please refer http://s.apache.org/0_8_migration.");
     }
 
     LOG.info(String.format("The compatibility of the catalog schema (version: %d) has been verified.",
