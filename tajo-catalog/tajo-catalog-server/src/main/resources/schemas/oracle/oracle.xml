@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+<tns:store xmlns:tns="http://tajo.apache.org/catalogstore" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.xsd ">
+  <tns:base version="2">
+    <tns:objects>
+  		<tns:Object order="0" type="table" name="meta">
+  			<tns:sql><![CDATA[
+  			CREATE TABLE META (VERSION INT NOT NULL)]]>
+  			</tns:sql>
+  		</tns:Object>
+  		<tns:Object order="1" type="table" name="tablespaces">
+  			<tns:sql><![CDATA[
+  			CREATE TABLE TABLESPACES (
+					SPACE_ID NUMBER(10) NOT NULL PRIMARY KEY,
+					SPACE_NAME VARCHAR2(128) NOT NULL UNIQUE,
+					SPACE_HANDLER VARCHAR2(1024) DEFAULT 'HDFS',
+					SPACE_URI VARCHAR2(4000) NOT NULL
+				)]]>
+				</tns:sql>
+  		</tns:Object>
+  		<tns:Object order="2" type="sequence" name="TABLESPACES_SEQ">
+  			<tns:sql><![CDATA[CREATE SEQUENCE TABLESPACES_SEQ]]></tns:sql>
+  		</tns:Object>
+  		<tns:Object order="3" type="trigger" name="TABLESPACES_AUTOINC">
+  			<tns:sql><![CDATA[
+  			CREATE OR REPLACE TRIGGER TABLESPACES_AUTOINC
+				BEFORE INSERT ON TABLESPACES
+				FOR EACH ROW
+				WHEN (new.SPACE_ID IS NULL)
+				BEGIN
+				  SELECT TABLESPACES_SEQ.NEXTVAL INTO :new.SPACE_ID FROM DUAL;
+				END;]]>
+				</tns:sql>
+  		</tns:Object>
+  		<tns:Object order="4" type="table" name="DATABASES_">
+  			<tns:sql><![CDATA[
+  			CREATE TABLE DATABASES_ (
+					DB_ID NUMBER(10) NOT NULL PRIMARY KEY,
+					DB_NAME VARCHAR2(128) NOT NULL UNIQUE,
+					SPACE_ID INT NOT NULL,
+					FOREIGN KEY (SPACE_ID) REFERENCES TABLESPACES (SPACE_ID)
+				)]]>
+				</tns:sql>
+  		</tns:Object>
+  		<tns:Object order="5" type="sequence" name="DATABASES__SEQ">
+  			<tns:sql><![CDATA[
+  			CREATE SEQUENCE DATABASES__SEQ
+  			]]>
+  			</tns:sql>
+  		</tns:Object>
+  		<tns:Object order="6" type="trigger" name="DATABASES__AUTOINC">
+  			<tns:sql><![CDATA[
+  			CREATE OR REPLACE TRIGGER DATABASES__AUTOINC
+				BEFORE INSERT ON DATABASES_
+				FOR EACH ROW
+				WHEN (new.DB_ID IS NULL)
+				BEGIN
+				  SELECT DATABASES__SEQ.NEXTVAL INTO :new.DB_ID FROM DUAL;
+				END;]]>
+				</tns:sql>
+  		</tns:Object>
+  		<tns:Object order="7" type="table" name="TABLES">
+  			<tns:sql><![CDATA[
+  			CREATE TABLE TABLES (
+					TID NUMBER(10) NOT NULL PRIMARY KEY,
+					DB_ID INT NOT NULL,
+					TABLE_NAME VARCHAR2(128) NOT NULL,
+					TABLE_TYPE VARCHAR2(128) NOT NULL,
+					PATH VARCHAR2(4000),
+					STORE_TYPE CHAR(16),
+					FOREIGN KEY (DB_ID) REFERENCES DATABASES_ (DB_ID)
+				)]]>
+				</tns:sql>
+  		</tns:Object>
+  		<tns:Object order="8" type="sequence" name="TABLES_SEQ">
+  			<tns:sql><![CDATA[
+  			CREATE SEQUENCE TABLES_SEQ
+  			]]>
+  			</tns:sql>
+  		</tns:Object>
+  		<tns:Object order="9" type="trigger" name="TABLES_AUTOINC">
+  			<tns:sql><![CDATA[
+  			CREATE OR REPLACE TRIGGER TABLES_AUTOINC
+				BEFORE INSERT ON TABLES
+				FOR EACH ROW
+				WHEN (new.TID IS NULL)
+				BEGIN
+				  SELECT TABLES_SEQ.NEXTVAL INTO :new.TID FROM DUAL;
+				END;]]>
+				</tns:sql>
+  		</tns:Object>
+  		<tns:Object order="10" type="index" name="TABLES_IDX_DB_ID" dependsOn="TABLES">
+  			<tns:sql><![CDATA[CREATE INDEX TABLES_IDX_DB_ID on TABLES (DB_ID)]]></tns:sql>
+  		</tns:Object>
+  		<tns:Object order="11" type="index" name="TABLES_IDX_TABLE_ID" dependsOn="TABLES">
+  			<tns:sql><![CDATA[CREATE UNIQUE INDEX TABLES_IDX_TABLE_ID on TABLES (DB_ID, TABLE_NAME)]]></tns:sql>
+  		</tns:Object>
+  		<tns:Object order="12" type="table" name="COLUMNS">
+  			<tns:sql><![CDATA[
+  			CREATE TABLE COLUMNS (
+					TID INT NOT NULL,
+					COLUMN_NAME VARCHAR2(255) NOT NULL,
+					ORDINAL_POSITION INT NOT NULL,
+					DATA_TYPE CHAR(16),
+					TYPE_LENGTH INTEGER,
+					CONSTRAINT COLUMNS_PKEY PRIMARY KEY (TID, COLUMN_NAME),
+					FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
+				)]]>
+				</tns:sql>
+  		</tns:Object>
+  		<tns:Object order="13" type="table" name="OPTIONS">
+  			<tns:sql><![CDATA[
+  			CREATE TABLE OPTIONS (
+					TID INT NOT NULL,
+					KEY_ VARCHAR2(255) NOT NULL,
+					VALUE_ VARCHAR2(255) NOT NULL,
+					CONSTRAINT OPTIONS_PKEY PRIMARY KEY (TID, KEY_),
+					FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
+				)]]>
+				</tns:sql>
+  		</tns:Object>
+  		<tns:Object order="14" type="table" name="INDEXES">
+  			<tns:sql><![CDATA[
+  			CREATE TABLE INDEXES (
+					DB_ID INT NOT NULL,
+					TID INT NOT NULL,
+					INDEX_NAME VARCHAR2(128) NOT NULL,
+					COLUMN_NAME VARCHAR2(128) NOT NULL,
+					DATA_TYPE VARCHAR2(128) NOT NULL,
+					INDEX_TYPE CHAR(32) NOT NULL,
+					IS_UNIQUE CHAR NOT NULL,
+					IS_CLUSTERED CHAR NOT NULL,
+					IS_ASCENDING CHAR NOT NULL,
+					CONSTRAINT INDEXES_PKEY PRIMARY KEY (DB_ID, INDEX_NAME),
+					FOREIGN KEY (DB_ID) REFERENCES DATABASES_ (DB_ID) ON DELETE CASCADE,
+					FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
+				)]]>
+				</tns:sql>
+  		</tns:Object>
+  		<tns:Object order="15" type="index" name="INDEXES_IDX_TID_COLUMN_NAME" dependsOn="INDEXES">
+  			<tns:sql><![CDATA[CREATE INDEX INDEXES_IDX_TID_COLUMN_NAME on INDEXES (TID, COLUMN_NAME)]]></tns:sql>
+  		</tns:Object>
+  		<tns:Object order="16" type="table" name="STATS">
+  			<tns:sql><![CDATA[
+  			CREATE TABLE STATS (
+					TID INT NOT NULL PRIMARY KEY,
+					NUM_ROWS NUMBER(38),
+					NUM_BYTES NUMBER(38),
+					FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
+				)]]>
+				</tns:sql>
+  		</tns:Object>
+  		<tns:Object order="17" type="table" name="PARTITION_METHODS">
+  			<tns:sql><![CDATA[
+  			CREATE TABLE PARTITION_METHODS (
+					TID INT NOT NULL PRIMARY KEY,
+					PARTITION_TYPE VARCHAR2(10) NOT NULL,
+					EXPRESSION VARCHAR2(1024) NOT NULL,
+					EXPRESSION_SCHEMA RAW(1024) NOT NULL,
+					FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
+				)]]>
+				</tns:sql>
+  		</tns:Object>
+  		<tns:Object order="18" type="table" name="PARTITIONS">
+  			<tns:sql><![CDATA[
+  			CREATE TABLE PARTITIONS (
+					PID INT NOT NULL PRIMARY KEY,
+					TID INT NOT NULL,
+					PARTITION_NAME VARCHAR2(128),
+					ORDINAL_POSITION INT NOT NULL,
+					PARTITION_VALUE VARCHAR2(1024),
+					PATH VARCHAR2(4000),
+					FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE,
+					CONSTRAINT C_PARTITION_UNIQUE UNIQUE (TID, PARTITION_NAME)
+				)]]>
+				</tns:sql>
+  		</tns:Object>
+  		<tns:Object order="19" type="index" name="PARTITIONS_IDX_TID" dependsOn="PARTITIONS">
+  			<tns:sql><![CDATA[CREATE INDEX PARTITIONS_IDX_TID on PARTITIONS (TID)]]></tns:sql>
+  		</tns:Object>
+    </tns:objects>
+  </tns:base>
+  <tns:existQueries>
+  	<tns:existQuery type="trigger">
+  		<tns:sql><![CDATA[SELECT TRIGGER_NAME FROM USER_TRIGGERS]]></tns:sql>
+  	</tns:existQuery>
+  	<tns:existQuery type="sequence">
+  		<tns:sql><![CDATA[SELECT SEQUENCE_NAME FROM USER_SEQUENCES]]></tns:sql>
+  	</tns:existQuery>
+  	<tns:existQuery type="view">
+  		<tns:sql><![CDATA[SELECT VIEW_NAME FROM USER_VIEWS]]></tns:sql>
+  	</tns:existQuery>
+  	<tns:existQuery type="index">
+  		<tns:sql><![CDATA[SELECT INDEX_NAME FROM USER_INDEXES]]></tns:sql>
+  	</tns:existQuery>
+  </tns:existQueries>
+  <tns:dropStatements>
+  	<tns:dropStatement type="table">
+  		<tns:sql><![CDATA[DROP TABLE ? CASCADE CONSTRAINT]]></tns:sql>
+  	</tns:dropStatement>
+  </tns:dropStatements>
+</tns:store>
