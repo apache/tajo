@@ -51,6 +51,7 @@ service TajoMasterClientProtocolService {
   rpc killQuery(QueryIdRequest) returns (BoolProto);
   rpc getClusterInfo(GetClusterInfoRequest) returns (GetClusterInfoResponse);
   rpc closeNonForwardQuery(QueryIdRequest) returns (BoolProto);
+  rpc getQueryInfo(QueryIdRequest) returns (GetQueryInfoResponse);
 
   // Database Management APIs
   rpc createDatabase(SessionedStringProto) returns (BoolProto);

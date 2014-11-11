@@ -52,6 +52,8 @@ import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.util.*;
 import org.apache.tajo.util.metrics.TajoSystemMetrics;
+import org.apache.tajo.util.history.HistoryReader;
+import org.apache.tajo.util.history.HistoryWriter;
 import org.apache.tajo.webapp.QueryExecutorServlet;
 import org.apache.tajo.webapp.StaticHttpServer;
 
@@ -124,6 +126,10 @@ public class TajoMaster extends CompositeService {
   private HAService haService;
 
   private JvmPauseMonitor pauseMonitor;
+
+  private HistoryWriter historyWriter;
+
+  private HistoryReader historyReader;
 
   public TajoMaster() throws Exception {
     super(TajoMaster.class.getName());
@@ -309,6 +315,13 @@ public class TajoMaster extends CompositeService {
     } catch (IOException e) {
       LOG.error(e.getMessage(), e);
     }
+
+    historyWriter = new HistoryWriter(getMasterName(), true);
+    historyWriter.init(getConfig());
+    addIfService(historyWriter);
+    historyWriter.start();
+
+    historyReader = new HistoryReader(getMasterName(), context.getConf());
   }
 
   private void writeSystemConf() throws IOException {
@@ -451,6 +464,14 @@ public class TajoMaster extends CompositeService {
 
     public HAService getHAService() {
       return haService;
+    }
+
+    public HistoryWriter getHistoryWriter() {
+      return historyWriter;
+    }
+
+    public HistoryReader getHistoryReader() {
+      return historyReader;
     }
   }
 

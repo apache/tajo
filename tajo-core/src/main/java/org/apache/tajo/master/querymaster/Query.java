@@ -52,6 +52,8 @@ import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.history.QueryHistory;
+import org.apache.tajo.util.history.SubQueryHistory;
 
 import java.io.IOException;
 import java.text.NumberFormat;
@@ -287,6 +289,42 @@ public class Query implements EventHandler<QueryEvent> {
     finishTime = clock.getTime();
   }
 
+  public QueryHistory getQueryHistory() {
+    QueryHistory queryHistory = makeQueryHistory();
+    queryHistory.setSubQueryHistories(makeSubQueryHistories());
+    return queryHistory;
+  }
+
+  private List<SubQueryHistory> makeSubQueryHistories() {
+    List<SubQueryHistory> subQueryHistories = new ArrayList<SubQueryHistory>();
+    for(SubQuery eachSubQuery: getSubQueries()) {
+      subQueryHistories.add(eachSubQuery.getSubQueryHistory());
+    }
+
+    return subQueryHistories;
+  }
+
+  private QueryHistory makeQueryHistory() {
+    QueryHistory queryHistory = new QueryHistory();
+
+    queryHistory.setQueryId(getId().toString());
+    queryHistory.setQueryMaster(context.getQueryMasterContext().getWorkerContext().getWorkerName());
+    queryHistory.setHttpPort(context.getQueryMasterContext().getWorkerContext().getConnectionInfo().getHttpInfoPort());
+    queryHistory.setLogicalPlan(plan.toString());
+    queryHistory.setLogicalPlan(plan.getLogicalPlan().toString());
+    queryHistory.setDistributedPlan(plan.toString());
+
+    List<String[]> sessionVariables = new ArrayList<String[]>();
+    for(Map.Entry<String,String> entry: plan.getContext().getAllKeyValus().entrySet()) {
+      if (SessionVars.exists(entry.getKey()) && SessionVars.isPublic(SessionVars.get(entry.getKey()))) {
+        sessionVariables.add(new String[]{entry.getKey(), entry.getValue()});
+      }
+    }
+    queryHistory.setSessionVariables(sessionVariables);
+
+    return queryHistory;
+  }
+
   public List<String> getDiagnostics() {
     readLock.lock();
     try {
@@ -385,6 +423,7 @@ public class Query implements EventHandler<QueryEvent> {
       }
       query.eventHandler.handle(new QueryMasterQueryCompletedEvent(query.getId()));
       query.setFinishTime();
+
       return finalState;
     }
 
