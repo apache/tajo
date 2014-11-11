@@ -20,7 +20,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
 <%@ page import="org.apache.tajo.master.TajoMaster" %>
-<%@ page import="org.apache.tajo.master.ha.HAService" %>
 <%@ page import="org.apache.tajo.master.querymaster.QueryInProgress" %>
 <%@ page import="org.apache.tajo.master.rm.Worker" %>
 <%@ page import="org.apache.tajo.util.JSPUtil" %>
@@ -28,6 +27,8 @@
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.*" %>
+<%@ page import="org.apache.tajo.util.history.HistoryReader" %>
+<%@ page import="org.apache.tajo.master.querymaster.QueryInfo" %>
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
@@ -38,8 +39,28 @@
   runningQueries.addAll(master.getContext().getQueryJobManager().getRunningQueries());
           JSPUtil.sortQueryInProgress(runningQueries, true);
 
-  List<QueryInProgress> finishedQueries =
-          JSPUtil.sortQueryInProgress(master.getContext().getQueryJobManager().getFinishedQueries(), true);
+  int currentPage = 1;
+  if (request.getParameter("page") != null && !request.getParameter("page").isEmpty()) {
+    currentPage = Integer.parseInt(request.getParameter("page"));
+  }
+  int pageSize = HistoryReader.DEFAULT_PAGE_SIZE;
+  if (request.getParameter("pageSize") != null && !request.getParameter("pageSize").isEmpty()) {
+    try {
+      pageSize = Integer.parseInt(request.getParameter("pageSize"));
+    } catch (NumberFormatException e) {
+      pageSize = HistoryReader.DEFAULT_PAGE_SIZE;
+    }
+  }
+
+  String keyword = request.getParameter("keyword");
+  HistoryReader historyReader = master.getContext().getHistoryReader();
+  List<QueryInfo> allFinishedQueries = historyReader.getQueries(keyword);
+
+  int numOfFinishedQueries = allFinishedQueries.size();
+  int totalPage = numOfFinishedQueries % pageSize == 0 ?
+      numOfFinishedQueries / pageSize : numOfFinishedQueries / pageSize + 1;
+
+  List<QueryInfo> finishedQueries = JSPUtil.getPageNavigationList(allFinishedQueries, currentPage, pageSize);
 
   SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -54,16 +75,6 @@
     Worker queryMaster = workers.get(eachQueryMasterKey);
     if(queryMaster != null) {
       portMap.put(queryMaster.getConnectionInfo().getHost(), queryMaster.getConnectionInfo().getHttpInfoPort());
-    }
-  }
-
-  HAService haService = master.getContext().getHAService();
-  String activeLabel = "";
-  if (haService != null) {
-    if (haService.isActiveStatus()) {
-      activeLabel = "<font color='#1e90ff'>(active)</font>";
-    } else {
-      activeLabel = "<font color='#1e90ff'>(backup)</font>";
     }
   }
 %>
@@ -100,7 +111,7 @@
 <body>
 <%@ include file="header.jsp"%>
 <div class='contents'>
-  <h2>Tajo Master: <%=master.getMasterName()%> <%=activeLabel%></h2>
+  <h2>Tajo Master: <%=master.getMasterName()%> <%=JSPUtil.getMasterActiveLabel(master.getContext())%></h2>
   <hr/>
   <h3>Running Queries</h3>
 <%
@@ -114,7 +125,7 @@
       for(QueryInProgress eachQuery: runningQueries) {
         long time = System.currentTimeMillis() - eachQuery.getQueryInfo().getStartTime();
         String detailView = "http://" + eachQuery.getQueryInfo().getQueryMasterHost() + ":" + portMap.get(eachQuery.getQueryInfo().getQueryMasterHost()) +
-                "/querydetail.jsp?queryId=" + eachQuery.getQueryId();
+                "/querydetail.jsp?queryId=" + eachQuery.getQueryId() + "&startTime=" + eachQuery.getQueryInfo().getStartTime();
     %>
     <tr>
       <td><a href='<%=detailView%>'><%=eachQuery.getQueryId()%></a></td>
@@ -141,28 +152,37 @@
       out.write("No finished queries");
     } else {
   %>
+  <div align="right">
+    <form action='query.jsp' method='GET'>
+      Page Size: <input type="text" name="pageSize" value="<%=pageSize%>" size="5"/>
+      &nbsp;<input type="submit" value="Submit">
+    </form>
+  </div>
   <table width="100%" border="1" class='border_table'>
     <tr></tr><th>QueryId</th><th>Query Master</th><th>Started</th><th>Finished</th><th>Time</th><th>Status</th><th>sql</th></tr>
     <%
-      for(QueryInProgress eachQuery: finishedQueries) {
-        long runTime = eachQuery.getQueryInfo().getFinishTime() > 0 ?
-                eachQuery.getQueryInfo().getFinishTime() - eachQuery.getQueryInfo().getStartTime() : -1;
-        String detailView = "http://" + eachQuery.getQueryInfo().getQueryMasterHost() + ":" + portMap.get(eachQuery.getQueryInfo().getQueryMasterHost())  +
-                "/querydetail.jsp?queryId=" + eachQuery.getQueryId();
+      for(QueryInfo eachQuery: finishedQueries) {
+        long runTime = eachQuery.getFinishTime() > 0 ?
+                eachQuery.getFinishTime() - eachQuery.getStartTime() : -1;
+        String detailView = "querydetail.jsp?queryId=" + eachQuery.getQueryIdStr() + "&startTime=" + eachQuery.getStartTime();
     %>
     <tr>
-      <td><a href='<%=detailView%>'><%=eachQuery.getQueryId()%></a></td>
-      <td><%=eachQuery.getQueryInfo().getQueryMasterHost()%></td>
-      <td><%=df.format(eachQuery.getQueryInfo().getStartTime())%></td>
-      <td><%=eachQuery.getQueryInfo().getFinishTime() > 0 ? df.format(eachQuery.getQueryInfo().getFinishTime()) : "-"%></td>
+      <td><a href='<%=detailView%>'><%=eachQuery.getQueryIdStr()%></a></td>
+      <td><%=eachQuery.getQueryMasterHost()%></td>
+      <td><%=df.format(eachQuery.getStartTime())%></td>
+      <td><%=eachQuery.getFinishTime() > 0 ? df.format(eachQuery.getFinishTime()) : "-"%></td>
       <td><%=runTime == -1 ? "-" : StringUtils.formatTime(runTime) %></td>
-      <td><%=eachQuery.getQueryInfo().getQueryState()%></td>
-      <td><%=eachQuery.getQueryInfo().getSql()%></td>
+      <td><%=eachQuery.getQueryState()%></td>
+      <td><%=eachQuery.getSql()%></td>
     </tr>
     <%
       }
     %>
   </table>
+  <div align="center">
+    <%=JSPUtil.getPageNavigation(currentPage, totalPage, "query.jsp?pageSize=" + pageSize)%>
+  </div>
+  <p/>
 <%
   }
 %>

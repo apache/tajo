@@ -24,7 +24,8 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
-import org.joda.time.DateTime;
+import org.apache.tajo.util.datetime.DateTimeUtil;
+import org.apache.tajo.util.datetime.TimeMeta;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -99,11 +100,17 @@ public class TestDateTimeFunctions extends ExprTestBase {
   @Test
   public void testToChar() throws IOException {
     long expectedTimestamp = System.currentTimeMillis();
-    DateTime expectedDateTime = new DateTime(expectedTimestamp);
-    String dateFormatStr = "yyyy-MM";
+    TimeMeta tm = new TimeMeta();
+    DateTimeUtil.toJulianTimeMeta(DateTimeUtil.javaTimeToJulianTime(expectedTimestamp), tm);
     // (expectedTimestamp / 1000) means the translation from millis seconds to unix timestamp
     String q = String.format("select to_char(to_timestamp(%d), 'yyyy-MM');", (expectedTimestamp / 1000));
-    testSimpleEval(q, new String[]{expectedDateTime.toString(dateFormatStr)});
+    testSimpleEval(q, new String[]{String.format("%04d-%02d", tm.years, tm.monthOfYear)});
+
+    q = "select to_char(to_timestamp('1997-12-30 11:40:00', 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS')";
+    testSimpleEval(q, new String[]{"1997-12-30 11:40:00"});
+
+    q = "select to_char(to_timestamp('1997-12-30 00:00:00', 'YYYY-MM-DD HH24:MI:SS'), 'YYYY-MM-DD HH24:MI:SS')";
+    testSimpleEval(q, new String[]{"1997-12-30 00:00:00"});
   }
 
   @Test

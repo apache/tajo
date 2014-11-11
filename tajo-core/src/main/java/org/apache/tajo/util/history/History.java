@@ -16,21 +16,12 @@
  * limitations under the License.
  */
 
-option java_package = "org.apache.tajo.ipc";
-option java_outer_classname = "QueryMasterClientProtocol";
-option java_generic_services = true;
-option java_generate_equals_and_hash = true;
+package org.apache.tajo.util.history;
 
-import "tajo_protos.proto";
-import "TajoIdProtos.proto";
-import "CatalogProtos.proto";
-import "PrimitiveProtos.proto";
-import "ClientProtos.proto";
+public interface History {
+  public static enum HistoryType {
+    TASK, QUERY, QUERY_SUMMARY
+  }
 
-service QueryMasterClientProtocolService {
-  rpc updateSessionVariables(UpdateSessionVariableRequest) returns (BoolProto);
-  rpc getQueryResult(GetQueryResultRequest) returns (GetQueryResultResponse);
-  rpc getQueryStatus(GetQueryStatusRequest) returns (GetQueryStatusResponse);
-  rpc closeQuery(QueryIdProto) returns (BoolProto);
-  rpc getQueryHistory(QueryIdRequest) returns (GetQueryHistoryResponse);
+  public HistoryType getHistoryType();
 }
