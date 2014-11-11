@@ -141,10 +141,6 @@
       <artifactId>tajo-common</artifactId>
       <exclusions>
         <exclusion>
-          <groupId>joda-time</groupId>
-          <artifactId>joda-time</artifactId>
-        </exclusion>
-        <exclusion>
           <groupId>com.google.code.gson</groupId>
           <artifactId>gson</artifactId>
         </exclusion>

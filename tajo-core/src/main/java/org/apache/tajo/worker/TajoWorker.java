@@ -45,6 +45,8 @@ import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.util.*;
+import org.apache.tajo.util.history.HistoryReader;
+import org.apache.tajo.util.history.HistoryWriter;
 import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.webapp.StaticHttpServer;
 
@@ -128,6 +130,10 @@ public class TajoWorker extends CompositeService {
   private LocalDirAllocator lDirAllocator;
 
   private JvmPauseMonitor pauseMonitor;
+
+  private HistoryWriter taskHistoryWriter;
+
+  private HistoryReader historyReader;
 
   public TajoWorker() throws Exception {
     super(TajoWorker.class.getName());
@@ -253,6 +259,12 @@ public class TajoWorker extends CompositeService {
       LOG.fatal(e.getMessage(), e);
       System.exit(-1);
     }
+
+    taskHistoryWriter = new HistoryWriter(workerContext.getWorkerName(), false);
+    addIfService(taskHistoryWriter);
+    taskHistoryWriter.init(conf);
+
+    historyReader = new HistoryReader(workerContext.getWorkerName(), this.systemConf);
   }
 
   private void initWorkerMetrics() {
@@ -540,6 +552,14 @@ public class TajoWorker extends CompositeService {
 
     public HashShuffleAppenderManager getHashShuffleAppenderManager() {
       return hashShuffleAppenderManager;
+    }
+
+    public HistoryWriter getTaskHistoryWriter() {
+      return taskHistoryWriter;
+    }
+
+    public HistoryReader getHistoryReader() {
+      return historyReader;
     }
   }
 

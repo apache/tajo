@@ -507,7 +507,8 @@ public class Task {
   }
 
   public void cleanupTask() {
-    executionBlockContext.addTaskHistory(taskRunnerId, getId(), createTaskHistory());
+    TaskHistory taskHistory = createTaskHistory();
+    executionBlockContext.addTaskHistory(taskRunnerId, getId(), taskHistory);
     executionBlockContext.getTasks().remove(getId());
 
     fetcherRunners.clear();
@@ -520,6 +521,8 @@ public class Task {
     } catch (IOException e) {
       LOG.fatal(e.getMessage(), e);
     }
+
+    executionBlockContext.getWorkerContext().getTaskHistoryWriter().appendHistory(taskHistory);
   }
 
   public TaskHistory createTaskHistory() {

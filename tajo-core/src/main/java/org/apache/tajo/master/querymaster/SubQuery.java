@@ -64,6 +64,8 @@ import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.history.QueryUnitHistory;
+import org.apache.tajo.util.history.SubQueryHistory;
 import org.apache.tajo.worker.FetchImpl;
 
 import java.io.IOException;
@@ -280,6 +282,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private TaskSchedulerContext schedulerContext;
   private List<IntermediateEntry> hashShuffleIntermediateEntries = new ArrayList<IntermediateEntry>();
   private AtomicInteger completeReportReceived = new AtomicInteger(0);
+  private SubQueryHistory finalSubQueryHistory;
 
   public SubQuery(QueryMasterTask.QueryMasterTaskContext context, MasterPlan masterPlan,
                   ExecutionBlock block, StorageManager sm) {
@@ -392,6 +395,76 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
   public void addTask(QueryUnit task) {
     tasks.put(task.getId(), task);
+  }
+
+  public SubQueryHistory getSubQueryHistory() {
+    if (finalSubQueryHistory != null) {
+      if (finalSubQueryHistory.getFinishTime() == 0) {
+        finalSubQueryHistory = makeSubQueryHistory();
+        finalSubQueryHistory.setQueryUnits(makeQueryUnitHistories());
+      }
+      return finalSubQueryHistory;
+    } else {
+      return makeSubQueryHistory();
+    }
+  }
+
+  private List<QueryUnitHistory> makeQueryUnitHistories() {
+    List<QueryUnitHistory> queryUnitHistories = new ArrayList<QueryUnitHistory>();
+
+    for(QueryUnit eachQueryUnit: getQueryUnits()) {
+      queryUnitHistories.add(eachQueryUnit.getQueryUnitHistory());
+    }
+
+    return queryUnitHistories;
+  }
+
+  private SubQueryHistory makeSubQueryHistory() {
+    SubQueryHistory subQueryHistory = new SubQueryHistory();
+
+    subQueryHistory.setExecutionBlockId(getId().toString());
+    subQueryHistory.setPlan(PlannerUtil.buildExplainString(block.getPlan()));
+    subQueryHistory.setState(getState().toString());
+    subQueryHistory.setStartTime(startTime);
+    subQueryHistory.setFinishTime(finishTime);
+    subQueryHistory.setSucceededObjectCount(succeededObjectCount);
+    subQueryHistory.setKilledObjectCount(killedObjectCount);
+    subQueryHistory.setFailedObjectCount(failedObjectCount);
+    subQueryHistory.setTotalScheduledObjectsCount(totalScheduledObjectsCount);
+    subQueryHistory.setHostLocalAssigned(getTaskScheduler().getHostLocalAssigned());
+    subQueryHistory.setRackLocalAssigned(getTaskScheduler().getRackLocalAssigned());
+
+    long totalInputBytes = 0;
+    long totalReadBytes = 0;
+    long totalReadRows = 0;
+    long totalWriteBytes = 0;
+    long totalWriteRows = 0;
+    int numShuffles = 0;
+    for(QueryUnit eachQueryUnit: getQueryUnits()) {
+      numShuffles = eachQueryUnit.getShuffleOutpuNum();
+      if (eachQueryUnit.getLastAttempt() != null) {
+        TableStats inputStats = eachQueryUnit.getLastAttempt().getInputStats();
+        if (inputStats != null) {
+          totalInputBytes += inputStats.getNumBytes();
+          totalReadBytes += inputStats.getReadBytes();
+          totalReadRows += inputStats.getNumRows();
+        }
+        TableStats outputStats = eachQueryUnit.getLastAttempt().getResultStats();
+        if (outputStats != null) {
+          totalWriteBytes += outputStats.getNumBytes();
+          totalWriteRows += outputStats.getNumRows();
+        }
+      }
+    }
+
+    subQueryHistory.setTotalInputBytes(totalInputBytes);
+    subQueryHistory.setTotalReadBytes(totalReadBytes);
+    subQueryHistory.setTotalReadRows(totalReadRows);
+    subQueryHistory.setTotalWriteBytes(totalWriteBytes);
+    subQueryHistory.setTotalWriteRows(totalWriteRows);
+    subQueryHistory.setNumShuffles(numShuffles);
+    subQueryHistory.setProgress(getProgress());
+    return subQueryHistory;
   }
 
   /**
@@ -1172,6 +1245,9 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
       getContext().getQueryMasterContext().getQueryMaster().cleanupExecutionBlock(ebIds);
     }
+
+    this.finalSubQueryHistory = makeSubQueryHistory();
+    this.finalSubQueryHistory.setQueryUnits(makeQueryUnitHistories());
   }
 
   public List<IntermediateEntry> getHashShuffleIntermediateEntries() {
