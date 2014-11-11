@@ -13,6 +13,9 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
    
+    TAJO-1109: Separate SQL Statements from Catalog Stores.
+    (Jihun Kang via hyunsik)
+
     TAJO-1161: Remove joda time dependency from tajo-core. 
     (Jihun Kang via hyunsik)
 
