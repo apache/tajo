@@ -133,16 +133,7 @@ public class DelimitedTextFile {
         this.stats = new TableStatistics(this.schema);
       }
 
-      try {
-        // we need to discuss the De/Serializer interface. so custom serde is to disable
-        /*String serdeClass = this.meta.getOption(StorageConstants.TEXTFILE_SERDE,
-            TextFieldSerializerDeserializer.class.getName());
-        serde = (TextFieldSerializerDeserializer) ReflectionUtils.newInstance(Class.forName(serdeClass), conf);*/
-        serde = new TextFieldSerializerDeserializer();
-      } catch (Throwable e) {
-        LOG.error(e.getMessage(), e);
-        throw new IOException(e);
-      }
+      serde = new TextFieldSerializerDeserializer();
 
       if (os == null) {
         os = new NonSyncByteArrayOutputStream(BUFFER_SIZE);
@@ -314,16 +305,7 @@ public class DelimitedTextFile {
         targetColumnIndexes[i] = schema.getColumnId(targets[i].getQualifiedName());
       }
 
-      try {
-        // we need to discuss the De/Serializer interface. so custom serde is to disable
-        /*String serdeClass = this.meta.getOption(StorageConstants.TEXTFILE_SERDE,
-            TextFieldSerializerDeserializer.class.getName());
-        serde = (TextFieldSerializerDeserializer) ReflectionUtils.newInstance(Class.forName(serdeClass), conf);*/
-        serde = new TextFieldSerializerDeserializer();
-      } catch (Throwable e) {
-        LOG.error(e.getMessage(), e);
-        throw new IOException(e);
-      }
+      serde = new TextFieldSerializerDeserializer();
 
       super.init();
       Arrays.sort(targetColumnIndexes);
