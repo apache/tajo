@@ -80,7 +80,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
     TajoWorkerContainerId containerId = new TajoWorkerContainerId();
     ApplicationAttemptId appAttemptId = new ApplicationAttemptIdPBImpl(containerIdProto.getAppAttemptId());
     containerId.setApplicationAttemptId(appAttemptId);
-    containerId.setId(containerIdProto.getId());
+    containerId.setContainerId(containerIdProto.getId());
     return containerId;
   }
 
@@ -336,7 +336,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
           containerId.setApplicationAttemptId(
               ApplicationIdUtils.createApplicationAttemptId(executionBlockId.getQueryId(),
                   eachAllocatedResource.getContainerId().getAppAttemptId().getAttemptId()));
-          containerId.setId(eachAllocatedResource.getContainerId().getId());
+          containerId.setContainerId(eachAllocatedResource.getContainerId().getId());
 
           container.setId(containerId);
           container.setNodeId(nodeId);

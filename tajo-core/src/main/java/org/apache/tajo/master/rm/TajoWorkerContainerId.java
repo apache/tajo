@@ -24,7 +24,7 @@ import org.apache.hadoop.yarn.proto.YarnProtos;
 
 public class TajoWorkerContainerId extends ContainerId {
   ApplicationAttemptId applicationAttemptId;
-  int id;
+  long id;
 
   @Override
   public ApplicationAttemptId getApplicationAttemptId() {
@@ -38,11 +38,16 @@ public class TajoWorkerContainerId extends ContainerId {
 
   @Override
   public int getId() {
+    return (int) id;
+  }
+
+  @Override
+  public long getContainerId() {
     return id;
   }
 
   @Override
-  public void setId(int id) {
+  public void setContainerId(long id) {
     this.id = id;
   }
 

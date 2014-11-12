@@ -310,7 +310,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
 
                 containerId.setApplicationAttemptId(
                     ApplicationIdUtils.createApplicationAttemptId(resourceRequest.queryId));
-                containerId.setId(containerIdSeq.incrementAndGet());
+                containerId.setContainerId(containerIdSeq.incrementAndGet());
 
                 ContainerIdProto containerIdProto = containerId.getProto();
                 allocatedResources.add(WorkerAllocatedResource.newBuilder()
