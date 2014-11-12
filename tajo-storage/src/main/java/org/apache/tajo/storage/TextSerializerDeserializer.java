@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 //Compatibility with Apache Hive
+@Deprecated
 public class TextSerializerDeserializer implements SerializerDeserializer {
   public static final byte[] trueBytes = "true".getBytes();
   public static final byte[] falseBytes = "false".getBytes();

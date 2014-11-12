@@ -21,8 +21,6 @@ package org.apache.tajo.util;
 import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.util.datetime.DateTimeFormat;
 import org.apache.tajo.util.datetime.TimeMeta;
-import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormatter;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -117,19 +115,11 @@ public class TestDateTimeFormat {
 
   @Test
   public void testPerformance() {
-    DateTimeFormatter jodaFormat = org.joda.time.format.DateTimeFormat.forPattern("YYYY-MM-DD HH:mm:ss.SSS");
     long startTime = System.currentTimeMillis();
     for (int i = 0; i < 10000000; i++) {
-      DateTime dateTime = jodaFormat.parseDateTime("1997-12-30 11:40:50.345");
+      DateTimeFormat.toTimestamp("1997-12-30 11:40:50.345", "YYYY-MM-DD HH24:MI:SS.MS");
     }
     long endTime = System.currentTimeMillis();
-    System.out.println("total parse time with JodaTime:" + (endTime - startTime) + " ms");
-
-    startTime = System.currentTimeMillis();
-    for (int i = 0; i < 10000000; i++) {
-      TimestampDatum datum = DateTimeFormat.toTimestamp("1997-12-30 11:40:50.345", "YYYY-MM-DD HH24:MI:SS.MS");
-    }
-    endTime = System.currentTimeMillis();
     System.out.println("total parse time with TajoDateTimeFormat:" + (endTime - startTime) + " ms");
   }
 

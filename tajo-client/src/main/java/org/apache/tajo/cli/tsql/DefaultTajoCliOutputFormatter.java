@@ -24,7 +24,6 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.util.FileUtil;
 

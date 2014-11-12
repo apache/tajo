@@ -24,7 +24,7 @@ import org.apache.tajo.datum.Datum;
 import java.io.IOException;
 import java.io.OutputStream;
 
-
+@Deprecated
 public interface SerializerDeserializer {
 
   public int serialize(Column col, Datum datum, OutputStream out, byte[] nullCharacters) throws IOException;

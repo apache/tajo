@@ -296,6 +296,11 @@ public class TajoConf extends Configuration {
     // Metrics ----------------------------------------------------------------
     METRICS_PROPERTY_FILENAME("tajo.metrics.property.file", "tajo-metrics.properties"),
 
+    // Query History  ---------------------------------------------------------
+    HISTORY_QUERY_DIR("tajo.history.query.dir", STAGING_ROOT_DIR.defaultVal + "/history"),
+    HISTORY_TASK_DIR("tajo.history.task.dir", "file:///tmp/tajo-${user.name}/history"),
+    HISTORY_EXPIRY_TIME_DAY("tajo.history.expiry-time-day", 7),
+
     // Misc -------------------------------------------------------------------
     // Fragment
     FRAGMENT_ALTERNATIVE_UNKNOWN_LENGTH("tajo.fragment.alternative.unknown.length", (long)(512 * 1024 * 1024)),
@@ -361,7 +366,7 @@ public class TajoConf extends Configuration {
     $DATE_ORDER("tajo.date.order", "YMD"),
 
     // FILE FORMAT
-    $CSVFILE_NULL("tajo.csvfile.null", "\\\\N"),
+    $TEXT_NULL("tajo.text.null", "\\\\N"),
 
     // Only for Debug and Testing
     $DEBUG_ENABLED("tajo.debug.enabled", false),
@@ -678,6 +683,27 @@ public class TajoConf extends Configuration {
       return path;
     }
     return new Path(stagingDirString);
+  }
+
+  public static Path getQueryHistoryDir(TajoConf conf) throws IOException {
+    String historyDirString = conf.getVar(ConfVars.HISTORY_QUERY_DIR);
+    if (!hasScheme(historyDirString)) {
+      Path stagingPath = getStagingDir(conf);
+      FileSystem fs = stagingPath.getFileSystem(conf);
+      Path path = new Path(fs.getUri().toString(), historyDirString);
+      conf.setVar(ConfVars.HISTORY_QUERY_DIR, path.toString());
+      return path;
+    }
+    return new Path(historyDirString);
+  }
+
+  public static Path getTaskHistoryDir(TajoConf conf) throws IOException {
+    String historyDirString = conf.getVar(ConfVars.HISTORY_TASK_DIR);
+    if (!hasScheme(historyDirString)) {
+      //Local dir
+      historyDirString = "file://" + historyDirString;
+    }
+    return new Path(historyDirString);
   }
 
   public static Path getSystemConfPath(TajoConf conf) {

@@ -91,11 +91,12 @@ function runQuery() {
   }
   init();
   var query = $("#query").val();
+  var sbox = document.getElementById("selectDatabase");
 
   $.ajax({
     type: "POST",
     url: "query_exec",
-    data: { action: "runQuery", query: query, limitSize:SIZE_LIMIT }
+    data: { action: "runQuery", query: query, limitSize:SIZE_LIMIT, database: sbox.options[sbox.selectedIndex].text }
   })
   .done(function(msg) {
     var resultJson = $.parseJSON(msg);
@@ -289,7 +290,18 @@ function getPage() {
   <h2>Tajo Master: <%=master.getMasterName()%> <%=activeLabel%></h2>
   <hr/>
   <h3>Query</h3>
-  <textarea id="query" style="width:800px; height:250px; font-family:Tahoma; font-size:12px;"></textarea>
+  Database :  
+  <select id="selectDatabase" name="database" width="190" style="width: 190px">
+    <%
+	for (String databaseName : master.getCatalog().getAllDatabaseNames()) {
+	%>
+	  <option value="<%=databaseName%>"><%=databaseName%></option>
+	<%
+	}
+	%>
+  </select>
+  <p />
+<textarea id="query" style="width:800px; height:250px; font-family:Tahoma; font-size:12px;"></textarea>
   <p />
   Limit : <input id="sizeLimit" type="text" value="10" style="width:30px; text-align:center;" /> MB
   <p />

@@ -24,7 +24,6 @@ import org.apache.tajo.*;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleFileOutput;
 import org.apache.tajo.master.querymaster.Query;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.querymaster.QueryUnit;
@@ -395,8 +394,8 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
     // case9
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.TEXT);
@@ -449,8 +448,8 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   public final void testDistinctAggregationCaseByCase3() throws Exception {
     // first distinct is smaller than second distinct.
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.TEXT);
@@ -479,8 +478,8 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   public final void testDistinctAggregationCaseByCase4() throws Exception {
     // Reproduction case for TAJO-994
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.TEXT);
@@ -666,8 +665,8 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   @Test
   public final void testNumShufflePartition() throws Exception {
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.TEXT);

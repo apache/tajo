@@ -6,7 +6,7 @@ store type: CSV
 number of rows: 0
 volume: 0 B
 Options: 
-	'csvfile.delimiter'='|'
+	'text.delimiter'='|'
 
 schema: 
 col1	INT4
@@ -20,7 +20,7 @@ store type: CSV
 number of rows: 0
 volume: 0 B
 Options: 
-	'csvfile.delimiter'='|'
+	'text.delimiter'='|'
 
 schema: 
 col1	INT4

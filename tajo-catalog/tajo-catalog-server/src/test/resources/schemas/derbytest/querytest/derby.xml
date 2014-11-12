@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+<tns:store xmlns:tns="http://tajo.apache.org/catalogstore" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://tajo.apache.org/catalogstore ../../../../../main/resources/schemas/DBMSSchemaDefinition.xsd ">
+	<tns:base version="1" schemaname="tajo">
+		<tns:objects>
+			<tns:Object order="0" type="table" name="TESTTABLE1">
+				<tns:sql><![CDATA[CREATE TABLE TESTTABLE1 (COL1 INT, COL2 VARCHAR(10))]]></tns:sql>
+			</tns:Object>
+			<tns:Object order="1" type="index" name="TESTINDEX1" dependsOn="TESTTABLE1">
+				<tns:sql><![CDATA[CREATE INDEX TESTINDEX1 ON TESTTABLE1 (COL1)]]></tns:sql>
+			</tns:Object>
+			<tns:Object order="2" type="table" name="TESTTABLE2">
+				<tns:sql><![CDATA[CREATE TABLE TESTTABLE2 (COL1 INT, COL2 VARCHAR(10))]]></tns:sql>
+			</tns:Object>
+			<tns:Object order="3" type="trigger" name="TESTTRIGGER1">
+				<tns:sql><![CDATA[
+				CREATE TRIGGER TESTTRIGGER1
+				AFTER INSERT ON TESTTABLE1
+				REFERENCING NEW AS NEWROW
+				FOR EACH ROW
+				  INSERT INTO TESTTABLE2
+				  (COL1, COL2)
+				  VALUES
+				  (NEWROW.COL1, NEWROW.COL2)
+				]]></tns:sql>
+			</tns:Object>
+			<tns:Object order="4" type="sequence" name="TESTSEQ">
+				<tns:sql><![CDATA[CREATE SEQUENCE TESTSEQ AS INT]]></tns:sql>
+			</tns:Object>
+			<tns:Object order="5" type="view" name="TESTVIEW">
+				<tns:sql><![CDATA[CREATE VIEW TESTVIEW (TESTTEXT) AS VALUES 'Text1', 'Text2']]></tns:sql>
+			</tns:Object>
+		</tns:objects>
+	</tns:base>
+	<tns:existQueries>
+	  <tns:existQuery type="trigger">
+	    <tns:sql><![CDATA[
+	    select a.TRIGGERNAME from SYS.SYSTRIGGERS a inner join SYS.SYSSCHEMAS b
+           on a.SCHEMAID = b.SCHEMAID where b.SCHEMANAME = ?
+	    ]]></tns:sql>
+	  </tns:existQuery>
+	  <tns:existQuery type="sequence">
+	    <tns:sql><![CDATA[
+	    select a.SEQUENCENAME from SYS.SYSSEQUENCES a inner join SYS.SYSSCHEMAS b
+           on a.SCHEMAID = b.SCHEMAID where b.SCHEMANAME = ?
+	    ]]></tns:sql>
+	  </tns:existQuery>
+	  <tns:existQuery type="view">
+	    <tns:sql><![CDATA[
+	    select a.TABLENAME from SYS.SYSTABLES a inner join SYS.SYSSCHEMAS b
+           on a.SCHEMAID = b.SCHEMAID where b.SCHEMANAME = ? and a.TABLETYPE = 'V'
+	    ]]></tns:sql>
+	  </tns:existQuery>
+	</tns:existQueries>
+	<tns:dropStatements>
+		<tns:dropStatement type="sequence">
+			<tns:sql>DROP SEQUENCE ? RESTRICT</tns:sql>
+		</tns:dropStatement>
+	</tns:dropStatements>
+</tns:store>

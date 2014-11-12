@@ -28,7 +28,10 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.util.StringUtils;
-import org.apache.tajo.*;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryIdFactory;
+import org.apache.tajo.SessionVars;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.algebra.AlterTablespaceSetType;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.algebra.JsonHelper;
@@ -253,8 +256,9 @@ public class GlobalEngine extends AbstractService {
         maxRow = (int) limitNode.getFetchFirstNum();
       }
       if (desc.getStats().getNumRows() == 0) {
-        desc.getStats().setNumRows(-1);
+        desc.getStats().setNumRows(TajoConstants.UNKNOWN_ROW_NUMBER);
       }
+
       QueryId queryId = QueryIdFactory.newQueryId(context.getResourceManager().getSeedQueryId());
 
       NonForwardQueryResultScanner queryResultScanner =

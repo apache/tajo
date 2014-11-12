@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+<tns:store xmlns:tns="http://tajo.apache.org/catalogstore" 
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.xsd ">
+	<tns:base version="2">
+		<tns:objects>
+			<tns:Object name="META" type="table" order="0">
+				<tns:sql><![CDATA[CREATE TABLE META (VERSION INT NOT NULL)]]></tns:sql>
+			</tns:Object>
+			<tns:Object name="TABLESPACES" type="table" order="1">
+				<tns:sql><![CDATA[
+				CREATE TABLE TABLESPACES (
+  				SPACE_ID SERIAL NOT NULL PRIMARY KEY,
+  				SPACE_NAME VARCHAR(128) NOT NULL UNIQUE,
+  				SPACE_HANDLER VARCHAR (1024) DEFAULT 'HDFS',
+  				SPACE_URI VARCHAR (4096) NOT NULL
+				)]]>
+				</tns:sql>
+			</tns:Object>
+			<tns:Object name="TABLESPACES_IDX_NAME" type="index" order="2" dependsOn="TABLESPACES">
+				<tns:sql><![CDATA[CREATE UNIQUE INDEX TABLESPACES_IDX_NAME on TABLESPACES (SPACE_NAME)]]>
+				</tns:sql>
+			</tns:Object>
+			<tns:Object name="DATABASES_" type="table" order="3">
+				<tns:sql><![CDATA[
+				CREATE TABLE DATABASES_ (
+  				DB_ID SERIAL NOT NULL PRIMARY KEY,
+  				DB_NAME VARCHAR(128) NOT NULL UNIQUE,
+  				SPACE_ID INT NOT NULL,
+  				FOREIGN KEY (SPACE_ID) REFERENCES TABLESPACES (SPACE_ID)
+				)]]>
+				</tns:sql>
+			</tns:Object>
+			<tns:Object name="DATABASES__IDX_NAME" type="index" order="4" dependsOn="DATABASES_">
+				<tns:sql><![CDATA[CREATE UNIQUE INDEX DATABASES__IDX_NAME on DATABASES_ (DB_NAME)]]></tns:sql>
+			</tns:Object>
+			<tns:Object name="TABLES" type="table" order="5">
+				<tns:sql><![CDATA[
+				CREATE TABLE TABLES (
+  				TID SERIAL NOT NULL PRIMARY KEY,
+  				DB_ID INT NOT NULL,
+  				TABLE_NAME VARCHAR(128) NOT NULL,
+  				TABLE_TYPE VARCHAR(128) NOT NULL,
+  				PATH VARCHAR(4096),
+  				STORE_TYPE CHAR(16),
+  				FOREIGN KEY (DB_ID) REFERENCES DATABASES_ (DB_ID)
+				)]]>
+				</tns:sql>
+			</tns:Object>
+			<tns:Object name="TABLES_IDX_DB_ID" type="index" order="6" dependsOn="TABLES">
+				<tns:sql><![CDATA[CREATE INDEX TABLES_IDX_DB_ID on TABLES (DB_ID)]]></tns:sql>
+			</tns:Object>
+			<tns:Object name="TABLES_IDX_TABLE_ID" type="index" order="7" dependsOn="TABLES">
+				<tns:sql><![CDATA[CREATE UNIQUE INDEX TABLES_IDX_TABLE_ID on TABLES (DB_ID, TABLE_NAME)]]></tns:sql>
+			</tns:Object>
+			<tns:Object name="COLUMNS" type="table" order="8">
+				<tns:sql><![CDATA[
+				CREATE TABLE COLUMNS (
+  				TID INT NOT NULL,
+  				COLUMN_NAME VARCHAR(255) NOT NULL,
+  				ORDINAL_POSITION INT NOT NULL,
+  				DATA_TYPE CHAR(16),
+  				TYPE_LENGTH INTEGER,
+  				CONSTRAINT COLUMNS_PKEY PRIMARY KEY (TID, COLUMN_NAME),
+  				FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
+				)]]>
+				</tns:sql>
+			</tns:Object>
+			<tns:Object name="OPTIONS" type="table" order="9">
+				<tns:sql><![CDATA[
+				CREATE TABLE OPTIONS (
+  				TID INT NOT NULL,
+  				KEY_ VARCHAR(255) NOT NULL,
+  				VALUE_ VARCHAR(255) NOT NULL,
+  				CONSTRAINT OPTIONS_PKEY PRIMARY KEY (TID, KEY_),
+  				FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
+				)]]>
+				</tns:sql>
+			</tns:Object>
+			<tns:Object name="INDEXES" type="table" order="10">
+				<tns:sql><![CDATA[
+				CREATE TABLE INDEXES (
+  				DB_ID INT NOT NULL,
+  				TID INT NOT NULL,
+  				INDEX_NAME VARCHAR(128) NOT NULL,
+  				COLUMN_NAME VARCHAR(128) NOT NULL,
+  				DATA_TYPE VARCHAR(128) NOT NULL,
+  				INDEX_TYPE CHAR(32) NOT NULL,
+  				IS_UNIQUE BOOLEAN NOT NULL,
+  				IS_CLUSTERED BOOLEAN NOT NULL,
+  				IS_ASCENDING BOOLEAN NOT NULL,
+  				CONSTRAINT INDEXES_PKEY PRIMARY KEY (DB_ID, INDEX_NAME),
+  				FOREIGN KEY (DB_ID) REFERENCES DATABASES_ (DB_ID) ON DELETE CASCADE,
+  				FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
+				)]]>
+				</tns:sql>
+			</tns:Object>
+			<tns:Object name="INDEXES_IDX_DB_ID_NAME" type="index" order="11" dependsOn="INDEXES">
+				<tns:sql><![CDATA[CREATE UNIQUE INDEX INDEXES_IDX_DB_ID_NAME on INDEXES (DB_ID, INDEX_NAME)]]></tns:sql>
+			</tns:Object>
+			<tns:Object name="INDEXES_IDX_TID_COLUMN_NAME" type="index" order="12" dependsOn="INDEXES">
+				<tns:sql><![CDATA[CREATE INDEX INDEXES_IDX_TID_COLUMN_NAME on INDEXES (TID, COLUMN_NAME)]]></tns:sql>
+			</tns:Object>
+			<tns:Object name="STATS" type="table" order="13">
+				<tns:sql><![CDATA[
+				CREATE TABLE STATS (
+  				TID INT NOT NULL PRIMARY KEY,
+  				NUM_ROWS BIGINT,
+  				NUM_BYTES BIGINT,
+  				FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
+				)]]>
+				</tns:sql>
+			</tns:Object>
+			<tns:Object name="PARTITION_METHODS" type="table" order="14">
+				<tns:sql><![CDATA[
+				CREATE TABLE PARTITION_METHODS (
+  				TID INT NOT NULL PRIMARY KEY,
+  				PARTITION_TYPE VARCHAR(10) NOT NULL,
+  				EXPRESSION VARCHAR(1024) NOT NULL,
+  				EXPRESSION_SCHEMA BYTEA NOT NULL,
+  				FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
+				)]]>
+				</tns:sql>
+			</tns:Object>
+			<tns:Object name="PARTITIONS" type="table" order="15">
+				<tns:sql><![CDATA[
+				CREATE TABLE PARTITIONS (
+  				PID INT NOT NULL PRIMARY KEY,
+  				TID INT NOT NULL,
+  				PARTITION_NAME VARCHAR(128),
+  				ORDINAL_POSITION INT NOT NULL,
+  				PARTITION_VALUE VARCHAR(1024),
+  				PATH VARCHAR(4096),
+  				FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE,
+  				CONSTRAINT C_PARTITION_UNIQUE UNIQUE (TID, PARTITION_NAME)
+				)]]>
+				</tns:sql>
+			</tns:Object>
+			<tns:Object name="PARTITIONS_IDX_TID" type="index" order="16" dependsOn="PARTITIONS">
+				<tns:sql><![CDATA[CREATE INDEX PARTITIONS_IDX_TID on PARTITIONS (TID)]]></tns:sql>
+			</tns:Object>
+			<tns:Object name="IDX_TID_NAME" type="index" order="17" dependsOn="PARTITIONS">
+				<tns:sql><![CDATA[CREATE UNIQUE INDEX IDX_TID_NAME on PARTITIONS (TID, PARTITION_NAME)]]></tns:sql>
+			</tns:Object>
+		</tns:objects>
+	</tns:base>
+	<tns:existQueries>
+		<tns:existQuery type="table">
+			<tns:sql><![CDATA[
+			select c.relname from pg_class c, pg_roles r 
+			where c.relowner = r.oid and r.rolname = current_user and c.relkind = 'r'::char]]>
+		  </tns:sql>
+		</tns:existQuery>
+		<tns:existQuery type="view">
+			<tns:sql><![CDATA[
+			select c.relname from pg_class c, pg_roles r 
+			where c.relowner = r.oid and r.rolname = current_user and c.relkind = 'v'::char]]>
+			</tns:sql>
+		</tns:existQuery>
+		<tns:existQuery type="index">
+			<tns:sql><![CDATA[
+			select c.relname from pg_class c, pg_roles r 
+			where c.relowner = r.oid and r.rolname = current_user and c.relkind = 'i'::char]]>
+			</tns:sql>
+		</tns:existQuery>
+		<tns:existQuery type="sequence">
+			<tns:sql><![CDATA[
+			select c.relname from pg_class c, pg_roles r 
+			where c.relowner = r.oid and r.rolname = current_user and c.relkind = 'S'::char]]>
+			</tns:sql>
+		</tns:existQuery>
+		<tns:existQuery type="trigger">
+			<tns:sql><![CDATA[
+			select tgname from pg_trigger t 
+			where t.tgrelid in 
+				(select c.oid from pg_class c, pg_roles r 
+				where c.relowner = r.oid and r.rolname = current_user and c.relkind = 'r'::char)]]>
+			</tns:sql>
+		</tns:existQuery>
+	</tns:existQueries>
+	<tns:dropStatements>
+		<tns:dropStatement type="table">
+			<tns:sql><![CDATA[DROP TABLE ? CASCADE]]></tns:sql>
+		</tns:dropStatement>
+	</tns:dropStatements>
+</tns:store>
