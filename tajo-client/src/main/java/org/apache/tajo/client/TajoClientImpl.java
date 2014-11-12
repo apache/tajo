@@ -32,10 +32,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.ipc.ClientProtos.BriefQueryInfo;
-import org.apache.tajo.ipc.ClientProtos.GetQueryResultResponse;
-import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
-import org.apache.tajo.ipc.ClientProtos.WorkerResourceInfo;
+import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.util.NetUtils;
@@ -156,6 +153,14 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
 
   public List<WorkerResourceInfo> getClusterInfo() throws ServiceException {
     return queryClient.getClusterInfo();
+  }
+
+  public QueryInfoProto getQueryInfo(final QueryId queryId) throws ServiceException {
+    return queryClient.getQueryInfo(queryId);
+  }
+
+  public QueryHistoryProto getQueryHistory(final QueryId queryId) throws ServiceException {
+    return queryClient.getQueryHistory(queryId);
   }
 
   /*------------------------------------------------------------------------*/

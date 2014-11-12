@@ -5,11 +5,19 @@ Release 0.9.1 - unreleased
 
   NEW FEATURES
 
+    TAJO-1026: Implement Query history persistency manager.(Hyoungjun Kim)
+
     TAJO-233: Support PostgreSQL CatalogStore. (Jihun Kang via hyunsik)
 
     TAJO-235: Support Oracle CatalogStore. (Jihun Kang via hyunsik)
 
   IMPROVEMENT
+   
+    TAJO-1109: Separate SQL Statements from Catalog Stores.
+    (Jihun Kang via hyunsik)
+
+    TAJO-1161: Remove joda time dependency from tajo-core. 
+    (Jihun Kang via hyunsik)
 
     TAJO-1133: Add 'bin/tajo version' command. (Jihun Kang via hyunsik)
 
@@ -30,7 +38,12 @@ Release 0.9.1 - unreleased
 
     TAJO-1121: Remove the 'v2' storage package. (Hyoungjun Kim)
 
+    TAJO-1128: Implement a select box for database at web interface. 
+    (Jongyoung Park via hyunsik)
+
   BUG FIXES
+    
+    TAJO-1162: to_char() returns "-00" second. (Hyoungjun Kim)
 
     TAJO-1154: TajoCli doesn't pause while running the non-forwarded 
     query. (Hyoungjun Kim via hyunsik)

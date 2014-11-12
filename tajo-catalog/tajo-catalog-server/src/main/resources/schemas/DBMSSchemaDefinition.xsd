@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+<schema targetNamespace="http://tajo.apache.org/catalogstore" 
+	elementFormDefault="qualified" xmlns="http://www.w3.org/2001/XMLSchema" 
+	xmlns:tns="http://tajo.apache.org/catalogstore">
+
+    <simpleType name="DatabaseObjectsType">
+    	<annotation>
+    		<documentation>
+    			PostgreSQL defines its database objects in this
+    			following link
+    			(http://www.postgresql.org/docs/9.3/static/server-programming.html).
+    			We also need to define these objects type to support in
+    			our catalog stores.
+    		</documentation>
+    	</annotation>
+    	<restriction base="string">
+    		<enumeration value="table"></enumeration>
+    		<enumeration value="view"></enumeration>
+    		<enumeration value="function"></enumeration>
+    		<enumeration value="operator"></enumeration>
+    		<enumeration value="data"></enumeration>
+    		<enumeration value="domain"></enumeration>
+    		<enumeration value="trigger"></enumeration>
+    		<enumeration value="rule"></enumeration>
+    		<enumeration value="sequence"></enumeration>
+    		<enumeration value="index"></enumeration>
+    	</restriction>
+    </simpleType>
+
+    <simpleType name="ExecutionOrderType">
+    	<restriction base="int">
+    		<minInclusive value="0"></minInclusive>
+    	</restriction>
+    </simpleType>
+    
+    <complexType name="ObjectsType">
+    	<sequence minOccurs="0" maxOccurs="unbounded">
+    		<element name="Object" type="tns:ObjectType" minOccurs="1" maxOccurs="unbounded"></element>
+    	</sequence>
+    </complexType>
+    
+    <complexType name="ObjectType">
+    	<sequence>
+    		<element name="sql" type="tns:SqlType" minOccurs="1"></element>
+    	</sequence>
+    	<attributeGroup ref="tns:ObjectAttributeGroup"></attributeGroup>
+    </complexType>
+    
+    <attributeGroup name="ObjectAttributeGroup">
+        <attribute name="name" type="tns:ObjectNameType" use="required"></attribute>
+        <attribute name="order" type="tns:ExecutionOrderType"></attribute>
+    	<attribute name="dependsOn" type="tns:ObjectNameType"></attribute>
+    	<attribute name="type" type="tns:DatabaseObjectsType"
+    		use="required">
+    	</attribute>
+    </attributeGroup>
+
+    <simpleType name="SqlType">
+    	<restriction base="string"></restriction>
+    </simpleType>
+
+    <complexType name="PatchesType">
+    	<sequence>
+    		<element name="patch" type="tns:PatchType" minOccurs="0" maxOccurs="unbounded"></element>
+    	</sequence>
+    </complexType>
+    
+    <complexType name="BaseSchemaType">
+    	<sequence>
+    		<element name="objects" type="tns:ObjectsType" minOccurs="0" maxOccurs="1"></element>
+    	</sequence>
+        <attributeGroup ref="tns:BaseSchemaAttributeGroup"></attributeGroup>
+    </complexType>
+
+    <attributeGroup name="BaseSchemaAttributeGroup">
+        <attribute name="schemaname" type="tns:SchemaNameType" use="optional"></attribute>
+        <attribute name="version" type="tns:SchemaVersionType"
+    		use="required">
+    	</attribute>
+    </attributeGroup>
+
+    <simpleType name="SchemaVersionType">
+    	<restriction base="int">
+    		<minInclusive value="0"></minInclusive>
+    	</restriction>
+    </simpleType>
+
+    <complexType name="PatchType">
+    	<sequence>
+    		<element name="objects" type="tns:ObjectsType" minOccurs="0" maxOccurs="1"></element>
+    	</sequence>
+        <attributeGroup ref="tns:PatchAttributeGroup"></attributeGroup>
+    </complexType>
+    
+    <simpleType name="ObjectNameType">
+    	<restriction base="string">
+    		<minLength value="1"></minLength>
+    	</restriction>
+    </simpleType>
+
+    <simpleType name="SchemaNameType">
+    	<restriction base="string">
+    		<minLength value="1"></minLength>
+    	</restriction>
+    </simpleType>
+
+    <attributeGroup name="PatchAttributeGroup">
+    	<attribute name="priorVersion" type="tns:SchemaVersionType"
+    		use="required">
+    	</attribute>
+    	<attribute name="nextVersion" type="tns:SchemaVersionType"></attribute>
+    </attributeGroup>
+
+    <complexType name="CatalogStoreType">
+    	<sequence>
+    		<element name="base" type="tns:BaseSchemaType" minOccurs="0"
+    			maxOccurs="1">
+    		</element>
+    		<element name="patches" type="tns:PatchesType" minOccurs="0"
+    			maxOccurs="1">
+    		</element>
+    		<element name="existQueries" type="tns:ExistsQueriesType"
+    			minOccurs="0" maxOccurs="1">
+    		</element>
+    		<element name="dropStatements" type="tns:DropStatementsType" minOccurs="0" maxOccurs="1"></element>
+    	</sequence>
+    </complexType>
+
+    <element name="store" type="tns:CatalogStoreType"></element>
+
+    <complexType name="ExistsQueryType">
+    	<sequence>
+    		<element name="sql" type="tns:SqlType" minOccurs="1" maxOccurs="1"></element>
+    	</sequence>
+    	<attribute name="type" type="tns:DatabaseObjectsType"
+    		use="required">
+    	</attribute>
+    </complexType>
+
+    <complexType name="ExistsQueriesType">
+    	<sequence>
+    		<element name="existQuery" type="tns:ExistsQueryType" minOccurs="0" maxOccurs="unbounded"></element>
+    	</sequence>
+    </complexType>
+
+    <complexType name="DropStatementsType">
+    	<sequence>
+    		<element name="dropStatement" type="tns:DropStatementType" minOccurs="0" maxOccurs="unbounded"></element>
+    	</sequence>
+    </complexType>
+
+    <complexType name="DropStatementType">
+    	<sequence>
+    		<element name="sql" type="tns:SqlType" minOccurs="1" maxOccurs="1"></element>
+    	</sequence>
+    	<attribute name="type" type="tns:DatabaseObjectsType"
+    		use="required">
+    	</attribute>
+    </complexType>
+</schema>
