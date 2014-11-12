@@ -75,6 +75,8 @@ Release 0.9.1 - unreleased
 
   SUB TASKS
 
+    TAJO-1152: RawFile ByteBuffer should be reuse. (jinho)
+
     TAJO-1149: Implement direct read of DelimitedTextFile. (jinho)
 
 
