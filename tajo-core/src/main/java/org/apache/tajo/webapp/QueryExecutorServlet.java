@@ -300,6 +300,17 @@ public class QueryExecutorServlet extends HttpServlet {
 
             progress.set(100);
           }
+        } else if (response.getResultCode() == ClientProtos.ResultCode.ERROR) {
+          StringBuffer errorMessage = new StringBuffer(response.getErrorMessage());
+          String modifiedMessage;
+          
+          if (errorMessage.length() > 200) {
+            modifiedMessage = errorMessage.substring(0, 200);
+          } else {
+            modifiedMessage = errorMessage.toString();
+          }
+          
+          error = new Exception(modifiedMessage);
         }
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
