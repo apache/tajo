@@ -81,12 +81,14 @@ public class CSVFile {
       this.fs = path.getFileSystem(conf);
       this.meta = meta;
       this.schema = schema;
-      this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.CSVFILE_DELIMITER,
-          StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
+      this.delimiter = StringEscapeUtils.unescapeJava(
+          this.meta.getOption(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
+
       this.columnNum = schema.size();
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.CSVFILE_NULL,
-          NullDatum.DEFAULT_TEXT));
+      String nullCharacters = StringEscapeUtils.unescapeJava(
+          this.meta.getOption(StorageConstants.TEXT_NULL, NullDatum.DEFAULT_TEXT));
+
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {
@@ -140,6 +142,7 @@ public class CSVFile {
       }
 
       try {
+        //It will be remove, because we will add custom serde in textfile
         String serdeClass = this.meta.getOption(StorageConstants.CSVFILE_SERDE,
             TextSerializerDeserializer.class.getName());
         serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
@@ -261,11 +264,14 @@ public class CSVFile {
       }
 
       //Delimiter
-      String delim  = meta.getOption(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-      this.delimiter = StringEscapeUtils.unescapeJava(delim).charAt(0);
+      this.delimiter = StringEscapeUtils.unescapeJava(
+          meta.getOption(StorageConstants.TEXT_DELIMITER,
+          meta.getOption(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER))).charAt(0);
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.CSVFILE_NULL,
-          NullDatum.DEFAULT_TEXT));
+      String nullCharacters = StringEscapeUtils.unescapeJava(
+          meta.getOption(StorageConstants.TEXT_NULL,
+          meta.getOption(StorageConstants.CSVFILE_NULL, NullDatum.DEFAULT_TEXT)));
+
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {
@@ -346,6 +352,7 @@ public class CSVFile {
       }
 
       try {
+        //FIXME
         String serdeClass = this.meta.getOption(StorageConstants.CSVFILE_SERDE,
             TextSerializerDeserializer.class.getName());
         serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();

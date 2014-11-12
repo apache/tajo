@@ -580,8 +580,8 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
   @Test
   public final void testLeftOuterJoinLeftSideSmallTable() throws Exception {
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.INT4);

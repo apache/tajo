@@ -22,6 +22,8 @@ import com.google.protobuf.ServiceException;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.ipc.ClientProtos.QueryHistoryProto;
+import org.apache.tajo.ipc.ClientProtos.QueryInfoProto;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 
 import java.io.Closeable;
@@ -111,4 +113,8 @@ public interface QueryClient extends Closeable {
   public List<ClientProtos.WorkerResourceInfo> getClusterInfo() throws ServiceException;
 
   public QueryStatus killQuery(final QueryId queryId) throws ServiceException, IOException;
+
+  public QueryInfoProto getQueryInfo(final QueryId queryId) throws ServiceException;
+
+  public QueryHistoryProto getQueryHistory(final QueryId queryId) throws ServiceException;
 }

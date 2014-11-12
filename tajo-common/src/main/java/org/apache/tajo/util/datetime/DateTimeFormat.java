@@ -1679,7 +1679,7 @@ public class DateTimeFormat {
    */
   private static String formatInteger(int value, int size) {
     char[] targetArray, tempArray;
-    final boolean isPositive = value>0;
+    final boolean isPositive = value>=0;
     final int tempValue = isPositive?value:-value;
     int targetArraySize;
     

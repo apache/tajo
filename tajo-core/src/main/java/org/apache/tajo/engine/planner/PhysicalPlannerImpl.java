@@ -789,7 +789,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       // if there is no given NULL CHAR property in the table property and the query is neither CTAS or INSERT,
       // we set DEFAULT NULL CHAR to the table property.
       if (!ctx.getQueryContext().containsKey(SessionVars.NULL_CHAR)) {
-        plan.getOptions().set(StorageConstants.CSVFILE_NULL, TajoConf.ConfVars.$CSVFILE_NULL.defaultVal);
+        plan.getOptions().set(StorageConstants.TEXT_NULL, TajoConf.ConfVars.$TEXT_NULL.defaultVal);
       }
       return new StoreTableExec(ctx, plan, subOp);
 

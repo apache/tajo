@@ -33,13 +33,19 @@ import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.ipc.ClientProtos.GetQueryHistoryResponse;
+import org.apache.tajo.ipc.ClientProtos.QueryIdRequest;
+import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.querymaster.Query;
+import org.apache.tajo.master.querymaster.QueryInProgress;
+import org.apache.tajo.master.querymaster.QueryJobManager;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.history.QueryHistory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -228,6 +234,34 @@ public class TajoWorkerClientService extends AbstractService {
       final QueryId queryId = new QueryId(request);
       LOG.info("Stop Query:" + queryId);
       return BOOL_TRUE;
+    }
+
+    @Override
+    public GetQueryHistoryResponse getQueryHistory(RpcController controller, QueryIdRequest request) throws ServiceException {
+      GetQueryHistoryResponse.Builder builder = GetQueryHistoryResponse.newBuilder();
+
+      try {
+        QueryId queryId = new QueryId(request.getQueryId());
+
+        QueryMasterTask queryMasterTask = workerContext.getQueryMaster().getQueryMasterTask(queryId);
+        QueryHistory queryHistory = null;
+        if (queryMasterTask == null) {
+          queryHistory = workerContext.getHistoryReader().getQueryHistory(queryId.toString());
+        } else {
+          queryHistory = queryMasterTask.getQuery().getQueryHistory();
+        }
+
+        if (queryHistory != null) {
+          builder.setQueryHistory(queryHistory.getProto());
+        }
+        builder.setResultCode(ResultCode.OK);
+      } catch (Throwable t) {
+        LOG.warn(t.getMessage(), t);
+        builder.setResultCode(ResultCode.ERROR);
+        builder.setErrorMessage(org.apache.hadoop.util.StringUtils.stringifyException(t));
+      }
+
+      return builder.build();
     }
   }
 }
