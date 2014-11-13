@@ -32,7 +32,6 @@ import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.CompressionOutputStream;
 import org.apache.hadoop.io.compress.Compressor;
-import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -134,15 +133,7 @@ public class DelimitedTextFile {
         this.stats = new TableStatistics(this.schema);
       }
 
-      try {
-        // we need to discuss the De/Serializer interface. so custom serde is to disable
-        String serdeClass = this.meta.getOption(StorageConstants.TEXTFILE_SERDE,
-            TextFieldSerializerDeserializer.class.getName());
-        serde = (TextFieldSerializerDeserializer) ReflectionUtils.newInstance(Class.forName(serdeClass), conf);
-      } catch (Throwable e) {
-        LOG.error(e.getMessage(), e);
-        throw new IOException(e);
-      }
+      serde = new TextFieldSerializerDeserializer();
 
       if (os == null) {
         os = new NonSyncByteArrayOutputStream(BUFFER_SIZE);
@@ -314,15 +305,7 @@ public class DelimitedTextFile {
         targetColumnIndexes[i] = schema.getColumnId(targets[i].getQualifiedName());
       }
 
-      try {
-        // we need to discuss the De/Serializer interface. so custom serde is to disable
-        String serdeClass = this.meta.getOption(StorageConstants.TEXTFILE_SERDE,
-            TextFieldSerializerDeserializer.class.getName());
-        serde = (TextFieldSerializerDeserializer) ReflectionUtils.newInstance(Class.forName(serdeClass), conf);
-      } catch (Throwable e) {
-        LOG.error(e.getMessage(), e);
-        throw new IOException(e);
-      }
+      serde = new TextFieldSerializerDeserializer();
 
       super.init();
       Arrays.sort(targetColumnIndexes);
@@ -410,8 +393,8 @@ public class DelimitedTextFile {
         }
 
         if (projection.length > currentTarget && currentIndex == projection[currentTarget]) {
-          Datum datum = serde.deserialize(lineBuf.slice(start, fieldLength),
-              schema.getColumn(currentIndex), currentIndex, nullChars);
+          lineBuf.setIndex(start, start + fieldLength);
+          Datum datum = serde.deserialize(lineBuf, schema.getColumn(currentIndex), currentIndex, nullChars);
           dst.put(currentIndex, datum);
           currentTarget++;
         }
