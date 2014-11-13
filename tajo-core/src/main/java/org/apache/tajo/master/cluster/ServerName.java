@@ -93,7 +93,7 @@ public class ServerName implements Comparable<ServerName> {
   }
 
   public static String getServerName(String hostName, int port) {
-    final StringBuilder name = new StringBuilder(hostName.length() + 4);
+    final StringBuilder name = new StringBuilder(hostName.length() + 8);
     name.append(hostName);
     name.append(SERVERNAME_SEPARATOR);
     name.append(port);
