@@ -32,12 +32,12 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.planner.LogicalOptimizer;
-import org.apache.tajo.engine.planner.LogicalPlan;
-import org.apache.tajo.engine.planner.LogicalPlanner;
+import org.apache.tajo.plan.LogicalOptimizer;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.engine.planner.PhysicalPlannerImpl;
-import org.apache.tajo.engine.planner.logical.LogicalNode;
-import org.apache.tajo.engine.planner.logical.ScanNode;
+import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -68,7 +68,7 @@ public class TestBSTIndexExec {
   private LogicalOptimizer optimizer;
   private StorageManager sm;
   private Schema idxSchema;
-  private TupleComparator comp;
+  private BaseTupleComparator comp;
   private BSTIndex.BSTIndexWriter writer;
   private HashMap<Integer , Integer> randomValues ;
   private int rndKey = -1;
@@ -104,7 +104,7 @@ public class TestBSTIndexExec {
     idxSchema.addColumn("managerid", Type.INT4);
     SortSpec[] sortKeys = new SortSpec[1];
     sortKeys[0] = new SortSpec(idxSchema.getColumn("managerid"), true, false);
-    this.comp = new TupleComparator(idxSchema, sortKeys);
+    this.comp = new BaseTupleComparator(idxSchema, sortKeys);
 
     this.writer = new BSTIndex(conf).getIndexWriter(idxPath,
         BSTIndex.TWO_LEVEL_INDEX, this.idxSchema, this.comp);
@@ -161,9 +161,6 @@ public class TestBSTIndexExec {
 
   @Test
   public void testEqual() throws Exception {
-    if(conf.getBoolean("tajo.storage.manager.v2", false)) {
-      return;
-    }
     this.rndKey = rnd.nextInt(250);
     final String QUERY = "select * from employee where managerId = " + rndKey;
     

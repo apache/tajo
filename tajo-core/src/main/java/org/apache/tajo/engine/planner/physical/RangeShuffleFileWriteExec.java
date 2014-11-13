@@ -27,7 +27,7 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.planner.PlannerUtil;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -71,7 +71,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
     }
 
     BSTIndex bst = new BSTIndex(new TajoConf());
-    this.comp = new TupleComparator(keySchema, sortSpecs);
+    this.comp = new BaseTupleComparator(keySchema, sortSpecs);
     Path storeTablePath = new Path(context.getWorkDir(), "output");
     LOG.info("Output data directory: " + storeTablePath);
     this.meta = CatalogUtil.newTableMeta(context.getDataChannel() != null ?

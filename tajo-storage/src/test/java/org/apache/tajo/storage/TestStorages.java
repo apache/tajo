@@ -121,12 +121,14 @@ public class TestStorages {
   @Parameterized.Parameters
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][] {
+        //type, splitable, statsable, seekable
         {StoreType.CSV, true, true, true},
-        {StoreType.RAW, false, false, true},
+        {StoreType.RAW, false, true, true},
         {StoreType.RCFILE, true, true, false},
         {StoreType.PARQUET, false, false, false},
         {StoreType.SEQUENCEFILE, true, true, false},
         {StoreType.AVRO, false, false, false},
+        {StoreType.TEXTFILE, true, true, false},
     });
   }
 
@@ -246,7 +248,7 @@ public class TestStorages {
     schema.addColumn("score", Type.FLOAT4);
 
     TableMeta meta = CatalogUtil.newTableMeta(storeType);
-    meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
+    meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
     if (storeType == StoreType.AVRO) {
       meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL,
                      TEST_PROJECTION_AVRO_SCHEMA);
@@ -314,7 +316,7 @@ public class TestStorages {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
+    meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
     if (storeType == StoreType.AVRO) {
       String path = FileUtil.getResourcePath("testVariousTypes.avsc").toString();
       meta.putOption(StorageConstants.AVRO_SCHEMA_URL, path);
@@ -380,8 +382,8 @@ public class TestStorages {
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
-    meta.setOptions(StorageUtil.newPhysicalProperties(storeType));
-    meta.putOption(StorageConstants.CSVFILE_NULL, "\\\\N");
+    meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
+    meta.putOption(StorageConstants.TEXT_NULL, "\\\\N");
     meta.putOption(StorageConstants.RCFILE_NULL, "\\\\N");
     meta.putOption(StorageConstants.RCFILE_SERDE, TextSerializerDeserializer.class.getName());
     meta.putOption(StorageConstants.SEQUENCEFILE_NULL, "\\");
@@ -790,7 +792,7 @@ public class TestStorages {
     TableMeta meta = CatalogUtil.newTableMeta(storeType);
     Path tablePath = new Path(testDir, "Seekable.data");
     FileAppender appender = (FileAppender) StorageManager.getStorageManager(conf).getAppender(meta, schema,
-	tablePath);
+        tablePath);
     appender.enableStats();
     appender.init();
     int tupleNum = 100000;
@@ -802,12 +804,12 @@ public class TestStorages {
       vTuple = new VTuple(3);
       vTuple.put(0, DatumFactory.createInt4(i + 1));
       vTuple.put(1, DatumFactory.createInt8(25l));
-      vTuple.put(2, DatumFactory.createText("test"));
+      vTuple.put(2, DatumFactory.createText("test" + i));
       appender.addTuple(vTuple);
 
       // find a seek position
       if (i % (tupleNum / 3) == 0) {
-	offsets.add(appender.getOffset());
+        offsets.add(appender.getOffset());
       }
     }
 
@@ -832,17 +834,17 @@ public class TestStorages {
     long readRows = 0;
     for (long offset : offsets) {
       scanner = StorageManager.getStorageManager(conf).getScanner(meta, schema,
-	  new FileFragment("table", tablePath, prevOffset, offset - prevOffset), schema);
+          new FileFragment("table", tablePath, prevOffset, offset - prevOffset), schema);
       scanner.init();
 
       while (scanner.next() != null) {
-	tupleCnt++;
+        tupleCnt++;
       }
 
       scanner.close();
       if (statsable) {
-	readBytes += scanner.getInputStats().getNumBytes();
-	readRows += scanner.getInputStats().getNumRows();
+        readBytes += scanner.getInputStats().getNumBytes();
+        readRows += scanner.getInputStats().getNumRows();
       }
       prevOffset = offset;
     }

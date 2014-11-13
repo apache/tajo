@@ -18,20 +18,140 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.SessionVars;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.PhysicalPlanningException;
-import org.apache.tajo.engine.planner.logical.NodeType;
-import org.apache.tajo.engine.planner.logical.PersistentStoreNode;
+import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.logical.NodeType;
+import org.apache.tajo.plan.logical.PersistentStoreNode;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.storage.TupleComparator;
+import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.FragmentConvertor;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class PhysicalPlanUtil {
   public static <T extends PhysicalExec> T findExecutor(PhysicalExec plan, Class<? extends PhysicalExec> clazz)
       throws PhysicalPlanningException {
     return (T) new FindVisitor().visit(plan, new Stack<PhysicalExec>(), clazz);
+  }
+
+  public static TupleComparator [] getComparatorsFromJoinQual(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
+    SortSpec[][] sortSpecs = PlannerUtil.getSortKeysFromJoinQual(joinQual, leftSchema, rightSchema);
+    BaseTupleComparator[] comparators = new BaseTupleComparator[2];
+    comparators[0] = new BaseTupleComparator(leftSchema, sortSpecs[0]);
+    comparators[1] = new BaseTupleComparator(rightSchema, sortSpecs[1]);
+    return comparators;
+  }
+
+  /**
+   * Listing table data file which is not empty.
+   * If the table is a partitioned table, return file list which has same partition key.
+   * @param tajoConf
+   * @param tableDesc
+   * @param fileIndex
+   * @param numResultFiles
+   * @return
+   * @throws java.io.IOException
+   */
+  public static CatalogProtos.FragmentProto[] getNonZeroLengthDataFiles(TajoConf tajoConf,TableDesc tableDesc,
+                                                          int fileIndex, int numResultFiles) throws IOException {
+    FileSystem fs = tableDesc.getPath().getFileSystem(tajoConf);
+
+    List<FileStatus> nonZeroLengthFiles = new ArrayList<FileStatus>();
+    if (fs.exists(tableDesc.getPath())) {
+      getNonZeroLengthDataFiles(fs, tableDesc.getPath(), nonZeroLengthFiles, fileIndex, numResultFiles,
+          new AtomicInteger(0));
+    }
+
+    List<FileFragment> fragments = new ArrayList<FileFragment>();
+
+    //In the case of partitioned table, return same partition key data files.
+    int numPartitionColumns = 0;
+    if (tableDesc.hasPartition()) {
+      numPartitionColumns = tableDesc.getPartitionMethod().getExpressionSchema().getColumns().size();
+    }
+    String[] previousPartitionPathNames = null;
+    for (FileStatus eachFile: nonZeroLengthFiles) {
+      FileFragment fileFragment = new FileFragment(tableDesc.getName(), eachFile.getPath(), 0, eachFile.getLen(), null);
+
+      if (numPartitionColumns > 0) {
+        // finding partition key;
+        Path filePath = fileFragment.getPath();
+        Path parentPath = filePath;
+        String[] parentPathNames = new String[numPartitionColumns];
+        for (int i = 0; i < numPartitionColumns; i++) {
+          parentPath = parentPath.getParent();
+          parentPathNames[numPartitionColumns - i - 1] = parentPath.getName();
+        }
+
+        // If current partitionKey == previousPartitionKey, add to result.
+        if (previousPartitionPathNames == null) {
+          fragments.add(fileFragment);
+        } else if (previousPartitionPathNames != null && Arrays.equals(previousPartitionPathNames, parentPathNames)) {
+          fragments.add(fileFragment);
+        } else {
+          break;
+        }
+        previousPartitionPathNames = parentPathNames;
+      } else {
+        fragments.add(fileFragment);
+      }
+    }
+    return FragmentConvertor.toFragmentProtoArray(fragments.toArray(new FileFragment[]{}));
+  }
+
+  private static void getNonZeroLengthDataFiles(FileSystem fs, Path path, List<FileStatus> result,
+                                         int startFileIndex, int numResultFiles,
+                                         AtomicInteger currentFileIndex) throws IOException {
+    if (fs.isDirectory(path)) {
+      FileStatus[] files = fs.listStatus(path, StorageManager.hiddenFileFilter);
+      if (files != null && files.length > 0) {
+        for (FileStatus eachFile : files) {
+          if (result.size() >= numResultFiles) {
+            return;
+          }
+          if (eachFile.isDirectory()) {
+            getNonZeroLengthDataFiles(fs, eachFile.getPath(), result, startFileIndex, numResultFiles,
+                currentFileIndex);
+          } else if (eachFile.isFile() && eachFile.getLen() > 0) {
+            if (currentFileIndex.get() >= startFileIndex) {
+              result.add(eachFile);
+            }
+            currentFileIndex.incrementAndGet();
+          }
+        }
+      }
+    } else {
+      FileStatus fileStatus = fs.getFileStatus(path);
+      if (fileStatus != null && fileStatus.getLen() > 0) {
+        if (currentFileIndex.get() >= startFileIndex) {
+          result.add(fileStatus);
+        }
+        currentFileIndex.incrementAndGet();
+        if (result.size() >= numResultFiles) {
+          return;
+        }
+      }
+    }
   }
 
   private static class FindVisitor extends BasicPhysicalExecutorVisitor<Class<? extends PhysicalExec>, PhysicalExec> {
@@ -53,16 +173,19 @@ public class PhysicalPlanUtil {
    */
   private static void setNullCharForTextSerializer(TableMeta meta, String nullChar) {
     switch (meta.getStoreType()) {
-    case CSV:
-      meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
-      break;
-    case RCFILE:
-      meta.putOption(StorageConstants.RCFILE_NULL, nullChar);
-      break;
-    case SEQUENCEFILE:
-      meta.putOption(StorageConstants.SEQUENCEFILE_NULL, nullChar);
-      break;
-    default: // nothing to do
+      case CSV:
+        meta.putOption(StorageConstants.TEXT_NULL, nullChar);
+        break;
+      case TEXTFILE:
+        meta.putOption(StorageConstants.TEXT_NULL, nullChar);
+        break;
+      case RCFILE:
+        meta.putOption(StorageConstants.RCFILE_NULL, nullChar);
+        break;
+      case SEQUENCEFILE:
+        meta.putOption(StorageConstants.SEQUENCEFILE_NULL, nullChar);
+        break;
+      default: // nothing to do
     }
   }
 
@@ -74,14 +197,16 @@ public class PhysicalPlanUtil {
    */
   public static boolean containsNullChar(TableMeta meta) {
     switch (meta.getStoreType()) {
-    case CSV:
-      return meta.containsOption(StorageConstants.CSVFILE_NULL);
-    case RCFILE:
-      return meta.containsOption(StorageConstants.RCFILE_NULL);
-    case SEQUENCEFILE:
-      return meta.containsOption(StorageConstants.SEQUENCEFILE_NULL);
-    default: // nothing to do
-      return false;
+      case CSV:
+        return meta.containsOption(StorageConstants.TEXT_NULL);
+      case TEXTFILE:
+        return meta.containsOption(StorageConstants.TEXT_NULL);
+      case RCFILE:
+        return meta.containsOption(StorageConstants.RCFILE_NULL);
+      case SEQUENCEFILE:
+        return meta.containsOption(StorageConstants.SEQUENCEFILE_NULL);
+      default: // nothing to do
+        return false;
     }
   }
 

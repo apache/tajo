@@ -26,7 +26,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.engine.planner.logical.ShuffleFileWriteNode;
+import org.apache.tajo.plan.logical.ShuffleFileWriteNode;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.HashShuffleAppender;
 import org.apache.tajo.storage.HashShuffleAppenderManager;

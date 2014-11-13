@@ -234,3 +234,63 @@ message FunctionResponse {
   repeated FunctionDescProto functions = 2;
   optional string errorMessage = 3;
 }
+
+message QueryInfoProto {
+  required string queryId = 1;
+  optional string sql = 2;
+  optional QueryState queryState = 3;
+  optional float progress = 4;
+  optional int64 startTime = 5;
+  optional int64 finishTime = 6;
+  optional string lastMessage = 7;
+  optional string hostNameOfQM = 8;
+  optional int32 queryMasterPort = 9;
+  optional int32 queryMasterClientPort = 10;
+  optional int32 queryMasterInfoPort = 11;
+}
+
+message SubQueryHistoryProto {
+  required string executionBlockId =1;
+  required string state = 2;
+  optional int64 startTime = 3;
+  optional int64 finishTime = 4;
+  optional int32 succeededObjectCount = 5;
+  optional int32 failedObjectCount = 6;
+  optional int32 killedObjectCount = 7;
+  optional int32 totalScheduledObjectsCount = 8;
+
+  optional int64 totalInputBytes = 9;
+  optional int64 totalReadBytes = 10;
+  optional int64 totalReadRows = 11;
+  optional int64 totalWriteBytes = 12;
+  optional int64 totalWriteRows = 13;
+  optional int32 numShuffles = 14;
+  optional float progress =15;
+
+  optional string plan = 16;
+  optional int32 hostLocalAssigned = 17;
+  optional int32 rackLocalAssigned = 18;
+}
+
+message QueryHistoryProto {
+  required string queryId = 1;
+  optional string queryMaster = 2;
+  optional int32 httpPort = 3;
+  optional string logicalPlan = 4;
+  optional string distributedPlan = 5;
+  repeated KeyValueProto sessionVariables = 6;
+  repeated SubQueryHistoryProto subQueryHistories = 7;
+}
+
+message GetQueryHistoryResponse {
+  required ResultCode resultCode = 1;
+  optional QueryHistoryProto queryHistory = 2;
+  optional string errorMessage = 3;
+}
+
+message GetQueryInfoResponse {
+  required ResultCode resultCode = 1;
+  optional QueryInfoProto queryInfo = 2;
+  optional string errorMessage = 3;
+}
+

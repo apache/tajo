@@ -20,12 +20,12 @@ package org.apache.tajo.engine.codegen;
 
 import com.google.common.base.Preconditions;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.eval.FunctionEval;
 import org.apache.tajo.function.FunctionUtil;
 import org.apache.tajo.function.StaticMethodInvocationDesc;
 import org.apache.tajo.org.objectweb.asm.Label;
 import org.apache.tajo.org.objectweb.asm.Opcodes;
+import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.expr.FunctionEval;
 
 import java.util.Stack;
 

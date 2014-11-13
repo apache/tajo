@@ -28,7 +28,7 @@ import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.planner.logical.LogicalRootNode;
+import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
@@ -146,6 +146,8 @@ public class QueryInProgress extends CompositeService {
     if(queryMasterRpc != null) {
       RpcConnectionPool.getPool((TajoConf)getConfig()).closeConnection(queryMasterRpc);
     }
+
+    masterContext.getHistoryWriter().appendHistory(queryInfo);
     super.stop();
   }
 
@@ -175,6 +177,7 @@ public class QueryInProgress extends CompositeService {
       queryInfo.setQueryMaster(resource.getConnectionInfo().getHost());
       queryInfo.setQueryMasterPort(resource.getConnectionInfo().getQueryMasterPort());
       queryInfo.setQueryMasterclientPort(resource.getConnectionInfo().getClientPort());
+      queryInfo.setQueryMasterInfoPort(resource.getConnectionInfo().getHttpInfoPort());
 
       getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_MASTER_START, queryInfo));
 

@@ -28,16 +28,23 @@ import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.*;
+import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.ipc.ClientProtos.QueryHistoryProto;
+import org.apache.tajo.ipc.ClientProtos.QueryInfoProto;
+import org.apache.tajo.ipc.ClientProtos.SubQueryHistoryProto;
 import org.apache.tajo.jdbc.TajoResultSet;
+import org.apache.tajo.master.querymaster.QueryInfo;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.history.QueryUnitHistory;
+import org.apache.tajo.util.history.SubQueryHistory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -50,6 +57,7 @@ import java.sql.SQLException;
 import java.util.*;
 
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
 public class TestTajoClient {
@@ -62,7 +70,7 @@ public class TestTajoClient {
   public static void setUp() throws Exception {
     cluster = TpchTestBase.getInstance().getTestingCluster();
     conf = cluster.getConfiguration();
-    client = new TajoClient(conf);
+    client = new TajoClientImpl(conf);
     testDir = CommonTestingUtil.getTestDir();
   }
 
@@ -658,7 +666,7 @@ public class TestTajoClient {
 
       QueryStatus queryStatus = client.getQueryStatus(queryId);
       assertNotNull(queryStatus);
-      assertTrue(TajoClient.isInCompleteState(queryStatus.getState()));
+      assertTrue(TajoClientUtil.isQueryComplete(queryStatus.getState()));
 
       TajoResultSet resultSet = (TajoResultSet) client.getQueryResult(queryId);
       assertNotNull(resultSet);
@@ -695,7 +703,7 @@ public class TestTajoClient {
 
     TajoResultSet res = (TajoResultSet)client.executeQueryAndGetResult(sql);
 
-    assertEquals(res.getTableDesc().getMeta().getOption(StorageConstants.CSVFILE_NULL), "\\\\T");
+    assertEquals(res.getTableDesc().getMeta().getOption(StorageConstants.TEXT_NULL), "\\\\T");
 
     Path path = res.getTableDesc().getPath();
     FileSystem fs = path.getFileSystem(tajoConf);
@@ -721,5 +729,51 @@ public class TestTajoClient {
     String resultDatas = new String(buf, 0, readBytes);
 
     assertEquals(expected, resultDatas);
+  }
+
+  @Test
+  public void testGetQueryInfoAndHistory() throws Exception {
+    String sql = "select count(*) from lineitem";
+    ClientProtos.SubmitQueryResponse response = client.executeQuery(sql);
+
+    assertNotNull(response);
+    QueryId queryId = new QueryId(response.getQueryId());
+
+    QueryInfoProto queryInfo = null;
+    long startTime = System.currentTimeMillis();
+    while (true) {
+      queryInfo = client.getQueryInfo(queryId);
+
+      if (queryInfo != null && queryInfo.getQueryState() == QueryState.QUERY_SUCCEEDED) {
+        break;
+      }
+      Thread.sleep(100);
+
+      if (System.currentTimeMillis() - startTime > 30 * 1000) {
+        fail("Too long running query");
+      }
+    }
+    Thread.sleep(5 * 1000);
+
+    assertNotNull(queryInfo);
+    assertEquals(queryId.toString(), queryInfo.getQueryId());
+
+    QueryHistoryProto queryHistory = client.getQueryHistory(queryId);
+    assertNotNull(queryHistory);
+    assertEquals(queryId.toString(), queryHistory.getQueryId());
+    assertEquals(2, queryHistory.getSubQueryHistoriesCount());
+
+    List<SubQueryHistoryProto> queryUnitHistories =
+        new ArrayList<SubQueryHistoryProto>(queryHistory.getSubQueryHistoriesList());
+    Collections.sort(queryUnitHistories, new Comparator<SubQueryHistoryProto>() {
+      @Override
+      public int compare(SubQueryHistoryProto o1, SubQueryHistoryProto o2) {
+        return o1.getExecutionBlockId().compareTo(o2.getExecutionBlockId());
+      }
+    });
+    assertEquals(5, queryUnitHistories.get(0).getTotalReadRows());
+    assertEquals(1, queryUnitHistories.get(0).getTotalWriteRows());
+    assertEquals(1, queryUnitHistories.get(1).getTotalReadRows());
+    assertEquals(1, queryUnitHistories.get(1).getTotalWriteRows());
   }
 }

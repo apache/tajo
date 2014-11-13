@@ -5,21 +5,81 @@ Release 0.9.1 - unreleased
 
   NEW FEATURES
 
+    TAJO-1026: Implement Query history persistency manager.(Hyoungjun Kim)
+
     TAJO-233: Support PostgreSQL CatalogStore. (Jihun Kang via hyunsik)
 
     TAJO-235: Support Oracle CatalogStore. (Jihun Kang via hyunsik)
 
   IMPROVEMENT
+   
+    TAJO-1109: Separate SQL Statements from Catalog Stores.
+    (Jihun Kang via hyunsik)
+
+    TAJO-1161: Remove joda time dependency from tajo-core. 
+    (Jihun Kang via hyunsik)
+
+    TAJO-1133: Add 'bin/tajo version' command. (Jihun Kang via hyunsik)
+
+    TAJO-1145: Add 'bin/tajo --help' command. (Jihun Kang via hyunsik)
+
+    TAJO-1114: Improve ConfVars (SessionVar) to take a validator 
+    interface to check its input. (Jihun Kang via hyunsik)
+
+    TAJO-1140: Separate TajoClient into fine grained parts. (hyunsik)
+
+    TAJO-1132: More detailed version info in tsql. (hyunsik)
+
+    TAJO-1125: Separate logical plan and optimizer into a maven module.
+    (hyunsik)
 
     TAJO-1092: Improve the function system to allow other function 
     implementation types. (hyunsik)
 
     TAJO-1121: Remove the 'v2' storage package. (Hyoungjun Kim)
 
+    TAJO-1128: Implement a select box for database at web interface. 
+    (Jongyoung Park via hyunsik)
+
   BUG FIXES
+    
+    TAJO-1162: to_char() returns "-00" second. (Hyoungjun Kim)
+
+    TAJO-1154: TajoCli doesn't pause while running the non-forwarded 
+    query. (Hyoungjun Kim via hyunsik)
+
+    TAJO-1150: Some weird methods in QueryClientImpl should be fixed. 
+    (Jongyoung Park via hyunsik)
+
+    TAJO-1139: ExternalSortExec should delete the intermediate files. 
+    (jinho via hyunsik)
+
+    TAJO-1126: Join condition including functions throws 
+    IllegalArgumentException. (hyunsik)
 
 
   TASKS
+
+    TAJO-1157: Required Java version in tutorial doc needs to be updated.
+    (hyunsik)
+
+    TAJO-1129: Remove hadoop 2.2.0 support. (jinho via hyunsik)
+
+    TAJO-1153: Merge off-heap package in block_iteration branch to master 
+    branch. (hyunsik)
+
+    TAJO-1032: Improve TravisCI scripts to adjust log4j log level. (jinho)
+
+    TAJO-1141: Refactor the packages hierarchy of tajo-client. (hyunsik)
+
+
+  SUB TASKS
+
+    TAJO-1151: Implement the ByteBuffer-based De/Serializer. (jinho)
+
+    TAJO-1152: RawFile ByteBuffer should be reuse. (jinho)
+
+    TAJO-1149: Implement direct read of DelimitedTextFile. (jinho)
 
 
 

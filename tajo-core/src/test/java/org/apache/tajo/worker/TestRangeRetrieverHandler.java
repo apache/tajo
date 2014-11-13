@@ -36,7 +36,11 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.*;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
-import org.apache.tajo.engine.planner.logical.LogicalNode;
+import org.apache.tajo.plan.LogicalOptimizer;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.LogicalPlanner;
+import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.engine.planner.physical.ExternalSortExec;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.planner.physical.ProjectionExec;
@@ -174,7 +178,7 @@ public class TestRangeRetrieverHandler {
     exec.close();
 
     Schema keySchema = PlannerUtil.sortSpecsToSchema(sortSpecs);
-    TupleComparator comp = new TupleComparator(keySchema, sortSpecs);
+    BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortSpecs);
     BSTIndex bst = new BSTIndex(conf);
     BSTIndex.BSTIndexReader reader = bst.getIndexReader(
         new Path(testDir, "output/index"), keySchema, comp);
@@ -298,7 +302,7 @@ public class TestRangeRetrieverHandler {
     exec.close();
 
     Schema keySchema = PlannerUtil.sortSpecsToSchema(sortSpecs);
-    TupleComparator comp = new TupleComparator(keySchema, sortSpecs);
+    BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortSpecs);
     BSTIndex bst = new BSTIndex(conf);
     BSTIndex.BSTIndexReader reader = bst.getIndexReader(
         new Path(testDir, "output/index"), keySchema, comp);
