@@ -20,7 +20,7 @@ package org.apache.tajo.util.datetime;
 
 import org.apache.tajo.util.datetime.DateTimeConstants.DateStyle;
 
-public class TimeMeta {
+public class TimeMeta implements Comparable<TimeMeta> {
   public int      fsecs;    // 1/1,000,000 secs
   public int			secs;
   public int			minutes;
@@ -150,5 +150,17 @@ public class TimeMeta {
 
   public int getDayOfWeek() {
     return (DateTimeUtil.date2j(years, monthOfYear, dayOfMonth) + 1) % 7;
+  }
+
+  @Override
+  public int compareTo(TimeMeta o) {
+    int result = 1;
+    if (o != null) {
+      long leftjulianTimestamp = DateTimeUtil.toJulianTimestamp(this);
+      long rightjulianTimestamp = DateTimeUtil.toJulianTimestamp(o);
+      
+      result = (int) Math.signum(leftjulianTimestamp - rightjulianTimestamp);
+    }
+    return result;
   }
 }

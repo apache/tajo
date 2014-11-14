@@ -178,7 +178,16 @@ public class TimestampDatum extends Datum {
   public int compareTo(Datum datum) {
     if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
       TimestampDatum another = (TimestampDatum) datum;
-      return (timestamp < another.timestamp) ? -1 : ((timestamp > another.timestamp) ? 1 : 0);
+      TimeMeta myMeta, otherMeta;
+      myMeta = toTimeMeta();
+      otherMeta = another.toTimeMeta();
+      return myMeta.compareTo(otherMeta);
+    } else if (datum.type() == TajoDataTypes.Type.DATE) {
+      DateDatum another = (DateDatum) datum;
+      TimeMeta myMeta, otherMeta;
+      myMeta = toTimeMeta();
+      otherMeta = another.toTimeMeta();
+      return myMeta.compareTo(otherMeta);
     } else if (datum.isNull()) {
       return -1;
     } else {

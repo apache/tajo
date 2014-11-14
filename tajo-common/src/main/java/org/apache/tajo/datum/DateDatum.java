@@ -241,16 +241,16 @@ public class DateDatum extends Datum {
   public int compareTo(Datum datum) {
     if (datum.type() == TajoDataTypes.Type.DATE) {
       DateDatum another = (DateDatum) datum;
-      int compareResult = (year < another.year) ? -1 : ((year == another.year) ? 0 : 1);
-      if (compareResult != 0) {
-        return compareResult;
-      }
-      compareResult = (monthOfYear < another.monthOfYear) ? -1 : ((monthOfYear == another.monthOfYear) ? 0 : 1);
-      if (compareResult != 0) {
-        return compareResult;
-      }
-
-      return (dayOfMonth < another.dayOfMonth) ? -1 : ((dayOfMonth == another.dayOfMonth) ? 0 : 1);
+      TimeMeta myMeta, otherMeta;
+      myMeta = toTimeMeta();
+      otherMeta = another.toTimeMeta();
+      return myMeta.compareTo(otherMeta);
+    } else if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
+      TimestampDatum another = (TimestampDatum) datum;
+      TimeMeta myMeta, otherMeta;
+      myMeta = toTimeMeta();
+      otherMeta = another.toTimeMeta();
+      return myMeta.compareTo(otherMeta);
     } else if (datum instanceof NullDatum || datum.isNull()) {
       return -1;
     } else {
