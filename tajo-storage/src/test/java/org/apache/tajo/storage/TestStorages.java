@@ -123,7 +123,7 @@ public class TestStorages {
     return Arrays.asList(new Object[][] {
         //type, splitable, statsable, seekable
         {StoreType.CSV, true, true, true},
-        {StoreType.RAW, false, false, true},
+        {StoreType.RAW, false, true, true},
         {StoreType.RCFILE, true, true, false},
         {StoreType.PARQUET, false, false, false},
         {StoreType.SEQUENCEFILE, true, true, false},
@@ -792,7 +792,7 @@ public class TestStorages {
     TableMeta meta = CatalogUtil.newTableMeta(storeType);
     Path tablePath = new Path(testDir, "Seekable.data");
     FileAppender appender = (FileAppender) StorageManager.getStorageManager(conf).getAppender(meta, schema,
-	tablePath);
+        tablePath);
     appender.enableStats();
     appender.init();
     int tupleNum = 100000;
@@ -804,12 +804,12 @@ public class TestStorages {
       vTuple = new VTuple(3);
       vTuple.put(0, DatumFactory.createInt4(i + 1));
       vTuple.put(1, DatumFactory.createInt8(25l));
-      vTuple.put(2, DatumFactory.createText("test"));
+      vTuple.put(2, DatumFactory.createText("test" + i));
       appender.addTuple(vTuple);
 
       // find a seek position
       if (i % (tupleNum / 3) == 0) {
-	offsets.add(appender.getOffset());
+        offsets.add(appender.getOffset());
       }
     }
 
@@ -834,17 +834,17 @@ public class TestStorages {
     long readRows = 0;
     for (long offset : offsets) {
       scanner = StorageManager.getStorageManager(conf).getScanner(meta, schema,
-	  new FileFragment("table", tablePath, prevOffset, offset - prevOffset), schema);
+          new FileFragment("table", tablePath, prevOffset, offset - prevOffset), schema);
       scanner.init();
 
       while (scanner.next() != null) {
-	tupleCnt++;
+        tupleCnt++;
       }
 
       scanner.close();
       if (statsable) {
-	readBytes += scanner.getInputStats().getNumBytes();
-	readRows += scanner.getInputStats().getNumRows();
+        readBytes += scanner.getInputStats().getNumBytes();
+        readRows += scanner.getInputStats().getNumRows();
       }
       prevOffset = offset;
     }

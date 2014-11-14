@@ -13,6 +13,9 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
    
+    TAJO-1109: Separate SQL Statements from Catalog Stores.
+    (Jihun Kang via hyunsik)
+
     TAJO-1161: Remove joda time dependency from tajo-core. 
     (Jihun Kang via hyunsik)
 
@@ -71,6 +74,10 @@ Release 0.9.1 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1151: Implement the ByteBuffer-based De/Serializer. (jinho)
+
+    TAJO-1152: RawFile ByteBuffer should be reuse. (jinho)
 
     TAJO-1149: Implement direct read of DelimitedTextFile. (jinho)
 
