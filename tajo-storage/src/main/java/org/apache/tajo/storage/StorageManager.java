@@ -163,7 +163,7 @@ public abstract class StorageManager {
   public abstract void closeStorageManager();
 
   /**
-   * It is called by a Repartitioner for range shuffling when the SortRangeType of SortNode is USING_STORAGE_MANAGER.
+   * It is called by a Repartitioner for range shuffling when the SortRangeType of SortNode is STORAGE_SPECIFIED.
    * In general Repartitioner determines the partition range using previous output statistics data.
    * In the special cases, such as HBase Repartitioner uses the result of this method.
    *
@@ -196,7 +196,7 @@ public abstract class StorageManager {
    * @param node The child node of the root node.
    * @throws IOException
    */
-  public abstract void queryFailed(LogicalNode node) throws IOException;
+  public abstract void rollbackOutputCommit(LogicalNode node) throws IOException;
 
   /**
    * Returns the current storage type.

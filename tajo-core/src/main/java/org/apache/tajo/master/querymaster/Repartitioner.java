@@ -45,7 +45,7 @@ import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.MultipleAg
 import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty;
 import org.apache.tajo.master.TaskSchedulerContext;
 import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
-import org.apache.tajo.plan.logical.SortNode.SortRangeType;
+import org.apache.tajo.plan.logical.SortNode.SortPurpose;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.*;
@@ -663,7 +663,7 @@ public class Repartitioner {
     }
     TupleRange mergedRange = TupleUtil.columnStatToRange(sortSpecs, sortSchema, totalStat.getColumnStats(), false);
 
-    if (sortNode.getSortRangeType() == SortRangeType.USING_STORAGE_MANAGER) {
+    if (sortNode.getSortPurpose() == SortPurpose.STORAGE_SPECIFIED) {
       StoreType storeType = PlannerUtil.getStoreType(masterPlan.getLogicalPlan());
       CatalogService catalog = subQuery.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
       LogicalRootNode rootNode = masterPlan.getLogicalPlan().getRootBlock().getRoot();

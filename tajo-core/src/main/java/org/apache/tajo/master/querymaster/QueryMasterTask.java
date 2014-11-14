@@ -42,7 +42,6 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.rewrite.RewriteRule;
-import org.apache.tajo.storage.hbase.AddSortForInsertRewriter;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.plan.logical.LogicalNode;
@@ -423,7 +422,7 @@ public class QueryMasterTask extends CompositeService {
       if (plan != null && sm != null) {
         LogicalRootNode rootNode = plan.getRootBlock().getRoot();
         try {
-          sm.queryFailed(rootNode.getChild());
+          sm.rollbackOutputCommit(rootNode.getChild());
         } catch (IOException e) {
           LOG.warn(query.getId() + ", failed processing cleanup storage when query failed:" + e.getMessage(), e);
         }

@@ -59,15 +59,6 @@ import java.util.*;
 public class HBaseStorageManager extends StorageManager {
   private static final Log LOG = LogFactory.getLog(HBaseStorageManager.class);
 
-  public static final String META_TABLE_KEY = "table";
-  public static final String META_COLUMNS_KEY = "columns";
-  public static final String META_SPLIT_ROW_KEYS_KEY = "hbase.split.rowkeys";
-  public static final String META_SPLIT_ROW_KEYS_FILE_KEY = "hbase.split.rowkeys.file";
-  public static final String META_ZK_QUORUM_KEY = "hbase.zookeeper.quorum";
-  public static final String META_ROWKEY_DELIMITER = "hbase.rowkey.delimiter";
-
-  public static final String INSERT_PUT_MODE = "tajo.hbase.insert.put.mode";
-
   private Map<HConnectionKey, HConnection> connMap = new HashMap<HConnectionKey, HConnection>();
 
   public HBaseStorageManager (StoreType storeType) {
@@ -101,13 +92,14 @@ public class HBaseStorageManager extends StorageManager {
 
   private void createTable(TableMeta tableMeta, Schema schema,
                            boolean isExternal, boolean ifNotExists) throws IOException {
-    String hbaseTableName = tableMeta.getOption(META_TABLE_KEY, "");
+    String hbaseTableName = tableMeta.getOption(HBaseStorageConstants.META_TABLE_KEY, "");
     if (hbaseTableName == null || hbaseTableName.trim().isEmpty()) {
-      throw new IOException("HBase mapped table is required a '" + META_TABLE_KEY + "' attribute.");
+      throw new IOException("HBase mapped table is required a '" +
+          HBaseStorageConstants.META_TABLE_KEY + "' attribute.");
     }
     TableName hTableName = TableName.valueOf(hbaseTableName);
 
-    String mappedColumns = tableMeta.getOption(META_COLUMNS_KEY, "");
+    String mappedColumns = tableMeta.getOption(HBaseStorageConstants.META_COLUMNS_KEY, "");
     if (mappedColumns != null && mappedColumns.split(",").length > schema.size()) {
       throw new IOException("Columns property has more entry than Tajo table columns");
     }
@@ -144,7 +136,8 @@ public class HBaseStorageManager extends StorageManager {
       if (isExternal) {
         // If tajo table is external table, only check validation.
         if (mappedColumns == null || mappedColumns.isEmpty()) {
-          throw new IOException("HBase mapped table is required a '" + META_COLUMNS_KEY + "' attribute.");
+          throw new IOException("HBase mapped table is required a '" +
+              HBaseStorageConstants.META_COLUMNS_KEY + "' attribute.");
         }
         if (!hAdmin.tableExists(hTableName)) {
           throw new IOException("HBase table [" + hbaseTableName + "] not exists. " +
@@ -158,7 +151,8 @@ public class HBaseStorageManager extends StorageManager {
 
         Collection<String> mappingColumnFamilies =columnMapping.getColumnFamilyNames();
         if (mappingColumnFamilies.isEmpty()) {
-          throw new IOException("HBase mapped table is required a '" + META_COLUMNS_KEY + "' attribute.");
+          throw new IOException("HBase mapped table is required a '" +
+              HBaseStorageConstants.META_COLUMNS_KEY + "' attribute.");
         }
 
         for (String eachMappingColumnFamily : mappingColumnFamilies) {
@@ -199,8 +193,8 @@ public class HBaseStorageManager extends StorageManager {
    * @throws IOException
    */
   private byte[][] getSplitKeys(TajoConf conf, Schema schema, TableMeta meta) throws IOException {
-    String splitRowKeys = meta.getOption(META_SPLIT_ROW_KEYS_KEY, "");
-    String splitRowKeysFile = meta.getOption(META_SPLIT_ROW_KEYS_FILE_KEY, "");
+    String splitRowKeys = meta.getOption(HBaseStorageConstants.META_SPLIT_ROW_KEYS_KEY, "");
+    String splitRowKeysFile = meta.getOption(HBaseStorageConstants.META_SPLIT_ROW_KEYS_FILE_KEY, "");
 
     if ((splitRowKeys == null || splitRowKeys.isEmpty()) &&
         (splitRowKeysFile == null || splitRowKeysFile.isEmpty())) {
@@ -296,9 +290,10 @@ public class HBaseStorageManager extends StorageManager {
    * @throws IOException
    */
   public static Configuration getHBaseConfiguration(Configuration conf, TableMeta tableMeta) throws IOException {
-    String zkQuorum = tableMeta.getOption(META_ZK_QUORUM_KEY, "");
+    String zkQuorum = tableMeta.getOption(HBaseStorageConstants.META_ZK_QUORUM_KEY, "");
     if (zkQuorum == null || zkQuorum.trim().isEmpty()) {
-      throw new IOException("HBase mapped table is required a '" + META_ZK_QUORUM_KEY + "' attribute.");
+      throw new IOException("HBase mapped table is required a '" +
+          HBaseStorageConstants.META_ZK_QUORUM_KEY + "' attribute.");
     }
 
     Configuration hbaseConf = (conf == null) ? HBaseConfiguration.create() : HBaseConfiguration.create(conf);
@@ -322,9 +317,10 @@ public class HBaseStorageManager extends StorageManager {
    * @throws IOException
    */
   public static HTableDescriptor parseHTableDescriptor(TableMeta tableMeta, Schema schema) throws IOException {
-    String hbaseTableName = tableMeta.getOption(META_TABLE_KEY, "");
+    String hbaseTableName = tableMeta.getOption(HBaseStorageConstants.META_TABLE_KEY, "");
     if (hbaseTableName == null || hbaseTableName.trim().isEmpty()) {
-      throw new IOException("HBase mapped table is required a '" + META_TABLE_KEY + "' attribute.");
+      throw new IOException("HBase mapped table is required a '" +
+          HBaseStorageConstants.META_TABLE_KEY + "' attribute.");
     }
     TableName hTableName = TableName.valueOf(hbaseTableName);
 
@@ -395,7 +391,7 @@ public class HBaseStorageManager extends StorageManager {
     HBaseAdmin hAdmin = null;
 
     try {
-      htable = new HTable(hconf, tableDesc.getMeta().getOption(META_TABLE_KEY));
+      htable = new HTable(hconf, tableDesc.getMeta().getOption(HBaseStorageConstants.META_TABLE_KEY));
 
       org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> keys = htable.getStartEndKeys();
       if (keys == null || keys.getFirst() == null || keys.getFirst().length == 0) {
@@ -536,7 +532,7 @@ public class HBaseStorageManager extends StorageManager {
   public Appender getAppender(OverridableConf queryContext,
                               QueryUnitAttemptId taskAttemptId, TableMeta meta, Schema schema, Path workDir)
       throws IOException {
-    if ("true".equalsIgnoreCase(queryContext.get(INSERT_PUT_MODE, "false"))) {
+    if ("true".equalsIgnoreCase(queryContext.get(HBaseStorageConstants.INSERT_PUT_MODE, "false"))) {
       return new HBasePutAppender(conf, taskAttemptId, schema, meta, workDir);
     } else {
       return super.getAppender(queryContext, taskAttemptId, meta, schema, workDir);
@@ -550,7 +546,7 @@ public class HBaseStorageManager extends StorageManager {
     HTable htable = null;
     HBaseAdmin hAdmin = null;
     try {
-      htable = new HTable(hconf, tableDesc.getMeta().getOption(META_TABLE_KEY));
+      htable = new HTable(hconf, tableDesc.getMeta().getOption(HBaseStorageConstants.META_TABLE_KEY));
 
       org.apache.hadoop.hbase.util.Pair<byte[][], byte[][]> keys = htable.getStartEndKeys();
       if (keys == null || keys.getFirst() == null || keys.getFirst().length == 0) {
@@ -947,7 +943,7 @@ public class HBaseStorageManager extends StorageManager {
       return super.commitOutputData(queryContext, finalEbId, plan, schema, tableDesc, false);
     } else {
       // insert into table
-      String tableName = tableDesc.getMeta().getOption(HBaseStorageManager.META_TABLE_KEY);
+      String tableName = tableDesc.getMeta().getOption(HBaseStorageConstants.META_TABLE_KEY);
 
       HTable htable = new HTable(hbaseConf, tableName);
       try {
@@ -1046,7 +1042,7 @@ public class HBaseStorageManager extends StorageManager {
   }
 
   public List<RewriteRule> getRewriteRules(OverridableConf queryContext, TableDesc tableDesc) throws IOException {
-    if ("false".equalsIgnoreCase(queryContext.get(INSERT_PUT_MODE, "false"))) {
+    if ("false".equalsIgnoreCase(queryContext.get(HBaseStorageConstants.INSERT_PUT_MODE, "false"))) {
       List<RewriteRule> rules = new ArrayList<RewriteRule>();
       rules.add(new AddSortForInsertRewriter(tableDesc, getIndexColumns(tableDesc)));
       return rules;
@@ -1089,7 +1085,7 @@ public class HBaseStorageManager extends StorageManager {
   }
 
   @Override
-  public void queryFailed(LogicalNode node) throws IOException {
+  public void rollbackOutputCommit(LogicalNode node) throws IOException {
     if (node.getType() == NodeType.CREATE_TABLE) {
       CreateTableNode cNode = (CreateTableNode)node;
       if (cNode.isExternal()) {

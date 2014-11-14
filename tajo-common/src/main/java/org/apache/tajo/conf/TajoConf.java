@@ -303,6 +303,9 @@ public class TajoConf extends Configuration {
 
     // Misc -------------------------------------------------------------------
     // Fragment
+    // When making physical plan, the length of fragment is used to determine the physical operation.
+    // Some storage does not know the size of the fragment.
+    // In this case PhysicalPlanner uses this value to determine.
     FRAGMENT_ALTERNATIVE_UNKNOWN_LENGTH("tajo.fragment.alternative.unknown.length", (long)(512 * 1024 * 1024)),
 
     // Geo IP

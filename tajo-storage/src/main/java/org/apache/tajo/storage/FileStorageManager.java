@@ -819,7 +819,7 @@ public class FileStorageManager extends StorageManager {
   }
 
   @Override
-  public void queryFailed(LogicalNode node) throws IOException {
+  public void rollbackOutputCommit(LogicalNode node) throws IOException {
   }
 
   @Override

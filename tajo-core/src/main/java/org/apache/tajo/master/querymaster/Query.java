@@ -425,7 +425,7 @@ public class Query implements EventHandler<QueryEvent> {
           if (storeType != null) {
             LogicalRootNode rootNode = lastStage.getMasterPlan().getLogicalPlan().getRootBlock().getRoot();
             try {
-              StorageManager.getStorageManager(query.systemConf, storeType).queryFailed(rootNode.getChild());
+              StorageManager.getStorageManager(query.systemConf, storeType).rollbackOutputCommit(rootNode.getChild());
             } catch (IOException e) {
               LOG.warn(query.getId() + ", failed processing cleanup storage when query failed:" + e.getMessage(), e);
             }

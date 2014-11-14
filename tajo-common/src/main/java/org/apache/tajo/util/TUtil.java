@@ -119,15 +119,6 @@ public class TUtil {
     return new ArrayList<T>();
   }
 
-  public static List<Integer> newIntList(int...items) {
-    List<Integer> list = new ArrayList<Integer>();
-    for (int item: items) {
-      list.add(item);
-    }
-
-    return list;
-  }
-
   public static <T> List<T> newList(T...items) {
     List<T> list = new ArrayList<T>();
     for (T t : items) {

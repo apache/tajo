@@ -106,7 +106,7 @@ public class HBaseScanner implements Scanner {
       }
     }
 
-    scanFetchSize = Integer.parseInt(meta.getOption("hbase.scanner.fetch,size", "" + DEFAULT_FETCH_SIZE));
+    scanFetchSize = Integer.parseInt(meta.getOption(HBaseStorageConstants.META_FETCH_ROWNUM_KEY, "" + DEFAULT_FETCH_SIZE));
     if (targets == null) {
       targets = schema.toArray();
     }
