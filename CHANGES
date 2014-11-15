@@ -60,6 +60,9 @@ Release 0.9.1 - unreleased
     TAJO-1126: Join condition including functions throws 
     IllegalArgumentException. (hyunsik)
 
+    TAJO-1179: Integration tests in TravisCI are occasionally failed 
+    due to log size. (hyunsik)
+
 
   TASKS
 
