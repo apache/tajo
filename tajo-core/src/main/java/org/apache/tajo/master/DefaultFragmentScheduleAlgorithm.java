@@ -87,7 +87,7 @@ public class DefaultFragmentScheduleAlgorithm implements FragmentScheduleAlgorit
       diskIds = ((FileFragment)fragmentPair.getLeftFragment()).getDiskIds();
     }
     for (int i = 0; i < hosts.length; i++) {
-      addFragment(hosts[i], diskIds[i], fragmentPair);
+      addFragment(hosts[i], diskIds != null ? diskIds[i] : -1, fragmentPair);
     }
     fragmentNum++;
   }

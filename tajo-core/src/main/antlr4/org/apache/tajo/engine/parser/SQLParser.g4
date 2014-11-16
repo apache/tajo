@@ -89,11 +89,11 @@ if_exists
   ;
 
 create_table_statement
-  : CREATE EXTERNAL TABLE (if_not_exists)? table_name table_elements USING file_type=identifier
-    (param_clause)? (table_partitioning_clauses)? (LOCATION path=Character_String_Literal)
-  | CREATE TABLE (if_not_exists)? table_name table_elements (USING file_type=identifier)?
+  : CREATE EXTERNAL TABLE (if_not_exists)? table_name table_elements USING storage_type=identifier
+    (param_clause)? (table_partitioning_clauses)? (LOCATION path=Character_String_Literal)?
+  | CREATE TABLE (if_not_exists)? table_name table_elements (USING storage_type=identifier)?
     (param_clause)? (table_partitioning_clauses)? (AS query_expression)?
-  | CREATE TABLE (if_not_exists)? table_name (USING file_type=identifier)?
+  | CREATE TABLE (if_not_exists)? table_name (USING storage_type=identifier)?
     (param_clause)? (table_partitioning_clauses)? AS query_expression
   | CREATE TABLE (if_not_exists)? table_name LIKE like_table_name=table_name
   ;
@@ -1559,7 +1559,7 @@ null_ordering
 
 insert_statement
   : INSERT (OVERWRITE)? INTO table_name (LEFT_PAREN column_name_list RIGHT_PAREN)? query_expression
-  | INSERT (OVERWRITE)? INTO LOCATION path=Character_String_Literal (USING file_type=identifier (param_clause)?)? query_expression
+  | INSERT (OVERWRITE)? INTO LOCATION path=Character_String_Literal (USING storage_type=identifier (param_clause)?)? query_expression
   ;
 
 /*

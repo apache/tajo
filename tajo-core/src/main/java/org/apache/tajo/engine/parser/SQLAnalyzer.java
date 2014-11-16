@@ -29,6 +29,7 @@ import org.apache.tajo.algebra.Aggregation.GroupType;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.engine.parser.SQLParser.*;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.StringUtils;
 
@@ -62,6 +63,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     try {
       context = parser.sql();
     } catch (SQLParseError e) {
+      e.printStackTrace();
       throw new SQLSyntaxError(e);
     }
     return visitSql(context);
@@ -1162,12 +1164,14 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       createTable.setExternal();
 
       ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
-      String fileType = ctx.file_type.getText();
-      String path = stripQuote(ctx.path.getText());
-
+      String storageType = ctx.storage_type.getText();
       createTable.setTableElements(elements);
-      createTable.setStorageType(fileType);
-      createTable.setLocation(path);
+      createTable.setStorageType(storageType);
+
+      if (PlannerUtil.isFileStorageType(storageType)) {
+        String path = stripQuote(ctx.path.getText());
+        createTable.setLocation(path);
+      }
     } else {
       if (checkIfExist(ctx.table_elements())) {
         ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
@@ -1175,7 +1179,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       }
 
       if (checkIfExist(ctx.USING())) {
-        String fileType = ctx.file_type.getText();
+        String fileType = ctx.storage_type.getText();
         createTable.setStorageType(fileType);
       }
 
@@ -1449,7 +1453,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       insertExpr.setLocation(stripQuote(ctx.path.getText()));
 
       if (ctx.USING() != null) {
-        insertExpr.setStorageType(ctx.file_type.getText());
+        insertExpr.setStorageType(ctx.storage_type.getText());
 
         if (ctx.param_clause() != null) {
           insertExpr.setParams(escapeTableMeta(getParams(ctx.param_clause())));

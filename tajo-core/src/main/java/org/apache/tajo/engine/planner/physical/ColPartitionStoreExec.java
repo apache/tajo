@@ -120,6 +120,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
     super.init();
 
     storeTablePath = context.getOutputPath();
+
     FileSystem fs = storeTablePath.getFileSystem(context.getConf());
     if (!fs.exists(storeTablePath.getParent())) {
       fs.mkdirs(storeTablePath.getParent());

@@ -23,6 +23,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -47,8 +48,9 @@ public class TrevniAppender extends FileAppender {
   private TableStatistics stats = null;
   private boolean flushed = false;
 
-  public TrevniAppender(Configuration conf, Schema schema, TableMeta meta, Path path) throws IOException {
-    super(conf, schema, meta, path);
+  public TrevniAppender(Configuration conf, QueryUnitAttemptId taskAttemptId,
+                        Schema schema, TableMeta meta, Path workDir) throws IOException {
+    super(conf, taskAttemptId, schema, meta, workDir);
   }
 
   public void init() throws IOException {

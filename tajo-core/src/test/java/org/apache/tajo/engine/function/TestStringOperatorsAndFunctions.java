@@ -25,6 +25,7 @@ import org.apache.tajo.engine.eval.ExprTestBase;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
 

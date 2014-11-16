@@ -28,6 +28,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.*;
+import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -76,9 +77,10 @@ public class CSVFile {
     private NonSyncByteArrayOutputStream os = new NonSyncByteArrayOutputStream(BUFFER_SIZE);
     private SerializerDeserializer serde;
 
-    public CSVAppender(Configuration conf, final Schema schema, final TableMeta meta, final Path path) throws IOException {
-      super(conf, schema, meta, path);
-      this.fs = path.getFileSystem(conf);
+    public CSVAppender(Configuration conf, final QueryUnitAttemptId taskAttemptId,
+                       final Schema schema, final TableMeta meta, final Path workDir) throws IOException {
+      super(conf, taskAttemptId, schema, meta, workDir);
+      this.fs = workDir.getFileSystem(conf);
       this.meta = meta;
       this.schema = schema;
       this.delimiter = StringEscapeUtils.unescapeJava(
@@ -99,7 +101,7 @@ public class CSVFile {
     @Override
     public void init() throws IOException {
       if (!fs.exists(path.getParent())) {
-        throw new FileNotFoundException(path.toString());
+        throw new FileNotFoundException(path.getParent().toString());
       }
 
       //determine the intermediate file type

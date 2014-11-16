@@ -23,11 +23,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaUtil;
-import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.*;
@@ -37,6 +35,7 @@ import org.apache.tajo.plan.visitor.ExplainLogicalPlanVisitor;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 import org.apache.tajo.util.TUtil;
 
+import java.io.IOException;
 import java.util.*;
 
 public class PlannerUtil {
@@ -775,5 +774,110 @@ public class PlannerUtil {
     }
 
     return explains.toString();
+  }
+
+  public static boolean isFileStorageType(String storageType) {
+    if (storageType.equalsIgnoreCase("hbase")) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  public static boolean isFileStorageType(StoreType storageType) {
+    if (storageType== StoreType.HBASE) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  public static StoreType getStoreType(LogicalPlan plan) {
+    LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+    NodeType nodeType = rootNode.getChild().getType();
+    if (nodeType == NodeType.CREATE_TABLE) {
+      return ((CreateTableNode)rootNode.getChild()).getStorageType();
+    } else if (nodeType == NodeType.INSERT) {
+      return ((InsertNode)rootNode.getChild()).getStorageType();
+    } else {
+      return null;
+    }
+  }
+
+  public static String getStoreTableName(LogicalPlan plan) {
+    LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+    NodeType nodeType = rootNode.getChild().getType();
+    if (nodeType == NodeType.CREATE_TABLE) {
+      return ((CreateTableNode)rootNode.getChild()).getTableName();
+    } else if (nodeType == NodeType.INSERT) {
+      return ((InsertNode)rootNode.getChild()).getTableName();
+    } else {
+      return null;
+    }
+  }
+
+  public static TableDesc getTableDesc(CatalogService catalog, LogicalNode node) throws IOException {
+    if (node.getType() == NodeType.CREATE_TABLE) {
+      return createTableDesc((CreateTableNode)node);
+    }
+    String tableName = null;
+    InsertNode insertNode = null;
+    if (node.getType() == NodeType.INSERT) {
+      insertNode = (InsertNode)node;
+      tableName = insertNode.getTableName();
+    } else {
+      return null;
+    }
+
+    if (tableName != null) {
+      String[] tableTokens = tableName.split("\\.");
+      if (tableTokens.length >= 2) {
+        if (catalog.existsTable(tableTokens[0], tableTokens[1])) {
+          return catalog.getTableDesc(tableTokens[0], tableTokens[1]);
+        }
+      }
+    } else {
+      if (insertNode.getPath() != null) {
+        //insert ... location
+        return createTableDesc(insertNode);
+      }
+    }
+    return null;
+  }
+
+  private static TableDesc createTableDesc(CreateTableNode createTableNode) {
+    TableMeta meta = new TableMeta(createTableNode.getStorageType(), createTableNode.getOptions());
+
+    TableDesc tableDescTobeCreated =
+        new TableDesc(
+            createTableNode.getTableName(),
+            createTableNode.getTableSchema(),
+            meta,
+            createTableNode.getPath());
+
+    tableDescTobeCreated.setExternal(createTableNode.isExternal());
+
+    if (createTableNode.hasPartition()) {
+      tableDescTobeCreated.setPartitionMethod(createTableNode.getPartitionMethod());
+    }
+
+    return tableDescTobeCreated;
+  }
+
+  private static TableDesc createTableDesc(InsertNode insertNode) {
+    TableMeta meta = new TableMeta(insertNode.getStorageType(), insertNode.getOptions());
+
+    TableDesc tableDescTobeCreated =
+        new TableDesc(
+            insertNode.getTableName(),
+            insertNode.getTableSchema(),
+            meta,
+            insertNode.getPath());
+
+    if (insertNode.hasPartition()) {
+      tableDescTobeCreated.setPartitionMethod(insertNode.getPartitionMethod());
+    }
+
+    return tableDescTobeCreated;
   }
 }

@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
@@ -26,34 +27,66 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
-import org.apache.tajo.TajoConstants;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
+import org.apache.tajo.*;
+import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.*;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.net.URI;
+import java.text.NumberFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class FileStorageManager extends StorageManager {
   private final Log LOG = LogFactory.getLog(FileStorageManager.class);
+
+  static final String OUTPUT_FILE_PREFIX="part-";
+  static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_SUBQUERY =
+      new ThreadLocal<NumberFormat>() {
+        @Override
+        public NumberFormat initialValue() {
+          NumberFormat fmt = NumberFormat.getInstance();
+          fmt.setGroupingUsed(false);
+          fmt.setMinimumIntegerDigits(2);
+          return fmt;
+        }
+      };
+  static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_TASK =
+      new ThreadLocal<NumberFormat>() {
+        @Override
+        public NumberFormat initialValue() {
+          NumberFormat fmt = NumberFormat.getInstance();
+          fmt.setGroupingUsed(false);
+          fmt.setMinimumIntegerDigits(6);
+          return fmt;
+        }
+      };
+
+  static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_SEQ =
+      new ThreadLocal<NumberFormat>() {
+        @Override
+        public NumberFormat initialValue() {
+          NumberFormat fmt = NumberFormat.getInstance();
+          fmt.setGroupingUsed(false);
+          fmt.setMinimumIntegerDigits(3);
+          return fmt;
+        }
+      };
 
   protected FileSystem fs;
   protected Path tableBaseDir;
   protected boolean blocksMetadataEnabled;
   private static final HdfsVolumeId zeroVolumeId = new HdfsVolumeId(Bytes.toBytes(0));
+
+  public FileStorageManager(StoreType storeType) {
+    super(storeType);
+  }
 
   @Override
   protected void storageInit() throws IOException {
@@ -114,47 +147,10 @@ public class FileStorageManager extends StorageManager {
     return new Path(tableBaseDir, tableName);
   }
 
-  public Appender getAppender(TableMeta meta, Schema schema, Path path)
+  @VisibleForTesting
+  public Appender getAppender(TableMeta meta, Schema schema, Path filePath)
       throws IOException {
-    Appender appender;
-
-    Class<? extends FileAppender> appenderClass;
-
-    String handlerName = meta.getStoreType().name().toLowerCase();
-    appenderClass = APPENDER_HANDLER_CACHE.get(handlerName);
-    if (appenderClass == null) {
-      appenderClass = conf.getClass(
-          String.format("tajo.storage.appender-handler.%s.class",
-              meta.getStoreType().name().toLowerCase()), null,
-          FileAppender.class);
-      APPENDER_HANDLER_CACHE.put(handlerName, appenderClass);
-    }
-
-    if (appenderClass == null) {
-      throw new IOException("Unknown Storage Type: " + meta.getStoreType());
-    }
-
-    appender = newAppenderInstance(appenderClass, conf, meta, schema, path);
-
-    return appender;
-  }
-
-  public TableMeta getTableMeta(Path tablePath) throws IOException {
-    TableMeta meta;
-
-    FileSystem fs = tablePath.getFileSystem(conf);
-    Path tableMetaPath = new Path(tablePath, ".meta");
-    if (!fs.exists(tableMetaPath)) {
-      throw new FileNotFoundException(".meta file not found in " + tablePath.toString());
-    }
-
-    FSDataInputStream tableMetaIn = fs.open(tableMetaPath);
-
-    CatalogProtos.TableProto tableProto = (CatalogProtos.TableProto) org.apache.tajo.util.FileUtil.loadProto(tableMetaIn,
-        CatalogProtos.TableProto.getDefaultInstance());
-    meta = new TableMeta(tableProto);
-
-    return meta;
+    return getAppender(null, null, meta, schema, filePath);
   }
 
   public FileFragment[] split(String tableName) throws IOException {
@@ -277,6 +273,23 @@ public class FileStorageManager extends StorageManager {
       return !name.startsWith("_") && !name.startsWith(".");
     }
   };
+
+  public Path getAppenderFilePath(QueryUnitAttemptId taskAttemptId, Path workDir) {
+    if (taskAttemptId == null) {
+      // For testcase
+      return workDir;
+    }
+    // The final result of a task will be written in a file named part-ss-nnnnnnn,
+    // where ss is the subquery id associated with this task, and nnnnnn is the task id.
+    Path outFilePath = StorageUtil.concatPath(workDir, TajoConstants.RESULT_DIR_NAME,
+        OUTPUT_FILE_PREFIX +
+            OUTPUT_FILE_FORMAT_SUBQUERY.get().format(taskAttemptId.getQueryUnitId().getExecutionBlockId().getId()) + "-" +
+            OUTPUT_FILE_FORMAT_TASK.get().format(taskAttemptId.getQueryUnitId().getId()) + "-" +
+            OUTPUT_FILE_FORMAT_SEQ.get().format(0));
+    LOG.info("Output File Path: " + outFilePath);
+
+    return outFilePath;
+  }
 
   /**
    * Proxy PathFilter that accepts a path only if all filters given in the
@@ -639,12 +652,12 @@ public class FileStorageManager extends StorageManager {
   }
 
   @Override
-  public List<Fragment> getSplits(String tableName, TableDesc table) throws IOException {
+  public List<Fragment> getSplits(String tableName, TableDesc table, ScanNode scanNode) throws IOException {
     return getSplits(tableName, table.getMeta(), table.getSchema(), table.getPath());
   }
 
   @Override
-  public void createTable(TableDesc tableDesc) throws IOException {
+  public void createTable(TableDesc tableDesc, boolean ifNotExists) throws IOException {
     if (!tableDesc.isExternal()) {
       String [] splitted = CatalogUtil.splitFQTableName(tableDesc.getName());
       String databaseName = splitted[0];
@@ -699,4 +712,120 @@ public class FileStorageManager extends StorageManager {
     }
   }
 
+  @Override
+  public List<Fragment> getNonForwardSplit(TableDesc tableDesc, int currentPage, int numFragments) throws IOException {
+    // Listing table data file which is not empty.
+    // If the table is a partitioned table, return file list which has same partition key.
+    FileSystem fs = tableDesc.getPath().getFileSystem(conf);
+
+    List<FileStatus> nonZeroLengthFiles = new ArrayList<FileStatus>();
+    if (fs.exists(tableDesc.getPath())) {
+      getNonZeroLengthDataFiles(fs, tableDesc.getPath(), nonZeroLengthFiles, currentPage, numFragments,
+          new AtomicInteger(0));
+    }
+
+    List<Fragment> fragments = new ArrayList<Fragment>();
+
+    //In the case of partitioned table, return same partition key data files.
+    int numPartitionColumns = 0;
+    if (tableDesc.hasPartition()) {
+      numPartitionColumns = tableDesc.getPartitionMethod().getExpressionSchema().getColumns().size();
+    }
+    String[] previousPartitionPathNames = null;
+    for (FileStatus eachFile: nonZeroLengthFiles) {
+      FileFragment fileFragment = new FileFragment(tableDesc.getName(), eachFile.getPath(), 0, eachFile.getLen(), null);
+
+      if (numPartitionColumns > 0) {
+        // finding partition key;
+        Path filePath = fileFragment.getPath();
+        Path parentPath = filePath;
+        String[] parentPathNames = new String[numPartitionColumns];
+        for (int i = 0; i < numPartitionColumns; i++) {
+          parentPath = parentPath.getParent();
+          parentPathNames[numPartitionColumns - i - 1] = parentPath.getName();
+        }
+
+        // If current partitionKey == previousPartitionKey, add to result.
+        if (previousPartitionPathNames == null) {
+          fragments.add(fileFragment);
+        } else if (previousPartitionPathNames != null && Arrays.equals(previousPartitionPathNames, parentPathNames)) {
+          fragments.add(fileFragment);
+        } else {
+          break;
+        }
+        previousPartitionPathNames = parentPathNames;
+      } else {
+        fragments.add(fileFragment);
+      }
+    }
+
+    return fragments;
+  }
+
+  private void getNonZeroLengthDataFiles(FileSystem fs, Path path, List<FileStatus> result,
+                                                int startFileIndex, int numResultFiles,
+                                                AtomicInteger currentFileIndex) throws IOException {
+    if (fs.isDirectory(path)) {
+      FileStatus[] files = fs.listStatus(path, FileStorageManager.hiddenFileFilter);
+      if (files != null && files.length > 0) {
+        for (FileStatus eachFile : files) {
+          if (result.size() >= numResultFiles) {
+            return;
+          }
+          if (eachFile.isDirectory()) {
+            getNonZeroLengthDataFiles(fs, eachFile.getPath(), result, startFileIndex, numResultFiles,
+                currentFileIndex);
+          } else if (eachFile.isFile() && eachFile.getLen() > 0) {
+            if (currentFileIndex.get() >= startFileIndex) {
+              result.add(eachFile);
+            }
+            currentFileIndex.incrementAndGet();
+          }
+        }
+      }
+    } else {
+      FileStatus fileStatus = fs.getFileStatus(path);
+      if (fileStatus != null && fileStatus.getLen() > 0) {
+        if (currentFileIndex.get() >= startFileIndex) {
+          result.add(fileStatus);
+        }
+        currentFileIndex.incrementAndGet();
+        if (result.size() >= numResultFiles) {
+          return;
+        }
+      }
+    }
+  }
+
+  @Override
+  public StorageProperty getStorageProperty() {
+    StorageProperty storageProperty = new StorageProperty();
+    storageProperty.setSortedInsert(false);
+    if (storeType == StoreType.RAW) {
+      storageProperty.setSupportsInsertInto(false);
+    } else {
+      storageProperty.setSupportsInsertInto(true);
+    }
+
+    return storageProperty;
+  }
+
+  @Override
+  public void closeStorageManager() {
+  }
+
+  @Override
+  public void beforeInsertOrCATS(LogicalNode node) throws IOException {
+  }
+
+  @Override
+  public void rollbackOutputCommit(LogicalNode node) throws IOException {
+  }
+
+  @Override
+  public TupleRange[] getInsertSortRanges(OverridableConf queryContext, TableDesc tableDesc,
+                                          Schema inputSchema, SortSpec[] sortSpecs, TupleRange dataRange)
+      throws IOException {
+    return null;
+  }
 }

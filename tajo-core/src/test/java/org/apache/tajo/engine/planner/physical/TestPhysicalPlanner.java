@@ -48,6 +48,7 @@ import org.apache.tajo.master.session.Session;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
@@ -76,7 +77,6 @@ import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.ColumnPartitionEnforcer.ColumnPartitionAlgorithm;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.SortEnforce.SortAlgorithm;
-import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 import static org.junit.Assert.*;
 
 public class TestPhysicalPlanner {
@@ -440,7 +440,6 @@ public class TestPhysicalPlanner {
     Expr context = analyzer.parse(CreateTableAsStmts[0]);
     LogicalPlan plan = planner.createPlan(defaultContext, context);
     LogicalNode rootNode = optimizer.optimize(plan);
-
 
     TableMeta outputMeta = CatalogUtil.newTableMeta(StoreType.CSV);
 

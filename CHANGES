@@ -5,6 +5,10 @@ Release 0.9.1 - unreleased
 
   NEW FEATURES
 
+    TAJO-1131: Supports Inserting or Creating table into 
+    the HBase mapped table.(Hyoungjun Kim)
+
+
     TAJO-1026: Implement Query history persistency manager.(Hyoungjun Kim)
 
     TAJO-233: Support PostgreSQL CatalogStore. (Jihun Kang via hyunsik)

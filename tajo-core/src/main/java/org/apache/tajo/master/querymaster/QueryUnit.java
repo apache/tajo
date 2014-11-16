@@ -266,8 +266,13 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
     List<String> fragmentList = new ArrayList<String>();
     for (FragmentProto eachFragment : getAllFragments()) {
-      FileFragment fileFragment = FragmentConvertor.convert(FileFragment.class, eachFragment);
-      fragmentList.add(fileFragment.toString());
+      try {
+        Fragment fragment = FragmentConvertor.convert(systemConf, eachFragment);
+        fragmentList.add(fragment.toString());
+      } catch (Exception e) {
+        LOG.error(e.getMessage());
+        fragmentList.add("ERROR: " + eachFragment.getStoreType() + "," + eachFragment.getId() + ": " + e.getMessage());
+      }
     }
     queryUnitHistory.setFragments(fragmentList.toArray(new String[]{}));
 
@@ -321,7 +326,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
       diskIds = ((FileFragment)fragment).getDiskIds();
     }
     for (int i = 0; i < hosts.length; i++) {
-      dataLocations.add(new DataLocation(hosts[i], diskIds[i]));
+      dataLocations.add(new DataLocation(hosts[i], diskIds == null ? -1 : diskIds[i]));
     }
   }
 

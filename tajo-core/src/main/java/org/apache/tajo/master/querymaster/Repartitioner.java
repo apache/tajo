@@ -45,6 +45,7 @@ import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.MultipleAg
 import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty;
 import org.apache.tajo.master.TaskSchedulerContext;
 import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
+import org.apache.tajo.plan.logical.SortNode.SortPurpose;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.*;
@@ -419,7 +420,8 @@ public class Repartitioner {
         } else {
           StorageManager storageManager = StorageManager.getStorageManager(subQuery.getContext().getConf(),
               tableDesc.getMeta().getStoreType());
-          Collection<Fragment> scanFragments = storageManager.getSplits(eachScan.getCanonicalName(), tableDesc);
+          Collection<Fragment> scanFragments = storageManager.getSplits(eachScan.getCanonicalName(),
+              tableDesc, eachScan);
           if (scanFragments != null) {
             rightFragments.addAll(scanFragments);
           }
@@ -539,7 +541,7 @@ public class Repartitioner {
         StorageManager storageManager =
             StorageManager.getStorageManager(subQuery.getContext().getConf(), desc.getMeta().getStoreType());
 
-        scanFragments = storageManager.getSplits(scan.getCanonicalName(), desc);
+        scanFragments = storageManager.getSplits(scan.getCanonicalName(), desc, scan);
       }
 
       if (scanFragments != null) {
@@ -649,39 +651,58 @@ public class Repartitioner {
     SortSpec [] sortSpecs = sortNode.getSortKeys();
     Schema sortSchema = new Schema(channel.getShuffleKeys());
 
+    TupleRange[] ranges;
+    int determinedTaskNum;
+
     // calculate the number of maximum query ranges
     TableStats totalStat = computeChildBlocksStats(subQuery.getContext(), masterPlan, subQuery.getId());
 
     // If there is an empty table in inner join, it should return zero rows.
-    if (totalStat.getNumBytes() == 0 && totalStat.getColumnStats().size() == 0 ) {
+    if (totalStat.getNumBytes() == 0 && totalStat.getColumnStats().size() == 0) {
       return;
     }
     TupleRange mergedRange = TupleUtil.columnStatToRange(sortSpecs, sortSchema, totalStat.getColumnStats(), false);
-    RangePartitionAlgorithm partitioner = new UniformRangePartition(mergedRange, sortSpecs);
-    BigInteger card = partitioner.getTotalCardinality();
 
-    // if the number of the range cardinality is less than the desired number of tasks,
-    // we set the the number of tasks to the number of range cardinality.
-    int determinedTaskNum;
-    if (card.compareTo(BigInteger.valueOf(maxNum)) < 0) {
-      LOG.info(subQuery.getId() + ", The range cardinality (" + card
-          + ") is less then the desired number of tasks (" + maxNum + ")");
-      determinedTaskNum = card.intValue();
+    if (sortNode.getSortPurpose() == SortPurpose.STORAGE_SPECIFIED) {
+      StoreType storeType = PlannerUtil.getStoreType(masterPlan.getLogicalPlan());
+      CatalogService catalog = subQuery.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
+      LogicalRootNode rootNode = masterPlan.getLogicalPlan().getRootBlock().getRoot();
+      TableDesc tableDesc = PlannerUtil.getTableDesc(catalog, rootNode.getChild());
+      if (tableDesc == null) {
+        throw new IOException("Can't get table meta data from catalog: " +
+            PlannerUtil.getStoreTableName(masterPlan.getLogicalPlan()));
+      }
+      ranges = StorageManager.getStorageManager(subQuery.getContext().getConf(), storeType)
+          .getInsertSortRanges(subQuery.getContext().getQueryContext(), tableDesc,
+              sortNode.getInSchema(), sortSpecs,
+              mergedRange);
+      determinedTaskNum = ranges.length;
     } else {
-      determinedTaskNum = maxNum;
-    }
+      RangePartitionAlgorithm partitioner = new UniformRangePartition(mergedRange, sortSpecs);
+      BigInteger card = partitioner.getTotalCardinality();
 
-    LOG.info(subQuery.getId() + ", Try to divide " + mergedRange + " into " + determinedTaskNum +
-        " sub ranges (total units: " + determinedTaskNum + ")");
-    TupleRange [] ranges = partitioner.partition(determinedTaskNum);
-    if (ranges == null || ranges.length == 0) {
-      LOG.warn(subQuery.getId() + " no range infos.");
-    }
-    TupleUtil.setMaxRangeIfNull(sortSpecs, sortSchema, totalStat.getColumnStats(), ranges);
-    if (LOG.isDebugEnabled()) {
-      if (ranges != null) {
-        for (TupleRange eachRange : ranges) {
-          LOG.debug(subQuery.getId() + " range: " + eachRange.getStart() + " ~ " + eachRange.getEnd());
+      // if the number of the range cardinality is less than the desired number of tasks,
+      // we set the the number of tasks to the number of range cardinality.
+      if (card.compareTo(BigInteger.valueOf(maxNum)) < 0) {
+        LOG.info(subQuery.getId() + ", The range cardinality (" + card
+            + ") is less then the desired number of tasks (" + maxNum + ")");
+        determinedTaskNum = card.intValue();
+      } else {
+        determinedTaskNum = maxNum;
+      }
+
+      LOG.info(subQuery.getId() + ", Try to divide " + mergedRange + " into " + determinedTaskNum +
+          " sub ranges (total units: " + determinedTaskNum + ")");
+      ranges = partitioner.partition(determinedTaskNum);
+      if (ranges == null || ranges.length == 0) {
+        LOG.warn(subQuery.getId() + " no range infos.");
+      }
+      TupleUtil.setMaxRangeIfNull(sortSpecs, sortSchema, totalStat.getColumnStats(), ranges);
+      if (LOG.isDebugEnabled()) {
+        if (ranges != null) {
+          for (TupleRange eachRange : ranges) {
+            LOG.debug(subQuery.getId() + " range: " + eachRange.getStart() + " ~ " + eachRange.getEnd());
+          }
         }
       }
     }

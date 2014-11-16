@@ -25,6 +25,7 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -313,9 +314,10 @@ public class RowFile {
     // statistics
     private TableStatistics stats;
 
-    public RowFileAppender(Configuration conf, final Schema schema, final TableMeta meta, final Path path)
+    public RowFileAppender(Configuration conf, final QueryUnitAttemptId taskAttemptId,
+                           final Schema schema, final TableMeta meta, final Path workDir)
         throws IOException {
-      super(conf, schema, meta, path);
+      super(conf, taskAttemptId, schema, meta, workDir);
     }
 
     public void init() throws IOException {

@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
@@ -37,8 +38,8 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneable {
   @Expose private String tableName; // required
   @Expose private Path uri; // required
-  @Expose private Long startOffset; // required
-  @Expose private Long length; // required
+  @Expose public Long startOffset; // required
+  @Expose public Long length; // required
 
   private String[] hosts; // Datanode hostnames
   @Expose private int[] diskIds;
@@ -229,6 +230,7 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
 
     FragmentProto.Builder fragmentBuilder = FragmentProto.newBuilder();
     fragmentBuilder.setId(this.tableName);
+    fragmentBuilder.setStoreType(StoreType.CSV.name());
     fragmentBuilder.setContents(builder.buildPartial().toByteString());
     return fragmentBuilder.build();
   }

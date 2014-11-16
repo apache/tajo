@@ -280,6 +280,8 @@ public class CatalogUtil {
       return StoreType.AVRO;
     } else if (typeStr.equalsIgnoreCase(StoreType.TEXTFILE.name())) {
       return StoreType.TEXTFILE;
+    } else if (typeStr.equalsIgnoreCase(StoreType.HBASE.name())) {
+      return StoreType.HBASE;
     } else {
       return null;
     }
