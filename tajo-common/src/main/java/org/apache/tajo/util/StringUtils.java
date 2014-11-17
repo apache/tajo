@@ -25,8 +25,13 @@ import org.apache.hadoop.util.Shell;
 import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.util.SignalLogger;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CoderResult;
+import java.nio.charset.CodingErrorAction;
 import java.util.Arrays;
 import java.util.BitSet;
 
@@ -309,5 +314,57 @@ public class StringUtils {
     }
 
     return padded;
+  }
+  
+  public static char[] convertBytesToChars(byte[] src, Charset charset) {
+    CharsetDecoder decoder = charset.newDecoder();
+    char[] resultArray = new char[(int) (src.length * decoder.maxCharsPerByte())];
+    
+    if (src.length != 0) {
+      ByteBuffer byteBuffer = ByteBuffer.wrap(src);
+      CharBuffer charBuffer = CharBuffer.wrap(resultArray);
+      
+      decoder.onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
+      decoder.reset();
+      
+      CoderResult coderResult = decoder.decode(byteBuffer, charBuffer, true);
+      if (coderResult.isUnderflow()) {
+        coderResult = decoder.flush(charBuffer);
+        
+        if (coderResult.isUnderflow()) {
+          if (resultArray.length != charBuffer.position()) {
+            resultArray = Arrays.copyOf(resultArray, charBuffer.position());
+          }
+        }
+      }
+    }
+    
+    return resultArray;
+  }
+  
+  public static byte[] convertCharsToBytes(char[] src, Charset charset) {
+    CharsetEncoder encoder = charset.newEncoder();
+    byte[] resultArray = new byte[(int) (src.length * encoder.maxBytesPerChar())];
+    
+    if (src.length != 0) {
+      CharBuffer charBuffer = CharBuffer.wrap(src);
+      ByteBuffer byteBuffer = ByteBuffer.wrap(resultArray);
+      
+      encoder.onMalformedInput(CodingErrorAction.REPLACE).onUnmappableCharacter(CodingErrorAction.REPLACE);
+      encoder.reset();
+      
+      CoderResult coderResult = encoder.encode(charBuffer, byteBuffer, true);
+      if (coderResult.isUnderflow()) {
+        coderResult = encoder.flush(byteBuffer);
+        
+        if (coderResult.isUnderflow()) {
+          if (resultArray.length != byteBuffer.position()) {
+            resultArray = Arrays.copyOf(resultArray, byteBuffer.position());
+          }
+        }
+      }
+    }
+    
+    return resultArray;
   }
 }

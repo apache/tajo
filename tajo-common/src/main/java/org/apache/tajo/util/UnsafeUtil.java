@@ -95,7 +95,7 @@ public class UnsafeUtil {
   }
 
   public static long getAddress(ByteBuffer buffer) {
-    Preconditions.checkArgument(buffer instanceof DirectBuffer, "ByteBuffer must be DirectBuffer");
+    Preconditions.checkArgument(buffer.isDirect(), "ByteBuffer must be DirectBuffer");
     return ((DirectBuffer)buffer).address();
   }
 
@@ -105,7 +105,7 @@ public class UnsafeUtil {
 
   public static void free(ByteBuffer bb) {
     Preconditions.checkNotNull(bb);
-    Preconditions.checkState(bb instanceof DirectBuffer);
+    Preconditions.checkState(bb.isDirect());
 
     Cleaner cleaner = ((DirectBuffer) bb).cleaner();
     if (cleaner != null) {
