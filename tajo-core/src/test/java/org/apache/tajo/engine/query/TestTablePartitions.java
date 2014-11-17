@@ -839,8 +839,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
     testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.SHUFFLE_HASH_APPENDER_PAGE_VOLUME.varname, "1");
     try {
       KeyValueSet tableOptions = new KeyValueSet();
-      tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-      tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+      tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+      tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
       Schema schema = new Schema();
       schema.addColumn("col1", TajoDataTypes.Type.TEXT);

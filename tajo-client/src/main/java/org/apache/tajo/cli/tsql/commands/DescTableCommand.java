@@ -25,7 +25,6 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.cli.tsql.TajoCli;
-import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.TUtil;
 

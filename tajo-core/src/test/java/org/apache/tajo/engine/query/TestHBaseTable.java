@@ -40,10 +40,7 @@ import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.storage.hbase.HBaseBinarySerializerDeserializer;
-import org.apache.tajo.storage.hbase.HBaseFragment;
-import org.apache.tajo.storage.hbase.HBaseStorageManager;
-import org.apache.tajo.storage.hbase.HBaseTextSerializerDeserializer;
+import org.apache.tajo.storage.hbase.*;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
@@ -1315,7 +1312,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     TableDesc tableDesc = catalog.getTableDesc(getCurrentDatabase(), "hbase_mapped_table");
 
     Map<String, String> sessions = new HashMap<String, String>();
-    sessions.put(HBaseStorageManager.INSERT_PUT_MODE, "true");
+    sessions.put(HBaseStorageConstants.INSERT_PUT_MODE, "true");
     client.updateSessionVariables(sessions);
 
     HTable htable = null;
@@ -1341,7 +1338,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
     } finally {
       executeString("DROP TABLE hbase_mapped_table PURGE").close();
 
-      client.unsetSessionVariables(TUtil.newList(HBaseStorageManager.INSERT_PUT_MODE));
+      client.unsetSessionVariables(TUtil.newList(HBaseStorageConstants.INSERT_PUT_MODE));
 
       if (scanner != null) {
         scanner.close();

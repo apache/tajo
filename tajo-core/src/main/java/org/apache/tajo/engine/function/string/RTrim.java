@@ -52,7 +52,7 @@ public class RTrim extends GeneralFunction {
 
   public RTrim() {
     super(new Column[] {
-        new Column("text", TajoDataTypes.Type.TEXT),
+        new Column("org/apache/tajo/storage/text", TajoDataTypes.Type.TEXT),
     });
   }
 

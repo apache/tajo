@@ -47,7 +47,7 @@ import org.apache.tajo.storage.Tuple;
 public class Concat extends GeneralFunction {
   public Concat() {
     super(new Column[] {
-        new Column("text", TajoDataTypes.Type.TEXT),
+        new Column("org/apache/tajo/storage/text", TajoDataTypes.Type.TEXT),
     });
   }
 

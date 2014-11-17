@@ -67,6 +67,7 @@ public class DateTimeConstants {
   public static final long USECS_PER_HOUR	= 3600000000L;
   public static final long USECS_PER_MINUTE = 60000000L;
   public static final long USECS_PER_SEC = 1000000L;
+  public static final long USECS_PER_MSEC = 1000L;
 
   public static final int JULIAN_MINYEAR = -4713;
   public static final int JULIAN_MINMONTH = 11;
@@ -75,6 +76,27 @@ public class DateTimeConstants {
 
   /** == DateTimeUtil.toJulianDate(JULIAN_MAXYEAR, 1, 1) */
   public static final int JULIAN_MAX = 2147483494;
+  
+  /** the first ISO day of week */
+  public static final int MONDAY = 1;
+  
+  /** the second ISO day of week */
+  public static final int TUESDAY = 2;
+
+  /** the third ISO day of week */
+  public static final int WEDNESDAY = 3;
+
+  /** the fourth ISO day of week */
+  public static final int THURSDAY = 4;
+
+  /** the fifth ISO day of week */
+  public static final int FRIDAY = 5;
+
+  /** the sixth ISO day of week */
+  public static final int SATURDAY = 6;
+
+  /** the seventh ISO day of week */
+  public static final int SUNDAY = 7;
 
   // Julian-date equivalents of Day 0 in Unix and Postgres reckoning
   /** == DateTimeUtil.toJulianDate(1970, 1, 1) */

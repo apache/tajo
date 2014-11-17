@@ -135,7 +135,7 @@ public class FileStorageManager extends StorageManager {
    * This method deletes only data contained in the given path.
    *
    * @param path The path in which data are deleted.
-   * @throws java.io.IOException
+   * @throws IOException
    */
   public void deleteData(Path path) throws IOException {
     FileSystem fileSystem = path.getFileSystem(conf);
@@ -321,7 +321,7 @@ public class FileStorageManager extends StorageManager {
    * expression.
    *
    * @return array of FileStatus objects
-   * @throws java.io.IOException if zero items.
+   * @throws IOException if zero items.
    */
   protected List<FileStatus> listStatus(Path... dirs) throws IOException {
     List<FileStatus> result = new ArrayList<FileStatus>();
@@ -508,7 +508,7 @@ public class FileStorageManager extends StorageManager {
   /**
    * Generate the list of files and make them into FileSplits.
    *
-   * @throws java.io.IOException
+   * @throws IOException
    */
   public List<Fragment> getSplits(String tableName, TableMeta meta, Schema schema, Path... inputs)
       throws IOException {
@@ -821,7 +821,7 @@ public class FileStorageManager extends StorageManager {
   }
 
   @Override
-  public void queryFailed(LogicalNode node) throws IOException {
+  public void rollbackOutputCommit(LogicalNode node) throws IOException {
   }
 
   @Override

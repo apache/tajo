@@ -57,6 +57,8 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
+import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.util.history.QueryHistory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -535,6 +537,37 @@ public class TajoMasterClientService extends AbstractService {
       } catch (Throwable t) {
         throw new ServiceException(t);
       }
+    }
+
+    @Override
+    public GetQueryInfoResponse getQueryInfo(RpcController controller, QueryIdRequest request) throws ServiceException {
+      GetQueryInfoResponse.Builder builder = GetQueryInfoResponse.newBuilder();
+
+      try {
+        context.getSessionManager().touch(request.getSessionId().getId());
+        QueryId queryId = new QueryId(request.getQueryId());
+
+        QueryJobManager queryJobManager = context.getQueryJobManager();
+        QueryInProgress queryInProgress = queryJobManager.getQueryInProgress(queryId);
+
+        QueryInfo queryInfo = null;
+        if (queryInProgress == null) {
+          queryInfo = context.getHistoryReader().getQueryInfo(queryId.toString());
+        } else {
+          queryInfo = queryInProgress.getQueryInfo();
+        }
+
+        if (queryInfo != null) {
+          builder.setQueryInfo(queryInfo.getProto());
+        }
+        builder.setResultCode(ResultCode.OK);
+      } catch (Throwable t) {
+        LOG.warn(t.getMessage(), t);
+        builder.setResultCode(ResultCode.ERROR);
+        builder.setErrorMessage(org.apache.hadoop.util.StringUtils.stringifyException(t));
+      }
+
+      return builder.build();
     }
 
     /**

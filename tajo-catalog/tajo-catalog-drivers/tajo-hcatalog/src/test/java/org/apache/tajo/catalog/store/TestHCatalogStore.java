@@ -110,7 +110,7 @@ public class TestHCatalogStore {
     }
 
     assertEquals(StringEscapeUtils.escapeJava(StorageConstants.DEFAULT_FIELD_DELIMITER),
-        table1.getMeta().getOption(StorageConstants.CSVFILE_DELIMITER));
+        table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER));
     store.dropTable(DB_NAME, CUSTOMER);
   }
 
@@ -174,8 +174,8 @@ public class TestHCatalogStore {
   @Test
   public void testTableWithNullValue() throws Exception {
     KeyValueSet options = new KeyValueSet();
-    options.set(StorageConstants.CSVFILE_DELIMITER, StringEscapeUtils.escapeJava("\u0002"));
-    options.set(StorageConstants.CSVFILE_NULL, StringEscapeUtils.escapeJava("\u0003"));
+    options.set(StorageConstants.TEXT_DELIMITER, StringEscapeUtils.escapeJava("\u0002"));
+    options.set(StorageConstants.TEXT_NULL, StringEscapeUtils.escapeJava("\u0003"));
     TableMeta meta = new TableMeta(CatalogProtos.StoreType.CSV, options);
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
@@ -201,16 +201,16 @@ public class TestHCatalogStore {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
     }
 
-    assertEquals(table.getMeta().getOption(StorageConstants.CSVFILE_DELIMITER),
-        table1.getMeta().getOption(StorageConstants.CSVFILE_DELIMITER));
+    assertEquals(table.getMeta().getOption(StorageConstants.TEXT_DELIMITER),
+        table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER));
 
-    assertEquals(table.getMeta().getOption(StorageConstants.CSVFILE_NULL),
-        table1.getMeta().getOption(StorageConstants.CSVFILE_NULL));
+    assertEquals(table.getMeta().getOption(StorageConstants.TEXT_NULL),
+        table1.getMeta().getOption(StorageConstants.TEXT_NULL));
 
-    assertEquals(table1.getMeta().getOption(StorageConstants.CSVFILE_DELIMITER),
+    assertEquals(table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER),
         StringEscapeUtils.escapeJava("\u0002"));
 
-    assertEquals(table1.getMeta().getOption(StorageConstants.CSVFILE_NULL),
+    assertEquals(table1.getMeta().getOption(StorageConstants.TEXT_NULL),
         StringEscapeUtils.escapeJava("\u0003"));
 
     store.dropTable(DB_NAME, SUPPLIER);

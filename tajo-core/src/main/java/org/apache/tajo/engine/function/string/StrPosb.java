@@ -47,7 +47,7 @@ import java.nio.ByteBuffer;
 public class StrPosb extends GeneralFunction {
   public StrPosb() {
     super(new Column[] {
-        new Column("text", TajoDataTypes.Type.TEXT),
+        new Column("org/apache/tajo/storage/text", TajoDataTypes.Type.TEXT),
         new Column("substring", TajoDataTypes.Type.TEXT)
     });
   }

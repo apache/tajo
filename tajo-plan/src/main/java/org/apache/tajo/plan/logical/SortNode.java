@@ -25,16 +25,16 @@ import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.util.TUtil;
 
 public final class SortNode extends UnaryNode implements Cloneable {
-  public static enum SortRangeType {
-    USING_SHUFFLE_DATA,
-    USING_STORAGE_MANAGER
+  public static enum SortPurpose {
+    NORMAL,
+    STORAGE_SPECIFIED
   }
 	@Expose private SortSpec [] sortKeys;
-  @Expose private SortRangeType sortRangeType;
+  @Expose private SortPurpose sortPurpose;
 
   public SortNode(int pid) {
     super(pid, NodeType.SORT);
-    sortRangeType = SortRangeType.USING_SHUFFLE_DATA;
+    sortPurpose = SortPurpose.NORMAL;
   }
 
   public void setSortSpecs(SortSpec[] sortSpecs) {
@@ -96,11 +96,11 @@ public final class SortNode extends UnaryNode implements Cloneable {
         + getChild().toString();
   }
 
-  public SortRangeType getSortRangeType() {
-    return sortRangeType;
+  public SortPurpose getSortPurpose() {
+    return sortPurpose;
   }
 
-  public void setSortRangeType(SortRangeType sortRangeType) {
-    this.sortRangeType = sortRangeType;
+  public void setSortPurpose(SortPurpose sortPurpose) {
+    this.sortPurpose = sortPurpose;
   }
 }

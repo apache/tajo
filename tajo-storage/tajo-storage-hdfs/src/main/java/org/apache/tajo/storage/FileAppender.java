@@ -60,6 +60,7 @@ public abstract class FileAppender implements Appender {
       }
     } catch (IOException e) {
       LOG.error(e.getMessage(), e);
+      throw new IllegalStateException("Error while opeining FileAppender: " + e.getMessage(), e);
     }
   }
 

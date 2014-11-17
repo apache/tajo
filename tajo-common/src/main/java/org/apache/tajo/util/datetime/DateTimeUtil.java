@@ -24,8 +24,6 @@ import org.apache.tajo.exception.ValueOutOfRangeException;
 import org.apache.tajo.util.datetime.DateTimeConstants.DateStyle;
 import org.apache.tajo.util.datetime.DateTimeConstants.DateToken;
 import org.apache.tajo.util.datetime.DateTimeConstants.TokenField;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -2088,54 +2086,88 @@ public class DateTimeUtil {
     minutes = minutes - hours * DateTimeConstants.MINS_PER_HOUR;
 
     StringBuilder sb = new StringBuilder();
-    String prefix = "";
-
     sb.append(totalSecs > 0 ? "+" : "-").append(String.format("%02d", hours));
 
     if (minutes > 0) {
       sb.append(":").append(String.format("%02d", minutes));
-      prefix = ":";
     }
 
     return sb.toString();
   }
 
-  public static long getDay(DateTime dateTime) {
-    return convertToMicroSeconds(dateTime.withTimeAtStartOfDay());
+  public static long getDay(TimeMeta dateTime) {
+    long usecs = 0;
+    
+    usecs = julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth, 
+        0, 0, 0, 0)) * DateTimeConstants.USECS_PER_MSEC;
+    return usecs;
   }
 
-  public static long getHour(DateTime dateTime) {
-    return convertToMicroSeconds(dateTime.withTime(dateTime.get(org.joda.time.DateTimeFieldType.hourOfDay()), 0, 0, 0));
+  public static long getHour(TimeMeta dateTime) {
+    long usecs = 0;
+    
+    usecs = julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth, 
+        dateTime.hours, 0, 0, 0)) * DateTimeConstants.USECS_PER_MSEC;
+    return usecs;
   }
 
-  public static long getMinute(DateTime dateTime) {
-    return convertToMicroSeconds(dateTime.withTime(dateTime.get(org.joda.time.DateTimeFieldType.hourOfDay()),
-        dateTime.get(org.joda.time.DateTimeFieldType.minuteOfHour()), 0, 0));
+  public static long getMinute(TimeMeta dateTime) {
+    long usecs = 0;
+    
+    usecs = julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth, 
+        dateTime.hours, dateTime.minutes, 0, 0)) * DateTimeConstants.USECS_PER_MSEC;
+    return usecs;
   }
 
-  public static long getSecond(DateTime dateTime) {
-    return convertToMicroSeconds(dateTime.withTime(dateTime.get(org.joda.time.DateTimeFieldType.hourOfDay()),
-        dateTime.get(org.joda.time.DateTimeFieldType.minuteOfHour()), dateTime.get(org.joda.time.DateTimeFieldType.secondOfMinute()), 0));
+  public static long getSecond(TimeMeta dateTime) {
+    long usecs = 0;
+    
+    usecs = julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth, 
+        dateTime.hours, dateTime.minutes, dateTime.secs, 0)) * DateTimeConstants.USECS_PER_MSEC;
+    return usecs;
   }
 
-  public static long getMonth(DateTime dateTime) {
-    return convertToMicroSeconds(dateTime.withTimeAtStartOfDay().withDate(dateTime.getYear(),
-        dateTime.getMonthOfYear(),1));
+  public static long getMonth(TimeMeta dateTime) {
+    long usecs = 0;
+    
+    usecs = julianTimeToJavaTime(toJulianTimestamp(dateTime.years, dateTime.monthOfYear, 1, 0, 0, 0, 0)) *
+        DateTimeConstants.USECS_PER_MSEC;
+    return usecs;
   }
 
-  public static long getDayOfWeek(DateTime dateTime,int week) {
-    return convertToMicroSeconds(dateTime.withTimeAtStartOfDay().withDayOfWeek(week));
+  public static long getDayOfWeek(TimeMeta dateTime, int weekday) {    
+    if (weekday < 1 || weekday > 7) {
+      throw new RuntimeException("Weekday is out of range. Actual : " + weekday);
+    }
+    
+    int week = date2isoweek(dateTime.years, dateTime.monthOfYear, dateTime.dayOfMonth);
+    int jday = isoweek2j(dateTime.years, week);
+    long usecs = 0;
+    
+    jday += (weekday - 1);
+    
+    jday -=  DateTimeConstants.POSTGRES_EPOCH_JDATE;
+    usecs = julianTimeToJavaTime(toJulianTimestamp(jday, 0, 0, 0, 0)) *
+        DateTimeConstants.USECS_PER_MSEC;
+    return usecs;
   }
 
-  public static long getYear (DateTime dateTime) {
-    return convertToMicroSeconds(dateTime.withTimeAtStartOfDay().withDate(dateTime.getYear(), 1, 1));
+  public static long getYear(TimeMeta dateTime) {
+    long usecs = 0;
+    
+    usecs = julianTimeToJavaTime(toJulianTimestamp(dateTime.years, 1, 1, 0, 0, 0, 0)) *
+        DateTimeConstants.USECS_PER_MSEC;
+    return usecs;
   }
 
-  public static DateTime getUTCDateTime(Int8Datum int8Datum){
-    return new DateTime(int8Datum.asInt8()/1000, DateTimeZone.UTC);
+  public static TimeMeta getUTCDateTime(Int8Datum int8Datum){
+    long usecs = int8Datum.asInt8()%DateTimeConstants.USECS_PER_MSEC;
+    long julianTimestamp = javaTimeToJulianTime(int8Datum.asInt8()/DateTimeConstants.USECS_PER_MSEC);
+    TimeMeta tm = new TimeMeta();
+    
+    julianTimestamp += usecs;
+    toJulianTimeMeta(julianTimestamp, tm);
+    return tm;
   }
-
-  public static long convertToMicroSeconds(DateTime dateTime) {
-    return  dateTime.getMillis() * 1000;
-  }
+  
 }

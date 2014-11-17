@@ -203,7 +203,7 @@ public abstract class StorageManager {
    * @param node The child node of the root node.
    * @throws java.io.IOException
    */
-  public abstract void queryFailed(LogicalNode node) throws IOException;
+  public abstract void rollbackOutputCommit(LogicalNode node) throws IOException;
 
   /**
    * Returns the current storage type.

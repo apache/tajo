@@ -48,7 +48,7 @@ import org.apache.tajo.storage.Tuple;
 public class Substr extends GeneralFunction {
   public Substr() {
     super(new Column[] {
-        new Column("text", TajoDataTypes.Type.TEXT),
+        new Column("org/apache/tajo/storage/text", TajoDataTypes.Type.TEXT),
         new Column("from", TajoDataTypes.Type.INT4),
         new Column("length", TajoDataTypes.Type.INT4)    //optional
     });

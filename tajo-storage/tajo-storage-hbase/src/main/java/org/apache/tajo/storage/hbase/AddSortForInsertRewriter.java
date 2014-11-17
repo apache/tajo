@@ -28,7 +28,7 @@ import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.logical.SortNode;
-import org.apache.tajo.plan.logical.SortNode.SortRangeType;
+import org.apache.tajo.plan.logical.SortNode.SortPurpose;
 import org.apache.tajo.plan.logical.UnaryNode;
 import org.apache.tajo.plan.rewrite.RewriteRule;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -65,7 +65,7 @@ public class AddSortForInsertRewriter implements RewriteRule {
 
     Schema sortSchema = childNode.getOutSchema();
     SortNode sortNode = plan.createNode(SortNode.class);
-    sortNode.setSortRangeType(SortRangeType.USING_STORAGE_MANAGER);
+    sortNode.setSortPurpose(SortPurpose.STORAGE_SPECIFIED);
     sortNode.setInSchema(sortSchema);
     sortNode.setOutSchema(sortSchema);
 

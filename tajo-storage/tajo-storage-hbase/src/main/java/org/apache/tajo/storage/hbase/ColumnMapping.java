@@ -28,9 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ColumnMapping {
-  public static final String KEY_COLUMN_MAPPING = "key";
-  public static final String VALUE_COLUMN_MAPPING = "value";
-
   private TableMeta tableMeta;
   private Schema schema;
   private char rowKeyDelimiter;
@@ -56,8 +53,8 @@ public class ColumnMapping {
   }
 
   public void init() throws IOException {
-    hbaseTableName = tableMeta.getOption(HBaseStorageManager.META_TABLE_KEY);
-    String delim = tableMeta.getOption(HBaseStorageManager.META_ROWKEY_DELIMITER, "").trim();
+    hbaseTableName = tableMeta.getOption(HBaseStorageConstants.META_TABLE_KEY);
+    String delim = tableMeta.getOption(HBaseStorageConstants.META_ROWKEY_DELIMITER, "").trim();
     if (delim.length() > 0) {
       rowKeyDelimiter = delim.charAt(0);
     }
@@ -73,7 +70,7 @@ public class ColumnMapping {
       rowKeyFieldIndexes[i] = -1;
     }
 
-    String columnMapping = tableMeta.getOption(HBaseStorageManager.META_COLUMNS_KEY, "");
+    String columnMapping = tableMeta.getOption(HBaseStorageConstants.META_COLUMNS_KEY, "");
     if (columnMapping == null || columnMapping.isEmpty()) {
       throw new IOException("'columns' property is required.");
     }
@@ -108,9 +105,9 @@ public class ColumnMapping {
         }
         mappingColumns[index][0] = mappingTokens[0];
         String keyOrValue = new String(mappingTokens[1]);
-        if (KEY_COLUMN_MAPPING.equalsIgnoreCase(keyOrValue)) {
+        if (HBaseStorageConstants.KEY_COLUMN_MAPPING.equalsIgnoreCase(keyOrValue)) {
           isColumnKeys[index] = true;
-        } else if (VALUE_COLUMN_MAPPING.equalsIgnoreCase(keyOrValue)) {
+        } else if (HBaseStorageConstants.VALUE_COLUMN_MAPPING.equalsIgnoreCase(keyOrValue)) {
           isColumnValues[index] = true;
         } else {
           throw new IOException(eachToken + " 'column' attribute should be '<cfname>:key:' or '<cfname>:value:'");
@@ -181,7 +178,7 @@ public class ColumnMapping {
     }
 
     String[] tokens = columnName.split("#");
-    if (!tokens[0].equalsIgnoreCase(KEY_COLUMN_MAPPING)) {
+    if (!tokens[0].equalsIgnoreCase(HBaseStorageConstants.KEY_COLUMN_MAPPING)) {
       return null;
     }
 

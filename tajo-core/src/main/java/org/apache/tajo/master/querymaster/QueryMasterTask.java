@@ -422,7 +422,7 @@ public class QueryMasterTask extends CompositeService {
       if (plan != null && sm != null) {
         LogicalRootNode rootNode = plan.getRootBlock().getRoot();
         try {
-          sm.queryFailed(rootNode.getChild());
+          sm.rollbackOutputCommit(rootNode.getChild());
         } catch (IOException e) {
           LOG.warn(query.getId() + ", failed processing cleanup storage when query failed:" + e.getMessage(), e);
         }

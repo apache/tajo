@@ -121,12 +121,14 @@ public class TestStorages {
   @Parameterized.Parameters
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][] {
+        //type, splitable, statsable, seekable
         {StoreType.CSV, true, true, true},
-        {StoreType.RAW, false, false, true},
+        {StoreType.RAW, false, true, true},
         {StoreType.RCFILE, true, true, false},
         {StoreType.PARQUET, false, false, false},
         {StoreType.SEQUENCEFILE, true, true, false},
         {StoreType.AVRO, false, false, false},
+        {StoreType.TEXTFILE, true, true, false},
     });
   }
 
@@ -385,7 +387,7 @@ public class TestStorages {
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
-    meta.putOption(StorageConstants.CSVFILE_NULL, "\\\\N");
+    meta.putOption(StorageConstants.TEXT_NULL, "\\\\N");
     meta.putOption(StorageConstants.RCFILE_NULL, "\\\\N");
     meta.putOption(StorageConstants.RCFILE_SERDE, TextSerializerDeserializer.class.getName());
     meta.putOption(StorageConstants.SEQUENCEFILE_NULL, "\\");
@@ -812,12 +814,12 @@ public class TestStorages {
       vTuple = new VTuple(3);
       vTuple.put(0, DatumFactory.createInt4(i + 1));
       vTuple.put(1, DatumFactory.createInt8(25l));
-      vTuple.put(2, DatumFactory.createText("test"));
+      vTuple.put(2, DatumFactory.createText("test" + i));
       appender.addTuple(vTuple);
 
       // find a seek position
       if (i % (tupleNum / 3) == 0) {
-	offsets.add(appender.getOffset());
+        offsets.add(appender.getOffset());
       }
     }
 
@@ -846,13 +848,13 @@ public class TestStorages {
       scanner.init();
 
       while (scanner.next() != null) {
-	      tupleCnt++;
+        tupleCnt++;
       }
 
       scanner.close();
       if (statsable) {
-	      readBytes += scanner.getInputStats().getNumBytes();
-	      readRows += scanner.getInputStats().getNumRows();
+        readBytes += scanner.getInputStats().getNumBytes();
+        readRows += scanner.getInputStats().getNumRows();
       }
       prevOffset = offset;
     }

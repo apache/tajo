@@ -160,9 +160,6 @@ public class TestBSTIndexExec {
 
   @Test
   public void testEqual() throws Exception {
-    if(conf.getBoolean("tajo.storage.manager.v2", false)) {
-      return;
-    }
     this.rndKey = rnd.nextInt(250);
     final String QUERY = "select * from employee where managerId = " + rndKey;
     

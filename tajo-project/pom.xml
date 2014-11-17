@@ -1023,9 +1023,9 @@
         <version>3.6.6.Final</version>
       </dependency>
       <dependency>
-        <groupId>joda-time</groupId>
-        <artifactId>joda-time</artifactId>
-        <version>2.3</version>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-buffer</artifactId>
+        <version>4.0.23.Final</version>
       </dependency>
       <dependency>
         <groupId>org.apache.derby</groupId>

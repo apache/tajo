@@ -33,8 +33,8 @@ public class TestColumnMapping {
   @Test
   public void testColumnKeyValueMapping() throws Exception {
     KeyValueSet keyValueSet = new KeyValueSet();
-    keyValueSet.set(HBaseStorageManager.META_TABLE_KEY, "test");
-    keyValueSet.set(HBaseStorageManager.META_COLUMNS_KEY, ":key,col2:key:,col2:value:#b,col3:");
+    keyValueSet.set(HBaseStorageConstants.META_TABLE_KEY, "test");
+    keyValueSet.set(HBaseStorageConstants.META_COLUMNS_KEY, ":key,col2:key:,col2:value:#b,col3:");
 
     Schema schema = new Schema();
     schema.addColumn("c1", Type.TEXT);

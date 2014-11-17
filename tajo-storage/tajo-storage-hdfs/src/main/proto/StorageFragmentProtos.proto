@@ -29,6 +29,6 @@ message FileFragmentProto {
   required string path = 2;
   required int64 startOffset = 3;
   required int64 length = 4;
-  repeated string hosts = 7;
-  repeated int32 diskIds = 8;
+  repeated string hosts = 5;
+  repeated int32 diskIds = 6;
 }
