@@ -40,7 +40,10 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
@@ -276,8 +279,10 @@ public class CatalogUtil {
       return StoreType.SEQUENCEFILE;
     } else if (typeStr.equalsIgnoreCase(StoreType.AVRO.name())) {
       return StoreType.AVRO;
+    } else if (typeStr.equalsIgnoreCase(StoreType.TEXTFILE.name())) {
+      return StoreType.TEXTFILE;
     } else if (typeStr.equalsIgnoreCase(StoreType.ELASTICSEARCH.name())) {
-      return StoreType.ELASTICSEARCH;
+      return StoreType.ELASTICSEARCH;      
     } else {
       return null;
     }
@@ -819,8 +824,8 @@ public class CatalogUtil {
 
   public static KeyValueSet newPhysicalProperties(StoreType type) {
     KeyValueSet options = new KeyValueSet();
-    if (StoreType.CSV == type) {
-      options.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    if (StoreType.CSV == type || StoreType.TEXTFILE == type) {
+      options.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     } else if (StoreType.RCFILE == type) {
       options.set(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
     } else if (StoreType.SEQUENCEFILE == type) {

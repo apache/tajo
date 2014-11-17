@@ -173,19 +173,22 @@ public class PhysicalPlanUtil {
    */
   private static void setNullCharForTextSerializer(TableMeta meta, String nullChar) {
     switch (meta.getStoreType()) {
-    case CSV:
-      meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
-      break;
-    case RCFILE:
-      meta.putOption(StorageConstants.RCFILE_NULL, nullChar);
-      break;
-    case SEQUENCEFILE:
-      meta.putOption(StorageConstants.SEQUENCEFILE_NULL, nullChar);
-      break;
-    case ELASTICSEARCH:
-      meta.putOption(StorageConstants.ELASTICSEARCH_NULL, nullChar);
-      break;
-    default: // nothing to do
+      case CSV:
+        meta.putOption(StorageConstants.TEXT_NULL, nullChar);
+        break;
+      case TEXTFILE:
+        meta.putOption(StorageConstants.TEXT_NULL, nullChar);
+        break;
+      case RCFILE:
+        meta.putOption(StorageConstants.RCFILE_NULL, nullChar);
+        break;
+      case SEQUENCEFILE:
+        meta.putOption(StorageConstants.SEQUENCEFILE_NULL, nullChar);
+        break;
+      case ELASTICSEARCH:
+        meta.putOption(StorageConstants.ELASTICSEARCH_NULL, nullChar);
+        break;      
+      default: // nothing to do
     }
   }
 
@@ -197,16 +200,18 @@ public class PhysicalPlanUtil {
    */
   public static boolean containsNullChar(TableMeta meta) {
     switch (meta.getStoreType()) {
-    case CSV:
-      return meta.containsOption(StorageConstants.CSVFILE_NULL);
-    case RCFILE:
-      return meta.containsOption(StorageConstants.RCFILE_NULL);
-    case SEQUENCEFILE:
-      return meta.containsOption(StorageConstants.SEQUENCEFILE_NULL);
-    case ELASTICSEARCH:
-      return meta.containsOption(StorageConstants.ELASTICSEARCH_NULL);
-    default: // nothing to do
-      return false;
+      case CSV:
+        return meta.containsOption(StorageConstants.TEXT_NULL);
+      case TEXTFILE:
+        return meta.containsOption(StorageConstants.TEXT_NULL);
+      case RCFILE:
+        return meta.containsOption(StorageConstants.RCFILE_NULL);
+      case SEQUENCEFILE:
+        return meta.containsOption(StorageConstants.SEQUENCEFILE_NULL);
+      case ELASTICSEARCH:
+        return meta.containsOption(StorageConstants.ELASTICSEARCH_NULL);
+      default: // nothing to do
+        return false;
     }
   }
 

@@ -26,7 +26,7 @@ import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.datetime.DateTimeUtil;
-import org.joda.time.DateTime;
+import org.apache.tajo.util.datetime.TimeMeta;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
 
@@ -58,7 +58,7 @@ public class DateTimePartFromUnixTimestamp extends GeneralFunction {
   public Datum eval(Tuple params) {
 
     Datum target = params.get(0);
-    DateTime dateTime;
+    TimeMeta dateTime;
     Int4Datum dayOfWeek = null;
 
     if (target instanceof NullDatum || params.get(1) instanceof NullDatum) {
@@ -97,44 +97,44 @@ public class DateTimePartFromUnixTimestamp extends GeneralFunction {
   }
 
   private interface DateTimePartExtractorFromUnixTime {
-    public Datum extract(DateTime dateTime);
+    public Datum extract(TimeMeta dateTime);
   }
 
   private interface WeekPartExtractorFromUnixTime {
-    public Datum extract(DateTime dateTime, int week);
+    public Datum extract(TimeMeta dateTime, int week);
   }
 
   private class DayExtractorFromTime implements DateTimePartExtractorFromUnixTime {
     @Override
-    public Datum extract(DateTime dateTime) {
+    public Datum extract(TimeMeta dateTime) {
       return DatumFactory.createInt8(DateTimeUtil.getDay(dateTime));
     }
   }
 
   private class HourExtractorFromTime implements DateTimePartExtractorFromUnixTime {
     @Override
-    public Datum extract(DateTime dateTime) {
+    public Datum extract(TimeMeta dateTime) {
       return DatumFactory.createInt8(DateTimeUtil.getHour(dateTime));
     }
   }
 
   private class MonthExtractorFromTime implements DateTimePartExtractorFromUnixTime {
     @Override
-    public Datum extract(DateTime dateTime) {
+    public Datum extract(TimeMeta dateTime) {
       return DatumFactory.createInt8(DateTimeUtil.getMonth(dateTime));
     }
   }
 
   private class YearExtractorFromTime implements DateTimePartExtractorFromUnixTime {
     @Override
-    public Datum extract(DateTime dateTime) {
+    public Datum extract(TimeMeta dateTime) {
       return DatumFactory.createInt8(DateTimeUtil.getYear(dateTime));
     }
   }
 
   private class WeekExtractorFromTime implements WeekPartExtractorFromUnixTime {
     @Override
-    public Datum extract(DateTime dateTime , int week) {
+    public Datum extract(TimeMeta dateTime , int week) {
       return DatumFactory.createInt8(DateTimeUtil.getDayOfWeek(dateTime,week));
     }
   }

@@ -23,6 +23,7 @@ import com.google.common.collect.Lists;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.util.history.History;
 
 import java.util.Collections;
 import java.util.List;
@@ -34,7 +35,7 @@ import static org.apache.tajo.ipc.TajoWorkerProtocol.TaskHistoryProto;
 /**
  * The history class for Task processing.
  */
-public class TaskHistory implements ProtoObject<TaskHistoryProto> {
+public class TaskHistory implements ProtoObject<TaskHistoryProto>, History {
 
   private QueryUnitAttemptId queryUnitAttemptId;
   private TaskAttemptState state;
@@ -211,5 +212,10 @@ public class TaskHistory implements ProtoObject<TaskHistoryProto> {
 
   public void setOutputStats(CatalogProtos.TableStatsProto outputStats) {
     this.outputStats = outputStats;
+  }
+
+  @Override
+  public HistoryType getHistoryType() {
+    return HistoryType.TASK;
   }
 }
