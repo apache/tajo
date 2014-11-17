@@ -364,7 +364,7 @@ public class TajoConf extends Configuration {
     $CLI_ERROR_STOP("tajo.cli.error.stop", false),
 
     // Timezone & Date ----------------------------------------------------------
-    $TIMEZONE("tajo.timezone", System.getProperty("user.timezone")),
+    $TIMEZONE("tajo.timezone", TimeZone.getDefault().getID()),
     $DATE_ORDER("tajo.date.order", "YMD"),
 
     // FILE FORMAT
