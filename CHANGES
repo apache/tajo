@@ -41,6 +41,12 @@ Release 0.9.1 - unreleased
     TAJO-1128: Implement a select box for database at web interface. 
     (Jongyoung Park via hyunsik)
 
+    TAJO-1174: remove unnessary codes for blobdatum.
+    (DaeMyung Kang via hyunsik)
+
+    TAJO-1169: Some older version of OpenJDK 1.6 does not get default 
+    timezone id. (Jihun Kang via hyunsik)
+
   BUG FIXES
     
     TAJO-1162: to_char() returns "-00" second. (Hyoungjun Kim)
@@ -56,6 +62,9 @@ Release 0.9.1 - unreleased
 
     TAJO-1126: Join condition including functions throws 
     IllegalArgumentException. (hyunsik)
+
+    TAJO-1179: Integration tests in TravisCI are occasionally failed 
+    due to log size. (hyunsik)
 
 
   TASKS
