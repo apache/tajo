@@ -599,4 +599,26 @@ public class TestCreateTable extends QueryTestCaseBase {
     */
     }
   }
+
+  @Test
+  public final void testCreateTableUsingElasticSearch() throws Exception {
+    StringBuffer sb = new StringBuffer();
+    sb.append(" CREATE TABLE estable1 (id int, name text, score float, type text)");
+    sb.append(" using elasticsearch");
+    sb.append(" with ('elasticsearch.cluster'='elasticsearch',");
+    sb.append("  'elasticsearch.nodes'='localhost:9300',");
+    sb.append("  'elasticsearch.resources'='radio/artists',");
+    sb.append("  'elasticsearch.replication'='1',");
+    sb.append("  'elasticsearch.bulk.item.size'='1000');");
+
+    executeString(sb.toString()).close();
+
+    assertTableExists("estable1");
+
+    TableDesc table = client.getTableDesc("estable1");
+
+//    for(Map.Entry<String, String> entry : table.getMeta().getOptions().getAllKeyValus().entrySet()) {
+//    }
+
+  }
 }

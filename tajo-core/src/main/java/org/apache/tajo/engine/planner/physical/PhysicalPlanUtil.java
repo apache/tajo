@@ -182,6 +182,9 @@ public class PhysicalPlanUtil {
     case SEQUENCEFILE:
       meta.putOption(StorageConstants.SEQUENCEFILE_NULL, nullChar);
       break;
+    case ELASTICSEARCH:
+      meta.putOption(StorageConstants.ELASTICSEARCH_NULL, nullChar);
+      break;
     default: // nothing to do
     }
   }
@@ -200,6 +203,8 @@ public class PhysicalPlanUtil {
       return meta.containsOption(StorageConstants.RCFILE_NULL);
     case SEQUENCEFILE:
       return meta.containsOption(StorageConstants.SEQUENCEFILE_NULL);
+    case ELASTICSEARCH:
+      return meta.containsOption(StorageConstants.ELASTICSEARCH_NULL);
     default: // nothing to do
       return false;
     }
