@@ -23,8 +23,8 @@ import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.junit.Test;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.*;
 
 public class TestDateDatum {
   private static String DATE = "1980-04-01";
@@ -108,5 +108,18 @@ public class TestDateDatum {
     assertEquals(Boolean.FALSE,d.equals(DatumFactory.createNullDatum()));
     assertEquals(DatumFactory.createNullDatum(),d.equalsTo(DatumFactory.createNullDatum()));
     assertEquals(-1,d.compareTo(DatumFactory.createNullDatum()));
+  }
+  
+  @Test
+  public void testCompareTo() {
+    DateDatum theday = DatumFactory.createDate("2014-11-12");
+    DateDatum thedaybefore = DatumFactory.createDate("2014-11-11");
+    
+    assertThat(theday.compareTo(thedaybefore) > 0, is(true));
+    assertThat(thedaybefore.compareTo(theday) > 0, is(false));
+    
+    TimestampDatum timestamp = DatumFactory.createTimestamp("2014-11-12 15:00:00.68");
+    
+    assertThat(timestamp.compareTo(theday) > 0, is(true));
   }
 }
