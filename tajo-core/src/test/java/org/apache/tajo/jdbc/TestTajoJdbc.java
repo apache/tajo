@@ -38,6 +38,7 @@ import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
 public class TestTajoJdbc extends QueryTestCaseBase {
@@ -488,6 +489,8 @@ public class TestTajoJdbc extends QueryTestCaseBase {
 
   @Test
   public void testCreateTableWithDateAndTimestamp() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testCreateTableWithDateAndTimestamp");
+
     int result;
     Statement stmt = null;
     ResultSet res = null;
@@ -499,11 +502,11 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       assertTrue(conn.isValid(100));
 
       stmt = conn.createStatement();
-      result = stmt.executeUpdate("create table table1 (id int, name text, score double"
+      result = stmt.executeUpdate("create table " + tableName + " (id int, name text, score double"
         + ", register_date timestamp, update_date date, send_date time)");
       assertEquals(result, 1);
 
-      res = stmt.executeQuery("select * from table1");
+      res = stmt.executeQuery("select * from " + tableName);
       assertFalse(res.next());
 
       ResultSetMetaData rsmd = res.getMetaData();
@@ -525,9 +528,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       assertEquals("time", rsmd.getColumnTypeName(6));
 
     } finally {
-      if (res != null) {
-        res.close();
-      }
+      cleanupQuery(res);
       if (stmt != null) {
         stmt.close();
       }
@@ -538,13 +539,14 @@ public class TestTajoJdbc extends QueryTestCaseBase {
   public void testSortWithDateTime() throws Exception {
     Statement stmt = null;
     ResultSet res = null;
+    int result;
 
     // skip this test if catalog uses HCatalogStore.
     // It is because HCatalogStore does not support Time data type.
     TimeZone oldTimeZone = TajoConf.setCurrentTimeZone(TimeZone.getTimeZone("UTC"));
     TimeZone systemOldTimeZone = TimeZone.getDefault();
     TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
-    
+
     try {
       if (!testingCluster.isHCatalogStoreRunning()) {
         executeDDL("create_table_with_date_ddl.sql", "table1");
@@ -567,14 +569,16 @@ public class TestTajoJdbc extends QueryTestCaseBase {
         assertEquals("time", rsmd.getColumnTypeName(3));
 
         assertResultSet(res);
+
+        result = stmt.executeUpdate("drop table table1");
+        assertEquals(result, 1);
+
       }
     } finally {
       TajoConf.setCurrentTimeZone(oldTimeZone);
       TimeZone.setDefault(systemOldTimeZone);
 
-      if (res != null) {
-        res.close();
-      }
+      cleanupQuery(res);
       if (stmt != null) {
         stmt.close();
       }
