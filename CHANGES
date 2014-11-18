@@ -12,6 +12,8 @@ Release 0.9.1 - unreleased
     TAJO-235: Support Oracle CatalogStore. (Jihun Kang via hyunsik)
 
   IMPROVEMENT
+
+    TAJO-1184: Upgrade netty-buffer to 4.0.24.Final. (jinho)
    
     TAJO-1109: Separate SQL Statements from Catalog Stores.
     (Jihun Kang via hyunsik)
@@ -46,6 +48,12 @@ Release 0.9.1 - unreleased
 
     TAJO-1169: Some older version of OpenJDK 1.6 does not get default 
     timezone id. (Jihun Kang via hyunsik)
+
+    TAJO-1177: Reduce the use of Sun proprietary API. 
+    (Jihun Kang via hyunsik)
+
+    TAJO-1172: Remove Trevni storage type and its related classes.
+    (DaeMyung Kang via hyunsik)
 
   BUG FIXES
     
