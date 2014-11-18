@@ -88,8 +88,7 @@ public class ElasticSearchFileAppender extends FileAppender {
     clusterName = this.meta.getOption(StorageConstants.ELASTICSEARCH_CLUSTER, "elasticsearch");
     nodes = this.meta.getOption(StorageConstants.ELASTICSEARCH_NODES).split(",");
     index = this.meta.getOption(StorageConstants.ELASTICSEARCH_INDEX);
-    type = CatalogUtil.extractSimpleName(
-      CatalogUtil.extractQualifier(schema.getColumn(0).getQualifiedName()));
+    type = this.meta.getOption(StorageConstants.ELASTICSEARCH_TYPE);
 
     bulkItemSize = this.meta.getOptions().getLong(StorageConstants.ELASTICSEARCH_BULK_ITEM_SIZE
       , 5000L);
@@ -99,6 +98,7 @@ public class ElasticSearchFileAppender extends FileAppender {
     try {
       settings = StorageUtil.getElasticSearchSettings(clusterName);
       client = StorageUtil.getElasticSearchClient(settings, nodes);
+//      client = StorageUtil.getElasticSearchLocalClient(settings);
       bulkRequest = client.prepareBulk();
     } catch (Exception e) {
     } finally {
@@ -174,10 +174,11 @@ public class ElasticSearchFileAppender extends FileAppender {
         .execute()
         .actionGet();
     }
-
     client.close();
 
-// Following codes will move to another class.
+// TODO: We need to implement following methods because it will be good for ES performance.
+// But current tajo-storage architecture can't adapt these methods.
+// Fortunately, this issue is in progress. See TAJO-1122.
 //    FlushResponse flush = client.admin().indices()
 //      .flush(
 //        new FlushRequest()
@@ -192,7 +193,6 @@ public class ElasticSearchFileAppender extends FileAppender {
 //      ).actionGet();
   }
 
-// Following codes will move to another class.
 //  public void beforeAppend() {
 //    UpdateSettingsResponse updateSettingsResponse = null;
 //

@@ -272,12 +272,13 @@ public class StorageUtil extends StorageConstants {
    */
   public static Client getElasticSearchClient(Settings settings, String[] nodes) throws Exception {
     TransportClient client = new TransportClient(settings);
-    for (int i = 0; i < nodes.length; i++) {
+    for (int i = 0; i < 1; i++) {
       InetSocketAddress socketAddress = NetUtils.createUnresolved(nodes[i]);
       InetSocketTransportAddress transportAddress =
         new InetSocketTransportAddress(socketAddress.getHostName(), socketAddress.getPort());
       client.addTransportAddress(transportAddress);
     }
+
     return client;
   }
 

@@ -61,6 +61,7 @@ public class StorageConstants {
   public static final String ELASTICSEARCH_CLUSTER = "elasticsearch.cluster";
   public static final String ELASTICSEARCH_NODES = "elasticsearch.nodes";
   public static final String ELASTICSEARCH_INDEX = "elasticsearch.index";
+  public static final String ELASTICSEARCH_TYPE = "elasticsearch.type";
   public static final String ELASTICSEARCH_REPLICATION = "elasticsearch.replication";
   public static final String ELASTICSEARCH_BULK_ITEM_SIZE = "elasticsearch.bulk.item.size";
 
