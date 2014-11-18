@@ -20,6 +20,7 @@ package org.apache.tajo.catalog.json;
 
 import com.google.common.base.Preconditions;
 import com.google.gson.*;
+import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -35,15 +36,10 @@ public class TableMetaAdapter implements GsonSerDerAdapter<TableMeta> {
     Preconditions.checkNotNull(json);
 		JsonObject jsonObject = json.getAsJsonObject();
 
-    CatalogProtos.StoreType type = CatalogProtos.StoreType.valueOf(jsonObject.get("store").getAsString());
+    CatalogProtos.StoreType type = CatalogProtos.StoreType.valueOf(
+				CommonGsonHelper.getOrDie(jsonObject, "store").getAsString());
 
-    KeyValueSet keyValueSet = null;
-    if (jsonObject.get("options") != null) {
-      keyValueSet = context.deserialize(jsonObject.get("options"), KeyValueSet.class);
-    } else {
-      throw new JsonParseException("Options not found in json");
-
-    }
+    KeyValueSet keyValueSet = context.deserialize(CommonGsonHelper.getOrDie(jsonObject, "options"), KeyValueSet.class);
 		return new TableMeta(type, keyValueSet);
 	}
 
