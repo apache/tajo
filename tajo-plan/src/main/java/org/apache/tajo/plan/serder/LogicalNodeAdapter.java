@@ -22,6 +22,7 @@
 package org.apache.tajo.plan.serder;
 
 import com.google.gson.*;
+import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.json.GsonSerDerAdapter;
@@ -34,7 +35,7 @@ public class LogicalNodeAdapter implements GsonSerDerAdapter<LogicalNode> {
   public LogicalNode deserialize(JsonElement src, Type type,
                                  JsonDeserializationContext ctx) throws JsonParseException {
     JsonObject jsonObject = src.getAsJsonObject();
-    String nodeName = jsonObject.get("type").getAsString();
+    String nodeName = CommonGsonHelper.getOrDie(jsonObject, "type").getAsString();
     Class clazz = NodeType.valueOf(nodeName).getBaseClass();
     return ctx.deserialize(jsonObject.get("body"), clazz);
   }

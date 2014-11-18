@@ -21,11 +21,6 @@
 
 <configuration>
   <property>
-    <name>tajo.storage.manager.v2</name>
-    <value>false</value>
-  </property>
-
-  <property>
     <name>tajo.storage.manager.maxReadBytes</name>
     <value>8388608</value>
     <description></description>
@@ -40,7 +35,7 @@
   <!--- Registered Scanner Handler -->
   <property>
     <name>tajo.storage.scanner-handler</name>
-    <value>textfile,csv,raw,rcfile,row,trevni,parquet,sequencefile,avro</value>
+    <value>textfile,csv,raw,rcfile,row,parquet,sequencefile,avro</value>
   </property>
 
   <!--- Fragment Class Configurations -->
@@ -62,10 +57,6 @@
   </property>
   <property>
     <name>tajo.storage.fragment.row.class</name>
-    <value>org.apache.tajo.storage.fragment.FileFragment</value>
-  </property>
-  <property>
-    <name>tajo.storage.fragment.trevni.class</name>
     <value>org.apache.tajo.storage.fragment.FileFragment</value>
   </property>
   <property>
@@ -108,11 +99,6 @@
   </property>
 
   <property>
-    <name>tajo.storage.scanner-handler.trevni.class</name>
-    <value>org.apache.tajo.storage.trevni.TrevniScanner</value>
-  </property>
-
-  <property>
     <name>tajo.storage.scanner-handler.parquet.class</name>
     <value>org.apache.tajo.storage.parquet.ParquetScanner</value>
   </property>
@@ -130,7 +116,7 @@
   <!--- Appender Handler -->
   <property>
     <name>tajo.storage.appender-handler</name>
-    <value>textfile,csv,raw,rcfile,row,trevni,parquet,sequencefile,avro,elasticsearch</value>
+    <value>textfile,csv,raw,rcfile,row,parquet,sequencefile,avro,elasticsearch</value>
   </property>
 
   <property>
@@ -156,11 +142,6 @@
   <property>
     <name>tajo.storage.appender-handler.rowfile.class</name>
     <value>org.apache.tajo.storage.RowFile$RowFileAppender</value>
-  </property>
-
-  <property>
-    <name>tajo.storage.appender-handler.trevni.class</name>
-    <value>org.apache.tajo.storage.trevni.TrevniAppender</value>
   </property>
 
   <property>

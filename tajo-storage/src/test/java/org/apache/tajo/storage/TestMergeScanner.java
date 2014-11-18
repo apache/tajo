@@ -79,7 +79,6 @@ public class TestMergeScanner {
         {StoreType.CSV},
         {StoreType.RAW},
         {StoreType.RCFILE},
-        {StoreType.TREVNI},
         {StoreType.PARQUET},
         {StoreType.SEQUENCEFILE},
         {StoreType.AVRO},
@@ -92,7 +91,7 @@ public class TestMergeScanner {
   public void setup() throws Exception {
     conf = new TajoConf();
     conf.setVar(ConfVars.ROOT_DIR, TEST_PATH);
-    conf.setStrings("tajo.storage.projectable-scanner", "rcfile", "trevni", "parquet", "avro");
+    conf.setStrings("tajo.storage.projectable-scanner", "rcfile", "parquet", "avro");
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     fs = testDir.getFileSystem(conf);
     sm = StorageManager.getStorageManager(conf, testDir);
@@ -190,7 +189,6 @@ public class TestMergeScanner {
   private static boolean isProjectableStorage(StoreType type) {
     switch (type) {
       case RCFILE:
-      case TREVNI:
       case PARQUET:
       case SEQUENCEFILE:
       case CSV:

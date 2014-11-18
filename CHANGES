@@ -12,6 +12,11 @@ Release 0.9.1 - unreleased
     TAJO-235: Support Oracle CatalogStore. (Jihun Kang via hyunsik)
 
   IMPROVEMENT
+
+    TAJO-1184: Upgrade netty-buffer to 4.0.24.Final. (jinho)
+
+    TAJO-1156: Improve the comparison of timestamp and date types. 
+    (Jihun Kang via jihoon)
    
     TAJO-1109: Separate SQL Statements from Catalog Stores.
     (Jihun Kang via hyunsik)
@@ -50,7 +55,13 @@ Release 0.9.1 - unreleased
     TAJO-1177: Reduce the use of Sun proprietary API. 
     (Jihun Kang via hyunsik)
 
+    TAJO-1172: Remove Trevni storage type and its related classes.
+    (DaeMyung Kang via hyunsik)
+
   BUG FIXES
+
+    TAJO-1178: Some error messages for wrong JSON queries are not so 
+    much helpful. (Jaewoong Jung via jihoon)
     
     TAJO-1162: to_char() returns "-00" second. (Hyoungjun Kim)
 
