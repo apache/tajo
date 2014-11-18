@@ -12,6 +12,8 @@ Release 0.9.1 - unreleased
     TAJO-235: Support Oracle CatalogStore. (Jihun Kang via hyunsik)
 
   IMPROVEMENT
+
+    TAJO-1184: Upgrade netty-buffer to 4.0.24.Final. (jinho)
    
     TAJO-1109: Separate SQL Statements from Catalog Stores.
     (Jihun Kang via hyunsik)
