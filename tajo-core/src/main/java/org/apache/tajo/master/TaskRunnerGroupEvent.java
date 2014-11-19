@@ -18,10 +18,10 @@
 
 package org.apache.tajo.master;
 
-import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.event.AbstractEvent;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.master.TaskRunnerGroupEvent.EventType;
+import org.apache.tajo.master.container.TajoContainer;
 
 import java.util.Collection;
 
@@ -32,16 +32,16 @@ public class TaskRunnerGroupEvent extends AbstractEvent<EventType> {
   }
 
   protected final ExecutionBlockId executionBlockId;
-  protected final Collection<Container> containers;
+  protected final Collection<TajoContainer> containers;
   public TaskRunnerGroupEvent(EventType eventType,
                               ExecutionBlockId executionBlockId,
-                              Collection<Container> containers) {
+                              Collection<TajoContainer> containers) {
     super(eventType);
     this.executionBlockId = executionBlockId;
     this.containers = containers;
   }
 
-  public Collection<Container> getContainers() {
+  public Collection<TajoContainer> getContainers() {
     return containers;
   }
 

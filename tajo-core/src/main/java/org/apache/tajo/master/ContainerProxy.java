@@ -22,11 +22,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.yarn.api.records.Container;
-import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
+import org.apache.tajo.master.container.TajoContainer;
+import org.apache.tajo.master.container.TajoContainerId;
 
 public abstract class ContainerProxy {
   protected static final Log LOG = LogFactory.getLog(ContainerProxy.class);
@@ -45,8 +45,8 @@ public abstract class ContainerProxy {
 
   protected ContainerState state;
   // store enough information to be able to cleanup the container
-  protected Container container;
-  protected ContainerId containerID;
+  protected TajoContainer container;
+  protected TajoContainerId containerID;
   protected String hostName;
   protected int port = -1;
 
@@ -54,7 +54,7 @@ public abstract class ContainerProxy {
   public abstract void stopContainer();
 
   public ContainerProxy(QueryMasterTask.QueryMasterTaskContext context, Configuration conf,
-                        ExecutionBlockId executionBlockId, Container container) {
+                        ExecutionBlockId executionBlockId, TajoContainer container) {
     this.context = context;
     this.conf = conf;
     this.state = ContainerState.PREP;

@@ -21,7 +21,6 @@ package org.apache.tajo.master.querymaster;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
 import org.apache.tajo.QueryUnitAttemptId;
@@ -35,6 +34,7 @@ import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttem
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
 import org.apache.tajo.master.querymaster.QueryUnit.PullHost;
+import org.apache.tajo.master.container.TajoContainerId;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -55,7 +55,7 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
   private final QueryUnit queryUnit;
   final EventHandler eventHandler;
 
-  private ContainerId containerId;
+  private TajoContainerId containerId;
   private WorkerConnectionInfo workerConnectionInfo;
   private int expire;
 
@@ -214,7 +214,7 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
     return this.workerConnectionInfo;
   }
 
-  public void setContainerId(ContainerId containerId) {
+  public void setContainerId(TajoContainerId containerId) {
     this.containerId = containerId;
   }
 

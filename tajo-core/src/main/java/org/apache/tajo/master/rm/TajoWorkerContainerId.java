@@ -19,12 +19,13 @@
 package org.apache.tajo.master.rm;
 
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
-import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.proto.YarnProtos;
+import org.apache.tajo.ipc.ContainerProtocol;
+import org.apache.tajo.master.container.TajoContainerId;
 
-public class TajoWorkerContainerId extends ContainerId {
+public class TajoWorkerContainerId extends TajoContainerId {
   ApplicationAttemptId applicationAttemptId;
-  long id;
+  int id;
 
   @Override
   public ApplicationAttemptId getApplicationAttemptId() {
@@ -38,56 +39,51 @@ public class TajoWorkerContainerId extends ContainerId {
 
   @Override
   public int getId() {
-    return (int) id;
-  }
-
-  @Override
-  public long getContainerId() {
     return id;
   }
 
   @Override
-  public void setContainerId(long id) {
+  public void setId(int id) {
     this.id = id;
   }
 
-  public YarnProtos.ContainerIdProto getProto() {
+  public ContainerProtocol.TajoContainerIdProto getProto() {
     YarnProtos.ApplicationIdProto appIdProto = YarnProtos.ApplicationIdProto.newBuilder()
-        .setClusterTimestamp(applicationAttemptId.getApplicationId().getClusterTimestamp())
-        .setId(applicationAttemptId.getApplicationId().getId())
-        .build();
+      .setClusterTimestamp(applicationAttemptId.getApplicationId().getClusterTimestamp())
+      .setId(applicationAttemptId.getApplicationId().getId())
+      .build();
 
     YarnProtos.ApplicationAttemptIdProto attemptIdProto = YarnProtos.ApplicationAttemptIdProto.newBuilder()
-        .setAttemptId(applicationAttemptId.getAttemptId())
-        .setApplicationId(appIdProto)
-        .build();
+      .setAttemptId(applicationAttemptId.getAttemptId())
+      .setApplicationId(appIdProto)
+      .build();
 
-    return YarnProtos.ContainerIdProto.newBuilder()
-        .setAppAttemptId(attemptIdProto)
-        .setAppId(appIdProto)
-        .setId(id)
-        .build();
+    return ContainerProtocol.TajoContainerIdProto.newBuilder()
+      .setAppAttemptId(attemptIdProto)
+      .setAppId(appIdProto)
+      .setId(id)
+      .build();
   }
 
-  public static YarnProtos.ContainerIdProto getContainerIdProto(ContainerId containerId) {
+  public static ContainerProtocol.TajoContainerIdProto getContainerIdProto(TajoContainerId containerId) {
     if(containerId instanceof TajoWorkerContainerId) {
       return ((TajoWorkerContainerId)containerId).getProto();
     } else {
       YarnProtos.ApplicationIdProto appIdProto = YarnProtos.ApplicationIdProto.newBuilder()
-          .setClusterTimestamp(containerId.getApplicationAttemptId().getApplicationId().getClusterTimestamp())
-          .setId(containerId.getApplicationAttemptId().getApplicationId().getId())
-          .build();
+        .setClusterTimestamp(containerId.getApplicationAttemptId().getApplicationId().getClusterTimestamp())
+        .setId(containerId.getApplicationAttemptId().getApplicationId().getId())
+        .build();
 
       YarnProtos.ApplicationAttemptIdProto attemptIdProto = YarnProtos.ApplicationAttemptIdProto.newBuilder()
-          .setAttemptId(containerId.getApplicationAttemptId().getAttemptId())
-          .setApplicationId(appIdProto)
-          .build();
+        .setAttemptId(containerId.getApplicationAttemptId().getAttemptId())
+        .setApplicationId(appIdProto)
+        .build();
 
-      return YarnProtos.ContainerIdProto.newBuilder()
-          .setAppAttemptId(attemptIdProto)
-          .setAppId(appIdProto)
-          .setId(containerId.getId())
-          .build();
+      return ContainerProtocol.TajoContainerIdProto.newBuilder()
+        .setAppAttemptId(attemptIdProto)
+        .setAppId(appIdProto)
+        .setId(containerId.getId())
+        .build();
     }
   }
 

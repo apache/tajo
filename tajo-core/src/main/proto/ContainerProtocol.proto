@@ -16,31 +16,33 @@
  * limitations under the License.
  */
 
+/**
+ * These .proto interfaces are public and stable.
+ * Please see http://wiki.apache.org/hadoop/Compatibility
+ * for what changes are allowed for a *stable* .proto interface.
+ */
+
 option java_package = "org.apache.tajo.ipc";
-option java_outer_classname = "QueryMasterProtocol";
+option java_outer_classname = "ContainerProtocol";
 option java_generic_services = true;
 option java_generate_equals_and_hash = true;
 
-import "yarn_protos.proto";
-import "tajo_protos.proto";
-import "TajoIdProtos.proto";
-import "CatalogProtos.proto";
-import "PrimitiveProtos.proto";
-import "TajoWorkerProtocol.proto";
-import "ContainerProtocol.proto";
-
 package hadoop.yarn;
 
-service QueryMasterProtocolService {
-  //from Worker
-  rpc getTask(GetTaskRequestProto) returns (QueryUnitRequestProto);
-  rpc statusUpdate (TaskStatusProto) returns (BoolProto);
-  rpc ping (ExecutionBlockIdProto) returns (BoolProto);
-  rpc fatalError(TaskFatalErrorReport) returns (BoolProto);
-  rpc done (TaskCompletionReport) returns (BoolProto);
-  rpc doneExecutionBlock(ExecutionBlockReport) returns (BoolProto);
+import "Security.proto";
+import "yarn_protos.proto";
 
-  //from TajoMaster's QueryJobManager
-  rpc killQuery(QueryIdProto) returns (BoolProto);
-  rpc executeQuery(QueryExecutionRequestProto) returns (BoolProto);
+message TajoContainerIdProto {
+  optional ApplicationIdProto app_id = 1;
+  optional ApplicationAttemptIdProto app_attempt_id = 2;
+  optional int32 id = 3;
+}
+
+message TajoContainerProto {
+  optional TajoContainerIdProto id = 1;
+  optional NodeIdProto nodeId = 2;
+  optional string node_http_address = 3;
+  optional ResourceProto resource = 4;
+  optional PriorityProto priority = 5;
+  optional hadoop.common.TokenProto container_token = 6;
 }
