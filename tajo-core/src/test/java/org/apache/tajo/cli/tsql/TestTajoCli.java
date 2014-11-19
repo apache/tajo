@@ -28,8 +28,6 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.cli.tsql.DefaultTajoCliOutputFormatter;
-import org.apache.tajo.cli.tsql.TajoCli;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.StorageUtil;
@@ -156,8 +154,12 @@ public class TestTajoCli {
 
     TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
     TajoCli testCli = new TajoCli(tajoConf, args, System.in, System.out);
-    assertEquals("false", testCli.getContext().get(SessionVars.CLI_PAGING_ENABLED));
-    assertEquals("256", testCli.getContext().getConf().get("tajo.executor.join.inner.in-memory-table-num"));
+    try {
+      assertEquals("false", testCli.getContext().get(SessionVars.CLI_PAGING_ENABLED));
+      assertEquals("256", testCli.getContext().getConf().get("tajo.executor.join.inner.in-memory-table-num"));
+    } finally {
+      testCli.close();
+    }
   }
 
   @Test
@@ -302,11 +304,15 @@ public class TestTajoCli {
     setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);
-    tajoCli.executeMetaCommand("\\getconf tajo.rootdir");
+    TajoCli tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);
+    try {
+      tajoCli.executeMetaCommand("\\getconf tajo.rootdir");
 
-    String consoleResult = new String(out.toByteArray());
-    assertEquals(consoleResult, tajoCli.getContext().getConf().getVar(TajoConf.ConfVars.ROOT_DIR) + "\n");
+      String consoleResult = new String(out.toByteArray());
+      assertEquals(consoleResult, tajoCli.getContext().getConf().getVar(TajoConf.ConfVars.ROOT_DIR) + "\n");
+    } finally {
+      tajoCli.close();
+    }
   }
 
   @Test

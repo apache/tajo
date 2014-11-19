@@ -22,6 +22,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
@@ -57,24 +58,28 @@ public class TestHAServiceHDFSImpl  {
 
     conf = cluster.getConfiguration();
     client = new TajoClientImpl(conf);
+    try {
+      FileSystem fs = cluster.getDefaultFileSystem();
+      startBackupMasters();
 
-    FileSystem fs = cluster.getDefaultFileSystem();
-    startBackupMasters();
+      verifyMasterAddress();
+      verifySystemDirectories(fs);
 
-    verifyMasterAddress();
-    verifySystemDirectories(fs);
+      Path backupMasterFile1 = new Path(backupPath, backupMaster1.getMasterName()
+          .replaceAll(":", "_"));
+      assertTrue(fs.exists(backupMasterFile1));
 
-    Path backupMasterFile1 = new Path(backupPath, backupMaster1.getMasterName()
-        .replaceAll(":", "_"));
-    assertTrue(fs.exists(backupMasterFile1));
+      Path backupMasterFile2 = new Path(backupPath, backupMaster2.getMasterName()
+          .replaceAll(":", "_"));
+      assertTrue(fs.exists(backupMasterFile2));
 
-    Path backupMasterFile2 = new Path(backupPath, backupMaster2.getMasterName()
-        .replaceAll(":", "_"));
-    assertTrue(fs.exists(backupMasterFile2));
-
-    assertTrue(cluster.getMaster().isActiveMaster());
-    assertFalse(backupMaster1.isActiveMaster());
-    assertFalse(backupMaster2.isActiveMaster());
+      assertTrue(cluster.getMaster().isActiveMaster());
+      assertFalse(backupMaster1.isActiveMaster());
+      assertFalse(backupMaster2.isActiveMaster());
+    } finally {
+      IOUtils.cleanup(LOG, client, backupMaster1, backupMaster2);
+      cluster.shutdownMiniCluster();
+    }
   }
 
   private void startBackupMasters() throws Exception {

@@ -60,7 +60,11 @@ Release 0.9.1 - unreleased
     TAJO-1172: Remove Trevni storage type and its related classes.
     (DaeMyung Kang via hyunsik)
 
+
   BUG FIXES
+
+    TAJO-1197: Unit test failed: unable to create new native thread.
+    (jinho)
 
     TAJO-1178: Some error messages for wrong JSON queries are not so 
     much helpful. (Jaewoong Jung via jihoon)
