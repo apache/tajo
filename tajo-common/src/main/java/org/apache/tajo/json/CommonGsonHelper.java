@@ -20,6 +20,10 @@ package org.apache.tajo.json;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.util.TUtil;
 
@@ -32,7 +36,7 @@ public class CommonGsonHelper {
 
   private CommonGsonHelper() {
   }
-	
+
 	private static Map<Type, GsonSerDerAdapter> registerAdapters() {
     Map<Type, GsonSerDerAdapter> adapters = TUtil.newHashMap();
     adapters.put(Datum.class, new DatumAdapter());
@@ -66,5 +70,23 @@ public class CommonGsonHelper {
 
   public static <T extends GsonObject> T fromJson(String json, Class<T> clazz) {
     return getInstance().fromJson(json, clazz);
+  }
+
+  /**
+   * A helper method that gets a JSON object member value after making sure it exists and has a valid value. Useful when
+   * a member value should present to proceed.
+   * @param object A JSON object to get a member value from
+   * @param memberName The name of a member to get value of
+   * @return {@link JsonElement} value read from the given member
+   * @throws JsonParseException When the specified member does not exist or have a value.
+   */
+  public static JsonElement getOrDie(JsonObject object, String memberName) throws JsonParseException {
+    if (object.has(memberName)) {
+      JsonElement element = object.get(memberName);
+      if (!JsonNull.INSTANCE.equals(element)) {
+        return element;
+      }
+    }
+    throw new JsonParseException("Field '" + memberName + "' not found in JSON object '" + object + "'");
   }
 }
