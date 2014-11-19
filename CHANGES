@@ -13,6 +13,8 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1195: Remove unused CachedDNSResolver Class. (DaeMyung Kang via jaehwa)
+
     TAJO-1184: Upgrade netty-buffer to 4.0.24.Final. (jinho)
 
     TAJO-1156: Improve the comparison of timestamp and date types. 
