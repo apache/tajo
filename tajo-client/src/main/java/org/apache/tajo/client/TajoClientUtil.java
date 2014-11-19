@@ -61,12 +61,24 @@ public class TajoClientUtil {
   public static ResultSet createResultSet(TajoConf conf, TajoClient client, QueryId queryId,
                                           ClientProtos.GetQueryResultResponse response)
       throws IOException {
+    return createResultSet(conf, client, queryId, response, false);
+  }
+
+  public static ResultSet createResultSet(TajoConf conf, TajoClient client, QueryId queryId,
+                                          ClientProtos.GetQueryResultResponse response, boolean showTimezone)
+      throws IOException {
     TableDesc desc = CatalogUtil.newTableDesc(response.getTableDesc());
     conf.setVar(TajoConf.ConfVars.USERNAME, response.getTajoUserName());
-    return new TajoResultSet(client, queryId, conf, desc);
+    return new TajoResultSet(client, queryId, conf, desc, showTimezone);
   }
 
   public static ResultSet createResultSet(TajoConf conf, QueryClient client, ClientProtos.SubmitQueryResponse response)
+      throws IOException {
+    return createResultSet(conf, client, response, false);
+  }
+
+  public static ResultSet createResultSet(TajoConf conf, QueryClient client,
+                                          ClientProtos.SubmitQueryResponse response, boolean showTimezone)
       throws IOException {
     if (response.hasTableDesc()) {
       // non-forward query
@@ -80,7 +92,8 @@ public class TajoClientUtil {
         }
       }
       TableDesc tableDesc = new TableDesc(response.getTableDesc());
-      return new FetchResultSet(client, tableDesc.getLogicalSchema(), new QueryId(response.getQueryId()), fetchRowNum);
+      return new FetchResultSet(client, tableDesc.getLogicalSchema(), new QueryId(response.getQueryId()),
+                                fetchRowNum, showTimezone);
     } else {
       // simple eval query
       // select substr('abc', 1, 2)
@@ -88,7 +101,7 @@ public class TajoClientUtil {
       return new TajoMemoryResultSet(
           new Schema(serializedResultSet.getSchema()),
           serializedResultSet.getSerializedTuplesList(),
-          response.getMaxRowNum());
+          response.getMaxRowNum(), showTimezone);
     }
   }
 }

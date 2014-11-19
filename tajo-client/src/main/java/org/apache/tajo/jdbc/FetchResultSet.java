@@ -21,7 +21,6 @@ package org.apache.tajo.jdbc;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.client.QueryClient;
-import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
@@ -35,14 +34,20 @@ public class FetchResultSet extends TajoResultSetBase {
   private boolean finished = false;
 
   public FetchResultSet(QueryClient tajoClient, Schema schema, QueryId queryId, int fetchRowNum) {
+    this(tajoClient, schema, queryId, fetchRowNum, false);
+  }
+
+  public FetchResultSet(QueryClient tajoClient, Schema schema, QueryId queryId, int fetchRowNum, boolean showTimezone) {
     this.tajoClient = tajoClient;
     this.queryId = queryId;
     this.fetchRowNum = fetchRowNum;
     this.totalRow = Integer.MAX_VALUE;
     this.schema = schema;
+    this.showTimezone = showTimezone;
   }
 
-  @Override
+
+    @Override
   protected Tuple nextTuple() throws IOException {
     if (finished) {
       return null;
