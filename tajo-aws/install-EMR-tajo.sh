@@ -84,15 +84,13 @@ else
 $HADOOP_HOME/bin/hadoop dfs -copyToLocal $TAJO_PACKAGE_URI $HADOOP_HOME
 fi
 
-## Unpackage
+## Unpack
 cd $HADOOP_HOME
 tar -xvf $HADOOP_HOME/$tajo_package_file
 ln -s $HADOOP_HOME/${tajo_package_file%.tar*} $HADOOP_HOME/tajo
-echo "tar -xvf $HADOOP_HOME/$tajo_package_file" >> /tmp/hahaha
-echo "ln -s $HADOOP_HOME/${tajo_package_file%.tar*} $HADOOP_HOME/tajo" >> /tmp/hahaha
 export TAJO_HOME=$HADOOP_HOME/tajo
 
-## Set tajo conf
+## Setting tajo conf
 if [ ! -z $TAJO_CONF_URI ]
 then
    mkdir $TAJO_HOME/conf/temp
