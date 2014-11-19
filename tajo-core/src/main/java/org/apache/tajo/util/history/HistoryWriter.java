@@ -317,6 +317,8 @@ public class HistoryWriter extends AbstractService {
     }
 
     private synchronized void writeQuerySummary(QueryInfo queryInfo) throws Exception {
+      if(stopped.get()) return;
+
         // writing to HDFS and rolling hourly
       if (querySummaryWriter == null) {
         querySummaryWriter = new WriterHolder();
