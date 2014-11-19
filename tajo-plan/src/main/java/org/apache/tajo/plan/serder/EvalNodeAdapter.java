@@ -22,6 +22,7 @@
 package org.apache.tajo.plan.serder;
 
 import com.google.gson.*;
+import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.json.GsonSerDerAdapter;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalType;
@@ -34,7 +35,7 @@ public class EvalNodeAdapter implements GsonSerDerAdapter<EvalNode> {
   public EvalNode deserialize(JsonElement json, Type type,
                               JsonDeserializationContext ctx) throws JsonParseException {
     JsonObject jsonObject = json.getAsJsonObject();
-    String nodeName = jsonObject.get("type").getAsString();
+    String nodeName = CommonGsonHelper.getOrDie(jsonObject, "type").getAsString();
     Class clazz = EvalType.valueOf(nodeName).getBaseClass();
     return ctx.deserialize(jsonObject.get("body"), clazz);
   }

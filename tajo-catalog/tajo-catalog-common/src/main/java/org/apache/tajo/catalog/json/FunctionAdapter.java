@@ -20,6 +20,7 @@ package org.apache.tajo.catalog.json;
 
 import com.google.gson.*;
 import org.apache.tajo.function.Function;
+import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.json.GsonSerDerAdapter;
 
 import java.lang.reflect.Type;
@@ -41,7 +42,7 @@ public class FunctionAdapter implements GsonSerDerAdapter<Function> {
   public Function deserialize(JsonElement json, Type typeOfT,
       JsonDeserializationContext context) throws JsonParseException {
     JsonObject jsonObject = json.getAsJsonObject();
-    String className = jsonObject.get("class").getAsJsonPrimitive().getAsString();
+    String className = CommonGsonHelper.getOrDie(jsonObject, "class").getAsJsonPrimitive().getAsString();
     
     Class clazz;
     try {
@@ -50,6 +51,6 @@ public class FunctionAdapter implements GsonSerDerAdapter<Function> {
       e.printStackTrace();
       throw new JsonParseException(e);
     }
-    return context.deserialize(jsonObject.get("body"), clazz);
+    return context.deserialize(CommonGsonHelper.getOrDie(jsonObject, "body"), clazz);
   }
 }

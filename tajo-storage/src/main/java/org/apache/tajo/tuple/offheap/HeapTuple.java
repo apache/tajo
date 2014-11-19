@@ -20,16 +20,19 @@ package org.apache.tajo.tuple.offheap;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
-import com.sun.tools.javac.util.Convert;
+
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.SizeOf;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.UnsafeUtil;
+
 import sun.misc.Unsafe;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 
@@ -241,7 +244,7 @@ public class HeapTuple implements Tuple {
 
     byte [] bytes = new byte[len];
     UNSAFE.copyMemory(data, BASE_OFFSET + pos, bytes, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET, len);
-    return Convert.utf2chars(bytes);
+    return StringUtils.convertBytesToChars(bytes, Charset.forName("UTF-8"));
   }
 
   @Override

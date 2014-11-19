@@ -22,6 +22,7 @@ import com.google.common.base.Objects;
 import com.google.gson.*;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
@@ -234,7 +235,8 @@ public class CreateTable extends Expr {
       public PartitionMethodDescExpr deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
           throws JsonParseException {
         JsonObject jsonObject = json.getAsJsonObject();
-        PartitionType type = PartitionType.valueOf(jsonObject.get("PartitionType").getAsString());
+        PartitionType type = PartitionType.valueOf(
+            CommonGsonHelper.getOrDie(jsonObject, "PartitionType").getAsString());
         switch (type) {
           case RANGE:
             return context.deserialize(json, RangePartition.class);
