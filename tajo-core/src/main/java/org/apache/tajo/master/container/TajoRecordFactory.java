@@ -16,28 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.event;
+package org.apache.tajo.master.container;
 
-import org.apache.tajo.QueryUnitAttemptId;
-import org.apache.tajo.master.cluster.WorkerConnectionInfo;
-import org.apache.tajo.master.container.TajoContainerId;
+import org.apache.hadoop.classification.InterfaceStability.Unstable;
 
-public class TaskAttemptAssignedEvent extends TaskAttemptEvent {
-  private final TajoContainerId cId;
-  private final WorkerConnectionInfo workerConnectionInfo;
-
-  public TaskAttemptAssignedEvent(QueryUnitAttemptId id, TajoContainerId cId,
-                                  WorkerConnectionInfo connectionInfo) {
-    super(id, TaskAttemptEventType.TA_ASSIGNED);
-    this.cId = cId;
-    this.workerConnectionInfo = connectionInfo;
-  }
-
-  public TajoContainerId getContainerId() {
-    return cId;
-  }
-
-  public WorkerConnectionInfo getWorkerConnectionInfo(){
-    return workerConnectionInfo;
-  }
+@Unstable
+public interface TajoRecordFactory {
+  public <T> T newRecordInstance(Class<T> clazz);
 }

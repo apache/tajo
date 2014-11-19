@@ -19,9 +19,11 @@
 package org.apache.tajo.master.rm;
 
 import org.apache.hadoop.yarn.api.records.*;
+import org.apache.tajo.master.container.TajoContainer;
+import org.apache.tajo.master.container.TajoContainerId;
 
-public class TajoWorkerContainer extends Container {
-  ContainerId id;
+public class TajoWorkerContainer extends TajoContainer {
+  TajoContainerId id;
   NodeId nodeId;
   Worker worker;
 
@@ -34,12 +36,12 @@ public class TajoWorkerContainer extends Container {
   }
 
   @Override
-  public ContainerId getId() {
+  public TajoContainerId getId() {
     return id;
   }
 
   @Override
-  public void setId(ContainerId id) {
+  public void setId(TajoContainerId id) {
     this.id = id;
   }
 
@@ -94,7 +96,7 @@ public class TajoWorkerContainer extends Container {
   }
 
   @Override
-  public int compareTo(Container container) {
+  public int compareTo(TajoContainer container) {
     return 0;  //To change body of implemented methods use File | Settings | File Templates.
   }
 }

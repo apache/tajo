@@ -20,8 +20,8 @@ package org.apache.tajo.storage;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.s3.S3FileSystem;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
@@ -32,8 +32,6 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.storage.s3.InMemoryFileSystemStore;
-import org.apache.tajo.storage.s3.SmallBlockS3FileSystem;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -60,11 +58,10 @@ public class TestFileSystems {
 
   public TestFileSystems(FileSystem fs) throws IOException {
     conf = new TajoConf();
+    conf.set("fs.local.block.size", "10");
 
-    if(fs instanceof S3FileSystem){
-      conf.set(DFSConfigKeys.DFS_BLOCK_SIZE_KEY, "10");
-      fs.initialize(URI.create(fs.getScheme() + ":///"), conf);
-    }
+    fs.initialize(URI.create(fs.getScheme() + ":///"), conf);
+
     this.fs = fs;
     sm = StorageManager.getStorageManager(conf);
     testDir = getTestDir(this.fs, TEST_PATH);
@@ -83,7 +80,7 @@ public class TestFileSystems {
   @Parameterized.Parameters
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][] {
-        {new SmallBlockS3FileSystem(new InMemoryFileSystemStore())},
+        {new LocalFileSystem()},
     });
   }
 
@@ -109,6 +106,7 @@ public class TestFileSystems {
     Path path = StorageUtil.concatPath(testDir, "testGetScannerAndAppender",
         "table.csv");
     fs.mkdirs(path.getParent());
+    System.out.println("### BlockSize(1) :" + fs.getBlockSize(path.getParent()));
 
     Appender appender = sm.getAppender(meta, schema, path);
     appender.init();
@@ -116,7 +114,9 @@ public class TestFileSystems {
       appender.addTuple(t);
     }
     appender.close();
+
     FileStatus fileStatus = fs.getFileStatus(path);
+    sm.getFileSystem().getConf().set("fs.local.block.size", "10");
 
     List<FileFragment> splits = sm.getSplits("table", meta, schema, path);
     int splitSize = (int) Math.ceil(fileStatus.getLen() / (double) fileStatus.getBlockSize());
