@@ -19,7 +19,7 @@
 #
 # The EMR Bootstrap for Tajo
 #
-# Environment Variables
+# Arguments
 #
 # -t	The tajo binary Tarball URL.
 #	ex) s3://tajo-release/tajo-0.9.0/tajo-0.9.0.tar.gz 
@@ -60,7 +60,7 @@ do
    esac
 done
 
-## Clean for instance restarting
+## Clean up
 rm -rf $HADOOP_HOME/tajo*
 
 ## Extract package name
