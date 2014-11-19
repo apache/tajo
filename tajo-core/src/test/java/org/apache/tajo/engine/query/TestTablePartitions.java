@@ -19,6 +19,9 @@
 package org.apache.tajo.engine.query;
 
 import com.google.common.collect.Maps;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.ContentSummary;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -59,7 +62,6 @@ import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.SCATTERED_HASH_S
 import static org.junit.Assert.*;
 
 public class TestTablePartitions extends QueryTestCaseBase {
-
 
   public TestTablePartitions() throws IOException {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
@@ -520,6 +522,22 @@ public class TestTablePartitions extends QueryTestCaseBase {
         "N,1,1,36.0\n";
 
     assertEquals(expected, resultSetData);
+
+
+    // insert overwrite empty result to partitioned table
+    res = executeString("insert overwrite into " + tableName
+      + " select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem where l_orderkey" +
+      " > 100");
+    res.close();
+
+    desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+    path = desc.getPath();
+
+    ContentSummary summary = fs.getContentSummary(path);
+
+    assertEquals(summary.getDirectoryCount(), 1L);
+    assertEquals(summary.getFileCount(), 0L);
+    assertEquals(summary.getLength(), 0L);
   }
 
   @Test
