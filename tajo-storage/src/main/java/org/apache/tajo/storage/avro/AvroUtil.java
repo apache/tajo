@@ -18,20 +18,22 @@
 
 package org.apache.tajo.storage.avro;
 
-import java.io.IOException;
-
 import org.apache.avro.Schema;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.storage.StorageConstants;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.storage.StorageConstants;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 
 public class AvroUtil {
   public static Schema getAvroSchema(TableMeta meta, Configuration conf)
       throws IOException {
-
 
     boolean isSchemaLiteral = meta.containsOption(StorageConstants.AVRO_SCHEMA_LITERAL);
     boolean isSchemaUrl = meta.containsOption(StorageConstants.AVRO_SCHEMA_URL);
@@ -44,9 +46,32 @@ public class AvroUtil {
     }
 
     String schemaURL = meta.getOption(StorageConstants.AVRO_SCHEMA_URL);
+    if (schemaURL.toLowerCase().startsWith("http")) {
+      return getAvroSchemaFromHttp(schemaURL);
+    } else {
+      return getAvroSchemaFromFileSystem(schemaURL, conf);
+    }
+  }
+
+  public static Schema getAvroSchemaFromHttp(String schemaURL) throws IOException {
+    InputStream inputStream = new URL(schemaURL).openStream();
+
+    try {
+      return new Schema.Parser().parse(inputStream);
+    } finally {
+      IOUtils.closeStream(inputStream);
+    }
+  }
+
+  public static Schema getAvroSchemaFromFileSystem(String schemaURL, Configuration conf) throws IOException {
     Path schemaPath = new Path(schemaURL);
     FileSystem fs = schemaPath.getFileSystem(conf);
     FSDataInputStream inputStream = fs.open(schemaPath);
-    return new Schema.Parser().parse(inputStream);
+
+    try {
+      return new Schema.Parser().parse(inputStream);
+    } finally {
+      IOUtils.closeStream(inputStream);
+    }
   }
 }
