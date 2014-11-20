@@ -70,6 +70,7 @@ public class TestFileSystems {
     testDir = getTestDir(this.fs, TEST_PATH);
 
     System.out.println("### 100 ## blockSize:" + conf.get("fs.local.block.size"));
+    sm.getFileSystem().getConf().set("fs.local.block.size", "10");
     System.out.println("### 110 ## blockSize:" + sm.getFileSystem().getConf().get("fs.local.block" +
       ".size"));
 
