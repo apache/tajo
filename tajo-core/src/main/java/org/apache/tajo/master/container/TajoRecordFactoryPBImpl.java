@@ -56,10 +56,7 @@ public class TajoRecordFactoryPBImpl implements TajoRecordFactory {
     if (constructor == null) {
       Class<?> pbClazz = null;
       try {
-        System.out.println("### 100 ### " + getPBImplClassName(clazz));
         pbClazz = localConf.getClassByName(getPBImplClassName(clazz));
-        System.out.println("### 200 ### " + pbClazz);
-//        pbClazz = TajoRecordFactoryPBImpl.class;
       } catch (ClassNotFoundException e) {
         throw new YarnRuntimeException("Failed to load class: ["
           + getPBImplClassName(clazz) + "]", e);

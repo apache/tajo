@@ -106,7 +106,6 @@ public class TestFileSystems {
     Path path = StorageUtil.concatPath(testDir, "testGetScannerAndAppender",
         "table.csv");
     fs.mkdirs(path.getParent());
-    System.out.println("### BlockSize(1) :" + fs.getBlockSize(path.getParent()));
 
     Appender appender = sm.getAppender(meta, schema, path);
     appender.init();

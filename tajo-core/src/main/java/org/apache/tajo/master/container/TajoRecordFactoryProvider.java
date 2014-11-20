@@ -44,9 +44,6 @@ public class TajoRecordFactoryProvider {
       //Users can specify a particular factory by providing a configuration.
       conf = defaultConf;
     }
-//    String recordFactoryClassName = conf.get(
-//      YarnConfiguration.IPC_RECORD_FACTORY_CLASS,
-//      YarnConfiguration.DEFAULT_IPC_RECORD_FACTORY_CLASS);
     return (TajoRecordFactory) getFactoryClassInstance(TajoRecordFactoryPBImpl.class.getCanonicalName());
   }
 
