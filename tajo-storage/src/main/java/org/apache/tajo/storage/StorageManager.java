@@ -567,6 +567,8 @@ public class StorageManager {
 
     for (Path p : inputs) {
       FileSystem fs = p.getFileSystem(conf);
+      System.out.println("### 200 ## blockSize:" + conf.get("fs.local.block.size"));
+
       ArrayList<FileStatus> files = Lists.newArrayList();
       if (fs.isFile(p)) {
         files.addAll(Lists.newArrayList(fs.getFileStatus(p)));
@@ -609,6 +611,9 @@ public class StorageManager {
 
               long blockSize = file.getBlockSize(); // s3n rest api contained block size but blockLocations is one
               long splitSize = Math.max(minSize, blockSize);
+              System.out.println("### 220 ## blockSize:" + blockSize + ", splitSize:" + splitSize
+              + ", minSize:" + minSize);
+              System.out.println("### 220 ## blockSize:" + conf.get("fs.local.block.size"));
               long bytesRemaining = length;
 
               // for s3

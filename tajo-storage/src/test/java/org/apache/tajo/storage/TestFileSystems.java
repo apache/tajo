@@ -18,6 +18,8 @@
 
 package org.apache.tajo.storage;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalFileSystem;
@@ -47,6 +49,7 @@ import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class TestFileSystems {
+  private final Log LOG = LogFactory.getLog(TestFileSystems.class);
 
   protected byte[] data = null;
 
@@ -65,6 +68,11 @@ public class TestFileSystems {
     this.fs = fs;
     sm = StorageManager.getStorageManager(conf);
     testDir = getTestDir(this.fs, TEST_PATH);
+
+    System.out.println("### 100 ## blockSize:" + conf.get("fs.local.block.size"));
+    System.out.println("### 110 ## blockSize:" + sm.getFileSystem().getConf().get("fs.local.block" +
+      ".size"));
+
   }
 
   public Path getTestDir(FileSystem fs, String dir) throws IOException {
@@ -113,13 +121,22 @@ public class TestFileSystems {
       appender.addTuple(t);
     }
     appender.close();
+    System.out.println("### 120 ## blockSize:" + conf.get("fs.local.block.size"));
+    System.out.println("### 130 ## blockSize:" + sm.getFileSystem().getConf().get("fs.local.block" +
+      ".size"));
 
     FileStatus fileStatus = fs.getFileStatus(path);
     sm.getFileSystem().getConf().set("fs.local.block.size", "10");
+    System.out.println("### 140 ## blockSize:" + conf.get("fs.local.block.size"));
+    System.out.println("### 150 ## blockSize:" + sm.getFileSystem().getConf().get("fs.local.block" +
+      ".size"));
 
     List<FileFragment> splits = sm.getSplits("table", meta, schema, path);
     int splitSize = (int) Math.ceil(fileStatus.getLen() / (double) fileStatus.getBlockSize());
     assertEquals(splitSize, splits.size());
+    System.out.println("### 160 ## blockSize:" + fileStatus.getBlockSize()
+    + ", fileLength:" + fileStatus.getLen()
+    + ", splitSize:" + splitSize + ", splits:" + splits.size());
 
     for (FileFragment fragment : splits) {
       assertTrue(fragment.getEndKey() <= fileStatus.getBlockSize());
