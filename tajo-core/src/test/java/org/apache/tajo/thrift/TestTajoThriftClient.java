@@ -19,6 +19,8 @@
 package org.apache.tajo.thrift;
 
 import com.google.common.collect.Sets;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -268,12 +270,16 @@ public class TestTajoThriftClient {
     assertFalse(hdfs.exists(tablePath));
   }
 
+  private final Log LOG = LogFactory.getLog(TestTajoThriftClient.class);
+
   @Test
   public final void testDDLByExecuteQuery() throws Exception {
     final String tableName = CatalogUtil.normalizeIdentifier("testDDLByExecuteQuery");
     Path tablePath = writeTmpTable(tableName);
 
-    assertFalse(client.existTable(tableName));
+    LOG.fatal(">>>>>>>>>>>>>>>>1111>" + client);
+    boolean result = client.existTable(tableName);
+    assertFalse(result);
     String sql =
         "create external table " + tableName + " (deptname text, score int4) "
             + "using csv location '" + tablePath + "'";
@@ -286,8 +292,12 @@ public class TestTajoThriftClient {
     String tableName1 = "GetTableList1".toLowerCase();
     String tableName2 = "GetTableList2".toLowerCase();
 
-    assertFalse(client.existTable(tableName1));
-    assertFalse(client.existTable(tableName2));
+    LOG.fatal(">>>>>>>>>>>>>>>>2222>" + client);
+    boolean result = client.existTable(tableName1);
+    assertFalse(result);
+
+    result = client.existTable(tableName2);
+    assertFalse(result);
     client.updateQuery("create table GetTableList1 (age int, name text);");
     client.updateQuery("create table GetTableList2 (age int, name text);");
 

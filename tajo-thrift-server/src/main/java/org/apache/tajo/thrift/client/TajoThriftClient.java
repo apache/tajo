@@ -36,7 +36,6 @@ import org.apache.tajo.util.TUtil;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
-import org.apache.thrift.transport.TTransportException;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -46,8 +45,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TajoThriftClient {
   private final Log LOG = LogFactory.getLog(TajoThriftClient.class);
-
-  private int fetchSize;
 
   protected final TajoConf tajoConf;
 
@@ -170,8 +167,16 @@ public class TajoThriftClient {
   public boolean existTable(final String tableName) throws Exception {
     return new ReconnectThriftServerCallable<Boolean>(currentClient) {
       public Boolean call(Client client) throws Exception {
-        checkSessionAndGet(client);
-        return client.existTable(sessionId, tableName);
+        try {
+          LOG.fatal(">>>>>>>>BBBBB>" + client);
+          checkSessionAndGet(client);
+          return client.existTable(sessionId, tableName);
+        } catch (Exception e) {
+          LOG.fatal(">>>>>>>>>>>>>>>>>>AAAAAA:" + e.getMessage(), e);
+
+          abort();
+          throw e;
+        }
       }
     }.withRetries();
   }
@@ -328,6 +333,9 @@ public class TajoThriftClient {
         resultSet = new TajoThriftMemoryResultSet(TajoThriftUtil.convertSchema(queryResult.getSchema()),
             queryResult.getRows(), queryResult.getRows() == null ? 0 : queryResult.getRows().size());
       } else {
+        if (queryResult.getTableDesc() == null) {
+          LOG.fatal(">>>>>>>>>>>>KKKKK>");
+        }
         resultSet = new TajoThriftResultSet(this, queryId, queryResult);
         resultSet.setFetchSize(fetchSize);
       }

@@ -150,6 +150,7 @@ public class TBoundedThreadPoolServer extends TServer {
     serverOptions = options;
   }
 
+  public Exception err;
   public void serve() {
     try {
       serverTransport_.listen();
@@ -178,7 +179,7 @@ public class TBoundedThreadPoolServer extends TServer {
           LOG.warn("Transport error when accepting message", ttx);
 
           try {
-            Thread.sleep(1000);
+            Thread.sleep(256 * 1000);
           } catch (InterruptedException e) {
             break;
           }

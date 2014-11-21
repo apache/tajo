@@ -25,6 +25,8 @@ import org.apache.tajo.thrift.generated.TajoThriftService;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.server.TServer;
+import org.apache.thrift.server.TThreadPoolServer;
+import org.apache.thrift.server.TThreadPoolServer.Args;
 import org.apache.thrift.transport.*;
 
 import java.net.InetAddress;
@@ -62,12 +64,17 @@ public class ThriftServerRunner extends Thread implements ThriftServerConstants 
 
     InetAddress listenAddress = getBindAddress();
     TServerSocket serverTransport = new TServerSocket(new InetSocketAddress(listenAddress, listenPort));
-    TBoundedThreadPoolServer.Args serverArgs = new TBoundedThreadPoolServer.Args(serverTransport, conf);
+    //TBoundedThreadPoolServer.Args serverArgs = new TBoundedThreadPoolServer.Args(serverTransport, conf);
+//    serverArgs.processor(processor)
+//        .transportFactory(transportFactory)
+//        .protocolFactory(protocolFactory);
+//
+//    TBoundedThreadPoolServer tserver = new TBoundedThreadPoolServer(serverArgs);
+    Args serverArgs = new Args(serverTransport);
     serverArgs.processor(processor)
         .transportFactory(transportFactory)
         .protocolFactory(protocolFactory);
-
-    TBoundedThreadPoolServer tserver = new TBoundedThreadPoolServer(serverArgs);
+    TThreadPoolServer tserver = new TThreadPoolServer(serverArgs);
     this.tserver = tserver;
 
     this.address = serverTransport.getServerSocket().getInetAddress().getHostName() + ":" +
@@ -91,6 +98,7 @@ public class ThriftServerRunner extends Thread implements ThriftServerConstants 
     if (tserver != null) {
       tserver.stop();
     }
+    LOG.info("Tajo Thrift Server stopped: " + this.address);
   }
 
   /*

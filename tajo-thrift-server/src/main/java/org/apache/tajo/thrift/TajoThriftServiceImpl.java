@@ -308,6 +308,9 @@ public class TajoThriftServiceImpl implements TajoThriftService.Iface {
           }
         }
         LOG.info("Send result to client for " + sessionId.getId() + "," + queryId + ", " + rowCount + " rows");
+        if (queryResult.getSchema() == null && queryResult.getTableDesc() == null) {
+          LOG.fatal(">>>>>>>>>>>>>>>>>>>>schema & tabledesc null");
+        }
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
 

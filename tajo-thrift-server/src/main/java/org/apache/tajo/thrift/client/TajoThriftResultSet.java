@@ -50,10 +50,10 @@ public class TajoThriftResultSet extends TajoResultSetBase {
     this.queryId = queryId;
     this.queryResult = queryResult;
 
-    TTableDesc desc = queryResult.getTableDesc();
-    this.schema = TajoThriftUtil.convertSchema(desc.getSchema());
+    this.tableDesc = queryResult.getTableDesc();
+    this.schema = TajoThriftUtil.convertSchema(tableDesc.getSchema());
 
-    this.totalRows = desc.getStats() != null ? desc.getStats().getNumRows() : Integer.MAX_VALUE;
+    this.totalRows = tableDesc.getStats() != null ? tableDesc.getStats().getNumRows() : Integer.MAX_VALUE;
     if (this.totalRows == 0) {
       //Case of select * from table
       this.totalRows = Integer.MAX_VALUE;
@@ -63,7 +63,6 @@ public class TajoThriftResultSet extends TajoResultSetBase {
       this.rowIterator = rowDatas.iterator();
     }
     this.rowDecoder = RowStoreUtil.createDecoder(schema);
-    this.tableDesc = queryResult.getTableDesc();
   }
 
   @Override
