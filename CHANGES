@@ -63,6 +63,14 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1205: Remove possible memory leak in TajoMaster. (jinho)
+
+    TAJO-1181: Avro schema URL should support various protocols. 
+    (jinho)
+
+    TAJO-1200: Invalid shuffle data of multiple worker in same server.
+    (jinho)
+
     TAJO-1197: Unit test failed: unable to create new native thread.
     (jinho)
 
