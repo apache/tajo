@@ -69,6 +69,8 @@ function print_usage() {
   echo "  cli                  run the tajo cli"
   echo "  admin                run the tajo admin util"
   echo "  haadmin              run the tajo master HA admin util"
+  echo "  thriftserver         run the Thrift server"
+  echo "  thriftcli            run the Thrift cli"
   echo "  getconf              print tajo configuration"
   echo "  jar <jar>            run a jar file"
   echo "  benchmark            run the benchmark driver"
@@ -121,6 +123,7 @@ JAVA_TAJO_MASTER_HEAP_MAX=-Xmx1000m
 JAVA_WORKER_HEAP_MAX=-Xmx1000m
 JAVA_QUERYMASTER_HEAP_MAX=-Xmx1000m
 JAVA_PULLSERVER_HEAP_MAX=-Xmx1000m
+JAVA_THRIFTSERVER_HEAP_MAX=-Xmx1000m
 
 # check envvars which might override default args
 if [ "$TAJO_MASTER_HEAPSIZE" != "" ]; then
@@ -142,6 +145,11 @@ if [ "$TAJO_QUERYMASTER_HEAPSIZE" != "" ]; then
   #echo "run with heapsize $TAJO_QUERYMASTER_HEAPSIZE"
   JAVA_QUERYMASTER_HEAP_MAX="-Xmx""$TAJO_QUERYMASTER_HEAPSIZE""m"
   #echo $JAVA_QUERYMASTER_HEAP_MAX
+fi
+if [ "$TAJO_THRIFTSERVER_HEAPSIZE" != "" ]; then
+  #echo "run with heapsize $TAJO_THRIFTSERVER_HEAPSIZE"
+  JAVA_THRIFTSERVER_HEAP_MAX="-Xmx""$$TAJO_THRIFTSERVER_HEAPSIZE""m"
+  #echo JAVA_THRIFTSERVER_HEAP_MAX
 fi
 
 
@@ -359,6 +367,12 @@ elif [ "$COMMAND" = "taskrunner" ] ; then
   TAJO_OPTS="$TAJO_OPTS $TAJO_WORKER_OPTS"
   TAJO_OPTS="$TAJO_OPTS $JAVA_WORKER_HEAP_MAX $TAJO_WORKER_OPTS"
   TAJO_DAEMON_MODE='standby-tr'
+elif [ "$COMMAND" = "thriftserver" ] ; then
+  CLASS='org.apache.tajo.thrift.TajoThriftServer'
+  TAJO_OPTS="$TAJO_OPTS $JAVA_THRIFTSERVER_HEAP_MAX $TAJO_THRIFTSERVER_OPTS"
+elif [ "$COMMAND" = "thriftcli" ] ; then
+  CLASS='org.apache.tajo.thrift.cli.TajoThriftCli'
+  TAJO_OPTS="$TAJO_OPTS $JAVA_THRIFTSERVER_HEAP_MAX $TAJO_THRIFTSERVER_OPTS"
 elif [ "$COMMAND" = "catalog" ] ; then
   CLASS='org.apache.tajo.catalog.CatalogServer'
   TAJO_OPTS="$TAJO_OPTS $TAJO_CATALOG_OPTS"

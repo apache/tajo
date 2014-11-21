@@ -16,24 +16,27 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.jdbc;
+package org.apache.tajo.thrift.client;
 
 import com.google.protobuf.ByteString;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.jdbc.TajoResultSetBase;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.thrift.generated.TSchema;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class TajoMemoryResultSet extends TajoResultSetBase {
-  private List<ByteString> serializedTuples;
+public class TajoThriftMemoryResultSet extends TajoResultSetBase {
+  private List<ByteBuffer> serializedTuples;
   private AtomicBoolean closed = new AtomicBoolean(false);
   private RowStoreUtil.RowStoreDecoder decoder;
 
-  public TajoMemoryResultSet(Schema schema, List<ByteString> serializedTuples, int maxRowNum) {
+  public TajoThriftMemoryResultSet(Schema schema, List<ByteBuffer> serializedTuples, int maxRowNum) {
     this.schema = schema;
     this.totalRows = maxRowNum;
     this.serializedTuples = serializedTuples;
@@ -66,7 +69,7 @@ public class TajoMemoryResultSet extends TajoResultSetBase {
   @Override
   protected Tuple nextTuple() throws IOException {
     if (curRow < totalRows) {
-      cur = decoder.toTuple(serializedTuples.get(curRow).toByteArray());
+      cur = decoder.toTuple(serializedTuples.get(curRow).array());
       return cur;
     } else {
       return null;

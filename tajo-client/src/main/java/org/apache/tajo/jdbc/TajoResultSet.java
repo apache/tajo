@@ -83,13 +83,13 @@ public class TajoResultSet extends TajoResultSetBase {
       schema = desc.getSchema();
       fs = FileScanner.getFileSystem(conf, desc.getPath());
       if (maxRowNum != null) {
-        this.totalRow = maxRowNum;
+        this.totalRows = maxRowNum;
       } else {
-        this.totalRow = desc.getStats() != null ? desc.getStats().getNumRows() : INFINITE_ROW_NUM;
+        this.totalRows = desc.getStats() != null ? desc.getStats().getNumRows() : INFINITE_ROW_NUM;
       }
 
-      if (totalRow == 0) {
-        totalRow = INFINITE_ROW_NUM;
+      if (totalRows == 0) {
+        totalRows = INFINITE_ROW_NUM;
       }
 
       List<FileFragment> frags = getFragments(desc.getPath());

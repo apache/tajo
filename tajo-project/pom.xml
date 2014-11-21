@@ -35,6 +35,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <hadoop.version>2.5.1</hadoop.version>
     <protobuf.version>2.5.0</protobuf.version>
+    <thrift.version>0.9.1</thrift.version>
     <tajo.version>0.9.1-SNAPSHOT</tajo.version>
     <tajo.root>${project.parent.relativePath}/..</tajo.root>
     <extra.source.path>src/main/hadoop-${hadoop.version}</extra.source.path>
@@ -778,6 +779,12 @@
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-thirdparty-asm</artifactId>
+        <version>${tajo.version}</version>
+        <type>jar</type>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tajo</groupId>
+        <artifactId>tajo-thrift-server</artifactId>
         <version>${tajo.version}</version>
         <type>jar</type>
       </dependency>

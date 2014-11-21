@@ -267,6 +267,11 @@
       <groupId>org.apache.tajo</groupId>
       <artifactId>tajo-thirdparty-asm</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-thrift-server</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>org.apache.hadoop</groupId>
@@ -395,6 +400,12 @@
       <groupId>info.ganglia.gmetric4j</groupId>
       <artifactId>gmetric4j</artifactId>
       <version>1.0.3</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.thrift</groupId>
+      <artifactId>libthrift</artifactId>
+      <version>${thrift.version}</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
