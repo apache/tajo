@@ -25,12 +25,6 @@
     <value>org.apache.tajo.storage.s3.SmallBlockS3FileSystem</value>
   </property>
 
-  <property>
-    <name>fs.local.block.size</name>
-    <value>10</value>
-  </property>
-
-
   <!--- Registered Scanner Handler -->
   <property>
     <name>tajo.storage.scanner-handler</name>
