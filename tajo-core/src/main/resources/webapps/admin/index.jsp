@@ -85,38 +85,6 @@
   String numDeadWorkersHtml = numDeadWorkers == 0 ? "0" : "<font color='red'>" + numDeadWorkers + "</font>";
   String numDeadQueryMastersHtml = numDeadQueryMasters == 0 ? "0" : "<font color='red'>" + numDeadQueryMasters + "</font>";
 
-  Collection<QueryInProgress> runningQueries = master.getContext().getQueryJobManager().getRunningQueries();
-  Collection<QueryInProgress> finishedQueries = master.getContext().getQueryJobManager().getFinishedQueries();
-
-  int avgQueryTime = 0;
-  int minQueryTime = Integer.MAX_VALUE;
-  int maxQueryTime = 0;
-
-  long totalTime = 0;
-  for(QueryInProgress eachQuery: finishedQueries) {
-    int runTime = (int)(eachQuery.getQueryInfo().getFinishTime() == 0 ? -1 :
-            eachQuery.getQueryInfo().getFinishTime() - eachQuery.getQueryInfo().getStartTime());
-    if(runTime > 0) {
-      totalTime += runTime;
-
-      if(runTime < minQueryTime) {
-        minQueryTime = runTime;
-      }
-
-      if(runTime > maxQueryTime) {
-        maxQueryTime = runTime;
-      }
-    }
-  }
-
-  if(minQueryTime == Integer.MAX_VALUE) {
-    minQueryTime = 0;
-  }
-  if(finishedQueries.size() > 0) {
-    avgQueryTime = (int)(totalTime / (long)finishedQueries.size());
-  }
-
-
   HAService haService = master.getContext().getHAService();
   List<TajoMasterInfo> masters = TUtil.newList();
 
@@ -217,11 +185,11 @@
   <table width="100%" class="border_table" border="1">
     <tr><th>Running Queries</th><th>Finished Queries</th><th>Average Execution Time</th><th>Min. Execution Time</th><th>Max. Execution Time</th></tr>
     <tr>
-      <td align='right'><%=runningQueries.size()%></td>
-      <td align='right'><%=finishedQueries.size()%></td>
-      <td align='left'><%=avgQueryTime/1000%> sec</td>
-      <td align='left'><%=minQueryTime/1000%> sec</td>
-      <td align='left'><%=maxQueryTime/1000%> sec</td>
+      <td align='right'><%=master.getContext().getQueryJobManager().getRunningQueries().size()%></td>
+      <td align='right'><%=master.getContext().getQueryJobManager().getExecutedQuerySize() %></td>
+      <td align='left'><%=master.getContext().getQueryJobManager().getAvgExecutionTime()/1000%> sec</td>
+      <td align='left'><%=master.getContext().getQueryJobManager().getMinExecutionTime()/1000%> sec</td>
+      <td align='left'><%=master.getContext().getQueryJobManager().getMaxExecutionTime()/1000%> sec</td>
     </tr>
   </table>
 </div>

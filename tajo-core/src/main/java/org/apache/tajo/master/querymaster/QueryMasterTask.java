@@ -358,6 +358,7 @@ public class QueryMasterTask extends CompositeService {
           new AccessPathRewriter.AccessPathRewriterContext(queryContext.getBool(SessionVars.INDEX_ENABLED),
               queryContext.getFloat(SessionVars.INDEX_SELECTIVITY_THRESHOLD)));
       Expr expr = JsonHelper.fromJson(jsonExpr, Expr.class);
+      jsonExpr = null; // remove the possible OOM
       LogicalPlan plan = planner.createPlan(queryContext, expr);
       optimizer.optimize(queryContext, plan);
 
