@@ -13,6 +13,8 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1195: Remove unused CachedDNSResolver Class. (DaeMyung Kang via jaehwa)
+
     TAJO-1184: Upgrade netty-buffer to 4.0.24.Final. (jinho)
 
     TAJO-1156: Improve the comparison of timestamp and date types. 
@@ -58,7 +60,17 @@ Release 0.9.1 - unreleased
     TAJO-1172: Remove Trevni storage type and its related classes.
     (DaeMyung Kang via hyunsik)
 
+
   BUG FIXES
+
+    TAJO-1181: Avro schema URL should support various protocols. 
+    (jinho)
+
+    TAJO-1200: Invalid shuffle data of multiple worker in same server.
+    (jinho)
+
+    TAJO-1197: Unit test failed: unable to create new native thread.
+    (jinho)
 
     TAJO-1178: Some error messages for wrong JSON queries are not so 
     much helpful. (Jaewoong Jung via jihoon)

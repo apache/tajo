@@ -209,7 +209,7 @@ public class TajoPullServerService extends AbstractService {
       readaheadLength = conf.getInt(SHUFFLE_READAHEAD_BYTES,
           DEFAULT_SHUFFLE_READAHEAD_BYTES);
 
-      int workerNum = conf.getInt("tajo.shuffle.rpc.server.io-thread-num",
+      int workerNum = conf.getInt("tajo.shuffle.rpc.server.worker-thread-num",
           Runtime.getRuntime().availableProcessors() * 2);
 
       selector = RpcChannelFactory.createServerChannelFactory("PullServerAuxService", workerNum);
