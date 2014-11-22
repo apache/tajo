@@ -102,7 +102,7 @@ function runQuery() {
     var resultJson = $.parseJSON(msg);
     if(resultJson.success == "false") {
       clearTimer();
-      alert(resultJson.errorMessage);
+      alert("query execution failed.");
       return;
     }
     queryRunnerId = resultJson.queryRunnerId;
@@ -116,7 +116,7 @@ function runQuery() {
         var resultJson = $.parseJSON(msg);
         if(resultJson.success == "false") {
           clearTimer();
-          alert(resultJson.errorMessage);
+          alert("query execution failed.");
           $("#queryStatus").html(getQueryStatusHtml(resultJson));
           return;
         }

@@ -310,6 +310,9 @@ public class QueryExecutorServlet extends HttpServlet {
             } else {
               modifiedMessage = errorMessage.toString();
             }
+            
+            String lineSeparator = System.getProperty("line.separator");
+            modifiedMessage = modifiedMessage.replaceAll(lineSeparator, "<br/>");
 
             error = new Exception(modifiedMessage);
           }
