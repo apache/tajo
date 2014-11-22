@@ -1439,9 +1439,6 @@ public class Bytes {
    */
   public static byte [] padHead(final byte [] a, final int length) {
     byte [] padding = new byte[length];
-    for (int i = 0; i < length; i++) {
-      padding[i] = 0;
-    }
     return add(padding,a);
   }
 
@@ -1452,9 +1449,6 @@ public class Bytes {
    */
   public static byte [] padTail(final byte [] a, final int length) {
     byte [] padding = new byte[length];
-    for (int i = 0; i < length; i++) {
-      padding[i] = 0;
-    }
     return add(a,padding);
   }
 
