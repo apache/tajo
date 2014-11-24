@@ -30,21 +30,21 @@ public class DatumAdapter implements GsonSerDerAdapter<Datum> {
 	public Datum deserialize(JsonElement json, Type typeOfT,
 			JsonDeserializationContext context) throws JsonParseException {
 		JsonObject jsonObject = json.getAsJsonObject();
-		String typeName = jsonObject.get("type").getAsString();
-    TajoDataTypes.Type type = TajoDataTypes.Type.valueOf(jsonObject.get("type").getAsString());
+		String typeName = CommonGsonHelper.getOrDie(jsonObject, "type").getAsString();
+    TajoDataTypes.Type type = TajoDataTypes.Type.valueOf(typeName);
     switch (type) {
     case DATE:
-      return new DateDatum(jsonObject.get("value").getAsInt());
+      return new DateDatum(CommonGsonHelper.getOrDie(jsonObject, "value").getAsInt());
     case TIME:
-      return new TimeDatum(jsonObject.get("value").getAsLong());
+      return new TimeDatum(CommonGsonHelper.getOrDie(jsonObject, "value").getAsLong());
     case TIMESTAMP:
-      return new TimestampDatum(jsonObject.get("value").getAsLong());
+      return new TimestampDatum(CommonGsonHelper.getOrDie(jsonObject, "value").getAsLong());
     case INTERVAL:
-      String[] values = jsonObject.get("value").getAsString().split(",");
+      String[] values = CommonGsonHelper.getOrDie(jsonObject, "value").getAsString().split(",");
 
       return new IntervalDatum(Integer.parseInt(values[0]), Long.parseLong(values[1]));
     default:
-      return context.deserialize(jsonObject.get("body"),
+      return context.deserialize(CommonGsonHelper.getOrDie(jsonObject, "body"),
           DatumFactory.getDatumClass(TajoDataTypes.Type.valueOf(typeName)));
     }
 	}

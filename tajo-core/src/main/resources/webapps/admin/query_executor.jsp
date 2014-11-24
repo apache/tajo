@@ -96,7 +96,7 @@ function runQuery() {
   $.ajax({
     type: "POST",
     url: "query_exec",
-    data: { action: "runQuery", query: query, limitSize:SIZE_LIMIT, database: sbox.options[sbox.selectedIndex].text }
+    data: { action: "runQuery", query: query, prevQueryId: queryRunnerId, limitSize:SIZE_LIMIT, database: sbox.options[sbox.selectedIndex].text }
   })
   .done(function(msg) {
     var resultJson = $.parseJSON(msg);
@@ -329,7 +329,7 @@ function getPage() {
   <hr/>
   <div id="queryResultTools"></div>
   <hr/>
-  <div style="dispaly:none;"><form name="dataForm" id="dataForm" method="post" action="getCSV.jsp"><input type="hidden" id="csvData" name="csvData" value="" /></div>
+  <div style="display:none;"><form name="dataForm" id="dataForm" method="post" action="getCSV.jsp"><input type="hidden" id="csvData" name="csvData" value="" /></div>
 </div>
 </body>
 </html>

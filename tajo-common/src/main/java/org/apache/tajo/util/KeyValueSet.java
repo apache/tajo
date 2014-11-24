@@ -24,7 +24,6 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.json.GsonObject;
-import sun.misc.FloatingDecimal;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -173,11 +172,10 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
     if (containsKey(key)) {
       String strVal = get(key, null);
       try {
-        sun.misc.FloatingDecimal fd = FloatingDecimal.readJavaFormatString(strVal);
-        if (Float.MAX_VALUE < fd.doubleValue()) {
+        if (Float.MAX_VALUE < Double.parseDouble(strVal)) {
           throw new IllegalStateException("Parsed value is overflow in float type");
         }
-        return fd.floatValue();
+        return Float.parseFloat(strVal);
       } catch (NumberFormatException nfe) {
         throw new IllegalArgumentException("No such a config key: "  + key);
       }
