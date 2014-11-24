@@ -35,10 +35,9 @@ import org.slf4j.LoggerFactory;
 public class TQueryResult implements org.apache.thrift.TBase<TQueryResult, TQueryResult._Fields>, java.io.Serializable, Cloneable, Comparable<TQueryResult> {
   private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("TQueryResult");
 
-  private static final org.apache.thrift.protocol.TField QUERY_STATUS_FIELD_DESC = new org.apache.thrift.protocol.TField("queryStatus", org.apache.thrift.protocol.TType.STRUCT, (short)1);
-  private static final org.apache.thrift.protocol.TField TABLE_DESC_FIELD_DESC = new org.apache.thrift.protocol.TField("tableDesc", org.apache.thrift.protocol.TType.STRUCT, (short)2);
-  private static final org.apache.thrift.protocol.TField ROWS_FIELD_DESC = new org.apache.thrift.protocol.TField("rows", org.apache.thrift.protocol.TType.LIST, (short)3);
-  private static final org.apache.thrift.protocol.TField SCHEMA_FIELD_DESC = new org.apache.thrift.protocol.TField("schema", org.apache.thrift.protocol.TType.STRUCT, (short)4);
+  private static final org.apache.thrift.protocol.TField TABLE_DESC_FIELD_DESC = new org.apache.thrift.protocol.TField("tableDesc", org.apache.thrift.protocol.TType.STRUCT, (short)1);
+  private static final org.apache.thrift.protocol.TField ROWS_FIELD_DESC = new org.apache.thrift.protocol.TField("rows", org.apache.thrift.protocol.TType.LIST, (short)2);
+  private static final org.apache.thrift.protocol.TField SCHEMA_FIELD_DESC = new org.apache.thrift.protocol.TField("schema", org.apache.thrift.protocol.TType.STRUCT, (short)3);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -46,17 +45,15 @@ public class TQueryResult implements org.apache.thrift.TBase<TQueryResult, TQuer
     schemes.put(TupleScheme.class, new TQueryResultTupleSchemeFactory());
   }
 
-  public TGetQueryStatusResponse queryStatus; // required
   public TTableDesc tableDesc; // required
   public List<ByteBuffer> rows; // required
   public TSchema schema; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-    QUERY_STATUS((short)1, "queryStatus"),
-    TABLE_DESC((short)2, "tableDesc"),
-    ROWS((short)3, "rows"),
-    SCHEMA((short)4, "schema");
+    TABLE_DESC((short)1, "tableDesc"),
+    ROWS((short)2, "rows"),
+    SCHEMA((short)3, "schema");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -71,13 +68,11 @@ public class TQueryResult implements org.apache.thrift.TBase<TQueryResult, TQuer
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // QUERY_STATUS
-          return QUERY_STATUS;
-        case 2: // TABLE_DESC
+        case 1: // TABLE_DESC
           return TABLE_DESC;
-        case 3: // ROWS
+        case 2: // ROWS
           return ROWS;
-        case 4: // SCHEMA
+        case 3: // SCHEMA
           return SCHEMA;
         default:
           return null;
@@ -122,8 +117,6 @@ public class TQueryResult implements org.apache.thrift.TBase<TQueryResult, TQuer
   public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.QUERY_STATUS, new org.apache.thrift.meta_data.FieldMetaData("queryStatus", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-        new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TGetQueryStatusResponse.class)));
     tmpMap.put(_Fields.TABLE_DESC, new org.apache.thrift.meta_data.FieldMetaData("tableDesc", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TTableDesc.class)));
     tmpMap.put(_Fields.ROWS, new org.apache.thrift.meta_data.FieldMetaData("rows", org.apache.thrift.TFieldRequirementType.DEFAULT, 
@@ -139,13 +132,11 @@ public class TQueryResult implements org.apache.thrift.TBase<TQueryResult, TQuer
   }
 
   public TQueryResult(
-    TGetQueryStatusResponse queryStatus,
     TTableDesc tableDesc,
     List<ByteBuffer> rows,
     TSchema schema)
   {
     this();
-    this.queryStatus = queryStatus;
     this.tableDesc = tableDesc;
     this.rows = rows;
     this.schema = schema;
@@ -155,9 +146,6 @@ public class TQueryResult implements org.apache.thrift.TBase<TQueryResult, TQuer
    * Performs a deep copy on <i>other</i>.
    */
   public TQueryResult(TQueryResult other) {
-    if (other.isSetQueryStatus()) {
-      this.queryStatus = new TGetQueryStatusResponse(other.queryStatus);
-    }
     if (other.isSetTableDesc()) {
       this.tableDesc = new TTableDesc(other.tableDesc);
     }
@@ -176,34 +164,9 @@ public class TQueryResult implements org.apache.thrift.TBase<TQueryResult, TQuer
 
   @Override
   public void clear() {
-    this.queryStatus = null;
     this.tableDesc = null;
     this.rows = null;
     this.schema = null;
-  }
-
-  public TGetQueryStatusResponse getQueryStatus() {
-    return this.queryStatus;
-  }
-
-  public TQueryResult setQueryStatus(TGetQueryStatusResponse queryStatus) {
-    this.queryStatus = queryStatus;
-    return this;
-  }
-
-  public void unsetQueryStatus() {
-    this.queryStatus = null;
-  }
-
-  /** Returns true if field queryStatus is set (has been assigned a value) and false otherwise */
-  public boolean isSetQueryStatus() {
-    return this.queryStatus != null;
-  }
-
-  public void setQueryStatusIsSet(boolean value) {
-    if (!value) {
-      this.queryStatus = null;
-    }
   }
 
   public TTableDesc getTableDesc() {
@@ -295,14 +258,6 @@ public class TQueryResult implements org.apache.thrift.TBase<TQueryResult, TQuer
 
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
-    case QUERY_STATUS:
-      if (value == null) {
-        unsetQueryStatus();
-      } else {
-        setQueryStatus((TGetQueryStatusResponse)value);
-      }
-      break;
-
     case TABLE_DESC:
       if (value == null) {
         unsetTableDesc();
@@ -332,9 +287,6 @@ public class TQueryResult implements org.apache.thrift.TBase<TQueryResult, TQuer
 
   public Object getFieldValue(_Fields field) {
     switch (field) {
-    case QUERY_STATUS:
-      return getQueryStatus();
-
     case TABLE_DESC:
       return getTableDesc();
 
@@ -355,8 +307,6 @@ public class TQueryResult implements org.apache.thrift.TBase<TQueryResult, TQuer
     }
 
     switch (field) {
-    case QUERY_STATUS:
-      return isSetQueryStatus();
     case TABLE_DESC:
       return isSetTableDesc();
     case ROWS:
@@ -379,15 +329,6 @@ public class TQueryResult implements org.apache.thrift.TBase<TQueryResult, TQuer
   public boolean equals(TQueryResult that) {
     if (that == null)
       return false;
-
-    boolean this_present_queryStatus = true && this.isSetQueryStatus();
-    boolean that_present_queryStatus = true && that.isSetQueryStatus();
-    if (this_present_queryStatus || that_present_queryStatus) {
-      if (!(this_present_queryStatus && that_present_queryStatus))
-        return false;
-      if (!this.queryStatus.equals(that.queryStatus))
-        return false;
-    }
 
     boolean this_present_tableDesc = true && this.isSetTableDesc();
     boolean that_present_tableDesc = true && that.isSetTableDesc();
@@ -432,16 +373,6 @@ public class TQueryResult implements org.apache.thrift.TBase<TQueryResult, TQuer
 
     int lastComparison = 0;
 
-    lastComparison = Boolean.valueOf(isSetQueryStatus()).compareTo(other.isSetQueryStatus());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetQueryStatus()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.queryStatus, other.queryStatus);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
     lastComparison = Boolean.valueOf(isSetTableDesc()).compareTo(other.isSetTableDesc());
     if (lastComparison != 0) {
       return lastComparison;
@@ -492,14 +423,6 @@ public class TQueryResult implements org.apache.thrift.TBase<TQueryResult, TQuer
     StringBuilder sb = new StringBuilder("TQueryResult(");
     boolean first = true;
 
-    sb.append("queryStatus:");
-    if (this.queryStatus == null) {
-      sb.append("null");
-    } else {
-      sb.append(this.queryStatus);
-    }
-    first = false;
-    if (!first) sb.append(", ");
     sb.append("tableDesc:");
     if (this.tableDesc == null) {
       sb.append("null");
@@ -530,9 +453,6 @@ public class TQueryResult implements org.apache.thrift.TBase<TQueryResult, TQuer
   public void validate() throws TException {
     // check for required fields
     // check for sub-struct validity
-    if (queryStatus != null) {
-      queryStatus.validate();
-    }
     if (tableDesc != null) {
       tableDesc.validate();
     }
@@ -575,16 +495,7 @@ public class TQueryResult implements org.apache.thrift.TBase<TQueryResult, TQuer
           break;
         }
         switch (schemeField.id) {
-          case 1: // QUERY_STATUS
-            if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-              struct.queryStatus = new TGetQueryStatusResponse();
-              struct.queryStatus.read(iprot);
-              struct.setQueryStatusIsSet(true);
-            } else { 
-              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-            }
-            break;
-          case 2: // TABLE_DESC
+          case 1: // TABLE_DESC
             if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
               struct.tableDesc = new TTableDesc();
               struct.tableDesc.read(iprot);
@@ -593,7 +504,7 @@ public class TQueryResult implements org.apache.thrift.TBase<TQueryResult, TQuer
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 3: // ROWS
+          case 2: // ROWS
             if (schemeField.type == org.apache.thrift.protocol.TType.LIST) {
               {
                 org.apache.thrift.protocol.TList _list18 = iprot.readListBegin();
@@ -611,7 +522,7 @@ public class TQueryResult implements org.apache.thrift.TBase<TQueryResult, TQuer
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
-          case 4: // SCHEMA
+          case 3: // SCHEMA
             if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
               struct.schema = new TSchema();
               struct.schema.read(iprot);
@@ -635,11 +546,6 @@ public class TQueryResult implements org.apache.thrift.TBase<TQueryResult, TQuer
       struct.validate();
 
       oprot.writeStructBegin(STRUCT_DESC);
-      if (struct.queryStatus != null) {
-        oprot.writeFieldBegin(QUERY_STATUS_FIELD_DESC);
-        struct.queryStatus.write(oprot);
-        oprot.writeFieldEnd();
-      }
       if (struct.tableDesc != null) {
         oprot.writeFieldBegin(TABLE_DESC_FIELD_DESC);
         struct.tableDesc.write(oprot);
@@ -680,22 +586,16 @@ public class TQueryResult implements org.apache.thrift.TBase<TQueryResult, TQuer
     public void write(org.apache.thrift.protocol.TProtocol prot, TQueryResult struct) throws TException {
       TTupleProtocol oprot = (TTupleProtocol) prot;
       BitSet optionals = new BitSet();
-      if (struct.isSetQueryStatus()) {
+      if (struct.isSetTableDesc()) {
         optionals.set(0);
       }
-      if (struct.isSetTableDesc()) {
+      if (struct.isSetRows()) {
         optionals.set(1);
       }
-      if (struct.isSetRows()) {
+      if (struct.isSetSchema()) {
         optionals.set(2);
       }
-      if (struct.isSetSchema()) {
-        optionals.set(3);
-      }
-      oprot.writeBitSet(optionals, 4);
-      if (struct.isSetQueryStatus()) {
-        struct.queryStatus.write(oprot);
-      }
+      oprot.writeBitSet(optionals, 3);
       if (struct.isSetTableDesc()) {
         struct.tableDesc.write(oprot);
       }
@@ -716,18 +616,13 @@ public class TQueryResult implements org.apache.thrift.TBase<TQueryResult, TQuer
     @Override
     public void read(org.apache.thrift.protocol.TProtocol prot, TQueryResult struct) throws TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      BitSet incoming = iprot.readBitSet(4);
+      BitSet incoming = iprot.readBitSet(3);
       if (incoming.get(0)) {
-        struct.queryStatus = new TGetQueryStatusResponse();
-        struct.queryStatus.read(iprot);
-        struct.setQueryStatusIsSet(true);
-      }
-      if (incoming.get(1)) {
         struct.tableDesc = new TTableDesc();
         struct.tableDesc.read(iprot);
         struct.setTableDescIsSet(true);
       }
-      if (incoming.get(2)) {
+      if (incoming.get(1)) {
         {
           org.apache.thrift.protocol.TList _list23 = new org.apache.thrift.protocol.TList(org.apache.thrift.protocol.TType.STRING, iprot.readI32());
           struct.rows = new ArrayList<ByteBuffer>(_list23.size);
@@ -740,7 +635,7 @@ public class TQueryResult implements org.apache.thrift.TBase<TQueryResult, TQuer
         }
         struct.setRowsIsSet(true);
       }
-      if (incoming.get(3)) {
+      if (incoming.get(2)) {
         struct.schema = new TSchema();
         struct.schema.read(iprot);
         struct.setSchemaIsSet(true);

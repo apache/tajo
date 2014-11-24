@@ -46,6 +46,7 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
   private static final org.apache.thrift.protocol.TField ERROR_TRACE_FIELD_DESC = new org.apache.thrift.protocol.TField("errorTrace", org.apache.thrift.protocol.TType.STRING, (short)9);
   private static final org.apache.thrift.protocol.TField QUERY_MASTER_HOST_FIELD_DESC = new org.apache.thrift.protocol.TField("queryMasterHost", org.apache.thrift.protocol.TType.STRING, (short)10);
   private static final org.apache.thrift.protocol.TField QUERY_MASTER_PORT_FIELD_DESC = new org.apache.thrift.protocol.TField("queryMasterPort", org.apache.thrift.protocol.TType.I32, (short)11);
+  private static final org.apache.thrift.protocol.TField QUERY_RESULT_FIELD_DESC = new org.apache.thrift.protocol.TField("queryResult", org.apache.thrift.protocol.TType.STRUCT, (short)12);
 
   private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
   static {
@@ -64,6 +65,7 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
   public String errorTrace; // required
   public String queryMasterHost; // required
   public int queryMasterPort; // required
+  public TQueryResult queryResult; // required
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -77,7 +79,8 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
     ERROR_MESSAGE((short)8, "errorMessage"),
     ERROR_TRACE((short)9, "errorTrace"),
     QUERY_MASTER_HOST((short)10, "queryMasterHost"),
-    QUERY_MASTER_PORT((short)11, "queryMasterPort");
+    QUERY_MASTER_PORT((short)11, "queryMasterPort"),
+    QUERY_RESULT((short)12, "queryResult");
 
     private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
 
@@ -114,6 +117,8 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
           return QUERY_MASTER_HOST;
         case 11: // QUERY_MASTER_PORT
           return QUERY_MASTER_PORT;
+        case 12: // QUERY_RESULT
+          return QUERY_RESULT;
         default:
           return null;
       }
@@ -185,6 +190,8 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
     tmpMap.put(_Fields.QUERY_MASTER_PORT, new org.apache.thrift.meta_data.FieldMetaData("queryMasterPort", org.apache.thrift.TFieldRequirementType.DEFAULT, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
+    tmpMap.put(_Fields.QUERY_RESULT, new org.apache.thrift.meta_data.FieldMetaData("queryResult", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+        new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, TQueryResult.class)));
     metaDataMap = Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(TGetQueryStatusResponse.class, metaDataMap);
   }
@@ -203,7 +210,8 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
     String errorMessage,
     String errorTrace,
     String queryMasterHost,
-    int queryMasterPort)
+    int queryMasterPort,
+    TQueryResult queryResult)
   {
     this();
     this.resultCode = resultCode;
@@ -222,6 +230,7 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
     this.queryMasterHost = queryMasterHost;
     this.queryMasterPort = queryMasterPort;
     setQueryMasterPortIsSet(true);
+    this.queryResult = queryResult;
   }
 
   /**
@@ -252,6 +261,9 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
       this.queryMasterHost = other.queryMasterHost;
     }
     this.queryMasterPort = other.queryMasterPort;
+    if (other.isSetQueryResult()) {
+      this.queryResult = new TQueryResult(other.queryResult);
+    }
   }
 
   public TGetQueryStatusResponse deepCopy() {
@@ -276,6 +288,7 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
     this.queryMasterHost = null;
     setQueryMasterPortIsSet(false);
     this.queryMasterPort = 0;
+    this.queryResult = null;
   }
 
   public String getResultCode() {
@@ -537,6 +550,30 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
     __isset_bitfield = EncodingUtils.setBit(__isset_bitfield, __QUERYMASTERPORT_ISSET_ID, value);
   }
 
+  public TQueryResult getQueryResult() {
+    return this.queryResult;
+  }
+
+  public TGetQueryStatusResponse setQueryResult(TQueryResult queryResult) {
+    this.queryResult = queryResult;
+    return this;
+  }
+
+  public void unsetQueryResult() {
+    this.queryResult = null;
+  }
+
+  /** Returns true if field queryResult is set (has been assigned a value) and false otherwise */
+  public boolean isSetQueryResult() {
+    return this.queryResult != null;
+  }
+
+  public void setQueryResultIsSet(boolean value) {
+    if (!value) {
+      this.queryResult = null;
+    }
+  }
+
   public void setFieldValue(_Fields field, Object value) {
     switch (field) {
     case RESULT_CODE:
@@ -627,6 +664,14 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
       }
       break;
 
+    case QUERY_RESULT:
+      if (value == null) {
+        unsetQueryResult();
+      } else {
+        setQueryResult((TQueryResult)value);
+      }
+      break;
+
     }
   }
 
@@ -665,6 +710,9 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
     case QUERY_MASTER_PORT:
       return Integer.valueOf(getQueryMasterPort());
 
+    case QUERY_RESULT:
+      return getQueryResult();
+
     }
     throw new IllegalStateException();
   }
@@ -698,6 +746,8 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
       return isSetQueryMasterHost();
     case QUERY_MASTER_PORT:
       return isSetQueryMasterPort();
+    case QUERY_RESULT:
+      return isSetQueryResult();
     }
     throw new IllegalStateException();
   }
@@ -811,6 +861,15 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
       if (!(this_present_queryMasterPort && that_present_queryMasterPort))
         return false;
       if (this.queryMasterPort != that.queryMasterPort)
+        return false;
+    }
+
+    boolean this_present_queryResult = true && this.isSetQueryResult();
+    boolean that_present_queryResult = true && that.isSetQueryResult();
+    if (this_present_queryResult || that_present_queryResult) {
+      if (!(this_present_queryResult && that_present_queryResult))
+        return false;
+      if (!this.queryResult.equals(that.queryResult))
         return false;
     }
 
@@ -940,6 +999,16 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
         return lastComparison;
       }
     }
+    lastComparison = Boolean.valueOf(isSetQueryResult()).compareTo(other.isSetQueryResult());
+    if (lastComparison != 0) {
+      return lastComparison;
+    }
+    if (isSetQueryResult()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.queryResult, other.queryResult);
+      if (lastComparison != 0) {
+        return lastComparison;
+      }
+    }
     return 0;
   }
 
@@ -1027,6 +1096,14 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
     sb.append("queryMasterPort:");
     sb.append(this.queryMasterPort);
     first = false;
+    if (!first) sb.append(", ");
+    sb.append("queryResult:");
+    if (this.queryResult == null) {
+      sb.append("null");
+    } else {
+      sb.append(this.queryResult);
+    }
+    first = false;
     sb.append(")");
     return sb.toString();
   }
@@ -1034,6 +1111,9 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
   public void validate() throws TException {
     // check for required fields
     // check for sub-struct validity
+    if (queryResult != null) {
+      queryResult.validate();
+    }
   }
 
   private void writeObject(java.io.ObjectOutputStream out) throws java.io.IOException {
@@ -1160,6 +1240,15 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
             break;
+          case 12: // QUERY_RESULT
+            if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
+              struct.queryResult = new TQueryResult();
+              struct.queryResult.read(iprot);
+              struct.setQueryResultIsSet(true);
+            } else { 
+              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
+            }
+            break;
           default:
             org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
         }
@@ -1220,6 +1309,11 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
       oprot.writeFieldBegin(QUERY_MASTER_PORT_FIELD_DESC);
       oprot.writeI32(struct.queryMasterPort);
       oprot.writeFieldEnd();
+      if (struct.queryResult != null) {
+        oprot.writeFieldBegin(QUERY_RESULT_FIELD_DESC);
+        struct.queryResult.write(oprot);
+        oprot.writeFieldEnd();
+      }
       oprot.writeFieldStop();
       oprot.writeStructEnd();
     }
@@ -1271,7 +1365,10 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
       if (struct.isSetQueryMasterPort()) {
         optionals.set(10);
       }
-      oprot.writeBitSet(optionals, 11);
+      if (struct.isSetQueryResult()) {
+        optionals.set(11);
+      }
+      oprot.writeBitSet(optionals, 12);
       if (struct.isSetResultCode()) {
         oprot.writeString(struct.resultCode);
       }
@@ -1305,12 +1402,15 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
       if (struct.isSetQueryMasterPort()) {
         oprot.writeI32(struct.queryMasterPort);
       }
+      if (struct.isSetQueryResult()) {
+        struct.queryResult.write(oprot);
+      }
     }
 
     @Override
     public void read(org.apache.thrift.protocol.TProtocol prot, TGetQueryStatusResponse struct) throws TException {
       TTupleProtocol iprot = (TTupleProtocol) prot;
-      BitSet incoming = iprot.readBitSet(11);
+      BitSet incoming = iprot.readBitSet(12);
       if (incoming.get(0)) {
         struct.resultCode = iprot.readString();
         struct.setResultCodeIsSet(true);
@@ -1354,6 +1454,11 @@ public class TGetQueryStatusResponse implements org.apache.thrift.TBase<TGetQuer
       if (incoming.get(10)) {
         struct.queryMasterPort = iprot.readI32();
         struct.setQueryMasterPortIsSet(true);
+      }
+      if (incoming.get(11)) {
+        struct.queryResult = new TQueryResult();
+        struct.queryResult.read(iprot);
+        struct.setQueryResultIsSet(true);
       }
     }
   }

@@ -53,39 +53,6 @@ struct TSchema {
   1:list<TColumn> columns
 }
 
-struct TGetQueryStatusResponse {
-  1:string resultCode,
-  2:string queryId,
-  3:string state,
-  4:double progress,
-  5:i64 submitTime,
-  6:i64 finishTime,
-  7:bool hasResult,
-  8:string errorMessage,
-  9:string errorTrace,
-  10:string queryMasterHost,
-  11:i32 queryMasterPort
-}
-
-struct TServerResponse {
-  1:string resultCode,
-  2:bool boolResult,
-  3:string errorMessage,
-  4:string detailErrorMessage,
-  5:string sessionId
-}
-
-struct TBriefQueryInfo {
-  1:string queryId,
-  2:string state,
-  3:i64 startTime,
-  4:i64 finishTime,
-  5:string query,
-  6:string queryMasterHost,
-  7:i32 queryMasterPort,
-  8:double progress
-}
-
 struct TTableStats {
   1:i64 numRows,
   2:i64 numBytes,
@@ -114,10 +81,43 @@ struct TTableDesc {
 }
 
 struct TQueryResult {
-  1:TGetQueryStatusResponse queryStatus,
-  2:TTableDesc tableDesc,
-  3:list<binary> rows,
-  4:TSchema schema
+  1:TTableDesc tableDesc,
+  2:list<binary> rows,
+  3:TSchema schema
+}
+
+struct TGetQueryStatusResponse {
+  1:string resultCode,
+  2:string queryId,
+  3:string state,
+  4:double progress,
+  5:i64 submitTime,
+  6:i64 finishTime,
+  7:bool hasResult,
+  8:string errorMessage,
+  9:string errorTrace,
+  10:string queryMasterHost,
+  11:i32 queryMasterPort,
+  12:TQueryResult queryResult;
+}
+
+struct TServerResponse {
+  1:string resultCode,
+  2:bool boolResult,
+  3:string errorMessage,
+  4:string detailErrorMessage,
+  5:string sessionId
+}
+
+struct TBriefQueryInfo {
+  1:string queryId,
+  2:string state,
+  3:i64 startTime,
+  4:i64 finishTime,
+  5:string query,
+  6:string queryMasterHost,
+  7:i32 queryMasterPort,
+  8:double progress
 }
 
 service TajoThriftService {

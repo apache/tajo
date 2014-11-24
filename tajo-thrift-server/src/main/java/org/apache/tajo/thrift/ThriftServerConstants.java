@@ -33,8 +33,6 @@ public interface ThriftServerConstants {
   public static final String MAX_SESSION_CONF_KEY = "tajo.thrift.max.sessions";
   public static final String MAX_TASK_RUNNER_CONF_KEY = "tajo.thrift.max.taskrunners";
 
-  public static final String SERVER_LIST_CONF_KEY = "tajo.thrift.servers";
-
   static final String DEFAULT_BIND_ADDRESS = "0.0.0.0";
   static final int DEFAULT_LISTEN_PORT = 26700;
   static final String INFO_SERVER_DEFAULT_ADDRESS = "0.0.0.0:26800";

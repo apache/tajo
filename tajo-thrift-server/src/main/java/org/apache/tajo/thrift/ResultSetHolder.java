@@ -19,19 +19,18 @@
 package org.apache.tajo.thrift;
 
 import org.apache.tajo.QueryId;
-import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TajoIdProtos.SessionIdProto;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.jdbc.TajoResultSetBase;
 
 public class ResultSetHolder {
-  TajoIdProtos.SessionIdProto sessionId;
-  QueryId queryId;
-  TajoResultSetBase rs;
-  TableDesc tableDesc;
-  Schema schema;
-  long lastTouchTime;
+  private SessionIdProto sessionId;
+  private QueryId queryId;
+  private TajoResultSetBase resultSet;
+  private TableDesc tableDesc;
+  private Schema schema;
+  private long lastTouchTime;
 
   public String getKey() {
     return getKey(sessionId, queryId);
@@ -39,5 +38,53 @@ public class ResultSetHolder {
 
   public static String getKey(SessionIdProto sessionId, QueryId queryId) {
     return sessionId.getId() + "," + queryId.toString();
+  }
+
+  public SessionIdProto getSessionId() {
+    return sessionId;
+  }
+
+  public void setSessionId(SessionIdProto sessionId) {
+    this.sessionId = sessionId;
+  }
+
+  public QueryId getQueryId() {
+    return queryId;
+  }
+
+  public void setQueryId(QueryId queryId) {
+    this.queryId = queryId;
+  }
+
+  public TableDesc getTableDesc() {
+    return tableDesc;
+  }
+
+  public void setTableDesc(TableDesc tableDesc) {
+    this.tableDesc = tableDesc;
+  }
+
+  public Schema getSchema() {
+    return schema;
+  }
+
+  public void setSchema(Schema schema) {
+    this.schema = schema;
+  }
+
+  public long getLastTouchTime() {
+    return lastTouchTime;
+  }
+
+  public void setLastTouchTime(long lastTouchTime) {
+    this.lastTouchTime = lastTouchTime;
+  }
+
+  public TajoResultSetBase getResultSet() {
+    return resultSet;
+  }
+
+  public void setResultSet(TajoResultSetBase resultSet) {
+    this.resultSet = resultSet;
   }
 }

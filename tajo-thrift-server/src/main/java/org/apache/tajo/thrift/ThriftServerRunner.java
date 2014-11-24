@@ -64,17 +64,12 @@ public class ThriftServerRunner extends Thread implements ThriftServerConstants 
 
     InetAddress listenAddress = getBindAddress();
     TServerSocket serverTransport = new TServerSocket(new InetSocketAddress(listenAddress, listenPort));
-    //TBoundedThreadPoolServer.Args serverArgs = new TBoundedThreadPoolServer.Args(serverTransport, conf);
-//    serverArgs.processor(processor)
-//        .transportFactory(transportFactory)
-//        .protocolFactory(protocolFactory);
-//
-//    TBoundedThreadPoolServer tserver = new TBoundedThreadPoolServer(serverArgs);
-    Args serverArgs = new Args(serverTransport);
+    TBoundedThreadPoolServer.Args serverArgs = new TBoundedThreadPoolServer.Args(serverTransport, conf);
     serverArgs.processor(processor)
         .transportFactory(transportFactory)
         .protocolFactory(protocolFactory);
-    TThreadPoolServer tserver = new TThreadPoolServer(serverArgs);
+
+    TBoundedThreadPoolServer tserver = new TBoundedThreadPoolServer(serverArgs);
     this.tserver = tserver;
 
     this.address = serverTransport.getServerSocket().getInetAddress().getHostName() + ":" +

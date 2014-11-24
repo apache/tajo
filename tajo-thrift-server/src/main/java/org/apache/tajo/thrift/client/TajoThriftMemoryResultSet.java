@@ -35,8 +35,13 @@ public class TajoThriftMemoryResultSet extends TajoResultSetBase {
   private List<ByteBuffer> serializedTuples;
   private AtomicBoolean closed = new AtomicBoolean(false);
   private RowStoreUtil.RowStoreDecoder decoder;
+  private TajoThriftClient client;
+  private String queryId;
 
-  public TajoThriftMemoryResultSet(Schema schema, List<ByteBuffer> serializedTuples, int maxRowNum) {
+  public TajoThriftMemoryResultSet(TajoThriftClient client, String queryId, Schema schema,
+                                   List<ByteBuffer> serializedTuples, int maxRowNum) {
+    this.client = client;
+    this.queryId = queryId;
     this.schema = schema;
     this.totalRows = maxRowNum;
     this.serializedTuples = serializedTuples;
@@ -56,6 +61,7 @@ public class TajoThriftMemoryResultSet extends TajoResultSetBase {
       return;
     }
 
+    client.closeQuery(queryId);
     cur = null;
     curRow = -1;
     serializedTuples = null;

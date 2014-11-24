@@ -25,6 +25,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.annotation.Nullable;
+import org.apache.tajo.annotation.ThreadSafe;
 import org.apache.tajo.client.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos.*;
@@ -32,7 +33,6 @@ import org.apache.tajo.thrift.TajoThriftUtil;
 import org.apache.tajo.thrift.ThriftServerConstants;
 import org.apache.tajo.thrift.generated.*;
 import org.apache.tajo.thrift.generated.TajoThriftService.Client;
-import org.apache.tajo.util.TUtil;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
@@ -43,12 +43,13 @@ import java.sql.ResultSet;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@ThreadSafe
 public class TajoThriftClient {
   private final Log LOG = LogFactory.getLog(TajoThriftClient.class);
 
   protected final TajoConf tajoConf;
 
-  protected String currentThriftServer;
+  protected String thriftServer;
 
   protected Client currentClient;
 
@@ -60,32 +61,33 @@ public class TajoThriftClient {
 
   private AtomicBoolean closed = new AtomicBoolean(false);
 
-  private Random rand = new Random(System.currentTimeMillis());
+  // Thrift client is thread unsafe. So every call should be synchronized with callMonitor.
+  private Object callMonitor = new Object();
 
-  public TajoThriftClient(TajoConf tajoConf) throws IOException {
-    this(tajoConf, null);
+  public TajoThriftClient(TajoConf tajoConf, String thriftServer) throws IOException {
+    this(tajoConf, thriftServer, null);
+
   }
 
   /**
    * Connect to ThriftServer
    *
    * @param tajoConf     TajoConf
+   * @param thriftServer ThriftServer
    * @param baseDatabase The base database name. It is case sensitive. If it is null,
    *                     the 'default' database will be used.
    * @throws java.io.IOException
    */
-  public TajoThriftClient(TajoConf tajoConf, @Nullable String baseDatabase) throws IOException {
+  public TajoThriftClient(TajoConf tajoConf, String thriftServer, @Nullable String baseDatabase) throws IOException {
     this.tajoConf = tajoConf;
+    this.thriftServer = thriftServer;
     this.baseDatabase = baseDatabase;
+
     this.userInfo = UserGroupInformation.getCurrentUser();
 
-    if (tajoConf.get(ThriftServerConstants.SERVER_LIST_CONF_KEY) == null ||
-        tajoConf.get(ThriftServerConstants.SERVER_LIST_CONF_KEY).isEmpty()) {
-      String serverAddress = "localhost:" +
-              tajoConf.getInt(ThriftServerConstants.SERVER_PORT_CONF_KEY, ThriftServerConstants.DEFAULT_LISTEN_PORT);
-      tajoConf.set(ThriftServerConstants.SERVER_LIST_CONF_KEY, serverAddress);
+    synchronized (callMonitor) {
+      makeConnection();
     }
-    makeConnection(null);
   }
 
   public TajoConf getConf() {
@@ -96,18 +98,9 @@ public class TajoThriftClient {
     return userInfo;
   }
 
-  protected void makeConnection(String thriftServer) throws IOException {
+  protected void makeConnection() throws IOException {
+    // Should be synchronized with callMonitor
     if (currentClient == null) {
-      if (thriftServer == null) {
-        List<String> thriftServers = TUtil.newList(
-            tajoConf.getStrings(ThriftServerConstants.SERVER_LIST_CONF_KEY));
-
-        if (thriftServers.isEmpty()) {
-          thriftServers.add(ThriftServerConstants.DEFAULT_BIND_ADDRESS);
-        }
-        thriftServer = thriftServers.get(rand.nextInt(thriftServers.size()));
-        currentThriftServer = thriftServer;
-      }
       String[] tokens = thriftServer.split(":");
       TTransport transport = new TSocket(tokens[0], Integer.parseInt(tokens[1]));
       try {
@@ -120,17 +113,9 @@ public class TajoThriftClient {
     }
   }
 
-  protected void reconnect() throws IOException {
-    if (currentClient != null) {
-      TajoThriftUtil.close(currentClient);
-    }
-    currentClient = null;
-    makeConnection(currentThriftServer);
-  }
-
   public boolean createDatabase(final String databaseName) throws Exception {
     return new ReconnectThriftServerCallable<Boolean>(currentClient) {
-      public Boolean call(Client client) throws Exception {
+      public Boolean syncCall(Client client) throws Exception {
         checkSessionAndGet(client);
         return client.createDatabase(sessionId, databaseName);
       }
@@ -139,7 +124,7 @@ public class TajoThriftClient {
 
   public boolean existDatabase(final String databaseName) throws Exception {
     return new ReconnectThriftServerCallable<Boolean>(currentClient) {
-      public Boolean call(Client client) throws Exception {
+      public Boolean syncCall(Client client) throws Exception {
         checkSessionAndGet(client);
         return client.existDatabase(sessionId, databaseName);
       }
@@ -148,7 +133,7 @@ public class TajoThriftClient {
 
   public boolean dropDatabase(final String databaseName) throws Exception {
     return new ReconnectThriftServerCallable<Boolean>(currentClient) {
-      public Boolean call(Client client) throws Exception {
+      public Boolean syncCall(Client client) throws Exception {
         checkSessionAndGet(client);
         return client.dropDatabase(sessionId, databaseName);
       }
@@ -157,7 +142,7 @@ public class TajoThriftClient {
 
   public List<String> getAllDatabaseNames() throws Exception {
     return new ReconnectThriftServerCallable<List<String>>(currentClient) {
-      public List<String> call(Client client) throws Exception {
+      public List<String> syncCall(Client client) throws Exception {
         checkSessionAndGet(client);
         return client.getAllDatabases(sessionId);
       }
@@ -166,14 +151,11 @@ public class TajoThriftClient {
 
   public boolean existTable(final String tableName) throws Exception {
     return new ReconnectThriftServerCallable<Boolean>(currentClient) {
-      public Boolean call(Client client) throws Exception {
+      public Boolean syncCall(Client client) throws Exception {
         try {
-          LOG.fatal(">>>>>>>>BBBBB>" + client);
           checkSessionAndGet(client);
           return client.existTable(sessionId, tableName);
         } catch (Exception e) {
-          LOG.fatal(">>>>>>>>>>>>>>>>>>AAAAAA:" + e.getMessage(), e);
-
           abort();
           throw e;
         }
@@ -187,7 +169,7 @@ public class TajoThriftClient {
 
   public boolean dropTable(final String tableName, final boolean purge) throws Exception {
     return new ReconnectThriftServerCallable<Boolean>(currentClient) {
-      public Boolean call(Client client) throws Exception {
+      public Boolean syncCall(Client client) throws Exception {
         checkSessionAndGet(client);
         return client.dropTable(sessionId, tableName, purge);
       }
@@ -196,7 +178,7 @@ public class TajoThriftClient {
 
   public List<String> getTableList(@Nullable final String databaseName) throws Exception {
     return new ReconnectThriftServerCallable<List<String>>(currentClient) {
-      public List<String> call(Client client) throws Exception {
+      public List<String> syncCall(Client client) throws Exception {
         checkSessionAndGet(client);
         return client.getTableList(sessionId, databaseName);
       }
@@ -205,7 +187,7 @@ public class TajoThriftClient {
 
   public TTableDesc getTableDesc(final String tableName) throws Exception {
     return new ReconnectThriftServerCallable<TTableDesc>(currentClient) {
-      public TTableDesc call(Client client) throws Exception {
+      public TTableDesc syncCall(Client client) throws Exception {
         checkSessionAndGet(client);
         return client.getTableDesc(sessionId, tableName);
       }
@@ -224,7 +206,7 @@ public class TajoThriftClient {
 
   public TGetQueryStatusResponse executeQuery(final String sql) throws Exception {
     return new ReconnectThriftServerCallable<TGetQueryStatusResponse>(currentClient) {
-      public TGetQueryStatusResponse call(Client client) throws Exception {
+      public TGetQueryStatusResponse syncCall(Client client) throws Exception {
         checkSessionAndGet(client);
         return client.submitQuery(sessionId, sql, false);
       }
@@ -233,7 +215,7 @@ public class TajoThriftClient {
 
   public boolean updateQuery(final String sql) throws Exception {
     return new ReconnectThriftServerCallable<Boolean>(currentClient) {
-      public Boolean call(Client client) throws Exception {
+      public Boolean syncCall(Client client) throws Exception {
         checkSessionAndGet(client);
         return client.updateQuery(sessionId, sql).isBoolResult();
       }
@@ -243,7 +225,7 @@ public class TajoThriftClient {
   public ResultSet executeQueryAndGetResult(final String sql) throws ServiceException, IOException {
     try {
       TGetQueryStatusResponse response = new ReconnectThriftServerCallable<TGetQueryStatusResponse>(currentClient) {
-        public TGetQueryStatusResponse call(Client client) throws Exception {
+        public TGetQueryStatusResponse syncCall(Client client) throws Exception {
           checkSessionAndGet(client);
           TGetQueryStatusResponse response = null;
           try {
@@ -263,7 +245,7 @@ public class TajoThriftClient {
       }.withRetries();
 
       if (response != null && response.getQueryId() != null) {
-        return this.getQueryResultAndWait(response.getQueryId());
+        return this.getQueryResultAndWait(response.getQueryId(), response);
       } else {
         return createNullResultSet(QueryIdFactory.NULL_QUERY_ID.toString());
       }
@@ -281,25 +263,33 @@ public class TajoThriftClient {
 
     TQueryResult emptyQueryResult = new TQueryResult();
 
-    emptyQueryResult.setQueryStatus(emptyQueryStatus);
     emptyQueryResult.setRows(Collections.<ByteBuffer>emptyList());
     return new TajoThriftResultSet(this, queryId, emptyQueryResult);
   }
 
-  public ResultSet getQueryResultAndWait(String queryId) throws Exception {
+  public ResultSet getQueryResultAndWait(String queryId, TGetQueryStatusResponse queryResponse) throws Exception {
+    if (queryResponse.getQueryResult() != null) {
+      //select 1+1
+      TQueryResult queryResult = queryResponse.getQueryResult();
+      ResultSet resultSet = new TajoThriftMemoryResultSet(this, queryId,
+          TajoThriftUtil.convertSchema(queryResult.getSchema()),
+          queryResult.getRows(), queryResult.getRows() == null ? 0 : queryResult.getRows().size());
+      return resultSet;
+    }
+
     TGetQueryStatusResponse status = getQueryStatus(queryId);
     while(status != null && TajoThriftUtil.isQueryRunnning(status.getState())) {
+      status = getQueryStatus(queryId);
       try {
         //TODO use thread
         Thread.sleep(100);
       } catch (InterruptedException e) {
         e.printStackTrace();
       }
-
-      status = getQueryStatus(queryId);
     }
     if (QueryState.QUERY_SUCCEEDED.name().equals(status.getState())) {
       if (status.isHasResult()) {
+        //select * from lineitem
         return getQueryResult(queryId);
       } else {
         return createNullResultSet(queryId);
@@ -314,31 +304,22 @@ public class TajoThriftClient {
 
   public TGetQueryStatusResponse getQueryStatus(final String queryId) throws Exception {
     return new ReconnectThriftServerCallable<TGetQueryStatusResponse>(currentClient) {
-      public TGetQueryStatusResponse call(Client client) throws Exception {
+      public TGetQueryStatusResponse syncCall(Client client) throws Exception {
         checkSessionAndGet(client);
         return client.getQueryStatus(sessionId, queryId);
       }
     }.withRetries();
   }
 
-  public ResultSet getQueryResult(String queryId) throws IOException {
+  public ResultSet getQueryResult(String queryId) throws Exception {
     return getQueryResult(queryId, ThriftServerConstants.DEFAULT_FETCH_SIZE);
   }
 
-  public ResultSet getQueryResult(String queryId, int fetchSize) throws IOException {
+  public ResultSet getQueryResult(String queryId, int fetchSize) throws Exception {
     try {
       TQueryResult queryResult = getNextQueryResult(queryId, fetchSize);
-      ResultSet resultSet;
-      if (queryResult.getSchema() != null) {
-        resultSet = new TajoThriftMemoryResultSet(TajoThriftUtil.convertSchema(queryResult.getSchema()),
-            queryResult.getRows(), queryResult.getRows() == null ? 0 : queryResult.getRows().size());
-      } else {
-        if (queryResult.getTableDesc() == null) {
-          LOG.fatal(">>>>>>>>>>>>KKKKK>");
-        }
-        resultSet = new TajoThriftResultSet(this, queryId, queryResult);
-        resultSet.setFetchSize(fetchSize);
-      }
+      ResultSet resultSet = new TajoThriftResultSet(this, queryId, queryResult);
+      resultSet.setFetchSize(fetchSize);
 
       return resultSet;
     } catch (Exception e) {
@@ -349,8 +330,6 @@ public class TajoThriftClient {
 
   public TQueryResult getNextQueryResult(final String queryId, int fetchSize) throws IOException {
     try {
-      checkSessionAndGet(currentClient);
-
       return currentClient.getQueryResult(sessionId, queryId, fetchSize);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
@@ -385,7 +364,7 @@ public class TajoThriftClient {
 
   public List<TBriefQueryInfo> getQueryList() throws Exception {
     return new ReconnectThriftServerCallable<List<TBriefQueryInfo>>(currentClient) {
-      public List<TBriefQueryInfo> call(Client client) throws Exception {
+      public List<TBriefQueryInfo> syncCall(Client client) throws Exception {
         checkSessionAndGet(client);
         return client.getQueryList(sessionId);
       }
@@ -394,7 +373,7 @@ public class TajoThriftClient {
 
   public boolean killQuery(final String queryId) throws Exception {
     return new ReconnectThriftServerCallable<Boolean>(currentClient) {
-      public Boolean call(Client client) throws Exception {
+      public Boolean syncCall(Client client) throws Exception {
         checkSessionAndGet(client);
         TServerResponse response = client.killQuery(sessionId, queryId);
         if (!ResultCode.OK.name().equals(response.getResultCode())) {
@@ -408,7 +387,7 @@ public class TajoThriftClient {
 
   public String getCurrentDatabase() throws Exception {
     return new ReconnectThriftServerCallable<String>(currentClient) {
-      public String call(Client client) throws Exception {
+      public String syncCall(Client client) throws Exception {
         checkSessionAndGet(client);
         return client.getCurrentDatabase(sessionId.toString());
       }
@@ -417,7 +396,7 @@ public class TajoThriftClient {
 
   public boolean updateSessionVariable(final String key, final String value) throws Exception {
     return new ReconnectThriftServerCallable<Boolean>(currentClient) {
-      public Boolean call(Client client) throws Exception {
+      public Boolean syncCall(Client client) throws Exception {
         checkSessionAndGet(client);
         return client.updateSessionVariable(sessionId, key, value);
       }
@@ -426,7 +405,7 @@ public class TajoThriftClient {
 
   public boolean unsetSessionVariable(final String key)  throws Exception {
     return new ReconnectThriftServerCallable<Boolean>(currentClient) {
-      public Boolean call(Client client) throws Exception {
+      public Boolean syncCall(Client client) throws Exception {
         checkSessionAndGet(client);
         return client.unsetSessionVariables(sessionId, key);
       }
@@ -443,7 +422,7 @@ public class TajoThriftClient {
 
   public Map<String, String> getAllSessionVariables() throws Exception {
     return new ReconnectThriftServerCallable<Map<String, String>>(currentClient) {
-      public Map<String, String> call(Client client) throws Exception {
+      public Map<String, String> syncCall(Client client) throws Exception {
         checkSessionAndGet(client);
         return client.getAllSessionVariables(sessionId);
       }
@@ -452,7 +431,7 @@ public class TajoThriftClient {
 
   public Boolean selectDatabase(final String databaseName) throws Exception {
     return new ReconnectThriftServerCallable<Boolean>(currentClient) {
-      public Boolean call(Client client) throws Exception {
+      public Boolean syncCall(Client client) throws Exception {
         checkSessionAndGet(client);
         return client.selectDatabase(sessionId, databaseName).isBoolResult();
       }
@@ -478,7 +457,7 @@ public class TajoThriftClient {
     }
   }
 
-  protected void checkSessionAndGet(Client client) throws Exception {
+  protected synchronized void checkSessionAndGet(Client client) throws Exception {
     if (sessionId == null) {
       TServerResponse response = client.createSession(userInfo.getUserName(), baseDatabase);
 
@@ -494,17 +473,28 @@ public class TajoThriftClient {
   }
 
   abstract class ReconnectThriftServerCallable<T> extends ThriftServerCallable<T> {
-
     public ReconnectThriftServerCallable(Client client) {
       super(client);
     }
 
+    public abstract T syncCall(Client client) throws Exception;
+
+    public T call(Client client) throws Exception {
+      synchronized (callMonitor) {
+        return syncCall(client);
+      }
+    }
+
     @Override
     protected void failedCall() throws Exception {
-      if (client != null) {
-        reconnect();
+      synchronized (callMonitor) {
+        if (currentClient != null) {
+          TajoThriftUtil.close(currentClient);
+        }
+        currentClient = null;
+        makeConnection();
+        client = TajoThriftClient.this.currentClient;
       }
-      client = TajoThriftClient.this.currentClient;
     }
   }
 }

@@ -44,7 +44,7 @@ public class TajoThriftService {
 
     public TServerResponse closeQuery(String sessionId, String queryId) throws TServiceException, TException;
 
-    public TServerResponse updateQuery(String userId, String query) throws TServiceException, TException;
+    public TServerResponse updateQuery(String sessionId, String query) throws TServiceException, TException;
 
     public TServerResponse createSession(String userId, String defaultDatabase) throws TServiceException, TException;
 
@@ -94,7 +94,7 @@ public class TajoThriftService {
 
     public void closeQuery(String sessionId, String queryId, AsyncMethodCallback resultHandler) throws TException;
 
-    public void updateQuery(String userId, String query, AsyncMethodCallback resultHandler) throws TException;
+    public void updateQuery(String sessionId, String query, AsyncMethodCallback resultHandler) throws TException;
 
     public void createSession(String userId, String defaultDatabase, AsyncMethodCallback resultHandler) throws TException;
 
@@ -264,16 +264,16 @@ public class TajoThriftService {
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "closeQuery failed: unknown result");
     }
 
-    public TServerResponse updateQuery(String userId, String query) throws TServiceException, TException
+    public TServerResponse updateQuery(String sessionId, String query) throws TServiceException, TException
     {
-      send_updateQuery(userId, query);
+      send_updateQuery(sessionId, query);
       return recv_updateQuery();
     }
 
-    public void send_updateQuery(String userId, String query) throws TException
+    public void send_updateQuery(String sessionId, String query) throws TException
     {
       updateQuery_args args = new updateQuery_args();
-      args.setUserId(userId);
+      args.setSessionId(sessionId);
       args.setQuery(query);
       sendBase("updateQuery", args);
     }
@@ -937,26 +937,26 @@ public class TajoThriftService {
       }
     }
 
-    public void updateQuery(String userId, String query, AsyncMethodCallback resultHandler) throws TException {
+    public void updateQuery(String sessionId, String query, AsyncMethodCallback resultHandler) throws TException {
       checkReady();
-      updateQuery_call method_call = new updateQuery_call(userId, query, resultHandler, this, ___protocolFactory, ___transport);
+      updateQuery_call method_call = new updateQuery_call(sessionId, query, resultHandler, this, ___protocolFactory, ___transport);
       this.___currentMethod = method_call;
       ___manager.call(method_call);
     }
 
     public static class updateQuery_call extends org.apache.thrift.async.TAsyncMethodCall {
-      private String userId;
+      private String sessionId;
       private String query;
-      public updateQuery_call(String userId, String query, AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws TException {
+      public updateQuery_call(String sessionId, String query, AsyncMethodCallback resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws TException {
         super(client, protocolFactory, transport, resultHandler, false);
-        this.userId = userId;
+        this.sessionId = sessionId;
         this.query = query;
       }
 
       public void write_args(org.apache.thrift.protocol.TProtocol prot) throws TException {
         prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("updateQuery", org.apache.thrift.protocol.TMessageType.CALL, 0));
         updateQuery_args args = new updateQuery_args();
-        args.setUserId(userId);
+        args.setSessionId(sessionId);
         args.setQuery(query);
         args.write(prot);
         prot.writeMessageEnd();
@@ -1741,7 +1741,7 @@ public class TajoThriftService {
       public updateQuery_result getResult(I iface, updateQuery_args args) throws TException {
         updateQuery_result result = new updateQuery_result();
         try {
-          result.success = iface.updateQuery(args.userId, args.query);
+          result.success = iface.updateQuery(args.sessionId, args.query);
         } catch (TServiceException se) {
           result.se = se;
         }
@@ -2508,7 +2508,7 @@ public class TajoThriftService {
       }
 
       public void start(I iface, updateQuery_args args, AsyncMethodCallback<TServerResponse> resultHandler) throws TException {
-        iface.updateQuery(args.userId, args.query,resultHandler);
+        iface.updateQuery(args.sessionId, args.query,resultHandler);
       }
     }
 
@@ -7406,7 +7406,7 @@ public class TajoThriftService {
   public static class updateQuery_args implements org.apache.thrift.TBase<updateQuery_args, updateQuery_args._Fields>, java.io.Serializable, Cloneable, Comparable<updateQuery_args>   {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("updateQuery_args");
 
-    private static final org.apache.thrift.protocol.TField USER_ID_FIELD_DESC = new org.apache.thrift.protocol.TField("userId", org.apache.thrift.protocol.TType.STRING, (short)1);
+    private static final org.apache.thrift.protocol.TField SESSION_ID_FIELD_DESC = new org.apache.thrift.protocol.TField("sessionId", org.apache.thrift.protocol.TType.STRING, (short)1);
     private static final org.apache.thrift.protocol.TField QUERY_FIELD_DESC = new org.apache.thrift.protocol.TField("query", org.apache.thrift.protocol.TType.STRING, (short)2);
 
     private static final Map<Class<? extends IScheme>, SchemeFactory> schemes = new HashMap<Class<? extends IScheme>, SchemeFactory>();
@@ -7415,12 +7415,12 @@ public class TajoThriftService {
       schemes.put(TupleScheme.class, new updateQuery_argsTupleSchemeFactory());
     }
 
-    public String userId; // required
+    public String sessionId; // required
     public String query; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-      USER_ID((short)1, "userId"),
+      SESSION_ID((short)1, "sessionId"),
       QUERY((short)2, "query");
 
       private static final Map<String, _Fields> byName = new HashMap<String, _Fields>();
@@ -7436,8 +7436,8 @@ public class TajoThriftService {
        */
       public static _Fields findByThriftId(int fieldId) {
         switch(fieldId) {
-          case 1: // USER_ID
-            return USER_ID;
+          case 1: // SESSION_ID
+            return SESSION_ID;
           case 2: // QUERY
             return QUERY;
           default:
@@ -7483,7 +7483,7 @@ public class TajoThriftService {
     public static final Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
     static {
       Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-      tmpMap.put(_Fields.USER_ID, new org.apache.thrift.meta_data.FieldMetaData("userId", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+      tmpMap.put(_Fields.SESSION_ID, new org.apache.thrift.meta_data.FieldMetaData("sessionId", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
       tmpMap.put(_Fields.QUERY, new org.apache.thrift.meta_data.FieldMetaData("query", org.apache.thrift.TFieldRequirementType.DEFAULT, 
           new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING)));
@@ -7495,11 +7495,11 @@ public class TajoThriftService {
     }
 
     public updateQuery_args(
-      String userId,
+      String sessionId,
       String query)
     {
       this();
-      this.userId = userId;
+      this.sessionId = sessionId;
       this.query = query;
     }
 
@@ -7507,8 +7507,8 @@ public class TajoThriftService {
      * Performs a deep copy on <i>other</i>.
      */
     public updateQuery_args(updateQuery_args other) {
-      if (other.isSetUserId()) {
-        this.userId = other.userId;
+      if (other.isSetSessionId()) {
+        this.sessionId = other.sessionId;
       }
       if (other.isSetQuery()) {
         this.query = other.query;
@@ -7521,31 +7521,31 @@ public class TajoThriftService {
 
     @Override
     public void clear() {
-      this.userId = null;
+      this.sessionId = null;
       this.query = null;
     }
 
-    public String getUserId() {
-      return this.userId;
+    public String getSessionId() {
+      return this.sessionId;
     }
 
-    public updateQuery_args setUserId(String userId) {
-      this.userId = userId;
+    public updateQuery_args setSessionId(String sessionId) {
+      this.sessionId = sessionId;
       return this;
     }
 
-    public void unsetUserId() {
-      this.userId = null;
+    public void unsetSessionId() {
+      this.sessionId = null;
     }
 
-    /** Returns true if field userId is set (has been assigned a value) and false otherwise */
-    public boolean isSetUserId() {
-      return this.userId != null;
+    /** Returns true if field sessionId is set (has been assigned a value) and false otherwise */
+    public boolean isSetSessionId() {
+      return this.sessionId != null;
     }
 
-    public void setUserIdIsSet(boolean value) {
+    public void setSessionIdIsSet(boolean value) {
       if (!value) {
-        this.userId = null;
+        this.sessionId = null;
       }
     }
 
@@ -7575,11 +7575,11 @@ public class TajoThriftService {
 
     public void setFieldValue(_Fields field, Object value) {
       switch (field) {
-      case USER_ID:
+      case SESSION_ID:
         if (value == null) {
-          unsetUserId();
+          unsetSessionId();
         } else {
-          setUserId((String)value);
+          setSessionId((String)value);
         }
         break;
 
@@ -7596,8 +7596,8 @@ public class TajoThriftService {
 
     public Object getFieldValue(_Fields field) {
       switch (field) {
-      case USER_ID:
-        return getUserId();
+      case SESSION_ID:
+        return getSessionId();
 
       case QUERY:
         return getQuery();
@@ -7613,8 +7613,8 @@ public class TajoThriftService {
       }
 
       switch (field) {
-      case USER_ID:
-        return isSetUserId();
+      case SESSION_ID:
+        return isSetSessionId();
       case QUERY:
         return isSetQuery();
       }
@@ -7634,12 +7634,12 @@ public class TajoThriftService {
       if (that == null)
         return false;
 
-      boolean this_present_userId = true && this.isSetUserId();
-      boolean that_present_userId = true && that.isSetUserId();
-      if (this_present_userId || that_present_userId) {
-        if (!(this_present_userId && that_present_userId))
+      boolean this_present_sessionId = true && this.isSetSessionId();
+      boolean that_present_sessionId = true && that.isSetSessionId();
+      if (this_present_sessionId || that_present_sessionId) {
+        if (!(this_present_sessionId && that_present_sessionId))
           return false;
-        if (!this.userId.equals(that.userId))
+        if (!this.sessionId.equals(that.sessionId))
           return false;
       }
 
@@ -7668,12 +7668,12 @@ public class TajoThriftService {
 
       int lastComparison = 0;
 
-      lastComparison = Boolean.valueOf(isSetUserId()).compareTo(other.isSetUserId());
+      lastComparison = Boolean.valueOf(isSetSessionId()).compareTo(other.isSetSessionId());
       if (lastComparison != 0) {
         return lastComparison;
       }
-      if (isSetUserId()) {
-        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.userId, other.userId);
+      if (isSetSessionId()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.sessionId, other.sessionId);
         if (lastComparison != 0) {
           return lastComparison;
         }
@@ -7708,11 +7708,11 @@ public class TajoThriftService {
       StringBuilder sb = new StringBuilder("updateQuery_args(");
       boolean first = true;
 
-      sb.append("userId:");
-      if (this.userId == null) {
+      sb.append("sessionId:");
+      if (this.sessionId == null) {
         sb.append("null");
       } else {
-        sb.append(this.userId);
+        sb.append(this.sessionId);
       }
       first = false;
       if (!first) sb.append(", ");
@@ -7766,10 +7766,10 @@ public class TajoThriftService {
             break;
           }
           switch (schemeField.id) {
-            case 1: // USER_ID
+            case 1: // SESSION_ID
               if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
-                struct.userId = iprot.readString();
-                struct.setUserIdIsSet(true);
+                struct.sessionId = iprot.readString();
+                struct.setSessionIdIsSet(true);
               } else { 
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
@@ -7797,9 +7797,9 @@ public class TajoThriftService {
         struct.validate();
 
         oprot.writeStructBegin(STRUCT_DESC);
-        if (struct.userId != null) {
-          oprot.writeFieldBegin(USER_ID_FIELD_DESC);
-          oprot.writeString(struct.userId);
+        if (struct.sessionId != null) {
+          oprot.writeFieldBegin(SESSION_ID_FIELD_DESC);
+          oprot.writeString(struct.sessionId);
           oprot.writeFieldEnd();
         }
         if (struct.query != null) {
@@ -7825,15 +7825,15 @@ public class TajoThriftService {
       public void write(org.apache.thrift.protocol.TProtocol prot, updateQuery_args struct) throws TException {
         TTupleProtocol oprot = (TTupleProtocol) prot;
         BitSet optionals = new BitSet();
-        if (struct.isSetUserId()) {
+        if (struct.isSetSessionId()) {
           optionals.set(0);
         }
         if (struct.isSetQuery()) {
           optionals.set(1);
         }
         oprot.writeBitSet(optionals, 2);
-        if (struct.isSetUserId()) {
-          oprot.writeString(struct.userId);
+        if (struct.isSetSessionId()) {
+          oprot.writeString(struct.sessionId);
         }
         if (struct.isSetQuery()) {
           oprot.writeString(struct.query);
@@ -7845,8 +7845,8 @@ public class TajoThriftService {
         TTupleProtocol iprot = (TTupleProtocol) prot;
         BitSet incoming = iprot.readBitSet(2);
         if (incoming.get(0)) {
-          struct.userId = iprot.readString();
-          struct.setUserIdIsSet(true);
+          struct.sessionId = iprot.readString();
+          struct.setSessionIdIsSet(true);
         }
         if (incoming.get(1)) {
           struct.query = iprot.readString();

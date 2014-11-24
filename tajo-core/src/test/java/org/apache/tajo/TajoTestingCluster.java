@@ -433,7 +433,6 @@ public class TajoTestingCluster {
         break;
       }
     }
-    conf.set(ThriftServerConstants.SERVER_LIST_CONF_KEY, thriftServer.getContext().getServerName());
   }
 
   public void restartTajoCluster(int numSlaves) throws Exception {

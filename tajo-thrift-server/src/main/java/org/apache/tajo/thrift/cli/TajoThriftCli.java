@@ -193,11 +193,14 @@ public class TajoThriftCli {
         processConfVarCommand(cmd.getOptionValues("conf"));
       }
 
+      String thriftServer = null;
       if (cmd.hasOption("h")) {
-        conf.set(ThriftServerConstants.SERVER_LIST_CONF_KEY, cmd.getOptionValue("h"));
+        thriftServer = cmd.getOptionValue("h");
+      } else {
+        thriftServer = "localhost:" + ThriftServerConstants.DEFAULT_LISTEN_PORT;
       }
 
-      client = new TajoThriftClient(conf, baseDatabase);
+      client = new TajoThriftClient(conf, thriftServer, baseDatabase);
 
       context.setCurrentDatabase(client.getCurrentDatabase());
 

@@ -18,6 +18,7 @@
 
 package org.apache.tajo.thrift;
 
+import com.google.protobuf.ByteString;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.util.StringUtils;
@@ -200,14 +201,7 @@ public class TajoThriftServiceImpl implements TajoThriftService.Iface {
         executorService.submit(querySubmitTask);
         return querySubmitTask.queryProgressInfo.queryStatus;
       } else {
-        //select * from table limit 100
         QueryId queryId = new QueryId(clientResponse.getQueryId());
-        LOG.info(sessionId.getId() + "," + queryId + " query is started(direct query)");
-
-        QuerySubmitTask querySubmitTask = new QuerySubmitTask(sessionId);
-        querySubmitTask.queryProgressInfo.queryId = queryId;
-        querySubmitTask.queryProgressInfo.lastTouchTime = System.currentTimeMillis();
-        querySubmitTask.queryProgressInfo.query = query;
 
         queryStatus.setQueryId(queryId.toString());
         queryStatus.setResultCode(ResultCode.OK.name());
@@ -217,28 +211,48 @@ public class TajoThriftServiceImpl implements TajoThriftService.Iface {
         queryStatus.setFinishTime(System.currentTimeMillis());
         queryStatus.setHasResult(true);
 
-        querySubmitTask.queryProgressInfo.queryStatus = queryStatus;
-
-        synchronized (querySubmitTasks) {
-          querySubmitTasks.put(querySubmitTask.getKey(), querySubmitTask);
-        }
-
+        //select * from table limit 100 or select 1+1
         ResultSet resultSet = TajoClientUtil.createResultSet(tajoConf, tajoClient, clientResponse);
-        synchronized (queryResultSets) {
-          ResultSetHolder rsHolder = new ResultSetHolder();
-          rsHolder.sessionId = sessionId;
-          rsHolder.queryId = queryId;
-          rsHolder.rs = (TajoResultSetBase) resultSet;
-          rsHolder.tableDesc = null;
-          if (resultSet instanceof FetchResultSet) {
-            rsHolder.tableDesc = new TableDesc(clientResponse.getTableDesc());
-          } else if (resultSet instanceof TajoMemoryResultSet) {
-            rsHolder.schema = new Schema(clientResponse.getResultSet().getSchema());
+        if (resultSet instanceof FetchResultSet) {
+          //select * from table limit 100
+          LOG.info(sessionId.getId() + "," + queryId + " query is started(direct query)");
+
+          QuerySubmitTask querySubmitTask = new QuerySubmitTask(sessionId);
+          querySubmitTask.queryProgressInfo.queryId = queryId;
+          querySubmitTask.queryProgressInfo.lastTouchTime = System.currentTimeMillis();
+          querySubmitTask.queryProgressInfo.query = query;
+
+          querySubmitTask.queryProgressInfo.queryStatus = queryStatus;
+
+          synchronized (querySubmitTasks) {
+            querySubmitTasks.put(querySubmitTask.getKey(), querySubmitTask);
           }
-          rsHolder.lastTouchTime = System.currentTimeMillis();
-          queryResultSets.put(rsHolder.getKey(), rsHolder);
+
+          synchronized (queryResultSets) {
+            ResultSetHolder rsHolder = new ResultSetHolder();
+            rsHolder.setSessionId(sessionId);
+            rsHolder.setQueryId(queryId);
+            rsHolder.setResultSet((TajoResultSetBase) resultSet);
+            rsHolder.setTableDesc(new TableDesc(clientResponse.getTableDesc()));
+            rsHolder.setLastTouchTime(System.currentTimeMillis());
+            queryResultSets.put(rsHolder.getKey(), rsHolder);
+          }
+        } else if (resultSet instanceof TajoMemoryResultSet) {
+          // select 1+1
+          Schema schema = new Schema(clientResponse.getResultSet().getSchema());
+          TQueryResult queryResult = new TQueryResult();
+          queryResult.setSchema(TajoThriftUtil.convertSchema(schema));
+          List<ByteBuffer> rows = new ArrayList<ByteBuffer>();
+          TajoMemoryResultSet memResultSet = (TajoMemoryResultSet)resultSet;
+          if (memResultSet.getSerializedTuples() != null && !memResultSet.getSerializedTuples().isEmpty()) {
+            for (ByteString eachRow: memResultSet.getSerializedTuples()) {
+              rows.add(ByteBuffer.wrap(eachRow.toByteArray()));
+            }
+          }
+          queryResult.setRows(rows);
+          queryStatus.setQueryResult(queryResult);
         }
-        return querySubmitTask.queryProgressInfo.queryStatus;
+        return queryStatus;
       }
     } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
@@ -261,11 +275,7 @@ public class TajoThriftServiceImpl implements TajoThriftService.Iface {
     synchronized(querySubmitTasks) {
       QuerySubmitTask querySubmitTask = querySubmitTasks.get(ResultSetHolder.getKey(sessionId, queryId));
       if (querySubmitTask == null) {
-        LOG.warn("No query submit info for " + sessionId.getId() + "," + queryId);
-        queryResult.setQueryStatus(createErrorResponse(queryId, "No query submit info for " + queryId));
-        return queryResult;
-      } else {
-        queryResult.setQueryStatus(querySubmitTask.queryProgressInfo.queryStatus);
+        throw new TServiceException("No query submit info for " + sessionId.getId() + "," + queryId, "");
       }
     }
 
@@ -275,19 +285,17 @@ public class TajoThriftServiceImpl implements TajoThriftService.Iface {
     }
 
     if (rsHolder == null) {
-      LOG.warn("No QueryResult for:" + sessionId.getId() + "," + queryId);
-      queryResult.setQueryStatus(createErrorResponse(queryId, "No query result for " + queryId));
-      return queryResult;
+      throw new TServiceException("No QueryResult for:" + sessionId.getId() + "," + queryId, "");
     } else {
       try {
-        rsHolder.lastTouchTime = System.currentTimeMillis();
+        rsHolder.setLastTouchTime(System.currentTimeMillis());
 
         Schema schema;
-        if (rsHolder.tableDesc != null)  {
-          schema = rsHolder.tableDesc.getSchema();
-          queryResult.setTableDesc(TajoThriftUtil.convertTableDesc(rsHolder.tableDesc));
+        if (rsHolder.getTableDesc() != null)  {
+          schema = rsHolder.getTableDesc().getSchema();
+          queryResult.setTableDesc(TajoThriftUtil.convertTableDesc(rsHolder.getTableDesc()));
         } else {
-          schema = rsHolder.schema;
+          schema = rsHolder.getSchema();
           queryResult.setSchema(TajoThriftUtil.convertSchema(schema));
         }
         RowStoreUtil.RowStoreEncoder rowEncoder = RowStoreUtil.createEncoder(schema);
@@ -299,8 +307,9 @@ public class TajoThriftServiceImpl implements TajoThriftService.Iface {
         }
         int rowCount = 0;
 
-        while (rsHolder.rs.next()) {
-          Tuple tuple = rsHolder.rs.getCurrentTuple();
+        TajoResultSetBase rs = rsHolder.getResultSet();
+        while (rs.next()) {
+          Tuple tuple = rs.getCurrentTuple();
           queryResult.addToRows(ByteBuffer.wrap(rowEncoder.toBytes(tuple)));
           rowCount++;
           if (rowCount >= fetchSize) {
@@ -308,15 +317,11 @@ public class TajoThriftServiceImpl implements TajoThriftService.Iface {
           }
         }
         LOG.info("Send result to client for " + sessionId.getId() + "," + queryId + ", " + rowCount + " rows");
-        if (queryResult.getSchema() == null && queryResult.getTableDesc() == null) {
-          LOG.fatal(">>>>>>>>>>>>>>>>>>>>schema & tabledesc null");
-        }
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
 
-        queryResult.setQueryStatus(
-            createErrorResponse(queryId, "Error while result fetching " + queryId + " cause:\n" +
-                StringUtils.stringifyException(e)));
+        throw new TServiceException("Error while result fetching " + queryId,
+                StringUtils.stringifyException(e));
       }
       return queryResult;
     }
@@ -829,6 +834,8 @@ public class TajoThriftServiceImpl implements TajoThriftService.Iface {
       }
       //get result
       ResultSetHolder resultSetHolder = new ResultSetHolder();
+      resultSetHolder.setQueryId(queryProgressInfo.queryId);
+      resultSetHolder.setSessionId(queryProgressInfo.sessionId);
       try {
         TajoResultSet rs = null;
         if (queryFinished && TajoProtos.QueryState.QUERY_SUCCEEDED.name().equals(lastResponse.getState())) {
@@ -842,9 +849,9 @@ public class TajoThriftServiceImpl implements TajoThriftService.Iface {
               queryProgressInfo.queryStatus.getQueryId() + ") failed: " + queryProgressInfo.queryStatus.getState());
           rs = (TajoResultSet)createNullResultSet(getTajoClient(queryProgressInfo.sessionId), queryProgressInfo.queryId);
         }
-        resultSetHolder.rs = rs;
-        resultSetHolder.tableDesc = rs.getTableDesc();
-        resultSetHolder.lastTouchTime = System.currentTimeMillis();
+        resultSetHolder.setResultSet(rs);
+        resultSetHolder.setTableDesc(rs.getTableDesc());
+        resultSetHolder.setLastTouchTime(System.currentTimeMillis());
 
         synchronized (queryResultSets) {
           LOG.info("Query completed: " + ResultSetHolder.getKey(queryProgressInfo.sessionId, queryProgressInfo.queryId));
@@ -947,11 +954,11 @@ public class TajoThriftServiceImpl implements TajoThriftService.Iface {
       }
 
       for (ResultSetHolder eachResultSetHolder: queryResultSetCleanList) {
-        if (System.currentTimeMillis() - eachResultSetHolder.lastTouchTime > resultSetExpireInterval * 1000) {
+        if (System.currentTimeMillis() - eachResultSetHolder.getLastTouchTime() > resultSetExpireInterval * 1000) {
           try {
-            if (!eachResultSetHolder.rs.isClosed()) {
-              LOG.info("ResultSet close:" + eachResultSetHolder.queryId);
-              eachResultSetHolder.rs.close();
+            if (!eachResultSetHolder.getResultSet().isClosed()) {
+              LOG.info("ResultSet close:" + eachResultSetHolder.getQueryId());
+              eachResultSetHolder.getResultSet().close();
 
               synchronized (queryResultSets) {
                 queryResultSets.remove(eachResultSetHolder.getKey());
