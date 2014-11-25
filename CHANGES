@@ -63,6 +63,9 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1208: Failure of create table using textfile on hivemeta.
+    (jinho)
+
     TAJO-1205: Remove possible memory leak in TajoMaster. (jinho)
 
     TAJO-1181: Avro schema URL should support various protocols. 
