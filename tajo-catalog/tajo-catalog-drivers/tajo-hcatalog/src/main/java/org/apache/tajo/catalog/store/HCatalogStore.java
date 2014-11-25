@@ -262,7 +262,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       if(client != null) client.release();
     }
     TableMeta meta = new TableMeta(storeType, options);
-    TableDesc tableDesc = new TableDesc(databaseName + "." + tableName, schema, meta, path);
+    TableDesc tableDesc = new TableDesc(databaseName + "." + tableName, schema, meta, path.toUri());
     if (table.getTableType().equals(TableType.EXTERNAL_TABLE)) {
       tableDesc.setExternal(true);
     }
@@ -442,12 +442,13 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         table.setTableType(TableType.EXTERNAL_TABLE.name());
         table.putToParameters("EXTERNAL", "TRUE");
 
-        FileSystem fs = tableDesc.getPath().getFileSystem(conf);
-        if (fs.isFile(tableDesc.getPath())) {
+        Path tablePath = new Path(tableDesc.getPath());
+        FileSystem fs = tablePath.getFileSystem(conf);
+        if (fs.isFile(tablePath)) {
           LOG.warn("A table path is a file, but HCatalog does not allow a file path.");
-          sd.setLocation(tableDesc.getPath().getParent().toString());
+          sd.setLocation(tablePath.getParent().toString());
         } else {
-          sd.setLocation(tableDesc.getPath().toString());
+          sd.setLocation(tablePath.toString());
         }
       }
 
