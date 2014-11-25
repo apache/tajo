@@ -48,7 +48,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 public class Digest extends GeneralFunction {
   public Digest() {
     super(new Column[] {
-        new Column("org/apache/tajo/storage/text", TajoDataTypes.Type.TEXT)
+        new Column("text", TajoDataTypes.Type.TEXT)
     });
   }
 

@@ -44,7 +44,7 @@ import org.apache.tajo.storage.Tuple;
 public class Lower extends GeneralFunction {
   public Lower() {
     super(new Column[] {
-        new Column("org/apache/tajo/storage/text", TajoDataTypes.Type.TEXT)
+        new Column("text", TajoDataTypes.Type.TEXT)
     });
   }
 

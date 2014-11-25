@@ -212,7 +212,7 @@ public class QueryExecutorServlet extends HttpServlet {
   }
 
   private void writeHttpResponse(HttpServletResponse response, Map<String, Object> outputMessage) throws IOException {
-    response.setContentType("org/apache/tajo/storage/text/html");
+    response.setContentType("text/html");
 
     OutputStream out = response.getOutputStream();
     out.write(om.writeValueAsBytes(outputMessage));

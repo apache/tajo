@@ -49,9 +49,9 @@ public class Concat_ws extends GeneralFunction {
 
   public Concat_ws() {
     super(new Column[] {
-        new Column("org/apache/tajo/storage/text", TajoDataTypes.Type.TEXT),
-        new Column("org/apache/tajo/storage/text", TajoDataTypes.Type.TEXT),
-        new Column("org/apache/tajo/storage/text", TajoDataTypes.Type.TEXT),
+        new Column("text", TajoDataTypes.Type.TEXT),
+        new Column("text", TajoDataTypes.Type.TEXT),
+        new Column("text", TajoDataTypes.Type.TEXT),
     });
   }
 

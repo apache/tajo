@@ -679,7 +679,7 @@ public class TajoPullServerService extends AbstractService {
     private void sendError(ChannelHandlerContext ctx, String message,
         HttpResponseStatus status) {
       HttpResponse response = new DefaultHttpResponse(HTTP_1_1, status);
-      response.setHeader(CONTENT_TYPE, "org/apache/tajo/storage/text/plain; charset=UTF-8");
+      response.setHeader(CONTENT_TYPE, "text/plain; charset=UTF-8");
       response.setContent(
         ChannelBuffers.copiedBuffer(message, CharsetUtil.UTF_8));
 
