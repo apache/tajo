@@ -188,14 +188,15 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
     } else if (event instanceof TaskRunnerStopEvent) {
       ExecutionBlockContext executionBlockContext =  executionBlockContextMap.remove(event.getExecutionBlockId());
       if(executionBlockContext != null){
-        TupleCache.getInstance().removeBroadcastCache(event.getExecutionBlockId());
-        executionBlockContext.reportExecutionBlock(event.getExecutionBlockId());
-        executionBlockContext.stop();
         try {
+          TupleCache.getInstance().removeBroadcastCache(event.getExecutionBlockId());
+          executionBlockContext.reportExecutionBlock(event.getExecutionBlockId());
           workerContext.getHashShuffleAppenderManager().close(event.getExecutionBlockId());
         } catch (IOException e) {
           LOG.fatal(e.getMessage(), e);
           throw new RuntimeException(e);
+        } finally {
+          executionBlockContext.stop();
         }
       }
       LOG.info("Stopped execution block:" + event.getExecutionBlockId());

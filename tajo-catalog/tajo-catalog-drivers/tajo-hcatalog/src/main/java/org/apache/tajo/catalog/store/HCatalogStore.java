@@ -486,7 +486,8 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
           table.putToParameters(serdeConstants.SERIALIZATION_NULL_FORMAT,
               StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(StorageConstants.RCFILE_NULL)));
         }
-      } else if (tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.CSV)) {
+      } else if (tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.CSV)
+          || tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.TEXTFILE)) {
         sd.getSerdeInfo().setSerializationLib(org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe.class.getName());
         sd.setInputFormat(org.apache.hadoop.mapred.TextInputFormat.class.getName());
         sd.setOutputFormat(org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat.class.getName());

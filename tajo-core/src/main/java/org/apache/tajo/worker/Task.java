@@ -41,6 +41,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.json.CoreGsonHelper;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.query.QueryContext;
@@ -725,7 +726,8 @@ public class Task {
           defaultStoreFile = new File(storeDir, "in_" + i);
           InetAddress address = InetAddress.getByName(uri.getHost());
 
-          if (NetUtils.isLocalAddress(address)) {
+          WorkerConnectionInfo conn = executionBlockContext.getWorkerContext().getConnectionInfo();
+          if (NetUtils.isLocalAddress(address) && conn.getPullServerPort() == uri.getPort()) {
             boolean hasError = false;
             try {
               LOG.info("Try to get local file chunk at local host");

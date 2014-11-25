@@ -354,6 +354,7 @@ public class QueryMasterTask extends CompositeService {
       LogicalPlanner planner = new LogicalPlanner(catalog);
       LogicalOptimizer optimizer = new LogicalOptimizer(systemConf);
       Expr expr = JsonHelper.fromJson(jsonExpr, Expr.class);
+      jsonExpr = null; // remove the possible OOM
       LogicalPlan plan = planner.createPlan(queryContext, expr);
       optimizer.optimize(queryContext, plan);
 
