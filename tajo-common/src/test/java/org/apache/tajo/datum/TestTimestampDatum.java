@@ -151,7 +151,8 @@ public class TestTimestampDatum {
     assertEquals(datum2, datum);
 
     for (int i = 0; i < 100; i++) {
-      Calendar cal = Calendar.getInstance();
+      TimeZone timeZone = TimeZone.getTimeZone("UTC");
+      Calendar cal = Calendar.getInstance(timeZone);
       long jTime = System.currentTimeMillis();
       int uTime = (int)(jTime / 1000);
       cal.setTimeInMillis(jTime);
