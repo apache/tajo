@@ -18,7 +18,6 @@
 
 package org.apache.tajo.master;
 
-import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -29,17 +28,18 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.service.CompositeService;
-import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.hadoop.yarn.util.SystemClock;
-import org.apache.tajo.catalog.*;
-import org.apache.tajo.engine.function.FunctionLoader;
+import org.apache.tajo.catalog.CatalogServer;
+import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.catalog.LocalCatalogWrapper;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.master.ha.HAService;
 import org.apache.tajo.master.ha.HAServiceHDFSImpl;
 import org.apache.tajo.master.metrics.CatalogMetricsGaugeSet;
@@ -51,9 +51,9 @@ import org.apache.tajo.master.session.SessionManager;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.util.*;
-import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.util.history.HistoryReader;
 import org.apache.tajo.util.history.HistoryWriter;
+import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.webapp.QueryExecutorServlet;
 import org.apache.tajo.webapp.StaticHttpServer;
 
@@ -150,6 +150,7 @@ public class TajoMaster extends CompositeService {
   @Override
   public void serviceInit(Configuration _conf) throws Exception {
     this.systemConf = (TajoConf) _conf;
+    Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
 
     context = new MasterContext(systemConf);
     clock = new SystemClock();
@@ -384,10 +385,9 @@ public class TajoMaster extends CompositeService {
       systemMetrics.stop();
     }
 
-    RpcChannelFactory.shutdown();
-
     if(pauseMonitor != null) pauseMonitor.stop();
     super.stop();
+
     LOG.info("Tajo Master main thread exiting");
   }
 
@@ -549,12 +549,25 @@ public class TajoMaster extends CompositeService {
       }
     }
   }
+
+  private class ShutdownHook implements Runnable {
+    @Override
+    public void run() {
+      if(!isInState(STATE.STOPPED)) {
+        LOG.info("============================================");
+        LOG.info("TajoMaster received SIGINT Signal");
+        LOG.info("============================================");
+        stop();
+        RpcChannelFactory.shutdown();
+      }
+    }
+  }
+
   public static void main(String[] args) throws Exception {
     StringUtils.startupShutdownMessage(TajoMaster.class, args, LOG);
 
     try {
       TajoMaster master = new TajoMaster();
-      ShutdownHookManager.get().addShutdownHook(new CompositeServiceShutdownHook(master), SHUTDOWN_HOOK_PRIORITY);
       TajoConf conf = new TajoConf(new YarnConfiguration());
       master.init(conf);
       master.start();
