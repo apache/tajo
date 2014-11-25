@@ -146,7 +146,7 @@ public class TestBSTIndexExec {
 
     TableDesc desc = new TableDesc(
         CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta,
-        sm.getTablePath("employee"));
+        sm.getTablePath("employee").toUri());
     catalog.createTable(desc);
 
     analyzer = new SQLAnalyzer();

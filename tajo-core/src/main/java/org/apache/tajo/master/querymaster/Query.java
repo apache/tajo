@@ -515,7 +515,7 @@ public class Query implements EventHandler<QueryEvent> {
                 query.getId().toString(),
                 lastStage.getSchema(),
                 meta,
-                finalOutputDir);
+                finalOutputDir.toUri());
         resultTableDesc.setExternal(true);
 
         stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
@@ -548,7 +548,7 @@ public class Query implements EventHandler<QueryEvent> {
                 createTableNode.getTableName(),
                 createTableNode.getTableSchema(),
                 meta,
-                finalOutputDir);
+                finalOutputDir.toUri());
         tableDescTobeCreated.setExternal(createTableNode.isExternal());
 
         if (createTableNode.hasPartition()) {
@@ -590,7 +590,7 @@ public class Query implements EventHandler<QueryEvent> {
           finalTable = catalog.getTableDesc(tableName);
         } else {
           String tableName = query.getId().toString();
-          finalTable = new TableDesc(tableName, lastStage.getSchema(), meta, finalOutputDir);
+          finalTable = new TableDesc(tableName, lastStage.getSchema(), meta, finalOutputDir.toUri());
         }
 
         long volume = getTableVolume(query.systemConf, finalOutputDir);

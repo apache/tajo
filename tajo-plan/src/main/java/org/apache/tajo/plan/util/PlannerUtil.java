@@ -853,7 +853,7 @@ public class PlannerUtil {
             createTableNode.getTableName(),
             createTableNode.getTableSchema(),
             meta,
-            createTableNode.getPath());
+            createTableNode.getPath() != null ? createTableNode.getPath().toUri() : null);
 
     tableDescTobeCreated.setExternal(createTableNode.isExternal());
 
@@ -872,7 +872,7 @@ public class PlannerUtil {
             insertNode.getTableName(),
             insertNode.getTableSchema(),
             meta,
-            insertNode.getPath());
+            insertNode.getPath() != null ? insertNode.getPath().toUri() : null);
 
     if (insertNode.hasPartition()) {
       tableDescTobeCreated.setPartitionMethod(insertNode.getPartitionMethod());

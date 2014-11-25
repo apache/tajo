@@ -653,7 +653,7 @@ public class FileStorageManager extends StorageManager {
 
   @Override
   public List<Fragment> getSplits(String tableName, TableDesc table, ScanNode scanNode) throws IOException {
-    return getSplits(tableName, table.getMeta(), table.getSchema(), table.getPath());
+    return getSplits(tableName, table.getMeta(), table.getSchema(), new Path(table.getPath()));
   }
 
   @Override
@@ -665,12 +665,12 @@ public class FileStorageManager extends StorageManager {
 
       // create a table directory (i.e., ${WAREHOUSE_DIR}/${DATABASE_NAME}/${TABLE_NAME} )
       Path tablePath = StorageUtil.concatPath(tableBaseDir, databaseName, simpleTableName);
-      tableDesc.setPath(tablePath);
+      tableDesc.setPath(tablePath.toUri());
     } else {
       Preconditions.checkState(tableDesc.getPath() != null, "ERROR: LOCATION must be given.");
     }
 
-    Path path = tableDesc.getPath();
+    Path path = new Path(tableDesc.getPath());
 
     FileSystem fs = path.getFileSystem(conf);
     TableStats stats = new TableStats();
@@ -703,7 +703,7 @@ public class FileStorageManager extends StorageManager {
   @Override
   public void purgeTable(TableDesc tableDesc) throws IOException {
     try {
-      Path path = tableDesc.getPath();
+      Path path = new Path(tableDesc.getPath());
       FileSystem fs = path.getFileSystem(conf);
       LOG.info("Delete table data dir: " + path);
       fs.delete(path, true);
@@ -716,11 +716,12 @@ public class FileStorageManager extends StorageManager {
   public List<Fragment> getNonForwardSplit(TableDesc tableDesc, int currentPage, int numFragments) throws IOException {
     // Listing table data file which is not empty.
     // If the table is a partitioned table, return file list which has same partition key.
-    FileSystem fs = tableDesc.getPath().getFileSystem(conf);
+    Path tablePath = new Path(tableDesc.getPath());
+    FileSystem fs = tablePath.getFileSystem(conf);
 
     List<FileStatus> nonZeroLengthFiles = new ArrayList<FileStatus>();
-    if (fs.exists(tableDesc.getPath())) {
-      getNonZeroLengthDataFiles(fs, tableDesc.getPath(), nonZeroLengthFiles, currentPage, numFragments,
+    if (fs.exists(tablePath)) {
+      getNonZeroLengthDataFiles(fs, tablePath, nonZeroLengthFiles, currentPage, numFragments,
           new AtomicInteger(0));
     }
 

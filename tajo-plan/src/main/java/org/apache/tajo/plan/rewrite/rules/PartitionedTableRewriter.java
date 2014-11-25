@@ -263,9 +263,9 @@ public class PartitionedTableRewriter implements RewriteRule {
 
     if (indexablePredicateSet.size() > 0) { // There are at least one indexable predicates
       return findFilteredPaths(paritionValuesSchema,
-          indexablePredicateSet.toArray(new EvalNode[indexablePredicateSet.size()]), table.getPath());
+          indexablePredicateSet.toArray(new EvalNode[indexablePredicateSet.size()]), new Path(table.getPath()));
     } else { // otherwise, we will get all partition paths.
-      return findFilteredPaths(paritionValuesSchema, null, table.getPath());
+      return findFilteredPaths(paritionValuesSchema, null, new Path(table.getPath()));
     }
   }
 

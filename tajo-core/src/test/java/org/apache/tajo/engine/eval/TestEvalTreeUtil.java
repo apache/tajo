@@ -106,7 +106,7 @@ public class TestEvalTreeUtil {
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
     TableDesc desc = new TableDesc(
         CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "people"), schema, meta,
-        CommonTestingUtil.getTestDir());
+        CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(desc);
 
     FunctionDesc funcMeta = new FunctionDesc("test_sum", TestSum.class,
