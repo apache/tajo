@@ -32,12 +32,14 @@ import org.apache.tajo.util.NumberUtil;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.CharsetDecoder;
 
 //Compatibility with Apache Hive
 public class TextFieldSerializerDeserializer implements FieldSerializerDeserializer {
   public static final byte[] trueBytes = "true".getBytes();
   public static final byte[] falseBytes = "false".getBytes();
   private ProtobufJsonFormat protobufJsonFormat = ProtobufJsonFormat.getInstance();
+  private final CharsetDecoder decoder = CharsetUtil.getDecoder(CharsetUtil.UTF_8);
 
   private static boolean isNull(ByteBuf val, ByteBuf nullBytes) {
     return !val.isReadable() || nullBytes.equals(val);
@@ -122,7 +124,7 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
   }
 
   @Override
-  public Datum deserialize(ByteBuf buf, Column col, int columnIndex, ByteBuf nullChars) throws IOException{
+  public Datum deserialize(ByteBuf buf, Column col, int columnIndex, ByteBuf nullChars) throws IOException {
     Datum datum;
     TajoDataTypes.Type type = col.getDataType().getType();
     boolean nullField;
@@ -141,41 +143,30 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
           datum = DatumFactory.createBool(bool == 't' || bool == 'T');
           break;
         case BIT:
-          datum = DatumFactory.createBit(Byte.parseByte(buf.toString(CharsetUtil.UTF_8)));
+          datum = DatumFactory.createBit(Byte.parseByte(
+              decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString()));
           break;
         case CHAR:
-          datum = DatumFactory.createChar(buf.toString(CharsetUtil.UTF_8).trim());
+          datum = DatumFactory.createChar(
+              decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString().trim());
           break;
         case INT1:
-        case INT2: {
-          //TODO zero-copy
-          byte[] bytes = new byte[buf.readableBytes()];
-          buf.readBytes(bytes);
-          datum = DatumFactory.createInt2((short) NumberUtil.parseInt(bytes, 0, bytes.length));
+        case INT2:
+          datum = DatumFactory.createInt2((short) NumberUtil.parseInt(buf));
           break;
-        }
-        case INT4: {
-          //TODO zero-copy
-          byte[] bytes = new byte[buf.readableBytes()];
-          buf.readBytes(bytes);
-          datum = DatumFactory.createInt4(NumberUtil.parseInt(bytes, 0, bytes.length));
+        case INT4:
+          datum = DatumFactory.createInt4(NumberUtil.parseInt(buf));
           break;
-        }
         case INT8:
-          //TODO zero-copy
-          datum = DatumFactory.createInt8(buf.toString(CharsetUtil.UTF_8));
+          datum = DatumFactory.createInt8(NumberUtil.parseLong(buf));
           break;
         case FLOAT4:
-          //TODO zero-copy
-          datum = DatumFactory.createFloat4(buf.toString(CharsetUtil.UTF_8));
+          datum = DatumFactory.createFloat4(
+              decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString());
           break;
-        case FLOAT8: {
-          //TODO zero-copy
-          byte[] bytes = new byte[buf.readableBytes()];
-          buf.readBytes(bytes);
-          datum = DatumFactory.createFloat8(NumberUtil.parseDouble(bytes, 0, bytes.length));
+        case FLOAT8:
+          datum = DatumFactory.createFloat8(NumberUtil.parseDouble(buf));
           break;
-        }
         case TEXT: {
           byte[] bytes = new byte[buf.readableBytes()];
           buf.readBytes(bytes);
@@ -183,16 +174,20 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
           break;
         }
         case DATE:
-          datum = DatumFactory.createDate(buf.toString(CharsetUtil.UTF_8));
+          datum = DatumFactory.createDate(
+              decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString());
           break;
         case TIME:
-          datum = DatumFactory.createTime(buf.toString(CharsetUtil.UTF_8));
+          datum = DatumFactory.createTime(
+              decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString());
           break;
         case TIMESTAMP:
-          datum = DatumFactory.createTimestamp(buf.toString(CharsetUtil.UTF_8));
+          datum = DatumFactory.createTimestamp(
+              decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString());
           break;
         case INTERVAL:
-          datum = DatumFactory.createInterval(buf.toString(CharsetUtil.UTF_8));
+          datum = DatumFactory.createInterval(
+              decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString());
           break;
         case PROTOBUF: {
           ProtobufDatumFactory factory = ProtobufDatumFactory.get(col.getDataType());
@@ -209,7 +204,8 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
           break;
         }
         case INET4:
-          datum = DatumFactory.createInet4(buf.toString(CharsetUtil.UTF_8));
+          datum = DatumFactory.createInet4(
+              decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString());
           break;
         case BLOB: {
           byte[] bytes = new byte[buf.readableBytes()];

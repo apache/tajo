@@ -29,8 +29,8 @@ import org.junit.Test;
 import java.util.Calendar;
 import java.util.TimeZone;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.*;
 
 public class TestTimestampDatum {
   private static long javatime;
@@ -178,5 +178,18 @@ public class TestTimestampDatum {
    assertEquals(Boolean.FALSE,d.equals(DatumFactory.createNullDatum()));
    assertEquals(DatumFactory.createNullDatum(),d.equalsTo(DatumFactory.createNullDatum()));
    assertEquals(-1,d.compareTo(DatumFactory.createNullDatum()));
+  }
+  
+  @Test
+  public void testCompareTo() {
+    TimestampDatum theday = DatumFactory.createTimestamp("2014-11-12 15:00:00.68");
+    TimestampDatum thedaybefore = DatumFactory.createTimestamp("2014-11-11 15:00:00.56");
+    
+    assertThat(theday.compareTo(thedaybefore) > 0, is(true));
+    assertThat(thedaybefore.compareTo(theday) > 0, is(false));
+    
+    DateDatum date = DatumFactory.createDate("2014-11-12");
+    
+    assertThat(theday.compareTo(date) > 0, is(true));
   }
 }

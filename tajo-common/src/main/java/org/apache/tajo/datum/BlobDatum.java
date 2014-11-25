@@ -140,8 +140,6 @@ public class BlobDatum extends Datum {
   public Datum equalsTo(Datum datum) {
     switch (datum.type()) {
     case BLOB:
-    	initFromBytes();
-    	((BlobDatum)datum).initFromBytes();
       return DatumFactory.createBool(Arrays.equals(this.val, ((BlobDatum)datum).val));
     case NULL_TYPE:
       return datum;
