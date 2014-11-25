@@ -107,7 +107,7 @@ public class Repartitioner {
         }
         fragments[i] = new FileFragment(scans[i].getCanonicalName(), tablePath, 0, 0, new String[]{UNKNOWN_HOST});
       } else {
-        tablePath = tableDesc.getPath();
+        tablePath = new Path(tableDesc.getPath());
         try {
           stats[i] = GlobalPlanner.computeDescendentVolume(scans[i]);
         } catch (PlanningException e) {
@@ -411,7 +411,7 @@ public class Repartitioner {
           partitionScan.setInputPaths(partitionScanPaths);
         } else {
           Collection<FileFragment> scanFragments = subQuery.getStorageManager().getSplits(eachScan.getCanonicalName(),
-              tableDesc.getMeta(), tableDesc.getSchema(), tableDesc.getPath());
+              tableDesc.getMeta(), tableDesc.getSchema(), new Path(tableDesc.getPath()));
           if (scanFragments != null) {
             rightFragments.addAll(scanFragments);
           }
@@ -527,7 +527,7 @@ public class Repartitioner {
         scanFragments = getFragmentsFromPartitionedTable(subQuery.getStorageManager(), scan, desc);
       } else {
         scanFragments = subQuery.getStorageManager().getSplits(scan.getCanonicalName(), meta, desc.getSchema(),
-            desc.getPath());
+            new Path(desc.getPath()));
       }
 
       if (scanFragments != null) {

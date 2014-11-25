@@ -142,7 +142,7 @@ public class TestRangeRetrieverHandler {
 
     TableDesc employee = new TableDesc(
         CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, employeeMeta,
-        tableDir);
+        tableDir.toUri());
     catalog.createTable(employee);
 
     FileFragment[] frags = StorageManager.splitNG(conf, "default.employee", employeeMeta, tableDir, Integer.MAX_VALUE);
@@ -265,7 +265,7 @@ public class TestRangeRetrieverHandler {
     appender.close();
 
     TableDesc employee = new TableDesc(
-        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta, tablePath);
+        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta, tablePath.toUri());
     catalog.createTable(employee);
 
     FileFragment[] frags = sm.splitNG(conf, "default.employee", meta, tablePath, Integer.MAX_VALUE);
