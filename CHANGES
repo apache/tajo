@@ -62,6 +62,9 @@ Release 0.9.1 - unreleased
 
     TAJO-1163: TableDesc should use URI instead of Path. (hyunsik)
 
+    TAJO-1188: Fix testcase testTimestampConstructor in TestTimestampDatum.
+    (DaeMyung Kang via hyunsik)
+
 
   BUG FIXES
 
