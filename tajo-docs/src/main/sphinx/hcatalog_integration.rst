@@ -45,8 +45,8 @@ Finally, you should specify HCatalogStore as Tajo catalog driver class in ``conf
   ``ALTER TABLE table_name ADD PARTITION`` commands on each of the newly added partitions or
   ``MSCK REPAIR TABLE  table_name`` command.
 
-  But current tajo doesn't provide ``ADD PARTITION`` command and hive doesn't provide a api for
+  But current tajo doesn't provide ``ADD PARTITION`` command and hive doesn't provide an api for
   responding to ``MSK REPAIR TABLE`` command. Thus, if you insert data to hive partitioned
-  table and you want to scan it on hive, you must run following command on hive ::
+  table and you want to scan the updated partitions through Tajo, you must run following command on hive ::
 
   $ MSCK REPAIR TABLE [table_name];
