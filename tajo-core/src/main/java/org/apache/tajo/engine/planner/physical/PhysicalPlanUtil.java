@@ -74,11 +74,12 @@ public class PhysicalPlanUtil {
    */
   public static CatalogProtos.FragmentProto[] getNonZeroLengthDataFiles(TajoConf tajoConf,TableDesc tableDesc,
                                                           int fileIndex, int numResultFiles) throws IOException {
-    FileSystem fs = tableDesc.getPath().getFileSystem(tajoConf);
+    Path path = new Path(tableDesc.getPath());
+    FileSystem fs = path.getFileSystem(tajoConf);
 
     List<FileStatus> nonZeroLengthFiles = new ArrayList<FileStatus>();
-    if (fs.exists(tableDesc.getPath())) {
-      getNonZeroLengthDataFiles(fs, tableDesc.getPath(), nonZeroLengthFiles, fileIndex, numResultFiles,
+    if (fs.exists(path)) {
+      getNonZeroLengthDataFiles(fs, path, nonZeroLengthFiles, fileIndex, numResultFiles,
           new AtomicInteger(0));
     }
 
