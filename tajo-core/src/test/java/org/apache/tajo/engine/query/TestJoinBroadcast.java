@@ -563,7 +563,7 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
           appender.flush();
           appender.close();
         }
-        Path dataPath = new Path(table.getPath(), fileIndex + ".csv");
+        Path dataPath = new Path(table.getPath().toString(), fileIndex + ".csv");
         fileIndex++;
         appender = StorageManager.getStorageManager(conf).getAppender(tableMeta, schema,
             dataPath);
@@ -811,16 +811,17 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
   private void addEmptyDataFile(String tableName, boolean isPartitioned) throws Exception {
     TableDesc table = client.getTableDesc(tableName);
 
-    FileSystem fs = table.getPath().getFileSystem(conf);
+    Path path = new Path(table.getPath());
+    FileSystem fs = path.getFileSystem(conf);
     if (isPartitioned) {
-      List<Path> partitionPathList = getPartitionPathList(fs, table.getPath());
+      List<Path> partitionPathList = getPartitionPathList(fs, path);
       for (Path eachPath: partitionPathList) {
         Path dataPath = new Path(eachPath, 0 + "_empty.csv");
         OutputStream out = fs.create(dataPath);
         out.close();
       }
     } else {
-      Path dataPath = new Path(table.getPath(), 0 + "_empty.csv");
+      Path dataPath = new Path(path, 0 + "_empty.csv");
       OutputStream out = fs.create(dataPath);
       out.close();
     }

@@ -60,6 +60,8 @@ Release 0.9.1 - unreleased
     TAJO-1172: Remove Trevni storage type and its related classes.
     (DaeMyung Kang via hyunsik)
 
+    TAJO-1163: TableDesc should use URI instead of Path. (hyunsik)
+
 
   BUG FIXES
 
