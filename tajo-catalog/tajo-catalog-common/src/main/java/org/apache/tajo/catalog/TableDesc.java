@@ -24,7 +24,6 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -35,14 +34,16 @@ import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 
+import java.net.URI;
+
 public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Cloneable {
   private final Log LOG = LogFactory.getLog(TableDesc.class);
 
 	@Expose protected String tableName;                        // required
   @Expose protected Schema schema;
   @Expose protected TableMeta meta;                          // required
-  /** uri is set if external flag is TRUE.*/
-  @Expose protected Path uri;                                // optional
+  /** uri is set if external flag is TRUE. */
+  @Expose protected URI uri;                                // optional
   @Expose	protected TableStats stats;                        // optional
   /** the description of table partition */
   @Expose protected PartitionMethodDesc partitionMethodDesc; // optional
@@ -53,26 +54,26 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
 	}
 
   public TableDesc(String tableName, Schema schema, TableMeta meta,
-                   Path path, boolean external) {
+                   URI uri, boolean external) {
     this();
     this.tableName = tableName;
     this.schema = schema;
     this.meta = meta;
-    this.uri = path;
+    this.uri = uri;
     this.external = external;
   }
 
-	public TableDesc(String tableName, Schema schema, TableMeta meta, Path path) {
+	public TableDesc(String tableName, Schema schema, TableMeta meta, URI path) {
 		this(tableName, schema, meta, path, true);
 	}
 	
-	public TableDesc(String tableName, Schema schema, StoreType type, KeyValueSet options, Path path) {
+	public TableDesc(String tableName, Schema schema, StoreType type, KeyValueSet options, URI path) {
 	  this(tableName, schema, new TableMeta(type, options), path);
 	}
 	
 	public TableDesc(TableDescProto proto) {
 	  this(proto.getTableName(), new Schema(proto.getSchema()),
-        new TableMeta(proto.getMeta()), proto.hasPath() ? new Path(proto.getPath()) : null, proto.getIsExternal());
+        new TableMeta(proto.getMeta()), proto.hasPath() ? URI.create(proto.getPath()) : null, proto.getIsExternal());
     if(proto.hasStats()) {
       this.stats = new TableStats(proto.getStats());
     }
@@ -89,11 +90,11 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
     return this.tableName;
   }
 	
-	public void setPath(Path uri) {
+	public void setPath(URI uri) {
 		this.uri = uri;
 	}
 	
-  public Path getPath() {
+  public URI getPath() {
     return this.uri;
   }
 

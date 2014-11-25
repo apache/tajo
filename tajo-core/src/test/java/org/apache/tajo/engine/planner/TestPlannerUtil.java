@@ -88,19 +88,19 @@ public class TestPlannerUtil {
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
     TableDesc people = new TableDesc(
         CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta,
-        CommonTestingUtil.getTestDir());
+        CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(people);
 
     TableDesc student =
         new TableDesc(
             CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "dept"), schema2, StoreType.CSV,
-            new KeyValueSet(), CommonTestingUtil.getTestDir());
+            new KeyValueSet(), CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(student);
 
     TableDesc score =
         new TableDesc(
             CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "score"), schema3, StoreType.CSV,
-            new KeyValueSet(), CommonTestingUtil.getTestDir());
+            new KeyValueSet(), CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(score);
 
     FunctionDesc funcDesc = new FunctionDesc("sumtest", SumInt.class, FunctionType.AGGREGATION,
@@ -338,7 +338,7 @@ public class TestPlannerUtil {
 
     TableDesc tableDesc = new TableDesc();
     tableDesc.setName("Test");
-    tableDesc.setPath(path);
+    tableDesc.setPath(path.toUri());
 
     FileSystem fs = path.getFileSystem(util.getConfiguration());
 

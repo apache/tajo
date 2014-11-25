@@ -47,7 +47,7 @@ public class TestTableDesc {
     schema.addColumn("addr", Type.TEXT);
     info = CatalogUtil.newTableMeta(StoreType.CSV);
     path = new Path(CommonTestingUtil.getTestDir(), "table1");
-    desc = new TableDesc("table1", schema, info, path);
+    desc = new TableDesc("table1", schema, info, path.toUri());
     stats = new TableStats();
     stats.setNumRows(957685);
     stats.setNumBytes(1023234);
@@ -76,10 +76,10 @@ public class TestTableDesc {
 
     Path path = new Path(CommonTestingUtil.getTestDir(), "tajo");
 
-    TableDesc desc = new TableDesc("table1", schema, info, path);
+    TableDesc desc = new TableDesc("table1", schema, info, path.toUri());
     assertEquals("table1", desc.getName());
     
-    assertEquals(path, desc.getPath());
+    assertEquals(path.toUri(), desc.getPath());
     assertEquals(info, desc.getMeta());
     testClone(desc);
   }
@@ -87,7 +87,7 @@ public class TestTableDesc {
   @Test
   public void testGetProto() throws CloneNotSupportedException, IOException {
     Path path = new Path(CommonTestingUtil.getTestDir(), "tajo");
-    TableDesc desc = new TableDesc("table1", schema, info, path);
+    TableDesc desc = new TableDesc("table1", schema, info, path.toUri());
     desc.setStats(stats);
     CatalogProtos.TableDescProto proto = desc.getProto();
 
@@ -98,7 +98,7 @@ public class TestTableDesc {
   @Test
   public void testToJson() throws CloneNotSupportedException, IOException {
     Path path = new Path(CommonTestingUtil.getTestDir(), "tajo");
-    TableDesc desc = new TableDesc("table1", schema, info, path);
+    TableDesc desc = new TableDesc("table1", schema, info, path.toUri());
     desc.setStats(stats);
     String json = desc.toJson();
 
