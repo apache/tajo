@@ -18,6 +18,8 @@
 
 package org.apache.tajo.util;
 
+import java.nio.charset.Charset;
+
 import org.apache.commons.lang.CharUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.junit.Test;
@@ -124,5 +126,27 @@ public class TestStringUtil {
     assertNotNull(bytesArray[1]);
     assertArrayEquals(textArray[1].getBytes(), bytesArray[1]);
     assertNull(bytesArray[2]);
+  }
+  
+  @Test
+  public void testConvertBytesToChars() {
+    byte[] testStringArray = new byte[] { 0x74, 0x61, 0x6A, 0x6F };
+    assertArrayEquals(new char[] { 't', 'a', 'j', 'o' },
+        StringUtils.convertBytesToChars(testStringArray, Charset.forName("UTF-8")));
+
+    testStringArray = new byte[] { (byte) 0xED, (byte) 0x83, (byte) 0x80, (byte) 0xEC, (byte) 0xA1, (byte) 0xB0 };
+    assertArrayEquals(new char[] { '\ud0c0', '\uc870' },
+        StringUtils.convertBytesToChars(testStringArray, Charset.forName("UTF-8")));
+  }
+  
+  @Test
+  public void testConvertCharsToBytes() {
+    char[] testStringArray = new char[] { 't', 'a', 'j', 'o' };
+    assertArrayEquals(new byte[] { 0x74, 0x61, 0x6A, 0x6F },
+        StringUtils.convertCharsToBytes(testStringArray, Charset.forName("UTF-8")));
+
+    testStringArray = new char[] { '\ud0c0', '\uc870' };
+    assertArrayEquals(new byte[] { (byte) 0xED, (byte) 0x83, (byte) 0x80, (byte) 0xEC, (byte) 0xA1, (byte) 0xB0 },
+        StringUtils.convertCharsToBytes(testStringArray, Charset.forName("UTF-8")));
   }
 }

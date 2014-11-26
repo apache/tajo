@@ -33,7 +33,7 @@ public class DataTypeAdapter implements GsonSerDerAdapter<DataType> {
 
     JsonObject obj = (JsonObject) json;
     DataType.Builder builder = DataType.newBuilder();
-    TajoDataTypes.Type type = TajoDataTypes.Type.valueOf(obj.get("type").getAsString());
+    TajoDataTypes.Type type = TajoDataTypes.Type.valueOf(CommonGsonHelper.getOrDie(obj, "type").getAsString());
     builder.setType(type);
 
     JsonElement len = obj.get("len");

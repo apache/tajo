@@ -324,6 +324,7 @@ public class GlobalEngine extends AbstractService {
         responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
         responseBuilder.setResultCode(ClientProtos.ResultCode.ERROR);
         responseBuilder.setErrorMessage("Fail starting QueryMaster.");
+        LOG.error("Fail starting QueryMaster: " + sql);
       } else {
         responseBuilder.setIsForwarded(true);
         responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
@@ -332,7 +333,8 @@ public class GlobalEngine extends AbstractService {
           responseBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
         }
         responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
-        LOG.info("Query is forwarded to " + queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
+        LOG.info("Query " + queryInfo.getQueryId().toString() + "," + queryInfo.getSql() + "," +
+            " is forwarded to " + queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
       }
     }
     SubmitQueryResponse response = responseBuilder.build();
@@ -354,7 +356,7 @@ public class GlobalEngine extends AbstractService {
     Path finalOutputDir = null;
     if (insertNode.getTableName() != null) {
       tableDesc = this.catalog.getTableDesc(insertNode.getTableName());
-      finalOutputDir = tableDesc.getPath();
+      finalOutputDir = new Path(tableDesc.getPath());
     } else {
       finalOutputDir = insertNode.getPath();
     }
@@ -685,7 +687,7 @@ public class GlobalEngine extends AbstractService {
 
       Path warehousePath = new Path(TajoConf.getWarehouseDir(context.getConf()), databaseName);
       TableDesc tableDesc = catalog.getTableDesc(databaseName, simpleTableName);
-      Path tablePath = tableDesc.getPath();
+      Path tablePath = new Path(tableDesc.getPath());
       if (tablePath.getParent() == null ||
           !tablePath.getParent().toUri().getPath().equals(warehousePath.toUri().getPath())) {
         throw new IOException("Can't truncate external table:" + eachTableName + ", data dir=" + tablePath +
@@ -695,7 +697,7 @@ public class GlobalEngine extends AbstractService {
     }
 
     for (TableDesc eachTable: tableDescList) {
-      Path path = eachTable.getPath();
+      Path path = new Path(eachTable.getPath());
       LOG.info("Truncate table: " + eachTable.getName() + ", delete all data files in " + path);
       FileSystem fs = path.getFileSystem(context.getConf());
 
@@ -732,7 +734,7 @@ public class GlobalEngine extends AbstractService {
   }
 
   public TableDesc createTable(QueryContext queryContext, String tableName, StoreType storeType,
-                               Schema schema, TableMeta meta, Path location, boolean isExternal,
+                               Schema schema, TableMeta meta, Path path, boolean isExternal,
                                PartitionMethodDesc partitionDesc, boolean ifNotExists) throws IOException {
     String databaseName;
     String simpleTableName;
@@ -758,8 +760,8 @@ public class GlobalEngine extends AbstractService {
     }
 
     TableDesc desc = new TableDesc(CatalogUtil.buildFQName(databaseName, simpleTableName),
-        schema, meta, location, isExternal);
-
+        schema, meta, (path != null ? path.toUri(): null), isExternal);
+    
     if (partitionDesc != null) {
       desc.setPartitionMethod(partitionDesc);
     }
@@ -864,10 +866,10 @@ public class GlobalEngine extends AbstractService {
 
     if (purge) {
       try {
-        StorageManager.getStorageManager(queryContext.getConf(), tableDesc.getMeta().getStoreType())
-            .purgeTable(tableDesc);
+        StorageManager.getStorageManager(queryContext.getConf(),
+            tableDesc.getMeta().getStoreType()).purgeTable(tableDesc);
       } catch (IOException e) {
-        LOG.warn("Can't purge table: " + e.getMessage(), e);
+        throw new InternalError(e.getMessage());
       }
     }
 

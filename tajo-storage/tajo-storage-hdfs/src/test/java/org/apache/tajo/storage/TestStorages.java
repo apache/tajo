@@ -284,7 +284,6 @@ public class TestStorages {
     Tuple tuple;
     while ((tuple = scanner.next()) != null) {
       if (storeType == StoreType.RCFILE
-          || storeType == StoreType.TREVNI
           || storeType == StoreType.CSV
           || storeType == StoreType.PARQUET
           || storeType == StoreType.SEQUENCEFILE

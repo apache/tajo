@@ -32,7 +32,6 @@ enum StoreType {
   RCFILE = 3;
   ROWFILE = 4;
   HCFILE = 5;
-  TREVNI = 6;
   PARQUET = 7;
   SEQUENCEFILE = 8;
   AVRO = 9;

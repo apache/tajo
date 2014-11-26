@@ -16,6 +16,13 @@ Release 0.9.1 - unreleased
     TAJO-235: Support Oracle CatalogStore. (Jihun Kang via hyunsik)
 
   IMPROVEMENT
+
+    TAJO-1195: Remove unused CachedDNSResolver Class. (DaeMyung Kang via jaehwa)
+
+    TAJO-1184: Upgrade netty-buffer to 4.0.24.Final. (jinho)
+
+    TAJO-1156: Improve the comparison of timestamp and date types. 
+    (Jihun Kang via jihoon)
    
     TAJO-1109: Separate SQL Statements from Catalog Stores.
     (Jihun Kang via hyunsik)
@@ -47,7 +54,39 @@ Release 0.9.1 - unreleased
     TAJO-1128: Implement a select box for database at web interface. 
     (Jongyoung Park via hyunsik)
 
+    TAJO-1174: remove unnessary codes for blobdatum.
+    (DaeMyung Kang via hyunsik)
+
+    TAJO-1169: Some older version of OpenJDK 1.6 does not get default 
+    timezone id. (Jihun Kang via hyunsik)
+
+    TAJO-1177: Reduce the use of Sun proprietary API. 
+    (Jihun Kang via hyunsik)
+
+    TAJO-1172: Remove Trevni storage type and its related classes.
+    (DaeMyung Kang via hyunsik)
+
+    TAJO-1163: TableDesc should use URI instead of Path. (hyunsik)
+
+
   BUG FIXES
+
+    TAJO-1208: Failure of create table using textfile on hivemeta.
+    (jinho)
+
+    TAJO-1205: Remove possible memory leak in TajoMaster. (jinho)
+
+    TAJO-1181: Avro schema URL should support various protocols. 
+    (jinho)
+
+    TAJO-1200: Invalid shuffle data of multiple worker in same server.
+    (jinho)
+
+    TAJO-1197: Unit test failed: unable to create new native thread.
+    (jinho)
+
+    TAJO-1178: Some error messages for wrong JSON queries are not so 
+    much helpful. (Jaewoong Jung via jihoon)
     
     TAJO-1162: to_char() returns "-00" second. (Hyoungjun Kim)
 
@@ -62,6 +101,9 @@ Release 0.9.1 - unreleased
 
     TAJO-1126: Join condition including functions throws 
     IllegalArgumentException. (hyunsik)
+
+    TAJO-1179: Integration tests in TravisCI are occasionally failed 
+    due to log size. (hyunsik)
 
 
   TASKS
@@ -80,6 +122,8 @@ Release 0.9.1 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1151: Implement the ByteBuffer-based De/Serializer. (jinho)
 
     TAJO-1152: RawFile ByteBuffer should be reuse. (jinho)
 

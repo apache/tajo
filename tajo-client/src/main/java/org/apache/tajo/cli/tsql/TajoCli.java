@@ -664,10 +664,15 @@ public class TajoCli {
     sout.println("Invalid command " + command + ". Try \\? for help.");
   }
 
+  @VisibleForTesting
   public void close() {
     //for testcase
     if (client != null) {
       client.close();
+    }
+
+    if (reader != null) {
+      reader.shutdown();
     }
   }
 

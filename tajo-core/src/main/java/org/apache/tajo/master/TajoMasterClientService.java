@@ -28,7 +28,10 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.service.AbstractService;
-import org.apache.tajo.*;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryIdFactory;
+import org.apache.tajo.TajoIdProtos;
+import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.NoSuchDatabaseException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -57,8 +60,6 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
-import org.apache.tajo.util.StringUtils;
-import org.apache.tajo.util.history.QueryHistory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -319,21 +320,22 @@ public class TajoMasterClientService extends AbstractService {
 
         // if we cannot get a QueryInProgress instance from QueryJobManager,
         // the instance can be in the finished query list.
+        QueryInfo queryInfo = null;
         if (queryInProgress == null) {
-          queryInProgress = context.getQueryJobManager().getFinishedQuery(queryId);
+          queryInfo = context.getQueryJobManager().getFinishedQuery(queryId);
+        } else {
+          queryInfo = queryInProgress.getQueryInfo();
         }
 
         GetQueryResultResponse.Builder builder = GetQueryResultResponse.newBuilder();
 
-        // If we cannot the QueryInProgress instance from the finished list,
+        // If we cannot the QueryInfo instance from the finished list,
         // the query result was expired due to timeout.
         // In this case, we will result in error.
-        if (queryInProgress == null) {
+        if (queryInfo == null) {
           builder.setErrorMessage("No such query: " + queryId.toString());
           return builder.build();
         }
-
-        QueryInfo queryInfo = queryInProgress.getQueryInfo();
 
         try {
           //TODO After implementation Tajo's user security feature, Should be modified.
@@ -404,14 +406,12 @@ public class TajoMasterClientService extends AbstractService {
         context.getSessionManager().touch(request.getSessionId().getId());
         GetQueryListResponse.Builder builder = GetQueryListResponse.newBuilder();
 
-        Collection<QueryInProgress> queries
+        Collection<QueryInfo> queries
             = context.getQueryJobManager().getFinishedQueries();
 
         BriefQueryInfo.Builder infoBuilder = BriefQueryInfo.newBuilder();
 
-        for (QueryInProgress queryInProgress : queries) {
-          QueryInfo queryInfo = queryInProgress.getQueryInfo();
-
+        for (QueryInfo queryInfo : queries) {
           infoBuilder.setQueryId(queryInfo.getQueryId().getProto());
           infoBuilder.setState(queryInfo.getQueryState());
           infoBuilder.setQuery(queryInfo.getSql());
@@ -452,12 +452,14 @@ public class TajoMasterClientService extends AbstractService {
           QueryInProgress queryInProgress = context.getQueryJobManager().getQueryInProgress(queryId);
 
           // It will try to find a query status from a finished query list.
+          QueryInfo queryInfo = null;
           if (queryInProgress == null) {
-            queryInProgress = context.getQueryJobManager().getFinishedQuery(queryId);
+            queryInfo = context.getQueryJobManager().getFinishedQuery(queryId);
+          } else {
+            queryInfo = queryInProgress.getQueryInfo();
           }
 
-          if (queryInProgress != null) {
-            QueryInfo queryInfo = queryInProgress.getQueryInfo();
+          if (queryInfo != null) {
             builder.setResultCode(ResultCode.OK);
             builder.setState(queryInfo.getQueryState());
             builder.setProgress(queryInfo.getProgress());

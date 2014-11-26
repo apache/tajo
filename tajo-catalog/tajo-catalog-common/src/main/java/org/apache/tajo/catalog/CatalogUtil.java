@@ -270,8 +270,6 @@ public class CatalogUtil {
       return StoreType.ROWFILE;
     } else if (typeStr.equalsIgnoreCase(StoreType.RCFILE.name())) {
       return StoreType.RCFILE;
-    } else if (typeStr.equalsIgnoreCase(StoreType.TREVNI.name())) {
-      return StoreType.TREVNI;
     } else if (typeStr.equalsIgnoreCase(StoreType.PARQUET.name())) {
       return StoreType.PARQUET;
     } else if (typeStr.equalsIgnoreCase(StoreType.SEQUENCEFILE.name())) {
@@ -296,7 +294,7 @@ public class CatalogUtil {
   }
 
   public static TableDesc newTableDesc(String tableName, Schema schema, TableMeta meta, Path path) {
-    return new TableDesc(tableName, schema, meta, path);
+    return new TableDesc(tableName, schema, meta, path.toUri());
   }
 
   public static TableDesc newTableDesc(TableDescProto proto) {

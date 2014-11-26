@@ -152,9 +152,11 @@ public class TestBNLJoinExec {
     Enforcer enforcer = new Enforcer();
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.BLOCK_NESTED_LOOP_JOIN);
 
-    FileFragment[] empFrags = FileStorageManager.splitNG(conf, "default.e", employee.getMeta(), employee.getPath(),
+    FileFragment[] empFrags = FileStorageManager.splitNG(conf, "default.e", employee.getMeta(),
+        new Path(employee.getPath()),
         Integer.MAX_VALUE);
-    FileFragment[] peopleFrags = FileStorageManager.splitNG(conf, "default.p", people.getMeta(), people.getPath(),
+    FileFragment[] peopleFrags = FileStorageManager.splitNG(conf, "default.p", people.getMeta(),
+        new Path(people.getPath()),
         Integer.MAX_VALUE);
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testBNLCrossJoin");
@@ -183,10 +185,10 @@ public class TestBNLJoinExec {
     LogicalNode plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf),
         context).getRootBlock().getRoot();
 
-    FileFragment[] empFrags = FileStorageManager.splitNG(conf, "default.e", employee.getMeta(), employee.getPath(),
-        Integer.MAX_VALUE);
-    FileFragment[] peopleFrags = FileStorageManager.splitNG(conf, "default.p", people.getMeta(), people.getPath(),
-        Integer.MAX_VALUE);
+    FileFragment[] empFrags = FileStorageManager.splitNG(conf, "default.e", employee.getMeta(), 
+        new Path(employee.getPath()), Integer.MAX_VALUE);
+    FileFragment[] peopleFrags = FileStorageManager.splitNG(conf, "default.p", people.getMeta(), 
+        new Path(people.getPath()), Integer.MAX_VALUE);
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
 

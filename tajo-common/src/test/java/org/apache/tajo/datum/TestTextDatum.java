@@ -96,4 +96,18 @@ public class TestTextDatum {
     Whitebox.setInternalState(Charset.class, "defaultCharset", systemCharSet);
     assertEquals(systemCharSet, Charset.defaultCharset());
   }
+  
+  @Test
+  public void testAsUnicodeChars() {
+    byte[] testStringArray = new byte[] {0x74, 0x61, 0x6A, 0x6F};
+    TextDatum test = new TextDatum(testStringArray);
+    
+    assertArrayEquals(new char[] {'t', 'a', 'j', 'o'}, test.asUnicodeChars());
+    
+    testStringArray = new byte[] {(byte) 0xED, (byte) 0x83, (byte) 0x80, (byte) 0xEC, 
+        (byte) 0xA1, (byte) 0xB0};
+    test = new TextDatum(testStringArray);
+    
+    assertArrayEquals(new char[] {'\ud0c0', '\uc870'}, test.asUnicodeChars());
+  }
 }
