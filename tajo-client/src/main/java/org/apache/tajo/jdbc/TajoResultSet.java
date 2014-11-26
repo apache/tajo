@@ -30,10 +30,7 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.storage.FileScanner;
-import org.apache.tajo.storage.MergeScanner;
-import org.apache.tajo.storage.Scanner;
-import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 
