@@ -16,28 +16,24 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.event;
+package org.apache.tajo.master.container;
 
-import org.apache.tajo.QueryUnitAttemptId;
-import org.apache.tajo.master.cluster.WorkerConnectionInfo;
-import org.apache.tajo.master.container.TajoContainerId;
 
-public class TaskAttemptAssignedEvent extends TaskAttemptEvent {
-  private final TajoContainerId cId;
-  private final WorkerConnectionInfo workerConnectionInfo;
+import org.apache.hadoop.classification.InterfaceStability.Unstable;
 
-  public TaskAttemptAssignedEvent(QueryUnitAttemptId id, TajoContainerId cId,
-                                  WorkerConnectionInfo connectionInfo) {
-    super(id, TaskAttemptEventType.TA_ASSIGNED);
-    this.cId = cId;
-    this.workerConnectionInfo = connectionInfo;
-  }
+/**
+ * This class is borrowed from the following source code :
+ * ${hadoop-yarn-api}/src/main/java/org/apache/hadoop/yarn/util/Records.java
+ *
+ * Convenient API record utils
+ */
+@Unstable
+public class TajoRecords {
+  // The default record factory
+  private static final TajoRecordFactory factory =
+    TajoRecordFactoryProvider.getRecordFactory(null);
 
-  public TajoContainerId getContainerId() {
-    return cId;
-  }
-
-  public WorkerConnectionInfo getWorkerConnectionInfo(){
-    return workerConnectionInfo;
+  public static <T> T newRecord(Class<T> cls) {
+    return factory.newRecordInstance(cls);
   }
 }

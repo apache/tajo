@@ -23,6 +23,7 @@ import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.TajoMasterProtocol.*;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.rpc.NullCallback;
@@ -150,7 +151,8 @@ public class TestTajoResourceManager {
           .build();
 
       final CountDownLatch barrier = new CountDownLatch(1);
-      final List<YarnProtos.ContainerIdProto> containerIds = new ArrayList<YarnProtos.ContainerIdProto>();
+      final List<ContainerProtocol.TajoContainerIdProto> containerIds = new
+        ArrayList<ContainerProtocol.TajoContainerIdProto>();
 
       RpcCallback<WorkerResourceAllocationResponse> callBack = new RpcCallback<WorkerResourceAllocationResponse>() {
 
@@ -190,7 +192,7 @@ public class TestTajoResourceManager {
         containerIds.add(eachResource.getContainerId());
       }
 
-      for(YarnProtos.ContainerIdProto eachContainerId: containerIds) {
+      for(ContainerProtocol.TajoContainerIdProto eachContainerId: containerIds) {
         tajoWorkerResourceManager.releaseWorkerResource(eachContainerId);
       }
 
@@ -318,7 +320,8 @@ public class TestTajoResourceManager {
           .build();
 
       final CountDownLatch barrier = new CountDownLatch(1);
-      final List<YarnProtos.ContainerIdProto> containerIds = new ArrayList<YarnProtos.ContainerIdProto>();
+      final List<ContainerProtocol.TajoContainerIdProto> containerIds = new
+        ArrayList<ContainerProtocol.TajoContainerIdProto>();
 
 
       RpcCallback<WorkerResourceAllocationResponse> callBack = new RpcCallback<WorkerResourceAllocationResponse>() {
@@ -356,7 +359,7 @@ public class TestTajoResourceManager {
 
       assertEquals(numWorkers * 3, response.getWorkerAllocatedResourceList().size());
 
-      for(YarnProtos.ContainerIdProto eachContainerId: containerIds) {
+      for(ContainerProtocol.TajoContainerIdProto eachContainerId: containerIds) {
         tajoWorkerResourceManager.releaseWorkerResource(eachContainerId);
       }
 
@@ -399,7 +402,8 @@ public class TestTajoResourceManager {
           .build();
 
       final CountDownLatch barrier = new CountDownLatch(1);
-      final List<YarnProtos.ContainerIdProto> containerIds = new ArrayList<YarnProtos.ContainerIdProto>();
+      final List<ContainerProtocol.TajoContainerIdProto> containerIds = new
+        ArrayList<ContainerProtocol.TajoContainerIdProto>();
 
 
       RpcCallback<WorkerResourceAllocationResponse> callBack = new RpcCallback<WorkerResourceAllocationResponse>() {
@@ -431,7 +435,7 @@ public class TestTajoResourceManager {
 
       assertEquals(0, totalUsedDisks, 0);
 
-      for(YarnProtos.ContainerIdProto eachContainerId: containerIds) {
+      for(ContainerProtocol.TajoContainerIdProto eachContainerId: containerIds) {
         tajoWorkerResourceManager.releaseWorkerResource(eachContainerId);
       }
 

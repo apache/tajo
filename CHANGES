@@ -68,6 +68,8 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1166: S3 related storage causes compilation error in Hadoop 2.6.0-SNAPSHOT. (jaehwa)
+
     TAJO-1208: Failure of create table using textfile on hivemeta.
     (jinho)
 
