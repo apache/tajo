@@ -67,6 +67,9 @@ Release 0.9.1 - unreleased
     TAJO-1188: Fix testcase testTimestampConstructor in TestTimestampDatum.
     (DaeMyung Kang via hyunsik)
 
+    TAJO-1209: Pluggable line (de)serializer for DelimitedTextFile.
+    (hyunsik)
+
 
   BUG FIXES
 

@@ -19,8 +19,6 @@
 package org.apache.tajo.storage.text;
 
 import io.netty.buffer.ByteBuf;
-import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -35,19 +33,20 @@ import org.apache.hadoop.io.compress.Compressor;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.rcfile.NonSyncByteArrayOutputStream;
+import org.apache.tajo.util.ReflectionUtil;
 
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class DelimitedTextFile {
 
@@ -56,15 +55,48 @@ public class DelimitedTextFile {
 
   private static final Log LOG = LogFactory.getLog(DelimitedTextFile.class);
 
+  /** it caches line serde classes. */
+  private static final Map<String, Class<? extends TextLineSerDe>> serdeClassCache =
+      new ConcurrentHashMap<String, Class<? extends TextLineSerDe>>();
+
+  /**
+   * By default, DelimitedTextFileScanner uses CSVLineSerder. If a table property 'text.serde.class' is given,
+   * it will use the specified serder class.
+   *
+   * @return TextLineSerder
+   */
+  public static TextLineSerDe getLineSerde(TableMeta meta) {
+    TextLineSerDe lineSerder;
+
+    String serDeClassName;
+
+    // if there is no given serde class, it will use CSV line serder.
+    serDeClassName = meta.getOption(StorageConstants.TEXT_SERDE_CLASS, StorageConstants.DEFAULT_TEXT_SERDE_CLASS);
+
+    try {
+      Class<? extends TextLineSerDe> serdeClass;
+
+      if (serdeClassCache.containsKey(serDeClassName)) {
+        serdeClass = serdeClassCache.get(serDeClassName);
+      } else {
+        serdeClass = (Class<? extends TextLineSerDe>) Class.forName(CSVLineSerDe.class.getName());
+        serdeClassCache.put(serDeClassName, serdeClass);
+      }
+      lineSerder = (TextLineSerDe) ReflectionUtil.newInstance(serdeClass);
+    } catch (Throwable e) {
+      throw new RuntimeException("TextLineSerde class cannot be initialized");
+    }
+
+    return lineSerder;
+  }
+
   public static class DelimitedTextFileAppender extends FileAppender {
     private final TableMeta meta;
     private final Schema schema;
-    private final int columnNum;
     private final FileSystem fs;
     private FSDataOutputStream fos;
     private DataOutputStream outputStream;
     private CompressionOutputStream deflateFilter;
-    private char delimiter;
     private TableStatistics stats = null;
     private Compressor compressor;
     private CompressionCodecFactory codecFactory;
@@ -76,7 +108,7 @@ public class DelimitedTextFile {
     private long pos = 0;
 
     private NonSyncByteArrayOutputStream os;
-    private FieldSerializerDeserializer serde;
+    private TextLineSerializer serializer;
 
     public DelimitedTextFileAppender(Configuration conf, final Schema schema, final TableMeta meta, final Path path)
         throws IOException {
@@ -84,17 +116,10 @@ public class DelimitedTextFile {
       this.fs = path.getFileSystem(conf);
       this.meta = meta;
       this.schema = schema;
-      this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.TEXT_DELIMITER,
-          StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
-      this.columnNum = schema.size();
+    }
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.TEXT_NULL,
-          NullDatum.DEFAULT_TEXT));
-      if (StringUtils.isEmpty(nullCharacters)) {
-        nullChars = NullDatum.get().asTextBytes();
-      } else {
-        nullChars = nullCharacters.getBytes();
-      }
+    public TextLineSerDe getLineSerde() {
+      return DelimitedTextFile.getLineSerde(meta);
     }
 
     @Override
@@ -133,7 +158,8 @@ public class DelimitedTextFile {
         this.stats = new TableStatistics(this.schema);
       }
 
-      serde = new TextFieldSerializerDeserializer();
+      serializer = getLineSerde().createSerializer(schema, meta);
+      serializer.init();
 
       if (os == null) {
         os = new NonSyncByteArrayOutputStream(BUFFER_SIZE);
@@ -145,26 +171,20 @@ public class DelimitedTextFile {
       super.init();
     }
 
-
     @Override
     public void addTuple(Tuple tuple) throws IOException {
-      Datum datum;
-      int rowBytes = 0;
+      // write
+      int rowBytes = serializer.serialize(os, tuple);
 
-      for (int i = 0; i < columnNum; i++) {
-        datum = tuple.get(i);
-        rowBytes += serde.serialize(os, datum, schema.getColumn(i), i, nullChars);
-
-        if (columnNum - 1 > i) {
-          os.write((byte) delimiter);
-          rowBytes += 1;
-        }
-      }
+      // new line
       os.write(LF);
       rowBytes += 1;
 
+      // update positions
       pos += rowBytes;
       bufferedBytes += rowBytes;
+
+      // refill buffer if necessary
       if (bufferedBytes > BUFFER_SIZE) {
         flushBuffer();
       }
@@ -197,6 +217,8 @@ public class DelimitedTextFile {
     public void close() throws IOException {
 
       try {
+        serializer.release();
+
         if(outputStream != null){
           flush();
         }
@@ -241,18 +263,15 @@ public class DelimitedTextFile {
   }
 
   public static class DelimitedTextFileScanner extends FileScanner {
-
     private boolean splittable = false;
     private final long startOffset;
-    private final long endOffset;
 
+    private final long endOffset;
     private int recordCount = 0;
     private int[] targetColumnIndexes;
 
-    private ByteBuf nullChars;
-    private FieldSerializerDeserializer serde;
     private DelimitedLineReader reader;
-    private FieldSplitProcessor processor;
+    private TextLineDeserializer deserializer;
 
     public DelimitedTextFileScanner(Configuration conf, final Schema schema, final TableMeta meta,
                                     final FileFragment fragment)
@@ -265,30 +284,14 @@ public class DelimitedTextFile {
 
       startOffset = fragment.getStartKey();
       endOffset = startOffset + fragment.getEndKey();
+    }
 
-      //Delimiter
-      String delim = meta.getOption(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-      this.processor = new FieldSplitProcessor(StringEscapeUtils.unescapeJava(delim).charAt(0));
+    public TextLineSerDe getLineSerde() {
+      return DelimitedTextFile.getLineSerde(meta);
     }
 
     @Override
     public void init() throws IOException {
-      if (nullChars != null) {
-        nullChars.release();
-      }
-
-      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.TEXT_NULL,
-          NullDatum.DEFAULT_TEXT));
-      byte[] bytes;
-      if (StringUtils.isEmpty(nullCharacters)) {
-        bytes = NullDatum.get().asTextBytes();
-      } else {
-        bytes = nullCharacters.getBytes();
-      }
-
-      nullChars = BufferPool.directBuffer(bytes.length, bytes.length);
-      nullChars.writeBytes(bytes);
-
       if (reader != null) {
         reader.close();
       }
@@ -305,8 +308,6 @@ public class DelimitedTextFile {
         targetColumnIndexes[i] = schema.getColumnId(targets[i].getQualifiedName());
       }
 
-      serde = new TextFieldSerializerDeserializer();
-
       super.init();
       Arrays.sort(targetColumnIndexes);
       if (LOG.isDebugEnabled()) {
@@ -316,6 +317,9 @@ public class DelimitedTextFile {
       if (startOffset > 0) {
         reader.readLine();  // skip first line;
       }
+
+      deserializer = getLineSerde().createDeserializer(schema, meta, targetColumnIndexes);
+      deserializer.init();
     }
 
     public ByteBuf readLine() throws IOException {
@@ -362,49 +366,11 @@ public class DelimitedTextFile {
         }
 
         VTuple tuple = new VTuple(schema.size());
-        fillTuple(schema, tuple, buf, targetColumnIndexes);
+        deserializer.deserialize(buf, tuple);
         return tuple;
       } catch (Throwable t) {
         LOG.error("Tuple list current index: " + recordCount + " file offset:" + reader.getCompressedPosition(), t);
         throw new IOException(t);
-      }
-    }
-
-    private void fillTuple(Schema schema, Tuple dst, ByteBuf lineBuf, int[] target) throws IOException {
-      int[] projection = target;
-      if (lineBuf == null || target == null || target.length == 0) {
-        return;
-      }
-
-      final int rowLength = lineBuf.readableBytes();
-      int start = 0, fieldLength = 0, end = 0;
-
-      //Projection
-      int currentTarget = 0;
-      int currentIndex = 0;
-
-      while (end != -1) {
-        end = lineBuf.forEachByte(start, rowLength - start, processor);
-
-        if (end < 0) {
-          fieldLength = rowLength - start;
-        } else {
-          fieldLength = end - start;
-        }
-
-        if (projection.length > currentTarget && currentIndex == projection[currentTarget]) {
-          lineBuf.setIndex(start, start + fieldLength);
-          Datum datum = serde.deserialize(lineBuf, schema.getColumn(currentIndex), currentIndex, nullChars);
-          dst.put(currentIndex, datum);
-          currentTarget++;
-        }
-
-        if (projection.length == currentTarget) {
-          break;
-        }
-
-        start = end + 1;
-        currentIndex++;
       }
     }
 
@@ -416,10 +382,7 @@ public class DelimitedTextFile {
     @Override
     public void close() throws IOException {
       try {
-        if (nullChars != null) {
-          nullChars.release();
-          nullChars = null;
-        }
+        deserializer.release();
 
         if (tableStats != null && reader != null) {
           tableStats.setReadBytes(reader.getReadBytes());  //Actual Processed Bytes. (decompressed bytes + overhead)

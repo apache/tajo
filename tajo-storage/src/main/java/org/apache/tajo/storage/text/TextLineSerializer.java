@@ -16,24 +16,30 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.util;
+package org.apache.tajo.storage.text;
 
-import java.lang.reflect.Constructor;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.storage.Tuple;
 
-public class ReflectionUtil {
-  private static final Class<?>[] EMPTY_ARRAY = new Class[]{};
+import java.io.IOException;
+import java.io.OutputStream;
 
-  /**
-   * Cache of constructors for each class. Pins the classes so they
-   * can't be garbage collected until ReflectionUtils can be collected.
-   */
-  private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE =
-      new ConcurrentHashMap<Class<?>, Constructor<?>>();
+/**
+ * Write a Tuple into single text formatted line
+ */
+public abstract class TextLineSerializer {
+  protected Schema schema;
+  protected TableMeta meta;
 
-	public static Object newInstance(Class<?> clazz)
-			throws InstantiationException, IllegalAccessException {
-		return clazz.newInstance();
-	}
+  public TextLineSerializer(Schema schema, TableMeta meta) {
+    this.schema = schema;
+    this.meta = meta;
+  }
+
+  public abstract void init();
+
+  public abstract int serialize(OutputStream out, Tuple input) throws IOException;
+
+  public abstract void release();
 }
