@@ -22,6 +22,7 @@ import org.apache.hadoop.yarn.api.records.*;
 import org.apache.tajo.master.container.TajoContainer;
 import org.apache.tajo.master.container.TajoContainerId;
 
+
 public class TajoWorkerContainer extends TajoContainer {
   TajoContainerId id;
   NodeId nodeId;
@@ -97,6 +98,6 @@ public class TajoWorkerContainer extends TajoContainer {
 
   @Override
   public int compareTo(TajoContainer container) {
-    return 0;  //To change body of implemented methods use File | Settings | File Templates.
+    return getId().compareTo(container.getId());
   }
 }
