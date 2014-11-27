@@ -27,6 +27,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.conf.YarnConfiguration;
 import org.apache.hadoop.yarn.exceptions.YarnRuntimeException;
 
+/**
+ * This class is borrowed from the following source code :
+ * ${hadoop-yarn-api}/src/main/java/org/apache/hadoop/yarn/factory/providers/RecordFactoryProvider.java
+ */
 @Unstable
 public class TajoRecordFactoryProvider {
   private static Configuration defaultConf;

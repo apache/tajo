@@ -29,6 +29,9 @@ import org.apache.hadoop.yarn.api.records.ApplicationId;
 import org.apache.hadoop.yarn.util.Records;
 
 /**
+ * This class is borrowed from the following source code :
+ * ${hadoop-yarn-api}/src/main/java/org/apache/hadoop/yarn/api/records/ContainerId.java
+ *
  * <p><code>TajoContainerId</code> represents a globally unique identifier
  * for a {@link org.apache.hadoop.yarn.api.records.Container} in the cluster.</p>
  */

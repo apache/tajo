@@ -29,6 +29,11 @@ import com.google.common.base.Preconditions;
 import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.master.container.TajoContainerId;
 
+/**
+ * This class is borrowed from the following source code :
+ * ${hadoop-yarn-common}/src/main/java/org/apache/hadoop/yarn/api/records/impl/pb/ContainerIdPBImpl.java
+ *
+ */
 @Private
 @Unstable
 public class TajoContainerIdPBImpl extends TajoContainerId {

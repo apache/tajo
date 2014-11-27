@@ -43,6 +43,9 @@ import org.apache.hadoop.yarn.factory.providers.RecordFactoryProvider;
 
 
 /**
+ * This class is borrowed from the following source code :
+ * ${hadoop-yarn-common}/src/main/java/org/apache/hadoop/yarn/util/ConverterUtils.java
+ *
  * This class contains a set of utilities which help converting data structures
  * from/to 'serializableFormat' to/from hadoop/nativejava data structures.
  *

@@ -28,6 +28,9 @@ import org.apache.hadoop.yarn.api.records.*;
 import org.apache.hadoop.yarn.util.Records;
 
 /**
+ * This class is borrowed from the following source code :
+ * ${hadoop-yarn-api}/src/main/java/org/apache/hadoop/yarn/api/records/Container.java
+ *
  * <p><code>TajoContainer</code> represents an allocated resource in the cluster.
  * </p>
  *

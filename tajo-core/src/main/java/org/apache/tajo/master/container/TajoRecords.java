@@ -22,6 +22,9 @@ package org.apache.tajo.master.container;
 import org.apache.hadoop.classification.InterfaceStability.Unstable;
 
 /**
+ * This class is borrowed from the following source code :
+ * ${hadoop-yarn-api}/src/main/java/org/apache/hadoop/yarn/util/Records.java
+ *
  * Convenient API record utils
  */
 @Unstable

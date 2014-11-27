@@ -31,6 +31,10 @@ import org.apache.hadoop.yarn.exceptions.YarnRuntimeException;
 import org.apache.hadoop.yarn.factories.RecordFactory;
 import org.apache.tajo.master.container.TajoRecordFactory;
 
+/**
+ * This class is borrowed from the following source code :
+ * ${hadoop-yarn-common}/src/main/java/org/apache/hadoop/yarn/factories/impl/pb/RecordFactoryPBImpl.java
+ */
 @Private
 public class TajoRecordFactoryPBImpl implements TajoRecordFactory {
 
