@@ -107,7 +107,7 @@ public class TestPhysicalPlanner {
     util.startCatalogCluster();
     conf = util.getConfiguration();
     testDir = CommonTestingUtil.getTestDir("target/test-data/TestPhysicalPlanner");
-    sm = StorageManager.getFileStorageManager(conf, testDir);
+    sm = (FileStorageManager)StorageManager.getFileStorageManager(conf, testDir);
     catalog = util.getMiniCatalogCluster().getCatalog();
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, testDir.toUri().toString());
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
@@ -130,8 +130,7 @@ public class TestPhysicalPlanner {
 
 
     Path employeePath = new Path(testDir, "employee.csv");
-    Appender appender = StorageManager.getFileStorageManager(conf).getAppender(employeeMeta, employeeSchema,
-        employeePath);
+    Appender appender = sm.getAppender(employeeMeta, employeeSchema, employeePath);
     appender.init();
     Tuple tuple = new VTuple(employeeSchema.size());
     for (int i = 0; i < 100; i++) {
@@ -149,7 +148,7 @@ public class TestPhysicalPlanner {
 
     Path scorePath = new Path(testDir, "score");
     TableMeta scoreMeta = CatalogUtil.newTableMeta(StoreType.CSV, new KeyValueSet());
-    appender = StorageManager.getFileStorageManager(conf).getAppender(scoreMeta, scoreSchema, scorePath);
+    appender = sm.getAppender(scoreMeta, scoreSchema, scorePath);
     appender.init();
     score = new TableDesc(
         CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "score"), scoreSchema, scoreMeta,
@@ -190,8 +189,8 @@ public class TestPhysicalPlanner {
 
     Schema scoreSchmea = score.getSchema();
     TableMeta scoreLargeMeta = CatalogUtil.newTableMeta(StoreType.RAW, new KeyValueSet());
-    Appender appender = StorageManager.getFileStorageManager(conf).getAppender(scoreLargeMeta, scoreSchmea,
-        scoreLargePath);
+    Appender appender =  ((FileStorageManager)StorageManager.getFileStorageManager(conf))
+        .getAppender(scoreLargeMeta, scoreSchmea, scoreLargePath);
     appender.enableStats();
     appender.init();
     largeScore = new TableDesc(
@@ -452,8 +451,8 @@ public class TestPhysicalPlanner {
     exec.next();
     exec.close();
 
-    Scanner scanner = StorageManager.getFileStorageManager(conf).getFileScanner(outputMeta, rootNode.getOutSchema(),
-        ctx.getOutputPath());
+    Scanner scanner =  ((FileStorageManager)StorageManager.getFileStorageManager(conf))
+        .getFileScanner(outputMeta, rootNode.getOutSchema(), ctx.getOutputPath());
     scanner.init();
     Tuple tuple;
     int i = 0;
@@ -512,7 +511,7 @@ public class TestPhysicalPlanner {
     // checking the file contents
     long totalNum = 0;
     for (FileStatus status : fs.listStatus(ctx.getOutputPath().getParent())) {
-      Scanner scanner = StorageManager.getFileStorageManager(conf).getFileScanner(
+      Scanner scanner =  ((FileStorageManager)StorageManager.getFileStorageManager(conf)).getFileScanner(
           CatalogUtil.newTableMeta(StoreType.CSV),
           rootNode.getOutSchema(),
           status.getPath());
@@ -549,8 +548,8 @@ public class TestPhysicalPlanner {
     exec.next();
     exec.close();
 
-    Scanner scanner = StorageManager.getFileStorageManager(conf).getFileScanner(outputMeta, rootNode.getOutSchema(),
-        ctx.getOutputPath());
+    Scanner scanner = ((FileStorageManager)StorageManager.getFileStorageManager(conf)).getFileScanner(
+        outputMeta, rootNode.getOutSchema(), ctx.getOutputPath());
     scanner.init();
     Tuple tuple;
     int i = 0;
@@ -1084,7 +1083,7 @@ public class TestPhysicalPlanner {
     Path outputPath = StorageUtil.concatPath(workDir, "output", "output");
     TableMeta meta = CatalogUtil.newTableMeta(channel.getStoreType(), new KeyValueSet());
     SeekableScanner scanner =
-        StorageManager.getSeekableScanner(conf, meta, exec.getSchema(), outputPath);
+        FileStorageManager.getSeekableScanner(conf, meta, exec.getSchema(), outputPath);
     scanner.init();
 
     int cnt = 0;

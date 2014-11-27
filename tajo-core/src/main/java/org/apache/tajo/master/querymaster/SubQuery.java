@@ -1051,7 +1051,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
         // After calling this method, partition paths are removed from the physical plan.
         FileStorageManager storageManager =
-            StorageManager.getFileStorageManager(subQuery.getContext().getConf());
+            (FileStorageManager)StorageManager.getFileStorageManager(subQuery.getContext().getConf());
         fragments = Repartitioner.getFragmentsFromPartitionedTable(storageManager, scan, table);
       } else {
         StorageManager storageManager =

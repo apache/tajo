@@ -245,7 +245,16 @@
     </dependency>
     <dependency>
       <groupId>org.apache.tajo</groupId>
-      <artifactId>tajo-storage</artifactId>
+      <artifactId>tajo-storage-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-storage-hdfs</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-storage-hbase</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.tajo</groupId>
@@ -482,8 +491,8 @@
         <dependency>
           <groupId>org.apache.tajo</groupId>
           <artifactId>tajo-hcatalog</artifactId>
-          <scope>test</scope>
           <version>${tajo.version}</version>
+          <scope>test</scope>
           <exclusions>
             <exclusion>
               <groupId>com.google.protobuf</groupId>

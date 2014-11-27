@@ -17,6 +17,9 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1122: Refactor the tajo-storage project structure.
+    (Hyoungjun Kim)
+
     TAJO-1195: Remove unused CachedDNSResolver Class. (DaeMyung Kang via jaehwa)
 
     TAJO-1184: Upgrade netty-buffer to 4.0.24.Final. (jinho)

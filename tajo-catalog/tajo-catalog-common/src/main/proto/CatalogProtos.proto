@@ -73,15 +73,6 @@ message FragmentProto {
   required bytes contents = 3;
 }
 
-message FileFragmentProto {
-  required string id = 1;
-  required string path = 2;
-  required int64 startOffset = 3;
-  required int64 length = 4;
-  repeated string hosts = 7;
-  repeated int32 diskIds = 8;
-}
-
 message TableProto {
   required StoreType storeType = 1;
   optional KeyValueSetProto params = 2;

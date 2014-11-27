@@ -167,7 +167,7 @@ public class TajoMaster extends CompositeService {
 
       // check the system directory and create if they are not created.
       checkAndInitializeSystemDirectories();
-      this.storeManager = StorageManager.getFileStorageManager(systemConf, null);
+      this.storeManager = (FileStorageManager)StorageManager.getFileStorageManager(systemConf, null);
 
       catalogServer = new CatalogServer(FunctionLoader.load());
       addIfService(catalogServer);
