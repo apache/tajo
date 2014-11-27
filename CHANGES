@@ -13,6 +13,8 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1165: Needs to show error messages on query_executor.jsp. (Jihun Kang via jaehwa)
+
     TAJO-1204: Remove unused ServerName class. (DaeMyung Kang via jaehwa)
 
     TAJO-1053: ADD PARTITIONS for HCatalogStore. (jaehwa)
