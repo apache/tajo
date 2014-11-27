@@ -37,3 +37,16 @@ Finally, you should specify HCatalogStore as Tajo catalog driver class in ``conf
     <name>tajo.catalog.store.class</name>
     <value>org.apache.tajo.catalog.store.HCatalogStore</value>
   </property>
+
+.. note::
+
+  Hive stores a list of partitions for each table in its metastore. If new partitions are
+  directly added to HDFS, HiveMetastore will not able aware of these partitions unless the user
+  ``ALTER TABLE table_name ADD PARTITION`` commands on each of the newly added partitions or
+  ``MSCK REPAIR TABLE  table_name`` command.
+
+  But current tajo doesn't provide ``ADD PARTITION`` command and hive doesn't provide an api for
+  responding to ``MSK REPAIR TABLE`` command. Thus, if you insert data to hive partitioned
+  table and you want to scan the updated partitions through Tajo, you must run following command on hive ::
+
+  $ MSCK REPAIR TABLE [table_name];
