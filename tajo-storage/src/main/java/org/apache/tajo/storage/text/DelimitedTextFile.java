@@ -79,12 +79,12 @@ public class DelimitedTextFile {
       if (serdeClassCache.containsKey(serDeClassName)) {
         serdeClass = serdeClassCache.get(serDeClassName);
       } else {
-        serdeClass = (Class<? extends TextLineSerDe>) Class.forName(CSVLineSerDe.class.getName());
+        serdeClass = (Class<? extends TextLineSerDe>) Class.forName(serDeClassName);
         serdeClassCache.put(serDeClassName, serdeClass);
       }
       lineSerder = (TextLineSerDe) ReflectionUtil.newInstance(serdeClass);
     } catch (Throwable e) {
-      throw new RuntimeException("TextLineSerde class cannot be initialized");
+      throw new RuntimeException("TextLineSerde class cannot be initialized.", e);
     }
 
     return lineSerder;
@@ -382,7 +382,9 @@ public class DelimitedTextFile {
     @Override
     public void close() throws IOException {
       try {
-        deserializer.release();
+        if (deserializer != null) {
+          deserializer.release();
+        }
 
         if (tableStats != null && reader != null) {
           tableStats.setReadBytes(reader.getReadBytes());  //Actual Processed Bytes. (decompressed bytes + overhead)
