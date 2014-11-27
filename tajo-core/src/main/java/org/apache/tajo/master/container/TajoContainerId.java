@@ -33,7 +33,7 @@ import org.apache.hadoop.yarn.util.Records;
  * ${hadoop-yarn-api}/src/main/java/org/apache/hadoop/yarn/api/records/ContainerId.java
  *
  * <p><code>TajoContainerId</code> represents a globally unique identifier
- * for a {@link org.apache.hadoop.yarn.api.records.Container} in the cluster.</p>
+ * for a {@link org.apache.tajo.master.container.TajoContainer} in the cluster.</p>
  */
 @Public
 @Stable

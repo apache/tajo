@@ -36,12 +36,12 @@ import org.apache.hadoop.yarn.util.Records;
  *
  * <p>The <code>ResourceManager</code> is the sole authority to allocate any
  * <code>TajoContainer</code> to applications. The allocated <code>TajoContainer</code>
- * is always on a single node and has a unique {@link org.apache.hadoop.yarn.api.records.TajoContainerId}. It has
+ * is always on a single node and has a unique {@link org.apache.tajo.master.container.TajoContainerId}. It has
  * a specific amount of {@link org.apache.hadoop.yarn.api.records.Resource} allocated.</p>
  *
  * <p>It includes details such as:
  *   <ul>
- *     <li>{@link org.apache.hadoop.yarn.api.records.TajoContainerId} for the container, which is globally unique.</li>
+ *     <li>{@link org.apache.tajo.master.container.TajoContainerId} for the container, which is globally unique.</li>
  *     <li>
  *       {@link org.apache.hadoop.yarn.api.records.NodeId} of the node on which it is allocated.
  *     </li>
@@ -61,8 +61,8 @@ import org.apache.hadoop.yarn.util.Records;
  * start/stop containers.</p>
  *
  * @see ApplicationMasterProtocol#allocate(org.apache.hadoop.yarn.api.protocolrecords.AllocateRequest)
- * @see TajoContainerManagementProtocol#startTajoContainers(org.apache.hadoop.yarn.api.protocolrecords.StartTajoContainersRequest)
- * @see TajoContainerManagementProtocol#stopTajoContainers(org.apache.hadoop.yarn.api.protocolrecords.StopTajoContainersRequest)
+ * @see org.apache.hadoop.yarn.api.ContainerManagementProtocol#startContainers(org.apache.hadoop.yarn.api.protocolrecords.StartContainersRequest)
+ * @see org.apache.hadoop.yarn.api.ContainerManagementProtocol#stopContainers(org.apache.hadoop.yarn.api.protocolrecords.StopContainersRequest)
  */
 @Public
 @Stable
@@ -159,7 +159,7 @@ public abstract class TajoContainer implements Comparable<TajoContainer> {
    * <code>TajoContainer</code> includes the <code>TajoContainerToken</code>.</p>
    *
    * @see ApplicationMasterProtocol#allocate(org.apache.hadoop.yarn.api.protocolrecords.AllocateRequest)
-   * @see TajoContainerManagementProtocol#startTajoContainers(org.apache.hadoop.yarn.api.protocolrecords.StartTajoContainersRequest)
+   * @see org.apache.hadoop.yarn.api.ContainerManagementProtocol#startContainers(org.apache.hadoop.yarn.api.protocolrecords.StartContainersRequest)
    *
    * @return <code>TajoContainerToken</code> for the container
    */
