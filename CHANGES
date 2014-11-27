@@ -13,6 +13,8 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1204: Remove unused ServerName class. (DaeMyung Kang via jaehwa)
+
     TAJO-1053: ADD PARTITIONS for HCatalogStore. (jaehwa)
 
     TAJO-1195: Remove unused CachedDNSResolver Class. (DaeMyung Kang via jaehwa)
