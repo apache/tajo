@@ -47,7 +47,10 @@ import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class DelimitedTextFile {
 
@@ -241,18 +244,20 @@ public class DelimitedTextFile {
   }
 
   public static class DelimitedTextFileScanner extends FileScanner {
+    private static final Class<?> SERDE_CONSTRUCTOR_PARAM[] = {Schema.class, TableMeta.class, int[].class};
+    /** it caches line serde constructors. */
+    private static final Map<String, Constructor<? extends TextLineSerde>> serdeConstructorCache =
+        new ConcurrentHashMap<String, Constructor<? extends TextLineSerde>>();
 
     private boolean splittable = false;
     private final long startOffset;
-    private final long endOffset;
 
+    private final long endOffset;
     private int recordCount = 0;
     private int[] targetColumnIndexes;
 
-    private ByteBuf nullChars;
-    private FieldSerializerDeserializer serde;
     private DelimitedLineReader reader;
-    private FieldSplitProcessor processor;
+    private TextLineSerde lineSerder;
 
     public DelimitedTextFileScanner(Configuration conf, final Schema schema, final TableMeta meta,
                                     final FileFragment fragment)
@@ -265,30 +270,10 @@ public class DelimitedTextFile {
 
       startOffset = fragment.getStartKey();
       endOffset = startOffset + fragment.getEndKey();
-
-      //Delimiter
-      String delim = meta.getOption(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-      this.processor = new FieldSplitProcessor(StringEscapeUtils.unescapeJava(delim).charAt(0));
     }
 
     @Override
     public void init() throws IOException {
-      if (nullChars != null) {
-        nullChars.release();
-      }
-
-      String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.TEXT_NULL,
-          NullDatum.DEFAULT_TEXT));
-      byte[] bytes;
-      if (StringUtils.isEmpty(nullCharacters)) {
-        bytes = NullDatum.get().asTextBytes();
-      } else {
-        bytes = nullCharacters.getBytes();
-      }
-
-      nullChars = BufferPool.directBuffer(bytes.length, bytes.length);
-      nullChars.writeBytes(bytes);
-
       if (reader != null) {
         reader.close();
       }
@@ -305,8 +290,6 @@ public class DelimitedTextFile {
         targetColumnIndexes[i] = schema.getColumnId(targets[i].getQualifiedName());
       }
 
-      serde = new TextFieldSerializerDeserializer();
-
       super.init();
       Arrays.sort(targetColumnIndexes);
       if (LOG.isDebugEnabled()) {
@@ -316,6 +299,44 @@ public class DelimitedTextFile {
       if (startOffset > 0) {
         reader.readLine();  // skip first line;
       }
+
+      lineSerder = getLineSerder();
+      lineSerder.init();
+    }
+
+    /**
+     * By default, DelimitedTextFileScanner uses CSVLineSerder. If a table property 'text.serde.class' is given,
+     * it will use the specified serder class.
+     *
+     * @return TextLineSerder
+     */
+    public TextLineSerde getLineSerder() {
+      TextLineSerde lineSerder;
+
+      String className;
+
+      // if there is no given serde class, it will use CSV line serder.
+      if (meta.containsOption(StorageConstants.TEXT_SERDE_CLASS)) {
+        className = meta.getOption(StorageConstants.TEXT_SERDE_CLASS);
+      } else {
+        className = StorageConstants.DEFAULT_TEXT_SERDE_CLASS;
+      }
+
+      try {
+        Constructor<? extends TextLineSerde> constructor;
+        if (serdeConstructorCache.containsKey(className)) {
+          constructor = serdeConstructorCache.get(className);
+        } else {
+          Class<? extends TextLineSerde> serDerClass = (Class<? extends TextLineSerde>) Class.forName(CSVLineSerde.class.getName());
+          constructor = serDerClass.getConstructor(SERDE_CONSTRUCTOR_PARAM);
+          serdeConstructorCache.put(className, constructor);
+        }
+        lineSerder = constructor.newInstance(schema, meta, targetColumnIndexes);
+      } catch (Throwable e) {
+        throw new RuntimeException("TextLineSerde class cannot be initialized");
+      }
+
+      return lineSerder;
     }
 
     public ByteBuf readLine() throws IOException {
@@ -362,49 +383,11 @@ public class DelimitedTextFile {
         }
 
         VTuple tuple = new VTuple(schema.size());
-        fillTuple(schema, tuple, buf, targetColumnIndexes);
+        lineSerder.buildTuple(buf, tuple);
         return tuple;
       } catch (Throwable t) {
         LOG.error("Tuple list current index: " + recordCount + " file offset:" + reader.getCompressedPosition(), t);
         throw new IOException(t);
-      }
-    }
-
-    private void fillTuple(Schema schema, Tuple dst, ByteBuf lineBuf, int[] target) throws IOException {
-      int[] projection = target;
-      if (lineBuf == null || target == null || target.length == 0) {
-        return;
-      }
-
-      final int rowLength = lineBuf.readableBytes();
-      int start = 0, fieldLength = 0, end = 0;
-
-      //Projection
-      int currentTarget = 0;
-      int currentIndex = 0;
-
-      while (end != -1) {
-        end = lineBuf.forEachByte(start, rowLength - start, processor);
-
-        if (end < 0) {
-          fieldLength = rowLength - start;
-        } else {
-          fieldLength = end - start;
-        }
-
-        if (projection.length > currentTarget && currentIndex == projection[currentTarget]) {
-          lineBuf.setIndex(start, start + fieldLength);
-          Datum datum = serde.deserialize(lineBuf, schema.getColumn(currentIndex), currentIndex, nullChars);
-          dst.put(currentIndex, datum);
-          currentTarget++;
-        }
-
-        if (projection.length == currentTarget) {
-          break;
-        }
-
-        start = end + 1;
-        currentIndex++;
       }
     }
 
@@ -416,10 +399,7 @@ public class DelimitedTextFile {
     @Override
     public void close() throws IOException {
       try {
-        if (nullChars != null) {
-          nullChars.release();
-          nullChars = null;
-        }
+        lineSerder.release();
 
         if (tableStats != null && reader != null) {
           tableStats.setReadBytes(reader.getReadBytes());  //Actual Processed Bytes. (decompressed bytes + overhead)
