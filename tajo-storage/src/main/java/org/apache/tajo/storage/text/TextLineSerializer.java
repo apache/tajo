@@ -18,43 +18,28 @@
 
 package org.apache.tajo.storage.text;
 
-import io.netty.buffer.ByteBuf;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
+import java.io.OutputStream;
 
 /**
- * Pluggable Text Line (De)Serializer
+ * Write a Tuple into single text formatted line
  */
-public abstract class TextLineSerde {
+public abstract class TextLineSerializer {
   protected Schema schema;
   protected TableMeta meta;
-  protected int [] targetColumnIndexes;
 
-  public TextLineSerde(Schema schema, TableMeta meta, int[] targetColumnIndexes) {
+  public TextLineSerializer(Schema schema, TableMeta meta) {
     this.schema = schema;
     this.meta = meta;
-    this.targetColumnIndexes = targetColumnIndexes;
   }
 
-  /**
-   * Initialize SerDe
-   */
   public abstract void init();
 
-  /**
-   * It fills a tuple with a read fields in a given line.
-   *
-   * @param buf Read line
-   * @param tuple Tuple to be filled with read fields
-   * @throws IOException
-   */
-  public abstract void buildTuple(final ByteBuf buf, Tuple tuple) throws IOException;
+  public abstract int serialize(OutputStream out, Tuple input) throws IOException;
 
-  /**
-   * Release external resources
-   */
   public abstract void release();
 }

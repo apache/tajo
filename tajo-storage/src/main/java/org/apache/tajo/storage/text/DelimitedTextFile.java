@@ -19,8 +19,6 @@
 package org.apache.tajo.storage.text;
 
 import io.netty.buffer.ByteBuf;
-import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -35,19 +33,17 @@ import org.apache.hadoop.io.compress.Compressor;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.rcfile.NonSyncByteArrayOutputStream;
+import org.apache.tajo.util.ReflectionUtil;
 
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -59,15 +55,48 @@ public class DelimitedTextFile {
 
   private static final Log LOG = LogFactory.getLog(DelimitedTextFile.class);
 
+  /** it caches line serde classes. */
+  private static final Map<String, Class<? extends TextLineSerDe>> serdeClassCache =
+      new ConcurrentHashMap<String, Class<? extends TextLineSerDe>>();
+
+  /**
+   * By default, DelimitedTextFileScanner uses CSVLineSerder. If a table property 'text.serde.class' is given,
+   * it will use the specified serder class.
+   *
+   * @return TextLineSerder
+   */
+  public static TextLineSerDe getLineSerde(TableMeta meta) {
+    TextLineSerDe lineSerder;
+
+    String serDeClassName;
+
+    // if there is no given serde class, it will use CSV line serder.
+    serDeClassName = meta.getOption(StorageConstants.TEXT_SERDE_CLASS, StorageConstants.DEFAULT_TEXT_SERDE_CLASS);
+
+    try {
+      Class<? extends TextLineSerDe> serdeClass;
+
+      if (serdeClassCache.containsKey(serDeClassName)) {
+        serdeClass = serdeClassCache.get(serDeClassName);
+      } else {
+        serdeClass = (Class<? extends TextLineSerDe>) Class.forName(CSVLineSerDe.class.getName());
+        serdeClassCache.put(serDeClassName, serdeClass);
+      }
+      lineSerder = (TextLineSerDe) ReflectionUtil.newInstance(serdeClass);
+    } catch (Throwable e) {
+      throw new RuntimeException("TextLineSerde class cannot be initialized");
+    }
+
+    return lineSerder;
+  }
+
   public static class DelimitedTextFileAppender extends FileAppender {
     private final TableMeta meta;
     private final Schema schema;
-    private final int columnNum;
     private final FileSystem fs;
     private FSDataOutputStream fos;
     private DataOutputStream outputStream;
     private CompressionOutputStream deflateFilter;
-    private char delimiter;
     private TableStatistics stats = null;
     private Compressor compressor;
     private CompressionCodecFactory codecFactory;
@@ -79,7 +108,7 @@ public class DelimitedTextFile {
     private long pos = 0;
 
     private NonSyncByteArrayOutputStream os;
-    private FieldSerializerDeserializer serde;
+    private TextLineSerializer serializer;
 
     public DelimitedTextFileAppender(Configuration conf, final Schema schema, final TableMeta meta, final Path path)
         throws IOException {
@@ -87,17 +116,10 @@ public class DelimitedTextFile {
       this.fs = path.getFileSystem(conf);
       this.meta = meta;
       this.schema = schema;
-      this.delimiter = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.TEXT_DELIMITER,
-          StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
-      this.columnNum = schema.size();
+    }
 
-      String nullCharacters = StringEscapeUtils.unescapeJava(this.meta.getOption(StorageConstants.TEXT_NULL,
-          NullDatum.DEFAULT_TEXT));
-      if (StringUtils.isEmpty(nullCharacters)) {
-        nullChars = NullDatum.get().asTextBytes();
-      } else {
-        nullChars = nullCharacters.getBytes();
-      }
+    public TextLineSerDe getLineSerde() {
+      return DelimitedTextFile.getLineSerde(meta);
     }
 
     @Override
@@ -136,7 +158,8 @@ public class DelimitedTextFile {
         this.stats = new TableStatistics(this.schema);
       }
 
-      serde = new TextFieldSerializerDeserializer();
+      serializer = getLineSerde().createSerializer(schema, meta);
+      serializer.init();
 
       if (os == null) {
         os = new NonSyncByteArrayOutputStream(BUFFER_SIZE);
@@ -148,26 +171,20 @@ public class DelimitedTextFile {
       super.init();
     }
 
-
     @Override
     public void addTuple(Tuple tuple) throws IOException {
-      Datum datum;
-      int rowBytes = 0;
+      // write
+      int rowBytes = serializer.serialize(os, tuple);
 
-      for (int i = 0; i < columnNum; i++) {
-        datum = tuple.get(i);
-        rowBytes += serde.serialize(os, datum, schema.getColumn(i), i, nullChars);
-
-        if (columnNum - 1 > i) {
-          os.write((byte) delimiter);
-          rowBytes += 1;
-        }
-      }
+      // new line
       os.write(LF);
       rowBytes += 1;
 
+      // update positions
       pos += rowBytes;
       bufferedBytes += rowBytes;
+
+      // refill buffer if necessary
       if (bufferedBytes > BUFFER_SIZE) {
         flushBuffer();
       }
@@ -200,6 +217,8 @@ public class DelimitedTextFile {
     public void close() throws IOException {
 
       try {
+        serializer.release();
+
         if(outputStream != null){
           flush();
         }
@@ -244,11 +263,6 @@ public class DelimitedTextFile {
   }
 
   public static class DelimitedTextFileScanner extends FileScanner {
-    private static final Class<?> SERDE_CONSTRUCTOR_PARAM[] = {Schema.class, TableMeta.class, int[].class};
-    /** it caches line serde constructors. */
-    private static final Map<String, Constructor<? extends TextLineSerde>> serdeConstructorCache =
-        new ConcurrentHashMap<String, Constructor<? extends TextLineSerde>>();
-
     private boolean splittable = false;
     private final long startOffset;
 
@@ -257,7 +271,7 @@ public class DelimitedTextFile {
     private int[] targetColumnIndexes;
 
     private DelimitedLineReader reader;
-    private TextLineSerde lineSerder;
+    private TextLineDeserializer deserializer;
 
     public DelimitedTextFileScanner(Configuration conf, final Schema schema, final TableMeta meta,
                                     final FileFragment fragment)
@@ -270,6 +284,10 @@ public class DelimitedTextFile {
 
       startOffset = fragment.getStartKey();
       endOffset = startOffset + fragment.getEndKey();
+    }
+
+    public TextLineSerDe getLineSerde() {
+      return DelimitedTextFile.getLineSerde(meta);
     }
 
     @Override
@@ -300,43 +318,8 @@ public class DelimitedTextFile {
         reader.readLine();  // skip first line;
       }
 
-      lineSerder = getLineSerder();
-      lineSerder.init();
-    }
-
-    /**
-     * By default, DelimitedTextFileScanner uses CSVLineSerder. If a table property 'text.serde.class' is given,
-     * it will use the specified serder class.
-     *
-     * @return TextLineSerder
-     */
-    public TextLineSerde getLineSerder() {
-      TextLineSerde lineSerder;
-
-      String className;
-
-      // if there is no given serde class, it will use CSV line serder.
-      if (meta.containsOption(StorageConstants.TEXT_SERDE_CLASS)) {
-        className = meta.getOption(StorageConstants.TEXT_SERDE_CLASS);
-      } else {
-        className = StorageConstants.DEFAULT_TEXT_SERDE_CLASS;
-      }
-
-      try {
-        Constructor<? extends TextLineSerde> constructor;
-        if (serdeConstructorCache.containsKey(className)) {
-          constructor = serdeConstructorCache.get(className);
-        } else {
-          Class<? extends TextLineSerde> serDerClass = (Class<? extends TextLineSerde>) Class.forName(CSVLineSerde.class.getName());
-          constructor = serDerClass.getConstructor(SERDE_CONSTRUCTOR_PARAM);
-          serdeConstructorCache.put(className, constructor);
-        }
-        lineSerder = constructor.newInstance(schema, meta, targetColumnIndexes);
-      } catch (Throwable e) {
-        throw new RuntimeException("TextLineSerde class cannot be initialized");
-      }
-
-      return lineSerder;
+      deserializer = getLineSerde().createDeserializer(schema, meta, targetColumnIndexes);
+      deserializer.init();
     }
 
     public ByteBuf readLine() throws IOException {
@@ -383,7 +366,7 @@ public class DelimitedTextFile {
         }
 
         VTuple tuple = new VTuple(schema.size());
-        lineSerder.buildTuple(buf, tuple);
+        deserializer.deserialize(buf, tuple);
         return tuple;
       } catch (Throwable t) {
         LOG.error("Tuple list current index: " + recordCount + " file offset:" + reader.getCompressedPosition(), t);
@@ -399,7 +382,7 @@ public class DelimitedTextFile {
     @Override
     public void close() throws IOException {
       try {
-        lineSerder.release();
+        deserializer.release();
 
         if (tableStats != null && reader != null) {
           tableStats.setReadBytes(reader.getReadBytes());  //Actual Processed Bytes. (decompressed bytes + overhead)

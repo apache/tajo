@@ -19,55 +19,36 @@
 package org.apache.tajo.storage.text;
 
 import io.netty.buffer.ByteBuf;
-import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.commons.lang.StringUtils;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.storage.BufferPool;
 import org.apache.tajo.storage.FieldSerializerDeserializer;
-import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
 
-@SuppressWarnings("unused")
-public class CSVLineSerde extends TextLineSerde {
+public class CSVLineDeserializer extends TextLineDeserializer {
   private FieldSplitProcessor processor;
   private FieldSerializerDeserializer fieldSerDer;
   private ByteBuf nullChars;
 
-  public CSVLineSerde(Schema schema, TableMeta meta, int[] targetColumnIndexes) {
+  public CSVLineDeserializer(Schema schema, TableMeta meta, int[] targetColumnIndexes) {
     super(schema, meta, targetColumnIndexes);
   }
 
   @Override
   public void init() {
-    //Delimiter
-    String delim = meta.getOption(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    this.processor = new FieldSplitProcessor(StringEscapeUtils.unescapeJava(delim).charAt(0));
+    this.processor = new FieldSplitProcessor(CSVLineSerDe.getFieldDelimiter(meta));
 
     if (nullChars != null) {
       nullChars.release();
     }
-
-    String nullCharacters = StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.TEXT_NULL,
-        NullDatum.DEFAULT_TEXT));
-    byte[] bytes;
-    if (StringUtils.isEmpty(nullCharacters)) {
-      bytes = NullDatum.get().asTextBytes();
-    } else {
-      bytes = nullCharacters.getBytes();
-    }
-
-    nullChars = BufferPool.directBuffer(bytes.length, bytes.length);
-    nullChars.writeBytes(bytes);
+    nullChars = TextLineSerDe.getNullChars(meta);
 
     fieldSerDer = new TextFieldSerializerDeserializer();
   }
 
-  public void buildTuple(final ByteBuf lineBuf, Tuple tuple) throws IOException {
+  public void deserialize(final ByteBuf lineBuf, Tuple tuple) throws IOException {
     int[] projection = targetColumnIndexes;
     if (lineBuf == null || targetColumnIndexes == null || targetColumnIndexes.length == 0) {
       return;
