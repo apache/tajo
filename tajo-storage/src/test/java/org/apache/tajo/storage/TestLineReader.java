@@ -166,7 +166,7 @@ public class TestLineReader {
 
   @Test
   public void testByteBufLineReaderWithoutTerminating() throws IOException {
-    String path = FileUtil.getResourcePath("testLineText.txt").getFile();
+    String path = FileUtil.getResourcePath("dataset/testLineText.txt").getFile();
     File file = new File(path);
     String data = FileUtil.readTextFile(file);
 
