@@ -58,7 +58,7 @@ public class JsonLineDeserializer extends TextLineDeserializer {
 
   @Override
   public void deserialize(ByteBuf buf, Tuple output) throws IOException {
-    byte [] line = new byte[buf.capacity()];
+    byte [] line = new byte[buf.readableBytes()];
     buf.getBytes(0, line);
 
     try {
