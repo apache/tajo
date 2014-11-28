@@ -13,6 +13,10 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1165: Needs to show error messages on query_executor.jsp. (Jihun Kang via jaehwa)
+
+    TAJO-1204: Remove unused ServerName class. (DaeMyung Kang via jaehwa)
+
     TAJO-1053: ADD PARTITIONS for HCatalogStore. (jaehwa)
 
     TAJO-1195: Remove unused CachedDNSResolver Class. (DaeMyung Kang via jaehwa)
@@ -72,6 +76,8 @@ Release 0.9.1 - unreleased
 
 
   BUG FIXES
+
+    TAJO-1119: JDBC driver should support TIMESTAMP type. (jaehwa)
 
     TAJO-1166: S3 related storage causes compilation error in Hadoop 2.6.0-SNAPSHOT. (jaehwa)
 
