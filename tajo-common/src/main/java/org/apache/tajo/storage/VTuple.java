@@ -56,7 +56,7 @@ public class VTuple implements Tuple, Cloneable {
 
   @Override
   public boolean isNull(int fieldid) {
-    return values[fieldid].isNull();
+    return values[fieldid] == null || values[fieldid].isNull();
   }
 
   @Override
@@ -93,7 +93,7 @@ public class VTuple implements Tuple, Cloneable {
   }
 
   public void put(Datum [] values) {
-    System.arraycopy(values, 0, this.values, 0, size());
+    System.arraycopy(values, 0, this.values, 0, values.length);
 	}
 	
 	//////////////////////////////////////////////////////

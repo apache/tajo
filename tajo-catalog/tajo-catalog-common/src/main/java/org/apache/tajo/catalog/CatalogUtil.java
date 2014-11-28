@@ -31,9 +31,11 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
+import org.mortbay.util.ajax.JSON;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -278,13 +280,16 @@ public class CatalogUtil {
       return StoreType.AVRO;
     } else if (typeStr.equalsIgnoreCase(StoreType.TEXTFILE.name())) {
       return StoreType.TEXTFILE;
+    } else if (typeStr.equalsIgnoreCase(StoreType.JSON.name())) {
+      return StoreType.JSON;
     } else {
       return null;
     }
   }
 
   public static TableMeta newTableMeta(StoreType type) {
-    return new TableMeta(type, new KeyValueSet());
+    KeyValueSet defaultProperties = CatalogUtil.newPhysicalProperties(type);
+    return new TableMeta(type, defaultProperties);
   }
 
   public static TableMeta newTableMeta(StoreType type, KeyValueSet options) {
@@ -821,6 +826,8 @@ public class CatalogUtil {
     KeyValueSet options = new KeyValueSet();
     if (StoreType.CSV == type || StoreType.TEXTFILE == type) {
       options.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    } else if (StoreType.JSON == type) {
+      options.set(StorageConstants.TEXT_SERDE_CLASS, "org.apache.tajo.storage.json.JsonLineSerDe");
     } else if (StoreType.RCFILE == type) {
       options.set(StorageConstants.RCFILE_SERDE, StorageConstants.DEFAULT_BINARY_SERDE);
     } else if (StoreType.SEQUENCEFILE == type) {
