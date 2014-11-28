@@ -38,8 +38,6 @@ import java.io.IOException;
 import java.util.Iterator;
 
 public class JsonLineDeserializer extends TextLineDeserializer {
-  private static ProtobufJsonFormat protobufJsonFormat = ProtobufJsonFormat.getInstance();
-
   private JSONParser parser;
   private Type [] types;
   private String [] columnNames;
@@ -59,7 +57,7 @@ public class JsonLineDeserializer extends TextLineDeserializer {
   @Override
   public void deserialize(ByteBuf buf, Tuple output) throws IOException {
     byte [] line = new byte[buf.readableBytes()];
-    buf.getBytes(0, line);
+    buf.readBytes(line);
 
     try {
       JSONObject object = (JSONObject) parser.parse(line);
