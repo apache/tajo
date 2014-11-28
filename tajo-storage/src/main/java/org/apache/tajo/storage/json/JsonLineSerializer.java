@@ -20,12 +20,14 @@ package org.apache.tajo.storage.json;
 
 
 import net.minidev.json.JSONObject;
+import org.apache.commons.lang.CharSet;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.common.exception.NotImplementedException;
 import org.apache.tajo.datum.ProtobufDatum;
+import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.text.TextLineSerDe;
@@ -33,6 +35,7 @@ import org.apache.tajo.storage.text.TextLineSerializer;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 
 public class JsonLineSerializer extends TextLineSerializer {
   private static ProtobufJsonFormat protobufJsonFormat = ProtobufJsonFormat.getInstance();
@@ -119,7 +122,7 @@ public class JsonLineSerializer extends TextLineSerializer {
     }
 
     String jsonStr = jsonObject.toJSONString();
-    byte [] jsonBytes = jsonStr.getBytes();
+    byte [] jsonBytes = jsonStr.getBytes(TextDatum.DEFAULT_CHARSET);
     out.write(jsonBytes);
     return jsonBytes.length;
   }
