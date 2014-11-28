@@ -4,18 +4,17 @@
   "name": "testVariousTypes",
   "fields": [
     { "name": "col1", "type": "boolean" },
-    { "name": "col2", "type": "int" },
-    { "name": "col3", "type": "string" },
+    { "name": "col2", "type": "string" },
+    { "name": "col3", "type": "int" },
     { "name": "col4", "type": "int" },
-    { "name": "col5", "type": "int" },
-    { "name": "col6", "type": "long" },
-    { "name": "col7", "type": "float" },
-    { "name": "col8", "type": "double" },
-    { "name": "col9", "type": "string" },
+    { "name": "col5", "type": "long" },
+    { "name": "col6", "type": "float" },
+    { "name": "col7", "type": "double" },
+    { "name": "col8", "type": "string" },
+    { "name": "col9", "type": "bytes" },
     { "name": "col10", "type": "bytes" },
-    { "name": "col11", "type": "bytes" },
-    { "name": "col12", "type": "null" },
-    { "name": "col13", "type": "bytes" }
+    { "name": "col11", "type": "null" },
+    { "name": "col12", "type": "bytes" }
   ]
 }
 

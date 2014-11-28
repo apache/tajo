@@ -16,26 +16,22 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.text;
+package org.apache.tajo.storage.json;
 
-import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.storage.text.TextLineDeserializer;
+import org.apache.tajo.storage.text.TextLineSerDe;
+import org.apache.tajo.storage.text.TextLineSerializer;
 
-public class CSVLineSerDe extends TextLineSerDe {
+public class JsonLineSerDe extends TextLineSerDe {
   @Override
   public TextLineDeserializer createDeserializer(Schema schema, TableMeta meta, int[] targetColumnIndexes) {
-    return new CSVLineDeserializer(schema, meta, targetColumnIndexes);
+    return new JsonLineDeserializer(schema, meta, targetColumnIndexes);
   }
 
   @Override
   public TextLineSerializer createSerializer(Schema schema, TableMeta meta) {
-    return new CSVLineSerializer(schema, meta);
-  }
-
-  public static char getFieldDelimiter(TableMeta meta) {
-    return StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.TEXT_DELIMITER,
-        StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
+    return new JsonLineSerializer(schema, meta);
   }
 }

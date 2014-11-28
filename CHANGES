@@ -11,6 +11,8 @@ Release 0.9.1 - unreleased
 
     TAJO-235: Support Oracle CatalogStore. (Jihun Kang via hyunsik)
 
+    TAJO-1095: Implement Json file scanner. (hyunsik)
+
   IMPROVEMENT
 
     TAJO-1165: Needs to show error messages on query_executor.jsp. (Jihun Kang via jaehwa)

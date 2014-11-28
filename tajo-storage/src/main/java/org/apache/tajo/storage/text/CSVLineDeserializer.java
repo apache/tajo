@@ -48,7 +48,7 @@ public class CSVLineDeserializer extends TextLineDeserializer {
     fieldSerDer = new TextFieldSerializerDeserializer();
   }
 
-  public void deserialize(final ByteBuf lineBuf, Tuple tuple) throws IOException {
+  public void deserialize(final ByteBuf lineBuf, Tuple output) throws IOException {
     int[] projection = targetColumnIndexes;
     if (lineBuf == null || targetColumnIndexes == null || targetColumnIndexes.length == 0) {
       return;
@@ -73,7 +73,7 @@ public class CSVLineDeserializer extends TextLineDeserializer {
       if (projection.length > currentTarget && currentIndex == projection[currentTarget]) {
         lineBuf.setIndex(start, start + fieldLength);
         Datum datum = fieldSerDer.deserialize(lineBuf, schema.getColumn(currentIndex), currentIndex, nullChars);
-        tuple.put(currentIndex, datum);
+        output.put(currentIndex, datum);
         currentTarget++;
       }
 
