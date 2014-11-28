@@ -56,15 +56,12 @@ public class TestJsonSerDe {
     schema.addColumn("col8", TajoDataTypes.Type.TEXT);
     schema.addColumn("col9", TajoDataTypes.Type.BLOB);
     schema.addColumn("col10", TajoDataTypes.Type.INET4);
+    schema.addColumn("col11", TajoDataTypes.Type.NULL_TYPE);
   }
 
   public static Path getResourcePath(String path, String suffix) {
     URL resultBaseURL = ClassLoader.getSystemResource(path);
     return new Path(resultBaseURL.toString(), suffix);
-  }
-
-  public static Path getResultPath(Class clazz, String fileName) {
-    return new Path (getResourcePath("results", clazz.getSimpleName()), fileName);
   }
 
   @Test
@@ -84,19 +81,19 @@ public class TestJsonSerDe {
     assertNull(scanner.next());
     scanner.close();
 
-    Tuple baseTuple = new VTuple(10);
+    Tuple baseTuple = new VTuple(11);
     baseTuple.put(new Datum[] {
-        DatumFactory.createBool(true),
-        DatumFactory.createChar("hyunsik"),
-        DatumFactory.createInt2((short) 17),
-        DatumFactory.createInt4(59),
-        DatumFactory.createInt8(23l),
-        DatumFactory.createFloat4(77.9f),
-        DatumFactory.createFloat8(271.9d),
-        DatumFactory.createText("hyunsik"),
-        DatumFactory.createBlob("hyunsik".getBytes()),
-        DatumFactory.createInet4("192.168.0.1"),
-        NullDatum.get(),
+        DatumFactory.createBool(true),                  // 0
+        DatumFactory.createChar("hyunsik"),             // 1
+        DatumFactory.createInt2((short) 17),            // 2
+        DatumFactory.createInt4(59),                    // 3
+        DatumFactory.createInt8(23l),                   // 4
+        DatumFactory.createFloat4(77.9f),               // 5
+        DatumFactory.createFloat8(271.9d),              // 6
+        DatumFactory.createText("hyunsik"),             // 7
+        DatumFactory.createBlob("hyunsik".getBytes()),  // 8
+        DatumFactory.createInet4("192.168.0.1"),        // 9
+        NullDatum.get(),                                // 10
     });
 
     assertEquals(baseTuple, tuple);

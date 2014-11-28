@@ -19,29 +19,22 @@
 package org.apache.tajo.storage.json;
 
 
-import com.google.protobuf.Message;
 import io.netty.buffer.ByteBuf;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
-import net.minidev.json.parser.ParseException;
-import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.common.exception.NotImplementedException;
-import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.datum.ProtobufDatumFactory;
 import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.text.TextLineDeserializer;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Iterator;
 
 public class JsonLineDeserializer extends TextLineDeserializer {
@@ -74,6 +67,11 @@ public class JsonLineDeserializer extends TextLineDeserializer {
       for (int i = 0; i < targetColumnIndexes.length; i++) {
         int actualIdx = targetColumnIndexes[i];
         String fieldName = columnNames[actualIdx];
+
+        if (!object.containsKey(fieldName)) {
+          output.put(actualIdx, NullDatum.get());
+          continue;
+        }
 
         switch (types[actualIdx]) {
         case BOOLEAN:
@@ -169,22 +167,29 @@ public class JsonLineDeserializer extends TextLineDeserializer {
         case BINARY:
         case VARBINARY:
         case BLOB: {
-          JSONArray jsonArray = (JSONArray) object.get(fieldName);
-          if (jsonArray == null) {
+          Object jsonObject = object.get(fieldName);
+
+          if (jsonObject == null) {
             output.put(actualIdx, NullDatum.get());
             break;
-          }
-
-          byte[] bytes = new byte[jsonArray.size()];
-          Iterator<Object> it = jsonArray.iterator();
-          int arrayIdx = 0;
-          while (it.hasNext()) {
-            bytes[arrayIdx++] = ((Long) it.next()).byteValue();
-          }
-          if (bytes.length > 0) {
-            output.put(actualIdx, DatumFactory.createBlob(bytes));
+          } if (jsonObject instanceof String) {
+            output.put(actualIdx, DatumFactory.createBlob((String)jsonObject));
+          } else if (jsonObject instanceof JSONArray) {
+            JSONArray jsonArray = (JSONArray) jsonObject;
+            byte[] bytes = new byte[jsonArray.size()];
+            Iterator<Object> it = jsonArray.iterator();
+            int arrayIdx = 0;
+            while (it.hasNext()) {
+              bytes[arrayIdx++] = ((Long) it.next()).byteValue();
+            }
+            if (bytes.length > 0) {
+              output.put(actualIdx, DatumFactory.createBlob(bytes));
+            } else {
+              output.put(actualIdx, NullDatum.get());
+            }
+            break;
           } else {
-            output.put(actualIdx, NullDatum.get());
+            throw new IOException("Unknown json object: " + object.getClass().getSimpleName());
           }
           break;
         }
