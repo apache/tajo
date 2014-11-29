@@ -277,7 +277,27 @@ public class GlobalEngine extends AbstractService {
       responseBuilder.setMaxRowNum(lines.length);
       responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-
+      
+    } else if (PlannerUtil.checkIfQueryTargetIsVirtualTable(plan)) {
+      int maxRow = Integer.MAX_VALUE;
+      if (plan.getRootBlock().hasNode(NodeType.LIMIT)) {
+        LimitNode limitNode = plan.getRootBlock().getNode(NodeType.LIMIT);
+        maxRow = (int) limitNode.getFetchFirstNum();
+      }
+      QueryId queryId = QueryIdFactory.newQueryId(context.getResourceManager().getSeedQueryId());
+      
+      NonForwardQueryResultScanner queryResultScanner =
+          new NonForwareQueryResultSystemScanner(context, plan, queryId, session.getSessionId(), maxRow);
+      
+      queryResultScanner.init();
+      session.addNonForwardQueryResultScanner(queryResultScanner);
+      
+      responseBuilder.setQueryId(queryId.getProto());
+      responseBuilder.setMaxRowNum(maxRow);
+      responseBuilder.setTableDesc(queryResultScanner.getTableDesc().getProto());
+      responseBuilder.setSessionVariables(session.getProto().getVariables());
+      responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+      
       // Simple query indicates a form of 'select * from tb_name [LIMIT X];'.
     } else if (PlannerUtil.checkIfSimpleQuery(plan)) {
       ScanNode scanNode = plan.getRootBlock().getNode(NodeType.SCAN);
@@ -297,7 +317,7 @@ public class GlobalEngine extends AbstractService {
       QueryId queryId = QueryIdFactory.newQueryId(context.getResourceManager().getSeedQueryId());
 
       NonForwardQueryResultScanner queryResultScanner =
-          new NonForwardQueryResultScanner(context.getConf(), session.getSessionId(), queryId, scanNode, desc, maxRow);
+          new NonForwardQueryResultFileScanner(context.getConf(), session.getSessionId(), queryId, scanNode, desc, maxRow);
 
       queryResultScanner.init();
       session.addNonForwardQueryResultScanner(queryResultScanner);
