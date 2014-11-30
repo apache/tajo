@@ -510,21 +510,40 @@ public class Query implements EventHandler<QueryEvent> {
                 }
                 throw new IOException(ioe.getMessage());
               }
-            } else {
+            } else { // no partition
               try {
+
+                // if the final output dir exists, move all contents to the temporary table dir.
+                // Otherwise, just make the final output dir. As a result, the final output dir will be empty.
                 if (fs.exists(finalOutputDir)) {
-                  fs.rename(finalOutputDir, oldTableDir);
+                  for (FileStatus status : fs.listStatus(finalOutputDir)) {
+                    fs.rename(status.getPath(), oldTableDir);
+                  }
                   movedToOldTable = fs.exists(oldTableDir);
                 } else { // if the parent does not exist, make its parent directory.
-                  fs.mkdirs(finalOutputDir.getParent());
+                  fs.mkdirs(finalOutputDir);
                 }
 
-                fs.rename(stagingResultDir, finalOutputDir);
+                // Move the results to the final output dir.
+                for (FileStatus status : fs.listStatus(stagingResultDir)) {
+                  fs.rename(status.getPath(), finalOutputDir);
+                }
+
+                // Check the final output dir
                 committed = fs.exists(finalOutputDir);
+
               } catch (IOException ioe) {
                 // recover the old table
                 if (movedToOldTable && !committed) {
-                  fs.rename(oldTableDir, finalOutputDir);
+
+                  // if commit is failed, recover the old data
+                  for (FileStatus status : fs.listStatus(finalOutputDir)) {
+                    fs.delete(status.getPath(), true);
+                  }
+
+                  for (FileStatus status : fs.listStatus(oldTableDir)) {
+                    fs.rename(status.getPath(), finalOutputDir);
+                  }
                 }
               }
             }
@@ -560,10 +579,21 @@ public class Query implements EventHandler<QueryEvent> {
                 }
               }
             } else { // CREATE TABLE AS SELECT (CTAS)
-              fs.rename(stagingResultDir, finalOutputDir);
+              if (fs.exists(finalOutputDir)) {
+                for (FileStatus status : fs.listStatus(stagingResultDir)) {
+                  fs.rename(status.getPath(), finalOutputDir);
+                }
+              } else {
+                fs.rename(stagingResultDir, finalOutputDir);
+              }
               LOG.info("Moved from the staging dir to the output directory '" + finalOutputDir);
             }
           }
+
+          // remove the staging directory if the final output dir is given.
+          Path stagingDirRoot = queryContext.getStagingDir().getParent();
+          fs.delete(stagingDirRoot, true);
+
         } catch (IOException e) {
           // TODO report to client
           e.printStackTrace();

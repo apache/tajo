@@ -271,7 +271,7 @@ public class TajoMaster extends CompositeService {
       LOG.info("Warehouse dir '" + wareHousePath + "' is created");
     }
 
-    Path stagingPath = TajoConf.getStagingDir(systemConf);
+    Path stagingPath = TajoConf.getDefaultRootStagingDir(systemConf);
     LOG.info("Staging dir: " + wareHousePath);
     if (!defaultFS.exists(stagingPath)) {
       defaultFS.mkdirs(stagingPath, new FsPermission(STAGING_ROOTDIR_PERMISSION));

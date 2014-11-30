@@ -399,8 +399,7 @@ public class QueryMasterTask extends CompositeService {
 
     try {
 
-      stagingDir = initStagingDir(systemConf, defaultFS, queryId.toString());
-      defaultFS.mkdirs(new Path(stagingDir, TajoConstants.RESULT_DIR_NAME));
+      stagingDir = initStagingDir(systemConf, queryId.toString(), queryContext);
 
       // Create a subdirectories
       LOG.info("The staging dir '" + stagingDir + "' is created.");
@@ -423,7 +422,7 @@ public class QueryMasterTask extends CompositeService {
    * It initializes the final output and staging directory and sets
    * them to variables.
    */
-  public static Path initStagingDir(TajoConf conf, FileSystem fs, String queryId) throws IOException {
+  public static Path initStagingDir(TajoConf conf, String queryId, QueryContext context) throws IOException {
 
     String realUser;
     String currentUser;
@@ -432,13 +431,21 @@ public class QueryMasterTask extends CompositeService {
     realUser = ugi.getShortUserName();
     currentUser = UserGroupInformation.getCurrentUser().getShortUserName();
 
-    Path stagingDir = null;
+    FileSystem fs;
+    Path stagingDir;
 
     ////////////////////////////////////////////
     // Create Output Directory
     ////////////////////////////////////////////
 
-    stagingDir = new Path(TajoConf.getStagingDir(conf), queryId);
+    if (context.isCreateTable() || context.isInsert()) {
+      stagingDir = new Path(context.getOutputPath(), new Path(".staging", queryId));
+    } else {
+      stagingDir = new Path(TajoConf.getDefaultRootStagingDir(conf), queryId);
+    }
+
+    // initializ
+    fs = stagingDir.getFileSystem(conf);
 
     if (fs.exists(stagingDir)) {
       throw new IOException("The staging directory '" + stagingDir + "' already exists");
@@ -461,6 +468,9 @@ public class QueryMasterTask extends CompositeService {
           "to correct value " + STAGING_DIR_PERMISSION);
       fs.setPermission(stagingDir, new FsPermission(STAGING_DIR_PERMISSION));
     }
+
+    Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
+    fs.mkdirs(stagingResultDir);
 
     return stagingDir;
   }
