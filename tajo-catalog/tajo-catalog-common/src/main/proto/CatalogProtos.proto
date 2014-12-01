@@ -36,7 +36,8 @@ enum StoreType {
   SEQUENCEFILE = 8;
   AVRO = 9;
   TEXTFILE = 10;
-  ELASTICSEARCH = 11;
+  JSON = 11;
+  ELASTICSEARCH = 12;
 }
 
 enum OrderType {

@@ -18,12 +18,12 @@
 
 package org.apache.tajo.worker;
 
-import org.apache.hadoop.yarn.api.records.ContainerId;
-import org.apache.hadoop.yarn.proto.YarnProtos;
+import org.apache.tajo.ipc.ContainerProtocol;
+import org.apache.tajo.master.container.TajoContainerId;
 
 public interface ResourceAllocator {
   public void allocateTaskWorker();
-  public ContainerId makeContainerId(YarnProtos.ContainerIdProto containerId);
+  public TajoContainerId makeContainerId(ContainerProtocol.TajoContainerIdProto containerId);
   public int calculateNumRequestContainers(TajoWorker.WorkerContext workerContext,
                                            int numTasks, int memoryMBPerTask);
 }

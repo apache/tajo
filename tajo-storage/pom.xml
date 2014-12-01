@@ -17,7 +17,6 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
   <parent>
     <artifactId>tajo-project</artifactId>
     <groupId>org.apache.tajo</groupId>
@@ -26,7 +25,7 @@
   </parent>
 
   <artifactId>tajo-storage</artifactId>
-  <packaging>pom</packaging>
+  <packaging>jar</packaging>
   <name>Tajo Storage</name>
   <description>Tajo Storage Package</description>
 
@@ -75,6 +74,7 @@
         <configuration>
           <excludes>
             <exclude>src/test/resources/testVariousTypes.avsc</exclude>
+            <exclude>src/test/resources/dataset/TestJsonSerDe/*.json</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -315,6 +315,11 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-buffer</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>net.minidev</groupId>
+      <artifactId>json-smart</artifactId>
+      <version>2.0</version>
     </dependency>
     <dependency>
       <groupId>org.apache.lucene</groupId>
