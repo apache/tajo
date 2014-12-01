@@ -510,6 +510,7 @@ public class Query implements EventHandler<QueryEvent> {
                   fs.delete(entry.getValue(), true);
                   fs.rename(entry.getValue(), entry.getKey());
                 }
+
                 throw new IOException(ioe.getMessage());
               }
             } else { // no partition
@@ -518,9 +519,12 @@ public class Query implements EventHandler<QueryEvent> {
                 // if the final output dir exists, move all contents to the temporary table dir.
                 // Otherwise, just make the final output dir. As a result, the final output dir will be empty.
                 if (fs.exists(finalOutputDir)) {
-                  for (FileStatus status : fs.listStatus(finalOutputDir)) {
+                  fs.mkdirs(oldTableDir);
+
+                  for (FileStatus status : fs.listStatus(finalOutputDir, StorageManager.hiddenFileFilter)) {
                     fs.rename(status.getPath(), oldTableDir);
                   }
+
                   movedToOldTable = fs.exists(oldTableDir);
                 } else { // if the parent does not exist, make its parent directory.
                   fs.mkdirs(finalOutputDir);
@@ -539,7 +543,7 @@ public class Query implements EventHandler<QueryEvent> {
                 if (movedToOldTable && !committed) {
 
                   // if commit is failed, recover the old data
-                  for (FileStatus status : fs.listStatus(finalOutputDir)) {
+                  for (FileStatus status : fs.listStatus(finalOutputDir, StorageManager.hiddenFileFilter)) {
                     fs.delete(status.getPath(), true);
                   }
 
@@ -547,6 +551,8 @@ public class Query implements EventHandler<QueryEvent> {
                     fs.rename(status.getPath(), finalOutputDir);
                   }
                 }
+
+                throw new IOException(ioe.getMessage());
               }
             }
           } else {
