@@ -411,9 +411,9 @@ public class Query implements EventHandler<QueryEvent> {
     public QueryState transition(Query query, QueryEvent queryEvent) {
       QueryCompletedEvent subQueryEvent = (QueryCompletedEvent) queryEvent;
       QueryState finalState;
+
       if (subQueryEvent.getState() == SubQueryState.SUCCEEDED) {
-        finalizeQuery(query, subQueryEvent);
-        finalState = QueryState.QUERY_SUCCEEDED;
+        finalState = finalizeQuery(query, subQueryEvent);
       } else if (subQueryEvent.getState() == SubQueryState.FAILED) {
         finalState = QueryState.QUERY_FAILED;
       } else if (subQueryEvent.getState() == SubQueryState.KILLED) {
@@ -427,26 +427,28 @@ public class Query implements EventHandler<QueryEvent> {
       return finalState;
     }
 
-    private void finalizeQuery(Query query, QueryCompletedEvent event) {
+    private QueryState finalizeQuery(Query query, QueryCompletedEvent event) {
       MasterPlan masterPlan = query.getPlan();
 
       ExecutionBlock terminal = query.getPlan().getTerminalBlock();
       DataChannel finalChannel = masterPlan.getChannel(event.getExecutionBlockId(), terminal.getId());
-      Path finalOutputDir = commitOutputData(query);
 
       QueryHookExecutor hookExecutor = new QueryHookExecutor(query.context.getQueryMasterContext());
       try {
-        hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(),
-            finalOutputDir);
-      } catch (Exception e) {
-        query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(e)));
+        Path finalOutputDir = commitOutputData(query);
+        hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(), finalOutputDir);
+      } catch (Throwable t) {
+        query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(t)));
+        return QueryState.QUERY_ERROR;
       }
+
+      return QueryState.QUERY_SUCCEEDED;
     }
 
     /**
      * It moves a result data stored in a staging output dir into a final output dir.
      */
-    public Path commitOutputData(Query query) {
+    public Path commitOutputData(Query query) throws IOException {
       QueryContext queryContext = query.context.getQueryContext();
       Path stagingResultDir = new Path(queryContext.getStagingDir(), TajoConstants.RESULT_DIR_NAME);
       Path finalOutputDir;
@@ -508,24 +510,49 @@ public class Query implements EventHandler<QueryEvent> {
                   fs.delete(entry.getValue(), true);
                   fs.rename(entry.getValue(), entry.getKey());
                 }
+
                 throw new IOException(ioe.getMessage());
               }
-            } else {
+            } else { // no partition
               try {
+
+                // if the final output dir exists, move all contents to the temporary table dir.
+                // Otherwise, just make the final output dir. As a result, the final output dir will be empty.
                 if (fs.exists(finalOutputDir)) {
-                  fs.rename(finalOutputDir, oldTableDir);
+                  fs.mkdirs(oldTableDir);
+
+                  for (FileStatus status : fs.listStatus(finalOutputDir, StorageManager.hiddenFileFilter)) {
+                    fs.rename(status.getPath(), oldTableDir);
+                  }
+
                   movedToOldTable = fs.exists(oldTableDir);
                 } else { // if the parent does not exist, make its parent directory.
-                  fs.mkdirs(finalOutputDir.getParent());
+                  fs.mkdirs(finalOutputDir);
                 }
 
-                fs.rename(stagingResultDir, finalOutputDir);
+                // Move the results to the final output dir.
+                for (FileStatus status : fs.listStatus(stagingResultDir)) {
+                  fs.rename(status.getPath(), finalOutputDir);
+                }
+
+                // Check the final output dir
                 committed = fs.exists(finalOutputDir);
+
               } catch (IOException ioe) {
                 // recover the old table
                 if (movedToOldTable && !committed) {
-                  fs.rename(oldTableDir, finalOutputDir);
+
+                  // if commit is failed, recover the old data
+                  for (FileStatus status : fs.listStatus(finalOutputDir, StorageManager.hiddenFileFilter)) {
+                    fs.delete(status.getPath(), true);
+                  }
+
+                  for (FileStatus status : fs.listStatus(oldTableDir)) {
+                    fs.rename(status.getPath(), finalOutputDir);
+                  }
                 }
+
+                throw new IOException(ioe.getMessage());
               }
             }
           } else {
@@ -560,13 +587,24 @@ public class Query implements EventHandler<QueryEvent> {
                 }
               }
             } else { // CREATE TABLE AS SELECT (CTAS)
-              fs.rename(stagingResultDir, finalOutputDir);
+              if (fs.exists(finalOutputDir)) {
+                for (FileStatus status : fs.listStatus(stagingResultDir)) {
+                  fs.rename(status.getPath(), finalOutputDir);
+                }
+              } else {
+                fs.rename(stagingResultDir, finalOutputDir);
+              }
               LOG.info("Moved from the staging dir to the output directory '" + finalOutputDir);
             }
           }
-        } catch (IOException e) {
-          // TODO report to client
-          e.printStackTrace();
+
+          // remove the staging directory if the final output dir is given.
+          Path stagingDirRoot = queryContext.getStagingDir().getParent();
+          fs.delete(stagingDirRoot, true);
+
+        } catch (Throwable t) {
+          LOG.error(t);
+          throw new IOException(t);
         }
       } else {
         finalOutputDir = new Path(queryContext.getStagingDir(), TajoConstants.RESULT_DIR_NAME);

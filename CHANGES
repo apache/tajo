@@ -79,6 +79,9 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1211: Staging directory for CTAS and INSERT should be in 
+    the output dir. (hyunsik)
+
     TAJO-1210: ByteBufLineReader does not handle the end of file, 
     if newline is not appeared. (jinho)
 
