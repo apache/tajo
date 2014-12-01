@@ -140,6 +140,9 @@
                       run mkdir -p share/jdbc-dist
                       run cp -r $ROOT/tajo-jdbc/target/tajo-jdbc-${project.version}.jar ./share/jdbc-dist
                       run cp -r $ROOT/tajo-jdbc/target/lib/* ./share/jdbc-dist
+                      
+                      run mkdir -p share/emr-dist
+                      run cp -r $ROOT/tajo-emr/* ./share/emr-dist
 
                       if [ -f $ROOT/tajo-catalog/tajo-catalog-drivers/tajo-hcatalog/target/lib/parquet-hive-bundle-*.jar ]
                       then
