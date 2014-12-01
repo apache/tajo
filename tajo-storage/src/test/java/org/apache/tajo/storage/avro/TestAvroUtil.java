@@ -49,7 +49,7 @@ public class TestAvroUtil {
 
   @Before
   public void setUp() throws Exception {
-    schemaUrl = FileUtil.getResourcePath("testVariousTypes.avsc");
+    schemaUrl = FileUtil.getResourcePath("dataset/testVariousTypes.avsc");
     assertNotNull(schemaUrl);
 
     File file = new File(schemaUrl.getPath());

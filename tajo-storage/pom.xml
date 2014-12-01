@@ -71,8 +71,7 @@
         </executions>
         <configuration>
           <excludes>
-            <exclude>src/test/resources/testVariousTypes.avsc</exclude>
-            <exclude>src/test/resources/dataset/TestJsonSerDe/*.json</exclude>
+            <exclude>src/test/resources/dataset/**</exclude>
           </excludes>
         </configuration>
       </plugin>

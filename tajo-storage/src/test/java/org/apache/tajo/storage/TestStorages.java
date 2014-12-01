@@ -320,7 +320,7 @@ public class TestStorages {
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
     if (storeType == StoreType.AVRO) {
-      String path = FileUtil.getResourcePath("testVariousTypes.avsc").toString();
+      String path = FileUtil.getResourcePath("dataset/testVariousTypes.avsc").toString();
       meta.putOption(StorageConstants.AVRO_SCHEMA_URL, path);
     }
 
