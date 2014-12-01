@@ -411,9 +411,9 @@ public class Query implements EventHandler<QueryEvent> {
     public QueryState transition(Query query, QueryEvent queryEvent) {
       QueryCompletedEvent subQueryEvent = (QueryCompletedEvent) queryEvent;
       QueryState finalState;
+
       if (subQueryEvent.getState() == SubQueryState.SUCCEEDED) {
-        finalizeQuery(query, subQueryEvent);
-        finalState = QueryState.QUERY_SUCCEEDED;
+        finalState = finalizeQuery(query, subQueryEvent);
       } else if (subQueryEvent.getState() == SubQueryState.FAILED) {
         finalState = QueryState.QUERY_FAILED;
       } else if (subQueryEvent.getState() == SubQueryState.KILLED) {
@@ -427,26 +427,28 @@ public class Query implements EventHandler<QueryEvent> {
       return finalState;
     }
 
-    private void finalizeQuery(Query query, QueryCompletedEvent event) {
+    private QueryState finalizeQuery(Query query, QueryCompletedEvent event) {
       MasterPlan masterPlan = query.getPlan();
 
       ExecutionBlock terminal = query.getPlan().getTerminalBlock();
       DataChannel finalChannel = masterPlan.getChannel(event.getExecutionBlockId(), terminal.getId());
-      Path finalOutputDir = commitOutputData(query);
 
       QueryHookExecutor hookExecutor = new QueryHookExecutor(query.context.getQueryMasterContext());
       try {
-        hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(),
-            finalOutputDir);
-      } catch (Exception e) {
-        query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(e)));
+        Path finalOutputDir = commitOutputData(query);
+        hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(), finalOutputDir);
+      } catch (Throwable t) {
+        query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(t)));
+        return QueryState.QUERY_ERROR;
       }
+
+      return QueryState.QUERY_SUCCEEDED;
     }
 
     /**
      * It moves a result data stored in a staging output dir into a final output dir.
      */
-    public Path commitOutputData(Query query) {
+    public Path commitOutputData(Query query) throws IOException {
       QueryContext queryContext = query.context.getQueryContext();
       Path stagingResultDir = new Path(queryContext.getStagingDir(), TajoConstants.RESULT_DIR_NAME);
       Path finalOutputDir;
@@ -594,9 +596,9 @@ public class Query implements EventHandler<QueryEvent> {
           Path stagingDirRoot = queryContext.getStagingDir().getParent();
           fs.delete(stagingDirRoot, true);
 
-        } catch (IOException e) {
-          // TODO report to client
-          e.printStackTrace();
+        } catch (Throwable t) {
+          LOG.error(t);
+          throw new IOException(t);
         }
       } else {
         finalOutputDir = new Path(queryContext.getStagingDir(), TajoConstants.RESULT_DIR_NAME);
