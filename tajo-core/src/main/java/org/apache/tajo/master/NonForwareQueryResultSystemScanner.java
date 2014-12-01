@@ -25,7 +25,6 @@ import java.util.Stack;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.QueryUnitId;
@@ -130,7 +129,7 @@ public class NonForwareQueryResultSystemScanner implements NonForwardQueryResult
       .createPlan(taskContext, leafBlock.getPlan());
     
     tableDesc = new TableDesc("table_"+System.currentTimeMillis(), physicalExec.getSchema(), 
-        new TableMeta(StoreType.SYSTEM, new KeyValueSet()), new Path("SYSTEM"));
+        new TableMeta(StoreType.SYSTEM, new KeyValueSet()), null);
     outSchema = physicalExec.getSchema();
     encoder = RowStoreUtil.createEncoder(getLogicalSchema());
     
@@ -142,6 +141,11 @@ public class NonForwareQueryResultSystemScanner implements NonForwardQueryResult
     tableDesc = null;
     outSchema = null;
     encoder = null;
+    if (physicalExec != null) {
+      try {
+        physicalExec.close();
+      } catch (Exception ignored) {}
+    }
     physicalExec = null;
     currentRow = -1;
   }

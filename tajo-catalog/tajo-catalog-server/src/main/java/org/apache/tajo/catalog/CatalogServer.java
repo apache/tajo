@@ -483,9 +483,10 @@ public class CatalogServer extends AbstractService {
     public StringListProto getAllDatabaseNames(RpcController controller, NullProto request) throws ServiceException {
       rlock.lock();
       try {
-        Collection<String> databaseNames = store.getAllDatabaseNames();
-        databaseNames.add(metaDictionary.getSystemDatabaseName());
-        return ProtoUtil.convertStrings(databaseNames);
+        StringListProto.Builder builder = StringListProto.newBuilder();
+        builder.addAllValues(store.getAllDatabaseNames());
+        builder.addValues(metaDictionary.getSystemDatabaseName());
+        return builder.build();
       } catch (Exception e) {
         LOG.error(e);
         throw new ServiceException(e);

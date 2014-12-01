@@ -148,10 +148,11 @@ public class PlannerUtil {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
     
     boolean hasScanNode = plan.getRootBlock().hasNode(NodeType.SCAN);
-    boolean isVirtualTable = true;
+    LogicalNode[] scanNodes = findAllNodes(rootNode, NodeType.SCAN);
+    boolean isVirtualTable = scanNodes.length > 0;
     ScanNode scanNode = null;
     
-    for (LogicalNode node: findAllNodes(rootNode, NodeType.SCAN)) {
+    for (LogicalNode node: scanNodes) {
       scanNode = (ScanNode) node;
       isVirtualTable &= (scanNode.getTableDesc().getMeta().getStoreType() == StoreType.SYSTEM);
     }
