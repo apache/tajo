@@ -58,6 +58,7 @@ import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.HAServiceUtil;
 import org.apache.tajo.util.metrics.TajoMetrics;
 import org.apache.tajo.util.metrics.reporter.MetricsConsoleReporter;
@@ -78,6 +79,8 @@ public class QueryMasterTask extends CompositeService {
   // query submission directory is private!
   final public static FsPermission STAGING_DIR_PERMISSION =
       FsPermission.createImmutable((short) 0700); // rwx--------
+
+  public static final String TMP_STAGING_DIR_PREFIX = ".staging";
 
   private QueryId queryId;
 
@@ -439,7 +442,7 @@ public class QueryMasterTask extends CompositeService {
     ////////////////////////////////////////////
 
     if (context.isCreateTable() || context.isInsert()) {
-      stagingDir = new Path(context.getOutputPath(), new Path(".staging", queryId));
+      stagingDir = StorageUtil.concatPath(context.getOutputPath(), TMP_STAGING_DIR_PREFIX, queryId);
     } else {
       stagingDir = new Path(TajoConf.getDefaultRootStagingDir(conf), queryId);
     }
