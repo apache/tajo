@@ -77,31 +77,33 @@ public class PhysicalPlanUtil {
     Path path = new Path(tableDesc.getPath());
     FileSystem fs = path.getFileSystem(tajoConf);
 
+    //In the case of partitioned table, we should return same partition key data files.
+    int partitionDepth = 0;
+    if (tableDesc.hasPartition()) {
+      partitionDepth = tableDesc.getPartitionMethod().getExpressionSchema().getColumns().size();
+    }
+
     List<FileStatus> nonZeroLengthFiles = new ArrayList<FileStatus>();
     if (fs.exists(path)) {
       getNonZeroLengthDataFiles(fs, path, nonZeroLengthFiles, fileIndex, numResultFiles,
-          new AtomicInteger(0));
+          new AtomicInteger(0), tableDesc.hasPartition(), 0, partitionDepth);
     }
 
     List<FileFragment> fragments = new ArrayList<FileFragment>();
 
-    //In the case of partitioned table, return same partition key data files.
-    int numPartitionColumns = 0;
-    if (tableDesc.hasPartition()) {
-      numPartitionColumns = tableDesc.getPartitionMethod().getExpressionSchema().getColumns().size();
-    }
+
     String[] previousPartitionPathNames = null;
     for (FileStatus eachFile: nonZeroLengthFiles) {
       FileFragment fileFragment = new FileFragment(tableDesc.getName(), eachFile.getPath(), 0, eachFile.getLen(), null);
 
-      if (numPartitionColumns > 0) {
+      if (partitionDepth > 0) {
         // finding partition key;
         Path filePath = fileFragment.getPath();
         Path parentPath = filePath;
-        String[] parentPathNames = new String[numPartitionColumns];
-        for (int i = 0; i < numPartitionColumns; i++) {
+        String[] parentPathNames = new String[partitionDepth];
+        for (int i = 0; i < partitionDepth; i++) {
           parentPath = parentPath.getParent();
-          parentPathNames[numPartitionColumns - i - 1] = parentPath.getName();
+          parentPathNames[partitionDepth - i - 1] = parentPath.getName();
         }
 
         // If current partitionKey == previousPartitionKey, add to result.
@@ -120,20 +122,53 @@ public class PhysicalPlanUtil {
     return FragmentConvertor.toFragmentProtoArray(fragments.toArray(new FileFragment[]{}));
   }
 
+  /**
+   *
+   * @param fs
+   * @param path The table path
+   * @param result The final result files to be used
+   * @param startFileIndex
+   * @param numResultFiles
+   * @param currentFileIndex
+   * @param partitioned A flag to indicate if this table is partitioned
+   * @param currentDepth Current visiting depth of partition directories
+   * @param maxDepth The partition depth of this table
+   * @throws IOException
+   */
   private static void getNonZeroLengthDataFiles(FileSystem fs, Path path, List<FileStatus> result,
                                          int startFileIndex, int numResultFiles,
-                                         AtomicInteger currentFileIndex) throws IOException {
+                                         AtomicInteger currentFileIndex, boolean partitioned,
+                                         int currentDepth, int maxDepth) throws IOException {
+    // Intermediate directory
     if (fs.isDirectory(path)) {
+
       FileStatus[] files = fs.listStatus(path, StorageManager.hiddenFileFilter);
+
       if (files != null && files.length > 0) {
+
         for (FileStatus eachFile : files) {
+
+          // checking if the enough number of files are found
           if (result.size() >= numResultFiles) {
             return;
           }
+
           if (eachFile.isDirectory()) {
-            getNonZeroLengthDataFiles(fs, eachFile.getPath(), result, startFileIndex, numResultFiles,
-                currentFileIndex);
-          } else if (eachFile.isFile() && eachFile.getLen() > 0) {
+            getNonZeroLengthDataFiles(
+                fs,
+                eachFile.getPath(),
+                result,
+                startFileIndex,
+                numResultFiles,
+                currentFileIndex,
+                partitioned,
+                currentDepth + 1, // increment a visiting depth
+                maxDepth);
+
+
+            // if partitioned table, we should ignore files located in the intermediate directory.
+            // we can ensure that this file is in leaf directory if currentDepth == maxDepth.
+          } else if (eachFile.isFile() && eachFile.getLen() > 0 && (!partitioned || currentDepth == maxDepth)) {
             if (currentFileIndex.get() >= startFileIndex) {
               result.add(eachFile);
             }
@@ -141,6 +176,8 @@ public class PhysicalPlanUtil {
           }
         }
       }
+
+      // Files located in leaf directory
     } else {
       FileStatus fileStatus = fs.getFileStatus(path);
       if (fileStatus != null && fileStatus.getLen() > 0) {
