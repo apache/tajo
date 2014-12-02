@@ -27,6 +27,7 @@ import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.querymaster.QueryJobManager;
@@ -128,9 +129,9 @@ public class TajoMasterService extends AbstractService {
     public void releaseWorkerResource(RpcController controller,
                                            TajoMasterProtocol.WorkerResourceReleaseRequest request,
                                            RpcCallback<PrimitiveProtos.BoolProto> done) {
-      List<YarnProtos.ContainerIdProto> containerIds = request.getContainerIdsList();
+      List<ContainerProtocol.TajoContainerIdProto> containerIds = request.getContainerIdsList();
 
-      for(YarnProtos.ContainerIdProto eachContainer: containerIds) {
+      for(ContainerProtocol.TajoContainerIdProto eachContainer: containerIds) {
         context.getResourceManager().releaseWorkerResource(eachContainer);
       }
       done.run(BOOL_TRUE);

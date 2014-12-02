@@ -28,6 +28,7 @@ import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryMasterProtocol;
@@ -74,7 +75,7 @@ public class QueryInProgress extends CompositeService {
 
   private QueryMasterProtocolService queryMasterRpcClient;
 
-  private YarnProtos.ContainerIdProto qmContainerId;
+  private ContainerProtocol.TajoContainerIdProto qmContainerId;
 
   public QueryInProgress(
       TajoMaster.MasterContext masterContext,

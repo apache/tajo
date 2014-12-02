@@ -24,7 +24,6 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.yarn.api.records.Container;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.Priority;
 import org.apache.hadoop.yarn.api.records.Resource;
@@ -58,6 +57,8 @@ import org.apache.tajo.master.TaskRunnerGroupEvent.EventType;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext;
 import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
+import org.apache.tajo.master.container.TajoContainer;
+import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.storage.StorageManager;
@@ -105,7 +106,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private long finishTime;
 
   volatile Map<QueryUnitId, QueryUnit> tasks = new ConcurrentHashMap<QueryUnitId, QueryUnit>();
-  volatile Map<ContainerId, Container> containers = new ConcurrentHashMap<ContainerId, Container>();
+  volatile Map<TajoContainerId, TajoContainer> containers = new ConcurrentHashMap<TajoContainerId,
+    TajoContainer>();
 
   private static final DiagnosticsUpdateTransition DIAGNOSTIC_UPDATE_TRANSITION = new DiagnosticsUpdateTransition();
   private static final InternalErrorTransition INTERNAL_ERROR_TRANSITION = new InternalErrorTransition();
@@ -663,13 +665,6 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     eventHandler.handle(new TaskRunnerGroupEvent(EventType.CONTAINER_REMOTE_CLEANUP, getId(), containers.values()));
   }
 
-  public void releaseContainer(ContainerId containerId) {
-    // try to kill the container.
-    ArrayList<Container> list = new ArrayList<Container>();
-    list.add(containers.get(containerId));
-    eventHandler.handle(new TaskRunnerGroupEvent(EventType.CONTAINER_REMOTE_CLEANUP, getId(), list));
-  }
-
   /**
    * It computes all stats and sets the intermediate result.
    */
@@ -1129,8 +1124,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       try {
         SubQueryContainerAllocationEvent allocationEvent =
             (SubQueryContainerAllocationEvent) event;
-        for (Container container : allocationEvent.getAllocatedContainer()) {
-          ContainerId cId = container.getId();
+        for (TajoContainer container : allocationEvent.getAllocatedContainer()) {
+          TajoContainerId cId = container.getId();
           if (subQuery.containers.containsKey(cId)) {
             subQuery.eventHandler.handle(new SubQueryDiagnosticsUpdateEvent(subQuery.getId(),
                 "Duplicated containers are allocated: " + cId.toString()));

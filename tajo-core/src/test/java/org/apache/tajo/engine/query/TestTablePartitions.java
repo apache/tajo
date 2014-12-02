@@ -531,7 +531,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res.close();
 
     desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
-    path = desc.getPath();
+    path = new Path(desc.getPath());
 
     ContentSummary summary = fs.getContentSummary(path);
 

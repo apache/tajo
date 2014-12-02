@@ -100,4 +100,12 @@ public class SchemaUtil {
     }
     return types;
   }
+
+  public static String [] toSimpleNames(Schema schema) {
+    String [] names = new String[schema.size()];
+    for (int i = 0; i < schema.size(); i++) {
+      names[i] = schema.getColumn(i).getSimpleName();
+    }
+    return names;
+  }
 }

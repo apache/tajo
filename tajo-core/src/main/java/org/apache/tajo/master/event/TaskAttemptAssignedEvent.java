@@ -18,22 +18,22 @@
 
 package org.apache.tajo.master.event;
 
-import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
+import org.apache.tajo.master.container.TajoContainerId;
 
 public class TaskAttemptAssignedEvent extends TaskAttemptEvent {
-  private final ContainerId cId;
+  private final TajoContainerId cId;
   private final WorkerConnectionInfo workerConnectionInfo;
 
-  public TaskAttemptAssignedEvent(QueryUnitAttemptId id, ContainerId cId,
+  public TaskAttemptAssignedEvent(QueryUnitAttemptId id, TajoContainerId cId,
                                   WorkerConnectionInfo connectionInfo) {
     super(id, TaskAttemptEventType.TA_ASSIGNED);
     this.cId = cId;
     this.workerConnectionInfo = connectionInfo;
   }
 
-  public ContainerId getContainerId() {
+  public TajoContainerId getContainerId() {
     return cId;
   }
 

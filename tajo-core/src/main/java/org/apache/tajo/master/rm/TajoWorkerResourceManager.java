@@ -33,6 +33,7 @@ import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.querymaster.QueryInProgress;
@@ -48,7 +49,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.apache.hadoop.yarn.proto.YarnProtos.ContainerIdProto;
 import static org.apache.tajo.ipc.TajoMasterProtocol.*;
 
 
@@ -80,7 +80,8 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
 
   private TajoConf systemConf;
 
-  private ConcurrentMap<ContainerIdProto, AllocatedWorkerResource> allocatedResourceMap = Maps.newConcurrentMap();
+  private ConcurrentMap<ContainerProtocol.TajoContainerIdProto, AllocatedWorkerResource> allocatedResourceMap = Maps
+    .newConcurrentMap();
 
   /** It receives status messages from workers and their resources. */
   private TajoResourceTracker resourceTracker;
@@ -194,7 +195,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
 
   private WorkerResourceAllocationRequest createQMResourceRequest(QueryId queryId) {
     float queryMasterDefaultDiskSlot = masterContext.getConf().getFloatVar(
-        TajoConf.ConfVars.TAJO_QUERYMASTER_DISK_SLOT);
+      TajoConf.ConfVars.TAJO_QUERYMASTER_DISK_SLOT);
     int queryMasterDefaultMemoryMB = masterContext.getConf().getIntVar(TajoConf.ConfVars.TAJO_QUERYMASTER_MEMORY_MB);
 
     WorkerResourceAllocationRequest.Builder builder = WorkerResourceAllocationRequest.newBuilder();
@@ -235,7 +236,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
     return resource;
   }
 
-  private void registerQueryMaster(QueryId queryId, ContainerIdProto containerId) {
+  private void registerQueryMaster(QueryId queryId, ContainerProtocol.TajoContainerIdProto containerId) {
     rmContext.getQueryMasterContainer().putIfAbsent(queryId, containerId);
   }
 
@@ -256,9 +257,9 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
     WorkerResourceAllocationRequest request;
     RpcCallback<WorkerResourceAllocationResponse> callBack;
     WorkerResourceRequest(
-        QueryId queryId,
-        boolean queryMasterRequest, WorkerResourceAllocationRequest request,
-        RpcCallback<WorkerResourceAllocationResponse> callBack) {
+      QueryId queryId,
+      boolean queryMasterRequest, WorkerResourceAllocationRequest request,
+      RpcCallback<WorkerResourceAllocationResponse> callBack) {
       this.queryId = queryId;
       this.queryMasterRequest = queryMasterRequest;
       this.request = request;
@@ -282,14 +283,14 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
 
           if (LOG.isDebugEnabled()) {
             LOG.debug("allocateWorkerResources:" +
-                (new QueryId(resourceRequest.request.getQueryId())) +
-                ", requiredMemory:" + resourceRequest.request.getMinMemoryMBPerContainer() +
-                "~" + resourceRequest.request.getMaxMemoryMBPerContainer() +
-                ", requiredContainers:" + resourceRequest.request.getNumContainers() +
-                ", requiredDiskSlots:" + resourceRequest.request.getMinDiskSlotPerContainer() +
-                "~" + resourceRequest.request.getMaxDiskSlotPerContainer() +
-                ", queryMasterRequest=" + resourceRequest.queryMasterRequest +
-                ", liveWorkers=" + rmContext.getWorkers().size());
+              (new QueryId(resourceRequest.request.getQueryId())) +
+              ", requiredMemory:" + resourceRequest.request.getMinMemoryMBPerContainer() +
+              "~" + resourceRequest.request.getMaxMemoryMBPerContainer() +
+              ", requiredContainers:" + resourceRequest.request.getNumContainers() +
+              ", requiredDiskSlots:" + resourceRequest.request.getMinDiskSlotPerContainer() +
+              "~" + resourceRequest.request.getMaxDiskSlotPerContainer() +
+              ", queryMasterRequest=" + resourceRequest.queryMasterRequest +
+              ", liveWorkers=" + rmContext.getWorkers().size());
           }
 
           // TajoWorkerResourceManager can't return allocated disk slots occasionally.
@@ -300,25 +301,25 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
 
             if(allocatedWorkerResources.size() > 0) {
               List<WorkerAllocatedResource> allocatedResources =
-                  new ArrayList<WorkerAllocatedResource>();
+                new ArrayList<WorkerAllocatedResource>();
 
               for(AllocatedWorkerResource allocatedResource: allocatedWorkerResources) {
                 NodeId nodeId = NodeId.newInstance(allocatedResource.worker.getConnectionInfo().getHost(),
-                    allocatedResource.worker.getConnectionInfo().getPeerRpcPort());
+                  allocatedResource.worker.getConnectionInfo().getPeerRpcPort());
 
                 TajoWorkerContainerId containerId = new TajoWorkerContainerId();
 
                 containerId.setApplicationAttemptId(
-                    ApplicationIdUtils.createApplicationAttemptId(resourceRequest.queryId));
+                  ApplicationIdUtils.createApplicationAttemptId(resourceRequest.queryId));
                 containerId.setId(containerIdSeq.incrementAndGet());
 
-                ContainerIdProto containerIdProto = containerId.getProto();
+                ContainerProtocol.TajoContainerIdProto containerIdProto = containerId.getProto();
                 allocatedResources.add(WorkerAllocatedResource.newBuilder()
-                    .setContainerId(containerIdProto)
-                    .setConnectionInfo(allocatedResource.worker.getConnectionInfo().getProto())
-                    .setAllocatedMemoryMB(allocatedResource.allocatedMemoryMB)
-                    .setAllocatedDiskSlots(allocatedResource.allocatedDiskSlots)
-                    .build());
+                  .setContainerId(containerIdProto)
+                  .setConnectionInfo(allocatedResource.worker.getConnectionInfo().getProto())
+                  .setAllocatedMemoryMB(allocatedResource.allocatedMemoryMB)
+                  .setAllocatedDiskSlots(allocatedResource.allocatedDiskSlots)
+                  .build());
 
 
                 allocatedResourceMap.putIfAbsent(containerIdProto, allocatedResource);
@@ -358,7 +359,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
     int allocatedResources = 0;
 
     TajoMasterProtocol.ResourceRequestPriority resourceRequestPriority
-        = resourceRequest.request.getResourceRequestPriority();
+      = resourceRequest.request.getResourceRequestPriority();
 
     if(resourceRequestPriority == TajoMasterProtocol.ResourceRequestPriority.MEMORY) {
       synchronized(rmContext) {
@@ -369,7 +370,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
         int minMemoryMB = resourceRequest.request.getMinMemoryMBPerContainer();
         int maxMemoryMB = resourceRequest.request.getMaxMemoryMBPerContainer();
         float diskSlot = Math.max(resourceRequest.request.getMaxDiskSlotPerContainer(),
-            resourceRequest.request.getMinDiskSlotPerContainer());
+          resourceRequest.request.getMinDiskSlotPerContainer());
 
         int liveWorkerSize = randomWorkers.size();
         Set<Integer> insufficientWorkers = new HashSet<Integer>();
@@ -418,7 +419,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
               }
 
               workerResource.allocateResource(allocatedWorkerResource.allocatedDiskSlots,
-                  allocatedWorkerResource.allocatedMemoryMB);
+                allocatedWorkerResource.allocatedMemoryMB);
 
               selectedWorkers.add(allocatedWorkerResource);
 
@@ -438,7 +439,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
         float minDiskSlots = resourceRequest.request.getMinDiskSlotPerContainer();
         float maxDiskSlots = resourceRequest.request.getMaxDiskSlotPerContainer();
         int memoryMB = Math.max(resourceRequest.request.getMaxMemoryMBPerContainer(),
-            resourceRequest.request.getMinMemoryMBPerContainer());
+          resourceRequest.request.getMinMemoryMBPerContainer());
 
         int liveWorkerSize = randomWorkers.size();
         Set<Integer> insufficientWorkers = new HashSet<Integer>();
@@ -487,7 +488,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
                 allocatedWorkerResource.allocatedMemoryMB = workerResource.getAvailableMemoryMB();
               }
               workerResource.allocateResource(allocatedWorkerResource.allocatedDiskSlots,
-                  allocatedWorkerResource.allocatedMemoryMB);
+                allocatedWorkerResource.allocatedMemoryMB);
 
               selectedWorkers.add(allocatedWorkerResource);
 
@@ -508,7 +509,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
    * @param containerId ContainerIdProto to be released
    */
   @Override
-  public void releaseWorkerResource(ContainerIdProto containerId) {
+  public void releaseWorkerResource(ContainerProtocol.TajoContainerIdProto containerId) {
     AllocatedWorkerResource allocated = allocatedResourceMap.get(containerId);
     if(allocated != null) {
       LOG.info("Release Resource: " + allocated.allocatedDiskSlots + "," + allocated.allocatedMemoryMB);
@@ -530,7 +531,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
       LOG.warn("No QueryMaster resource info for " + queryId);
       return;
     } else {
-      ContainerIdProto containerId = rmContext.getQueryMasterContainer().remove(queryId);
+      ContainerProtocol.TajoContainerIdProto containerId = rmContext.getQueryMasterContainer().remove(queryId);
       releaseWorkerResource(containerId);
       rmContext.getStoppedQueryIds().add(queryId);
       LOG.info(String.format("Released QueryMaster (%s) resource." , queryId.toString()));

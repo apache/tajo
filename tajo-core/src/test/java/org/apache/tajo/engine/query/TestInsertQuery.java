@@ -29,6 +29,7 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -114,8 +115,19 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
   @Test
   public final void testInsertIntoLocation() throws Exception {
+    Path dfsPath = new Path("/tajo-data/testInsertIntoLocation");
+    assertTestInsertIntoLocation(dfsPath);
+  }
+
+  @Test
+  public final void testInsertIntoLocationDifferentFSs() throws Exception {
+    Path localPath = CommonTestingUtil.getTestDir();
+    assertTestInsertIntoLocation(localPath);
+  }
+
+  public final void assertTestInsertIntoLocation(Path path) throws Exception {
     FileSystem fs = null;
-    Path path = new Path("/tajo-data/testInsertIntoLocation");
+
     try {
       executeString("insert into location '" + path + "' select l_orderkey, l_partkey, l_linenumber from default.lineitem").close();
 
