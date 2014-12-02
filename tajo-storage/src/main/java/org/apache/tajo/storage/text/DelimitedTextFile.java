@@ -48,6 +48,9 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static org.apache.tajo.storage.StorageConstants.DEFAULT_TEXT_ERROR_TOLERANCE_MAXNUM;
+import static org.apache.tajo.storage.StorageConstants.TEXT_ERROR_TOLERANCE_MAXNUM;
+
 public class DelimitedTextFile {
 
   public static final byte LF = '\n';
@@ -273,6 +276,12 @@ public class DelimitedTextFile {
     private DelimitedLineReader reader;
     private TextLineDeserializer deserializer;
 
+    private int errorPrintOutMaxNum = 5;
+    /** Maximum number of permissible errors */
+    private int errorTorrenceMaxNum;
+    /** How many errors have occurred? */
+    private int errorNum;
+
     public DelimitedTextFileScanner(Configuration conf, final Schema schema, final TableMeta meta,
                                     final FileFragment fragment)
         throws IOException {
@@ -284,10 +293,9 @@ public class DelimitedTextFile {
 
       startOffset = fragment.getStartKey();
       endOffset = startOffset + fragment.getEndKey();
-    }
 
-    public TextLineSerDe getLineSerde() {
-      return DelimitedTextFile.getLineSerde(meta);
+      errorTorrenceMaxNum =
+          Integer.parseInt(meta.getOption(TEXT_ERROR_TOLERANCE_MAXNUM, DEFAULT_TEXT_ERROR_TOLERANCE_MAXNUM));
     }
 
     @Override
@@ -295,6 +303,7 @@ public class DelimitedTextFile {
       if (reader != null) {
         reader.close();
       }
+
       reader = new DelimitedLineReader(conf, fragment);
       reader.init();
       recordCount = 0;
@@ -320,6 +329,10 @@ public class DelimitedTextFile {
 
       deserializer = getLineSerde().createDeserializer(schema, meta, targetColumnIndexes);
       deserializer.init();
+    }
+
+    public TextLineSerDe getLineSerde() {
+      return DelimitedTextFile.getLineSerde(meta);
     }
 
     public ByteBuf readLine() throws IOException {
@@ -355,21 +368,58 @@ public class DelimitedTextFile {
 
     @Override
     public Tuple next() throws IOException {
+
+      if (!reader.isReadable()) {
+        return null;
+      }
+
+      if (targets.length == 0) {
+        return EmptyTuple.get();
+      }
+
+      VTuple tuple = new VTuple(schema.size());
+
       try {
-        if (!reader.isReadable()) return null;
 
-        ByteBuf buf = readLine();
-        if (buf == null) return null;
+        // this loop will continue until one tuple is build or EOS (end of stream).
+        do {
 
-        if (targets.length == 0) {
-          return EmptyTuple.get();
-        }
+          ByteBuf buf = readLine();
+          if (buf == null) {
+            return null;
+          }
 
-        VTuple tuple = new VTuple(schema.size());
-        deserializer.deserialize(buf, tuple);
+          try {
+
+            deserializer.deserialize(buf, tuple);
+
+            // if a line is read normaly, it exists this loop.
+            break;
+
+          } catch (TextLineParsingError tae) {
+
+            errorNum++;
+
+            // suppress too many log prints, which probably cause performance degradation
+            if (errorNum < errorPrintOutMaxNum) {
+              LOG.warn("Ignore JSON Parse Error (" + errorNum + "): ", tae);
+            }
+
+            // Only when the maximum error torrence limit is set (i.e., errorTorrenceMaxNum >= 0),
+            // it checks if the number of parsing error exceeds the max limit.
+            // Otherwise, it will ignore all parsing errors.
+            if (errorTorrenceMaxNum >= 0 && errorNum > errorTorrenceMaxNum) {
+              throw tae;
+            }
+            continue;
+          }
+
+        } while (reader.isReadable()); // continue until EOS
+
         return tuple;
+
       } catch (Throwable t) {
-        LOG.error("Tuple list current index: " + recordCount + " file offset:" + reader.getCompressedPosition(), t);
+        LOG.error(t);
         throw new IOException(t);
       }
     }
