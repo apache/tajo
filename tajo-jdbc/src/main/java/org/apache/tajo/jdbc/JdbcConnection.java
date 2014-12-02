@@ -183,7 +183,17 @@ public class JdbcConnection implements Connection {
   @Override
   public Statement createStatement(int resultSetType, int resultSetConcurrency)
       throws SQLException {
-    throw new SQLFeatureNotSupportedException("createStatement");
+	  		//Just support 'CONCUR_READ_ONLY' only.
+            if (resultSetConcurrency != ResultSet.CONCUR_READ_ONLY) {
+              throw new SQLException("Statement with resultset concurrency " +
+                  resultSetConcurrency + " is not supported");      
+            }
+            //Not support 'TYPE_SCROLL_SENSITIVE'.
+            if (resultSetType == ResultSet.TYPE_SCROLL_SENSITIVE) {
+              throw new SQLException("Statement with resultset type " + 
+            	  resultSetType + " is not supported");
+            }
+            return new TajoStatement(this, tajoClient);
   }
 
   @Override
