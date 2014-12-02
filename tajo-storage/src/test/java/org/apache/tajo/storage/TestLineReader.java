@@ -34,11 +34,14 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.text.ByteBufLineReader;
-import org.apache.tajo.storage.text.DelimitedTextFile;
 import org.apache.tajo.storage.text.DelimitedLineReader;
+import org.apache.tajo.storage.text.DelimitedTextFile;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.FileUtil;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -159,5 +162,32 @@ public class TestLineReader {
     IOUtils.cleanup(null, reader, fs);
     assertEquals(tupleNum, i);
 
+  }
+
+  @Test
+  public void testByteBufLineReaderWithoutTerminating() throws IOException {
+    String path = FileUtil.getResourcePath("dataset/testLineText.txt").getFile();
+    File file = new File(path);
+    String data = FileUtil.readTextFile(file);
+
+    ByteBufInputChannel channel = new ByteBufInputChannel(new FileInputStream(file));
+
+    assertEquals(file.length(), channel.available());
+    ByteBufLineReader reader = new ByteBufLineReader(channel);
+    assertEquals(file.length(), reader.available());
+
+    long totalRead = 0;
+    int i = 0;
+    AtomicInteger bytes = new AtomicInteger();
+    for(;;){
+      ByteBuf buf = reader.readLineBuf(bytes);
+      if(buf == null) break;
+      totalRead += bytes.get();
+      i++;
+    }
+    IOUtils.cleanup(null, reader);
+    assertEquals(file.length(), totalRead);
+    assertEquals(file.length(), reader.readBytes());
+    assertEquals(data.split("\n").length, i);
   }
 }

@@ -28,6 +28,9 @@ import "TajoIdProtos.proto";
 import "CatalogProtos.proto";
 import "PrimitiveProtos.proto";
 import "Plan.proto";
+import "ContainerProtocol.proto";
+
+package hadoop.yarn;
 
 message SessionProto {
   required string session_id = 1;
@@ -170,7 +173,7 @@ message QueryExecutionRequestProto {
 
 message GetTaskRequestProto {
     required int32 workerId = 1;
-    required hadoop.yarn.ContainerIdProto containerId = 2;
+    required TajoContainerIdProto containerId = 2;
     required ExecutionBlockIdProto executionBlockId = 3;
 }
 

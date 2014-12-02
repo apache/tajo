@@ -687,7 +687,7 @@ public class QueryTestCaseBase {
       return null;
     }
 
-    Path path = tableDesc.getPath();
+    Path path = new Path(tableDesc.getPath());
     return getTableFileContents(path);
   }
 
@@ -697,7 +697,7 @@ public class QueryTestCaseBase {
       return null;
     }
 
-    Path path = tableDesc.getPath();
+    Path path = new Path(tableDesc.getPath());
     FileSystem fs = path.getFileSystem(conf);
 
     return listFiles(fs, path);

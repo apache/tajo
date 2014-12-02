@@ -32,8 +32,8 @@ public class ReflectionUtil {
   private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE =
       new ConcurrentHashMap<Class<?>, Constructor<?>>();
 
-	public static Object newInstance(Class<?> clazz) 
-			throws InstantiationException, IllegalAccessException {         
+	public static Object newInstance(Class<?> clazz)
+			throws InstantiationException, IllegalAccessException {
 		return clazz.newInstance();
 	}
 }

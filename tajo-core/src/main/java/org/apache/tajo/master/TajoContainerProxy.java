@@ -20,17 +20,17 @@ package org.apache.tajo.master;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.StringUtils;
-import org.apache.hadoop.yarn.api.records.Container;
-import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
-import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
+import org.apache.tajo.master.container.TajoContainer;
+import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.master.rm.TajoWorkerContainer;
 import org.apache.tajo.master.rm.TajoWorkerContainerId;
 import org.apache.tajo.rpc.NettyClientBase;
@@ -47,7 +47,7 @@ public class TajoContainerProxy extends ContainerProxy {
   private final String planJson;
 
   public TajoContainerProxy(QueryMasterTask.QueryMasterTaskContext context,
-                            Configuration conf, Container container,
+                            Configuration conf, TajoContainer container,
                             QueryContext queryContext, ExecutionBlockId executionBlockId, String planJson) {
     super(context, conf, executionBlockId, container);
     this.queryContext = queryContext;
@@ -89,7 +89,7 @@ public class TajoContainerProxy extends ContainerProxy {
     }
   }
 
-  private void assignExecutionBlock(ExecutionBlockId executionBlockId, Container container) {
+  private void assignExecutionBlock(ExecutionBlockId executionBlockId, TajoContainer container) {
     NettyClientBase tajoWorkerRpc = null;
     try {
       InetSocketAddress myAddr= context.getQueryMasterContext().getWorkerContext()
@@ -149,8 +149,8 @@ public class TajoContainerProxy extends ContainerProxy {
 
   public static void releaseWorkerResource(QueryMasterTask.QueryMasterTaskContext context,
                                            ExecutionBlockId executionBlockId,
-                                           ContainerId containerId) throws Exception {
-    List<ContainerId> containerIds = new ArrayList<ContainerId>();
+                                           TajoContainerId containerId) throws Exception {
+    List<TajoContainerId> containerIds = new ArrayList<TajoContainerId>();
     containerIds.add(containerId);
 
     releaseWorkerResource(context, executionBlockId, containerIds);
@@ -158,11 +158,11 @@ public class TajoContainerProxy extends ContainerProxy {
 
   public static void releaseWorkerResource(QueryMasterTask.QueryMasterTaskContext context,
                                            ExecutionBlockId executionBlockId,
-                                           List<ContainerId> containerIds) throws Exception {
-    List<YarnProtos.ContainerIdProto> containerIdProtos =
-        new ArrayList<YarnProtos.ContainerIdProto>();
+                                           List<TajoContainerId> containerIds) throws Exception {
+    List<ContainerProtocol.TajoContainerIdProto> containerIdProtos =
+        new ArrayList<ContainerProtocol.TajoContainerIdProto>();
 
-    for(ContainerId eachContainerId: containerIds) {
+    for(TajoContainerId eachContainerId: containerIds) {
       containerIdProtos.add(TajoWorkerContainerId.getContainerIdProto(eachContainerId));
     }
 

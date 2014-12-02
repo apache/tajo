@@ -46,7 +46,7 @@ public class InsertNode extends StoreTableNode implements Cloneable {
     } else {
       tableSchema = desc.getSchema();
     }
-    setPath(desc.getPath());
+    setPath(new Path(desc.getPath()));
     setOptions(desc.getMeta().getOptions());
     setStorageType(desc.getMeta().getStoreType());
 
