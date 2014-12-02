@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
@@ -60,13 +61,14 @@ import static org.apache.tajo.plan.joinorder.GreedyHeuristicJoinOrderAlgorithm.g
 public class LogicalOptimizer {
   private static final Log LOG = LogFactory.getLog(LogicalOptimizer.class.getName());
 
+  private final TajoConf systemConf;
   private CatalogService catalog;
   private BasicQueryRewriteEngine rulesBeforeJoinOpt;
   private BasicQueryRewriteEngine rulesAfterToJoinOpt;
   private JoinOrderAlgorithm joinOrderAlgorithm = new GreedyHeuristicJoinOrderAlgorithm();
 
-  public LogicalOptimizer(TajoConf systemConf, CatalogService catalog,
-                          AccessPathRewriter.AccessPathRewriterContext accessPathRewriterContext) {
+  public LogicalOptimizer(TajoConf systemConf, CatalogService catalog) {
+    this.systemConf = systemConf;
     this.catalog = catalog;
     rulesBeforeJoinOpt = new BasicQueryRewriteEngine();
     if (systemConf.getBoolVar(ConfVars.$TEST_FILTER_PUSHDOWN_ENABLED)) {
@@ -76,7 +78,7 @@ public class LogicalOptimizer {
     rulesAfterToJoinOpt = new BasicQueryRewriteEngine();
     rulesAfterToJoinOpt.addRewriteRule(new ProjectionPushDownRule());
     rulesAfterToJoinOpt.addRewriteRule(new PartitionedTableRewriter(systemConf));
-    rulesAfterToJoinOpt.addRewriteRule(new AccessPathRewriter(accessPathRewriterContext));
+    rulesAfterToJoinOpt.addRewriteRule(new AccessPathRewriter());
 
     // Currently, it is only used for some test cases to inject exception manually.
     String userDefinedRewriterClass = systemConf.get("tajo.plan.rewriter.classes");
@@ -93,12 +95,13 @@ public class LogicalOptimizer {
     }
   }
 
+  @VisibleForTesting
   public LogicalNode optimize(LogicalPlan plan) throws PlanningException {
-    return optimize(null, plan);
+    return optimize(new OverridableConf(systemConf), plan);
   }
 
   public LogicalNode optimize(OverridableConf context, LogicalPlan plan) throws PlanningException {
-    rulesBeforeJoinOpt.rewrite(plan);
+    rulesBeforeJoinOpt.rewrite(context, plan);
 
     DirectedGraphCursor<String, BlockEdge> blockCursor =
         new DirectedGraphCursor<String, BlockEdge>(plan.getQueryBlockGraph(), plan.getRootBlock().getName());
@@ -111,7 +114,7 @@ public class LogicalOptimizer {
     } else {
       LOG.info("Skip Join Optimized.");
     }
-    rulesAfterToJoinOpt.rewrite(plan);
+    rulesAfterToJoinOpt.rewrite(context, plan);
     return plan.getRootBlock().getRoot();
   }
 

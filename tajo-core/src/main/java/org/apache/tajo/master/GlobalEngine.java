@@ -58,7 +58,6 @@ import org.apache.tajo.master.session.Session;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.plan.rewrite.rules.AccessPathRewriter.AccessPathRewriterContext;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.verifier.LogicalPlanVerifier;
 import org.apache.tajo.plan.verifier.PreLogicalPlanVerifier;
@@ -106,7 +105,7 @@ public class GlobalEngine extends AbstractService {
       preVerifier = new PreLogicalPlanVerifier(context.getCatalog());
       planner = new LogicalPlanner(context.getCatalog());
       // Access path rewriter is enabled only in QueryMasterTask
-      optimizer = new LogicalOptimizer(context.getConf(), context.getCatalog(), new AccessPathRewriterContext(false));
+      optimizer = new LogicalOptimizer(context.getConf(), context.getCatalog());
       annotatedPlanVerifier = new LogicalPlanVerifier(context.getConf(), context.getCatalog());
 
       hookManager = new DistributedQueryHookManager();
@@ -216,13 +215,17 @@ public class GlobalEngine extends AbstractService {
 
     if (PlannerUtil.checkIfDDLPlan(rootNode)) {
       context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
-      boolean requireForward = updateQuery(queryContext, rootNode.getChild());
-      if (requireForward) {
+//      boolean requireForward = updateQuery(queryContext, rootNode.getChild());
+      if (PlannerUtil.requireParallelExecution(rootNode)) {
+        if (rootNode.getChild().getType() == NodeType.CREATE_INDEX) {
+          checkIndexExistence(queryContext, (CreateIndexNode) rootNode.getChild());
+        }
         response = submitForwardQuery(session, queryContext, sql, jsonExpr, rootNode, responseBuilder);
       } else {
         responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
         responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
       }
+      updateQuery(queryContext, rootNode.getChild());
 
     } else if (plan.isExplain()) { // explain query
       String explainStr = PlannerUtil.buildExplainString(plan.getRootBlock().getRoot());
@@ -470,8 +473,7 @@ public class GlobalEngine extends AbstractService {
     }
   }
 
-  private boolean updateQuery(QueryContext queryContext, LogicalNode root) throws IOException {
-    boolean requireForward = false;
+  private void updateQuery(QueryContext queryContext, LogicalNode root) throws IOException {
     switch (root.getType()) {
       case CREATE_DATABASE:
         CreateDatabaseNode createDatabase = (CreateDatabaseNode) root;
@@ -502,9 +504,8 @@ public class GlobalEngine extends AbstractService {
         truncateTable(queryContext, truncateTable);
         break;
       case CREATE_INDEX:
-        CreateIndexNode createIndexNode = (CreateIndexNode) root;
-        createIndex(queryContext, createIndexNode);
-        requireForward = true;
+        // The catalog information for the created index is automatically updated when the query is successfully finished.
+        // See the Query.CreateIndexHook class.
         break;
       case DROP_INDEX:
         DropIndexNode dropIndexNode = (DropIndexNode) root;
@@ -513,7 +514,6 @@ public class GlobalEngine extends AbstractService {
       default:
         throw new InternalError("updateQuery cannot handle such query: \n" + root.toJson());
     }
-    return requireForward;
   }
 
   private LogicalPlan createLogicalPlan(QueryContext queryContext, Expr expression) throws PlanningException {
@@ -723,7 +723,7 @@ public class GlobalEngine extends AbstractService {
       throw new CatalogException("Cannot drop index \"" + simpleIndexName + "\".");
     }
 
-    Path indexPath = desc.getIndexPath();
+    Path indexPath = new Path(desc.getIndexPath());
     try {
       FileSystem fs = indexPath.getFileSystem(context.getConf());
       fs.delete(indexPath, true);
@@ -732,6 +732,25 @@ public class GlobalEngine extends AbstractService {
     }
 
     LOG.info("Index " + simpleIndexName + " is dropped.");
+  }
+
+  private void checkIndexExistence(final QueryContext queryContext, final CreateIndexNode createIndexNode)
+      throws IOException {
+    String databaseName, simpleIndexName, qualifiedIndexName;
+    if (CatalogUtil.isFQTableName(createIndexNode.getIndexName())) {
+      String [] splits = CatalogUtil.splitFQTableName(createIndexNode.getIndexName());
+      databaseName = splits[0];
+      simpleIndexName = splits[1];
+      qualifiedIndexName = createIndexNode.getIndexName();
+    } else {
+      databaseName = queryContext.getCurrentDatabase();
+      simpleIndexName = createIndexNode.getIndexName();
+      qualifiedIndexName = CatalogUtil.buildFQName(databaseName, simpleIndexName);
+    }
+
+    if (catalog.existIndexByName(databaseName, simpleIndexName)) {
+      throw new AlreadyExistsIndexException(qualifiedIndexName);
+    }
   }
 
   public void createIndex(final QueryContext queryContext, final CreateIndexNode createIndexNode)

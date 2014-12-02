@@ -156,6 +156,8 @@ public class LogicalPlan {
   /**
    * It generates an unique column name from Expr. It is usually used for an expression or predicate without
    * a specified name (i.e., alias).
+   * Here, some expressions require to be identified in the future with their names.
+   * For example, expressions must be identifiable with their names when getting targets in {@link LogicalPlanner#visitCreateIndex}.
    */
   public String generateUniqueColumnName(Expr expr, boolean identifiable) {
     String generatedName;

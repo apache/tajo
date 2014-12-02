@@ -21,6 +21,7 @@ package org.apache.tajo.plan.rewrite.rules;
 import com.google.common.collect.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.OverridableConf;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -55,7 +56,7 @@ public class ProjectionPushDownRule extends
   }
 
   @Override
-  public boolean isEligible(LogicalPlan plan) {
+  public boolean isEligible(OverridableConf conf, LogicalPlan plan) {
     LogicalNode toBeOptimized = plan.getRootBlock().getRoot();
 
     if (PlannerUtil.checkIfDDLPlan(toBeOptimized)) {
@@ -70,7 +71,7 @@ public class ProjectionPushDownRule extends
   }
 
   @Override
-  public LogicalPlan rewrite(LogicalPlan plan) throws PlanningException {
+  public LogicalPlan rewrite(OverridableConf conf, LogicalPlan plan) throws PlanningException {
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
 
     LogicalPlan.QueryBlock topmostBlock = rootBlock;

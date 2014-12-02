@@ -23,6 +23,7 @@ import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.*;
+import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
@@ -64,7 +65,7 @@ public class PartitionedTableRewriter implements RewriteRule {
   }
 
   @Override
-  public boolean isEligible(LogicalPlan plan) {
+  public boolean isEligible(OverridableConf conf, LogicalPlan plan) {
     for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
       for (RelationNode relation : block.getRelations()) {
         if (relation.getType() == NodeType.SCAN) {
@@ -79,7 +80,7 @@ public class PartitionedTableRewriter implements RewriteRule {
   }
 
   @Override
-  public LogicalPlan rewrite(LogicalPlan plan) throws PlanningException {
+  public LogicalPlan rewrite(OverridableConf conf, LogicalPlan plan) throws PlanningException {
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
     rewriter.visit(rootBlock, plan, rootBlock, rootBlock.getRoot(), new Stack<LogicalNode>());
     return plan;

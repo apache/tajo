@@ -39,7 +39,6 @@ import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.rewrite.rules.AccessPathRewriter.AccessPathRewriterContext;
 import org.apache.tajo.plan.serder.EvalTreeProtoDeserializer;
 import org.apache.tajo.plan.serder.EvalTreeProtoSerializer;
 import org.apache.tajo.plan.serder.PlanProto;
@@ -95,7 +94,7 @@ public class ExprTestBase {
     analyzer = new SQLAnalyzer();
     preLogicalPlanVerifier = new PreLogicalPlanVerifier(cat);
     planner = new LogicalPlanner(cat);
-    optimizer = new LogicalOptimizer(util.getConfiguration(), cat, new AccessPathRewriterContext(false));
+    optimizer = new LogicalOptimizer(util.getConfiguration(), cat);
     annotatedPlanVerifier = new LogicalPlanVerifier(util.getConfiguration(), cat);
   }
 

@@ -21,6 +21,7 @@ package org.apache.tajo.plan.rewrite.rules;
 import com.google.common.collect.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.OverridableConf;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.datum.Datum;
@@ -85,7 +86,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   }
 
   @Override
-  public boolean isEligible(LogicalPlan plan) {
+  public boolean isEligible(OverridableConf conf, LogicalPlan plan) {
     for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
       if (block.hasNode(NodeType.SELECTION) || block.hasNode(NodeType.JOIN)) {
         return true;
@@ -95,7 +96,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   }
 
   @Override
-  public LogicalPlan rewrite(LogicalPlan plan) throws PlanningException {
+  public LogicalPlan rewrite(OverridableConf conf, LogicalPlan plan) throws PlanningException {
     /*
     FilterPushDown rule: processing when visits each node
       - If a target which is corresponding on a filter EvalNode's column is not FieldEval, do not PushDown.
@@ -897,11 +898,11 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     if (qual != null) { // if a matched qual exists
       scanNode.setQual(qual);
 
-      // Add the index path
+      // Index path can be identified only after filters are pushed into each scan.
       String databaseName, tableName;
       databaseName = CatalogUtil.extractQualifier(table.getName());
       tableName = CatalogUtil.extractSimpleName(table.getName());
-      List<Predicate> predicates = TUtil.newList();
+      Set<Predicate> predicates = TUtil.newHashSet();
       for (EvalNode eval : IndexUtil.getAllEqualEvals(qual)) {
         BinaryEval binaryEval = (BinaryEval) eval;
         // TODO: consider more complex predicates
@@ -919,7 +920,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       }
 
       // for every subset of the set of columns, find all matched index paths
-      for (List<Predicate> subset : TUtil.powerSet(predicates)) {
+      for (Set<Predicate> subset : Sets.powerSet(predicates)) {
         if (subset.size() == 0)
           continue;
         Column[] columns = extractColumns(subset);
@@ -953,7 +954,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     }
   }
 
-  private static SimplePredicate[] getSimplePredicates(IndexDesc desc, List<Predicate> predicates) {
+  private static SimplePredicate[] getSimplePredicates(IndexDesc desc, Set<Predicate> predicates) {
     SimplePredicate[] simplePredicates = new SimplePredicate[predicates.size()];
     Map<Column, Datum> colToValue = TUtil.newHashMap();
     for (Predicate predicate : predicates) {
@@ -975,10 +976,11 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     return values;
   }
 
-  private static Column[] extractColumns(List<Predicate> predicates) {
+  private static Column[] extractColumns(Set<Predicate> predicates) {
     Column[] columns = new Column[predicates.size()];
-    for (int i = 0; i < columns.length; i++) {
-      columns[i] = predicates.get(i).column;
+    int i = 0;
+    for (Predicate p : predicates) {
+      columns[i++] = p.column;
     }
     return columns;
   }

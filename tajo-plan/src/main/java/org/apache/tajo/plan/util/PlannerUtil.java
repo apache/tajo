@@ -53,12 +53,31 @@ public class PlannerUtil {
         type == NodeType.CREATE_DATABASE ||
             type == NodeType.DROP_DATABASE ||
             (type == NodeType.CREATE_TABLE && !((CreateTableNode) baseNode).hasSubQuery()) ||
-            baseNode.getType() == NodeType.DROP_TABLE ||
-            baseNode.getType() == NodeType.ALTER_TABLESPACE ||
-            baseNode.getType() == NodeType.ALTER_TABLE ||
-            baseNode.getType() == NodeType.TRUNCATE_TABLE ||
-            baseNode.getType() == NodeType.CREATE_INDEX ||
-            baseNode.getType() == NodeType.DROP_INDEX;
+            type == NodeType.DROP_TABLE ||
+            type == NodeType.ALTER_TABLESPACE ||
+            type == NodeType.ALTER_TABLE ||
+            type == NodeType.TRUNCATE_TABLE ||
+            type == NodeType.CREATE_INDEX ||
+            type == NodeType.DROP_INDEX;
+  }
+
+  /**
+   * Most update queries requires only the updates to the catalog information,
+   * but some queires such as "CREATE INDEX" or CTAS requires the parallel execution in multiple cluster nodes.
+   * This function checks whether the plan requires the parallel execution or not.
+   * @param node the root node of a query plan
+   * @return Return true if the input query plan requires the parallel execution. Otherwise, return false.
+   */
+  public static boolean requireParallelExecution(LogicalNode node) {
+    LogicalNode baseNode = node;
+    if (node instanceof LogicalRootNode) {
+      baseNode = ((LogicalRootNode) node).getChild();
+    }
+
+    NodeType type = baseNode.getType();
+
+    return type == NodeType.CREATE_INDEX ||
+        type == NodeType.CREATE_TABLE && ((CreateTableNode)baseNode).hasSubQuery();
   }
 
   /**

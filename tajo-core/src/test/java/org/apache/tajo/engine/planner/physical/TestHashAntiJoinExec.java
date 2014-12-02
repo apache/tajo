@@ -37,7 +37,6 @@ import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.plan.rewrite.rules.AccessPathRewriter.AccessPathRewriterContext;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -134,7 +133,7 @@ public class TestHashAntiJoinExec {
     catalog.createTable(people);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
-    optimizer = new LogicalOptimizer(conf, catalog, new AccessPathRewriterContext(false));
+    optimizer = new LogicalOptimizer(conf, catalog);
   }
 
   @After

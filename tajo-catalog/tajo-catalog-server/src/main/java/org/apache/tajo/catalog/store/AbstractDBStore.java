@@ -1888,13 +1888,14 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         LOG.debug(sql);
       }
 
-      String FQUnifiedColumnName = CatalogUtil.buildFQName(databaseName, tableName,
+      // columnNames should be sorted according to the position in the target relation schema
+      String unifiedName = CatalogUtil.buildFQName(databaseName, tableName,
           CatalogUtil.getUnifiedSimpleColumnName(new Schema(relationSchema), columnNames));
       conn = getConnection();
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
       pstmt.setInt(2, tableId);
-      pstmt.setString(3, FQUnifiedColumnName);
+      pstmt.setString(3, unifiedName);
       res = pstmt.executeQuery();
       exist = res.next();
     } catch (SQLException se) {

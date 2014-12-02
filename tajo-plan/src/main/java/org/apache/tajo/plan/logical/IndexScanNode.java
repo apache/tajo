@@ -20,21 +20,20 @@ package org.apache.tajo.plan.logical;
 
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.plan.serder.PlanGsonHelper;
 import org.apache.tajo.util.TUtil;
 
+import java.net.URI;
+
 public class IndexScanNode extends ScanNode {
   @Expose private Schema keySchema = null;
-  @Expose private Path indexPath = null;
+  @Expose private URI indexPath = null;
   @Expose private SimplePredicate[] predicates = null;
   
   public IndexScanNode(int pid, ScanNode scanNode ,
-      Schema keySchema , SimplePredicate[] predicates, Path indexPath) {
+      Schema keySchema , SimplePredicate[] predicates, URI indexPath) {
     super(pid);
     init(scanNode.getTableDesc());
     setQual(scanNode.getQual());
@@ -91,7 +90,7 @@ public class IndexScanNode extends ScanNode {
     return indexNode;
   }
 
-  public Path getIndexPath() {
+  public URI getIndexPath() {
     return indexPath;
   }
 }

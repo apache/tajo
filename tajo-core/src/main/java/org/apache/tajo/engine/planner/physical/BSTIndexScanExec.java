@@ -41,6 +41,7 @@ import org.apache.tajo.worker.TaskAttemptContext;
 import org.apache.tools.ant.taskdefs.Tar;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
@@ -66,7 +67,7 @@ public class BSTIndexScanExec extends PhysicalExec {
 
   public BSTIndexScanExec(TaskAttemptContext context,
                           StorageManager sm , IndexScanNode scanNode ,
-       FileFragment fragment, Path indexPrefix , Schema keySchema,
+       FileFragment fragment, URI indexPrefix , Schema keySchema,
        SimplePredicate [] predicates) throws IOException {
     super(context, scanNode.getInSchema(), scanNode.getOutSchema());
     this.scanNode = scanNode;
@@ -89,7 +90,7 @@ public class BSTIndexScanExec extends PhysicalExec {
     this.fileScanner.init();
     this.projector = new Projector(context, inSchema, outSchema, scanNode.getTargets());
 
-    Path indexPath = new Path(indexPrefix, context.getUniqueKeyFromFragments());
+    Path indexPath = new Path(indexPrefix.toString(), context.getUniqueKeyFromFragments());
     this.reader = new BSTIndex(sm.getFileSystem().getConf()).
         getIndexReader(indexPath, keySchema, comparator);
     this.reader.open();

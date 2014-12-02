@@ -54,12 +54,10 @@ public class MemStore implements CatalogStore {
 
   public MemStore(Configuration conf) {
   }
-
   
   public void close() throws IOException {
     databases.clear();
     functions.clear();
-    indexes.clear();
     indexes.clear();
   }
 

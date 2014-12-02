@@ -40,7 +40,6 @@ import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.BinaryEval;
 import org.apache.tajo.plan.expr.EvalType;
 import org.apache.tajo.plan.expr.FieldEval;
-import org.apache.tajo.plan.rewrite.rules.AccessPathRewriter.AccessPathRewriterContext;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
@@ -116,7 +115,7 @@ public class TestGlobalPlanner {
 
     sqlAnalyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
-    optimizer = new LogicalOptimizer(util.getConfiguration(), catalog, new AccessPathRewriterContext(false));
+    optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
     globalPlanner = new GlobalPlanner(util.getConfiguration(), catalog);
   }
 

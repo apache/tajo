@@ -20,10 +20,8 @@ package org.apache.tajo.plan.rewrite.rules;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.catalog.IndexDesc;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.OverridableConf;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.IndexScanNode;
@@ -31,7 +29,6 @@ import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.RelationNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.rewrite.RewriteRule;
-import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 
@@ -42,26 +39,7 @@ public class AccessPathRewriter implements RewriteRule {
   private static final Log LOG = LogFactory.getLog(AccessPathRewriter.class);
 
   private static final String NAME = "Access Path Rewriter";
-  private final Rewriter rewriter = new Rewriter();
-  private final AccessPathRewriterContext context;
-
-  public static class AccessPathRewriterContext {
-    boolean enableIndex;
-    float selectivityThreshold;
-
-    public AccessPathRewriterContext(boolean enableIndex) {
-      this(enableIndex, ConfVars.$INDEX_SELECTIVITY_THRESHOLD.defaultFloatVal);
-    }
-
-    public AccessPathRewriterContext(boolean enableIndex, float selectivityThreshold) {
-      this.enableIndex = enableIndex;
-      this.selectivityThreshold = selectivityThreshold;
-    }
-  }
-
-  public AccessPathRewriter(AccessPathRewriterContext context) {
-    this.context = context;
-  }
+  private Rewriter rewriter = null;
 
   @Override
   public String getName() {
@@ -69,8 +47,8 @@ public class AccessPathRewriter implements RewriteRule {
   }
 
   @Override
-  public boolean isEligible(LogicalPlan plan) {
-    if (context.enableIndex) {
+  public boolean isEligible(OverridableConf conf, LogicalPlan plan) {
+    if (conf.getBool(SessionVars.INDEX_ENABLED)) {
       for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
         for (RelationNode relationNode : block.getRelations()) {
           List<AccessPathInfo> accessPathInfos = block.getAccessInfos(relationNode);
@@ -78,6 +56,7 @@ public class AccessPathRewriter implements RewriteRule {
           if (accessPathInfos.size() > 1) {
             for (AccessPathInfo accessPathInfo : accessPathInfos) {
               if (accessPathInfo.getScanType() == AccessPathInfo.ScanTypeControl.INDEX_SCAN) {
+                rewriter = new Rewriter(conf);
                 return true;
               }
             }
@@ -88,13 +67,19 @@ public class AccessPathRewriter implements RewriteRule {
     return false;
   }
 
-  public LogicalPlan rewrite(LogicalPlan plan) throws PlanningException {
+  @Override
+  public LogicalPlan rewrite(OverridableConf conf, LogicalPlan plan) throws PlanningException {
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
     rewriter.visit(rootBlock, plan, rootBlock, rootBlock.getRoot(), new Stack<LogicalNode>());
     return plan;
   }
 
   private final class Rewriter extends BasicLogicalPlanVisitor<Object, Object> {
+
+    private OverridableConf conf;
+    public Rewriter(OverridableConf conf) {
+      this.conf = conf;
+    }
 
     @Override
     public Object visitScan(Object object, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode scanNode,
@@ -114,9 +99,10 @@ public class AccessPathRewriter implements RewriteRule {
           // estimation selectivity and choose the better path
           // TODO: improve the selectivity estimation
           double estimateSelectivity = 0.001;
-          LOG.info("Selectivity threshold: " + context.selectivityThreshold);
+          double selectivityThreshold = conf.getFloat(SessionVars.INDEX_SELECTIVITY_THRESHOLD);
+          LOG.info("Selectivity threshold: " + selectivityThreshold);
           LOG.info("Estimated selectivity: " + estimateSelectivity);
-          if (estimateSelectivity < context.selectivityThreshold) {
+          if (estimateSelectivity < selectivityThreshold) {
             // if the estimated selectivity is greater than threshold, use the index scan
             optimalPath = accessPath;
           }

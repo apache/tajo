@@ -20,6 +20,7 @@ package org.apache.tajo.plan.rewrite;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.OverridableConf;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 
@@ -55,12 +56,12 @@ public class BasicQueryRewriteEngine implements QueryRewriteEngine {
    * @param plan The plan to be rewritten with all query rewrite rule.
    * @return The rewritten plan.
    */
-  public LogicalPlan rewrite(LogicalPlan plan) throws PlanningException {
+  public LogicalPlan rewrite(OverridableConf conf, LogicalPlan plan) throws PlanningException {
     RewriteRule rule;
     for (Entry<String, RewriteRule> rewriteRule : rewriteRules.entrySet()) {
       rule = rewriteRule.getValue();
-      if (rule.isEligible(plan)) {
-        plan = rule.rewrite(plan);
+      if (rule.isEligible(conf, plan)) {
+        plan = rule.rewrite(conf, plan);
         if (LOG.isDebugEnabled()) {
           LOG.debug("The rule \"" + rule.getName() + " \" rewrites the query.");
         }

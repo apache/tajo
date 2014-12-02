@@ -18,13 +18,15 @@
 
 package org.apache.tajo.catalog;
 
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.net.URI;
+import java.net.URISyntaxException;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.assertEquals;
@@ -43,19 +45,19 @@ public class TestIndexDesc {
     SortSpec[] colSpecs1 = new SortSpec[1];
     colSpecs1[0] = new SortSpec(new Column("id", Type.INT4), true, true);
     desc1 = new IndexDesc(DEFAULT_DATABASE_NAME, "indexed",
-        "idx_test", new Path("idx_test"), colSpecs1,
+        "idx_test", new URI("idx_test"), colSpecs1,
         IndexMethod.TWO_LEVEL_BIN_TREE, true, true, relationSchema);
 
     SortSpec[] colSpecs2 = new SortSpec[1];
     colSpecs2[0] = new SortSpec(new Column("score", Type.FLOAT8), false, false);
     desc2 = new IndexDesc(DEFAULT_DATABASE_NAME, "indexed",
-        "idx_test2", new Path("idx_test2"), colSpecs2,
+        "idx_test2", new URI("idx_test2"), colSpecs2,
         IndexMethod.TWO_LEVEL_BIN_TREE, false, false, relationSchema);
 
     SortSpec[] colSpecs3 = new SortSpec[1];
     colSpecs3[0] = new SortSpec(new Column("id", Type.INT4), true, true);
     desc3 = new IndexDesc(DEFAULT_DATABASE_NAME, "indexed",
-        "idx_test", new Path("idx_test"), colSpecs3,
+        "idx_test", new URI("idx_test"), colSpecs3,
         IndexMethod.TWO_LEVEL_BIN_TREE, true, true, relationSchema);
   }
 
@@ -71,7 +73,7 @@ public class TestIndexDesc {
   }
 
   @Test
-  public void testGetFields() {
+  public void testGetFields() throws URISyntaxException {
     assertEquals("idx_test", desc1.getName());
     assertEquals("indexed", desc1.getTableName());
     assertEquals(1, desc1.getKeySortSpecs().length);
@@ -79,7 +81,7 @@ public class TestIndexDesc {
     assertEquals(true, desc1.getKeySortSpecs()[0].isAscending());
     assertEquals(true, desc1.getKeySortSpecs()[0].isNullFirst());
     assertEquals(IndexMethod.TWO_LEVEL_BIN_TREE, desc1.getIndexMethod());
-    assertEquals(new Path("idx_test"), desc1.getIndexPath());
+    assertEquals(new URI("idx_test"), desc1.getIndexPath());
     assertEquals(true, desc1.isUnique());
     assertEquals(true, desc1.isClustered());
 
@@ -90,7 +92,7 @@ public class TestIndexDesc {
     assertEquals(false, desc2.getKeySortSpecs()[0].isAscending());
     assertEquals(false, desc2.getKeySortSpecs()[0].isNullFirst());
     assertEquals(IndexMethod.TWO_LEVEL_BIN_TREE, desc2.getIndexMethod());
-    assertEquals(new Path("idx_test2"), desc2.getIndexPath());
+    assertEquals(new URI("idx_test2"), desc2.getIndexPath());
     assertEquals(false, desc2.isUnique());
     assertEquals(false, desc2.isClustered());
   }

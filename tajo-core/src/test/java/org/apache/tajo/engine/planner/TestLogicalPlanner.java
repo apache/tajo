@@ -41,7 +41,6 @@ import org.apache.tajo.master.session.Session;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.plan.rewrite.rules.AccessPathRewriter.AccessPathRewriterContext;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.FileUtil;
@@ -498,8 +497,7 @@ public class TestLogicalPlanner {
     Schema expected = tpch.getOutSchema("q2");
     assertSchema(expected, node.getOutSchema());
 
-    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog,
-        new AccessPathRewriterContext(false));
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
     optimizer.optimize(plan);
 
     LogicalNode[] nodes = PlannerUtil.findAllNodes(node, NodeType.JOIN);
@@ -538,8 +536,7 @@ public class TestLogicalPlanner {
     LogicalNode node = plan.getRootBlock().getRoot();
     testJsonSerDerObject(node);
 
-    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog,
-        new AccessPathRewriterContext(false));
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
     optimizer.optimize(plan);
 
     LogicalNode[] nodes = PlannerUtil.findAllNodes(node, NodeType.SCAN);
@@ -580,8 +577,7 @@ public class TestLogicalPlanner {
     LogicalNode node = plan.getRootBlock().getRoot();
     testJsonSerDerObject(node);
 
-    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog,
-        new AccessPathRewriterContext(false));
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
     optimizer.optimize(plan);
 
     LogicalNode[] nodes = PlannerUtil.findAllNodes(node, NodeType.SCAN);
@@ -628,8 +624,7 @@ public class TestLogicalPlanner {
     LogicalNode node = plan.getRootBlock().getRoot();
     testJsonSerDerObject(node);
 
-    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog,
-        new AccessPathRewriterContext(false));
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
     optimizer.optimize(plan);
 
     Map<BinaryEval, Boolean> scanMap = TUtil.newHashMap();

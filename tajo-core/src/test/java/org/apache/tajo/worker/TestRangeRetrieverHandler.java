@@ -39,7 +39,6 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.rewrite.rules.AccessPathRewriter.AccessPathRewriterContext;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.engine.planner.physical.ExternalSortExec;
@@ -95,7 +94,7 @@ public class TestRangeRetrieverHandler {
 
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
-    optimizer = new LogicalOptimizer(conf, catalog, new AccessPathRewriterContext(false));
+    optimizer = new LogicalOptimizer(conf, catalog);
 
     schema = new Schema();
     schema.addColumn("empid", Type.INT4);

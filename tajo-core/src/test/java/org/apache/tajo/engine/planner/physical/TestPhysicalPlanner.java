@@ -51,7 +51,6 @@ import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.plan.rewrite.rules.AccessPathRewriter.AccessPathRewriterContext;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
@@ -177,7 +176,7 @@ public class TestPhysicalPlanner {
     catalog.createTable(score);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
-    optimizer = new LogicalOptimizer(conf, catalog, new AccessPathRewriterContext(false));
+    optimizer = new LogicalOptimizer(conf, catalog);
 
     masterPlan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), null, null);
 

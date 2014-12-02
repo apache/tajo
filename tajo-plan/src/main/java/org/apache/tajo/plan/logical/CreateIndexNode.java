@@ -19,12 +19,13 @@
 package org.apache.tajo.plan.logical;
 
 import com.google.gson.annotations.Expose;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.IndexMeta;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.util.KeyValueSet;
+
+import java.net.URI;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 
@@ -52,11 +53,11 @@ public class CreateIndexNode extends UnaryNode implements Cloneable {
     return indexMeta.getIndexName();
   }
 
-  public void setIndexPath(Path indexPath) {
+  public void setIndexPath(URI indexPath) {
     indexMeta.setIndexPath(indexPath);
   }
 
-  public Path getIndexPath() {
+  public URI getIndexPath() {
     return indexMeta.getIndexPath();
   }
 

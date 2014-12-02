@@ -38,7 +38,6 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.plan.rewrite.rules.AccessPathRewriter.AccessPathRewriterContext;
 import org.apache.tajo.storage.Appender;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.Tuple;
@@ -142,7 +141,7 @@ public class TestHashSemiJoinExec {
     catalog.createTable(people);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
-    optimizer = new LogicalOptimizer(conf, catalog, new AccessPathRewriterContext(false));
+    optimizer = new LogicalOptimizer(conf, catalog);
   }
 
   @After

@@ -19,12 +19,13 @@
 package org.apache.tajo.plan.rewrite.rules;
 
 import com.google.gson.annotations.Expose;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.IndexDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
+
+import java.net.URI;
 
 public class IndexScanInfo extends AccessPathInfo {
 
@@ -67,7 +68,7 @@ public class IndexScanInfo extends AccessPathInfo {
     }
   }
 
-  private final Path indexPath;
+  private final URI indexPath;
   private final Schema keySchema;
   private final SimplePredicate[] predicates;
 
@@ -81,7 +82,7 @@ public class IndexScanInfo extends AccessPathInfo {
     }
   }
 
-  public Path getIndexPath() {
+  public URI getIndexPath() {
     return indexPath;
   }
 

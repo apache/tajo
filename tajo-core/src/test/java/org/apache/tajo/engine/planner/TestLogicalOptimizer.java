@@ -35,7 +35,6 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.plan.rewrite.rules.AccessPathRewriter.AccessPathRewriterContext;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
@@ -107,7 +106,7 @@ public class TestLogicalOptimizer {
     planner = new LogicalPlanner(catalog);
 
     defaultContext = LocalTajoTestingUtility.createDummyContext(util.getConfiguration());
-    optimizer = new LogicalOptimizer(util.getConfiguration(), catalog, new AccessPathRewriterContext(false));
+    optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
   }
 
   @AfterClass

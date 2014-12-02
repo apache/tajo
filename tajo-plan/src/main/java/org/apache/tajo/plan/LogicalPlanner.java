@@ -54,6 +54,7 @@ import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
+import java.net.URI;
 import java.util.*;
 
 import static org.apache.tajo.algebra.CreateTable.PartitionType;
@@ -1888,9 +1889,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return alterTableNode;
   }
 
-  private static Path getIndexPath(PlanContext context, String databaseName, String indexName) {
+  private static URI getIndexPath(PlanContext context, String databaseName, String indexName) {
     return new Path(TajoConf.getWarehouseDir(context.queryContext.getConf()),
-        databaseName + "/" + indexName + "/");
+        databaseName + "/" + indexName + "/").toUri();
   }
 
   @Override
@@ -1918,6 +1919,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       normalizedExprList[i] = normalizer.normalize(context, sortSpecs[i].getKey());
     }
     for (int i = 0; i < sortKeyNum; i++) {
+      // even if base expressions don't have their name,
+      // reference names should be identifiable for the later sort spec creation.
       referNames[i] = block.namedExprsMgr.addExpr(normalizedExprList[i].baseExpr, true);
       block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].aggExprs,
           context.queryBlock.isNeedIdentifiableTargets());

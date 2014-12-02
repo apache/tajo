@@ -21,11 +21,14 @@ package org.apache.tajo.catalog;
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.common.ProtoObject;
+
+import java.net.URI;
+import java.net.URISyntaxException;
 
 public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   private String databaseName;         // required
@@ -35,7 +38,7 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   public IndexDesc() {
   }
   
-  public IndexDesc(String databaseName, String tableName, String indexName, Path indexPath, SortSpec[] keySortSpecs,
+  public IndexDesc(String databaseName, String tableName, String indexName, URI indexPath, SortSpec[] keySortSpecs,
                    IndexMethod type,  boolean isUnique, boolean isClustered, Schema targetRelationSchema) {
     this();
     this.set(databaseName, tableName, indexName, indexPath, keySortSpecs, type, isUnique, isClustered,
@@ -50,15 +53,19 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
       keySortSpecs[i] = new SortSpec(proto.getKeySortSpecs(i));
     }
 
-    this.set(proto.getTableIdentifier().getDatabaseName(),
-        proto.getTableIdentifier().getTableName(),
-        proto.getIndexName(), new Path(proto.getIndexPath()),
-        keySortSpecs,
-        proto.getIndexMethod(), proto.getIsUnique(), proto.getIsClustered(),
-        new Schema(proto.getTargetRelationSchema()));
+    try {
+      this.set(proto.getTableIdentifier().getDatabaseName(),
+          proto.getTableIdentifier().getTableName(),
+          proto.getIndexName(), new URI(proto.getIndexPath()),
+          keySortSpecs,
+          proto.getIndexMethod(), proto.getIsUnique(), proto.getIsClustered(),
+          new Schema(proto.getTargetRelationSchema()));
+    } catch (URISyntaxException e) {
+      throw new CatalogException(e);
+    }
   }
 
-  public void set(String databaseName, String tableName, String indexName, Path indexPath, SortSpec[] keySortSpecs,
+  public void set(String databaseName, String tableName, String indexName, URI indexPath, SortSpec[] keySortSpecs,
                   IndexMethod type,  boolean isUnique, boolean isClustered, Schema targetRelationSchema) {
     this.databaseName = databaseName;
     this.tableName = tableName;
@@ -78,7 +85,7 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
     return indexMeta.getIndexName();
   }
   
-  public Path getIndexPath() {
+  public URI getIndexPath() {
     return indexMeta.getIndexPath();
   }
 

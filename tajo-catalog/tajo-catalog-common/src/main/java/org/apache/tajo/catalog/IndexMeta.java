@@ -22,28 +22,32 @@ import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Comparator;
 
+/**
+ * IndexMeta contains meta information of an index.
+ * Meta information is the name, an index method, a path to the stored location, index keys, and so on.
+ */
 public class IndexMeta implements Cloneable {
-  @Expose private String indexName;
-  @Expose private IndexMethod indexMethod;
-  @Expose private Path indexPath;
-  // keySortSpecs are always sorted in the order of the targetRelationSchema
-  @Expose private SortSpec[] keySortSpecs;
-  @Expose private boolean isUnique = false;
-  @Expose private boolean isClustered = false;
-  @Expose private Schema targetRelationSchema;
-  @Expose private KeyValueSet options;                // TODO: will be added
+  @Expose private String indexName;              // index name
+  @Expose private IndexMethod indexMethod;       // index method
+  @Expose private URI indexPath;                 // path to the location
+  @Expose private SortSpec[] keySortSpecs;       // index keys. This array should always be sorted
+                                                 // according to the position in the targetRelationSchema
+  @Expose private boolean isUnique = false;      // unique key or not
+  @Expose private boolean isClustered = false;   // clustered index or not
+  @Expose private Schema targetRelationSchema;   // schema of the indexed relation
+  @Expose private KeyValueSet options;           // index options. TODO: will be added
 
   public IndexMeta() {}
 
-  public IndexMeta(String indexName, Path indexPath, SortSpec[] keySortSpecs,
+  public IndexMeta(String indexName, URI indexPath, SortSpec[] keySortSpecs,
                    IndexMethod type,  boolean isUnique, boolean isClustered,
                    Schema targetRelationSchema) {
     this.indexName = indexName;
@@ -87,11 +91,11 @@ public class IndexMeta implements Cloneable {
     this.indexMethod = type;
   }
 
-  public Path getIndexPath() {
+  public URI getIndexPath() {
     return indexPath;
   }
 
-  public void setIndexPath(final Path indexPath) {
+  public void setIndexPath(final URI indexPath) {
     this.indexPath = indexPath;
   }
 

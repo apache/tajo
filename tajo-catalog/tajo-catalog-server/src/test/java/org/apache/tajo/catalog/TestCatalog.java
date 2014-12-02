@@ -41,6 +41,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
@@ -392,23 +394,23 @@ public class TestCatalog {
         new Path(CommonTestingUtil.getTestDir(), "indexed").toUri());
   }
 
-  public static void prepareIndexDescs() throws IOException {
+  public static void prepareIndexDescs() throws IOException, URISyntaxException {
     SortSpec[] colSpecs1 = new SortSpec[1];
     colSpecs1[0] = new SortSpec(new Column("default.indexed.id", Type.INT4), true, true);
     desc1 = new IndexDesc(DEFAULT_DATABASE_NAME, "indexed",
-        "idx_test", new Path("idx_test"), colSpecs1,
+        "idx_test", new URI("idx_test"), colSpecs1,
         IndexMethod.TWO_LEVEL_BIN_TREE, true, true, relationSchema);
 
     SortSpec[] colSpecs2 = new SortSpec[1];
     colSpecs2[0] = new SortSpec(new Column("default.indexed.score", Type.FLOAT8), false, false);
     desc2 = new IndexDesc(DEFAULT_DATABASE_NAME, "indexed",
-        "idx_test2", new Path("idx_test2"), colSpecs2,
+        "idx_test2", new URI("idx_test2"), colSpecs2,
         IndexMethod.TWO_LEVEL_BIN_TREE, false, false, relationSchema);
 
     SortSpec[] colSpecs3 = new SortSpec[1];
     colSpecs3[0] = new SortSpec(new Column("default.indexed.id", Type.INT4), true, false);
     desc3 = new IndexDesc(DEFAULT_DATABASE_NAME, "indexed",
-        "idx_test", new Path("idx_test"), colSpecs3,
+        "idx_test", new URI("idx_test"), colSpecs3,
         IndexMethod.TWO_LEVEL_BIN_TREE, true, true, relationSchema);
   }
 

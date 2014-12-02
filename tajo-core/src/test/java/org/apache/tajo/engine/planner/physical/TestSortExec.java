@@ -36,7 +36,6 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.plan.rewrite.rules.AccessPathRewriter.AccessPathRewriterContext;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -105,7 +104,7 @@ public class TestSortExec {
     queryContext = new QueryContext(conf);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
-    optimizer = new LogicalOptimizer(conf, catalog, new AccessPathRewriterContext(false));
+    optimizer = new LogicalOptimizer(conf, catalog);
   }
 
   public static String[] QUERIES = {

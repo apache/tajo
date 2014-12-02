@@ -421,6 +421,7 @@ public class AlgebraicUtil {
   public static class IdentifiableNameBuilder extends SimpleAlgebraVisitor<Object, Object> {
     private Expr expr;
     private StringBuilder nameBuilder = new StringBuilder();
+
     public IdentifiableNameBuilder(Expr expr) {
       this.expr = expr;
     }
