@@ -36,6 +36,7 @@ enum StoreType {
   SEQUENCEFILE = 8;
   AVRO = 9;
   TEXTFILE = 10;
+  JSON = 11;
 }
 
 enum OrderType {

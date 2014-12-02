@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryClient;
+import org.apache.tajo.conf.TajoConf;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -33,13 +34,11 @@ import org.junit.experimental.categories.Category;
 
 import java.net.InetSocketAddress;
 import java.sql.*;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
 public class TestTajoJdbc extends QueryTestCaseBase {
@@ -69,13 +68,13 @@ public class TestTajoJdbc extends QueryTestCaseBase {
   @Test(expected = SQLException.class)
   public void testGetConnection() throws SQLException {
     DriverManager.getConnection("jdbc:taju://" + tajoMasterAddress.getHostName() + ":" + tajoMasterAddress.getPort()
-        + "/default");
+      + "/default");
   }
 
   @Test
   public void testStatement() throws Exception {
     String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
-        DEFAULT_DATABASE_NAME);
+      DEFAULT_DATABASE_NAME);
     Connection conn = DriverManager.getConnection(connUri);
     assertTrue(conn.isValid(100));
 
@@ -85,10 +84,10 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       stmt = conn.createStatement();
 
       res = stmt.executeQuery("select l_returnflag, l_linestatus, count(*) as count_order from lineitem " +
-          "group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus");
+        "group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus");
 
       try {
-        Map<String,Integer> result = Maps.newHashMap();
+        Map<String, Integer> result = Maps.newHashMap();
         result.put("NO", 3);
         result.put("RF", 2);
 
@@ -108,10 +107,10 @@ public class TestTajoJdbc extends QueryTestCaseBase {
         res.close();
       }
     } finally {
-      if(res != null) {
+      if (res != null) {
         res.close();
       }
-      if(stmt != null) {
+      if (stmt != null) {
         stmt.close();
       }
     }
@@ -120,7 +119,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
   @Test
   public void testPreparedStatement() throws Exception {
     String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
-        TajoConstants.DEFAULT_DATABASE_NAME);
+      TajoConstants.DEFAULT_DATABASE_NAME);
     Connection conn = DriverManager.getConnection(connUri);
     assertTrue(conn.isValid(100));
 
@@ -137,7 +136,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       */
 
       String sql =
-          "select l_orderkey, l_quantity, l_returnflag from lineitem where l_quantity > ? and l_returnflag = ?";
+        "select l_orderkey, l_quantity, l_returnflag from lineitem where l_quantity > ? and l_returnflag = ?";
 
       stmt = conn.prepareStatement(sql);
 
@@ -155,9 +154,9 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       try {
         int numRows = 0;
         String[] resultData = {"136.0N", "238.0N"};
-        while(res.next()) {
+        while (res.next()) {
           assertEquals(resultData[numRows],
-              ("" + res.getObject(1).toString() + res.getObject(2).toString() + res.getObject(3).toString()));
+            ("" + res.getObject(1).toString() + res.getObject(2).toString() + res.getObject(3).toString()));
           numRows++;
         }
         assertEquals(2, numRows);
@@ -179,9 +178,9 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       try {
         int numRows = 0;
         String[] resultData = {"345.0R", "349.0R"};
-        while(res.next()) {
+        while (res.next()) {
           assertEquals(resultData[numRows],
-              ("" + res.getObject(1).toString() + res.getObject(2).toString() + res.getObject(3).toString()));
+            ("" + res.getObject(1).toString() + res.getObject(2).toString() + res.getObject(3).toString()));
           numRows++;
         }
         assertEquals(2, numRows);
@@ -189,10 +188,10 @@ public class TestTajoJdbc extends QueryTestCaseBase {
         res.close();
       }
     } finally {
-      if(res != null) {
+      if (res != null) {
         res.close();
       }
-      if(stmt != null) {
+      if (stmt != null) {
         stmt.close();
       }
     }
@@ -201,7 +200,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
   @Test
   public void testDatabaseMetaDataGetTable() throws Exception {
     String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
-        TajoConstants.DEFAULT_DATABASE_NAME);
+      TajoConstants.DEFAULT_DATABASE_NAME);
     Connection conn = DriverManager.getConnection(connUri);
     assertTrue(conn.isValid(100));
 
@@ -219,12 +218,12 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       Set<String> retrivedViaJavaAPI = new HashSet<String>(client.getTableList("default"));
 
       Set<String> retrievedViaJDBC = new HashSet<String>();
-      while(rs.next()) {
+      while (rs.next()) {
         retrievedViaJDBC.add(rs.getString("TABLE_NAME"));
       }
       assertEquals(retrievedViaJDBC, retrivedViaJavaAPI);
     } finally {
-      if(rs != null) {
+      if (rs != null) {
         rs.close();
       }
     }
@@ -236,7 +235,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
   @Test
   public void testDatabaseMetaDataGetColumns() throws Exception {
     String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
-        TajoConstants.DEFAULT_DATABASE_NAME);
+      TajoConstants.DEFAULT_DATABASE_NAME);
     Connection conn = DriverManager.getConnection(connUri);
     assertTrue(conn.isValid(100));
 
@@ -258,7 +257,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
 
       List<Column> columns = tableDesc.getSchema().getColumns();
 
-      while(rs.next()) {
+      while (rs.next()) {
         assertEquals(tableName, rs.getString("TABLE_NAME"));
         assertEquals(columns.get(numColumns).getSimpleName(), rs.getString("COLUMN_NAME"));
         // TODO assert type
@@ -267,7 +266,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
 
       assertEquals(16, numColumns);
     } finally {
-      if(rs != null) {
+      if (rs != null) {
         rs.close();
       }
     }
@@ -280,24 +279,24 @@ public class TestTajoJdbc extends QueryTestCaseBase {
   @Test
   public void testMultipleConnections() throws Exception {
     String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
-        TajoConstants.DEFAULT_DATABASE_NAME);
+      TajoConstants.DEFAULT_DATABASE_NAME);
 
     Connection[] conns = new Connection[2];
     conns[0] = DriverManager.getConnection(connUri);
     conns[1] = DriverManager.getConnection(connUri);
 
     try {
-      for(int i = 0; i < conns.length; i++) {
+      for (int i = 0; i < conns.length; i++) {
         Statement stmt = null;
         ResultSet res = null;
         try {
           stmt = conns[i].createStatement();
 
           res = stmt.executeQuery("select l_returnflag, l_linestatus, count(*) as count_order from lineitem " +
-              "group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus");
+            "group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus");
 
           try {
-            Map<String,Integer> result = Maps.newHashMap();
+            Map<String, Integer> result = Maps.newHashMap();
             result.put("NO", 3);
             result.put("RF", 2);
 
@@ -317,10 +316,10 @@ public class TestTajoJdbc extends QueryTestCaseBase {
             res.close();
           }
         } finally {
-          if(res != null) {
+          if (res != null) {
             res.close();
           }
-          if(stmt != null) {
+          if (stmt != null) {
             stmt.close();
           }
         }
@@ -338,24 +337,24 @@ public class TestTajoJdbc extends QueryTestCaseBase {
   @Test
   public void testMultipleConnectionsSequentialClose() throws Exception {
     String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
-        DEFAULT_DATABASE_NAME);
+      DEFAULT_DATABASE_NAME);
 
     Connection[] conns = new Connection[2];
     conns[0] = DriverManager.getConnection(connUri);
     conns[1] = DriverManager.getConnection(connUri);
 
     try {
-      for(int i = 0; i < conns.length; i++) {
+      for (int i = 0; i < conns.length; i++) {
         Statement stmt = null;
         ResultSet res = null;
         try {
           stmt = conns[i].createStatement();
 
           res = stmt.executeQuery("select l_returnflag, l_linestatus, count(*) as count_order from lineitem " +
-              "group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus");
+            "group by l_returnflag, l_linestatus order by l_returnflag, l_linestatus");
 
           try {
-            Map<String,Integer> result = Maps.newHashMap();
+            Map<String, Integer> result = Maps.newHashMap();
             result.put("NO", 3);
             result.put("RF", 2);
 
@@ -375,22 +374,22 @@ public class TestTajoJdbc extends QueryTestCaseBase {
             res.close();
           }
         } finally {
-          if(res != null) {
+          if (res != null) {
             res.close();
           }
-          if(stmt != null) {
+          if (stmt != null) {
             stmt.close();
           }
           conns[i].close();
         }
       }
     } finally {
-      if(!conns[0].isClosed()) {
+      if (!conns[0].isClosed()) {
         assertTrue(conns[0].isValid(100));
         conns[0].close();
         assertFalse(conns[0].isValid(100));
       }
-      if(!conns[1].isClosed()) {
+      if (!conns[1].isClosed()) {
         assertTrue(conns[1].isValid(100));
         conns[1].close();
         assertFalse(conns[1].isValid(100));
@@ -405,7 +404,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     assertFalse(TajoStatement.isSetVariableQuery("--SET JOIN_TASK_INPUT_SIZE 123"));
 
     String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
-        DEFAULT_DATABASE_NAME);
+      DEFAULT_DATABASE_NAME);
 
     Connection conn = DriverManager.getConnection(connUri);
 
@@ -419,7 +418,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       assertNotNull(rsmd);
       assertEquals(0, rsmd.getColumnCount());
 
-      QueryClient connTajoClient = ((JdbcConnection)stmt.getConnection()).getQueryClient();
+      QueryClient connTajoClient = ((JdbcConnection) stmt.getConnection()).getQueryClient();
       Map<String, String> variables = connTajoClient.getAllSessionVariables();
       String value = variables.get("JOIN_TASK_INPUT_SIZE");
       assertNotNull(value);
@@ -447,7 +446,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
   @Test
   public void testSetPreparedStatement() throws Exception {
     String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
-        DEFAULT_DATABASE_NAME);
+      DEFAULT_DATABASE_NAME);
 
     Connection conn = DriverManager.getConnection(connUri);
 
@@ -461,7 +460,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       assertNotNull(rsmd);
       assertEquals(0, rsmd.getColumnCount());
 
-      QueryClient connTajoClient = ((JdbcConnection)stmt.getConnection()).getQueryClient();
+      QueryClient connTajoClient = ((JdbcConnection) stmt.getConnection()).getQueryClient();
       Map<String, String> variables = connTajoClient.getAllSessionVariables();
       String value = variables.get("JOIN_TASK_INPUT_SIZE");
       assertNotNull(value);
@@ -484,6 +483,104 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       }
       if (conn != null) {
         conn.close();
+      }
+    }
+  }
+
+  @Test
+  public void testCreateTableWithDateAndTimestamp() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testCreateTableWithDateAndTimestamp");
+
+    int result;
+    Statement stmt = null;
+    ResultSet res = null;
+
+    try {
+      String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+        DEFAULT_DATABASE_NAME);
+      Connection conn = DriverManager.getConnection(connUri);
+      assertTrue(conn.isValid(100));
+
+      stmt = conn.createStatement();
+      result = stmt.executeUpdate("create table " + tableName + " (id int, name text, score double"
+        + ", register_date timestamp, update_date date, send_date time)");
+      assertEquals(result, 1);
+
+      res = stmt.executeQuery("select * from " + tableName);
+      assertFalse(res.next());
+
+      ResultSetMetaData rsmd = res.getMetaData();
+      assertNotNull(rsmd);
+      assertEquals(6, rsmd.getColumnCount());
+
+      assertEquals("id", rsmd.getColumnName(1));
+      assertEquals("name", rsmd.getColumnName(2));
+      assertEquals("score", rsmd.getColumnName(3));
+      assertEquals("register_date", rsmd.getColumnName(4));
+      assertEquals("update_date", rsmd.getColumnName(5));
+      assertEquals("send_date", rsmd.getColumnName(6));
+
+      assertEquals("integer", rsmd.getColumnTypeName(1));
+      assertEquals("varchar", rsmd.getColumnTypeName(2));
+      assertEquals("float8", rsmd.getColumnTypeName(3));
+      assertEquals("timestamp", rsmd.getColumnTypeName(4));
+      assertEquals("date", rsmd.getColumnTypeName(5));
+      assertEquals("time", rsmd.getColumnTypeName(6));
+
+    } finally {
+      cleanupQuery(res);
+      if (stmt != null) {
+        stmt.close();
+      }
+    }
+  }
+
+  @Test
+  public void testSortWithDateTime() throws Exception {
+    Statement stmt = null;
+    ResultSet res = null;
+    int result;
+
+    // skip this test if catalog uses HCatalogStore.
+    // It is because HCatalogStore does not support Time data type.
+    TimeZone oldTimeZone = TajoConf.setCurrentTimeZone(TimeZone.getTimeZone("UTC"));
+    TimeZone systemOldTimeZone = TimeZone.getDefault();
+    TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+
+    try {
+      if (!testingCluster.isHCatalogStoreRunning()) {
+        executeDDL("create_table_with_date_ddl.sql", "table1");
+
+        String connUri = buildConnectionUri(tajoMasterAddress.getHostName(),
+          tajoMasterAddress.getPort(), "TestTajoJdbc");
+
+        Connection conn = DriverManager.getConnection(connUri);
+        assertTrue(conn.isValid(100));
+
+        stmt = conn.createStatement();
+        res = stmt.executeQuery("select col1, col2, col3 from table1 order by col1, col2, col3");
+
+        ResultSetMetaData rsmd = res.getMetaData();
+        assertNotNull(rsmd);
+        assertEquals(3, rsmd.getColumnCount());
+
+        assertEquals("timestamp", rsmd.getColumnTypeName(1));
+        assertEquals("date", rsmd.getColumnTypeName(2));
+        assertEquals("time", rsmd.getColumnTypeName(3));
+
+        assertResultSet(res);
+
+        result = stmt.executeUpdate("drop table table1");
+        assertEquals(result, 1);
+
+      }
+    } finally {
+      TajoConf.setCurrentTimeZone(oldTimeZone);
+      TimeZone.setDefault(systemOldTimeZone);
+
+      cleanupQuery(res);
+      if (stmt != null) {
+        stmt.close();
       }
     }
   }

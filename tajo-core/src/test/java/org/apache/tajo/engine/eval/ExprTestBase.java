@@ -241,7 +241,7 @@ public class ExprTestBase {
         }
       }
       cat.createTable(new TableDesc(qualifiedTableName, inputSchema,
-          CatalogProtos.StoreType.CSV, new KeyValueSet(), CommonTestingUtil.getTestDir()));
+          CatalogProtos.StoreType.CSV, new KeyValueSet(), CommonTestingUtil.getTestDir().toUri()));
     }
 
     Target [] targets;

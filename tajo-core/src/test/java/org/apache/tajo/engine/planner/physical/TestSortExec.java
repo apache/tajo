@@ -99,7 +99,7 @@ public class TestSortExec {
 
     TableDesc desc = new TableDesc(
         CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, employeeMeta,
-        tablePath);
+        tablePath.toUri());
     catalog.createTable(desc);
 
     queryContext = new QueryContext(conf);

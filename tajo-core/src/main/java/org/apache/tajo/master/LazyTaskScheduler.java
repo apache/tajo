@@ -21,7 +21,6 @@ package org.apache.tajo.master;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
@@ -38,6 +37,7 @@ import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 import org.apache.tajo.master.querymaster.QueryUnit;
 import org.apache.tajo.master.querymaster.QueryUnitAttempt;
 import org.apache.tajo.master.querymaster.SubQuery;
+import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.FetchImpl;
@@ -246,7 +246,8 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
   }
 
   private static class DiskBalancer {
-    private HashMap<ContainerId, Integer> containerDiskMap = new HashMap<ContainerId, Integer>();
+    private HashMap<TajoContainerId, Integer> containerDiskMap = new HashMap<TajoContainerId,
+      Integer>();
     private HashMap<Integer, Integer> diskReferMap = new HashMap<Integer, Integer>();
     private String host;
 
@@ -260,7 +261,7 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
       }
     }
 
-    public Integer getDiskId(ContainerId containerId) {
+    public Integer getDiskId(TajoContainerId containerId) {
       if (!containerDiskMap.containsKey(containerId)) {
         assignVolumeId(containerId);
       }
@@ -268,7 +269,7 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
       return containerDiskMap.get(containerId);
     }
 
-    public void assignVolumeId(ContainerId containerId){
+    public void assignVolumeId(TajoContainerId containerId){
       Map.Entry<Integer, Integer> volumeEntry = null;
 
       for (Map.Entry<Integer, Integer> entry : diskReferMap.entrySet()) {
