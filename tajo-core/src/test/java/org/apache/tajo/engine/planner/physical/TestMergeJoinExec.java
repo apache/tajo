@@ -165,8 +165,10 @@ public class TestMergeJoinExec {
     Enforcer enforcer = new Enforcer();
     enforcer.enforceJoinAlgorithm(joinNode.getPID(), JoinAlgorithm.MERGE_JOIN);
 
-    FileFragment[] empFrags = sm.splitNG(conf, "default.e", employee.getMeta(), employee.getPath(), Integer.MAX_VALUE);
-    FileFragment[] peopleFrags = sm.splitNG(conf, "default.p", people.getMeta(), people.getPath(), Integer.MAX_VALUE);
+    FileFragment[] empFrags = sm.splitNG(conf, "default.e", employee.getMeta(), new Path(employee.getPath()),
+        Integer.MAX_VALUE);
+    FileFragment[] peopleFrags = sm.splitNG(conf, "default.p", people.getMeta(), new Path(people.getPath()),
+        Integer.MAX_VALUE);
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testMergeInnerJoin");

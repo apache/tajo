@@ -567,6 +567,7 @@ public class StorageManager {
 
     for (Path p : inputs) {
       FileSystem fs = p.getFileSystem(conf);
+
       ArrayList<FileStatus> files = Lists.newArrayList();
       if (fs.isFile(p)) {
         files.addAll(Lists.newArrayList(fs.getFileStatus(p)));

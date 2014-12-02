@@ -28,7 +28,7 @@ import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.TajoMaster;
-import org.apache.tajo.master.querymaster.QueryInProgress;
+import org.apache.tajo.master.querymaster.QueryInfo;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -64,7 +64,7 @@ public class TestHistory {
     int beforeFinishedQueriesCount = master.getContext().getQueryJobManager().getFinishedQueries().size();
     client.executeQueryAndGetResult("select sleep(1) from lineitem");
 
-    Collection<QueryInProgress> finishedQueries = master.getContext().getQueryJobManager().getFinishedQueries();
+    Collection<QueryInfo> finishedQueries = master.getContext().getQueryJobManager().getFinishedQueries();
     assertTrue(finishedQueries.size() > beforeFinishedQueriesCount);
 
     TajoWorker worker = cluster.getTajoWorkers().get(0);
@@ -91,7 +91,7 @@ public class TestHistory {
     int beforeFinishedQueriesCount = master.getContext().getQueryJobManager().getFinishedQueries().size();
     client.executeQueryAndGetResult("select sleep(1) from lineitem");
 
-    Collection<QueryInProgress> finishedQueries = master.getContext().getQueryJobManager().getFinishedQueries();
+    Collection<QueryInfo> finishedQueries = master.getContext().getQueryJobManager().getFinishedQueries();
     assertTrue(finishedQueries.size() > beforeFinishedQueriesCount);
 
     TajoWorker worker = cluster.getTajoWorkers().get(0);

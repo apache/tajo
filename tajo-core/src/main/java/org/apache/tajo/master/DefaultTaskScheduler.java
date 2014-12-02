@@ -41,6 +41,7 @@ import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 import org.apache.tajo.master.querymaster.QueryUnit;
 import org.apache.tajo.master.querymaster.QueryUnitAttempt;
 import org.apache.tajo.master.querymaster.SubQuery;
+import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.NetUtils;
@@ -338,7 +339,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     private Map<Integer, LinkedHashSet<QueryUnitAttempt>> unassignedTaskForEachVolume =
         Collections.synchronizedMap(new HashMap<Integer, LinkedHashSet<QueryUnitAttempt>>());
     /** A value is last assigned volume id for each task runner */
-    private HashMap<ContainerId, Integer> lastAssignedVolumeId = new HashMap<ContainerId, Integer>();
+    private HashMap<TajoContainerId, Integer> lastAssignedVolumeId = new HashMap<TajoContainerId,
+      Integer>();
     /**
      * A key is disk volume id, and a value is the load of this volume.
      * This load is measured by counting how many number of tasks are running.
@@ -378,7 +380,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
      *  2. unknown block or Non-splittable task in host
      *  3. remote tasks. unassignedTaskForEachVolume is only contained local task. so it will be null
      */
-    public synchronized QueryUnitAttemptId getLocalTask(ContainerId containerId) {
+    public synchronized QueryUnitAttemptId getLocalTask(TajoContainerId containerId) {
       int volumeId;
       QueryUnitAttemptId queryUnitAttemptId = null;
 
@@ -489,7 +491,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
      * @param volumeId Volume identifier
      * @return the volume load (i.e., how many running tasks use this volume)
      */
-    private synchronized int increaseConcurrency(ContainerId containerId, int volumeId) {
+    private synchronized int increaseConcurrency(TajoContainerId containerId, int volumeId) {
 
       int concurrency = 1;
       if (diskVolumeLoads.containsKey(volumeId)) {
@@ -514,7 +516,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     /**
      * Decrease the count of running tasks of a certain task runner
      */
-    private synchronized void decreaseConcurrency(ContainerId containerId){
+    private synchronized void decreaseConcurrency(TajoContainerId containerId){
       Integer volumeId = lastAssignedVolumeId.get(containerId);
       if(volumeId != null && diskVolumeLoads.containsKey(volumeId)){
         Integer concurrency = diskVolumeLoads.get(volumeId);
@@ -552,11 +554,11 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       }
     }
 
-    public boolean isAssigned(ContainerId containerId){
+    public boolean isAssigned(TajoContainerId containerId){
       return lastAssignedVolumeId.containsKey(containerId);
     }
 
-    public boolean isRemote(ContainerId containerId){
+    public boolean isRemote(TajoContainerId containerId){
       Integer volumeId = lastAssignedVolumeId.get(containerId);
       if(volumeId == null || volumeId > REMOTE){
         return false;
@@ -647,7 +649,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
 
     public Set<QueryUnitAttemptId> assignedRequest = new HashSet<QueryUnitAttemptId>();
 
-    private QueryUnitAttemptId allocateLocalTask(String host, ContainerId containerId){
+    private QueryUnitAttemptId allocateLocalTask(String host, TajoContainerId containerId){
       HostVolumeMapping hostVolumeMapping = leafTaskHostMapping.get(host);
 
       if (hostVolumeMapping != null) { //tajo host is located in hadoop datanode
@@ -778,7 +780,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           }
         }
 
-        ContainerId containerId = taskRequest.getContainerId();
+        TajoContainerId containerId = taskRequest.getContainerId();
         LOG.debug("assignToLeafTasks: " + taskRequest.getExecutionBlockId() + "," +
             "containerId=" + containerId);
 

@@ -11,7 +11,15 @@ Release 0.9.1 - unreleased
 
     TAJO-235: Support Oracle CatalogStore. (Jihun Kang via hyunsik)
 
+    TAJO-1095: Implement Json file scanner. (hyunsik)
+
   IMPROVEMENT
+
+    TAJO-1165: Needs to show error messages on query_executor.jsp. (Jihun Kang via jaehwa)
+
+    TAJO-1204: Remove unused ServerName class. (DaeMyung Kang via jaehwa)
+
+    TAJO-1053: ADD PARTITIONS for HCatalogStore. (jaehwa)
 
     TAJO-1195: Remove unused CachedDNSResolver Class. (DaeMyung Kang via jaehwa)
 
@@ -60,8 +68,31 @@ Release 0.9.1 - unreleased
     TAJO-1172: Remove Trevni storage type and its related classes.
     (DaeMyung Kang via hyunsik)
 
+    TAJO-1163: TableDesc should use URI instead of Path. (hyunsik)
+
+    TAJO-1188: Fix testcase testTimestampConstructor in TestTimestampDatum.
+    (DaeMyung Kang via hyunsik)
+
+    TAJO-1209: Pluggable line (de)serializer for DelimitedTextFile.
+    (hyunsik)
+
 
   BUG FIXES
+
+    TAJO-1211: Staging directory for CTAS and INSERT should be in 
+    the output dir. (hyunsik)
+
+    TAJO-1210: ByteBufLineReader does not handle the end of file, 
+    if newline is not appeared. (jinho)
+
+    TAJO-1119: JDBC driver should support TIMESTAMP type. (jaehwa)
+
+    TAJO-1166: S3 related storage causes compilation error in Hadoop 2.6.0-SNAPSHOT. (jaehwa)
+
+    TAJO-1208: Failure of create table using textfile on hivemeta.
+    (jinho)
+
+    TAJO-1205: Remove possible memory leak in TajoMaster. (jinho)
 
     TAJO-1181: Avro schema URL should support various protocols. 
     (jinho)
