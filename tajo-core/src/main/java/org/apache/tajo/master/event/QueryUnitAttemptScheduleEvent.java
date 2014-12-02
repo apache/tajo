@@ -19,10 +19,10 @@
 package org.apache.tajo.master.event;
 
 import com.google.protobuf.RpcCallback;
-import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.ipc.TajoWorkerProtocol.QueryUnitRequestProto;
 import org.apache.tajo.master.querymaster.QueryUnitAttempt;
+import org.apache.tajo.master.container.TajoContainerId;
 
 public class QueryUnitAttemptScheduleEvent extends TaskSchedulerEvent {
   private final QueryUnitAttemptScheduleContext context;
@@ -44,7 +44,7 @@ public class QueryUnitAttemptScheduleEvent extends TaskSchedulerEvent {
   }
 
   public static class QueryUnitAttemptScheduleContext {
-    private ContainerId containerId;
+    private TajoContainerId containerId;
     private String host;
     private RpcCallback<QueryUnitRequestProto> callback;
 
@@ -52,7 +52,7 @@ public class QueryUnitAttemptScheduleEvent extends TaskSchedulerEvent {
 
     }
 
-    public QueryUnitAttemptScheduleContext(ContainerId containerId,
+    public QueryUnitAttemptScheduleContext(TajoContainerId containerId,
                                            String host,
                                            RpcCallback<QueryUnitRequestProto> callback) {
       this.containerId = containerId;
@@ -60,11 +60,11 @@ public class QueryUnitAttemptScheduleEvent extends TaskSchedulerEvent {
       this.callback = callback;
     }
 
-    public ContainerId getContainerId() {
+    public TajoContainerId getContainerId() {
       return containerId;
     }
 
-    public void setContainerId(ContainerId containerId) {
+    public void setContainerId(TajoContainerId containerId) {
       this.containerId = containerId;
     }
 

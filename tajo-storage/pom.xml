@@ -71,7 +71,7 @@
         </executions>
         <configuration>
           <excludes>
-            <exclude>src/test/resources/testVariousTypes.avsc</exclude>
+            <exclude>src/test/resources/dataset/**</exclude>
           </excludes>
         </configuration>
       </plugin>
@@ -312,6 +312,11 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-buffer</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>net.minidev</groupId>
+      <artifactId>json-smart</artifactId>
+      <version>2.0</version>
     </dependency>
   </dependencies>
 

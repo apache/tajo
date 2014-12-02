@@ -80,18 +80,17 @@ public class TestStorages {
       "  \"name\": \"testNullHandlingTypes\",\n" +
       "  \"fields\": [\n" +
       "    { \"name\": \"col1\", \"type\": [\"null\", \"boolean\"] },\n" +
-      "    { \"name\": \"col2\", \"type\": [\"null\", \"int\"] },\n" +
-      "    { \"name\": \"col3\", \"type\": [\"null\", \"string\"] },\n" +
+      "    { \"name\": \"col2\", \"type\": [\"null\", \"string\"] },\n" +
+      "    { \"name\": \"col3\", \"type\": [\"null\", \"int\"] },\n" +
       "    { \"name\": \"col4\", \"type\": [\"null\", \"int\"] },\n" +
-      "    { \"name\": \"col5\", \"type\": [\"null\", \"int\"] },\n" +
-      "    { \"name\": \"col6\", \"type\": [\"null\", \"long\"] },\n" +
-      "    { \"name\": \"col7\", \"type\": [\"null\", \"float\"] },\n" +
-      "    { \"name\": \"col8\", \"type\": [\"null\", \"double\"] },\n" +
-      "    { \"name\": \"col9\", \"type\": [\"null\", \"string\"] },\n" +
+      "    { \"name\": \"col5\", \"type\": [\"null\", \"long\"] },\n" +
+      "    { \"name\": \"col6\", \"type\": [\"null\", \"float\"] },\n" +
+      "    { \"name\": \"col7\", \"type\": [\"null\", \"double\"] },\n" +
+      "    { \"name\": \"col8\", \"type\": [\"null\", \"string\"] },\n" +
+      "    { \"name\": \"col9\", \"type\": [\"null\", \"bytes\"] },\n" +
       "    { \"name\": \"col10\", \"type\": [\"null\", \"bytes\"] },\n" +
-      "    { \"name\": \"col11\", \"type\": [\"null\", \"bytes\"] },\n" +
-      "    { \"name\": \"col12\", \"type\": \"null\" },\n" +
-      "    { \"name\": \"col13\", \"type\": [\"null\", \"bytes\"] }\n" +
+      "    { \"name\": \"col11\", \"type\": \"null\" },\n" +
+      "    { \"name\": \"col12\", \"type\": [\"null\", \"bytes\"] }\n" +
       "  ]\n" +
       "}\n";
 
@@ -129,6 +128,7 @@ public class TestStorages {
         {StoreType.SEQUENCEFILE, true, true, false},
         {StoreType.AVRO, false, false, false},
         {StoreType.TEXTFILE, true, true, false},
+        {StoreType.JSON, true, true, false},
     });
   }
 
@@ -298,26 +298,29 @@ public class TestStorages {
 
   @Test
   public void testVariousTypes() throws IOException {
+    boolean handleProtobuf = storeType != StoreType.JSON;
+
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.BIT);
-    schema.addColumn("col3", Type.CHAR, 7);
-    schema.addColumn("col4", Type.INT2);
-    schema.addColumn("col5", Type.INT4);
-    schema.addColumn("col6", Type.INT8);
-    schema.addColumn("col7", Type.FLOAT4);
-    schema.addColumn("col8", Type.FLOAT8);
-    schema.addColumn("col9", Type.TEXT);
-    schema.addColumn("col10", Type.BLOB);
-    schema.addColumn("col11", Type.INET4);
-    schema.addColumn("col12", Type.NULL_TYPE);
-    schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+    schema.addColumn("col2", Type.CHAR, 7);
+    schema.addColumn("col3", Type.INT2);
+    schema.addColumn("col4", Type.INT4);
+    schema.addColumn("col5", Type.INT8);
+    schema.addColumn("col6", Type.FLOAT4);
+    schema.addColumn("col7", Type.FLOAT8);
+    schema.addColumn("col8", Type.TEXT);
+    schema.addColumn("col9", Type.BLOB);
+    schema.addColumn("col10", Type.INET4);
+    schema.addColumn("col11", Type.NULL_TYPE);
+    if (handleProtobuf) {
+      schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+    }
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
     meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
     if (storeType == StoreType.AVRO) {
-      String path = FileUtil.getResourcePath("testVariousTypes.avsc").toString();
+      String path = FileUtil.getResourcePath("dataset/testVariousTypes.avsc").toString();
       meta.putOption(StorageConstants.AVRO_SCHEMA_URL, path);
     }
 
@@ -328,10 +331,9 @@ public class TestStorages {
     QueryId queryid = new QueryId("12345", 5);
     ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
 
-    Tuple tuple = new VTuple(13);
+    Tuple tuple = new VTuple(11 + (handleProtobuf ? 1 : 0));
     tuple.put(new Datum[] {
         DatumFactory.createBool(true),
-        DatumFactory.createBit((byte) 0x99),
         DatumFactory.createChar("hyunsik"),
         DatumFactory.createInt2((short) 17),
         DatumFactory.createInt4(59),
@@ -341,9 +343,12 @@ public class TestStorages {
         DatumFactory.createText("hyunsik"),
         DatumFactory.createBlob("hyunsik".getBytes()),
         DatumFactory.createInet4("192.168.0.1"),
-        NullDatum.get(),
-        factory.createDatum(queryid.getProto())
+        NullDatum.get()
     });
+    if (handleProtobuf) {
+      tuple.put(11, factory.createDatum(queryid.getProto()));
+    }
+
     appender.addTuple(tuple);
     appender.flush();
     appender.close();
@@ -364,20 +369,24 @@ public class TestStorages {
 
   @Test
   public void testNullHandlingTypes() throws IOException {
+    boolean handleProtobuf = storeType != StoreType.JSON;
+
     Schema schema = new Schema();
     schema.addColumn("col1", Type.BOOLEAN);
-    schema.addColumn("col2", Type.BIT);
-    schema.addColumn("col3", Type.CHAR, 7);
-    schema.addColumn("col4", Type.INT2);
-    schema.addColumn("col5", Type.INT4);
-    schema.addColumn("col6", Type.INT8);
-    schema.addColumn("col7", Type.FLOAT4);
-    schema.addColumn("col8", Type.FLOAT8);
-    schema.addColumn("col9", Type.TEXT);
-    schema.addColumn("col10", Type.BLOB);
-    schema.addColumn("col11", Type.INET4);
-    schema.addColumn("col12", Type.NULL_TYPE);
-    schema.addColumn("col13", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+    schema.addColumn("col2", Type.CHAR, 7);
+    schema.addColumn("col3", Type.INT2);
+    schema.addColumn("col4", Type.INT4);
+    schema.addColumn("col5", Type.INT8);
+    schema.addColumn("col6", Type.FLOAT4);
+    schema.addColumn("col7", Type.FLOAT8);
+    schema.addColumn("col8", Type.TEXT);
+    schema.addColumn("col9", Type.BLOB);
+    schema.addColumn("col10", Type.INET4);
+    schema.addColumn("col11", Type.NULL_TYPE);
+
+    if (handleProtobuf) {
+      schema.addColumn("col12", CatalogUtil.newDataType(Type.PROTOBUF, TajoIdProtos.QueryIdProto.class.getName()));
+    }
 
     KeyValueSet options = new KeyValueSet();
     TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
@@ -397,11 +406,10 @@ public class TestStorages {
 
     QueryId queryid = new QueryId("12345", 5);
     ProtobufDatumFactory factory = ProtobufDatumFactory.get(TajoIdProtos.QueryIdProto.class.getName());
-
-    Tuple seedTuple = new VTuple(13);
+    int columnNum = 11 + (handleProtobuf ? 1 : 0);
+    Tuple seedTuple = new VTuple(columnNum);
     seedTuple.put(new Datum[]{
         DatumFactory.createBool(true),                // 0
-        DatumFactory.createBit((byte) 0x99),          // 1
         DatumFactory.createChar("hyunsik"),           // 2
         DatumFactory.createInt2((short) 17),          // 3
         DatumFactory.createInt4(59),                  // 4
@@ -412,14 +420,17 @@ public class TestStorages {
         DatumFactory.createBlob("hyunsik".getBytes()),// 9
         DatumFactory.createInet4("192.168.0.1"),      // 10
         NullDatum.get(),                              // 11
-        factory.createDatum(queryid.getProto())       // 12
     });
+
+    if (handleProtobuf) {
+      seedTuple.put(11, factory.createDatum(queryid.getProto()));       // 12
+    }
 
     // Making tuples with different null column positions
     Tuple tuple;
-    for (int i = 0; i < 13; i++) {
-      tuple = new VTuple(13);
-      for (int j = 0; j < 13; j++) {
+    for (int i = 0; i < columnNum; i++) {
+      tuple = new VTuple(columnNum);
+      for (int j = 0; j < columnNum; j++) {
         if (i == j) { // i'th column will have NULL value
           tuple.put(j, NullDatum.get());
         } else {
@@ -439,8 +450,8 @@ public class TestStorages {
     Tuple retrieved;
     int i = 0;
     while ((retrieved = scanner.next()) != null) {
-      assertEquals(13, retrieved.size());
-      for (int j = 0; j < 13; j++) {
+      assertEquals(columnNum, retrieved.size());
+      for (int j = 0; j < columnNum; j++) {
         if (i == j) {
           assertEquals(NullDatum.get(), retrieved.get(j));
         } else {
