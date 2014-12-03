@@ -476,6 +476,22 @@ public abstract class AbstractCatalogClient implements CatalogService {
   }
 
   @Override
+  public boolean existIndexesByTable(final String databaseName, final String tableName) {
+    try {
+      return new ServerCallable<Boolean>(this.pool, getCatalogServerAddr(), CatalogProtocol.class, false) {
+        public Boolean call(NettyClientBase client) throws ServiceException {
+
+          CatalogProtocolService.BlockingInterface stub = getStub(client);
+          return stub.existIndexesByTable(null, CatalogUtil.buildTableIdentifier(databaseName, tableName)).getValue();
+        }
+      }.withRetries();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return false;
+    }
+  }
+
+  @Override
   public final IndexDesc getIndexByName(final String databaseName, final String indexName) {
     try {
       return new ServerCallable<IndexDesc>(this.pool, getCatalogServerAddr(), CatalogProtocol.class, false) {

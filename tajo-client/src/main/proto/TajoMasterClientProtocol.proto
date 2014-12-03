@@ -70,7 +70,6 @@ service TajoMasterClientProtocolService {
   rpc getFunctionList(SessionedStringProto) returns (FunctionResponse);
 
   // Index Management APIs
-  rpc createIndex(CreateIndexRequest) returns (CreateIndexResponse);
   rpc getIndexWithName(SessionedStringProto) returns (IndexDescProto);
   rpc existIndexWithName(SessionedStringProto) returns (BoolProto);
   rpc getIndexesForTable(SessionedStringProto) returns (GetIndexesResponse);

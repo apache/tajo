@@ -753,8 +753,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
     ClientProtos.SubmitQueryResponse response = client.executeQuery("insert overwrite into " + tableName
         + " select l_orderkey, l_partkey from lineitem");
 
-    assertTrue(response.hasErrorMessage());
-    assertEquals(response.getErrorMessage(), "INSERT has smaller expressions than target columns\n");
+    assertTrue(response.getResult().hasErrorMessage());
+    assertEquals(response.getResult().getErrorMessage(), "INSERT has smaller expressions than target columns\n");
 
     res = executeFile("case14.sql");
     assertResultSet(res, "case14.result");
@@ -773,8 +773,8 @@ public class TestTablePartitions extends QueryTestCaseBase {
     ClientProtos.SubmitQueryResponse response = client.executeQuery("insert overwrite into " + tableName
         + " select l_returnflag , l_orderkey, l_partkey from lineitem");
 
-    assertTrue(response.hasErrorMessage());
-    assertEquals(response.getErrorMessage(), "INSERT has smaller expressions than target columns\n");
+    assertTrue(response.getResult().hasErrorMessage());
+    assertEquals(response.getResult().getErrorMessage(), "INSERT has smaller expressions than target columns\n");
 
     res = executeFile("case15.sql");
     assertResultSet(res, "case15.result");

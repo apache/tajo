@@ -49,6 +49,8 @@ import org.apache.tajo.engine.planner.physical.EvalExprExec;
 import org.apache.tajo.engine.planner.physical.StoreTableExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.ipc.ClientProtos.RequestResult;
+import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.querymaster.Query;
 import org.apache.tajo.master.querymaster.QueryInfo;
@@ -179,13 +181,12 @@ public class GlobalEngine extends AbstractService {
       responseBuilder.setUserName(queryContext.get(SessionVars.USERNAME));
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
       responseBuilder.setIsForwarded(true);
-      responseBuilder.setResultCode(ClientProtos.ResultCode.ERROR);
       String errorMessage = t.getMessage();
       if (t.getMessage() == null) {
         errorMessage = t.getClass().getName();
       }
-      responseBuilder.setErrorMessage(errorMessage);
-      responseBuilder.setErrorTrace(StringUtils.stringifyException(t));
+      responseBuilder.setResult(buildRequestResult(ResultCode.ERROR,
+          errorMessage, StringUtils.stringifyException(t)));
       return responseBuilder.build();
     }
   }
@@ -223,7 +224,7 @@ public class GlobalEngine extends AbstractService {
         response = submitForwardQuery(session, queryContext, sql, jsonExpr, rootNode, responseBuilder);
       } else {
         responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-        responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+        responseBuilder.setResult(buildOkRequestResult());
       }
       updateQuery(queryContext, rootNode.getChild());
 
@@ -249,7 +250,7 @@ public class GlobalEngine extends AbstractService {
 
       responseBuilder.setResultSet(serializedResBuilder.build());
       responseBuilder.setMaxRowNum(lines.length);
-      responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+      responseBuilder.setResult(buildOkRequestResult());
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
 
       // Simple query indicates a form of 'select * from tb_name [LIMIT X];'.
@@ -280,7 +281,7 @@ public class GlobalEngine extends AbstractService {
       responseBuilder.setMaxRowNum(maxRow);
       responseBuilder.setTableDesc(desc.getProto());
       responseBuilder.setSessionVariables(session.getProto().getVariables());
-      responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+      responseBuilder.setResult(buildOkRequestResult());
 
       // NonFromQuery indicates a form of 'select a, x+y;'
     } else if (PlannerUtil.checkIfNonFromQuery(plan)) {
@@ -309,7 +310,7 @@ public class GlobalEngine extends AbstractService {
         responseBuilder.setResultSet(serializedResBuilder);
         responseBuilder.setMaxRowNum(1);
         responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-        responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+        responseBuilder.setResult(buildOkRequestResult());
       }
     } else { // it requires distributed execution. So, the query is forwarded to a query master.
       context.getSystemMetrics().counter("Query", "numDMLQuery").inc();
@@ -333,12 +334,12 @@ public class GlobalEngine extends AbstractService {
 
     if(queryInfo == null) {
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      responseBuilder.setResultCode(ClientProtos.ResultCode.ERROR);
-      responseBuilder.setErrorMessage("Fail starting QueryMaster.");
+      responseBuilder.setResult(buildRequestResult(ResultCode.ERROR,
+          "Fail starting QueryMaster.", null));
     } else {
       responseBuilder.setIsForwarded(true);
       responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
-      responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+      responseBuilder.setResult(buildOkRequestResult());
       if(queryInfo.getQueryMasterHost() != null) {
         responseBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
       }
@@ -442,7 +443,7 @@ public class GlobalEngine extends AbstractService {
     // If queryId == NULL_QUERY_ID and MaxRowNum == -1, TajoCli prints only number of inserted rows.
     responseBuilder.setMaxRowNum(-1);
     responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-    responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+    responseBuilder.setResult(buildOkRequestResult());
   }
 
 
@@ -975,6 +976,24 @@ public class GlobalEngine extends AbstractService {
 
     LOG.info(String.format("relation \"%s\" is " + (purge ? " purged." : " dropped."), qualifiedName));
     return true;
+  }
+
+  private static RequestResult buildOkRequestResult() {
+    return buildRequestResult(ResultCode.OK, null, null);
+  }
+
+  private static RequestResult buildRequestResult(ResultCode code,
+                                                  @Nullable String errorMessage,
+                                                  @Nullable String errorTrace) {
+    RequestResult.Builder builder = RequestResult.newBuilder();
+    builder.setResultCode(code);
+    if (errorMessage != null) {
+      builder.setErrorMessage(errorMessage);
+    }
+    if (errorTrace != null) {
+      builder.setErrorTrace(errorTrace);
+    }
+    return builder.build();
   }
 
   public interface DistributedQueryHook {

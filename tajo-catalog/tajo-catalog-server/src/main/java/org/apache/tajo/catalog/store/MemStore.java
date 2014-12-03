@@ -464,6 +464,18 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
+  public boolean existIndexesByTable(String databaseName, String tableName) throws CatalogException {
+    Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
+    String simpleTableName = CatalogUtil.extractSimpleName(tableName);
+    for (IndexDescProto proto : indexByColumn.values()) {
+      if (proto.getTableIdentifier().getTableName().equals(simpleTableName)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
   public void addFunction(FunctionDesc func) throws CatalogException {
     // to be implemented
   }

@@ -1938,6 +1938,36 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return indexNames;
   }
 
+  @Override
+  public boolean existIndexesByTable(String databaseName, String tableName) throws CatalogException {
+    ResultSet res = null;
+    PreparedStatement pstmt = null;
+    final List<String> indexNames = new ArrayList<String>();
+
+    try {
+      final int databaseId = getDatabaseId(databaseName);
+      final int tableId = getTableId(databaseId, databaseName, tableName);
+
+      String sql = GET_INDEXES_SQL + " WHERE " + COL_DATABASES_PK + "=? AND " + COL_TABLES_PK + "=?";
+
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
+
+      conn = getConnection();
+      pstmt = conn.prepareStatement(sql);
+      pstmt.setInt(1, databaseId);
+      pstmt.setInt(2, tableId);
+      res = pstmt.executeQuery();
+
+      return res.next();
+    } catch (SQLException se) {
+      throw new CatalogException(se);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt, res);
+    }
+  }
+
   private void resultToIndexDescProtoBuilder(IndexDescProto.Builder builder,
                                              final ResultSet res) throws SQLException {
     builder.setIndexName(res.getString("index_name"));

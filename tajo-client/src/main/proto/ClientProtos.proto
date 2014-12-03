@@ -283,15 +283,6 @@ message GetQueryInfoResponse {
   optional QueryInfoProto queryInfo = 2;
 }
 
-message CreateIndexRequest {
-  required string tableName = 1;
-  required string indexName = 2;
-  repeated SortSpecProto sortSpecs = 3;
-  required string indexMethod = 4;
-  optional bool isUnique = 5;
-  required KeyValueSetProto options = 6;
-}
-
 message CreateIndexResponse {
   required RequestResult result = 1;
   optional IndexDescProto indexDesc = 2;
@@ -303,8 +294,9 @@ message GetIndexesResponse {
 }
 
 message GetIndexWithColumnsRequest {
-  required string tableName = 1;
-  repeated string columnNames = 2;
+  required SessionIdProto sessionId = 1;
+  required string tableName = 2;
+  repeated string columnNames = 3;
 }
 
 message GetIndexWithColumnsResponse {

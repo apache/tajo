@@ -116,6 +116,8 @@ public interface CatalogStore extends Closeable {
 
   List<String> getAllIndexNamesByTable(String databaseName, String tableName) throws CatalogException;
 
+  boolean existIndexesByTable(String databaseName, String tableName) throws CatalogException;
+
   /************************** FUNCTION *****************************/
 
   

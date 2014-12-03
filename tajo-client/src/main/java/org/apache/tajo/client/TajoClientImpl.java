@@ -221,11 +221,6 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
   }
 
   @Override
-  public IndexDescProto createIndex(String tableName, IndexMeta indexMeta) throws ServiceException {
-    return catalogClient.createIndex(tableName, indexMeta);
-  }
-
-  @Override
   public IndexDescProto getIndex(String indexName) throws ServiceException {
     return catalogClient.getIndex(indexName);
   }

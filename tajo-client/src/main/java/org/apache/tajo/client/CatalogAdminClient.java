@@ -137,8 +137,6 @@ public interface CatalogAdminClient extends Closeable {
 
   public List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws ServiceException;
 
-  public IndexDescProto createIndex(final String tableName, final IndexMeta indexMeta) throws ServiceException;
-
   public IndexDescProto getIndex(final String indexName) throws ServiceException;
 
   public boolean existIndex(final String indexName) throws ServiceException;

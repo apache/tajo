@@ -762,6 +762,23 @@ public class CatalogServer extends AbstractService {
     }
 
     @Override
+    public BoolProto existIndexesByTable(RpcController controller, TableIdentifierProto request) throws ServiceException {
+      String databaseName = request.getDatabaseName();
+      String tableName = request.getTableName();
+
+      rlock.lock();
+      try {
+        return store.existIndexesByTable(databaseName, tableName) ?
+            ProtoUtil.TRUE : ProtoUtil.FALSE;
+      } catch (Exception e) {
+        LOG.error(e);
+        return BoolProto.newBuilder().setValue(false).build();
+      } finally {
+        rlock.unlock();
+      }
+    }
+
+    @Override
     public IndexDescProto getIndexByName(RpcController controller, IndexNameProto request)
         throws ServiceException {
 

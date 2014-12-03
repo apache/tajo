@@ -259,37 +259,6 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public IndexDescProto createIndex(final String tableName, final IndexMeta indexMeta)
-      throws ServiceException {
-    return new ServerCallable<IndexDescProto>(connection.connPool,
-        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
-
-      @Override
-      public IndexDescProto call(NettyClientBase client) throws Exception {
-        CreateIndexRequest.Builder builder = CreateIndexRequest.newBuilder();
-        builder.setTableName(tableName);
-        builder.setIndexName(indexMeta.getIndexName());
-        for (SortSpec sortSpec : indexMeta.getKeySortSpecs()) {
-          builder.addSortSpecs(sortSpec.getProto());
-        }
-        builder.setIndexMethod(indexMeta.getIndexMethod().name());
-        builder.setIsUnique(indexMeta.isUnique());
-        if (indexMeta.getOptions() != null) {
-          builder.setOptions(indexMeta.getOptions().getProto());
-        }
-        connection.checkSessionAndGet(client);
-        BlockingInterface tajoMasterService = client.getStub();
-        CreateIndexResponse res = tajoMasterService.createIndex(null, builder.build());
-        if (res.getResult().getResultCode() == ResultCode.OK) {
-          return res.getIndexDesc();
-        } else {
-          throw new SQLException(res.getResult().getErrorMessage());
-        }
-      }
-    }.withRetries();
-  }
-
-  @Override
   public IndexDescProto getIndex(final String indexName) throws ServiceException {
     return new ServerCallable<IndexDescProto>(connection.connPool,
         connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
@@ -359,6 +328,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
       public IndexDescProto call(NettyClientBase client) throws Exception {
         BlockingInterface tajoMasterService = client.getStub();
         GetIndexWithColumnsRequest.Builder builder = GetIndexWithColumnsRequest.newBuilder();
+        builder.setSessionId(connection.sessionId);
         builder.setTableName(tableName);
         for (String eachColumnName : columnNames) {
           builder.addColumnNames(eachColumnName);
@@ -382,6 +352,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
       public Boolean call(NettyClientBase client) throws Exception {
         BlockingInterface tajoMasterService = client.getStub();
         GetIndexWithColumnsRequest.Builder builder = GetIndexWithColumnsRequest.newBuilder();
+        builder.setSessionId(connection.sessionId);
         builder.setTableName(tableName);
         for (String eachColumnName : columnName) {
           builder.addColumnNames(eachColumnName);

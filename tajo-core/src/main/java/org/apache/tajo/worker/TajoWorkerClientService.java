@@ -31,10 +31,12 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TajoProtos;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.GetQueryHistoryResponse;
 import org.apache.tajo.ipc.ClientProtos.QueryIdRequest;
+import org.apache.tajo.ipc.ClientProtos.RequestResult;
 import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -174,12 +176,11 @@ public class TajoWorkerClientService extends AbstractService {
       builder.setQueryId(request.getQueryId());
 
       if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
-        builder.setResultCode(ClientProtos.ResultCode.OK);
+        builder.setResult(buildOkRequestResult());
         builder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
       } else {
         QueryMasterTask queryMasterTask = workerContext.getQueryMaster().getQueryMasterTask(queryId);
 
-        builder.setResultCode(ClientProtos.ResultCode.OK);
         builder.setQueryMasterHost(bindAddr.getHostName());
         builder.setQueryMasterPort(bindAddr.getPort());
 
@@ -212,15 +213,15 @@ public class TajoWorkerClientService extends AbstractService {
         Collection<TajoWorkerProtocol.TaskFatalErrorReport> diagnostics = queryMasterTask.getDiagnostics();
         if(!diagnostics.isEmpty()) {
           TajoWorkerProtocol.TaskFatalErrorReport firstError = diagnostics.iterator().next();
-          builder.setErrorMessage(firstError.getErrorMessage());
-          builder.setErrorTrace(firstError.getErrorTrace());
+          builder.setResult(buildRequestResult(ResultCode.OK,
+              firstError.getErrorMessage(), firstError.getErrorTrace()));
         }
 
         if (queryMasterTask.isInitError()) {
           Throwable initError = queryMasterTask.getInitError();
-          builder.setErrorMessage(
-              initError.getMessage() == null ? initError.getClass().getName() : initError.getMessage());
-          builder.setErrorTrace(StringUtils.stringifyException(initError));
+          builder.setResult(buildRequestResult(ResultCode.OK,
+              initError.getMessage() == null ? initError.getClass().getName() : initError.getMessage(),
+              StringUtils.stringifyException(initError)));
           builder.setState(queryMasterTask.getState());
         }
       }
@@ -254,13 +255,31 @@ public class TajoWorkerClientService extends AbstractService {
         if (queryHistory != null) {
           builder.setQueryHistory(queryHistory.getProto());
         }
-        builder.setResultCode(ResultCode.OK);
+        builder.setResult(buildOkRequestResult());
       } catch (Throwable t) {
         LOG.warn(t.getMessage(), t);
-        builder.setResultCode(ResultCode.ERROR);
-        builder.setErrorMessage(org.apache.hadoop.util.StringUtils.stringifyException(t));
+        builder.setResult(buildRequestResult(ResultCode.ERROR,
+            StringUtils.stringifyException(t), null));
       }
 
+      return builder.build();
+    }
+
+    private RequestResult buildOkRequestResult() {
+      return buildRequestResult(ResultCode.OK, null, null);
+    }
+
+    private RequestResult buildRequestResult(ResultCode code,
+                                                    @Nullable String errorMessage,
+                                                    @Nullable String errorTrace) {
+      RequestResult.Builder builder = RequestResult.newBuilder();
+      builder.setResultCode(code);
+      if (errorMessage != null) {
+        builder.setErrorMessage(errorMessage);
+      }
+      if (errorTrace != null) {
+        builder.setErrorTrace(errorTrace);
+      }
       return builder.build();
     }
   }
