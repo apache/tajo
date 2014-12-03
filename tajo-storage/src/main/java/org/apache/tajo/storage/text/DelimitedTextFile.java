@@ -270,6 +270,7 @@ public class DelimitedTextFile {
     private final long startOffset;
 
     private final long endOffset;
+    /** The number of actual read records */
     private int recordCount = 0;
     private int[] targetColumnIndexes;
 
@@ -339,8 +340,6 @@ public class DelimitedTextFile {
       ByteBuf buf = reader.readLine();
       if (buf == null) {
         return null;
-      } else {
-        recordCount++;
       }
 
       return buf;
@@ -415,6 +414,9 @@ public class DelimitedTextFile {
           }
 
         } while (reader.isReadable()); // continue until EOS
+
+        // recordCount means the number of actual read records. We increment the count here.
+        recordCount++;
 
         return tuple;
 
