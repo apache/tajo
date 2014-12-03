@@ -83,6 +83,9 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1220: Implement createStatement() and setEscapeProcessing() in 
+    JdbcConnection. (YeonSu Han via hyunsik)
+
     TAJO-1183: Keep command execution even with errors. (Jaewoong Jung via 
     hyunsik)
 
