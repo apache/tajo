@@ -57,7 +57,7 @@ public class CheckHadoopRuntimeVersionRule implements RuntimeRule {
     String versionString = versionInfo.getProperty("version");
     
     if (versionString != null && !versionString.isEmpty()) {
-      Validators.patternMatch("\\d+\\.\\d+\\.\\d+\\.").validate(versionString, true);
+      Validators.patternMatch("\\d+\\.\\d+\\.\\d+").validate(versionString, true);
       
       String[] versionArray = versionString.split("\\.");
       version = new int[versionArray.length];
