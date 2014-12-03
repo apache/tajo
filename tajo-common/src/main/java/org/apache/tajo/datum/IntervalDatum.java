@@ -236,7 +236,6 @@ public class IntervalDatum extends Datum {
         if (getMonths() > 0) {
           tm.plusMonths(getMonths());
         }
-        DateTimeUtil.toUTCTimezone(tm);
         return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
       }
       case TIME: {

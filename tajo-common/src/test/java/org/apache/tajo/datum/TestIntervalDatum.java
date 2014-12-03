@@ -85,7 +85,7 @@ public class TestIntervalDatum {
     datum = new IntervalDatum(60 * 60 * 1000);
     result = datum.plus(DatumFactory.createDate(2001, 9, 28));
     assertEquals(TajoDataTypes.Type.TIMESTAMP, result.type());
-    assertEquals("2001-09-28 01:00:00", ((TimestampDatum)result).asChars(TajoConf.getCurrentTimeZone(), false));
+    assertEquals("2001-09-28 01:00:00", result.asChars());
 
     // date '2001-09-28' + time '03:00' ==> timestamp '2001-09-28 03:00:00'
     datum = DatumFactory.createDate(2001, 9, 28);
