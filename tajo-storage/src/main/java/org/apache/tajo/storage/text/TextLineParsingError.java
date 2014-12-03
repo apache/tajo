@@ -16,22 +16,16 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage;
+package org.apache.tajo.storage.text;
 
-import io.netty.buffer.ByteBuf;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.storage.text.TextLineParsingError;
+public class TextLineParsingError extends Exception {
 
-import java.io.IOException;
-import java.io.OutputStream;
+  public TextLineParsingError(Throwable t) {
+    super(t);
+  }
 
-
-public interface FieldSerializerDeserializer {
-
-  public int serialize(OutputStream out, Datum datum, Column col, int columnIndex, byte[] nullChars) throws IOException;
-
-  public Datum deserialize(ByteBuf buf, Column col, int columnIndex, ByteBuf nullChars)
-      throws IOException, TextLineParsingError;
+  public TextLineParsingError(String message, Throwable t) {
+    super(t.getMessage() + ", Error line: " + message);
+  }
 
 }

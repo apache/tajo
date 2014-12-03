@@ -48,7 +48,7 @@ public class CSVLineDeserializer extends TextLineDeserializer {
     fieldSerDer = new TextFieldSerializerDeserializer();
   }
 
-  public void deserialize(final ByteBuf lineBuf, Tuple output) throws IOException {
+  public void deserialize(final ByteBuf lineBuf, Tuple output) throws IOException, TextLineParsingError {
     int[] projection = targetColumnIndexes;
     if (lineBuf == null || targetColumnIndexes == null || targetColumnIndexes.length == 0) {
       return;
