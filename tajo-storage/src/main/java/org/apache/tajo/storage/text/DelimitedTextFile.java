@@ -336,15 +336,6 @@ public class DelimitedTextFile {
       return DelimitedTextFile.getLineSerde(meta);
     }
 
-    public ByteBuf readLine() throws IOException {
-      ByteBuf buf = reader.readLine();
-      if (buf == null) {
-        return null;
-      }
-
-      return buf;
-    }
-
     @Override
     public float getProgress() {
       try {
@@ -383,7 +374,7 @@ public class DelimitedTextFile {
         // this loop will continue until one tuple is build or EOS (end of stream).
         do {
 
-          ByteBuf buf = readLine();
+          ByteBuf buf = reader.readLine();
           if (buf == null) {
             return null;
           }
@@ -391,7 +382,6 @@ public class DelimitedTextFile {
           try {
 
             deserializer.deserialize(buf, tuple);
-
             // if a line is read normaly, it exists this loop.
             break;
 

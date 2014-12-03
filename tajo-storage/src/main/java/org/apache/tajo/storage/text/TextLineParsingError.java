@@ -24,4 +24,8 @@ public class TextLineParsingError extends Exception {
     super(t);
   }
 
+  public TextLineParsingError(String message, Throwable t) {
+    super(t.getMessage() + ", Error line: " + message);
+  }
+
 }

@@ -31,6 +31,7 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.common.exception.NotImplementedException;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.text.TextLineDeserializer;
@@ -212,7 +213,7 @@ public class JsonLineDeserializer extends TextLineDeserializer {
         }
       }
     } catch (ParseException pe) {
-      throw new TextLineParsingError(pe);
+      throw new TextLineParsingError(new String(line, TextDatum.DEFAULT_CHARSET), pe);
     } catch (Throwable e) {
       throw new IOException(e);
     }
