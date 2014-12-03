@@ -40,7 +40,7 @@ service TajoMasterClientProtocolService {
 
   // Query Submission and Result APIs
   rpc submitQuery(QueryRequest) returns (SubmitQueryResponse);
-  rpc updateQuery(QueryRequest) returns (UpdateQueryResponse);
+  rpc updateQuery(QueryRequest) returns (RequestResult);
   rpc getQueryResult(GetQueryResultRequest) returns (GetQueryResultResponse);
   rpc getQueryResultData(GetQueryResultDataRequest) returns (GetQueryResultDataResponse);
 
@@ -68,4 +68,14 @@ service TajoMasterClientProtocolService {
   rpc getTableList(GetTableListRequest) returns (GetTableListResponse);
   rpc getTableDesc(GetTableDescRequest) returns (TableResponse);
   rpc getFunctionList(SessionedStringProto) returns (FunctionResponse);
+
+  // Index Management APIs
+  rpc createIndex(CreateIndexRequest) returns (CreateIndexResponse);
+  rpc getIndexWithName(SessionedStringProto) returns (IndexDescProto);
+  rpc existIndexWithName(SessionedStringProto) returns (BoolProto);
+  rpc getIndexesForTable(SessionedStringProto) returns (GetIndexesResponse);
+  rpc existIndexesForTable(SessionedStringProto) returns (BoolProto);
+  rpc getIndexWithColumns(GetIndexWithColumnsRequest) returns (GetIndexWithColumnsResponse);
+  rpc existIndexWithColumns(GetIndexWithColumnsRequest) returns (BoolProto);
+  rpc dropIndex(SessionedStringProto) returns (BoolProto);
 }

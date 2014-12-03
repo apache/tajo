@@ -27,10 +27,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.catalog.CatalogConstants;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
@@ -1907,21 +1904,17 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public IndexDescProto[] getIndexes(String databaseName, final String tableName)
+  public List<String> getAllIndexNamesByTable(final String databaseName, final String tableName)
       throws CatalogException {
-    Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
-    final List<IndexDescProto> protos = new ArrayList<IndexDescProto>();
+    final List<String> indexNames = new ArrayList<String>();
 
     try {
       final int databaseId = getDatabaseId(databaseName);
       final int tableId = getTableId(databaseId, databaseName, tableName);
-      final TableIdentifierProto tableIdentifier = CatalogUtil.buildTableIdentifier(databaseName, tableName);
-      final TableDescProto tableDescProto = getTable(databaseName, tableName);
 
       String sql = GET_INDEXES_SQL + " WHERE " + COL_DATABASES_PK + "=? AND " + COL_TABLES_PK + "=?";
-
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
@@ -1934,11 +1927,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = pstmt.executeQuery();
 
       while (res.next()) {
-        IndexDescProto.Builder builder = IndexDescProto.newBuilder();
-        resultToIndexDescProtoBuilder(builder, res);
-        builder.setTableIdentifier(tableIdentifier);
-        builder.setTargetRelationSchema(tableDescProto.getSchema());
-        protos.add(builder.build());
+        indexNames.add(res.getString("index_name"));
       }
     } catch (SQLException se) {
       throw new CatalogException(se);
@@ -1946,7 +1935,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       CatalogUtil.closeQuietly(pstmt, res);
     }
 
-    return protos.toArray(new IndexDescProto[protos.size()]);
+    return indexNames;
   }
 
   private void resultToIndexDescProtoBuilder(IndexDescProto.Builder builder,

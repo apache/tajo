@@ -800,7 +800,27 @@ public class CatalogServer extends AbstractService {
         }
         return store.getIndexByColumns(databaseName, tableName, columnNames);
       } catch (Exception e) {
-        LOG.error("ERROR : cannot get index for " + tableName + "." + columnNames, e);
+        LOG.error("ERROR: cannot get index for " + tableName + "." + columnNames, e);
+        return null;
+      } finally {
+        rlock.unlock();
+      }
+    }
+
+    @Override
+    public GetAllIndexesResponse getAllIndexesByTable(RpcController controller, TableIdentifierProto request)
+        throws ServiceException {
+      rlock.lock();
+      String databaseName = request.getDatabaseName();
+      String tableName = request.getTableName();
+      try {
+        GetAllIndexesResponse.Builder builder = GetAllIndexesResponse.newBuilder();
+        for (String eachIndexName : store.getAllIndexNamesByTable(databaseName, tableName)) {
+          builder.addIndexDesc(store.getIndexByName(databaseName, eachIndexName));
+        }
+        return builder.build();
+      } catch (Exception e) {
+        LOG.error("ERROR: cannot get all indexes for " + databaseName + "." + tableName, e);
         return null;
       } finally {
         rlock.unlock();

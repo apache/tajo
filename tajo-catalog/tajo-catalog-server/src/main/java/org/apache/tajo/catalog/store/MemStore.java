@@ -450,17 +450,17 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public IndexDescProto[] getIndexes(String databaseName, String tableName) throws CatalogException {
-    List<IndexDescProto> protos = new ArrayList<IndexDescProto>();
+  public List<String> getAllIndexNamesByTable(String databaseName, String tableName) throws CatalogException {
+    List<String> indexNames = new ArrayList<String>();
     Map<String, IndexDescProto> indexByColumn = checkAndGetDatabaseNS(indexesByColumn, databaseName);
     String simpleTableName = CatalogUtil.extractSimpleName(tableName);
     for (IndexDescProto proto : indexByColumn.values()) {
       if (proto.getTableIdentifier().getTableName().equals(simpleTableName)) {
-        protos.add(proto);
+        indexNames.add(proto.getIndexName());
       }
     }
 
-    return protos.toArray(new IndexDescProto[protos.size()]);
+    return indexNames;
   }
 
   @Override

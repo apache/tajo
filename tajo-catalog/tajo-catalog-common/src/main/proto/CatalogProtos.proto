@@ -149,6 +149,10 @@ message IndexNameProto {
   required string indexName = 3;
 }
 
+message GetAllIndexesResponse {
+  repeated IndexDescProto indexDesc = 1;
+}
+
 message GetFunctionsResponse {
   repeated FunctionDescProto functionDesc = 1;
 }

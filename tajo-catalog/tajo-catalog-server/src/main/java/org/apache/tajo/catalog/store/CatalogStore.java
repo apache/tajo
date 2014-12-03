@@ -114,7 +114,7 @@ public interface CatalogStore extends Closeable {
   boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames)
       throws CatalogException;
 
-  IndexDescProto [] getIndexes(String databaseName, String tableName) throws CatalogException;
+  List<String> getAllIndexNamesByTable(String databaseName, String tableName) throws CatalogException;
 
   /************************** FUNCTION *****************************/
 

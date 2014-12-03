@@ -31,6 +31,12 @@ enum ResultCode {
   ERROR = 1;
 }
 
+message RequestResult {
+  required ResultCode resultCode = 1;
+  optional string errorMessage = 2;
+  optional string errorTrace = 3;
+}
+
 message CreateSessionRequest {
   required string username = 1;
   optional string baseDatabaseName = 2;
@@ -58,9 +64,8 @@ message SessionedStringProto {
 }
 
 message ExplainQueryResponse {
-  required ResultCode resultCode = 1;
+  required RequestResult result = 1;
   optional string explain = 2;
-  optional string errorMessage = 3;
 }
 
 message QueryRequest {
@@ -68,11 +73,6 @@ message QueryRequest {
   required string query = 2;
   repeated KeyValueProto setVariables = 3;
   required bool isJson = 4;
-}
-
-message UpdateQueryResponse {
-  required ResultCode resultCode = 1;
-  optional string errorMessage = 2;
 }
 
 message GetQueryResultRequest {
@@ -122,7 +122,7 @@ message SerializedResultSet {
 }
 
 message SubmitQueryResponse {
-  required ResultCode resultCode = 1;
+  required RequestResult result = 1;
   required QueryIdProto queryId = 2;
   required string userName = 3;
   optional bool isForwarded = 4 [default = false];
@@ -134,24 +134,19 @@ message SubmitQueryResponse {
   optional TableDescProto tableDesc = 8;
   optional int32 maxRowNum = 9;
 
-  optional string errorMessage = 10;
-  optional string errorTrace = 11;
-
-  optional KeyValueSetProto sessionVariables = 12;
+  optional KeyValueSetProto sessionVariables = 10;
 }
 
 message GetQueryStatusResponse {
-  required ResultCode resultCode = 1;
+  required RequestResult result = 1;
   required QueryIdProto queryId = 2;
   optional QueryState state = 3;
   optional float progress = 4;
   optional int64 submitTime = 5;
   optional int64 finishTime = 7;
   optional bool hasResult = 8;
-  optional string errorMessage = 9;
-  optional string errorTrace = 10;
-  optional string queryMasterHost = 11;
-  optional int32 queryMasterPort = 12;
+  optional string queryMasterHost = 9;
+  optional int32 queryMasterPort = 10;
 }
 
 message GetQueryResultDataRequest {
@@ -161,10 +156,8 @@ message GetQueryResultDataRequest {
 }
 
 message GetQueryResultDataResponse {
-  required ResultCode resultCode = 1;
+  required RequestResult result = 1;
   required SerializedResultSet resultSet = 2;
-  optional string errorMessage = 3;
-  optional string errorTrace = 4;
 }
 
 message GetClusterInfoRequest {
@@ -224,15 +217,13 @@ message DropTableRequest {
 }
 
 message TableResponse {
-  required ResultCode resultCode = 1;
+  required RequestResult result = 1;
   optional TableDescProto tableDesc = 2;
-  optional string errorMessage = 3;
 }
 
 message FunctionResponse {
-  required ResultCode resultCode = 1;
+  required RequestResult result = 1;
   repeated FunctionDescProto functions = 2;
-  optional string errorMessage = 3;
 }
 
 message QueryInfoProto {
@@ -283,14 +274,40 @@ message QueryHistoryProto {
 }
 
 message GetQueryHistoryResponse {
-  required ResultCode resultCode = 1;
+  required RequestResult result = 1;
   optional QueryHistoryProto queryHistory = 2;
-  optional string errorMessage = 3;
 }
 
 message GetQueryInfoResponse {
-  required ResultCode resultCode = 1;
+  required RequestResult result = 1;
   optional QueryInfoProto queryInfo = 2;
-  optional string errorMessage = 3;
 }
 
+message CreateIndexRequest {
+  required string tableName = 1;
+  required string indexName = 2;
+  repeated SortSpecProto sortSpecs = 3;
+  required string indexMethod = 4;
+  optional bool isUnique = 5;
+  required KeyValueSetProto options = 6;
+}
+
+message CreateIndexResponse {
+  required RequestResult result = 1;
+  optional IndexDescProto indexDesc = 2;
+}
+
+message GetIndexesResponse {
+  required RequestResult result = 1;
+  repeated IndexDescProto indexes = 2;
+}
+
+message GetIndexWithColumnsRequest {
+  required string tableName = 1;
+  repeated string columnNames = 2;
+}
+
+message GetIndexWithColumnsResponse {
+  required RequestResult result = 1;
+  optional IndexDescProto indexDesc = 2;
+}

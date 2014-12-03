@@ -381,10 +381,10 @@ public class TestCatalog {
 
   public static TableDesc prepareTable() throws IOException {
     relationSchema = new Schema();
-    relationSchema.addColumn("indexed.id", Type.INT4)
-        .addColumn("indexed.name", Type.TEXT)
-        .addColumn("indexed.age", Type.INT4)
-        .addColumn("indexed.score", Type.FLOAT8);
+    relationSchema.addColumn(DEFAULT_DATABASE_NAME + ".indexed.id", Type.INT4)
+        .addColumn(DEFAULT_DATABASE_NAME + ".indexed.name", Type.TEXT)
+        .addColumn(DEFAULT_DATABASE_NAME + ".indexed.age", Type.INT4)
+        .addColumn(DEFAULT_DATABASE_NAME + ".indexed.score", Type.FLOAT8);
 
     String tableName = "indexed";
 
@@ -464,6 +464,14 @@ public class TestCatalog {
 	  catalog.createIndex(desc2);
 	  assertTrue(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getName()));
 	  assertTrue(catalog.existIndexByColumnNames(DEFAULT_DATABASE_NAME, "indexed", new String[]{"score"}));
+
+    Set<IndexDesc> indexDescs = TUtil.newHashSet();
+    indexDescs.add(desc1);
+    indexDescs.add(desc2);
+    indexDescs.add(desc3);
+    for (IndexDesc index : catalog.getAllIndexesByTable(DEFAULT_DATABASE_NAME, "indexed")) {
+      assertTrue(indexDescs.contains(index));
+    }
 	  
 	  catalog.dropIndex(DEFAULT_DATABASE_NAME, desc1.getName());
 	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getName()));

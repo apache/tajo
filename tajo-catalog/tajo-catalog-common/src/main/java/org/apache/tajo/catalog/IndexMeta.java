@@ -152,8 +152,8 @@ public class IndexMeta implements Cloneable {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(indexName, indexPath, indexMethod, keySortSpecs, isUnique, isClustered,
-        targetRelationSchema);
+    return Objects.hashCode(indexName, indexPath, indexMethod, Objects.hashCode(keySortSpecs),
+        isUnique, isClustered, targetRelationSchema);
   }
 
   @Override

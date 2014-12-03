@@ -62,6 +62,7 @@ service CatalogProtocolService {
   rpc existIndexByColumnNames(GetIndexByColumnNamesRequest) returns (BoolProto);
   rpc getIndexByName(IndexNameProto) returns (IndexDescProto);
   rpc getIndexByColumnNames(GetIndexByColumnNamesRequest) returns (IndexDescProto);
+  rpc getAllIndexesByTable(TableIdentifierProto) returns (GetAllIndexesResponse);
 
   rpc createFunction(FunctionDescProto) returns (BoolProto);
   rpc dropFunction(UnregisterFunctionRequest) returns (BoolProto);

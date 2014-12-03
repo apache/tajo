@@ -304,7 +304,7 @@ public class QueryExecutorServlet extends HttpServlet {
           LOG.error("Internal Error: SubmissionResponse is NULL");
           error = new Exception("Internal Error: SubmissionResponse is NULL");
 
-        } else if (response.getResultCode() == ClientProtos.ResultCode.OK) {
+        } else if (response.getResult().getResultCode() == ClientProtos.ResultCode.OK) {
           if (response.getIsForwarded()) {
             queryId = new QueryId(response.getQueryId());
             getQueryResult(queryId);
@@ -316,9 +316,9 @@ public class QueryExecutorServlet extends HttpServlet {
 
             progress.set(100);
           }
-        } else if (response.getResultCode() == ClientProtos.ResultCode.ERROR) {
-          if (response.hasErrorMessage()) {
-            StringBuffer errorMessage = new StringBuffer(response.getErrorMessage());
+        } else if (response.getResult().getResultCode() == ClientProtos.ResultCode.ERROR) {
+          if (response.getResult().hasErrorMessage()) {
+            StringBuffer errorMessage = new StringBuffer(response.getResult().getErrorMessage());
             String modifiedMessage;
 
             if (errorMessage.length() > 200) {

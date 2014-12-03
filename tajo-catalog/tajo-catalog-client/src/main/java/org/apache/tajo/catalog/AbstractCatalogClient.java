@@ -35,6 +35,7 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.util.HAServiceUtil;
 import org.apache.tajo.util.ProtoUtil;
+import org.apache.tajo.util.TUtil;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -525,6 +526,29 @@ public abstract class AbstractCatalogClient implements CatalogService {
 
           CatalogProtocolService.BlockingInterface stub = getStub(client);
           return new IndexDesc(stub.getIndexByColumnNames(null, builder.build()));
+        }
+      }.withRetries();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return null;
+    }
+  }
+
+  @Override
+  public final Collection<IndexDesc> getAllIndexesByTable(final String databaseName,
+                                                          final String tableName) {
+    try {
+      return new ServerCallable<Collection<IndexDesc>>(this.pool, getCatalogServerAddr(), CatalogProtocol.class, false) {
+        @Override
+        public Collection<IndexDesc> call(NettyClientBase client) throws Exception {
+          TableIdentifierProto proto = CatalogUtil.buildTableIdentifier(databaseName, tableName);
+          CatalogProtocolService.BlockingInterface stub = getStub(client);
+          GetAllIndexesResponse response = stub.getAllIndexesByTable(null, proto);
+          List<IndexDesc> indexDescs = TUtil.newList();
+          for (IndexDescProto descProto : response.getIndexDescList()) {
+            indexDescs.add(new IndexDesc(descProto));
+          }
+          return indexDescs;
         }
       }.withRetries();
     } catch (ServiceException e) {

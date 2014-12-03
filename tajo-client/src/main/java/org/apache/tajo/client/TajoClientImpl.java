@@ -25,11 +25,13 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.annotation.ThreadSafe;
+import org.apache.tajo.catalog.IndexMeta;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos.*;
@@ -216,5 +218,45 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
 
   public List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws ServiceException {
     return catalogClient.getFunctions(functionName);
+  }
+
+  @Override
+  public IndexDescProto createIndex(String tableName, IndexMeta indexMeta) throws ServiceException {
+    return catalogClient.createIndex(tableName, indexMeta);
+  }
+
+  @Override
+  public IndexDescProto getIndex(String indexName) throws ServiceException {
+    return catalogClient.getIndex(indexName);
+  }
+
+  @Override
+  public boolean existIndex(String indexName) throws ServiceException {
+    return catalogClient.existIndex(indexName);
+  }
+
+  @Override
+  public List<IndexDescProto> getIndexes(String tableName) throws ServiceException {
+    return catalogClient.getIndexes(tableName);
+  }
+
+  @Override
+  public boolean hasIndexes(String tableName) throws ServiceException {
+    return catalogClient.hasIndexes(tableName);
+  }
+
+  @Override
+  public IndexDescProto getIndex(String tableName, String[] columnNames) throws ServiceException {
+    return catalogClient.getIndex(tableName, columnNames);
+  }
+
+  @Override
+  public boolean existIndex(String tableName, String[] columnName) throws ServiceException {
+    return catalogClient.existIndex(tableName, columnName);
+  }
+
+  @Override
+  public boolean dropIndex(String indexName) throws ServiceException {
+    return catalogClient.dropIndex(indexName);
   }
 }

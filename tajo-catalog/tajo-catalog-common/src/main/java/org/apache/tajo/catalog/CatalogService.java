@@ -165,6 +165,8 @@ public interface CatalogService {
 
   IndexDesc getIndexByColumnNames(String databaseName, String tableName, String [] columnNames);
 
+  Collection<IndexDesc> getAllIndexesByTable(String databaseName, String tableName);
+
   boolean dropIndex(String databaseName, String indexName);
 
   boolean createFunction(FunctionDesc funcDesc);

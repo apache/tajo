@@ -21,7 +21,6 @@ package org.apache.tajo.catalog;
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
@@ -61,7 +60,7 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
           proto.getIndexMethod(), proto.getIsUnique(), proto.getIsClustered(),
           new Schema(proto.getTargetRelationSchema()));
     } catch (URISyntaxException e) {
-      throw new CatalogException(e);
+      e.printStackTrace();
     }
   }
 
@@ -147,8 +146,7 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   }
   
   public int hashCode() {
-    return Objects.hashCode(getName(), getIndexPath(), getTableName(), getKeySortSpecs(),
-        getIndexMethod(), isUnique(), isClustered(), getTargetRelationSchema());
+    return Objects.hashCode(databaseName, tableName, indexMeta);
   }
 
   public Object clone() throws CloneNotSupportedException {
