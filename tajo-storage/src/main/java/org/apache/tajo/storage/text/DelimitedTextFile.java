@@ -363,10 +363,6 @@ public class DelimitedTextFile {
         return null;
       }
 
-      if (targets.length == 0) {
-        return EmptyTuple.get();
-      }
-
       VTuple tuple = new VTuple(schema.size());
 
       try {
@@ -375,8 +371,17 @@ public class DelimitedTextFile {
         do {
 
           ByteBuf buf = reader.readLine();
+
+          // if no more line, then return EOT (end of tuple)
           if (buf == null) {
             return null;
+          }
+
+          // If there is no required column, we just read each line
+          // and then return an empty tuple without parsing line.
+          if (targets.length == 0) {
+            recordCount++;
+            return EmptyTuple.get();
           }
 
           try {
