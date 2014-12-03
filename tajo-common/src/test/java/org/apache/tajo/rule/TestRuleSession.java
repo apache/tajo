@@ -120,7 +120,7 @@ public class TestRuleSession {
   }
   
   protected Path createServiceJar(String className) throws Exception {
-    Path jarPath = new Path(testPath, "test-rule-session1.jar");
+    Path jarPath = new Path(testPath, className+".jar");
     Manifest manifest = new Manifest();
     manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
     JarOutputStream jarOut = new JarOutputStream(new FileOutputStream(new File(jarPath.toUri())), manifest);
