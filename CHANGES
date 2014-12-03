@@ -80,6 +80,9 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1183: Keep command execution even with errors. (Jaewoong Jung via 
+    hyunsik)
+
     TAJO-1190: INSERT INTO to partition tables may cause NPE. (hyunsik)
 
     TAJO-1211: Staging directory for CTAS and INSERT should be in 
