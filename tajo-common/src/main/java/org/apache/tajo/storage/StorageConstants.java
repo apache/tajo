@@ -32,8 +32,20 @@ public class StorageConstants {
 
   public static final String TEXT_DELIMITER = "text.delimiter";
   public static final String TEXT_NULL = "text.null";
-  public static final String TEXT_SERDE_CLASS = "text.serde.class";
+  public static final String TEXT_SERDE_CLASS = "text.serde";
   public static final String DEFAULT_TEXT_SERDE_CLASS = "org.apache.tajo.storage.text.CSVLineSerDe";
+  /**
+   * It's the maximum number of parsing error torrence.
+   *
+   * <ul>
+   *   <li>If it is -1, it is always torrent against any parsing error.</li>
+   *   <li>If it is 0, it does not permit any parsing error.</li>
+   *   <li>If it is some positive integer (i.e., > 0), the given number of parsing errors in each
+   *       task will be permissible</li>
+   * </ul>
+   **/
+  public static final String TEXT_ERROR_TOLERANCE_MAXNUM = "text.error-tolerance.max-num";
+  public static final String DEFAULT_TEXT_ERROR_TOLERANCE_MAXNUM = "0";
 
   @Deprecated
   public static final String SEQUENCEFILE_DELIMITER = "sequencefile.delimiter";
