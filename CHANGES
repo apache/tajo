@@ -83,6 +83,9 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1224: When there is no projected column, json scan can be hang. 
+    (hyunsik) 
+
     TAJO-1220: Implement createStatement() and setEscapeProcessing() in 
     JdbcConnection. (YeonSu Han via hyunsik)
 
