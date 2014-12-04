@@ -51,7 +51,7 @@ public abstract class TextLineDeserializer {
    * @param output Tuple to be filled with read fields
    * @throws java.io.IOException
    */
-  public abstract void deserialize(final ByteBuf buf, Tuple output) throws IOException;
+  public abstract void deserialize(final ByteBuf buf, Tuple output) throws IOException, TextLineParsingError;
 
   /**
    * Release external resources

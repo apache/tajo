@@ -172,4 +172,12 @@ public class TestCaseByCases extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
   }
+
+  @Test
+  public final void testTAJO1224Case1() throws Exception {
+    executeString("CREATE TABLE TAJO1224 USING JSON AS SELECT * FROM LINEITEM").close();
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
 }
