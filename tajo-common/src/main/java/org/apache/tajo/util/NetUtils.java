@@ -18,9 +18,14 @@
 
 package org.apache.tajo.util;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import java.net.*;
 
 public class NetUtils {
+  private static Log LOG = LogFactory.getLog(NetUtils.class);
+
   public static String normalizeInetSocketAddress(InetSocketAddress addr) {
     return addr.getAddress().getHostAddress() + ":" + addr.getPort();
   }
@@ -28,6 +33,16 @@ public class NetUtils {
   public static InetSocketAddress createSocketAddr(String addr) {
     String [] splitted = addr.split(":");
     return new InetSocketAddress(splitted[0], Integer.parseInt(splitted[1]));
+  }
+
+  public static InetSocketAddress createLocalSocketAddr(InetSocketAddress addr) {
+    try {
+      String hostAddress = InetAddress.getLocalHost().getHostAddress();
+      int port = addr.getPort();
+      return  NetUtils.createSocketAddr(hostAddress + ":" + port);
+    } catch (UnknownHostException e) {
+    }
+    return addr;
   }
 
   /**
