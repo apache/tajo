@@ -254,36 +254,48 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
 
     if (child != null && child.getType() == OpType.Projection) {
       Projection projection = (Projection) child;
-      int projectColumnNum = projection.getNamedExprs().length;
 
-      if (expr.hasTargetColumns()) {
-        int targetColumnNum = expr.getTargetColumns().length;
+      // checking if at least one asterisk exists in target list
+      boolean includeAsterisk = false;
+      for (NamedExpr namedExpr : projection.getNamedExprs()) {
+        includeAsterisk |= namedExpr.getExpr().getType() == OpType.Asterisk;
+      }
 
-        if (targetColumnNum > projectColumnNum)  {
-          context.state.addVerification("INSERT has more target columns than expressions");
-        } else if (targetColumnNum < projectColumnNum) {
-          context.state.addVerification("INSERT has more expressions than target columns");
-        }
-      } else {
-        if (expr.hasTableName()) {
-          String qualifiedName = expr.getTableName();
-          if (TajoConstants.EMPTY_STRING.equals(CatalogUtil.extractQualifier(expr.getTableName()))) {
-            qualifiedName = CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE),
-                expr.getTableName());
+      // If one asterisk expression exists, we verify the match between the target exprs and output exprs.
+      // This verification will be in LogicalPlanVerifier.
+      if (!includeAsterisk) {
+
+        int projectColumnNum = projection.getNamedExprs().length;
+
+        if (expr.hasTargetColumns()) {
+          int targetColumnNum = expr.getTargetColumns().length;
+
+          if (targetColumnNum > projectColumnNum) {
+            context.state.addVerification("INSERT has more target columns than expressions");
+          } else if (targetColumnNum < projectColumnNum) {
+            context.state.addVerification("INSERT has more expressions than target columns");
           }
+        } else {
+          if (expr.hasTableName()) {
+            String qualifiedName = expr.getTableName();
+            if (TajoConstants.EMPTY_STRING.equals(CatalogUtil.extractQualifier(expr.getTableName()))) {
+              qualifiedName = CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE),
+                  expr.getTableName());
+            }
 
-          TableDesc table = catalog.getTableDesc(qualifiedName);
-          if (table == null) {
-            context.state.addVerification(String.format("relation \"%s\" does not exist", qualifiedName));
-            return null;
-          }
-          if (table.hasPartition()) {
-            int columnSize = table.getSchema().getColumns().size();
-            columnSize += table.getPartitionMethod().getExpressionSchema().getColumns().size();
-            if (projectColumnNum < columnSize) {
-              context.state.addVerification("INSERT has smaller expressions than target columns");
-            } else if (projectColumnNum > columnSize) {
-              context.state.addVerification("INSERT has more expressions than target columns");
+            TableDesc table = catalog.getTableDesc(qualifiedName);
+            if (table == null) {
+              context.state.addVerification(String.format("relation \"%s\" does not exist", qualifiedName));
+              return null;
+            }
+            if (table.hasPartition()) {
+              int columnSize = table.getSchema().getColumns().size();
+              columnSize += table.getPartitionMethod().getExpressionSchema().getColumns().size();
+              if (projectColumnNum < columnSize) {
+                context.state.addVerification("INSERT has smaller expressions than target columns");
+              } else if (projectColumnNum > columnSize) {
+                context.state.addVerification("INSERT has more expressions than target columns");
+              }
             }
           }
         }

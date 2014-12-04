@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBuf;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
+import net.minidev.json.parser.ParseException;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableMeta;
@@ -30,9 +31,11 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.common.exception.NotImplementedException;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.text.TextLineDeserializer;
+import org.apache.tajo.storage.text.TextLineParsingError;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -55,7 +58,7 @@ public class JsonLineDeserializer extends TextLineDeserializer {
   }
 
   @Override
-  public void deserialize(ByteBuf buf, Tuple output) throws IOException {
+  public void deserialize(ByteBuf buf, Tuple output) throws IOException, TextLineParsingError {
     byte [] line = new byte[buf.readableBytes()];
     buf.readBytes(line);
 
@@ -170,8 +173,9 @@ public class JsonLineDeserializer extends TextLineDeserializer {
           if (jsonObject == null) {
             output.put(actualIdx, NullDatum.get());
             break;
-          } if (jsonObject instanceof String) {
-            output.put(actualIdx, DatumFactory.createBlob((String)jsonObject));
+          }
+          if (jsonObject instanceof String) {
+            output.put(actualIdx, DatumFactory.createBlob((String) jsonObject));
           } else if (jsonObject instanceof JSONArray) {
             JSONArray jsonArray = (JSONArray) jsonObject;
             byte[] bytes = new byte[jsonArray.size()];
@@ -208,7 +212,8 @@ public class JsonLineDeserializer extends TextLineDeserializer {
           throw new NotImplementedException(types[actualIdx].name() + " is not supported.");
         }
       }
-
+    } catch (ParseException pe) {
+      throw new TextLineParsingError(new String(line, TextDatum.DEFAULT_CHARSET), pe);
     } catch (Throwable e) {
       throw new IOException(e);
     }

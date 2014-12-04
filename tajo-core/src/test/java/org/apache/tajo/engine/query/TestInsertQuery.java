@@ -392,6 +392,28 @@ public class TestInsertQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testInsertOverwriteWithAsteriskAndMore() throws Exception {
+    ResultSet res = executeFile("lineitem_year_month_ddl.sql");
+    res.close();
+
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), "lineitem_year_month"));
+
+    res = executeFile("load_to_lineitem_year_month.sql");
+    res.close();
+    TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "lineitem_year_month");
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      assertEquals(5, desc.getStats().getNumRows().intValue());
+    }
+
+    res = executeQuery();
+    assertResultSet(res);
+    res.close();
+
+    executeString("DROP TABLE lineitem_year_month PURGE");
+  }
+
+  @Test
   public final void testInsertOverwriteIntoSelect() throws Exception {
     String tableName = CatalogUtil.normalizeIdentifier("insertoverwriteintoselect");
     ResultSet res = executeString("create table " + tableName + " as select l_orderkey from default.lineitem");
