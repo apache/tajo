@@ -358,12 +358,11 @@ public class DelimitedTextFile {
 
     @Override
     public Tuple next() throws IOException {
+      VTuple tuple;
 
       if (!reader.isReadable()) {
         return null;
       }
-
-      VTuple tuple = new VTuple(schema.size());
 
       try {
 
@@ -384,8 +383,9 @@ public class DelimitedTextFile {
             return EmptyTuple.get();
           }
 
-          try {
+          tuple = new VTuple(schema.size());
 
+          try {
             deserializer.deserialize(buf, tuple);
             // if a line is read normaly, it exists this loop.
             break;
