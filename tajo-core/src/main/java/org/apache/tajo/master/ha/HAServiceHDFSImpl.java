@@ -31,6 +31,7 @@ import org.apache.tajo.util.HAServiceUtil;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.List;
 
 /**
@@ -65,7 +66,11 @@ public class HAServiceHDFSImpl implements HAService {
     this.context = context;
     this.conf = context.getConf();
     initSystemDirectory();
-    this.masterName = conf.get(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS.varname);
+
+    String hostAddress = InetAddress.getLocalHost().getHostAddress();
+    int port = context.getTajoMasterService().getBindAddress().getPort();
+
+    this.masterName = hostAddress + ":" + port;
     monitorInterval = conf.getIntVar(TajoConf.ConfVars.TAJO_MASTER_HA_MONITOR_INTERVAL);
   }
 
@@ -133,7 +138,8 @@ public class HAServiceHDFSImpl implements HAService {
   }
 
   private void createMasterFile(boolean isActive) throws IOException {
-    String hostName = masterName.split(":")[0];
+    String hostAddress = InetAddress.getLocalHost().getHostAddress();
+
     String fileName = masterName.replaceAll(":", "_");
     Path path = null;
 
@@ -144,19 +150,17 @@ public class HAServiceHDFSImpl implements HAService {
     }
 
     StringBuilder sb = new StringBuilder();
-    sb.append(context.getConf().get(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS.varname,
-        hostName + ":26002"));
+    sb.append(getHostName(hostAddress, HAServiceUtil.MASTER_CLIENT_RPC_ADDRESS));
     sb.append("_");
-    sb.append(context.getConf().get(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS.varname,
-        hostName + ":26003"));
+    sb.append(getHostName(hostAddress, HAServiceUtil.RESOURCE_TRACKER_RPC_ADDRESS));
     sb.append("_");
-    sb.append(context.getConf().get(TajoConf.ConfVars.CATALOG_ADDRESS.varname, hostName + ":26005"));
+    sb.append(getHostName(hostAddress, HAServiceUtil.CATALOG_ADDRESS));
     sb.append("_");
-    sb.append(context.getConf().get(TajoConf.ConfVars.TAJO_MASTER_INFO_ADDRESS.varname,
-        hostName + ":26080"));
+    sb.append(getHostName(hostAddress, HAServiceUtil.MASTER_INFO_ADDRESS));
 
     FSDataOutputStream out = fs.create(path);
     out.writeUTF(sb.toString());
+    out.hflush();
     out.close();
 
     if (isActive) {
@@ -168,6 +172,48 @@ public class HAServiceHDFSImpl implements HAService {
     startPingChecker();
   }
 
+
+  private String getHostName(String hostAddress, int type) {
+    String hostName = null;
+    int port = 0;
+
+    switch (type) {
+      case 1:
+        hostName = context.getConf().get(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS
+          .varname);
+        port = 26001;
+        break;
+      case 2:
+        hostName = context.getConf().get(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS.varname);
+        port = 26002;
+        break;
+      case 3:
+        hostName = context.getConf().get(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS.varname);
+        port = 26003;
+        break;
+      case 4:
+        hostName = context.getConf().get(TajoConf.ConfVars.CATALOG_ADDRESS.varname);
+        port = 26005;
+        break;
+      case 5:
+        hostName = context.getConf().get(TajoConf.ConfVars.TAJO_MASTER_INFO_ADDRESS.varname);
+        port = 26080;
+        break;
+      default:
+        break;
+    }
+
+    StringBuilder sb = new StringBuilder();
+    sb.append(hostAddress);
+    sb.append(":");
+
+    if (hostName == null) {
+      sb.append(port);
+    } else {
+      sb.append(hostName.split(":")[1]);
+    }
+    return sb.toString();
+  }
 
   @Override
   public void delete() throws IOException {
@@ -196,9 +242,6 @@ public class HAServiceHDFSImpl implements HAService {
   @Override
   public List<TajoMasterInfo> getMasters() throws IOException {
     List<TajoMasterInfo> list = TUtil.newList();
-    boolean isAlive = false;
-    TajoMasterInfo info = null;
-    String hostAddress = null;
     Path path = null;
 
     FileStatus[] files = fs.listStatus(activePath);
