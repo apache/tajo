@@ -943,6 +943,7 @@ public class TajoMasterClientService extends AbstractService {
         for (IndexDesc index : catalog.getAllIndexesByTable(databaseName, tableName)) {
           builder.addIndexes(index.getProto());
         }
+        builder.setResult(RequestResult.newBuilder().setResultCode(ResultCode.OK).build());
         return builder.build();
       } catch (Throwable t) {
         throw new ServiceException(t);

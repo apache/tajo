@@ -186,6 +186,7 @@ public class TajoWorkerClientService extends AbstractService {
       } else {
         QueryMasterTask queryMasterTask = workerContext.getQueryMaster().getQueryMasterTask(queryId);
 
+        builder.setResult(buildOkRequestResult());
         builder.setQueryMasterHost(bindAddr.getHostName());
         builder.setQueryMasterPort(bindAddr.getPort());
 
