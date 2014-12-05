@@ -32,10 +32,11 @@ public class ByteBufLineReader implements Closeable {
 
   private int bufferSize;
   private long readBytes;
+  private int startIndex;
   private boolean eof = false;
   private ByteBuf buffer;
   private final ByteBufInputChannel channel;
-  private final AtomicInteger tempReadBytes = new AtomicInteger();
+  private final AtomicInteger lineReadBytes = new AtomicInteger();
   private final LineSplitProcessor processor = new LineSplitProcessor();
 
   public ByteBufLineReader(ByteBufInputChannel channel) {
@@ -53,10 +54,6 @@ public class ByteBufLineReader implements Closeable {
     return readBytes - buffer.readableBytes();
   }
 
-  public long available() throws IOException {
-    return channel.available() + buffer.readableBytes();
-  }
-
   @Override
   public void close() throws IOException {
     if (this.buffer.refCnt() > 0) {
@@ -66,7 +63,7 @@ public class ByteBufLineReader implements Closeable {
   }
 
   public String readLine() throws IOException {
-    ByteBuf buf = readLineBuf(tempReadBytes);
+    ByteBuf buf = readLineBuf(lineReadBytes);
     if (buf != null) {
       return buf.toString(CharsetUtil.UTF_8);
     }
@@ -77,23 +74,25 @@ public class ByteBufLineReader implements Closeable {
 
     int tailBytes = 0;
     if (this.readBytes > 0) {
+      //startIndex = 0, readIndex = tailBytes length, writable = (buffer capacity - tailBytes)
       this.buffer.markReaderIndex();
-      this.buffer.discardSomeReadBytes();  // compact the buffer
+      this.buffer.discardReadBytes();  // compact the buffer
       tailBytes = this.buffer.writerIndex();
       if (!this.buffer.isWritable()) {
         // a line bytes is large than the buffer
-        BufferPool.ensureWritable(buffer, bufferSize);
+        BufferPool.ensureWritable(buffer, bufferSize * 2);
         this.bufferSize = buffer.capacity();
       }
+      this.startIndex = 0;
     }
 
     boolean release = true;
     try {
       int readBytes = tailBytes;
       for (; ; ) {
-        int localReadBytes = buffer.writeBytes(channel, bufferSize - readBytes);
+        int localReadBytes = buffer.writeBytes(channel, this.bufferSize - readBytes);
         if (localReadBytes < 0) {
-          if (tailBytes == readBytes) {
+          if (buffer.isWritable()) {
             // no more bytes are in the channel
             eof = true;
           }
@@ -106,9 +105,8 @@ public class ByteBufLineReader implements Closeable {
       }
       this.readBytes += (readBytes - tailBytes);
       release = false;
-      if (!eof) {
-        this.buffer.readerIndex(this.buffer.readerIndex() + tailBytes); //skip past buffer (tail)
-      }
+
+      this.buffer.readerIndex(this.buffer.readerIndex() + tailBytes); //skip past buffer (tail)
     } finally {
       if (release) {
         buffer.release();
@@ -120,24 +118,34 @@ public class ByteBufLineReader implements Closeable {
    * Read a line terminated by one of CR, LF, or CRLF.
    */
   public ByteBuf readLineBuf(AtomicInteger reads) throws IOException {
-    if(eof) return null;
-
-    int startIndex = buffer.readerIndex();
-    int readBytes;
+    int readBytes = 0;
+    int newlineLength = 0; //length of terminating newline
     int readable;
-    int newlineLength; //length of terminating newline
+
+    this.startIndex = buffer.readerIndex();
 
     loop:
     while (true) {
       readable = buffer.readableBytes();
       if (readable <= 0) {
-        buffer.readerIndex(startIndex);
+        buffer.readerIndex(this.startIndex);
         fillBuffer(); //compact and fill buffer
         if (!buffer.isReadable()) {
+          reads.set(0);
           return null;
         } else {
-          if (!eof) startIndex = 0; // reset the line start position
-          else startIndex = buffer.readerIndex();
+          //skip first newLine
+          if (processor.isPrevCharCR() && buffer.getByte(buffer.readerIndex()) == LineSplitProcessor.LF) {
+            buffer.skipBytes(1);
+            if(eof && !buffer.isReadable()) {
+              reads.set(1);
+              return null;
+            }
+
+            newlineLength++;
+            readBytes++;
+            startIndex = buffer.readerIndex();
+          }
         }
         readable = buffer.readableBytes();
       }
@@ -147,19 +155,19 @@ public class ByteBufLineReader implements Closeable {
         //does not appeared terminating newline
         buffer.readerIndex(buffer.writerIndex()); // set to end buffer
         if(eof){
-          readBytes = buffer.readerIndex() - startIndex;
-          newlineLength = 0;
+          readBytes += readable;
           break loop;
         }
       } else {
         buffer.readerIndex(endIndex + 1);
-        readBytes = buffer.readerIndex() - startIndex;
+        readBytes += (buffer.readerIndex() - startIndex);
         if (processor.isPrevCharCR() && buffer.isReadable()
             && buffer.getByte(buffer.readerIndex()) == LineSplitProcessor.LF) {
           buffer.skipBytes(1);
-          newlineLength = 2;
+          readBytes++;
+          newlineLength += 2;
         } else {
-          newlineLength = 1;
+          newlineLength += 1;
         }
         break loop;
       }
