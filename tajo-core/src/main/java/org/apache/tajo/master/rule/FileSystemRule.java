@@ -32,14 +32,14 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.rule.EvaluationContext;
 import org.apache.tajo.rule.EvaluationResult;
-import org.apache.tajo.rule.RuleDefinition;
-import org.apache.tajo.rule.RuleVisibility;
+import org.apache.tajo.rule.SelfDiagnosisRuleDefinition;
+import org.apache.tajo.rule.SelfDiagnosisRuleVisibility;
 import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
-import org.apache.tajo.rule.RuntimeRule;
+import org.apache.tajo.rule.SelfDiagnosisRule;
 
-@RuleDefinition(category="master", name="FileSystemRule")
-@RuleVisibility.LimitedPrivate(acceptedCallers = { TajoMaster.class })
-public class FileSystemRule implements RuntimeRule {
+@SelfDiagnosisRuleDefinition(category="master", name="FileSystemRule")
+@SelfDiagnosisRuleVisibility.LimitedPrivate(acceptedCallers = { TajoMaster.class })
+public class FileSystemRule implements SelfDiagnosisRule {
   
   private void canAccessToPath(FileStatus fsStatus, FsAction action) throws Exception {
     FsPermission permission = fsStatus.getPermission();

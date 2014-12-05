@@ -18,8 +18,21 @@
 
 package org.apache.tajo.rule;
 
-public interface RuntimeRule {
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-  public EvaluationResult evaluate(EvaluationContext context);
+public abstract class SelfDiagnosisRuleVisibility {
+
+  @Target(ElementType.TYPE)
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface Public {}
+  
+  @Target(ElementType.TYPE)
+  @Retention(RetentionPolicy.RUNTIME)
+  public @interface LimitedPrivate {
+    Class<?>[] acceptedCallers();
+  }
   
 }

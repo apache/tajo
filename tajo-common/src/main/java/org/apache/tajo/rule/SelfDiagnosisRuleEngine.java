@@ -26,21 +26,21 @@ import java.util.ServiceLoader;
 
 import org.apache.tajo.util.TUtil;
 
-public class RuleEngine {
+public class SelfDiagnosisRuleEngine {
 
   private final Map<String, Map<String, RuleWrapper>> wrapperMap;
-  private static RuleEngine instance;
+  private static SelfDiagnosisRuleEngine instance;
   
-  private RuleEngine() {
+  private SelfDiagnosisRuleEngine() {
     wrapperMap = TUtil.newHashMap();
     loadPredefinedRules();
   }
   
-  public static RuleEngine getInstance() {
+  public static SelfDiagnosisRuleEngine getInstance() {
     if (instance == null) {
-      synchronized (RuleEngine.class) {
+      synchronized (SelfDiagnosisRuleEngine.class) {
         if (instance == null) {
-          instance = new RuleEngine();
+          instance = new SelfDiagnosisRuleEngine();
         }
       }
     }
@@ -54,16 +54,16 @@ public class RuleEngine {
     loadPredefinedRules();
   }
   
-  public RuleSession newRuleSession() {
-    return new RuleSession(this);
+  public SelfDiagnosisRuleSession newRuleSession() {
+    return new SelfDiagnosisRuleSession(this);
   }
   
   protected Map<String, Map<String, RuleWrapper>> getRules() {
     return wrapperMap;    
   }
   
-  private void loadRuleData(List<RuntimeRule> ruleList) {
-    for (RuntimeRule rule: ruleList) {
+  private void loadRuleData(List<SelfDiagnosisRule> ruleList) {
+    for (SelfDiagnosisRule rule: ruleList) {
       RuleWrapper wrapper = new RuleWrapper(rule);
       Map<String, RuleWrapper> categoryMap = wrapperMap.get(wrapper.getCategoryName());
       
@@ -78,12 +78,12 @@ public class RuleEngine {
 
   protected void loadPredefinedRules() {
     ClassLoader cl = Thread.currentThread().getContextClassLoader();
-    ServiceLoader<RuleProvider> serviceLoader = ServiceLoader.load(RuleProvider.class, cl);
-    Iterator<RuleProvider> iterator = serviceLoader.iterator();
+    ServiceLoader<SelfDiagnosisRuleProvider> serviceLoader = ServiceLoader.load(SelfDiagnosisRuleProvider.class, cl);
+    Iterator<SelfDiagnosisRuleProvider> iterator = serviceLoader.iterator();
     
     wrapperMap.clear();
     while (iterator.hasNext()) {
-      RuleProvider ruleProvider = iterator.next();
+      SelfDiagnosisRuleProvider ruleProvider = iterator.next();
       loadRuleData(ruleProvider.getDefinedRules());
     }
   }
@@ -93,12 +93,12 @@ public class RuleEngine {
     private final String ruleName;
     private final int priority;
     private final Class<?>[] acceptedCallers;
-    private final RuntimeRule rule;
+    private final SelfDiagnosisRule rule;
     
-    public RuleWrapper(RuntimeRule rule) {
+    public RuleWrapper(SelfDiagnosisRule rule) {
       this.rule = rule;
       
-      RuleDefinition ruleDefinition = rule.getClass().getAnnotation(RuleDefinition.class);
+      SelfDiagnosisRuleDefinition ruleDefinition = rule.getClass().getAnnotation(SelfDiagnosisRuleDefinition.class);
       if (ruleDefinition == null) {
         throw new IllegalArgumentException(rule.getClass().getName() + " is not a valid runtime rule.");
       }
@@ -106,8 +106,8 @@ public class RuleEngine {
       ruleName = ruleDefinition.name();
       priority = ruleDefinition.priority();
       
-      RuleVisibility.LimitedPrivate limitedPrivateScope = 
-          rule.getClass().getAnnotation(RuleVisibility.LimitedPrivate.class);
+      SelfDiagnosisRuleVisibility.LimitedPrivate limitedPrivateScope = 
+          rule.getClass().getAnnotation(SelfDiagnosisRuleVisibility.LimitedPrivate.class);
       if (limitedPrivateScope != null) {
         acceptedCallers =
             Arrays.copyOf(limitedPrivateScope.acceptedCallers(), 
@@ -129,7 +129,7 @@ public class RuleEngine {
       return acceptedCallers;
     }
 
-    public RuntimeRule getRule() {
+    public SelfDiagnosisRule getRule() {
       return rule;
     }
     

@@ -24,22 +24,22 @@ import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.rule.RuleProvider;
-import org.apache.tajo.rule.RuntimeRule;
+import org.apache.tajo.rule.SelfDiagnosisRuleProvider;
+import org.apache.tajo.rule.SelfDiagnosisRule;
 import org.apache.tajo.util.ClassUtil;
 
-public class WorkerRuleProvider implements RuleProvider {
+public class WorkerRuleProvider implements SelfDiagnosisRuleProvider {
 
   private Log LOG = LogFactory.getLog(getClass());
 
   @SuppressWarnings({ "rawtypes", "unchecked" })
   @Override
-  public List<RuntimeRule> getDefinedRules() {
-    Set<Class> classSet = ClassUtil.findClasses(RuntimeRule.class, 
+  public List<SelfDiagnosisRule> getDefinedRules() {
+    Set<Class> classSet = ClassUtil.findClasses(SelfDiagnosisRule.class, 
         getClass().getPackage().getName());
-    List<RuntimeRule> ruleList = new ArrayList<RuntimeRule>(classSet.size());
+    List<SelfDiagnosisRule> ruleList = new ArrayList<SelfDiagnosisRule>(classSet.size());
     
-    for (Class<RuntimeRule> ruleClazz: classSet) {
+    for (Class<SelfDiagnosisRule> ruleClazz: classSet) {
       try {
         ruleList.add(ruleClazz.newInstance());
       } catch (Exception e) {

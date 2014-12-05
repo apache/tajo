@@ -46,8 +46,8 @@ import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rule.EvaluationContext;
 import org.apache.tajo.rule.EvaluationFailedException;
-import org.apache.tajo.rule.RuleEngine;
-import org.apache.tajo.rule.RuleSession;
+import org.apache.tajo.rule.SelfDiagnosisRuleEngine;
+import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.util.*;
 import org.apache.tajo.util.history.HistoryReader;
@@ -267,6 +267,8 @@ public class TajoWorker extends CompositeService {
     taskHistoryWriter.init(conf);
 
     historyReader = new HistoryReader(workerContext.getWorkerName(), this.systemConf);
+    
+    evaluatePredefinedRules();
   }
 
   private void initWorkerMetrics() {
@@ -322,12 +324,11 @@ public class TajoWorker extends CompositeService {
   }
   
   private void evaluatePredefinedRules() throws EvaluationFailedException {
-    RuleEngine ruleEngine = RuleEngine.getInstance();
-    RuleSession ruleSession = ruleEngine.newRuleSession();
+    SelfDiagnosisRuleEngine ruleEngine = SelfDiagnosisRuleEngine.getInstance();
+    SelfDiagnosisRuleSession ruleSession = ruleEngine.newRuleSession();
     EvaluationContext context = new EvaluationContext();
     
     context.addParameter(TajoConf.class.getName(), systemConf);
-    context.addParameter(WorkerContext.class.getName(), workerContext);
     
     ruleSession.withCategoryNames("base", "worker").fireRules(context);
   }
@@ -363,8 +364,6 @@ public class TajoWorker extends CompositeService {
 
     initWorkerMetrics();
     super.serviceStart();
-    
-    evaluatePredefinedRules();
     LOG.info("Tajo Worker is started");
   }
 

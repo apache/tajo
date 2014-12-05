@@ -27,15 +27,15 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.rule.EvaluationContext;
 import org.apache.tajo.rule.EvaluationResult;
-import org.apache.tajo.rule.RuleDefinition;
-import org.apache.tajo.rule.RuleVisibility;
-import org.apache.tajo.rule.RuntimeRule;
+import org.apache.tajo.rule.SelfDiagnosisRuleDefinition;
+import org.apache.tajo.rule.SelfDiagnosisRuleVisibility;
+import org.apache.tajo.rule.SelfDiagnosisRule;
 import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
 import org.apache.tajo.validation.Validators;
 
-@RuleDefinition(category="base", name = "CheckHadoopRuntimeVersionRule", priority = 0)
-@RuleVisibility.Public
-public class CheckHadoopRuntimeVersionRule implements RuntimeRule {
+@SelfDiagnosisRuleDefinition(category="base", name = "CheckHadoopRuntimeVersionRule", priority = 0)
+@SelfDiagnosisRuleVisibility.Public
+public class CheckHadoopRuntimeVersionRule implements SelfDiagnosisRule {
   
   private Log LOG = LogFactory.getLog(getClass());
   private final Properties versionInfo;

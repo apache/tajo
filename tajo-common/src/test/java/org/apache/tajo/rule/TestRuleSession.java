@@ -34,7 +34,7 @@ import java.util.jar.Manifest;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
-import org.apache.tajo.rule.RuleEngine.RuleWrapper;
+import org.apache.tajo.rule.SelfDiagnosisRuleEngine.RuleWrapper;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
@@ -57,19 +57,19 @@ public class TestRuleSession {
   
   @Test
   public void testGetCallerClassName() throws Exception {
-    RuleEngine ruleEngine = RuleEngine.getInstance();
+    SelfDiagnosisRuleEngine ruleEngine = SelfDiagnosisRuleEngine.getInstance();
     ruleEngine.reset();
-    RuleSession ruleSession = ruleEngine.newRuleSession();
+    SelfDiagnosisRuleSession ruleSession = ruleEngine.newRuleSession();
     
     assertThat(ruleSession.getCallerClassName(), is(notNullValue()));
     assertThat(ruleSession.getCallerClassName().getName(), is(TestRuleSession.class.getName()));
   }
   
-  public static class TestRuleSessionProvider implements RuleProvider {
+  public static class TestRuleSessionProvider implements SelfDiagnosisRuleProvider {
 
     @Override
-    public List<RuntimeRule> getDefinedRules() {
-      List<RuntimeRule> ruleList = TUtil.newList();
+    public List<SelfDiagnosisRule> getDefinedRules() {
+      List<SelfDiagnosisRule> ruleList = TUtil.newList();
       ruleList.add(new TestRule1());
       ruleList.add(new TestRule2());
       ruleList.add(new TestRule3());
@@ -78,9 +78,9 @@ public class TestRuleSession {
     
   }
   
-  @RuleDefinition(category="test1",name = "TestRule1")
-  @RuleVisibility.Public
-  public static class TestRule1 implements RuntimeRule {
+  @SelfDiagnosisRuleDefinition(category="test1",name = "TestRule1")
+  @SelfDiagnosisRuleVisibility.Public
+  public static class TestRule1 implements SelfDiagnosisRule {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext context) {
@@ -92,9 +92,9 @@ public class TestRuleSession {
     
   }
   
-  @RuleDefinition(category="test1",name = "TestRule2")
-  @RuleVisibility.LimitedPrivate(acceptedCallers = { TestRuleSession.class })
-  public static class TestRule2 implements RuntimeRule {
+  @SelfDiagnosisRuleDefinition(category="test1",name = "TestRule2")
+  @SelfDiagnosisRuleVisibility.LimitedPrivate(acceptedCallers = { TestRuleSession.class })
+  public static class TestRule2 implements SelfDiagnosisRule {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext context) {
@@ -106,9 +106,9 @@ public class TestRuleSession {
     
   }
   
-  @RuleDefinition(category="test1",name = "TestRule3")
-  @RuleVisibility.LimitedPrivate(acceptedCallers = { TestRuleEngine.class })
-  public static class TestRule3 implements RuntimeRule {
+  @SelfDiagnosisRuleDefinition(category="test1",name = "TestRule3")
+  @SelfDiagnosisRuleVisibility.LimitedPrivate(acceptedCallers = { TestRuleEngine.class })
+  public static class TestRule3 implements SelfDiagnosisRule {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext context) {
@@ -126,7 +126,7 @@ public class TestRuleSession {
     manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
     JarOutputStream jarOut = new JarOutputStream(new FileOutputStream(new File(jarPath.toUri())), manifest);
     
-    JarEntry entry = new JarEntry("META-INF/services/"+RuleProvider.class.getName());
+    JarEntry entry = new JarEntry("META-INF/services/"+SelfDiagnosisRuleProvider.class.getName());
     jarOut.putNextEntry(entry);
     jarOut.write(className.getBytes());
     jarOut.closeEntry();
@@ -147,9 +147,9 @@ public class TestRuleSession {
     cl = new URLClassLoader(new URL[] {createJarPathForTestRuleSession().toUri().toURL()}, parent);
     Thread.currentThread().setContextClassLoader(cl);
     
-    RuleEngine ruleEngine = RuleEngine.getInstance();
+    SelfDiagnosisRuleEngine ruleEngine = SelfDiagnosisRuleEngine.getInstance();
     ruleEngine.reset();
-    RuleSession ruleSession = ruleEngine.newRuleSession();
+    SelfDiagnosisRuleSession ruleSession = ruleEngine.newRuleSession();
     List<RuleWrapper> candidateRules = ruleSession.withCategoryNames("test1").getCandidateRules();
     
     assertThat(candidateRules, is(notNullValue()));
@@ -183,9 +183,9 @@ public class TestRuleSession {
     cl = new URLClassLoader(new URL[] {createJarPathForTestRuleSession().toUri().toURL()}, parent);
     Thread.currentThread().setContextClassLoader(cl);
     
-    RuleEngine ruleEngine = RuleEngine.getInstance();
+    SelfDiagnosisRuleEngine ruleEngine = SelfDiagnosisRuleEngine.getInstance();
     ruleEngine.reset();
-    RuleSession ruleSession = ruleEngine.newRuleSession();
+    SelfDiagnosisRuleSession ruleSession = ruleEngine.newRuleSession();
     List<RuleWrapper> candidateRules = ruleSession.withCategoryNames("test1")
         .withRuleNames("TestRule1").getCandidateRules();
     
@@ -210,11 +210,11 @@ public class TestRuleSession {
     }
   }
   
-  public static class TestRulePriorityProvider implements RuleProvider {
+  public static class TestRulePriorityProvider implements SelfDiagnosisRuleProvider {
 
     @Override
-    public List<RuntimeRule> getDefinedRules() {
-      List<RuntimeRule> ruleList = TUtil.newList();
+    public List<SelfDiagnosisRule> getDefinedRules() {
+      List<SelfDiagnosisRule> ruleList = TUtil.newList();
       ruleList.add(new TestPriorityRule1());
       ruleList.add(new TestPriorityRule2());
       ruleList.add(new TestPriorityRule3());
@@ -224,9 +224,9 @@ public class TestRuleSession {
     
   }
   
-  @RuleDefinition(category="test2",name = "TestPriorityRule1")
-  @RuleVisibility.Public
-  public static class TestPriorityRule1 implements RuntimeRule {
+  @SelfDiagnosisRuleDefinition(category="test2",name = "TestPriorityRule1")
+  @SelfDiagnosisRuleVisibility.Public
+  public static class TestPriorityRule1 implements SelfDiagnosisRule {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext context) {
@@ -238,9 +238,9 @@ public class TestRuleSession {
     
   }
   
-  @RuleDefinition(category="test2",name = "TestPriorityRule2")
-  @RuleVisibility.Public
-  public static class TestPriorityRule2 implements RuntimeRule {
+  @SelfDiagnosisRuleDefinition(category="test2",name = "TestPriorityRule2")
+  @SelfDiagnosisRuleVisibility.Public
+  public static class TestPriorityRule2 implements SelfDiagnosisRule {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext context) {
@@ -252,9 +252,9 @@ public class TestRuleSession {
     
   }
   
-  @RuleDefinition(category="test2",name = "TestPriorityRule3",priority=0)
-  @RuleVisibility.Public
-  public static class TestPriorityRule3 implements RuntimeRule {
+  @SelfDiagnosisRuleDefinition(category="test2",name = "TestPriorityRule3",priority=0)
+  @SelfDiagnosisRuleVisibility.Public
+  public static class TestPriorityRule3 implements SelfDiagnosisRule {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext context) {
@@ -266,9 +266,9 @@ public class TestRuleSession {
     
   }
   
-  @RuleDefinition(category="test2",name = "TestPriorityRule4",priority=10)
-  @RuleVisibility.Public
-  public static class TestPriorityRule4 implements RuntimeRule {
+  @SelfDiagnosisRuleDefinition(category="test2",name = "TestPriorityRule4",priority=10)
+  @SelfDiagnosisRuleVisibility.Public
+  public static class TestPriorityRule4 implements SelfDiagnosisRule {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext context) {
@@ -292,9 +292,9 @@ public class TestRuleSession {
     cl = new URLClassLoader(new URL[] {createJarPathForRulePriority().toUri().toURL()}, parent);
     Thread.currentThread().setContextClassLoader(cl);
     
-    RuleEngine ruleEngine = RuleEngine.getInstance();
+    SelfDiagnosisRuleEngine ruleEngine = SelfDiagnosisRuleEngine.getInstance();
     ruleEngine.reset();
-    RuleSession ruleSession = ruleEngine.newRuleSession();
+    SelfDiagnosisRuleSession ruleSession = ruleEngine.newRuleSession();
     List<RuleWrapper> candidateRules = ruleSession.withCategoryNames("test2").getCandidateRules();
 
     assertThat(candidateRules, is(notNullValue()));
@@ -316,11 +316,11 @@ public class TestRuleSession {
     }
   }
   
-  public static class TestExecutionRuleProvider implements RuleProvider {
+  public static class TestExecutionRuleProvider implements SelfDiagnosisRuleProvider {
 
     @Override
-    public List<RuntimeRule> getDefinedRules() {
-      List<RuntimeRule> ruleList = TUtil.newList();
+    public List<SelfDiagnosisRule> getDefinedRules() {
+      List<SelfDiagnosisRule> ruleList = TUtil.newList();
       ruleList.add(new TestExecRule1());
       ruleList.add(new TestExecRule2());
       ruleList.add(new TestExecRule3());
@@ -329,9 +329,9 @@ public class TestRuleSession {
     
   }
   
-  @RuleDefinition(category="test3",name="TestExecRule1",priority=0)
-  @RuleVisibility.Public
-  public static class TestExecRule1 implements RuntimeRule {
+  @SelfDiagnosisRuleDefinition(category="test3",name="TestExecRule1",priority=0)
+  @SelfDiagnosisRuleVisibility.Public
+  public static class TestExecRule1 implements SelfDiagnosisRule {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext context) {
@@ -360,9 +360,9 @@ public class TestRuleSession {
     
   }
   
-  @RuleDefinition(category="test3",name="TestExecRule2",priority=1)
-  @RuleVisibility.Public
-  public static class TestExecRule2 implements RuntimeRule {
+  @SelfDiagnosisRuleDefinition(category="test3",name="TestExecRule2",priority=1)
+  @SelfDiagnosisRuleVisibility.Public
+  public static class TestExecRule2 implements SelfDiagnosisRule {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext context) {
@@ -379,9 +379,9 @@ public class TestRuleSession {
     
   }
   
-  @RuleDefinition(category="test3",name="TestExecRule3",priority=2)
-  @RuleVisibility.Public
-  public static class TestExecRule3 implements RuntimeRule {
+  @SelfDiagnosisRuleDefinition(category="test3",name="TestExecRule3",priority=2)
+  @SelfDiagnosisRuleVisibility.Public
+  public static class TestExecRule3 implements SelfDiagnosisRule {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext context) {
@@ -417,9 +417,9 @@ public class TestRuleSession {
     cl = new URLClassLoader(new URL[] {createJarPathForExecutingRules().toUri().toURL()}, parent);
     Thread.currentThread().setContextClassLoader(cl);
     
-    RuleEngine ruleEngine = RuleEngine.getInstance();
+    SelfDiagnosisRuleEngine ruleEngine = SelfDiagnosisRuleEngine.getInstance();
     ruleEngine.reset();
-    RuleSession ruleSession = ruleEngine.newRuleSession();
+    SelfDiagnosisRuleSession ruleSession = ruleEngine.newRuleSession();
     EvaluationContext context = new EvaluationContext();
     
     context.addParameter("TestExecRule1_param1", (int)5);
@@ -443,9 +443,9 @@ public class TestRuleSession {
     cl = new URLClassLoader(new URL[] {createJarPathForExecutingRules().toUri().toURL()}, parent);
     Thread.currentThread().setContextClassLoader(cl);
     
-    RuleEngine ruleEngine = RuleEngine.getInstance();
+    SelfDiagnosisRuleEngine ruleEngine = SelfDiagnosisRuleEngine.getInstance();
     ruleEngine.reset();
-    RuleSession ruleSession = ruleEngine.newRuleSession();
+    SelfDiagnosisRuleSession ruleSession = ruleEngine.newRuleSession();
     EvaluationContext context = new EvaluationContext();
     
     context.addParameter("TestExecRule1_param1", (int)0);

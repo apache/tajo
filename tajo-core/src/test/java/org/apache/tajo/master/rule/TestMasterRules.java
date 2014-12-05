@@ -32,8 +32,8 @@ import org.apache.tajo.rule.EvaluationContext;
 import org.apache.tajo.rule.EvaluationFailedException;
 import org.apache.tajo.rule.EvaluationResult;
 import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
-import org.apache.tajo.rule.RuleEngine;
-import org.apache.tajo.rule.RuleSession;
+import org.apache.tajo.rule.SelfDiagnosisRuleEngine;
+import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.rule.base.TajoConfValidationRule;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.AfterClass;
@@ -71,8 +71,8 @@ public class TestMasterRules {
   @Test(expected=EvaluationFailedException.class)
   public void testTajoConfValidationRuleWithException() throws Exception {
     TajoConf tajoConf = new TajoConf(new YarnConfiguration());
-    RuleEngine ruleEngine = RuleEngine.getInstance();
-    RuleSession ruleSession = ruleEngine.newRuleSession();
+    SelfDiagnosisRuleEngine ruleEngine = SelfDiagnosisRuleEngine.getInstance();
+    SelfDiagnosisRuleSession ruleSession = ruleEngine.newRuleSession();
     
     tajoConf.setVar(TajoConf.ConfVars.ROOT_DIR, "invalid path.");
     

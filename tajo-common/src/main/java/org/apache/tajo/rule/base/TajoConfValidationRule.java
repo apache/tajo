@@ -24,18 +24,18 @@ import java.util.Set;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.rule.EvaluationContext;
 import org.apache.tajo.rule.EvaluationResult;
-import org.apache.tajo.rule.RuleVisibility;
+import org.apache.tajo.rule.SelfDiagnosisRuleVisibility;
 import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
-import org.apache.tajo.rule.RuleDefinition;
-import org.apache.tajo.rule.RuntimeRule;
+import org.apache.tajo.rule.SelfDiagnosisRuleDefinition;
+import org.apache.tajo.rule.SelfDiagnosisRule;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.validation.ConstraintViolation;
 import org.apache.tajo.validation.ConstraintViolationException;
 import org.apache.tajo.validation.Validator;
 
-@RuleDefinition(category="base", name="TajoConfValidationRule", priority=0)
-@RuleVisibility.Public
-public class TajoConfValidationRule implements RuntimeRule {
+@SelfDiagnosisRuleDefinition(category="base", name="TajoConfValidationRule", priority=0)
+@SelfDiagnosisRuleVisibility.Public
+public class TajoConfValidationRule implements SelfDiagnosisRule {
   
   private Collection<ConstraintViolation> isValidationTestPassed(TajoConf.ConfVars confVar, String varValue) {
     Set<ConstraintViolation> violationSet = TUtil.newHashSet();

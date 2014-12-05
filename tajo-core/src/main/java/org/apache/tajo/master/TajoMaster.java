@@ -51,8 +51,8 @@ import org.apache.tajo.master.session.SessionManager;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rule.EvaluationContext;
 import org.apache.tajo.rule.EvaluationFailedException;
-import org.apache.tajo.rule.RuleEngine;
-import org.apache.tajo.rule.RuleSession;
+import org.apache.tajo.rule.SelfDiagnosisRuleEngine;
+import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.util.*;
 import org.apache.tajo.util.history.HistoryReader;
@@ -170,6 +170,7 @@ public class TajoMaster extends CompositeService {
 
       // check the system directory and create if they are not created.
       checkAndInitializeSystemDirectories();
+      evaluatePredefinedRules();
       this.storeManager = StorageManager.getStorageManager(systemConf);
 
       catalogServer = new CatalogServer(FunctionLoader.load());
@@ -284,8 +285,8 @@ public class TajoMaster extends CompositeService {
   }
   
   private void evaluatePredefinedRules() throws EvaluationFailedException {
-    RuleEngine ruleEngine = RuleEngine.getInstance();
-    RuleSession ruleSession = ruleEngine.newRuleSession();
+    SelfDiagnosisRuleEngine ruleEngine = SelfDiagnosisRuleEngine.getInstance();
+    SelfDiagnosisRuleSession ruleSession = ruleEngine.newRuleSession();
     EvaluationContext context = new EvaluationContext();
     
     context.addParameter(TajoConf.class.getName(), systemConf);
@@ -337,8 +338,6 @@ public class TajoMaster extends CompositeService {
     historyWriter.start();
 
     historyReader = new HistoryReader(getMasterName(), context.getConf());
-    
-    evaluatePredefinedRules();
   }
 
   private void writeSystemConf() throws IOException {

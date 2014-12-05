@@ -25,32 +25,32 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
-import org.apache.tajo.rule.RuleEngine.RuleWrapper;
+import org.apache.tajo.rule.SelfDiagnosisRuleEngine.RuleWrapper;
 import org.apache.tajo.util.TUtil;
 
-public class RuleSession {
+public class SelfDiagnosisRuleSession {
   
-  private final RuleEngine ruleEngine;
+  private final SelfDiagnosisRuleEngine ruleEngine;
   private final Set<String> categoryPredicate;
   private final Set<String> rulePredicate;
 
-  protected RuleSession(RuleEngine engine) {
+  protected SelfDiagnosisRuleSession(SelfDiagnosisRuleEngine engine) {
     ruleEngine = engine;
     categoryPredicate = TUtil.newHashSet();
     rulePredicate = TUtil.newHashSet();
   }
   
-  public RuleSession withCategoryNames(String...categories) {
+  public SelfDiagnosisRuleSession withCategoryNames(String...categories) {
     categoryPredicate.addAll(Arrays.asList(categories));
     return this;
   }
   
-  public RuleSession withRuleNames(String...rules) {
+  public SelfDiagnosisRuleSession withRuleNames(String...rules) {
     rulePredicate.addAll(Arrays.asList(rules));
     return this;
   }
   
-  public RuleSession reset() {
+  public SelfDiagnosisRuleSession reset() {
     categoryPredicate.clear();
     rulePredicate.clear();
     return this;
@@ -124,7 +124,7 @@ public class RuleSession {
       Class<?>[] clazzArray = getClassContext();
       int clazzIdx = 2;
       for (; clazzIdx < clazzArray.length; clazzIdx++) {
-        if (!clazzArray[clazzIdx].getName().equals(RuleSession.class.getName())) {
+        if (!clazzArray[clazzIdx].getName().equals(SelfDiagnosisRuleSession.class.getName())) {
           break;
         }
       }

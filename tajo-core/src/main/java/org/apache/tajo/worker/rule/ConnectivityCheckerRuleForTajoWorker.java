@@ -18,32 +18,42 @@
 
 package org.apache.tajo.worker.rule;
 
+import java.net.InetSocketAddress;
+
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rule.EvaluationContext;
 import org.apache.tajo.rule.EvaluationResult;
-import org.apache.tajo.rule.RuleDefinition;
-import org.apache.tajo.rule.RuleVisibility;
+import org.apache.tajo.rule.SelfDiagnosisRuleDefinition;
+import org.apache.tajo.rule.SelfDiagnosisRuleVisibility;
 import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
-import org.apache.tajo.rule.RuntimeRule;
+import org.apache.tajo.rule.SelfDiagnosisRule;
+import org.apache.tajo.util.HAServiceUtil;
+import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.TajoWorker;
-import org.apache.tajo.worker.TajoWorker.WorkerContext;
 
 /**
  * With this rule, Tajo worker will check the connectivity to tajo master server.
  */
-@RuleDefinition(category="worker", name="ConnectivityCheckerRuleForTajoWorker", priority=0)
-@RuleVisibility.LimitedPrivate(acceptedCallers = { TajoWorker.class })
-public class ConnectivityCheckerRuleForTajoWorker implements RuntimeRule {
+@SelfDiagnosisRuleDefinition(category="worker", name="ConnectivityCheckerRuleForTajoWorker", priority=0)
+@SelfDiagnosisRuleVisibility.LimitedPrivate(acceptedCallers = { TajoWorker.class })
+public class ConnectivityCheckerRuleForTajoWorker implements SelfDiagnosisRule {
   
-  private void checkTajoMasterConnectivity(WorkerContext workerContext) throws Exception {
-    RpcConnectionPool pool = RpcConnectionPool.getPool(workerContext.getConf());
+  private void checkTajoMasterConnectivity(TajoConf tajoConf) throws Exception {
+    RpcConnectionPool pool = RpcConnectionPool.getPool(tajoConf);
     NettyClientBase masterClient = null;
+    InetSocketAddress masterAddress = null;
     
     try {
-      masterClient = pool.getConnection(workerContext.getTajoMasterAddress(), 
-          TajoMasterProtocol.class, true);
+      if (tajoConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+        masterAddress = HAServiceUtil.getMasterUmbilicalAddress(tajoConf);
+      } else {
+        masterAddress = NetUtils.createSocketAddr(tajoConf.getVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS));
+      }
+      masterClient = pool.getConnection(masterAddress, TajoMasterProtocol.class, true);
       
       masterClient.getStub();
     } finally {
@@ -56,13 +66,13 @@ public class ConnectivityCheckerRuleForTajoWorker implements RuntimeRule {
 
   @Override
   public EvaluationResult evaluate(EvaluationContext context) {
-    Object workerContextObj = context.getParameter(WorkerContext.class.getName());
+    Object tajoConfObj = context.getParameter(TajoConf.class.getName());
     EvaluationResult result = new EvaluationResult();
     
-    if (workerContextObj != null && workerContextObj instanceof WorkerContext) {
-      WorkerContext workerContext = (WorkerContext) workerContextObj;
+    if (tajoConfObj != null && tajoConfObj instanceof TajoConf) {
+      TajoConf tajoConf = (TajoConf) tajoConfObj;
       try {
-        checkTajoMasterConnectivity(workerContext);
+        checkTajoMasterConnectivity(tajoConf);
         
         result.setReturnCode(EvaluationResultCode.OK);
       } catch (Exception e) {

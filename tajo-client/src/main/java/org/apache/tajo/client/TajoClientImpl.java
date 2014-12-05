@@ -19,6 +19,7 @@
 package org.apache.tajo.client;
 
 import com.google.protobuf.ServiceException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
@@ -35,6 +36,10 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.jdbc.TajoResultSet;
+import org.apache.tajo.rule.EvaluationContext;
+import org.apache.tajo.rule.EvaluationFailedException;
+import org.apache.tajo.rule.SelfDiagnosisRuleEngine;
+import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.util.NetUtils;
 
 import java.io.IOException;
@@ -75,12 +80,26 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     super(conf, addr, baseDatabase);
     this.queryClient = new QueryClientImpl(this);
     this.catalogClient = new CatalogAdminClientImpl(this);
+    
+    evaluatePredefinedRules();
   }
 
   public TajoClientImpl(String hostName, int port, @Nullable String baseDatabase) throws IOException {
     super(hostName, port, baseDatabase);
     this.queryClient = new QueryClientImpl(this);
     this.catalogClient = new CatalogAdminClientImpl(this);
+    
+    evaluatePredefinedRules();
+  }
+  
+  private void evaluatePredefinedRules() throws EvaluationFailedException {
+    SelfDiagnosisRuleEngine ruleEngine = SelfDiagnosisRuleEngine.getInstance();
+    SelfDiagnosisRuleSession ruleSession = ruleEngine.newRuleSession();
+    EvaluationContext context = new EvaluationContext();
+    
+    context.addParameter(TajoConf.class.getName(), getConf());
+    
+    ruleSession.withRuleNames("TajoConfValidationRule").fireRules(context);
   }
 
   /*------------------------------------------------------------------------*/

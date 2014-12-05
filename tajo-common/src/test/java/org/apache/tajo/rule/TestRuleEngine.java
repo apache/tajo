@@ -35,7 +35,7 @@ import java.util.jar.Manifest;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
-import org.apache.tajo.rule.RuleEngine.RuleWrapper;
+import org.apache.tajo.rule.SelfDiagnosisRuleEngine.RuleWrapper;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.TUtil;
 import org.junit.AfterClass;
@@ -58,25 +58,25 @@ public class TestRuleEngine {
 
   @Test
   public void testLoadPredefinedRules() throws Exception {
-    RuleEngine ruleEngine = RuleEngine.getInstance();
+    SelfDiagnosisRuleEngine ruleEngine = SelfDiagnosisRuleEngine.getInstance();
     ruleEngine.loadPredefinedRules();
     
     assertThat(ruleEngine.getRules().size() > 0, is(true));
   }
   
-  public static class TestRuleProvider1 implements RuleProvider {
+  public static class TestRuleProvider1 implements SelfDiagnosisRuleProvider {
 
     @Override
-    public List<RuntimeRule> getDefinedRules() {
-      List<RuntimeRule> ruleList = TUtil.newList(new TestRule1(), new TestRule2());
+    public List<SelfDiagnosisRule> getDefinedRules() {
+      List<SelfDiagnosisRule> ruleList = TUtil.newList(new TestRule1(), new TestRule2());
       return ruleList;
     }
     
   }
   
-  @RuleDefinition(category="test",name = "TestRule1")
-  @RuleVisibility.Public
-  public static class TestRule1 implements RuntimeRule {
+  @SelfDiagnosisRuleDefinition(category="test",name = "TestRule1")
+  @SelfDiagnosisRuleVisibility.Public
+  public static class TestRule1 implements SelfDiagnosisRule {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext context) {
@@ -88,9 +88,9 @@ public class TestRuleEngine {
     
   }
   
-  @RuleDefinition(category="test",name = "TestRule2")
-  @RuleVisibility.LimitedPrivate(acceptedCallers = { TestRuleEngine.class })
-  public static class TestRule2 implements RuntimeRule {
+  @SelfDiagnosisRuleDefinition(category="test",name = "TestRule2")
+  @SelfDiagnosisRuleVisibility.LimitedPrivate(acceptedCallers = { TestRuleEngine.class })
+  public static class TestRule2 implements SelfDiagnosisRule {
 
     @Override
     public EvaluationResult evaluate(EvaluationContext context) {
@@ -108,7 +108,7 @@ public class TestRuleEngine {
     manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
     JarOutputStream jarOut = new JarOutputStream(new FileOutputStream(new File(jarPath.toUri())), manifest);
     
-    JarEntry entry = new JarEntry("META-INF/services/"+RuleProvider.class.getName());
+    JarEntry entry = new JarEntry("META-INF/services/"+SelfDiagnosisRuleProvider.class.getName());
     jarOut.putNextEntry(entry);
     jarOut.write(TestRuleProvider1.class.getName().getBytes());
     jarOut.closeEntry();
@@ -125,7 +125,7 @@ public class TestRuleEngine {
     cl = new URLClassLoader(new URL[] {createJarPathForTestRuleProvider1().toUri().toURL()}, parent);
     Thread.currentThread().setContextClassLoader(cl);
     
-    RuleEngine ruleEngine = RuleEngine.getInstance();
+    SelfDiagnosisRuleEngine ruleEngine = SelfDiagnosisRuleEngine.getInstance();
     ruleEngine.loadPredefinedRules();
     
     Map<String, Map<String, RuleWrapper>> wrapperMap = ruleEngine.getRules();
