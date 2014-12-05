@@ -563,7 +563,7 @@ public class TajoCli {
       if (response.getMaxRowNum() < 0 && queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
         displayFormatter.printResult(sout, sin, desc, responseTime, res);
       } else {
-        res = TajoClientUtil.createResultSet(conf, client, response);
+        res = TajoClientUtil.createResultSet(conf, client, response, true);
         displayFormatter.printResult(sout, sin, desc, responseTime, res);
       }
     } catch (Throwable t) {
@@ -624,7 +624,7 @@ public class TajoCli {
           float responseTime = ((float)(status.getFinishTime() - status.getSubmitTime()) / 1000.0f);
           ClientProtos.GetQueryResultResponse response = client.getResultResponse(queryId);
           if (status.hasResult()) {
-            res = TajoClientUtil.createResultSet(conf, client, queryId, response);
+            res = TajoClientUtil.createResultSet(conf, client, queryId, response, true);
             TableDesc desc = new TableDesc(response.getTableDesc());
             displayFormatter.printResult(sout, sin, desc, responseTime, res);
           } else {

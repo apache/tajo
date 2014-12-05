@@ -42,6 +42,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   protected boolean wasNull;
   protected Schema schema;
   protected Tuple cur;
+  protected boolean showTimezone;
 
   protected void init() {
     cur = null;
@@ -289,10 +290,10 @@ public abstract class TajoResultSetBase implements ResultSet {
       case BOOLEAN:
         return String.valueOf(datum.asBool());
       case TIME: {
-        return ((TimeDatum)datum).asChars(TajoConf.getCurrentTimeZone(), false);
+        return ((TimeDatum)datum).asChars(TajoConf.getCurrentTimeZone(), showTimezone);
       }
       case TIMESTAMP: {
-        return ((TimestampDatum)datum).asChars(TajoConf.getCurrentTimeZone(), false);
+        return ((TimestampDatum)datum).asChars(TajoConf.getCurrentTimeZone(), showTimezone);
       }
       default :
         return datum.asChars();

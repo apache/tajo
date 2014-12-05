@@ -34,9 +34,14 @@ public class TajoMemoryResultSet extends TajoResultSetBase {
   private RowStoreUtil.RowStoreDecoder decoder;
 
   public TajoMemoryResultSet(Schema schema, List<ByteString> serializedTuples, int maxRowNum) {
+    this(schema, serializedTuples, maxRowNum, false);
+  }
+
+  public TajoMemoryResultSet(Schema schema, List<ByteString> serializedTuples, int maxRowNum, boolean showTimezone) {
     this.schema = schema;
     this.totalRow = maxRowNum;
     this.serializedTuples = serializedTuples;
+    this.showTimezone = showTimezone;
     decoder = RowStoreUtil.createDecoder(schema);
     init();
   }

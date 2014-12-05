@@ -56,23 +56,37 @@ public class TajoResultSet extends TajoResultSetBase {
   private AtomicBoolean closed = new AtomicBoolean(false);
 
   public TajoResultSet(QueryClient tajoClient, QueryId queryId) {
+    this(tajoClient, queryId, false);
+  }
+
+  public TajoResultSet(QueryClient tajoClient, QueryId queryId, boolean showTimezone) {
     this.tajoClient = tajoClient;
     this.queryId = queryId;
     init();
   }
 
   public TajoResultSet(QueryClient tajoClient, QueryId queryId, TajoConf conf, TableDesc table) throws IOException {
+    this(tajoClient, queryId, conf, table, false);
+  }
+
+  public TajoResultSet(QueryClient tajoClient, QueryId queryId, TajoConf conf, TableDesc table, boolean showTimezone) throws IOException {
     this.tajoClient = tajoClient;
     this.queryId = queryId;
     this.conf = conf;
     this.desc = table;
+    this.showTimezone = showTimezone;
     initScanner();
     init();
   }
 
   public TajoResultSet(TajoClient tajoClient, QueryId queryId, TajoConf conf, TableDesc table, long maxRowNum)
       throws IOException {
-    this(tajoClient, queryId, conf, table);
+    this(tajoClient, queryId, conf, table, maxRowNum, false);
+  }
+
+  public TajoResultSet(TajoClient tajoClient, QueryId queryId, TajoConf conf, TableDesc table, long maxRowNum, boolean showTimezone)
+      throws IOException {
+    this(tajoClient, queryId, conf, table, showTimezone);
     this.maxRowNum = maxRowNum;
     initScanner();
     init();
