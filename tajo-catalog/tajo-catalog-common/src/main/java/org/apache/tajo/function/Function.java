@@ -21,7 +21,7 @@ package org.apache.tajo.function;
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.storage.json.GsonObject;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.datum.Datum;

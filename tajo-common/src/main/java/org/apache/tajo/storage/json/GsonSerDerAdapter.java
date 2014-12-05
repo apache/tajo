@@ -16,32 +16,10 @@
  * limitations under the License.
  */
 
-/**
- * 
- */
-package org.apache.tajo.json;
+package org.apache.tajo.storage.json;
 
-import com.google.gson.*;
-import org.apache.tajo.util.ClassUtil;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonSerializer;
 
-import java.lang.reflect.Type;
-
-public class ClassNameSerializer implements GsonSerDerAdapter<Class> {
-
-	@Override
-	public JsonElement serialize(Class clazz, Type type,
-			JsonSerializationContext ctx) {
-		return new JsonPrimitive(clazz.getName());
-	}
-
-  @Override
-  public Class deserialize(JsonElement json, Type type,
-                           JsonDeserializationContext ctx) throws JsonParseException {
-    try {
-      return ClassUtil.forName(json.getAsString());
-    } catch (ClassNotFoundException e) {
-      e.printStackTrace();
-    }
-    return null;
-  }
+public interface GsonSerDerAdapter<T> extends JsonSerializer<T>, JsonDeserializer<T> {
 }

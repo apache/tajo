@@ -22,7 +22,7 @@ import com.google.common.base.Objects;
 import com.google.gson.*;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
-import org.apache.tajo.json.CommonGsonHelper;
+import org.apache.tajo.storage.json.CommonGsonHelper;
 import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;

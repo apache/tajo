@@ -16,26 +16,26 @@
  * limitations under the License.
  */
 
-/**
- * 
- */
-package org.apache.tajo.json;
+package org.apache.tajo.storage.text;
 
-import com.google.gson.*;
-import org.apache.hadoop.fs.Path;
+import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.storage.StorageConstants;
 
-import java.lang.reflect.Type;
-
-public class PathSerializer implements GsonSerDerAdapter<Path> {
-
-	@Override
-	public JsonElement serialize(Path path, Type arg1,
-			JsonSerializationContext arg2) {
-		return new JsonPrimitive(path.toString());
-	}
+public class CSVLineSerDe extends TextLineSerDe {
+  @Override
+  public TextLineDeserializer createDeserializer(Schema schema, TableMeta meta, int[] targetColumnIndexes) {
+    return new CSVLineDeserializer(schema, meta, targetColumnIndexes);
+  }
 
   @Override
-  public Path deserialize(JsonElement arg0, Type arg1, JsonDeserializationContext context) throws JsonParseException {
-    return new Path(arg0.getAsJsonPrimitive().getAsString());
+  public TextLineSerializer createSerializer(Schema schema, TableMeta meta) {
+    return new CSVLineSerializer(schema, meta);
+  }
+
+  public static char getFieldDelimiter(TableMeta meta) {
+    return StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.TEXT_DELIMITER,
+        StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
   }
 }

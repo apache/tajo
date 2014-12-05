@@ -22,10 +22,10 @@
 package org.apache.tajo.plan.serder;
 
 import com.google.gson.*;
-import org.apache.tajo.json.CommonGsonHelper;
+import org.apache.tajo.storage.json.CommonGsonHelper;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
-import org.apache.tajo.json.GsonSerDerAdapter;
+import org.apache.tajo.storage.json.GsonSerDerAdapter;
 
 import java.lang.reflect.Type;
 

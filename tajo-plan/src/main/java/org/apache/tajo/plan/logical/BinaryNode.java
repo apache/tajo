@@ -19,7 +19,7 @@
 package org.apache.tajo.plan.logical;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.storage.json.GsonObject;
 
 public abstract class BinaryNode extends LogicalNode implements Cloneable, GsonObject {
 	@Expose LogicalNode leftChild = null;

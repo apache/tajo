@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.json;
+package org.apache.tajo.storage.json;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;

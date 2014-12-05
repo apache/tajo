@@ -25,7 +25,7 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.function.Function;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.json.*;
+import org.apache.tajo.storage.json.*;
 import org.apache.tajo.util.TUtil;
 
 import java.lang.reflect.Type;

@@ -332,7 +332,12 @@ public class SeqScanExec extends PhysicalExec {
     if (scanner != null) {
       return scanner.getInputStats();
     } else {
-      return inputStats;
+      if (inputStats != null) {
+        return inputStats;
+      } else {
+        // If no fragment, there is no scanner. So, we need to create a dummy table stat.
+        return new TableStats();
+      }
     }
   }
 

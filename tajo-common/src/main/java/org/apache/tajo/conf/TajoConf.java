@@ -676,7 +676,15 @@ public class TajoConf extends Configuration {
     return path.indexOf("file:/") == 0 || path.indexOf("hdfs:/") == 0;
   }
 
-  public static Path getStagingDir(TajoConf conf) throws IOException {
+  /**
+   * It returns the default root staging directory used by queries without a target table or
+   * a specified output directory. An example query is <pre>SELECT a,b,c FROM XXX;</pre>.
+   *
+   * @param conf TajoConf
+   * @return Path which points the default staging directory
+   * @throws IOException
+   */
+  public static Path getDefaultRootStagingDir(TajoConf conf) throws IOException {
     String stagingDirString = conf.getVar(ConfVars.STAGING_ROOT_DIR);
     if (!hasScheme(stagingDirString)) {
       Path warehousePath = getWarehouseDir(conf);
@@ -691,7 +699,7 @@ public class TajoConf extends Configuration {
   public static Path getQueryHistoryDir(TajoConf conf) throws IOException {
     String historyDirString = conf.getVar(ConfVars.HISTORY_QUERY_DIR);
     if (!hasScheme(historyDirString)) {
-      Path stagingPath = getStagingDir(conf);
+      Path stagingPath = getDefaultRootStagingDir(conf);
       FileSystem fs = stagingPath.getFileSystem(conf);
       Path path = new Path(fs.getUri().toString(), historyDirString);
       conf.setVar(ConfVars.HISTORY_QUERY_DIR, path.toString());

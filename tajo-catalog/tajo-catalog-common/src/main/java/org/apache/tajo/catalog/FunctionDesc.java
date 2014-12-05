@@ -22,7 +22,7 @@ import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.function.*;
-import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.storage.json.GsonObject;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;

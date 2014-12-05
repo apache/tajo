@@ -1383,9 +1383,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
           schema, tableOptions, datas.toArray(new String[]{}), 2);
 
       executeString("insert into location '/tmp/hfile_test' " +
-          "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:', " +
-          "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
-          "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')" +
           "select id, name, comment from base_table ").close();
 
       FileSystem fs = testingCluster.getDefaultFileSystem();
@@ -1396,11 +1393,9 @@ public class TestHBaseTable extends QueryTestCaseBase {
       assertNotNull(files);
       assertEquals(2, files.length);
 
-      assertEquals("/tmp/hfile_test/col2", files[1].getPath().toUri().getPath());
-
-      int index = 1;
+      int index = 0;
       for (FileStatus eachFile: files) {
-        assertEquals("/tmp/hfile_test/col" + index, eachFile.getPath().toUri().getPath());
+        assertEquals("/tmp/hfile_test/part-01-00000" + index + "-00" + index, eachFile.getPath().toUri().getPath());
         for (FileStatus subFile: fs.listStatus(eachFile.getPath())) {
           assertTrue(subFile.isFile());
           assertTrue(subFile.getLen() > 0);

@@ -20,9 +20,8 @@ package org.apache.tajo.storage;
 
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocalFileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.s3.S3FileSystem;
-import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -32,8 +31,8 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.storage.s3.InMemoryFileSystemStore;
-import org.apache.tajo.storage.s3.SmallBlockS3FileSystem;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -50,22 +49,15 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public class TestFileSystems {
 
-  protected byte[] data = null;
-
   private static String TEST_PATH = "target/test-data/TestFileSystem";
-  private TajoConf conf = null;
-  private FileStorageManager sm = null;
-  private FileSystem fs = null;
-  Path testDir;
+  private TajoConf conf;
+  private FileStorageManager sm;
+  private FileSystem fs;
+  private Path testDir;
 
   public TestFileSystems(FileSystem fs) throws IOException {
-    conf = new TajoConf();
-
-    if(fs instanceof S3FileSystem){
-      conf.set(DFSConfigKeys.DFS_BLOCK_SIZE_KEY, "10");
-      fs.initialize(URI.create(fs.getScheme() + ":///"), conf);
-    }
     this.fs = fs;
+    this.conf = new TajoConf(fs.getConf());
     sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
     testDir = getTestDir(this.fs, TEST_PATH);
   }
@@ -81,10 +73,26 @@ public class TestFileSystems {
   }
 
   @Parameterized.Parameters
-  public static Collection<Object[]> generateParameters() {
-    return Arrays.asList(new Object[][] {
-        {new SmallBlockS3FileSystem(new InMemoryFileSystemStore())},
+  public static Collection<Object[]> generateParameters() throws IOException {
+    return Arrays.asList(new Object[][]{
+        {FileSystem.getLocal(new TajoConf())},
     });
+  }
+
+  @Before
+  public void setup() throws IOException {
+    if (!(fs instanceof LocalFileSystem)) {
+      conf.set("fs.local.block.size", "10");
+      fs.initialize(URI.create(fs.getScheme() + ":///"), conf);
+      fs.setConf(conf);
+    }
+  }
+
+  @After
+  public void tearDown() throws IOException {
+    if (!(fs instanceof LocalFileSystem)) {
+      fs.setConf(new TajoConf());
+    }
   }
 
   @Test
@@ -101,9 +109,9 @@ public class TestFileSystems {
     for (int i = 0; i < tuples.length; i++) {
       tuples[i] = new VTuple(3);
       tuples[i]
-          .put(new Datum[] { DatumFactory.createInt4(i),
+          .put(new Datum[]{DatumFactory.createInt4(i),
               DatumFactory.createInt4(i + 32),
-              DatumFactory.createText("name" + i) });
+              DatumFactory.createText("name" + i)});
     }
 
     Path path = StorageUtil.concatPath(testDir, "testGetScannerAndAppender",

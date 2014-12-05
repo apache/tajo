@@ -32,6 +32,7 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.GetQueryHistoryResponse;
 import org.apache.tajo.ipc.ClientProtos.QueryIdRequest;
@@ -39,8 +40,6 @@ import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.querymaster.Query;
-import org.apache.tajo.master.querymaster.QueryInProgress;
-import org.apache.tajo.master.querymaster.QueryJobManager;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
@@ -132,6 +131,10 @@ public class TajoWorkerClientService extends AbstractService {
       return null;
     }
 
+    private boolean hasResultTableDesc(QueryContext queryContext) {
+      return !(queryContext.isCreateTable() || queryContext.isInsert());
+    }
+
     @Override
     public ClientProtos.GetQueryResultResponse getQueryResult(
             RpcController controller,
@@ -151,7 +154,9 @@ public class TajoWorkerClientService extends AbstractService {
       } else {
         switch (queryMasterTask.getState()) {
           case QUERY_SUCCEEDED:
-            builder.setTableDesc(queryMasterTask.getQuery().getResultDesc().getProto());
+//            if (hasResultTableDesc(queryMasterTask.getQueryTaskContext().getQueryContext())) {
+              builder.setTableDesc(queryMasterTask.getQuery().getResultDesc().getProto());
+            //}
             break;
           case QUERY_FAILED:
           case QUERY_ERROR:
@@ -191,10 +196,7 @@ public class TajoWorkerClientService extends AbstractService {
           return builder.build();
         }
 
-        builder.setHasResult(
-            !(queryMasterTask.getQueryTaskContext().getQueryContext().isCreateTable() ||
-                queryMasterTask.getQueryTaskContext().getQueryContext().isInsert())
-        );
+        builder.setHasResult(hasResultTableDesc(queryMasterTask.getQueryTaskContext().getQueryContext()));
 
         queryMasterTask.touchSessionTime();
         Query query = queryMasterTask.getQuery();

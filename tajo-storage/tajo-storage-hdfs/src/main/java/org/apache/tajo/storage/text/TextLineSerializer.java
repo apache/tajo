@@ -16,8 +16,30 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.json;
+package org.apache.tajo.storage.text;
 
-public interface GsonObject {
-  public String toJson();
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.storage.Tuple;
+
+import java.io.IOException;
+import java.io.OutputStream;
+
+/**
+ * Write a Tuple into single text formatted line
+ */
+public abstract class TextLineSerializer {
+  protected Schema schema;
+  protected TableMeta meta;
+
+  public TextLineSerializer(Schema schema, TableMeta meta) {
+    this.schema = schema;
+    this.meta = meta;
+  }
+
+  public abstract void init();
+
+  public abstract int serialize(OutputStream out, Tuple input) throws IOException;
+
+  public abstract void release();
 }

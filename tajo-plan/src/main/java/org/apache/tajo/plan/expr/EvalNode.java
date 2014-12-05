@@ -22,7 +22,7 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.storage.json.GsonObject;
 import org.apache.tajo.plan.serder.PlanGsonHelper;
 import org.apache.tajo.storage.Tuple;
 

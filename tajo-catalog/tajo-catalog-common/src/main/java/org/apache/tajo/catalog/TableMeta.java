@@ -28,7 +28,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableProtoOrBuilder;
 import org.apache.tajo.common.ProtoObject;
-import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.storage.json.GsonObject;
 import org.apache.tajo.util.KeyValueSet;
 
 import java.util.Map;

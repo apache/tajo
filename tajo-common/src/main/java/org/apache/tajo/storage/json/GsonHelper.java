@@ -16,10 +16,34 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.json;
+package org.apache.tajo.storage.json;
 
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonSerializer;
+import com.google.gson.*;
 
-public interface GsonSerDerAdapter<T> extends JsonSerializer<T>, JsonDeserializer<T> {
+import java.lang.reflect.Type;
+import java.util.Map;
+
+public class GsonHelper {
+  private final GsonBuilder builder;
+  private final Gson gson;
+
+  public GsonHelper(Map<Type, GsonSerDerAdapter> adapters) {
+    builder = new GsonBuilder().excludeFieldsWithoutExposeAnnotation();
+    registerAdapters(builder, adapters);
+    gson = builder.create();
+  }
+
+  public static void registerAdapters(GsonBuilder builder, Map<Type, GsonSerDerAdapter> adapters) {
+    for (Map.Entry<Type, GsonSerDerAdapter> entry : adapters.entrySet()) {
+      try {
+        builder.registerTypeAdapter(entry.getKey(), entry.getValue());
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
+    }
+  }
+
+  public Gson getGson() {
+    return gson;
+  }
 }

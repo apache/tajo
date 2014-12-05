@@ -31,7 +31,7 @@ import org.apache.tajo.plan.function.AggFunction;
 import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.function.Function;
-import org.apache.tajo.json.*;
+import org.apache.tajo.storage.json.*;
 import org.apache.tajo.plan.serder.EvalNodeAdapter;
 import org.apache.tajo.plan.serder.LogicalNodeAdapter;
 import org.apache.tajo.util.TUtil;

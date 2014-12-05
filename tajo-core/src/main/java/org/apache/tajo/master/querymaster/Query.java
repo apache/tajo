@@ -404,13 +404,9 @@ public class Query implements EventHandler<QueryEvent> {
     public QueryState transition(Query query, QueryEvent queryEvent) {
       QueryCompletedEvent subQueryEvent = (QueryCompletedEvent) queryEvent;
       QueryState finalState;
+
       if (subQueryEvent.getState() == SubQueryState.SUCCEEDED) {
-        boolean success = finalizeQuery(query, subQueryEvent);
-        if (success) {
-          finalState = QueryState.QUERY_SUCCEEDED;
-        } else {
-          finalState = QueryState.QUERY_ERROR;
-        }
+        finalState = finalizeQuery(query, subQueryEvent);
       } else if (subQueryEvent.getState() == SubQueryState.FAILED) {
         finalState = QueryState.QUERY_FAILED;
       } else if (subQueryEvent.getState() == SubQueryState.KILLED) {
@@ -438,7 +434,7 @@ public class Query implements EventHandler<QueryEvent> {
       return finalState;
     }
 
-    private boolean finalizeQuery(Query query, QueryCompletedEvent event) {
+    private QueryState finalizeQuery(Query query, QueryCompletedEvent event) {
       SubQuery lastStage = query.getSubQuery(event.getExecutionBlockId());
       StoreType storeType = lastStage.getTableMeta().getStoreType();
       try {
@@ -451,13 +447,13 @@ public class Query implements EventHandler<QueryEvent> {
                 lastStage.getId(), lastStage.getMasterPlan().getLogicalPlan(), lastStage.getSchema(), tableDesc);
 
         QueryHookExecutor hookExecutor = new QueryHookExecutor(query.context.getQueryMasterContext());
-          hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(), finalOutputDir);
-        return true;
+        hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(), finalOutputDir);
       } catch (Exception e) {
-        LOG.error(e.getMessage(), e);
         query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(e)));
-        return false;
+        return QueryState.QUERY_ERROR;
       }
+      
+      return QueryState.QUERY_SUCCEEDED;
     }
 
     private static interface QueryHook {

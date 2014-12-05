@@ -23,7 +23,7 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
-import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.storage.json.GsonObject;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTableDescProto;
 

@@ -27,7 +27,7 @@ import org.apache.tajo.catalog.json.TableMetaAdapter;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.function.Function;
-import org.apache.tajo.json.*;
+import org.apache.tajo.storage.json.*;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.function.AggFunction;
 import org.apache.tajo.plan.function.GeneralFunction;

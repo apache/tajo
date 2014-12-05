@@ -22,7 +22,7 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.reflect.TypeToken;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.ipc.ClientProtos.SubQueryHistoryProto;
-import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.storage.json.GsonObject;
 
 import java.util.ArrayList;
 import java.util.List;

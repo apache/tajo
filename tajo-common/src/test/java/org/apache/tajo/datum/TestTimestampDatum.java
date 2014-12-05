@@ -21,7 +21,7 @@ package org.apache.tajo.datum;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.InvalidCastException;
-import org.apache.tajo.json.CommonGsonHelper;
+import org.apache.tajo.storage.json.CommonGsonHelper;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -151,7 +151,8 @@ public class TestTimestampDatum {
     assertEquals(datum2, datum);
 
     for (int i = 0; i < 100; i++) {
-      Calendar cal = Calendar.getInstance();
+      TimeZone timeZone = TimeZone.getTimeZone("UTC");
+      Calendar cal = Calendar.getInstance(timeZone);
       long jTime = System.currentTimeMillis();
       int uTime = (int)(jTime / 1000);
       cal.setTimeInMillis(jTime);

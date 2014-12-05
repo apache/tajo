@@ -18,7 +18,7 @@
 
 package org.apache.tajo.datum;
 
-import org.apache.tajo.json.CommonGsonHelper;
+import org.apache.tajo.storage.json.CommonGsonHelper;
 import org.junit.Before;
 import org.junit.Test;
 

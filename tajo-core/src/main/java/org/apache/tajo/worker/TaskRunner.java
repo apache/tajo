@@ -24,15 +24,15 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.service.AbstractService;
-import org.apache.hadoop.yarn.api.records.ContainerId;
-import org.apache.hadoop.yarn.api.records.impl.pb.ContainerIdPBImpl;
-import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryUnitRequestImpl;
 import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
+import org.apache.tajo.master.container.TajoContainerId;
+import org.apache.tajo.master.container.impl.pb.TajoContainerIdPBImpl;
+import org.apache.tajo.master.container.TajoConverterUtils;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NullCallback;
 import org.jboss.netty.channel.ConnectTimeoutException;
@@ -53,7 +53,7 @@ public class TaskRunner extends AbstractService {
   private volatile boolean stopped = false;
   private Path baseDirPath;
 
-  private ContainerId containerId;
+  private TajoContainerId containerId;
 
   // for Fetcher
   private ExecutorService fetchLauncher;
@@ -77,7 +77,7 @@ public class TaskRunner extends AbstractService {
     this.fetchLauncher = Executors.newFixedThreadPool(
         systemConf.getIntVar(ConfVars.SHUFFLE_FETCHER_PARALLEL_EXECUTION_MAX_NUM), fetcherFactory);
     try {
-      this.containerId = ConverterUtils.toContainerId(containerId);
+      this.containerId = TajoConverterUtils.toTajoContainerId(containerId);
       this.executionBlockContext = executionBlockContext;
       this.history = executionBlockContext.createTaskRunnerHistory(this);
       this.history.setState(getServiceState());
@@ -91,11 +91,11 @@ public class TaskRunner extends AbstractService {
     return getId(getContext().getExecutionBlockId(), containerId);
   }
 
-  public ContainerId getContainerId(){
+  public TajoContainerId getContainerId(){
     return containerId;
   }
 
-  public static String getId(ExecutionBlockId executionBlockId, ContainerId containerId) {
+  public static String getId(ExecutionBlockId executionBlockId, TajoContainerId containerId) {
     return executionBlockId + "," + containerId;
   }
 
@@ -211,7 +211,7 @@ public class TaskRunner extends AbstractService {
                 LOG.info("Request GetTask: " + getId());
                 GetTaskRequestProto request = GetTaskRequestProto.newBuilder()
                     .setExecutionBlockId(getExecutionBlockId().getProto())
-                    .setContainerId(((ContainerIdPBImpl) containerId).getProto())
+                    .setContainerId(((TajoContainerIdPBImpl) containerId).getProto())
                     .setWorkerId(getContext().getWorkerContext().getConnectionInfo().getId())
                     .build();
 
