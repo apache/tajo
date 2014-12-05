@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.json;
+package org.apache.tajo.storage;
 
 import io.netty.buffer.ByteBuf;
 import org.apache.hadoop.fs.FileStatus;
@@ -32,10 +32,6 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.storage.ByteBufInputChannel;
-import org.apache.tajo.storage.FileAppender;
-import org.apache.tajo.storage.StorageManager;
-import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.text.ByteBufLineReader;
 import org.apache.tajo.storage.text.DelimitedLineReader;

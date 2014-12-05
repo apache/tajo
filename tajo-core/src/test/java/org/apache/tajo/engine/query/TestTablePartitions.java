@@ -19,10 +19,7 @@
 package org.apache.tajo.engine.query;
 
 import com.google.common.collect.Maps;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.DeflateCodec;
@@ -522,6 +519,20 @@ public class TestTablePartitions extends QueryTestCaseBase {
         "N,1,1,36.0\n";
 
     assertEquals(expected, resultSetData);
+
+    // insert overwrite empty result to partitioned table
+    res = executeString("insert overwrite into " + tableName
+      + " select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem where l_orderkey" +
+      " > 100");
+    res.close();
+
+    desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+
+    ContentSummary summary = fs.getContentSummary(new Path(desc.getPath()));
+
+    assertEquals(summary.getDirectoryCount(), 1L);
+    assertEquals(summary.getFileCount(), 0L);
+    assertEquals(summary.getLength(), 0L);
   }
 
   @Test
@@ -980,7 +991,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     Path testDir = CommonTestingUtil.getTestDir();
 
     executeString(
-        "CREATE EXTERNAL TABLE testIgnoreFilesInIntermediateDir (col1 int) USING CSV PARTITION BY COLUMN (col2 text) " +
+      "CREATE EXTERNAL TABLE testIgnoreFilesInIntermediateDir (col1 int) USING CSV PARTITION BY COLUMN (col2 text) " +
         "LOCATION '" + testDir + "'");
 
     FileSystem fs = testDir.getFileSystem(conf);

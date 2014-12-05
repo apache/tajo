@@ -22,10 +22,7 @@ import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.PathFilter;
+import org.apache.hadoop.fs.*;
 import org.apache.tajo.*;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
@@ -647,8 +644,9 @@ public abstract class StorageManager {
           boolean movedToOldTable = false;
           boolean committed = false;
           Path oldTableDir = new Path(stagingDir, TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
+          ContentSummary summary = fs.getContentSummary(stagingResultDir);
 
-          if (!queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty()) {
+          if (!queryContext.get(QueryVars.OUTPUT_PARTITIONS, "").isEmpty() && summary.getFileCount() > 0L) {
             // This is a map for existing non-leaf directory to rename. A key is current directory and a value is
             // renaming directory.
             Map<Path, Path> renameDirs = TUtil.newHashMap();
@@ -692,6 +690,7 @@ public abstract class StorageManager {
                 fs.delete(entry.getValue(), true);
                 fs.rename(entry.getValue(), entry.getKey());
               }
+
               throw new IOException(ioe.getMessage());
             }
           } else { // no partition

@@ -452,7 +452,7 @@ public class Query implements EventHandler<QueryEvent> {
         query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(e)));
         return QueryState.QUERY_ERROR;
       }
-      
+
       return QueryState.QUERY_SUCCEEDED;
     }
 

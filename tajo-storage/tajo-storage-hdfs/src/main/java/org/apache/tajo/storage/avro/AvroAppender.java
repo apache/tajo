@@ -55,6 +55,7 @@ public class AvroAppender extends FileAppender {
    * Creates a new AvroAppender.
    *
    * @param conf Configuration properties.
+   * @param taskAttemptId The task attempt id
    * @param schema The table schema.
    * @param meta The table metadata.
    * @param workDir The path of the Parquet file to write to.
