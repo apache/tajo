@@ -20,6 +20,7 @@ package org.apache.tajo.worker;
 
 import com.codahale.metrics.Gauge;
 import com.google.common.annotations.VisibleForTesting;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -43,6 +44,10 @@ import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.rule.EvaluationContext;
+import org.apache.tajo.rule.EvaluationFailedException;
+import org.apache.tajo.rule.RuleEngine;
+import org.apache.tajo.rule.RuleSession;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.util.*;
 import org.apache.tajo.util.history.HistoryReader;
@@ -315,6 +320,17 @@ public class TajoWorker extends CompositeService {
       getWorkerContext().cleanupTemporalDirectories();
     }
   }
+  
+  private void evaluatePredefinedRules() throws EvaluationFailedException {
+    RuleEngine ruleEngine = RuleEngine.getInstance();
+    RuleSession ruleSession = ruleEngine.newRuleSession();
+    EvaluationContext context = new EvaluationContext();
+    
+    context.addParameter(TajoConf.class.getName(), systemConf);
+    context.addParameter(WorkerContext.class.getName(), workerContext);
+    
+    ruleSession.withCategoryNames("base", "worker").fireRules(context);
+  }
 
   private void startJvmPauseMonitor(){
     pauseMonitor = new JvmPauseMonitor(systemConf);
@@ -347,6 +363,8 @@ public class TajoWorker extends CompositeService {
 
     initWorkerMetrics();
     super.serviceStart();
+    
+    evaluatePredefinedRules();
     LOG.info("Tajo Worker is started");
   }
 

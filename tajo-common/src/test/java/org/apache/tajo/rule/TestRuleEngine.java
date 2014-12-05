@@ -58,7 +58,7 @@ public class TestRuleEngine {
 
   @Test
   public void testLoadPredefinedRules() throws Exception {
-    RuleEngine ruleEngine = new RuleEngine();
+    RuleEngine ruleEngine = RuleEngine.getInstance();
     ruleEngine.loadPredefinedRules();
     
     assertThat(ruleEngine.getRules().size() > 0, is(true));
@@ -125,7 +125,7 @@ public class TestRuleEngine {
     cl = new URLClassLoader(new URL[] {createJarPathForTestRuleProvider1().toUri().toURL()}, parent);
     Thread.currentThread().setContextClassLoader(cl);
     
-    RuleEngine ruleEngine = new RuleEngine();
+    RuleEngine ruleEngine = RuleEngine.getInstance();
     ruleEngine.loadPredefinedRules();
     
     Map<String, Map<String, RuleWrapper>> wrapperMap = ruleEngine.getRules();

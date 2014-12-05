@@ -56,14 +56,14 @@ public class RuleSession {
     return this;
   }
   
-  public void fireRules(EvaluationContext context) throws ValidationFailedException {
+  public void fireRules(EvaluationContext context) throws EvaluationFailedException {
     List<RuleWrapper> candidateRules = getCandidateRules();
     
     for (RuleWrapper wrapper: candidateRules) {
       EvaluationResult result = wrapper.getRule().evaluate(context);
       
       if (result.getReturnCode() == EvaluationResultCode.ERROR) {
-        throw new ValidationFailedException(result.getMessage(), result.getThrowable());
+        throw new EvaluationFailedException(result.getMessage(), result.getThrowable());
       }
     }
   }
@@ -72,7 +72,6 @@ public class RuleSession {
     Map<String, Map<String, RuleWrapper>> wrapperMap = null;
     List<RuleWrapper> candidateRules = TUtil.newList();
     
-    ruleEngine.loadPredefinedRules();
     wrapperMap = ruleEngine.getRules();
     Class<?> callerClazz = getCallerClassName();
     

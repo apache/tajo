@@ -18,22 +18,22 @@
 
 package org.apache.tajo.rule;
 
-public class ValidationFailedException extends RuntimeException {
+public class EvaluationFailedException extends RuntimeException {
 
   /**
    * 
    */
   private static final long serialVersionUID = 1L;
 
-  public ValidationFailedException(String message, Throwable cause) {
+  public EvaluationFailedException(String message, Throwable cause) {
     super(message, cause);
   }
 
-  public ValidationFailedException(String message) {
+  public EvaluationFailedException(String message) {
     super(message);
   }
 
-  public ValidationFailedException(Throwable cause) {
+  public EvaluationFailedException(Throwable cause) {
     super(cause);
   }
 

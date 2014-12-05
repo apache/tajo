@@ -57,7 +57,8 @@ public class TestRuleSession {
   
   @Test
   public void testGetCallerClassName() throws Exception {
-    RuleEngine ruleEngine = new RuleEngine();
+    RuleEngine ruleEngine = RuleEngine.getInstance();
+    ruleEngine.reset();
     RuleSession ruleSession = ruleEngine.newRuleSession();
     
     assertThat(ruleSession.getCallerClassName(), is(notNullValue()));
@@ -146,7 +147,8 @@ public class TestRuleSession {
     cl = new URLClassLoader(new URL[] {createJarPathForTestRuleSession().toUri().toURL()}, parent);
     Thread.currentThread().setContextClassLoader(cl);
     
-    RuleEngine ruleEngine = new RuleEngine();
+    RuleEngine ruleEngine = RuleEngine.getInstance();
+    ruleEngine.reset();
     RuleSession ruleSession = ruleEngine.newRuleSession();
     List<RuleWrapper> candidateRules = ruleSession.withCategoryNames("test1").getCandidateRules();
     
@@ -181,7 +183,8 @@ public class TestRuleSession {
     cl = new URLClassLoader(new URL[] {createJarPathForTestRuleSession().toUri().toURL()}, parent);
     Thread.currentThread().setContextClassLoader(cl);
     
-    RuleEngine ruleEngine = new RuleEngine();
+    RuleEngine ruleEngine = RuleEngine.getInstance();
+    ruleEngine.reset();
     RuleSession ruleSession = ruleEngine.newRuleSession();
     List<RuleWrapper> candidateRules = ruleSession.withCategoryNames("test1")
         .withRuleNames("TestRule1").getCandidateRules();
@@ -289,7 +292,8 @@ public class TestRuleSession {
     cl = new URLClassLoader(new URL[] {createJarPathForRulePriority().toUri().toURL()}, parent);
     Thread.currentThread().setContextClassLoader(cl);
     
-    RuleEngine ruleEngine = new RuleEngine();
+    RuleEngine ruleEngine = RuleEngine.getInstance();
+    ruleEngine.reset();
     RuleSession ruleSession = ruleEngine.newRuleSession();
     List<RuleWrapper> candidateRules = ruleSession.withCategoryNames("test2").getCandidateRules();
 
@@ -413,7 +417,8 @@ public class TestRuleSession {
     cl = new URLClassLoader(new URL[] {createJarPathForExecutingRules().toUri().toURL()}, parent);
     Thread.currentThread().setContextClassLoader(cl);
     
-    RuleEngine ruleEngine = new RuleEngine();
+    RuleEngine ruleEngine = RuleEngine.getInstance();
+    ruleEngine.reset();
     RuleSession ruleSession = ruleEngine.newRuleSession();
     EvaluationContext context = new EvaluationContext();
     
@@ -430,7 +435,7 @@ public class TestRuleSession {
     }
   }
   
-  @Test(expected=ValidationFailedException.class)
+  @Test(expected=EvaluationFailedException.class)
   public void testFireRulesWithException() throws Exception {
     ClassLoader parent = Thread.currentThread().getContextClassLoader();
     URLClassLoader cl;
@@ -438,7 +443,8 @@ public class TestRuleSession {
     cl = new URLClassLoader(new URL[] {createJarPathForExecutingRules().toUri().toURL()}, parent);
     Thread.currentThread().setContextClassLoader(cl);
     
-    RuleEngine ruleEngine = new RuleEngine();
+    RuleEngine ruleEngine = RuleEngine.getInstance();
+    ruleEngine.reset();
     RuleSession ruleSession = ruleEngine.newRuleSession();
     EvaluationContext context = new EvaluationContext();
     

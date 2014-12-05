@@ -40,7 +40,7 @@ public class TajoConfValidationRule implements RuntimeRule {
   private Collection<ConstraintViolation> isValidationTestPassed(TajoConf.ConfVars confVar, String varValue) {
     Set<ConstraintViolation> violationSet = TUtil.newHashSet();
     
-    if (confVar.valueClass() != null && confVar.validator() != null) {
+    if (varValue != null && confVar.valueClass() != null && confVar.validator() != null) {
       Class<?> valueClazz = confVar.valueClass();
       Validator validator = confVar.validator();
       

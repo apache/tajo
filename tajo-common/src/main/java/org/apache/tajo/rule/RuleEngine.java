@@ -29,15 +29,29 @@ import org.apache.tajo.util.TUtil;
 public class RuleEngine {
 
   private final Map<String, Map<String, RuleWrapper>> wrapperMap;
+  private static RuleEngine instance;
   
-  public RuleEngine() {
+  private RuleEngine() {
     wrapperMap = TUtil.newHashMap();
+    loadPredefinedRules();
+  }
+  
+  public static RuleEngine getInstance() {
+    if (instance == null) {
+      synchronized (RuleEngine.class) {
+        if (instance == null) {
+          instance = new RuleEngine();
+        }
+      }
+    }
+    return instance;
   }
   
   public void reset() {
     if (wrapperMap != null) {
       wrapperMap.clear();
     }
+    loadPredefinedRules();
   }
   
   public RuleSession newRuleSession() {
