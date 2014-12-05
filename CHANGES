@@ -83,6 +83,11 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1194: 'INSERT OVERWRITE .. SELECT' does not remove existing data when result is empty.
+    (jaehwa)
+
+    TAJO-1191: Change DateDatum timezone to UTC. (Jaewoong Jung via hyunsik)
+
     TAJO-1224: When there is no projected column, json scan can be hang. 
     (hyunsik) 
 
