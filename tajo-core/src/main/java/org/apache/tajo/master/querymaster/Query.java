@@ -465,8 +465,9 @@ public class Query implements EventHandler<QueryEvent> {
             boolean movedToOldTable = false;
             boolean committed = false;
             Path oldTableDir = new Path(queryContext.getStagingDir(), TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
+            ContentSummary summary = fs.getContentSummary(stagingResultDir);
 
-            if (queryContext.hasPartition()) {
+            if (queryContext.hasPartition() && summary.getFileCount() > 0L) {
               // This is a map for existing non-leaf directory to rename. A key is current directory and a value is
               // renaming directory.
               Map<Path, Path> renameDirs = TUtil.newHashMap();

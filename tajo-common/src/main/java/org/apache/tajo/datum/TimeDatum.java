@@ -128,13 +128,9 @@ public class TimeDatum extends Datum {
       }
       case DATE: {
         TimeMeta tm = toTimeMeta();
-        DateTimeUtil.toUserTimezone(tm);     //TimeDatum is UTC
-
         DateDatum dateDatum = (DateDatum) datum;
         TimeMeta dateTm = dateDatum.toTimeMeta();
         dateTm.plusTime(DateTimeUtil.toTime(tm));
-
-        DateTimeUtil.toUTCTimezone(dateTm);
         return new TimestampDatum(DateTimeUtil.toJulianTimestamp(dateTm));
       }
       default:
