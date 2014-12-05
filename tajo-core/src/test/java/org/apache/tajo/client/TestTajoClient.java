@@ -680,7 +680,7 @@ public class TestTajoClient {
   }
 
   @Test
-  public void testSetCvsNull() throws Exception {
+  public void testNullCharSession() throws Exception {
     String sql =
         "select\n" +
             "  c_custkey,\n" +
@@ -692,17 +692,44 @@ public class TestTajoClient {
             "  c_custkey,\n" +
             "  orders.o_orderkey;\n";
 
-    TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
+    Map<String, String> variables = new HashMap<String, String>();
+    variables.put(SessionVars.NULL_CHAR.keyname(), "\\\\T");
+    client.updateSessionVariables(variables);
+    TajoResultSet resultDesc = (TajoResultSet)client.executeQueryAndGetResult(sql);
+    resultDesc.close();
+    assertNullCharSessionVar(resultDesc.getTableDesc());
+  }
+
+  @Test
+  public void testNullCharSessionInCTAS() throws Exception {
+    String sql =
+        "create table nullcharsession as select\n" +
+            "  c_custkey,\n" +
+            "  orders.o_orderkey,\n" +
+            "  orders.o_orderstatus \n" +
+            "from\n" +
+            "  orders full outer join customer on c_custkey = o_orderkey\n" +
+            "order by\n" +
+            "  c_custkey,\n" +
+            "  orders.o_orderkey;\n";
 
     Map<String, String> variables = new HashMap<String, String>();
     variables.put(SessionVars.NULL_CHAR.keyname(), "\\\\T");
     client.updateSessionVariables(variables);
-
     TajoResultSet res = (TajoResultSet)client.executeQueryAndGetResult(sql);
+    res.close();
 
-    assertEquals(res.getTableDesc().getMeta().getOption(StorageConstants.TEXT_NULL), "\\\\T");
+    TableDesc resultDesc = client.getTableDesc("nullcharsession");
+    assertNullCharSessionVar(resultDesc);
+  }
 
-    Path path = new Path(res.getTableDesc().getPath());
+
+  public void assertNullCharSessionVar(TableDesc resultDesc) throws Exception {
+    TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
+
+    assertEquals(resultDesc.getMeta().getOption(StorageConstants.TEXT_NULL), "\\\\T");
+
+    Path path = new Path(resultDesc.getPath());
     FileSystem fs = path.getFileSystem(tajoConf);
 
     FileStatus[] files = fs.listStatus(path);
