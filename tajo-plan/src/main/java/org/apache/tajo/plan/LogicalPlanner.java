@@ -1706,13 +1706,25 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       createTableNode.setStorageType(CatalogProtos.StoreType.CSV);
     }
 
-    // Set default storage properties to be created.
-    KeyValueSet keyValueSet = CatalogUtil.newPhysicalProperties(createTableNode.getStorageType());
+
+
+    // Set default storage properties to table
+    KeyValueSet properties = CatalogUtil.newPhysicalProperties(createTableNode.getStorageType());
+
+    // Priority to apply table properties
+    // 1. Explicit table properties specified in WITH clause
+    // 2. Session variables
+
+    // Set session variables to properties
+    PlannerUtil.applySessionToTableProperties(context.queryContext, createTableNode.getStorageType(), properties);
+    // Set table properties specified in WITH clause
     if (expr.hasParams()) {
-      keyValueSet.putAll(expr.getParams());
+      properties.putAll(expr.getParams());
     }
 
-    createTableNode.setOptions(keyValueSet);
+    createTableNode.setOptions(properties);
+
+
 
     if (expr.hasPartition()) {
       if (expr.getPartitionMethod().getPartitionType().equals(PartitionType.COLUMN)) {

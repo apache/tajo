@@ -314,98 +314,98 @@ public class TestDateTimeFunctions extends ExprTestBase {
      testSimpleEval("select utc_usec_to('week' ,1207929480000000, 2);", new String[]{1207612800000000L+""});
   }
 
-//  @Test
-//  public void testToDate() throws IOException {
-//    testSimpleEval("select to_date('2014-01-04', 'YYYY-MM-DD')", new String[]{"2014-01-04"});
-//    testSimpleEval("select to_date('2014-01-04', 'YYYY-MM-DD') + interval '1 day'",
-//        new String[]{"2014-01-05 00:00:00" + getUserTimeZoneDisplay()});
-//
-//    testSimpleEval("SELECT to_date('201404', 'yyyymm');", new String[]{"2014-04-01"});
-//  }
+  @Test
+  public void testToDate() throws IOException {
+    testSimpleEval("select to_date('2014-01-04', 'YYYY-MM-DD')", new String[]{"2014-01-04"});
+    testSimpleEval("select to_date('2014-01-04', 'YYYY-MM-DD') + interval '1 day'",
+        new String[]{"2014-01-05 00:00:00" + getUserTimeZoneDisplay()});
 
-//  @Test
-//  public void testAddMonths() throws Exception {
-//    testSimpleEval("SELECT add_months(date '2013-12-17', 2::INT2);",
-//        new String[]{"2014-02-17 00:00:00" + getUserTimeZoneDisplay()});
-//    testSimpleEval("SELECT add_months(date '2013-12-17', 2::INT4);",
-//        new String[]{"2014-02-17 00:00:00" + getUserTimeZoneDisplay()});
-//    testSimpleEval("SELECT add_months(date '2013-12-17', 2::INT8);",
-//        new String[]{"2014-02-17 00:00:00" + getUserTimeZoneDisplay()});
-//
-//    testSimpleEval("SELECT add_months(timestamp '2013-12-17 12:10:20', 2::INT2);",
-//        new String[]{"2014-02-17 12:10:20" + getUserTimeZoneDisplay()});
-//    testSimpleEval("SELECT add_months(timestamp '2013-12-17 12:10:20', 2::INT4);",
-//        new String[]{"2014-02-17 12:10:20" + getUserTimeZoneDisplay()});
-//    testSimpleEval("SELECT add_months(timestamp '2013-12-17 12:10:20', 2::INT8);",
-//        new String[]{"2014-02-17 12:10:20" + getUserTimeZoneDisplay()});
-//
-//    testSimpleEval("SELECT add_months(date '2014-02-05', -3::INT2);",
-//        new String[]{"2013-11-05 00:00:00" + getUserTimeZoneDisplay()});
-//    testSimpleEval("SELECT add_months(date '2014-02-05', -3::INT4);",
-//        new String[]{"2013-11-05 00:00:00" + getUserTimeZoneDisplay()});
-//    testSimpleEval("SELECT add_months(date '2014-02-05', -3::INT8);",
-//        new String[]{"2013-11-05 00:00:00" + getUserTimeZoneDisplay()});
-//
-//    testSimpleEval("SELECT add_months(timestamp '2014-02-05 12:10:20', -3::INT2);",
-//        new String[]{"2013-11-05 12:10:20" + getUserTimeZoneDisplay()});
-//    testSimpleEval("SELECT add_months(timestamp '2014-02-05 12:10:20', -3::INT4);",
-//        new String[]{"2013-11-05 12:10:20" + getUserTimeZoneDisplay()});
-//    testSimpleEval("SELECT add_months(timestamp '2014-02-05 12:10:20', -3::INT8);",
-//        new String[]{"2013-11-05 12:10:20" + getUserTimeZoneDisplay()});
-//  }
+    testSimpleEval("SELECT to_date('201404', 'yyyymm');", new String[]{"2014-04-01"});
+  }
 
-//  @Test
-//  public void testAddDays() throws IOException {
-//    testSimpleEval("SELECT add_days(date '2013-12-30', 5::INT2);",
-//        new String[]{"2014-01-04 00:00:00" + getUserTimeZoneDisplay()});
-//    testSimpleEval("SELECT add_days(date '2013-12-30', 5::INT4);",
-//        new String[]{"2014-01-04 00:00:00" + getUserTimeZoneDisplay()});
-//    testSimpleEval("SELECT add_days(date '2013-12-30', 5::INT8);",
-//        new String[]{"2014-01-04 00:00:00" + getUserTimeZoneDisplay()});
-//
-//    testSimpleEval("SELECT add_days(timestamp '2013-12-30 12:10:20', 5::INT2);",
-//        new String[]{"2014-01-04 12:10:20" + getUserTimeZoneDisplay()});
-//    testSimpleEval("SELECT add_days(timestamp '2013-12-30 12:10:20', 5::INT4);",
-//        new String[]{"2014-01-04 12:10:20" + getUserTimeZoneDisplay()});
-//    testSimpleEval("SELECT add_days(timestamp '2013-12-30 12:10:20', 5::INT8);",
-//        new String[]{"2014-01-04 12:10:20" + getUserTimeZoneDisplay()});
-//
-//    testSimpleEval("SELECT add_days(date '2013-12-05', -7::INT2);",
-//        new String[]{"2013-11-28 00:00:00" + getUserTimeZoneDisplay()});
-//    testSimpleEval("SELECT add_days(date '2013-12-05', -7::INT4);",
-//        new String[]{"2013-11-28 00:00:00" + getUserTimeZoneDisplay()});
-//    testSimpleEval("SELECT add_days(date '2013-12-05', -7::INT8);",
-//        new String[]{"2013-11-28 00:00:00" + getUserTimeZoneDisplay()});
-//
-//    testSimpleEval("SELECT add_days(timestamp '2013-12-05 12:10:20', -7::INT2);",
-//        new String[]{"2013-11-28 12:10:20" + getUserTimeZoneDisplay()});
-//    testSimpleEval("SELECT add_days(timestamp '2013-12-05 12:10:20', -7::INT4);",
-//        new String[]{"2013-11-28 12:10:20" + getUserTimeZoneDisplay()});
-//    testSimpleEval("SELECT add_days(timestamp '2013-12-05 12:10:20', -7::INT8);",
-//        new String[]{"2013-11-28 12:10:20" + getUserTimeZoneDisplay()});
-//  }
-//
-//  @Test
-//  public void testDateTimeNow() throws IOException {
-//    TimeZone originTimeZone = TajoConf.setCurrentTimeZone(TimeZone.getTimeZone("GMT-6"));
-//    TimeZone systemOriginTimeZone = TimeZone.getDefault();
-//    TimeZone.setDefault(TimeZone.getTimeZone("GMT-6"));
-//    try {
-//      Date expectedDate = new Date(System.currentTimeMillis());
-//
-//      testSimpleEval("select to_char(now(), 'yyyy-MM-dd');",
-//          new String[]{dateFormat(expectedDate, "yyyy-MM-dd")});
-//      testSimpleEval("select cast(extract(year from now()) as INT4);",
-//          new String[]{dateFormat(expectedDate, "yyyy")});
-//      testSimpleEval("select current_date();",
-//          new String[]{dateFormat(expectedDate, "yyyy-MM-dd")});
-//      testSimpleEval("select cast(extract(hour from current_time()) as INT4);",
-//          new String[]{String.valueOf(Integer.parseInt(dateFormat(expectedDate, "HH")))});
-//    } finally {
-//      TajoConf.setCurrentTimeZone(originTimeZone);
-//      TimeZone.setDefault(systemOriginTimeZone);
-//    }
-//  }
+  @Test
+  public void testAddMonths() throws Exception {
+    testSimpleEval("SELECT add_months(date '2013-12-17', 2::INT2);",
+        new String[]{"2014-02-17 00:00:00" + getUserTimeZoneDisplay()});
+    testSimpleEval("SELECT add_months(date '2013-12-17', 2::INT4);",
+        new String[]{"2014-02-17 00:00:00" + getUserTimeZoneDisplay()});
+    testSimpleEval("SELECT add_months(date '2013-12-17', 2::INT8);",
+        new String[]{"2014-02-17 00:00:00" + getUserTimeZoneDisplay()});
+
+    testSimpleEval("SELECT add_months(timestamp '2013-12-17 12:10:20', 2::INT2);",
+        new String[]{"2014-02-17 12:10:20" + getUserTimeZoneDisplay()});
+    testSimpleEval("SELECT add_months(timestamp '2013-12-17 12:10:20', 2::INT4);",
+        new String[]{"2014-02-17 12:10:20" + getUserTimeZoneDisplay()});
+    testSimpleEval("SELECT add_months(timestamp '2013-12-17 12:10:20', 2::INT8);",
+        new String[]{"2014-02-17 12:10:20" + getUserTimeZoneDisplay()});
+
+    testSimpleEval("SELECT add_months(date '2014-02-05', -3::INT2);",
+        new String[]{"2013-11-05 00:00:00" + getUserTimeZoneDisplay()});
+    testSimpleEval("SELECT add_months(date '2014-02-05', -3::INT4);",
+        new String[]{"2013-11-05 00:00:00" + getUserTimeZoneDisplay()});
+    testSimpleEval("SELECT add_months(date '2014-02-05', -3::INT8);",
+        new String[]{"2013-11-05 00:00:00" + getUserTimeZoneDisplay()});
+
+    testSimpleEval("SELECT add_months(timestamp '2014-02-05 12:10:20', -3::INT2);",
+        new String[]{"2013-11-05 12:10:20" + getUserTimeZoneDisplay()});
+    testSimpleEval("SELECT add_months(timestamp '2014-02-05 12:10:20', -3::INT4);",
+        new String[]{"2013-11-05 12:10:20" + getUserTimeZoneDisplay()});
+    testSimpleEval("SELECT add_months(timestamp '2014-02-05 12:10:20', -3::INT8);",
+        new String[]{"2013-11-05 12:10:20" + getUserTimeZoneDisplay()});
+  }
+
+  @Test
+  public void testAddDays() throws IOException {
+    testSimpleEval("SELECT add_days(date '2013-12-30', 5::INT2);",
+        new String[]{"2014-01-04 00:00:00" + getUserTimeZoneDisplay()});
+    testSimpleEval("SELECT add_days(date '2013-12-30', 5::INT4);",
+        new String[]{"2014-01-04 00:00:00" + getUserTimeZoneDisplay()});
+    testSimpleEval("SELECT add_days(date '2013-12-30', 5::INT8);",
+        new String[]{"2014-01-04 00:00:00" + getUserTimeZoneDisplay()});
+
+    testSimpleEval("SELECT add_days(timestamp '2013-12-30 12:10:20', 5::INT2);",
+        new String[]{"2014-01-04 12:10:20" + getUserTimeZoneDisplay()});
+    testSimpleEval("SELECT add_days(timestamp '2013-12-30 12:10:20', 5::INT4);",
+        new String[]{"2014-01-04 12:10:20" + getUserTimeZoneDisplay()});
+    testSimpleEval("SELECT add_days(timestamp '2013-12-30 12:10:20', 5::INT8);",
+        new String[]{"2014-01-04 12:10:20" + getUserTimeZoneDisplay()});
+
+    testSimpleEval("SELECT add_days(date '2013-12-05', -7::INT2);",
+        new String[]{"2013-11-28 00:00:00" + getUserTimeZoneDisplay()});
+    testSimpleEval("SELECT add_days(date '2013-12-05', -7::INT4);",
+        new String[]{"2013-11-28 00:00:00" + getUserTimeZoneDisplay()});
+    testSimpleEval("SELECT add_days(date '2013-12-05', -7::INT8);",
+        new String[]{"2013-11-28 00:00:00" + getUserTimeZoneDisplay()});
+
+    testSimpleEval("SELECT add_days(timestamp '2013-12-05 12:10:20', -7::INT2);",
+        new String[]{"2013-11-28 12:10:20" + getUserTimeZoneDisplay()});
+    testSimpleEval("SELECT add_days(timestamp '2013-12-05 12:10:20', -7::INT4);",
+        new String[]{"2013-11-28 12:10:20" + getUserTimeZoneDisplay()});
+    testSimpleEval("SELECT add_days(timestamp '2013-12-05 12:10:20', -7::INT8);",
+        new String[]{"2013-11-28 12:10:20" + getUserTimeZoneDisplay()});
+  }
+
+  @Test
+  public void testDateTimeNow() throws IOException {
+    TimeZone originTimeZone = TajoConf.setCurrentTimeZone(TimeZone.getTimeZone("GMT-6"));
+    TimeZone systemOriginTimeZone = TimeZone.getDefault();
+    TimeZone.setDefault(TimeZone.getTimeZone("GMT-6"));
+    try {
+      Date expectedDate = new Date(System.currentTimeMillis());
+
+      testSimpleEval("select to_char(now(), 'yyyy-MM-dd');",
+          new String[]{dateFormat(expectedDate, "yyyy-MM-dd")});
+      testSimpleEval("select cast(extract(year from now()) as INT4);",
+          new String[]{dateFormat(expectedDate, "yyyy")});
+      testSimpleEval("select current_date();",
+          new String[]{dateFormat(expectedDate, "yyyy-MM-dd")});
+      testSimpleEval("select cast(extract(hour from current_time()) as INT4);",
+          new String[]{String.valueOf(Integer.parseInt(dateFormat(expectedDate, "HH")))});
+    } finally {
+      TajoConf.setCurrentTimeZone(originTimeZone);
+      TimeZone.setDefault(systemOriginTimeZone);
+    }
+  }
 
   @Test
   public void testTimeValueKeyword() throws IOException {
