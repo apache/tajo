@@ -32,6 +32,7 @@ public class ByteBufLineReader implements Closeable {
 
   private int bufferSize;
   private long readBytes;
+  private boolean eof = false;
   private ByteBuf buffer;
   private final ByteBufInputChannel channel;
   private final AtomicInteger tempReadBytes = new AtomicInteger();
@@ -92,6 +93,10 @@ public class ByteBufLineReader implements Closeable {
       for (; ; ) {
         int localReadBytes = buffer.writeBytes(channel, bufferSize - readBytes);
         if (localReadBytes < 0) {
+          if (tailBytes == readBytes) {
+            // no more bytes are in the channel
+            eof = true;
+          }
           break;
         }
         readBytes += localReadBytes;
@@ -101,7 +106,9 @@ public class ByteBufLineReader implements Closeable {
       }
       this.readBytes += (readBytes - tailBytes);
       release = false;
-      this.buffer.readerIndex(this.buffer.readerIndex() + tailBytes); //skip past buffer (tail)
+      if (!eof) {
+        this.buffer.readerIndex(this.buffer.readerIndex() + tailBytes); //skip past buffer (tail)
+      }
     } finally {
       if (release) {
         buffer.release();
@@ -113,6 +120,8 @@ public class ByteBufLineReader implements Closeable {
    * Read a line terminated by one of CR, LF, or CRLF.
    */
   public ByteBuf readLineBuf(AtomicInteger reads) throws IOException {
+    if(eof) return null;
+
     int startIndex = buffer.readerIndex();
     int readBytes;
     int readable;
@@ -127,14 +136,21 @@ public class ByteBufLineReader implements Closeable {
         if (!buffer.isReadable()) {
           return null;
         } else {
-          startIndex = 0; // reset the line start position
+          if (!eof) startIndex = 0; // reset the line start position
+          else startIndex = buffer.readerIndex();
         }
         readable = buffer.readableBytes();
       }
 
       int endIndex = buffer.forEachByte(buffer.readerIndex(), readable, processor);
       if (endIndex < 0) {
-        buffer.readerIndex(buffer.writerIndex());
+        //does not appeared terminating newline
+        buffer.readerIndex(buffer.writerIndex()); // set to end buffer
+        if(eof){
+          readBytes = buffer.readerIndex() - startIndex;
+          newlineLength = 0;
+          break loop;
+        }
       } else {
         buffer.readerIndex(endIndex + 1);
         readBytes = buffer.readerIndex() - startIndex;

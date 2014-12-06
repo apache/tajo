@@ -162,6 +162,7 @@
                 <argument>--proto_path=../tajo-client/src/main/proto</argument>
                 <argument>--proto_path=../tajo-plan/src/main/proto</argument>
                 <argument>--java_out=target/generated-sources/proto</argument>
+                <argument>src/main/proto/ContainerProtocol.proto</argument>
                 <argument>src/main/proto/ResourceTrackerProtocol.proto</argument>
                 <argument>src/main/proto/QueryMasterProtocol.proto</argument>
                 <argument>src/main/proto/TajoMasterProtocol.proto</argument>

@@ -5,13 +5,25 @@ Release 0.9.1 - unreleased
 
   NEW FEATURES
 
+    TAJO-1222: DelimitedTextFile should be tolerant against parsing errors.
+    (hyunsik)
+
     TAJO-1026: Implement Query history persistency manager.(Hyoungjun Kim)
 
     TAJO-233: Support PostgreSQL CatalogStore. (Jihun Kang via hyunsik)
 
     TAJO-235: Support Oracle CatalogStore. (Jihun Kang via hyunsik)
 
+    TAJO-1095: Implement Json file scanner. (hyunsik)
+
   IMPROVEMENT
+
+    TAJO-1165: Needs to show error messages on query_executor.jsp. 
+    (Jihun Kang via jaehwa)
+
+    TAJO-1204: Remove unused ServerName class. (DaeMyung Kang via jaehwa)
+
+    TAJO-1053: ADD PARTITIONS for HCatalogStore. (jaehwa)
 
     TAJO-1195: Remove unused CachedDNSResolver Class. (DaeMyung Kang via jaehwa)
 
@@ -60,8 +72,49 @@ Release 0.9.1 - unreleased
     TAJO-1172: Remove Trevni storage type and its related classes.
     (DaeMyung Kang via hyunsik)
 
+    TAJO-1163: TableDesc should use URI instead of Path. (hyunsik)
+
+    TAJO-1188: Fix testcase testTimestampConstructor in TestTimestampDatum.
+    (DaeMyung Kang via hyunsik)
+
+    TAJO-1209: Pluggable line (de)serializer for DelimitedTextFile.
+    (hyunsik)
+
 
   BUG FIXES
+
+    TAJO-1231: Implicit table properties in session are not stored in 
+    table property. (hyunsik)
+
+    TAJO-1194: 'INSERT OVERWRITE .. SELECT' does not remove existing data 
+    when result is empty. (jaehwa)
+
+    TAJO-1191: Change DateDatum timezone to UTC. (Jaewoong Jung via hyunsik)
+
+    TAJO-1224: When there is no projected column, json scan can be hang. 
+    (hyunsik) 
+
+    TAJO-1220: Implement createStatement() and setEscapeProcessing() in 
+    JdbcConnection. (YeonSu Han via hyunsik)
+
+    TAJO-1183: Keep command execution even with errors. (Jaewoong Jung via 
+    hyunsik)
+
+    TAJO-1190: INSERT INTO to partition tables may cause NPE. (hyunsik)
+
+    TAJO-1211: Staging directory for CTAS and INSERT should be in 
+    the output dir. (hyunsik)
+
+    TAJO-1210: ByteBufLineReader does not handle the end of file, 
+    if newline is not appeared. (jinho)
+
+    TAJO-1119: JDBC driver should support TIMESTAMP type. (jaehwa)
+
+    TAJO-1166: S3 related storage causes compilation error in Hadoop 
+    2.6.0-SNAPSHOT. (jaehwa)
+
+    TAJO-1208: Failure of create table using textfile on hivemeta.
+    (jinho)
 
     TAJO-1205: Remove possible memory leak in TajoMaster. (jinho)
 

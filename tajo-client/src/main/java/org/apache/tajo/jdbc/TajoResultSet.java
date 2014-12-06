@@ -81,7 +81,7 @@ public class TajoResultSet extends TajoResultSetBase {
   private void initScanner() throws IOException {
     if(desc != null) {
       schema = desc.getSchema();
-      fs = FileScanner.getFileSystem(conf, desc.getPath());
+      fs = FileScanner.getFileSystem(conf, new Path(desc.getPath()));
       if (maxRowNum != null) {
         this.totalRows = maxRowNum;
       } else {
@@ -92,7 +92,7 @@ public class TajoResultSet extends TajoResultSetBase {
         totalRows = INFINITE_ROW_NUM;
       }
 
-      List<FileFragment> frags = getFragments(desc.getPath());
+      List<FileFragment> frags = getFragments(new Path(desc.getPath()));
       scanner = new MergeScanner(conf, desc.getSchema(), desc.getMeta(), frags);
     }
   }

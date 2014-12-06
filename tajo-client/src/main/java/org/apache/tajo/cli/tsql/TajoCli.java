@@ -390,7 +390,7 @@ public class TajoCli {
   public int runShell() throws Exception {
     String line;
     String currentPrompt = context.getCurrentDatabase();
-    int exitCode = 0;
+    int exitCode;
 
     sout.write("Try \\? for help.\n");
 
@@ -416,7 +416,8 @@ public class TajoCli {
           exitCode = executeParsedResults(parsedResults);
           currentPrompt = updatePrompt(parser.getState());
 
-          if (exitCode != 0 && context.getBool(SessionVars.ON_ERROR_STOP)) {
+          // if at least one failed
+          if (exitCode != 0) {
             return exitCode;
           }
         }
@@ -430,11 +431,11 @@ public class TajoCli {
       
       throw e;
     }
-    return exitCode;
+    return 0;
   }
 
   private int executeParsedResults(Collection<ParsedResult> parsedResults) throws Exception {
-    int exitCode = 0;
+    int exitCode;
     for (ParsedResult parsedResult : parsedResults) {
       if (parsedResult.getType() == META) {
         exitCode = executeMetaCommand(parsedResult.getStatement());
@@ -442,12 +443,12 @@ public class TajoCli {
         exitCode = executeQuery(parsedResult.getStatement());
       }
 
-      if (exitCode != 0) {
+      if (exitCode != 0 && context.getBool(SessionVars.ON_ERROR_STOP)) {
         return exitCode;
       }
     }
 
-    return exitCode;
+    return 0;
   }
 
   public int executeMetaCommand(String line) throws Exception {

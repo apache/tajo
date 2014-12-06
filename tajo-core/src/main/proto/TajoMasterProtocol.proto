@@ -28,6 +28,9 @@ import "tajo_protos.proto";
 import "TajoIdProtos.proto";
 import "CatalogProtos.proto";
 import "PrimitiveProtos.proto";
+import "ContainerProtocol.proto";
+
+package hadoop.yarn;
 
 message ServerStatusProto {
     message System {
@@ -119,11 +122,11 @@ message WorkerResourcesRequest {
 
 message WorkerResourceReleaseRequest {
     required ExecutionBlockIdProto executionBlockId = 1;
-    repeated hadoop.yarn.ContainerIdProto containerIds = 2;
+    repeated TajoContainerIdProto containerIds = 2;
 }
 
 message WorkerAllocatedResource {
-    required hadoop.yarn.ContainerIdProto containerId = 1;
+    required TajoContainerIdProto containerId = 1;
     required WorkerConnectionInfoProto connectionInfo = 2;
 
     required int32 allocatedMemoryMB = 3;

@@ -19,9 +19,7 @@
 package org.apache.tajo.engine.query;
 
 import com.google.common.collect.Maps;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.DeflateCodec;
@@ -43,6 +41,7 @@ import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.worker.TajoWorker;
 import org.junit.Test;
@@ -202,7 +201,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
   private void assertPartitionDirectories(TableDesc desc) throws IOException {
     FileSystem fs = FileSystem.get(conf);
-    Path path = desc.getPath();
+    Path path = new Path(desc.getPath());
     assertTrue(fs.isDirectory(path));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=17.0")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/key=36.0")));
@@ -309,7 +308,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res.close();
 
     TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
-    Path path = desc.getPath();
+    Path path = new Path(desc.getPath());
 
     FileSystem fs = FileSystem.get(conf);
     assertTrue(fs.isDirectory(path));
@@ -373,7 +372,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res.close();
 
     TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
-    Path path = desc.getPath();
+    Path path = new Path(desc.getPath());
 
     FileSystem fs = FileSystem.get(conf);
     assertTrue(fs.isDirectory(path));
@@ -426,7 +425,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res.close();
 
     desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
-    path = desc.getPath();
+    path = new Path(desc.getPath());
 
     assertTrue(fs.isDirectory(path));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
@@ -455,7 +454,7 @@ public class TestTablePartitions extends QueryTestCaseBase {
         "R\n" +
         "R\n";
 
-    String tableData = getTableFileContents(desc.getPath());
+    String tableData = getTableFileContents(new Path(desc.getPath()));
     assertEquals(expected, tableData);
 
     res = executeString("select * from " + tableName + " where col2 = 2");
@@ -520,6 +519,20 @@ public class TestTablePartitions extends QueryTestCaseBase {
         "N,1,1,36.0\n";
 
     assertEquals(expected, resultSetData);
+
+    // insert overwrite empty result to partitioned table
+    res = executeString("insert overwrite into " + tableName
+      + " select l_returnflag, l_orderkey, l_partkey, l_quantity from lineitem where l_orderkey" +
+      " > 100");
+    res.close();
+
+    desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+
+    ContentSummary summary = fs.getContentSummary(new Path(desc.getPath()));
+
+    assertEquals(summary.getDirectoryCount(), 1L);
+    assertEquals(summary.getFileCount(), 0L);
+    assertEquals(summary.getLength(), 0L);
   }
 
   @Test
@@ -541,10 +554,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
 
     FileSystem fs = FileSystem.get(conf);
-    assertTrue(fs.exists(desc.getPath()));
+    assertTrue(fs.exists(new Path(desc.getPath())));
     CompressionCodecFactory factory = new CompressionCodecFactory(conf);
 
-    Path path = desc.getPath();
+    Path path = new Path(desc.getPath());
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=3")));
@@ -578,10 +591,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
 
     FileSystem fs = FileSystem.get(conf);
-    assertTrue(fs.exists(desc.getPath()));
+    assertTrue(fs.exists(new Path(desc.getPath())));
     CompressionCodecFactory factory = new CompressionCodecFactory(conf);
 
-    Path path = desc.getPath();
+    Path path = new Path(desc.getPath());
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=2")));
@@ -623,10 +636,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
 
     FileSystem fs = FileSystem.get(conf);
-    assertTrue(fs.exists(desc.getPath()));
+    assertTrue(fs.exists(new Path(desc.getPath())));
     CompressionCodecFactory factory = new CompressionCodecFactory(conf);
 
-    Path path = desc.getPath();
+    Path path = new Path(desc.getPath());
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1/col3=17.0")));
@@ -706,10 +719,10 @@ public class TestTablePartitions extends QueryTestCaseBase {
     }
 
     FileSystem fs = FileSystem.get(conf);
-    assertTrue(fs.exists(desc.getPath()));
+    assertTrue(fs.exists(new Path(desc.getPath())));
     CompressionCodecFactory factory = new CompressionCodecFactory(conf);
 
-    Path path = desc.getPath();
+    Path path = new Path(desc.getPath());
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1")));
     assertTrue(fs.isDirectory(new Path(path.toUri() + "/col1=1/col2=1/col3=17.0")));
@@ -818,6 +831,39 @@ public class TestTablePartitions extends QueryTestCaseBase {
     if (!testingCluster.isHCatalogStoreRunning()) {
       assertEquals(5, desc.getStats().getNumRows().intValue());
     }
+  }
+
+  @Test
+  public final void testColumnPartitionedTableWithSmallerExpressions5() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testColumnPartitionedTableWithSmallerExpressions5");
+    ResultSet res = executeString(
+        "create table " + tableName + " (col1 text) partition by column(col2 text) ");
+    res.close();
+
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+    res = executeString("insert overwrite into " + tableName + "(col1) select l_returnflag from lineitem");
+    res.close();
+    res = executeString("select * from " + tableName);
+    assertResultSet(res);
+    res.close();
+  }
+
+  @Test
+  public final void testColumnPartitionedTableWithSmallerExpressions6() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testColumnPartitionedTableWithSmallerExpressions6");
+    ResultSet res = executeString(
+        "create table " + tableName + " (col1 text) partition by column(col2 text) ");
+    res.close();
+
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+    res = executeString(
+        "insert overwrite into " + tableName + "(col1) select l_returnflag from lineitem where l_orderkey = 1");
+    res.close();
+    res = executeString("select * from " + tableName);
+    assertResultSet(res);
+    res.close();
   }
 
   private MasterPlan getQueryPlan(ResultSet res) {
@@ -935,5 +981,26 @@ public class TestTablePartitions extends QueryTestCaseBase {
     res = executeString("select * from pTable948 where type='RA:*?><I/L#%S' or type='AIR01'");
     assertResultSet(res);
     cleanupQuery(res);
+  }
+
+  @Test
+  public final void testIgnoreFilesInIntermediateDir() throws Exception {
+    // See - TAJO-1219: Files located in intermediate directories of partitioned table should be ignored
+    // It verifies that Tajo ignores files located in intermediate directories of partitioned table.
+
+    Path testDir = CommonTestingUtil.getTestDir();
+
+    executeString(
+      "CREATE EXTERNAL TABLE testIgnoreFilesInIntermediateDir (col1 int) USING CSV PARTITION BY COLUMN (col2 text) " +
+        "LOCATION '" + testDir + "'");
+
+    FileSystem fs = testDir.getFileSystem(conf);
+    FSDataOutputStream fos = fs.create(new Path(testDir, "table1.data"));
+    fos.write("a|b|c".getBytes());
+    fos.close();
+
+    ResultSet res = executeString("select * from testIgnoreFilesInIntermediateDir;");
+    assertFalse(res.next());
+    res.close();
   }
 }
