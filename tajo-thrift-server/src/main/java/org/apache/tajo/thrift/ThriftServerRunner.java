@@ -25,8 +25,6 @@ import org.apache.tajo.thrift.generated.TajoThriftService;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.server.TServer;
-import org.apache.thrift.server.TThreadPoolServer;
-import org.apache.thrift.server.TThreadPoolServer.Args;
 import org.apache.thrift.transport.*;
 
 import java.net.InetAddress;
@@ -72,8 +70,12 @@ public class ThriftServerRunner extends Thread implements ThriftServerConstants 
     TBoundedThreadPoolServer tserver = new TBoundedThreadPoolServer(serverArgs);
     this.tserver = tserver;
 
-    this.address = serverTransport.getServerSocket().getInetAddress().getHostName() + ":" +
-        serverTransport.getServerSocket().getLocalPort();
+    if (listenAddress.isAnyLocalAddress()) {
+      this.address = InetAddress.getLocalHost().getHostName() + ":" + serverTransport.getServerSocket().getLocalPort();
+    } else {
+      this.address = serverTransport.getServerSocket().getInetAddress().getHostName() + ":" +
+          serverTransport.getServerSocket().getLocalPort();
+    }
   }
 
   public String getAddress() {

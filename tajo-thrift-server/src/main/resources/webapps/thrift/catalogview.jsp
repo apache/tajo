@@ -32,7 +32,7 @@
   TajoThriftServer tajoThriftServer =
       (TajoThriftServer) InfoHttpServer.getInstance().getAttribute("tajo.thrift.info.server.object");
   ThriftServerContext context = tajoThriftServer.getContext();
-  TajoThriftClient client = new TajoThriftClient(context.getConfig());
+  TajoThriftClient client = new TajoThriftClient(context.getConfig(), context.getServerName());
   try {
     String selectedDatabase = request.getParameter("database");
     if(selectedDatabase == null || selectedDatabase.trim().isEmpty()) {

@@ -31,7 +31,7 @@
   TajoThriftServer tajoThriftServer =
       (TajoThriftServer) InfoHttpServer.getInstance().getAttribute("tajo.thrift.info.server.object");
   ThriftServerContext context = tajoThriftServer.getContext();
-  TajoThriftClient client = new TajoThriftClient(context.getConfig());
+  TajoThriftClient client = new TajoThriftClient(context.getConfig(), context.getServerName());
   try {
     List<TBriefQueryInfo> queries = client.getQueryList();
 
