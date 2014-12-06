@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.function.string;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.BooleanDatum;
@@ -70,7 +71,8 @@ public class RegexpReplace extends GeneralFunction {
     });
   }
 
-  public void init(ParamType[] paramTypes) {
+  @Override
+  public void init(OverridableConf context, ParamType[] paramTypes) {
     if (paramTypes[0] == ParamType.NULL || paramTypes[1] == ParamType.NULL || paramTypes[2] == ParamType.NULL) {
       isAlwaysNull = true;
     } else if (paramTypes[1] == ParamType.CONSTANT) {

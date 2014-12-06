@@ -133,10 +133,7 @@ public class TestResultSet {
     // Hcatalog does not support date type, time type in hive-0.12.0
     if(util.isHCatalogStoreRunning()) return;
 
-    TimeZone tajoCurrentTimeZone = TajoConf.getCurrentTimeZone();
-    TajoConf.setCurrentTimeZone(TimeZone.getTimeZone("UTC"));
-
-    TimeZone systemCurrentTimeZone = TimeZone.getDefault();
+    TimeZone originalTimezone = TimeZone.getDefault();
     TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
 
     ResultSet res = null;
@@ -212,8 +209,8 @@ public class TestResultSet {
       assertNotNull(timestamp);
       assertEquals("2014-01-01 10:00:00.0", timestamp.toString());
     } finally {
-      TajoConf.setCurrentTimeZone(tajoCurrentTimeZone);
-      TimeZone.setDefault(systemCurrentTimeZone);
+      TimeZone.setDefault(originalTimezone);
+
       if (res != null) {
         res.close();
       }

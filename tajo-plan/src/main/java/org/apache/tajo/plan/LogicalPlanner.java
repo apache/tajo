@@ -83,6 +83,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     LogicalPlan plan;
     QueryBlock queryBlock;
     EvalTreeOptimizer evalOptimizer;
+    TimeZone timeZone;
     boolean debugOrUnitTests;
 
     public PlanContext(OverridableConf context, LogicalPlan plan, QueryBlock block, EvalTreeOptimizer evalOptimizer,
@@ -91,6 +92,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       this.plan = plan;
       this.queryBlock = block;
       this.evalOptimizer = evalOptimizer;
+
+      // session's time zone
+      if (context.containsKey(SessionVars.TZ)) {
+        String timezoneId = context.get(SessionVars.TZ);
+        timeZone = TimeZone.getTimeZone(timezoneId);
+      }
+
       this.debugOrUnitTests = debugOrUnitTests;
     }
 

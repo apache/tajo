@@ -23,23 +23,33 @@ import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
 import org.apache.tajo.storage.FieldSerializerDeserializer;
+import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.NumberUtil;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.CharsetDecoder;
+import java.util.TimeZone;
 
-//Compatibility with Apache Hive
 public class TextFieldSerializerDeserializer implements FieldSerializerDeserializer {
   public static final byte[] trueBytes = "true".getBytes();
   public static final byte[] falseBytes = "false".getBytes();
   private static ProtobufJsonFormat protobufJsonFormat = ProtobufJsonFormat.getInstance();
   private final CharsetDecoder decoder = CharsetUtil.getDecoder(CharsetUtil.UTF_8);
+
+  private final boolean hasTimezone;
+  private final TimeZone timezone;
+
+  public TextFieldSerializerDeserializer(TableMeta meta) {
+    hasTimezone = meta.containsOption(StorageConstants.TIMEZONE);
+    timezone = TimeZone.getTimeZone(meta.getOption(StorageConstants.TIMEZONE, StorageConstants.DEFAULT_TIMEZONE));
+  }
 
   private static boolean isNull(ByteBuf val, ByteBuf nullBytes) {
     return !val.isReadable() || nullBytes.equals(val);
@@ -50,7 +60,8 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
   }
 
   @Override
-  public int serialize(OutputStream out, Datum datum, Column col, int columnIndex, byte[] nullChars) throws IOException {
+  public int serialize(OutputStream out, Datum datum, Column col, int columnIndex, byte[] nullChars)
+      throws IOException {
     byte[] bytes;
     int length = 0;
     TajoDataTypes.DataType dataType = col.getDataType();
@@ -95,12 +106,20 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
         out.write(bytes);
         break;
       case TIME:
-        bytes = ((TimeDatum) datum).asChars(TajoConf.getCurrentTimeZone(), true).getBytes();
+        if (hasTimezone) {
+          bytes = ((TimeDatum) datum).asChars(timezone, true).getBytes();
+        } else {
+          bytes = datum.asTextBytes();
+        }
         length = bytes.length;
         out.write(bytes);
         break;
       case TIMESTAMP:
-        bytes = ((TimestampDatum) datum).asChars(TajoConf.getCurrentTimeZone(), true).getBytes();
+        if (hasTimezone) {
+          bytes = ((TimestampDatum) datum).asChars(timezone, true).getBytes();
+        } else {
+          bytes = datum.asTextBytes();
+        }
         length = bytes.length;
         out.write(bytes);
         break;
@@ -178,12 +197,22 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
               decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString());
           break;
         case TIME:
-          datum = DatumFactory.createTime(
-              decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString());
+          if (hasTimezone) {
+            datum = DatumFactory.createTime(
+                decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString(), timezone);
+          } else {
+            datum = DatumFactory.createTime(
+                decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString());
+          }
           break;
         case TIMESTAMP:
-          datum = DatumFactory.createTimestamp(
-              decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString());
+          if (hasTimezone) {
+            datum = DatumFactory.createTimestamp(
+                decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString(), timezone);
+          } else {
+            datum = DatumFactory.createTimestamp(
+                decoder.decode(buf.nioBuffer(buf.readerIndex(), buf.readableBytes())).toString());
+          }
           break;
         case INTERVAL:
           datum = DatumFactory.createInterval(

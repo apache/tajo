@@ -18,6 +18,7 @@
 
 package org.apache.tajo.conf;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 
 import org.apache.hadoop.conf.Configuration;
@@ -44,7 +45,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class TajoConf extends Configuration {
 
-  private static TimeZone CURRENT_TIMEZONE;
+  private static TimeZone SYSTEM_TIMEZONE;
   private static int DATE_ORDER = -1;
   private static final ReentrantReadWriteLock confLock = new ReentrantReadWriteLock();
   private static final Lock writeLock = confLock.writeLock();
@@ -90,21 +91,22 @@ public class TajoConf extends Configuration {
   public static TimeZone getCurrentTimeZone() {
     writeLock.lock();
     try {
-      if (CURRENT_TIMEZONE == null) {
+      if (SYSTEM_TIMEZONE == null) {
         TajoConf tajoConf = new TajoConf();
-        CURRENT_TIMEZONE = TimeZone.getTimeZone(tajoConf.getVar(ConfVars.$TIMEZONE));
+        SYSTEM_TIMEZONE = TimeZone.getTimeZone(tajoConf.getVar(ConfVars.$TIMEZONE));
       }
-      return CURRENT_TIMEZONE;
+      return SYSTEM_TIMEZONE;
     } finally {
       writeLock.unlock();
     }
   }
 
+  @VisibleForTesting @SuppressWarnings("unused")
   public static TimeZone setCurrentTimeZone(TimeZone timeZone) {
     writeLock.lock();
     try {
-      TimeZone oldTimeZone = CURRENT_TIMEZONE;
-      CURRENT_TIMEZONE = timeZone;
+      TimeZone oldTimeZone = SYSTEM_TIMEZONE;
+      SYSTEM_TIMEZONE = timeZone;
       return oldTimeZone;
     } finally {
       writeLock.unlock();
@@ -360,7 +362,7 @@ public class TajoConf extends Configuration {
     $CLI_ERROR_STOP("tajo.cli.error.stop", false),
 
     // Timezone & Date ----------------------------------------------------------
-    $TIMEZONE("tajo.timezone", TimeZone.getDefault().getID()),
+    $TIMEZONE("tajo.timezone", TajoConstants.SYSTEM_DEFAULT_TIMEZONE),
     $DATE_ORDER("tajo.date.order", "YMD"),
 
     // FILE FORMAT

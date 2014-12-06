@@ -20,6 +20,7 @@ package org.apache.tajo.plan.serder;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
@@ -43,7 +44,7 @@ import java.util.*;
  */
 public class EvalTreeProtoDeserializer {
 
-  public static EvalNode deserialize(PlanProto.EvalTree tree) {
+  public static EvalNode deserialize(OverridableConf context, PlanProto.EvalTree tree) {
     Map<Integer, EvalNode> evalNodeMap = Maps.newHashMap();
 
     // sort serialized eval nodes in an ascending order of their IDs.
@@ -79,7 +80,7 @@ public class EvalTreeProtoDeserializer {
           current = new IsNullEval(unaryProto.getNegative(), child);
           break;
         case CAST:
-          current = new CastEval(child, unaryProto.getCastingType());
+          current = new CastEval(context, child, unaryProto.getCastingType());
           break;
         case SIGNED:
           current = new SignedEval(unaryProto.getNegative(), child);
@@ -153,7 +154,7 @@ public class EvalTreeProtoDeserializer {
           funcDesc = new FunctionDesc(funcProto.getFuncion());
           if (type == EvalType.FUNCTION) {
             GeneralFunction instance = (GeneralFunction) funcDesc.newInstance();
-            current = new GeneralFunctionEval(new FunctionDesc(funcProto.getFuncion()), instance, params);
+            current = new GeneralFunctionEval(context, new FunctionDesc(funcProto.getFuncion()), instance, params);
           } else if (type == EvalType.AGG_FUNCTION || type == EvalType.WINDOW_FUNCTION) {
             AggFunction instance = (AggFunction) funcDesc.newInstance();
             if (type == EvalType.AGG_FUNCTION) {

@@ -45,7 +45,7 @@ public class CSVLineSerializer extends TextLineSerializer {
     delimiter = CSVLineSerDe.getFieldDelimiter(meta);
     columnNum = schema.size();
 
-    serde = new TextFieldSerializerDeserializer();
+    serde = new TextFieldSerializerDeserializer(meta);
   }
 
   @Override
