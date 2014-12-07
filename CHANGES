@@ -18,6 +18,8 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1213: Implement CatalogStore::updateTableStats. (jaehwa)
+
     TAJO-1165: Needs to show error messages on query_executor.jsp. 
     (Jihun Kang via jaehwa)
 
