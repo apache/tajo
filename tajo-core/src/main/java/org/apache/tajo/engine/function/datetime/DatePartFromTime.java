@@ -23,7 +23,6 @@ import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
@@ -64,7 +63,7 @@ public class DatePartFromTime extends GeneralFunction {
 
   @Override
   public void init(OverridableConf context, FunctionEval.ParamType [] types) {
-    String timezoneId = context.get(SessionVars.TZ, TajoConstants.SYSTEM_DEFAULT_TIMEZONE);
+    String timezoneId = context.get(SessionVars.TZ, TajoConstants.UTC_TIMEZONE);
     timezone = TimeZone.getTimeZone(timezoneId);
   }
 

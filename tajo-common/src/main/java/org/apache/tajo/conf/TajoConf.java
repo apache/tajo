@@ -84,11 +84,11 @@ public class TajoConf extends Configuration {
   }
 
   private static void confStaticInit() {
-    TimeZone.setDefault(getCurrentTimeZone());
+    TimeZone.setDefault(getSystemTimezone());
     getDateOrder();
   }
 
-  public static TimeZone getCurrentTimeZone() {
+  public static TimeZone getSystemTimezone() {
     writeLock.lock();
     try {
       if (SYSTEM_TIMEZONE == null) {
@@ -96,18 +96,6 @@ public class TajoConf extends Configuration {
         SYSTEM_TIMEZONE = TimeZone.getTimeZone(tajoConf.getVar(ConfVars.$TIMEZONE));
       }
       return SYSTEM_TIMEZONE;
-    } finally {
-      writeLock.unlock();
-    }
-  }
-
-  @VisibleForTesting @SuppressWarnings("unused")
-  public static TimeZone setCurrentTimeZone(TimeZone timeZone) {
-    writeLock.lock();
-    try {
-      TimeZone oldTimeZone = SYSTEM_TIMEZONE;
-      SYSTEM_TIMEZONE = timeZone;
-      return oldTimeZone;
     } finally {
       writeLock.unlock();
     }
@@ -362,7 +350,7 @@ public class TajoConf extends Configuration {
     $CLI_ERROR_STOP("tajo.cli.error.stop", false),
 
     // Timezone & Date ----------------------------------------------------------
-    $TIMEZONE("tajo.timezone", TajoConstants.SYSTEM_DEFAULT_TIMEZONE),
+    $TIMEZONE("tajo.timezone", TajoConstants.UTC_TIMEZONE),
     $DATE_ORDER("tajo.date.order", "YMD"),
 
     // FILE FORMAT

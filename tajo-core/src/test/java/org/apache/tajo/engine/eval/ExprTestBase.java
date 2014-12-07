@@ -74,10 +74,6 @@ public class ExprTestBase {
   private static LogicalOptimizer optimizer;
   private static LogicalPlanVerifier annotatedPlanVerifier;
 
-  public static String getUserTimeZoneDisplay() {
-    return DateTimeUtil.getTimeZoneDisplayTime(TajoConf.getCurrentTimeZone());
-  }
-
   public static String getUserTimeZoneDisplay(TimeZone tz) {
     return DateTimeUtil.getTimeZoneDisplayTime(tz);
   }

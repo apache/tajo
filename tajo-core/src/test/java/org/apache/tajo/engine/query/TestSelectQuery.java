@@ -18,11 +18,8 @@
 
 package org.apache.tajo.engine.query;
 
-import org.apache.tajo.IntegrationTest;
-import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.TajoConstants;
+import org.apache.tajo.*;
 import org.apache.tajo.TajoProtos.QueryState;
-import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
@@ -37,6 +34,8 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
@@ -537,5 +536,45 @@ public class TestSelectQuery extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+  }
+
+  @Test
+  public void testTimezonedTable1() throws Exception {
+    try {
+      executeDDL("datetime_table_ddl.sql", "timezoned", new String[]{"timezoned1"});
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE IF EXISTS timezoned1");
+    }
+  }
+
+  @Test
+  public void testTimezonedTable2() throws Exception {
+    try {
+      executeDDL("datetime_table_timezoned_ddl.sql", "timezoned", new String[]{"timezoned2"});
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE IF EXISTS timezoned2");
+    }
+  }
+
+  @Test
+  public void testTimezonedTable3() throws Exception {
+    Map<String,String> sessionVars = new HashMap<String, String>();
+    sessionVars.put(SessionVars.TZ.name(), "Asia/Seoul");
+    getClient().updateSessionVariables(sessionVars);
+
+    try {
+      executeDDL("datetime_table_timezoned_ddl.sql", "timezoned", new String[]{"timezoned3"});
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE IF EXISTS timezoned3");
+    }
   }
 }

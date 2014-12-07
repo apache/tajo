@@ -37,7 +37,6 @@ import org.apache.tajo.util.datetime.DateTimeFormat;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
-import java.util.Objects;
 import java.util.TimeZone;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
@@ -63,7 +62,7 @@ public class ToCharTimestamp extends GeneralFunction {
 
   @Override
   public void init(OverridableConf context, FunctionEval.ParamType[] paramTypes) {
-    String timezoneId = context.get(SessionVars.TZ, TajoConstants.SYSTEM_DEFAULT_TIMEZONE);
+    String timezoneId = context.get(SessionVars.TZ, TajoConstants.UTC_TIMEZONE);
     timezone = TimeZone.getTimeZone(timezoneId);
   }
 

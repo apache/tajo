@@ -2068,11 +2068,6 @@ public class DateTimeUtil {
     tm.plusMillis(timeZone.getRawOffset());
   }
 
-  public static void toUTCTimezone(TimeMeta tm) {
-    TimeZone timeZone = TajoConf.getCurrentTimeZone();
-    tm.plusMillis(0 - timeZone.getRawOffset());
-  }
-
   public static void toUTCTimezone(TimeMeta tm, TimeZone timeZone) {
     tm.plusMillis(0 - timeZone.getRawOffset());
   }

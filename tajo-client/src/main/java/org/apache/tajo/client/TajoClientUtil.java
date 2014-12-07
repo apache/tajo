@@ -88,7 +88,8 @@ public class TajoClientUtil {
       return new TajoMemoryResultSet(
           new Schema(serializedResultSet.getSchema()),
           serializedResultSet.getSerializedTuplesList(),
-          response.getMaxRowNum());
+          response.getMaxRowNum(),
+          client.getClientSideSessionVars());
     }
   }
 }

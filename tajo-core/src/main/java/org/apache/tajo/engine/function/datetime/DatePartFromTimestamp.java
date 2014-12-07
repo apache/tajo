@@ -59,7 +59,7 @@ public class DatePartFromTimestamp extends GeneralFunction {
 
   @Override
   public void init(OverridableConf context, FunctionEval.ParamType [] types) {
-    String timezoneId = context.get(SessionVars.TZ, TajoConstants.SYSTEM_DEFAULT_TIMEZONE);
+    String timezoneId = context.get(SessionVars.TZ, TajoConstants.UTC_TIMEZONE);
     timezone = TimeZone.getTimeZone(timezoneId);
   }
 
