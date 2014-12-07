@@ -835,7 +835,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       String[] splitted = CatalogUtil.splitTableName(statsProto.getTableName());
       if (splitted.length == 1) {
-        throw new IllegalArgumentException("createTable() requires a qualified table name, but it is \""
+        throw new IllegalArgumentException("updateTableStats() requires a qualified table name, but it is \""
           + statsProto.getTableName() + "\".");
       }
       String databaseName = splitted[0];
