@@ -27,6 +27,8 @@ import java.util.Collection;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import static org.apache.tajo.catalog.proto.CatalogProtos.TablespaceProto;
+import static org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
+
 
 public interface CatalogService {
 
@@ -181,4 +183,7 @@ public interface CatalogService {
   * @throws Throwable
   */
   boolean alterTable(AlterTableDesc desc);
+
+  boolean updateTableStats(UpdateTableStatsProto stats);
+
 }
