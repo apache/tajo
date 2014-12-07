@@ -59,6 +59,7 @@ import java.net.URL;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.UUID;
 
 public class TajoTestingCluster {
@@ -117,6 +118,8 @@ public class TajoTestingCluster {
   }
 
   void initPropertiesAndConfigs() {
+    TimeZone.setDefault(TimeZone.getTimeZone(TajoConstants.UTC_TIMEZONE));
+
     if (System.getProperty(ConfVars.RESOURCE_MANAGER_CLASS.varname) != null) {
       String testResourceManager = System.getProperty(ConfVars.RESOURCE_MANAGER_CLASS.varname);
       Preconditions.checkState(testResourceManager.equals(TajoWorkerResourceManager.class.getCanonicalName()));

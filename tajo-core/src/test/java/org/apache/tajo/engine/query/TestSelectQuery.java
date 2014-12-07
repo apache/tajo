@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.query;
 
+import com.google.common.collect.Lists;
 import org.apache.tajo.*;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.CatalogService;
@@ -565,7 +566,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
   @Test
   public void testTimezonedTable3() throws Exception {
     Map<String,String> sessionVars = new HashMap<String, String>();
-    sessionVars.put(SessionVars.TZ.name(), "Asia/Seoul");
+    sessionVars.put(SessionVars.TZ.name(), "UTC+9");
     getClient().updateSessionVariables(sessionVars);
 
     try {
@@ -576,5 +577,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
     } finally {
       executeString("DROP TABLE IF EXISTS timezoned3");
     }
+
+    getClient().unsetSessionVariables(Lists.newArrayList("TZ"));
   }
 }
