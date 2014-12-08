@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class TajoConf extends Configuration {
 
-  private static TimeZone CURRENT_TIMEZONE;
+  private static TimeZone SYSTEM_TIMEZONE;
   private static int DATE_ORDER = -1;
   private static final ReentrantReadWriteLock confLock = new ReentrantReadWriteLock();
   private static final Lock writeLock = confLock.writeLock();
@@ -83,29 +83,18 @@ public class TajoConf extends Configuration {
   }
 
   private static void confStaticInit() {
-    TimeZone.setDefault(getCurrentTimeZone());
+    TimeZone.setDefault(getSystemTimezone());
     getDateOrder();
   }
 
-  public static TimeZone getCurrentTimeZone() {
+  public static TimeZone getSystemTimezone() {
     writeLock.lock();
     try {
-      if (CURRENT_TIMEZONE == null) {
+      if (SYSTEM_TIMEZONE == null) {
         TajoConf tajoConf = new TajoConf();
-        CURRENT_TIMEZONE = TimeZone.getTimeZone(tajoConf.getVar(ConfVars.$TIMEZONE));
+        SYSTEM_TIMEZONE = TimeZone.getTimeZone(tajoConf.getVar(ConfVars.$TIMEZONE));
       }
-      return CURRENT_TIMEZONE;
-    } finally {
-      writeLock.unlock();
-    }
-  }
-
-  public static TimeZone setCurrentTimeZone(TimeZone timeZone) {
-    writeLock.lock();
-    try {
-      TimeZone oldTimeZone = CURRENT_TIMEZONE;
-      CURRENT_TIMEZONE = timeZone;
-      return oldTimeZone;
+      return SYSTEM_TIMEZONE;
     } finally {
       writeLock.unlock();
     }
@@ -360,7 +349,7 @@ public class TajoConf extends Configuration {
     $CLI_ERROR_STOP("tajo.cli.error.stop", false),
 
     // Timezone & Date ----------------------------------------------------------
-    $TIMEZONE("tajo.timezone", TimeZone.getDefault().getID()),
+    $TIMEZONE("tajo.timezone", TajoConstants.DEFAULT_SYSTEM_TIMEZONE),
     $DATE_ORDER("tajo.date.order", "YMD"),
 
     // FILE FORMAT

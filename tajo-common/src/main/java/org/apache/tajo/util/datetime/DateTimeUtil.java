@@ -25,6 +25,7 @@ import org.apache.tajo.util.datetime.DateTimeConstants.DateStyle;
 import org.apache.tajo.util.datetime.DateTimeConstants.DateToken;
 import org.apache.tajo.util.datetime.DateTimeConstants.TokenField;
 
+import javax.annotation.Nullable;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,7 +35,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * This Class is originated from j2date in datetime.c of PostgreSQL.
  */
 public class DateTimeUtil {
-
   private static int MAX_FRACTION_LENGTH = 6;
 
   /** maximum possible number of fields in a date * string */
@@ -663,16 +663,20 @@ public class DateTimeUtil {
 
 
   /**
-   * Parse datetime string to julian time.
-   * The result is the local time basis.
+   * Parse datetime string to UTC-based julian time.
+   * The result julian time is adjusted by local timezone.
+   *
    * @param timestampStr
-   * @return
+   * @param tz Local timezone. If it is NULL, UTC will be used by default.
+   * @return UTC-based julian time
    */
-  public static long toJulianTimestampWithTZ(String timestampStr) {
+  public static long toJulianTimestampWithTZ(String timestampStr, @Nullable TimeZone tz) {
     long timestamp = DateTimeUtil.toJulianTimestamp(timestampStr);
     TimeMeta tm = new TimeMeta();
     DateTimeUtil.toJulianTimeMeta(timestamp, tm);
-    DateTimeUtil.toUTCTimezone(tm);
+    if (tz != null) {
+      DateTimeUtil.toUTCTimezone(tm, tz);
+    }
     return DateTimeUtil.toJulianTimestamp(tm);
   }
 
@@ -2060,16 +2064,11 @@ public class DateTimeUtil {
     return date2j(year, mon, mday) - isoweek2j(date2isoyear(year, mon, mday), 1) + 1;
   }
 
-  public static void toUserTimezone(TimeMeta tm) {
-    toUserTimezone(tm, TajoConf.getCurrentTimeZone());
-  }
-
   public static void toUserTimezone(TimeMeta tm, TimeZone timeZone) {
     tm.plusMillis(timeZone.getRawOffset());
   }
 
-  public static void toUTCTimezone(TimeMeta tm) {
-    TimeZone timeZone = TajoConf.getCurrentTimeZone();
+  public static void toUTCTimezone(TimeMeta tm, TimeZone timeZone) {
     tm.plusMillis(0 - timeZone.getRawOffset());
   }
 

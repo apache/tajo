@@ -23,6 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.conf.TajoConf;
@@ -39,6 +40,7 @@ import org.jboss.netty.channel.ConnectTimeoutException;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -67,6 +69,9 @@ public class SessionConnection implements Closeable {
   volatile TajoIdProtos.SessionIdProto sessionId;
 
   private AtomicBoolean closed = new AtomicBoolean(false);
+
+  /** session variable cache */
+  Map<String, String> clientSideSessionVars = new ConcurrentHashMap<String, String>();
 
 
   public SessionConnection(TajoConf conf) throws IOException {
@@ -103,6 +108,10 @@ public class SessionConnection implements Closeable {
     connPool = RpcConnectionPool.newPool(conf, getClass().getSimpleName(), workerNum);
     userInfo = UserGroupInformation.getCurrentUser();
     this.baseDatabase = baseDatabase != null ? baseDatabase : null;
+  }
+
+  public Map<String, String> getClientSideSessionVars() {
+    return Collections.unmodifiableMap(clientSideSessionVars);
   }
 
   public <T> T getStub(QueryId queryId, Class protocolClass, boolean asyncMode) throws NoSuchMethodException,
@@ -177,6 +186,17 @@ public class SessionConnection implements Closeable {
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
 
+        // keep client-side session variables
+        for (Map.Entry<String, String> entry : variables.entrySet()) {
+          String key = entry.getKey();
+          if (SessionVars.exists(entry.getKey())) {
+            SessionVars configKey = SessionVars.get(key);
+            if (configKey.getMode() == SessionVars.VariableMode.CLI_SIDE_VAR) {
+              clientSideSessionVars.put(key, entry.getValue());
+            }
+          }
+        }
+
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
         KeyValueSet keyValueSet = new KeyValueSet();
         keyValueSet.putAll(variables);
@@ -195,6 +215,13 @@ public class SessionConnection implements Closeable {
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
 
+        // Remove matched session vars
+        for (String key : variables) {
+          if (clientSideSessionVars.containsKey(key)) {
+            clientSideSessionVars.remove(key);
+          }
+        }
+
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
         ClientProtos.UpdateSessionVariableRequest request = ClientProtos.UpdateSessionVariableRequest.newBuilder()
             .setSessionId(sessionId)
@@ -208,6 +235,12 @@ public class SessionConnection implements Closeable {
     return new ServerCallable<String>(connPool, getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
 
       public String call(NettyClientBase client) throws ServiceException {
+
+        // If a desired variable is client side one and exists in the cache, immediately return the variable.
+        if (clientSideSessionVars.containsKey(varname)) {
+          return clientSideSessionVars.get(varname);
+        }
+
         checkSessionAndGet(client);
 
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();

@@ -18,14 +18,16 @@
 
 package org.apache.tajo.jdbc;
 
+import org.apache.tajo.SessionVars;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -37,11 +39,29 @@ import java.util.Map;
 import java.util.TimeZone;
 
 public abstract class TajoResultSetBase implements ResultSet {
+  protected final Map<String, String> clientSideSessionVars;
+  protected TimeZone timezone;
+
   protected int curRow;
   protected long totalRow;
   protected boolean wasNull;
   protected Schema schema;
   protected Tuple cur;
+
+  public TajoResultSetBase(@Nullable Map<String, String> clientSideSessionVars) {
+    this.clientSideSessionVars = clientSideSessionVars;
+
+    if (clientSideSessionVars != null) {
+
+      if (clientSideSessionVars.containsKey(SessionVars.TZ.name())) {
+        String timezoneId = clientSideSessionVars.get(SessionVars.TZ.name());
+        this.timezone = TimeZone.getTimeZone(timezoneId);
+      } else {
+        this.timezone = TimeZone.getTimeZone(TajoConstants.DEFAULT_SYSTEM_TIMEZONE);
+      }
+
+    }
+  }
 
   protected void init() {
     cur = null;
@@ -226,13 +246,13 @@ public abstract class TajoResultSetBase implements ResultSet {
       case FLOAT8:  return d.asFloat8();
       case NUMERIC:  return d.asFloat8();
       case DATE: {
-        return getDate((DateDatum)d, TajoConf.getCurrentTimeZone());
+        return getDate((DateDatum)d, timezone);
       }
       case TIME: {
-        return getTime((TimeDatum)d, TajoConf.getCurrentTimeZone());
+        return getTime((TimeDatum)d, timezone);
       }
       case TIMESTAMP: {
-        return getTimestamp((TimestampDatum) d, TajoConf.getCurrentTimeZone());
+        return getTimestamp((TimestampDatum) d, timezone);
       }
       default: return d.asChars();
     }
@@ -289,10 +309,10 @@ public abstract class TajoResultSetBase implements ResultSet {
       case BOOLEAN:
         return String.valueOf(datum.asBool());
       case TIME: {
-        return ((TimeDatum)datum).asChars(TajoConf.getCurrentTimeZone(), false);
+        return ((TimeDatum)datum).asChars(timezone, false);
       }
       case TIMESTAMP: {
-        return ((TimestampDatum)datum).asChars(TajoConf.getCurrentTimeZone(), false);
+        return ((TimestampDatum)datum).asChars(timezone, false);
       }
       default :
         return datum.asChars();
@@ -307,7 +327,7 @@ public abstract class TajoResultSetBase implements ResultSet {
       return null;
     }
 
-    return getDate((DateDatum)datum, TajoConf.getCurrentTimeZone());
+    return getDate((DateDatum)datum, null);
   }
 
   @Override
@@ -347,7 +367,7 @@ public abstract class TajoResultSetBase implements ResultSet {
       return null;
     }
 
-    return getTime((TimeDatum)datum, TajoConf.getCurrentTimeZone());
+    return getTime((TimeDatum)datum, timezone);
 
   }
 
@@ -388,7 +408,7 @@ public abstract class TajoResultSetBase implements ResultSet {
       return null;
     }
 
-    return getTimestamp((TimestampDatum)datum, TajoConf.getCurrentTimeZone());
+    return getTimestamp((TimestampDatum)datum, timezone);
   }
 
   @Override
