@@ -29,6 +29,12 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.NetUtils;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.settings.ImmutableSettings;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import parquet.hadoop.ParquetOutputFormat;
 import sun.nio.ch.DirectBuffer;
 
@@ -36,6 +42,7 @@ import java.io.DataInput;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -220,4 +227,59 @@ public class StorageUtil extends StorageConstants {
       amt -= ret;
     }
   }
+
+  /**
+   * Build Setting Object for connecting an ElasticSearch cluster.
+   *
+   * @param clusterName
+   * @return
+   */
+  public static Settings getElasticSearchSettings(String clusterName) {
+    return getElasticSearchSettings(clusterName, 1);
+  }
+
+
+  /**
+   * Create Settings to connect an ElasticSearch cluster.
+   *
+   * @param clusterName
+   * @param bulkSize
+   * @return
+   */
+  public static Settings getElasticSearchSettings(String clusterName, int bulkSize) {
+    Settings settings = ImmutableSettings.settingsBuilder()
+      .put("cluster.name", clusterName)
+      .put("client.transport.sniff", true)
+      .put("node.client", true)
+      .put("network.tcp.blocking", false)
+      .put("client.transport.ping_timeout", "60s")
+      .put("client.transport.nodes_sampler_interval", "60s")
+      .put("transport.connections_per_node.recovery", 0)
+      .put("transport.connections_per_node.bulk", bulkSize)
+      .put("transport.connections_per_node.reg", 1)
+      .build();
+
+    return settings;
+  }
+
+  /**
+   * Create a client to connect to an ElasticSearch cluster.
+   *
+   * @param settings
+   * @param nodes
+   * @return
+   * @throws Exception
+   */
+  public static Client getElasticSearchClient(Settings settings, String[] nodes) throws Exception {
+    TransportClient client = new TransportClient(settings);
+    for (int i = 0; i < 1; i++) {
+      InetSocketAddress socketAddress = NetUtils.createUnresolved(nodes[i]);
+      InetSocketTransportAddress transportAddress =
+        new InetSocketTransportAddress(socketAddress.getHostName(), socketAddress.getPort());
+      client.addTransportAddress(transportAddress);
+    }
+
+    return client;
+  }
+
 }

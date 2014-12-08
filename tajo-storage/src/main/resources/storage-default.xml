@@ -125,7 +125,7 @@
   <!--- Appender Handler -->
   <property>
     <name>tajo.storage.appender-handler</name>
-    <value>textfile,csv,raw,rcfile,row,parquet,sequencefile,avro</value>
+    <value>textfile,csv,raw,rcfile,row,parquet,sequencefile,avro,elasticsearch</value>
   </property>
 
   <property>
@@ -171,5 +171,10 @@
   <property>
     <name>tajo.storage.appender-handler.avro.class</name>
     <value>org.apache.tajo.storage.avro.AvroAppender</value>
+  </property>
+
+  <property>
+    <name>tajo.storage.appender-handler.elasticsearch.class</name>
+    <value>org.apache.tajo.storage.elasticsearch.ElasticSearchFileAppender</value>
   </property>
 </configuration>

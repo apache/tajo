@@ -37,6 +37,7 @@ enum StoreType {
   AVRO = 9;
   TEXTFILE = 10;
   JSON = 11;
+  ELASTICSEARCH = 12;
 }
 
 enum OrderType {
