@@ -64,22 +64,17 @@ public class TajoHAClientUtil {
       TajoCliContext context) throws IOException, ServiceException {
 
     if (conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
-      if (!HAServiceUtil.isMasterAlive(conf.getVar(
-          TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS), conf)) {
-        TajoClient tajoClient = null;
-        String baseDatabase = client.getBaseDatabase();
-        conf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS,
-            HAServiceUtil.getMasterClientName(conf));
-        client.close();
-        tajoClient = new TajoClientImpl(conf, baseDatabase);
+      TajoClient tajoClient = null;
+      String baseDatabase = client.getBaseDatabase();
+      conf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS,
+          HAServiceUtil.getMasterClientName(conf));
+      client.close();
+      tajoClient = new TajoClientImpl(conf, baseDatabase);
 
-        if (context != null && context.getCurrentDatabase() != null) {
-          tajoClient.selectDatabase(context.getCurrentDatabase());
-        }
-        return tajoClient;
-      } else {
-        return client;
+      if (context != null && context.getCurrentDatabase() != null) {
+        tajoClient.selectDatabase(context.getCurrentDatabase());
       }
+      return tajoClient;
     } else {
       return client;
     }

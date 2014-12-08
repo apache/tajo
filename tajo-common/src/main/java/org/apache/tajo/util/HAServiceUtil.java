@@ -30,12 +30,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HAServiceUtil {
-
-  private final static int MASTER_UMBILICAL_RPC_ADDRESS = 1;
-  private final static int MASTER_CLIENT_RPC_ADDRESS = 2;
-  private final static int RESOURCE_TRACKER_RPC_ADDRESS = 3;
-  private final static int CATALOG_ADDRESS = 4;
-  private final static int MASTER_INFO_ADDRESS = 5;
+  public final static int MASTER_UMBILICAL_RPC_ADDRESS = 1;
+  public final static int MASTER_CLIENT_RPC_ADDRESS = 2;
+  public final static int RESOURCE_TRACKER_RPC_ADDRESS = 3;
+  public final static int CATALOG_ADDRESS = 4;
+  public final static int MASTER_INFO_ADDRESS = 5;
 
   public static InetSocketAddress getMasterUmbilicalAddress(TajoConf conf) {
     return getMasterAddress(conf, MASTER_UMBILICAL_RPC_ADDRESS);
@@ -91,6 +90,7 @@ public class HAServiceUtil {
           if (files.length == 1) {
             Path file = files[0].getPath();
             String hostAddress = file.getName().replaceAll("_", ":");
+
             FSDataInputStream stream = fs.open(file);
             String data = stream.readUTF();
             stream.close();
