@@ -39,7 +39,7 @@ package org.apache.tajo.client;
 import com.google.protobuf.ServiceException;
 import org.apache.tajo.cli.tsql.TajoCli.TajoCliContext;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.util.HAServiceUtil;
+import org.apache.tajo.ha.HAServiceUtil;
 
 import java.io.IOException;
 

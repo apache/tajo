@@ -25,9 +25,10 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.ha.HAConstants;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.TajoMaster.MasterContext;
-import org.apache.tajo.util.HAServiceUtil;
+import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
@@ -150,13 +151,13 @@ public class HAServiceHDFSImpl implements HAService {
     }
 
     StringBuilder sb = new StringBuilder();
-    sb.append(getHostName(hostAddress, HAServiceUtil.MASTER_CLIENT_RPC_ADDRESS));
+    sb.append(getHostName(hostAddress, HAConstants.MASTER_CLIENT_RPC_ADDRESS));
     sb.append("_");
-    sb.append(getHostName(hostAddress, HAServiceUtil.RESOURCE_TRACKER_RPC_ADDRESS));
+    sb.append(getHostName(hostAddress, HAConstants.RESOURCE_TRACKER_RPC_ADDRESS));
     sb.append("_");
-    sb.append(getHostName(hostAddress, HAServiceUtil.CATALOG_ADDRESS));
+    sb.append(getHostName(hostAddress, HAConstants.CATALOG_ADDRESS));
     sb.append("_");
-    sb.append(getHostName(hostAddress, HAServiceUtil.MASTER_INFO_ADDRESS));
+    sb.append(getHostName(hostAddress, HAConstants.MASTER_INFO_ADDRESS));
 
     FSDataOutputStream out = fs.create(path);
     out.writeUTF(sb.toString());
@@ -178,24 +179,24 @@ public class HAServiceHDFSImpl implements HAService {
     int port = 0;
 
     switch (type) {
-      case 1:
+      case HAConstants.MASTER_UMBILICAL_RPC_ADDRESS:
         hostName = context.getConf().get(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS
           .varname);
         port = 26001;
         break;
-      case 2:
+      case HAConstants.MASTER_CLIENT_RPC_ADDRESS:
         hostName = context.getConf().get(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS.varname);
         port = 26002;
         break;
-      case 3:
+      case HAConstants.RESOURCE_TRACKER_RPC_ADDRESS:
         hostName = context.getConf().get(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS.varname);
         port = 26003;
         break;
-      case 4:
+      case HAConstants.CATALOG_ADDRESS:
         hostName = context.getConf().get(TajoConf.ConfVars.CATALOG_ADDRESS.varname);
         port = 26005;
         break;
-      case 5:
+      case HAConstants.MASTER_INFO_ADDRESS:
         hostName = context.getConf().get(TajoConf.ConfVars.TAJO_MASTER_INFO_ADDRESS.varname);
         port = 26080;
         break;
