@@ -42,6 +42,8 @@ public interface QueryClient extends Closeable {
 
   public SessionIdProto getSessionId();
 
+  public Map<String, String> getClientSideSessionVars();
+
   public String getBaseDatabase();
 
   @Override

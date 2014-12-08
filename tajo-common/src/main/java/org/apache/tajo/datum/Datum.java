@@ -100,7 +100,7 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
   }
 
   public byte[] asTextBytes() {
-    return toString().getBytes();
+    return asChars().getBytes();
   }
 
   public boolean isNumeric() {
