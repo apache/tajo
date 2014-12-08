@@ -130,7 +130,7 @@ public class ByteBufLineReader implements Closeable {
       if (readable <= 0) {
         buffer.readerIndex(this.startIndex);
         fillBuffer(); //compact and fill buffer
-        if (!buffer.isReadable()) {
+        if (!buffer.isReadable() && buffer.writerIndex() == 0) {
           reads.set(0);
           return null;
         } else {
@@ -155,7 +155,7 @@ public class ByteBufLineReader implements Closeable {
         //does not appeared terminating newline
         buffer.readerIndex(buffer.writerIndex()); // set to end buffer
         if(eof){
-          readBytes += readable;
+          readBytes += buffer.readerIndex() - startIndex;
           break loop;
         }
       } else {
