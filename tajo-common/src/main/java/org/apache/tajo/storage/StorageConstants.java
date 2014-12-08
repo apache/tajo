@@ -18,13 +18,15 @@
 
 package org.apache.tajo.storage;
 
+import org.apache.tajo.TajoConstants;
+
 public class StorageConstants {
 
   // Common table properties -------------------------------------------------
 
   // time zone
   public static final String TIMEZONE = "timezone";
-  public static final String DEFAULT_TIMEZONE = "UTC";
+  public static final String DEFAULT_TIMEZONE = TajoConstants.UTC_TIMEZONE;
 
   // compression
   public static final String COMPRESSION_CODEC = "compression.codec";

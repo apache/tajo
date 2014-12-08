@@ -118,7 +118,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
 
   @Test
   public void testExtract() throws IOException {
-    TimeZone UTC = TimeZone.getTimeZone("UTC");
+    TimeZone GMT = TimeZone.getTimeZone("GMT");
     TimeZone PST = TimeZone.getTimeZone("PST");
 
     Schema schema2 = new Schema();
@@ -128,7 +128,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
         "select extract(year from col1), extract(month from col1), extract(day from col1) from table1;",
         new String[]{"1970.0", "1.0", "17.0"});
     testEval(schema2, "table1",
-        "1970-01-17 10:09:37" + getUserTimeZoneDisplay(UTC),
+        "1970-01-17 10:09:37" + getUserTimeZoneDisplay(GMT),
         "select extract(year from col1), extract(month from col1), extract(day from col1) from table1;",
         new String[]{"1970.0", "1.0", "17.0"});
     testEval(schema2, "table1",
@@ -144,7 +144,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
         "select extract(hour from col1), extract(minute from col1), extract(second from col1) from table1;",
         new String[]{"10.0", "9.0", "37.5"});
     testEval(schema3, "table1",
-        "10:09:37.5" + getUserTimeZoneDisplay(UTC),
+        "10:09:37.5" + getUserTimeZoneDisplay(GMT),
         "select extract(hour from col1), extract(minute from col1), extract(second from col1) from table1;",
         new String[]{"10.0", "9.0", "37.5"});
     testEval(schema3, "table1",
@@ -234,7 +234,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
 
   @Test
   public void testDatePart() throws IOException {
-    TimeZone UTC = TimeZone.getTimeZone("UTC");
+    TimeZone GMT = TimeZone.getTimeZone("GMT");
     TimeZone PST = TimeZone.getTimeZone("PST");
 
     Schema schema2 = new Schema();
@@ -245,7 +245,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
         "select date_part('year', col1), date_part('month', col1), date_part('day', col1) from table1;",
         new String[]{"1970.0", "1.0", "17.0"});
     testEval(schema2, "table1",
-        "1970-01-17 22:09:37" + getUserTimeZoneDisplay(UTC),
+        "1970-01-17 22:09:37" + getUserTimeZoneDisplay(GMT),
         "select date_part('year', col1), date_part('month', col1), date_part('day', col1) from table1;",
         new String[]{"1970.0", "1.0", "17.0"});
     testEval(schema2, "table1",
@@ -258,7 +258,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
     testEval(schema3, "table1", "10:09:37.5",
         "select date_part('hour', col1), date_part('minute', col1), date_part('second', col1) from table1;",
         new String[]{"10.0", "9.0", "37.5"});
-    testEval(schema3, "table1", "10:09:37.5" + getUserTimeZoneDisplay(UTC),
+    testEval(schema3, "table1", "10:09:37.5" + getUserTimeZoneDisplay(GMT),
         "select date_part('hour', col1), date_part('minute', col1), date_part('second', col1) from table1;",
         new String[]{"10.0", "9.0", "37.5"});
     testEval(schema3, "table1", "10:09:37.5" + getUserTimeZoneDisplay(PST),

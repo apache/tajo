@@ -150,7 +150,7 @@ public class TestTimestampDatum {
     assertEquals(datum2, datum);
 
     for (int i = 0; i < 100; i++) {
-      TimeZone timeZone = TimeZone.getTimeZone("UTC");
+      TimeZone timeZone = TimeZone.getTimeZone("GMT");
       Calendar cal = Calendar.getInstance(timeZone);
       long jTime = System.currentTimeMillis();
       int uTime = (int)(jTime / 1000);

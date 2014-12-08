@@ -125,19 +125,14 @@ public class TestSortQuery extends QueryTestCaseBase {
   public final void testSortWithDate() throws Exception {
     // skip this test if catalog uses HCatalogStore.
     // It is because HCatalogStore does not support Time data type.
-    TimeZone originalTimezone = TimeZone.getDefault();
-    TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
-    try {
-      if (!testingCluster.isHCatalogStoreRunning()) {
-        // create external table table1 (col1 timestamp, col2 date, col3 time) ...
-        executeDDL("create_table_with_date_ddl.sql", "table1");
 
-        ResultSet res = executeQuery();
-        assertResultSet(res);
-        cleanupQuery(res);
-      }
-    } finally {
-      TimeZone.setDefault(originalTimezone);
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      // create external table table1 (col1 timestamp, col2 date, col3 time) ...
+      executeDDL("create_table_with_date_ddl.sql", "table1");
+
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
     }
   }
 

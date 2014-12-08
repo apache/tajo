@@ -543,8 +543,6 @@ public class TestTajoJdbc extends QueryTestCaseBase {
 
     // skip this test if catalog uses HCatalogStore.
     // It is because HCatalogStore does not support Time data type.
-    TimeZone originalTimezone = TimeZone.getDefault();
-    TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
 
     try {
       if (!testingCluster.isHCatalogStoreRunning()) {
@@ -574,8 +572,6 @@ public class TestTajoJdbc extends QueryTestCaseBase {
 
       }
     } finally {
-      TimeZone.setDefault(originalTimezone);
-
       cleanupQuery(res);
       if (stmt != null) {
         stmt.close();
