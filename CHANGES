@@ -154,6 +154,9 @@ Release 0.9.1 - unreleased
 
   TASKS
 
+    TAJO-1229: rename tajo-yarn-pullserver to tajo-pullserver.
+    (hyunsik)
+
     TAJO-1157: Required Java version in tutorial doc needs to be updated.
     (hyunsik)
 
