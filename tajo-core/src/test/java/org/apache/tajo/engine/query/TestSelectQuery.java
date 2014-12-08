@@ -566,7 +566,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
   @Test
   public void testTimezonedTable3() throws Exception {
     Map<String,String> sessionVars = new HashMap<String, String>();
-    sessionVars.put(SessionVars.TZ.name(), "UTC+9");
+    sessionVars.put(SessionVars.TZ.name(), "GMT+9");
     getClient().updateSessionVariables(sessionVars);
 
     try {
