@@ -55,14 +55,9 @@ public class SetCommand extends TajoShellCommand {
     SessionVars sessionVar = null;
 
     if (SessionVars.exists(key)) { // if the variable is one of the session variables
-      sessionVar = SessionVars.get(key);
 
       // is it cli-side variable?
-      if (sessionVar.getMode() == VariableMode.CLI_SIDE_VAR) {
-        context.setCliSideVar(key, val);
-      } else {
-        updateSessionVariable(key, val);
-      }
+      updateSessionVariable(key, val);
 
       if (SessionVars.isDeprecated(key)) {
         context.getOutput().println("Warning: deprecated to directly use config key in TajoConf.ConfVars. " +

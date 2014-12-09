@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.DataTypeUtil;
@@ -50,6 +51,11 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class CatalogUtil {
+
+  public static boolean isValidIdentifier(String identifier) {
+    Preconditions.checkNotNull(identifier);
+    return identifier.length() > 0 && Character.isAlphabetic(identifier.charAt(0));
+  }
 
   /**
    * Normalize an identifier. Normalization means a translation from a identifier to be a refined identifier name.

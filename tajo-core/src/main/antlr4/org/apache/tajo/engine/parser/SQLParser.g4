@@ -52,9 +52,10 @@ statement
 
 session_statement
   : SET CATALOG dbname = identifier
-  | SET TIME ZONE (Character_String_Literal | signed_numerical_literal | DEFAULT)
+  | SET TIME ZONE (TO | EQUAL)? (Character_String_Literal | signed_numerical_literal | DEFAULT)
   | SET (SESSION)? name=identifier (TO | EQUAL)?
     (Character_String_Literal | signed_numerical_literal | boolean_literal | DEFAULT)
+  | RESET name=identifier
   ;
 
 data_statement
@@ -293,6 +294,7 @@ nonreserved_keywords
   | RANK
   | REGEXP
   | RENAME
+  | RESET
   | RLIKE
   | ROLLUP
   | ROW
