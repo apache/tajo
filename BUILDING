@@ -20,7 +20,7 @@ Maven main modules:
          - tajo-rpc
          - tajo-catalog
          - tajo-storage
-         - tajo-yarn-pullserver
+         - tajo-pullserver
          - tajo-core
          - tajo-client
          - tajo-jdbc
