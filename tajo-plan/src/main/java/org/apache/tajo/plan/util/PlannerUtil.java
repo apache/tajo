@@ -792,8 +792,8 @@ public class PlannerUtil {
         tableProperties.set(StorageConstants.TEXT_NULL, sessionVars.get(SessionVars.NULL_CHAR));
       }
 
-      if (sessionVars.containsKey(SessionVars.TZ)) {
-        tableProperties.set(StorageConstants.TIMEZONE, sessionVars.get(SessionVars.TZ));
+      if (sessionVars.containsKey(SessionVars.TIMEZONE)) {
+        tableProperties.set(StorageConstants.TIMEZONE, sessionVars.get(SessionVars.TIMEZONE));
       }
     }
   }

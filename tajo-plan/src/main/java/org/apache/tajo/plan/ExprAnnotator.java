@@ -783,8 +783,8 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
       // some cast operation may require earlier evaluation with timezone.
       TimeZone tz = null;
-      if (ctx.queryContext.containsKey(SessionVars.TZ)) {
-        String tzId = ctx.queryContext.get(SessionVars.TZ);
+      if (ctx.queryContext.containsKey(SessionVars.TIMEZONE)) {
+        String tzId = ctx.queryContext.get(SessionVars.TIMEZONE);
         tz = TimeZone.getTimeZone(tzId);
       }
 
@@ -859,8 +859,8 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     TimeMeta tm = new TimeMeta();
     DateTimeUtil.toJulianTimeMeta(timestamp, tm);
 
-    if (ctx.queryContext.containsKey(SessionVars.TZ)) {
-      TimeZone tz = TimeZone.getTimeZone(ctx.queryContext.get(SessionVars.TZ));
+    if (ctx.queryContext.containsKey(SessionVars.TIMEZONE)) {
+      TimeZone tz = TimeZone.getTimeZone(ctx.queryContext.get(SessionVars.TIMEZONE));
       DateTimeUtil.toUTCTimezone(tm, tz);
     }
 
@@ -889,8 +889,8 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     TimeDatum timeDatum = new TimeDatum(time);
     TimeMeta tm = timeDatum.toTimeMeta();
 
-    if (ctx.queryContext.containsKey(SessionVars.TZ)) {
-      TimeZone tz = TimeZone.getTimeZone(ctx.queryContext.get(SessionVars.TZ));
+    if (ctx.queryContext.containsKey(SessionVars.TIMEZONE)) {
+      TimeZone tz = TimeZone.getTimeZone(ctx.queryContext.get(SessionVars.TIMEZONE));
       DateTimeUtil.toUTCTimezone(tm, tz);
     }
 

@@ -566,7 +566,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
   @Test
   public void testTimezonedTable3() throws Exception {
     Map<String,String> sessionVars = new HashMap<String, String>();
-    sessionVars.put(SessionVars.TZ.name(), "GMT+9");
+    sessionVars.put(SessionVars.TIMEZONE.name(), "GMT+9");
     getClient().updateSessionVariables(sessionVars);
 
     try {
@@ -578,6 +578,38 @@ public class TestSelectQuery extends QueryTestCaseBase {
       executeString("DROP TABLE IF EXISTS timezoned3");
     }
 
-    getClient().unsetSessionVariables(Lists.newArrayList("TZ"));
+    getClient().unsetSessionVariables(Lists.newArrayList("TIMEZONE"));
+  }
+
+  @Test
+  public void testCurrentTimestamp1() throws Exception {
+
+    try {
+      Map<String,String> sessionVars = new HashMap<String, String>();
+      sessionVars.put(SessionVars.TIMEZONE.name(), "GMT+9");
+      getClient().updateSessionVariables(sessionVars);
+
+      ResultSet res = executeString("SELECT current_timestamp;");
+      System.out.println(resultSetToString(res));
+      cleanupQuery(res);
+    } finally {
+      getClient().unsetSessionVariables(Lists.newArrayList("TIMEZONE"));
+    }
+  }
+
+  @Test
+  public void testCurrentTimestamp2() throws Exception {
+
+    try {
+      Map<String,String> sessionVars = new HashMap<String, String>();
+      sessionVars.put(SessionVars.TIMEZONE.name(), "GMT+9");
+      getClient().updateSessionVariables(sessionVars);
+
+      ResultSet res = executeString("SELECT current_timestamp;");
+      System.out.println(resultSetToString(res));
+      cleanupQuery(res);
+    } finally {
+      getClient().unsetSessionVariables(Lists.newArrayList("TIMEZONE"));
+    }
   }
 }
