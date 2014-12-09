@@ -58,6 +58,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.*;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListProto;
+import static org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
 
 /**
  * This class provides the catalog service. The catalog service enables clients
@@ -363,6 +364,27 @@ public class CatalogServer extends AbstractService {
       } finally {
         wlock.unlock();
       }
+    }
+
+    @Override
+    public BoolProto updateTableStats(RpcController controller, UpdateTableStatsProto proto) throws
+      ServiceException {
+      wlock.lock();
+      try {
+        String [] split = CatalogUtil.splitTableName(proto.getTableName());
+        if (!store.existTable(split[0], split[1])) {
+          throw new NoSuchTableException(proto.getTableName());
+        }
+        store.updateTableStats(proto);
+      } catch (Exception e) {
+        LOG.error(e.getMessage(), e);
+        return BOOL_FALSE;
+      } finally {
+        wlock.unlock();
+        LOG.info("Table " + proto.getTableName() + " is updated in the catalog ("
+          + bindAddressStr + ")");
+      }
+      return BOOL_TRUE;
     }
 
     @Override

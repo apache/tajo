@@ -150,6 +150,7 @@ message UnaryEval {
   required int32 child_id = 1;
   optional DataType castingType = 2;
   optional bool negative = 3;
+  optional string timezone = 4;
 }
 
 message BinaryEval {

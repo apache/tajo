@@ -18,11 +18,20 @@
 
 package org.apache.tajo.storage;
 
+import org.apache.tajo.TajoConstants;
+
 public class StorageConstants {
-  // table properties
+
+  // Common table properties -------------------------------------------------
+
+  // time zone
+  public static final String TIMEZONE = "timezone";
+
+  // compression
   public static final String COMPRESSION_CODEC = "compression.codec";
   public static final String COMPRESSION_TYPE = "compression.type";
 
+  // Text file properties -------------------------------------------------
   @Deprecated
   public static final String CSVFILE_DELIMITER = "csvfile.delimiter";
   @Deprecated
@@ -47,12 +56,14 @@ public class StorageConstants {
   public static final String TEXT_ERROR_TOLERANCE_MAXNUM = "text.error-tolerance.max-num";
   public static final String DEFAULT_TEXT_ERROR_TOLERANCE_MAXNUM = "0";
 
+  // Sequence file properties -------------------------------------------------
   @Deprecated
   public static final String SEQUENCEFILE_DELIMITER = "sequencefile.delimiter";
   @Deprecated
   public static final String SEQUENCEFILE_NULL = "sequencefile.null";
   public static final String SEQUENCEFILE_SERDE = "sequencefile.serde";
 
+  // RC file properties -------------------------------------------------
   @Deprecated
   public static final String RCFILE_NULL = "rcfile.null";
   public static final String RCFILE_SERDE = "rcfile.serde";
@@ -61,17 +72,22 @@ public class StorageConstants {
   public static final String DEFAULT_BINARY_SERDE = "org.apache.tajo.storage.BinarySerializerDeserializer";
   public static final String DEFAULT_TEXT_SERDE = "org.apache.tajo.storage.TextSerializerDeserializer";
 
+
+  // Parquet file properties -------------------------------------------------
   public static final String PARQUET_DEFAULT_BLOCK_SIZE;
   public static final String PARQUET_DEFAULT_PAGE_SIZE;
   public static final String PARQUET_DEFAULT_COMPRESSION_CODEC_NAME;
   public static final String PARQUET_DEFAULT_IS_DICTIONARY_ENABLED;
   public static final String PARQUET_DEFAULT_IS_VALIDATION_ENABLED;
 
+  public static final int DEFAULT_BLOCK_SIZE = 128 * 1024 * 1024;
+  public static final int DEFAULT_PAGE_SIZE = 1 * 1024 * 1024;
+
+
+  // Avro file properties -------------------------------------------------
   public static final String AVRO_SCHEMA_LITERAL = "avro.schema.literal";
   public static final String AVRO_SCHEMA_URL = "avro.schema.url";
 
-  public static final int DEFAULT_BLOCK_SIZE = 128 * 1024 * 1024;
-  public static final int DEFAULT_PAGE_SIZE = 1 * 1024 * 1024;
   static {
     PARQUET_DEFAULT_BLOCK_SIZE = Integer.toString(DEFAULT_BLOCK_SIZE);
     PARQUET_DEFAULT_PAGE_SIZE = Integer.toString(DEFAULT_PAGE_SIZE);

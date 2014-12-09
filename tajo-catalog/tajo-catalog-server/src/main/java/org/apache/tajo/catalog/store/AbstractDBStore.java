@@ -823,6 +823,74 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
+  public void updateTableStats(final CatalogProtos.UpdateTableStatsProto statsProto) throws
+    CatalogException {
+    Connection conn = null;
+    PreparedStatement pstmt = null;
+    ResultSet res = null;
+
+    try {
+      conn = getConnection();
+      conn.setAutoCommit(false);
+
+      String[] splitted = CatalogUtil.splitTableName(statsProto.getTableName());
+      if (splitted.length == 1) {
+        throw new IllegalArgumentException("updateTableStats() requires a qualified table name, but it is \""
+          + statsProto.getTableName() + "\".");
+      }
+      String databaseName = splitted[0];
+      String tableName = splitted[1];
+
+      int dbid = getDatabaseId(databaseName);
+
+      String tidSql =
+        "SELECT TID from " + TB_TABLES + " WHERE " + COL_DATABASES_PK + "=? AND " + COL_TABLES_NAME + "=?";
+      pstmt = conn.prepareStatement(tidSql);
+      pstmt.setInt(1, dbid);
+      pstmt.setString(2, tableName);
+      res = pstmt.executeQuery();
+
+      if (!res.next()) {
+        throw new CatalogException("ERROR: there is no TID matched to " + statsProto.getTableName());
+      }
+
+      int tableId = res.getInt("TID");
+      res.close();
+      pstmt.close();
+
+      if (statsProto.hasStats()) {
+
+        String statSql = "UPDATE " + TB_STATISTICS + " SET NUM_ROWS = ?, " +
+          "NUM_BYTES = ? WHERE TID = ?";
+
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(statSql);
+        }
+
+        pstmt = conn.prepareStatement(statSql);
+        pstmt.setInt(1, tableId);
+        pstmt.setLong(2, statsProto.getStats().getNumRows());
+        pstmt.setLong(3, statsProto.getStats().getNumBytes());
+        pstmt.executeUpdate();
+      }
+
+      // If there is no error, commit the changes.
+      conn.commit();
+    } catch (SQLException se) {
+      if (conn != null) {
+        try {
+          conn.rollback();
+        } catch (SQLException e) {
+          LOG.error(e);
+        }
+      }
+      throw new CatalogException(se);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt, res);
+    }
+  }
+
+  @Override
   public void alterTable(CatalogProtos.AlterTableDescProto alterTableDescProto) throws CatalogException {
 
     String[] splitted = CatalogUtil.splitTableName(alterTableDescProto.getTableName());

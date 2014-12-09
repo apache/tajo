@@ -480,16 +480,16 @@ public class QueryMaster extends CompositeService implements EventHandler {
       QueryMasterTask queryMasterTask = new QueryMasterTask(queryMasterContext,
           event.getQueryId(), event.getSession(), event.getQueryContext(), event.getJsonExpr(), event.getLogicalPlanJson());
 
+      synchronized(queryMasterTasks) {
+        queryMasterTasks.put(event.getQueryId(), queryMasterTask);
+      }
+
       queryMasterTask.init(systemConf);
       if (!queryMasterTask.isInitError()) {
         queryMasterTask.start();
       }
 
       queryContext = event.getQueryContext();
-
-      synchronized(queryMasterTasks) {
-        queryMasterTasks.put(event.getQueryId(), queryMasterTask);
-      }
 
       if (queryMasterTask.isInitError()) {
         queryMasterContext.stopQuery(queryMasterTask.getQueryId());

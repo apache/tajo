@@ -281,6 +281,11 @@ message AlterColumnProto {
   required string newColumnName = 2;
 }
 
+message UpdateTableStatsProto {
+  required string tableName = 1;
+  required TableStatsProto stats = 2;
+}
+
 ////////////////////////////////////////////////
 // Function and UDF Section
 ////////////////////////////////////////////////

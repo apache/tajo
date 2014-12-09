@@ -172,6 +172,23 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
+  public void updateTableStats(CatalogProtos.UpdateTableStatsProto request) throws CatalogException {
+    String [] splitted = CatalogUtil.splitTableName(request.getTableName());
+    if (splitted.length == 1) {
+      throw new IllegalArgumentException("createTable() requires a qualified table name, but it is \""
+        + request.getTableName() + "\".");
+    }
+    String databaseName = splitted[0];
+    String tableName = splitted[1];
+
+    final Map<String, CatalogProtos.TableDescProto> database = checkAndGetDatabaseNS(databases, databaseName);
+    final CatalogProtos.TableDescProto tableDescProto = database.get(tableName);
+    CatalogProtos.TableDescProto newTableDescProto = tableDescProto.toBuilder().setStats(request
+      .getStats().toBuilder()).build();
+    database.put(tableName, newTableDescProto);
+  }
+
+  @Override
   public boolean existTable(String dbName, String tbName) throws CatalogException {
     Map<String, CatalogProtos.TableDescProto> database = checkAndGetDatabaseNS(databases, dbName);
 
