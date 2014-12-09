@@ -93,7 +93,7 @@ public class ByteBufLineReader implements Closeable {
         int localReadBytes = buffer.writeBytes(channel, this.bufferSize - readBytes);
         if (localReadBytes < 0) {
           if (buffer.isWritable()) {
-            // no more bytes are in the channel
+            //if read bytes is less than the buffer capacity,  there is no more bytes in the channel
             eof = true;
           }
           break;
@@ -118,7 +118,7 @@ public class ByteBufLineReader implements Closeable {
    * Read a line terminated by one of CR, LF, or CRLF.
    */
   public ByteBuf readLineBuf(AtomicInteger reads) throws IOException {
-    int readBytes = 0;
+    int readBytes = 0; // newline + text line bytes
     int newlineLength = 0; //length of terminating newline
     int readable;
 
@@ -130,6 +130,8 @@ public class ByteBufLineReader implements Closeable {
       if (readable <= 0) {
         buffer.readerIndex(this.startIndex);
         fillBuffer(); //compact and fill buffer
+
+        //if buffer.writerIndex() is zero, there is no bytes in buffer
         if (!buffer.isReadable() && buffer.writerIndex() == 0) {
           reads.set(0);
           return null;
@@ -155,12 +157,14 @@ public class ByteBufLineReader implements Closeable {
         //does not appeared terminating newline
         buffer.readerIndex(buffer.writerIndex()); // set to end buffer
         if(eof){
-          readBytes += buffer.readerIndex() - startIndex;
+          readBytes += (buffer.readerIndex() - startIndex);
           break loop;
         }
       } else {
         buffer.readerIndex(endIndex + 1);
-        readBytes += (buffer.readerIndex() - startIndex);
+        readBytes += (buffer.readerIndex() - startIndex); //past newline + text line
+
+        //appeared terminating CRLF
         if (processor.isPrevCharCR() && buffer.isReadable()
             && buffer.getByte(buffer.readerIndex()) == LineSplitProcessor.LF) {
           buffer.skipBytes(1);
