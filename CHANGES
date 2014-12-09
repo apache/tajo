@@ -18,6 +18,8 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1230: Disable ipv6 support on JVM. (Jihun Kang via hyunsik)
+
     TAJO-1213: Implement CatalogStore::updateTableStats. (jaehwa)
 
     TAJO-1165: Needs to show error messages on query_executor.jsp. 
@@ -153,6 +155,9 @@ Release 0.9.1 - unreleased
 
 
   TASKS
+
+    TAJO-1229: rename tajo-yarn-pullserver to tajo-pullserver.
+    (hyunsik)
 
     TAJO-1157: Required Java version in tutorial doc needs to be updated.
     (hyunsik)
