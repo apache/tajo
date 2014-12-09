@@ -79,7 +79,7 @@ public class FileSystemRule implements SelfDiagnosisRule {
     Path wareHousePath = TajoConf.getWarehouseDir(tajoConf);
     canAccessToPath(defaultFs.getFileStatus(wareHousePath), FsAction.READ_WRITE);
     
-    Path stagingPath = TajoConf.getStagingDir(tajoConf);
+    Path stagingPath = TajoConf.getDefaultRootStagingDir(tajoConf);
     canAccessToPath(defaultFs.getFileStatus(stagingPath), FsAction.READ_WRITE);
   }
 
