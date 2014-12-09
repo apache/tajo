@@ -57,6 +57,7 @@ import org.junit.BeforeClass;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.TimeZone;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
@@ -72,8 +73,8 @@ public class ExprTestBase {
   private static LogicalOptimizer optimizer;
   private static LogicalPlanVerifier annotatedPlanVerifier;
 
-  public static String getUserTimeZoneDisplay() {
-    return DateTimeUtil.getTimeZoneDisplayTime(TajoConf.getCurrentTimeZone());
+  public static String getUserTimeZoneDisplay(TimeZone tz) {
+    return DateTimeUtil.getTimeZoneDisplayTime(tz);
   }
 
   public ExprTestBase() {
@@ -163,7 +164,7 @@ public class ExprTestBase {
       assertJsonSerDer(t.getEvalTree());
     }
     for (Target t : targets) {
-      assertEvalTreeProtoSerDer(t.getEvalTree());
+      assertEvalTreeProtoSerDer(context, t.getEvalTree());
     }
     return targets;
   }
@@ -172,8 +173,19 @@ public class ExprTestBase {
     testEval(null, null, null, query, expected);
   }
 
-  public void testSimpleEval(String query, String [] expected, boolean condition) throws IOException {
-    testEval(null, null, null, null, query, expected, ',', condition);
+  public void testSimpleEval(OverridableConf context, String query, String [] expected) throws IOException {
+    testEval(context, null, null, null, query, expected);
+  }
+
+  public void testSimpleEval(String query, String [] expected, boolean successOrFail)
+      throws IOException {
+
+    testEval(null, null, null, null, query, expected, ',', successOrFail);
+  }
+
+  public void testSimpleEval(OverridableConf context, String query, String [] expected, boolean successOrFail)
+      throws IOException {
+    testEval(context, null, null, null, query, expected, ',', successOrFail);
   }
 
   public void testEval(Schema schema, String tableName, String csvTuple, String query, String [] expected)
@@ -182,10 +194,10 @@ public class ExprTestBase {
         expected, ',', true);
   }
 
-  public void testEval(OverridableConf overideConf, Schema schema, String tableName, String csvTuple, String query,
+  public void testEval(OverridableConf context, Schema schema, String tableName, String csvTuple, String query,
                        String [] expected)
       throws IOException {
-    testEval(overideConf, schema, tableName != null ? CatalogUtil.normalizeIdentifier(tableName) : null, csvTuple,
+    testEval(context, schema, tableName != null ? CatalogUtil.normalizeIdentifier(tableName) : null, csvTuple,
         query, expected, ',', true);
   }
 
@@ -195,15 +207,18 @@ public class ExprTestBase {
         query, expected, delimiter, condition);
   }
 
-  public void testEval(OverridableConf overideConf, Schema schema, String tableName, String csvTuple, String query,
+  public void testEval(OverridableConf context, Schema schema, String tableName, String csvTuple, String query,
                        String [] expected, char delimiter, boolean condition) throws IOException {
-    QueryContext context;
-    if (overideConf == null) {
-      context = LocalTajoTestingUtility.createDummyContext(conf);
+    QueryContext queryContext;
+    if (context == null) {
+      queryContext = LocalTajoTestingUtility.createDummyContext(conf);
     } else {
-      context = LocalTajoTestingUtility.createDummyContext(conf);
-      context.putAll(overideConf);
+      queryContext = LocalTajoTestingUtility.createDummyContext(conf);
+      queryContext.putAll(context);
     }
+
+    String timezoneId = queryContext.get(SessionVars.TZ);
+    TimeZone timeZone = TimeZone.getTimeZone(timezoneId);
 
     LazyTuple lazyTuple;
     VTuple vtuple  = null;
@@ -229,8 +244,8 @@ public class ExprTestBase {
         boolean nullDatum;
         Datum datum = lazyTuple.get(i);
         nullDatum = (datum instanceof TextDatum || datum instanceof CharDatum);
-        nullDatum = nullDatum && datum.asChars().equals("") ||
-            datum.asChars().equals(context.get(SessionVars.NULL_CHAR));
+        nullDatum = nullDatum &&
+            datum.asChars().equals("") || datum.asChars().equals(queryContext.get(SessionVars.NULL_CHAR));
         nullDatum |= datum.isNull();
 
         if (nullDatum) {
@@ -248,10 +263,10 @@ public class ExprTestBase {
     TajoClassLoader classLoader = new TajoClassLoader();
 
     try {
-      targets = getRawTargets(context, query, condition);
+      targets = getRawTargets(queryContext, query, condition);
 
       EvalCodeGenerator codegen = null;
-      if (context.getBool(SessionVars.CODEGEN)) {
+      if (queryContext.getBool(SessionVars.CODEGEN)) {
         codegen = new EvalCodeGenerator(classLoader);
       }
 
@@ -259,7 +274,7 @@ public class ExprTestBase {
       for (int i = 0; i < targets.length; i++) {
         EvalNode eval = targets[i].getEvalTree();
 
-        if (context.getBool(SessionVars.CODEGEN)) {
+        if (queryContext.getBool(SessionVars.CODEGEN)) {
           eval = codegen.compile(inputSchema, eval);
         }
 
@@ -276,9 +291,9 @@ public class ExprTestBase {
         Datum datum = outTuple.get(i);
         String outTupleAsChars;
         if (datum.type() == Type.TIMESTAMP) {
-          outTupleAsChars = ((TimestampDatum) datum).asChars(TajoConf.getCurrentTimeZone(), true);
+          outTupleAsChars = ((TimestampDatum) datum).asChars(timeZone, false);
         } else if (datum.type() == Type.TIME) {
-          outTupleAsChars = ((TimeDatum) datum).asChars(TajoConf.getCurrentTimeZone(), true);
+          outTupleAsChars = ((TimeDatum) datum).asChars(timeZone, false);
         } else {
           outTupleAsChars = datum.asChars();
         }
@@ -301,8 +316,8 @@ public class ExprTestBase {
     }
   }
 
-  public static void assertEvalTreeProtoSerDer(EvalNode evalNode) {
+  public static void assertEvalTreeProtoSerDer(OverridableConf context, EvalNode evalNode) {
     PlanProto.EvalTree converted = EvalTreeProtoSerializer.serialize(evalNode);
-    assertEquals(evalNode, EvalTreeProtoDeserializer.deserialize(converted));
+    assertEquals(evalNode, EvalTreeProtoDeserializer.deserialize(context, converted));
   }
 }

@@ -76,6 +76,7 @@ import java.util.List;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
+import static org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
 import static org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
 import static org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 
@@ -418,8 +419,11 @@ public class GlobalEngine extends AbstractService {
       stats.setNumBytes(volume);
       stats.setNumRows(1);
 
-      catalog.dropTable(insertNode.getTableName());
-      catalog.createTable(tableDesc);
+      UpdateTableStatsProto.Builder builder = UpdateTableStatsProto.newBuilder();
+      builder.setTableName(tableDesc.getName());
+      builder.setStats(stats.getProto());
+
+      catalog.updateTableStats(builder.build());
 
       responseBuilder.setTableDesc(tableDesc.getProto());
     } else {

@@ -532,6 +532,14 @@ public class QueryTestCaseBase {
    *   replaced by the first and second elements of <code>args</code> respectively</li>. It uses zero-based index.
    * </ul>
    *
+   * Example ddl
+   * <pre>
+   *   CREATE EXTERNAL TABLE ${0} (
+   *     t_timestamp  TIMESTAMP,
+   *     t_date    DATE
+   *   ) USING CSV LOCATION ${table.path}
+   * </pre>
+   *
    * @param ddlFileName A file name, containing a data definition statement.
    * @param dataFileName A file name, containing data rows, which columns have to be separated by vertical bar '|'.
    *                     This file name is used for replacing some format string indicating an external table location.

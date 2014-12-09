@@ -73,6 +73,11 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
+  public Map<String, String> getClientSideSessionVars() {
+    return connection.getClientSideSessionVars();
+  }
+
+  @Override
   public String getBaseDatabase() {
     return connection.getBaseDatabase();
   }
@@ -455,7 +460,8 @@ public class QueryClientImpl implements QueryClient {
       return new TajoMemoryResultSet(
           new Schema(serializedResultSet.getSchema()),
           serializedResultSet.getSerializedTuplesList(),
-          serializedResultSet.getSerializedTuplesCount());
+          serializedResultSet.getSerializedTuplesCount(),
+          getClientSideSessionVars());
     } catch (Exception e) {
       throw new ServiceException(e.getMessage(), e);
     }

@@ -27,7 +27,9 @@ import org.apache.tajo.util.datetime.DateTimeFormat;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
+import java.util.TimeZone;
 
 public class DatumFactory {
 
@@ -282,6 +284,12 @@ public class DatumFactory {
     return new TimeDatum(DateTimeUtil.toJulianTime(timeStr));
   }
 
+  public static TimeDatum createTime(String timeStr, TimeZone tz) {
+    TimeMeta tm = DateTimeUtil.decodeDateTime(timeStr);
+    DateTimeUtil.toUTCTimezone(tm, tz);
+    return new TimeDatum(DateTimeUtil.toTime(tm));
+  }
+
   public static TimestampDatum createTimestmpDatumWithJavaMillis(long millis) {
     return new TimestampDatum(DateTimeUtil.javaTimeToJulianTime(millis));
   }
@@ -292,6 +300,12 @@ public class DatumFactory {
 
   public static TimestampDatum createTimestamp(String datetimeStr) {
     return new TimestampDatum(DateTimeUtil.toJulianTimestamp(datetimeStr));
+  }
+
+  public static TimestampDatum createTimestamp(String datetimeStr, TimeZone tz) {
+    TimeMeta tm = DateTimeUtil.decodeDateTime(datetimeStr);
+    DateTimeUtil.toUTCTimezone(tm, tz);
+    return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
   }
 
   public static IntervalDatum createInterval(String intervalStr) {
@@ -318,13 +332,17 @@ public class DatumFactory {
     }
   }
 
-  public static TimeDatum createTime(Datum datum) {
+  public static TimeDatum createTime(Datum datum, @Nullable TimeZone tz) {
     switch (datum.type()) {
     case INT8:
       return new TimeDatum(datum.asInt8());
+    case CHAR:
+    case VARCHAR:
     case TEXT:
       TimeMeta tm = DateTimeFormat.parseDateTime(datum.asChars(), "HH24:MI:SS.MS");
-      DateTimeUtil.toUTCTimezone(tm);
+      if (tz != null) {
+        DateTimeUtil.toUTCTimezone(tm, tz);
+      }
       return new TimeDatum(DateTimeUtil.toTime(tm));
     case TIME:
       return (TimeDatum) datum;
@@ -333,10 +351,12 @@ public class DatumFactory {
     }
   }
 
-  public static TimestampDatum createTimestamp(Datum datum) {
+  public static TimestampDatum createTimestamp(Datum datum, @Nullable TimeZone tz) {
     switch (datum.type()) {
+      case CHAR:
+      case VARCHAR:
       case TEXT:
-        return parseTimestamp(datum.asChars());
+        return parseTimestamp(datum.asChars(), tz);
       case TIMESTAMP:
         return (TimestampDatum) datum;
       default:
@@ -349,8 +369,8 @@ public class DatumFactory {
     return new TimestampDatum(julianTimestamp);
   }
 
-  public static TimestampDatum parseTimestamp(String str) {
-    return new TimestampDatum(DateTimeUtil.toJulianTimestampWithTZ(str));
+  public static TimestampDatum parseTimestamp(String str, @Nullable TimeZone tz) {
+    return new TimestampDatum(DateTimeUtil.toJulianTimestampWithTZ(str, tz));
   }
 
   public static BlobDatum createBlob(byte[] val) {
@@ -381,7 +401,7 @@ public class DatumFactory {
     return new Inet4Datum(val);
   }
 
-  public static Datum cast(Datum operandDatum, DataType target) {
+  public static Datum cast(Datum operandDatum, DataType target, @Nullable TimeZone tz) {
     switch (target.getType()) {
     case BOOLEAN:
       return DatumFactory.createBool(operandDatum.asBool());
@@ -398,21 +418,24 @@ public class DatumFactory {
       return DatumFactory.createFloat4(operandDatum.asFloat4());
     case FLOAT8:
       return DatumFactory.createFloat8(operandDatum.asFloat8());
+    case VARCHAR:
     case TEXT:
       switch (operandDatum.type()) {
         case TIMESTAMP: {
           TimestampDatum timestampDatum = (TimestampDatum)operandDatum;
-          TimeMeta tm = timestampDatum.toTimeMeta();
-          DateTimeUtil.toUserTimezone(tm);
-          TimestampDatum convertedTimestampDatum = new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
-          return DatumFactory.createText(convertedTimestampDatum.asTextBytes());
+          if (tz != null) {
+            return DatumFactory.createText(timestampDatum.asChars(tz, false));
+          } else {
+            return DatumFactory.createText(timestampDatum.asChars());
+          }
         }
         case TIME: {
           TimeDatum timeDatum = (TimeDatum)operandDatum;
-          TimeMeta tm = timeDatum.toTimeMeta();
-          DateTimeUtil.toUserTimezone(tm);
-          TimeDatum convertedTimeDatum = new TimeDatum(DateTimeUtil.toTime(tm));
-          return DatumFactory.createText(convertedTimeDatum.asTextBytes());
+          if (tz != null) {
+            return DatumFactory.createText(timeDatum.asChars(tz, false));
+          } else {
+            return DatumFactory.createText(timeDatum.asChars());
+          }
         }
         default:
           return DatumFactory.createText(operandDatum.asTextBytes());
@@ -420,9 +443,9 @@ public class DatumFactory {
     case DATE:
       return DatumFactory.createDate(operandDatum);
     case TIME:
-      return DatumFactory.createTime(operandDatum);
+      return DatumFactory.createTime(operandDatum, tz);
     case TIMESTAMP:
-      return DatumFactory.createTimestamp(operandDatum);
+      return DatumFactory.createTimestamp(operandDatum, tz);
     case BLOB:
       return DatumFactory.createBlob(operandDatum.asByteArray());
     case INET4:

@@ -68,7 +68,9 @@ public interface CatalogStore extends Closeable {
 
   void alterTable(CatalogProtos.AlterTableDescProto alterTableDescProto) throws CatalogException;
 
-    /************************ PARTITION METHOD **************************/
+  void updateTableStats(CatalogProtos.UpdateTableStatsProto statsProto) throws CatalogException;
+
+  /************************ PARTITION METHOD **************************/
   void addPartitionMethod(PartitionMethodProto partitionMethodProto) throws CatalogException;
 
   PartitionMethodProto getPartitionMethod(String databaseName, String tableName)

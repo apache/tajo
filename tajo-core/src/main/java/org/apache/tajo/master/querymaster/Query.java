@@ -36,6 +36,11 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.CatalogException;
+import org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
+import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.DataChannel;
@@ -957,8 +962,11 @@ public class Query implements EventHandler<QueryEvent> {
         finalTable.setStats(stats);
 
         if (insertNode.hasTargetTable()) {
-          catalog.dropTable(insertNode.getTableName());
-          catalog.createTable(finalTable);
+          UpdateTableStatsProto.Builder builder = UpdateTableStatsProto.newBuilder();
+          builder.setTableName(finalTable.getName());
+          builder.setStats(stats.getProto());
+
+          catalog.updateTableStats(builder.build());
         }
 
         query.setResultDesc(finalTable);

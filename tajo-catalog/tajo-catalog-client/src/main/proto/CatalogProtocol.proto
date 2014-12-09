@@ -33,6 +33,7 @@ service CatalogProtocolService {
   rpc getTablespace(StringProto) returns (TablespaceProto);
   rpc alterTablespace(AlterTablespaceProto) returns (BoolProto);
   rpc alterTable(AlterTableDescProto) returns (BoolProto);
+  rpc updateTableStats(UpdateTableStatsProto) returns (BoolProto);
 
 
   rpc createDatabase(CreateDatabaseRequest) returns (BoolProto);
