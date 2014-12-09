@@ -170,7 +170,7 @@ public class TajoMaster extends CompositeService {
 
       // check the system directory and create if they are not created.
       checkAndInitializeSystemDirectories();
-      evaluatePredefinedRules();
+      diagnoseTajoMaster();
       this.storeManager = StorageManager.getStorageManager(systemConf);
 
       catalogServer = new CatalogServer(FunctionLoader.load());
@@ -284,7 +284,7 @@ public class TajoMaster extends CompositeService {
     }
   }
   
-  private void evaluatePredefinedRules() throws EvaluationFailedException {
+  private void diagnoseTajoMaster() throws EvaluationFailedException {
     SelfDiagnosisRuleEngine ruleEngine = SelfDiagnosisRuleEngine.getInstance();
     SelfDiagnosisRuleSession ruleSession = ruleEngine.newRuleSession();
     EvaluationContext context = new EvaluationContext();

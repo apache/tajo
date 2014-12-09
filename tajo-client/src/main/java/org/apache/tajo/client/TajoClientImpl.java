@@ -81,7 +81,7 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     this.queryClient = new QueryClientImpl(this);
     this.catalogClient = new CatalogAdminClientImpl(this);
     
-    evaluatePredefinedRules();
+    diagnoseTajoClient();
   }
 
   public TajoClientImpl(String hostName, int port, @Nullable String baseDatabase) throws IOException {
@@ -89,10 +89,10 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     this.queryClient = new QueryClientImpl(this);
     this.catalogClient = new CatalogAdminClientImpl(this);
     
-    evaluatePredefinedRules();
+    diagnoseTajoClient();
   }
   
-  private void evaluatePredefinedRules() throws EvaluationFailedException {
+  private void diagnoseTajoClient() throws EvaluationFailedException {
     SelfDiagnosisRuleEngine ruleEngine = SelfDiagnosisRuleEngine.getInstance();
     SelfDiagnosisRuleSession ruleSession = ruleEngine.newRuleSession();
     EvaluationContext context = new EvaluationContext();

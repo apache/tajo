@@ -268,7 +268,7 @@ public class TajoWorker extends CompositeService {
 
     historyReader = new HistoryReader(workerContext.getWorkerName(), this.systemConf);
     
-    evaluatePredefinedRules();
+    diagnoseTajoWorker();
   }
 
   private void initWorkerMetrics() {
@@ -323,7 +323,7 @@ public class TajoWorker extends CompositeService {
     }
   }
   
-  private void evaluatePredefinedRules() throws EvaluationFailedException {
+  private void diagnoseTajoWorker() throws EvaluationFailedException {
     SelfDiagnosisRuleEngine ruleEngine = SelfDiagnosisRuleEngine.getInstance();
     SelfDiagnosisRuleSession ruleSession = ruleEngine.newRuleSession();
     EvaluationContext context = new EvaluationContext();
