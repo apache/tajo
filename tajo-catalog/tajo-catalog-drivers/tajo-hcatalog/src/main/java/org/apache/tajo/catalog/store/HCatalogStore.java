@@ -779,25 +779,13 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public void dropIndex(String databaseName, String indexName) throws CatalogException {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public boolean existIndexByName(String databaseName, String indexName) throws CatalogException {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public CatalogProtos.IndexDescProto[] getIndexes(String databaseName, String tableName) throws CatalogException {
-    // TODO - not implemented yet
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   public void createIndex(CatalogProtos.IndexDescProto proto) throws CatalogException {
+    // TODO - not implemented yet
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void dropIndex(String databaseName, String indexName) throws CatalogException {
     // TODO - not implemented yet
     throw new UnsupportedOperationException();
   }
@@ -809,14 +797,33 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public CatalogProtos.IndexDescProto getIndexByColumns(String databaseName, String tableName, String []columnName)
+  public CatalogProtos.IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames)
       throws CatalogException {
     // TODO - not implemented yet
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean existIndexByColumns(String databaseName, String tableName, String []columnName) throws CatalogException {
+  public boolean existIndexByName(String databaseName, String indexName) throws CatalogException {
+    // TODO - not implemented yet
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames)
+      throws CatalogException {
+    // TODO - not implemented yet
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public List<String> getAllIndexNamesByTable(String databaseName, String tableName) throws CatalogException {
+    // TODO - not implemented yet
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean existIndexesByTable(String databaseName, String tableName) throws CatalogException {
     // TODO - not implemented yet
     throw new UnsupportedOperationException();
   }
