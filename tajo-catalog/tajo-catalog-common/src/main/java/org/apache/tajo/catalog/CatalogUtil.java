@@ -699,7 +699,7 @@ public class CatalogUtil {
       "AS", "ALL", "AND", "ANY", "ASYMMETRIC", "ASC",
       "BOTH",
       "CASE", "CAST", "CREATE", "CROSS", "CURRENT_DATE", "CURRENT_TIME", "CURRENT_TIMESTAMP",
-      "DESC", "DISTINCT",
+      "DEFAULT", "DESC", "DISTINCT",
       "END", "ELSE", "EXCEPT",
       "FALSE", "FULL", "FROM",
       "GROUP",

@@ -1,0 +1,5 @@
+{
+  "name": "extsort_buffer_size",
+  "value": "100",
+  "OpType": "SetSession"
+}
