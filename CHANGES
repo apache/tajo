@@ -87,6 +87,8 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1196: Unit test hangs occasionally and randomly. (jihoon)
+
     TAJO-1234: Rearrange timezone in date/time types. (hyunsik)
 
     TAJO-1231: Implicit table properties in session are not stored in 
