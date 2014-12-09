@@ -19,6 +19,7 @@
 package org.apache.tajo.util;
 
 import java.util.Collection;
+import java.util.Map;
 
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.*;
 
@@ -38,5 +39,17 @@ public class ProtoUtil {
 
   public static Collection<String> convertStrings(StringListProto strings) {
     return strings.getValuesList();
+  }
+
+  public static Map<String, String> convertToMap(KeyValueSetProto proto) {
+    Map<String, String> keyVals = TUtil.newHashMap();
+    for(KeyValueProto keyval : proto.getKeyvalList()) {
+      keyVals.put(keyval.getKey(), keyval.getValue());
+    }
+    return keyVals;
+  }
+
+  public static KeyValueSetProto convertFromMap(Map<String, String> map) {
+    return new KeyValueSet(map).getProto();
   }
 }

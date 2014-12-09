@@ -532,4 +532,64 @@ public class TestSQLAnalyzer {
   public void windowFunction9() throws IOException {
     assertParseResult("window9.sql", "window9.result");
   }
+
+  @Test
+  public void testSetCatalog1() throws IOException {
+    assertParseResult("setcatalog1.sql", "setcatalog1.result");
+  }
+
+  @Test
+  public void testSetCatalog2() throws IOException {
+    assertParseResult("setcatalog2.sql", "setcatalog2.result");
+  }
+
+  @Test
+  public void testTimezone1() throws IOException {
+    assertParseResult("settimezone1.sql", "settimezone1.result");
+  }
+
+  @Test
+  public void testTimezone2() throws IOException {
+    assertParseResult("settimezone2.sql", "settimezone2.result");
+  }
+
+  @Test
+  public void testTimezone3() throws IOException {
+    assertParseResult("settimezone3.sql", "settimezone3.result");
+  }
+
+  @Test
+  public void testSetSession1() throws IOException {
+    assertParseResult("setsession1.sql", "setsession1.result");
+  }
+
+  @Test
+  public void testSetSession2() throws IOException {
+    assertParseResult("setsession2.sql", "setsession2.result");
+  }
+
+  @Test
+  public void testSetSession3() throws IOException {
+    assertParseResult("setsession3.sql", "setsession3.result");
+  }
+
+  @Test
+  public void testSetSession4() throws IOException {
+    assertParseResult("setsession4.sql", "setsession4.result");
+  }
+
+  @Test
+  public void testSetSession5() throws IOException {
+    assertParseResult("setsession5.sql", "setsession5.result");
+  }
+
+  @Test
+  public void testSetSession6() throws IOException {
+    assertParseResult("setsession6.sql", "setsession6.result");
+  }
+
+  @Test
+  public void testSetSession7() throws IOException {
+    assertParseResult("setsession7.sql", "setsession7.result");
+  }
 }

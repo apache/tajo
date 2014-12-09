@@ -26,6 +26,8 @@ package org.apache.tajo.plan.logical;
  * This indicates a logical node type.
  */
 public enum NodeType {
+  SET_SESSION(SetSessionNode.class),
+
   ROOT(LogicalRootNode.class),
   EXPRS(EvalExprNode.class),
   PROJECTION(ProjectionNode.class),

@@ -43,10 +43,19 @@ explain_clause
   ;
 
 statement
-  : data_statement
+  : session_statement
+  | data_statement
   | data_change_statement
   | schema_statement
   | index_statement
+  ;
+
+session_statement
+  : SET CATALOG dbname = identifier
+  | SET TIME ZONE (TO | EQUAL)? (Character_String_Literal | signed_numerical_literal | DEFAULT)
+  | SET (SESSION)? name=identifier (TO | EQUAL)?
+    (Character_String_Literal | signed_numerical_literal | boolean_literal | DEFAULT)
+  | RESET name=identifier
   ;
 
 data_statement
@@ -221,6 +230,7 @@ nonreserved_keywords
   | ALTER
   | BETWEEN
   | BY
+  | CATALOG
   | CENTURY
   | CHARACTER
   | COALESCE
@@ -284,6 +294,7 @@ nonreserved_keywords
   | RANK
   | REGEXP
   | RENAME
+  | RESET
   | RLIKE
   | ROLLUP
   | ROW
@@ -291,6 +302,7 @@ nonreserved_keywords
   | ROW_NUMBER
   | SECOND
   | SET
+  | SESSION
   | SIMILAR
   | STDDEV_POP
   | STDDEV_SAMP
