@@ -52,9 +52,6 @@ public class AvgDouble extends AggFunction {
     return new AvgContext();
   }
 
-  public void init() {
-  }
-
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
     AvgContext avgCtx = (AvgContext) ctx;

@@ -658,4 +658,18 @@ public abstract class AbstractCatalogClient implements CatalogService {
     }
   }
 
+  @Override
+  public boolean updateTableStats(final UpdateTableStatsProto updateTableStatsProto) {
+    try {
+      return new ServerCallable<Boolean>(pool, getCatalogServerAddr(), CatalogProtocol.class, false) {
+        public Boolean call(NettyClientBase client) throws ServiceException {
+          CatalogProtocolService.BlockingInterface stub = getStub(client);
+          return stub.updateTableStats(null, updateTableStatsProto).getValue();
+        }
+      }.withRetries();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return false;
+    }
+  }
 }

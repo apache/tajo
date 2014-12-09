@@ -5,6 +5,9 @@ Release 0.9.1 - unreleased
 
   NEW FEATURES
 
+    TAJO-1222: DelimitedTextFile should be tolerant against parsing errors.
+    (hyunsik)
+
     TAJO-1026: Implement Query history persistency manager.(Hyoungjun Kim)
 
     TAJO-233: Support PostgreSQL CatalogStore. (Jihun Kang via hyunsik)
@@ -15,7 +18,12 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
-    TAJO-1165: Needs to show error messages on query_executor.jsp. (Jihun Kang via jaehwa)
+    TAJO-1230: Disable ipv6 support on JVM. (Jihun Kang via hyunsik)
+
+    TAJO-1213: Implement CatalogStore::updateTableStats. (jaehwa)
+
+    TAJO-1165: Needs to show error messages on query_executor.jsp. 
+    (Jihun Kang via jaehwa)
 
     TAJO-1204: Remove unused ServerName class. (DaeMyung Kang via jaehwa)
 
@@ -79,12 +87,39 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1196: Unit test hangs occasionally and randomly. (jihoon)
+
+    TAJO-1234: Rearrange timezone in date/time types. (hyunsik)
+
+    TAJO-1231: Implicit table properties in session are not stored in 
+    table property. (hyunsik)
+
+    TAJO-1194: 'INSERT OVERWRITE .. SELECT' does not remove existing data 
+    when result is empty. (jaehwa)
+
+    TAJO-1191: Change DateDatum timezone to UTC. (Jaewoong Jung via hyunsik)
+
+    TAJO-1224: When there is no projected column, json scan can be hang. 
+    (hyunsik) 
+
+    TAJO-1220: Implement createStatement() and setEscapeProcessing() in 
+    JdbcConnection. (YeonSu Han via hyunsik)
+
+    TAJO-1183: Keep command execution even with errors. (Jaewoong Jung via 
+    hyunsik)
+
+    TAJO-1190: INSERT INTO to partition tables may cause NPE. (hyunsik)
+
+    TAJO-1211: Staging directory for CTAS and INSERT should be in 
+    the output dir. (hyunsik)
+
     TAJO-1210: ByteBufLineReader does not handle the end of file, 
     if newline is not appeared. (jinho)
 
     TAJO-1119: JDBC driver should support TIMESTAMP type. (jaehwa)
 
-    TAJO-1166: S3 related storage causes compilation error in Hadoop 2.6.0-SNAPSHOT. (jaehwa)
+    TAJO-1166: S3 related storage causes compilation error in Hadoop 
+    2.6.0-SNAPSHOT. (jaehwa)
 
     TAJO-1208: Failure of create table using textfile on hivemeta.
     (jinho)
@@ -122,6 +157,9 @@ Release 0.9.1 - unreleased
 
 
   TASKS
+
+    TAJO-1229: rename tajo-yarn-pullserver to tajo-pullserver.
+    (hyunsik)
 
     TAJO-1157: Required Java version in tutorial doc needs to be updated.
     (hyunsik)

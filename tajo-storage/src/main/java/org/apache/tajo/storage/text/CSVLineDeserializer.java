@@ -45,10 +45,10 @@ public class CSVLineDeserializer extends TextLineDeserializer {
     }
     nullChars = TextLineSerDe.getNullChars(meta);
 
-    fieldSerDer = new TextFieldSerializerDeserializer();
+    fieldSerDer = new TextFieldSerializerDeserializer(meta);
   }
 
-  public void deserialize(final ByteBuf lineBuf, Tuple output) throws IOException {
+  public void deserialize(final ByteBuf lineBuf, Tuple output) throws IOException, TextLineParsingError {
     int[] projection = targetColumnIndexes;
     if (lineBuf == null || targetColumnIndexes == null || targetColumnIndexes.length == 0) {
       return;

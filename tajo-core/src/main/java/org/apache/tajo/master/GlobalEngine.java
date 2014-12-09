@@ -74,6 +74,7 @@ import java.util.List;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
+import static org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
 import static org.apache.tajo.ipc.ClientProtos.SerializedResultSet;
 import static org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 
@@ -335,10 +336,8 @@ public class GlobalEngine extends AbstractService {
     String queryId = nodeUniqName + "_" + System.currentTimeMillis();
 
     FileSystem fs = TajoConf.getWarehouseDir(context.getConf()).getFileSystem(context.getConf());
-    Path stagingDir = QueryMasterTask.initStagingDir(context.getConf(), fs, queryId.toString());
-
+    Path stagingDir = QueryMasterTask.initStagingDir(context.getConf(), queryId.toString(), queryContext);
     Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
-    fs.mkdirs(stagingResultDir);
 
     TableDesc tableDesc = null;
     Path finalOutputDir = null;
@@ -349,8 +348,7 @@ public class GlobalEngine extends AbstractService {
       finalOutputDir = insertNode.getPath();
     }
 
-    TaskAttemptContext taskAttemptContext =
-        new TaskAttemptContext(queryContext, null, null, (CatalogProtos.FragmentProto[]) null, stagingDir);
+    TaskAttemptContext taskAttemptContext = new TaskAttemptContext(queryContext, null, null, null, stagingDir);
     taskAttemptContext.setOutputPath(new Path(stagingResultDir, "part-01-000000"));
 
     EvalExprExec evalExprExec = new EvalExprExec(taskAttemptContext, (EvalExprNode) insertNode.getChild());
@@ -401,8 +399,11 @@ public class GlobalEngine extends AbstractService {
       stats.setNumBytes(volume);
       stats.setNumRows(1);
 
-      catalog.dropTable(insertNode.getTableName());
-      catalog.createTable(tableDesc);
+      UpdateTableStatsProto.Builder builder = UpdateTableStatsProto.newBuilder();
+      builder.setTableName(tableDesc.getName());
+      builder.setStats(stats.getProto());
+
+      catalog.updateTableStats(builder.build());
 
       responseBuilder.setTableDesc(tableDesc.getProto());
     } else {

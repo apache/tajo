@@ -29,6 +29,7 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -114,8 +115,19 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
   @Test
   public final void testInsertIntoLocation() throws Exception {
+    Path dfsPath = new Path("/tajo-data/testInsertIntoLocation");
+    assertTestInsertIntoLocation(dfsPath);
+  }
+
+  @Test
+  public final void testInsertIntoLocationDifferentFSs() throws Exception {
+    Path localPath = CommonTestingUtil.getTestDir();
+    assertTestInsertIntoLocation(localPath);
+  }
+
+  public final void assertTestInsertIntoLocation(Path path) throws Exception {
     FileSystem fs = null;
-    Path path = new Path("/tajo-data/testInsertIntoLocation");
+
     try {
       executeString("insert into location '" + path + "' select l_orderkey, l_partkey, l_linenumber from default.lineitem").close();
 
@@ -377,6 +389,28 @@ public class TestInsertQuery extends QueryTestCaseBase {
       assertEquals(2, desc.getStats().getNumRows().intValue());
     }
     executeString("DROP TABLE full_table_csv PURGE");
+  }
+
+  @Test
+  public final void testInsertOverwriteWithAsteriskAndMore() throws Exception {
+    ResultSet res = executeFile("lineitem_year_month_ddl.sql");
+    res.close();
+
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), "lineitem_year_month"));
+
+    res = executeFile("load_to_lineitem_year_month.sql");
+    res.close();
+    TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "lineitem_year_month");
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      assertEquals(5, desc.getStats().getNumRows().intValue());
+    }
+
+    res = executeQuery();
+    assertResultSet(res);
+    res.close();
+
+    executeString("DROP TABLE lineitem_year_month PURGE");
   }
 
   @Test

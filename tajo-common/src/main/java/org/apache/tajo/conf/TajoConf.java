@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class TajoConf extends Configuration {
 
-  private static TimeZone CURRENT_TIMEZONE;
+  private static TimeZone SYSTEM_TIMEZONE;
   private static int DATE_ORDER = -1;
   private static final ReentrantReadWriteLock confLock = new ReentrantReadWriteLock();
   private static final Lock writeLock = confLock.writeLock();
@@ -83,29 +83,18 @@ public class TajoConf extends Configuration {
   }
 
   private static void confStaticInit() {
-    TimeZone.setDefault(getCurrentTimeZone());
+    TimeZone.setDefault(getSystemTimezone());
     getDateOrder();
   }
 
-  public static TimeZone getCurrentTimeZone() {
+  public static TimeZone getSystemTimezone() {
     writeLock.lock();
     try {
-      if (CURRENT_TIMEZONE == null) {
+      if (SYSTEM_TIMEZONE == null) {
         TajoConf tajoConf = new TajoConf();
-        CURRENT_TIMEZONE = TimeZone.getTimeZone(tajoConf.getVar(ConfVars.$TIMEZONE));
+        SYSTEM_TIMEZONE = TimeZone.getTimeZone(tajoConf.getVar(ConfVars.$TIMEZONE));
       }
-      return CURRENT_TIMEZONE;
-    } finally {
-      writeLock.unlock();
-    }
-  }
-
-  public static TimeZone setCurrentTimeZone(TimeZone timeZone) {
-    writeLock.lock();
-    try {
-      TimeZone oldTimeZone = CURRENT_TIMEZONE;
-      CURRENT_TIMEZONE = timeZone;
-      return oldTimeZone;
+      return SYSTEM_TIMEZONE;
     } finally {
       writeLock.unlock();
     }
@@ -359,7 +348,7 @@ public class TajoConf extends Configuration {
     $CLI_ERROR_STOP("tajo.cli.error.stop", false),
 
     // Timezone & Date ----------------------------------------------------------
-    $TIMEZONE("tajo.timezone", TimeZone.getDefault().getID()),
+    $TIMEZONE("tajo.timezone", TajoConstants.DEFAULT_SYSTEM_TIMEZONE),
     $DATE_ORDER("tajo.date.order", "YMD"),
 
     // FILE FORMAT
@@ -670,7 +659,15 @@ public class TajoConf extends Configuration {
     return path.indexOf("file:/") == 0 || path.indexOf("hdfs:/") == 0;
   }
 
-  public static Path getStagingDir(TajoConf conf) throws IOException {
+  /**
+   * It returns the default root staging directory used by queries without a target table or
+   * a specified output directory. An example query is <pre>SELECT a,b,c FROM XXX;</pre>.
+   *
+   * @param conf TajoConf
+   * @return Path which points the default staging directory
+   * @throws IOException
+   */
+  public static Path getDefaultRootStagingDir(TajoConf conf) throws IOException {
     String stagingDirString = conf.getVar(ConfVars.STAGING_ROOT_DIR);
     if (!hasScheme(stagingDirString)) {
       Path warehousePath = getWarehouseDir(conf);
@@ -685,7 +682,7 @@ public class TajoConf extends Configuration {
   public static Path getQueryHistoryDir(TajoConf conf) throws IOException {
     String historyDirString = conf.getVar(ConfVars.HISTORY_QUERY_DIR);
     if (!hasScheme(historyDirString)) {
-      Path stagingPath = getStagingDir(conf);
+      Path stagingPath = getDefaultRootStagingDir(conf);
       FileSystem fs = stagingPath.getFileSystem(conf);
       Path path = new Path(fs.getUri().toString(), historyDirString);
       conf.setVar(ConfVars.HISTORY_QUERY_DIR, path.toString());

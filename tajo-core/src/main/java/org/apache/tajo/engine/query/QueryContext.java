@@ -74,12 +74,12 @@ public class QueryContext extends OverridableConf {
   }
 
   public QueryContext(TajoConf conf, Session session) {
-    super(conf);
+    super(conf, ConfigKey.ConfigType.QUERY, ConfigKey.ConfigType.SESSION);
     putAll(session.getAllVariables());
   }
 
   public QueryContext(TajoConf conf, KeyValueSetProto proto) {
-    super(conf, proto, ConfigKey.ConfigType.QUERY);
+    super(conf, proto, ConfigKey.ConfigType.QUERY, ConfigKey.ConfigType.SESSION);
   }
 
   //-----------------------------------------------------------------------------------------------
