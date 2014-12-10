@@ -118,8 +118,7 @@ public class TajoConf extends Configuration {
     // a username for a running Tajo cluster
     ROOT_DIR("tajo.rootdir", "file:///tmp/tajo-${user.name}/", 
         Validators.groups(Validators.notNull(), Validators.pathUrl())),
-    USERNAME("tajo.username", "${user.name}", 
-        Validators.groups(Validators.notNull(), Validators.javaString())),
+    USERNAME("tajo.username", "${user.name}", Validators.javaString()),
 
     // Configurable System Directories
     WAREHOUSE_DIR("tajo.warehouse.directory", EMPTY_VALUE, Validators.pathUrl()),

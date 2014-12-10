@@ -78,6 +78,7 @@
             <exclude>src/test/resources/queries/**</exclude>
             <exclude>src/test/resources/results/**</exclude>
             <exclude>src/test/resources/results/**</exclude>
+            <exclude>src/main/resources/META-INF/services/*</exclude>
             <exclude>src/main/resources/webapps/static/js/*</exclude>
           </excludes>
         </configuration>
