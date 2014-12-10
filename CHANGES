@@ -18,6 +18,9 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1236: Remove slow 'new String' operation in parquet format. 
+    (jinho)
+
     TAJO-1230: Disable ipv6 support on JVM. (Jihun Kang via hyunsik)
 
     TAJO-1213: Implement CatalogStore::updateTableStats. (jaehwa)
@@ -86,6 +89,11 @@ Release 0.9.1 - unreleased
 
 
   BUG FIXES
+
+    TAJO-1235: ByteBufLineReader can not read text line with CRLF.
+    (jinho)
+
+    TAJO-1237: Fix missing maven-module for pullserver. (jinho)
 
     TAJO-1196: Unit test hangs occasionally and randomly. (jihoon)
 

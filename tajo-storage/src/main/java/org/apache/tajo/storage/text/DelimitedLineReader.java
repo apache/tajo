@@ -57,7 +57,7 @@ public class DelimitedLineReader implements Closeable {
   private long startOffset, end, pos;
   private boolean eof = true;
   private ByteBufLineReader lineReader;
-  private AtomicInteger tempReadBytes = new AtomicInteger();
+  private AtomicInteger lineReadBytes = new AtomicInteger();
   private FileFragment fragment;
   private Configuration conf;
 
@@ -122,11 +122,10 @@ public class DelimitedLineReader implements Closeable {
       return null;
     }
 
-    ByteBuf buf = lineReader.readLineBuf(tempReadBytes);
+    ByteBuf buf = lineReader.readLineBuf(lineReadBytes);
+    pos += lineReadBytes.get();
     if (buf == null) {
       eof = true;
-    } else {
-      pos += tempReadBytes.get();
     }
 
     if (!isCompressed() && getCompressedPosition() > end) {
