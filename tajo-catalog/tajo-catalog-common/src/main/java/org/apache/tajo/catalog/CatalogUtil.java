@@ -52,11 +52,6 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class CatalogUtil {
 
-  public static boolean isValidIdentifier(String identifier) {
-    Preconditions.checkNotNull(identifier);
-    return identifier.length() > 0 && Character.isAlphabetic(identifier.charAt(0));
-  }
-
   /**
    * Normalize an identifier. Normalization means a translation from a identifier to be a refined identifier name.
    *
@@ -705,7 +700,7 @@ public class CatalogUtil {
       "AS", "ALL", "AND", "ANY", "ASYMMETRIC", "ASC",
       "BOTH",
       "CASE", "CAST", "CREATE", "CROSS", "CURRENT_DATE", "CURRENT_TIME", "CURRENT_TIMESTAMP",
-      "DEFAULT", "DESC", "DISTINCT",
+      "DESC", "DISTINCT",
       "END", "ELSE", "EXCEPT",
       "FALSE", "FULL", "FROM",
       "GROUP",
