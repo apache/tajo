@@ -243,6 +243,7 @@ nonreserved_keywords
   | DAY
   | DEC
   | DECADE
+  | DEFAULT
   | DENSE_RANK
   | DOW
   | DOY
