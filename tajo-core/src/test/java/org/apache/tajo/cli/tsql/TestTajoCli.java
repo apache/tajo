@@ -351,35 +351,6 @@ public class TestTajoCli {
   }
 
   @Test
-  public void testSetTimezone1() throws Exception {
-    tajoCli.executeMetaCommand("\\set TIMEZONE GMT");
-    assertSessionVar(tajoCli, "TIMEZONE", "GMT");
-
-    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
-    Thread t = new Thread() {
-      public void run() {
-        try {
-          tajoCli.executeScript("select timestamp '2014-10-01 08:09:01'::text;");
-        } catch (Exception e) {
-          e.printStackTrace();
-          fail(e.getMessage());
-        }
-      }
-    };
-    t.start();
-    String consoleResult;
-    while (true) {
-      Thread.sleep(3 * 1000);
-      consoleResult = new String(out.toByteArray());
-      if (consoleResult.indexOf("row") >= 0) {
-        t.interrupt();
-        break;
-      }
-    }
-    assertOutputResult(consoleResult);
-  }
-
-  @Test
   public void testNonForwardQueryPause() throws Exception {
     final String sql = "select * from default.lineitem";
     try {

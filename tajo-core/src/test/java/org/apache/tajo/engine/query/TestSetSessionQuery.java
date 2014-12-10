@@ -58,9 +58,9 @@ public class TestSetSessionQuery extends QueryTestCaseBase {
 
   @Test
   public final void testSetTimezone() throws Exception {
-    assertFalse(getClient().existSessionVariable("TZ"));
+    assertFalse(getClient().existSessionVariable("TIMEZONE"));
     executeString("SET TIME ZONE 'GMT+9'").close();
-    assertTrue(getClient().existSessionVariable("TZ"));
+    assertTrue(getClient().existSessionVariable("TIMEZONE"));
     executeString("SET TIME ZONE to DEFAULT").close();
   }
 

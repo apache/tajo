@@ -823,6 +823,11 @@ public class CatalogUtil {
   public static final String ENABLE_DICTIONARY    = "parquet.enable.dictionary";
   public static final String VALIDATION           = "parquet.validation";
 
+  /**
+   *
+   * @param type
+   * @return
+   */
   public static KeyValueSet newPhysicalProperties(StoreType type) {
     KeyValueSet options = new KeyValueSet();
     if (StoreType.CSV == type || StoreType.TEXTFILE == type) {
