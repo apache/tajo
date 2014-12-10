@@ -74,6 +74,7 @@ public class TajoConf extends Configuration {
     addResource(path);
   }
 
+  @SuppressWarnings("unused")
   public TimeZone getSystemTimezone() {
     return TimeZone.getTimeZone(getVar(ConfVars.$TIMEZONE));
   }

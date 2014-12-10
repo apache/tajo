@@ -37,6 +37,7 @@ import org.junit.experimental.categories.Category;
 import java.sql.ResultSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TimeZone;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
@@ -541,7 +542,8 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public void testTimezonedTable1() throws Exception {
-    // default client time zone test without any time zone
+    // Table - GMT (No table property)
+    // Client - GMT (default client time zone is used if no TIME ZONE session variable is given.)
     try {
       executeDDL("datetime_table_ddl.sql", "timezoned", new String[]{"timezoned1"});
       ResultSet res = executeQuery();
@@ -554,7 +556,8 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public void testTimezonedTable2() throws Exception {
-    // manually setting timezone to GMT
+    // Table - timezone = GMT+9
+    // Client - GMT (SET TIME ZONE 'GMT';)
     try {
       executeDDL("datetime_table_timezoned_ddl.sql", "timezoned", new String[]{"timezoned2"});
       ResultSet res = executeQuery();
@@ -567,7 +570,8 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public void testTimezonedTable3() throws Exception {
-    // set time zone GMT+9 through TajoClient
+    // Table - timezone = GMT+9
+    // Client - GMT+9 through TajoClient API
 
     Map<String,String> sessionVars = new HashMap<String, String>();
     sessionVars.put(SessionVars.TIMEZONE.name(), "GMT+9");
@@ -587,14 +591,36 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public void testTimezonedTable4() throws Exception {
-    // set time zone GMT+9 in query statement
+    // Table - timezone = GMT+9
+    // Client - GMT+9 (SET TIME ZONE 'GMT+9';)
+
     try {
-      executeDDL("datetime_table_timezoned_ddl.sql", "timezoned", new String[]{"timezoned3"});
+      executeDDL("datetime_table_timezoned_ddl.sql", "timezoned", new String[]{"timezoned4"});
       ResultSet res = executeQuery();
       assertResultSet(res, "testTimezonedTable3.result");
       cleanupQuery(res);
     } finally {
-      executeString("DROP TABLE IF EXISTS timezoned3");
+      executeString("DROP TABLE IF EXISTS timezoned4");
+    }
+  }
+
+  @Test
+  public void testTimezonedTable5() throws Exception {
+    // Table - timezone = GMT+9 (by system default timezone)
+    // TajoClient uses JVM default timezone (GMT+9)
+
+    try {
+      testingCluster.getConfiguration().setSystemTimezone(TimeZone.getTimeZone("GMT+9"));
+
+      executeDDL("datetime_table_ddl.sql", "timezoned", new String[]{"timezoned5"});
+      ResultSet res = executeQuery();
+      assertResultSet(res, "testTimezonedTable3.result");
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE IF EXISTS timezoned5");
+
+      // restore the config
+      testingCluster.getConfiguration().setSystemTimezone(TimeZone.getTimeZone("GMT"));
     }
   }
 }

@@ -1,2 +1,2 @@
 SET TIME ZONE 'GMT+9';
-SELECT * FROM timezoned3;
+SELECT * FROM timezoned4;

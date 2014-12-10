@@ -824,9 +824,10 @@ public class CatalogUtil {
   public static final String VALIDATION           = "parquet.validation";
 
   /**
+   * Create new table property with default configs. It is used to make TableMeta to be stored in Catalog.
    *
-   * @param type
-   * @return
+   * @param type StoreType
+   * @return Table properties
    */
   public static KeyValueSet newPhysicalProperties(StoreType type) {
     KeyValueSet options = new KeyValueSet();
