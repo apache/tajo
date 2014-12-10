@@ -541,6 +541,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public void testTimezonedTable1() throws Exception {
+    // default client time zone test without any time zone
     try {
       executeDDL("datetime_table_ddl.sql", "timezoned", new String[]{"timezoned1"});
       ResultSet res = executeQuery();
@@ -553,6 +554,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public void testTimezonedTable2() throws Exception {
+    // manually setting timezone to GMT
     try {
       executeDDL("datetime_table_timezoned_ddl.sql", "timezoned", new String[]{"timezoned2"});
       ResultSet res = executeQuery();
@@ -565,6 +567,8 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public void testTimezonedTable3() throws Exception {
+    // set time zone GMT+9 through TajoClient
+
     Map<String,String> sessionVars = new HashMap<String, String>();
     sessionVars.put(SessionVars.TIMEZONE.name(), "GMT+9");
     getClient().updateSessionVariables(sessionVars);
@@ -582,34 +586,15 @@ public class TestSelectQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public void testCurrentTimestamp1() throws Exception {
-
+  public void testTimezonedTable4() throws Exception {
+    // set time zone GMT+9 in query statement
     try {
-      Map<String,String> sessionVars = new HashMap<String, String>();
-      sessionVars.put(SessionVars.TIMEZONE.name(), "GMT+9");
-      getClient().updateSessionVariables(sessionVars);
-
-      ResultSet res = executeString("SELECT current_timestamp;");
-      System.out.println(resultSetToString(res));
+      executeDDL("datetime_table_timezoned_ddl.sql", "timezoned", new String[]{"timezoned3"});
+      ResultSet res = executeQuery();
+      assertResultSet(res, "testTimezonedTable3.result");
       cleanupQuery(res);
     } finally {
-      getClient().unsetSessionVariables(Lists.newArrayList("TIMEZONE"));
-    }
-  }
-
-  @Test
-  public void testCurrentTimestamp2() throws Exception {
-
-    try {
-      Map<String,String> sessionVars = new HashMap<String, String>();
-      sessionVars.put(SessionVars.TIMEZONE.name(), "GMT+9");
-      getClient().updateSessionVariables(sessionVars);
-
-      ResultSet res = executeString("SELECT current_timestamp;");
-      System.out.println(resultSetToString(res));
-      cleanupQuery(res);
-    } finally {
-      getClient().unsetSessionVariables(Lists.newArrayList("TIMEZONE"));
+      executeString("DROP TABLE IF EXISTS timezoned3");
     }
   }
 }
