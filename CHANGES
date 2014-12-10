@@ -90,6 +90,11 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1235: ByteBufLineReader can not read text line with CRLF.
+    (jinho)
+
+    TAJO-1237: Fix missing maven-module for pullserver. (jinho)
+
     TAJO-1196: Unit test hangs occasionally and randomly. (jihoon)
 
     TAJO-1234: Rearrange timezone in date/time types. (hyunsik)
