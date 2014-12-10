@@ -746,7 +746,7 @@
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
-        <artifactId>tajo-yarn-pullserver</artifactId>
+        <artifactId>tajo-pullserver</artifactId>
         <version>${tajo.version}</version>
       </dependency>
       <dependency>
