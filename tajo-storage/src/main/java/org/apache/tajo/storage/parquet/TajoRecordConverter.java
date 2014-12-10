@@ -18,29 +18,23 @@
 
 package org.apache.tajo.storage.parquet;
 
-import com.google.protobuf.Message;
 import com.google.protobuf.InvalidProtocolBufferException;
-
-import java.nio.ByteBuffer;
-
-import parquet.io.api.GroupConverter;
-import parquet.io.api.Converter;
-import parquet.io.api.PrimitiveConverter;
-import parquet.io.api.Binary;
-import parquet.schema.Type;
-import parquet.schema.GroupType;
-
+import com.google.protobuf.Message;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.Column;
+import org.apache.tajo.datum.*;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.BlobDatum;
-import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.datum.ProtobufDatumFactory;
+import parquet.io.api.Binary;
+import parquet.io.api.Converter;
+import parquet.io.api.GroupConverter;
+import parquet.io.api.PrimitiveConverter;
+import parquet.schema.GroupType;
+import parquet.schema.Type;
+
+import java.nio.ByteBuffer;
 
 /**
  * Converter to convert a Parquet record into a Tajo Tuple.
@@ -222,7 +216,7 @@ public class TajoRecordConverter extends GroupConverter {
 
     @Override
     final public void addBinary(Binary value) {
-      parent.add(DatumFactory.createChar(value.toStringUsingUTF8()));
+      parent.add(DatumFactory.createChar(value.getBytes()));
     }
   }
 
@@ -343,7 +337,7 @@ public class TajoRecordConverter extends GroupConverter {
 
     @Override
     final public void addBinary(Binary value) {
-      parent.add(DatumFactory.createText(value.toStringUsingUTF8()));
+      parent.add(DatumFactory.createText(value.getBytes()));
     }
   }
 
