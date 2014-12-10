@@ -71,6 +71,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TimeZone;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
@@ -212,7 +213,39 @@ public class GlobalEngine extends AbstractService {
     responseBuilder.setIsForwarded(false);
     responseBuilder.setUserName(queryContext.get(SessionVars.USERNAME));
 
-    if (PlannerUtil.checkIfDDLPlan(rootNode)) {
+    if (PlannerUtil.checkIfSetSession(rootNode)) {
+
+      SetSessionNode setSessionNode = rootNode.getChild();
+
+      final String varName = setSessionNode.getName();
+
+      // SET CATALOG 'XXX'
+      if (varName.equals(SessionVars.CURRENT_DATABASE.name())) {
+        String databaseName = setSessionNode.getValue();
+
+        if (catalog.existDatabase(databaseName)) {
+          session.selectDatabase(setSessionNode.getValue());
+        } else {
+          responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+          responseBuilder.setResultCode(ClientProtos.ResultCode.ERROR);
+          responseBuilder.setErrorMessage("database \"" + databaseName + "\" does not exists.");
+          return responseBuilder.build();
+        }
+
+        // others
+      } else {
+        if (setSessionNode.isDefaultValue()) {
+          session.removeVariable(varName);
+        } else {
+          session.setVariable(varName, setSessionNode.getValue());
+        }
+      }
+
+      context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
+      responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+      responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+
+    } else if (PlannerUtil.checkIfDDLPlan(rootNode)) {
       context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
       updateQuery(queryContext, rootNode.getChild());
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
@@ -461,6 +494,8 @@ public class GlobalEngine extends AbstractService {
   private boolean updateQuery(QueryContext queryContext, LogicalNode root) throws IOException {
 
     switch (root.getType()) {
+      case SET_SESSION:
+
       case CREATE_DATABASE:
         CreateDatabaseNode createDatabase = (CreateDatabaseNode) root;
         createDatabase(queryContext, createDatabase.getDatabaseName(), null, createDatabase.isIfNotExists());

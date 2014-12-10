@@ -37,19 +37,22 @@ message CreateSessionRequest {
 }
 
 message CreateSessionResponse {
-  enum ResultState {
-      SUCCESS = 0;
-      FAILED = 1;
-  }
-  required ResultState state = 1;
+  required ResultCode resultCode = 1;
   optional SessionIdProto sessionId = 2;
-  optional string message = 3;
+  optional KeyValueSetProto variables = 3;
+  optional string message = 4;
 }
 
 message UpdateSessionVariableRequest {
   optional SessionIdProto sessionId = 1;
   optional KeyValueSetProto setVariables = 2;
   repeated string unsetVariables = 3;
+}
+
+message SessionUpdateResponse {
+  required ResultCode resultCode = 1;
+  optional KeyValueSetProto variables = 2;
+  optional string message = 3;
 }
 
 message SessionedStringProto {
