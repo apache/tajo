@@ -110,6 +110,7 @@
         </executions>
         <configuration>
           <excludes>
+          	<exclude>src/main/resources/META-INF/services/*</exclude>
             <exclude>src/test/resources/org/apache/tajo/conf/**</exclude>
           </excludes>
         </configuration>
