@@ -120,8 +120,8 @@ public class BaseTupleComparator extends TupleComparator implements ProtoObject<
           } else if (right.isNull()) {
             compVal = -1;
           }
-          if (nullFirsts[i]) {
-            if (compVal != 0) {
+          if (compVal != 0) {
+            if ((nullFirsts[i] && asc[i]) || (!nullFirsts[i] && !asc[i])) {
               compVal *= -1;
             }
           }
