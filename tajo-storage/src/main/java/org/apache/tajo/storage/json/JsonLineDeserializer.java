@@ -67,7 +67,7 @@ public class JsonLineDeserializer extends TextLineDeserializer {
     } catch (ParseException pe) {
       throw new TextLineParsingError(new String(line, TextDatum.DEFAULT_CHARSET), pe);
     } catch (ArrayIndexOutOfBoundsException ae) {
-      // trucated value
+      // truncated value
       throw new TextLineParsingError(new String(line, TextDatum.DEFAULT_CHARSET), ae);
     }
 
