@@ -18,17 +18,46 @@
 
 package org.apache.tajo.validation;
 
-public class PathValidator extends PatternValidator {
-  static final String PATH_REGEXP_PATTERN =
-      "^(?:[a-zA-Z][a-zA-Z0-9+-.]+:[/]{1,2}[a-zA-Z-.]*[:0-9]*)?(?:/?[a-zA-Z]:)?[/a-zA-Z0-9-_\\\\.\\\\$\\\\{\\\\}]*$";
+import org.apache.tajo.util.TUtil;
 
-  public PathValidator() {
-    super(PATH_REGEXP_PATTERN);
-  }
+import java.util.Collection;
+
+public class PathListValidator extends AbstractValidator {
+  private static final String LIST_SEPARATOR = ",";
 
   @Override
   protected <T> String getErrorMessage(T object) {
     return object + " is not valid path.";
+  }
+
+  @Override
+  protected <T> boolean validateInternal(T object) {
+    PathValidator validator = (PathValidator) Validators.pathUrl();
+
+    boolean result = true;
+
+    if (object != null) {
+      if (object instanceof CharSequence) {
+        String valueString = object.toString();
+        if (valueString.isEmpty()) {
+          result = true;
+        } else {
+          String [] splits = object.toString().split(LIST_SEPARATOR);
+          for (String path : splits) {
+            result &= validator.validateInternal(path.trim());
+          }
+        }
+      }
+    } else {
+      result = true;
+    }
+
+    return result;
+  }
+
+  @Override
+  protected Collection<Validator> getDependantValidators() {
+    return TUtil.newList();
   }
 
 }

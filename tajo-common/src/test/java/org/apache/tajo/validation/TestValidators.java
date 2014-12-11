@@ -397,6 +397,32 @@ public class TestValidators {
     assertThat(new PathValidator().validate(invalidUrl),
         hasItem(hasAClass(equalTo(PathValidator.class))));
   }
+
+  @Test
+  public void testPathListValidator() {
+    String validUrls =
+        "file:///tmp/tajo-$root/a,file:///tmp/tajo-${user.name}/,file:/home/tajo/test-data/TestExternalSortExec";
+    assertThat(new PathListValidator().validateInternal(validUrls), is(true));
+    assertThat(new PathListValidator().validate(validUrls).size(), is(0));
+
+    validUrls =
+        "file:///tmp/tajo-$root/a,  file:///tmp/tajo-${user.name}/, file:/home/tajo/test-data/TestExternalSortExec";
+    assertThat(new PathListValidator().validateInternal(validUrls), is(true));
+    assertThat(new PathListValidator().validate(validUrls).size(), is(0));
+
+    String invalidUrls =
+        "file:///tmp/tajo-$root/a,  t!ef:///tmp/tajo-root, file:/home/tajo/test-data/TestExternalSortExec";
+    assertThat(new PathValidator().validateInternal(invalidUrls), is(false));
+    assertThat(new PathValidator().validate(invalidUrls).size(), is(1));
+    assertThat(new PathValidator().validate(invalidUrls),
+        hasItem(hasAClass(equalTo(PathValidator.class))));
+
+    invalidUrls = "This is not a valid url,This is not a valid url";
+    assertThat(new PathValidator().validateInternal(invalidUrls), is(false));
+    assertThat(new PathValidator().validate(invalidUrls).size(), is(1));
+    assertThat(new PathValidator().validate(invalidUrls),
+        hasItem(hasAClass(equalTo(PathValidator.class))));
+  }
   
   @Test
   public void testShellVariableValidator() {
