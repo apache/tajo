@@ -30,7 +30,9 @@ import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
 import org.apache.tajo.util.TUtil;
+import org.apache.tajo.validation.ConstraintViolation;
 
+import java.util.Collection;
 import java.util.Set;
 import java.util.Stack;
 
@@ -56,6 +58,24 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     Context context = new Context(queryContext, state);
     visit(context, new Stack<Expr>(), expr);
     return context.state;
+  }
+
+  @Override
+  public Expr visitSetSession(Context ctx, Stack<Expr> stack, SetSession expr) throws PlanningException {
+
+    // we should allow undefined session variables which can be used in query statements in the future.
+    if (SessionVars.exists(expr.getName())) {
+      SessionVars var = SessionVars.get(expr.getName());
+      if (var.validator() != null) {
+        Collection<ConstraintViolation> violations = var.validator().validate(expr.getValue());
+
+        for (ConstraintViolation violation : violations) {
+          ctx.state.addVerification(violation.getMessage());
+        }
+      }
+    }
+
+    return expr;
   }
 
   public Expr visitProjection(Context context, Stack<Expr> stack, Projection expr) throws PlanningException {

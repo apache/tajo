@@ -18,10 +18,12 @@
 
 package org.apache.tajo.storage.parquet;
 
-import java.util.Map;
-import java.util.HashMap;
-import java.util.List;
-
+import org.apache.hadoop.conf.Configuration;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.storage.Tuple;
 import parquet.hadoop.api.WriteSupport;
 import parquet.io.api.Binary;
 import parquet.io.api.RecordConsumer;
@@ -29,12 +31,9 @@ import parquet.schema.GroupType;
 import parquet.schema.MessageType;
 import parquet.schema.Type;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.datum.Datum;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Tajo implementation of {@link WriteSupport} for {@link Tuple}s.
@@ -116,7 +115,7 @@ public class TajoWriteSupport extends WriteSupport<Tuple> {
   private void writeValue(Type fieldType, Column column, Datum datum) {
     switch (column.getDataType().getType()) {
       case BOOLEAN:
-        recordConsumer.addBoolean((Boolean) datum.asBool());
+        recordConsumer.addBoolean(datum.asBool());
         break;
       case BIT:
       case INT2:
@@ -134,7 +133,7 @@ public class TajoWriteSupport extends WriteSupport<Tuple> {
         break;
       case CHAR:
       case TEXT:
-        recordConsumer.addBinary(Binary.fromString(datum.asChars()));
+        recordConsumer.addBinary(Binary.fromByteArray(datum.asTextBytes()));
         break;
       case PROTOBUF:
       case BLOB:
