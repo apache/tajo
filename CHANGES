@@ -95,6 +95,9 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1244: tajo.worker.tmpdir.locations should use a validator for a list 
+    of paths. (hyunsik)
+
     TAJO-1235: ByteBufLineReader can not read text line with CRLF.
     (jinho)
 

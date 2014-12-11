@@ -65,14 +65,16 @@ public class SelfDiagnosisRuleEngine {
   private void loadRuleData(List<SelfDiagnosisRule> ruleList) {
     for (SelfDiagnosisRule rule: ruleList) {
       RuleWrapper wrapper = new RuleWrapper(rule);
-      Map<String, RuleWrapper> categoryMap = wrapperMap.get(wrapper.getCategoryName());
-      
-      if (categoryMap == null) {
-        categoryMap = TUtil.newHashMap();
-        wrapperMap.put(wrapper.getCategoryName(), categoryMap);
+      if (wrapper.isEnabled()) {
+        Map<String, RuleWrapper> categoryMap = wrapperMap.get(wrapper.getCategoryName());
+
+        if (categoryMap == null) {
+          categoryMap = TUtil.newHashMap();
+          wrapperMap.put(wrapper.getCategoryName(), categoryMap);
+        }
+
+        categoryMap.put(wrapper.getRuleName(), wrapper);
       }
-      
-      categoryMap.put(wrapper.getRuleName(), wrapper);
     }
   }
 
@@ -92,6 +94,7 @@ public class SelfDiagnosisRuleEngine {
     private final String categoryName;
     private final String ruleName;
     private final int priority;
+    private final boolean enabled;
     private final Class<?>[] acceptedCallers;
     private final SelfDiagnosisRule rule;
     
@@ -105,6 +108,7 @@ public class SelfDiagnosisRuleEngine {
       categoryName = ruleDefinition.category();
       ruleName = ruleDefinition.name();
       priority = ruleDefinition.priority();
+      enabled = ruleDefinition.enabled();
       
       SelfDiagnosisRuleVisibility.LimitedPrivate limitedPrivateScope = 
           rule.getClass().getAnnotation(SelfDiagnosisRuleVisibility.LimitedPrivate.class);
@@ -135,6 +139,10 @@ public class SelfDiagnosisRuleEngine {
     
     public int getPriority() {
       return priority;
+    }
+
+    public boolean isEnabled() {
+      return enabled;
     }
 
     @Override
