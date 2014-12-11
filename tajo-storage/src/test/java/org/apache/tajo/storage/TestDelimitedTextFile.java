@@ -31,7 +31,6 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.FileUtil;
 import org.junit.Test;
@@ -160,5 +159,22 @@ public class TestDelimitedTextFile {
       scanner.close();
     }
     fail();
+  }
+
+  @Test
+  public void testIgnoreTruncatedValueErrorTolerance() throws IOException {
+    TajoConf conf = new TajoConf();
+    TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.JSON);
+    meta.putOption(StorageUtil.TEXT_ERROR_TOLERANCE_MAXNUM, "1");
+    FileFragment fragment = getFileFragment("testErrorTolerance3.json");
+    Scanner scanner = StorageManager.getStorageManager(conf).getScanner(meta, schema, fragment);
+    scanner.init();
+
+    try {
+      Tuple tuple = scanner.next();
+      assertNull(tuple);
+    } finally {
+      scanner.close();
+    }
   }
 }
