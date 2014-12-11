@@ -542,7 +542,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public void testTimezonedTable1() throws Exception {
-    // Table - GMT (No table property)
+    // Table - GMT (No table property or no system timezone)
     // Client - GMT (default client time zone is used if no TIME ZONE session variable is given.)
     try {
       executeDDL("datetime_table_ddl.sql", "timezoned", new String[]{"timezoned1"});
@@ -606,7 +606,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public void testTimezonedTable5() throws Exception {
-    // Table - timezone = GMT+9 (by system default timezone)
+    // Table - timezone = GMT+9 (by a specified system timezone)
     // TajoClient uses JVM default timezone (GMT+9)
 
     try {
