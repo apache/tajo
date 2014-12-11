@@ -20,4 +20,34 @@
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 
 <configuration>
+
+<!--
+ <property>
+  <name>tajo.rootdir</name>
+  <value>hdfs://namenode_hostname:port/path</value>
+  <description>Base directory including system directories</description
+</property>
+
+<property>
+  <name>tajo.master.umbilical-rpc.address</name>
+  <value>hostname:26001</value>
+  <description>TajoMaster rpc between Tajo and Workers</description>
+</property>
+
+<property>
+  <name>tajo.master.client-rpc.address</name>
+  <value>hostname:26002</value>
+</property>
+
+<property>
+  <name>tajo.resource-tracker.rpc.address</name>
+  <value>hostname:26003</value>
+</property>
+
+<property>
+  <name>tajo.catalog.client-rpc.address</name>
+  <value>hostname:26005</value>
+</property>
+-->
+
 </configuration>
