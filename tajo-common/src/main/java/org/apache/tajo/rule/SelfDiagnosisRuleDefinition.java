@@ -32,5 +32,6 @@ public @interface SelfDiagnosisRuleDefinition {
   public String name();
   
   public int priority() default -1;
-  
+
+  public boolean enabled() default true;
 }

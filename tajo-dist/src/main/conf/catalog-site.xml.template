@@ -18,5 +18,81 @@
   -->
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 
+<!-- Refer to http://tajo.apache.org/docs/current/configuration/catalog_configuration.html -->
+
 <configuration>
+
+<!-- JDBC Common Settings -->
+
+<!-- Please remove comments if you want JDBC-based catalog store. -->
+<!--
+<property>
+  <name>tajo.catalog.jdbc.connection.id</name>
+  <value><mysql user name></value>
+</property>
+<property>
+  <name>tajo.catalog.jdbc.connection.password</name>
+  <value><mysql user password></value>
+</property>
+-->
+
+<!-- JDBC Store Section -->
+
+<!-- Please remove comments corresponding to your desired catalog store. -->
+<!-- You must choose only one catalog store driver among them. -->
+
+ <!-- MySQL Catalog Store Driver -->
+ <!--
+ <property>
+  <name>tajo.catalog.store.class</name>
+  <value>org.apache.tajo.catalog.store.MySQLStore</value>
+ </property>
+ <property>
+  <name>tajo.catalog.jdbc.uri</name>
+  <value>jdbc:mysql://<host name>:<mysql port>/<database name for tajo>?createDatabaseIfNotExist=true</value>
+ </property>
+ -->
+
+ <!-- MariaDB Catalog Store Driver -->
+ <!--
+ <property>
+  <name>tajo.catalog.store.class</name>
+  <value>org.apache.tajo.catalog.store.MariaDBStore</value>
+ </property>
+ <property>
+  <name>tajo.catalog.jdbc.uri</name>
+  <value>jdbc:mariadb://<mariadb host name>:<mariadb port>/<database name for tajo>?createDatabaseIfNotExist=true</value>
+ </property>
+ -->
+
+ <!-- PostgreSQL Catalog Store Driver -->
+ <!--
+ <property>
+  <name>tajo.catalog.store.class</name>
+  <value>org.apache.tajo.catalog.store.PostgreSQLStore</value>
+ </property>
+ <property>
+  <name>tajo.catalog.jdbc.uri</name>
+  <value>jdbc:mariadb://<mariadb host name>:<mariadb port>/<database name for tajo>?createDatabaseIfNotExist=true</value>
+ </property>
+ -->
+
+ <!-- Oracle Catalog Store Driver -->
+ <!--
+ <property>
+  <name>tajo.catalog.store.class</name>
+  <value>org.apache.tajo.catalog.store.OracleStore</value>
+ </property>
+ -->
+
+
+<!-- HCatalog Store Driver -->
+<!-- Please remove comment if you want to use HCatalog. -->
+<!--
+<property>
+  <name>tajo.catalog.store.class</name>
+  <value>org.apache.tajo.catalog.store.HCatalogStore</value>
+</property>
+-->
+
 </configuration>
