@@ -55,7 +55,7 @@ public class Validators {
   }
 
   public static Validator pathUrlList() {
-    return new PathValidator();
+    return new PathListValidator();
   }
   
   public static Validator shellVar() {

@@ -410,18 +410,22 @@ public class TestValidators {
     assertThat(new PathListValidator().validateInternal(validUrls), is(true));
     assertThat(new PathListValidator().validate(validUrls).size(), is(0));
 
+    validUrls = "/tmp/tajo-hyunsik/tmpdir1,/tmp/tajo-hyunsik/tmpdir2";
+    assertThat(new PathListValidator().validateInternal(validUrls), is(true));
+    assertThat(new PathListValidator().validate(validUrls).size(), is(0));
+
     String invalidUrls =
         "file:///tmp/tajo-$root/a,  t!ef:///tmp/tajo-root, file:/home/tajo/test-data/TestExternalSortExec";
-    assertThat(new PathValidator().validateInternal(invalidUrls), is(false));
-    assertThat(new PathValidator().validate(invalidUrls).size(), is(1));
-    assertThat(new PathValidator().validate(invalidUrls),
-        hasItem(hasAClass(equalTo(PathValidator.class))));
+    assertThat(new PathListValidator().validateInternal(invalidUrls), is(false));
+    assertThat(new PathListValidator().validate(invalidUrls).size(), is(1));
+    assertThat(new PathListValidator().validate(invalidUrls),
+        hasItem(hasAClass(equalTo(PathListValidator.class))));
 
     invalidUrls = "This is not a valid url,This is not a valid url";
-    assertThat(new PathValidator().validateInternal(invalidUrls), is(false));
-    assertThat(new PathValidator().validate(invalidUrls).size(), is(1));
-    assertThat(new PathValidator().validate(invalidUrls),
-        hasItem(hasAClass(equalTo(PathValidator.class))));
+    assertThat(new PathListValidator().validateInternal(invalidUrls), is(false));
+    assertThat(new PathListValidator().validate(invalidUrls).size(), is(1));
+    assertThat(new PathListValidator().validate(invalidUrls),
+        hasItem(hasAClass(equalTo(PathListValidator.class))));
   }
   
   @Test

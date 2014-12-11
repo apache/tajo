@@ -27,7 +27,7 @@ public class PathListValidator extends AbstractValidator {
 
   @Override
   protected <T> String getErrorMessage(T object) {
-    return object + " is not valid path.";
+    return object + " is not valid path list.";
   }
 
   @Override
