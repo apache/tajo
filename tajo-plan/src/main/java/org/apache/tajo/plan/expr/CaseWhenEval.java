@@ -27,7 +27,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.storage.json.GsonObject;
 import org.apache.tajo.plan.serder.PlanGsonHelper;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;

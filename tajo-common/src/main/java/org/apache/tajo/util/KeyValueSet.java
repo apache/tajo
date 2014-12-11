@@ -22,8 +22,8 @@ import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.common.ProtoObject;
-import org.apache.tajo.json.CommonGsonHelper;
-import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.storage.json.CommonGsonHelper;
+import org.apache.tajo.storage.json.GsonObject;
 
 import java.util.HashMap;
 import java.util.Map;

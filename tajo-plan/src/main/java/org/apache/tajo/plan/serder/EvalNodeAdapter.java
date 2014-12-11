@@ -22,8 +22,8 @@
 package org.apache.tajo.plan.serder;
 
 import com.google.gson.*;
-import org.apache.tajo.json.CommonGsonHelper;
-import org.apache.tajo.json.GsonSerDerAdapter;
+import org.apache.tajo.storage.json.CommonGsonHelper;
+import org.apache.tajo.storage.json.GsonSerDerAdapter;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalType;
 

@@ -21,7 +21,7 @@ package org.apache.tajo.datum;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.exception.InvalidCastException;
-import org.apache.tajo.json.CommonGsonHelper;
+import org.apache.tajo.storage.json.CommonGsonHelper;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;

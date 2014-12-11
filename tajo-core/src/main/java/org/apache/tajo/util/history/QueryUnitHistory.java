@@ -20,7 +20,7 @@ package org.apache.tajo.util.history;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.engine.json.CoreGsonHelper;
-import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.storage.json.GsonObject;
 
 public class QueryUnitHistory implements GsonObject {
   @Expose private String id;

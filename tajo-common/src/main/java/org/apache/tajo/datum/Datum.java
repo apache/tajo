@@ -23,8 +23,8 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.InvalidOperationException;
-import org.apache.tajo.json.CommonGsonHelper;
-import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.storage.json.CommonGsonHelper;
+import org.apache.tajo.storage.json.GsonObject;
 
 import static org.apache.tajo.common.TajoDataTypes.Type;
 

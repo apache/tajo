@@ -10,6 +10,10 @@ Release 0.9.1 - unreleased
     TAJO-1222: DelimitedTextFile should be tolerant against parsing errors.
     (hyunsik)
 
+    TAJO-1131: Supports Inserting or Creating table into 
+    the HBase mapped table.(Hyoungjun Kim)
+
+
     TAJO-1026: Implement Query history persistency manager.(Hyoungjun Kim)
 
     TAJO-233: Support PostgreSQL CatalogStore. (Jihun Kang via hyunsik)
@@ -33,6 +37,9 @@ Release 0.9.1 - unreleased
 
     TAJO-1213: Implement CatalogStore::updateTableStats. (jaehwa)
 
+    TAJO-1122: Refactor the tajo-storage project structure.
+    (Hyoungjun Kim)
+    
     TAJO-1165: Needs to show error messages on query_executor.jsp. 
     (Jihun Kang via jaehwa)
 
@@ -66,6 +73,8 @@ Release 0.9.1 - unreleased
 
     TAJO-1125: Separate logical plan and optimizer into a maven module.
     (hyunsik)
+
+    TAJO-1123: Use Fragment instead of FileFragment.(Hyoungjun Kim)
 
     TAJO-1092: Improve the function system to allow other function 
     implementation types. (hyunsik)

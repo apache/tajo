@@ -70,6 +70,7 @@ public class TajoTestingCluster {
   private FileSystem defaultFS;
   private MiniDFSCluster dfsCluster;
 	private MiniCatalogServer catalogServer;
+  private HBaseTestClusterUtil hbaseUtil;
 
   private TajoMaster tajoMaster;
   private List<TajoWorker> tajoWorkers = new ArrayList<TajoWorker>();
@@ -280,6 +281,10 @@ public class TajoTestingCluster {
 
   public FileSystem getDefaultFileSystem() {
     return this.defaultFS;
+  }
+
+  public HBaseTestClusterUtil getHBaseUtil() {
+    return hbaseUtil;
   }
 
   ////////////////////////////////////////////////////////
@@ -505,6 +510,8 @@ public class TajoTestingCluster {
     startMiniDFSCluster(numDataNodes, this.clusterTestBuildDir, dataNodeHosts);
     this.dfsCluster.waitClusterUp();
 
+    hbaseUtil = new HBaseTestClusterUtil(conf, clusterTestBuildDir);
+
     if(!standbyWorkerMode) {
       startMiniYarnCluster();
     }
@@ -592,7 +599,6 @@ public class TajoTestingCluster {
     }
 
     if(this.dfsCluster != null) {
-
       try {
         FileSystem fs = this.dfsCluster.getFileSystem();
         if (fs != null) fs.close();
@@ -611,6 +617,10 @@ public class TajoTestingCluster {
       }
       this.clusterTestBuildDir = null;
     }
+
+    hbaseUtil.stopZooKeeperCluster();
+    hbaseUtil.stopHBaseCluster();
+
     LOG.info("Minicluster is down");
   }
 

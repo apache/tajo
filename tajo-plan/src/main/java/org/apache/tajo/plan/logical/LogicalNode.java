@@ -23,7 +23,7 @@ package org.apache.tajo.plan.logical;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.storage.json.GsonObject;
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.serder.PlanGsonHelper;
