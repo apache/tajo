@@ -73,6 +73,11 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
+  public Map<String, String> getClientSideSessionVars() {
+    return connection.getClientSideSessionVars();
+  }
+
+  @Override
   public String getBaseDatabase() {
     return connection.getBaseDatabase();
   }
@@ -135,12 +140,12 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public Boolean updateSessionVariables(Map<String, String> variables) throws ServiceException {
+  public Map<String, String> updateSessionVariables(Map<String, String> variables) throws ServiceException {
     return connection.updateSessionVariables(variables);
   }
 
   @Override
-  public Boolean unsetSessionVariables(List<String> variables) throws ServiceException {
+  public Map<String, String> unsetSessionVariables(List<String> variables) throws ServiceException {
     return connection.unsetSessionVariables(variables);
   }
 
@@ -209,7 +214,11 @@ public class QueryClientImpl implements QueryClient {
     ClientProtos.SubmitQueryResponse response = executeQuery(sql);
 
     if (response.getResultCode() == ClientProtos.ResultCode.ERROR) {
-      throw new ServiceException(response.getErrorTrace());
+      if (response.hasErrorMessage()) {
+        throw new ServiceException(response.getErrorMessage());
+      } else if (response.hasErrorTrace()) {
+        throw new ServiceException(response.getErrorTrace());
+      }
     }
 
     QueryId queryId = new QueryId(response.getQueryId());
@@ -455,7 +464,8 @@ public class QueryClientImpl implements QueryClient {
       return new TajoMemoryResultSet(
           new Schema(serializedResultSet.getSchema()),
           serializedResultSet.getSerializedTuplesList(),
-          serializedResultSet.getSerializedTuplesCount());
+          serializedResultSet.getSerializedTuplesCount(),
+          getClientSideSessionVars());
     } catch (Exception e) {
       throw new ServiceException(e.getMessage(), e);
     }

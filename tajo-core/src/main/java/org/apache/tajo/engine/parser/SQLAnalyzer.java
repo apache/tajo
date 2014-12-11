@@ -24,6 +24,7 @@ import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.Aggregation.GroupType;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
@@ -80,6 +81,44 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       return new Explain(statement);
     } else {
       return statement;
+    }
+  }
+
+  public Expr visitSession_statement(@NotNull SQLParser.Session_statementContext ctx) {
+
+    if (checkIfExist(ctx.CATALOG())) {
+
+      return new SetSession(SessionVars.CURRENT_DATABASE.name(), ctx.dbname.getText());
+
+
+    } else if (checkIfExist(ctx.name)) {
+      String value;
+      if (checkIfExist(ctx.boolean_literal())) {
+        value = ctx.boolean_literal().getText();
+      } else if (checkIfExist(ctx.Character_String_Literal())) {
+        value = stripQuote(ctx.Character_String_Literal().getText());
+      } else if (checkIfExist(ctx.signed_numerical_literal())) {
+        value = ctx.signed_numerical_literal().getText();
+      } else {
+        value = null;
+      }
+      return new SetSession(ctx.name.getText(), value);
+
+
+    } else if (checkIfExist(ctx.TIME()) && checkIfExist(ctx.ZONE())) {
+
+      String value;
+      if (checkIfExist(ctx.Character_String_Literal())) {
+        value = stripQuote(ctx.Character_String_Literal().getText());
+      } else if (checkIfExist(ctx.signed_numerical_literal())) {
+        value = ctx.signed_numerical_literal().getText();
+      } else {
+        value = null;
+      }
+      return new SetSession(SessionVars.TZ.name(), value);
+
+    } else {
+      throw new SQLSyntaxError("Unsupported session statement");
     }
   }
 

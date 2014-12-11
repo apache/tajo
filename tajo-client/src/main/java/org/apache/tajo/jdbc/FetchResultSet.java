@@ -35,6 +35,7 @@ public class FetchResultSet extends TajoResultSetBase {
   private boolean finished = false;
 
   public FetchResultSet(QueryClient tajoClient, Schema schema, QueryId queryId, int fetchRowNum) {
+    super(tajoClient.getClientSideSessionVars());
     this.tajoClient = tajoClient;
     this.queryId = queryId;
     this.fetchRowNum = fetchRowNum;

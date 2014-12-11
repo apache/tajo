@@ -5,6 +5,8 @@ Release 0.9.1 - unreleased
 
   NEW FEATURES
 
+    TAJO-1238: Add SET SESSION and RESET statement. (hyunsik)
+
     TAJO-1222: DelimitedTextFile should be tolerant against parsing errors.
     (hyunsik)
 
@@ -21,6 +23,19 @@ Release 0.9.1 - unreleased
     TAJO-1095: Implement Json file scanner. (hyunsik)
 
   IMPROVEMENT
+
+    TAJO-1243: *-site.xml.template should have default configs commented out.
+    (hyunsik)
+
+    TAJO-1143: TajoMaster, TajoWorker, and TajoClient should have 
+    diagnosis phase at startup. (Jihun Kang via hyunsik)
+
+    TAJO-1236: Remove slow 'new String' operation in parquet format. 
+    (jinho)
+
+    TAJO-1230: Disable ipv6 support on JVM. (Jihun Kang via hyunsik)
+
+    TAJO-1213: Implement CatalogStore::updateTableStats. (jaehwa)
 
     TAJO-1122: Refactor the tajo-storage project structure.
     (Hyoungjun Kim)
@@ -92,6 +107,18 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1244: tajo.worker.tmpdir.locations should use a validator for a list 
+    of paths. (hyunsik)
+
+    TAJO-1235: ByteBufLineReader can not read text line with CRLF.
+    (jinho)
+
+    TAJO-1237: Fix missing maven-module for pullserver. (jinho)
+
+    TAJO-1196: Unit test hangs occasionally and randomly. (jihoon)
+
+    TAJO-1234: Rearrange timezone in date/time types. (hyunsik)
+
     TAJO-1231: Implicit table properties in session are not stored in 
     table property. (hyunsik)
 
@@ -158,6 +185,9 @@ Release 0.9.1 - unreleased
 
 
   TASKS
+
+    TAJO-1229: rename tajo-yarn-pullserver to tajo-pullserver.
+    (hyunsik)
 
     TAJO-1157: Required Java version in tutorial doc needs to be updated.
     (hyunsik)

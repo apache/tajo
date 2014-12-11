@@ -1,0 +1,3 @@
+# Specify a path for rule provider
+org.apache.tajo.master.rule.MasterRuleProvider
+org.apache.tajo.worker.rule.WorkerRuleProvider

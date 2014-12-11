@@ -1180,7 +1180,7 @@ public class TestHBaseTable extends QueryTestCaseBase {
           "select id, name from base_table ").close();
       fail("If inserting data type different with target table data type, should throw exception");
     } catch (Exception e) {
-      assertTrue(e.getMessage().indexOf("VerifyException") >= 0);
+      assertTrue(e.getMessage().indexOf("is different column type with") >= 0);
     } finally {
       executeString("DROP TABLE base_table PURGE").close();
       executeString("DROP TABLE hbase_mapped_table PURGE").close();

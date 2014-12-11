@@ -19,6 +19,7 @@
 package org.apache.tajo.storage;
 
 import io.netty.buffer.ByteBuf;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -43,6 +44,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
@@ -84,18 +86,15 @@ public class TestLineReader {
     FileStatus status = fs.getFileStatus(tablePath);
 
     ByteBufInputChannel channel = new ByteBufInputChannel(fs.open(tablePath));
-    assertEquals(status.getLen(), channel.available());
     ByteBufLineReader reader = new ByteBufLineReader(channel);
-    assertEquals(status.getLen(), reader.available());
 
     long totalRead = 0;
     int i = 0;
     AtomicInteger bytes = new AtomicInteger();
     for(;;){
       ByteBuf buf = reader.readLineBuf(bytes);
-      if(buf == null) break;
-
       totalRead += bytes.get();
+      if(buf == null) break;
       i++;
     }
     IOUtils.cleanup(null, reader, channel, fs);
@@ -171,23 +170,51 @@ public class TestLineReader {
     String data = FileUtil.readTextFile(file);
 
     ByteBufInputChannel channel = new ByteBufInputChannel(new FileInputStream(file));
-
-    assertEquals(file.length(), channel.available());
     ByteBufLineReader reader = new ByteBufLineReader(channel);
-    assertEquals(file.length(), reader.available());
 
     long totalRead = 0;
     int i = 0;
     AtomicInteger bytes = new AtomicInteger();
     for(;;){
       ByteBuf buf = reader.readLineBuf(bytes);
-      if(buf == null) break;
       totalRead += bytes.get();
+      if(buf == null) break;
       i++;
     }
     IOUtils.cleanup(null, reader);
     assertEquals(file.length(), totalRead);
     assertEquals(file.length(), reader.readBytes());
     assertEquals(data.split("\n").length, i);
+  }
+
+  @Test
+  public void testCRLFLine() throws IOException {
+    TajoConf conf = new TajoConf();
+    Path testFile = new Path(CommonTestingUtil.getTestDir(TEST_PATH), "testCRLFLineText.txt");
+
+    FileSystem fs = testFile.getFileSystem(conf);
+    FSDataOutputStream outputStream = fs.create(testFile, true);
+    outputStream.write("0\r\n1\r\n".getBytes());
+    outputStream.flush();
+    IOUtils.closeStream(outputStream);
+
+    ByteBufInputChannel channel = new ByteBufInputChannel(fs.open(testFile));
+    ByteBufLineReader reader = new ByteBufLineReader(channel, BufferPool.directBuffer(2));
+    FileStatus status = fs.getFileStatus(testFile);
+
+    long totalRead = 0;
+    int i = 0;
+    AtomicInteger bytes = new AtomicInteger();
+    for(;;){
+      ByteBuf buf = reader.readLineBuf(bytes);
+      totalRead += bytes.get();
+      if(buf == null) break;
+      String row  = buf.toString(Charset.defaultCharset());
+      assertEquals(i, Integer.parseInt(row));
+      i++;
+    }
+    IOUtils.cleanup(null, reader);
+    assertEquals(status.getLen(), totalRead);
+    assertEquals(status.getLen(), reader.readBytes());
   }
 }

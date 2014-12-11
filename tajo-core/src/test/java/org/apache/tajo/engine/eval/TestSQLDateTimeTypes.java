@@ -26,14 +26,10 @@ public class TestSQLDateTimeTypes extends ExprTestBase {
 
   @Test
   public void testTimestamp() throws IOException {
-    testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37';",
-        new String[]{"1970-01-17 10:09:37" + getUserTimeZoneDisplay()});
-    testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37.5';",
-        new String[]{"1970-01-17 10:09:37.5" + getUserTimeZoneDisplay()});
-    testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37.01';",
-        new String[]{"1970-01-17 10:09:37.01" + getUserTimeZoneDisplay()});
-    testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37.003';",
-        new String[]{"1970-01-17 10:09:37.003" + getUserTimeZoneDisplay()});
+    testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37';", new String[]{"1970-01-17 10:09:37"});
+    testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37.5';", new String[]{"1970-01-17 10:09:37.5"});
+    testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37.01';", new String[]{"1970-01-17 10:09:37.01"});
+    testSimpleEval("select TIMESTAMP '1970-01-17 10:09:37.003';",new String[]{"1970-01-17 10:09:37.003"});
   }
 
   @Test
@@ -44,14 +40,12 @@ public class TestSQLDateTimeTypes extends ExprTestBase {
 
   @Test
   public void testTimeLiteral() throws IOException {
-    testSimpleEval("select TIME '10:09:37';",
-        new String[]{"10:09:37" + getUserTimeZoneDisplay()});
+    testSimpleEval("select TIME '10:09:37';", new String[]{"10:09:37"});
   }
 
   @Test
   public void testDateLiteral() throws IOException {
-    testSimpleEval("select DATE '1970-01-17';",
-        new String[]{"1970-01-17"});
+    testSimpleEval("select DATE '1970-01-17';", new String[]{"1970-01-17"});
   }
 
 }

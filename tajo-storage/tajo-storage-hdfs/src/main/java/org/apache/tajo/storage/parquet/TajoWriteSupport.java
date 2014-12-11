@@ -115,7 +115,7 @@ public class TajoWriteSupport extends WriteSupport<Tuple> {
   private void writeValue(Type fieldType, Column column, Datum datum) {
     switch (column.getDataType().getType()) {
       case BOOLEAN:
-        recordConsumer.addBoolean((Boolean) datum.asBool());
+        recordConsumer.addBoolean(datum.asBool());
         break;
       case BIT:
       case INT2:
@@ -133,7 +133,7 @@ public class TajoWriteSupport extends WriteSupport<Tuple> {
         break;
       case CHAR:
       case TEXT:
-        recordConsumer.addBinary(Binary.fromString(datum.asChars()));
+        recordConsumer.addBinary(Binary.fromByteArray(datum.asTextBytes()));
         break;
       case PROTOBUF:
       case BLOB:

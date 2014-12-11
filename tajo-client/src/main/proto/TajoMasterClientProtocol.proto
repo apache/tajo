@@ -33,7 +33,7 @@ service TajoMasterClientProtocolService {
   // Session APIs
   rpc createSession(CreateSessionRequest) returns (CreateSessionResponse);
   rpc removeSession(SessionIdProto) returns (BoolProto);
-  rpc updateSessionVariables(UpdateSessionVariableRequest) returns (BoolProto);
+  rpc updateSessionVariables(UpdateSessionVariableRequest) returns (SessionUpdateResponse);
   rpc existSessionVariable(SessionedStringProto) returns (BoolProto);
   rpc getSessionVariable(SessionedStringProto) returns (StringProto);
   rpc getAllSessionVariables(SessionIdProto) returns (KeyValueSetProto);

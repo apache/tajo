@@ -69,8 +69,4 @@ public class ByteBufInputChannel extends AbstractInterruptibleChannel implements
   protected void implCloseChannel() throws IOException {
     IOUtils.cleanup(null, channel, inputStream);
   }
-
-  public int available() throws IOException {
-    return inputStream.available();
-  }
 }

@@ -212,25 +212,25 @@ public class TestConditionalExpressions extends ExprTestBase {
   @Test
   public void testCoalesceTimestamp() throws Exception {
     testSimpleEval("select coalesce(null, timestamp '2014-01-01 00:00:00');",
-        new String[]{"2014-01-01 00:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"2014-01-01 00:00:00"});
     testSimpleEval("select coalesce(null, null, timestamp '2014-01-01 00:00:00');",
-        new String[]{"2014-01-01 00:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"2014-01-01 00:00:00"});
     testSimpleEval("select coalesce(timestamp '2014-01-01 00:00:00', null, timestamp '2014-01-02 00:00:00');",
-        new String[]{"2014-01-01 00:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"2014-01-01 00:00:00"});
     testSimpleEval("select coalesce(null, timestamp '2014-01-01 00:00:00', timestamp '2014-02-01 00:00:00');",
-        new String[]{"2014-01-01 00:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"2014-01-01 00:00:00"});
   }
 
   @Test
   public void testCoalesceTime() throws Exception {
     testSimpleEval("select coalesce(null, time '12:00:00');",
-        new String[]{"12:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"12:00:00"});
     testSimpleEval("select coalesce(null, null, time '12:00:00');",
-        new String[]{"12:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"12:00:00"});
     testSimpleEval("select coalesce(time '12:00:00', null, time '13:00:00');",
-        new String[]{"12:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"12:00:00"});
     testSimpleEval("select coalesce(null, time '12:00:00', time '13:00:00');",
-        new String[]{"12:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"12:00:00"});
   }
 
   @Test

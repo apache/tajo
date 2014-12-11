@@ -54,12 +54,14 @@ public class TajoResultSet extends TajoResultSetBase {
   private AtomicBoolean closed = new AtomicBoolean(false);
 
   public TajoResultSet(QueryClient tajoClient, QueryId queryId) {
+    super(tajoClient.getClientSideSessionVars());
     this.tajoClient = tajoClient;
     this.queryId = queryId;
     init();
   }
 
   public TajoResultSet(QueryClient tajoClient, QueryId queryId, TajoConf conf, TableDesc table) throws IOException {
+    super(tajoClient.getClientSideSessionVars());
     this.tajoClient = tajoClient;
     this.queryId = queryId;
     this.conf = conf;

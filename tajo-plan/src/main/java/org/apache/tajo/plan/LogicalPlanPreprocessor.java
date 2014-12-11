@@ -177,6 +177,13 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
   }
 
   @Override
+  public LogicalNode visitSetSession(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, SetSession expr)
+      throws PlanningException {
+    SetSessionNode setSession = ctx.plan.createNode(SetSessionNode.class);
+    return setSession;
+  }
+
+  @Override
   public LogicalNode visitProjection(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, Projection expr)
       throws PlanningException {
     // If Non-from statement, it immediately returns.

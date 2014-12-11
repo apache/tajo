@@ -38,6 +38,7 @@ import org.apache.tajo.util.TUtil;
 
 import java.lang.reflect.Type;
 import java.util.Map;
+import java.util.TimeZone;
 
 public class CoreGsonHelper {
   private static Gson gson;
@@ -58,6 +59,7 @@ public class CoreGsonHelper {
     adapters.put(AggFunction.class, new FunctionAdapter());
     adapters.put(Datum.class, new DatumAdapter());
     adapters.put(DataType.class, new DataTypeAdapter());
+    adapters.put(TimeZone.class, new TimeZoneGsonSerdeAdapter());
 
     return adapters;
 	}

@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.function;
 
+import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -36,7 +37,8 @@ public abstract class GeneralFunction extends Function implements GsonObject {
   /**
    * This method gives hints to an actual function instance.
    */
-  public void init(FunctionEval.ParamType [] paramTypes) {}
+  @SuppressWarnings("unused")
+  public void init(OverridableConf queryContext, FunctionEval.ParamType [] paramTypes) {}
 
   public abstract Datum eval(Tuple params);
 

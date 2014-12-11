@@ -216,7 +216,7 @@ public class TajoRecordConverter extends GroupConverter {
 
     @Override
     final public void addBinary(Binary value) {
-      parent.add(DatumFactory.createChar(value.toStringUsingUTF8()));
+      parent.add(DatumFactory.createChar(value.getBytes()));
     }
   }
 
@@ -337,7 +337,7 @@ public class TajoRecordConverter extends GroupConverter {
 
     @Override
     final public void addBinary(Binary value) {
-      parent.add(DatumFactory.createText(value.toStringUsingUTF8()));
+      parent.add(DatumFactory.createText(value.getBytes()));
     }
   }
 

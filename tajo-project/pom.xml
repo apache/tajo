@@ -88,7 +88,7 @@
       <id>ereisman</id>
       <name>Eli Reisman</name>
       <email>ereisman@apache.org</email>
-      <organization>Hortonworks</organization>
+      <organization>Etsy</organization>
       <roles>
         <role>PMC</role>
       </roles>
@@ -137,7 +137,7 @@
       <id>jghoman</id>
       <name>Jakob Homan</name>
       <email>jghoman@apache.org</email>
-      <organization>LinkedIn</organization>
+      <organization>Microsoft</organization>
       <roles>
         <role>PMC</role>
       </roles>
@@ -167,7 +167,7 @@
       <id>mzhou</id>
       <name>Min Zhou</name>
       <email>mzhou@apache.org</email>
-      <organization>LinkedIn</organization>
+      <organization>Tango Me</organization>
       <roles>
         <role>Committer</role>
       </roles>
@@ -197,7 +197,7 @@
       <id>rsumbaly</id>
       <name>Roshan Sumbaly</name>
       <email>rsumbaly@apache.org</email>
-      <organization>LinkedIn</organization>
+      <organization>Coursera</organization>
       <roles>
         <role>PMC</role>
       </roles>
@@ -237,7 +237,7 @@
     </contributor>
     <contributor>
       <name>David Chen</name>
-      <organization>LinkedIn</organization>
+      <organization>Google</organization>
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
@@ -763,7 +763,7 @@
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
-        <artifactId>tajo-yarn-pullserver</artifactId>
+        <artifactId>tajo-pullserver</artifactId>
         <version>${tajo.version}</version>
       </dependency>
       <dependency>

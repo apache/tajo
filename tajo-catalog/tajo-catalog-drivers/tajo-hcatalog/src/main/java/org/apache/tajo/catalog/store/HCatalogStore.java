@@ -333,6 +333,12 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
+  public void updateTableStats(CatalogProtos.UpdateTableStatsProto statsProto) throws
+    CatalogException {
+    // TODO - not implemented yet
+  }
+
+  @Override
   public void alterTablespace(CatalogProtos.AlterTablespaceProto alterProto) throws CatalogException {
     throw new CatalogException("tablespace concept is not supported in HCatalogStore");
   }

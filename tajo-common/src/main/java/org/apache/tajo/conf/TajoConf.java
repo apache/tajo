@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class TajoConf extends Configuration {
 
-  private static TimeZone CURRENT_TIMEZONE;
+  private static TimeZone SYSTEM_TIMEZONE;
   private static int DATE_ORDER = -1;
   private static final ReentrantReadWriteLock confLock = new ReentrantReadWriteLock();
   private static final Lock writeLock = confLock.writeLock();
@@ -83,29 +83,18 @@ public class TajoConf extends Configuration {
   }
 
   private static void confStaticInit() {
-    TimeZone.setDefault(getCurrentTimeZone());
+    TimeZone.setDefault(getSystemTimezone());
     getDateOrder();
   }
 
-  public static TimeZone getCurrentTimeZone() {
+  public static TimeZone getSystemTimezone() {
     writeLock.lock();
     try {
-      if (CURRENT_TIMEZONE == null) {
+      if (SYSTEM_TIMEZONE == null) {
         TajoConf tajoConf = new TajoConf();
-        CURRENT_TIMEZONE = TimeZone.getTimeZone(tajoConf.getVar(ConfVars.$TIMEZONE));
+        SYSTEM_TIMEZONE = TimeZone.getTimeZone(tajoConf.getVar(ConfVars.$TIMEZONE));
       }
-      return CURRENT_TIMEZONE;
-    } finally {
-      writeLock.unlock();
-    }
-  }
-
-  public static TimeZone setCurrentTimeZone(TimeZone timeZone) {
-    writeLock.lock();
-    try {
-      TimeZone oldTimeZone = CURRENT_TIMEZONE;
-      CURRENT_TIMEZONE = timeZone;
-      return oldTimeZone;
+      return SYSTEM_TIMEZONE;
     } finally {
       writeLock.unlock();
     }
@@ -155,8 +144,7 @@ public class TajoConf extends Configuration {
     // a username for a running Tajo cluster
     ROOT_DIR("tajo.rootdir", "file:///tmp/tajo-${user.name}/", 
         Validators.groups(Validators.notNull(), Validators.pathUrl())),
-    USERNAME("tajo.username", "${user.name}", 
-        Validators.groups(Validators.notNull(), Validators.javaString())),
+    USERNAME("tajo.username", "${user.name}", Validators.javaString()),
 
     // Configurable System Directories
     WAREHOUSE_DIR("tajo.warehouse.directory", EMPTY_VALUE, Validators.pathUrl()),
@@ -193,8 +181,7 @@ public class TajoConf extends Configuration {
     WORKER_QM_RPC_ADDRESS("tajo.worker.qm-rpc.address", "0.0.0.0:28093", Validators.networkAddr()),
 
     // Tajo Worker Temporal Directories
-    WORKER_TEMPORAL_DIR("tajo.worker.tmpdir.locations", "/tmp/tajo-${user.name}/tmpdir", 
-        Validators.pathUrl()),
+    WORKER_TEMPORAL_DIR("tajo.worker.tmpdir.locations", "/tmp/tajo-${user.name}/tmpdir", Validators.pathUrlList()),
     WORKER_TEMPORAL_DIR_CLEANUP("tajo.worker.tmpdir.cleanup-at-startup", false, Validators.bool()),
 
     // Tajo Worker Resources
@@ -365,7 +352,7 @@ public class TajoConf extends Configuration {
     $CLI_ERROR_STOP("tajo.cli.error.stop", false),
 
     // Timezone & Date ----------------------------------------------------------
-    $TIMEZONE("tajo.timezone", TimeZone.getDefault().getID()),
+    $TIMEZONE("tajo.timezone", TajoConstants.DEFAULT_SYSTEM_TIMEZONE),
     $DATE_ORDER("tajo.date.order", "YMD"),
 
     // FILE FORMAT

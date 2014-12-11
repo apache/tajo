@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -83,6 +84,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     LogicalPlan plan;
     QueryBlock queryBlock;
     EvalTreeOptimizer evalOptimizer;
+    TimeZone timeZone;
     boolean debugOrUnitTests;
 
     public PlanContext(OverridableConf context, LogicalPlan plan, QueryBlock block, EvalTreeOptimizer evalOptimizer,
@@ -91,6 +93,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       this.plan = plan;
       this.queryBlock = block;
       this.evalOptimizer = evalOptimizer;
+
+      // session's time zone
+      if (context.containsKey(SessionVars.TZ)) {
+        String timezoneId = context.get(SessionVars.TZ);
+        timeZone = TimeZone.getTimeZone(timezoneId);
+      }
+
       this.debugOrUnitTests = debugOrUnitTests;
     }
 
@@ -177,6 +186,16 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       queryBlock.updateCurrentNode(stack.peek());
     }
     return current;
+  }
+
+  @Override
+  public LogicalNode visitSetSession(PlanContext context, Stack<Expr> stack, SetSession expr) throws PlanningException {
+    QueryBlock block = context.queryBlock;
+
+    SetSessionNode setSessionNode = block.getNodeFromExpr(expr);
+    setSessionNode.init(expr.getName(), expr.getValue());
+
+    return setSessionNode;
   }
 
   public LogicalNode visitExplain(PlanContext ctx, Stack<Expr> stack, Explain expr) throws PlanningException {

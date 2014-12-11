@@ -47,6 +47,16 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType.TEXTFILE;
 
 public class PlannerUtil {
 
+  public static boolean checkIfSetSession(LogicalNode node) {
+    LogicalNode baseNode = node;
+    if (node instanceof LogicalRootNode) {
+      baseNode = ((LogicalRootNode) node).getChild();
+    }
+
+    return baseNode.getType() == NodeType.SET_SESSION;
+
+  }
+
   public static boolean checkIfDDLPlan(LogicalNode node) {
     LogicalNode baseNode = node;
     if (node instanceof LogicalRootNode) {
@@ -789,6 +799,10 @@ public class PlannerUtil {
     if (storeType == CSV || storeType == TEXTFILE) {
       if (sessionVars.containsKey(SessionVars.NULL_CHAR)) {
         tableProperties.set(StorageConstants.TEXT_NULL, sessionVars.get(SessionVars.NULL_CHAR));
+      }
+
+      if (sessionVars.containsKey(SessionVars.TZ)) {
+        tableProperties.set(StorageConstants.TIMEZONE, sessionVars.get(SessionVars.TZ));
       }
     }
   }
