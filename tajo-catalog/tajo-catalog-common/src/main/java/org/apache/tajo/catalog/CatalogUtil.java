@@ -841,6 +841,14 @@ public class CatalogUtil {
     return options;
   }
 
+  /**
+   * Make a unique name by concatenating column names.
+   * The concatenation is performed in sequence of columns' occurrence in the relation schema.
+   *
+   * @param originalSchema original relation schema
+   * @param columnNames column names which will be unified
+   * @return unified name
+   */
   public static String getUnifiedSimpleColumnName(Schema originalSchema, String[] columnNames) {
     String[] simpleNames = new String[columnNames.length];
     for (int i = 0; i < simpleNames.length; i++) {
@@ -856,6 +864,9 @@ public class CatalogUtil {
     return sb.toString();
   }
 
+  /**
+   * Given column names, compare the position of columns in the relation schema.
+   */
   public static class ColumnPosComparator implements Comparator<String> {
 
     private Schema originlSchema;

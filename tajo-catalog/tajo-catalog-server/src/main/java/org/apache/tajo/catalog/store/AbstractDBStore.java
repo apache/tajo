@@ -1732,6 +1732,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       StringBuilder ordersBuilder = new StringBuilder();
       StringBuilder nullOrdersBuilder = new StringBuilder();
       for (SortSpecProto columnSpec : proto.getKeySortSpecsList()) {
+        // Since the key columns are always sorted in order of their occurrence position in the relation schema,
+        // the concatenated name can be uniquely identified.
         columnNamesBuilder.append(columnSpec.getColumn().getName()).append(",");
         dataTypesBuilder.append(columnSpec.getColumn().getDataType().getType().name()).append(",");
         ordersBuilder.append(columnSpec.getAscending()).append(",");
@@ -1872,16 +1874,19 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         LOG.debug(sql);
       }
 
-      String FQUnifiedColumnName = CatalogUtil.buildFQName(databaseName, tableName,
+      // Since the column names in the unified name are always sorted
+      // in order of occurrence position in the relation schema,
+      // they can be uniquely identified.
+      String unifiedName = CatalogUtil.buildFQName(databaseName, tableName,
           CatalogUtil.getUnifiedSimpleColumnName(new Schema(tableDescProto.getSchema()), columnNames));
       conn = getConnection();
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
       pstmt.setInt(2, tableId);
-      pstmt.setString(3, FQUnifiedColumnName);
+      pstmt.setString(3, unifiedName);
       res = pstmt.executeQuery();
       if (!res.next()) {
-        throw new CatalogException("ERROR: there is no index matched to " + FQUnifiedColumnName);
+        throw new CatalogException("ERROR: there is no index matched to " + unifiedName);
       }
 
       IndexDescProto.Builder builder = IndexDescProto.newBuilder();
@@ -1953,7 +1958,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         LOG.debug(sql);
       }
 
-      // columnNames should be sorted according to the position in the target relation schema
+      // Since the column names in the unified name are always sorted
+      // in order of occurrence position in the relation schema,
+      // they can be uniquely identified.
       String unifiedName = CatalogUtil.buildFQName(databaseName, tableName,
           CatalogUtil.getUnifiedSimpleColumnName(new Schema(relationSchema), columnNames));
       conn = getConnection();

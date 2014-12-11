@@ -217,7 +217,6 @@ public class GlobalEngine extends AbstractService {
 
     if (PlannerUtil.checkIfDDLPlan(rootNode)) {
       context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
-//      boolean requireForward = updateQuery(queryContext, rootNode.getChild());
       if (PlannerUtil.requireParallelExecution(rootNode)) {
         if (rootNode.getChild().getType() == NodeType.CREATE_INDEX) {
           checkIndexExistence(queryContext, (CreateIndexNode) rootNode.getChild());
