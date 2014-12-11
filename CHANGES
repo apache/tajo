@@ -20,6 +20,9 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1243: *-site.xml.template should have default configs commented out.
+    (hyunsik)
+
     TAJO-1143: TajoMaster, TajoWorker, and TajoClient should have 
     diagnosis phase at startup. (Jihun Kang via hyunsik)
 
