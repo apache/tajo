@@ -43,6 +43,7 @@ import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttem
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TajoIdUtils;
@@ -265,8 +266,13 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
     List<String> fragmentList = new ArrayList<String>();
     for (FragmentProto eachFragment : getAllFragments()) {
-      FileFragment fileFragment = FragmentConvertor.convert(FileFragment.class, eachFragment);
-      fragmentList.add(fileFragment.toString());
+      try {
+        Fragment fragment = FragmentConvertor.convert(systemConf, eachFragment);
+        fragmentList.add(fragment.toString());
+      } catch (Exception e) {
+        LOG.error(e.getMessage());
+        fragmentList.add("ERROR: " + eachFragment.getStoreType() + "," + eachFragment.getId() + ": " + e.getMessage());
+      }
     }
     queryUnitHistory.setFragments(fragmentList.toArray(new String[]{}));
 
@@ -313,15 +319,18 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	  }
 	}
 
-  private void addDataLocation(FileFragment fragment) {
+  private void addDataLocation(Fragment fragment) {
     String[] hosts = fragment.getHosts();
-    int[] diskIds = fragment.getDiskIds();
+    int[] diskIds = null;
+    if (fragment instanceof FileFragment) {
+      diskIds = ((FileFragment)fragment).getDiskIds();
+    }
     for (int i = 0; i < hosts.length; i++) {
-      dataLocations.add(new DataLocation(hosts[i], diskIds[i]));
+      dataLocations.add(new DataLocation(hosts[i], diskIds == null ? -1 : diskIds[i]));
     }
   }
 
-  public void addFragment(FileFragment fragment, boolean useDataLocation) {
+  public void addFragment(Fragment fragment, boolean useDataLocation) {
     Set<FragmentProto> fragmentProtos;
     if (fragMap.containsKey(fragment.getTableName())) {
       fragmentProtos = fragMap.get(fragment.getTableName());
@@ -336,8 +345,8 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     totalFragmentNum++;
   }
 
-  public void addFragments(Collection<FileFragment> fragments) {
-    for (FileFragment eachFragment: fragments) {
+  public void addFragments(Collection<Fragment> fragments) {
+    for (Fragment eachFragment: fragments) {
       addFragment(eachFragment, false);
     }
   }

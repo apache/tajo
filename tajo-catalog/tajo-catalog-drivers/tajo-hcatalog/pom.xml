@@ -113,7 +113,7 @@
     </dependency>
     <dependency>
       <groupId>org.apache.tajo</groupId>
-      <artifactId>tajo-storage</artifactId>
+      <artifactId>tajo-storage-common</artifactId>
     </dependency>
     <dependency>
       <groupId>junit</groupId>

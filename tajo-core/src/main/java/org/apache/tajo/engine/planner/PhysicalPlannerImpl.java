@@ -47,11 +47,9 @@ import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.SortSpecAr
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.storage.BaseTupleComparator;
-import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.storage.StorageManager;
-import org.apache.tajo.storage.TupleComparator;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.IndexUtil;
@@ -77,11 +75,9 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   private static final int UNGENERATED_PID = -1;
 
   protected final TajoConf conf;
-  protected final StorageManager sm;
 
-  public PhysicalPlannerImpl(final TajoConf conf, final StorageManager sm) {
+  public PhysicalPlannerImpl(final TajoConf conf) {
     this.conf = conf;
-    this.sm = sm;
   }
 
   public PhysicalExec createPlan(final TaskAttemptContext context, final LogicalNode logicalPlan)
@@ -250,11 +246,10 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   public long estimateSizeRecursive(TaskAttemptContext ctx, String [] tableIds) throws IOException {
     long size = 0;
     for (String tableId : tableIds) {
-      // TODO - CSV is a hack.
-      List<FileFragment> fragments = FragmentConvertor.convert(ctx.getConf(), CatalogProtos.StoreType.CSV,
-          ctx.getTables(tableId));
-      for (FileFragment frag : fragments) {
-        size += frag.getEndKey();
+      FragmentProto[] fragmentProtos = ctx.getTables(tableId);
+      List<Fragment> fragments = FragmentConvertor.convert(ctx.getConf(), fragmentProtos);
+      for (Fragment frag : fragments) {
+        size += StorageManager.getFragmentLength(ctx.getConf(), frag);
       }
     }
     return size;
@@ -446,13 +441,13 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     leftSortNode.setSortSpecs(sortSpecs[0]);
     leftSortNode.setInSchema(leftExec.getSchema());
     leftSortNode.setOutSchema(leftExec.getSchema());
-    ExternalSortExec outerSort = new ExternalSortExec(context, sm, leftSortNode, leftExec);
+    ExternalSortExec outerSort = new ExternalSortExec(context, leftSortNode, leftExec);
 
     SortNode rightSortNode = LogicalPlan.createNodeWithoutPID(SortNode.class);
     rightSortNode.setSortSpecs(sortSpecs[1]);
     rightSortNode.setInSchema(rightExec.getSchema());
     rightSortNode.setOutSchema(rightExec.getSchema());
-    ExternalSortExec innerSort = new ExternalSortExec(context, sm, rightSortNode, rightExec);
+    ExternalSortExec innerSort = new ExternalSortExec(context, rightSortNode, rightExec);
 
     LOG.info("Join (" + plan.getPID() +") chooses [Merge Join]");
     return new MergeJoinExec(context, plan, outerSort, innerSort, sortSpecs[0], sortSpecs[1]);
@@ -543,13 +538,13 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     leftSortNode2.setSortSpecs(sortSpecs2[0]);
     leftSortNode2.setInSchema(leftExec.getSchema());
     leftSortNode2.setOutSchema(leftExec.getSchema());
-    ExternalSortExec outerSort2 = new ExternalSortExec(context, sm, leftSortNode2, leftExec);
+    ExternalSortExec outerSort2 = new ExternalSortExec(context, leftSortNode2, leftExec);
 
     SortNode rightSortNode2 = LogicalPlan.createNodeWithoutPID(SortNode.class);
     rightSortNode2.setSortSpecs(sortSpecs2[1]);
     rightSortNode2.setInSchema(rightExec.getSchema());
     rightSortNode2.setOutSchema(rightExec.getSchema());
-    ExternalSortExec innerSort2 = new ExternalSortExec(context, sm, rightSortNode2, rightExec);
+    ExternalSortExec innerSort2 = new ExternalSortExec(context, rightSortNode2, rightExec);
 
     return new RightOuterMergeJoinExec(context, plan, outerSort2, innerSort2, sortSpecs2[0], sortSpecs2[1]);
   }
@@ -634,13 +629,13 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     leftSortNode.setSortSpecs(sortSpecs3[0]);
     leftSortNode.setInSchema(leftExec.getSchema());
     leftSortNode.setOutSchema(leftExec.getSchema());
-    ExternalSortExec outerSort3 = new ExternalSortExec(context, sm, leftSortNode, leftExec);
+    ExternalSortExec outerSort3 = new ExternalSortExec(context, leftSortNode, leftExec);
 
     SortNode rightSortNode = LogicalPlan.createNodeWithoutPID(SortNode.class);
     rightSortNode.setSortSpecs(sortSpecs3[1]);
     rightSortNode.setInSchema(rightExec.getSchema());
     rightSortNode.setOutSchema(rightExec.getSchema());
-    ExternalSortExec innerSort3 = new ExternalSortExec(context, sm, rightSortNode, rightExec);
+    ExternalSortExec innerSort3 = new ExternalSortExec(context, rightSortNode, rightExec);
 
     return new MergeFullOuterJoinExec(context, plan, outerSort3, innerSort3, sortSpecs3[0], sortSpecs3[1]);
   }
@@ -768,7 +763,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     switch (plan.getShuffleType()) {
     case HASH_SHUFFLE:
     case SCATTERED_HASH_SHUFFLE:
-      return new HashShuffleFileWriteExec(ctx, sm, plan, subOp);
+      return new HashShuffleFileWriteExec(ctx, plan, subOp);
 
     case RANGE_SHUFFLE:
       SortExec sortExec = PhysicalPlanUtil.findExecutor(subOp, SortExec.class);
@@ -783,7 +778,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           specs[i] = new SortSpec(columns[i]);
         }
       }
-      return new RangeShuffleFileWriteExec(ctx, sm, subOp, plan.getInSchema(), plan.getInSchema(), sortSpecs);
+      return new RangeShuffleFileWriteExec(ctx, subOp, plan.getInSchema(), plan.getInSchema(), sortSpecs);
 
     case NONE_SHUFFLE:
       // if there is no given NULL CHAR property in the table property and the query is neither CTAS or INSERT,
@@ -869,7 +864,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     sortNode.setInSchema(child.getSchema());
     sortNode.setOutSchema(child.getSchema());
 
-    ExternalSortExec sortExec = new ExternalSortExec(context, sm, sortNode, child);
+    ExternalSortExec sortExec = new ExternalSortExec(context, sortNode, child);
     LOG.info("The planner chooses [Sort-based Column Partitioned Store] algorithm");
     return new SortBasedColPartitionStoreExec(context, storeTableNode, sortExec);
   }
@@ -896,10 +891,10 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     // Since the default intermediate file format is raw file, it is not problem right now.
     if (checkIfSortEquivalance(ctx, scanNode, node)) {
       if (ctx.getTable(scanNode.getCanonicalName()) == null) {
-        return new SeqScanExec(ctx, sm, scanNode, null);
+        return new SeqScanExec(ctx, scanNode, null);
       }
       FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
-      return new ExternalSortExec(ctx, sm, (SortNode) node.peek(), fragments);
+      return new ExternalSortExec(ctx, (SortNode) node.peek(), fragments);
     } else {
       Enforcer enforcer = ctx.getEnforcer();
 
@@ -919,25 +914,26 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         if (scanNode instanceof PartitionedTableScanNode) {
           if (broadcastFlag) {
             PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) scanNode;
-            List<FileFragment> fileFragments = TUtil.newList();
+            List<Fragment> fileFragments = TUtil.newList();
+            FileStorageManager fileStorageManager = (FileStorageManager)StorageManager.getFileStorageManager(ctx.getConf());
             for (Path path : partitionedTableScanNode.getInputPaths()) {
-              fileFragments.addAll(TUtil.newList(sm.split(scanNode.getCanonicalName(), path)));
+              fileFragments.addAll(TUtil.newList(fileStorageManager.split(scanNode.getCanonicalName(), path)));
             }
 
             FragmentProto[] fragments =
                 FragmentConvertor.toFragmentProtoArray(fileFragments.toArray(new FileFragment[fileFragments.size()]));
 
             ctx.addFragments(scanNode.getCanonicalName(), fragments);
-            return new PartitionMergeScanExec(ctx, sm, scanNode, fragments);
+            return new PartitionMergeScanExec(ctx, scanNode, fragments);
           }
         }
       }
 
       if (ctx.getTable(scanNode.getCanonicalName()) == null) {
-        return new SeqScanExec(ctx, sm, scanNode, null);
+        return new SeqScanExec(ctx, scanNode, null);
       }
       FragmentProto [] fragments = ctx.getTables(scanNode.getCanonicalName());
-      return new SeqScanExec(ctx, sm, scanNode, fragments);
+      return new SeqScanExec(ctx, scanNode, fragments);
     }
   }
 
@@ -997,7 +993,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     sortNode.setSortSpecs(sortSpecs);
     sortNode.setInSchema(subOp.getSchema());
     sortNode.setOutSchema(subOp.getSchema());
-    ExternalSortExec sortExec = new ExternalSortExec(ctx, sm, sortNode, subOp);
+    ExternalSortExec sortExec = new ExternalSortExec(ctx, sortNode, subOp);
     LOG.info("The planner chooses [Sort Aggregation] in (" + TUtil.arrayToString(sortSpecs) + ")");
     return new SortAggregateExec(ctx, groupbyNode, sortExec);
   }
@@ -1038,7 +1034,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       sortNode.setSortSpecs(sortSpecs);
       sortNode.setInSchema(subOp.getSchema());
       sortNode.setOutSchema(subOp.getSchema());
-      child = new ExternalSortExec(context, sm, sortNode, subOp);
+      child = new ExternalSortExec(context, sortNode, subOp);
       LOG.info("The planner chooses [Sort Aggregation] in (" + TUtil.arrayToString(sortSpecs) + ")");
     }
 
@@ -1101,7 +1097,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     sortNode.setSortSpecs(sortSpecs.toArray(new SortSpec[]{}));
     sortNode.setInSchema(distinctNode.getInSchema());
     sortNode.setOutSchema(distinctNode.getInSchema());
-    ExternalSortExec sortExec = new ExternalSortExec(context, sm, sortNode, subOp);
+    ExternalSortExec sortExec = new ExternalSortExec(context, sortNode, subOp);
 
     return sortExec;
   }
@@ -1132,7 +1128,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       sortNode.setSortSpecs(sortSpecs);
       sortNode.setInSchema(subOp.getSchema());
       sortNode.setOutSchema(eachGroupbyNode.getInSchema());
-      ExternalSortExec sortExec = new ExternalSortExec(ctx, sm, sortNode, subOp);
+      ExternalSortExec sortExec = new ExternalSortExec(ctx, sortNode, subOp);
 
       sortAggregateExec[index++] = new SortAggregateExec(ctx, eachGroupbyNode, sortExec);
     }
@@ -1160,7 +1156,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       if (algorithm == SortEnforce.SortAlgorithm.IN_MEMORY_SORT) {
         return new MemSortExec(context, sortNode, child);
       } else {
-        return new ExternalSortExec(context, sm, sortNode, child);
+        return new ExternalSortExec(context, sortNode, child);
       }
     }
 
@@ -1169,7 +1165,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
   public SortExec createBestSortPlan(TaskAttemptContext context, SortNode sortNode,
                                      PhysicalExec child) throws IOException {
-    return new ExternalSortExec(context, sm, sortNode, child);
+    return new ExternalSortExec(context, sortNode, child);
   }
 
   public PhysicalExec createIndexScanExec(TaskAttemptContext ctx,
@@ -1181,14 +1177,15 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
     FragmentProto [] fragmentProtos = ctx.getTables(annotation.getTableName());
     List<FileFragment> fragments =
-        FragmentConvertor.convert(ctx.getConf(), ctx.getDataChannel().getStoreType(), fragmentProtos);
+        FragmentConvertor.convert(ctx.getConf(), fragmentProtos);
 
     String indexName = IndexUtil.getIndexNameOfFrag(fragments.get(0), annotation.getSortKeys());
+    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(ctx.getConf());
     Path indexPath = new Path(sm.getTablePath(annotation.getTableName()), "index");
 
     TupleComparator comp = new BaseTupleComparator(annotation.getKeySchema(),
         annotation.getSortKeys());
-    return new BSTIndexScanExec(ctx, sm, annotation, fragments.get(0), new Path(indexPath, indexName),
+    return new BSTIndexScanExec(ctx, annotation, fragments.get(0), new Path(indexPath, indexName),
         annotation.getKeySchema(), comp, annotation.getDatum());
 
   }
