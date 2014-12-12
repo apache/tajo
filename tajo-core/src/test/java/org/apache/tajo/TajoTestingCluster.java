@@ -118,7 +118,9 @@ public class TajoTestingCluster {
   }
 
   void initPropertiesAndConfigs() {
-    TimeZone.setDefault(TimeZone.getTimeZone(TajoConstants.DEFAULT_SYSTEM_TIMEZONE));
+    TimeZone testDefaultTZ = TimeZone.getTimeZone(TajoConstants.DEFAULT_SYSTEM_TIMEZONE);
+    conf.setSystemTimezone(testDefaultTZ);
+    TimeZone.setDefault(testDefaultTZ);
 
     if (System.getProperty(ConfVars.RESOURCE_MANAGER_CLASS.varname) != null) {
       String testResourceManager = System.getProperty(ConfVars.RESOURCE_MANAGER_CLASS.varname);

@@ -18,8 +18,8 @@
 
 package org.apache.tajo.conf;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -39,16 +39,10 @@ import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.TimeZone;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class TajoConf extends Configuration {
-
   private static TimeZone SYSTEM_TIMEZONE;
   private static int DATE_ORDER = -1;
-  private static final ReentrantReadWriteLock confLock = new ReentrantReadWriteLock();
-  private static final Lock writeLock = confLock.writeLock();
-  private static final Lock readLock = confLock.readLock();
   
   private static final Map<String, ConfVars> vars = TUtil.newHashMap();
 
@@ -59,8 +53,6 @@ public class TajoConf extends Configuration {
     Configuration.addDefaultResource("storage-site.xml");
     Configuration.addDefaultResource("tajo-default.xml");
     Configuration.addDefaultResource("tajo-site.xml");
-
-    confStaticInit();
     
     for (ConfVars confVars: ConfVars.values()) {
       vars.put(confVars.keyname(), confVars);
@@ -82,55 +74,37 @@ public class TajoConf extends Configuration {
     addResource(path);
   }
 
-  private static void confStaticInit() {
-    TimeZone.setDefault(getSystemTimezone());
-    getDateOrder();
+  @SuppressWarnings("unused")
+  public TimeZone getSystemTimezone() {
+    return TimeZone.getTimeZone(getVar(ConfVars.$TIMEZONE));
   }
 
-  public static TimeZone getSystemTimezone() {
-    writeLock.lock();
-    try {
-      if (SYSTEM_TIMEZONE == null) {
-        TajoConf tajoConf = new TajoConf();
-        SYSTEM_TIMEZONE = TimeZone.getTimeZone(tajoConf.getVar(ConfVars.$TIMEZONE));
-      }
-      return SYSTEM_TIMEZONE;
-    } finally {
-      writeLock.unlock();
-    }
+  public void setSystemTimezone(TimeZone timezone) {
+    setVar(ConfVars.$TIMEZONE, timezone.getID());
   }
 
   public static int getDateOrder() {
-    writeLock.lock();
-    try {
-      if (DATE_ORDER < 0) {
-        TajoConf tajoConf = new TajoConf();
-        String dateOrder = tajoConf.getVar(ConfVars.$DATE_ORDER);
-        if ("YMD".equals(dateOrder)) {
-          DATE_ORDER = DateTimeConstants.DATEORDER_YMD;
-        } else if ("DMY".equals(dateOrder)) {
-          DATE_ORDER = DateTimeConstants.DATEORDER_DMY;
-        } else if ("MDY".equals(dateOrder)) {
-          DATE_ORDER = DateTimeConstants.DATEORDER_MDY;
-        } else {
-          DATE_ORDER = DateTimeConstants.DATEORDER_YMD;
-        }
+    if (DATE_ORDER < 0) {
+      TajoConf tajoConf = new TajoConf();
+      String dateOrder = tajoConf.getVar(ConfVars.$DATE_ORDER);
+      if ("YMD".equals(dateOrder)) {
+        DATE_ORDER = DateTimeConstants.DATEORDER_YMD;
+      } else if ("DMY".equals(dateOrder)) {
+        DATE_ORDER = DateTimeConstants.DATEORDER_DMY;
+      } else if ("MDY".equals(dateOrder)) {
+        DATE_ORDER = DateTimeConstants.DATEORDER_MDY;
+      } else {
+        DATE_ORDER = DateTimeConstants.DATEORDER_YMD;
       }
-      return DATE_ORDER;
-    } finally {
-      writeLock.unlock();
     }
+    return DATE_ORDER;
   }
 
+  @VisibleForTesting
   public static int setDateOrder(int dateOrder) {
-    writeLock.lock();
-    try {
-      int oldDateOrder = DATE_ORDER;
-      DATE_ORDER = dateOrder;
-      return oldDateOrder;
-    } finally {
-    	writeLock.unlock();
-    }
+    int oldDateOrder = DATE_ORDER;
+    DATE_ORDER = dateOrder;
+    return oldDateOrder;
   }
 
   public static enum ConfVars implements ConfigKey {
@@ -181,8 +155,7 @@ public class TajoConf extends Configuration {
     WORKER_QM_RPC_ADDRESS("tajo.worker.qm-rpc.address", "0.0.0.0:28093", Validators.networkAddr()),
 
     // Tajo Worker Temporal Directories
-    WORKER_TEMPORAL_DIR("tajo.worker.tmpdir.locations", "/tmp/tajo-${user.name}/tmpdir", 
-        Validators.pathUrl()),
+    WORKER_TEMPORAL_DIR("tajo.worker.tmpdir.locations", "/tmp/tajo-${user.name}/tmpdir", Validators.pathUrlList()),
     WORKER_TEMPORAL_DIR_CLEANUP("tajo.worker.tmpdir.cleanup-at-startup", false, Validators.bool()),
 
     // Tajo Worker Resources
@@ -348,8 +321,8 @@ public class TajoConf extends Configuration {
     $CLI_ERROR_STOP("tajo.cli.error.stop", false),
 
     // Timezone & Date ----------------------------------------------------------
-    $TIMEZONE("tajo.timezone", TajoConstants.DEFAULT_SYSTEM_TIMEZONE),
-    $DATE_ORDER("tajo.date.order", "YMD"),
+    $TIMEZONE("tajo.timezone", TimeZone.getDefault().getID()),
+    $DATE_ORDER("tajo.datetime.date-order", "YMD"),
 
     // FILE FORMAT
     $TEXT_NULL("tajo.text.null", "\\\\N"),

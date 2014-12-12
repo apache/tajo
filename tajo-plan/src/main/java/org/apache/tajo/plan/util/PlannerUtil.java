@@ -25,12 +25,10 @@ import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaUtil;
-import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
@@ -802,9 +800,23 @@ public class PlannerUtil {
         tableProperties.set(StorageConstants.TEXT_NULL, sessionVars.get(SessionVars.NULL_CHAR));
       }
 
-      if (sessionVars.containsKey(SessionVars.TZ)) {
-        tableProperties.set(StorageConstants.TIMEZONE, sessionVars.get(SessionVars.TZ));
+      if (sessionVars.containsKey(SessionVars.TIMEZONE)) {
+        tableProperties.set(StorageConstants.TIMEZONE, sessionVars.get(SessionVars.TIMEZONE));
       }
+    }
+  }
+
+  /**
+   * This method sets a set of table properties by System default configs.
+   * These properties are implicitly used to read or write rows in Table.
+   * Don't use this method for TableMeta to be stored in Catalog.
+   *
+   * @param systemConf System configuration
+   * @param meta TableMeta to be set
+   */
+  public static void applySystemDefaultToTableProperties(OverridableConf systemConf, TableMeta meta) {
+    if (!meta.containsOption(StorageConstants.TIMEZONE)) {
+      meta.putOption(StorageConstants.TIMEZONE, systemConf.get(SessionVars.TIMEZONE));
     }
   }
 }

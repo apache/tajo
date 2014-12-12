@@ -330,7 +330,13 @@ public class QueryTestCaseBase {
     if (parsedResults.size() > 1) {
       assertNotNull("This script \"" + queryFileName + "\" includes two or more queries");
     }
-    ResultSet result = client.executeQueryAndGetResult(parsedResults.get(0).getHistoryStatement());
+
+    int idx = 0;
+    for (; idx < parsedResults.size() - 1; idx++) {
+      client.executeQueryAndGetResult(parsedResults.get(idx).getHistoryStatement()).close();
+    }
+
+    ResultSet result = client.executeQueryAndGetResult(parsedResults.get(idx).getHistoryStatement());
     assertNotNull("Query succeeded test", result);
     return result;
   }

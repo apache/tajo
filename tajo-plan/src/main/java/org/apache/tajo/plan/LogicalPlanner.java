@@ -95,8 +95,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       this.evalOptimizer = evalOptimizer;
 
       // session's time zone
-      if (context.containsKey(SessionVars.TZ)) {
-        String timezoneId = context.get(SessionVars.TZ);
+      if (context.containsKey(SessionVars.TIMEZONE)) {
+        String timezoneId = context.get(SessionVars.TIMEZONE);
         timeZone = TimeZone.getTimeZone(timezoneId);
       }
 

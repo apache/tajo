@@ -65,6 +65,7 @@ import org.apache.tajo.plan.verifier.VerificationState;
 import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.ProtoUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -303,7 +304,6 @@ public class GlobalEngine extends AbstractService {
       responseBuilder.setQueryId(queryId.getProto());
       responseBuilder.setMaxRowNum(maxRow);
       responseBuilder.setTableDesc(desc.getProto());
-      responseBuilder.setSessionVariables(session.getProto().getVariables());
       responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
 
       // NonFromQuery indicates a form of 'select a, x+y;'
@@ -359,6 +359,8 @@ public class GlobalEngine extends AbstractService {
         LOG.info("Query is forwarded to " + queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
       }
     }
+
+    responseBuilder.setSessionVars(ProtoUtil.convertFromMap(session.getAllVariables()));
     SubmitQueryResponse response = responseBuilder.build();
     return response;
   }

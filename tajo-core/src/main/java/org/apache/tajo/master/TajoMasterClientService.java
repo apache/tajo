@@ -145,7 +145,7 @@ public class TajoMasterClientService extends AbstractService {
         CreateSessionResponse.Builder builder = CreateSessionResponse.newBuilder();
         builder.setResultCode(ResultCode.OK);
         builder.setSessionId(TajoIdProtos.SessionIdProto.newBuilder().setId(sessionId).build());
-        builder.setVariables(ProtoUtil.convertFromMap(context.getSessionManager().getAllVariables(sessionId)));
+        builder.setSessionVars(ProtoUtil.convertFromMap(context.getSessionManager().getAllVariables(sessionId)));
         return builder.build();
       } catch (NoSuchDatabaseException nsde) {
         CreateSessionResponse.Builder builder = CreateSessionResponse.newBuilder();
@@ -174,7 +174,7 @@ public class TajoMasterClientService extends AbstractService {
     public SessionUpdateResponse buildSessionUpdateOnSuccess(Map<String, String> variables) {
       SessionUpdateResponse.Builder builder = SessionUpdateResponse.newBuilder();
       builder.setResultCode(ResultCode.OK);
-      builder.setVariables(new KeyValueSet(variables).getProto());
+      builder.setSessionVars(new KeyValueSet(variables).getProto());
       return builder.build();
     }
 
@@ -190,7 +190,7 @@ public class TajoMasterClientService extends AbstractService {
         throws ServiceException {
       try {
         String sessionId = request.getSessionId().getId();
-        for (KeyValueProto kv : request.getSetVariables().getKeyvalList()) {
+        for (KeyValueProto kv : request.getSessionVars().getKeyvalList()) {
           context.getSessionManager().setVariable(sessionId, kv.getKey(), kv.getValue());
         }
         for (String unsetVariable : request.getUnsetVariablesList()) {

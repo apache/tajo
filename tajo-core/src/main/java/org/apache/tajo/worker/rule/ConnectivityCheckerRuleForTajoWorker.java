@@ -38,7 +38,8 @@ import org.apache.tajo.worker.TajoWorker;
 /**
  * With this rule, Tajo worker will check the connectivity to tajo master server.
  */
-@SelfDiagnosisRuleDefinition(category="worker", name="ConnectivityCheckerRuleForTajoWorker", priority=0)
+@SelfDiagnosisRuleDefinition(
+    category="worker", name="ConnectivityCheckerRuleForTajoWorker", priority=0, enabled = false)
 @SelfDiagnosisRuleVisibility.LimitedPrivate(acceptedCallers = { TajoWorker.class })
 public class ConnectivityCheckerRuleForTajoWorker implements SelfDiagnosisRule {
   

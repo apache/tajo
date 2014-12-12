@@ -1,6 +1,6 @@
-**********************
-Configuration Defaults
-**********************
+**************************************
+Cluster Service Configuration Defaults 
+**************************************
 
 Tajo Master Configuration Defaults
 ====================================

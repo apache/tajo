@@ -823,6 +823,12 @@ public class CatalogUtil {
   public static final String ENABLE_DICTIONARY    = "parquet.enable.dictionary";
   public static final String VALIDATION           = "parquet.validation";
 
+  /**
+   * Create new table property with default configs. It is used to make TableMeta to be stored in Catalog.
+   *
+   * @param type StoreType
+   * @return Table properties
+   */
   public static KeyValueSet newPhysicalProperties(StoreType type) {
     KeyValueSet options = new KeyValueSet();
     if (StoreType.CSV == type || StoreType.TEXTFILE == type) {

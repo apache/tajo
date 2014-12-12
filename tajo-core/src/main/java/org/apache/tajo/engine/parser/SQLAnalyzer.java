@@ -113,7 +113,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       } else {
         value = null;
       }
-      return new SetSession(SessionVars.TZ.name(), value);
+      return new SetSession(SessionVars.TIMEZONE.name(), value);
 
     } else {
       throw new SQLSyntaxError("Unsupported session statement");
