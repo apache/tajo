@@ -167,7 +167,7 @@ public class TestDelimitedTextFile {
     TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.JSON);
     meta.putOption(StorageUtil.TEXT_ERROR_TOLERANCE_MAXNUM, "1");
     FileFragment fragment = getFileFragment("testErrorTolerance3.json");
-    Scanner scanner = StorageManager.getStorageManager(conf).getScanner(meta, schema, fragment);
+    Scanner scanner = StorageManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
     scanner.init();
 
     try {
