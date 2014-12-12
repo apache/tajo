@@ -19,7 +19,7 @@
 package org.apache.tajo.master;
 
 import com.google.common.base.Objects;
-import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 
 /**
  * FragmentPair consists of two fragments, a left fragment and a right fragment.
@@ -29,23 +29,23 @@ import org.apache.tajo.storage.fragment.FileFragment;
  * For other queries, it is assumed to have only a left fragment.
  */
 public class FragmentPair {
-  private FileFragment leftFragment;
-  private FileFragment rightFragment;
+  private Fragment leftFragment;
+  private Fragment rightFragment;
 
-  public FragmentPair(FileFragment left) {
+  public FragmentPair(Fragment left) {
     this.leftFragment = left;
   }
 
-  public FragmentPair(FileFragment left, FileFragment right) {
+  public FragmentPair(Fragment left, Fragment right) {
     this.leftFragment = left;
     this.rightFragment = right;
   }
 
-  public FileFragment getLeftFragment() {
+  public Fragment getLeftFragment() {
     return leftFragment;
   }
 
-  public FileFragment getRightFragment() {
+  public Fragment getRightFragment() {
     return rightFragment;
   }
 

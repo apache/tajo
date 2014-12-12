@@ -21,11 +21,11 @@ package org.apache.tajo.engine.query;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ConfigKey;
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.QueryVars;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.session.Session;
-import org.apache.tajo.validation.Validator;
 import org.apache.tajo.plan.logical.NodeType;
 
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
@@ -34,41 +34,6 @@ import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetPro
  * QueryContent is a overridable config, and it provides a set of various configs for a query instance.
  */
 public class QueryContext extends OverridableConf {
-  public static enum QueryVars implements ConfigKey {
-    COMMAND_TYPE,
-    STAGING_DIR,
-    OUTPUT_TABLE_NAME,
-    OUTPUT_TABLE_PATH,
-    OUTPUT_PARTITIONS,
-    OUTPUT_OVERWRITE,
-    OUTPUT_AS_DIRECTORY,
-    OUTPUT_PER_FILE_SIZE,
-    ;
-
-    QueryVars() {
-    }
-
-    @Override
-    public String keyname() {
-      return name().toLowerCase();
-    }
-
-    @Override
-    public ConfigType type() {
-      return ConfigType.QUERY;
-    }
-
-    @Override
-    public Class<?> valueClass() {
-      return null;
-    }
-
-    @Override
-    public Validator validator() {
-      return null;
-    }
-  }
-
   public QueryContext(TajoConf conf) {
     super(conf, ConfigKey.ConfigType.QUERY);
   }
@@ -103,8 +68,8 @@ public class QueryContext extends OverridableConf {
   }
 
   public Path getStagingDir() {
-    String strVal = get(QueryVars.STAGING_DIR);
-    return strVal != null ? new Path(strVal) : null;
+    String strVal = get(QueryVars.STAGING_DIR, "");
+    return strVal != null && !strVal.isEmpty() ? new Path(strVal) : null;
   }
 
   /**
@@ -127,7 +92,9 @@ public class QueryContext extends OverridableConf {
   }
 
   public void setOutputPath(Path path) {
-    put(QueryVars.OUTPUT_TABLE_PATH, path.toUri().toString());
+    if (path != null) {
+      put(QueryVars.OUTPUT_TABLE_PATH, path.toUri().toString());
+    }
   }
 
   public Path getOutputPath() {

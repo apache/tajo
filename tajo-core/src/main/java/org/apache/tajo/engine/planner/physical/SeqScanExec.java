@@ -42,6 +42,7 @@ import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -69,7 +70,7 @@ public class SeqScanExec extends PhysicalExec {
 
   private boolean cacheRead = false;
 
-  public SeqScanExec(TaskAttemptContext context, StorageManager sm, ScanNode plan,
+  public SeqScanExec(TaskAttemptContext context, ScanNode plan,
                      CatalogProtos.FragmentProto [] fragments) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema());
 
@@ -81,9 +82,8 @@ public class SeqScanExec extends PhysicalExec {
       String pathNameKey = "";
       if (fragments != null) {
         for (FragmentProto f : fragments) {
-          FileFragment fileFragement = FragmentConvertor.convert(
-              context.getConf(), plan.getTableDesc().getMeta().getStoreType(), f);
-          pathNameKey += fileFragement.getPath();
+          Fragment fragement = FragmentConvertor.convert(context.getConf(), f);
+          pathNameKey += fragement.getKey();
         }
       }
 
@@ -227,13 +227,13 @@ public class SeqScanExec extends PhysicalExec {
     if (fragments != null) {
       if (fragments.length > 1) {
         this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), meta,
-            FragmentConvertor.<FileFragment>convert(context.getConf(), plan.getTableDesc().getMeta().getStoreType(),
-                fragments), projected
+            FragmentConvertor.convert(context.getConf(), fragments), projected
         );
       } else {
-        this.scanner = StorageManager.getStorageManager(
-            context.getConf()).getScanner(meta, plan.getPhysicalSchema(), fragments[0],
-            projected);
+        StorageManager storageManager = StorageManager.getStorageManager(
+            context.getConf(), plan.getTableDesc().getMeta().getStoreType());
+        this.scanner = storageManager.getScanner(meta,
+            plan.getPhysicalSchema(), fragments[0], projected);
       }
       scanner.init();
     }

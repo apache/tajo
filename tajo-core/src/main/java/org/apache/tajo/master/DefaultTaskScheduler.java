@@ -44,6 +44,7 @@ import org.apache.tajo.master.querymaster.SubQuery;
 import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.FetchImpl;
 
@@ -150,8 +151,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     super.stop();
   }
 
-  private FileFragment[] fragmentsForNonLeafTask;
-  private FileFragment[] broadcastFragmentsForNonLeafTask;
+  private Fragment[] fragmentsForNonLeafTask;
+  private Fragment[] broadcastFragmentsForNonLeafTask;
 
   LinkedList<TaskRequestEvent> taskRequestEvents = new LinkedList<TaskRequestEvent>();
   public void schedule() {
