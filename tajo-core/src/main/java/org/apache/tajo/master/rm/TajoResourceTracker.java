@@ -83,10 +83,6 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
     String confMasterServiceAddr = systemConf.getVar(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterServiceAddr);
 
-    if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
-      initIsa = NetUtils.createLocalSocketAddr(initIsa);
-    }
-
     try {
       server = new AsyncRpcServer(TajoResourceTrackerProtocol.class, this, initIsa, 3);
     } catch (Exception e) {

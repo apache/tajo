@@ -76,10 +76,6 @@ public class QueryMasterManagerService extends CompositeService
         throw new IllegalArgumentException("Failed resolve of " + initIsa);
       }
 
-      if (tajoConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
-        initIsa = NetUtils.createLocalSocketAddr(initIsa);
-      }
-
       int workerNum = tajoConf.getIntVar(TajoConf.ConfVars.QUERY_MASTER_RPC_SERVER_WORKER_THREAD_NUM);
       this.rpcServer = new AsyncRpcServer(QueryMasterProtocol.class, this, initIsa, workerNum);
       this.rpcServer.start();
