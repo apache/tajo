@@ -41,6 +41,7 @@
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="java.util.Set" %>
+<%@ page import="org.apache.tajo.storage.fragment.Fragment" %>
 
 <%
     String paramQueryId = request.getParameter("queryId");
@@ -102,8 +103,8 @@
     String fragmentInfo = "";
     String delim = "";
     for (CatalogProtos.FragmentProto eachFragment : queryUnit.getAllFragments()) {
-        FileFragment fileFragment = FragmentConvertor.convert(FileFragment.class, eachFragment);
-        fragmentInfo += delim + fileFragment.toString();
+        Fragment fragment = FragmentConvertor.convert(tajoWorker.getConfig(), eachFragment);
+        fragmentInfo += delim + fragment.toString();
         delim = "<br/>";
     }
 

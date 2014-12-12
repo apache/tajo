@@ -30,11 +30,9 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.storage.FileScanner;
-import org.apache.tajo.storage.MergeScanner;
-import org.apache.tajo.storage.Scanner;
-import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -94,7 +92,7 @@ public class TajoResultSet extends TajoResultSetBase {
         totalRow = INFINITE_ROW_NUM;
       }
 
-      List<FileFragment> frags = getFragments(new Path(desc.getPath()));
+      List<Fragment> frags = getFragments(new Path(desc.getPath()));
       scanner = new MergeScanner(conf, desc.getSchema(), desc.getMeta(), frags);
     }
   }
@@ -113,9 +111,9 @@ public class TajoResultSet extends TajoResultSetBase {
     }
   }
 
-  private List<FileFragment> getFragments(Path tablePath)
+  private List<Fragment> getFragments(Path tablePath)
       throws IOException {
-    List<FileFragment> fragments = Lists.newArrayList();
+    List<Fragment> fragments = Lists.newArrayList();
     FileStatus[] files = fs.listStatus(tablePath, new PathFilter() {
       @Override
       public boolean accept(Path path) {

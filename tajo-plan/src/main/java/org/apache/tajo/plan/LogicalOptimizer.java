@@ -48,6 +48,7 @@ import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.graph.DirectedGraphCursor;
 
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
@@ -92,6 +93,12 @@ public class LogicalOptimizer {
           continue;
         }
       }
+    }
+  }
+
+  public void addRuleAfterToJoinOpt(RewriteRule rewriteRule) {
+    if (rewriteRule != null) {
+      rulesAfterToJoinOpt.addRewriteRule(rewriteRule);
     }
   }
 

@@ -144,17 +144,18 @@ public class TajoMasterClientService extends AbstractService {
         String sessionId =
             context.getSessionManager().createSession(request.getUsername(), databaseName);
         CreateSessionResponse.Builder builder = CreateSessionResponse.newBuilder();
-        builder.setState(CreateSessionResponse.ResultState.SUCCESS);
+        builder.setResultCode(ResultCode.OK);
         builder.setSessionId(TajoIdProtos.SessionIdProto.newBuilder().setId(sessionId).build());
+        builder.setSessionVars(ProtoUtil.convertFromMap(context.getSessionManager().getAllVariables(sessionId)));
         return builder.build();
       } catch (NoSuchDatabaseException nsde) {
         CreateSessionResponse.Builder builder = CreateSessionResponse.newBuilder();
-        builder.setState(CreateSessionResponse.ResultState.FAILED);
+        builder.setResultCode(ResultCode.ERROR);
         builder.setMessage(nsde.getMessage());
         return builder.build();
       } catch (InvalidSessionException e) {
         CreateSessionResponse.Builder builder = CreateSessionResponse.newBuilder();
-        builder.setState(CreateSessionResponse.ResultState.FAILED);
+        builder.setResultCode(ResultCode.ERROR);
         builder.setMessage(e.getMessage());
         return builder.build();
       }
@@ -163,26 +164,42 @@ public class TajoMasterClientService extends AbstractService {
     @Override
     public BoolProto removeSession(RpcController controller, TajoIdProtos.SessionIdProto request)
         throws ServiceException {
+
       if (request != null) {
         context.getSessionManager().removeSession(request.getId());
       }
-      return ProtoUtil.TRUE;
+
+      return BOOL_TRUE;
+    }
+
+    public SessionUpdateResponse buildSessionUpdateOnSuccess(Map<String, String> variables) {
+      SessionUpdateResponse.Builder builder = SessionUpdateResponse.newBuilder();
+      builder.setResultCode(ResultCode.OK);
+      builder.setSessionVars(new KeyValueSet(variables).getProto());
+      return builder.build();
+    }
+
+    public SessionUpdateResponse buildSessionUpdateOnError(String message) {
+      SessionUpdateResponse.Builder builder = SessionUpdateResponse.newBuilder();
+      builder.setResultCode(ResultCode.ERROR);
+      builder.setMessage(message);
+      return builder.build();
     }
 
     @Override
-    public BoolProto updateSessionVariables(RpcController controller, UpdateSessionVariableRequest request)
+    public SessionUpdateResponse updateSessionVariables(RpcController controller, UpdateSessionVariableRequest request)
         throws ServiceException {
       try {
         String sessionId = request.getSessionId().getId();
-        for (KeyValueProto kv : request.getSetVariables().getKeyvalList()) {
+        for (KeyValueProto kv : request.getSessionVars().getKeyvalList()) {
           context.getSessionManager().setVariable(sessionId, kv.getKey(), kv.getValue());
         }
         for (String unsetVariable : request.getUnsetVariablesList()) {
           context.getSessionManager().removeVariable(sessionId, unsetVariable);
         }
-        return ProtoUtil.TRUE;
+        return buildSessionUpdateOnSuccess(context.getSessionManager().getAllVariables(sessionId));
       } catch (Throwable t) {
-        throw new ServiceException(t);
+        return buildSessionUpdateOnError("Invalid Session Id" + request.getSessionId());
       }
     }
 
@@ -285,28 +302,24 @@ public class TajoMasterClientService extends AbstractService {
     }
 
     @Override
-    public RequestResult updateQuery(RpcController controller, QueryRequest request) throws ServiceException {
+    public UpdateQueryResponse updateQuery(RpcController controller, QueryRequest request) throws ServiceException {
 
       try {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
         QueryContext queryContext = new QueryContext(conf, session);
-        if (queryContext.getCurrentDatabase() == null) {
-          for (Map.Entry<String,String> e : queryContext.getAllKeyValus().entrySet()) {
-            System.out.println(e.getKey() + "=" + e.getValue());
-          }
-        }
 
+        UpdateQueryResponse.Builder responseBuilder = UpdateQueryResponse.newBuilder();
         RequestResult.Builder builder = RequestResult.newBuilder();
         try {
           context.getGlobalEngine().updateQuery(queryContext, request.getQuery(), request.getIsJson());
           builder.setResultCode(ResultCode.OK);
-          return builder.build();
+          return responseBuilder.setResult(builder.build()).build();
         } catch (Exception e) {
           builder.setResultCode(ResultCode.ERROR);
           if (e.getMessage() == null) {
             builder.setErrorMessage(ExceptionUtils.getStackTrace(e));
           }
-          return builder.build();
+          return responseBuilder.setResult(builder.build()).build();
         }
       } catch (Throwable t) {
         throw new ServiceException(t);
@@ -806,7 +819,8 @@ public class TajoMasterClientService extends AbstractService {
 
         TableDesc desc;
         try {
-          desc = context.getGlobalEngine().createTableOnPath(queryContext, request.getName(), schema,
+          desc = context.getGlobalEngine().createTable(queryContext, request.getName(),
+              meta.getStoreType(), schema,
               meta, path, true, partitionDesc, false);
         } catch (Exception e) {
           return TableResponse.newBuilder()

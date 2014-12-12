@@ -217,7 +217,7 @@ public class ExprTestBase {
       queryContext.putAll(context);
     }
 
-    String timezoneId = queryContext.get(SessionVars.TZ);
+    String timezoneId = queryContext.get(SessionVars.TIMEZONE);
     TimeZone timeZone = TimeZone.getTimeZone(timezoneId);
 
     LazyTuple lazyTuple;

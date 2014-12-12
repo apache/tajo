@@ -36,6 +36,7 @@
     <hadoop.version>2.5.1</hadoop.version>
     <protobuf.version>2.5.0</protobuf.version>
     <tajo.version>0.9.1-SNAPSHOT</tajo.version>
+    <hbase.version>0.98.7-hadoop2</hbase.version>
     <tajo.root>${project.parent.relativePath}/..</tajo.root>
     <extra.source.path>src/main/hadoop-${hadoop.version}</extra.source.path>
   </properties>
@@ -742,6 +743,22 @@
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-storage</artifactId>
+        <version>${tajo.version}</version>
+        <type>pom</type>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tajo</groupId>
+        <artifactId>tajo-storage-common</artifactId>
+        <version>${tajo.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tajo</groupId>
+        <artifactId>tajo-storage-hdfs</artifactId>
+        <version>${tajo.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tajo</groupId>
+        <artifactId>tajo-storage-hbase</artifactId>
         <version>${tajo.version}</version>
       </dependency>
       <dependency>

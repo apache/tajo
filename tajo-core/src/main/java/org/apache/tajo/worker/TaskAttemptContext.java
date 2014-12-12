@@ -384,7 +384,7 @@ public class TaskAttemptContext {
     for (List<FragmentProto> fragments : fragmentMap.values()) {
       for (FragmentProto f : fragments) {
         FileFragment fileFragment = FragmentConvertor.convert(FileFragment.class, f);
-        sb.append(fileFragment.getPath().getName()).append(fileFragment.getStartKey()).append(fileFragment.getEndKey());
+        sb.append(fileFragment.getPath().getName()).append(fileFragment.getStartKey()).append(fileFragment.getLength());
       }
     }
     return sb.toString();

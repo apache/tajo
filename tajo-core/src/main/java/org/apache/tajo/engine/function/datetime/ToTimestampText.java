@@ -54,7 +54,7 @@ public class ToTimestampText extends GeneralFunction {
   }
 
   public void init(OverridableConf queryContext, FunctionEval.ParamType [] paramTypes) {
-    String timezoneId = queryContext.get(SessionVars.TZ, TajoConstants.DEFAULT_SYSTEM_TIMEZONE);
+    String timezoneId = queryContext.get(SessionVars.TIMEZONE, TajoConstants.DEFAULT_SYSTEM_TIMEZONE);
     timezone = TimeZone.getTimeZone(timezoneId);
   }
 

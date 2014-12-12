@@ -35,6 +35,7 @@ import org.apache.tajo.plan.logical.InsertNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.StoreTableNode;
 import org.apache.tajo.storage.Appender;
+import org.apache.tajo.storage.FileStorageManager;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.unit.StorageUnit;
@@ -120,6 +121,7 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
     super.init();
 
     storeTablePath = context.getOutputPath();
+
     FileSystem fs = storeTablePath.getFileSystem(context.getConf());
     if (!fs.exists(storeTablePath.getParent())) {
       fs.mkdirs(storeTablePath.getParent());
@@ -160,7 +162,8 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
       actualFilePath = new Path(lastFileName + "_" + suffixId);
     }
 
-    appender = StorageManager.getStorageManager(context.getConf()).getAppender(meta, outSchema, actualFilePath);
+    appender = ((FileStorageManager)StorageManager.getFileStorageManager(context.getConf()))
+        .getAppender(meta, outSchema, actualFilePath);
 
     appender.enableStats();
     appender.init();

@@ -125,12 +125,13 @@ public class TupleUtil {
     Tuple startTuple = new VTuple(target.size());
     Tuple endTuple = new VTuple(target.size());
     int i = 0;
+    int sortSpecIndex = 0;
 
     // In outer join, empty table could be searched.
     // As a result, min value and max value would be null.
     // So, we should put NullDatum for this case.
     for (Column col : target.getColumns()) {
-      if (sortSpecs[i].isAscending()) {
+      if (sortSpecs[sortSpecIndex].isAscending()) {
         if (statSet.get(col).getMinValue() != null)
           startTuple.put(i, statSet.get(col).getMinValue());
         else
@@ -163,6 +164,10 @@ public class TupleUtil {
           endTuple.put(i, statSet.get(col).getMinValue());
         else
           endTuple.put(i, DatumFactory.createNullDatum());
+      }
+      if (target.getColumns().size() == sortSpecs.length) {
+        // Not composite column sort
+        sortSpecIndex++;
       }
       i++;
     }

@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
@@ -38,8 +39,10 @@ import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.expr.FieldEval;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -67,7 +70,7 @@ public class SeqScanExec extends PhysicalExec {
 
   private boolean cacheRead = false;
 
-  public SeqScanExec(TaskAttemptContext context, StorageManager sm, ScanNode plan,
+  public SeqScanExec(TaskAttemptContext context, ScanNode plan,
                      CatalogProtos.FragmentProto [] fragments) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema());
 
@@ -79,9 +82,8 @@ public class SeqScanExec extends PhysicalExec {
       String pathNameKey = "";
       if (fragments != null) {
         for (FragmentProto f : fragments) {
-          FileFragment fileFragement = FragmentConvertor.convert(
-              context.getConf(), plan.getTableDesc().getMeta().getStoreType(), f);
-          pathNameKey += fileFragement.getPath();
+          Fragment fragement = FragmentConvertor.convert(context.getConf(), f);
+          pathNameKey += fragement.getKey();
         }
       }
 
@@ -212,16 +214,26 @@ public class SeqScanExec extends PhysicalExec {
 
   private void initScanner(Schema projected) throws IOException {
     this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
+    TableMeta meta = null;
+    try {
+      meta = (TableMeta) plan.getTableDesc().getMeta().clone();
+    } catch (CloneNotSupportedException e) {
+      throw new RuntimeException(e);
+    }
+
+    // set system default properties
+    PlannerUtil.applySystemDefaultToTableProperties(context.getQueryContext(), meta);
+
     if (fragments != null) {
       if (fragments.length > 1) {
-        this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), plan.getTableDesc().getMeta(),
-            FragmentConvertor.<FileFragment>convert(context.getConf(), plan.getTableDesc().getMeta().getStoreType(),
-                fragments), projected
+        this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), meta,
+            FragmentConvertor.convert(context.getConf(), fragments), projected
         );
       } else {
-        this.scanner = StorageManager.getStorageManager(
-            context.getConf()).getScanner(plan.getTableDesc().getMeta(), plan.getPhysicalSchema(), fragments[0],
-            projected);
+        StorageManager storageManager = StorageManager.getStorageManager(
+            context.getConf(), plan.getTableDesc().getMeta().getStoreType());
+        this.scanner = storageManager.getScanner(meta,
+            plan.getPhysicalSchema(), fragments[0], projected);
       }
       scanner.init();
     }

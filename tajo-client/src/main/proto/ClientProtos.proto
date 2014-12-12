@@ -43,19 +43,22 @@ message CreateSessionRequest {
 }
 
 message CreateSessionResponse {
-  enum ResultState {
-      SUCCESS = 0;
-      FAILED = 1;
-  }
-  required ResultState state = 1;
+  required ResultCode resultCode = 1;
   optional SessionIdProto sessionId = 2;
-  optional string message = 3;
+  optional KeyValueSetProto sessionVars = 3;
+  optional string message = 4;
 }
 
 message UpdateSessionVariableRequest {
   optional SessionIdProto sessionId = 1;
-  optional KeyValueSetProto setVariables = 2;
+  optional KeyValueSetProto sessionVars = 2;
   repeated string unsetVariables = 3;
+}
+
+message SessionUpdateResponse {
+  required ResultCode resultCode = 1;
+  optional KeyValueSetProto sessionVars = 2;
+  optional string message = 3;
 }
 
 message SessionedStringProto {
@@ -71,8 +74,13 @@ message ExplainQueryResponse {
 message QueryRequest {
   optional SessionIdProto sessionId = 1;
   required string query = 2;
-  repeated KeyValueProto setVariables = 3;
+  repeated KeyValueProto sessionVars = 3;
   required bool isJson = 4;
+}
+
+message UpdateQueryResponse {
+  required RequestResult result = 1;
+  optional KeyValueSetProto sessionVars = 2;
 }
 
 message GetQueryResultRequest {
@@ -134,7 +142,7 @@ message SubmitQueryResponse {
   optional TableDescProto tableDesc = 8;
   optional int32 maxRowNum = 9;
 
-  optional KeyValueSetProto sessionVariables = 10;
+  optional KeyValueSetProto sessionVars = 10;
 }
 
 message GetQueryStatusResponse {

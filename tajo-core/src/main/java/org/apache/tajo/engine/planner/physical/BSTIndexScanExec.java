@@ -20,6 +20,7 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.Column;
@@ -38,13 +39,9 @@ import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
-import org.apache.tools.ant.taskdefs.Tar;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Map;
 import java.util.Set;
 
 public class BSTIndexScanExec extends PhysicalExec {
@@ -66,9 +63,14 @@ public class BSTIndexScanExec extends PhysicalExec {
   private TableStats inputStats;
 
   public BSTIndexScanExec(TaskAttemptContext context,
-                          StorageManager sm , IndexScanNode scanNode ,
+                          IndexScanNode scanNode ,
        FileFragment fragment, URI indexPrefix , Schema keySchema,
        SimplePredicate [] predicates) throws IOException {
+//=======
+//  public BSTIndexScanExec(TaskAttemptContext context, ScanNode scanNode ,
+//       FileFragment fragment, Path fileName , Schema keySchema,
+//       TupleComparator comparator , Datum[] datum) throws IOException {
+//>>>>>>> e05cd29886f9a9b177bf5b955dda494eebeb12ca
     super(context, scanNode.getInSchema(), scanNode.getOutSchema());
     this.scanNode = scanNode;
     this.qual = scanNode.getQual();
@@ -91,8 +93,13 @@ public class BSTIndexScanExec extends PhysicalExec {
     this.projector = new Projector(context, inSchema, outSchema, scanNode.getTargets());
 
     Path indexPath = new Path(indexPrefix.toString(), context.getUniqueKeyFromFragments());
-    this.reader = new BSTIndex(sm.getFileSystem().getConf()).
+    this.reader = new BSTIndex(context.getConf()).
         getIndexReader(indexPath, keySchema, comparator);
+//=======
+//    FileSystem fs = fileName.getFileSystem(context.getConf());
+//    this.reader = new BSTIndex(fs.getConf()).
+//        getIndexReader(fileName, keySchema, comparator);
+//>>>>>>> e05cd29886f9a9b177bf5b955dda494eebeb12ca
     this.reader.open();
   }
 

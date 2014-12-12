@@ -25,10 +25,16 @@ import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.util.TUtil;
 
 public final class SortNode extends UnaryNode implements Cloneable {
+  public static enum SortPurpose {
+    NORMAL,
+    STORAGE_SPECIFIED
+  }
 	@Expose private SortSpec [] sortKeys;
+  @Expose private SortPurpose sortPurpose;
 
   public SortNode(int pid) {
     super(pid, NodeType.SORT);
+    sortPurpose = SortPurpose.NORMAL;
   }
 
   public void setSortSpecs(SortSpec[] sortSpecs) {
@@ -65,8 +71,7 @@ public final class SortNode extends UnaryNode implements Cloneable {
     PlanString planStr = new PlanString(this);
     StringBuilder sb = new StringBuilder("Sort Keys: ");
     for (int i = 0; i < sortKeys.length; i++) {
-      sb.append(sortKeys[i].getSortKey().getSimpleName()).append(" ")
-          .append(sortKeys[i].isAscending() ? "asc" : "desc");
+      sb.append(sortKeys[i].toString());
       if( i < sortKeys.length - 1) {
         sb.append(",");
       }
@@ -78,8 +83,7 @@ public final class SortNode extends UnaryNode implements Cloneable {
   public String toString() {
     StringBuilder sb = new StringBuilder("Sort [key= ");
     for (int i = 0; i < sortKeys.length; i++) {    
-      sb.append(sortKeys[i].getSortKey().getQualifiedName()).append(" ")
-          .append(sortKeys[i].isAscending() ? "asc" : "desc");
+      sb.append(sortKeys[i].toString());
       if(i < sortKeys.length - 1) {
         sb.append(",");
       }
@@ -90,5 +94,13 @@ public final class SortNode extends UnaryNode implements Cloneable {
         + "\n\"in schema: " + getInSchema());
     return sb.toString()+"\n"
         + getChild().toString();
+  }
+
+  public SortPurpose getSortPurpose() {
+    return sortPurpose;
+  }
+
+  public void setSortPurpose(SortPurpose sortPurpose) {
+    this.sortPurpose = sortPurpose;
   }
 }

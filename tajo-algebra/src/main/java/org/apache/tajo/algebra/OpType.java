@@ -24,6 +24,9 @@ import java.lang.reflect.Type;
 
 public enum OpType {
 
+  // session statements
+  SetSession(SetSession.class),
+
   // relational operators
   Projection(Projection.class),
   Limit(Limit.class),

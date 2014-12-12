@@ -307,7 +307,7 @@ public class PartitionedTableRewriter implements RewriteRule {
 
       boolean sameVariable =
           EvalTreeUtil.findUniqueColumns(orEval.getLeftExpr())
-          .equals(EvalTreeUtil.findUniqueColumns(orEval.getRightExpr()));
+              .equals(EvalTreeUtil.findUniqueColumns(orEval.getRightExpr()));
 
       return indexable && sameVariable;
     } else {
