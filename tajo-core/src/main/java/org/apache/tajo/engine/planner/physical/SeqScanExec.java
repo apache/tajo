@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
@@ -38,6 +39,7 @@ import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.expr.FieldEval;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
@@ -212,15 +214,25 @@ public class SeqScanExec extends PhysicalExec {
 
   private void initScanner(Schema projected) throws IOException {
     this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
+    TableMeta meta = null;
+    try {
+      meta = (TableMeta) plan.getTableDesc().getMeta().clone();
+    } catch (CloneNotSupportedException e) {
+      throw new RuntimeException(e);
+    }
+
+    // set system default properties
+    PlannerUtil.applySystemDefaultToTableProperties(context.getQueryContext(), meta);
+
     if (fragments != null) {
       if (fragments.length > 1) {
-        this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), plan.getTableDesc().getMeta(),
+        this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), meta,
             FragmentConvertor.<FileFragment>convert(context.getConf(), plan.getTableDesc().getMeta().getStoreType(),
                 fragments), projected
         );
       } else {
         this.scanner = StorageManager.getStorageManager(
-            context.getConf()).getScanner(plan.getTableDesc().getMeta(), plan.getPhysicalSchema(), fragments[0],
+            context.getConf()).getScanner(meta, plan.getPhysicalSchema(), fragments[0],
             projected);
       }
       scanner.init();

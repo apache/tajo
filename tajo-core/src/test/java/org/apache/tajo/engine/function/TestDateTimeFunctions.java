@@ -21,7 +21,6 @@ package org.apache.tajo.engine.function;
 
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.engine.eval.ExprTestBase;
@@ -431,7 +430,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
     TimeZone.setDefault(TimeZone.getTimeZone("GMT-6"));
 
     QueryContext context = new QueryContext(getConf());
-    context.put(SessionVars.TZ, "GMT-6");
+    context.put(SessionVars.TIMEZONE, "GMT-6");
 
     try {
       Date expectedDate = new Date(System.currentTimeMillis());
@@ -455,7 +454,7 @@ public class TestDateTimeFunctions extends ExprTestBase {
     TimeZone.setDefault(TimeZone.getTimeZone("GMT-6"));
 
     QueryContext context = new QueryContext(getConf());
-    context.put(SessionVars.TZ, "GMT-6");
+    context.put(SessionVars.TIMEZONE, "GMT-6");
 
     try {
       Date expectedDate = new Date(System.currentTimeMillis());

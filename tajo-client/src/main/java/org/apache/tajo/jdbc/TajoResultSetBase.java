@@ -19,7 +19,6 @@
 package org.apache.tajo.jdbc;
 
 import org.apache.tajo.SessionVars;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
@@ -53,11 +52,11 @@ public abstract class TajoResultSetBase implements ResultSet {
 
     if (clientSideSessionVars != null) {
 
-      if (clientSideSessionVars.containsKey(SessionVars.TZ.name())) {
-        String timezoneId = clientSideSessionVars.get(SessionVars.TZ.name());
+      if (clientSideSessionVars.containsKey(SessionVars.TIMEZONE.name())) {
+        String timezoneId = clientSideSessionVars.get(SessionVars.TIMEZONE.name());
         this.timezone = TimeZone.getTimeZone(timezoneId);
       } else {
-        this.timezone = TimeZone.getTimeZone(TajoConstants.DEFAULT_SYSTEM_TIMEZONE);
+        this.timezone = TimeZone.getDefault();
       }
 
     }

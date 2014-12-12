@@ -20,6 +20,8 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1241: Change default client and table time zone behavior. (hyunsik)
+
     TAJO-1243: *-site.xml.template should have default configs commented out.
     (hyunsik)
 

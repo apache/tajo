@@ -33,6 +33,7 @@ Table of Contents:
    configuration
    tsql
    sql_language
+   time_zone
    functions
    table_management
    table_partitioning

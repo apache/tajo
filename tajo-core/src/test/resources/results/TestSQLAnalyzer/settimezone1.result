@@ -1,5 +1,5 @@
 {
-  "name": "TZ",
+  "name": "TIMEZONE",
   "value": "PDT",
   "OpType": "SetSession"
 }

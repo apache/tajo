@@ -71,7 +71,7 @@ public enum SessionVars implements ConfigKey {
   ON_ERROR_STOP(ConfVars.$CLI_ERROR_STOP, "tsql will exist if an error occurs.", CLI_SIDE_VAR),
 
   // Timezone & Date ----------------------------------------------------------
-  TZ(ConfVars.$TIMEZONE, "Sets timezone", CLI_SIDE_VAR),
+  TIMEZONE(ConfVars.$TIMEZONE, "Sets timezone", CLI_SIDE_VAR),
   DATE_ORDER(ConfVars.$DATE_ORDER, "date order (default is YMD)", CLI_SIDE_VAR),
 
   // Locales and Character set ------------------------------------------------

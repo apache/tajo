@@ -8,7 +8,7 @@ Available Session Variables:
 \set CLI_PAGING_ENABLED [true or false] - Enable paging of result display
 \set CLI_DISPLAY_ERROR_TRACE [true or false] - Enable display of error trace
 \set ON_ERROR_STOP [true or false] - tsql will exist if an error occurs.
-\set TZ [text value] - Sets timezone
+\set TIMEZONE [text value] - Sets timezone
 \set DATE_ORDER [text value] - date order (default is YMD)
 \set LANG [text value] - Language
 \set LC_ALL [text value] - String sort order
