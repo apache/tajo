@@ -21,11 +21,14 @@ package org.apache.tajo.storage;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.*;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -73,5 +76,87 @@ public class TestTupleComparator {
         new SortSpec[] {sortKey1, sortKey2});
     assertEquals(-1, tc.compare(tuple1, tuple2));
     assertEquals(1, tc.compare(tuple2, tuple1));
+  }
+
+  @Test
+  public void testNullFirst() throws Exception {
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("name", Type.TEXT);
+
+    VTuple tuple1 = new VTuple(2);
+    tuple1.put(0, new Int4Datum(1));
+    tuple1.put(1, new TextDatum("111"));
+
+    VTuple nullTuple = new VTuple(2);
+    nullTuple.put(0, new Int4Datum(2));
+    nullTuple.put(1, NullDatum.get());
+
+    VTuple tuple3 = new VTuple(2);
+    tuple3.put(0, new Int4Datum(3));
+    tuple3.put(1, new TextDatum("333"));
+
+    List<Tuple> tupleList = new ArrayList<Tuple>();
+    tupleList.add(tuple1);
+    tupleList.add(nullTuple);
+    tupleList.add(tuple3);
+
+    SortSpec sortSpecAsc = new SortSpec(schema.getColumn(1), true, true);
+    BaseTupleComparator ascComp = new BaseTupleComparator(schema, new SortSpec[]{sortSpecAsc});
+    Collections.sort(tupleList, ascComp);
+
+    assertEquals(nullTuple, tupleList.get(0));
+    assertEquals(tuple1, tupleList.get(1));
+    assertEquals(tuple3, tupleList.get(2));
+
+    SortSpec sortSpecDesc = new SortSpec(schema.getColumn(1), false, true);
+    BaseTupleComparator descComp = new BaseTupleComparator(schema, new SortSpec[]{sortSpecDesc});
+    Collections.sort(tupleList, descComp);
+
+    assertEquals(tuple3, tupleList.get(0));
+    assertEquals(tuple1, tupleList.get(1));
+    assertEquals(nullTuple, tupleList.get(2));
+  }
+
+  @Test
+  public void testNullLast() throws Exception {
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("name", Type.TEXT);
+
+    VTuple tuple1 = new VTuple(2);
+    tuple1.put(0, new Int4Datum(1));
+    tuple1.put(1, new TextDatum("111"));
+
+    VTuple nullTuple = new VTuple(2);
+    nullTuple.put(0, new Int4Datum(2));
+    nullTuple.put(1, NullDatum.get());
+
+    VTuple tuple3 = new VTuple(2);
+    tuple3.put(0, new Int4Datum(3));
+    tuple3.put(1, new TextDatum("333"));
+
+    List<Tuple> tupleList = new ArrayList<Tuple>();
+    tupleList.add(tuple1);
+    tupleList.add(nullTuple);
+    tupleList.add(tuple3);
+
+    SortSpec sortSpecAsc = new SortSpec(schema.getColumn(1), true, false);
+    BaseTupleComparator ascComp = new BaseTupleComparator(schema, new SortSpec[]{sortSpecAsc});
+
+    Collections.sort(tupleList, ascComp);
+
+    assertEquals(tuple1, tupleList.get(0));
+    assertEquals(tuple3, tupleList.get(1));
+    assertEquals(nullTuple, tupleList.get(2));
+
+    SortSpec sortSpecDesc = new SortSpec(schema.getColumn(1), false, false);
+    BaseTupleComparator descComp = new BaseTupleComparator(schema, new SortSpec[]{sortSpecDesc});
+
+    Collections.sort(tupleList, descComp);
+
+    assertEquals(nullTuple, tupleList.get(0));
+    assertEquals(tuple3, tupleList.get(1));
+    assertEquals(tuple1, tupleList.get(2));
   }
 }
