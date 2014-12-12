@@ -23,7 +23,6 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.TimestampDatum;
 import org.apache.tajo.engine.query.QueryContext;
@@ -856,7 +855,7 @@ public class TestSQLExpression extends ExprTestBase {
   @Test
   public void testCastWithNestedFunction() throws IOException {
     QueryContext context = new QueryContext(getConf());
-    context.put(SessionVars.TZ, "GMT-6");
+    context.put(SessionVars.TIMEZONE, "GMT-6");
     TimeZone tz = TimeZone.getTimeZone("GMT-6");
 
     int unixtime = 1389071574; // (int) (System.currentTimeMillis() / 1000);
@@ -868,7 +867,7 @@ public class TestSQLExpression extends ExprTestBase {
   @Test
   public void testCastFromTable() throws IOException {
     QueryContext queryContext = new QueryContext(getConf());
-    queryContext.put(SessionVars.TZ, "GMT-6");
+    queryContext.put(SessionVars.TIMEZONE, "GMT-6");
     TimeZone tz = TimeZone.getTimeZone("GMT-6");
 
     Schema schema = new Schema();

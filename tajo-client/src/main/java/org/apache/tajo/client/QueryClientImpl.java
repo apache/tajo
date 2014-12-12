@@ -37,6 +37,7 @@ import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.ServerCallable;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.ProtoUtil;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -140,12 +141,12 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public Boolean updateSessionVariables(Map<String, String> variables) throws ServiceException {
+  public Map<String, String> updateSessionVariables(Map<String, String> variables) throws ServiceException {
     return connection.updateSessionVariables(variables);
   }
 
   @Override
-  public Boolean unsetSessionVariables(List<String> variables) throws ServiceException {
+  public Map<String, String> unsetSessionVariables(List<String> variables) throws ServiceException {
     return connection.unsetSessionVariables(variables);
   }
 
@@ -181,7 +182,11 @@ public class QueryClientImpl implements QueryClient {
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
 
 
-        return tajoMasterService.submitQuery(null, builder.build());
+        SubmitQueryResponse response = tajoMasterService.submitQuery(null, builder.build());
+        if (response.getResultCode() == ResultCode.OK) {
+          connection.updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
+        }
+        return response;
       }
     }.withRetries();
   }
@@ -214,7 +219,11 @@ public class QueryClientImpl implements QueryClient {
     ClientProtos.SubmitQueryResponse response = executeQuery(sql);
 
     if (response.getResultCode() == ClientProtos.ResultCode.ERROR) {
-      throw new ServiceException(response.getErrorTrace());
+      if (response.hasErrorMessage()) {
+        throw new ServiceException(response.getErrorMessage());
+      } else if (response.hasErrorTrace()) {
+        throw new ServiceException(response.getErrorTrace());
+      }
     }
 
     QueryId queryId = new QueryId(response.getQueryId());
@@ -485,6 +494,7 @@ public class QueryClientImpl implements QueryClient {
         ClientProtos.UpdateQueryResponse response = tajoMasterService.updateQuery(null, builder.build());
 
         if (response.getResultCode() == ClientProtos.ResultCode.OK) {
+          connection.updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
           return true;
         } else {
           if (response.hasErrorMessage()) {

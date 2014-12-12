@@ -25,6 +25,9 @@ import java.util.Stack;
 
 public interface AlgebraVisitor<CONTEXT, RESULT> {
   // Relational Operators
+  RESULT visitSetSession(CONTEXT ctx, Stack<Expr> stack, SetSession expr) throws PlanningException;
+
+  // Relational Operators
   RESULT visitProjection(CONTEXT ctx, Stack<Expr> stack, Projection expr) throws PlanningException;
   RESULT visitLimit(CONTEXT ctx, Stack<Expr> stack, Limit expr) throws PlanningException;
   RESULT visitSort(CONTEXT ctx, Stack<Expr> stack, Sort expr) throws PlanningException;

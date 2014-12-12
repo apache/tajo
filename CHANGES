@@ -5,8 +5,14 @@ Release 0.9.1 - unreleased
 
   NEW FEATURES
 
+    TAJO-1238: Add SET SESSION and RESET statement. (hyunsik)
+
     TAJO-1222: DelimitedTextFile should be tolerant against parsing errors.
     (hyunsik)
+
+    TAJO-1131: Supports Inserting or Creating table into 
+    the HBase mapped table.(Hyoungjun Kim)
+
 
     TAJO-1026: Implement Query history persistency manager.(Hyoungjun Kim)
 
@@ -18,6 +24,14 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1241: Change default client and table time zone behavior. (hyunsik)
+
+    TAJO-1243: *-site.xml.template should have default configs commented out.
+    (hyunsik)
+
+    TAJO-1143: TajoMaster, TajoWorker, and TajoClient should have 
+    diagnosis phase at startup. (Jihun Kang via hyunsik)
+
     TAJO-1236: Remove slow 'new String' operation in parquet format. 
     (jinho)
 
@@ -25,6 +39,9 @@ Release 0.9.1 - unreleased
 
     TAJO-1213: Implement CatalogStore::updateTableStats. (jaehwa)
 
+    TAJO-1122: Refactor the tajo-storage project structure.
+    (Hyoungjun Kim)
+    
     TAJO-1165: Needs to show error messages on query_executor.jsp. 
     (Jihun Kang via jaehwa)
 
@@ -59,6 +76,8 @@ Release 0.9.1 - unreleased
     TAJO-1125: Separate logical plan and optimizer into a maven module.
     (hyunsik)
 
+    TAJO-1123: Use Fragment instead of FileFragment.(Hyoungjun Kim)
+
     TAJO-1092: Improve the function system to allow other function 
     implementation types. (hyunsik)
 
@@ -89,6 +108,14 @@ Release 0.9.1 - unreleased
 
 
   BUG FIXES
+
+    TAJO-1242: Json scanner can not read some case of trucated text. (jinho) 
+
+    TAJO-1239: ORDER BY with null column desc miss some data. 
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-1244: tajo.worker.tmpdir.locations should use a validator for a list 
+    of paths. (hyunsik)
 
     TAJO-1235: ByteBufLineReader can not read text line with CRLF.
     (jinho)
@@ -166,6 +193,9 @@ Release 0.9.1 - unreleased
 
   TASKS
 
+    TAJO-1233: Merge hbase_storage branch to the master branch. 
+    (Hyoungjun via hyunsik)
+ 
     TAJO-1229: rename tajo-yarn-pullserver to tajo-pullserver.
     (hyunsik)
 

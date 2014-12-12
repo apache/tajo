@@ -23,12 +23,15 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.plan.logical.InsertNode;
 import org.apache.tajo.plan.logical.PersistentStoreNode;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.Appender;
+import org.apache.tajo.storage.FileStorageManager;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.unit.StorageUnit;
@@ -78,30 +81,33 @@ public class StoreTableExec extends UnaryPhysicalExec {
   }
 
   public void openNewFile(int suffixId) throws IOException {
-    String prevFile = null;
+    Schema appenderSchema = (plan instanceof InsertNode) ? ((InsertNode) plan).getTableSchema() : outSchema;
 
-    lastFileName = context.getOutputPath();
-    if (suffixId > 0) {
-      prevFile = lastFileName.toString();
+    if (PlannerUtil.isFileStorageType(meta.getStoreType())) {
+      String prevFile = null;
 
-      lastFileName = new Path(lastFileName + "_" + suffixId);
-    }
+      lastFileName = context.getOutputPath();
 
-    if (plan instanceof InsertNode) {
-      InsertNode createTableNode = (InsertNode) plan;
-      appender = StorageManager.getStorageManager(context.getConf()).getAppender(meta,
-          createTableNode.getTableSchema(), context.getOutputPath());
+      if (suffixId > 0) {
+        prevFile = lastFileName.toString();
+        lastFileName = new Path(lastFileName + "_" + suffixId);
+      }
+
+      appender = ((FileStorageManager)StorageManager.getFileStorageManager(context.getConf()))
+          .getAppender(meta, appenderSchema, lastFileName);
+
+      if (suffixId > 0) {
+        LOG.info(prevFile + " exceeds " + SessionVars.MAX_OUTPUT_FILE_SIZE.keyname() + " (" + maxPerFileSize + " MB), " +
+            "The remain output will be written into " + lastFileName.toString());
+      }
     } else {
-      appender = StorageManager.getStorageManager(context.getConf()).getAppender(meta, outSchema, lastFileName);
+      appender = StorageManager.getStorageManager(context.getConf(), meta.getStoreType()).getAppender(
+          context.getQueryContext(),
+          context.getTaskId(), meta, appenderSchema, context.getQueryContext().getStagingDir());
     }
 
     appender.enableStats();
     appender.init();
-
-    if (suffixId > 0) {
-      LOG.info(prevFile + " exceeds " + SessionVars.MAX_OUTPUT_FILE_SIZE.keyname() + " (" + maxPerFileSize + " MB), " +
-          "The remain output will be written into " + lastFileName.toString());
-    }
   }
 
   /* (non-Javadoc)

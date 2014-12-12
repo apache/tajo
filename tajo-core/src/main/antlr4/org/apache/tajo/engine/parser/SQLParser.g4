@@ -43,10 +43,19 @@ explain_clause
   ;
 
 statement
-  : data_statement
+  : session_statement
+  | data_statement
   | data_change_statement
   | schema_statement
   | index_statement
+  ;
+
+session_statement
+  : SET CATALOG dbname = identifier
+  | SET TIME ZONE (TO | EQUAL)? (Character_String_Literal | signed_numerical_literal | DEFAULT)
+  | SET (SESSION)? name=identifier (TO | EQUAL)?
+    (Character_String_Literal | signed_numerical_literal | boolean_literal | DEFAULT)
+  | RESET name=identifier
   ;
 
 data_statement
@@ -89,11 +98,11 @@ if_exists
   ;
 
 create_table_statement
-  : CREATE EXTERNAL TABLE (if_not_exists)? table_name table_elements USING file_type=identifier
-    (param_clause)? (table_partitioning_clauses)? (LOCATION path=Character_String_Literal)
-  | CREATE TABLE (if_not_exists)? table_name table_elements (USING file_type=identifier)?
+  : CREATE EXTERNAL TABLE (if_not_exists)? table_name table_elements USING storage_type=identifier
+    (param_clause)? (table_partitioning_clauses)? (LOCATION path=Character_String_Literal)?
+  | CREATE TABLE (if_not_exists)? table_name table_elements (USING storage_type=identifier)?
     (param_clause)? (table_partitioning_clauses)? (AS query_expression)?
-  | CREATE TABLE (if_not_exists)? table_name (USING file_type=identifier)?
+  | CREATE TABLE (if_not_exists)? table_name (USING storage_type=identifier)?
     (param_clause)? (table_partitioning_clauses)? AS query_expression
   | CREATE TABLE (if_not_exists)? table_name LIKE like_table_name=table_name
   ;
@@ -221,6 +230,7 @@ nonreserved_keywords
   | ALTER
   | BETWEEN
   | BY
+  | CATALOG
   | CENTURY
   | CHARACTER
   | COALESCE
@@ -233,6 +243,7 @@ nonreserved_keywords
   | DAY
   | DEC
   | DECADE
+  | DEFAULT
   | DENSE_RANK
   | DOW
   | DOY
@@ -284,6 +295,7 @@ nonreserved_keywords
   | RANK
   | REGEXP
   | RENAME
+  | RESET
   | RLIKE
   | ROLLUP
   | ROW
@@ -291,6 +303,7 @@ nonreserved_keywords
   | ROW_NUMBER
   | SECOND
   | SET
+  | SESSION
   | SIMILAR
   | STDDEV_POP
   | STDDEV_SAMP
@@ -1559,7 +1572,7 @@ null_ordering
 
 insert_statement
   : INSERT (OVERWRITE)? INTO table_name (LEFT_PAREN column_name_list RIGHT_PAREN)? query_expression
-  | INSERT (OVERWRITE)? INTO LOCATION path=Character_String_Literal (USING file_type=identifier (param_clause)?)? query_expression
+  | INSERT (OVERWRITE)? INTO LOCATION path=Character_String_Literal (USING storage_type=identifier (param_clause)?)? query_expression
   ;
 
 /*

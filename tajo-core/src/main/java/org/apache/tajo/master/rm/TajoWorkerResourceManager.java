@@ -39,6 +39,7 @@ import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.querymaster.QueryInProgress;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.util.ApplicationIdUtils;
+import org.apache.tajo.util.StringUtils;
 
 import java.io.IOException;
 import java.util.*;

@@ -20,6 +20,7 @@ package org.apache.tajo.worker;
 
 import com.codahale.metrics.Gauge;
 import com.google.common.annotations.VisibleForTesting;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -43,6 +44,10 @@ import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.rule.EvaluationContext;
+import org.apache.tajo.rule.EvaluationFailedException;
+import org.apache.tajo.rule.SelfDiagnosisRuleEngine;
+import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.util.*;
 import org.apache.tajo.util.history.HistoryReader;
@@ -262,6 +267,8 @@ public class TajoWorker extends CompositeService {
     taskHistoryWriter.init(conf);
 
     historyReader = new HistoryReader(workerContext.getWorkerName(), this.systemConf);
+    
+    diagnoseTajoWorker();
   }
 
   private void initWorkerMetrics() {
@@ -314,6 +321,16 @@ public class TajoWorker extends CompositeService {
     if (systemConf.getBoolVar(ConfVars.WORKER_TEMPORAL_DIR_CLEANUP)) {
       getWorkerContext().cleanupTemporalDirectories();
     }
+  }
+  
+  private void diagnoseTajoWorker() throws EvaluationFailedException {
+    SelfDiagnosisRuleEngine ruleEngine = SelfDiagnosisRuleEngine.getInstance();
+    SelfDiagnosisRuleSession ruleSession = ruleEngine.newRuleSession();
+    EvaluationContext context = new EvaluationContext();
+    
+    context.addParameter(TajoConf.class.getName(), systemConf);
+    
+    ruleSession.withCategoryNames("base", "worker").fireRules(context);
   }
 
   private void startJvmPauseMonitor(){

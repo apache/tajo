@@ -23,11 +23,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.tajo.QueryId;
-import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.ipc.ClientProtos.ResultCode;
+import org.apache.tajo.ipc.ClientProtos.SessionUpdateResponse;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
@@ -35,12 +36,14 @@ import org.apache.tajo.rpc.ServerCallable;
 import org.apache.tajo.util.HAServiceUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.ProtoUtil;
 import org.jboss.netty.channel.ConnectTimeoutException;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -71,7 +74,7 @@ public class SessionConnection implements Closeable {
   private AtomicBoolean closed = new AtomicBoolean(false);
 
   /** session variable cache */
-  Map<String, String> clientSideSessionVars = new ConcurrentHashMap<String, String>();
+  private final Map<String, String> sessionVarsCache = new HashMap<String, String>();
 
 
   public SessionConnection(TajoConf conf) throws IOException {
@@ -111,7 +114,7 @@ public class SessionConnection implements Closeable {
   }
 
   public Map<String, String> getClientSideSessionVars() {
-    return Collections.unmodifiableMap(clientSideSessionVars);
+    return Collections.unmodifiableMap(sessionVarsCache);
   }
 
   public <T> T getStub(QueryId queryId, Class protocolClass, boolean asyncMode) throws NoSuchMethodException,
@@ -180,55 +183,60 @@ public class SessionConnection implements Closeable {
     }.withRetries();
   }
 
-  public Boolean updateSessionVariables(final Map<String, String> variables) throws ServiceException {
-    return new ServerCallable<Boolean>(connPool, getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
+  public Map<String, String> updateSessionVariables(final Map<String, String> variables) throws ServiceException {
+    return new ServerCallable<Map<String, String>>(connPool, getTajoMasterAddr(),
+        TajoMasterClientProtocol.class, false, true) {
 
-      public Boolean call(NettyClientBase client) throws ServiceException {
+      public Map<String, String> call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
-
-        // keep client-side session variables
-        for (Map.Entry<String, String> entry : variables.entrySet()) {
-          String key = entry.getKey();
-          if (SessionVars.exists(entry.getKey())) {
-            SessionVars configKey = SessionVars.get(key);
-            if (configKey.getMode() == SessionVars.VariableMode.CLI_SIDE_VAR) {
-              clientSideSessionVars.put(key, entry.getValue());
-            }
-          }
-        }
 
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
         KeyValueSet keyValueSet = new KeyValueSet();
         keyValueSet.putAll(variables);
         ClientProtos.UpdateSessionVariableRequest request = ClientProtos.UpdateSessionVariableRequest.newBuilder()
             .setSessionId(sessionId)
-            .setSetVariables(keyValueSet.getProto()).build();
+            .setSessionVars(keyValueSet.getProto()).build();
 
-        return tajoMasterService.updateSessionVariables(null, request).getValue();
+        SessionUpdateResponse response = tajoMasterService.updateSessionVariables(null, request);
+
+        if (response.getResultCode() == ResultCode.OK) {
+          updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
+          return Collections.unmodifiableMap(sessionVarsCache);
+        } else {
+          throw new ServiceException(response.getMessage());
+        }
       }
     }.withRetries();
   }
 
-  public Boolean unsetSessionVariables(final List<String> variables)  throws ServiceException {
-    return new ServerCallable<Boolean>(connPool, getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
+  public Map<String, String> unsetSessionVariables(final List<String> variables)  throws ServiceException {
+    return new ServerCallable<Map<String, String>>(connPool, getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
 
-      public Boolean call(NettyClientBase client) throws ServiceException {
+      public Map<String, String> call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
-
-        // Remove matched session vars
-        for (String key : variables) {
-          if (clientSideSessionVars.containsKey(key)) {
-            clientSideSessionVars.remove(key);
-          }
-        }
 
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
         ClientProtos.UpdateSessionVariableRequest request = ClientProtos.UpdateSessionVariableRequest.newBuilder()
             .setSessionId(sessionId)
             .addAllUnsetVariables(variables).build();
-        return tajoMasterService.updateSessionVariables(null, request).getValue();
+
+        SessionUpdateResponse response = tajoMasterService.updateSessionVariables(null, request);
+
+        if (response.getResultCode() == ResultCode.OK) {
+          updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
+          return Collections.unmodifiableMap(sessionVarsCache);
+        } else {
+          throw new ServiceException(response.getMessage());
+        }
       }
     }.withRetries();
+  }
+
+  void updateSessionVarsCache(Map<String, String> variables) {
+    synchronized (sessionVarsCache) {
+      this.sessionVarsCache.clear();
+      this.sessionVarsCache.putAll(variables);
+    }
   }
 
   public String getSessionVariable(final String varname) throws ServiceException {
@@ -236,9 +244,11 @@ public class SessionConnection implements Closeable {
 
       public String call(NettyClientBase client) throws ServiceException {
 
-        // If a desired variable is client side one and exists in the cache, immediately return the variable.
-        if (clientSideSessionVars.containsKey(varname)) {
-          return clientSideSessionVars.get(varname);
+        synchronized (sessionVarsCache) {
+          // If a desired variable is client side one and exists in the cache, immediately return the variable.
+          if (sessionVarsCache.containsKey(varname)) {
+            return sessionVarsCache.get(varname);
+          }
         }
 
         checkSessionAndGet(client);
@@ -261,6 +271,12 @@ public class SessionConnection implements Closeable {
     }.withRetries();
   }
 
+  public Map<String, String> getCachedAllSessionVariables() {
+    synchronized (sessionVarsCache) {
+      return Collections.unmodifiableMap(sessionVarsCache);
+    }
+  }
+
   public Map<String, String> getAllSessionVariables() throws ServiceException {
     return new ServerCallable<Map<String, String>>(connPool, getTajoMasterAddr(), TajoMasterClientProtocol.class,
         false, true) {
@@ -269,8 +285,7 @@ public class SessionConnection implements Closeable {
         checkSessionAndGet(client);
 
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
-        KeyValueSet keyValueSet = new KeyValueSet(tajoMasterService.getAllSessionVariables(null, sessionId));
-        return keyValueSet.getAllKeyValus();
+        return ProtoUtil.convertToMap(tajoMasterService.getAllSessionVariables(null, sessionId));
       }
     }.withRetries();
   }
@@ -336,9 +351,10 @@ public class SessionConnection implements Closeable {
 
       CreateSessionResponse response = tajoMasterService.createSession(null, builder.build());
 
-      if (response.getState() == CreateSessionResponse.ResultState.SUCCESS) {
+      if (response.getResultCode() == ResultCode.OK) {
 
         sessionId = response.getSessionId();
+        updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
         if (LOG.isDebugEnabled()) {
           LOG.debug(String.format("Got session %s as a user '%s'.", sessionId.getId(), userInfo.getUserName()));
         }

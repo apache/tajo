@@ -169,9 +169,9 @@ public class QueryTestCaseBase {
   private static String currentDatabase;
   private static Set<String> createdTableGlobalSet = new HashSet<String>();
   // queries and results directory corresponding to subclass class.
-  private Path currentQueryPath;
-  private Path currentResultPath;
-  private Path currentDatasetPath;
+  protected Path currentQueryPath;
+  protected Path currentResultPath;
+  protected Path currentDatasetPath;
 
   // for getting a method name
   @Rule public TestName name = new TestName();
@@ -303,7 +303,7 @@ public class QueryTestCaseBase {
     return executeFile(getMethodName() + ".sql");
   }
 
-  private String getMethodName() {
+  protected String getMethodName() {
     String methodName = name.getMethodName();
     // In the case of parameter execution name's pattern is methodName[0]
     if (methodName.endsWith("]")) {
@@ -330,7 +330,13 @@ public class QueryTestCaseBase {
     if (parsedResults.size() > 1) {
       assertNotNull("This script \"" + queryFileName + "\" includes two or more queries");
     }
-    ResultSet result = client.executeQueryAndGetResult(parsedResults.get(0).getHistoryStatement());
+
+    int idx = 0;
+    for (; idx < parsedResults.size() - 1; idx++) {
+      client.executeQueryAndGetResult(parsedResults.get(idx).getHistoryStatement()).close();
+    }
+
+    ResultSet result = client.executeQueryAndGetResult(parsedResults.get(idx).getHistoryStatement());
     assertNotNull("Query succeeded test", result);
     return result;
   }

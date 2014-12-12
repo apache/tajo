@@ -24,6 +24,9 @@
 # Hadoop home. Required
 # export HADOOP_HOME=
 
+# HBase home. optional
+# export HBASE_HOME=
+
 # The java implementation to use.  Required.
 # export JAVA_HOME=/usr/java/default
 

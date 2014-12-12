@@ -1,0 +1,2 @@
+# Specify a path for rule provider
+org.apache.tajo.rule.base.BaseRuleProvider
