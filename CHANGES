@@ -5,6 +5,15 @@ Release 0.9.1 - unreleased
 
   NEW FEATURES
 
+    TAJO-1238: Add SET SESSION and RESET statement. (hyunsik)
+
+    TAJO-1222: DelimitedTextFile should be tolerant against parsing errors.
+    (hyunsik)
+
+    TAJO-1131: Supports Inserting or Creating table into 
+    the HBase mapped table.(Hyoungjun Kim)
+
+
     TAJO-1026: Implement Query history persistency manager.(Hyoungjun Kim)
 
     TAJO-233: Support PostgreSQL CatalogStore. (Jihun Kang via hyunsik)
@@ -15,7 +24,26 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
-    TAJO-1165: Needs to show error messages on query_executor.jsp. (Jihun Kang via jaehwa)
+    TAJO-1241: Change default client and table time zone behavior. (hyunsik)
+
+    TAJO-1243: *-site.xml.template should have default configs commented out.
+    (hyunsik)
+
+    TAJO-1143: TajoMaster, TajoWorker, and TajoClient should have 
+    diagnosis phase at startup. (Jihun Kang via hyunsik)
+
+    TAJO-1236: Remove slow 'new String' operation in parquet format. 
+    (jinho)
+
+    TAJO-1230: Disable ipv6 support on JVM. (Jihun Kang via hyunsik)
+
+    TAJO-1213: Implement CatalogStore::updateTableStats. (jaehwa)
+
+    TAJO-1122: Refactor the tajo-storage project structure.
+    (Hyoungjun Kim)
+    
+    TAJO-1165: Needs to show error messages on query_executor.jsp. 
+    (Jihun Kang via jaehwa)
 
     TAJO-1204: Remove unused ServerName class. (DaeMyung Kang via jaehwa)
 
@@ -48,6 +76,8 @@ Release 0.9.1 - unreleased
     TAJO-1125: Separate logical plan and optimizer into a maven module.
     (hyunsik)
 
+    TAJO-1123: Use Fragment instead of FileFragment.(Hyoungjun Kim)
+
     TAJO-1092: Improve the function system to allow other function 
     implementation types. (hyunsik)
 
@@ -79,6 +109,40 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1239 ORDER BY with null column desc miss some data. 
+    (Hyoungjun Kim via hyunsik)
+
+    TAJO-1244: tajo.worker.tmpdir.locations should use a validator for a list 
+    of paths. (hyunsik)
+
+    TAJO-1235: ByteBufLineReader can not read text line with CRLF.
+    (jinho)
+
+    TAJO-1237: Fix missing maven-module for pullserver. (jinho)
+
+    TAJO-1196: Unit test hangs occasionally and randomly. (jihoon)
+
+    TAJO-1234: Rearrange timezone in date/time types. (hyunsik)
+
+    TAJO-1231: Implicit table properties in session are not stored in 
+    table property. (hyunsik)
+
+    TAJO-1194: 'INSERT OVERWRITE .. SELECT' does not remove existing data 
+    when result is empty. (jaehwa)
+
+    TAJO-1191: Change DateDatum timezone to UTC. (Jaewoong Jung via hyunsik)
+
+    TAJO-1224: When there is no projected column, json scan can be hang. 
+    (hyunsik) 
+
+    TAJO-1220: Implement createStatement() and setEscapeProcessing() in 
+    JdbcConnection. (YeonSu Han via hyunsik)
+
+    TAJO-1183: Keep command execution even with errors. (Jaewoong Jung via 
+    hyunsik)
+
+    TAJO-1190: INSERT INTO to partition tables may cause NPE. (hyunsik)
+
     TAJO-1211: Staging directory for CTAS and INSERT should be in 
     the output dir. (hyunsik)
 
@@ -87,7 +151,8 @@ Release 0.9.1 - unreleased
 
     TAJO-1119: JDBC driver should support TIMESTAMP type. (jaehwa)
 
-    TAJO-1166: S3 related storage causes compilation error in Hadoop 2.6.0-SNAPSHOT. (jaehwa)
+    TAJO-1166: S3 related storage causes compilation error in Hadoop 
+    2.6.0-SNAPSHOT. (jaehwa)
 
     TAJO-1208: Failure of create table using textfile on hivemeta.
     (jinho)
@@ -125,6 +190,12 @@ Release 0.9.1 - unreleased
 
 
   TASKS
+
+    TAJO-1233: Merge hbase_storage branch to the master branch. 
+    (Hyoungjun via hyunsik)
+ 
+    TAJO-1229: rename tajo-yarn-pullserver to tajo-pullserver.
+    (hyunsik)
 
     TAJO-1157: Required Java version in tutorial doc needs to be updated.
     (hyunsik)

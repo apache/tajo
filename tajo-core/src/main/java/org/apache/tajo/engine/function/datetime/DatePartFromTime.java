@@ -18,19 +18,26 @@
 
 package org.apache.tajo.engine.function.datetime;
 
+import com.google.gson.annotations.Expose;
+import org.apache.tajo.OverridableConf;
+import org.apache.tajo.SessionVars;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TimeDatum;
-import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
+import org.apache.tajo.plan.expr.FunctionEval;
+import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.datetime.DateTimeConstants;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
+
+import java.util.TimeZone;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.FLOAT8;
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
@@ -44,6 +51,9 @@ import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
     paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT, TajoDataTypes.Type.TIME})}
 )
 public class DatePartFromTime extends GeneralFunction {
+  @Expose  private TimeZone timezone;
+  private DatePartExtractorFromTime extractor = null;
+
   public DatePartFromTime() {
     super(new Column[] {
         new Column("target", FLOAT8),
@@ -51,7 +61,11 @@ public class DatePartFromTime extends GeneralFunction {
     });
   }
 
-  private DatePartExtractorFromTime extractor = null;
+  @Override
+  public void init(OverridableConf context, FunctionEval.ParamType [] types) {
+    String timezoneId = context.get(SessionVars.TIMEZONE, TajoConstants.DEFAULT_SYSTEM_TIMEZONE);
+    timezone = TimeZone.getTimeZone(timezoneId);
+  }
 
   @Override
   public Datum eval(Tuple params) {
@@ -93,7 +107,7 @@ public class DatePartFromTime extends GeneralFunction {
     }
 
     TimeMeta tm = time.toTimeMeta();
-    DateTimeUtil.toUserTimezone(tm);
+    DateTimeUtil.toUserTimezone(tm, timezone);
     return extractor.extract(tm);
   }
 

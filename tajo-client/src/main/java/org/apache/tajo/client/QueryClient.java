@@ -42,6 +42,8 @@ public interface QueryClient extends Closeable {
 
   public SessionIdProto getSessionId();
 
+  public Map<String, String> getClientSideSessionVars();
+
   public String getBaseDatabase();
 
   @Override
@@ -61,9 +63,9 @@ public interface QueryClient extends Closeable {
 
   public Boolean selectDatabase(final String databaseName) throws ServiceException;
 
-  public Boolean updateSessionVariables(final Map<String, String> variables) throws ServiceException;
+  public Map<String, String> updateSessionVariables(final Map<String, String> variables) throws ServiceException;
 
-  public Boolean unsetSessionVariables(final List<String> variables) throws ServiceException;
+  public Map<String, String> unsetSessionVariables(final List<String> variables) throws ServiceException;
 
   public String getSessionVariable(final String varname) throws ServiceException;
 

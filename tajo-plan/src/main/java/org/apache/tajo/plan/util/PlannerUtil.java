@@ -21,25 +21,42 @@ package org.apache.tajo.plan.util;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.tajo.OverridableConf;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaUtil;
-import org.apache.tajo.catalog.SortSpec;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.plan.visitor.ExplainLogicalPlanVisitor;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
+import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 
+import java.io.IOException;
 import java.util.*;
 
+import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType.CSV;
+import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType.TEXTFILE;
+
 public class PlannerUtil {
+
+  public static boolean checkIfSetSession(LogicalNode node) {
+    LogicalNode baseNode = node;
+    if (node instanceof LogicalRootNode) {
+      baseNode = ((LogicalRootNode) node).getChild();
+    }
+
+    return baseNode.getType() == NodeType.SET_SESSION;
+
+  }
 
   public static boolean checkIfDDLPlan(LogicalNode node) {
     LogicalNode baseNode = node;
@@ -775,5 +792,138 @@ public class PlannerUtil {
     }
 
     return explains.toString();
+  }
+
+  public static void applySessionToTableProperties(OverridableConf sessionVars,
+                                                   StoreType storeType,
+                                                   KeyValueSet tableProperties) {
+    if (storeType == CSV || storeType == TEXTFILE) {
+      if (sessionVars.containsKey(SessionVars.NULL_CHAR)) {
+        tableProperties.set(StorageConstants.TEXT_NULL, sessionVars.get(SessionVars.NULL_CHAR));
+      }
+
+      if (sessionVars.containsKey(SessionVars.TIMEZONE)) {
+        tableProperties.set(StorageConstants.TIMEZONE, sessionVars.get(SessionVars.TIMEZONE));
+      }
+    }
+  }
+
+  /**
+   * This method sets a set of table properties by System default configs.
+   * These properties are implicitly used to read or write rows in Table.
+   * Don't use this method for TableMeta to be stored in Catalog.
+   *
+   * @param systemConf System configuration
+   * @param meta TableMeta to be set
+   */
+  public static void applySystemDefaultToTableProperties(OverridableConf systemConf, TableMeta meta) {
+    if (!meta.containsOption(StorageConstants.TIMEZONE)) {
+      meta.putOption(StorageConstants.TIMEZONE, systemConf.get(SessionVars.TIMEZONE));
+    }
+  }
+
+  public static boolean isFileStorageType(String storageType) {
+    if (storageType.equalsIgnoreCase("hbase")) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  public static boolean isFileStorageType(StoreType storageType) {
+    if (storageType== StoreType.HBASE) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  public static StoreType getStoreType(LogicalPlan plan) {
+    LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+    NodeType nodeType = rootNode.getChild().getType();
+    if (nodeType == NodeType.CREATE_TABLE) {
+      return ((CreateTableNode)rootNode.getChild()).getStorageType();
+    } else if (nodeType == NodeType.INSERT) {
+      return ((InsertNode)rootNode.getChild()).getStorageType();
+    } else {
+      return null;
+    }
+  }
+
+  public static String getStoreTableName(LogicalPlan plan) {
+    LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+    NodeType nodeType = rootNode.getChild().getType();
+    if (nodeType == NodeType.CREATE_TABLE) {
+      return ((CreateTableNode)rootNode.getChild()).getTableName();
+    } else if (nodeType == NodeType.INSERT) {
+      return ((InsertNode)rootNode.getChild()).getTableName();
+    } else {
+      return null;
+    }
+  }
+
+  public static TableDesc getTableDesc(CatalogService catalog, LogicalNode node) throws IOException {
+    if (node.getType() == NodeType.CREATE_TABLE) {
+      return createTableDesc((CreateTableNode)node);
+    }
+    String tableName = null;
+    InsertNode insertNode = null;
+    if (node.getType() == NodeType.INSERT) {
+      insertNode = (InsertNode)node;
+      tableName = insertNode.getTableName();
+    } else {
+      return null;
+    }
+
+    if (tableName != null) {
+      String[] tableTokens = tableName.split("\\.");
+      if (tableTokens.length >= 2) {
+        if (catalog.existsTable(tableTokens[0], tableTokens[1])) {
+          return catalog.getTableDesc(tableTokens[0], tableTokens[1]);
+        }
+      }
+    } else {
+      if (insertNode.getPath() != null) {
+        //insert ... location
+        return createTableDesc(insertNode);
+      }
+    }
+    return null;
+  }
+
+  private static TableDesc createTableDesc(CreateTableNode createTableNode) {
+    TableMeta meta = new TableMeta(createTableNode.getStorageType(), createTableNode.getOptions());
+
+    TableDesc tableDescTobeCreated =
+        new TableDesc(
+            createTableNode.getTableName(),
+            createTableNode.getTableSchema(),
+            meta,
+            createTableNode.getPath() != null ? createTableNode.getPath().toUri() : null);
+
+    tableDescTobeCreated.setExternal(createTableNode.isExternal());
+
+    if (createTableNode.hasPartition()) {
+      tableDescTobeCreated.setPartitionMethod(createTableNode.getPartitionMethod());
+    }
+
+    return tableDescTobeCreated;
+  }
+
+  private static TableDesc createTableDesc(InsertNode insertNode) {
+    TableMeta meta = new TableMeta(insertNode.getStorageType(), insertNode.getOptions());
+
+    TableDesc tableDescTobeCreated =
+        new TableDesc(
+            insertNode.getTableName(),
+            insertNode.getTableSchema(),
+            meta,
+            insertNode.getPath() != null ? insertNode.getPath().toUri() : null);
+
+    if (insertNode.hasPartition()) {
+      tableDescTobeCreated.setPartitionMethod(insertNode.getPartitionMethod());
+    }
+
+    return tableDescTobeCreated;
   }
 }

@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.DataTypeUtil;
@@ -282,6 +283,8 @@ public class CatalogUtil {
       return StoreType.TEXTFILE;
     } else if (typeStr.equalsIgnoreCase(StoreType.JSON.name())) {
       return StoreType.JSON;
+    } else if (typeStr.equalsIgnoreCase(StoreType.HBASE.name())) {
+      return StoreType.HBASE;
     } else {
       return null;
     }
@@ -822,6 +825,12 @@ public class CatalogUtil {
   public static final String ENABLE_DICTIONARY    = "parquet.enable.dictionary";
   public static final String VALIDATION           = "parquet.validation";
 
+  /**
+   * Create new table property with default configs. It is used to make TableMeta to be stored in Catalog.
+   *
+   * @param type StoreType
+   * @return Table properties
+   */
   public static KeyValueSet newPhysicalProperties(StoreType type) {
     KeyValueSet options = new KeyValueSet();
     if (StoreType.CSV == type || StoreType.TEXTFILE == type) {

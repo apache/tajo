@@ -72,8 +72,8 @@ public class TajoClientUtil {
       // non-forward query
       // select * from table1 [limit 10]
       int fetchRowNum = conf.getIntVar(TajoConf.ConfVars.$RESULT_SET_FETCH_ROWNUM);
-      if (response.hasSessionVariables()) {
-        for (PrimitiveProtos.KeyValueProto eachKeyValue: response.getSessionVariables().getKeyvalList()) {
+      if (response.hasSessionVars()) {
+        for (PrimitiveProtos.KeyValueProto eachKeyValue: response.getSessionVars().getKeyvalList()) {
           if (eachKeyValue.getKey().equals(SessionVars.FETCH_ROWNUM.keyname())) {
             fetchRowNum = Integer.parseInt(eachKeyValue.getValue());
           }
@@ -88,7 +88,8 @@ public class TajoClientUtil {
       return new TajoMemoryResultSet(
           new Schema(serializedResultSet.getSchema()),
           serializedResultSet.getSerializedTuplesList(),
-          response.getMaxRowNum());
+          response.getMaxRowNum(),
+          client.getClientSideSessionVars());
     }
   }
 }

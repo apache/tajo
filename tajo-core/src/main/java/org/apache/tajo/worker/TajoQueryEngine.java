@@ -30,12 +30,10 @@ import java.io.IOException;
 
 public class TajoQueryEngine {
 
-  private final StorageManager storageManager;
   private final PhysicalPlanner phyPlanner;
 
   public TajoQueryEngine(TajoConf conf) throws IOException {
-    this.storageManager = StorageManager.getStorageManager(conf);
-    this.phyPlanner = new PhysicalPlannerImpl(conf, storageManager);
+    this.phyPlanner = new PhysicalPlannerImpl(conf);
   }
   
   public PhysicalExec createPlan(TaskAttemptContext ctx, LogicalNode plan)

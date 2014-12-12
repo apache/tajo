@@ -24,6 +24,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.master.DefaultFragmentScheduleAlgorithm.FragmentsPerDisk;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.TUtil;
 
@@ -101,9 +102,12 @@ public class GreedyFragmentScheduleAlgorithm implements FragmentScheduleAlgorith
   @Override
   public void addFragment(FragmentPair fragmentPair) {
     String[] hosts = fragmentPair.getLeftFragment().getHosts();
-    int[] diskIds = fragmentPair.getLeftFragment().getDiskIds();
+    int[] diskIds = null;
+    if (fragmentPair.getLeftFragment() instanceof FileFragment) {
+      diskIds = ((FileFragment)fragmentPair.getLeftFragment()).getDiskIds();
+    }
     for (int i = 0; i < hosts.length; i++) {
-      addFragment(hosts[i], diskIds[i], fragmentPair);
+      addFragment(hosts[i], diskIds != null ? diskIds[i] : -1, fragmentPair);
     }
     totalFragmentNum++;
   }
@@ -276,23 +280,27 @@ public class GreedyFragmentScheduleAlgorithm implements FragmentScheduleAlgorith
 
   public void removeFragment(FragmentPair fragmentPair) {
     String [] hosts = fragmentPair.getLeftFragment().getHosts();
-    int[] diskIds = fragmentPair.getLeftFragment().getDiskIds();
+    int[] diskIds = null;
+    if (fragmentPair.getLeftFragment() instanceof FileFragment) {
+      diskIds = ((FileFragment)fragmentPair.getLeftFragment()).getDiskIds();
+    }
     for (int i = 0; i < hosts.length; i++) {
+      int diskId = diskIds == null ? -1 : diskIds[i];
       String normalizedHost = NetUtils.normalizeHost(hosts[i]);
       Map<Integer, FragmentsPerDisk> diskFragmentMap = fragmentHostMapping.get(normalizedHost);
 
       if (diskFragmentMap != null) {
-        FragmentsPerDisk fragmentsPerDisk = diskFragmentMap.get(diskIds[i]);
+        FragmentsPerDisk fragmentsPerDisk = diskFragmentMap.get(diskId);
         if (fragmentsPerDisk != null) {
           boolean isRemoved = fragmentsPerDisk.removeFragmentPair(fragmentPair);
           if (isRemoved) {
             if (fragmentsPerDisk.size() == 0) {
-              diskFragmentMap.remove(diskIds[i]);
+              diskFragmentMap.remove(diskId);
               if (diskFragmentMap.size() == 0) {
                 fragmentHostMapping.remove(normalizedHost);
               }
             }
-            HostAndDisk hostAndDisk = new HostAndDisk(normalizedHost, diskIds[i]);
+            HostAndDisk hostAndDisk = new HostAndDisk(normalizedHost, diskId);
             if (totalHostPriority.containsKey(hostAndDisk)) {
               PrioritizedHost prioritizedHost = totalHostPriority.get(hostAndDisk);
               updateHostPriority(prioritizedHost.hostAndDisk, prioritizedHost.priority-1);

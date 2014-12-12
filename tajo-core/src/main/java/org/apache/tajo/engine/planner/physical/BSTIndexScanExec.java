@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.Schema;
@@ -47,8 +48,7 @@ public class BSTIndexScanExec extends PhysicalExec {
 
   private float progress;
 
-  public BSTIndexScanExec(TaskAttemptContext context,
-                          StorageManager sm , ScanNode scanNode ,
+  public BSTIndexScanExec(TaskAttemptContext context, ScanNode scanNode ,
        FileFragment fragment, Path fileName , Schema keySchema,
        TupleComparator comparator , Datum[] datum) throws IOException {
     super(context, scanNode.getInSchema(), scanNode.getOutSchema());
@@ -61,7 +61,8 @@ public class BSTIndexScanExec extends PhysicalExec {
     this.fileScanner.init();
     this.projector = new Projector(context, inSchema, outSchema, scanNode.getTargets());
 
-    this.reader = new BSTIndex(sm.getFileSystem().getConf()).
+    FileSystem fs = fileName.getFileSystem(context.getConf());
+    this.reader = new BSTIndex(fs.getConf()).
         getIndexReader(fileName, keySchema, comparator);
     this.reader.open();
   }

@@ -226,6 +226,21 @@ HDFS_LIBRARY_PATH="${HADOOP_HOME}/lib/native/"
 ##############################################################################
 
 ##############################################################################
+# Set HBase CLASSPATH
+##############################################################################
+if [ "$HBASE_HOME" != "" ]; then
+  for f in ${HBASE_HOME}/lib/hbase-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+  for f in ${HBASE_HOME}/lib/htrace-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+fi
+##############################################################################
+# HBase Configuration End
+##############################################################################
+
+##############################################################################
 # Find and Set Hive CLASSPATH
 ##############################################################################
 
@@ -333,6 +348,9 @@ fi
 if [ "$TAJO_POLICYFILE" = "" ]; then
   TAJO_POLICYFILE="tajo-policy.xml"
 fi
+
+# Disable IPv6 Support for network performance
+TAJO_OPTS="$TAJO_OPTS -Djava.net.preferIPv4Stack=true"
 
 # figure out which class to run
 if [ "$COMMAND" = "classpath" ] ; then

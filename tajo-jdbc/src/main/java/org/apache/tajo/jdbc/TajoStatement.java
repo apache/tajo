@@ -311,10 +311,11 @@ public class TajoStatement implements Statement {
     throw new SQLFeatureNotSupportedException("setCursorName not supported");
   }
 
+  /**
+   * Not necessary.
+   */
   @Override
-  public void setEscapeProcessing(boolean enable) throws SQLException {
-    throw new SQLFeatureNotSupportedException("setEscapeProcessing not supported");
-  }
+  public void setEscapeProcessing(boolean enable) throws SQLException {}
 
   @Override
   public void setFetchDirection(int direction) throws SQLException {

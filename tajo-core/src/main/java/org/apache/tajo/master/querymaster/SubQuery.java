@@ -36,7 +36,7 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -59,10 +59,11 @@ import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttem
 import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
 import org.apache.tajo.master.container.TajoContainer;
 import org.apache.tajo.master.container.TajoContainerId;
+import org.apache.tajo.storage.FileStorageManager;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.storage.StorageManager;
-import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.history.QueryUnitHistory;
@@ -96,7 +97,6 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private TableStats resultStatistics;
   private TableStats inputStatistics;
   private EventHandler<Event> eventHandler;
-  private final StorageManager sm;
   private AbstractTaskScheduler taskScheduler;
   private QueryMasterTask.QueryMasterTaskContext context;
   private final List<String> diagnostics = new ArrayList<String>();
@@ -286,12 +286,10 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private AtomicInteger completeReportReceived = new AtomicInteger(0);
   private SubQueryHistory finalSubQueryHistory;
 
-  public SubQuery(QueryMasterTask.QueryMasterTaskContext context, MasterPlan masterPlan,
-                  ExecutionBlock block, StorageManager sm) {
+  public SubQuery(QueryMasterTask.QueryMasterTaskContext context, MasterPlan masterPlan, ExecutionBlock block) {
     this.context = context;
     this.masterPlan = masterPlan;
     this.block = block;
-    this.sm = sm;
     this.eventHandler = context.getEventHandler();
 
     ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
@@ -509,10 +507,6 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     return this.priority;
   }
 
-  public StorageManager getStorageManager() {
-    return sm;
-  }
-  
   public ExecutionBlockId getId() {
     return block.getId();
   }
@@ -677,14 +671,14 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
 
     DataChannel channel = masterPlan.getOutgoingChannels(getId()).get(0);
-    // get default or store type
-    CatalogProtos.StoreType storeType = CatalogProtos.StoreType.CSV; // default setting
 
     // if store plan (i.e., CREATE or INSERT OVERWRITE)
-    StoreTableNode storeTableNode = PlannerUtil.findTopNode(getBlock().getPlan(), NodeType.STORE);
-    if (storeTableNode != null) {
-      storeType = storeTableNode.getStorageType();
+    StoreType storeType = PlannerUtil.getStoreType(masterPlan.getLogicalPlan());
+    if (storeType == null) {
+      // get default or store type
+      storeType = StoreType.CSV;
     }
+
     schema = channel.getSchema();
     meta = CatalogUtil.newTableMeta(storeType, new KeyValueSet());
     inputStatistics = statsArray[0];
@@ -1043,7 +1037,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       ScanNode scan = scans[0];
       TableDesc table = subQuery.context.getTableDescMap().get(scan.getCanonicalName());
 
-      Collection<FileFragment> fragments;
+      Collection<Fragment> fragments;
       TableMeta meta = table.getMeta();
 
       // Depending on scanner node's type, it creates fragments. If scan is for
@@ -1052,10 +1046,13 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       // span a number of blocks or possibly consists of a number of files.
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
         // After calling this method, partition paths are removed from the physical plan.
-        fragments = Repartitioner.getFragmentsFromPartitionedTable(subQuery.getStorageManager(), scan, table);
+        FileStorageManager storageManager =
+            (FileStorageManager)StorageManager.getFileStorageManager(subQuery.getContext().getConf());
+        fragments = Repartitioner.getFragmentsFromPartitionedTable(storageManager, scan, table);
       } else {
-        Path inputPath = new Path(table.getPath());
-        fragments = subQuery.getStorageManager().getSplits(scan.getCanonicalName(), meta, table.getSchema(), inputPath);
+        StorageManager storageManager =
+            StorageManager.getStorageManager(subQuery.getContext().getConf(), meta.getStoreType());
+        fragments = storageManager.getSplits(scan.getCanonicalName(), table, scan);
       }
 
       SubQuery.scheduleFragments(subQuery, fragments);
@@ -1073,27 +1070,27 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
   }
 
-  public static void scheduleFragment(SubQuery subQuery, FileFragment fragment) {
+  public static void scheduleFragment(SubQuery subQuery, Fragment fragment) {
     subQuery.taskScheduler.handle(new FragmentScheduleEvent(TaskSchedulerEvent.EventType.T_SCHEDULE,
         subQuery.getId(), fragment));
   }
 
 
-  public static void scheduleFragments(SubQuery subQuery, Collection<FileFragment> fragments) {
-    for (FileFragment eachFragment : fragments) {
+  public static void scheduleFragments(SubQuery subQuery, Collection<Fragment> fragments) {
+    for (Fragment eachFragment : fragments) {
       scheduleFragment(subQuery, eachFragment);
     }
   }
 
-  public static void scheduleFragments(SubQuery subQuery, Collection<FileFragment> leftFragments,
-                                       Collection<FileFragment> broadcastFragments) {
-    for (FileFragment eachLeafFragment : leftFragments) {
+  public static void scheduleFragments(SubQuery subQuery, Collection<Fragment> leftFragments,
+                                       Collection<Fragment> broadcastFragments) {
+    for (Fragment eachLeafFragment : leftFragments) {
       scheduleFragment(subQuery, eachLeafFragment, broadcastFragments);
     }
   }
 
   public static void scheduleFragment(SubQuery subQuery,
-                                      FileFragment leftFragment, Collection<FileFragment> rightFragments) {
+                                      Fragment leftFragment, Collection<Fragment> rightFragments) {
     subQuery.taskScheduler.handle(new FragmentScheduleEvent(TaskSchedulerEvent.EventType.T_SCHEDULE,
         subQuery.getId(), leftFragment, rightFragments));
   }

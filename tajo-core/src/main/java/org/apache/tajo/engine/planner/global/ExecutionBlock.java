@@ -82,6 +82,8 @@ public class ExecutionBlock {
       } else if (node instanceof TableSubQueryNode) {
         TableSubQueryNode subQuery = (TableSubQueryNode) node;
         s.add(s.size(), subQuery.getSubQuery());
+      } else if (node instanceof StoreTableNode) {
+        store = (StoreTableNode)node;
       }
     }
   }

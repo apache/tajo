@@ -32,28 +32,28 @@ public class TestIntervalType extends ExprTestBase {
     // http://www.postgresql.org/docs/8.2/static/functions-datetime.html
     testSimpleEval("select date '2001-09-28' + 7", new String[]{"2001-10-05"});
     testSimpleEval("select date '2001-09-28' + interval '1 hour'",
-        new String[]{"2001-09-28 01:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"2001-09-28 01:00:00"});
 
     testSimpleEval("select date '2001-09-28' + time '03:00'",
-        new String[]{"2001-09-28 03:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"2001-09-28 03:00:00"});
     testSimpleEval("select time '03:00' + date '2001-09-28'",
-        new String[]{"2001-09-28 03:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"2001-09-28 03:00:00"});
     testSimpleEval("select interval '1 day' + interval '1 hour'", new String[]{"1 day 01:00:00"});
 
     testSimpleEval("select timestamp '2001-09-28 01:00' + interval '23 hours'",
-        new String[]{"2001-09-29 00:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"2001-09-29 00:00:00"});
 
-    testSimpleEval("select time '01:00' + interval '3 hours'", new String[]{"04:00:00" + getUserTimeZoneDisplay()});
+    testSimpleEval("select time '01:00' + interval '3 hours'", new String[]{"04:00:00"});
 
     testSimpleEval("select date '2001-10-01' - date '2001-09-28'", new String[]{"3"});
     testSimpleEval("select date '2001-10-01' - 7", new String[]{"2001-09-24"});
     testSimpleEval("select date '2001-09-28' - interval '1 hour'",
-        new String[]{"2001-09-27 23:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"2001-09-27 23:00:00"});
 
     testSimpleEval("select time '05:00' - time '03:00'", new String[]{"02:00:00"});
-    testSimpleEval("select time '05:00' - interval '2 hours'", new String[]{"03:00:00" + getUserTimeZoneDisplay()});
+    testSimpleEval("select time '05:00' - interval '2 hours'", new String[]{"03:00:00"});
     testSimpleEval("select timestamp '2001-09-28 23:00' - interval '23 hours'",
-        new String[]{"2001-09-28 00:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"2001-09-28 00:00:00"});
 
     testSimpleEval("select interval '1 day' - interval '1 hour'", new String[]{"23:00:00"});
 
@@ -67,32 +67,32 @@ public class TestIntervalType extends ExprTestBase {
   @Test
   public void testCaseByCase() throws Exception {
     testSimpleEval("select date '2001-08-28' + interval '10 day 1 hour'",
-        new String[]{"2001-09-07 01:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"2001-09-07 01:00:00"});
     testSimpleEval("select interval '10 day 01:00:00' + date '2001-08-28'",
-        new String[]{"2001-09-07 01:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"2001-09-07 01:00:00"});
     testSimpleEval("select time '10:20:30' + interval '1 day 01:00:00'",
-        new String[]{"11:20:30" + getUserTimeZoneDisplay()});
+        new String[]{"11:20:30"});
     testSimpleEval("select interval '1 day 01:00:00' + time '10:20:30'",
-        new String[]{"11:20:30" + getUserTimeZoneDisplay()});
+        new String[]{"11:20:30"});
     testSimpleEval("select time '10:20:30' - interval '1 day 01:00:00'",
-        new String[]{"09:20:30" + getUserTimeZoneDisplay()});
+        new String[]{"09:20:30"});
 
     testSimpleEval("select (interval '1 month 20 day' + interval '50 day')", new String[]{"1 month 70 days"});
     testSimpleEval("select date '2013-01-01' + interval '1 month 70 day'",
-        new String[]{"2013-04-12 00:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"2013-04-12 00:00:00"});
     testSimpleEval("select date '2013-01-01' + (interval '1 month 20 day' + interval '50 day')",
-        new String[]{"2013-04-12 00:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"2013-04-12 00:00:00"});
     testSimpleEval("select interval '1 month 70 day' + date '2013-01-01'",
-        new String[]{"2013-04-12 00:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"2013-04-12 00:00:00"});
     testSimpleEval("select date '2013-01-01' - interval '1 month 70 day'",
-        new String[]{"2012-09-22 00:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"2012-09-22 00:00:00"});
 
     testSimpleEval("select timestamp '2001-09-28 23:00' - interval '1 month 2 day 10:20:30'",
-        new String[]{"2001-08-26 12:39:30" + getUserTimeZoneDisplay()});
+        new String[]{"2001-08-26 12:39:30"});
     testSimpleEval("select timestamp '2001-09-28 23:00' + interval '1 month 2 day 10:20:30'",
-        new String[]{"2001-10-31 09:20:30" + getUserTimeZoneDisplay()});
+        new String[]{"2001-10-31 09:20:30"});
     testSimpleEval("select interval '1 month 2 day 10:20:30' + timestamp '2001-09-28 23:00'",
-        new String[]{"2001-10-31 09:20:30" + getUserTimeZoneDisplay()});
+        new String[]{"2001-10-31 09:20:30"});
 
 
     testSimpleEval("select interval '5 month' / 3", new String[]{"1 month 20 days"});
@@ -104,13 +104,13 @@ public class TestIntervalType extends ExprTestBase {
     testSimpleEval("select interval '3 year 5 month 1 hour' / 1.5", new String[]{"2 years 3 months 10 days 00:40:00"});
 
     testSimpleEval("select date '2001-09-28' - time '03:00'",
-        new String[]{"2001-09-27 21:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"2001-09-27 21:00:00"});
 
     testSimpleEval("select date '2014-03-20' + interval '1 day'",
-        new String[]{"2014-03-21 00:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"2014-03-21 00:00:00"});
 
     testSimpleEval("select date '2014-03-20' - interval '1 day'",
-        new String[]{"2014-03-19 00:00:00" + getUserTimeZoneDisplay()});
+        new String[]{"2014-03-19 00:00:00"});
   }
 
   @Test

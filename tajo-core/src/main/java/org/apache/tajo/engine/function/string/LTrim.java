@@ -20,6 +20,7 @@ package org.apache.tajo.engine.function.string;
 
 import com.google.gson.annotations.Expose;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
@@ -57,7 +58,8 @@ public class LTrim extends GeneralFunction {
     });
   }
 
-  public void init(FunctionEval.ParamType[] paramTypes) {
+  @Override
+  public void init(OverridableConf context, FunctionEval.ParamType[] paramTypes) {
     if (paramTypes.length == 2) {
       hasTrimCharacters = true;
     }

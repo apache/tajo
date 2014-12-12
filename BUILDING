@@ -20,7 +20,7 @@ Maven main modules:
          - tajo-rpc
          - tajo-catalog
          - tajo-storage
-         - tajo-yarn-pullserver
+         - tajo-pullserver
          - tajo-core
          - tajo-client
          - tajo-jdbc
@@ -44,6 +44,8 @@ Maven build goals:
   * Use -Dtar to create a TAR with the distribution (using -Pdist)
   * Use -Dhadoop.version to build with the specific hadoop version (-Dhadoop.version=2.5.1)
     * Currently, 2.3.0 or higher are supported.
+  * Use -Dhbase.version to build with the specific hbase version (-Dhbase.version=0.98.7-hadoop2)
+    * Currently, 0.98.x-hadoop2 or higher are tested.
 
  Tests options:
   * Use -DskipTests to skip tests when running the following Maven goals:

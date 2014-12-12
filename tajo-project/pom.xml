@@ -36,6 +36,7 @@
     <hadoop.version>2.5.1</hadoop.version>
     <protobuf.version>2.5.0</protobuf.version>
     <tajo.version>0.9.1-SNAPSHOT</tajo.version>
+    <hbase.version>0.98.7-hadoop2</hbase.version>
     <tajo.root>${project.parent.relativePath}/..</tajo.root>
     <extra.source.path>src/main/hadoop-${hadoop.version}</extra.source.path>
   </properties>
@@ -87,7 +88,7 @@
       <id>ereisman</id>
       <name>Eli Reisman</name>
       <email>ereisman@apache.org</email>
-      <organization>Hortonworks</organization>
+      <organization>Etsy</organization>
       <roles>
         <role>PMC</role>
       </roles>
@@ -136,7 +137,7 @@
       <id>jghoman</id>
       <name>Jakob Homan</name>
       <email>jghoman@apache.org</email>
-      <organization>LinkedIn</organization>
+      <organization>Microsoft</organization>
       <roles>
         <role>PMC</role>
       </roles>
@@ -166,7 +167,7 @@
       <id>mzhou</id>
       <name>Min Zhou</name>
       <email>mzhou@apache.org</email>
-      <organization>LinkedIn</organization>
+      <organization>Tango Me</organization>
       <roles>
         <role>Committer</role>
       </roles>
@@ -196,7 +197,7 @@
       <id>rsumbaly</id>
       <name>Roshan Sumbaly</name>
       <email>rsumbaly@apache.org</email>
-      <organization>LinkedIn</organization>
+      <organization>Coursera</organization>
       <roles>
         <role>PMC</role>
       </roles>
@@ -236,7 +237,7 @@
     </contributor>
     <contributor>
       <name>David Chen</name>
-      <organization>LinkedIn</organization>
+      <organization>Google</organization>
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
@@ -743,10 +744,26 @@
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-storage</artifactId>
         <version>${tajo.version}</version>
+        <type>pom</type>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
-        <artifactId>tajo-yarn-pullserver</artifactId>
+        <artifactId>tajo-storage-common</artifactId>
+        <version>${tajo.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tajo</groupId>
+        <artifactId>tajo-storage-hdfs</artifactId>
+        <version>${tajo.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tajo</groupId>
+        <artifactId>tajo-storage-hbase</artifactId>
+        <version>${tajo.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tajo</groupId>
+        <artifactId>tajo-pullserver</artifactId>
         <version>${tajo.version}</version>
       </dependency>
       <dependency>

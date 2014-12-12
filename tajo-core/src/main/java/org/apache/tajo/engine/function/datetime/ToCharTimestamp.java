@@ -18,6 +18,10 @@
 
 package org.apache.tajo.engine.function.datetime;
 
+import com.google.gson.annotations.Expose;
+import org.apache.tajo.OverridableConf;
+import org.apache.tajo.SessionVars;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
@@ -33,6 +37,8 @@ import org.apache.tajo.util.datetime.DateTimeFormat;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
+import java.util.TimeZone;
+
 import static org.apache.tajo.common.TajoDataTypes.Type.TEXT;
 import static org.apache.tajo.common.TajoDataTypes.Type.TIMESTAMP;
 
@@ -45,6 +51,8 @@ import static org.apache.tajo.common.TajoDataTypes.Type.TIMESTAMP;
   paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TIMESTAMP, TajoDataTypes.Type.TEXT})}
 )
 public class ToCharTimestamp extends GeneralFunction {
+  @Expose private TimeZone timezone;
+
   public ToCharTimestamp() {
     super(new Column[] {
         new Column("timestamp", TIMESTAMP),
@@ -53,7 +61,9 @@ public class ToCharTimestamp extends GeneralFunction {
   }
 
   @Override
-  public void init(FunctionEval.ParamType[] paramTypes) {
+  public void init(OverridableConf context, FunctionEval.ParamType[] paramTypes) {
+    String timezoneId = context.get(SessionVars.TIMEZONE, TajoConstants.DEFAULT_SYSTEM_TIMEZONE);
+    timezone = TimeZone.getTimeZone(timezoneId);
   }
 
   @Override
@@ -63,10 +73,10 @@ public class ToCharTimestamp extends GeneralFunction {
     }
 
     TimestampDatum valueDatum = (TimestampDatum) params.get(0);
-    TimeMeta tm = valueDatum.toTimeMeta();
-    DateTimeUtil.toUserTimezone(tm);
-
     Datum pattern = params.get(1);
+
+    TimeMeta tm = valueDatum.toTimeMeta();
+    DateTimeUtil.toUserTimezone(tm, timezone);
 
     return DatumFactory.createText(DateTimeFormat.to_char(tm, pattern.asChars()));
   }
