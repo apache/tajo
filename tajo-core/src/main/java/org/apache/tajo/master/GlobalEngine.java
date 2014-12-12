@@ -233,6 +233,7 @@ public class GlobalEngine extends AbstractService {
         } else {
           responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
           responseBuilder.setResult(buildRequestResult(ResultCode.ERROR, "database \"" + databaseName + "\" does not exists.", null));
+          responseBuilder.setSessionVars(ProtoUtil.convertFromMap(session.getAllVariables()));
           return responseBuilder.build();
         }
 
@@ -361,6 +362,7 @@ public class GlobalEngine extends AbstractService {
       response = submitForwardQuery(session, queryContext, sql, jsonExpr, rootNode, responseBuilder);
     }
     if (response == null) {
+      responseBuilder.setSessionVars(ProtoUtil.convertFromMap(session.getAllVariables()));
       response = responseBuilder.build();
     }
     return response;

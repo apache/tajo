@@ -149,22 +149,16 @@ public class LogicalPlan {
     return attachSeqIdToGeneratedColumnName(prefix).toLowerCase();
   }
 
-  public String generateUniqueColumnName(Expr expr) {
-    return generateUniqueColumnName(expr, false);
-  }
-
   /**
    * It generates an unique column name from Expr. It is usually used for an expression or predicate without
    * a specified name (i.e., alias).
    * Here, some expressions require to be identified with their names in the future.
    * For example, expressions must be identifiable with their names when getting targets in {@link LogicalPlanner#visitCreateIndex}.
    */
-  public String generateUniqueColumnName(Expr expr, boolean identifiable) {
+  public String generateUniqueColumnName(Expr expr) {
     String generatedName;
     if (expr.getType() == OpType.Column) {
       generatedName = ((ColumnReferenceExpr) expr).getCanonicalName();
-    } else if (identifiable) {
-      generatedName = generateUniqueIdentifiableColumnName(expr);
     } else { // if a generated column name
       generatedName = attachSeqIdToGeneratedColumnName(getGeneratedPrefixFromExpr(expr));
     }
@@ -434,7 +428,6 @@ public class LogicalPlan {
     private final Map<NodeType, LogicalNode> nodeTypeToNodeMap = TUtil.newHashMap();
     private final Map<String, LogicalNode> exprToNodeMap = TUtil.newHashMap();
     final NamedExprsManager namedExprsMgr;
-    private boolean needIdentifiableTargets = false;
 
     private LogicalNode currentNode;
     private LogicalNode latestNode;
@@ -453,14 +446,6 @@ public class LogicalPlan {
     public QueryBlock(String blockName) {
       this.blockName = blockName;
       this.namedExprsMgr = new NamedExprsManager(LogicalPlan.this, this);
-    }
-
-    public void setNeedIdentifiableTargets(boolean need) {
-      this.needIdentifiableTargets = need;
-    }
-
-    public boolean isNeedIdentifiableTargets() {
-      return this.needIdentifiableTargets;
     }
 
     public String getName() {

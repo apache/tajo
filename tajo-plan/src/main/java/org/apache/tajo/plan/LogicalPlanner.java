@@ -399,15 +399,15 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       // Get all projecting references
       if (namedExpr.hasAlias()) {
         NamedExpr aliasedExpr = new NamedExpr(normalizedExprList[i].baseExpr, namedExpr.getAlias());
-        referenceNames[i] = block.namedExprsMgr.addNamedExpr(aliasedExpr, block.isNeedIdentifiableTargets());
+        referenceNames[i] = block.namedExprsMgr.addNamedExpr(aliasedExpr);
       } else {
-        referenceNames[i] = block.namedExprsMgr.addExpr(normalizedExprList[i].baseExpr, block.isNeedIdentifiableTargets());
+        referenceNames[i] = block.namedExprsMgr.addExpr(normalizedExprList[i].baseExpr);
       }
 
       // Add sub-expressions (i.e., aggregation part and scalar part) from dissected parts.
-      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].aggExprs, block.isNeedIdentifiableTargets());
-      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs, block.isNeedIdentifiableTargets());
-      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].windowAggExprs, block.isNeedIdentifiableTargets());
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].aggExprs);
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs);
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].windowAggExprs);
 
       windowSpecReferencesList.addAll(normalizedExprList[i].windowSpecs);
     }
@@ -779,9 +779,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       ////////////////////////////////////////////////////////
     } else {
       ExprNormalizedResult normalizedResult = normalizer.normalize(context, limit.getFetchFirstNum());
-      String referName = block.namedExprsMgr.addExpr(normalizedResult.baseExpr, false);
-      block.namedExprsMgr.addNamedExprArray(normalizedResult.aggExprs, false);
-      block.namedExprsMgr.addNamedExprArray(normalizedResult.scalarExprs, false);
+      String referName = block.namedExprsMgr.addExpr(normalizedResult.baseExpr);
+      block.namedExprsMgr.addNamedExprArray(normalizedResult.aggExprs);
+      block.namedExprsMgr.addNamedExprArray(normalizedResult.scalarExprs);
 
       ////////////////////////////////////////////////////////
       // Visit and Build Child Plan
@@ -822,9 +822,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       normalizedExprList[i] = normalizer.normalize(context, sortSpecs[i].getKey());
     }
     for (int i = 0; i < sortKeyNum; i++) {
-      referNames[i] = block.namedExprsMgr.addExpr(normalizedExprList[i].baseExpr, false);
-      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].aggExprs, false);
-      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs, false);
+      referNames[i] = block.namedExprsMgr.addExpr(normalizedExprList[i].baseExpr);
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].aggExprs);
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs);
     }
 
     ////////////////////////////////////////////////////////
@@ -881,9 +881,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock block = context.queryBlock;
 
     ExprNormalizedResult normalizedResult = normalizer.normalize(context, expr.getQual());
-    String referName = block.namedExprsMgr.addExpr(normalizedResult.baseExpr, false);
-    block.namedExprsMgr.addNamedExprArray(normalizedResult.aggExprs, false);
-    block.namedExprsMgr.addNamedExprArray(normalizedResult.scalarExprs, false);
+    String referName = block.namedExprsMgr.addExpr(normalizedResult.baseExpr);
+    block.namedExprsMgr.addNamedExprArray(normalizedResult.aggExprs);
+    block.namedExprsMgr.addNamedExprArray(normalizedResult.scalarExprs);
 
     ////////////////////////////////////////////////////////
     // Visit and Build Child Plan
@@ -932,9 +932,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     String [] groupingKeyRefNames = new String[groupingKeyNum];
     for (int i = 0; i < groupingKeyNum; i++) {
-      groupingKeyRefNames[i] = block.namedExprsMgr.addExpr(normalizedResults[i].baseExpr, false);
-      block.namedExprsMgr.addNamedExprArray(normalizedResults[i].aggExprs, false);
-      block.namedExprsMgr.addNamedExprArray(normalizedResults[i].scalarExprs, false);
+      groupingKeyRefNames[i] = block.namedExprsMgr.addExpr(normalizedResults[i].baseExpr);
+      block.namedExprsMgr.addNamedExprArray(normalizedResults[i].aggExprs);
+      block.namedExprsMgr.addNamedExprArray(normalizedResults[i].scalarExprs);
     }
 
     ////////////////////////////////////////////////////////
@@ -1044,7 +1044,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     QueryBlock block = context.queryBlock;
 
     ExprNormalizedResult normalizedResult = normalizer.normalize(context, selection.getQual());
-    block.namedExprsMgr.addExpr(normalizedResult.baseExpr, false);
+    block.namedExprsMgr.addExpr(normalizedResult.baseExpr);
     if (normalizedResult.aggExprs.size() > 0 || normalizedResult.scalarExprs.size() > 0) {
       throw new VerifyException("Filter condition cannot include aggregation function");
     }
@@ -1085,7 +1085,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     if (join.hasQual()) {
       ExprNormalizedResult normalizedResult = normalizer.normalize(context, join.getQual(), true);
-      block.namedExprsMgr.addExpr(normalizedResult.baseExpr, false);
+      block.namedExprsMgr.addExpr(normalizedResult.baseExpr);
       if (normalizedResult.aggExprs.size() > 0 || normalizedResult.scalarExprs.size() > 0) {
         throw new VerifyException("Filter condition cannot include aggregation function");
       }
@@ -1952,11 +1952,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     for (int i = 0; i < sortKeyNum; i++) {
       // even if base expressions don't have their name,
       // reference names should be identifiable for the later sort spec creation.
-      referNames[i] = block.namedExprsMgr.addExpr(normalizedExprList[i].baseExpr, true);
-      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].aggExprs,
-          context.queryBlock.isNeedIdentifiableTargets());
-      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs,
-          context.queryBlock.isNeedIdentifiableTargets());
+      referNames[i] = block.namedExprsMgr.addExpr(normalizedExprList[i].baseExpr);
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].aggExprs);
+      block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs);
     }
 
     Collection<RelationNode> relations = block.getRelations();
