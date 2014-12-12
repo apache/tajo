@@ -34,6 +34,8 @@ import org.junit.experimental.categories.Category;
 import java.sql.ResultSet;
 import java.util.TimeZone;
 
+import static org.junit.Assert.assertEquals;
+
 @Category(IntegrationTest.class)
 public class TestSortQuery extends QueryTestCaseBase {
 
@@ -194,6 +196,43 @@ public class TestSortQuery extends QueryTestCaseBase {
     } finally {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "0");
       executeString("DROP TABLE nullsort PURGE;").close();
+    }
+  }
+
+  @Test
+  public final void testSortOnNullColumn2() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("name", Type.TEXT);
+    String[] data = new String[]{ "1|111", "2|\\N", "3|333" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select * from table11 order by name asc");
+      String ascExpected = "id,name\n" +
+          "-------------------------------\n" +
+          "1,111\n" +
+          "3,333\n" +
+          "2,null\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+
+      res = executeString("select * from table11 order by name desc");
+      String descExpected = "id,name\n" +
+          "-------------------------------\n" +
+          "2,null\n" +
+          "3,333\n" +
+          "1,111\n";
+
+      assertEquals(descExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
     }
   }
 
