@@ -188,6 +188,9 @@ Release 0.9.1 - unreleased
 
   TASKS
 
+    TAJO-1233: Merge hbase_storage branch to the master branch. 
+    (Hyoungjun via hyunsik)
+ 
     TAJO-1229: rename tajo-yarn-pullserver to tajo-pullserver.
     (hyunsik)
 
