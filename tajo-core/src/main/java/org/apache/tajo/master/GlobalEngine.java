@@ -214,7 +214,6 @@ public class GlobalEngine extends AbstractService {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
     SubmitQueryResponse.Builder responseBuilder = SubmitQueryResponse.newBuilder();
-    SubmitQueryResponse response = null;
     responseBuilder.setIsForwarded(false);
     responseBuilder.setUserName(queryContext.get(SessionVars.USERNAME));
 
@@ -232,7 +231,8 @@ public class GlobalEngine extends AbstractService {
           session.selectDatabase(setSessionNode.getValue());
         } else {
           responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-          responseBuilder.setResult(buildRequestResult(ResultCode.ERROR, "database \"" + databaseName + "\" does not exists.", null));
+          responseBuilder.setResult(
+              buildRequestResult(ResultCode.ERROR, "database \"" + databaseName + "\" does not exists.", null));
           responseBuilder.setSessionVars(ProtoUtil.convertFromMap(session.getAllVariables()));
           return responseBuilder.build();
         }
@@ -256,7 +256,7 @@ public class GlobalEngine extends AbstractService {
         if (rootNode.getChild().getType() == NodeType.CREATE_INDEX) {
           checkIndexExistence(queryContext, (CreateIndexNode) rootNode.getChild());
         }
-        response = submitForwardQuery(session, queryContext, sql, jsonExpr, rootNode, responseBuilder);
+        responseBuilder = submitForwardQuery(session, queryContext, sql, jsonExpr, rootNode, responseBuilder);
       } else {
         responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
         responseBuilder.setResult(buildOkRequestResult());
@@ -359,16 +359,14 @@ public class GlobalEngine extends AbstractService {
       context.getSystemMetrics().counter("Query", "numDMLQuery").inc();
       hookManager.doHooks(queryContext, plan);
 
-      response = submitForwardQuery(session, queryContext, sql, jsonExpr, rootNode, responseBuilder);
+      responseBuilder = submitForwardQuery(session, queryContext, sql, jsonExpr, rootNode, responseBuilder);
     }
-    if (response == null) {
-      responseBuilder.setSessionVars(ProtoUtil.convertFromMap(session.getAllVariables()));
-      response = responseBuilder.build();
-    }
-    return response;
+
+    responseBuilder.setSessionVars(ProtoUtil.convertFromMap(session.getAllVariables()));
+    return responseBuilder.build();
   }
 
-  private SubmitQueryResponse submitForwardQuery(Session session, QueryContext queryContext, String sql,
+  private SubmitQueryResponse.Builder submitForwardQuery(Session session, QueryContext queryContext, String sql,
                                                          String jsonExpr, LogicalRootNode rootNode,
                                                          SubmitQueryResponse.Builder responseBuilder) throws Exception {
     QueryJobManager queryJobManager = this.context.getQueryJobManager();
@@ -395,8 +393,7 @@ public class GlobalEngine extends AbstractService {
     responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
     LOG.info("Query is forwarded to " + queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
 
-    responseBuilder.setSessionVars(ProtoUtil.convertFromMap(session.getAllVariables()));
-    return responseBuilder.build();
+    return responseBuilder;
   }
 
   private void insertNonFromQuery(QueryContext queryContext, InsertNode insertNode, SubmitQueryResponse.Builder responseBuilder)
