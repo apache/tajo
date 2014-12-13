@@ -28,7 +28,6 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.planner.physical.PhysicalPlanUtil;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.engine.planner.physical.SeqScanExec;
 import org.apache.tajo.engine.query.QueryContext;
@@ -36,6 +35,8 @@ import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -43,7 +44,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class NonForwardQueryResultFileScanner implements NonForwardQueryResultScanner {
-  private static final int MAX_FILE_NUM_PER_SCAN = 100;
+  private static final int MAX_FRAGMENT_NUM_PER_SCAN = 100;
 
   private QueryId queryId;
   private String sessionId;
@@ -56,7 +57,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   private TajoConf tajoConf;
   private ScanNode scanNode;
 
-  private int currentFileIndex = 0;
+  private int currentFragmentIndex = 0;
 
   public NonForwardQueryResultFileScanner(TajoConf tajoConf, String sessionId,
                                       QueryId queryId,
@@ -73,38 +74,36 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     this.rowEncoder =  RowStoreUtil.createEncoder(tableDesc.getLogicalSchema());
   }
 
-  @Override
   public void init() throws IOException {
     initSeqScanExec();
   }
 
   private void initSeqScanExec() throws IOException {
-    FragmentProto[] fragments = PhysicalPlanUtil.getNonZeroLengthDataFiles(tajoConf, tableDesc,
-        currentFileIndex, MAX_FILE_NUM_PER_SCAN);
-    if (fragments != null && fragments.length > 0) {
+    List<Fragment> fragments = StorageManager.getStorageManager(tajoConf, tableDesc.getMeta().getStoreType())
+        .getNonForwardSplit(tableDesc, currentFragmentIndex, MAX_FRAGMENT_NUM_PER_SCAN);
+
+    if (fragments != null && !fragments.isEmpty()) {
+      FragmentProto[] fragmentProtos = FragmentConvertor.toFragmentProtoArray(fragments.toArray(new Fragment[]{}));
       this.taskContext = new TaskAttemptContext(
           new QueryContext(tajoConf), null,
           new QueryUnitAttemptId(new QueryUnitId(new ExecutionBlockId(queryId, 1), 0), 0),
-          fragments, null);
+          fragmentProtos, null);
 
       try {
         // scanNode must be clone cause SeqScanExec change target in the case of a partitioned table.
-        scanExec = new SeqScanExec(taskContext,
-            StorageManager.getStorageManager(tajoConf), (ScanNode)scanNode.clone(), fragments);
+        scanExec = new SeqScanExec(taskContext, (ScanNode)scanNode.clone(), fragmentProtos);
       } catch (CloneNotSupportedException e) {
         throw new IOException(e.getMessage(), e);
       }
       scanExec.init();
-      currentFileIndex += fragments.length;
+      currentFragmentIndex += fragments.size();
     }
   }
 
-  @Override
   public QueryId getQueryId() {
     return queryId;
   }
 
-  @Override
   public String getSessionId() {
     return sessionId;
   }
@@ -113,17 +112,10 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     this.scanExec = scanExec;
   }
 
-  @Override
   public TableDesc getTableDesc() {
     return tableDesc;
   }
-  
-  @Override
-  public Schema getLogicalSchema() {
-    return tableDesc.getLogicalSchema();
-  }
 
-  @Override
   public void close() throws Exception {
     if (scanExec != null) {
       scanExec.close();
@@ -131,7 +123,6 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     }
   }
 
-  @Override
   public List<ByteString> getNextRows(int fetchRowNum) throws IOException {
     List<ByteString> rows = new ArrayList<ByteString>();
     if (scanExec == null) {
@@ -173,5 +164,10 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     }
 
     return rows;
+  }
+
+  @Override
+  public Schema getLogicalSchema() {
+    return tableDesc.getLogicalSchema();
   }
 }

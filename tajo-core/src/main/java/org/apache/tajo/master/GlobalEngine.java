@@ -295,7 +295,6 @@ public class GlobalEngine extends AbstractService {
       responseBuilder.setQueryId(queryId.getProto());
       responseBuilder.setMaxRowNum(maxRow);
       responseBuilder.setTableDesc(queryResultScanner.getTableDesc().getProto());
-      responseBuilder.setSessionVariables(session.getProto().getVariables());
       responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
       
       // Simple query indicates a form of 'select * from tb_name [LIMIT X];'.

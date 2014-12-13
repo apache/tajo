@@ -63,7 +63,6 @@ import org.apache.tajo.plan.logical.IndexScanNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.RowStoreUtil;
-import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
@@ -125,7 +124,7 @@ public class NonForwareQueryResultSystemScanner implements NonForwardQueryResult
     taskContext = new TaskAttemptContext(queryContext, null,
         new QueryUnitAttemptId(new QueryUnitId(leafBlock.getId(), 0), 0),
         null, null);
-    physicalExec = new SimplePhysicalPlannerImpl(masterContext.getConf(), masterContext.getStorageManager())
+    physicalExec = new SimplePhysicalPlannerImpl(masterContext.getConf())
       .createPlan(taskContext, leafBlock.getPlan());
     
     tableDesc = new TableDesc("table_"+System.currentTimeMillis(), physicalExec.getSchema(), 
@@ -506,8 +505,8 @@ public class NonForwareQueryResultSystemScanner implements NonForwardQueryResult
   
   class SimplePhysicalPlannerImpl extends PhysicalPlannerImpl {
 
-    public SimplePhysicalPlannerImpl(TajoConf conf, StorageManager sm) {
-      super(conf, sm);
+    public SimplePhysicalPlannerImpl(TajoConf conf) {
+      super(conf);
     }
 
     @Override
