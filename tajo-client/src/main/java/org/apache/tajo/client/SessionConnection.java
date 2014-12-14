@@ -19,6 +19,7 @@
 package org.apache.tajo.client;
 
 import com.google.protobuf.ServiceException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -37,7 +38,8 @@ import org.apache.tajo.util.HAServiceUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
-import org.jboss.netty.channel.ConnectTimeoutException;
+
+import io.netty.channel.ConnectTimeoutException;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -152,10 +154,10 @@ public class SessionConnection implements Closeable {
     return baseDatabase;
   }
 
-  public boolean isConnected() {
+  public boolean isActive() {
     if(!closed.get()){
       try {
-        return connPool.getConnection(tajoMasterAddr, TajoMasterClientProtocol.class, false).isConnected();
+        return connPool.getConnection(tajoMasterAddr, TajoMasterClientProtocol.class, false).isActive();
       } catch (Throwable e) {
         return false;
       }

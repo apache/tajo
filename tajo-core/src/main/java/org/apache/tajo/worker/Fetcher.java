@@ -24,14 +24,32 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.pullserver.retriever.FileChunk;
-import org.jboss.netty.bootstrap.ClientBootstrap;
-import org.jboss.netty.buffer.ChannelBuffer;
-import org.jboss.netty.channel.*;
-import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
-import org.jboss.netty.handler.codec.http.*;
-import org.jboss.netty.handler.timeout.ReadTimeoutException;
-import org.jboss.netty.handler.timeout.ReadTimeoutHandler;
-import org.jboss.netty.util.Timer;
+
+import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.http.DefaultHttpRequest;
+import io.netty.handler.codec.http.HttpClientCodec;
+import io.netty.handler.codec.http.HttpContent;
+import io.netty.handler.codec.http.HttpContentDecompressor;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpMethod;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.handler.timeout.ReadTimeoutException;
+import io.netty.handler.timeout.ReadTimeoutHandler;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -40,8 +58,7 @@ import java.io.RandomAccessFile;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.channels.FileChannel;
-
-import static org.jboss.netty.channel.Channels.pipeline;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Fetcher fetches data from a given uri via HTTP protocol and stores them into
@@ -64,17 +81,15 @@ public class Fetcher {
   private long fileLen;
   private int messageReceiveCount;
   private TajoProtos.FetcherState state;
-  private Timer timer;
 
-  private ClientBootstrap bootstrap;
+  private Bootstrap bootstrap;
 
-  public Fetcher(TajoConf conf, URI uri, FileChunk chunk, ClientSocketChannelFactory factory, Timer timer) {
+  public Fetcher(TajoConf conf, URI uri, FileChunk chunk, EventLoopGroup loopGroup) {
     this.uri = uri;
     this.fileChunk = chunk;
     this.useLocalFile = !chunk.fromRemote();
     this.state = TajoProtos.FetcherState.FETCH_INIT;
     this.conf = conf;
-    this.timer = timer;
 
     String scheme = uri.getScheme() == null ? "http" : uri.getScheme();
     this.host = uri.getHost() == null ? "localhost" : uri.getHost();
@@ -88,13 +103,15 @@ public class Fetcher {
     }
 
     if (!useLocalFile) {
-      bootstrap = new ClientBootstrap(factory);
-      bootstrap.setOption("connectTimeoutMillis", 5000L); // set 5 sec
-      bootstrap.setOption("receiveBufferSize", 1048576); // set 1M
-      bootstrap.setOption("tcpNoDelay", true);
+      bootstrap = new Bootstrap();
+      bootstrap.group(loopGroup);
+      bootstrap.channel(NioSocketChannel.class);
+      bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000); // set 5 sec
+      bootstrap.option(ChannelOption.SO_RCVBUF, 1048576); // set 1M
+      bootstrap.option(ChannelOption.TCP_NODELAY, true);
 
-      ChannelPipelineFactory pipelineFactory = new HttpClientPipelineFactory(fileChunk.getFile());
-      bootstrap.setPipelineFactory(pipelineFactory);
+      ChannelInitializer<Channel> initializer = new HttpClientChannelInitializer(fileChunk.getFile());
+      bootstrap.handler(initializer);
     }
   }
 
@@ -132,30 +149,30 @@ public class Fetcher {
     this.state = TajoProtos.FetcherState.FETCH_FETCHING;
     ChannelFuture future = null;
     try {
-      future = bootstrap.connect(new InetSocketAddress(host, port));
+      future = bootstrap.clone().connect(new InetSocketAddress(host, port));
 
       // Wait until the connection attempt succeeds or fails.
-      Channel channel = future.awaitUninterruptibly().getChannel();
+      Channel channel = future.awaitUninterruptibly().channel();
       if (!future.isSuccess()) {
-        future.getChannel().close();
+        future.channel().close();
         state = TajoProtos.FetcherState.FETCH_FAILED;
-        throw new IOException(future.getCause());
+        throw new IOException(future.cause());
       }
 
       String query = uri.getPath()
           + (uri.getRawQuery() != null ? "?" + uri.getRawQuery() : "");
       // Prepare the HTTP request.
       HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, query);
-      request.setHeader(HttpHeaders.Names.HOST, host);
-      request.setHeader(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.CLOSE);
-      request.setHeader(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
+      request.headers().add(HttpHeaders.Names.HOST, host);
+      request.headers().add(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.CLOSE);
+      request.headers().add(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
 
       LOG.info("Status: " + getState() + ", URI:" + uri);
       // Send the HTTP request.
-      ChannelFuture channelFuture = channel.write(request);
+      ChannelFuture channelFuture = channel.writeAndFlush(request);
 
       // Wait for the server to close the connection.
-      channel.getCloseFuture().awaitUninterruptibly();
+      channel.closeFuture().awaitUninterruptibly();
 
       channelFuture.addListener(ChannelFutureListener.CLOSE);
 
@@ -164,7 +181,7 @@ public class Fetcher {
     } finally {
       if(future != null){
         // Close the channel to exit.
-        future.getChannel().close();
+        future.channel().close();
       }
 
       this.finishTime = System.currentTimeMillis();
@@ -176,8 +193,7 @@ public class Fetcher {
     return this.uri;
   }
 
-  class HttpClientHandler extends SimpleChannelUpstreamHandler {
-    private volatile boolean readingChunks;
+  class HttpClientHandler extends ChannelInboundHandlerAdapter {
     private final File file;
     private RandomAccessFile raf;
     private FileChannel fc;
@@ -188,14 +204,14 @@ public class Fetcher {
     }
 
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
+    public void channelRead(ChannelHandlerContext ctx, Object msg)
         throws Exception {
 
       messageReceiveCount++;
       try {
-        if (!readingChunks && e.getMessage() instanceof HttpResponse) {
+        if (msg instanceof HttpResponse) {
 
-          HttpResponse response = (HttpResponse) e.getMessage();
+          HttpResponse response = (HttpResponse) msg;
 
           StringBuilder sb = new StringBuilder();
           if (LOG.isDebugEnabled()) {
@@ -203,9 +219,9 @@ public class Fetcher {
                 .append(", VERSION: ").append(response.getProtocolVersion())
                 .append(", HEADER: ");
           }
-          if (!response.getHeaderNames().isEmpty()) {
-            for (String name : response.getHeaderNames()) {
-              for (String value : response.getHeaders(name)) {
+          if (!response.headers().names().isEmpty()) {
+            for (String name : response.headers().names()) {
+              for (String value : response.headers().getAll(name)) {
                 if (LOG.isDebugEnabled()) {
                   sb.append(name).append(" = ").append(value);
                 }
@@ -219,109 +235,90 @@ public class Fetcher {
             LOG.debug(sb.toString());
           }
 
-          if (response.getStatus().getCode() == HttpResponseStatus.NO_CONTENT.getCode()) {
+          if (response.getStatus().code() == HttpResponseStatus.NO_CONTENT.code()) {
             LOG.warn("There are no data corresponding to the request");
             length = 0;
             return;
-          } else if (response.getStatus().getCode() != HttpResponseStatus.OK.getCode()){
-            LOG.error(response.getStatus().getReasonPhrase());
+          } else if (response.getStatus().code() != HttpResponseStatus.OK.code()){
+            LOG.error(response.getStatus().reasonPhrase());
             state = TajoProtos.FetcherState.FETCH_FAILED;
             return;
           }
 
           this.raf = new RandomAccessFile(file, "rw");
           this.fc = raf.getChannel();
-
-          if (response.isChunked()) {
-            readingChunks = true;
-          } else {
-            ChannelBuffer content = response.getContent();
-            if (content.readable()) {
-              fc.write(content.toByteBuffer());
-            }
+        }
+        if (msg instanceof HttpContent) {
+          HttpContent httpContent = (HttpContent) msg;
+          ByteBuf content = httpContent.content();
+          if (content.isReadable()) {
+            fc.write(content.nioBuffer());
           }
-        } else {
-          HttpChunk chunk = (HttpChunk) e.getMessage();
-          if (chunk.isLast()) {
-            readingChunks = false;
-            long fileLength = file.length();
-            if (fileLength == length) {
-              LOG.info("Data fetch is done (total received bytes: " + fileLength
-                  + ")");
-            } else {
-              LOG.info("Data fetch is done, but cannot get all data "
-                  + "(received/total: " + fileLength + "/" + length + ")");
+          
+          if (msg instanceof LastHttpContent) {
+            if(raf != null) {
+              fileLen = file.length();
             }
-          } else {
-            if(fc != null){
-              fc.write(chunk.getContent().toByteBuffer());
-            }
+            
+            IOUtils.cleanup(LOG, fc, raf);
+            finishTime = System.currentTimeMillis();
+            state = TajoProtos.FetcherState.FETCH_FINISHED;
           }
         }
-      } finally {
-        if(raf != null) {
-          fileLen = file.length();
-        }
-
-        if(fileLen == length){
-          IOUtils.cleanup(LOG, fc, raf);
-          finishTime = System.currentTimeMillis();
-          state = TajoProtos.FetcherState.FETCH_FINISHED;
-        }
+      } catch(Exception e) {
+        LOG.warn(e.getMessage(), e);
       }
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
         throws Exception {
-      if (e.getCause() instanceof ReadTimeoutException) {
-        LOG.warn(e.getCause());
+      if (cause instanceof ReadTimeoutException) {
+        LOG.warn(cause);
       } else {
-        LOG.error("Fetch failed :", e.getCause());
+        LOG.error("Fetch failed :", cause);
       }
 
       // this fetching will be retry
       IOUtils.cleanup(LOG, fc, raf);
-      if(ctx.getChannel().isConnected()){
-        ctx.getChannel().close();
+      if(ctx.channel().isActive()){
+        ctx.channel().close();
       }
       finishTime = System.currentTimeMillis();
       state = TajoProtos.FetcherState.FETCH_FAILED;
     }
 
     @Override
-    public void channelDisconnected(ChannelHandlerContext ctx, ChannelStateEvent e) throws Exception {
-      super.channelDisconnected(ctx, e);
-
+    public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
       if(getState() != TajoProtos.FetcherState.FETCH_FINISHED){
         //channel is closed, but cannot complete fetcher
         finishTime = System.currentTimeMillis();
         state = TajoProtos.FetcherState.FETCH_FAILED;
       }
       IOUtils.cleanup(LOG, fc, raf);
+      
+      super.channelUnregistered(ctx);
     }
   }
 
-  class HttpClientPipelineFactory implements
-      ChannelPipelineFactory {
+  class HttpClientChannelInitializer extends ChannelInitializer<Channel> {
     private final File file;
 
-    public HttpClientPipelineFactory(File file) {
+    public HttpClientChannelInitializer(File file) {
       this.file = file;
     }
 
     @Override
-    public ChannelPipeline getPipeline() throws Exception {
-      ChannelPipeline pipeline = pipeline();
+    protected void initChannel(Channel channel) throws Exception {
+      ChannelPipeline pipeline = channel.pipeline();
 
       int maxChunkSize = conf.getIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_CHUNK_MAX_SIZE);
       int readTimeout = conf.getIntVar(TajoConf.ConfVars.SHUFFLE_FETCHER_READ_TIMEOUT);
 
       pipeline.addLast("codec", new HttpClientCodec(4096, 8192, maxChunkSize));
       pipeline.addLast("inflater", new HttpContentDecompressor());
-      pipeline.addLast("timeout", new ReadTimeoutHandler(timer, readTimeout));
+      pipeline.addLast("timeout", new ReadTimeoutHandler(readTimeout, TimeUnit.SECONDS));
       pipeline.addLast("handler", new HttpClientHandler(file));
-      return pipeline;
     }
   }
 }

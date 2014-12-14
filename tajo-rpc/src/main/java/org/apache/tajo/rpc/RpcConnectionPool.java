@@ -19,15 +19,18 @@
 package org.apache.tajo.rpc;
 
 import com.google.common.base.Objects;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.conf.TajoConf;
-import org.jboss.netty.channel.ConnectTimeoutException;
-import org.jboss.netty.channel.group.ChannelGroup;
-import org.jboss.netty.channel.group.DefaultChannelGroup;
-import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
-import org.jboss.netty.logging.CommonsLoggerFactory;
-import org.jboss.netty.logging.InternalLoggerFactory;
+
+import io.netty.channel.ConnectTimeoutException;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.util.concurrent.GlobalEventExecutor;
+import io.netty.util.internal.logging.CommonsLoggerFactory;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,17 +42,17 @@ public class RpcConnectionPool {
 
   private ConcurrentMap<RpcConnectionKey, NettyClientBase> connections =
       new ConcurrentHashMap<RpcConnectionKey, NettyClientBase>();
-  private ChannelGroup accepted = new DefaultChannelGroup();
+  private ChannelGroup accepted = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
   private static RpcConnectionPool instance;
-  private final ClientSocketChannelFactory channelFactory;
+  private final EventLoopGroup clientLoopGroup;
   private final TajoConf conf;
 
   public final static int RPC_RETRIES = 3;
 
-  private RpcConnectionPool(TajoConf conf, ClientSocketChannelFactory channelFactory) {
+  private RpcConnectionPool(TajoConf conf, EventLoopGroup loopGroup) {
     this.conf = conf;
-    this.channelFactory =  channelFactory;
+    this.clientLoopGroup =  loopGroup;
   }
 
   public synchronized static RpcConnectionPool getPool(TajoConf conf) {
@@ -61,16 +64,16 @@ public class RpcConnectionPool {
   }
 
   public synchronized static RpcConnectionPool newPool(TajoConf conf, String poolName, int workerNum) {
-    return new RpcConnectionPool(conf, RpcChannelFactory.createClientChannelFactory(poolName, workerNum));
+    return new RpcConnectionPool(conf, RpcChannelFactory.createClientEventloopGroup(poolName, workerNum));
   }
 
   private NettyClientBase makeConnection(RpcConnectionKey rpcConnectionKey)
       throws NoSuchMethodException, ClassNotFoundException, ConnectTimeoutException {
     NettyClientBase client;
     if(rpcConnectionKey.asyncMode) {
-      client = new AsyncRpcClient(rpcConnectionKey.protocolClass, rpcConnectionKey.addr, channelFactory, RPC_RETRIES);
+      client = new AsyncRpcClient(rpcConnectionKey.protocolClass, rpcConnectionKey.addr, clientLoopGroup, RPC_RETRIES);
     } else {
-      client = new BlockingRpcClient(rpcConnectionKey.protocolClass, rpcConnectionKey.addr, channelFactory, RPC_RETRIES);
+      client = new BlockingRpcClient(rpcConnectionKey.protocolClass, rpcConnectionKey.addr, clientLoopGroup, RPC_RETRIES);
     }
     accepted.add(client.getChannel());
     return client;
@@ -96,7 +99,7 @@ public class RpcConnectionPool {
       }
     }
 
-    if (!client.getChannel().isOpen() || !client.getChannel().isConnected()) {
+    if (!client.getChannel().isOpen() || !client.getChannel().isActive()) {
       LOG.warn("Try to reconnect : " + addr);
       client.connect(addr);
     }
@@ -163,8 +166,9 @@ public class RpcConnectionPool {
 
   public synchronized void shutdown(){
     close();
-    if(channelFactory != null){
-      channelFactory.releaseExternalResources();
+    if(clientLoopGroup != null){
+      clientLoopGroup.shutdownGracefully();
+      clientLoopGroup.terminationFuture().syncUninterruptibly();
     }
   }
 

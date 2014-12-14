@@ -22,9 +22,16 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.util.NetUtils;
-import org.jboss.netty.bootstrap.ClientBootstrap;
-import org.jboss.netty.channel.*;
-import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
+
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.ConnectTimeoutException;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.concurrent.GenericFutureListener;
 
 import java.io.Closeable;
 import java.net.InetSocketAddress;
@@ -38,7 +45,7 @@ public abstract class NettyClientBase implements Closeable {
   private static final long PAUSE = 1000; // 1 sec
   private int numRetries;
 
-  protected ClientBootstrap bootstrap;
+  protected Bootstrap bootstrap;
   private ChannelFuture channelFuture;
 
   public NettyClientBase() {
@@ -47,42 +54,43 @@ public abstract class NettyClientBase implements Closeable {
   public abstract <T> T getStub();
   public abstract RpcConnectionPool.RpcConnectionKey getKey();
   
-  public void init(InetSocketAddress addr, ChannelPipelineFactory pipeFactory, ClientSocketChannelFactory factory, 
+  public void init(InetSocketAddress addr, ChannelInitializer<Channel> initializer, EventLoopGroup loopGroup, 
       int numRetries) throws ConnectTimeoutException {
     this.numRetries = numRetries;
     
-    init(addr, pipeFactory, factory);
+    init(addr, initializer, loopGroup);
   }
 
-  public void init(InetSocketAddress addr, ChannelPipelineFactory pipeFactory, ClientSocketChannelFactory factory)
+  public void init(InetSocketAddress addr, ChannelInitializer<Channel> initializer, EventLoopGroup loopGroup)
       throws ConnectTimeoutException {
-    this.bootstrap = new ClientBootstrap(factory);
-    this.bootstrap.setPipelineFactory(pipeFactory);
-    // TODO - should be configurable
-    this.bootstrap.setOption("connectTimeoutMillis", 10000);
-    this.bootstrap.setOption("connectResponseTimeoutMillis", 10000);
-    this.bootstrap.setOption("receiveBufferSize", 1048576 * 10);
-    this.bootstrap.setOption("tcpNoDelay", true);
-    this.bootstrap.setOption("keepAlive", true);
+    this.bootstrap = new Bootstrap();
+    this.bootstrap.group(loopGroup)
+      .channel(NioSocketChannel.class)
+      .handler(initializer)
+      .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
+      .option(ChannelOption.SO_RCVBUF, 1048576 * 10)
+      .option(ChannelOption.TCP_NODELAY, true)
+      .option(ChannelOption.SO_KEEPALIVE, true);
 
     connect(addr);
   }
   
   private void handleConnectionInternally(final InetSocketAddress addr) throws ConnectTimeoutException {
-    this.channelFuture = bootstrap.connect(addr);
+    this.channelFuture = bootstrap.clone().connect(addr);
 
     final CountDownLatch latch = new CountDownLatch(1);
-    this.channelFuture.addListener(new ChannelFutureListener() {
+    this.channelFuture.addListener(new GenericFutureListener<ChannelFuture>() {
       private final AtomicInteger retryCount = new AtomicInteger();
       
       @Override
       public void operationComplete(ChannelFuture future) throws Exception {
         if (!future.isSuccess()) {
+          
           if (numRetries > retryCount.getAndIncrement()) {
             Thread.sleep(PAUSE);
-            channelFuture = bootstrap.connect(addr);
+            channelFuture = bootstrap.clone().connect(addr);
             channelFuture.addListener(this);
-            
+
             LOG.debug("Connecting to " + addr + " has been failed. Retrying to connect.");
           }
           else {
@@ -104,7 +112,7 @@ public abstract class NettyClientBase implements Closeable {
 
     if (!channelFuture.isSuccess()) {
       throw new ConnectTimeoutException("Connect error to " + addr +
-          " caused by " + ExceptionUtils.getMessage(channelFuture.getCause()));
+          " caused by " + ExceptionUtils.getMessage(channelFuture.cause()));
     }
   }
 
@@ -116,31 +124,23 @@ public abstract class NettyClientBase implements Closeable {
     handleConnectionInternally(addr);
   }
 
-  public boolean isConnected() {
-    return getChannel().isConnected();
+  public boolean isActive() {
+    return getChannel().isActive();
   }
 
   public InetSocketAddress getRemoteAddress() {
-    if (channelFuture == null || channelFuture.getChannel() == null) {
+    if (channelFuture == null || channelFuture.channel() == null) {
       return null;
     }
-    return (InetSocketAddress) channelFuture.getChannel().getRemoteAddress();
+    return (InetSocketAddress) channelFuture.channel().remoteAddress();
   }
 
   public Channel getChannel() {
-    return channelFuture.getChannel();
+    return channelFuture.channel();
   }
 
   @Override
   public void close() {
-    if(this.channelFuture != null && getChannel().isOpen()) {
-      try {
-        getChannel().close().awaitUninterruptibly();
-      } catch (Throwable ce) {
-        LOG.warn(ce);
-      }
-    }
-
     if(this.bootstrap != null) {
       // This line will shutdown the factory
       // this.bootstrap.releaseExternalResources();

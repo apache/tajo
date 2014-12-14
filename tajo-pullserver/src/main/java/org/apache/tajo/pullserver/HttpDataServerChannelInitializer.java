@@ -18,26 +18,26 @@
 
 package org.apache.tajo.pullserver;
 
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.handler.codec.http.HttpContentCompressor;
-import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
-import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
-import org.jboss.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPipeline;
+import io.netty.handler.codec.http.HttpContentCompressor;
+import io.netty.handler.codec.http.HttpRequestDecoder;
+import io.netty.handler.codec.http.HttpResponseEncoder;
+import io.netty.handler.stream.ChunkedWriteHandler;
 
-import static org.jboss.netty.channel.Channels.pipeline;
-
-public class HttpDataServerPipelineFactory implements ChannelPipelineFactory {
+public class HttpDataServerChannelInitializer extends ChannelInitializer<Channel> {
   private String userName;
   private String appId;
-  public HttpDataServerPipelineFactory(String userName, String appId) {
+  public HttpDataServerChannelInitializer(String userName, String appId) {
     this.userName = userName;
     this.appId = appId;
   }
 
-  public ChannelPipeline getPipeline() throws Exception {
-    // Create a default pipeline implementation.
-    ChannelPipeline pipeline = pipeline();
+  @Override
+  protected void initChannel(Channel channel) throws Exception {
+ // Create a default pipeline implementation.
+    ChannelPipeline pipeline = channel.pipeline();
 
     // Uncomment the following line if you want HTTPS
     // SSLEngine engine =
@@ -51,6 +51,5 @@ public class HttpDataServerPipelineFactory implements ChannelPipelineFactory {
     pipeline.addLast("chunkedWriter", new ChunkedWriteHandler());
     pipeline.addLast("deflater", new HttpContentCompressor());
     pipeline.addLast("handler", new HttpDataServerHandler(userName, appId));
-    return pipeline;
   }
 }

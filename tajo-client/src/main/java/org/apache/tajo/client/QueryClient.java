@@ -38,7 +38,7 @@ public interface QueryClient extends Closeable {
 
   public void setSessionId(SessionIdProto sessionId);
 
-  public boolean isConnected();
+  public boolean isActive();
 
   public SessionIdProto getSessionId();
 

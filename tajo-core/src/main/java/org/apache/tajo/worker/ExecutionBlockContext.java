@@ -20,6 +20,7 @@ package org.apache.tajo.worker;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
@@ -43,9 +44,9 @@ import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.worker.event.TaskRunnerStartEvent;
-import org.jboss.netty.channel.ConnectTimeoutException;
-import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
-import org.jboss.netty.util.Timer;
+
+import io.netty.channel.ConnectTimeoutException;
+import io.netty.channel.EventLoopGroup;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -68,7 +69,7 @@ public class ExecutionBlockContext {
   public AtomicInteger killedTasksNum = new AtomicInteger();
   public AtomicInteger failedTasksNum = new AtomicInteger();
 
-  private ClientSocketChannelFactory channelFactory;
+  private EventLoopGroup loopGroup;
   // for temporal or intermediate files
   private FileSystem localFS;
   // for input files
@@ -271,23 +272,19 @@ public class ExecutionBlockContext {
     return manager.getWorkerContext();
   }
 
-  protected ClientSocketChannelFactory getShuffleChannelFactory(){
-    if(channelFactory == null) {
+  protected EventLoopGroup getShuffleEventLoopGroup(){
+    if(loopGroup == null) {
       int workerNum = getConf().getIntVar(TajoConf.ConfVars.SHUFFLE_RPC_CLIENT_WORKER_THREAD_NUM);
-      channelFactory = RpcChannelFactory.createClientChannelFactory("Fetcher", workerNum);
+      loopGroup = RpcChannelFactory.createClientEventloopGroup("Fetcher", workerNum);
     }
-    return channelFactory;
-  }
-
-  public Timer getRPCTimer() {
-    return manager.getRPCTimer();
+    return loopGroup;
   }
 
   protected void releaseShuffleChannelFactory(){
-    if(channelFactory != null) {
-      channelFactory.shutdown();
-      channelFactory.releaseExternalResources();
-      channelFactory = null;
+    if(loopGroup != null) {
+      loopGroup.shutdownGracefully();
+      loopGroup.terminationFuture();
+      loopGroup = null;
     }
   }
 

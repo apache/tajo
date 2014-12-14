@@ -74,7 +74,7 @@ public class DummyProtocolAsyncImpl implements Interface {
     try {
       Thread.sleep(3000);
     } catch (InterruptedException e) {
-      e.printStackTrace();
+      LOG.error(e.getMessage());
     }
 
     done.run(request);

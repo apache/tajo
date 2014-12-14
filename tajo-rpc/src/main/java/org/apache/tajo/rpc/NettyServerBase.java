@@ -21,13 +21,16 @@ package org.apache.tajo.rpc;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.util.NetUtils;
-import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelFactory;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.DefaultChannelFuture;
-import org.jboss.netty.channel.group.ChannelGroup;
-import org.jboss.netty.channel.group.DefaultChannelGroup;
+
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.concurrent.GlobalEventExecutor;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
@@ -45,10 +48,10 @@ public class NettyServerBase {
   protected String serviceName;
   protected InetSocketAddress serverAddr;
   protected InetSocketAddress bindAddress;
-  protected ChannelPipelineFactory pipelineFactory;
+  protected ChannelInitializer<Channel> initializer;
   protected ServerBootstrap bootstrap;
-  protected Channel channel;
-  protected ChannelGroup accepted = new DefaultChannelGroup();
+  protected ChannelFuture channelFuture;
+  protected ChannelGroup accepted = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
   private InetSocketAddress initIsa;
 
@@ -65,19 +68,18 @@ public class NettyServerBase {
     this.serviceName = name;
   }
 
-  public void init(ChannelPipelineFactory pipeline, int workerNum) {
-    ChannelFactory factory = RpcChannelFactory.createServerChannelFactory(serviceName, workerNum);
+  public void init(ChannelInitializer<Channel> initializer, int workerNum) {
+    bootstrap = RpcChannelFactory.createServerChannelFactory(serviceName, workerNum);
 
-    pipelineFactory = pipeline;
-    bootstrap = new ServerBootstrap(factory);
-    bootstrap.setPipelineFactory(pipelineFactory);
-    // TODO - should be configurable
-    bootstrap.setOption("reuseAddress", true);
-    bootstrap.setOption("child.tcpNoDelay", true);
-    bootstrap.setOption("child.keepAlive", true);
-    bootstrap.setOption("child.connectTimeoutMillis", 10000);
-    bootstrap.setOption("child.connectResponseTimeoutMillis", 10000);
-    bootstrap.setOption("child.receiveBufferSize", 1048576 * 10);
+    this.initializer = initializer;
+    bootstrap
+      .channel(NioServerSocketChannel.class)
+      .childHandler(initializer)
+      .option(ChannelOption.SO_REUSEADDR, true)
+      .childOption(ChannelOption.TCP_NODELAY, true)
+      .childOption(ChannelOption.SO_KEEPALIVE, true)
+      .childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
+      .childOption(ChannelOption.SO_RCVBUF, 1048576 * 10);
   }
 
   public InetSocketAddress getListenAddress() {
@@ -100,28 +102,33 @@ public class NettyServerBase {
       serverAddr = initIsa;
     }
 
-    this.channel = bootstrap.bind(serverAddr);
-    this.bindAddress = (InetSocketAddress) channel.getLocalAddress();
+    this.channelFuture = bootstrap.clone().bind(serverAddr).syncUninterruptibly();
+    this.bindAddress = (InetSocketAddress) channelFuture.channel().localAddress();
 
     LOG.info("Rpc (" + serviceName + ") listens on " + this.bindAddress);
   }
 
   public Channel getChannel() {
-    return this.channel;
+    return this.channelFuture.channel();
   }
 
   public void shutdown() {
-    if(channel != null) {
-      channel.close().awaitUninterruptibly();
-    }
-
     try {
       accepted.close().awaitUninterruptibly(10, TimeUnit.SECONDS);
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
     }
+    
     if(bootstrap != null) {
-      bootstrap.releaseExternalResources();
+      if (bootstrap.childGroup() != null) {
+        bootstrap.childGroup().shutdownGracefully();
+        bootstrap.childGroup().terminationFuture();
+      }
+      
+      if (bootstrap.group() != null) {
+        bootstrap.group().shutdownGracefully();
+        bootstrap.group().terminationFuture();
+      }
     }
 
     if (bindAddress != null) {
