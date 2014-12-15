@@ -33,8 +33,6 @@ import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.master.TajoMaster;
 import org.junit.Test;
 
-import java.net.InetAddress;
-
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -52,7 +50,7 @@ public class TestHAServiceHDFSImpl  {
 
   private Path haPath, activePath, backupPath;
 
-  private static String masterAddress;
+  private String masterAddress;
 
   @Test
   public final void testTwoBackupMasters() throws Exception {
@@ -66,6 +64,7 @@ public class TestHAServiceHDFSImpl  {
       FileSystem fs = cluster.getDefaultFileSystem();
 
       masterAddress = HAServiceUtil.getMasterUmbilicalName(conf).split(":")[0];
+
       startBackupMasters();
       verifyMasterAddress();
       verifySystemDirectories(fs);

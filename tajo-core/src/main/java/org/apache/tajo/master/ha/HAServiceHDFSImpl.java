@@ -148,17 +148,17 @@ public class HAServiceHDFSImpl implements HAService {
     }
 
     StringBuilder sb = new StringBuilder();
-    InetSocketAddress socketAddress = getHostAddress(HAConstants.MASTER_CLIENT_RPC_ADDRESS);
-    sb.append(socketAddress.getHostString()).append(":").append(socketAddress.getPort()).append("_");
+    InetSocketAddress address = getHostAddress(HAConstants.MASTER_CLIENT_RPC_ADDRESS);
+    sb.append(address.getHostString()).append(":").append(address.getPort()).append("_");
 
-    socketAddress = getHostAddress(HAConstants.RESOURCE_TRACKER_RPC_ADDRESS);
-    sb.append(socketAddress.getHostString()).append(":").append(socketAddress.getPort()).append("_");
+    address = getHostAddress(HAConstants.RESOURCE_TRACKER_RPC_ADDRESS);
+    sb.append(address.getHostString()).append(":").append(address.getPort()).append("_");
 
-    socketAddress = getHostAddress(HAConstants.CATALOG_ADDRESS);
-    sb.append(socketAddress.getHostString()).append(":").append(socketAddress.getPort()).append("_");
+    address = getHostAddress(HAConstants.CATALOG_ADDRESS);
+    sb.append(address.getHostString()).append(":").append(address.getPort()).append("_");
 
-    socketAddress = getHostAddress(HAConstants.MASTER_INFO_ADDRESS);
-    sb.append(socketAddress.getHostString()).append(":").append(socketAddress.getPort());
+    address = getHostAddress(HAConstants.MASTER_INFO_ADDRESS);
+    sb.append(address.getHostString()).append(":").append(address.getPort());
 
     FSDataOutputStream out = fs.create(path);
     out.writeUTF(sb.toString());
@@ -176,34 +176,33 @@ public class HAServiceHDFSImpl implements HAService {
 
 
   private InetSocketAddress getHostAddress(int type) {
-    String hostAddress = null;
-    InetSocketAddress socketAddress = null;
+    InetSocketAddress address = null;
 
     switch (type) {
       case HAConstants.MASTER_UMBILICAL_RPC_ADDRESS:
-        socketAddress = context.getConf().getSocketAddrVar(TajoConf.ConfVars
+        address = context.getConf().getSocketAddrVar(TajoConf.ConfVars
           .TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
         break;
       case HAConstants.MASTER_CLIENT_RPC_ADDRESS:
-        socketAddress = context.getConf().getSocketAddrVar(TajoConf.ConfVars
+        address = context.getConf().getSocketAddrVar(TajoConf.ConfVars
           .TAJO_MASTER_CLIENT_RPC_ADDRESS);
         break;
       case HAConstants.RESOURCE_TRACKER_RPC_ADDRESS:
-        socketAddress = context.getConf().getSocketAddrVar(TajoConf.ConfVars
+        address = context.getConf().getSocketAddrVar(TajoConf.ConfVars
           .RESOURCE_TRACKER_RPC_ADDRESS);
         break;
       case HAConstants.CATALOG_ADDRESS:
-        socketAddress = context.getConf().getSocketAddrVar(TajoConf.ConfVars
+        address = context.getConf().getSocketAddrVar(TajoConf.ConfVars
           .CATALOG_ADDRESS);
         break;
       case HAConstants.MASTER_INFO_ADDRESS:
-        socketAddress = context.getConf().getSocketAddrVar(TajoConf.ConfVars
+        address = context.getConf().getSocketAddrVar(TajoConf.ConfVars
         .TAJO_MASTER_INFO_ADDRESS);
       default:
         break;
     }
 
-    return NetUtils.createSocketAddr(masterName.split(":")[0] + ":" + socketAddress.getPort());
+    return NetUtils.createSocketAddr(masterName.split(":")[0] + ":" + address.getPort());
   }
 
   @Override
@@ -213,13 +212,11 @@ public class HAServiceHDFSImpl implements HAService {
     Path activeFile = new Path(activePath, fileName);
     if (fs.exists(activeFile)) {
       fs.delete(activeFile, true);
-      LOG.info("## deletedFileName:" + activeFile.getName());
     }
 
     Path backupFile = new Path(backupPath, fileName);
     if (fs.exists(backupFile)) {
       fs.delete(backupFile, true);
-      LOG.info("## deletedFileName:" + backupFile.getName());
     }
     if (isActiveStatus) {
       isActiveStatus = false;
