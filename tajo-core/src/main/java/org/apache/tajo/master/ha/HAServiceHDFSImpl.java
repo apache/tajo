@@ -161,9 +161,14 @@ public class HAServiceHDFSImpl implements HAService {
     sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort());
 
     FSDataOutputStream out = fs.create(path);
-    out.writeUTF(sb.toString());
-    out.hflush();
-    out.close();
+
+    try {
+      out.writeUTF(sb.toString());
+      out.hflush();
+      out.close();
+    } catch (FileAlreadyExistsException e) {
+      createMasterFile(false);
+    }
 
     if (isActive) {
       isActiveStatus = true;
