@@ -104,6 +104,8 @@ public class HBaseTestClusterUtil {
     createRootDir();
 
     Configuration c = HBaseConfiguration.create(this.conf);
+    // randomize hbase info port
+    c.setInt(HConstants.MASTER_INFO_PORT, 0);
 
     hbaseCluster = new MiniHBaseCluster(c, 1);
 
