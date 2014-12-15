@@ -109,7 +109,9 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
-    TAJO-1239 ORDER BY with null column desc miss some data. 
+    TAJO-1242: Json scanner can not read some case of trucated text. (jinho) 
+
+    TAJO-1239: ORDER BY with null column desc miss some data. 
     (Hyoungjun Kim via hyunsik)
 
     TAJO-1244: tajo.worker.tmpdir.locations should use a validator for a list 
