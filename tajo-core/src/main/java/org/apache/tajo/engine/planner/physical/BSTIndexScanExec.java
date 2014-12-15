@@ -66,11 +66,6 @@ public class BSTIndexScanExec extends PhysicalExec {
                           IndexScanNode scanNode ,
        FileFragment fragment, URI indexPrefix , Schema keySchema,
        SimplePredicate [] predicates) throws IOException {
-//=======
-//  public BSTIndexScanExec(TaskAttemptContext context, ScanNode scanNode ,
-//       FileFragment fragment, Path fileName , Schema keySchema,
-//       TupleComparator comparator , Datum[] datum) throws IOException {
-//>>>>>>> e05cd29886f9a9b177bf5b955dda494eebeb12ca
     super(context, scanNode.getInSchema(), scanNode.getOutSchema());
     this.scanNode = scanNode;
     this.qual = scanNode.getQual();
@@ -95,11 +90,6 @@ public class BSTIndexScanExec extends PhysicalExec {
     Path indexPath = new Path(indexPrefix.toString(), context.getUniqueKeyFromFragments());
     this.reader = new BSTIndex(context.getConf()).
         getIndexReader(indexPath, keySchema, comparator);
-//=======
-//    FileSystem fs = fileName.getFileSystem(context.getConf());
-//    this.reader = new BSTIndex(fs.getConf()).
-//        getIndexReader(fileName, keySchema, comparator);
-//>>>>>>> e05cd29886f9a9b177bf5b955dda494eebeb12ca
     this.reader.open();
   }
 

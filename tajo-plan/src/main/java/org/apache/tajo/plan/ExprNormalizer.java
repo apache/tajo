@@ -133,13 +133,13 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
       visit(ctx, stack, when.getResult());
 
       if (OpType.isAggregationFunction(when.getCondition().getType())) {
-        String referenceName = ctx.block.namedExprsMgr.addExpr(when.getCondition(), false);
+        String referenceName = ctx.block.namedExprsMgr.addExpr(when.getCondition());
         ctx.aggExprs.add(new NamedExpr(when.getCondition(), referenceName));
         when.setCondition(new ColumnReferenceExpr(referenceName));
       }
 
       if (OpType.isAggregationFunction(when.getResult().getType())) {
-        String referenceName = ctx.block.namedExprsMgr.addExpr(when.getResult(), false);
+        String referenceName = ctx.block.namedExprsMgr.addExpr(when.getResult());
         ctx.aggExprs.add(new NamedExpr(when.getResult(), referenceName));
         when.setResult(new ColumnReferenceExpr(referenceName));
       }
@@ -148,7 +148,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
     if (expr.hasElseResult()) {
       visit(ctx, stack, expr.getElseResult());
       if (OpType.isAggregationFunction(expr.getElseResult().getType())) {
-        String referenceName = ctx.block.namedExprsMgr.addExpr(expr.getElseResult(), false);
+        String referenceName = ctx.block.namedExprsMgr.addExpr(expr.getElseResult());
         ctx.aggExprs.add(new NamedExpr(expr.getElseResult(), referenceName));
         expr.setElseResult(new ColumnReferenceExpr(referenceName));
       }
@@ -162,7 +162,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
     super.visitUnaryOperator(ctx, stack, expr);
     if (OpType.isAggregationFunction(expr.getChild().getType())) {
       // Get an anonymous column name and replace the aggregation function by the column name
-      String refName = ctx.block.namedExprsMgr.addExpr(expr.getChild(), false);
+      String refName = ctx.block.namedExprsMgr.addExpr(expr.getChild());
       ctx.aggExprs.add(new NamedExpr(expr.getChild(), refName));
       expr.setChild(new ColumnReferenceExpr(refName));
     }
@@ -181,13 +181,13 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
 
     visit(ctx, new Stack<Expr>(), expr.getLeft());
     if (isBinaryCommonTermsElimination(ctx, expr.getLeft())) {
-      String refName = ctx.block.namedExprsMgr.addExpr(expr.getLeft(), false);
+      String refName = ctx.block.namedExprsMgr.addExpr(expr.getLeft());
       expr.setLeft(new ColumnReferenceExpr(refName));
     }
 
     visit(ctx, new Stack<Expr>(), expr.getRight());
     if (isBinaryCommonTermsElimination(ctx, expr.getRight())) {
-      String refName = ctx.block.namedExprsMgr.addExpr(expr.getRight(), false);
+      String refName = ctx.block.namedExprsMgr.addExpr(expr.getRight());
       expr.setRight(new ColumnReferenceExpr(refName));
     }
     stack.pop();
@@ -197,7 +197,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
     ////////////////////////
 
     if (OpType.isAggregationFunction(expr.getLeft().getType())) {
-      String leftRefName = ctx.block.namedExprsMgr.addExpr(expr.getLeft(), false);
+      String leftRefName = ctx.block.namedExprsMgr.addExpr(expr.getLeft());
       ctx.aggExprs.add(new NamedExpr(expr.getLeft(), leftRefName));
       expr.setLeft(new ColumnReferenceExpr(leftRefName));
     }
@@ -207,7 +207,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
     // For Right Term
     ////////////////////////
     if (OpType.isAggregationFunction(expr.getRight().getType())) {
-      String rightRefName = ctx.block.namedExprsMgr.addExpr(expr.getRight(), false);
+      String rightRefName = ctx.block.namedExprsMgr.addExpr(expr.getRight());
       ctx.aggExprs.add(new NamedExpr(expr.getRight(), rightRefName));
       expr.setRight(new ColumnReferenceExpr(rightRefName));
     }
@@ -256,7 +256,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
       // If parameters are all constants, we don't need to dissect an aggregation expression into two parts:
       // function and parameter parts.
       if (!OpType.isLiteralType(param.getType()) && param.getType() != OpType.Column) {
-        String referenceName = ctx.block.namedExprsMgr.addExpr(param, false);
+        String referenceName = ctx.block.namedExprsMgr.addExpr(param);
         ctx.scalarExprs.add(new NamedExpr(param, referenceName));
         expr.getParams()[i] = new ColumnReferenceExpr(referenceName);
       }
@@ -282,7 +282,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
         for (int i = 0; i < windowSpec.getPartitionKeys().length; i++) {
           key = windowSpec.getPartitionKeys()[i];
           visit(ctx, stack, key);
-          partitionKeyReferenceNames[i] = ctx.block.namedExprsMgr.addExpr(key, false);
+          partitionKeyReferenceNames[i] = ctx.block.namedExprsMgr.addExpr(key);
         }
       }
 
@@ -292,7 +292,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
         for (int i = 0; i < windowSpec.getSortSpecs().length; i++) {
           key = windowSpec.getSortSpecs()[i].getKey();
           visit(ctx, stack, key);
-          String referenceName = ctx.block.namedExprsMgr.addExpr(key, false);
+          String referenceName = ctx.block.namedExprsMgr.addExpr(key);
           if (OpType.isAggregationFunction(key.getType())) {
             ctx.aggExprs.add(new NamedExpr(key, referenceName));
             windowSpec.getSortSpecs()[i].setKey(new ColumnReferenceExpr(referenceName));
@@ -305,7 +305,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
     }
     ctx.windowSpecs.add(windowSpecReferences);
 
-    String funcExprRef = ctx.block.namedExprsMgr.addExpr(expr, false);
+    String funcExprRef = ctx.block.namedExprsMgr.addExpr(expr);
     ctx.windowAggExprs.add(new NamedExpr(expr, funcExprRef));
     stack.pop();
 
@@ -321,7 +321,7 @@ class ExprNormalizer extends SimpleAlgebraVisitor<ExprNormalizer.ExprNormalizedR
   public Expr visitCastExpr(ExprNormalizedResult ctx, Stack<Expr> stack, CastExpr expr) throws PlanningException {
     super.visitCastExpr(ctx, stack, expr);
     if (OpType.isAggregationFunction(expr.getType())) {
-      String referenceName = ctx.block.namedExprsMgr.addExpr(expr.getChild(), false);
+      String referenceName = ctx.block.namedExprsMgr.addExpr(expr.getChild());
       ctx.aggExprs.add(new NamedExpr(expr.getChild(), referenceName));
       expr.setChild(new ColumnReferenceExpr(referenceName));
     }

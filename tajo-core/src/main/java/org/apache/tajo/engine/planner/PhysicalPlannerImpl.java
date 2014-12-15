@@ -1188,17 +1188,6 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
     return new BSTIndexScanExec(ctx, annotation, fragments.get(0), annotation.getIndexPath(),
         annotation.getKeySchema(), annotation.getPredicates());
-
-//    String indexName = IndexUtil.getIndexNameOfFrag(fragments.get(0), annotation.getSortKeys());
-//    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(ctx.getConf());
-//    Path indexPath = new Path(sm.getTablePath(annotation.getTableName()), "index");
-//
-//    TupleComparator comp = new BaseTupleComparator(annotation.getKeySchema(),
-//        annotation.getSortKeys());
-//    return new BSTIndexScanExec(ctx, annotation, fragments.get(0), new Path(indexPath, indexName),
-//        annotation.getKeySchema(), comp, annotation.getDatum());
-//>>>>>>> e05cd29886f9a9b177bf5b955dda494eebeb12ca
-
   }
 
   public static EnforceProperty getAlgorithmEnforceProperty(Enforcer enforcer, LogicalNode node) {
