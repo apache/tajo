@@ -32,7 +32,7 @@ import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.List;
 
 /**
@@ -68,10 +68,9 @@ public class HAServiceHDFSImpl implements HAService {
     this.conf = context.getConf();
     initSystemDirectory();
 
-    String hostAddress = InetAddress.getLocalHost().getHostAddress();
-    int port = context.getTajoMasterService().getBindAddress().getPort();
+    InetSocketAddress socketAddress = context.getTajoMasterService().getBindAddress();
+    this.masterName = socketAddress.getAddress().getHostAddress() + ":" + socketAddress.getPort();
 
-    this.masterName = hostAddress + ":" + port;
     monitorInterval = conf.getIntVar(TajoConf.ConfVars.TAJO_MASTER_HA_MONITOR_INTERVAL);
   }
 
@@ -139,8 +138,6 @@ public class HAServiceHDFSImpl implements HAService {
   }
 
   private void createMasterFile(boolean isActive) throws IOException {
-    String hostAddress = InetAddress.getLocalHost().getHostAddress();
-
     String fileName = masterName.replaceAll(":", "_");
     Path path = null;
 
@@ -151,13 +148,17 @@ public class HAServiceHDFSImpl implements HAService {
     }
 
     StringBuilder sb = new StringBuilder();
-    sb.append(getHostName(hostAddress, HAConstants.MASTER_CLIENT_RPC_ADDRESS));
-    sb.append("_");
-    sb.append(getHostName(hostAddress, HAConstants.RESOURCE_TRACKER_RPC_ADDRESS));
-    sb.append("_");
-    sb.append(getHostName(hostAddress, HAConstants.CATALOG_ADDRESS));
-    sb.append("_");
-    sb.append(getHostName(hostAddress, HAConstants.MASTER_INFO_ADDRESS));
+    InetSocketAddress socketAddress = getHostAddress(HAConstants.MASTER_CLIENT_RPC_ADDRESS);
+    sb.append(socketAddress.getHostString()).append(":").append(socketAddress.getPort()).append("_");
+
+    socketAddress = getHostAddress(HAConstants.RESOURCE_TRACKER_RPC_ADDRESS);
+    sb.append(socketAddress.getHostString()).append(":").append(socketAddress.getPort()).append("_");
+
+    socketAddress = getHostAddress(HAConstants.CATALOG_ADDRESS);
+    sb.append(socketAddress.getHostString()).append(":").append(socketAddress.getPort()).append("_");
+
+    socketAddress = getHostAddress(HAConstants.MASTER_INFO_ADDRESS);
+    sb.append(socketAddress.getHostString()).append(":").append(socketAddress.getPort());
 
     FSDataOutputStream out = fs.create(path);
     out.writeUTF(sb.toString());
@@ -174,46 +175,35 @@ public class HAServiceHDFSImpl implements HAService {
   }
 
 
-  private String getHostName(String hostAddress, int type) {
-    String hostName = null;
-    int port = 0;
+  private InetSocketAddress getHostAddress(int type) {
+    String hostAddress = null;
+    InetSocketAddress socketAddress = null;
 
     switch (type) {
       case HAConstants.MASTER_UMBILICAL_RPC_ADDRESS:
-        hostName = context.getConf().get(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS
-          .varname);
-        port = 26001;
+        socketAddress = context.getConf().getSocketAddrVar(TajoConf.ConfVars
+          .TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
         break;
       case HAConstants.MASTER_CLIENT_RPC_ADDRESS:
-        hostName = context.getConf().get(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS.varname);
-        port = 26002;
+        socketAddress = context.getConf().getSocketAddrVar(TajoConf.ConfVars
+          .TAJO_MASTER_CLIENT_RPC_ADDRESS);
         break;
       case HAConstants.RESOURCE_TRACKER_RPC_ADDRESS:
-        hostName = context.getConf().get(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS.varname);
-        port = 26003;
+        socketAddress = context.getConf().getSocketAddrVar(TajoConf.ConfVars
+          .RESOURCE_TRACKER_RPC_ADDRESS);
         break;
       case HAConstants.CATALOG_ADDRESS:
-        hostName = context.getConf().get(TajoConf.ConfVars.CATALOG_ADDRESS.varname);
-        port = 26005;
+        socketAddress = context.getConf().getSocketAddrVar(TajoConf.ConfVars
+          .CATALOG_ADDRESS);
         break;
       case HAConstants.MASTER_INFO_ADDRESS:
-        hostName = context.getConf().get(TajoConf.ConfVars.TAJO_MASTER_INFO_ADDRESS.varname);
-        port = 26080;
-        break;
+        socketAddress = context.getConf().getSocketAddrVar(TajoConf.ConfVars
+        .TAJO_MASTER_INFO_ADDRESS);
       default:
         break;
     }
 
-    StringBuilder sb = new StringBuilder();
-    sb.append(hostAddress);
-    sb.append(":");
-
-    if (hostName == null) {
-      sb.append(port);
-    } else {
-      sb.append(hostName.split(":")[1]);
-    }
-    return sb.toString();
+    return NetUtils.createSocketAddr(masterName.split(":")[0] + ":" + socketAddress.getPort());
   }
 
   @Override
@@ -223,11 +213,13 @@ public class HAServiceHDFSImpl implements HAService {
     Path activeFile = new Path(activePath, fileName);
     if (fs.exists(activeFile)) {
       fs.delete(activeFile, true);
+      LOG.info("## deletedFileName:" + activeFile.getName());
     }
 
     Path backupFile = new Path(backupPath, fileName);
     if (fs.exists(backupFile)) {
       fs.delete(backupFile, true);
+      LOG.info("## deletedFileName:" + backupFile.getName());
     }
     if (isActiveStatus) {
       isActiveStatus = false;
@@ -290,20 +282,22 @@ public class HAServiceHDFSImpl implements HAService {
       while (!stopped && !Thread.currentThread().isInterrupted()) {
         synchronized (HAServiceHDFSImpl.this) {
           try {
-            boolean isAlive = HAServiceUtil.isMasterAlive(currentActiveMaster, conf);
-            if (LOG.isDebugEnabled()) {
-              LOG.debug("currentActiveMaster:" + currentActiveMaster + ", thisMasterName:" + masterName
+            if (!currentActiveMaster.equals(masterName)) {
+              boolean isAlive = HAServiceUtil.isMasterAlive(currentActiveMaster, conf);
+              if (LOG.isDebugEnabled()) {
+                LOG.debug("currentActiveMaster:" + currentActiveMaster + ", thisMasterName:" + masterName
                   + ", isAlive:" + isAlive);
-            }
+              }
 
-            // If active master is dead, this master should be active master instead of
-            // previous active master.
-            if (!isAlive) {
-              FileStatus[] files = fs.listStatus(activePath);
-              if (files.length == 0 || (files.length ==  1
-                && currentActiveMaster.equals(files[0].getPath().getName().replaceAll("_", ":")))) {
-                delete();
-                register();
+              // If active master is dead, this master should be active master instead of
+              // previous active master.
+              if (!isAlive) {
+                FileStatus[] files = fs.listStatus(activePath);
+                if (files.length == 0 || (files.length ==  1
+                  && currentActiveMaster.equals(files[0].getPath().getName().replaceAll("_", ":")))) {
+                  delete();
+                  register();
+                }
               }
             }
           } catch (Exception e) {

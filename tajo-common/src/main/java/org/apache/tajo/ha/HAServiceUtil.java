@@ -18,6 +18,8 @@
 
 package org.apache.tajo.ha;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.*;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
@@ -32,6 +34,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class HAServiceUtil {
+  private static Log LOG = LogFactory.getLog(HAServiceUtil.class);
+
   public static InetSocketAddress getMasterUmbilicalAddress(TajoConf conf) {
     return getMasterAddress(conf, HAConstants.MASTER_UMBILICAL_RPC_ADDRESS);
   }
@@ -86,7 +90,6 @@ public class HAServiceUtil {
           if (files.length == 1) {
             Path file = files[0].getPath();
             String hostAddress = file.getName().replaceAll("_", ":");
-
             FSDataInputStream stream = fs.open(file);
             String data = stream.readUTF();
             stream.close();

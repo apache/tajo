@@ -29,8 +29,11 @@ import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.master.TajoMaster;
 import org.junit.Test;
+
+import java.net.InetAddress;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -49,28 +52,30 @@ public class TestHAServiceHDFSImpl  {
 
   private Path haPath, activePath, backupPath;
 
-  private static final String LOCAL_HOST =  "localhost:";
+  private static String masterAddress;
 
   @Test
   public final void testTwoBackupMasters() throws Exception {
     cluster = new TajoTestingCluster(true);
-    cluster.startMiniCluster(1);
 
+    cluster.startMiniCluster(1);
     conf = cluster.getConfiguration();
     client = new TajoClientImpl(conf);
+
     try {
       FileSystem fs = cluster.getDefaultFileSystem();
-      startBackupMasters();
 
+      masterAddress = HAServiceUtil.getMasterUmbilicalName(conf).split(":")[0];
+      startBackupMasters();
       verifyMasterAddress();
       verifySystemDirectories(fs);
 
       Path backupMasterFile1 = new Path(backupPath, backupMaster1.getMasterName()
-          .replaceAll(":", "_"));
+        .replaceAll(":", "_"));
       assertTrue(fs.exists(backupMasterFile1));
 
       Path backupMasterFile2 = new Path(backupPath, backupMaster2.getMasterName()
-          .replaceAll(":", "_"));
+        .replaceAll(":", "_"));
       assertTrue(fs.exists(backupMasterFile2));
 
       assertTrue(cluster.getMaster().isActiveMaster());
@@ -82,33 +87,28 @@ public class TestHAServiceHDFSImpl  {
     }
   }
 
-  private void startBackupMasters() throws Exception {
-
+  private void setConfiguration() {
     conf = cluster.getConfiguration();
     conf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS,
-        LOCAL_HOST + NetUtils.getFreeSocketPort());
+      masterAddress + ":" + NetUtils.getFreeSocketPort());
     conf.setVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS,
-        LOCAL_HOST + NetUtils.getFreeSocketPort());
+      masterAddress + ":" + NetUtils.getFreeSocketPort());
     conf.setVar(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS,
-        LOCAL_HOST + NetUtils.getFreeSocketPort());
+      masterAddress + ":" + NetUtils.getFreeSocketPort());
     conf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS,
-        LOCAL_HOST + NetUtils.getFreeSocketPort());
+      masterAddress + ":" + NetUtils.getFreeSocketPort());
+    conf.setVar(TajoConf.ConfVars.TAJO_MASTER_INFO_ADDRESS,
+      masterAddress + ":" + NetUtils.getFreeSocketPort());
     conf.setBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE, true);
+  }
 
+  private void startBackupMasters() throws Exception {
+    setConfiguration();
     backupMaster1 = new TajoMaster();
     backupMaster1.init(conf);
     backupMaster1.start();
 
-    conf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS,
-        LOCAL_HOST + NetUtils.getFreeSocketPort());
-    conf.setVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS,
-        LOCAL_HOST + NetUtils.getFreeSocketPort());
-    conf.setVar(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS,
-        LOCAL_HOST + NetUtils.getFreeSocketPort());
-    conf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS,
-        LOCAL_HOST + NetUtils.getFreeSocketPort());
-    conf.setBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE, true);
-
+    setConfiguration();
     backupMaster2 = new TajoMaster();
     backupMaster2.init(conf);
     backupMaster2.start();
@@ -116,11 +116,11 @@ public class TestHAServiceHDFSImpl  {
 
   private void verifyMasterAddress() {
     assertNotEquals(cluster.getMaster().getMasterName(),
-        backupMaster1.getMasterName());
+      backupMaster1.getMasterName());
     assertNotEquals(cluster.getMaster().getMasterName(),
-        backupMaster2.getMasterName());
+      backupMaster2.getMasterName());
     assertNotEquals(backupMaster1.getMasterName(),
-        backupMaster2.getMasterName());
+      backupMaster2.getMasterName());
   }
 
   private void verifySystemDirectories(FileSystem fs) throws Exception {
