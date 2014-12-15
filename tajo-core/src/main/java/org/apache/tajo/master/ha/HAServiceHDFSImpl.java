@@ -149,16 +149,16 @@ public class HAServiceHDFSImpl implements HAService {
 
     StringBuilder sb = new StringBuilder();
     InetSocketAddress address = getHostAddress(HAConstants.MASTER_CLIENT_RPC_ADDRESS);
-    sb.append(address.getHostString()).append(":").append(address.getPort()).append("_");
+    sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort()).append("_");
 
     address = getHostAddress(HAConstants.RESOURCE_TRACKER_RPC_ADDRESS);
-    sb.append(address.getHostString()).append(":").append(address.getPort()).append("_");
+    sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort()).append("_");
 
     address = getHostAddress(HAConstants.CATALOG_ADDRESS);
-    sb.append(address.getHostString()).append(":").append(address.getPort()).append("_");
+    sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort()).append("_");
 
     address = getHostAddress(HAConstants.MASTER_INFO_ADDRESS);
-    sb.append(address.getHostString()).append(":").append(address.getPort());
+    sb.append(address.getAddress().getHostAddress()).append(":").append(address.getPort());
 
     FSDataOutputStream out = fs.create(path);
     out.writeUTF(sb.toString());
