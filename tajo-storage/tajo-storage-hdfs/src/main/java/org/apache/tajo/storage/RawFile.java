@@ -30,11 +30,11 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatumFactory;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.BitArray;
 
 import java.io.File;
@@ -92,7 +92,8 @@ public class RawFile {
             + ", fragment length :" + fragment.getLength());
       }
 
-      buf = BufferPool.directBuffer(64 * StorageUnit.KB);
+      buf = BufferPool.directBuffer(conf.getInt(TajoConf.ConfVars.STORAGE_IO_READ_BUFFER_SIZE.varname,
+          TajoConf.ConfVars.STORAGE_IO_READ_BUFFER_SIZE.defaultIntVal));
       buffer = buf.nioBuffer(0, buf.capacity());
 
       columnTypes = new DataType[schema.size()];
@@ -382,7 +383,7 @@ public class RawFile {
       if (buffer.capacity() - buffer.remaining()  <  writableBytes) {
         buf.setIndex(buffer.position(), buffer.limit());
         buf.markReaderIndex();
-        buf.discardSomeReadBytes();
+        buf.discardReadBytes();
         buf.ensureWritable(writableBytes);
         buffer = buf.nioBuffer(0, buf.capacity());
         buffer.limit(buf.writerIndex());
@@ -491,7 +492,8 @@ public class RawFile {
         columnTypes[i] = schema.getColumn(i).getDataType();
       }
 
-      buf = BufferPool.directBuffer(64 * StorageUnit.KB);
+      buf = BufferPool.directBuffer(conf.getInt(TajoConf.ConfVars.STORAGE_IO_WRITE_BUFFER_SIZE.varname,
+          TajoConf.ConfVars.STORAGE_IO_WRITE_BUFFER_SIZE.defaultIntVal));
       buffer = buf.nioBuffer(0, buf.capacity());
 
       // comput the number of bytes, representing the null flags
@@ -532,6 +534,13 @@ public class RawFile {
         buffer.limit(limit);
         buffer.compact();
 
+        //increase the write-buffer
+        if(buffer.remaining() < sizeToBeWritten) {
+          buf.setIndex(buffer.position(), buffer.limit());
+          buf.ensureWritable(sizeToBeWritten);
+          buffer = buf.nioBuffer(0, buf.capacity());
+          buffer.position(buf.readerIndex());
+        }
         return true;
       } else {
         return false;
@@ -632,8 +641,8 @@ public class RawFile {
           continue;
         }
 
-        // 8 is the maximum bytes size of all types
-        if (flushBufferAndReplace(recordOffset, 8)) {
+        // 10 is the maximum bytes size of all types
+        if (flushBufferAndReplace(recordOffset, 10)) {
           recordOffset = 0;
         }
 

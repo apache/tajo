@@ -45,7 +45,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class DelimitedLineReader implements Closeable {
   private static final Log LOG = LogFactory.getLog(DelimitedLineReader.class);
-  private final static int DEFAULT_PAGE_SIZE = 128 * 1024;
 
   private FileSystem fs;
   private FSDataInputStream fis;
@@ -79,18 +78,22 @@ public class DelimitedLineReader implements Closeable {
     pos = startOffset = fragment.getStartKey();
     end = startOffset + fragment.getLength();
 
+    int bufferSize = conf.getInt(TajoConf.ConfVars.STORAGE_IO_READ_BUFFER_SIZE.varname,
+        TajoConf.ConfVars.STORAGE_IO_READ_BUFFER_SIZE.defaultIntVal);
     if (codec != null) {
       decompressor = CodecPool.getDecompressor(codec);
       is = new DataInputStream(codec.createInputStream(fis, decompressor));
       ByteBufInputChannel channel = new ByteBufInputChannel(is);
-      lineReader = new ByteBufLineReader(channel, BufferPool.directBuffer(DEFAULT_PAGE_SIZE));
+
+      ByteBuf buf = BufferPool.directBuffer(bufferSize);
+      lineReader = new ByteBufLineReader(channel, buf);
     } else {
       fis.seek(startOffset);
       is = fis;
 
       ByteBufInputChannel channel = new ByteBufInputChannel(is);
       lineReader = new ByteBufLineReader(channel,
-          BufferPool.directBuffer((int) Math.min(DEFAULT_PAGE_SIZE, end)));
+          BufferPool.directBuffer((int) Math.min(bufferSize, end)));
     }
     eof = false;
   }

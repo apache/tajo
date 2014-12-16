@@ -34,10 +34,10 @@ import org.apache.tajo.QueryUnitAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
-import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.rcfile.NonSyncByteArrayOutputStream;
 import org.apache.tajo.util.ReflectionUtil;
@@ -106,8 +106,7 @@ public class DelimitedTextFile {
     private CompressionCodecFactory codecFactory;
     private CompressionCodec codec;
     private Path compressedPath;
-    private byte[] nullChars;
-    private int BUFFER_SIZE = 128 * 1024;
+    private int bufferSize;
     private int bufferedBytes = 0;
     private long pos = 0;
 
@@ -166,8 +165,10 @@ public class DelimitedTextFile {
       serializer = getLineSerde().createSerializer(schema, meta);
       serializer.init();
 
+      bufferSize = conf.getInt(TajoConf.ConfVars.STORAGE_IO_WRITE_BUFFER_SIZE.varname,
+          TajoConf.ConfVars.STORAGE_IO_WRITE_BUFFER_SIZE.defaultIntVal);
       if (os == null) {
-        os = new NonSyncByteArrayOutputStream(BUFFER_SIZE);
+        os = new NonSyncByteArrayOutputStream(bufferSize);
       }
 
       os.reset();
@@ -190,7 +191,7 @@ public class DelimitedTextFile {
       bufferedBytes += rowBytes;
 
       // refill buffer if necessary
-      if (bufferedBytes > BUFFER_SIZE) {
+      if (bufferedBytes > bufferSize) {
         flushBuffer();
       }
       // Statistical section
