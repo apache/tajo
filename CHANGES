@@ -109,6 +109,9 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1246: HBase info port conflict occasionally causes unit test 
+    failures in Jenkins CI. (hyunsik)
+
     TAJO-1242: Json scanner can not read some case of trucated text. (jinho) 
 
     TAJO-1239: ORDER BY with null column desc miss some data. 
