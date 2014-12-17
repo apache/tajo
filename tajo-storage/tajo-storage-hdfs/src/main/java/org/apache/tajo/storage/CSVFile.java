@@ -27,7 +27,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.*;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -76,7 +76,7 @@ public class CSVFile {
     private NonSyncByteArrayOutputStream os = new NonSyncByteArrayOutputStream(BUFFER_SIZE);
     private SerializerDeserializer serde;
 
-    public CSVAppender(Configuration conf, final QueryUnitAttemptId taskAttemptId,
+    public CSVAppender(Configuration conf, final TaskAttemptId taskAttemptId,
                        final Schema schema, final TableMeta meta, final Path workDir) throws IOException {
       super(conf, taskAttemptId, schema, meta, workDir);
       this.fs = workDir.getFileSystem(conf);

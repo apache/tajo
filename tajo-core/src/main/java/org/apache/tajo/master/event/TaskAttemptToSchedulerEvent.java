@@ -20,41 +20,41 @@ package org.apache.tajo.master.event;
 
 import com.google.protobuf.RpcCallback;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.ipc.TajoWorkerProtocol.QueryUnitRequestProto;
-import org.apache.tajo.master.querymaster.QueryUnitAttempt;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.master.querymaster.TaskAttempt;
 import org.apache.tajo.master.container.TajoContainerId;
 
-public class QueryUnitAttemptScheduleEvent extends TaskSchedulerEvent {
-  private final QueryUnitAttemptScheduleContext context;
-  private final QueryUnitAttempt queryUnitAttempt;
+public class TaskAttemptToSchedulerEvent extends TaskSchedulerEvent {
+  private final TaskAttemptScheduleContext context;
+  private final TaskAttempt taskAttempt;
 
-  public QueryUnitAttemptScheduleEvent(EventType eventType, ExecutionBlockId executionBlockId,
-                                       QueryUnitAttemptScheduleContext context, QueryUnitAttempt queryUnitAttempt) {
+  public TaskAttemptToSchedulerEvent(EventType eventType, ExecutionBlockId executionBlockId,
+                                     TaskAttemptScheduleContext context, TaskAttempt taskAttempt) {
     super(eventType, executionBlockId);
     this.context = context;
-    this.queryUnitAttempt = queryUnitAttempt;
+    this.taskAttempt = taskAttempt;
   }
 
-  public QueryUnitAttempt getQueryUnitAttempt() {
-    return queryUnitAttempt;
+  public TaskAttempt getTaskAttempt() {
+    return taskAttempt;
   }
 
-  public QueryUnitAttemptScheduleContext getContext() {
+  public TaskAttemptScheduleContext getContext() {
     return context;
   }
 
-  public static class QueryUnitAttemptScheduleContext {
+  public static class TaskAttemptScheduleContext {
     private TajoContainerId containerId;
     private String host;
-    private RpcCallback<QueryUnitRequestProto> callback;
+    private RpcCallback<TajoWorkerProtocol.TaskRequestProto> callback;
 
-    public QueryUnitAttemptScheduleContext() {
+    public TaskAttemptScheduleContext() {
 
     }
 
-    public QueryUnitAttemptScheduleContext(TajoContainerId containerId,
-                                           String host,
-                                           RpcCallback<QueryUnitRequestProto> callback) {
+    public TaskAttemptScheduleContext(TajoContainerId containerId,
+                                      String host,
+                                      RpcCallback<TajoWorkerProtocol.TaskRequestProto> callback) {
       this.containerId = containerId;
       this.host = host;
       this.callback = callback;
@@ -76,11 +76,11 @@ public class QueryUnitAttemptScheduleEvent extends TaskSchedulerEvent {
       this.host = host;
     }
 
-    public RpcCallback<QueryUnitRequestProto> getCallback() {
+    public RpcCallback<TajoWorkerProtocol.TaskRequestProto> getCallback() {
       return callback;
     }
 
-    public void setCallback(RpcCallback<QueryUnitRequestProto> callback) {
+    public void setCallback(RpcCallback<TajoWorkerProtocol.TaskRequestProto> callback) {
       this.callback = callback;
     }
   }

@@ -26,7 +26,7 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.master.querymaster.Query;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
-import org.apache.tajo.master.querymaster.QueryUnit;
+import org.apache.tajo.master.querymaster.Task;
 import org.apache.tajo.master.querymaster.SubQuery;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
@@ -736,7 +736,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
       assertTrue(!subQueries.isEmpty());
       for (SubQuery subQuery: subQueries) {
         if (subQuery.getId().toStringNoPrefix().endsWith("_000001")) {
-          for (QueryUnit.IntermediateEntry eachInterm: subQuery.getHashShuffleIntermediateEntries()) {
+          for (Task.IntermediateEntry eachInterm: subQuery.getHashShuffleIntermediateEntries()) {
             partitionIds.add(eachInterm.getPartId());
           }
         }

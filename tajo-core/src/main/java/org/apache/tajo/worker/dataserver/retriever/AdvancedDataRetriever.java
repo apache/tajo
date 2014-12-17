@@ -23,8 +23,8 @@ import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryUnitAttemptId;
-import org.apache.tajo.QueryUnitId;
+import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.TaskId;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.worker.dataserver.FileAccessForbiddenException;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -46,7 +46,7 @@ public class AdvancedDataRetriever implements DataRetriever {
   public AdvancedDataRetriever() {
   }
   
-  public void register(QueryUnitAttemptId id, RetrieverHandler handler) {
+  public void register(TaskAttemptId id, RetrieverHandler handler) {
     synchronized (handlerMap) {
       if (!handlerMap.containsKey(id.toString())) {
         handlerMap.put(id.toString(), handler);
@@ -54,7 +54,7 @@ public class AdvancedDataRetriever implements DataRetriever {
     } 
   }
   
-  public void unregister(QueryUnitAttemptId id) {
+  public void unregister(TaskAttemptId id) {
     synchronized (handlerMap) {
       if (handlerMap.containsKey(id.toString())) {
         handlerMap.remove(id.toString());
@@ -82,8 +82,8 @@ public class AdvancedDataRetriever implements DataRetriever {
       for (String qid : qids) {
         String[] ids = qid.split("_");
         ExecutionBlockId suid = TajoIdUtils.createExecutionBlockId(params.get("sid").get(0));
-        QueryUnitId quid = new QueryUnitId(suid, Integer.parseInt(ids[0]));
-        QueryUnitAttemptId attemptId = new QueryUnitAttemptId(quid,
+        TaskId quid = new TaskId(suid, Integer.parseInt(ids[0]));
+        TaskAttemptId attemptId = new TaskAttemptId(quid,
             Integer.parseInt(ids[1]));
         RetrieverHandler handler = handlerMap.get(attemptId.toString());
         FileChunk chunk = handler.get(params);
@@ -115,7 +115,7 @@ public class AdvancedDataRetriever implements DataRetriever {
 
   private List<String> splitMaps(List<String> qids) {
     if (null == qids) {
-      LOG.error("QueryUnitId is EMPTY");
+      LOG.error("QueryId is EMPTY");
       return null;
     }
 

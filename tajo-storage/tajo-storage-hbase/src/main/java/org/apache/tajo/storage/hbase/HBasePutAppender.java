@@ -23,7 +23,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.HConnection;
 import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.Put;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -38,7 +38,7 @@ public class HBasePutAppender extends AbstractHBaseAppender {
   private HTableInterface htable;
   private long totalNumBytes;
 
-  public HBasePutAppender(Configuration conf, QueryUnitAttemptId taskAttemptId,
+  public HBasePutAppender(Configuration conf, TaskAttemptId taskAttemptId,
                           Schema schema, TableMeta meta, Path stagingDir) {
     super(conf, taskAttemptId, schema, meta, stagingDir);
   }

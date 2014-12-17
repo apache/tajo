@@ -21,7 +21,8 @@ package org.apache.tajo.master.event;
 import com.google.protobuf.RpcCallback;
 import org.apache.hadoop.yarn.event.AbstractEvent;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.ipc.TajoWorkerProtocol.QueryUnitRequestProto;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.ipc.TajoWorkerProtocol.TaskRequestProto;
 import org.apache.tajo.master.event.TaskRequestEvent.TaskRequestEventType;
 import org.apache.tajo.master.container.TajoContainerId;
 
@@ -35,12 +36,12 @@ public class TaskRequestEvent extends AbstractEvent<TaskRequestEventType> {
   private final TajoContainerId containerId;
   private final ExecutionBlockId executionBlockId;
 
-  private final RpcCallback<QueryUnitRequestProto> callback;
+  private final RpcCallback<TaskRequestProto> callback;
 
   public TaskRequestEvent(int workerId,
                           TajoContainerId containerId,
                           ExecutionBlockId executionBlockId,
-                          RpcCallback<QueryUnitRequestProto> callback) {
+                          RpcCallback<TaskRequestProto> callback) {
     super(TaskRequestEventType.TASK_REQ);
     this.workerId = workerId;
     this.containerId = containerId;
@@ -60,7 +61,7 @@ public class TaskRequestEvent extends AbstractEvent<TaskRequestEventType> {
     return executionBlockId;
   }
 
-  public RpcCallback<QueryUnitRequestProto> getCallback() {
+  public RpcCallback<TajoWorkerProtocol.TaskRequestProto> getCallback() {
     return this.callback;
   }
 }
