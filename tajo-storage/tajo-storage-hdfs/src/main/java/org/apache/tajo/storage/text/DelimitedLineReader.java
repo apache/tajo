@@ -36,6 +36,7 @@ import org.apache.tajo.storage.ByteBufInputChannel;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.unit.StorageUnit;
 
 import java.io.Closeable;
 import java.io.DataInputStream;
@@ -59,12 +60,18 @@ public class DelimitedLineReader implements Closeable {
   private AtomicInteger lineReadBytes = new AtomicInteger();
   private FileFragment fragment;
   private Configuration conf;
+  private int bufferSize;
 
   public DelimitedLineReader(Configuration conf, final FileFragment fragment) throws IOException {
+    this(conf, fragment, 128 * StorageUnit.KB);
+  }
+
+  public DelimitedLineReader(Configuration conf, final FileFragment fragment, int bufferSize) throws IOException {
     this.fragment = fragment;
     this.conf = conf;
     this.factory = new CompressionCodecFactory(conf);
     this.codec = factory.getCodec(fragment.getPath());
+    this.bufferSize = bufferSize;
     if (this.codec instanceof SplittableCompressionCodec) {
       throw new NotImplementedException(); // bzip2 does not support multi-thread model
     }
@@ -78,8 +85,6 @@ public class DelimitedLineReader implements Closeable {
     pos = startOffset = fragment.getStartKey();
     end = startOffset + fragment.getLength();
 
-    int bufferSize = conf.getInt(TajoConf.ConfVars.STORAGE_IO_READ_BUFFER_SIZE.varname,
-        TajoConf.ConfVars.STORAGE_IO_READ_BUFFER_SIZE.defaultIntVal);
     if (codec != null) {
       decompressor = CodecPool.getDecompressor(codec);
       is = new DataInputStream(codec.createInputStream(fis, decompressor));

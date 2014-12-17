@@ -272,10 +272,6 @@ public class TajoConf extends Configuration {
     // Geo IP
     GEOIP_DATA("tajo.function.geoip-database-location", ""),
 
-    // Storage IO BUFFER
-    STORAGE_IO_WRITE_BUFFER_SIZE("tajo.io.write.buffer.size", 128 * 1024),
-    STORAGE_IO_READ_BUFFER_SIZE("tajo.io.read.buffer.size", 128 * 1024),
-
     /////////////////////////////////////////////////////////////////////////////////
     // User Session Configuration
     //

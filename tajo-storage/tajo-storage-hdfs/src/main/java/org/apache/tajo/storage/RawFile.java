@@ -30,11 +30,11 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatumFactory;
 import org.apache.tajo.storage.fragment.Fragment;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.BitArray;
 
 import java.io.File;
@@ -46,6 +46,8 @@ import java.nio.channels.FileChannel;
 
 public class RawFile {
   private static final Log LOG = LogFactory.getLog(RawFile.class);
+  public static final String READ_BUFFER_SIZE = "tajo.storage.raw.io.read-buffer.bytes";
+  public static final String WRITE_BUFFER_SIZE = "tajo.storage.raw.io.write-buffer.bytes";
 
   public static class RawFileScanner extends FileScanner implements SeekableScanner {
     private FileChannel channel;
@@ -92,8 +94,7 @@ public class RawFile {
             + ", fragment length :" + fragment.getLength());
       }
 
-      buf = BufferPool.directBuffer(conf.getInt(TajoConf.ConfVars.STORAGE_IO_READ_BUFFER_SIZE.varname,
-          TajoConf.ConfVars.STORAGE_IO_READ_BUFFER_SIZE.defaultIntVal));
+      buf = BufferPool.directBuffer(conf.getInt(READ_BUFFER_SIZE, 128 * StorageUnit.KB));
       buffer = buf.nioBuffer(0, buf.capacity());
 
       columnTypes = new DataType[schema.size()];
@@ -492,8 +493,7 @@ public class RawFile {
         columnTypes[i] = schema.getColumn(i).getDataType();
       }
 
-      buf = BufferPool.directBuffer(conf.getInt(TajoConf.ConfVars.STORAGE_IO_WRITE_BUFFER_SIZE.varname,
-          TajoConf.ConfVars.STORAGE_IO_WRITE_BUFFER_SIZE.defaultIntVal));
+      buf = BufferPool.directBuffer(conf.getInt(WRITE_BUFFER_SIZE, 128 * StorageUnit.KB));
       buffer = buf.nioBuffer(0, buf.capacity());
 
       // comput the number of bytes, representing the null flags

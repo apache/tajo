@@ -906,15 +906,19 @@ public class TestStorages {
       meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_MAX_VALUE_AVRO_SCHEMA);
     }
 
-    /* reproduce BufferOverflow of RAWFile */
-    int headerSize = 4 + 2 + 1; //Integer record length + Short null-flag length + 1 byte null flags
+    if (storeType == StoreType.RAW) {
+      StorageManager.clearCache();
+      /* TAJO-1250 reproduce BufferOverflow of RAWFile */
+      int headerSize = 4 + 2 + 1; //Integer record length + Short null-flag length + 1 byte null flags
       /* max varint32: 5 bytes, max varint64: 10 bytes */
-    int record = 4 + 8 + 2 + 5 + 8; // required size is 27
-    conf.setIntVar(TajoConf.ConfVars.STORAGE_IO_WRITE_BUFFER_SIZE, record + headerSize);
+      int record = 4 + 8 + 2 + 5 + 8; // required size is 27
+      conf.setInt(RawFile.WRITE_BUFFER_SIZE, record + headerSize);
+    }
 
     FileStorageManager sm = (FileStorageManager) StorageManager.getFileStorageManager(conf);
     Path tablePath = new Path(testDir, "testMaxValue.data");
     Appender appender = sm.getAppender(meta, schema, tablePath);
+
     appender.init();
 
     Tuple tuple = new VTuple(5);
@@ -942,5 +946,10 @@ public class TestStorages {
       }
     }
     scanner.close();
+
+
+    if (storeType == StoreType.RAW){
+      StorageManager.clearCache();
+    }
   }
 }
