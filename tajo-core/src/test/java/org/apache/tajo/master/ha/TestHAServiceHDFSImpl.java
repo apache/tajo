@@ -90,7 +90,7 @@ public class TestHAServiceHDFSImpl  {
 
       cluster.getMaster().stop();
 
-      Thread.sleep(10000);
+      Thread.sleep(7000);
 
       assertFalse(cluster.getMaster().isActiveMaster());
       assertTrue(backupMaster.isActiveMaster());
@@ -146,16 +146,13 @@ public class TestHAServiceHDFSImpl  {
   }
 
   private void createDatabaseAndTable() throws Exception {
-    String databaseName = CatalogUtil.normalizeIdentifier("tajoMasterHA");
-    client.createDatabase(databaseName);
-    client.executeQuery("CREATE TABLE " + databaseName + ".table1 (age int);");
-    client.executeQuery("CREATE TABLE " + databaseName + ".table2 (age int);");
+    client.executeQuery("CREATE TABLE default.table1 (age int);");
+    client.executeQuery("CREATE TABLE default.table2 (age int);");
   }
 
   private void verifyDataBaseAndTable() throws Exception {
-    String databaseName = CatalogUtil.normalizeIdentifier("tajoMasterHA");
-    client.existDatabase(databaseName);
-    client.existTable(databaseName + ".table1");
-    client.existTable(databaseName + ".table2");
+    client.existDatabase("default");
+    client.existTable("default.table1");
+    client.existTable("default.table2");
   }
 }
