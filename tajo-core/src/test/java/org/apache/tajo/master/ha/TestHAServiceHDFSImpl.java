@@ -90,7 +90,7 @@ public class TestHAServiceHDFSImpl  {
 
       cluster.getMaster().stop();
 
-      Thread.sleep(7000);
+      Thread.sleep(10000);
 
       assertFalse(cluster.getMaster().isActiveMaster());
       assertTrue(backupMaster.isActiveMaster());
