@@ -384,6 +384,18 @@ public class TestValidators {
     validUrl = "/tmp/tajo-root/";
     assertThat(new PathValidator().validateInternal(validUrl), is(true));
     assertThat(new PathValidator().validate(validUrl).size(), is(0));
+
+    validUrl = "hdfs://localhost:7020/tajo-root";
+    assertThat(new PathValidator().validateInternal(validUrl), is(true));
+    assertThat(new PathValidator().validate(validUrl).size(), is(0));
+
+    validUrl = "hdfs://127.0.0.1:7020/tajo-root";
+    assertThat(new PathValidator().validateInternal(validUrl), is(true));
+    assertThat(new PathValidator().validate(validUrl).size(), is(0));
+
+    validUrl = "hdfs://192.168.0.1:7020/tajo-root";
+    assertThat(new PathValidator().validateInternal(validUrl), is(true));
+    assertThat(new PathValidator().validate(validUrl).size(), is(0));
     
     String invalidUrl = "t!ef:///tmp/tajo-root";
     assertThat(new PathValidator().validateInternal(invalidUrl), is(false));

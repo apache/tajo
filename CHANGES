@@ -109,6 +109,9 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1252: PathValidator should allow hdfs paths which contain IP addresses. 
+    (jihoon)
+
     TAJO-1246: HBase info port conflict occasionally causes unit test 
     failures in Jenkins CI. (hyunsik)
 
