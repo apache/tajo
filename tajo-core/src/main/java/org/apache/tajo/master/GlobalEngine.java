@@ -204,10 +204,10 @@ public class GlobalEngine extends AbstractService {
   }
 
   private SubmitQueryResponse executeQueryInternal(QueryContext queryContext,
-                                                      Session session,
-                                                      LogicalPlan plan,
-                                                      String sql,
-                                                      String jsonExpr) throws Exception {
+                                                   Session session,
+                                                   LogicalPlan plan,
+                                                   String sql,
+                                                   String jsonExpr) throws Exception {
 
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 

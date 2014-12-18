@@ -749,4 +749,25 @@ public class TestGroupByQuery extends QueryTestCaseBase {
           ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME.defaultVal);
     }
   }
+
+  @Test
+  public final void testGroupbyWithLimit1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testGroupbyWithLimit2() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testGroupbyWithLimit3() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
 }
