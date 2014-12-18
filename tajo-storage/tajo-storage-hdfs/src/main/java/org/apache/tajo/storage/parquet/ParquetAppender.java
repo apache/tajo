@@ -18,6 +18,8 @@
 
 package org.apache.tajo.storage.parquet;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.storage.StorageConstants;
 import parquet.hadoop.ParquetOutputFormat;
@@ -38,6 +40,7 @@ import java.io.IOException;
  * FileAppender for writing to Parquet files.
  */
 public class ParquetAppender extends FileAppender {
+  private static final Log LOG = LogFactory.getLog(ParquetAppender.class);
   private TajoParquetWriter writer;
   private int blockSize;
   private int pageSize;
@@ -128,7 +131,12 @@ public class ParquetAppender extends FileAppender {
    */
   @Override
   public void close() throws IOException {
-    writer.close();
+    try {
+      super.close();
+      writer.close();
+    } catch (IllegalStateException ex) {
+      LOG.error(ex.getMessage());
+    }
   }
 
   public long getEstimatedOutputSize() throws IOException {

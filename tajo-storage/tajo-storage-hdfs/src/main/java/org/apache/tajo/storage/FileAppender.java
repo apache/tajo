@@ -83,5 +83,12 @@ public abstract class FileAppender implements Appender {
     return getOffset();
   }
 
+  @Override
+  public void close() throws IOException {
+    if (!inited) {
+      throw new IllegalStateException("Closing is tried for not initialized object");
+    }
+  }
+
   public abstract long getOffset() throws IOException;
 }

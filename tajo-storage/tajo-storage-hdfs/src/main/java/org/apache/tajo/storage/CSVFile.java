@@ -213,6 +213,13 @@ public class CSVFile {
     public void close() throws IOException {
 
       try {
+        super.close();
+      } catch(IllegalStateException ex) {
+        LOG.error(ex.getMessage());
+        return;
+      }
+
+      try {
         flush();
 
         // Statistical section
@@ -220,7 +227,7 @@ public class CSVFile {
           stats.setNumBytes(getOffset());
         }
 
-        if(deflateFilter != null) {
+        if(this.meta.containsOption(StorageConstants.COMPRESSION_CODEC)) {
           deflateFilter.finish();
           deflateFilter.resetState();
           deflateFilter = null;
@@ -229,10 +236,9 @@ public class CSVFile {
         os.close();
       } finally {
         IOUtils.cleanup(LOG, fos);
-        if (compressor != null) {
-          CodecPool.returnCompressor(compressor);
-          compressor = null;
-        }
+
+        CodecPool.returnCompressor(compressor);
+        compressor = null;
       }
     }
 

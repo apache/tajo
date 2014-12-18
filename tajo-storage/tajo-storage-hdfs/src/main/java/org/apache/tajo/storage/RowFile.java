@@ -356,6 +356,8 @@ public class RowFile {
       if (enabledStats) {
         this.stats = new TableStatistics(this.schema);
       }
+
+      super.init();
     }
 
     private void writeHeader() throws IOException {
@@ -462,13 +464,17 @@ public class RowFile {
 
     @Override
     public void close() throws IOException {
-      if (out != null) {
+      try {
+        super.close();
+
         if (enabledStats) {
           stats.setNumBytes(out.getPos());
         }
         sync();
         out.flush();
         out.close();
+      } catch (IllegalStateException ex) {
+        LOG.error(ex.getMessage());
       }
     }
 

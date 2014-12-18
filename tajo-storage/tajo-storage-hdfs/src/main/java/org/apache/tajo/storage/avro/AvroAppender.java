@@ -18,6 +18,9 @@
 
 package org.apache.tajo.storage.avro;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import org.apache.avro.Schema;
 import org.apache.avro.file.DataFileWriter;
 import org.apache.avro.generic.GenericData;
@@ -46,6 +49,8 @@ import java.util.List;
  * FileAppender for writing to Avro files.
  */
 public class AvroAppender extends FileAppender {
+  private static final Log LOG = LogFactory.getLog(AvroAppender.class);
+
   private TableStatistics stats;
   private Schema avroSchema;
   private List<Schema.Field> avroFields;
@@ -201,7 +206,12 @@ public class AvroAppender extends FileAppender {
    */
   @Override
   public void close() throws IOException {
-    dataFileWriter.close();
+    try {
+      super.close();
+      dataFileWriter.close();
+    } catch (IllegalStateException ex) {
+      LOG.error(ex.getMessage());
+    }
   }
 
   /**

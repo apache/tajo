@@ -253,13 +253,17 @@ public class SequenceFileAppender extends FileAppender {
 
   @Override
   public void close() throws IOException {
-    // Statistical section
-    if (enabledStats) {
-      stats.setNumBytes(getOffset());
-    }
+    try {
+      // Statistical section
+      if (enabledStats) {
+        stats.setNumBytes(getOffset());
+      }
 
-    os.close();
-    writer.close();
+      os.close();
+      writer.close();
+    } catch (IllegalStateException ex) {
+      LOG.error(ex.getMessage());
+    }
   }
 
   @Override

@@ -741,6 +741,13 @@ public class RawFile {
 
     @Override
     public void close() throws IOException {
+      try {
+        super.close();
+      } catch (IllegalStateException ex) {
+        LOG.error(ex.getMessage());
+        return;
+      }
+
       flush();
       if (enabledStats) {
         stats.setNumBytes(getOffset());

@@ -221,6 +221,13 @@ public class DelimitedTextFile {
     public void close() throws IOException {
 
       try {
+        super.close();
+      } catch (IllegalStateException ex) {
+        LOG.error(ex.getMessage());
+        return;
+      }
+
+      try {
         serializer.release();
 
         if(outputStream != null){

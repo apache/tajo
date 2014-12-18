@@ -1098,6 +1098,13 @@ public class RCFile {
 
     @Override
     public void close() throws IOException {
+      try {
+        super.close();
+      } catch (IllegalStateException ex) {
+        LOG.error(ex.getMessage());
+        return;
+      }
+
       if (bufferedRecords > 0) {
         flushRecords();
       }
