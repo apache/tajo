@@ -51,6 +51,9 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     RESULT current;
 
     switch (expr.getType()) {
+    case SetSession:
+      current = visitSetSession(ctx, stack, (SetSession) expr);
+      break;
 
     case Projection:
       current = visitProjection(ctx, stack, (Projection) expr);
@@ -292,6 +295,11 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
     visit(ctx, stack, expr.getRight());
     stack.pop();
     return child;
+  }
+
+  @Override
+  public RESULT visitSetSession(CONTEXT ctx, Stack<Expr> stack, SetSession expr) throws PlanningException {
+    return null;
   }
 
   @Override

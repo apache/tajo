@@ -26,11 +26,15 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.master.TajoMaster;
 import org.junit.Test;
+
+import java.util.List;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -41,86 +45,90 @@ public class TestHAServiceHDFSImpl  {
   private static Log LOG = LogFactory.getLog(TestHAServiceHDFSImpl.class);
 
   private TajoTestingCluster cluster;
-  private TajoMaster backupMaster1, backupMaster2;
+  private TajoMaster backupMaster;
 
   private TajoConf conf;
   private TajoClient client;
-  private Path testDir;
 
   private Path haPath, activePath, backupPath;
 
-  private static final String LOCAL_HOST =  "localhost:";
+  private String masterAddress;
 
   @Test
-  public final void testTwoBackupMasters() throws Exception {
+  public final void testAutoFailOver() throws Exception {
     cluster = new TajoTestingCluster(true);
-    cluster.startMiniCluster(1);
 
+    cluster.startMiniCluster(1);
     conf = cluster.getConfiguration();
     client = new TajoClientImpl(conf);
+
     try {
       FileSystem fs = cluster.getDefaultFileSystem();
-      startBackupMasters();
 
-      verifyMasterAddress();
+      masterAddress = HAServiceUtil.getMasterUmbilicalName(conf).split(":")[0];
+
+      setConfiguration();
+
+      backupMaster = new TajoMaster();
+      backupMaster.init(conf);
+      backupMaster.start();
+
+      assertNotEquals(cluster.getMaster().getMasterName(), backupMaster.getMasterName());
+
       verifySystemDirectories(fs);
 
-      Path backupMasterFile1 = new Path(backupPath, backupMaster1.getMasterName()
-          .replaceAll(":", "_"));
-      assertTrue(fs.exists(backupMasterFile1));
-
-      Path backupMasterFile2 = new Path(backupPath, backupMaster2.getMasterName()
-          .replaceAll(":", "_"));
-      assertTrue(fs.exists(backupMasterFile2));
+      Path backupMasterFile = new Path(backupPath, backupMaster.getMasterName()
+        .replaceAll(":", "_"));
+      assertTrue(fs.exists(backupMasterFile));
 
       assertTrue(cluster.getMaster().isActiveMaster());
-      assertFalse(backupMaster1.isActiveMaster());
-      assertFalse(backupMaster2.isActiveMaster());
+      assertFalse(backupMaster.isActiveMaster());
+
+      createDatabaseAndTable();
+      verifyDataBaseAndTable();
+      client.close();
+
+      cluster.getMaster().stop();
+
+      Thread.sleep(7000);
+
+      assertFalse(cluster.getMaster().isActiveMaster());
+      assertTrue(backupMaster.isActiveMaster());
+
+      client = new TajoClientImpl(conf);
+      verifyDataBaseAndTable();
     } finally {
-      IOUtils.cleanup(LOG, client, backupMaster1, backupMaster2);
+      client.close();
+      backupMaster.stop();
       cluster.shutdownMiniCluster();
     }
   }
 
-  private void startBackupMasters() throws Exception {
-
+  private void setConfiguration() {
     conf = cluster.getConfiguration();
-    conf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS,
-        LOCAL_HOST + NetUtils.getFreeSocketPort());
-    conf.setVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS,
-        LOCAL_HOST + NetUtils.getFreeSocketPort());
-    conf.setVar(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS,
-        LOCAL_HOST + NetUtils.getFreeSocketPort());
-    conf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS,
-        LOCAL_HOST + NetUtils.getFreeSocketPort());
-    conf.setBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE, true);
-
-    backupMaster1 = new TajoMaster();
-    backupMaster1.init(conf);
-    backupMaster1.start();
 
     conf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS,
-        LOCAL_HOST + NetUtils.getFreeSocketPort());
+      masterAddress + ":" + NetUtils.getFreeSocketPort());
     conf.setVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS,
-        LOCAL_HOST + NetUtils.getFreeSocketPort());
+      masterAddress + ":" + NetUtils.getFreeSocketPort());
     conf.setVar(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS,
-        LOCAL_HOST + NetUtils.getFreeSocketPort());
+      masterAddress + ":" + NetUtils.getFreeSocketPort());
     conf.setVar(TajoConf.ConfVars.CATALOG_ADDRESS,
-        LOCAL_HOST + NetUtils.getFreeSocketPort());
+      masterAddress + ":" + NetUtils.getFreeSocketPort());
+    conf.setVar(TajoConf.ConfVars.TAJO_MASTER_INFO_ADDRESS,
+      masterAddress + ":" + NetUtils.getFreeSocketPort());
     conf.setBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE, true);
 
-    backupMaster2 = new TajoMaster();
-    backupMaster2.init(conf);
-    backupMaster2.start();
-  }
+    //Client API service RPC Server
+    conf.setIntVar(TajoConf.ConfVars.MASTER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM, 2);
+    conf.setIntVar(TajoConf.ConfVars.WORKER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM, 2);
 
-  private void verifyMasterAddress() {
-    assertNotEquals(cluster.getMaster().getMasterName(),
-        backupMaster1.getMasterName());
-    assertNotEquals(cluster.getMaster().getMasterName(),
-        backupMaster2.getMasterName());
-    assertNotEquals(backupMaster1.getMasterName(),
-        backupMaster2.getMasterName());
+    // Internal RPC Server
+    conf.setIntVar(TajoConf.ConfVars.MASTER_RPC_SERVER_WORKER_THREAD_NUM, 2);
+    conf.setIntVar(TajoConf.ConfVars.QUERY_MASTER_RPC_SERVER_WORKER_THREAD_NUM, 2);
+    conf.setIntVar(TajoConf.ConfVars.WORKER_RPC_SERVER_WORKER_THREAD_NUM, 2);
+    conf.setIntVar(TajoConf.ConfVars.CATALOG_RPC_SERVER_WORKER_THREAD_NUM, 2);
+    conf.setIntVar(TajoConf.ConfVars.SHUFFLE_RPC_SERVER_WORKER_THREAD_NUM, 2);
   }
 
   private void verifySystemDirectories(FileSystem fs) throws Exception {
@@ -134,6 +142,17 @@ public class TestHAServiceHDFSImpl  {
     assertTrue(fs.exists(backupPath));
 
     assertEquals(1, fs.listStatus(activePath).length);
-    assertEquals(2, fs.listStatus(backupPath).length);
+    assertEquals(1, fs.listStatus(backupPath).length);
+  }
+
+  private void createDatabaseAndTable() throws Exception {
+    client.executeQuery("CREATE TABLE default.table1 (age int);");
+    client.executeQuery("CREATE TABLE default.table2 (age int);");
+  }
+
+  private void verifyDataBaseAndTable() throws Exception {
+    client.existDatabase("default");
+    client.existTable("default.table1");
+    client.existTable("default.table2");
   }
 }

@@ -18,17 +18,13 @@
 
 package org.apache.tajo.thrift.client;
 
-import com.google.protobuf.ByteString;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.jdbc.TajoResultSetBase;
-import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.thrift.ThriftRowStoreDecoder;
 import org.apache.tajo.thrift.generated.TRowData;
-import org.apache.tajo.thrift.generated.TSchema;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -42,6 +38,7 @@ public class TajoThriftMemoryResultSet extends TajoResultSetBase {
 
   public TajoThriftMemoryResultSet(TajoThriftClient client, String queryId, Schema schema,
                                    List<TRowData> rows, int maxRowNum) {
+    super(null);
     this.client = client;
     this.queryId = queryId;
     this.schema = schema;

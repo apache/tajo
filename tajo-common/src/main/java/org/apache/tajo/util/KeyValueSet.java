@@ -41,6 +41,11 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
 	public KeyValueSet() {
     keyVals = TUtil.newHashMap();
 	}
+
+  public KeyValueSet(Map<String, String> keyVals) {
+    this();
+    putAll(keyVals);
+  }
 	
 	public KeyValueSet(KeyValueSetProto proto) {
     this.keyVals = TUtil.newHashMap();

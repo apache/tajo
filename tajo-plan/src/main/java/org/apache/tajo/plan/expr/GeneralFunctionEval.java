@@ -20,6 +20,7 @@ package org.apache.tajo.plan.expr;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
@@ -28,14 +29,17 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.TUtil;
 
+import javax.annotation.Nullable;
+
 public class GeneralFunctionEval extends FunctionEval {
   @Expose protected GeneralFunction instance;
   private Tuple params = null;
 
-	public GeneralFunctionEval(FunctionDesc desc, GeneralFunction instance, EvalNode[] givenArgs) {
+	public GeneralFunctionEval(@Nullable OverridableConf queryContext, FunctionDesc desc, GeneralFunction instance,
+                             EvalNode[] givenArgs) {
 		super(EvalType.FUNCTION, desc, givenArgs);
 		this.instance = instance;
-    this.instance.init(getParamType());
+    this.instance.init(queryContext, getParamType());
   }
 
   /* (non-Javadoc)

@@ -23,8 +23,6 @@ import com.google.common.collect.Lists;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.api.records.Priority;
 import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.event.Event;
@@ -36,7 +34,7 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -55,17 +53,18 @@ import org.apache.tajo.ipc.TajoWorkerProtocol.IntermediateEntryProto;
 import org.apache.tajo.master.*;
 import org.apache.tajo.master.TaskRunnerGroupEvent.EventType;
 import org.apache.tajo.master.event.*;
-import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext;
-import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
+import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptScheduleContext;
+import org.apache.tajo.master.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.master.container.TajoContainer;
 import org.apache.tajo.master.container.TajoContainerId;
+import org.apache.tajo.storage.FileStorageManager;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.storage.StorageManager;
-import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.history.QueryUnitHistory;
+import org.apache.tajo.util.history.TaskHistory;
 import org.apache.tajo.util.history.SubQueryHistory;
 import org.apache.tajo.worker.FetchImpl;
 
@@ -96,7 +95,6 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private TableStats resultStatistics;
   private TableStats inputStatistics;
   private EventHandler<Event> eventHandler;
-  private final StorageManager sm;
   private AbstractTaskScheduler taskScheduler;
   private QueryMasterTask.QueryMasterTaskContext context;
   private final List<String> diagnostics = new ArrayList<String>();
@@ -105,7 +103,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private long startTime;
   private long finishTime;
 
-  volatile Map<QueryUnitId, QueryUnit> tasks = new ConcurrentHashMap<QueryUnitId, QueryUnit>();
+  volatile Map<TaskId, Task> tasks = new ConcurrentHashMap<TaskId, Task>();
   volatile Map<TajoContainerId, TajoContainer> containers = new ConcurrentHashMap<TajoContainerId,
     TajoContainer>();
 
@@ -286,12 +284,10 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private AtomicInteger completeReportReceived = new AtomicInteger(0);
   private SubQueryHistory finalSubQueryHistory;
 
-  public SubQuery(QueryMasterTask.QueryMasterTaskContext context, MasterPlan masterPlan,
-                  ExecutionBlock block, StorageManager sm) {
+  public SubQuery(QueryMasterTask.QueryMasterTaskContext context, MasterPlan masterPlan, ExecutionBlock block) {
     this.context = context;
     this.masterPlan = masterPlan;
     this.block = block;
-    this.sm = sm;
     this.eventHandler = context.getEventHandler();
 
     ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
@@ -357,22 +353,22 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   }
 
   public float getProgress() {
-    List<QueryUnit> tempTasks = null;
+    List<Task> tempTasks = null;
     readLock.lock();
     try {
       if (getState() == SubQueryState.NEW) {
         return 0.0f;
       } else {
-        tempTasks = new ArrayList<QueryUnit>(tasks.values());
+        tempTasks = new ArrayList<Task>(tasks.values());
       }
     } finally {
       readLock.unlock();
     }
 
     float totalProgress = 0.0f;
-    for (QueryUnit eachQueryUnit: tempTasks) {
-      if (eachQueryUnit.getLastAttempt() != null) {
-        totalProgress += eachQueryUnit.getLastAttempt().getProgress();
+    for (Task eachTask : tempTasks) {
+      if (eachTask.getLastAttempt() != null) {
+        totalProgress += eachTask.getLastAttempt().getProgress();
       }
     }
 
@@ -395,7 +391,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     return block;
   }
 
-  public void addTask(QueryUnit task) {
+  public void addTask(Task task) {
     tasks.put(task.getId(), task);
   }
 
@@ -403,7 +399,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     if (finalSubQueryHistory != null) {
       if (finalSubQueryHistory.getFinishTime() == 0) {
         finalSubQueryHistory = makeSubQueryHistory();
-        finalSubQueryHistory.setQueryUnits(makeQueryUnitHistories());
+        finalSubQueryHistory.setTasks(makeTaskHistories());
       }
       return finalSubQueryHistory;
     } else {
@@ -411,14 +407,14 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
   }
 
-  private List<QueryUnitHistory> makeQueryUnitHistories() {
-    List<QueryUnitHistory> queryUnitHistories = new ArrayList<QueryUnitHistory>();
+  private List<TaskHistory> makeTaskHistories() {
+    List<TaskHistory> taskHistories = new ArrayList<TaskHistory>();
 
-    for(QueryUnit eachQueryUnit: getQueryUnits()) {
-      queryUnitHistories.add(eachQueryUnit.getQueryUnitHistory());
+    for(Task eachTask : getTasks()) {
+      taskHistories.add(eachTask.getTaskHistory());
     }
 
-    return queryUnitHistories;
+    return taskHistories;
   }
 
   private SubQueryHistory makeSubQueryHistory() {
@@ -442,16 +438,16 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     long totalWriteBytes = 0;
     long totalWriteRows = 0;
     int numShuffles = 0;
-    for(QueryUnit eachQueryUnit: getQueryUnits()) {
-      numShuffles = eachQueryUnit.getShuffleOutpuNum();
-      if (eachQueryUnit.getLastAttempt() != null) {
-        TableStats inputStats = eachQueryUnit.getLastAttempt().getInputStats();
+    for(Task eachTask : getTasks()) {
+      numShuffles = eachTask.getShuffleOutpuNum();
+      if (eachTask.getLastAttempt() != null) {
+        TableStats inputStats = eachTask.getLastAttempt().getInputStats();
         if (inputStats != null) {
           totalInputBytes += inputStats.getNumBytes();
           totalReadBytes += inputStats.getReadBytes();
           totalReadRows += inputStats.getNumRows();
         }
-        TableStats outputStats = eachQueryUnit.getLastAttempt().getResultStats();
+        TableStats outputStats = eachTask.getLastAttempt().getResultStats();
         if (outputStats != null) {
           totalWriteBytes += outputStats.getNumBytes();
           totalWriteRows += outputStats.getNumRows();
@@ -509,19 +505,15 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     return this.priority;
   }
 
-  public StorageManager getStorageManager() {
-    return sm;
-  }
-  
   public ExecutionBlockId getId() {
     return block.getId();
   }
   
-  public QueryUnit[] getQueryUnits() {
-    return tasks.values().toArray(new QueryUnit[tasks.size()]);
+  public Task[] getTasks() {
+    return tasks.values().toArray(new Task[tasks.size()]);
   }
   
-  public QueryUnit getQueryUnit(QueryUnitId qid) {
+  public Task getTask(TaskId qid) {
     return tasks.get(qid);
   }
 
@@ -641,7 +633,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private TableStats[] computeStatFromTasks() {
     List<TableStats> inputStatsList = Lists.newArrayList();
     List<TableStats> resultStatsList = Lists.newArrayList();
-    for (QueryUnit unit : getQueryUnits()) {
+    for (Task unit : getTasks()) {
       resultStatsList.add(unit.getStats());
       if (unit.getLastAttempt().getInputStats() != null) {
         inputStatsList.add(unit.getLastAttempt().getInputStats());
@@ -677,14 +669,14 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
 
     DataChannel channel = masterPlan.getOutgoingChannels(getId()).get(0);
-    // get default or store type
-    CatalogProtos.StoreType storeType = CatalogProtos.StoreType.CSV; // default setting
 
     // if store plan (i.e., CREATE or INSERT OVERWRITE)
-    StoreTableNode storeTableNode = PlannerUtil.findTopNode(getBlock().getPlan(), NodeType.STORE);
-    if (storeTableNode != null) {
-      storeType = storeTableNode.getStorageType();
+    StoreType storeType = PlannerUtil.getStoreType(masterPlan.getLogicalPlan());
+    if (storeType == null) {
+      // get default or store type
+      storeType = StoreType.CSV;
     }
+
     schema = channel.getSchema();
     meta = CatalogUtil.newTableMeta(storeType, new KeyValueSet());
     inputStatistics = statsArray[0];
@@ -1043,7 +1035,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       ScanNode scan = scans[0];
       TableDesc table = subQuery.context.getTableDescMap().get(scan.getCanonicalName());
 
-      Collection<FileFragment> fragments;
+      Collection<Fragment> fragments;
       TableMeta meta = table.getMeta();
 
       // Depending on scanner node's type, it creates fragments. If scan is for
@@ -1052,10 +1044,13 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       // span a number of blocks or possibly consists of a number of files.
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
         // After calling this method, partition paths are removed from the physical plan.
-        fragments = Repartitioner.getFragmentsFromPartitionedTable(subQuery.getStorageManager(), scan, table);
+        FileStorageManager storageManager =
+            (FileStorageManager)StorageManager.getFileStorageManager(subQuery.getContext().getConf());
+        fragments = Repartitioner.getFragmentsFromPartitionedTable(storageManager, scan, table);
       } else {
-        Path inputPath = new Path(table.getPath());
-        fragments = subQuery.getStorageManager().getSplits(scan.getCanonicalName(), meta, table.getSchema(), inputPath);
+        StorageManager storageManager =
+            StorageManager.getStorageManager(subQuery.getContext().getConf(), meta.getStoreType());
+        fragments = storageManager.getSplits(scan.getCanonicalName(), table, scan);
       }
 
       SubQuery.scheduleFragments(subQuery, fragments);
@@ -1073,27 +1068,27 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
   }
 
-  public static void scheduleFragment(SubQuery subQuery, FileFragment fragment) {
+  public static void scheduleFragment(SubQuery subQuery, Fragment fragment) {
     subQuery.taskScheduler.handle(new FragmentScheduleEvent(TaskSchedulerEvent.EventType.T_SCHEDULE,
         subQuery.getId(), fragment));
   }
 
 
-  public static void scheduleFragments(SubQuery subQuery, Collection<FileFragment> fragments) {
-    for (FileFragment eachFragment : fragments) {
+  public static void scheduleFragments(SubQuery subQuery, Collection<Fragment> fragments) {
+    for (Fragment eachFragment : fragments) {
       scheduleFragment(subQuery, eachFragment);
     }
   }
 
-  public static void scheduleFragments(SubQuery subQuery, Collection<FileFragment> leftFragments,
-                                       Collection<FileFragment> broadcastFragments) {
-    for (FileFragment eachLeafFragment : leftFragments) {
+  public static void scheduleFragments(SubQuery subQuery, Collection<Fragment> leftFragments,
+                                       Collection<Fragment> broadcastFragments) {
+    for (Fragment eachLeafFragment : leftFragments) {
       scheduleFragment(subQuery, eachLeafFragment, broadcastFragments);
     }
   }
 
   public static void scheduleFragment(SubQuery subQuery,
-                                      FileFragment leftFragment, Collection<FileFragment> rightFragments) {
+                                      Fragment leftFragment, Collection<Fragment> rightFragments) {
     subQuery.taskScheduler.handle(new FragmentScheduleEvent(TaskSchedulerEvent.EventType.T_SCHEDULE,
         subQuery.getId(), leftFragment, rightFragments));
   }
@@ -1103,13 +1098,13 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         subQuery.getId(), fetches));
   }
 
-  public static QueryUnit newEmptyQueryUnit(TaskSchedulerContext schedulerContext,
-                                            QueryUnitAttemptScheduleContext queryUnitContext,
-                                            SubQuery subQuery, int taskId) {
+  public static Task newEmptyTask(TaskSchedulerContext schedulerContext,
+                                  TaskAttemptScheduleContext taskContext,
+                                  SubQuery subQuery, int taskId) {
     ExecutionBlock execBlock = subQuery.getBlock();
-    QueryUnit unit = new QueryUnit(schedulerContext.getMasterContext().getConf(),
-        queryUnitContext,
-        QueryIdFactory.newQueryUnitId(schedulerContext.getBlockId(), taskId),
+    Task unit = new Task(schedulerContext.getMasterContext().getConf(),
+        taskContext,
+        QueryIdFactory.newTaskId(schedulerContext.getBlockId(), taskId),
         schedulerContext.isLeafQuery(), subQuery.eventHandler);
     unit.setLogicalPlan(execBlock.getPlan());
     subQuery.addTask(unit);
@@ -1179,7 +1174,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     public void transition(SubQuery subQuery,
                            SubQueryEvent event) {
       SubQueryTaskEvent taskEvent = (SubQueryTaskEvent) event;
-      QueryUnit task = subQuery.getQueryUnit(taskEvent.getTaskId());
+      Task task = subQuery.getTask(taskEvent.getTaskId());
 
       if (task == null) { // task failed
         LOG.error(String.format("Task %s is absent", taskEvent.getTaskId()));
@@ -1220,8 +1215,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         subQuery.getTaskScheduler().stop();
       }
 
-      for (QueryUnit queryUnit : subQuery.getQueryUnits()) {
-        subQuery.eventHandler.handle(new TaskEvent(queryUnit.getId(), TaskEventType.T_KILL));
+      for (Task task : subQuery.getTasks()) {
+        subQuery.eventHandler.handle(new TaskEvent(task.getId(), TaskEventType.T_KILL));
       }
     }
   }
@@ -1242,7 +1237,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
 
     this.finalSubQueryHistory = makeSubQueryHistory();
-    this.finalSubQueryHistory.setQueryUnits(makeQueryUnitHistories());
+    this.finalSubQueryHistory.setTasks(makeTaskHistories());
   }
 
   public List<IntermediateEntry> getHashShuffleIntermediateEntries() {

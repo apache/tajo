@@ -19,7 +19,6 @@
 package org.apache.tajo.datum;
 
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.util.datetime.DateTimeUtil;
@@ -29,8 +28,8 @@ import org.junit.Test;
 import java.util.Calendar;
 import java.util.TimeZone;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
-import static org.hamcrest.CoreMatchers.*;
 
 public class TestTimestampDatum {
   private static long javatime;
@@ -40,7 +39,7 @@ public class TestTimestampDatum {
   @BeforeClass
   public static void setUp() {
     javatime = System.currentTimeMillis();
-    calendar = Calendar.getInstance(TajoConf.getCurrentTimeZone());
+    calendar = Calendar.getInstance(TimeZone.getTimeZone("PST"));
     calendar.setTimeInMillis(javatime);
     unixtime = (int) (javatime / 1000);
   }
@@ -151,7 +150,7 @@ public class TestTimestampDatum {
     assertEquals(datum2, datum);
 
     for (int i = 0; i < 100; i++) {
-      TimeZone timeZone = TimeZone.getTimeZone("UTC");
+      TimeZone timeZone = TimeZone.getTimeZone("GMT");
       Calendar cal = Calendar.getInstance(timeZone);
       long jTime = System.currentTimeMillis();
       int uTime = (int)(jTime / 1000);

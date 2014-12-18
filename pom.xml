@@ -89,7 +89,7 @@
     <module>tajo-client</module>
     <module>tajo-jdbc</module>
     <module>tajo-storage</module>
-    <module>tajo-yarn-pullserver</module>
+    <module>tajo-pullserver</module>
     <module>tajo-dist</module>
     <module>tajo-thirdparty/asm</module>
     <module>tajo-thrift-server</module>

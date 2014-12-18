@@ -40,10 +40,10 @@ import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -380,7 +380,7 @@ public class TestPlannerUtil {
     int index = 0;
 
     for (int i = startIndex; i < startIndex + expectedSize; i++, index++) {
-      FileFragment fragment = FragmentConvertor.convert(util.getConfiguration(), StoreType.CSV, fragments[index]);
+      FileFragment fragment = FragmentConvertor.convert(util.getConfiguration(), fragments[index]);
       assertEquals(expectedFiles.get(i), fragment.getPath());
     }
   }

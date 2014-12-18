@@ -59,6 +59,9 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
       case ROOT:
         current = visitRoot(context, plan, block, (LogicalRootNode) node, stack);
         break;
+      case SET_SESSION:
+        current = visitSetSession(context, plan, block, (SetSessionNode) node, stack);
+        break;
       case EXPRS:
         return null;
       case PROJECTION:
@@ -147,6 +150,12 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
     RESULT result = visit(context, plan, block, node.getChild(), stack);
     stack.pop();
     return result;
+  }
+
+  @Override
+  public RESULT visitSetSession(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, SetSessionNode node,
+                                Stack<LogicalNode> stack) throws PlanningException {
+    return null;
   }
 
   @Override

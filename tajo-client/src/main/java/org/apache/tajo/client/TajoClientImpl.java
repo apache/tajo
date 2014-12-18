@@ -19,6 +19,7 @@
 package org.apache.tajo.client;
 
 import com.google.protobuf.ServiceException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
@@ -32,9 +33,14 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.jdbc.TajoResultSet;
+import org.apache.tajo.rule.EvaluationContext;
+import org.apache.tajo.rule.EvaluationFailedException;
+import org.apache.tajo.rule.SelfDiagnosisRuleEngine;
+import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.util.NetUtils;
 
 import java.io.IOException;
@@ -51,11 +57,11 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
   CatalogAdminClient catalogClient;
 
   public TajoClientImpl(TajoConf conf) throws IOException {
-    this(conf, NetUtils.createSocketAddr(conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS)), null);
+    this(conf, TajoHAClientUtil.getRpcClientAddress(conf), null);
   }
 
   public TajoClientImpl(TajoConf conf, @Nullable String baseDatabase) throws IOException {
-    this(conf, NetUtils.createSocketAddr(conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS)), baseDatabase);
+    this(conf, TajoHAClientUtil.getRpcClientAddress(conf), baseDatabase);
   }
 
   public TajoClientImpl(InetSocketAddress addr) throws IOException {
@@ -75,12 +81,26 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     super(conf, addr, baseDatabase);
     this.queryClient = new QueryClientImpl(this);
     this.catalogClient = new CatalogAdminClientImpl(this);
+    
+    diagnoseTajoClient();
   }
 
   public TajoClientImpl(String hostName, int port, @Nullable String baseDatabase) throws IOException {
     super(hostName, port, baseDatabase);
     this.queryClient = new QueryClientImpl(this);
     this.catalogClient = new CatalogAdminClientImpl(this);
+    
+    diagnoseTajoClient();
+  }
+  
+  private void diagnoseTajoClient() throws EvaluationFailedException {
+    SelfDiagnosisRuleEngine ruleEngine = SelfDiagnosisRuleEngine.getInstance();
+    SelfDiagnosisRuleSession ruleSession = ruleEngine.newRuleSession();
+    EvaluationContext context = new EvaluationContext();
+    
+    context.addParameter(TajoConf.class.getName(), getConf());
+    
+    ruleSession.withRuleNames("TajoConfValidationRule").fireRules(context);
   }
 
   /*------------------------------------------------------------------------*/

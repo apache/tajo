@@ -20,7 +20,6 @@ package org.apache.tajo.thrift.client;
 
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.jdbc.TajoResultSetBase;
-import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.thrift.TajoThriftUtil;
 import org.apache.tajo.thrift.ThriftRowStoreDecoder;
@@ -29,7 +28,6 @@ import org.apache.tajo.thrift.generated.TRowData;
 import org.apache.tajo.thrift.generated.TTableDesc;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.List;
@@ -47,7 +45,7 @@ public class TajoThriftResultSet extends TajoResultSetBase {
   private TTableDesc tableDesc;
 
   public TajoThriftResultSet(TajoThriftClient tajoThriftClient, String queryId, TQueryResult queryResult) {
-    super();
+    super(null);
 
     this.tajoThriftClient = tajoThriftClient;
     this.queryId = queryId;

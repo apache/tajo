@@ -18,7 +18,7 @@
 
 package org.apache.tajo.master.event;
 
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.container.TajoContainerId;
 
@@ -26,7 +26,7 @@ public class TaskAttemptAssignedEvent extends TaskAttemptEvent {
   private final TajoContainerId cId;
   private final WorkerConnectionInfo workerConnectionInfo;
 
-  public TaskAttemptAssignedEvent(QueryUnitAttemptId id, TajoContainerId cId,
+  public TaskAttemptAssignedEvent(TaskAttemptId id, TajoContainerId cId,
                                   WorkerConnectionInfo connectionInfo) {
     super(id, TaskAttemptEventType.TA_ASSIGNED);
     this.cId = cId;

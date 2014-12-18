@@ -19,19 +19,30 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.OverridableConf;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.TUtil;
+
+import java.util.TimeZone;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 
 public class CastEval extends UnaryEval {
   @Expose private DataType target;
+  @Expose private TimeZone timezone;
 
-  public CastEval(EvalNode operand, DataType target) {
+  public CastEval(OverridableConf context, EvalNode operand, DataType target) {
     super(EvalType.CAST, operand);
     this.target = target;
+
+    if (context.containsKey(SessionVars.TIMEZONE)) {
+      String timezoneId = context.get(SessionVars.TIMEZONE);
+      timezone = TimeZone.getTimeZone(timezoneId);
+    }
   }
 
   public EvalNode getOperand() {
@@ -41,6 +52,14 @@ public class CastEval extends UnaryEval {
   @Override
   public DataType getValueType() {
     return target;
+  }
+
+  public boolean hasTimeZone() {
+    return this.timezone != null;
+  }
+
+  public TimeZone getTimezone() {
+    return this.timezone;
   }
 
   @Override
@@ -54,7 +73,7 @@ public class CastEval extends UnaryEval {
       return operandDatum;
     }
 
-    return DatumFactory.cast(operandDatum, target);
+    return DatumFactory.cast(operandDatum, target, timezone);
   }
 
   public String toString() {
@@ -66,7 +85,9 @@ public class CastEval extends UnaryEval {
     boolean valid = obj != null && obj instanceof CastEval;
     if (valid) {
       CastEval another = (CastEval) obj;
-      return child.equals(another.child) && target.equals(another.target);
+      return child.equals(another.child) &&
+          target.equals(another.target) &&
+          TUtil.checkEquals(timezone, another.timezone);
     } else {
       return false;
     }

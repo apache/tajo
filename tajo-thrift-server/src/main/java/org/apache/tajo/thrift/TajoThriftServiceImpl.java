@@ -18,7 +18,6 @@
 
 package org.apache.tajo.thrift;
 
-import com.google.protobuf.ByteString;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.util.StringUtils;
@@ -37,9 +36,6 @@ import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.jdbc.TajoResultSetBase;
-import org.apache.tajo.storage.RowStoreUtil;
-import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
-import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.thrift.generated.*;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.TajoIdUtils;
@@ -331,8 +327,13 @@ public class TajoThriftServiceImpl implements TajoThriftService.Iface {
       List<Boolean> nullFlags = new ArrayList<Boolean>();
       List<ByteBuffer> columnDatas = new ArrayList<ByteBuffer>();
       for (int i = 0; i < numColumns; i++) {
-        columnDatas.add(ByteBuffer.wrap(rs.getString(i + 1).getBytes()));
-        nullFlags.add(rs.wasNull());
+        String value = rs.getString(i + 1);
+        if (value == null || rs.wasNull()) {
+          nullFlags.add(true);
+        } else {
+          nullFlags.add(false);
+          columnDatas.add(ByteBuffer.wrap(value.getBytes()));
+        }
       }
       TRowData rowData = new TRowData();
       rowData.setNullFlags(nullFlags);
@@ -698,7 +699,8 @@ public class TajoThriftServiceImpl implements TajoThriftService.Iface {
       TajoClient tajoClient = getTajoClient(sessionId);
       Map<String, String> sessionVariable = new HashMap<String, String>();
       sessionVariable.put(key, value);
-      return tajoClient.updateSessionVariables(sessionVariable);
+      tajoClient.updateSessionVariables(sessionVariable);
+      return true;
     } catch (Exception e) {
       checkTajoInvalidSession(e, sessionId);
       throw new TServiceException(e.getMessage(), StringUtils.stringifyException(e));
@@ -710,7 +712,8 @@ public class TajoThriftServiceImpl implements TajoThriftService.Iface {
     SessionIdProto sessionId = TajoThriftUtil.makeSessionId(sessionIdStr);
     try {
       TajoClient tajoClient = getTajoClient(sessionId);
-      return tajoClient.unsetSessionVariables(TUtil.newList(key));
+      tajoClient.unsetSessionVariables(TUtil.newList(key));
+      return true;
     } catch (Exception e) {
       checkTajoInvalidSession(e, sessionId);
       throw new TServiceException(e.getMessage(), StringUtils.stringifyException(e));

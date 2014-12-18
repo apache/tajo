@@ -787,17 +787,17 @@ public class TestTajoClient {
     assertEquals(queryId.toString(), queryHistory.getQueryId());
     assertEquals(2, queryHistory.getSubQueryHistoriesCount());
 
-    List<SubQueryHistoryProto> queryUnitHistories =
+    List<SubQueryHistoryProto> taskHistories =
         new ArrayList<SubQueryHistoryProto>(queryHistory.getSubQueryHistoriesList());
-    Collections.sort(queryUnitHistories, new Comparator<SubQueryHistoryProto>() {
+    Collections.sort(taskHistories, new Comparator<SubQueryHistoryProto>() {
       @Override
       public int compare(SubQueryHistoryProto o1, SubQueryHistoryProto o2) {
         return o1.getExecutionBlockId().compareTo(o2.getExecutionBlockId());
       }
     });
-    assertEquals(5, queryUnitHistories.get(0).getTotalReadRows());
-    assertEquals(1, queryUnitHistories.get(0).getTotalWriteRows());
-    assertEquals(1, queryUnitHistories.get(1).getTotalReadRows());
-    assertEquals(1, queryUnitHistories.get(1).getTotalWriteRows());
+    assertEquals(5, taskHistories.get(0).getTotalReadRows());
+    assertEquals(1, taskHistories.get(0).getTotalWriteRows());
+    assertEquals(1, taskHistories.get(1).getTotalReadRows());
+    assertEquals(1, taskHistories.get(1).getTotalWriteRows());
   }
 }

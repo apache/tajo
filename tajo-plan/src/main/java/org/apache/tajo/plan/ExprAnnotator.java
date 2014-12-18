@@ -19,6 +19,8 @@
 package org.apache.tajo.plan;
 
 import com.google.common.collect.Sets;
+import org.apache.tajo.OverridableConf;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -43,6 +45,7 @@ import org.apache.tajo.util.datetime.TimeMeta;
 
 import java.util.Set;
 import java.util.Stack;
+import java.util.TimeZone;
 
 import static org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
 import static org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
@@ -64,11 +67,16 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   static class Context {
+    OverridableConf queryContext;
+    TimeZone timeZone;
     LogicalPlan plan;
     LogicalPlan.QueryBlock currentBlock;
     NameResolvingMode columnRsvLevel;
 
     public Context(LogicalPlanner.PlanContext planContext, NameResolvingMode colRsvLevel) {
+      this.queryContext = planContext.queryContext;
+      this.timeZone = planContext.timeZone;
+
       this.plan = planContext.plan;
       this.currentBlock = planContext.queryBlock;
       this.columnRsvLevel = colRsvLevel;
@@ -95,7 +103,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
    * @param rhs right hand side term
    * @return a pair including left/right hand side terms
    */
-  public static Pair<EvalNode, EvalNode> convertTypesIfNecessary(EvalNode lhs, EvalNode rhs) {
+  private static Pair<EvalNode, EvalNode> convertTypesIfNecessary(Context ctx, EvalNode lhs, EvalNode rhs) {
     Type lhsType = lhs.getValueType().getType();
     Type rhsType = rhs.getValueType().getType();
 
@@ -108,10 +116,10 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     if (toBeCasted != null) { // if not null, one of either should be converted to another type.
       // Overwrite lhs, rhs, or both with cast expression.
       if (lhsType != toBeCasted) {
-        lhs = convertType(lhs, CatalogUtil.newSimpleDataType(toBeCasted));
+        lhs = convertType(ctx, lhs, CatalogUtil.newSimpleDataType(toBeCasted));
       }
       if (rhsType != toBeCasted) {
-        rhs = convertType(rhs, CatalogUtil.newSimpleDataType(toBeCasted));
+        rhs = convertType(ctx, rhs, CatalogUtil.newSimpleDataType(toBeCasted));
       }
     }
 
@@ -126,7 +134,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
    * @param toType target type
    * @return type converted expression.
    */
-  private static EvalNode convertType(EvalNode evalNode, DataType toType) {
+  private static EvalNode convertType(Context ctx, EvalNode evalNode, DataType toType) {
 
     // if original and toType is the same, we don't need type conversion.
     if (evalNode.getValueType().equals(toType)) {
@@ -140,9 +148,9 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     if (evalNode.getType() == EvalType.BETWEEN) {
       BetweenPredicateEval between = (BetweenPredicateEval) evalNode;
 
-      between.setPredicand(convertType(between.getPredicand(), toType));
-      between.setBegin(convertType(between.getBegin(), toType));
-      between.setEnd(convertType(between.getEnd(), toType));
+      between.setPredicand(convertType(ctx, between.getPredicand(), toType));
+      between.setBegin(convertType(ctx, between.getBegin(), toType));
+      between.setEnd(convertType(ctx, between.getEnd(), toType));
 
       return between;
 
@@ -150,11 +158,11 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
       CaseWhenEval caseWhenEval = (CaseWhenEval) evalNode;
       for (CaseWhenEval.IfThenEval ifThen : caseWhenEval.getIfThenEvals()) {
-        ifThen.setResult(convertType(ifThen.getResult(), toType));
+        ifThen.setResult(convertType(ctx, ifThen.getResult(), toType));
       }
 
       if (caseWhenEval.hasElse()) {
-        caseWhenEval.setElseResult(convertType(caseWhenEval.getElse(), toType));
+        caseWhenEval.setElseResult(convertType(ctx, caseWhenEval.getElse(), toType));
       }
 
       return caseWhenEval;
@@ -166,7 +174,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       Datum[] convertedDatum = new Datum[datums.length];
 
       for (int i = 0; i < datums.length; i++) {
-        convertedDatum[i] = DatumFactory.cast(datums[i], toType);
+        convertedDatum[i] = DatumFactory.cast(datums[i], toType, ctx.timeZone);
       }
 
       RowConstantEval convertedRowConstant = new RowConstantEval(convertedDatum);
@@ -175,11 +183,11 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
     } else if (evalNode.getType() == EvalType.CONST) {
       ConstEval original = (ConstEval) evalNode;
-      ConstEval newConst = new ConstEval(DatumFactory.cast(original.getValue(), toType));
+      ConstEval newConst = new ConstEval(DatumFactory.cast(original.getValue(), toType, ctx.timeZone));
       return newConst;
 
     } else {
-      return new CastEval(evalNode, toType);
+      return new CastEval(ctx.queryContext, evalNode, toType);
     }
   }
 
@@ -279,7 +287,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       throw new IllegalStateException("Wrong Expr Type: " + expr.getType());
     }
 
-    return createBinaryNode(evalType, left, right);
+    return createBinaryNode(ctx, evalType, left, right);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -308,7 +316,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
         between.isSymmetric(),
         predicand, begin, end);
 
-    betweenEval = (BetweenPredicateEval) convertType(betweenEval, widestType);
+    betweenEval = (BetweenPredicateEval) convertType(ctx, betweenEval, widestType);
     return betweenEval;
   }
 
@@ -342,7 +350,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     assertEval(widestType != null, "Invalid Type Conversion for CaseWhen");
 
     // implicit type conversion
-    caseWhenEval = (CaseWhenEval) convertType(caseWhenEval, widestType);
+    caseWhenEval = (CaseWhenEval) convertType(ctx, caseWhenEval, widestType);
 
     return caseWhenEval;
   }
@@ -362,7 +370,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     RowConstantEval rowConstantEval = (RowConstantEval) visit(ctx, stack, expr.getInValue());
     stack.pop();
 
-    Pair<EvalNode, EvalNode> pair = convertTypesIfNecessary(lhs, rowConstantEval);
+    Pair<EvalNode, EvalNode> pair = convertTypesIfNecessary(ctx, lhs, rowConstantEval);
 
     return new InEval(pair.getFirst(), (RowConstantEval) pair.getSecond(), expr.isNot());
   }
@@ -415,10 +423,10 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     stack.pop();
 
     if (lhs.getValueType().getType() != Type.TEXT) {
-      lhs = convertType(lhs, CatalogUtil.newSimpleDataType(Type.TEXT));
+      lhs = convertType(ctx, lhs, CatalogUtil.newSimpleDataType(Type.TEXT));
     }
     if (rhs.getValueType().getType() != Type.TEXT) {
-      rhs = convertType(rhs, CatalogUtil.newSimpleDataType(Type.TEXT));
+      rhs = convertType(ctx, rhs, CatalogUtil.newSimpleDataType(Type.TEXT));
     }
 
     return new BinaryEval(EvalType.CONCATENATE, lhs, rhs);
@@ -448,8 +456,8 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   // Arithmetic Operators
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  private static BinaryEval createBinaryNode(EvalType type, EvalNode lhs, EvalNode rhs) {
-    Pair<EvalNode, EvalNode> pair = convertTypesIfNecessary(lhs, rhs); // implicit type conversion if necessary
+  private static BinaryEval createBinaryNode(Context ctx, EvalType type, EvalNode lhs, EvalNode rhs) {
+    Pair<EvalNode, EvalNode> pair = convertTypesIfNecessary(ctx, lhs, rhs); // implicit type conversion if necessary
     return new BinaryEval(type, pair.getFirst(), pair.getSecond());
   }
 
@@ -460,7 +468,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     EvalNode right = visit(ctx, stack, expr.getRight());
     stack.pop();
 
-    return createBinaryNode(EvalType.PLUS, left, right);
+    return createBinaryNode(ctx, EvalType.PLUS, left, right);
   }
 
   @Override
@@ -470,7 +478,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     EvalNode right = visit(ctx, stack, expr.getRight());
     stack.pop();
 
-    return createBinaryNode(EvalType.MINUS, left, right);
+    return createBinaryNode(ctx, EvalType.MINUS, left, right);
   }
 
   @Override
@@ -480,7 +488,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     EvalNode right = visit(ctx, stack, expr.getRight());
     stack.pop();
 
-    return createBinaryNode(EvalType.MULTIPLY, left, right);
+    return createBinaryNode(ctx, EvalType.MULTIPLY, left, right);
   }
 
   @Override
@@ -490,7 +498,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     EvalNode right = visit(ctx, stack, expr.getRight());
     stack.pop();
 
-    return createBinaryNode(EvalType.DIVIDE, left, right);
+    return createBinaryNode(ctx, EvalType.DIVIDE, left, right);
   }
 
   @Override
@@ -500,7 +508,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     EvalNode right = visit(ctx, stack, expr.getRight());
     stack.pop();
 
-    return createBinaryNode(EvalType.MODULAR, left, right);
+    return createBinaryNode(ctx, EvalType.MODULAR, left, right);
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -584,14 +592,14 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
         } else {
           lastDataType = CatalogUtil.newSimpleDataType(CatalogUtil.getPrimitiveTypeOf(lastDataType.getType()));
         }
-        givenArgs[i] = convertType(givenArgs[i], lastDataType);
+        givenArgs[i] = convertType(ctx, givenArgs[i], lastDataType);
       }
     } else {
       assertEval(funcDesc.getParamTypes().length == givenArgs.length,
           "The number of parameters is mismatched to the function definition: " + funcDesc.toString());
       // According to our function matching method, each given argument can be casted to the definition parameter.
       for (int i = 0; i < givenArgs.length; i++) {
-        givenArgs[i] = convertType(givenArgs[i], funcDesc.getParamTypes()[i]);
+        givenArgs[i] = convertType(ctx, givenArgs[i], funcDesc.getParamTypes()[i]);
       }
     }
 
@@ -600,7 +608,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       FunctionType functionType = funcDesc.getFuncType();
       if (functionType == FunctionType.GENERAL
           || functionType == FunctionType.UDF) {
-        return new GeneralFunctionEval(funcDesc, (GeneralFunction) funcDesc.newInstance(), givenArgs);
+        return new GeneralFunctionEval(ctx.queryContext, funcDesc, (GeneralFunction) funcDesc.newInstance(), givenArgs);
       } else if (functionType == FunctionType.AGGREGATION
           || functionType == FunctionType.UDA) {
         if (!ctx.currentBlock.hasNode(NodeType.GROUP_BY)) {
@@ -768,11 +776,23 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   public EvalNode visitCastExpr(Context ctx, Stack<Expr> stack, CastExpr expr) throws PlanningException {
     EvalNode child = super.visitCastExpr(ctx, stack, expr);
 
-    if (child.getType() == EvalType.CONST) { // if it is a casting operation for a constant value
-      ConstEval constEval = (ConstEval) child; // it will be pre-computed and casted to a constant value
-      return new ConstEval(DatumFactory.cast(constEval.getValue(), LogicalPlanner.convertDataType(expr.getTarget())));
+    // if it is a casting operation for a constant value, it will be pre-computed and casted to a constant value.
+
+    if (child.getType() == EvalType.CONST) {
+      ConstEval constEval = (ConstEval) child;
+
+      // some cast operation may require earlier evaluation with timezone.
+      TimeZone tz = null;
+      if (ctx.queryContext.containsKey(SessionVars.TIMEZONE)) {
+        String tzId = ctx.queryContext.get(SessionVars.TIMEZONE);
+        tz = TimeZone.getTimeZone(tzId);
+      }
+
+      return new ConstEval(
+          DatumFactory.cast(constEval.getValue(), LogicalPlanner.convertDataType(expr.getTarget()), tz));
+
     } else {
-      return new CastEval(child, LogicalPlanner.convertDataType(expr.getTarget()));
+      return new CastEval(ctx.queryContext, child, LogicalPlanner.convertDataType(expr.getTarget()));
     }
   }
 
@@ -838,7 +858,11 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
     TimeMeta tm = new TimeMeta();
     DateTimeUtil.toJulianTimeMeta(timestamp, tm);
-    DateTimeUtil.toUTCTimezone(tm);
+
+    if (ctx.queryContext.containsKey(SessionVars.TIMEZONE)) {
+      TimeZone tz = TimeZone.getTimeZone(ctx.queryContext.get(SessionVars.TIMEZONE));
+      DateTimeUtil.toUTCTimezone(tm, tz);
+    }
 
     return new ConstEval(new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm)));
   }
@@ -864,7 +888,11 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
     TimeDatum timeDatum = new TimeDatum(time);
     TimeMeta tm = timeDatum.toTimeMeta();
-    DateTimeUtil.toUTCTimezone(tm);
+
+    if (ctx.queryContext.containsKey(SessionVars.TIMEZONE)) {
+      TimeZone tz = TimeZone.getTimeZone(ctx.queryContext.get(SessionVars.TIMEZONE));
+      DateTimeUtil.toUTCTimezone(tm, tz);
+    }
 
     return new ConstEval(new TimeDatum(DateTimeUtil.toTime(tm)));
   }

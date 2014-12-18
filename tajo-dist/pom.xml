@@ -75,7 +75,12 @@
     </dependency>
     <dependency>
       <groupId>org.apache.tajo</groupId>
-      <artifactId>tajo-storage</artifactId>
+      <artifactId>tajo-storage-common</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-storage-hdfs</artifactId>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -130,7 +135,7 @@
                       run cp -r $ROOT/tajo-client/target/tajo-client-${project.version}/* .
                       run cp -r $ROOT/tajo-catalog/target/tajo-catalog-${project.version}/* .
                       run cp -r $ROOT/tajo-storage/target/tajo-storage-${project.version}/* .
-                      run cp -r $ROOT/tajo-yarn-pullserver/target/tajo-yarn-pullserver-${project.version}.jar .
+                      run cp -r $ROOT/tajo-pullserver/target/tajo-pullserver-${project.version}.jar .
                       run cp -r $ROOT/tajo-thrift-server/target/tajo-thrift-server-${project.version}/* .
                       run cp -r $ROOT/tajo-core/target/tajo-core-${project.version}.jar .
                       run cp -r $ROOT/tajo-core/target/lib .
@@ -222,8 +227,8 @@
                     <argument>Tajo</argument>
                     <argument>org.apache.tajo.master.querymaster.Query,
                       org.apache.tajo.master.querymaster.SubQuery,
-                      org.apache.tajo.master.querymaster.QueryUnit,
-                      org.apache.tajo.master.querymaster.QueryUnitAttempt
+                      org.apache.tajo.master.querymaster.Task,
+                      org.apache.tajo.master.querymaster.TaskAttempt
                     </argument>
                     <argument>Tajo.gv</argument>
                   </arguments>

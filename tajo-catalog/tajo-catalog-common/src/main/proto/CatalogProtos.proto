@@ -37,6 +37,7 @@ enum StoreType {
   AVRO = 9;
   TEXTFILE = 10;
   JSON = 11;
+  HBASE = 12;
 }
 
 enum OrderType {
@@ -69,16 +70,8 @@ message SchemaProto {
 
 message FragmentProto {
   required string id = 1;
-  required bytes contents = 2;
-}
-
-message FileFragmentProto {
-  required string id = 1;
-  required string path = 2;
-  required int64 startOffset = 3;
-  required int64 length = 4;
-  repeated string hosts = 7;
-  repeated int32 diskIds = 8;
+  required string storeType = 2;
+  required bytes contents = 3;
 }
 
 message TableProto {
@@ -278,6 +271,11 @@ message AlterTableDescProto {
 message AlterColumnProto {
   required string oldColumnName = 1;
   required string newColumnName = 2;
+}
+
+message UpdateTableStatsProto {
+  required string tableName = 1;
+  required TableStatsProto stats = 2;
 }
 
 ////////////////////////////////////////////////

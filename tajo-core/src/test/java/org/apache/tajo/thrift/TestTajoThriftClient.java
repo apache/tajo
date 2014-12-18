@@ -205,9 +205,15 @@ public class TestTajoThriftClient {
   @Test
   public final void testKillQuery() throws Exception {
     TGetQueryStatusResponse res = client.executeQuery("select sleep(2) from default.lineitem");
-    Thread.sleep(1000);
+    while (true) {
+      String state = client.getQueryStatus(res.getQueryId()).getState();
+      if (QueryState.QUERY_RUNNING.name().equals(state)) {
+        break;
+      }
+      Thread.sleep(100);
+    }
     client.killQuery(res.getQueryId());
-    Thread.sleep(2000);
+    Thread.sleep(5000);
     assertEquals(QueryState.QUERY_KILLED.name(), client.getQueryStatus(res.getQueryId()).getState());
   }
 

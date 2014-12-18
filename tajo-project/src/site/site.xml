@@ -104,8 +104,8 @@
     </menu>
 
     <menu name="Documentation">
-      <item name="Current (Dev)" href="http://tajo.apache.org/docs/current/index.html" />
-      <item name="0.9.0" href="http://tajo.apache.org/docs/0.9.0/index.html" />
+      <item name="Devel" href="http://tajo.apache.org/docs/devel/index.html" />
+      <item name="Current (0.9.0)" href="http://tajo.apache.org/docs/current/index.html" />
       <item name="0.8.0" href="http://tajo.apache.org/docs/0.8.0/index.html" />
       <item name="0.2.0-incubating release" href="http://tajo.apache.org/tajo-0.2.0-doc.html" />
     </menu>

@@ -34,6 +34,8 @@ import org.junit.experimental.categories.Category;
 import java.sql.ResultSet;
 import java.util.TimeZone;
 
+import static org.junit.Assert.assertEquals;
+
 @Category(IntegrationTest.class)
 public class TestSortQuery extends QueryTestCaseBase {
 
@@ -125,21 +127,14 @@ public class TestSortQuery extends QueryTestCaseBase {
   public final void testSortWithDate() throws Exception {
     // skip this test if catalog uses HCatalogStore.
     // It is because HCatalogStore does not support Time data type.
-    TimeZone oldTimeZone = TajoConf.setCurrentTimeZone(TimeZone.getTimeZone("UTC"));
-    TimeZone systemOldTimeZone = TimeZone.getDefault();
-    TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
-    try {
-      if (!testingCluster.isHCatalogStoreRunning()) {
-        // create external table table1 (col1 timestamp, col2 date, col3 time) ...
-        executeDDL("create_table_with_date_ddl.sql", "table1");
 
-        ResultSet res = executeQuery();
-        assertResultSet(res);
-        cleanupQuery(res);
-      }
-    } finally {
-      TajoConf.setCurrentTimeZone(oldTimeZone);
-      TimeZone.setDefault(systemOldTimeZone);
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      // create external table table1 (col1 timestamp, col2 date, col3 time) ...
+      executeDDL("create_table_with_date_ddl.sql", "table1");
+
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
     }
   }
 
@@ -201,6 +196,43 @@ public class TestSortQuery extends QueryTestCaseBase {
     } finally {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "0");
       executeString("DROP TABLE nullsort PURGE;").close();
+    }
+  }
+
+  @Test
+  public final void testSortOnNullColumn2() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("name", Type.TEXT);
+    String[] data = new String[]{ "1|111", "2|\\N", "3|333" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select * from table11 order by name asc");
+      String ascExpected = "id,name\n" +
+          "-------------------------------\n" +
+          "1,111\n" +
+          "3,333\n" +
+          "2,null\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+
+      res = executeString("select * from table11 order by name desc");
+      String descExpected = "id,name\n" +
+          "-------------------------------\n" +
+          "2,null\n" +
+          "3,333\n" +
+          "1,111\n";
+
+      assertEquals(descExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
     }
   }
 

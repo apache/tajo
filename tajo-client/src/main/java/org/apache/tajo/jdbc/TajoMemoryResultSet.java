@@ -26,6 +26,7 @@ import org.apache.tajo.storage.Tuple;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TajoMemoryResultSet extends TajoResultSetBase {
@@ -33,7 +34,9 @@ public class TajoMemoryResultSet extends TajoResultSetBase {
   private AtomicBoolean closed = new AtomicBoolean(false);
   private RowStoreUtil.RowStoreDecoder decoder;
 
-  public TajoMemoryResultSet(Schema schema, List<ByteString> serializedTuples, int maxRowNum) {
+  public TajoMemoryResultSet(Schema schema, List<ByteString> serializedTuples, int maxRowNum,
+                             Map<String, String> clientSideSessionVars) {
+    super(clientSideSessionVars);
     this.schema = schema;
     this.totalRows = maxRowNum;
     this.serializedTuples = serializedTuples;

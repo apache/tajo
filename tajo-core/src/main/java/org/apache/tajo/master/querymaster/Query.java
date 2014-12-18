@@ -23,7 +23,6 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.ContentSummary;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.event.EventHandler;
@@ -32,31 +31,28 @@ import org.apache.hadoop.yarn.util.Clock;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos.QueryState;
+import org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.ExecutionBlockCursor;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.plan.logical.CreateTableNode;
-import org.apache.tajo.plan.logical.InsertNode;
-import org.apache.tajo.plan.logical.NodeType;
+import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.event.*;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.history.QueryHistory;
 import org.apache.tajo.util.history.SubQueryHistory;
 
 import java.io.IOException;
-import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -72,7 +68,6 @@ public class Query implements EventHandler<QueryEvent> {
   private Map<ExecutionBlockId, SubQuery> subqueries;
   private final EventHandler eventHandler;
   private final MasterPlan plan;
-  private final StorageManager sm;
   QueryMasterTask.QueryMasterTaskContext context;
   private ExecutionBlockCursor cursor;
 
@@ -211,10 +206,9 @@ public class Query implements EventHandler<QueryEvent> {
     this.clock = context.getClock();
     this.appSubmitTime = appSubmitTime;
     this.queryStr = queryStr;
-    subqueries = Maps.newHashMap();
+    this.subqueries = Maps.newConcurrentMap();
     this.eventHandler = eventHandler;
     this.plan = plan;
-    this.sm = context.getStorageManager();
     this.cursor = new ExecutionBlockCursor(plan, true);
 
     StringBuilder sb = new StringBuilder("\n=======================================================");
@@ -396,7 +390,7 @@ public class Query implements EventHandler<QueryEvent> {
 
       query.setStartTime();
       SubQuery subQuery = new SubQuery(query.context, query.getPlan(),
-          query.getExecutionBlockCursor().nextBlock(), query.sm);
+          query.getExecutionBlockCursor().nextBlock());
       subQuery.setPriority(query.priority--);
       query.addSubQuery(subQuery);
 
@@ -421,6 +415,20 @@ public class Query implements EventHandler<QueryEvent> {
       } else {
         finalState = QueryState.QUERY_ERROR;
       }
+      if (finalState != QueryState.QUERY_SUCCEEDED) {
+        SubQuery lastStage = query.getSubQuery(subQueryEvent.getExecutionBlockId());
+        if (lastStage != null && lastStage.getTableMeta() != null) {
+          StoreType storeType = lastStage.getTableMeta().getStoreType();
+          if (storeType != null) {
+            LogicalRootNode rootNode = lastStage.getMasterPlan().getLogicalPlan().getRootBlock().getRoot();
+            try {
+              StorageManager.getStorageManager(query.systemConf, storeType).rollbackOutputCommit(rootNode.getChild());
+            } catch (IOException e) {
+              LOG.warn(query.getId() + ", failed processing cleanup storage when query failed:" + e.getMessage(), e);
+            }
+          }
+        }
+      }
       query.eventHandler.handle(new QueryMasterQueryCompletedEvent(query.getId()));
       query.setFinishTime();
 
@@ -428,354 +436,25 @@ public class Query implements EventHandler<QueryEvent> {
     }
 
     private QueryState finalizeQuery(Query query, QueryCompletedEvent event) {
-      MasterPlan masterPlan = query.getPlan();
-
-      ExecutionBlock terminal = query.getPlan().getTerminalBlock();
-      DataChannel finalChannel = masterPlan.getChannel(event.getExecutionBlockId(), terminal.getId());
-
-      QueryHookExecutor hookExecutor = new QueryHookExecutor(query.context.getQueryMasterContext());
+      SubQuery lastStage = query.getSubQuery(event.getExecutionBlockId());
+      StoreType storeType = lastStage.getTableMeta().getStoreType();
       try {
-        Path finalOutputDir = commitOutputData(query);
+        LogicalRootNode rootNode = lastStage.getMasterPlan().getLogicalPlan().getRootBlock().getRoot();
+        CatalogService catalog = lastStage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
+        TableDesc tableDesc =  PlannerUtil.getTableDesc(catalog, rootNode.getChild());
+
+        Path finalOutputDir = StorageManager.getStorageManager(query.systemConf, storeType)
+            .commitOutputData(query.context.getQueryContext(),
+                lastStage.getId(), lastStage.getMasterPlan().getLogicalPlan(), lastStage.getSchema(), tableDesc);
+
+        QueryHookExecutor hookExecutor = new QueryHookExecutor(query.context.getQueryMasterContext());
         hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(), finalOutputDir);
-      } catch (Throwable t) {
-        query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(t)));
+      } catch (Exception e) {
+        query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(e)));
         return QueryState.QUERY_ERROR;
       }
 
       return QueryState.QUERY_SUCCEEDED;
-    }
-
-    /**
-     * It moves a result data stored in a staging output dir into a final output dir.
-     */
-    public Path commitOutputData(Query query) throws IOException {
-      QueryContext queryContext = query.context.getQueryContext();
-      Path stagingResultDir = new Path(queryContext.getStagingDir(), TajoConstants.RESULT_DIR_NAME);
-      Path finalOutputDir;
-      if (queryContext.hasOutputPath()) {
-        finalOutputDir = queryContext.getOutputPath();
-        try {
-          FileSystem fs = stagingResultDir.getFileSystem(query.systemConf);
-
-          if (queryContext.isOutputOverwrite()) { // INSERT OVERWRITE INTO
-
-            // It moves the original table into the temporary location.
-            // Then it moves the new result table into the original table location.
-            // Upon failed, it recovers the original table if possible.
-            boolean movedToOldTable = false;
-            boolean committed = false;
-            Path oldTableDir = new Path(queryContext.getStagingDir(), TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
-            ContentSummary summary = fs.getContentSummary(stagingResultDir);
-
-            if (queryContext.hasPartition() && summary.getFileCount() > 0L) {
-              // This is a map for existing non-leaf directory to rename. A key is current directory and a value is
-              // renaming directory.
-              Map<Path, Path> renameDirs = TUtil.newHashMap();
-              // This is a map for recovering existing partition directory. A key is current directory and a value is
-              // temporary directory to back up.
-              Map<Path, Path> recoveryDirs = TUtil.newHashMap();
-
-              try {
-                if (!fs.exists(finalOutputDir)) {
-                  fs.mkdirs(finalOutputDir);
-                }
-
-                visitPartitionedDirectory(fs, stagingResultDir, finalOutputDir, stagingResultDir.toString(),
-                    renameDirs, oldTableDir);
-
-                // Rename target partition directories
-                for(Map.Entry<Path, Path> entry : renameDirs.entrySet()) {
-                  // Backup existing data files for recovering
-                  if (fs.exists(entry.getValue())) {
-                    String recoveryPathString = entry.getValue().toString().replaceAll(finalOutputDir.toString(),
-                        oldTableDir.toString());
-                    Path recoveryPath = new Path(recoveryPathString);
-                    fs.rename(entry.getValue(), recoveryPath);
-                    fs.exists(recoveryPath);
-                    recoveryDirs.put(entry.getValue(), recoveryPath);
-                  }
-                  // Delete existing directory
-                  fs.delete(entry.getValue(), true);
-                  // Rename staging directory to final output directory
-                  fs.rename(entry.getKey(), entry.getValue());
-                }
-
-              } catch (IOException ioe) {
-                // Remove created dirs
-                for(Map.Entry<Path, Path> entry : renameDirs.entrySet()) {
-                  fs.delete(entry.getValue(), true);
-                }
-
-                // Recovery renamed dirs
-                for(Map.Entry<Path, Path> entry : recoveryDirs.entrySet()) {
-                  fs.delete(entry.getValue(), true);
-                  fs.rename(entry.getValue(), entry.getKey());
-                }
-
-                throw new IOException(ioe.getMessage());
-              }
-            } else { // no partition
-              try {
-
-                // if the final output dir exists, move all contents to the temporary table dir.
-                // Otherwise, just make the final output dir. As a result, the final output dir will be empty.
-                if (fs.exists(finalOutputDir)) {
-                  fs.mkdirs(oldTableDir);
-
-                  for (FileStatus status : fs.listStatus(finalOutputDir, StorageManager.hiddenFileFilter)) {
-                    fs.rename(status.getPath(), oldTableDir);
-                  }
-
-                  movedToOldTable = fs.exists(oldTableDir);
-                } else { // if the parent does not exist, make its parent directory.
-                  fs.mkdirs(finalOutputDir);
-                }
-
-                // Move the results to the final output dir.
-                for (FileStatus status : fs.listStatus(stagingResultDir)) {
-                  fs.rename(status.getPath(), finalOutputDir);
-                }
-
-                // Check the final output dir
-                committed = fs.exists(finalOutputDir);
-
-              } catch (IOException ioe) {
-                // recover the old table
-                if (movedToOldTable && !committed) {
-
-                  // if commit is failed, recover the old data
-                  for (FileStatus status : fs.listStatus(finalOutputDir, StorageManager.hiddenFileFilter)) {
-                    fs.delete(status.getPath(), true);
-                  }
-
-                  for (FileStatus status : fs.listStatus(oldTableDir)) {
-                    fs.rename(status.getPath(), finalOutputDir);
-                  }
-                }
-
-                throw new IOException(ioe.getMessage());
-              }
-            }
-          } else {
-            NodeType queryType = queryContext.getCommandType();
-
-            if (queryType == NodeType.INSERT) { // INSERT INTO an existing table
-
-              NumberFormat fmt = NumberFormat.getInstance();
-              fmt.setGroupingUsed(false);
-              fmt.setMinimumIntegerDigits(3);
-
-              if (queryContext.hasPartition()) {
-                for(FileStatus eachFile: fs.listStatus(stagingResultDir)) {
-                  if (eachFile.isFile()) {
-                    LOG.warn("Partition table can't have file in a staging dir: " + eachFile.getPath());
-                    continue;
-                  }
-                  moveResultFromStageToFinal(fs, stagingResultDir, eachFile, finalOutputDir, fmt, -1);
-                }
-              } else {
-                int maxSeq = StorageUtil.getMaxFileSequence(fs, finalOutputDir, false) + 1;
-                for(FileStatus eachFile: fs.listStatus(stagingResultDir)) {
-                  moveResultFromStageToFinal(fs, stagingResultDir, eachFile, finalOutputDir, fmt, maxSeq++);
-                }
-              }
-              // checking all file moved and remove empty dir
-              verifyAllFileMoved(fs, stagingResultDir);
-              FileStatus[] files = fs.listStatus(stagingResultDir);
-              if (files != null && files.length != 0) {
-                for (FileStatus eachFile: files) {
-                  LOG.error("There are some unmoved files in staging dir:" + eachFile.getPath());
-                }
-              }
-            } else { // CREATE TABLE AS SELECT (CTAS)
-              if (fs.exists(finalOutputDir)) {
-                for (FileStatus status : fs.listStatus(stagingResultDir)) {
-                  fs.rename(status.getPath(), finalOutputDir);
-                }
-              } else {
-                fs.rename(stagingResultDir, finalOutputDir);
-              }
-              LOG.info("Moved from the staging dir to the output directory '" + finalOutputDir);
-            }
-          }
-
-          // remove the staging directory if the final output dir is given.
-          Path stagingDirRoot = queryContext.getStagingDir().getParent();
-          fs.delete(stagingDirRoot, true);
-
-        } catch (Throwable t) {
-          LOG.error(t);
-          throw new IOException(t);
-        }
-      } else {
-        finalOutputDir = new Path(queryContext.getStagingDir(), TajoConstants.RESULT_DIR_NAME);
-      }
-
-      return finalOutputDir;
-    }
-
-    /**
-     * This method sets a rename map which includes renamed staging directory to final output directory recursively.
-     * If there exists some data files, this delete it for duplicate data.
-     *
-     *
-     * @param fs
-     * @param stagingPath
-     * @param outputPath
-     * @param stagingParentPathString
-     * @throws IOException
-     */
-    private void visitPartitionedDirectory(FileSystem fs, Path stagingPath, Path outputPath,
-                                        String stagingParentPathString,
-                                        Map<Path, Path> renameDirs, Path oldTableDir) throws IOException {
-      FileStatus[] files = fs.listStatus(stagingPath);
-
-      for(FileStatus eachFile : files) {
-        if (eachFile.isDirectory()) {
-          Path oldPath = eachFile.getPath();
-
-          // Make recover directory.
-          String recoverPathString = oldPath.toString().replaceAll(stagingParentPathString,
-          oldTableDir.toString());
-          Path recoveryPath = new Path(recoverPathString);
-          if (!fs.exists(recoveryPath)) {
-            fs.mkdirs(recoveryPath);
-          }
-
-          visitPartitionedDirectory(fs, eachFile.getPath(), outputPath, stagingParentPathString,
-          renameDirs, oldTableDir);
-          // Find last order partition for renaming
-          String newPathString = oldPath.toString().replaceAll(stagingParentPathString,
-          outputPath.toString());
-          Path newPath = new Path(newPathString);
-          if (!isLeafDirectory(fs, eachFile.getPath())) {
-           renameDirs.put(eachFile.getPath(), newPath);
-          } else {
-            if (!fs.exists(newPath)) {
-             fs.mkdirs(newPath);
-            }
-          }
-        }
-      }
-    }
-
-    private boolean isLeafDirectory(FileSystem fs, Path path) throws IOException {
-      boolean retValue = false;
-
-      FileStatus[] files = fs.listStatus(path);
-      for (FileStatus file : files) {
-        if (fs.isDirectory(file.getPath())) {
-          retValue = true;
-          break;
-        }
-      }
-
-      return retValue;
-    }
-
-    private boolean verifyAllFileMoved(FileSystem fs, Path stagingPath) throws IOException {
-      FileStatus[] files = fs.listStatus(stagingPath);
-      if (files != null && files.length != 0) {
-        for (FileStatus eachFile: files) {
-          if (eachFile.isFile()) {
-            LOG.error("There are some unmoved files in staging dir:" + eachFile.getPath());
-            return false;
-          } else {
-            if (verifyAllFileMoved(fs, eachFile.getPath())) {
-              fs.delete(eachFile.getPath(), false);
-            } else {
-              return false;
-            }
-          }
-        }
-      }
-
-      return true;
-    }
-
-    /**
-     * Attach the sequence number to a path.
-     *
-     * @param path Path
-     * @param seq sequence number
-     * @param nf Number format
-     * @return New path attached with sequence number
-     * @throws IOException
-     */
-    private String replaceFileNameSeq(Path path, int seq, NumberFormat nf) throws IOException {
-      String[] tokens = path.getName().split("-");
-      if (tokens.length != 4) {
-        throw new IOException("Wrong result file name:" + path);
-      }
-      return tokens[0] + "-" + tokens[1] + "-" + tokens[2] + "-" + nf.format(seq);
-    }
-
-    /**
-     * Attach the sequence number to the output file name and than move the file into the final result path.
-     *
-     * @param fs FileSystem
-     * @param stagingResultDir The staging result dir
-     * @param fileStatus The file status
-     * @param finalOutputPath Final output path
-     * @param nf Number format
-     * @param fileSeq The sequence number
-     * @throws IOException
-     */
-    private void moveResultFromStageToFinal(FileSystem fs, Path stagingResultDir,
-                                            FileStatus fileStatus, Path finalOutputPath,
-                                            NumberFormat nf,
-                                            int fileSeq) throws IOException {
-      if (fileStatus.isDirectory()) {
-        String subPath = extractSubPath(stagingResultDir, fileStatus.getPath());
-        if (subPath != null) {
-          Path finalSubPath = new Path(finalOutputPath, subPath);
-          if (!fs.exists(finalSubPath)) {
-            fs.mkdirs(finalSubPath);
-          }
-          int maxSeq = StorageUtil.getMaxFileSequence(fs, finalSubPath, false);
-          for (FileStatus eachFile : fs.listStatus(fileStatus.getPath())) {
-            moveResultFromStageToFinal(fs, stagingResultDir, eachFile, finalOutputPath, nf, ++maxSeq);
-          }
-        } else {
-          throw new IOException("Wrong staging dir:" + stagingResultDir + "," + fileStatus.getPath());
-        }
-      } else {
-        String subPath = extractSubPath(stagingResultDir, fileStatus.getPath());
-        if (subPath != null) {
-          Path finalSubPath = new Path(finalOutputPath, subPath);
-          finalSubPath = new Path(finalSubPath.getParent(), replaceFileNameSeq(finalSubPath, fileSeq, nf));
-          if (!fs.exists(finalSubPath.getParent())) {
-            fs.mkdirs(finalSubPath.getParent());
-          }
-          if (fs.exists(finalSubPath)) {
-            throw new IOException("Already exists data file:" + finalSubPath);
-          }
-          boolean success = fs.rename(fileStatus.getPath(), finalSubPath);
-          if (success) {
-            LOG.info("Moving staging file[" + fileStatus.getPath() + "] + " +
-                "to final output[" + finalSubPath + "]");
-          } else {
-            LOG.error("Can't move staging file[" + fileStatus.getPath() + "] + " +
-                "to final output[" + finalSubPath + "]");
-          }
-        }
-      }
-    }
-
-    private String extractSubPath(Path parentPath, Path childPath) {
-      String parentPathStr = parentPath.toUri().getPath();
-      String childPathStr = childPath.toUri().getPath();
-
-      if (parentPathStr.length() > childPathStr.length()) {
-        return null;
-      }
-
-      int index = childPathStr.indexOf(parentPathStr);
-      if (index != 0) {
-        return null;
-      }
-
-      return childPathStr.substring(parentPathStr.length() + 1);
     }
 
     private static interface QueryHook {
@@ -916,8 +595,11 @@ public class Query implements EventHandler<QueryEvent> {
         finalTable.setStats(stats);
 
         if (insertNode.hasTargetTable()) {
-          catalog.dropTable(insertNode.getTableName());
-          catalog.createTable(finalTable);
+          UpdateTableStatsProto.Builder builder = UpdateTableStatsProto.newBuilder();
+          builder.setTableName(finalTable.getName());
+          builder.setStats(stats.getProto());
+
+          catalog.updateTableStats(builder.build());
         }
 
         query.setResultDesc(finalTable);
@@ -942,7 +624,7 @@ public class Query implements EventHandler<QueryEvent> {
     private void executeNextBlock(Query query) {
       ExecutionBlockCursor cursor = query.getExecutionBlockCursor();
       ExecutionBlock nextBlock = cursor.nextBlock();
-      SubQuery nextSubQuery = new SubQuery(query.context, query.getPlan(), nextBlock, query.sm);
+      SubQuery nextSubQuery = new SubQuery(query.context, query.getPlan(), nextBlock);
       nextSubQuery.setPriority(query.priority--);
       query.addSubQuery(nextSubQuery);
       nextSubQuery.handle(new SubQueryEvent(nextSubQuery.getId(), SubQueryEventType.SQ_INIT));
