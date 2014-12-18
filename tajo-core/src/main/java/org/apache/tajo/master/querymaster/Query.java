@@ -206,7 +206,7 @@ public class Query implements EventHandler<QueryEvent> {
     this.clock = context.getClock();
     this.appSubmitTime = appSubmitTime;
     this.queryStr = queryStr;
-    subqueries = Maps.newHashMap();
+    this.subqueries = Maps.newConcurrentMap();
     this.eventHandler = eventHandler;
     this.plan = plan;
     this.cursor = new ExecutionBlockCursor(plan, true);
