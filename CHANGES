@@ -111,6 +111,8 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1254: Fix getProgress race conditions in Query. (jinho)
+
     TAJO-1252: PathValidator should allow hdfs paths which contain IP addresses. 
     (jihoon)
 
