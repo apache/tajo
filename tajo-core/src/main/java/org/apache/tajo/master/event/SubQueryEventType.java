@@ -30,7 +30,7 @@ public enum SubQueryEventType {
   SQ_KILL,
   SQ_LAUNCH,
 
-  // Producer: QueryUnit
+  // Producer: Task
   SQ_TASK_COMPLETED,
   SQ_FAILED,
 

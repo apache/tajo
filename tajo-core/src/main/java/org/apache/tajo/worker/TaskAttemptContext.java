@@ -24,7 +24,7 @@ import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -59,7 +59,7 @@ public class TaskAttemptContext {
 
   private TaskAttemptState state;
   private TableStats resultStats;
-  private QueryUnitAttemptId queryId;
+  private TaskAttemptId queryId;
   private final Path workDir;
   private boolean needFetch = false;
   private CountDownLatch doneFetchPhaseSignal;
@@ -84,7 +84,7 @@ public class TaskAttemptContext {
   private HashShuffleAppenderManager hashShuffleAppenderManager;
 
   public TaskAttemptContext(QueryContext queryContext, final ExecutionBlockContext executionBlockContext,
-                            final QueryUnitAttemptId queryId,
+                            final TaskAttemptId queryId,
                             final FragmentProto[] fragments,
                             final Path workDir) {
     this.queryContext = queryContext;
@@ -127,7 +127,7 @@ public class TaskAttemptContext {
   }
 
   @VisibleForTesting
-  public TaskAttemptContext(final QueryContext queryContext, final QueryUnitAttemptId queryId,
+  public TaskAttemptContext(final QueryContext queryContext, final TaskAttemptId queryId,
                             final Fragment [] fragments,  final Path workDir) {
     this(queryContext, null, queryId, FragmentConvertor.toFragmentProtoArray(fragments), workDir);
   }
@@ -306,7 +306,7 @@ public class TaskAttemptContext {
     return this.workDir;
   }
   
-  public QueryUnitAttemptId getTaskId() {
+  public TaskAttemptId getTaskId() {
     return this.queryId;
   }
   
@@ -396,7 +396,7 @@ public class TaskAttemptContext {
     return queryContext;
   }
 
-  public QueryUnitAttemptId getQueryId() {
+  public TaskAttemptId getQueryId() {
     return queryId;
   }
 

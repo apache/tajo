@@ -21,7 +21,7 @@ package org.apache.tajo.storage.hbase;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.KeyValue;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -45,7 +45,7 @@ public abstract class AbstractHBaseAppender implements Appender {
   protected Configuration conf;
   protected Schema schema;
   protected TableMeta meta;
-  protected QueryUnitAttemptId taskAttemptId;
+  protected TaskAttemptId taskAttemptId;
   protected Path stagingDir;
   protected boolean inited = false;
 
@@ -72,7 +72,7 @@ public abstract class AbstractHBaseAppender implements Appender {
 
   protected KeyValue[] keyValues;
 
-  public AbstractHBaseAppender(Configuration conf, QueryUnitAttemptId taskAttemptId,
+  public AbstractHBaseAppender(Configuration conf, TaskAttemptId taskAttemptId,
                        Schema schema, TableMeta meta, Path stagingDir) {
     this.conf = conf;
     this.schema = schema;

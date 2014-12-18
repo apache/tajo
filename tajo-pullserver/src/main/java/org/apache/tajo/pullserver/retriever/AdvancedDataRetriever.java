@@ -23,8 +23,8 @@ import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryUnitAttemptId;
-import org.apache.tajo.QueryUnitId;
+import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.TaskId;
 import org.apache.tajo.pullserver.FileAccessForbiddenException;
 import org.apache.tajo.util.TajoIdUtils;
 import org.jboss.netty.channel.ChannelHandlerContext;
@@ -75,13 +75,13 @@ public class AdvancedDataRetriever implements DataRetriever {
 
     if (params.containsKey("sid")) {
       List<FileChunk> chunks = Lists.newArrayList();
-      List<String> queryUnidIds = splitMaps(params.get("qid"));
-      for (String eachQueryUnitId : queryUnidIds) {
-        String[] queryUnitIdSeqTokens = eachQueryUnitId.split("_");
+      List<String> taskIds = splitMaps(params.get("qid"));
+      for (String eachTaskId : taskIds) {
+        String[] taskIdSeqTokens = eachTaskId.split("_");
         ExecutionBlockId ebId = TajoIdUtils.createExecutionBlockId(params.get("sid").get(0));
-        QueryUnitId quid = new QueryUnitId(ebId, Integer.parseInt(queryUnitIdSeqTokens[0]));
+        TaskId quid = new TaskId(ebId, Integer.parseInt(taskIdSeqTokens[0]));
 
-        QueryUnitAttemptId attemptId = new QueryUnitAttemptId(quid, Integer.parseInt(queryUnitIdSeqTokens[1]));
+        TaskAttemptId attemptId = new TaskAttemptId(quid, Integer.parseInt(taskIdSeqTokens[1]));
 
         RetrieverHandler handler = handlerMap.get(attemptId.toString());
         FileChunk chunk = handler.get(params);
@@ -113,7 +113,7 @@ public class AdvancedDataRetriever implements DataRetriever {
 
   private List<String> splitMaps(List<String> qids) {
     if (null == qids) {
-      LOG.error("QueryUnitId is EMPTY");
+      LOG.error("QueryId is EMPTY");
       return null;
     }
 

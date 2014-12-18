@@ -25,10 +25,9 @@ import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TestTajoIds;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.master.querymaster.QueryUnit;
-import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
+import org.apache.tajo.master.querymaster.Task;
+import org.apache.tajo.master.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.master.querymaster.Repartitioner;
-import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.FetchImpl;
@@ -61,7 +60,7 @@ public class TestRepartitioner {
     }
     for (int i = 0; i < 1000; i++) {
       int partitionId = i % numPartition;
-      IntermediateEntry entry = new IntermediateEntry(i, 0, partitionId, new QueryUnit.PullHost(hostName, port));
+      IntermediateEntry entry = new IntermediateEntry(i, 0, partitionId, new Task.PullHost(hostName, port));
       entry.setEbId(sid);
       entry.setVolume(10);
       intermediateEntries.get(partitionId).add(entry);
@@ -71,7 +70,7 @@ public class TestRepartitioner {
         new HashMap<Integer, Map<ExecutionBlockId, List<IntermediateEntry>>>();
 
     for (Map.Entry<Integer, List<IntermediateEntry>> eachEntry: intermediateEntries.entrySet()) {
-      FetchImpl fetch = new FetchImpl(new QueryUnit.PullHost(hostName, port), ShuffleType.HASH_SHUFFLE,
+      FetchImpl fetch = new FetchImpl(new Task.PullHost(hostName, port), ShuffleType.HASH_SHUFFLE,
           sid, eachEntry.getKey(), eachEntry.getValue());
 
       fetch.setName(sid.toString());
@@ -120,7 +119,7 @@ public class TestRepartitioner {
     ExecutionBlockId ebId = new ExecutionBlockId(LocalTajoTestingUtility.newQueryId(), 0);
     FetchImpl [] fetches = new FetchImpl[12];
     for (int i = 0; i < 12; i++) {
-      fetches[i] = new FetchImpl(new QueryUnit.PullHost("localhost", 10000 + i), HASH_SHUFFLE, ebId, i / 2);
+      fetches[i] = new FetchImpl(new Task.PullHost("localhost", 10000 + i), HASH_SHUFFLE, ebId, i / 2);
     }
 
     int [] VOLUMES = {100, 80, 70, 30, 10, 5};
@@ -185,7 +184,7 @@ public class TestRepartitioner {
         offset += pageLengths[j];
         expectedTotalLength += pageLengths[j];
       }
-      IntermediateEntry interm = new IntermediateEntry(i, -1, -1, new QueryUnit.PullHost("" + i, i));
+      IntermediateEntry interm = new IntermediateEntry(i, -1, -1, new Task.PullHost("" + i, i));
       interm.setPages(pages);
       interm.setVolume(offset);
       intermediateEntries.add(interm);
@@ -243,7 +242,7 @@ public class TestRepartitioner {
         offset += pageLengths[j];
         expectedTotalLength += pageLengths[j];
       }
-      IntermediateEntry interm = new IntermediateEntry(i, -1, 0, new QueryUnit.PullHost("" + i, i));
+      IntermediateEntry interm = new IntermediateEntry(i, -1, 0, new Task.PullHost("" + i, i));
       interm.setPages(pages);
       interm.setVolume(offset);
       intermediateEntries.add(interm);
@@ -372,7 +371,7 @@ public class TestRepartitioner {
       for (int j = 0; j < pageDatas.length; j++) {
         pages.add(new Pair(pageDatas[j][0], (int) (pageDatas[j][1])));
       }
-      IntermediateEntry entry = new IntermediateEntry(-1, -1, 1, new QueryUnit.PullHost("host" + i , 9000));
+      IntermediateEntry entry = new IntermediateEntry(-1, -1, 1, new Task.PullHost("host" + i , 9000));
       entry.setPages(pages);
 
       entries.add(entry);
@@ -422,7 +421,7 @@ public class TestRepartitioner {
     }
 
     long expectedTotalLength = 0;
-    QueryUnit.PullHost pullHost = new QueryUnit.PullHost("host", 0);
+    Task.PullHost pullHost = new Task.PullHost("host", 0);
 
     for (int i = 0; i < 20; i++) {
       List<Pair<Long, Integer>> pages = new ArrayList<Pair<Long, Integer>>();
@@ -481,7 +480,7 @@ public class TestRepartitioner {
   @Test
   public void testFetchImpl() {
     ExecutionBlockId ebId = new ExecutionBlockId(LocalTajoTestingUtility.newQueryId(), 0);
-    QueryUnit.PullHost pullHost = new QueryUnit.PullHost("localhost", 0);
+    Task.PullHost pullHost = new Task.PullHost("localhost", 0);
 
     FetchImpl expected = new FetchImpl(pullHost, SCATTERED_HASH_SHUFFLE, ebId, 1);
     FetchImpl fetch2 = new FetchImpl(pullHost, SCATTERED_HASH_SHUFFLE, ebId, 1);

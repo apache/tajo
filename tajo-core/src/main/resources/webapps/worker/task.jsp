@@ -21,13 +21,13 @@
 
 <%@ page import="org.apache.tajo.ExecutionBlockId" %>
 <%@ page import="org.apache.tajo.QueryId" %>
-<%@ page import="org.apache.tajo.QueryUnitId" %>
+<%@ page import="org.apache.tajo.TaskId" %>
 <%@ page import="org.apache.tajo.catalog.proto.CatalogProtos" %>
 <%@ page import="org.apache.tajo.catalog.statistics.TableStats" %>
 <%@ page import="org.apache.tajo.ipc.TajoWorkerProtocol" %>
 <%@ page import="org.apache.tajo.master.querymaster.Query" %>
 <%@ page import="org.apache.tajo.master.querymaster.QueryMasterTask" %>
-<%@ page import="org.apache.tajo.master.querymaster.QueryUnit" %>
+<%@ page import="org.apache.tajo.master.querymaster.Task" %>
 <%@ page import="org.apache.tajo.master.querymaster.SubQuery" %>
 <%@ page import="org.apache.tajo.storage.DataLocation" %>
 <%@ page import="org.apache.tajo.storage.fragment.FileFragment" %>
@@ -54,7 +54,7 @@
     QueryId queryId = TajoIdUtils.parseQueryId(paramQueryId);
     ExecutionBlockId ebid = TajoIdUtils.createExecutionBlockId(paramEbId);
 
-    int queryUnitSeq = Integer.parseInt(request.getParameter("queryUnitSeq"));
+    int taskSeq = Integer.parseInt(request.getParameter("taskSeq"));
     TajoWorker tajoWorker = (TajoWorker) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
     QueryMasterTask queryMasterTask = tajoWorker.getWorkerContext()
             .getQueryMasterManagerService().getQueryMaster().getQueryMasterTask(queryId, true);
@@ -83,12 +83,12 @@
     }
     SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-    QueryUnitId queryUnitId = new QueryUnitId(ebid, queryUnitSeq);
-    QueryUnit queryUnit = subQuery.getQueryUnit(queryUnitId);
-    if(queryUnit == null) {
+    TaskId taskId = new TaskId(ebid, taskSeq);
+    Task task = subQuery.getTask(taskId);
+    if(task == null) {
 %>
 <script type="text/javascript">
-    alert("No QueryUnit for" + queryUnitId);
+    alert("No Task for" + taskId);
     document.history.back();
 </script>
 <%
@@ -102,7 +102,7 @@
 
     String fragmentInfo = "";
     String delim = "";
-    for (CatalogProtos.FragmentProto eachFragment : queryUnit.getAllFragments()) {
+    for (CatalogProtos.FragmentProto eachFragment : task.getAllFragments()) {
         Fragment fragment = FragmentConvertor.convert(tajoWorker.getConfig(), eachFragment);
         fragmentInfo += delim + fragment.toString();
         delim = "<br/>";
@@ -110,7 +110,7 @@
 
     String fetchInfo = "";
     delim = "";
-    for (Map.Entry<String, Set<FetchImpl>> e : queryUnit.getFetchMap().entrySet()) {
+    for (Map.Entry<String, Set<FetchImpl>> e : task.getFetchMap().entrySet()) {
         fetchInfo += delim + "<b>" + e.getKey() + "</b>";
         delim = "<br/>";
         for (FetchImpl f : e.getValue()) {
@@ -122,23 +122,22 @@
 
     String dataLocationInfos = "";
     delim = "";
-    for(DataLocation eachLocation: queryUnit.getDataLocations()) {
+    for(DataLocation eachLocation: task.getDataLocations()) {
         dataLocationInfos += delim + eachLocation.toString();
         delim = "<br/>";
     }
 
-    int numShuffles = queryUnit.getShuffleOutpuNum();
+    int numShuffles = task.getShuffleOutpuNum();
     String shuffleKey = "-";
     String shuffleFileName = "-";
     if(numShuffles > 0) {
-        TajoWorkerProtocol.ShuffleFileOutput shuffleFileOutputs = queryUnit.getShuffleFileOutputs().get(0);
+        TajoWorkerProtocol.ShuffleFileOutput shuffleFileOutputs = task.getShuffleFileOutputs().get(0);
         shuffleKey = "" + shuffleFileOutputs.getPartId();
         shuffleFileName = shuffleFileOutputs.getFileName();
     }
 
-    //int numIntermediateData = queryUnit.getIntermediateData() == null ? 0 : queryUnit.getIntermediateData().size();
-    TableStats inputStat = queryUnit.getLastAttempt().getInputStats();
-    TableStats outputStat = queryUnit.getLastAttempt().getResultStats();
+    TableStats inputStat = task.getLastAttempt().getInputStats();
+    TableStats outputStat = task.getLastAttempt().getResultStats();
 %>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -156,13 +155,13 @@
     <h3><a href='<%=backUrl%>'><%=ebid.toString()%></a></h3>
     <hr/>
     <table border="1" width="100%" class="border_table">
-        <tr><td width="200" align="right">ID</td><td><%=queryUnit.getId()%></td></tr>
-        <tr><td align="right">Progress</td><td><%=JSPUtil.percentFormat(queryUnit.getLastAttempt().getProgress())%>%</td></tr>
-        <tr><td align="right">State</td><td><%=queryUnit.getState()%></td></tr>
-        <tr><td align="right">Launch Time</td><td><%=queryUnit.getLaunchTime() == 0 ? "-" : df.format(queryUnit.getLaunchTime())%></td></tr>
-        <tr><td align="right">Finish Time</td><td><%=queryUnit.getFinishTime() == 0 ? "-" : df.format(queryUnit.getFinishTime())%></td></tr>
-        <tr><td align="right">Running Time</td><td><%=queryUnit.getLaunchTime() == 0 ? "-" : queryUnit.getRunningTime() + " ms"%></td></tr>
-        <tr><td align="right">Host</td><td><%=queryUnit.getSucceededHost() == null ? "-" : queryUnit.getSucceededHost()%></td></tr>
+        <tr><td width="200" align="right">ID</td><td><%=task.getId()%></td></tr>
+        <tr><td align="right">Progress</td><td><%=JSPUtil.percentFormat(task.getLastAttempt().getProgress())%>%</td></tr>
+        <tr><td align="right">State</td><td><%=task.getState()%></td></tr>
+        <tr><td align="right">Launch Time</td><td><%=task.getLaunchTime() == 0 ? "-" : df.format(task.getLaunchTime())%></td></tr>
+        <tr><td align="right">Finish Time</td><td><%=task.getFinishTime() == 0 ? "-" : df.format(task.getFinishTime())%></td></tr>
+        <tr><td align="right">Running Time</td><td><%=task.getLaunchTime() == 0 ? "-" : task.getRunningTime() + " ms"%></td></tr>
+        <tr><td align="right">Host</td><td><%=task.getSucceededHost() == null ? "-" : task.getSucceededHost()%></td></tr>
         <tr><td align="right">Shuffles</td><td># Shuffle Outputs: <%=numShuffles%>, Shuffle Key: <%=shuffleKey%>, Shuffle file: <%=shuffleFileName%></td></tr>
         <tr><td align="right">Data Locations</td><td><%=dataLocationInfos%></td></tr>
         <tr><td align="right">Fragment</td><td><%=fragmentInfo%></td></tr>

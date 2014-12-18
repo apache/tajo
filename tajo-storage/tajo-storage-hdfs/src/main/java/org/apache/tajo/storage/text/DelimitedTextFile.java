@@ -30,7 +30,7 @@ import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
 import org.apache.hadoop.io.compress.CompressionOutputStream;
 import org.apache.hadoop.io.compress.Compressor;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -115,7 +115,7 @@ public class DelimitedTextFile {
     private NonSyncByteArrayOutputStream os;
     private TextLineSerializer serializer;
 
-    public DelimitedTextFileAppender(Configuration conf, QueryUnitAttemptId taskAttemptId,
+    public DelimitedTextFileAppender(Configuration conf, TaskAttemptId taskAttemptId,
                                      final Schema schema, final TableMeta meta, final Path path)
         throws IOException {
       super(conf, taskAttemptId, schema, meta, path);

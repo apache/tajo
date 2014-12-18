@@ -29,7 +29,7 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.SequenceFile.CompressionType;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.hadoop.io.compress.CompressionCodecFactory;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -74,7 +74,7 @@ public class SequenceFileAppender extends FileAppender {
 
   private Writable EMPTY_KEY;
 
-  public SequenceFileAppender(Configuration conf, QueryUnitAttemptId taskAttemptId,
+  public SequenceFileAppender(Configuration conf, TaskAttemptId taskAttemptId,
                               Schema schema, TableMeta meta, Path workDir) throws IOException {
     super(conf, taskAttemptId, schema, meta, workDir);
     this.meta = meta;

@@ -18,13 +18,13 @@
 
 package org.apache.tajo.engine.query;
 
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.ipc.TajoWorkerProtocol.QueryUnitRequestProto;
-import org.apache.tajo.ipc.TajoWorkerProtocol.QueryUnitRequestProtoOrBuilder;
+import org.apache.tajo.ipc.TajoWorkerProtocol.TaskRequestProto;
+import org.apache.tajo.ipc.TajoWorkerProtocol.TaskRequestProtoOrBuilder;
 import org.apache.tajo.worker.FetchImpl;
 
 import java.util.ArrayList;
@@ -32,9 +32,9 @@ import java.util.List;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
-public class QueryUnitRequestImpl implements QueryUnitRequest {
+public class TaskRequestImpl implements TaskRequest {
 	
-  private QueryUnitAttemptId id;
+  private TaskAttemptId id;
   private List<FragmentProto> fragments;
   private String outputTable;
 	private boolean isUpdated;
@@ -47,31 +47,31 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
   private DataChannel dataChannel;
   private Enforcer enforcer;
 	
-	private QueryUnitRequestProto proto = QueryUnitRequestProto.getDefaultInstance();
-	private QueryUnitRequestProto.Builder builder = null;
+	private TaskRequestProto proto = TajoWorkerProtocol.TaskRequestProto.getDefaultInstance();
+	private TajoWorkerProtocol.TaskRequestProto.Builder builder = null;
 	private boolean viaProto = false;
 	
-	public QueryUnitRequestImpl() {
-		builder = QueryUnitRequestProto.newBuilder();
+	public TaskRequestImpl() {
+		builder = TaskRequestProto.newBuilder();
 		this.id = null;
 		this.isUpdated = false;
 	}
 	
-	public QueryUnitRequestImpl(QueryUnitAttemptId id, List<FragmentProto> fragments,
-			String outputTable, boolean clusteredOutput,
-			String serializedData, QueryContext queryContext, DataChannel channel, Enforcer enforcer) {
+	public TaskRequestImpl(TaskAttemptId id, List<FragmentProto> fragments,
+												 String outputTable, boolean clusteredOutput,
+												 String serializedData, QueryContext queryContext, DataChannel channel, Enforcer enforcer) {
 		this();
 		this.set(id, fragments, outputTable, clusteredOutput, serializedData, queryContext, channel, enforcer);
 	}
 	
-	public QueryUnitRequestImpl(QueryUnitRequestProto proto) {
+	public TaskRequestImpl(TaskRequestProto proto) {
 		this.proto = proto;
 		viaProto = true;
 		id = null;
 		isUpdated = false;
 	}
 	
-	public void set(QueryUnitAttemptId id, List<FragmentProto> fragments,
+	public void set(TaskAttemptId id, List<FragmentProto> fragments,
 			String outputTable, boolean clusteredOutput,
 			String serializedData, QueryContext queryContext, DataChannel dataChannel, Enforcer enforcer) {
 		this.id = id;
@@ -87,7 +87,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	}
 
 	@Override
-	public QueryUnitRequestProto getProto() {
+	public TaskRequestProto getProto() {
 		mergeLocalToProto();
 		proto = viaProto ? proto : builder.build();
 		viaProto = true;
@@ -95,21 +95,21 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	}
 
 	@Override
-	public QueryUnitAttemptId getId() {
-		QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
+	public TaskAttemptId getId() {
+		TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
 		if (id != null) {
 			return this.id;
 		}
 		if (!p.hasId()) {
 			return null;
 		}
-		this.id = new QueryUnitAttemptId(p.getId());
+		this.id = new TaskAttemptId(p.getId());
 		return this.id;
 	}
 
 	@Override
 	public List<FragmentProto> getFragments() {
-		QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
+		TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
 		if (fragments != null) {
 			return fragments;
 		}
@@ -124,7 +124,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 
 	@Override
 	public String getOutputTableId() {
-		QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
+		TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
 		if (outputTable != null) {
 			return this.outputTable;
 		}
@@ -137,7 +137,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 
 	@Override
 	public boolean isClusteredOutput() {
-		QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
+		TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
 		if (isUpdated) {
 			return this.clusteredOutput;
 		}
@@ -151,7 +151,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 
 	@Override
 	public String getSerializedData() {
-		QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
+		TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
 		if (this.serializedData != null) {
 			return this.serializedData;
 		}
@@ -163,7 +163,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	}
 
 	public boolean isInterQuery() {
-	  QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
+	  TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
     if (interQuery != null) {
       return interQuery;
     }
@@ -187,7 +187,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
   }
 
   public QueryContext getQueryContext(TajoConf conf) {
-    QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
+    TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
     if (queryContext != null) {
       return queryContext;
     }
@@ -210,7 +210,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 
   @Override
   public DataChannel getDataChannel() {
-    QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
+    TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
     if (dataChannel != null) {
       return dataChannel;
     }
@@ -223,7 +223,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 
   @Override
   public Enforcer getEnforcer() {
-    QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
+    TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
     if (enforcer != null) {
       return enforcer;
     }
@@ -244,7 +244,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 	  if (this.fetches != null) {
       return;
     }
-    QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
+    TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
     this.fetches = new ArrayList<FetchImpl>();
     for(TajoWorkerProtocol.FetchProto fetch : p.getFetchesList()) {
       fetches.add(new FetchImpl(fetch));
@@ -253,7 +253,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 
   @Override
   public boolean shouldDie() {
-    QueryUnitRequestProtoOrBuilder p = viaProto ? proto : builder;
+    TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
     if (shouldDie != null) {
       return shouldDie;
     }
@@ -272,7 +272,7 @@ public class QueryUnitRequestImpl implements QueryUnitRequest {
 
   private void maybeInitBuilder() {
 		if (viaProto || builder == null) {
-			builder = QueryUnitRequestProto.newBuilder(proto);
+			builder = TajoWorkerProtocol.TaskRequestProto.newBuilder(proto);
 		}
 		viaProto = true;
 	}

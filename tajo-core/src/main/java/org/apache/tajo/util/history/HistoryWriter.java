@@ -238,7 +238,7 @@ public class HistoryWriter extends AbstractService {
               writeTaskHistory((TaskHistory) eachHistory);
             } catch (Exception e) {
               LOG.error("Error while saving task history: " +
-                  ((TaskHistory) eachHistory).getQueryUnitAttemptId() + ":" + e.getMessage(), e);
+                  ((TaskHistory) eachHistory).getTaskAttemptId() + ":" + e.getMessage(), e);
             }
             break;
           case QUERY:
@@ -301,7 +301,7 @@ public class HistoryWriter extends AbstractService {
           out = null;
           try {
             out = fs.create(path);
-            out.write(subQueryHistory.toQueryUnitsJson().getBytes());
+            out.write(subQueryHistory.toTasksJson().getBytes());
             LOG.info("Saving query unit: " + path);
           } finally {
             if (out != null) {

@@ -27,7 +27,6 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.plan.logical.ShuffleFileWriteNode;
-import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.HashShuffleAppender;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.Tuple;
@@ -87,7 +86,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
     HashShuffleAppender appender = appenderMap.get(partId);
     if (appender == null) {
       appender = hashShuffleAppenderManager.getAppender(context.getConf(),
-          context.getQueryId().getQueryUnitId().getExecutionBlockId(), partId, meta, outSchema);
+          context.getQueryId().getTaskId().getExecutionBlockId(), partId, meta, outSchema);
       appenderMap.put(partId, appender);
     }
     return appender;
