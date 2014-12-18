@@ -24,7 +24,8 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
-    TAJO-1221: HA TajoClient should not connect TajoMaster at the first. (jaehwa)
+    TAJO-1221: HA TajoClient should not connect TajoMaster at the first. 
+    (jaehwa)
 
     TAJO-1241: Change default client and table time zone behavior. (hyunsik)
 
@@ -223,6 +224,8 @@ Release 0.9.1 - unreleased
 
 
   SUB TASKS
+
+    TAJO-324: Rename the prefix 'QueryUnit' to Task. (hyunsik)
 
     TAJO-1151: Implement the ByteBuffer-based De/Serializer. (jinho)
 

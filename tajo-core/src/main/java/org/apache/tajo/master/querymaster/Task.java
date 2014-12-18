@@ -30,8 +30,8 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
-import org.apache.tajo.QueryUnitAttemptId;
-import org.apache.tajo.QueryUnitId;
+import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.TaskId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.ipc.TajoWorkerProtocol.FailureIntermediateProto;
@@ -39,7 +39,7 @@ import org.apache.tajo.ipc.TajoWorkerProtocol.IntermediateEntryProto;
 import org.apache.tajo.master.FragmentPair;
 import org.apache.tajo.master.TaskState;
 import org.apache.tajo.master.event.*;
-import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext;
+import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptScheduleContext;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -47,7 +47,7 @@ import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TajoIdUtils;
-import org.apache.tajo.util.history.QueryUnitHistory;
+import org.apache.tajo.util.history.TaskHistory;
 import org.apache.tajo.worker.FetchImpl;
 
 import java.net.URI;
@@ -60,12 +60,12 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleFileOutput;
 
-public class QueryUnit implements EventHandler<TaskEvent> {
+public class Task implements EventHandler<TaskEvent> {
   /** Class Logger */
-  private static final Log LOG = LogFactory.getLog(QueryUnit.class);
+  private static final Log LOG = LogFactory.getLog(Task.class);
 
   private final Configuration systemConf;
-	private QueryUnitId taskId;
+	private TaskId taskId;
   private EventHandler eventHandler;
 	private StoreTableNode store = null;
 	private LogicalNode plan = null;
@@ -81,12 +81,12 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   private final boolean isLeafTask;
   private List<IntermediateEntry> intermediateData;
 
-  private Map<QueryUnitAttemptId, QueryUnitAttempt> attempts;
+  private Map<TaskAttemptId, TaskAttempt> attempts;
   private final int maxAttempts = 3;
   private Integer nextAttempt = -1;
-  private QueryUnitAttemptId lastAttemptId;
+  private TaskAttemptId lastAttemptId;
 
-  private QueryUnitAttemptId successfulAttempt;
+  private TaskAttemptId successfulAttempt;
   private String succeededHost;
   private int succeededHostPort;
   private int succeededPullServerPort;
@@ -101,11 +101,11 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
   private static final AttemptKilledTransition ATTEMPT_KILLED_TRANSITION = new AttemptKilledTransition();
 
-  private QueryUnitHistory finalQueryUnitHistory;
+  private TaskHistory finalTaskHistory;
 
   protected static final StateMachineFactory
-      <QueryUnit, TaskState, TaskEventType, TaskEvent> stateMachineFactory =
-      new StateMachineFactory <QueryUnit, TaskState, TaskEventType, TaskEvent>(TaskState.NEW)
+      <Task, TaskState, TaskEventType, TaskEvent> stateMachineFactory =
+      new StateMachineFactory <Task, TaskState, TaskEventType, TaskEvent>(TaskState.NEW)
 
           // Transitions from NEW state
           .addTransition(TaskState.NEW, TaskState.SCHEDULED,
@@ -182,10 +182,10 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
   private final Lock readLock;
   private final Lock writeLock;
-  private QueryUnitAttemptScheduleContext scheduleContext;
+  private TaskAttemptScheduleContext scheduleContext;
 
-	public QueryUnit(Configuration conf, QueryUnitAttemptScheduleContext scheduleContext,
-                   QueryUnitId id, boolean isLeafTask, EventHandler eventHandler) {
+	public Task(Configuration conf, TaskAttemptScheduleContext scheduleContext,
+              TaskId id, boolean isLeafTask, EventHandler eventHandler) {
     this.systemConf = conf;
 		this.taskId = id;
     this.eventHandler = eventHandler;
@@ -222,7 +222,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   }
 
   public TaskAttemptState getLastAttemptStatus() {
-    QueryUnitAttempt lastAttempt = getLastAttempt();
+    TaskAttempt lastAttempt = getLastAttempt();
     if (lastAttempt != null) {
       return lastAttempt.getState();
     } else {
@@ -230,37 +230,37 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     }
   }
 
-  public QueryUnitHistory getQueryUnitHistory() {
-    if (finalQueryUnitHistory != null) {
-      if (finalQueryUnitHistory.getFinishTime() == 0) {
-        finalQueryUnitHistory = makeQueryUnitHistory();
+  public TaskHistory getTaskHistory() {
+    if (finalTaskHistory != null) {
+      if (finalTaskHistory.getFinishTime() == 0) {
+        finalTaskHistory = makeTaskHistory();
       }
-      return finalQueryUnitHistory;
+      return finalTaskHistory;
     } else {
-      return makeQueryUnitHistory();
+      return makeTaskHistory();
     }
   }
 
-  private QueryUnitHistory makeQueryUnitHistory() {
-    QueryUnitHistory queryUnitHistory = new QueryUnitHistory();
+  private TaskHistory makeTaskHistory() {
+    TaskHistory taskHistory = new TaskHistory();
 
-    QueryUnitAttempt lastAttempt = getLastAttempt();
+    TaskAttempt lastAttempt = getLastAttempt();
     if (lastAttempt != null) {
-      queryUnitHistory.setId(lastAttempt.getId().toString());
-      queryUnitHistory.setState(lastAttempt.getState().toString());
-      queryUnitHistory.setProgress(lastAttempt.getProgress());
+      taskHistory.setId(lastAttempt.getId().toString());
+      taskHistory.setState(lastAttempt.getState().toString());
+      taskHistory.setProgress(lastAttempt.getProgress());
     }
-    queryUnitHistory.setHostAndPort(succeededHost + ":" + succeededHostPort);
-    queryUnitHistory.setRetryCount(this.getRetryCount());
-    queryUnitHistory.setLaunchTime(launchTime);
-    queryUnitHistory.setFinishTime(finishTime);
+    taskHistory.setHostAndPort(succeededHost + ":" + succeededHostPort);
+    taskHistory.setRetryCount(this.getRetryCount());
+    taskHistory.setLaunchTime(launchTime);
+    taskHistory.setFinishTime(finishTime);
 
-    queryUnitHistory.setNumShuffles(getShuffleOutpuNum());
+    taskHistory.setNumShuffles(getShuffleOutpuNum());
     if (!getShuffleFileOutputs().isEmpty()) {
       ShuffleFileOutput shuffleFileOutputs = getShuffleFileOutputs().get(0);
-      if (queryUnitHistory.getNumShuffles() > 0) {
-        queryUnitHistory.setShuffleKey("" + shuffleFileOutputs.getPartId());
-        queryUnitHistory.setShuffleFileName(shuffleFileOutputs.getFileName());
+      if (taskHistory.getNumShuffles() > 0) {
+        taskHistory.setShuffleKey("" + shuffleFileOutputs.getPartId());
+        taskHistory.setShuffleFileName(shuffleFileOutputs.getFileName());
       }
     }
 
@@ -274,7 +274,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
         fragmentList.add("ERROR: " + eachFragment.getStoreType() + "," + eachFragment.getId() + ": " + e.getMessage());
       }
     }
-    queryUnitHistory.setFragments(fragmentList.toArray(new String[]{}));
+    taskHistory.setFragments(fragmentList.toArray(new String[]{}));
 
     List<String[]> fetchList = new ArrayList<String[]>();
     for (Map.Entry<String, Set<FetchImpl>> e : getFetchMap().entrySet()) {
@@ -285,15 +285,15 @@ public class QueryUnit implements EventHandler<TaskEvent> {
       }
     }
 
-    queryUnitHistory.setFetchs(fetchList.toArray(new String[][]{}));
+    taskHistory.setFetchs(fetchList.toArray(new String[][]{}));
 
     List<String> dataLocationList = new ArrayList<String>();
     for(DataLocation eachLocation: getDataLocations()) {
       dataLocationList.add(eachLocation.toString());
     }
 
-    queryUnitHistory.setDataLocations(dataLocationList.toArray(new String[]{}));
-    return queryUnitHistory;
+    taskHistory.setDataLocations(dataLocationList.toArray(new String[]{}));
+    return taskHistory;
   }
 
 	public void setLogicalPlan(LogicalNode plan) {
@@ -396,7 +396,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	  return this.plan;
 	}
 	
-	public QueryUnitId getId() {
+	public TaskId getId() {
 		return taskId;
 	}
 	
@@ -462,27 +462,27 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 	  return this.shuffleFileOutputs.size();
 	}
 
-  public QueryUnitAttempt newAttempt() {
-    QueryUnitAttempt attempt = new QueryUnitAttempt(scheduleContext,
-        QueryIdFactory.newQueryUnitAttemptId(this.getId(), ++nextAttempt),
+  public TaskAttempt newAttempt() {
+    TaskAttempt attempt = new TaskAttempt(scheduleContext,
+        QueryIdFactory.newTaskAttemptId(this.getId(), ++nextAttempt),
         this, eventHandler);
     lastAttemptId = attempt.getId();
     return attempt;
   }
 
-  public QueryUnitAttempt getAttempt(QueryUnitAttemptId attemptId) {
+  public TaskAttempt getAttempt(TaskAttemptId attemptId) {
     return attempts.get(attemptId);
   }
 
-  public QueryUnitAttempt getAttempt(int attempt) {
-    return this.attempts.get(QueryIdFactory.newQueryUnitAttemptId(this.getId(), attempt));
+  public TaskAttempt getAttempt(int attempt) {
+    return this.attempts.get(QueryIdFactory.newTaskAttemptId(this.getId(), attempt));
   }
 
-  public QueryUnitAttempt getLastAttempt() {
+  public TaskAttempt getLastAttempt() {
     return getAttempt(this.lastAttemptId);
   }
 
-  public QueryUnitAttempt getSuccessfulAttempt() {
+  public TaskAttempt getSuccessfulAttempt() {
     readLock.lock();
     try {
       if (null == successfulAttempt) {
@@ -503,10 +503,10 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   }
 
   private static class InitialScheduleTransition implements
-    SingleArcTransition<QueryUnit, TaskEvent> {
+    SingleArcTransition<Task, TaskEvent> {
 
     @Override
-    public void transition(QueryUnit task, TaskEvent taskEvent) {
+    public void transition(Task task, TaskEvent taskEvent) {
       task.addAndScheduleAttempt();
     }
   }
@@ -540,7 +540,7 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   // This is always called in the Write Lock
   private void addAndScheduleAttempt() {
     // Create new task attempt
-    QueryUnitAttempt attempt = newAttempt();
+    TaskAttempt attempt = newAttempt();
     if (LOG.isDebugEnabled()) {
       LOG.debug("Created attempt " + attempt.getId());
     }
@@ -550,8 +550,8 @@ public class QueryUnit implements EventHandler<TaskEvent> {
         break;
 
       case 1:
-        Map<QueryUnitAttemptId, QueryUnitAttempt> newAttempts
-            = new LinkedHashMap<QueryUnitAttemptId, QueryUnitAttempt>(3);
+        Map<TaskAttemptId, TaskAttempt> newAttempts
+            = new LinkedHashMap<TaskAttemptId, TaskAttempt>(3);
         newAttempts.putAll(attempts);
         attempts = newAttempts;
         attempts.put(attempt.getId(), attempt);
@@ -573,43 +573,43 @@ public class QueryUnit implements EventHandler<TaskEvent> {
 
   private void finishTask() {
     this.finishTime = System.currentTimeMillis();
-    finalQueryUnitHistory = makeQueryUnitHistory();
+    finalTaskHistory = makeTaskHistory();
   }
 
-  private static class KillNewTaskTransition implements SingleArcTransition<QueryUnit, TaskEvent> {
+  private static class KillNewTaskTransition implements SingleArcTransition<Task, TaskEvent> {
 
     @Override
-    public void transition(QueryUnit task, TaskEvent taskEvent) {
+    public void transition(Task task, TaskEvent taskEvent) {
       task.eventHandler.handle(new SubQueryTaskEvent(task.getId(), TaskState.KILLED));
     }
   }
 
-  private static class KillTaskTransition implements SingleArcTransition<QueryUnit, TaskEvent> {
+  private static class KillTaskTransition implements SingleArcTransition<Task, TaskEvent> {
 
     @Override
-    public void transition(QueryUnit task, TaskEvent taskEvent) {
+    public void transition(Task task, TaskEvent taskEvent) {
       task.finishTask();
       task.eventHandler.handle(new TaskAttemptEvent(task.lastAttemptId, TaskAttemptEventType.TA_KILL));
     }
   }
 
-  private static class AttemptKilledTransition implements SingleArcTransition<QueryUnit, TaskEvent>{
+  private static class AttemptKilledTransition implements SingleArcTransition<Task, TaskEvent>{
 
     @Override
-    public void transition(QueryUnit task, TaskEvent event) {
+    public void transition(Task task, TaskEvent event) {
       task.finishTask();
       task.eventHandler.handle(new SubQueryTaskEvent(task.getId(), TaskState.KILLED));
     }
   }
 
   private static class AttemptSucceededTransition
-      implements SingleArcTransition<QueryUnit, TaskEvent>{
+      implements SingleArcTransition<Task, TaskEvent>{
 
     @Override
-    public void transition(QueryUnit task,
+    public void transition(Task task,
                            TaskEvent event) {
       TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) event;
-      QueryUnitAttempt attempt = task.attempts.get(attemptEvent.getTaskAttemptId());
+      TaskAttempt attempt = task.attempts.get(attemptEvent.getTaskAttemptId());
 
       task.successfulAttempt = attemptEvent.getTaskAttemptId();
       task.succeededHost = attempt.getWorkerConnectionInfo().getHost();
@@ -621,21 +621,21 @@ public class QueryUnit implements EventHandler<TaskEvent> {
     }
   }
 
-  private static class AttemptLaunchedTransition implements SingleArcTransition<QueryUnit, TaskEvent> {
+  private static class AttemptLaunchedTransition implements SingleArcTransition<Task, TaskEvent> {
     @Override
-    public void transition(QueryUnit task,
+    public void transition(Task task,
                            TaskEvent event) {
       TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) event;
-      QueryUnitAttempt attempt = task.attempts.get(attemptEvent.getTaskAttemptId());
+      TaskAttempt attempt = task.attempts.get(attemptEvent.getTaskAttemptId());
       task.launchTime = System.currentTimeMillis();
       task.succeededHost = attempt.getWorkerConnectionInfo().getHost();
       task.succeededHostPort = attempt.getWorkerConnectionInfo().getPeerRpcPort();
     }
   }
 
-  private static class AttemptFailedTransition implements SingleArcTransition<QueryUnit, TaskEvent> {
+  private static class AttemptFailedTransition implements SingleArcTransition<Task, TaskEvent> {
     @Override
-    public void transition(QueryUnit task, TaskEvent event) {
+    public void transition(Task task, TaskEvent event) {
       TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) event;
       LOG.info("=============================================================");
       LOG.info(">>> Task Failed: " + attemptEvent.getTaskAttemptId() + " <<<");
@@ -649,10 +649,10 @@ public class QueryUnit implements EventHandler<TaskEvent> {
   }
 
   private static class AttemptFailedOrRetryTransition implements
-    MultipleArcTransition<QueryUnit, TaskEvent, TaskState> {
+    MultipleArcTransition<Task, TaskEvent, TaskState> {
 
     @Override
-    public TaskState transition(QueryUnit task, TaskEvent taskEvent) {
+    public TaskState transition(Task task, TaskEvent taskEvent) {
       TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) taskEvent;
       task.failedAttempts++;
       task.finishedAttempts++;

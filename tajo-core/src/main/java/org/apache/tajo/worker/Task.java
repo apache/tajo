@@ -30,7 +30,7 @@ import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.catalog.Schema;
@@ -44,7 +44,7 @@ import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.engine.query.QueryUnitRequest;
+import org.apache.tajo.engine.query.TaskRequest;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
@@ -63,7 +63,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
-import java.text.NumberFormat;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutorService;
@@ -78,11 +77,11 @@ public class Task {
   private final TajoConf systemConf;
   private final QueryContext queryContext;
   private final ExecutionBlockContext executionBlockContext;
-  private final QueryUnitAttemptId taskId;
+  private final TaskAttemptId taskId;
   private final String taskRunnerId;
 
   private final Path taskDir;
-  private final QueryUnitRequest request;
+  private final TaskRequest request;
   private TaskAttemptContext context;
   private List<Fetcher> fetcherRunners;
   private LogicalNode plan;
@@ -106,9 +105,9 @@ public class Task {
 
   public Task(String taskRunnerId,
               Path baseDir,
-              QueryUnitAttemptId taskId,
+              TaskAttemptId taskId,
               final ExecutionBlockContext executionBlockContext,
-              final QueryUnitRequest request) throws IOException {
+              final TaskRequest request) throws IOException {
     this.taskRunnerId = taskRunnerId;
     this.request = request;
     this.taskId = taskId;
@@ -117,7 +116,7 @@ public class Task {
     this.queryContext = request.getQueryContext(systemConf);
     this.executionBlockContext = executionBlockContext;
     this.taskDir = StorageUtil.concatPath(baseDir,
-        taskId.getQueryUnitId().getId() + "_" + taskId.getId());
+        taskId.getTaskId().getId() + "_" + taskId.getId());
 
     this.context = new TaskAttemptContext(queryContext, executionBlockContext, taskId,
         request.getFragments().toArray(new FragmentProto[request.getFragments().size()]), taskDir);
@@ -207,7 +206,7 @@ public class Task {
     }
   }
 
-  public QueryUnitAttemptId getTaskId() {
+  public TaskAttemptId getTaskId() {
     return taskId;
   }
 
@@ -215,11 +214,11 @@ public class Task {
     return LOG;
   }
 
-  public void localize(QueryUnitRequest request) throws IOException {
+  public void localize(TaskRequest request) throws IOException {
     fetcherRunners = getFetchRunners(context, request.getFetches());
   }
 
-  public QueryUnitAttemptId getId() {
+  public TaskAttemptId getId() {
     return context.getTaskId();
   }
 
@@ -272,7 +271,7 @@ public class Task {
         executionBlockContext.getTasks().remove(this.getId());
       }
     } else {
-      LOG.error("QueryUnitAttemptId: " + context.getTaskId() + " status: " + context.getState());
+      LOG.error("TaskAttemptId: " + context.getTaskId() + " status: " + context.getState());
     }
   }
 
@@ -626,7 +625,7 @@ public class Task {
           if (retryNum == maxRetryNum) {
             LOG.error("ERROR: the maximum retry (" + retryNum + ") on the fetch exceeded (" + fetcher.getURI() + ")");
           }
-          aborted = true; // retry queryUnit
+          aborted = true; // retry task
           ctx.getFetchLatch().countDown();
         }
       }
@@ -830,10 +829,10 @@ public class Task {
     return ret;
   }
 
-  public static Path getTaskAttemptDir(QueryUnitAttemptId quid) {
+  public static Path getTaskAttemptDir(TaskAttemptId quid) {
     Path workDir =
-        StorageUtil.concatPath(ExecutionBlockContext.getBaseInputDir(quid.getQueryUnitId().getExecutionBlockId()),
-            String.valueOf(quid.getQueryUnitId().getId()),
+        StorageUtil.concatPath(ExecutionBlockContext.getBaseInputDir(quid.getTaskId().getExecutionBlockId()),
+            String.valueOf(quid.getTaskId().getId()),
             String.valueOf(quid.getId()));
     return workDir;
   }

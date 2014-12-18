@@ -66,12 +66,12 @@ public class LocalTajoTestingUtility {
 
   private static int taskAttemptId;
 
-  public static QueryUnitAttemptId newQueryUnitAttemptId() {
-    return QueryIdFactory.newQueryUnitAttemptId(
-        QueryIdFactory.newQueryUnitId(new MasterPlan(newQueryId(), null, null).newExecutionBlockId()), taskAttemptId++);
+  public static TaskAttemptId newTaskAttemptId() {
+    return QueryIdFactory.newTaskAttemptId(
+        QueryIdFactory.newTaskId(new MasterPlan(newQueryId(), null, null).newExecutionBlockId()), taskAttemptId++);
   }
-  public static QueryUnitAttemptId newQueryUnitAttemptId(MasterPlan plan) {
-    return QueryIdFactory.newQueryUnitAttemptId(QueryIdFactory.newQueryUnitId(plan.newExecutionBlockId()), 0);
+  public static TaskAttemptId newTaskAttemptId(MasterPlan plan) {
+    return QueryIdFactory.newTaskAttemptId(QueryIdFactory.newTaskId(plan.newExecutionBlockId()), 0);
   }
 
   public static Session createDummySession() {

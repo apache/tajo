@@ -41,7 +41,7 @@ message SessionProto {
 }
 
 message TaskStatusProto {
-  required QueryUnitAttemptIdProto id = 1;
+  required TaskAttemptIdProto id = 1;
   required string workerName = 2;
   required float progress = 3;
   required TaskAttemptState state = 4;
@@ -52,7 +52,7 @@ message TaskStatusProto {
 }
 
 message TaskCompletionReport {
-  required QueryUnitAttemptIdProto id = 1;
+  required TaskAttemptIdProto id = 1;
   optional StatSetProto stats = 2;
   optional TableStatsProto inputStats = 3;
   optional TableStatsProto resultStats = 4;
@@ -60,13 +60,13 @@ message TaskCompletionReport {
 }
 
 message TaskFatalErrorReport {
-  required QueryUnitAttemptIdProto id = 1;
+  required TaskAttemptIdProto id = 1;
   optional string errorMessage = 2;
   optional string errorTrace = 3;
 }
 
-message QueryUnitRequestProto {
-    required QueryUnitAttemptIdProto id = 1;
+message TaskRequestProto {
+    required TaskAttemptIdProto id = 1;
     repeated FragmentProto fragments = 2;
     required string outputTable = 3;
     required bool clusteredOutput = 4;
@@ -126,7 +126,7 @@ message ExecutionBlockReport {
     repeated IntermediateEntryProto intermediateEntries = 5;
 }
 
-message QueryUnitResponseProto {
+message TaskResponseProto {
     required string id = 1;
     required QueryState status = 2;
 }
@@ -135,7 +135,7 @@ message StatusReportProto {
   required int64 timestamp = 1;
   required string serverName = 2;
   repeated TaskStatusProto status = 3;
-  repeated QueryUnitAttemptIdProto pings = 4;
+  repeated TaskAttemptIdProto pings = 4;
 }
 
 message CommandRequestProto {
@@ -146,7 +146,7 @@ message CommandResponseProto {
 }
 
 message Command {
-    required QueryUnitAttemptIdProto id = 1;
+    required TaskAttemptIdProto id = 1;
     required CommandType type = 2;
 }
 
@@ -208,12 +208,12 @@ message ExecutionBlockListProto {
 }
 
 service TajoWorkerProtocolService {
-  rpc ping (QueryUnitAttemptIdProto) returns (BoolProto);
+  rpc ping (TaskAttemptIdProto) returns (BoolProto);
 
   // from QueryMaster(Worker)
   rpc startExecutionBlock(RunExecutionBlockRequestProto) returns (BoolProto);
   rpc stopExecutionBlock(ExecutionBlockIdProto) returns (BoolProto);
-  rpc killTaskAttempt(QueryUnitAttemptIdProto) returns (BoolProto);
+  rpc killTaskAttempt(TaskAttemptIdProto) returns (BoolProto);
   rpc cleanup(QueryIdProto) returns (BoolProto);
   rpc cleanupExecutionBlocks(ExecutionBlockListProto) returns (BoolProto);
 }
@@ -336,7 +336,7 @@ message FetcherHistoryProto {
 }
 
 message TaskHistoryProto {
-  required QueryUnitAttemptIdProto queryUnitAttemptId = 1;
+  required TaskAttemptIdProto taskAttemptId = 1;
   required TaskAttemptState state = 2;
   required float progress = 3;
   required int64 startTime = 4;

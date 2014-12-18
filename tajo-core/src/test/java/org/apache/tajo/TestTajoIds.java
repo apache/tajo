@@ -64,10 +64,10 @@ public class TestTajoIds {
     ExecutionBlockId subId = QueryIdFactory.newExecutionBlockId(queryId, 2);
     assertEquals("eb_" + timeId +"_0001_000002", subId.toString());
     
-    QueryUnitId qId = new QueryUnitId(subId, 5);
+    TaskId qId = new TaskId(subId, 5);
     assertEquals("t_" + timeId + "_0001_000002_000005", qId.toString());
 
-    QueryUnitAttemptId attemptId = new QueryUnitAttemptId(qId, 4);
+    TaskAttemptId attemptId = new TaskAttemptId(qId, 4);
     assertEquals("ta_" + timeId + "_0001_000002_000005_04", attemptId.toString());
   }
 
@@ -87,10 +87,10 @@ public class TestTajoIds {
     ExecutionBlockId sid3 = QueryIdFactory.newExecutionBlockId(queryId1, 1);
     assertEquals(sid1, sid3);
     
-    QueryUnitId qid1 = new QueryUnitId(sid1, 9);
-    QueryUnitId qid2 = new QueryUnitId(sid1, 10);
+    TaskId qid1 = new TaskId(sid1, 9);
+    TaskId qid2 = new TaskId(sid1, 10);
     assertNotSame(qid1, qid2);
-    QueryUnitId qid3 = new QueryUnitId(sid1, 9);
+    TaskId qid3 = new TaskId(sid1, 9);
     assertEquals(qid1, qid3);
   }
 
@@ -112,9 +112,9 @@ public class TestTajoIds {
     assertEquals(1, sid2.compareTo(sid1));
     assertEquals(0, sid3.compareTo(sid1));
     
-    QueryUnitId qid1 = new QueryUnitId(sid1, 9);
-    QueryUnitId qid2 = new QueryUnitId(sid1, 10);
-    QueryUnitId qid3 = new QueryUnitId(sid1, 9);
+    TaskId qid1 = new TaskId(sid1, 9);
+    TaskId qid2 = new TaskId(sid1, 10);
+    TaskId qid3 = new TaskId(sid1, 9);
     assertEquals(-1, qid1.compareTo(qid2));
     assertEquals(1, qid2.compareTo(qid1));
     assertEquals(0, qid3.compareTo(qid1));
@@ -131,12 +131,12 @@ public class TestTajoIds {
     ExecutionBlockId sub2 = TajoIdUtils.createExecutionBlockId(sub1.toString());
     assertEquals(sub1, sub2);
     
-    QueryUnitId u1 = QueryIdFactory.newQueryUnitId(sub1);
-    QueryUnitId u2 = new QueryUnitId(u1.getProto());
+    TaskId u1 = QueryIdFactory.newTaskId(sub1);
+    TaskId u2 = new TaskId(u1.getProto());
     assertEquals(u1, u2);
 
-    QueryUnitAttemptId attempt1 = new QueryUnitAttemptId(u1, 1);
-    QueryUnitAttemptId attempt2 = new QueryUnitAttemptId(attempt1.getProto());
+    TaskAttemptId attempt1 = new TaskAttemptId(u1, 1);
+    TaskAttemptId attempt2 = new TaskAttemptId(attempt1.getProto());
     assertEquals(attempt1, attempt2);
   }
 
@@ -151,12 +151,12 @@ public class TestTajoIds {
     ExecutionBlockId sub2 = TajoIdUtils.createExecutionBlockId(sub1.toString());
     assertEquals(sub1, sub2);
 
-    QueryUnitId u1 = QueryIdFactory.newQueryUnitId(sub1);
-    QueryUnitId u2 = new QueryUnitId(u1.getProto());
+    TaskId u1 = QueryIdFactory.newTaskId(sub1);
+    TaskId u2 = new TaskId(u1.getProto());
     assertEquals(u1, u2);
 
-    QueryUnitAttemptId attempt1 = new QueryUnitAttemptId(u1, 1);
-    QueryUnitAttemptId attempt2 = new QueryUnitAttemptId(attempt1.getProto());
+    TaskAttemptId attempt1 = new TaskAttemptId(u1, 1);
+    TaskAttemptId attempt2 = new TaskAttemptId(attempt1.getProto());
     assertEquals(attempt1, attempt2);
   }
 

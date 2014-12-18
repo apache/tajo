@@ -25,7 +25,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -465,7 +465,7 @@ public class RawFile {
 
     private TableStatistics stats;
 
-    public RawFileAppender(Configuration conf, QueryUnitAttemptId taskAttemptId,
+    public RawFileAppender(Configuration conf, TaskAttemptId taskAttemptId,
                            Schema schema, TableMeta meta, Path workDir) throws IOException {
       super(conf, taskAttemptId, schema, meta, workDir);
     }

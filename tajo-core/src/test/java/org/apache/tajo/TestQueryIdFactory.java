@@ -47,12 +47,12 @@ public class TestQueryIdFactory {
   }
   
   @Test
-  public void testNewQueryUnitId() {
+  public void testNewTaskId() {
     QueryId qid = LocalTajoTestingUtility.newQueryId();
     MasterPlan plan = new MasterPlan(qid, null, null);
     ExecutionBlockId subid = plan.newExecutionBlockId();
-    QueryUnitId quid1 = QueryIdFactory.newQueryUnitId(subid);
-    QueryUnitId quid2 = QueryIdFactory.newQueryUnitId(subid);
+    TaskId quid1 = QueryIdFactory.newTaskId(subid);
+    TaskId quid2 = QueryIdFactory.newTaskId(subid);
     assertTrue(quid1.compareTo(quid2) < 0);
   }
 }
