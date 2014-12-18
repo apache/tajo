@@ -20,7 +20,7 @@ package org.apache.tajo.validation;
 
 public class PathValidator extends PatternValidator {
   static final String PATH_REGEXP_PATTERN =
-      "^(?:[a-zA-Z][a-zA-Z0-9+-.]+:[/]{1,2}[a-zA-Z-.]*[:0-9]*)?(?:/?[a-zA-Z]:)?[/a-zA-Z0-9-_\\\\.\\\\$\\\\{\\\\}]*$";
+      "^(?:[a-zA-Z][a-zA-Z0-9+-.]+:[/]{1,2}[a-zA-Z0-9-.]*[:0-9]*)?(?:/?[a-zA-Z]:)?[/a-zA-Z0-9-_\\\\.\\\\$\\\\{\\\\}]*$";
 
   public PathValidator() {
     super(PATH_REGEXP_PATTERN);
