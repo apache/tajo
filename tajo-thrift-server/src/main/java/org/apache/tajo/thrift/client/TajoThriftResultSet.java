@@ -23,7 +23,9 @@ import org.apache.tajo.jdbc.TajoResultSetBase;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.thrift.TajoThriftUtil;
+import org.apache.tajo.thrift.ThriftRowStoreDecoder;
 import org.apache.tajo.thrift.generated.TQueryResult;
+import org.apache.tajo.thrift.generated.TRowData;
 import org.apache.tajo.thrift.generated.TTableDesc;
 
 import java.io.IOException;
@@ -36,12 +38,12 @@ public class TajoThriftResultSet extends TajoResultSetBase {
   private TajoThriftClient tajoThriftClient;
   private String queryId;
   private TQueryResult queryResult;
-  private List<ByteBuffer> rowDatas;
-  private Iterator<ByteBuffer> rowIterator;
+  private List<TRowData> rowDatas;
+  private Iterator<TRowData> rowIterator;
   private int fetchSize;
   private int maxRows;
   private long totalFetchRows;
-  private RowStoreUtil.RowStoreDecoder rowDecoder;
+  private ThriftRowStoreDecoder rowDecoder;
   private TTableDesc tableDesc;
 
   public TajoThriftResultSet(TajoThriftClient tajoThriftClient, String queryId, TQueryResult queryResult) {
@@ -63,7 +65,7 @@ public class TajoThriftResultSet extends TajoResultSetBase {
     if (rowDatas != null) {
       this.rowIterator = rowDatas.iterator();
     }
-    this.rowDecoder = RowStoreUtil.createDecoder(schema);
+    this.rowDecoder = new ThriftRowStoreDecoder(schema);
   }
 
   @Override
@@ -73,9 +75,9 @@ public class TajoThriftResultSet extends TajoResultSetBase {
     }
 
     if (rowIterator.hasNext()) {
-      ByteBuffer row = rowIterator.next();
+      TRowData row = rowIterator.next();
       totalFetchRows++;
-      return rowDecoder.toTuple(row.array());
+      return rowDecoder.toTuple(row);
     } else {
       queryResult = tajoThriftClient.getNextQueryResult(queryId, fetchSize);
       if (queryResult == null || queryResult.getRows() == null || queryResult.getRows().isEmpty()) {

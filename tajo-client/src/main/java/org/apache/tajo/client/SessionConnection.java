@@ -309,7 +309,7 @@ public class SessionConnection implements Closeable {
         if (LOG.isDebugEnabled()) {
           LOG.debug(String.format("Got session %s as a user '%s'.", sessionId.getId(), userInfo.getUserName()));
         }
-
+        LOG.fatal(">>>>>>>>>>>>>>SessionId: " + sessionId.getId());
       } else {
         throw new InvalidClientSessionException(response.getMessage());
       }

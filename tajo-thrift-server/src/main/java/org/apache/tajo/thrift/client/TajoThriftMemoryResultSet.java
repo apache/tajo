@@ -23,6 +23,8 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.jdbc.TajoResultSetBase;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.thrift.ThriftRowStoreDecoder;
+import org.apache.tajo.thrift.generated.TRowData;
 import org.apache.tajo.thrift.generated.TSchema;
 
 import java.io.IOException;
@@ -32,20 +34,20 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TajoThriftMemoryResultSet extends TajoResultSetBase {
-  private List<ByteBuffer> serializedTuples;
+  private List<TRowData> rows;
   private AtomicBoolean closed = new AtomicBoolean(false);
-  private RowStoreUtil.RowStoreDecoder decoder;
+  private ThriftRowStoreDecoder decoder;
   private TajoThriftClient client;
   private String queryId;
 
   public TajoThriftMemoryResultSet(TajoThriftClient client, String queryId, Schema schema,
-                                   List<ByteBuffer> serializedTuples, int maxRowNum) {
+                                   List<TRowData> rows, int maxRowNum) {
     this.client = client;
     this.queryId = queryId;
     this.schema = schema;
     this.totalRows = maxRowNum;
-    this.serializedTuples = serializedTuples;
-    decoder = RowStoreUtil.createDecoder(schema);
+    this.rows = rows;
+    decoder = new ThriftRowStoreDecoder(schema);
     init();
   }
 
@@ -64,7 +66,7 @@ public class TajoThriftMemoryResultSet extends TajoResultSetBase {
     client.closeQuery(queryId);
     cur = null;
     curRow = -1;
-    serializedTuples = null;
+    rows.clear();
   }
 
   @Override
@@ -75,7 +77,7 @@ public class TajoThriftMemoryResultSet extends TajoResultSetBase {
   @Override
   protected Tuple nextTuple() throws IOException {
     if (curRow < totalRows) {
-      cur = decoder.toTuple(serializedTuples.get(curRow).array());
+      cur = decoder.toTuple(rows.get(curRow));
       return cur;
     } else {
       return null;
@@ -83,6 +85,6 @@ public class TajoThriftMemoryResultSet extends TajoResultSetBase {
   }
 
   public boolean hasResult() {
-    return serializedTuples.size() > 0;
+    return rows.size() > 0;
   }
 }

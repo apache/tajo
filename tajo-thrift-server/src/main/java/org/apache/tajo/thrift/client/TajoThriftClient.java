@@ -64,6 +64,8 @@ public class TajoThriftClient {
   // Thrift client is thread unsafe. So every call should be synchronized with callMonitor.
   private Object callMonitor = new Object();
 
+  static final List<TRowData> EMPTY_RESULT = new ArrayList<TRowData>();
+
   public TajoThriftClient(TajoConf tajoConf, String thriftServer) throws IOException {
     this(tajoConf, thriftServer, null);
 
@@ -263,7 +265,7 @@ public class TajoThriftClient {
 
     TQueryResult emptyQueryResult = new TQueryResult();
 
-    emptyQueryResult.setRows(Collections.<ByteBuffer>emptyList());
+    emptyQueryResult.setRows(EMPTY_RESULT);
     return new TajoThriftResultSet(this, queryId, emptyQueryResult);
   }
 

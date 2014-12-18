@@ -38,6 +38,7 @@ import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.jdbc.TajoResultSetBase;
 import org.apache.tajo.storage.RowStoreUtil;
+import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.thrift.generated.*;
 import org.apache.tajo.util.TUtil;
@@ -242,12 +243,13 @@ public class TajoThriftServiceImpl implements TajoThriftService.Iface {
           Schema schema = new Schema(clientResponse.getResultSet().getSchema());
           TQueryResult queryResult = new TQueryResult();
           queryResult.setSchema(TajoThriftUtil.convertSchema(schema));
-          List<ByteBuffer> rows = new ArrayList<ByteBuffer>();
+
           TajoMemoryResultSet memResultSet = (TajoMemoryResultSet)resultSet;
+          List<TRowData> rows;
           if (memResultSet.getSerializedTuples() != null && !memResultSet.getSerializedTuples().isEmpty()) {
-            for (ByteString eachRow: memResultSet.getSerializedTuples()) {
-              rows.add(ByteBuffer.wrap(eachRow.toByteArray()));
-            }
+            rows = getRowDatas(memResultSet, schema, ThriftServerConstants.DEFAULT_FETCH_SIZE);
+          } else {
+            rows = new ArrayList<TRowData>();
           }
           queryResult.setRows(rows);
           queryStatus.setQueryResult(queryResult);
@@ -298,7 +300,7 @@ public class TajoThriftServiceImpl implements TajoThriftService.Iface {
           schema = rsHolder.getSchema();
           queryResult.setSchema(TajoThriftUtil.convertSchema(schema));
         }
-        RowStoreUtil.RowStoreEncoder rowEncoder = RowStoreUtil.createEncoder(schema);
+        //RowStoreUtil.RowStoreEncoder rowEncoder = RowStoreUtil.createEncoder(schema);
 
         if (fetchSize <= 0) {
           LOG.warn("Fetch size(" + fetchSize + ") is less than 0, use default size:" +
@@ -308,14 +310,8 @@ public class TajoThriftServiceImpl implements TajoThriftService.Iface {
         int rowCount = 0;
 
         TajoResultSetBase rs = rsHolder.getResultSet();
-        while (rs.next()) {
-          Tuple tuple = rs.getCurrentTuple();
-          queryResult.addToRows(ByteBuffer.wrap(rowEncoder.toBytes(tuple)));
-          rowCount++;
-          if (rowCount >= fetchSize) {
-            break;
-          }
-        }
+        List<TRowData> rows = getRowDatas(rs, schema, fetchSize);
+        queryResult.setRows(rows);
         LOG.info("Send result to client for " + sessionId.getId() + "," + queryId + ", " + rowCount + " rows");
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
@@ -325,6 +321,32 @@ public class TajoThriftServiceImpl implements TajoThriftService.Iface {
       }
       return queryResult;
     }
+  }
+
+  private List<TRowData> getRowDatas(TajoResultSetBase rs, Schema schema, int fetchSize) throws Exception {
+    List<TRowData> rows = new ArrayList<TRowData>();
+    int numColumns = schema.getColumns().size();
+    int rowCount = 0;
+    while (rs.next()) {
+      List<Boolean> nullFlags = new ArrayList<Boolean>();
+      List<ByteBuffer> columnDatas = new ArrayList<ByteBuffer>();
+      for (int i = 0; i < numColumns; i++) {
+        columnDatas.add(ByteBuffer.wrap(rs.getString(i + 1).getBytes()));
+        nullFlags.add(rs.wasNull());
+      }
+      TRowData rowData = new TRowData();
+      rowData.setNullFlags(nullFlags);
+      rowData.setColumnDatas(columnDatas);
+
+      rows.add(rowData);
+
+      rowCount++;
+      if (rowCount >= fetchSize) {
+        break;
+      }
+    }
+
+    return rows;
   }
 
   @Override

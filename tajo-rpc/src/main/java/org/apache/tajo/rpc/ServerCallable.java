@@ -102,6 +102,7 @@ public abstract class ServerCallable<T> {
           throw new ServiceException("Giving up after tries=" + tries, ioe);
         }
       } catch (Throwable t) {
+        t.printStackTrace(System.out);
         throw new ServiceException(t);
       } finally {
         afterCall();

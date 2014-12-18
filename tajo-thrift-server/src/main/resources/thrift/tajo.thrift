@@ -80,9 +80,14 @@ struct TTableDesc {
   8:bool isExternal
 }
 
+struct TRowData {
+  1: list<bool> nullFlags;
+  2: list<binary> columnDatas;
+}
+
 struct TQueryResult {
   1:TTableDesc tableDesc,
-  2:list<binary> rows,
+  2:list<TRowData> rows,
   3:TSchema schema
 }
 
