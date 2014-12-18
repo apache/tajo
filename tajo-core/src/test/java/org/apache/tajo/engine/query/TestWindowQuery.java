@@ -258,5 +258,5 @@ public class TestWindowQuery extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
   }
-  
+
 }

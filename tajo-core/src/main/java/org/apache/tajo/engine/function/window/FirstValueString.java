@@ -19,15 +19,10 @@
 package org.apache.tajo.engine.function.window;
 
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.datum.*;
-import org.apache.tajo.plan.function.FunctionContext;
-import org.apache.tajo.plan.function.WindowAggFunc;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
-import org.apache.tajo.storage.Tuple;
 
 @Description(
     functionName = "first_value",
@@ -36,41 +31,11 @@ import org.apache.tajo.storage.Tuple;
     returnType = Type.TEXT,
     paramTypes = {@ParamTypes(paramTypes = {Type.TEXT})}
 )
-public class FirstValueString extends WindowAggFunc<Datum> {
+public class FirstValueString extends FirstValue {
 
   public FirstValueString() {
-    super(NoArgs);
+    super(new Column[] {
+        new Column("expr", TajoDataTypes.Type.TEXT)
+    });
   }
-
-  public FirstValueString(Column[] columns) {
-    super(columns);
-  }
-
-  @Override
-  public FunctionContext newContext() {
-    return new FirstValueStringContext();
-  }
-
-  @Override
-  public void eval(FunctionContext ctx, Tuple params) {
-    FirstValueStringContext firstValueCtx = (FirstValueStringContext)ctx;
-    if(firstValueCtx.firstString == null && !(params.get(0) instanceof NullDatum)) {
-      firstValueCtx.firstString = params.get(0).asChars();
-    }
-  }
-
-  @Override
-  public Datum terminate(FunctionContext ctx) {
-    if (((FirstValueStringContext) ctx).firstString == null) {
-      return NullDatum.get();
-    }
-    else {
-      return DatumFactory.createText(((FirstValueStringContext) ctx).firstString);
-    }
-  }
-
-  protected class FirstValueStringContext implements FunctionContext {
-    String firstString = null;
-  }
-
 }
