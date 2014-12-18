@@ -1,0 +1,7 @@
+l_orderkey,shipmode_first
+-------------------------------
+1,TRUCK
+1,TRUCK
+2,RAIL
+3,RAIL
+3,RAIL

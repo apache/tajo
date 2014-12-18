@@ -1,0 +1,7 @@
+l_orderkey,shipmode_first
+-------------------------------
+1,MAIL
+1,MAIL
+2,RAIL
+3,AIR
+3,AIR
