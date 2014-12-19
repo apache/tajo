@@ -36,7 +36,7 @@ You can specify a table time zone as follows:
    CREATE EXTERNAL TABLE table1 (
     t_timestamp  TIMESTAMP,
     t_date    DATE
-   ) USING TEXTFILE WITH('timezone'='ASIA/Seoul') LOCATION '/path-to-table/'
+   ) USING TEXT WITH('timezone'='ASIA/Seoul') LOCATION '/path-to-table/'
  
 
 In order to learn table properties, please refer to :doc:`/table_management/table_overview`.
@@ -102,7 +102,7 @@ In order to register the table, we should put a table property ``'timezone'='Asi
  CREATE EXTERNAL TABLE table1 (
   t_timestamp  TIMESTAMP,
   t_date    DATE
- ) USING TEXTFILE WITH('text.delimiter'='|', 'timezone'='ASIA/Seoul') LOCATION '/path-to-table/'
+ ) USING TEXT WITH('text.delimiter'='|', 'timezone'='ASIA/Seoul') LOCATION '/path-to-table/'
 
 
 By default, ``tsql`` and ``TajoClient`` API use UTC time zone. So, timestamp values in the result are adjusted by the time zone offset. But, date is not adjusted because date type does not consider time zone.
