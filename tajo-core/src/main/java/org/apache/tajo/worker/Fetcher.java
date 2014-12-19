@@ -201,6 +201,8 @@ public class Fetcher {
 
     public HttpClientHandler(File file) throws FileNotFoundException {
       this.file = file;
+      this.raf = new RandomAccessFile(file, "rw");
+      this.fc = raf.getChannel();
     }
 
     @Override
@@ -244,10 +246,8 @@ public class Fetcher {
             state = TajoProtos.FetcherState.FETCH_FAILED;
             return;
           }
-
-          this.raf = new RandomAccessFile(file, "rw");
-          this.fc = raf.getChannel();
         }
+        
         if (msg instanceof HttpContent) {
           HttpContent httpContent = (HttpContent) msg;
           ByteBuf content = httpContent.content();
