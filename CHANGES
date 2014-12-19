@@ -24,6 +24,9 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1247: Store type 'TEXTFILE' should be TEXT while keeping enum 'TEXTFILE' in protobuf.
+    (DaeMyung Kang via hyunsik)
+
     TAJO-1221: HA TajoClient should not connect TajoMaster at the first. 
     (jaehwa)
 
