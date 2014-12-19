@@ -19,18 +19,18 @@
 package org.apache.tajo.master.event;
 
 import org.apache.hadoop.yarn.event.AbstractEvent;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 
 public class TaskAttemptEvent extends AbstractEvent<TaskAttemptEventType> {
-  private final QueryUnitAttemptId id;
+  private final TaskAttemptId id;
 
-  public TaskAttemptEvent(QueryUnitAttemptId id,
+  public TaskAttemptEvent(TaskAttemptId id,
                           TaskAttemptEventType taskAttemptEventType) {
     super(taskAttemptEventType);
     this.id = id;
   }
 
-  public QueryUnitAttemptId getTaskAttemptId() {
+  public TaskAttemptId getTaskAttemptId() {
     return this.id;
   }
 }

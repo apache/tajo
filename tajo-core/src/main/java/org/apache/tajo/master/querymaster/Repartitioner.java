@@ -44,7 +44,7 @@ import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty;
 import org.apache.tajo.master.TaskSchedulerContext;
-import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
+import org.apache.tajo.master.querymaster.Task.IntermediateEntry;
 import org.apache.tajo.plan.logical.SortNode.SortPurpose;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.PlanningException;
@@ -717,7 +717,7 @@ public class Repartitioner {
     List<ExecutionBlock> childBlocks = masterPlan.getChilds(subQuery.getId());
     for (ExecutionBlock childBlock : childBlocks) {
       SubQuery childExecSM = subQuery.getContext().getSubQuery(childBlock.getId());
-      for (QueryUnit qu : childExecSM.getQueryUnits()) {
+      for (Task qu : childExecSM.getTasks()) {
         for (IntermediateEntry p : qu.getIntermediateData()) {
           FetchImpl fetch = new FetchImpl(p.getPullHost(), RANGE_SHUFFLE, childBlock.getId(), 0);
           fetch.addPart(p.getTaskId(), p.getAttemptId());
@@ -840,8 +840,8 @@ public class Repartitioner {
       // make FetchImpl per PullServer, PartId
       Map<Integer, List<IntermediateEntry>> hashed = hashByKey(partitions);
       for (Entry<Integer, List<IntermediateEntry>> interm : hashed.entrySet()) {
-        Map<QueryUnit.PullHost, List<IntermediateEntry>> hashedByHost = hashByHost(interm.getValue());
-        for (Entry<QueryUnit.PullHost, List<IntermediateEntry>> e : hashedByHost.entrySet()) {
+        Map<Task.PullHost, List<IntermediateEntry>> hashedByHost = hashByHost(interm.getValue());
+        for (Entry<Task.PullHost, List<IntermediateEntry>> e : hashedByHost.entrySet()) {
 
           FetchImpl fetch = new FetchImpl(e.getKey(), channel.getShuffleType(),
               block.getId(), interm.getKey(), e.getValue());
@@ -1191,10 +1191,10 @@ public class Repartitioner {
     return hashed;
   }
 
-  public static Map<QueryUnit.PullHost, List<IntermediateEntry>> hashByHost(List<IntermediateEntry> entries) {
-    Map<QueryUnit.PullHost, List<IntermediateEntry>> hashed = new HashMap<QueryUnit.PullHost, List<IntermediateEntry>>();
+  public static Map<Task.PullHost, List<IntermediateEntry>> hashByHost(List<IntermediateEntry> entries) {
+    Map<Task.PullHost, List<IntermediateEntry>> hashed = new HashMap<Task.PullHost, List<IntermediateEntry>>();
 
-    QueryUnit.PullHost host;
+    Task.PullHost host;
     for (IntermediateEntry entry : entries) {
       host = entry.getPullHost();
       if (hashed.containsKey(host)) {

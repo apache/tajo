@@ -88,7 +88,7 @@ public class SeqScanExec extends PhysicalExec {
       }
 
       cacheKey = new TupleCacheKey(
-          context.getTaskId().getQueryUnitId().getExecutionBlockId().toString(), plan.getTableName(), pathNameKey);
+          context.getTaskId().getTaskId().getExecutionBlockId().toString(), plan.getTableName(), pathNameKey);
     }
 
     if (fragments != null

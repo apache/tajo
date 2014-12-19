@@ -68,7 +68,7 @@ public abstract class StorageManager {
 
   private static final Class<?>[] DEFAULT_APPENDER_PARAMS = {
       Configuration.class,
-      QueryUnitAttemptId.class,
+      TaskAttemptId.class,
       Schema.class,
       TableMeta.class,
       Path.class
@@ -446,7 +446,7 @@ public abstract class StorageManager {
    * @throws java.io.IOException
    */
   public Appender getAppender(OverridableConf queryContext,
-                              QueryUnitAttemptId taskAttemptId, TableMeta meta, Schema schema, Path workDir)
+                              TaskAttemptId taskAttemptId, TableMeta meta, Schema schema, Path workDir)
       throws IOException {
     Appender appender;
 
@@ -511,7 +511,7 @@ public abstract class StorageManager {
    * @param <T>
    * @return The scanner instance
    */
-  public static <T> T newAppenderInstance(Class<T> theClass, Configuration conf, QueryUnitAttemptId taskAttemptId,
+  public static <T> T newAppenderInstance(Class<T> theClass, Configuration conf, TaskAttemptId taskAttemptId,
                                           TableMeta meta, Schema schema, Path workDir) {
     T result;
     try {

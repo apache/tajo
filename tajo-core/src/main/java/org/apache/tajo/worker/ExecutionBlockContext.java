@@ -28,7 +28,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
@@ -92,7 +92,7 @@ public class ExecutionBlockContext {
   private AtomicBoolean stop = new AtomicBoolean();
 
   // It keeps all of the query unit attempts while a TaskRunner is running.
-  private final ConcurrentMap<QueryUnitAttemptId, Task> tasks = Maps.newConcurrentMap();
+  private final ConcurrentMap<TaskAttemptId, Task> tasks = Maps.newConcurrentMap();
 
   private final ConcurrentMap<String, TaskRunnerHistory> histories = Maps.newConcurrentMap();
 
@@ -242,12 +242,12 @@ public class ExecutionBlockContext {
     return executionBlockId;
   }
 
-  public Map<QueryUnitAttemptId, Task> getTasks() {
+  public Map<TaskAttemptId, Task> getTasks() {
     return tasks;
   }
 
-  public Task getTask(QueryUnitAttemptId queryUnitAttemptId){
-    return tasks.get(queryUnitAttemptId);
+  public Task getTask(TaskAttemptId taskAttemptId){
+    return tasks.get(taskAttemptId);
   }
 
   public void stopTaskRunner(String id){
@@ -258,7 +258,7 @@ public class ExecutionBlockContext {
     return manager.getTaskRunner(taskRunnerId);
   }
 
-  public void addTaskHistory(String taskRunnerId, QueryUnitAttemptId quAttemptId, TaskHistory taskHistory) {
+  public void addTaskHistory(String taskRunnerId, TaskAttemptId quAttemptId, TaskHistory taskHistory) {
     histories.get(taskRunnerId).addTaskHistory(quAttemptId, taskHistory);
   }
 

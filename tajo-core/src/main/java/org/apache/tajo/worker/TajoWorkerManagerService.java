@@ -27,7 +27,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
@@ -104,7 +104,7 @@ public class TajoWorkerManagerService extends CompositeService
 
   @Override
   public void ping(RpcController controller,
-                   TajoIdProtos.QueryUnitAttemptIdProto attemptId,
+                   TajoIdProtos.TaskAttemptIdProto attemptId,
                    RpcCallback<PrimitiveProtos.BoolProto> done) {
     done.run(TajoWorker.TRUE_PROTO);
   }
@@ -146,9 +146,9 @@ public class TajoWorkerManagerService extends CompositeService
   }
 
   @Override
-  public void killTaskAttempt(RpcController controller, TajoIdProtos.QueryUnitAttemptIdProto request,
+  public void killTaskAttempt(RpcController controller, TajoIdProtos.TaskAttemptIdProto request,
                               RpcCallback<PrimitiveProtos.BoolProto> done) {
-    Task task = workerContext.getTaskRunnerManager().getTaskByQueryUnitAttemptId(new QueryUnitAttemptId(request));
+    Task task = workerContext.getTaskRunnerManager().getTaskByTaskAttemptId(new TaskAttemptId(request));
     if(task != null) task.kill();
 
     done.run(TajoWorker.TRUE_PROTO);

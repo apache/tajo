@@ -110,6 +110,6 @@ clause in a Hive's ``CREATE TABLE`` statement as follows:
 
  CREATE TABLE table1 (id int, name string, score float, type string)
  ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
- STORED AS TEXTFILE
+ STORED AS TEXT
 
 To the best of our knowledge, there is not way to specify a custom NULL character in Hive.

@@ -25,7 +25,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocalDirAllocator;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
@@ -154,10 +154,10 @@ public class HashShuffleAppenderManager {
     return intermEntries;
   }
 
-  public void finalizeTask(QueryUnitAttemptId taskId) {
+  public void finalizeTask(TaskAttemptId taskId) {
     synchronized (appenderMap) {
       Map<Integer, PartitionAppenderMeta> partitionAppenderMap =
-        appenderMap.get(taskId.getQueryUnitId().getExecutionBlockId());
+        appenderMap.get(taskId.getTaskId().getExecutionBlockId());
       if (partitionAppenderMap == null) {
         return;
       }

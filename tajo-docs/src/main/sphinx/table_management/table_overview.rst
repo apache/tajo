@@ -57,7 +57,7 @@ You can specify a table time zone as follows:
    CREATE EXTERNAL TABLE table1 (
     t_timestamp  TIMESTAMP,
     t_date    DATE
-   ) USING TEXTFILE WITH('timezone'='ASIA/Seoul') LOCATION '/path-to-table/'
+   ) USING TEXT WITH('timezone'='ASIA/Seoul') LOCATION '/path-to-table/'
  
 
 In order to learn time zone, please refer to :doc:`/time_zone`.

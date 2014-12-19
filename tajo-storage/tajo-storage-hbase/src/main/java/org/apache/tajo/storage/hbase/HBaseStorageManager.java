@@ -539,7 +539,7 @@ public class HBaseStorageManager extends StorageManager {
 
   @Override
   public Appender getAppender(OverridableConf queryContext,
-                              QueryUnitAttemptId taskAttemptId, TableMeta meta, Schema schema, Path workDir)
+                              TaskAttemptId taskAttemptId, TableMeta meta, Schema schema, Path workDir)
       throws IOException {
     if ("true".equalsIgnoreCase(queryContext.get(HBaseStorageConstants.INSERT_PUT_MODE, "false"))) {
       return new HBasePutAppender(conf, taskAttemptId, schema, meta, workDir);

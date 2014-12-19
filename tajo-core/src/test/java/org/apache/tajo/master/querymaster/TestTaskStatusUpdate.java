@@ -36,9 +36,9 @@ import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
-public class TestQueryUnitStatusUpdate extends QueryTestCaseBase {
+public class TestTaskStatusUpdate extends QueryTestCaseBase {
 
-  public TestQueryUnitStatusUpdate() {
+  public TestTaskStatusUpdate() {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
   }
 

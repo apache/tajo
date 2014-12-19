@@ -22,7 +22,7 @@ import org.apache.hadoop.net.NetUtils;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.QueryIdFactory;
-import org.apache.tajo.QueryUnitId;
+import org.apache.tajo.TaskId;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.worker.InterDataRetriever;
@@ -80,8 +80,8 @@ public class TestHttpDataServer {
   public final void testInterDataRetriver() throws Exception {
     MasterPlan plan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), null, null);
     ExecutionBlockId schid = plan.newExecutionBlockId();
-    QueryUnitId qid1 = QueryIdFactory.newQueryUnitId(schid);
-    QueryUnitId qid2 = QueryIdFactory.newQueryUnitId(schid);
+    TaskId qid1 = QueryIdFactory.newTaskId(schid);
+    TaskId qid2 = QueryIdFactory.newTaskId(schid);
     
     File qid1Dir = new File(TEST_DATA + "/" + qid1.toString() + "/out");
     qid1Dir.mkdirs();
@@ -121,8 +121,8 @@ public class TestHttpDataServer {
   public final void testNoSuchFile() throws Exception {
     MasterPlan plan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), null, null);
     ExecutionBlockId schid = plan.newExecutionBlockId();
-    QueryUnitId qid1 = QueryIdFactory.newQueryUnitId(schid);
-    QueryUnitId qid2 = QueryIdFactory.newQueryUnitId(schid);
+    TaskId qid1 = QueryIdFactory.newTaskId(schid);
+    TaskId qid2 = QueryIdFactory.newTaskId(schid);
     
     File qid1Dir = new File(TEST_DATA + "/" + qid1.toString() + "/out");
     qid1Dir.mkdirs();
@@ -154,7 +154,7 @@ public class TestHttpDataServer {
     assertDataRetrival(qid1, addr.getPort(), watermark1);
   }
   
-  private static void assertDataRetrival(QueryUnitId id, int port, 
+  private static void assertDataRetrival(TaskId id, int port,
       String watermark) throws IOException {
     URL url = new URL("http://127.0.0.1:"+port
         + "/?qid=" + id.toString() + "&fn=testHttp");
