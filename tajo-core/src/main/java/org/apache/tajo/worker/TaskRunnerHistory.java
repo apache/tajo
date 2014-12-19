@@ -22,7 +22,7 @@ import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.service.Service;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.master.container.TajoConverterUtils;
@@ -43,7 +43,7 @@ public class TaskRunnerHistory implements ProtoObject<TaskRunnerHistoryProto> {
   private long startTime;
   private long finishTime;
   private ExecutionBlockId executionBlockId;
-  private Map<QueryUnitAttemptId, TaskHistory> taskHistoryMap = null;
+  private Map<TaskAttemptId, TaskHistory> taskHistoryMap = null;
 
   public TaskRunnerHistory(TajoContainerId containerId, ExecutionBlockId executionBlockId) {
     init();
@@ -60,7 +60,7 @@ public class TaskRunnerHistory implements ProtoObject<TaskRunnerHistoryProto> {
     this.taskHistoryMap = Maps.newTreeMap();
     for (TaskHistoryProto taskHistoryProto : proto.getTaskHistoriesList()) {
       TaskHistory taskHistory = new TaskHistory(taskHistoryProto);
-      taskHistoryMap.put(taskHistory.getQueryUnitAttemptId(), taskHistory);
+      taskHistoryMap.put(taskHistory.getTaskAttemptId(), taskHistory);
     }
   }
 
@@ -137,15 +137,15 @@ public class TaskRunnerHistory implements ProtoObject<TaskRunnerHistoryProto> {
     this.containerId = containerId;
   }
 
-  public TaskHistory getTaskHistory(QueryUnitAttemptId queryUnitAttemptId) {
-    return taskHistoryMap.get(queryUnitAttemptId);
+  public TaskHistory getTaskHistory(TaskAttemptId taskAttemptId) {
+    return taskHistoryMap.get(taskAttemptId);
   }
 
-  public Map<QueryUnitAttemptId, TaskHistory> getTaskHistoryMap() {
+  public Map<TaskAttemptId, TaskHistory> getTaskHistoryMap() {
     return Collections.unmodifiableMap(taskHistoryMap);
   }
 
-  public void addTaskHistory(QueryUnitAttemptId queryUnitAttemptId, TaskHistory taskHistory) {
-    taskHistoryMap.put(queryUnitAttemptId, taskHistory);
+  public void addTaskHistory(TaskAttemptId taskAttemptId, TaskHistory taskHistory) {
+    taskHistoryMap.put(taskAttemptId, taskHistory);
   }
 }

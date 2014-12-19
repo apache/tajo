@@ -19,6 +19,7 @@
 package org.apache.tajo.master.querymaster;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -52,9 +53,9 @@ public class QueryJobManager extends CompositeService {
 
   private SimpleFifoScheduler scheduler;
 
-  private final Map<QueryId, QueryInProgress> submittedQueries = new HashMap<QueryId, QueryInProgress>();
+  private final Map<QueryId, QueryInProgress> submittedQueries = Maps.newConcurrentMap();
 
-  private final Map<QueryId, QueryInProgress> runningQueries = new HashMap<QueryId, QueryInProgress>();
+  private final Map<QueryId, QueryInProgress> runningQueries = Maps.newConcurrentMap();
 
   private AtomicLong minExecutionTime = new AtomicLong(Long.MAX_VALUE);
   private AtomicLong maxExecutionTime = new AtomicLong();

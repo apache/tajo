@@ -122,7 +122,7 @@ public class QueryMasterManagerService extends CompositeService
 
   @Override
   public void getTask(RpcController controller, TajoWorkerProtocol.GetTaskRequestProto request,
-                      RpcCallback<TajoWorkerProtocol.QueryUnitRequestProto> done) {
+                      RpcCallback<TajoWorkerProtocol.TaskRequestProto> done) {
     try {
       ExecutionBlockId ebId = new ExecutionBlockId(request.getExecutionBlockId());
       QueryMasterTask queryMasterTask = workerContext.getQueryMaster().getQueryMasterTask(ebId.getQueryId());
@@ -144,15 +144,15 @@ public class QueryMasterManagerService extends CompositeService
   public void statusUpdate(RpcController controller, TajoWorkerProtocol.TaskStatusProto request,
                            RpcCallback<PrimitiveProtos.BoolProto> done) {
     try {
-      QueryId queryId = new QueryId(request.getId().getQueryUnitId().getExecutionBlockId().getQueryId());
-      QueryUnitAttemptId attemptId = new QueryUnitAttemptId(request.getId());
+      QueryId queryId = new QueryId(request.getId().getTaskId().getExecutionBlockId().getQueryId());
+      TaskAttemptId attemptId = new TaskAttemptId(request.getId());
       QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(queryId);
       if (queryMasterTask == null) {
         queryMasterTask = queryMaster.getQueryMasterTask(queryId, true);
       }
-      SubQuery sq = queryMasterTask.getQuery().getSubQuery(attemptId.getQueryUnitId().getExecutionBlockId());
-      QueryUnit task = sq.getQueryUnit(attemptId.getQueryUnitId());
-      QueryUnitAttempt attempt = task.getAttempt(attemptId.getId());
+      SubQuery sq = queryMasterTask.getQuery().getSubQuery(attemptId.getTaskId().getExecutionBlockId());
+      Task task = sq.getTask(attemptId.getTaskId());
+      TaskAttempt attempt = task.getAttempt(attemptId.getId());
 
       if(LOG.isDebugEnabled()){
         LOG.debug(String.format("Task State: %s, Attempt State: %s", task.getState().name(), attempt.getState().name()));
@@ -161,10 +161,10 @@ public class QueryMasterManagerService extends CompositeService
       if (request.getState() == TajoProtos.TaskAttemptState.TA_KILLED) {
         LOG.warn(attemptId + " Killed");
         attempt.handle(
-            new TaskAttemptEvent(new QueryUnitAttemptId(request.getId()), TaskAttemptEventType.TA_LOCAL_KILLED));
+            new TaskAttemptEvent(new TaskAttemptId(request.getId()), TaskAttemptEventType.TA_LOCAL_KILLED));
       } else {
         queryMasterTask.getEventHandler().handle(
-            new TaskAttemptStatusUpdateEvent(new QueryUnitAttemptId(request.getId()), request));
+            new TaskAttemptStatusUpdateEvent(new TaskAttemptId(request.getId()), request));
       }
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {
@@ -185,11 +185,11 @@ public class QueryMasterManagerService extends CompositeService
                          RpcCallback<PrimitiveProtos.BoolProto> done) {
     try {
       QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(
-          new QueryId(report.getId().getQueryUnitId().getExecutionBlockId().getQueryId()));
+          new QueryId(report.getId().getTaskId().getExecutionBlockId().getQueryId()));
       if (queryMasterTask != null) {
         queryMasterTask.handleTaskFailed(report);
       } else {
-        LOG.warn("No QueryMasterTask: " + new QueryUnitAttemptId(report.getId()));
+        LOG.warn("No QueryMasterTask: " + new TaskAttemptId(report.getId()));
       }
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {
@@ -203,7 +203,7 @@ public class QueryMasterManagerService extends CompositeService
                    RpcCallback<PrimitiveProtos.BoolProto> done) {
     try {
       QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(
-          new QueryId(report.getId().getQueryUnitId().getExecutionBlockId().getQueryId()));
+          new QueryId(report.getId().getTaskId().getExecutionBlockId().getQueryId()));
       if (queryMasterTask != null) {
         queryMasterTask.getEventHandler().handle(new TaskCompletionEvent(report));
       }

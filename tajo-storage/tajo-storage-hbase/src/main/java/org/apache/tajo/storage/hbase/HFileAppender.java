@@ -34,7 +34,7 @@ import org.apache.hadoop.mapreduce.lib.output.FileOutputCommitter;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -53,7 +53,7 @@ public class HFileAppender extends AbstractHBaseAppender {
   private Path workingFilePath;
   private FileOutputCommitter committer;
 
-  public HFileAppender(Configuration conf, QueryUnitAttemptId taskAttemptId,
+  public HFileAppender(Configuration conf, TaskAttemptId taskAttemptId,
                        Schema schema, TableMeta meta, Path stagingDir) {
     super(conf, taskAttemptId, schema, meta, stagingDir);
   }
@@ -66,10 +66,10 @@ public class HFileAppender extends AbstractHBaseAppender {
     Path stagingResultDir = new Path(stagingDir, TajoConstants.RESULT_DIR_NAME);
     taskConf.set(FileOutputFormat.OUTDIR, stagingResultDir.toString());
 
-    ExecutionBlockId ebId = taskAttemptId.getQueryUnitId().getExecutionBlockId();
+    ExecutionBlockId ebId = taskAttemptId.getTaskId().getExecutionBlockId();
     writerContext = new TaskAttemptContextImpl(taskConf,
         new TaskAttemptID(ebId.getQueryId().toString(), ebId.getId(), TaskType.MAP,
-            taskAttemptId.getQueryUnitId().getId(), taskAttemptId.getId()));
+            taskAttemptId.getTaskId().getId(), taskAttemptId.getId()));
 
     HFileOutputFormat2 hFileOutputFormat2 = new HFileOutputFormat2();
     try {

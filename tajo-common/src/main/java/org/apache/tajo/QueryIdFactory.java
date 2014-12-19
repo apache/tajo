@@ -92,15 +92,15 @@ public class QueryIdFactory {
     return new ExecutionBlockId(queryId, id);
   }
 
-  public synchronized static QueryUnitId newQueryUnitId(ExecutionBlockId executionBlockId) {
-    return new QueryUnitId(executionBlockId, nextId.incrementAndGet());
+  public synchronized static TaskId newTaskId(ExecutionBlockId executionBlockId) {
+    return new TaskId(executionBlockId, nextId.incrementAndGet());
   }
 
-  public synchronized static QueryUnitId newQueryUnitId(ExecutionBlockId executionBlockId, int id) {
-    return new QueryUnitId(executionBlockId, id);
+  public synchronized static TaskId newTaskId(ExecutionBlockId executionBlockId, int id) {
+    return new TaskId(executionBlockId, id);
   }
 
-  public synchronized static QueryUnitAttemptId newQueryUnitAttemptId(QueryUnitId queryUnitId, final int attemptId) {
-    return new QueryUnitAttemptId(queryUnitId, attemptId);
+  public synchronized static TaskAttemptId newTaskAttemptId(TaskId taskId, final int attemptId) {
+    return new TaskAttemptId(taskId, attemptId);
   }
 }

@@ -21,7 +21,7 @@ package org.apache.tajo.storage;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.util.Pair;
 
@@ -42,7 +42,7 @@ public class HashShuffleAppender implements Appender {
   private TableStats tableStats;
 
   //<taskId,<page start offset,<task start, task end>>>
-  private Map<QueryUnitAttemptId, List<Pair<Long, Pair<Integer, Integer>>>> taskTupleIndexes;
+  private Map<TaskAttemptId, List<Pair<Long, Pair<Integer, Integer>>>> taskTupleIndexes;
 
   //page start offset, length
   private List<Pair<Long, Integer>> pages = new ArrayList<Pair<Long, Integer>>();
@@ -69,7 +69,7 @@ public class HashShuffleAppender implements Appender {
   @Override
   public void init() throws IOException {
     currentPage = new Pair(0L, 0);
-    taskTupleIndexes = new HashMap<QueryUnitAttemptId, List<Pair<Long, Pair<Integer, Integer>>>>();
+    taskTupleIndexes = new HashMap<TaskAttemptId, List<Pair<Long, Pair<Integer, Integer>>>>();
     rowNumInPage = 0;
   }
 
@@ -81,7 +81,7 @@ public class HashShuffleAppender implements Appender {
    * @return written bytes
    * @throws java.io.IOException
    */
-  public int addTuples(QueryUnitAttemptId taskId, List<Tuple> tuples) throws IOException {
+  public int addTuples(TaskAttemptId taskId, List<Tuple> tuples) throws IOException {
     synchronized(appender) {
       if (closed.get()) {
         return 0;
@@ -189,7 +189,7 @@ public class HashShuffleAppender implements Appender {
     return pages;
   }
 
-  public Map<QueryUnitAttemptId, List<Pair<Long, Pair<Integer, Integer>>>> getTaskTupleIndexes() {
+  public Map<TaskAttemptId, List<Pair<Long, Pair<Integer, Integer>>>> getTaskTupleIndexes() {
     return taskTupleIndexes;
   }
 
@@ -203,7 +203,7 @@ public class HashShuffleAppender implements Appender {
     return merged;
   }
 
-  public void taskFinished(QueryUnitAttemptId taskId) {
+  public void taskFinished(TaskAttemptId taskId) {
     taskTupleIndexes.remove(taskId);
   }
 }

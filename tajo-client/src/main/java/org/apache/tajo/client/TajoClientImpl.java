@@ -35,6 +35,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.jdbc.TajoResultSet;
@@ -58,11 +59,11 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
   CatalogAdminClient catalogClient;
 
   public TajoClientImpl(TajoConf conf) throws IOException {
-    this(conf, NetUtils.createSocketAddr(conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS)), null);
+    this(conf, TajoHAClientUtil.getRpcClientAddress(conf), null);
   }
 
   public TajoClientImpl(TajoConf conf, @Nullable String baseDatabase) throws IOException {
-    this(conf, NetUtils.createSocketAddr(conf.getVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS)), baseDatabase);
+    this(conf, TajoHAClientUtil.getRpcClientAddress(conf), baseDatabase);
   }
 
   public TajoClientImpl(InetSocketAddress addr) throws IOException {

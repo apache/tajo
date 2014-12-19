@@ -28,7 +28,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -268,7 +268,7 @@ public class FileStorageManager extends StorageManager {
   /////////////////////////////////////////////////////////////////////////////
   // FileInputFormat Area
   /////////////////////////////////////////////////////////////////////////////
-  public Path getAppenderFilePath(QueryUnitAttemptId taskAttemptId, Path workDir) {
+  public Path getAppenderFilePath(TaskAttemptId taskAttemptId, Path workDir) {
     if (taskAttemptId == null) {
       // For testcase
       return workDir;
@@ -277,8 +277,8 @@ public class FileStorageManager extends StorageManager {
     // where ss is the subquery id associated with this task, and nnnnnn is the task id.
     Path outFilePath = StorageUtil.concatPath(workDir, TajoConstants.RESULT_DIR_NAME,
         OUTPUT_FILE_PREFIX +
-            OUTPUT_FILE_FORMAT_SUBQUERY.get().format(taskAttemptId.getQueryUnitId().getExecutionBlockId().getId()) + "-" +
-            OUTPUT_FILE_FORMAT_TASK.get().format(taskAttemptId.getQueryUnitId().getId()) + "-" +
+            OUTPUT_FILE_FORMAT_SUBQUERY.get().format(taskAttemptId.getTaskId().getExecutionBlockId().getId()) + "-" +
+            OUTPUT_FILE_FORMAT_TASK.get().format(taskAttemptId.getTaskId().getId()) + "-" +
             OUTPUT_FILE_FORMAT_SEQ.get().format(0));
     LOG.info("Output File Path: " + outFilePath);
 

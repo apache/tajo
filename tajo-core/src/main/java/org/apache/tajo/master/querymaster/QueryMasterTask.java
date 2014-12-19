@@ -65,7 +65,7 @@ import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.StorageProperty;
 import org.apache.tajo.storage.StorageUtil;
-import org.apache.tajo.util.HAServiceUtil;
+import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.util.metrics.TajoMetrics;
 import org.apache.tajo.util.metrics.reporter.MetricsConsoleReporter;
 import org.apache.tajo.worker.AbstractResourceAllocator;
@@ -286,12 +286,12 @@ public class QueryMasterTask extends CompositeService {
   private class TaskEventDispatcher
       implements EventHandler<TaskEvent> {
     public void handle(TaskEvent event) {
-      QueryUnitId taskId = event.getTaskId();
+      TaskId taskId = event.getTaskId();
       if(LOG.isDebugEnabled()) {
         LOG.debug("TaskEventDispatcher>" + taskId + "," + event.getType());
       }
-      QueryUnit task = query.getSubQuery(taskId.getExecutionBlockId()).
-          getQueryUnit(taskId);
+      Task task = query.getSubQuery(taskId.getExecutionBlockId()).
+          getTask(taskId);
       task.handle(event);
     }
   }
@@ -299,10 +299,10 @@ public class QueryMasterTask extends CompositeService {
   private class TaskAttemptEventDispatcher
       implements EventHandler<TaskAttemptEvent> {
     public void handle(TaskAttemptEvent event) {
-      QueryUnitAttemptId attemptId = event.getTaskAttemptId();
-      SubQuery subQuery = query.getSubQuery(attemptId.getQueryUnitId().getExecutionBlockId());
-      QueryUnit task = subQuery.getQueryUnit(attemptId.getQueryUnitId());
-      QueryUnitAttempt attempt = task.getAttempt(attemptId);
+      TaskAttemptId attemptId = event.getTaskAttemptId();
+      SubQuery subQuery = query.getSubQuery(attemptId.getTaskId().getExecutionBlockId());
+      Task task = subQuery.getTask(attemptId.getTaskId());
+      TaskAttempt attempt = task.getAttempt(attemptId);
       attempt.handle(event);
     }
   }

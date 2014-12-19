@@ -67,7 +67,7 @@ public class SubQueryHistory implements GsonObject {
   @Expose
   private int rackLocalAssigned;
 
-  private List<QueryUnitHistory> queryUnits;
+  private List<TaskHistory> tasks;
 
   public String getExecutionBlockId() {
     return executionBlockId;
@@ -213,12 +213,12 @@ public class SubQueryHistory implements GsonObject {
     this.killedObjectCount = killedObjectCount;
   }
 
-  public List<QueryUnitHistory> getQueryUnits() {
-    return queryUnits;
+  public List<TaskHistory> getTasks() {
+    return tasks;
   }
 
-  public void setQueryUnits(List<QueryUnitHistory> queryUnits) {
-    this.queryUnits = queryUnits;
+  public void setTasks(List<TaskHistory> tasks) {
+    this.tasks = tasks;
   }
 
   @Override
@@ -226,19 +226,19 @@ public class SubQueryHistory implements GsonObject {
     return CoreGsonHelper.toJson(this, SubQueryHistory.class);
   }
 
-  public String toQueryUnitsJson() {
-    if (queryUnits == null) {
+  public String toTasksJson() {
+    if (tasks == null) {
       return "";
     }
-    return CoreGsonHelper.getInstance().toJson(queryUnits, new TypeToken<List<QueryUnitHistory>>() {
+    return CoreGsonHelper.getInstance().toJson(tasks, new TypeToken<List<TaskHistory>>() {
     }.getType());
   }
 
-  public static List<QueryUnitHistory> fromJsonQueryUnits(String json) {
+  public static List<TaskHistory> fromJsonTasks(String json) {
     if (json == null || json.trim().isEmpty()) {
-      return new ArrayList<QueryUnitHistory>();
+      return new ArrayList<TaskHistory>();
     }
-    return CoreGsonHelper.getInstance().fromJson(json, new TypeToken<List<QueryUnitHistory>>() {
+    return CoreGsonHelper.getInstance().fromJson(json, new TypeToken<List<TaskHistory>>() {
     }.getType());
   }
 

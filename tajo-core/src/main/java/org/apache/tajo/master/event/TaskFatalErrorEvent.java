@@ -18,19 +18,19 @@
 
 package org.apache.tajo.master.event;
 
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.ipc.TajoWorkerProtocol.TaskFatalErrorReport;
 
 public class TaskFatalErrorEvent extends TaskAttemptEvent {
   private final String message;
 
   public TaskFatalErrorEvent(TaskFatalErrorReport report) {
-    super(new QueryUnitAttemptId(report.getId()),
+    super(new TaskAttemptId(report.getId()),
         TaskAttemptEventType.TA_FATAL_ERROR);
     this.message = report.getErrorMessage();
   }
 
-  public TaskFatalErrorEvent(QueryUnitAttemptId attemptId, String message) {
+  public TaskFatalErrorEvent(TaskAttemptId attemptId, String message) {
     super(attemptId, TaskAttemptEventType.TA_FATAL_ERROR);
     this.message = message;
   }

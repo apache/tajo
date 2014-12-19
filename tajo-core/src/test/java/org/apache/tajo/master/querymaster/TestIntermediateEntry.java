@@ -29,7 +29,7 @@ import static org.junit.Assert.assertEquals;
 public class TestIntermediateEntry {
   @Test
   public void testPage() {
-    QueryUnit.IntermediateEntry interm = new QueryUnit.IntermediateEntry(-1, -1, 1, null);
+    Task.IntermediateEntry interm = new Task.IntermediateEntry(-1, -1, 1, null);
 
     List<Pair<Long, Integer>> pages = new ArrayList<Pair<Long, Integer>>();
     pages.add(new Pair(0L, 1441275));

@@ -20,7 +20,7 @@ package org.apache.tajo.worker;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.util.history.History;
@@ -37,7 +37,7 @@ import static org.apache.tajo.ipc.TajoWorkerProtocol.TaskHistoryProto;
  */
 public class TaskHistory implements ProtoObject<TaskHistoryProto>, History {
 
-  private QueryUnitAttemptId queryUnitAttemptId;
+  private TaskAttemptId taskAttemptId;
   private TaskAttemptState state;
   private float progress;
   private long startTime;
@@ -51,10 +51,10 @@ public class TaskHistory implements ProtoObject<TaskHistoryProto>, History {
   private int totalFetchCount;
   private List<FetcherHistoryProto> fetcherHistories;
 
-  public TaskHistory(QueryUnitAttemptId queryUnitAttemptId, TaskAttemptState state, float progress,
+  public TaskHistory(TaskAttemptId taskAttemptId, TaskAttemptState state, float progress,
                      long startTime, long finishTime, CatalogProtos.TableStatsProto inputStats) {
     init();
-    this.queryUnitAttemptId = queryUnitAttemptId;
+    this.taskAttemptId = taskAttemptId;
     this.state = state;
     this.progress = progress;
     this.startTime = startTime;
@@ -63,7 +63,7 @@ public class TaskHistory implements ProtoObject<TaskHistoryProto>, History {
   }
 
   public TaskHistory(TaskHistoryProto proto) {
-    this.queryUnitAttemptId = new QueryUnitAttemptId(proto.getQueryUnitAttemptId());
+    this.taskAttemptId = new TaskAttemptId(proto.getTaskAttemptId());
     this.state = proto.getState();
     this.progress = proto.getProgress();
     this.startTime = proto.getStartTime();
@@ -99,7 +99,7 @@ public class TaskHistory implements ProtoObject<TaskHistoryProto>, History {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(queryUnitAttemptId, state);
+    return Objects.hashCode(taskAttemptId, state);
   }
 
   @Override
@@ -114,7 +114,7 @@ public class TaskHistory implements ProtoObject<TaskHistoryProto>, History {
   @Override
   public TaskHistoryProto getProto() {
     TaskHistoryProto.Builder builder = TaskHistoryProto.newBuilder();
-    builder.setQueryUnitAttemptId(queryUnitAttemptId.getProto());
+    builder.setTaskAttemptId(taskAttemptId.getProto());
     builder.setState(state);
     builder.setProgress(progress);
     builder.setStartTime(startTime);
@@ -158,8 +158,8 @@ public class TaskHistory implements ProtoObject<TaskHistoryProto>, History {
     fetcherHistories.add(fetcherHistory);
   }
 
-  public QueryUnitAttemptId getQueryUnitAttemptId() {
-    return queryUnitAttemptId;
+  public TaskAttemptId getTaskAttemptId() {
+    return taskAttemptId;
   }
 
   public TaskAttemptState getState() {

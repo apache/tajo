@@ -158,8 +158,8 @@ public class StorageUtil extends StorageConstants {
     Path lastFile = fileNamePatternMatchedList.get(fileNamePatternMatchedList.size() - 1);
     String pathName = lastFile.getName();
 
-    // 0.8: pathName = part-<ExecutionBlockId.seq>-<QueryUnitId.seq>
-    // 0.9: pathName = part-<ExecutionBlockId.seq>-<QueryUnitId.seq>-<Sequence>
+    // 0.8: pathName = part-<ExecutionBlockId.seq>-<TaskId.seq>
+    // 0.9: pathName = part-<ExecutionBlockId.seq>-<TaskId.seq>-<Sequence>
     String[] pathTokens = pathName.split("-");
     if (pathTokens.length == 3) {
       return -1;

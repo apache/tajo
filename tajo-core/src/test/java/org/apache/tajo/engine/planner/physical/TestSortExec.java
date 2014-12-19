@@ -117,7 +117,7 @@ public class TestSortExec {
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestSortExec");
     TaskAttemptContext ctx = new TaskAttemptContext(queryContext,
         LocalTajoTestingUtility
-        .newQueryUnitAttemptId(), new FileFragment[] { frags[0] }, workDir);
+        .newTaskAttemptId(), new FileFragment[] { frags[0] }, workDir);
     ctx.setEnforcer(new Enforcer());
     Expr context = analyzer.parse(QUERIES[0]);
     LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), context);

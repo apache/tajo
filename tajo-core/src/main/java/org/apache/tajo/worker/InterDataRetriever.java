@@ -27,7 +27,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.apache.tajo.QueryUnitId;
+import org.apache.tajo.TaskId;
 import org.apache.tajo.worker.dataserver.FileAccessForbiddenException;
 import org.apache.tajo.worker.dataserver.retriever.DataRetriever;
 import org.apache.tajo.worker.dataserver.retriever.FileChunk;
@@ -41,13 +41,13 @@ import java.util.Set;
 @Deprecated
 public class InterDataRetriever implements DataRetriever {
   private final Log LOG = LogFactory.getLog(InterDataRetriever.class);
-  private final Set<QueryUnitId> registered = Sets.newHashSet();
+  private final Set<TaskId> registered = Sets.newHashSet();
   private final Map<String, String> map = Maps.newConcurrentMap();
 
   public InterDataRetriever() {
   }
   
-  public void register(QueryUnitId id, String baseURI) {
+  public void register(TaskId id, String baseURI) {
     synchronized (registered) {
       if (!registered.contains(id)) {      
         map.put(id.toString(), baseURI);
@@ -56,7 +56,7 @@ public class InterDataRetriever implements DataRetriever {
     } 
   }
   
-  public void unregister(QueryUnitId id) {
+  public void unregister(TaskId id) {
     synchronized (registered) {
       if (registered.contains(id)) {
         map.remove(id.toString());
