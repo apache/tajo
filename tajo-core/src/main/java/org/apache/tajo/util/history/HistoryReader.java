@@ -24,11 +24,10 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoWorkerProtocol.TaskHistoryProto;
 import org.apache.tajo.master.querymaster.QueryInfo;
-import org.apache.tajo.worker.TaskHistory;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -187,22 +186,21 @@ public class HistoryReader {
     }
   }
 
-  public List<QueryUnitHistory> getQueryUnitHistory(String queryId, String ebId) throws IOException {
+  public List<TaskHistory> getTaskHistory(String queryId, String ebId) throws IOException {
     Path queryHistoryFile = getQueryHistoryFilePath(queryId, 0);
     if (queryHistoryFile == null) {
-      return new ArrayList<QueryUnitHistory>();
+      return new ArrayList<TaskHistory>();
     }
     Path detailFile = new Path(queryHistoryFile.getParent(), ebId + HistoryWriter.HISTORY_FILE_POSTFIX);
     FileSystem fs = HistoryWriter.getNonCrcFileSystem(detailFile, tajoConf);
 
     if (!fs.exists(detailFile)) {
-      return new ArrayList<QueryUnitHistory>();
+      return new ArrayList<TaskHistory>();
     }
 
     FileStatus fileStatus = fs.getFileStatus(detailFile);
     if (fileStatus.getLen() > 100 * 1024 * 1024) {    // 100MB
-      throw new IOException("QueryUnitHistory file is too big: " +
-          detailFile + ", " + fileStatus.getLen() + " bytes");
+      throw new IOException("TaskHistory file is too big: " + detailFile + ", " + fileStatus.getLen() + " bytes");
     }
 
     FSDataInputStream in = null;
@@ -212,7 +210,7 @@ public class HistoryReader {
 
       in.readFully(buf, 0, buf.length);
 
-      return SubQueryHistory.fromJsonQueryUnits(new String(buf));
+      return SubQueryHistory.fromJsonTasks(new String(buf));
     } finally {
       if (in != null) {
         in.close();
@@ -220,7 +218,7 @@ public class HistoryReader {
     }
   }
 
-  public TaskHistory getTaskHistory(String queryUnitAttemptId, long startTime) throws IOException {
+  public org.apache.tajo.worker.TaskHistory getTaskHistory(String taskAttemptId, long startTime) throws IOException {
     FileSystem fs = HistoryWriter.getNonCrcFileSystem(taskHistoryParentPath, tajoConf);
 
     SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHH");
@@ -276,9 +274,9 @@ public class HistoryReader {
 
             builder.clear();
             TaskHistoryProto taskHistoryProto = builder.mergeFrom(buf).build();
-            QueryUnitAttemptId attemptId = new QueryUnitAttemptId(taskHistoryProto.getQueryUnitAttemptId());
-            if (attemptId.toString().equals(queryUnitAttemptId)) {
-              return new TaskHistory(taskHistoryProto);
+            TaskAttemptId attemptId = new TaskAttemptId(taskHistoryProto.getTaskAttemptId());
+            if (attemptId.toString().equals(taskAttemptId)) {
+              return new org.apache.tajo.worker.TaskHistory(taskHistoryProto);
             }
           }
         } catch (EOFException e) {

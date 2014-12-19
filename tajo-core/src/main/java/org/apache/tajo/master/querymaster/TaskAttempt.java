@@ -23,17 +23,17 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.ipc.TajoWorkerProtocol.TaskCompletionReport;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.event.*;
-import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext;
+import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptScheduleContext;
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
-import org.apache.tajo.master.querymaster.QueryUnit.IntermediateEntry;
-import org.apache.tajo.master.querymaster.QueryUnit.PullHost;
+import org.apache.tajo.master.querymaster.Task.IntermediateEntry;
+import org.apache.tajo.master.querymaster.Task.PullHost;
 import org.apache.tajo.master.container.TajoContainerId;
 
 import java.util.ArrayList;
@@ -45,14 +45,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleFileOutput;
 
-public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
+public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
 
-  private static final Log LOG = LogFactory.getLog(QueryUnitAttempt.class);
+  private static final Log LOG = LogFactory.getLog(TaskAttempt.class);
 
   private final static int EXPIRE_TIME = 15000;
 
-  private final QueryUnitAttemptId id;
-  private final QueryUnit queryUnit;
+  private final TaskAttemptId id;
+  private final Task task;
   final EventHandler eventHandler;
 
   private TajoContainerId containerId;
@@ -64,16 +64,16 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
 
   private final List<String> diagnostics = new ArrayList<String>();
 
-  private final QueryUnitAttemptScheduleContext scheduleContext;
+  private final TaskAttemptScheduleContext scheduleContext;
 
   private float progress;
   private CatalogProtos.TableStatsProto inputStats;
   private CatalogProtos.TableStatsProto resultStats;
 
   protected static final StateMachineFactory
-      <QueryUnitAttempt, TaskAttemptState, TaskAttemptEventType, TaskAttemptEvent>
+      <TaskAttempt, TaskAttemptState, TaskAttemptEventType, TaskAttemptEvent>
       stateMachineFactory = new StateMachineFactory
-      <QueryUnitAttempt, TaskAttemptState, TaskAttemptEventType, TaskAttemptEvent>
+      <TaskAttempt, TaskAttemptState, TaskAttemptEventType, TaskAttemptEvent>
       (TaskAttemptState.TA_NEW)
 
       // Transitions from TA_NEW state
@@ -173,13 +173,13 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
     stateMachine;
 
 
-  public QueryUnitAttempt(final QueryUnitAttemptScheduleContext scheduleContext,
-                          final QueryUnitAttemptId id, final QueryUnit queryUnit,
-                          final EventHandler eventHandler) {
+  public TaskAttempt(final TaskAttemptScheduleContext scheduleContext,
+                     final TaskAttemptId id, final Task task,
+                     final EventHandler eventHandler) {
     this.scheduleContext = scheduleContext;
     this.id = id;
-    this.expire = QueryUnitAttempt.EXPIRE_TIME;
-    this.queryUnit = queryUnit;
+    this.expire = TaskAttempt.EXPIRE_TIME;
+    this.task = task;
     this.eventHandler = eventHandler;
 
     ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
@@ -198,16 +198,16 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
     }
   }
 
-  public QueryUnitAttemptId getId() {
+  public TaskAttemptId getId() {
     return this.id;
   }
 
   public boolean isLeafTask() {
-    return this.queryUnit.isLeafTask();
+    return this.task.isLeafTask();
   }
 
-  public QueryUnit getQueryUnit() {
-    return this.queryUnit;
+  public Task getTask() {
+    return this.task;
   }
 
   public WorkerConnectionInfo getWorkerConnectionInfo() {
@@ -227,7 +227,7 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
   }
 
   public synchronized void resetExpireTime() {
-    this.setExpireTime(QueryUnitAttempt.EXPIRE_TIME);
+    this.setExpireTime(TaskAttempt.EXPIRE_TIME);
   }
 
   public int getLeftTime() {
@@ -259,53 +259,53 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
     List<IntermediateEntry> partitions = new ArrayList<IntermediateEntry>();
 
     if (report.getShuffleFileOutputsCount() > 0) {
-      this.getQueryUnit().setShuffleFileOutputs(report.getShuffleFileOutputsList());
+      this.getTask().setShuffleFileOutputs(report.getShuffleFileOutputsList());
 
       PullHost host = new PullHost(getWorkerConnectionInfo().getHost(), getWorkerConnectionInfo().getPullServerPort());
       for (ShuffleFileOutput p : report.getShuffleFileOutputsList()) {
-        IntermediateEntry entry = new IntermediateEntry(getId().getQueryUnitId().getId(),
+        IntermediateEntry entry = new IntermediateEntry(getId().getTaskId().getId(),
             getId().getId(), p.getPartId(), host, p.getVolume());
         partitions.add(entry);
       }
     }
-    this.getQueryUnit().setIntermediateData(partitions);
+    this.getTask().setIntermediateData(partitions);
 
     if (report.hasInputStats()) {
       this.inputStats = report.getInputStats();
     }
     if (report.hasResultStats()) {
       this.resultStats = report.getResultStats();
-      this.getQueryUnit().setStats(new TableStats(resultStats));
+      this.getTask().setStats(new TableStats(resultStats));
     }
   }
 
   private static class TaskAttemptScheduleTransition implements
-      SingleArcTransition<QueryUnitAttempt, TaskAttemptEvent> {
+      SingleArcTransition<TaskAttempt, TaskAttemptEvent> {
 
     @Override
-    public void transition(QueryUnitAttempt taskAttempt, TaskAttemptEvent taskAttemptEvent) {
-      taskAttempt.eventHandler.handle(new QueryUnitAttemptScheduleEvent(
-          EventType.T_SCHEDULE, taskAttempt.getQueryUnit().getId().getExecutionBlockId(),
+    public void transition(TaskAttempt taskAttempt, TaskAttemptEvent taskAttemptEvent) {
+      taskAttempt.eventHandler.handle(new TaskAttemptToSchedulerEvent(
+          EventType.T_SCHEDULE, taskAttempt.getTask().getId().getExecutionBlockId(),
           taskAttempt.scheduleContext, taskAttempt));
     }
   }
 
   private static class KillUnassignedTaskTransition implements
-      SingleArcTransition<QueryUnitAttempt, TaskAttemptEvent> {
+      SingleArcTransition<TaskAttempt, TaskAttemptEvent> {
 
     @Override
-    public void transition(QueryUnitAttempt taskAttempt, TaskAttemptEvent taskAttemptEvent) {
-      taskAttempt.eventHandler.handle(new QueryUnitAttemptScheduleEvent(
-          EventType.T_SCHEDULE_CANCEL, taskAttempt.getQueryUnit().getId().getExecutionBlockId(),
+    public void transition(TaskAttempt taskAttempt, TaskAttemptEvent taskAttemptEvent) {
+      taskAttempt.eventHandler.handle(new TaskAttemptToSchedulerEvent(
+          EventType.T_SCHEDULE_CANCEL, taskAttempt.getTask().getId().getExecutionBlockId(),
           taskAttempt.scheduleContext, taskAttempt));
     }
   }
 
   private static class LaunchTransition
-      implements SingleArcTransition<QueryUnitAttempt, TaskAttemptEvent> {
+      implements SingleArcTransition<TaskAttempt, TaskAttemptEvent> {
 
     @Override
-    public void transition(QueryUnitAttempt taskAttempt,
+    public void transition(TaskAttempt taskAttempt,
                            TaskAttemptEvent event) {
       TaskAttemptAssignedEvent castEvent = (TaskAttemptAssignedEvent) event;
       taskAttempt.containerId = castEvent.getContainerId();
@@ -316,22 +316,22 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
     }
   }
 
-  private static class TaskKilledCompleteTransition implements SingleArcTransition<QueryUnitAttempt, TaskAttemptEvent> {
+  private static class TaskKilledCompleteTransition implements SingleArcTransition<TaskAttempt, TaskAttemptEvent> {
 
     @Override
-    public void transition(QueryUnitAttempt taskAttempt,
+    public void transition(TaskAttempt taskAttempt,
                            TaskAttemptEvent event) {
-      taskAttempt.getQueryUnit().handle(new TaskEvent(taskAttempt.getId().getQueryUnitId(),
+      taskAttempt.getTask().handle(new TaskEvent(taskAttempt.getId().getTaskId(),
           TaskEventType.T_ATTEMPT_KILLED));
       LOG.info(taskAttempt.getId() + " Received TA_KILLED Status from LocalTask");
     }
   }
 
   private static class StatusUpdateTransition
-      implements MultipleArcTransition<QueryUnitAttempt, TaskAttemptEvent, TaskAttemptState> {
+      implements MultipleArcTransition<TaskAttempt, TaskAttemptEvent, TaskAttemptState> {
 
     @Override
-    public TaskAttemptState transition(QueryUnitAttempt taskAttempt,
+    public TaskAttemptState transition(TaskAttempt taskAttempt,
                                        TaskAttemptEvent event) {
       TaskAttemptStatusUpdateEvent updateEvent = (TaskAttemptStatusUpdateEvent) event;
 
@@ -350,26 +350,26 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
   }
 
   private static class AlreadyAssignedTransition
-      implements SingleArcTransition<QueryUnitAttempt, TaskAttemptEvent>{
+      implements SingleArcTransition<TaskAttempt, TaskAttemptEvent>{
 
     @Override
-    public void transition(QueryUnitAttempt queryUnitAttempt,
+    public void transition(TaskAttempt taskAttempt,
                            TaskAttemptEvent taskAttemptEvent) {
     }
   }
 
   private static class AlreadyDoneTransition
-      implements SingleArcTransition<QueryUnitAttempt, TaskAttemptEvent>{
+      implements SingleArcTransition<TaskAttempt, TaskAttemptEvent>{
 
     @Override
-    public void transition(QueryUnitAttempt queryUnitAttempt,
+    public void transition(TaskAttempt taskAttempt,
                            TaskAttemptEvent taskAttemptEvent) {
     }
   }
 
-  private static class SucceededTransition implements SingleArcTransition<QueryUnitAttempt, TaskAttemptEvent> {
+  private static class SucceededTransition implements SingleArcTransition<TaskAttempt, TaskAttemptEvent> {
     @Override
-    public void transition(QueryUnitAttempt taskAttempt,
+    public void transition(TaskAttempt taskAttempt,
                            TaskAttemptEvent event) {
       TaskCompletionReport report = ((TaskCompletionEvent)event).getReport();
 
@@ -383,18 +383,18 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
     }
   }
 
-  private static class KillTaskTransition implements SingleArcTransition<QueryUnitAttempt, TaskAttemptEvent> {
+  private static class KillTaskTransition implements SingleArcTransition<TaskAttempt, TaskAttemptEvent> {
 
     @Override
-    public void transition(QueryUnitAttempt taskAttempt, TaskAttemptEvent event) {
+    public void transition(TaskAttempt taskAttempt, TaskAttemptEvent event) {
       taskAttempt.eventHandler.handle(new LocalTaskEvent(taskAttempt.getId(), taskAttempt.containerId,
           LocalTaskEventType.KILL));
     }
   }
 
-  private static class FailedTransition implements SingleArcTransition<QueryUnitAttempt, TaskAttemptEvent>{
+  private static class FailedTransition implements SingleArcTransition<TaskAttempt, TaskAttemptEvent>{
     @Override
-    public void transition(QueryUnitAttempt taskAttempt, TaskAttemptEvent event) {
+    public void transition(TaskAttempt taskAttempt, TaskAttemptEvent event) {
       TaskFatalErrorEvent errorEvent = (TaskFatalErrorEvent) event;
       taskAttempt.eventHandler.handle(new TaskTAttemptEvent(taskAttempt.getId(), TaskEventType.T_ATTEMPT_FAILED));
       taskAttempt.addDiagnosticInfo(errorEvent.errorMessage());
@@ -420,10 +420,10 @@ public class QueryUnitAttempt implements EventHandler<TaskAttemptEvent> {
             + ", nextState:" + getState().name()
             , e);
         eventHandler.handle(
-            new SubQueryDiagnosticsUpdateEvent(event.getTaskAttemptId().getQueryUnitId().getExecutionBlockId(),
+            new SubQueryDiagnosticsUpdateEvent(event.getTaskAttemptId().getTaskId().getExecutionBlockId(),
                 "Can't handle this event at current state of " + event.getTaskAttemptId() + ")"));
         eventHandler.handle(
-            new SubQueryEvent(event.getTaskAttemptId().getQueryUnitId().getExecutionBlockId(),
+            new SubQueryEvent(event.getTaskAttemptId().getTaskId().getExecutionBlockId(),
                 SubQueryEventType.SQ_INTERNAL_ERROR));
       }
 

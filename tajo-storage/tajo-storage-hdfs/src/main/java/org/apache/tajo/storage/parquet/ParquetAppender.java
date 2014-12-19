@@ -18,7 +18,7 @@
 
 package org.apache.tajo.storage.parquet;
 
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.storage.StorageConstants;
 import parquet.hadoop.ParquetOutputFormat;
 import parquet.hadoop.metadata.CompressionCodecName;
@@ -54,7 +54,7 @@ public class ParquetAppender extends FileAppender {
    * @param meta The table metadata.
    * @param workDir The path of the Parquet file to write to.
    */
-  public ParquetAppender(Configuration conf, QueryUnitAttemptId taskAttemptId, Schema schema, TableMeta meta,
+  public ParquetAppender(Configuration conf, TaskAttemptId taskAttemptId, Schema schema, TableMeta meta,
                          Path workDir) throws IOException {
     super(conf, taskAttemptId, schema, meta, workDir);
     this.blockSize = Integer.parseInt(

@@ -22,7 +22,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
@@ -38,12 +38,12 @@ public abstract class FileAppender implements Appender {
   protected final TableMeta meta;
   protected final Schema schema;
   protected final Path workDir;
-  protected final QueryUnitAttemptId taskAttemptId;
+  protected final TaskAttemptId taskAttemptId;
 
   protected boolean enabledStats;
   protected Path path;
 
-  public FileAppender(Configuration conf, QueryUnitAttemptId taskAttemptId, Schema schema,
+  public FileAppender(Configuration conf, TaskAttemptId taskAttemptId, Schema schema,
                       TableMeta meta, Path workDir) {
     this.conf = conf;
     this.meta = meta;

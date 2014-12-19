@@ -26,10 +26,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.engine.query.QueryUnitRequestImpl;
+import org.apache.tajo.engine.query.TaskRequestImpl;
 import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
 import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.master.container.impl.pb.TajoContainerIdPBImpl;
@@ -44,7 +44,7 @@ import java.util.concurrent.*;
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
 
 /**
- * The driver class for Tajo QueryUnit processing.
+ * The driver class for Tajo Task processing.
  */
 public class TaskRunner extends AbstractService {
   /** class logger */
@@ -167,7 +167,7 @@ public class TaskRunner extends AbstractService {
   }
 
   static void fatalError(QueryMasterProtocolService.Interface qmClientService,
-                         QueryUnitAttemptId taskAttemptId, String message) {
+                         TaskAttemptId taskAttemptId, String message) {
     if (message == null) {
        message = "No error message";
     }
@@ -187,8 +187,8 @@ public class TaskRunner extends AbstractService {
         @Override
         public void run() {
           int receivedNum = 0;
-          CallFuture<QueryUnitRequestProto> callFuture = null;
-          QueryUnitRequestProto taskRequest = null;
+          CallFuture<TaskRequestProto> callFuture = null;
+          TaskRequestProto taskRequest = null;
 
           while(!stopped) {
             QueryMasterProtocolService.Interface qmClientService;
@@ -209,7 +209,7 @@ public class TaskRunner extends AbstractService {
 
             try {
               if (callFuture == null) {
-                callFuture = new CallFuture<QueryUnitRequestProto>();
+                callFuture = new CallFuture<TaskRequestProto>();
                 LOG.info("Request GetTask: " + getId());
                 GetTaskRequestProto request = GetTaskRequestProto.newBuilder()
                     .setExecutionBlockId(getExecutionBlockId().getProto())
@@ -256,7 +256,7 @@ public class TaskRunner extends AbstractService {
                   getContext().getWorkerContext().getWorkerSystemMetrics().counter("query", "task").inc();
                   LOG.info("Accumulated Received Task: " + (++receivedNum));
 
-                  QueryUnitAttemptId taskAttemptId = new QueryUnitAttemptId(taskRequest.getId());
+                  TaskAttemptId taskAttemptId = new TaskAttemptId(taskRequest.getId());
                   if (getContext().getTasks().containsKey(taskAttemptId)) {
                     LOG.error("Duplicate Task Attempt: " + taskAttemptId);
                     fatalError(qmClientService, taskAttemptId, "Duplicate Task Attempt: " + taskAttemptId);
@@ -267,7 +267,7 @@ public class TaskRunner extends AbstractService {
                   Task task;
                   try {
                     task = new Task(getId(), getTaskBaseDir(), taskAttemptId, executionBlockContext,
-                        new QueryUnitRequestImpl(taskRequest));
+                        new TaskRequestImpl(taskRequest));
                     getContext().getTasks().put(taskAttemptId, task);
 
                     task.init();

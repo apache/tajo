@@ -18,17 +18,17 @@
 
 package org.apache.tajo.master.event;
 
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 
 public class TaskTAttemptEvent extends TaskEvent {
-  private final QueryUnitAttemptId attemptId;
-  public TaskTAttemptEvent(QueryUnitAttemptId attemptId,
+  private final TaskAttemptId attemptId;
+  public TaskTAttemptEvent(TaskAttemptId attemptId,
                            TaskEventType eventType) {
-    super(attemptId.getQueryUnitId(), eventType);
+    super(attemptId.getTaskId(), eventType);
     this.attemptId = attemptId;
   }
 
-  public QueryUnitAttemptId getTaskAttemptId() {
+  public TaskAttemptId getTaskAttemptId() {
     return attemptId;
   }
 }
