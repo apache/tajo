@@ -371,7 +371,7 @@ public class TajoMaster extends CompositeService {
     }
 
     if (!catalog.existDatabase(DEFAULT_DATABASE_NAME)) {
-      globalEngine.createDatabase(null, DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME, false);
+      globalEngine.getDDLExecutor().createDatabase(null, DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME, false);
     } else {
       LOG.info(String.format("Default database (%s) is already prepared.", DEFAULT_DATABASE_NAME));
     }

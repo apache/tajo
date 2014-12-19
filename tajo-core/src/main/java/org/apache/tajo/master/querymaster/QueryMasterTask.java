@@ -37,6 +37,8 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
+import org.apache.tajo.master.exec.prehook.InsertIntoHook;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
@@ -390,8 +392,8 @@ public class QueryMasterTask extends CompositeService {
 
       optimizer.optimize(queryContext, plan);
 
-      GlobalEngine.DistributedQueryHookManager hookManager = new GlobalEngine.DistributedQueryHookManager();
-      hookManager.addHook(new GlobalEngine.InsertHook());
+      DistributedQueryHookManager hookManager = new DistributedQueryHookManager();
+      hookManager.addHook(new InsertIntoHook());
       hookManager.doHooks(queryContext, plan);
 
       for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
