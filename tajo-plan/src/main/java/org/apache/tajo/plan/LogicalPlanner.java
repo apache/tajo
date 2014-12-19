@@ -22,7 +22,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -48,7 +47,6 @@ import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
@@ -1637,7 +1635,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    *
    * ex) INSERT OVERWRITE INTO LOCATION 'hdfs://....' ..
    */
-  private InsertNode buildInsertIntoLocationPlan(PlanContext context, InsertNode insertNode, Insert expr) {
+  private InsertNode buildInsertIntoLocationPlan(PlanContext context, InsertNode insertNode, Insert expr) throws PlanningException {
     // INSERT (OVERWRITE)? INTO LOCATION path (USING file_type (param_clause)?)? query_expression
 
     LogicalNode child = insertNode.getChild();
@@ -1653,6 +1651,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     insertNode.setTargetLocation(new Path(expr.getLocation()));
 
     if (expr.hasStorageType()) {
+      CatalogProtos.StoreType storeType = CatalogUtil.getStoreType(expr.getStorageType());
+      if (storeType == null) {
+        throw new PlanningException(expr.getStorageType() + " is not supported storage type.");
+      }
       insertNode.setStorageType(CatalogUtil.getStoreType(expr.getStorageType()));
     }
     if (expr.hasParams()) {
@@ -1727,7 +1729,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       return handleCreateTableLike(context, expr, createTableNode);
 
     if (expr.hasStorageType()) { // If storage type (using clause) is specified
-      createTableNode.setStorageType(CatalogUtil.getStoreType(expr.getStorageType()));
+      CatalogProtos.StoreType storeType = CatalogUtil.getStoreType(expr.getStorageType());
+      if (storeType == null) {
+        throw new PlanningException(expr.getStorageType() + " is not supported storage type.");
+      }
+
+      createTableNode.setStorageType(storeType);
     } else { // otherwise, default type
       createTableNode.setStorageType(CatalogProtos.StoreType.CSV);
     }
