@@ -28,14 +28,14 @@ import org.apache.tajo.engine.function.annotation.ParamTypes;
     functionName = "first_value",
     description = "the first value of retrieved rows",
     example = "> SELECT first_value(column) OVER ();",
-    returnType = Type.TEXT,
-    paramTypes = {@ParamTypes(paramTypes = {Type.TEXT})}
+    returnType = Type.TIME,
+    paramTypes = {@ParamTypes(paramTypes = {Type.TIME})}
 )
-public class FirstValueString extends FirstValue {
+public class FirstValueTime extends FirstValue {
 
-  public FirstValueString() {
+  public FirstValueTime() {
     super(new Column[] {
-        new Column("expr", Type.TEXT)
+        new Column("expr", Type.TIME)
     });
   }
 }

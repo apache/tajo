@@ -16,26 +16,31 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.function.window;
+package org.apache.tajo.engine.function.builtin;
 
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 
 @Description(
-    functionName = "first_value",
-    description = "the first value of retrieved rows",
-    example = "> SELECT first_value(column) OVER ();",
-    returnType = Type.TEXT,
-    paramTypes = {@ParamTypes(paramTypes = {Type.TEXT})}
+    functionName = "last_value",
+    description = "the last value of expr",
+    example = "> SELECT last_value(expr);",
+    returnType = TajoDataTypes.Type.TIME,
+    paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TIME})}
 )
-public class FirstValueString extends FirstValue {
+public class LastValueTime extends LastValue {
 
-  public FirstValueString() {
+  public LastValueTime() {
     super(new Column[] {
-        new Column("expr", Type.TEXT)
+        new Column("expr", TajoDataTypes.Type.TIME)
     });
+  }
+
+  @Override
+  public TajoDataTypes.DataType getPartialResultType() {
+    return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TIME);
   }
 }
