@@ -1,0 +1,1 @@
+select sum(l_linenumber) from lineitem limit 1;
