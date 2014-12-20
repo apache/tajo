@@ -65,7 +65,7 @@ import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.history.TaskHistory;
-import org.apache.tajo.util.history.SubQueryHistory;
+import org.apache.tajo.util.history.StageHistory;
 import org.apache.tajo.worker.FetchImpl;
 
 import java.io.IOException;
@@ -81,11 +81,11 @@ import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 
 
 /**
- * SubQuery plays a role in controlling an ExecutionBlock and is a finite state machine.
+ * Stage plays a role in controlling an ExecutionBlock and is a finite state machine.
  */
-public class SubQuery implements EventHandler<SubQueryEvent> {
+public class Stage implements EventHandler<StageEvent> {
 
-  private static final Log LOG = LogFactory.getLog(SubQuery.class);
+  private static final Log LOG = LogFactory.getLog(Stage.class);
 
   private MasterPlan masterPlan;
   private ExecutionBlock block;
@@ -98,7 +98,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private AbstractTaskScheduler taskScheduler;
   private QueryMasterTask.QueryMasterTaskContext context;
   private final List<String> diagnostics = new ArrayList<String>();
-  private SubQueryState subQueryState;
+  private StageState stageState;
 
   private long startTime;
   private long finishTime;
@@ -113,160 +113,159 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private static final TaskCompletedTransition TASK_COMPLETED_TRANSITION = new TaskCompletedTransition();
   private static final AllocatedContainersCancelTransition CONTAINERS_CANCEL_TRANSITION =
       new AllocatedContainersCancelTransition();
-  private static final SubQueryCompleteTransition SUBQUERY_COMPLETED_TRANSITION =
-      new SubQueryCompleteTransition();
-  private StateMachine<SubQueryState, SubQueryEventType, SubQueryEvent> stateMachine;
+  private static final StageCompleteTransition STAGE_COMPLETED_TRANSITION = new StageCompleteTransition();
+  private StateMachine<StageState, StageEventType, StageEvent> stateMachine;
 
-  protected static final StateMachineFactory<SubQuery, SubQueryState,
-      SubQueryEventType, SubQueryEvent> stateMachineFactory =
-      new StateMachineFactory <SubQuery, SubQueryState,
-          SubQueryEventType, SubQueryEvent> (SubQueryState.NEW)
+  protected static final StateMachineFactory<Stage, StageState,
+      StageEventType, StageEvent> stateMachineFactory =
+      new StateMachineFactory <Stage, StageState,
+          StageEventType, StageEvent> (StageState.NEW)
 
           // Transitions from NEW state
-          .addTransition(SubQueryState.NEW,
-              EnumSet.of(SubQueryState.INITED, SubQueryState.ERROR, SubQueryState.SUCCEEDED),
-              SubQueryEventType.SQ_INIT,
+          .addTransition(StageState.NEW,
+              EnumSet.of(StageState.INITED, StageState.ERROR, StageState.SUCCEEDED),
+              StageEventType.SQ_INIT,
               new InitAndRequestContainer())
-          .addTransition(SubQueryState.NEW, SubQueryState.NEW,
-              SubQueryEventType.SQ_DIAGNOSTIC_UPDATE,
+          .addTransition(StageState.NEW, StageState.NEW,
+              StageEventType.SQ_DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
-          .addTransition(SubQueryState.NEW, SubQueryState.KILLED,
-              SubQueryEventType.SQ_KILL)
-          .addTransition(SubQueryState.NEW, SubQueryState.ERROR,
-              SubQueryEventType.SQ_INTERNAL_ERROR,
+          .addTransition(StageState.NEW, StageState.KILLED,
+              StageEventType.SQ_KILL)
+          .addTransition(StageState.NEW, StageState.ERROR,
+              StageEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
 
           // Transitions from INITED state
-          .addTransition(SubQueryState.INITED, SubQueryState.RUNNING,
-              SubQueryEventType.SQ_CONTAINER_ALLOCATED,
+          .addTransition(StageState.INITED, StageState.RUNNING,
+              StageEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINER_LAUNCH_TRANSITION)
-          .addTransition(SubQueryState.INITED, SubQueryState.INITED,
-              SubQueryEventType.SQ_DIAGNOSTIC_UPDATE,
+          .addTransition(StageState.INITED, StageState.INITED,
+              StageEventType.SQ_DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
-          .addTransition(SubQueryState.INITED, SubQueryState.KILL_WAIT,
-              SubQueryEventType.SQ_KILL, new KillTasksTransition())
-          .addTransition(SubQueryState.INITED, SubQueryState.ERROR,
-              SubQueryEventType.SQ_INTERNAL_ERROR,
+          .addTransition(StageState.INITED, StageState.KILL_WAIT,
+              StageEventType.SQ_KILL, new KillTasksTransition())
+          .addTransition(StageState.INITED, StageState.ERROR,
+              StageEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
 
           // Transitions from RUNNING state
-          .addTransition(SubQueryState.RUNNING, SubQueryState.RUNNING,
-              SubQueryEventType.SQ_CONTAINER_ALLOCATED,
+          .addTransition(StageState.RUNNING, StageState.RUNNING,
+              StageEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINER_LAUNCH_TRANSITION)
-          .addTransition(SubQueryState.RUNNING, SubQueryState.RUNNING,
-              SubQueryEventType.SQ_TASK_COMPLETED,
+          .addTransition(StageState.RUNNING, StageState.RUNNING,
+              StageEventType.SQ_TASK_COMPLETED,
               TASK_COMPLETED_TRANSITION)
-          .addTransition(SubQueryState.RUNNING,
-              EnumSet.of(SubQueryState.SUCCEEDED, SubQueryState.FAILED),
-              SubQueryEventType.SQ_SUBQUERY_COMPLETED,
-              SUBQUERY_COMPLETED_TRANSITION)
-          .addTransition(SubQueryState.RUNNING, SubQueryState.RUNNING,
-              SubQueryEventType.SQ_FAILED,
+          .addTransition(StageState.RUNNING,
+              EnumSet.of(StageState.SUCCEEDED, StageState.FAILED),
+              StageEventType.SQ_STAGE_COMPLETED,
+              STAGE_COMPLETED_TRANSITION)
+          .addTransition(StageState.RUNNING, StageState.RUNNING,
+              StageEventType.SQ_FAILED,
               TASK_COMPLETED_TRANSITION)
-          .addTransition(SubQueryState.RUNNING, SubQueryState.RUNNING,
-              SubQueryEventType.SQ_DIAGNOSTIC_UPDATE,
+          .addTransition(StageState.RUNNING, StageState.RUNNING,
+              StageEventType.SQ_DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
-          .addTransition(SubQueryState.RUNNING, SubQueryState.KILL_WAIT,
-              SubQueryEventType.SQ_KILL,
+          .addTransition(StageState.RUNNING, StageState.KILL_WAIT,
+              StageEventType.SQ_KILL,
               new KillTasksTransition())
-          .addTransition(SubQueryState.RUNNING, SubQueryState.ERROR,
-              SubQueryEventType.SQ_INTERNAL_ERROR,
+          .addTransition(StageState.RUNNING, StageState.ERROR,
+              StageEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
           // Ignore-able Transition
-          .addTransition(SubQueryState.RUNNING, SubQueryState.RUNNING,
-              SubQueryEventType.SQ_START)
+          .addTransition(StageState.RUNNING, StageState.RUNNING,
+              StageEventType.SQ_START)
 
           // Transitions from KILL_WAIT state
-          .addTransition(SubQueryState.KILL_WAIT, SubQueryState.KILL_WAIT,
-              SubQueryEventType.SQ_CONTAINER_ALLOCATED,
+          .addTransition(StageState.KILL_WAIT, StageState.KILL_WAIT,
+              StageEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINERS_CANCEL_TRANSITION)
-          .addTransition(SubQueryState.KILL_WAIT, SubQueryState.KILL_WAIT,
-              EnumSet.of(SubQueryEventType.SQ_KILL), new KillTasksTransition())
-          .addTransition(SubQueryState.KILL_WAIT, SubQueryState.KILL_WAIT,
-              SubQueryEventType.SQ_TASK_COMPLETED,
+          .addTransition(StageState.KILL_WAIT, StageState.KILL_WAIT,
+              EnumSet.of(StageEventType.SQ_KILL), new KillTasksTransition())
+          .addTransition(StageState.KILL_WAIT, StageState.KILL_WAIT,
+              StageEventType.SQ_TASK_COMPLETED,
               TASK_COMPLETED_TRANSITION)
-          .addTransition(SubQueryState.KILL_WAIT,
-              EnumSet.of(SubQueryState.SUCCEEDED, SubQueryState.FAILED, SubQueryState.KILLED),
-              SubQueryEventType.SQ_SUBQUERY_COMPLETED,
-              SUBQUERY_COMPLETED_TRANSITION)
-          .addTransition(SubQueryState.KILL_WAIT, SubQueryState.KILL_WAIT,
-              SubQueryEventType.SQ_DIAGNOSTIC_UPDATE,
+          .addTransition(StageState.KILL_WAIT,
+              EnumSet.of(StageState.SUCCEEDED, StageState.FAILED, StageState.KILLED),
+              StageEventType.SQ_STAGE_COMPLETED,
+              STAGE_COMPLETED_TRANSITION)
+          .addTransition(StageState.KILL_WAIT, StageState.KILL_WAIT,
+              StageEventType.SQ_DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
-          .addTransition(SubQueryState.KILL_WAIT, SubQueryState.KILL_WAIT,
-              SubQueryEventType.SQ_FAILED,
+          .addTransition(StageState.KILL_WAIT, StageState.KILL_WAIT,
+              StageEventType.SQ_FAILED,
               TASK_COMPLETED_TRANSITION)
-          .addTransition(SubQueryState.KILL_WAIT, SubQueryState.ERROR,
-              SubQueryEventType.SQ_INTERNAL_ERROR,
+          .addTransition(StageState.KILL_WAIT, StageState.ERROR,
+              StageEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
 
               // Transitions from SUCCEEDED state
-          .addTransition(SubQueryState.SUCCEEDED, SubQueryState.SUCCEEDED,
-              SubQueryEventType.SQ_CONTAINER_ALLOCATED,
+          .addTransition(StageState.SUCCEEDED, StageState.SUCCEEDED,
+              StageEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINERS_CANCEL_TRANSITION)
-          .addTransition(SubQueryState.SUCCEEDED, SubQueryState.SUCCEEDED,
-              SubQueryEventType.SQ_DIAGNOSTIC_UPDATE,
+          .addTransition(StageState.SUCCEEDED, StageState.SUCCEEDED,
+              StageEventType.SQ_DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
-          .addTransition(SubQueryState.SUCCEEDED, SubQueryState.ERROR,
-              SubQueryEventType.SQ_INTERNAL_ERROR,
+          .addTransition(StageState.SUCCEEDED, StageState.ERROR,
+              StageEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
               // Ignore-able events
-          .addTransition(SubQueryState.SUCCEEDED, SubQueryState.SUCCEEDED,
+          .addTransition(StageState.SUCCEEDED, StageState.SUCCEEDED,
               EnumSet.of(
-                  SubQueryEventType.SQ_START,
-                  SubQueryEventType.SQ_KILL,
-                  SubQueryEventType.SQ_CONTAINER_ALLOCATED))
+                  StageEventType.SQ_START,
+                  StageEventType.SQ_KILL,
+                  StageEventType.SQ_CONTAINER_ALLOCATED))
 
           // Transitions from KILLED state
-          .addTransition(SubQueryState.KILLED, SubQueryState.KILLED,
-              SubQueryEventType.SQ_CONTAINER_ALLOCATED,
+          .addTransition(StageState.KILLED, StageState.KILLED,
+              StageEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINERS_CANCEL_TRANSITION)
-          .addTransition(SubQueryState.KILLED, SubQueryState.KILLED,
-              SubQueryEventType.SQ_DIAGNOSTIC_UPDATE,
+          .addTransition(StageState.KILLED, StageState.KILLED,
+              StageEventType.SQ_DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
-          .addTransition(SubQueryState.KILLED, SubQueryState.ERROR,
-              SubQueryEventType.SQ_INTERNAL_ERROR,
+          .addTransition(StageState.KILLED, StageState.ERROR,
+              StageEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
               // Ignore-able transitions
-          .addTransition(SubQueryState.KILLED, SubQueryState.KILLED,
+          .addTransition(StageState.KILLED, StageState.KILLED,
               EnumSet.of(
-                  SubQueryEventType.SQ_START,
-                  SubQueryEventType.SQ_KILL,
-                  SubQueryEventType.SQ_CONTAINER_ALLOCATED,
-                  SubQueryEventType.SQ_FAILED))
+                  StageEventType.SQ_START,
+                  StageEventType.SQ_KILL,
+                  StageEventType.SQ_CONTAINER_ALLOCATED,
+                  StageEventType.SQ_FAILED))
 
           // Transitions from FAILED state
-          .addTransition(SubQueryState.FAILED, SubQueryState.FAILED,
-              SubQueryEventType.SQ_CONTAINER_ALLOCATED,
+          .addTransition(StageState.FAILED, StageState.FAILED,
+              StageEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINERS_CANCEL_TRANSITION)
-          .addTransition(SubQueryState.FAILED, SubQueryState.FAILED,
-              SubQueryEventType.SQ_DIAGNOSTIC_UPDATE,
+          .addTransition(StageState.FAILED, StageState.FAILED,
+              StageEventType.SQ_DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
-          .addTransition(SubQueryState.FAILED, SubQueryState.ERROR,
-              SubQueryEventType.SQ_INTERNAL_ERROR,
+          .addTransition(StageState.FAILED, StageState.ERROR,
+              StageEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
           // Ignore-able transitions
-          .addTransition(SubQueryState.FAILED, SubQueryState.FAILED,
+          .addTransition(StageState.FAILED, StageState.FAILED,
               EnumSet.of(
-                  SubQueryEventType.SQ_START,
-                  SubQueryEventType.SQ_KILL,
-                  SubQueryEventType.SQ_CONTAINER_ALLOCATED,
-                  SubQueryEventType.SQ_FAILED))
+                  StageEventType.SQ_START,
+                  StageEventType.SQ_KILL,
+                  StageEventType.SQ_CONTAINER_ALLOCATED,
+                  StageEventType.SQ_FAILED))
 
           // Transitions from ERROR state
-          .addTransition(SubQueryState.ERROR, SubQueryState.ERROR,
-              SubQueryEventType.SQ_CONTAINER_ALLOCATED,
+          .addTransition(StageState.ERROR, StageState.ERROR,
+              StageEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINERS_CANCEL_TRANSITION)
-          .addTransition(SubQueryState.ERROR, SubQueryState.ERROR,
-              SubQueryEventType.SQ_DIAGNOSTIC_UPDATE,
+          .addTransition(StageState.ERROR, StageState.ERROR,
+              StageEventType.SQ_DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
           // Ignore-able transitions
-          .addTransition(SubQueryState.ERROR, SubQueryState.ERROR,
+          .addTransition(StageState.ERROR, StageState.ERROR,
               EnumSet.of(
-                  SubQueryEventType.SQ_START,
-                  SubQueryEventType.SQ_KILL,
-                  SubQueryEventType.SQ_FAILED,
-                  SubQueryEventType.SQ_INTERNAL_ERROR,
-                  SubQueryEventType.SQ_SUBQUERY_COMPLETED))
+                  StageEventType.SQ_START,
+                  StageEventType.SQ_KILL,
+                  StageEventType.SQ_FAILED,
+                  StageEventType.SQ_INTERNAL_ERROR,
+                  StageEventType.SQ_STAGE_COMPLETED))
 
           .installTopology();
 
@@ -282,9 +281,9 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   private TaskSchedulerContext schedulerContext;
   private List<IntermediateEntry> hashShuffleIntermediateEntries = new ArrayList<IntermediateEntry>();
   private AtomicInteger completeReportReceived = new AtomicInteger(0);
-  private SubQueryHistory finalSubQueryHistory;
+  private StageHistory finalStageHistory;
 
-  public SubQuery(QueryMasterTask.QueryMasterTaskContext context, MasterPlan masterPlan, ExecutionBlock block) {
+  public Stage(QueryMasterTask.QueryMasterTaskContext context, MasterPlan masterPlan, ExecutionBlock block) {
     this.context = context;
     this.masterPlan = masterPlan;
     this.block = block;
@@ -294,11 +293,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     this.readLock = readWriteLock.readLock();
     this.writeLock = readWriteLock.writeLock();
     stateMachine = stateMachineFactory.make(this);
-    subQueryState = stateMachine.getCurrentState();
+    stageState = stateMachine.getCurrentState();
   }
 
-  public static boolean isRunningState(SubQueryState state) {
-    return state == SubQueryState.INITED || state == SubQueryState.NEW || state == SubQueryState.RUNNING;
+  public static boolean isRunningState(StageState state) {
+    return state == StageState.INITED || state == StageState.NEW || state == StageState.RUNNING;
   }
 
   public QueryMasterTask.QueryMasterTaskContext getContext() {
@@ -342,7 +341,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   public float getTaskProgress() {
     readLock.lock();
     try {
-      if (getState() == SubQueryState.NEW) {
+      if (getState() == StageState.NEW) {
         return 0;
       } else {
         return (float)(succeededObjectCount) / (float)totalScheduledObjectsCount;
@@ -356,7 +355,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     List<Task> tempTasks = null;
     readLock.lock();
     try {
-      if (getState() == SubQueryState.NEW) {
+      if (getState() == StageState.NEW) {
         return 0.0f;
       } else {
         tempTasks = new ArrayList<Task>(tasks.values());
@@ -395,15 +394,15 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     tasks.put(task.getId(), task);
   }
 
-  public SubQueryHistory getSubQueryHistory() {
-    if (finalSubQueryHistory != null) {
-      if (finalSubQueryHistory.getFinishTime() == 0) {
-        finalSubQueryHistory = makeSubQueryHistory();
-        finalSubQueryHistory.setTasks(makeTaskHistories());
+  public StageHistory getStageHistory() {
+    if (finalStageHistory != null) {
+      if (finalStageHistory.getFinishTime() == 0) {
+        finalStageHistory = makeStageHistory();
+        finalStageHistory.setTasks(makeTaskHistories());
       }
-      return finalSubQueryHistory;
+      return finalStageHistory;
     } else {
-      return makeSubQueryHistory();
+      return makeStageHistory();
     }
   }
 
@@ -417,20 +416,20 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     return taskHistories;
   }
 
-  private SubQueryHistory makeSubQueryHistory() {
-    SubQueryHistory subQueryHistory = new SubQueryHistory();
+  private StageHistory makeStageHistory() {
+    StageHistory stageHistory = new StageHistory();
 
-    subQueryHistory.setExecutionBlockId(getId().toString());
-    subQueryHistory.setPlan(PlannerUtil.buildExplainString(block.getPlan()));
-    subQueryHistory.setState(getState().toString());
-    subQueryHistory.setStartTime(startTime);
-    subQueryHistory.setFinishTime(finishTime);
-    subQueryHistory.setSucceededObjectCount(succeededObjectCount);
-    subQueryHistory.setKilledObjectCount(killedObjectCount);
-    subQueryHistory.setFailedObjectCount(failedObjectCount);
-    subQueryHistory.setTotalScheduledObjectsCount(totalScheduledObjectsCount);
-    subQueryHistory.setHostLocalAssigned(getTaskScheduler().getHostLocalAssigned());
-    subQueryHistory.setRackLocalAssigned(getTaskScheduler().getRackLocalAssigned());
+    stageHistory.setExecutionBlockId(getId().toString());
+    stageHistory.setPlan(PlannerUtil.buildExplainString(block.getPlan()));
+    stageHistory.setState(getState().toString());
+    stageHistory.setStartTime(startTime);
+    stageHistory.setFinishTime(finishTime);
+    stageHistory.setSucceededObjectCount(succeededObjectCount);
+    stageHistory.setKilledObjectCount(killedObjectCount);
+    stageHistory.setFailedObjectCount(failedObjectCount);
+    stageHistory.setTotalScheduledObjectsCount(totalScheduledObjectsCount);
+    stageHistory.setHostLocalAssigned(getTaskScheduler().getHostLocalAssigned());
+    stageHistory.setRackLocalAssigned(getTaskScheduler().getRackLocalAssigned());
 
     long totalInputBytes = 0;
     long totalReadBytes = 0;
@@ -455,44 +454,44 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       }
     }
 
-    subQueryHistory.setTotalInputBytes(totalInputBytes);
-    subQueryHistory.setTotalReadBytes(totalReadBytes);
-    subQueryHistory.setTotalReadRows(totalReadRows);
-    subQueryHistory.setTotalWriteBytes(totalWriteBytes);
-    subQueryHistory.setTotalWriteRows(totalWriteRows);
-    subQueryHistory.setNumShuffles(numShuffles);
-    subQueryHistory.setProgress(getProgress());
-    return subQueryHistory;
+    stageHistory.setTotalInputBytes(totalInputBytes);
+    stageHistory.setTotalReadBytes(totalReadBytes);
+    stageHistory.setTotalReadRows(totalReadRows);
+    stageHistory.setTotalWriteBytes(totalWriteBytes);
+    stageHistory.setTotalWriteRows(totalWriteRows);
+    stageHistory.setNumShuffles(numShuffles);
+    stageHistory.setProgress(getProgress());
+    return stageHistory;
   }
 
   /**
-   * It finalizes this subquery. It is only invoked when the subquery is succeeded.
+   * It finalizes this stage. It is only invoked when the stage is succeeded.
    */
   public void complete() {
     cleanup();
     finalizeStats();
     setFinishTime();
-    eventHandler.handle(new SubQueryCompletedEvent(getId(), SubQueryState.SUCCEEDED));
+    eventHandler.handle(new StageCompletedEvent(getId(), StageState.SUCCEEDED));
   }
 
   /**
-   * It finalizes this subquery. Unlike {@link SubQuery#complete()},
-   * it is invoked when a subquery is abnormally finished.
+   * It finalizes this stage. Unlike {@link Stage#complete()},
+   * it is invoked when a stage is abnormally finished.
    *
-   * @param finalState The final subquery state
+   * @param finalState The final stage state
    */
-  public void abort(SubQueryState finalState) {
+  public void abort(StageState finalState) {
     // TODO -
-    // - committer.abortSubQuery(...)
-    // - record SubQuery Finish Time
+    // - committer.abortStage(...)
+    // - record Stage Finish Time
     // - CleanUp Tasks
     // - Record History
     cleanup();
     setFinishTime();
-    eventHandler.handle(new SubQueryCompletedEvent(getId(), finalState));
+    eventHandler.handle(new StageCompletedEvent(getId(), finalState));
   }
 
-  public StateMachine<SubQueryState, SubQueryEventType, SubQueryEvent> getStateMachine() {
+  public StateMachine<StageState, StageEventType, StageEvent> getStateMachine() {
     return this.stateMachine;
   }
 
@@ -554,8 +553,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   
   @Override
   public boolean equals(Object o) {
-    if (o instanceof SubQuery) {
-      SubQuery other = (SubQuery)o;
+    if (o instanceof Stage) {
+      Stage other = (Stage)o;
       return getId().equals(other.getId());
     }
     return false;
@@ -566,11 +565,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     return getId().hashCode();
   }
   
-  public int compareTo(SubQuery other) {
+  public int compareTo(Stage other) {
     return getId().compareTo(other.getId());
   }
 
-  public SubQueryState getSynchronizedState() {
+  public StageState getSynchronizedState() {
     readLock.lock();
     try {
       return stateMachine.getCurrentState();
@@ -580,11 +579,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   }
 
   /* non-blocking call for client API */
-  public SubQueryState getState() {
-    return subQueryState;
+  public StageState getState() {
+    return stageState;
   }
 
-  public static TableStats[] computeStatFromUnionBlock(SubQuery subQuery) {
+  public static TableStats[] computeStatFromUnionBlock(Stage stage) {
     TableStats[] stat = new TableStats[]{new TableStats(), new TableStats()};
     long[] avgRows = new long[]{0, 0};
     long[] numBytes = new long[]{0, 0};
@@ -595,13 +594,13 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
     List<ColumnStats> columnStatses = Lists.newArrayList();
 
-    MasterPlan masterPlan = subQuery.getMasterPlan();
-    Iterator<ExecutionBlock> it = masterPlan.getChilds(subQuery.getBlock()).iterator();
+    MasterPlan masterPlan = stage.getMasterPlan();
+    Iterator<ExecutionBlock> it = masterPlan.getChilds(stage.getBlock()).iterator();
     while (it.hasNext()) {
       ExecutionBlock block = it.next();
-      SubQuery childSubQuery = subQuery.context.getSubQuery(block.getId());
+      Stage childStage = stage.context.getStage(block.getId());
       TableStats[] childStatArray = new TableStats[]{
-          childSubQuery.getInputStats(), childSubQuery.getResultStats()
+          childStage.getInputStats(), childStage.getResultStats()
       };
       for (int i = 0; i < 2; i++) {
         if (childStatArray[i] == null) {
@@ -684,31 +683,32 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
   }
 
   @Override
-  public void handle(SubQueryEvent event) {
+  public void handle(StageEvent event) {
     if (LOG.isDebugEnabled()) {
-      LOG.debug("Processing " + event.getSubQueryId() + " of type " + event.getType() + ", preState=" + getSynchronizedState());
+      LOG.debug("Processing " + event.getStageId() + " of type " + event.getType() + ", preState="
+          + getSynchronizedState());
     }
 
     try {
       writeLock.lock();
-      SubQueryState oldState = getSynchronizedState();
+      StageState oldState = getSynchronizedState();
       try {
         getStateMachine().doTransition(event.getType(), event);
-        subQueryState = getSynchronizedState();
+        stageState = getSynchronizedState();
       } catch (InvalidStateTransitonException e) {
         LOG.error("Can't handle this event at current state"
             + ", eventType:" + event.getType().name()
             + ", oldState:" + oldState.name()
             + ", nextState:" + getSynchronizedState().name()
             , e);
-        eventHandler.handle(new SubQueryEvent(getId(),
-            SubQueryEventType.SQ_INTERNAL_ERROR));
+        eventHandler.handle(new StageEvent(getId(),
+            StageEventType.SQ_INTERNAL_ERROR));
       }
 
       // notify the eventhandler of state change
       if (LOG.isDebugEnabled()) {
         if (oldState != getSynchronizedState()) {
-          LOG.debug(getId() + " SubQuery Transitioned from " + oldState + " to "
+          LOG.debug(getId() + " Stage Transitioned from " + oldState + " to "
               + getSynchronizedState());
         }
       }
@@ -721,96 +721,96 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     taskScheduler.handleTaskRequestEvent(event);
   }
 
-  private static class InitAndRequestContainer implements MultipleArcTransition<SubQuery,
-      SubQueryEvent, SubQueryState> {
+  private static class InitAndRequestContainer implements MultipleArcTransition<Stage,
+      StageEvent, StageState> {
 
     @Override
-    public SubQueryState transition(final SubQuery subQuery, SubQueryEvent subQueryEvent) {
-      subQuery.setStartTime();
-      ExecutionBlock execBlock = subQuery.getBlock();
-      SubQueryState state;
+    public StageState transition(final Stage stage, StageEvent stageEvent) {
+      stage.setStartTime();
+      ExecutionBlock execBlock = stage.getBlock();
+      StageState state;
 
       try {
         // Union operator does not require actual query processing. It is performed logically.
         if (execBlock.hasUnion()) {
-          subQuery.finalizeStats();
-          state = SubQueryState.SUCCEEDED;
+          stage.finalizeStats();
+          state = StageState.SUCCEEDED;
         } else {
           // execute pre-processing asyncronously
-          subQuery.getContext().getQueryMasterContext().getEventExecutor()
+          stage.getContext().getQueryMasterContext().getEventExecutor()
               .submit(new Runnable() {
                         @Override
                         public void run() {
                           try {
-                            ExecutionBlock parent = subQuery.getMasterPlan().getParent(subQuery.getBlock());
-                            DataChannel channel = subQuery.getMasterPlan().getChannel(subQuery.getId(), parent.getId());
-                            setShuffleIfNecessary(subQuery, channel);
-                            initTaskScheduler(subQuery);
-                            schedule(subQuery);
-                            subQuery.totalScheduledObjectsCount = subQuery.getTaskScheduler().remainingScheduledObjectNum();
-                            LOG.info(subQuery.totalScheduledObjectsCount + " objects are scheduled");
+                            ExecutionBlock parent = stage.getMasterPlan().getParent(stage.getBlock());
+                            DataChannel channel = stage.getMasterPlan().getChannel(stage.getId(), parent.getId());
+                            setShuffleIfNecessary(stage, channel);
+                            initTaskScheduler(stage);
+                            schedule(stage);
+                            stage.totalScheduledObjectsCount = stage.getTaskScheduler().remainingScheduledObjectNum();
+                            LOG.info(stage.totalScheduledObjectsCount + " objects are scheduled");
 
-                            if (subQuery.getTaskScheduler().remainingScheduledObjectNum() == 0) { // if there is no tasks
-                              subQuery.complete();
+                            if (stage.getTaskScheduler().remainingScheduledObjectNum() == 0) { // if there is no tasks
+                              stage.complete();
                             } else {
-                              if(subQuery.getSynchronizedState() == SubQueryState.INITED) {
-                                subQuery.taskScheduler.start();
-                                allocateContainers(subQuery);
+                              if(stage.getSynchronizedState() == StageState.INITED) {
+                                stage.taskScheduler.start();
+                                allocateContainers(stage);
                               } else {
-                                subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_KILL));
+                                stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_KILL));
                               }
                             }
                           } catch (Throwable e) {
-                            LOG.error("SubQuery (" + subQuery.getId() + ") ERROR: ", e);
-                            subQuery.setFinishTime();
-                            subQuery.eventHandler.handle(new SubQueryDiagnosticsUpdateEvent(subQuery.getId(), e.getMessage()));
-                            subQuery.eventHandler.handle(new SubQueryCompletedEvent(subQuery.getId(), SubQueryState.ERROR));
+                            LOG.error("Stage (" + stage.getId() + ") ERROR: ", e);
+                            stage.setFinishTime();
+                            stage.eventHandler.handle(new StageDiagnosticsUpdateEvent(stage.getId(), e.getMessage()));
+                            stage.eventHandler.handle(new StageCompletedEvent(stage.getId(), StageState.ERROR));
                           }
                         }
                       }
               );
-          state = SubQueryState.INITED;
+          state = StageState.INITED;
         }
       } catch (Throwable e) {
-        LOG.error("SubQuery (" + subQuery.getId() + ") ERROR: ", e);
-        subQuery.setFinishTime();
-        subQuery.eventHandler.handle(new SubQueryDiagnosticsUpdateEvent(subQuery.getId(), e.getMessage()));
-        subQuery.eventHandler.handle(new SubQueryCompletedEvent(subQuery.getId(), SubQueryState.ERROR));
-        return SubQueryState.ERROR;
+        LOG.error("Stage (" + stage.getId() + ") ERROR: ", e);
+        stage.setFinishTime();
+        stage.eventHandler.handle(new StageDiagnosticsUpdateEvent(stage.getId(), e.getMessage()));
+        stage.eventHandler.handle(new StageCompletedEvent(stage.getId(), StageState.ERROR));
+        return StageState.ERROR;
       }
 
       return state;
     }
 
-    private void initTaskScheduler(SubQuery subQuery) throws IOException {
-      TajoConf conf = subQuery.context.getConf();
-      subQuery.schedulerContext = new TaskSchedulerContext(subQuery.context,
-          subQuery.getMasterPlan().isLeaf(subQuery.getId()), subQuery.getId());
-      subQuery.taskScheduler = TaskSchedulerFactory.get(conf, subQuery.schedulerContext, subQuery);
-      subQuery.taskScheduler.init(conf);
-      LOG.info(subQuery.taskScheduler.getName() + " is chosen for the task scheduling for " + subQuery.getId());
+    private void initTaskScheduler(Stage stage) throws IOException {
+      TajoConf conf = stage.context.getConf();
+      stage.schedulerContext = new TaskSchedulerContext(stage.context,
+          stage.getMasterPlan().isLeaf(stage.getId()), stage.getId());
+      stage.taskScheduler = TaskSchedulerFactory.get(conf, stage.schedulerContext, stage);
+      stage.taskScheduler.init(conf);
+      LOG.info(stage.taskScheduler.getName() + " is chosen for the task scheduling for " + stage.getId());
     }
 
     /**
      * If a parent block requires a repartition operation, the method sets proper repartition
-     * methods and the number of partitions to a given subquery.
+     * methods and the number of partitions to a given Stage.
      */
-    private static void setShuffleIfNecessary(SubQuery subQuery, DataChannel channel) {
+    private static void setShuffleIfNecessary(Stage stage, DataChannel channel) {
       if (channel.getShuffleType() != ShuffleType.NONE_SHUFFLE) {
-        int numTasks = calculateShuffleOutputNum(subQuery, channel);
-        Repartitioner.setShuffleOutputNumForTwoPhase(subQuery, numTasks, channel);
+        int numTasks = calculateShuffleOutputNum(stage, channel);
+        Repartitioner.setShuffleOutputNumForTwoPhase(stage, numTasks, channel);
       }
     }
 
     /**
      * Getting the total memory of cluster
      *
-     * @param subQuery
+     * @param stage
      * @return mega bytes
      */
-    private static int getClusterTotalMemory(SubQuery subQuery) {
+    private static int getClusterTotalMemory(Stage stage) {
       List<TajoMasterProtocol.WorkerResourceProto> workers =
-          subQuery.context.getQueryMasterContext().getQueryMaster().getAllWorker();
+          stage.context.getQueryMasterContext().getQueryMaster().getAllWorker();
 
       int totalMem = 0;
       for (TajoMasterProtocol.WorkerResourceProto worker : workers) {
@@ -822,13 +822,13 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
      * Getting the desire number of partitions according to the volume of input data.
      * This method is only used to determine the partition key number of hash join or aggregation.
      *
-     * @param subQuery
+     * @param stage
      * @return
      */
-    public static int calculateShuffleOutputNum(SubQuery subQuery, DataChannel channel) {
-      TajoConf conf = subQuery.context.getConf();
-      MasterPlan masterPlan = subQuery.getMasterPlan();
-      ExecutionBlock parent = masterPlan.getParent(subQuery.getBlock());
+    public static int calculateShuffleOutputNum(Stage stage, DataChannel channel) {
+      TajoConf conf = stage.context.getConf();
+      MasterPlan masterPlan = stage.getMasterPlan();
+      ExecutionBlock parent = masterPlan.getParent(stage.getBlock());
 
       LogicalNode grpNode = null;
       if (parent != null) {
@@ -844,18 +844,18 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
         // for outer
         ExecutionBlock outer = childs.get(0);
-        long outerVolume = getInputVolume(subQuery.masterPlan, subQuery.context, outer);
+        long outerVolume = getInputVolume(stage.masterPlan, stage.context, outer);
 
         // for inner
         ExecutionBlock inner = childs.get(1);
-        long innerVolume = getInputVolume(subQuery.masterPlan, subQuery.context, inner);
-        LOG.info(subQuery.getId() + ", Outer volume: " + Math.ceil((double) outerVolume / 1048576) + "MB, "
+        long innerVolume = getInputVolume(stage.masterPlan, stage.context, inner);
+        LOG.info(stage.getId() + ", Outer volume: " + Math.ceil((double) outerVolume / 1048576) + "MB, "
             + "Inner volume: " + Math.ceil((double) innerVolume / 1048576) + "MB");
 
         long bigger = Math.max(outerVolume, innerVolume);
 
         int mb = (int) Math.ceil((double) bigger / 1048576);
-        LOG.info(subQuery.getId() + ", Bigger Table's volume is approximately " + mb + " MB");
+        LOG.info(stage.getId() + ", Bigger Table's volume is approximately " + mb + " MB");
 
         int taskNum = (int) Math.ceil((double) mb / masterPlan.getContext().getInt(SessionVars.JOIN_PER_SHUFFLE_SIZE));
 
@@ -877,14 +877,14 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
         if (outerShuffleOutputNum != innerShuffleOutputNum
             && taskNum != outerShuffleOutputNum
             && taskNum != innerShuffleOutputNum) {
-          LOG.info(subQuery.getId() + ", Change determined number of join partitions cause difference of outputNum" +
+          LOG.info(stage.getId() + ", Change determined number of join partitions cause difference of outputNum" +
                   ", originTaskNum=" + taskNum + ", changedTaskNum=" + Math.max(outerShuffleOutputNum, innerShuffleOutputNum) +
                   ", outerShuffleOutptNum=" + outerShuffleOutputNum +
                   ", innerShuffleOutputNum=" + innerShuffleOutputNum);
           taskNum = Math.max(outerShuffleOutputNum, innerShuffleOutputNum);
         }
 
-        LOG.info(subQuery.getId() + ", The determined number of join partitions is " + taskNum);
+        LOG.info(stage.getId() + ", The determined number of join partitions is " + taskNum);
 
         return taskNum;
         // Is this subquery the first step of group-by?
@@ -894,82 +894,82 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           hasGroupColumns = ((GroupbyNode)grpNode).getGroupingColumns().length > 0;
         } else if (grpNode.getType() == NodeType.DISTINCT_GROUP_BY) {
           // Find current distinct stage node.
-          DistinctGroupbyNode distinctNode = PlannerUtil.findMostBottomNode(subQuery.getBlock().getPlan(), NodeType.DISTINCT_GROUP_BY);
+          DistinctGroupbyNode distinctNode = PlannerUtil.findMostBottomNode(stage.getBlock().getPlan(), NodeType.DISTINCT_GROUP_BY);
           if (distinctNode == null) {
-            LOG.warn(subQuery.getId() + ", Can't find current DistinctGroupbyNode");
+            LOG.warn(stage.getId() + ", Can't find current DistinctGroupbyNode");
             distinctNode = (DistinctGroupbyNode)grpNode;
           }
           hasGroupColumns = distinctNode.getGroupingColumns().length > 0;
 
-          Enforcer enforcer = subQuery.getBlock().getEnforcer();
+          Enforcer enforcer = stage.getBlock().getEnforcer();
           if (enforcer == null) {
-            LOG.warn(subQuery.getId() + ", DistinctGroupbyNode's enforcer is null.");
+            LOG.warn(stage.getId() + ", DistinctGroupbyNode's enforcer is null.");
           }
           EnforceProperty property = PhysicalPlannerImpl.getAlgorithmEnforceProperty(enforcer, distinctNode);
           if (property != null) {
             if (property.getDistinct().getIsMultipleAggregation()) {
-              MultipleAggregationStage stage = property.getDistinct().getMultipleAggregationStage();
-              if (stage != MultipleAggregationStage.THRID_STAGE) {
+              MultipleAggregationStage multiAggStage = property.getDistinct().getMultipleAggregationStage();
+              if (multiAggStage != MultipleAggregationStage.THRID_STAGE) {
                 hasGroupColumns = true;
               }
             }
           }
         }
         if (!hasGroupColumns) {
-          LOG.info(subQuery.getId() + ", No Grouping Column - determinedTaskNum is set to 1");
+          LOG.info(stage.getId() + ", No Grouping Column - determinedTaskNum is set to 1");
           return 1;
         } else {
-          long volume = getInputVolume(subQuery.masterPlan, subQuery.context, subQuery.block);
+          long volume = getInputVolume(stage.masterPlan, stage.context, stage.block);
 
           int volumeByMB = (int) Math.ceil((double) volume / StorageUnit.MB);
-          LOG.info(subQuery.getId() + ", Table's volume is approximately " + volumeByMB + " MB");
+          LOG.info(stage.getId() + ", Table's volume is approximately " + volumeByMB + " MB");
           // determine the number of task
           int taskNum = (int) Math.ceil((double) volumeByMB /
               masterPlan.getContext().getInt(SessionVars.GROUPBY_PER_SHUFFLE_SIZE));
-          LOG.info(subQuery.getId() + ", The determined number of aggregation partitions is " + taskNum);
+          LOG.info(stage.getId() + ", The determined number of aggregation partitions is " + taskNum);
           return taskNum;
         }
       } else {
         LOG.info("============>>>>> Unexpected Case! <<<<<================");
-        long volume = getInputVolume(subQuery.masterPlan, subQuery.context, subQuery.block);
+        long volume = getInputVolume(stage.masterPlan, stage.context, stage.block);
 
         int mb = (int) Math.ceil((double)volume / 1048576);
-        LOG.info(subQuery.getId() + ", Table's volume is approximately " + mb + " MB");
+        LOG.info(stage.getId() + ", Table's volume is approximately " + mb + " MB");
         // determine the number of task per 128MB
         int taskNum = (int) Math.ceil((double)mb / 128);
-        LOG.info(subQuery.getId() + ", The determined number of partitions is " + taskNum);
+        LOG.info(stage.getId() + ", The determined number of partitions is " + taskNum);
         return taskNum;
       }
     }
 
-    private static void schedule(SubQuery subQuery) throws IOException {
-      MasterPlan masterPlan = subQuery.getMasterPlan();
-      ExecutionBlock execBlock = subQuery.getBlock();
-      if (subQuery.getMasterPlan().isLeaf(execBlock.getId()) && execBlock.getScanNodes().length == 1) { // Case 1: Just Scan
-        scheduleFragmentsForLeafQuery(subQuery);
+    private static void schedule(Stage stage) throws IOException {
+      MasterPlan masterPlan = stage.getMasterPlan();
+      ExecutionBlock execBlock = stage.getBlock();
+      if (stage.getMasterPlan().isLeaf(execBlock.getId()) && execBlock.getScanNodes().length == 1) { // Case 1: Just Scan
+        scheduleFragmentsForLeafQuery(stage);
       } else if (execBlock.getScanNodes().length > 1) { // Case 2: Join
-        Repartitioner.scheduleFragmentsForJoinQuery(subQuery.schedulerContext, subQuery);
+        Repartitioner.scheduleFragmentsForJoinQuery(stage.schedulerContext, stage);
       } else { // Case 3: Others (Sort or Aggregation)
-        int numTasks = getNonLeafTaskNum(subQuery);
-        Repartitioner.scheduleFragmentsForNonLeafTasks(subQuery.schedulerContext, masterPlan, subQuery, numTasks);
+        int numTasks = getNonLeafTaskNum(stage);
+        Repartitioner.scheduleFragmentsForNonLeafTasks(stage.schedulerContext, masterPlan, stage, numTasks);
       }
     }
 
     /**
      * Getting the desire number of tasks according to the volume of input data
      *
-     * @param subQuery
+     * @param stage
      * @return
      */
-    public static int getNonLeafTaskNum(SubQuery subQuery) {
+    public static int getNonLeafTaskNum(Stage stage) {
       // Getting intermediate data size
-      long volume = getInputVolume(subQuery.getMasterPlan(), subQuery.context, subQuery.getBlock());
+      long volume = getInputVolume(stage.getMasterPlan(), stage.context, stage.getBlock());
 
       int mb = (int) Math.ceil((double)volume / 1048576);
-      LOG.info(subQuery.getId() + ", Table's volume is approximately " + mb + " MB");
+      LOG.info(stage.getId() + ", Table's volume is approximately " + mb + " MB");
       // determine the number of task per 64MB
       int maxTaskNum = Math.max(1, (int) Math.ceil((double)mb / 64));
-      LOG.info(subQuery.getId() + ", The determined number of non-leaf tasks is " + maxTaskNum);
+      LOG.info(stage.getId() + ", The determined number of non-leaf tasks is " + maxTaskNum);
       return maxTaskNum;
     }
 
@@ -989,11 +989,11 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       } else {
         long aggregatedVolume = 0;
         for (ExecutionBlock childBlock : masterPlan.getChilds(execBlock)) {
-          SubQuery subquery = context.getSubQuery(childBlock.getId());
-          if (subquery == null || subquery.getSynchronizedState() != SubQueryState.SUCCEEDED) {
+          Stage stage = context.getStage(childBlock.getId());
+          if (stage == null || stage.getSynchronizedState() != StageState.SUCCEEDED) {
             aggregatedVolume += getInputVolume(masterPlan, context, childBlock);
           } else {
-            aggregatedVolume += subquery.getResultStats().getNumBytes();
+            aggregatedVolume += stage.getResultStats().getNumBytes();
           }
         }
 
@@ -1001,15 +1001,15 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       }
     }
 
-    public static void allocateContainers(SubQuery subQuery) {
-      ExecutionBlock execBlock = subQuery.getBlock();
+    public static void allocateContainers(Stage stage) {
+      ExecutionBlock execBlock = stage.getBlock();
 
       //TODO consider disk slot
       int requiredMemoryMBPerTask = 512;
 
-      int numRequest = subQuery.getContext().getResourceAllocator().calculateNumRequestContainers(
-          subQuery.getContext().getQueryMasterContext().getWorkerContext(),
-          subQuery.schedulerContext.getEstimatedTaskNum(),
+      int numRequest = stage.getContext().getResourceAllocator().calculateNumRequestContainers(
+          stage.getContext().getQueryMasterContext().getWorkerContext(),
+          stage.schedulerContext.getEstimatedTaskNum(),
           requiredMemoryMBPerTask
       );
 
@@ -1017,23 +1017,23 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
 
       resource.setMemory(requiredMemoryMBPerTask);
 
-      LOG.info("Request Container for " + subQuery.getId() + " containers=" + numRequest);
+      LOG.info("Request Container for " + stage.getId() + " containers=" + numRequest);
 
       Priority priority = Records.newRecord(Priority.class);
-      priority.setPriority(subQuery.getPriority());
+      priority.setPriority(stage.getPriority());
       ContainerAllocationEvent event =
           new ContainerAllocationEvent(ContainerAllocatorEventType.CONTAINER_REQ,
-              subQuery.getId(), priority, resource, numRequest,
-              subQuery.masterPlan.isLeaf(execBlock), 0.0f);
-      subQuery.eventHandler.handle(event);
+              stage.getId(), priority, resource, numRequest,
+              stage.masterPlan.isLeaf(execBlock), 0.0f);
+      stage.eventHandler.handle(event);
     }
 
-    private static void scheduleFragmentsForLeafQuery(SubQuery subQuery) throws IOException {
-      ExecutionBlock execBlock = subQuery.getBlock();
+    private static void scheduleFragmentsForLeafQuery(Stage stage) throws IOException {
+      ExecutionBlock execBlock = stage.getBlock();
       ScanNode[] scans = execBlock.getScanNodes();
       Preconditions.checkArgument(scans.length == 1, "Must be Scan Query");
       ScanNode scan = scans[0];
-      TableDesc table = subQuery.context.getTableDescMap().get(scan.getCanonicalName());
+      TableDesc table = stage.context.getTableDescMap().get(scan.getCanonicalName());
 
       Collection<Fragment> fragments;
       TableMeta meta = table.getMeta();
@@ -1045,101 +1045,101 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       if (scan.getType() == NodeType.PARTITIONS_SCAN) {
         // After calling this method, partition paths are removed from the physical plan.
         FileStorageManager storageManager =
-            (FileStorageManager)StorageManager.getFileStorageManager(subQuery.getContext().getConf());
+            (FileStorageManager)StorageManager.getFileStorageManager(stage.getContext().getConf());
         fragments = Repartitioner.getFragmentsFromPartitionedTable(storageManager, scan, table);
       } else {
         StorageManager storageManager =
-            StorageManager.getStorageManager(subQuery.getContext().getConf(), meta.getStoreType());
+            StorageManager.getStorageManager(stage.getContext().getConf(), meta.getStoreType());
         fragments = storageManager.getSplits(scan.getCanonicalName(), table, scan);
       }
 
-      SubQuery.scheduleFragments(subQuery, fragments);
-      if (subQuery.getTaskScheduler() instanceof DefaultTaskScheduler) {
+      Stage.scheduleFragments(stage, fragments);
+      if (stage.getTaskScheduler() instanceof DefaultTaskScheduler) {
         //Leaf task of DefaultTaskScheduler should be fragment size
         // EstimatedTaskNum determined number of initial container
-        subQuery.schedulerContext.setEstimatedTaskNum(fragments.size());
+        stage.schedulerContext.setEstimatedTaskNum(fragments.size());
       } else {
-        TajoConf conf = subQuery.context.getConf();
-        subQuery.schedulerContext.setTaskSize(conf.getIntVar(ConfVars.TASK_DEFAULT_SIZE) * 1024 * 1024);
+        TajoConf conf = stage.context.getConf();
+        stage.schedulerContext.setTaskSize(conf.getIntVar(ConfVars.TASK_DEFAULT_SIZE) * 1024 * 1024);
         int estimatedTaskNum = (int) Math.ceil((double) table.getStats().getNumBytes() /
-            (double) subQuery.schedulerContext.getTaskSize());
-        subQuery.schedulerContext.setEstimatedTaskNum(estimatedTaskNum);
+            (double) stage.schedulerContext.getTaskSize());
+        stage.schedulerContext.setEstimatedTaskNum(estimatedTaskNum);
       }
     }
   }
 
-  public static void scheduleFragment(SubQuery subQuery, Fragment fragment) {
-    subQuery.taskScheduler.handle(new FragmentScheduleEvent(TaskSchedulerEvent.EventType.T_SCHEDULE,
-        subQuery.getId(), fragment));
+  public static void scheduleFragment(Stage stage, Fragment fragment) {
+    stage.taskScheduler.handle(new FragmentScheduleEvent(TaskSchedulerEvent.EventType.T_SCHEDULE,
+        stage.getId(), fragment));
   }
 
 
-  public static void scheduleFragments(SubQuery subQuery, Collection<Fragment> fragments) {
+  public static void scheduleFragments(Stage stage, Collection<Fragment> fragments) {
     for (Fragment eachFragment : fragments) {
-      scheduleFragment(subQuery, eachFragment);
+      scheduleFragment(stage, eachFragment);
     }
   }
 
-  public static void scheduleFragments(SubQuery subQuery, Collection<Fragment> leftFragments,
+  public static void scheduleFragments(Stage stage, Collection<Fragment> leftFragments,
                                        Collection<Fragment> broadcastFragments) {
     for (Fragment eachLeafFragment : leftFragments) {
-      scheduleFragment(subQuery, eachLeafFragment, broadcastFragments);
+      scheduleFragment(stage, eachLeafFragment, broadcastFragments);
     }
   }
 
-  public static void scheduleFragment(SubQuery subQuery,
+  public static void scheduleFragment(Stage stage,
                                       Fragment leftFragment, Collection<Fragment> rightFragments) {
-    subQuery.taskScheduler.handle(new FragmentScheduleEvent(TaskSchedulerEvent.EventType.T_SCHEDULE,
-        subQuery.getId(), leftFragment, rightFragments));
+    stage.taskScheduler.handle(new FragmentScheduleEvent(TaskSchedulerEvent.EventType.T_SCHEDULE,
+        stage.getId(), leftFragment, rightFragments));
   }
 
-  public static void scheduleFetches(SubQuery subQuery, Map<String, List<FetchImpl>> fetches) {
-    subQuery.taskScheduler.handle(new FetchScheduleEvent(TaskSchedulerEvent.EventType.T_SCHEDULE,
-        subQuery.getId(), fetches));
+  public static void scheduleFetches(Stage stage, Map<String, List<FetchImpl>> fetches) {
+    stage.taskScheduler.handle(new FetchScheduleEvent(TaskSchedulerEvent.EventType.T_SCHEDULE,
+        stage.getId(), fetches));
   }
 
   public static Task newEmptyTask(TaskSchedulerContext schedulerContext,
                                   TaskAttemptScheduleContext taskContext,
-                                  SubQuery subQuery, int taskId) {
-    ExecutionBlock execBlock = subQuery.getBlock();
+                                  Stage stage, int taskId) {
+    ExecutionBlock execBlock = stage.getBlock();
     Task unit = new Task(schedulerContext.getMasterContext().getConf(),
         taskContext,
         QueryIdFactory.newTaskId(schedulerContext.getBlockId(), taskId),
-        schedulerContext.isLeafQuery(), subQuery.eventHandler);
+        schedulerContext.isLeafQuery(), stage.eventHandler);
     unit.setLogicalPlan(execBlock.getPlan());
-    subQuery.addTask(unit);
+    stage.addTask(unit);
     return unit;
   }
 
   private static class ContainerLaunchTransition
-      implements SingleArcTransition<SubQuery, SubQueryEvent> {
+      implements SingleArcTransition<Stage, StageEvent> {
 
     @Override
-    public void transition(SubQuery subQuery, SubQueryEvent event) {
+    public void transition(Stage stage, StageEvent event) {
       try {
-        SubQueryContainerAllocationEvent allocationEvent =
-            (SubQueryContainerAllocationEvent) event;
+        StageContainerAllocationEvent allocationEvent =
+            (StageContainerAllocationEvent) event;
         for (TajoContainer container : allocationEvent.getAllocatedContainer()) {
           TajoContainerId cId = container.getId();
-          if (subQuery.containers.containsKey(cId)) {
-            subQuery.eventHandler.handle(new SubQueryDiagnosticsUpdateEvent(subQuery.getId(),
+          if (stage.containers.containsKey(cId)) {
+            stage.eventHandler.handle(new StageDiagnosticsUpdateEvent(stage.getId(),
                 "Duplicated containers are allocated: " + cId.toString()));
-            subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_INTERNAL_ERROR));
+            stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_INTERNAL_ERROR));
           }
-          subQuery.containers.put(cId, container);
+          stage.containers.put(cId, container);
         }
-        LOG.info("SubQuery (" + subQuery.getId() + ") has " + subQuery.containers.size() + " containers!");
-        subQuery.eventHandler.handle(
-            new LaunchTaskRunnersEvent(subQuery.getId(), allocationEvent.getAllocatedContainer(),
-                subQuery.getContext().getQueryContext(),
-                CoreGsonHelper.toJson(subQuery.getBlock().getPlan(), LogicalNode.class))
+        LOG.info("Stage (" + stage.getId() + ") has " + stage.containers.size() + " containers!");
+        stage.eventHandler.handle(
+            new LaunchTaskRunnersEvent(stage.getId(), allocationEvent.getAllocatedContainer(),
+                stage.getContext().getQueryContext(),
+                CoreGsonHelper.toJson(stage.getBlock().getPlan(), LogicalNode.class))
         );
 
-        subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_START));
+        stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_START));
       } catch (Throwable t) {
-        subQuery.eventHandler.handle(new SubQueryDiagnosticsUpdateEvent(subQuery.getId(),
+        stage.eventHandler.handle(new StageDiagnosticsUpdateEvent(stage.getId(),
             ExceptionUtils.getStackTrace(t)));
-        subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_INTERNAL_ERROR));
+        stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_INTERNAL_ERROR));
       }
     }
   }
@@ -1148,75 +1148,75 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
    * It is used in KILL_WAIT state against Contained Allocated event.
    * It just returns allocated containers to resource manager.
    */
-  private static class AllocatedContainersCancelTransition implements SingleArcTransition<SubQuery, SubQueryEvent> {
+  private static class AllocatedContainersCancelTransition implements SingleArcTransition<Stage, StageEvent> {
     @Override
-    public void transition(SubQuery subQuery, SubQueryEvent event) {
+    public void transition(Stage stage, StageEvent event) {
       try {
-        SubQueryContainerAllocationEvent allocationEvent =
-            (SubQueryContainerAllocationEvent) event;
-        subQuery.eventHandler.handle(
+        StageContainerAllocationEvent allocationEvent =
+            (StageContainerAllocationEvent) event;
+        stage.eventHandler.handle(
             new TaskRunnerGroupEvent(EventType.CONTAINER_REMOTE_CLEANUP,
-                subQuery.getId(), allocationEvent.getAllocatedContainer()));
+                stage.getId(), allocationEvent.getAllocatedContainer()));
         LOG.info(String.format("[%s] %d allocated containers are canceled",
-            subQuery.getId().toString(),
+            stage.getId().toString(),
             allocationEvent.getAllocatedContainer().size()));
       } catch (Throwable t) {
-        subQuery.eventHandler.handle(new SubQueryDiagnosticsUpdateEvent(subQuery.getId(),
+        stage.eventHandler.handle(new StageDiagnosticsUpdateEvent(stage.getId(),
             ExceptionUtils.getStackTrace(t)));
-        subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_INTERNAL_ERROR));
+        stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_INTERNAL_ERROR));
       }
     }
   }
 
-  private static class TaskCompletedTransition implements SingleArcTransition<SubQuery, SubQueryEvent> {
+  private static class TaskCompletedTransition implements SingleArcTransition<Stage, StageEvent> {
 
     @Override
-    public void transition(SubQuery subQuery,
-                           SubQueryEvent event) {
-      SubQueryTaskEvent taskEvent = (SubQueryTaskEvent) event;
-      Task task = subQuery.getTask(taskEvent.getTaskId());
+    public void transition(Stage stage,
+                           StageEvent event) {
+      StageTaskEvent taskEvent = (StageTaskEvent) event;
+      Task task = stage.getTask(taskEvent.getTaskId());
 
       if (task == null) { // task failed
         LOG.error(String.format("Task %s is absent", taskEvent.getTaskId()));
-        subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_FAILED));
+        stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_FAILED));
       } else {
-        subQuery.completedTaskCount++;
+        stage.completedTaskCount++;
 
         if (taskEvent.getState() == TaskState.SUCCEEDED) {
-          subQuery.succeededObjectCount++;
+          stage.succeededObjectCount++;
         } else if (task.getState() == TaskState.KILLED) {
-          subQuery.killedObjectCount++;
+          stage.killedObjectCount++;
         } else if (task.getState() == TaskState.FAILED) {
-          subQuery.failedObjectCount++;
+          stage.failedObjectCount++;
           // if at least one task is failed, try to kill all tasks.
-          subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_KILL));
+          stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_KILL));
         }
 
         LOG.info(String.format("[%s] Task Completion Event (Total: %d, Success: %d, Killed: %d, Failed: %d)",
-            subQuery.getId(),
-            subQuery.getTotalScheduledObjectsCount(),
-            subQuery.succeededObjectCount,
-            subQuery.killedObjectCount,
-            subQuery.failedObjectCount));
+            stage.getId(),
+            stage.getTotalScheduledObjectsCount(),
+            stage.succeededObjectCount,
+            stage.killedObjectCount,
+            stage.failedObjectCount));
 
-        if (subQuery.totalScheduledObjectsCount ==
-            subQuery.succeededObjectCount + subQuery.killedObjectCount + subQuery.failedObjectCount) {
-          subQuery.eventHandler.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_SUBQUERY_COMPLETED));
+        if (stage.totalScheduledObjectsCount ==
+            stage.succeededObjectCount + stage.killedObjectCount + stage.failedObjectCount) {
+          stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_STAGE_COMPLETED));
         }
       }
     }
   }
 
-  private static class KillTasksTransition implements SingleArcTransition<SubQuery, SubQueryEvent> {
+  private static class KillTasksTransition implements SingleArcTransition<Stage, StageEvent> {
 
     @Override
-    public void transition(SubQuery subQuery, SubQueryEvent subQueryEvent) {
-      if(subQuery.getTaskScheduler() != null){
-        subQuery.getTaskScheduler().stop();
+    public void transition(Stage stage, StageEvent stageEvent) {
+      if(stage.getTaskScheduler() != null){
+        stage.getTaskScheduler().stop();
       }
 
-      for (Task task : subQuery.getTasks()) {
-        subQuery.eventHandler.handle(new TaskEvent(task.getId(), TaskEventType.T_KILL));
+      for (Task task : stage.getTasks()) {
+        stage.eventHandler.handle(new TaskEvent(task.getId(), TaskEventType.T_KILL));
       }
     }
   }
@@ -1236,8 +1236,8 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
       getContext().getQueryMasterContext().getQueryMaster().cleanupExecutionBlock(ebIds);
     }
 
-    this.finalSubQueryHistory = makeSubQueryHistory();
-    this.finalSubQueryHistory.setTasks(makeTaskHistories());
+    this.finalStageHistory = makeStageHistory();
+    this.finalStageHistory.setTasks(makeTaskHistories());
   }
 
   public List<IntermediateEntry> getHashShuffleIntermediateEntries() {
@@ -1260,7 +1260,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
           long elapsedTime = System.currentTimeMillis() - startTime;
           if (elapsedTime >= 120 * 1000) {
             LOG.error(getId() + ", Timeout while receiving intermediate reports: " + elapsedTime + " ms");
-            abort(SubQueryState.FAILED);
+            abort(StageState.FAILED);
             return;
           }
         }
@@ -1272,7 +1272,7 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     LOG.info(getId() + ", receiveExecutionBlockReport:" +  report.getSucceededTasks());
     if (!report.getReportSuccess()) {
       LOG.error(getId() + ", ExecutionBlock final report fail cause:" + report.getReportErrorMessage());
-      abort(SubQueryState.FAILED);
+      abort(StageState.FAILED);
       return;
     }
     if (report.getIntermediateEntriesCount() > 0) {
@@ -1288,56 +1288,55 @@ public class SubQuery implements EventHandler<SubQueryEvent> {
     }
   }
 
-  private static class SubQueryCompleteTransition
-      implements MultipleArcTransition<SubQuery, SubQueryEvent, SubQueryState> {
+  private static class StageCompleteTransition implements MultipleArcTransition<Stage, StageEvent, StageState> {
 
     @Override
-    public SubQueryState transition(SubQuery subQuery, SubQueryEvent subQueryEvent) {
-      // TODO - Commit subQuery
+    public StageState transition(Stage stage, StageEvent stageEvent) {
+      // TODO - Commit Stage
       // TODO - records succeeded, failed, killed completed task
       // TODO - records metrics
       try {
-        LOG.info(String.format("subQuery completed - %s (total=%d, success=%d, killed=%d)",
-            subQuery.getId().toString(),
-            subQuery.getTotalScheduledObjectsCount(),
-            subQuery.getSucceededObjectCount(),
-            subQuery.killedObjectCount));
+        LOG.info(String.format("Stage completed - %s (total=%d, success=%d, killed=%d)",
+            stage.getId().toString(),
+            stage.getTotalScheduledObjectsCount(),
+            stage.getSucceededObjectCount(),
+            stage.killedObjectCount));
 
-        if (subQuery.killedObjectCount > 0 || subQuery.failedObjectCount > 0) {
-          if (subQuery.failedObjectCount > 0) {
-            subQuery.abort(SubQueryState.FAILED);
-            return SubQueryState.FAILED;
-          } else if (subQuery.killedObjectCount > 0) {
-            subQuery.abort(SubQueryState.KILLED);
-            return SubQueryState.KILLED;
+        if (stage.killedObjectCount > 0 || stage.failedObjectCount > 0) {
+          if (stage.failedObjectCount > 0) {
+            stage.abort(StageState.FAILED);
+            return StageState.FAILED;
+          } else if (stage.killedObjectCount > 0) {
+            stage.abort(StageState.KILLED);
+            return StageState.KILLED;
           } else {
-            LOG.error("Invalid State " + subQuery.getSynchronizedState() + " State");
-            subQuery.abort(SubQueryState.ERROR);
-            return SubQueryState.ERROR;
+            LOG.error("Invalid State " + stage.getSynchronizedState() + " State");
+            stage.abort(StageState.ERROR);
+            return StageState.ERROR;
           }
         } else {
-          subQuery.complete();
-          return SubQueryState.SUCCEEDED;
+          stage.complete();
+          return StageState.SUCCEEDED;
         }
       } catch (Throwable t) {
         LOG.error(t.getMessage(), t);
-        subQuery.abort(SubQueryState.ERROR);
-        return SubQueryState.ERROR;
+        stage.abort(StageState.ERROR);
+        return StageState.ERROR;
       }
     }
   }
 
-  private static class DiagnosticsUpdateTransition implements SingleArcTransition<SubQuery, SubQueryEvent> {
+  private static class DiagnosticsUpdateTransition implements SingleArcTransition<Stage, StageEvent> {
     @Override
-    public void transition(SubQuery subQuery, SubQueryEvent event) {
-      subQuery.addDiagnostic(((SubQueryDiagnosticsUpdateEvent) event).getDiagnosticUpdate());
+    public void transition(Stage stage, StageEvent event) {
+      stage.addDiagnostic(((StageDiagnosticsUpdateEvent) event).getDiagnosticUpdate());
     }
   }
 
-  private static class InternalErrorTransition implements SingleArcTransition<SubQuery, SubQueryEvent> {
+  private static class InternalErrorTransition implements SingleArcTransition<Stage, StageEvent> {
     @Override
-    public void transition(SubQuery subQuery, SubQueryEvent subQueryEvent) {
-      subQuery.abort(SubQueryState.ERROR);
+    public void transition(Stage stage, StageEvent stageEvent) {
+      stage.abort(StageState.ERROR);
     }
   }
 }

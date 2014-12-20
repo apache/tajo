@@ -28,7 +28,7 @@
 <%@ page import="org.apache.tajo.master.TajoMaster" %>
 <%@ page import="org.apache.tajo.util.history.HistoryReader" %>
 <%@ page import="org.apache.tajo.util.history.QueryHistory" %>
-<%@ page import="org.apache.tajo.util.history.SubQueryHistory" %>
+<%@ page import="org.apache.tajo.util.history.StageHistory" %>
 <%@ page import="org.apache.tajo.master.rm.Worker" %>
 <%@ page import="java.util.*" %>
 <%@ page import="org.apache.tajo.util.history.TaskHistory" %>
@@ -43,14 +43,14 @@
 
   QueryHistory queryHistory = reader.getQueryHistory(queryId);
 
-  List<SubQueryHistory> subQueryHistories =
-      queryHistory != null ? JSPUtil.sortSubQueryHistory(queryHistory.getSubQueryHistories()) : null;
+  List<StageHistory> stageHistories =
+      queryHistory != null ? JSPUtil.sortStageHistories(queryHistory.getStageHistories()) : null;
 
-  SubQueryHistory subQuery = null;
-  if (subQueryHistories != null) {
-    for (SubQueryHistory eachSubQuery: subQueryHistories) {
-      if (eachSubQuery.getExecutionBlockId().equals(ebId)) {
-        subQuery = eachSubQuery;
+  StageHistory stage = null;
+  if (stageHistories != null) {
+    for (StageHistory eachStage: stageHistories) {
+      if (eachStage.getExecutionBlockId().equals(ebId)) {
+        stage = eachStage;
         break;
       }
     }
@@ -92,12 +92,12 @@
   long totalWriteBytes = 0;
   long totalWriteRows = 0;
 
-  if (subQuery != null) {
-    totalInputBytes = subQuery.getTotalInputBytes();
-    totalReadBytes = subQuery.getTotalReadBytes();
-    totalReadRows = subQuery.getTotalReadRows();
-    totalWriteBytes = subQuery.getTotalWriteBytes();
-    totalWriteRows = subQuery.getTotalWriteRows();
+  if (stage != null) {
+    totalInputBytes = stage.getTotalInputBytes();
+    totalReadBytes = stage.getTotalReadBytes();
+    totalReadRows = stage.getTotalReadRows();
+    totalWriteBytes = stage.getTotalWriteBytes();
+    totalWriteRows = stage.getTotalWriteRows();
   }
 
   List<TaskHistory> allTasks = reader.getTaskHistory(queryId, ebId);
@@ -150,12 +150,12 @@
   <h3><a href='querydetail.jsp?queryId=<%=queryId%>&startTime=<%=startTime%>'><%=ebId.toString()%></a></h3>
   <hr/>
   <p/>
-  <pre style="white-space:pre-wrap;"><%=subQuery.getPlan()%></pre>
+  <pre style="white-space:pre-wrap;"><%=stage.getPlan()%></pre>
   <p/>
   <table border="1" width="100%" class="border_table">
-    <tr><td align='right' width='180px'>Status:</td><td><%=subQuery.getState()%></td></tr>
-    <tr><td align='right'>Started:</td><td><%=df.format(subQuery.getStartTime())%> ~ <%=subQuery.getFinishTime() == 0 ? "-" : df.format(subQuery.getFinishTime())%></td></tr>
-    <tr><td align='right'># Tasks:</td><td><%=numTasks%> (Local Tasks: <%=subQuery.getHostLocalAssigned()%>, Rack Local Tasks: <%=subQuery.getRackLocalAssigned()%>)</td></tr>
+    <tr><td align='right' width='180px'>Status:</td><td><%=stage.getState()%></td></tr>
+    <tr><td align='right'>Started:</td><td><%=df.format(stage.getStartTime())%> ~ <%=stage.getFinishTime() == 0 ? "-" : df.format(stage.getFinishTime())%></td></tr>
+    <tr><td align='right'># Tasks:</td><td><%=numTasks%> (Local Tasks: <%=stage.getHostLocalAssigned()%>, Rack Local Tasks: <%=stage.getRackLocalAssigned()%>)</td></tr>
     <tr><td align='right'>Progress:</td><td><%=JSPUtil.percentFormat((float) (totalProgress / numTasks))%>%</td></tr>
     <tr><td align='right'># Shuffles:</td><td><%=numShuffles%></td></tr>
     <tr><td align='right'>Input Bytes:</td><td><%=FileUtil.humanReadableByteCount(totalInputBytes, false) + " (" + nf.format(totalInputBytes) + " B)"%></td></tr>

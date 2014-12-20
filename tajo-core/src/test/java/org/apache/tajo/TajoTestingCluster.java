@@ -45,8 +45,8 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.querymaster.Query;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
-import org.apache.tajo.master.querymaster.SubQuery;
-import org.apache.tajo.master.querymaster.SubQueryState;
+import org.apache.tajo.master.querymaster.Stage;
+import org.apache.tajo.master.querymaster.StageState;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -804,10 +804,10 @@ public class TajoTestingCluster {
     }
   }
 
-  public void waitForSubQueryState(SubQuery subQuery, SubQueryState expected, int delay) throws Exception {
+  public void waitForStageState(Stage stage, StageState expected, int delay) throws Exception {
 
     int i = 0;
-    while (subQuery == null || subQuery.getSynchronizedState() != expected) {
+    while (stage == null || stage.getSynchronizedState() != expected) {
       try {
         Thread.sleep(delay);
       } catch (InterruptedException e) {
