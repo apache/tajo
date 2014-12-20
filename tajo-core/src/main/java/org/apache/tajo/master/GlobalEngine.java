@@ -204,10 +204,10 @@ public class GlobalEngine extends AbstractService {
   }
 
   private SubmitQueryResponse executeQueryInternal(QueryContext queryContext,
-                                                      Session session,
-                                                      LogicalPlan plan,
-                                                      String sql,
-                                                      String jsonExpr) throws Exception {
+                                                   Session session,
+                                                   LogicalPlan plan,
+                                                   String sql,
+                                                   String jsonExpr) throws Exception {
 
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
@@ -287,7 +287,7 @@ public class GlobalEngine extends AbstractService {
       QueryId queryId = QueryIdFactory.newQueryId(context.getResourceManager().getSeedQueryId());
       
       NonForwardQueryResultScanner queryResultScanner =
-          new NonForwareQueryResultSystemScanner(context, plan, queryId, session.getSessionId(), maxRow);
+          new NonForwardQueryResultSystemScanner(context, plan, queryId, session.getSessionId(), maxRow);
       
       queryResultScanner.init();
       session.addNonForwardQueryResultScanner(queryResultScanner);

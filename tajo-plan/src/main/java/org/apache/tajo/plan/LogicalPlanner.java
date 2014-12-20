@@ -717,6 +717,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     LogicalPlan plan = context.plan;
     QueryBlock block = context.queryBlock;
+
+    // The limit operation must affect to the number of results, not the number of input records.
+    // Thus, the aggregation must be carried out before the limit operation.
+    if (child.getType() == NodeType.LIMIT) {
+      child = ((LimitNode)child).getChild();
+    }
+
     GroupbyNode groupbyNode = context.plan.createNode(GroupbyNode.class);
     groupbyNode.setChild(child);
     groupbyNode.setInSchema(child.getOutSchema());

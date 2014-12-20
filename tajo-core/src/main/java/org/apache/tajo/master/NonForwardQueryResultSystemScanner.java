@@ -26,8 +26,8 @@ import java.util.Stack;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.QueryId;
-import org.apache.tajo.QueryUnitAttemptId;
-import org.apache.tajo.QueryUnitId;
+import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.TaskId;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -72,7 +72,7 @@ import org.apache.tajo.worker.TaskAttemptContext;
 
 import com.google.protobuf.ByteString;
 
-public class NonForwareQueryResultSystemScanner implements NonForwardQueryResultScanner {
+public class NonForwardQueryResultSystemScanner implements NonForwardQueryResultScanner {
   
   private final Log LOG = LogFactory.getLog(getClass());
   
@@ -88,7 +88,7 @@ public class NonForwareQueryResultSystemScanner implements NonForwardQueryResult
   private RowStoreEncoder encoder;
   private PhysicalExec physicalExec;
   
-  public NonForwareQueryResultSystemScanner(MasterContext context, LogicalPlan plan, QueryId queryId, 
+  public NonForwardQueryResultSystemScanner(MasterContext context, LogicalPlan plan, QueryId queryId, 
       String sessionId, int maxRow) {
     masterContext = context;
     logicalPlan = plan;
@@ -122,7 +122,7 @@ public class NonForwareQueryResultSystemScanner implements NonForwardQueryResult
     }
     
     taskContext = new TaskAttemptContext(queryContext, null,
-        new QueryUnitAttemptId(new QueryUnitId(leafBlock.getId(), 0), 0),
+        new TaskAttemptId(new TaskId(leafBlock.getId(), 0), 0),
         null, null);
     physicalExec = new SimplePhysicalPlannerImpl(masterContext.getConf())
       .createPlan(taskContext, leafBlock.getPlan());
@@ -160,21 +160,21 @@ public class NonForwareQueryResultSystemScanner implements NonForwardQueryResult
       
       for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
         Column column = columns.get(fieldId);
-        if ("SPACE_ID".equalsIgnoreCase(column.getSimpleName())) {
+        if ("space_id".equalsIgnoreCase(column.getSimpleName())) {
           if (tablespace.hasId()) {
             aTuple.put(fieldId, DatumFactory.createInt4(tablespace.getId()));
           } else {
             aTuple.put(fieldId, DatumFactory.createNullDatum());
           }
-        } else if ("SPACE_NAME".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("space_name".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createText(tablespace.getSpaceName()));
-        } else if ("SPACE_HANDLER".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("space_handler".equalsIgnoreCase(column.getSimpleName())) {
           if (tablespace.hasHandler()) {
             aTuple.put(fieldId, DatumFactory.createText(tablespace.getHandler()));
           } else {
             aTuple.put(fieldId, DatumFactory.createNullDatum());
           }
-        } else if ("SPACE_URI".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("space_uri".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createText(tablespace.getUri()));
         }
       }
@@ -195,11 +195,11 @@ public class NonForwareQueryResultSystemScanner implements NonForwardQueryResult
       
       for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
         Column column = columns.get(fieldId);
-        if ("DB_ID".equalsIgnoreCase(column.getSimpleName())) {
+        if ("db_id".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createInt4(database.getId()));
-        } else if ("DB_NAME".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("db_name".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createText(database.getName()));
-        } else if ("SPACE_ID".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("space_id".equalsIgnoreCase(column.getSimpleName())) {
           if (database.hasSpaceId()) {
             aTuple.put(fieldId, DatumFactory.createInt4(database.getSpaceId()));
           } else {
@@ -225,21 +225,21 @@ public class NonForwareQueryResultSystemScanner implements NonForwardQueryResult
       
       for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
         Column column = columns.get(fieldId);
-        if ("TID".equalsIgnoreCase(column.getSimpleName())) {
+        if ("tid".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createInt4(table.getTid()));
-        } else if ("DB_ID".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("db_id".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createInt4(table.getDbId()));
-        } else if ("TABLE_NAME".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("table_name".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createText(table.getName()));
-        } else if ("TABLE_TYPE".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("table_type".equalsIgnoreCase(column.getSimpleName())) {
           if (table.hasTableType()) {
             aTuple.put(fieldId, DatumFactory.createText(table.getTableType()));
           } else {
             aTuple.put(fieldId, DatumFactory.createNullDatum());
           }
-        } else if ("PATH".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("path".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createText(table.getPath()));
-        } else if ("STORE_TYPE".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("store_type".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createText(table.getStoreType()));
         }
       }
@@ -269,19 +269,19 @@ public class NonForwareQueryResultSystemScanner implements NonForwardQueryResult
       for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
         Column colObj = columns.get(fieldId);
         
-        if ("TID".equalsIgnoreCase(colObj.getSimpleName())) {
+        if ("tid".equalsIgnoreCase(colObj.getSimpleName())) {
           if (column.hasTid()) {
             aTuple.put(fieldId, DatumFactory.createInt4(tid));
           } else {
             aTuple.put(fieldId, DatumFactory.createNullDatum());
           }
-        } else if ("COLUMN_NAME".equalsIgnoreCase(colObj.getSimpleName())) {
+        } else if ("column_name".equalsIgnoreCase(colObj.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createText(column.getName()));
-        } else if ("ORDINAL_POSITION".equalsIgnoreCase(colObj.getSimpleName())) {
+        } else if ("ordinal_position".equalsIgnoreCase(colObj.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createInt4(columnId));
-        } else if ("DATA_TYPE".equalsIgnoreCase(colObj.getSimpleName())) {
+        } else if ("data_type".equalsIgnoreCase(colObj.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createText(column.getDataType().getType().toString()));
-        } else if ("TYPE_LENGTH".equalsIgnoreCase(colObj.getSimpleName())) {
+        } else if ("type_length".equalsIgnoreCase(colObj.getSimpleName())) {
           DataType dataType = column.getDataType();
           if (dataType.hasLength()) {
             aTuple.put(fieldId, DatumFactory.createInt4(dataType.getLength()));
@@ -310,23 +310,23 @@ public class NonForwareQueryResultSystemScanner implements NonForwardQueryResult
       for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
         Column column = columns.get(fieldId);
         
-        if ("DB_ID".equalsIgnoreCase(column.getSimpleName())) {
+        if ("db_id".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createInt4(index.getDbId()));
-        } else if ("TID".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("tid".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createInt4(index.getTId()));
-        } else if ("INDEX_NAME".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("index_name".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createText(index.getIndexName()));
-        } else if ("COLUMN_NAME".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("column_name".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createText(index.getColumnName()));
-        } else if ("DATA_TYPE".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("data_type".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createText(index.getDataType()));
-        } else if ("INDEX_TYPE".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("index_type".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createText(index.getIndexType()));
-        } else if ("IS_UNIQUE".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("is_unique".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createBool(index.getIsUnique()));
-        } else if ("IS_CLUSTERED".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("is_clustered".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createBool(index.getIsClustered()));
-        } else if ("IS_ASCENDING".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("is_ascending".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createBool(index.getIsAscending()));
         }
       }
@@ -349,11 +349,11 @@ public class NonForwareQueryResultSystemScanner implements NonForwardQueryResult
       for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
         Column column = columns.get(fieldId);
         
-        if ("TID".equalsIgnoreCase(column.getSimpleName())) {
+        if ("tid".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createInt4(option.getTid()));
-        } else if ("KEY_".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("key_".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createText(option.getKeyval().getKey()));
-        } else if ("VALUE_".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("value_".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createText(option.getKeyval().getValue()));
         }
       }
@@ -376,11 +376,11 @@ public class NonForwareQueryResultSystemScanner implements NonForwardQueryResult
       for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
         Column column = columns.get(fieldId);
         
-        if ("TID".equalsIgnoreCase(column.getSimpleName())) {
+        if ("tid".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createInt4(stat.getTid()));
-        } else if ("NUM_ROWS".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("num_rows".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createInt8(stat.getNumRows()));
-        } else if ("NUM_BYTES".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("num_bytes".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createInt8(stat.getNumBytes()));
         }
       }
@@ -403,19 +403,19 @@ public class NonForwareQueryResultSystemScanner implements NonForwardQueryResult
       for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
         Column column = columns.get(fieldId);
         
-        if ("PID".equalsIgnoreCase(column.getSimpleName())) {
+        if ("pid".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createInt4(partition.getPid()));
-        } else if ("TID".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("tid".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createInt4(partition.getTid()));
-        } else if ("PARTITION_NAME".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("partition_name".equalsIgnoreCase(column.getSimpleName())) {
           if (partition.hasPartitionName()) {
             aTuple.put(fieldId, DatumFactory.createText(partition.getPartitionName()));
           } else {
             aTuple.put(fieldId, DatumFactory.createNullDatum());
           }
-        } else if ("ORDINAL_POSITION".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("ordinal_position".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createInt4(partition.getOrdinalPosition()));
-        } else if ("PATH".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("path".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createText(partition.getPath()));
         }
       }
@@ -430,21 +430,21 @@ public class NonForwareQueryResultSystemScanner implements NonForwardQueryResult
     List<Tuple> tuples = null;
     String tableName = CatalogUtil.extractSimpleName(tableDesc.getName());
 
-    if ("TABLESPACE".equalsIgnoreCase(tableName)) {
+    if ("tablespace".equalsIgnoreCase(tableName)) {
       tuples = getTablespaces(inSchema);
-    } else if ("DATABASES_".equalsIgnoreCase(tableName)) {
+    } else if ("databases".equalsIgnoreCase(tableName)) {
       tuples = getDatabases(inSchema);
-    } else if ("TABLES".equalsIgnoreCase(tableName)) {
+    } else if ("tables".equalsIgnoreCase(tableName)) {
       tuples = getTables(inSchema);
-    } else if ("COLUMNS".equalsIgnoreCase(tableName)) {
+    } else if ("columns".equalsIgnoreCase(tableName)) {
       tuples = getColumns(inSchema);
-    } else if ("INDEXES".equalsIgnoreCase(tableName)) {
+    } else if ("indexes".equalsIgnoreCase(tableName)) {
       tuples = getIndexes(inSchema);
-    } else if ("TABLE_OPTIONS".equalsIgnoreCase(tableName)) {
+    } else if ("table_options".equalsIgnoreCase(tableName)) {
       tuples = getAllTableOptions(inSchema);
-    } else if ("TABLE_STATS".equalsIgnoreCase(tableName)) {
+    } else if ("table_stats".equalsIgnoreCase(tableName)) {
       tuples = getAllTableStats(inSchema);
-    } else if ("PARTITIONS".equalsIgnoreCase(tableName)) {
+    } else if ("partitions".equalsIgnoreCase(tableName)) {
       tuples = getAllPartitions(inSchema);
     }
     

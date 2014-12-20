@@ -29,9 +29,9 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
 
 abstract class AbstractTableDescriptor implements TableDescriptor {
   
-  protected SystemMetadataDictionary dictionary;
+  protected InfoSchemaMetadataDictionary dictionary;
 
-  public AbstractTableDescriptor(SystemMetadataDictionary metadataDictionary) {
+  public AbstractTableDescriptor(InfoSchemaMetadataDictionary metadataDictionary) {
     dictionary = metadataDictionary;
   }
 

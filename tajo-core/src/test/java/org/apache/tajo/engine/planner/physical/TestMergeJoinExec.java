@@ -174,7 +174,7 @@ public class TestMergeJoinExec {
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testMergeInnerJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
-        LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
+        LocalTajoTestingUtility.newTaskAttemptId(), merged, workDir);
     ctx.setEnforcer(enforcer);
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);

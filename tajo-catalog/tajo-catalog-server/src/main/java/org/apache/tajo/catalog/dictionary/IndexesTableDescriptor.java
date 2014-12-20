@@ -22,20 +22,20 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 
 class IndexesTableDescriptor extends AbstractTableDescriptor {
   
-  private static final String TABLENAME = "INDEXES";
+  private static final String TABLENAME = "indexes";
   private final ColumnDescriptor[] columns = new ColumnDescriptor[] {
-      new ColumnDescriptor("DB_ID", Type.INT4, 0),
-      new ColumnDescriptor("TID", Type.INT4, 0),
-      new ColumnDescriptor("INDEX_NAME", Type.TEXT, 0),
-      new ColumnDescriptor("COLUMN_NAME", Type.TEXT, 0),
-      new ColumnDescriptor("DATA_TYPE", Type.TEXT, 0),
-      new ColumnDescriptor("INDEX_TYPE", Type.TEXT, 0),
-      new ColumnDescriptor("IS_UNIQUE", Type.BOOLEAN, 0),
-      new ColumnDescriptor("IS_CLUSTERED", Type.BOOLEAN, 0),
-      new ColumnDescriptor("IS_ASCENDING", Type.BOOLEAN, 0)
+      new ColumnDescriptor("db_id", Type.INT4, 0),
+      new ColumnDescriptor("tid", Type.INT4, 0),
+      new ColumnDescriptor("index_name", Type.TEXT, 0),
+      new ColumnDescriptor("column_name", Type.TEXT, 0),
+      new ColumnDescriptor("data_type", Type.TEXT, 0),
+      new ColumnDescriptor("index_type", Type.TEXT, 0),
+      new ColumnDescriptor("is_unique", Type.BOOLEAN, 0),
+      new ColumnDescriptor("is_clustered", Type.BOOLEAN, 0),
+      new ColumnDescriptor("is_ascending", Type.BOOLEAN, 0)
   };
 
-  public IndexesTableDescriptor(SystemMetadataDictionary metadataDictionary) {
+  public IndexesTableDescriptor(InfoSchemaMetadataDictionary metadataDictionary) {
     super(metadataDictionary);
   }
 

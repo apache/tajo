@@ -22,7 +22,7 @@ import com.google.common.collect.Sets;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
-import org.apache.tajo.catalog.dictionary.SystemMetadataDictionary;
+import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
 import org.apache.tajo.catalog.store.PostgreSQLStore;
@@ -212,7 +212,7 @@ public class TestCatalog {
   @Test
   public void testCreateAndDropManyDatabases() throws Exception {
     List<String> createdDatabases = new ArrayList<String>();
-    SystemMetadataDictionary dictionary = new SystemMetadataDictionary();
+    InfoSchemaMetadataDictionary dictionary = new InfoSchemaMetadataDictionary();
     String namePrefix = "database_";
     final int NUM = 10;
     for (int i = 0; i < NUM; i++) {

@@ -22,16 +22,16 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 
 class TablespacesTableDescriptor extends AbstractTableDescriptor {
 
-  private static final String TABLENAME = "TABLESPACE";
+  private static final String TABLENAME = "tablespace";
   
   private final ColumnDescriptor[] columns = new ColumnDescriptor[] {
-      new ColumnDescriptor("SPACE_ID", Type.INT4, 0),
-      new ColumnDescriptor("SPACE_NAME", Type.TEXT, 0),
-      new ColumnDescriptor("SPACE_HANDLER", Type.TEXT, 0),
-      new ColumnDescriptor("SPACE_URI", Type.TEXT, 0)
+      new ColumnDescriptor("space_id", Type.INT4, 0),
+      new ColumnDescriptor("space_name", Type.TEXT, 0),
+      new ColumnDescriptor("space_handler", Type.TEXT, 0),
+      new ColumnDescriptor("space_uri", Type.TEXT, 0)
   };
   
-  public TablespacesTableDescriptor(SystemMetadataDictionary metadataDictionary) {
+  public TablespacesTableDescriptor(InfoSchemaMetadataDictionary metadataDictionary) {
     super(metadataDictionary);
   }
 

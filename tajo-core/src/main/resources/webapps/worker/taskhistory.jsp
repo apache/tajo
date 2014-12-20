@@ -31,7 +31,7 @@
   TajoWorker tajoWorker = (TajoWorker) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
   HistoryReader reader = new HistoryReader(tajoWorker.getWorkerContext().getWorkerName(), tajoWorker.getWorkerContext().getConf());
 
-  TaskHistory taskHistory = reader.getTaskHistory(request.getParameter("queryUnitAttemptId"),
+  TaskHistory taskHistory = reader.getTaskHistory(request.getParameter("taskAttemptId"),
       Long.parseLong(request.getParameter("startTime")));
 
   SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -62,9 +62,9 @@
 <div class='contents'>
   <h2>Tajo Worker: <a href='index.jsp'><%=tajoWorker.getWorkerContext().getWorkerName()%></a></h2>
   <hr/>
-  <h3>Task Detail: <%=request.getParameter("queryUnitAttemptId")%></h3>
+  <h3>Task Detail: <%=request.getParameter("taskAttemptId")%></h3>
   <table border="1" width="100%" class="border_table">
-      <tr><td width="200" align="right">ID</td><td><%=request.getParameter("queryUnitAttemptId")%></td></tr>
+      <tr><td width="200" align="right">ID</td><td><%=request.getParameter("taskAttemptId")%></td></tr>
       <tr><td align="right">State</td><td><%=taskHistory.getState()%></td></tr>
       <tr><td align="right">Start Time</td><td><%=taskHistory.getStartTime() == 0 ? "-" : df.format(taskHistory.getStartTime())%></td></tr>
       <tr><td align="right">Finish Time</td><td><%=taskHistory.getFinishTime() == 0 ? "-" : df.format(taskHistory.getFinishTime())%></td></tr>

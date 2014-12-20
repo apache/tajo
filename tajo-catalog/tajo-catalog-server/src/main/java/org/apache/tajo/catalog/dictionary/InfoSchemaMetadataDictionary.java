@@ -26,9 +26,9 @@ import org.apache.tajo.catalog.exception.NoSuchTableException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.util.TUtil;
 
-public class SystemMetadataDictionary {
+public class InfoSchemaMetadataDictionary {
   
-  private static final String DATABASE_NAME = "SYSTEM";
+  private static final String DATABASE_NAME = "information_schema";
   
   private static enum DEFINED_TABLES {
     TABLESPACES,
@@ -42,22 +42,22 @@ public class SystemMetadataDictionary {
     MAX_TABLE;
   }
   
-  private List<TableDescriptor> systemTableDescriptors = new ArrayList<TableDescriptor>(
+  private List<TableDescriptor> schemaInfoTableDescriptors = new ArrayList<TableDescriptor>(
       Collections.nCopies(DEFINED_TABLES.MAX_TABLE.ordinal(), (TableDescriptor)null));
   
-  public SystemMetadataDictionary() {
+  public InfoSchemaMetadataDictionary() {
     createSystemTableDescriptors();
   }
   
   private void createSystemTableDescriptors() {
-    systemTableDescriptors.set(DEFINED_TABLES.TABLESPACES.ordinal(), new TablespacesTableDescriptor(this));
-    systemTableDescriptors.set(DEFINED_TABLES.DATABASES.ordinal(), new DatabasesTableDescriptor(this));
-    systemTableDescriptors.set(DEFINED_TABLES.TABLES.ordinal(), new TablesTableDescriptor(this));
-    systemTableDescriptors.set(DEFINED_TABLES.COLUMNS.ordinal(), new ColumnsTableDescriptor(this));
-    systemTableDescriptors.set(DEFINED_TABLES.INDEXES.ordinal(), new IndexesTableDescriptor(this));
-    systemTableDescriptors.set(DEFINED_TABLES.TABLEOPTIONS.ordinal(), new TableOptionsTableDescriptor(this));
-    systemTableDescriptors.set(DEFINED_TABLES.TABLESTATS.ordinal(), new TableStatsTableDescriptor(this));
-    systemTableDescriptors.set(DEFINED_TABLES.PARTITIONS.ordinal(), new PartitionsTableDescriptor(this));
+    schemaInfoTableDescriptors.set(DEFINED_TABLES.TABLESPACES.ordinal(), new TablespacesTableDescriptor(this));
+    schemaInfoTableDescriptors.set(DEFINED_TABLES.DATABASES.ordinal(), new DatabasesTableDescriptor(this));
+    schemaInfoTableDescriptors.set(DEFINED_TABLES.TABLES.ordinal(), new TablesTableDescriptor(this));
+    schemaInfoTableDescriptors.set(DEFINED_TABLES.COLUMNS.ordinal(), new ColumnsTableDescriptor(this));
+    schemaInfoTableDescriptors.set(DEFINED_TABLES.INDEXES.ordinal(), new IndexesTableDescriptor(this));
+    schemaInfoTableDescriptors.set(DEFINED_TABLES.TABLEOPTIONS.ordinal(), new TableOptionsTableDescriptor(this));
+    schemaInfoTableDescriptors.set(DEFINED_TABLES.TABLESTATS.ordinal(), new TableStatsTableDescriptor(this));
+    schemaInfoTableDescriptors.set(DEFINED_TABLES.PARTITIONS.ordinal(), new PartitionsTableDescriptor(this));
   }
 
   public boolean isSystemDatabase(String databaseName) {
@@ -77,7 +77,7 @@ public class SystemMetadataDictionary {
   public List<String> getAllSystemTables() {
     List<String> systemTableNames = TUtil.newList();
     
-    for (TableDescriptor descriptor: systemTableDescriptors) {
+    for (TableDescriptor descriptor: schemaInfoTableDescriptors) {
       systemTableNames.add(descriptor.getTableNameString());
     }
     
@@ -92,8 +92,8 @@ public class SystemMetadataDictionary {
     }
     
     tableName = tableName.toUpperCase();
-    for (int idx = 0; idx < systemTableDescriptors.size(); idx++) {
-      TableDescriptor testDescriptor = systemTableDescriptors.get(idx);
+    for (int idx = 0; idx < schemaInfoTableDescriptors.size(); idx++) {
+      TableDescriptor testDescriptor = schemaInfoTableDescriptors.get(idx);
       if (testDescriptor.getTableNameString().equalsIgnoreCase(tableName)) {
         tableDescriptor = testDescriptor;
         break;

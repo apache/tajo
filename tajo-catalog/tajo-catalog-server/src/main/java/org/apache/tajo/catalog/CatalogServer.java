@@ -31,7 +31,7 @@ import org.apache.hadoop.service.AbstractService;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.annotation.ThreadSafe;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService;
-import org.apache.tajo.catalog.dictionary.SystemMetadataDictionary;
+import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.store.CatalogStore;
@@ -81,7 +81,7 @@ public class CatalogServer extends AbstractService {
   private CatalogStore store;
   private Map<String, List<FunctionDescProto>> functions = new ConcurrentHashMap<String,
       List<FunctionDescProto>>();
-  private final SystemMetadataDictionary metaDictionary = new SystemMetadataDictionary();
+  private final InfoSchemaMetadataDictionary metaDictionary = new InfoSchemaMetadataDictionary();
 
   // RPC variables
   private BlockingRpcServer rpcServer;

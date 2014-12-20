@@ -188,7 +188,7 @@ public class TestNonForwardQueryResultSystemScanner {
     }
     
     NonForwardQueryResultScanner queryResultScanner = 
-        new NonForwareQueryResultSystemScanner(masterContext, logicalPlan, queryId, 
+        new NonForwardQueryResultSystemScanner(masterContext, logicalPlan, queryId, 
             sessionId, maxRow);
     
     return queryResultScanner;

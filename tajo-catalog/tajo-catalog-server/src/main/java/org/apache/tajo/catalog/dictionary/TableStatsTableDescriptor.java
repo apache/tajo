@@ -22,14 +22,14 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 
 class TableStatsTableDescriptor extends AbstractTableDescriptor {
   
-  private static final String TABLENAME = "TABLE_STATS";
+  private static final String TABLENAME = "table_stats";
   private final ColumnDescriptor[] columns = new ColumnDescriptor[] {
-      new ColumnDescriptor("TID", Type.INT4, 0),
-      new ColumnDescriptor("NUM_ROWS", Type.INT8, 0),
-      new ColumnDescriptor("NUM_BYTES", Type.INT8, 0)
+      new ColumnDescriptor("tid", Type.INT4, 0),
+      new ColumnDescriptor("num_rows", Type.INT8, 0),
+      new ColumnDescriptor("num_bytes", Type.INT8, 0)
   };
 
-  public TableStatsTableDescriptor(SystemMetadataDictionary metadataDictionary) {
+  public TableStatsTableDescriptor(InfoSchemaMetadataDictionary metadataDictionary) {
     super(metadataDictionary);
   }
 

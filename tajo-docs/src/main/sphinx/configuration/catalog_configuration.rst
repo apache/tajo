@@ -126,9 +126,9 @@ All configurations for using MariaDBStore is compatible with MySQLStore except f
   </property>
 
 
-----------------------------------
+==================================
   HCatalogStore Configuration
-----------------------------------
+==================================
 
 Tajo support HCatalogStore to integrate with hive. If you want to use HCatalogStore, you just do as follows.
 

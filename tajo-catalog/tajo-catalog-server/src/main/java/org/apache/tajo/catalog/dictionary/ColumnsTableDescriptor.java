@@ -22,16 +22,16 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 
 class ColumnsTableDescriptor extends AbstractTableDescriptor {
   
-  private static final String TABLENAME = "COLUMNS";
+  private static final String TABLENAME = "columns";
   private final ColumnDescriptor[] columns = new ColumnDescriptor[] {
-      new ColumnDescriptor("TID", Type.INT4, 0),
-      new ColumnDescriptor("COLUMN_NAME", Type.TEXT, 0),
-      new ColumnDescriptor("ORDINAL_POSITION", Type.INT4, 0),
-      new ColumnDescriptor("DATA_TYPE", Type.TEXT, 0),
-      new ColumnDescriptor("TYPE_LENGTH", Type.INT4, 0)
+      new ColumnDescriptor("tid", Type.INT4, 0),
+      new ColumnDescriptor("column_name", Type.TEXT, 0),
+      new ColumnDescriptor("ordinal_position", Type.INT4, 0),
+      new ColumnDescriptor("data_type", Type.TEXT, 0),
+      new ColumnDescriptor("type_length", Type.INT4, 0)
   };
   
-  public ColumnsTableDescriptor(SystemMetadataDictionary metadataDictionary) {
+  public ColumnsTableDescriptor(InfoSchemaMetadataDictionary metadataDictionary) {
     super(metadataDictionary);
   }
 

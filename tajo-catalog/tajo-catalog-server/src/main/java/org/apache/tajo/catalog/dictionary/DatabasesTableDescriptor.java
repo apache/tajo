@@ -22,15 +22,15 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 
 class DatabasesTableDescriptor extends AbstractTableDescriptor {
   
-  private static final String TABLENAME = "DATABASES_";
+  private static final String TABLENAME = "databases";
   
   private final ColumnDescriptor[] columns = new ColumnDescriptor[] {
-      new ColumnDescriptor("DB_ID", Type.INT4, 0),
-      new ColumnDescriptor("DB_NAME", Type.TEXT, 0),
-      new ColumnDescriptor("SPACE_ID", Type.INT4, 0)
+      new ColumnDescriptor("db_id", Type.INT4, 0),
+      new ColumnDescriptor("db_name", Type.TEXT, 0),
+      new ColumnDescriptor("space_id", Type.INT4, 0)
   };
   
-  public DatabasesTableDescriptor(SystemMetadataDictionary metadataDictionary) {
+  public DatabasesTableDescriptor(InfoSchemaMetadataDictionary metadataDictionary) {
     super(metadataDictionary);
   }
 

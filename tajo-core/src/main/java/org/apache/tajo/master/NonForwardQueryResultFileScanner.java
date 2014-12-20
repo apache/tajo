@@ -22,8 +22,8 @@ import com.google.protobuf.ByteString;
 
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
-import org.apache.tajo.QueryUnitAttemptId;
-import org.apache.tajo.QueryUnitId;
+import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.TaskId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
@@ -45,7 +45,7 @@ import java.util.List;
 
 public class NonForwardQueryResultFileScanner implements NonForwardQueryResultScanner {
   private static final int MAX_FRAGMENT_NUM_PER_SCAN = 100;
-
+  
   private QueryId queryId;
   private String sessionId;
   private SeqScanExec scanExec;
@@ -56,22 +56,18 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   private TaskAttemptContext taskContext;
   private TajoConf tajoConf;
   private ScanNode scanNode;
-
+  
   private int currentFragmentIndex = 0;
 
-  public NonForwardQueryResultFileScanner(TajoConf tajoConf, String sessionId,
-                                      QueryId queryId,
-                                      ScanNode scanNode,
-                                      TableDesc tableDesc,
-                                      int maxRow) throws IOException {
+  public NonForwardQueryResultFileScanner(TajoConf tajoConf, String sessionId, QueryId queryId, ScanNode scanNode,
+      TableDesc tableDesc, int maxRow) throws IOException {
     this.tajoConf = tajoConf;
     this.sessionId = sessionId;
     this.queryId = queryId;
     this.scanNode = scanNode;
     this.tableDesc = tableDesc;
     this.maxRow = maxRow;
-
-    this.rowEncoder =  RowStoreUtil.createEncoder(tableDesc.getLogicalSchema());
+    this.rowEncoder = RowStoreUtil.createEncoder(tableDesc.getLogicalSchema());
   }
 
   public void init() throws IOException {
@@ -81,17 +77,17 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
   private void initSeqScanExec() throws IOException {
     List<Fragment> fragments = StorageManager.getStorageManager(tajoConf, tableDesc.getMeta().getStoreType())
         .getNonForwardSplit(tableDesc, currentFragmentIndex, MAX_FRAGMENT_NUM_PER_SCAN);
-
+    
     if (fragments != null && !fragments.isEmpty()) {
-      FragmentProto[] fragmentProtos = FragmentConvertor.toFragmentProtoArray(fragments.toArray(new Fragment[]{}));
+      FragmentProto[] fragmentProtos = FragmentConvertor.toFragmentProtoArray(fragments.toArray(new Fragment[] {}));
       this.taskContext = new TaskAttemptContext(
-          new QueryContext(tajoConf), null,
-          new QueryUnitAttemptId(new QueryUnitId(new ExecutionBlockId(queryId, 1), 0), 0),
+          new QueryContext(tajoConf), null, 
+          new TaskAttemptId(new TaskId(new ExecutionBlockId(queryId, 1), 0), 0), 
           fragmentProtos, null);
-
       try {
-        // scanNode must be clone cause SeqScanExec change target in the case of a partitioned table.
-        scanExec = new SeqScanExec(taskContext, (ScanNode)scanNode.clone(), fragmentProtos);
+        // scanNode must be clone cause SeqScanExec change target in the case of
+        // a partitioned table.
+        scanExec = new SeqScanExec(taskContext, (ScanNode) scanNode.clone(), fragmentProtos);
       } catch (CloneNotSupportedException e) {
         throw new IOException(e.getMessage(), e);
       }
@@ -129,23 +125,20 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
       return rows;
     }
     int rowCount = 0;
-
     while (true) {
       Tuple tuple = scanExec.next();
       if (tuple == null) {
         scanExec.close();
         scanExec = null;
-
         initSeqScanExec();
         if (scanExec != null) {
           tuple = scanExec.next();
         }
         if (tuple == null) {
-          if (scanExec != null ) {
+          if (scanExec != null) {
             scanExec.close();
             scanExec = null;
           }
-
           break;
         }
       }
@@ -155,14 +148,12 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
       if (rowCount >= fetchRowNum) {
         break;
       }
-
       if (currentNumRows >= maxRow) {
         scanExec.close();
         scanExec = null;
         break;
       }
     }
-
     return rows;
   }
 

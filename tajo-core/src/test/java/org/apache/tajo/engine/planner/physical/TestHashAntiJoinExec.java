@@ -160,7 +160,7 @@ public class TestHashAntiJoinExec {
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testHashAntiJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
-        LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
+        LocalTajoTestingUtility.newTaskAttemptId(), merged, workDir);
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
