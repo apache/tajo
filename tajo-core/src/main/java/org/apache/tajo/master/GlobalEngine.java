@@ -365,6 +365,7 @@ public class GlobalEngine extends AbstractService {
         responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
         if(queryInfo.getQueryMasterHost() != null) {
           responseBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
+          responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterPort());
         }
         responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
         LOG.info("Query " + queryInfo.getQueryId().toString() + "," + queryInfo.getSql() + "," +

@@ -138,10 +138,16 @@ message WorkerResourceAllocationResponse {
     repeated WorkerAllocatedResource workerAllocatedResource = 2;
 }
 
+message QueryCompleteReport {
+  required QueryIdProto queryId = 1;
+  optional QueryState finalState = 2;
+  optional TableDescProto tableDesc = 3;
+}
+
 service TajoMasterProtocolService {
   rpc heartbeat(TajoHeartbeat) returns (TajoHeartbeatResponse);
   rpc allocateWorkerResources(WorkerResourceAllocationRequest) returns (WorkerResourceAllocationResponse);
   rpc releaseWorkerResource(WorkerResourceReleaseRequest) returns (BoolProto);
-  rpc stopQueryMaster(QueryIdProto) returns (BoolProto);
+  rpc stopQueryMaster(QueryCompleteReport) returns (BoolProto);
   rpc getAllWorkerResource(NullProto) returns (WorkerResourcesRequest);
 }

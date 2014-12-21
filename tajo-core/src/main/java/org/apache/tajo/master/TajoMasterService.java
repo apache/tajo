@@ -26,6 +26,9 @@ import org.apache.hadoop.service.AbstractService;
 import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoIdProtos;
+import org.apache.tajo.TajoProtos;
+import org.apache.tajo.TajoProtos.QueryState;
+import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.TajoMasterProtocol;
@@ -138,9 +141,16 @@ public class TajoMasterService extends AbstractService {
     }
 
     @Override
-    public void stopQueryMaster(RpcController controller, TajoIdProtos.QueryIdProto request,
+    public void stopQueryMaster(RpcController controller, TajoMasterProtocol.QueryCompleteReport request,
                                 RpcCallback<BoolProto> done) {
-      context.getQueryJobManager().stopQuery(new QueryId(request));
+      QueryId queryId = new QueryId(request.getQueryId());
+      if (request.getFinalState() == QueryState.QUERY_SUCCEEDED && request.hasTableDesc()) {
+        TableDesc resultTableDesc = new TableDesc(request.getTableDesc());
+        context.getQueryJobManager().stopQuery(queryId, request.getFinalState(), resultTableDesc);
+      } else {
+        context.getQueryJobManager().stopQuery(queryId, request.getFinalState());
+      }
+
       done.run(BOOL_TRUE);
     }
 

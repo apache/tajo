@@ -24,13 +24,11 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.event.EventHandler;
-import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
-import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.ContainerProtocol;
-import org.apache.tajo.plan.logical.LogicalRootNode;
+import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -39,6 +37,7 @@ import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.rm.WorkerResourceManager;
 import org.apache.tajo.master.session.Session;
+import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcConnectionPool;
@@ -56,8 +55,6 @@ public class QueryInProgress extends CompositeService {
   private QueryId queryId;
 
   private Session session;
-
-  private QueryContext queryContext;
 
   private TajoAsyncDispatcher dispatcher;
 
@@ -77,6 +74,8 @@ public class QueryInProgress extends CompositeService {
 
   private ContainerProtocol.TajoContainerIdProto qmContainerId;
 
+  private TableDesc resultDesc;
+
   public QueryInProgress(
       TajoMaster.MasterContext masterContext,
       Session session,
@@ -85,11 +84,10 @@ public class QueryInProgress extends CompositeService {
     super(QueryInProgress.class.getName());
     this.masterContext = masterContext;
     this.session = session;
-    this.queryContext = queryContext;
     this.queryId = queryId;
     this.plan = plan;
 
-    queryInfo = new QueryInfo(queryId, sql, jsonExpr);
+    queryInfo = new QueryInfo(queryId, queryContext, sql, jsonExpr);
     queryInfo.setStartTime(System.currentTimeMillis());
   }
 
@@ -105,6 +103,18 @@ public class QueryInProgress extends CompositeService {
   public synchronized void kill() {
     if(queryMasterRpcClient != null){
       queryMasterRpcClient.killQuery(null, queryId.getProto(), NullCallback.get());
+    }
+  }
+
+  public void setResultDesc(TableDesc resultDesc) {
+    synchronized (this) {
+      this.resultDesc = resultDesc;
+    }
+  }
+
+  public TableDesc getResultDesc() {
+    synchronized (this) {
+      return resultDesc;
     }
   }
 
@@ -145,7 +155,7 @@ public class QueryInProgress extends CompositeService {
     }
 
     if(queryMasterRpc != null) {
-      RpcConnectionPool.getPool((TajoConf)getConfig()).closeConnection(queryMasterRpc);
+      RpcConnectionPool.getPool(masterContext.getConf()).closeConnection(queryMasterRpc);
     }
 
     masterContext.getHistoryWriter().appendHistory(queryInfo);
@@ -212,7 +222,7 @@ public class QueryInProgress extends CompositeService {
     InetSocketAddress addr = NetUtils.createSocketAddr(queryInfo.getQueryMasterHost(), queryInfo.getQueryMasterPort());
     LOG.info("Connect to QueryMaster:" + addr);
     queryMasterRpc =
-        RpcConnectionPool.getPool((TajoConf) getConfig()).getConnection(addr, QueryMasterProtocol.class, true);
+        RpcConnectionPool.getPool(masterContext.getConf()).getConnection(addr, QueryMasterProtocol.class, true);
     queryMasterRpcClient = queryMasterRpc.getStub();
   }
 
@@ -235,8 +245,8 @@ public class QueryInProgress extends CompositeService {
 
       QueryExecutionRequestProto.Builder builder = TajoWorkerProtocol.QueryExecutionRequestProto.newBuilder();
       builder.setQueryId(queryId.getProto())
+          .setQueryContext(queryInfo.getQueryContext().getProto())
           .setSession(session.getProto())
-          .setQueryContext(queryContext.getProto())
           .setExprInJson(PrimitiveProtos.StringProto.newBuilder().setValue(queryInfo.getJsonExpr()))
           .setLogicalPlanJson(PrimitiveProtos.StringProto.newBuilder().setValue(plan.toJson()).build());
 

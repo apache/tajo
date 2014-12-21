@@ -37,6 +37,7 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.ipc.TajoMasterProtocol.QueryCompleteReport;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
@@ -228,7 +229,14 @@ public class QueryMasterTask extends CompositeService {
       }
 
       TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
-      masterClientService.stopQueryMaster(null, queryId.getProto(), future);
+      QueryCompleteReport.Builder completionReport = QueryCompleteReport.newBuilder();
+      completionReport.setQueryId(queryId.getProto());
+      completionReport.setFinalState(getState());
+      Query query = queryMasterContext.getQueryMaster().getQueryMasterTask(queryId, true).getQuery();
+      if (query != null && query.getSynchronizedState() == QueryState.QUERY_SUCCEEDED) {
+        completionReport.setTableDesc(query.getResultDesc().getProto());
+      }
+      masterClientService.stopQueryMaster(null, completionReport.build(), future);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
     } finally {
