@@ -362,8 +362,9 @@ public class TajoMasterClientService extends AbstractService {
         }
         switch (queryInfo.getQueryState()) {
           case QUERY_SUCCEEDED:
-            // TODO check this logic needed
-            //builder.setTableDesc((TableDescProto) queryJobManager.getResultDesc().getProto());
+            if (queryInfo.hasResultdesc()) {
+              builder.setTableDesc(queryInfo.getResultDesc().getProto());
+            }
             break;
           case QUERY_FAILED:
           case QUERY_ERROR:
@@ -479,6 +480,11 @@ public class TajoMasterClientService extends AbstractService {
           if (queryInfo != null) {
             builder.setResultCode(ResultCode.OK);
             builder.setState(queryInfo.getQueryState());
+
+            boolean isCreateTable = queryInfo.getQueryContext().isCreateTable();
+            boolean isInsert = queryInfo.getQueryContext().isInsert();
+            builder.setHasResult(!(isCreateTable || isInsert));
+
             builder.setProgress(queryInfo.getProgress());
             builder.setSubmitTime(queryInfo.getStartTime());
             if(queryInfo.getQueryMasterHost() != null) {

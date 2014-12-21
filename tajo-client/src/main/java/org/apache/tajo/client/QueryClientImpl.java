@@ -318,7 +318,8 @@ public class QueryClientImpl implements QueryClient {
     ClientProtos.GetQueryStatusRequest.Builder builder = ClientProtos.GetQueryStatusRequest.newBuilder();
     builder.setQueryId(queryId.getProto());
 
-    ClientProtos.GetQueryStatusResponse res = null;
+    GetQueryStatusResponse res = null;
+    GetQueryStatusResponse res2 = null;
 
     if(connection.queryMasterMap.containsKey(queryId)) {
       NettyClientBase qmClient = null;
@@ -330,11 +331,31 @@ public class QueryClientImpl implements QueryClient {
         QueryMasterClientProtocolService.BlockingInterface queryMasterService = qmClient.getStub();
         res = queryMasterService.getQueryStatus(null, builder.build());
 
+        NettyClientBase tmClient = connection.getTajoMasterConnection(false);
+        connection.checkSessionAndGet(tmClient);
+        builder.setSessionId(connection.sessionId);
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = tmClient.getStub();
+        res2 = tajoMasterService.getQueryStatus(null, builder.build());
+
+        if (res.getResultCode() != res2.getResultCode()) {
+          LOG.fatal("resultCode is different: " + res.getResultCode() + " <> " + res2.getResultCode());
+        }
+
+        if (!new QueryId(res.getQueryId()).equals(new QueryId(res2.getQueryId()))) {
+          LOG.fatal("queryId is different: " + res.getQueryId() + " <> " + res2.getQueryId());
+        }
+
+        if (!res.getState().equals(res2.getState())) {
+          LOG.fatal("getState is different: " + res.getState() + " <> " + res2.getState());
+        }
+
       } catch (Exception e) {
         throw new ServiceException(e.getMessage(), e);
       } finally {
         connection.connPool.releaseConnection(qmClient);
       }
+      return new QueryStatus(res2);
+
 
     } else {
 
@@ -356,8 +377,7 @@ public class QueryClientImpl implements QueryClient {
           try {
 
             InetSocketAddress qmAddr = NetUtils.createSocketAddr(queryMasterHost, res.getQueryMasterPort());
-            qmClient = connection.connPool.getConnection(
-                qmAddr, QueryMasterClientProtocol.class, false);
+            qmClient = connection.connPool.getConnection(qmAddr, QueryMasterClientProtocol.class, false);
             QueryMasterClientProtocolService.BlockingInterface queryMasterService = qmClient.getStub();
             res = queryMasterService.getQueryStatus(null, builder.build());
 
