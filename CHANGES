@@ -118,6 +118,9 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1250: RawFileAppender occasionally causes BufferOverflowException. 
+    (jinho)
+
     TAJO-1259: A title in catalog configuration document is different from others. 
     (Jongyoung Park via hyunsik)
 

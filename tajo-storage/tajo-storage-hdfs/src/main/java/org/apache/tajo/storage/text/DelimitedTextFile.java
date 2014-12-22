@@ -39,6 +39,7 @@ import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.rcfile.NonSyncByteArrayOutputStream;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.ReflectionUtil;
 
 import java.io.BufferedOutputStream;
@@ -55,6 +56,9 @@ import static org.apache.tajo.storage.StorageConstants.TEXT_ERROR_TOLERANCE_MAXN
 public class DelimitedTextFile {
 
   public static final byte LF = '\n';
+  public static final String READ_BUFFER_SIZE = "tajo.storage.text.io.read-buffer.bytes";
+  public static final String WRITE_BUFFER_SIZE = "tajo.storage.text.io.write-buffer.bytes";
+  public static final int DEFAULT_BUFFER_SIZE = 128 * StorageUnit.KB;
 
   private static final Log LOG = LogFactory.getLog(DelimitedTextFile.class);
 
@@ -105,8 +109,7 @@ public class DelimitedTextFile {
     private CompressionCodecFactory codecFactory;
     private CompressionCodec codec;
     private Path compressedPath;
-    private byte[] nullChars;
-    private int BUFFER_SIZE = 128 * 1024;
+    private int bufferSize;
     private int bufferedBytes = 0;
     private long pos = 0;
 
@@ -165,8 +168,9 @@ public class DelimitedTextFile {
       serializer = getLineSerde().createSerializer(schema, meta);
       serializer.init();
 
+      bufferSize = conf.getInt(WRITE_BUFFER_SIZE, DEFAULT_BUFFER_SIZE);
       if (os == null) {
-        os = new NonSyncByteArrayOutputStream(BUFFER_SIZE);
+        os = new NonSyncByteArrayOutputStream(bufferSize);
       }
 
       os.reset();
@@ -189,7 +193,7 @@ public class DelimitedTextFile {
       bufferedBytes += rowBytes;
 
       // refill buffer if necessary
-      if (bufferedBytes > BUFFER_SIZE) {
+      if (bufferedBytes > bufferSize) {
         flushBuffer();
       }
       // Statistical section
@@ -288,7 +292,7 @@ public class DelimitedTextFile {
                                     final Fragment fragment)
         throws IOException {
       super(conf, schema, meta, fragment);
-      reader = new DelimitedLineReader(conf, this.fragment);
+      reader = new DelimitedLineReader(conf, this.fragment, conf.getInt(READ_BUFFER_SIZE, 128 * StorageUnit.KB));
       if (!reader.isCompressed()) {
         splittable = true;
       }
@@ -307,7 +311,7 @@ public class DelimitedTextFile {
         reader.close();
       }
 
-      reader = new DelimitedLineReader(conf, fragment);
+      reader = new DelimitedLineReader(conf, fragment, conf.getInt(READ_BUFFER_SIZE, 128 * StorageUnit.KB));
       reader.init();
       recordCount = 0;
 

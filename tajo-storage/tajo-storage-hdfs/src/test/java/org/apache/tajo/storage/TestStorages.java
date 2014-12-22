@@ -94,6 +94,20 @@ public class TestStorages {
       "  ]\n" +
       "}\n";
 
+  private static String TEST_MAX_VALUE_AVRO_SCHEMA =
+      "{\n" +
+          "  \"type\": \"record\",\n" +
+          "  \"namespace\": \"org.apache.tajo\",\n" +
+          "  \"name\": \"testMaxValue\",\n" +
+          "  \"fields\": [\n" +
+          "    { \"name\": \"col4\", \"type\": \"float\" },\n" +
+          "    { \"name\": \"col5\", \"type\": \"double\" },\n" +
+          "    { \"name\": \"col1\", \"type\": \"int\" },\n" +
+          "    { \"name\": \"col2\", \"type\": \"int\" },\n" +
+          "    { \"name\": \"col3\", \"type\": \"long\" }\n" +
+          "  ]\n" +
+          "}\n";
+
   private StoreType storeType;
   private boolean splitable;
   private boolean statsable;
@@ -873,6 +887,69 @@ public class TestStorages {
     if (statsable) {
       assertEquals(appender.getStats().getNumBytes().longValue(), readBytes);
       assertEquals(appender.getStats().getNumRows().longValue(), readRows);
+    }
+  }
+
+  @Test
+  public void testMaxValue() throws IOException {
+
+    Schema schema = new Schema();
+    schema.addColumn("col1", Type.FLOAT4);
+    schema.addColumn("col2", Type.FLOAT8);
+    schema.addColumn("col3", Type.INT2);
+    schema.addColumn("col4", Type.INT4);
+    schema.addColumn("col5", Type.INT8);
+
+    KeyValueSet options = new KeyValueSet();
+    TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
+    if (storeType == StoreType.AVRO) {
+      meta.putOption(StorageConstants.AVRO_SCHEMA_LITERAL, TEST_MAX_VALUE_AVRO_SCHEMA);
+    }
+
+    if (storeType == StoreType.RAW) {
+      StorageManager.clearCache();
+      /* TAJO-1250 reproduce BufferOverflow of RAWFile */
+      int headerSize = 4 + 2 + 1; //Integer record length + Short null-flag length + 1 byte null flags
+      /* max varint32: 5 bytes, max varint64: 10 bytes */
+      int record = 4 + 8 + 2 + 5 + 8; // required size is 27
+      conf.setInt(RawFile.WRITE_BUFFER_SIZE, record + headerSize);
+    }
+
+    FileStorageManager sm = (FileStorageManager) StorageManager.getFileStorageManager(conf);
+    Path tablePath = new Path(testDir, "testMaxValue.data");
+    Appender appender = sm.getAppender(meta, schema, tablePath);
+
+    appender.init();
+
+    Tuple tuple = new VTuple(5);
+    tuple.put(new Datum[]{
+        DatumFactory.createFloat4(Float.MAX_VALUE),
+        DatumFactory.createFloat8(Double.MAX_VALUE),
+        DatumFactory.createInt2(Short.MAX_VALUE),
+        DatumFactory.createInt4(Integer.MAX_VALUE),
+        DatumFactory.createInt8(Long.MAX_VALUE)
+    });
+
+    appender.addTuple(tuple);
+    appender.flush();
+    appender.close();
+
+    FileStatus status = fs.getFileStatus(tablePath);
+    FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
+    Scanner scanner = sm.getScanner(meta, schema, fragment);
+    scanner.init();
+
+    Tuple retrieved;
+    while ((retrieved = scanner.next()) != null) {
+      for (int i = 0; i < tuple.size(); i++) {
+        assertEquals(tuple.get(i), retrieved.get(i));
+      }
+    }
+    scanner.close();
+
+
+    if (storeType == StoreType.RAW){
+      StorageManager.clearCache();
     }
   }
 }
