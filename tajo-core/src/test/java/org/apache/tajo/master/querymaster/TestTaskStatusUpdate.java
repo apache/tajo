@@ -103,7 +103,7 @@ public class TestTaskStatusUpdate extends QueryTestCaseBase {
       String actualResult = resultSetToString(res);
       System.out.println(actualResult);
 
-      // in/out * subquery(4)
+      // in/out * stage(4)
       long[] expectedNumRows = new long[]{2, 2, 5, 5, 7, 2, 2, 2};
       long[] expectedNumBytes = new long[]{8, 34, 20, 75, 109, 34, 34, 18};
       long[] expectedReadBytes = new long[]{8, 8, 20, 20, 109, 0, 34, 0};
@@ -131,7 +131,7 @@ public class TestTaskStatusUpdate extends QueryTestCaseBase {
     res.close();
   }
 
-  private void assertStatus(int numSubQueries,
+  private void assertStatus(int numStages,
                             long[] expectedNumRows,
                             long[] expectedNumBytes,
                             long[] expectedReadBytes) throws Exception {
@@ -160,20 +160,20 @@ public class TestTaskStatusUpdate extends QueryTestCaseBase {
 
       assertNotNull(query);
 
-      List<SubQuery> subQueries = new ArrayList<SubQuery>(query.getSubQueries());
-      assertEquals(numSubQueries, subQueries.size());
+      List<Stage> stages = new ArrayList<Stage>(query.getStages());
+      assertEquals(numStages, stages.size());
 
-      Collections.sort(subQueries, new Comparator<SubQuery>() {
+      Collections.sort(stages, new Comparator<Stage>() {
         @Override
-        public int compare(SubQuery o1, SubQuery o2) {
+        public int compare(Stage o1, Stage o2) {
           return o1.getId().compareTo(o2.getId());
         }
       });
 
       int index = 0;
-      for (SubQuery eachSubQuery: subQueries) {
-        TableStats inputStats = eachSubQuery.getInputStats();
-        TableStats resultStats = eachSubQuery.getResultStats();
+      for (Stage eachStage : stages) {
+        TableStats inputStats = eachStage.getInputStats();
+        TableStats resultStats = eachStage.getResultStats();
 
         assertNotNull(inputStats);
         assertEquals(expectedNumRows[index], inputStats.getNumRows().longValue());

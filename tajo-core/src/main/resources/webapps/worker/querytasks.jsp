@@ -78,14 +78,14 @@
   }
 
   Query query = queryMasterTask.getQuery();
-  SubQuery subQuery = query.getSubQuery(ebid);
+  Stage stage = query.getStage(ebid);
 
-  if(subQuery == null) {
+  if(stage == null) {
     out.write("<script type='text/javascript'>alert('no sub-query'); history.back(0); </script>");
     return;
   }
 
-  if(subQuery == null) {
+  if(stage == null) {
 %>
 <script type="text/javascript">
   alert("No Execution Block for" + ebid);
@@ -97,7 +97,7 @@
 
   SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-  Task[] allTasks = subQuery.getTasks();
+  Task[] allTasks = stage.getTasks();
 
   long totalInputBytes = 0;
   long totalReadBytes = 0;
@@ -105,8 +105,6 @@
   long totalWriteBytes = 0;
   long totalWriteRows = 0;
   int numTasks = allTasks.length;
-//  int numSucceededTasks = 0;
-//  int localReadTasks = subQuery.;
   int numShuffles = 0;
 
   float totalProgress = 0.0f;
@@ -166,12 +164,12 @@
   <h3><a href='querydetail.jsp?queryId=<%=paramQueryId%>'><%=ebid.toString()%></a></h3>
   <hr/>
   <p/>
-  <pre style="white-space:pre-wrap;"><%=PlannerUtil.buildExplainString(subQuery.getBlock().getPlan())%></pre>
+  <pre style="white-space:pre-wrap;"><%=PlannerUtil.buildExplainString(stage.getBlock().getPlan())%></pre>
   <p/>
   <table border="1" width="100%" class="border_table">
-    <tr><td align='right' width='180px'>Status:</td><td><%=subQuery.getState()%></td></tr>
-    <tr><td align='right'>Started:</td><td><%=df.format(subQuery.getStartTime())%> ~ <%=subQuery.getFinishTime() == 0 ? "-" : df.format(subQuery.getFinishTime())%></td></tr>
-    <tr><td align='right'># Tasks:</td><td><%=numTasks%> (Local Tasks: <%=subQuery.getTaskScheduler().getHostLocalAssigned()%>, Rack Local Tasks: <%=subQuery.getTaskScheduler().getRackLocalAssigned()%>)</td></tr>
+    <tr><td align='right' width='180px'>Status:</td><td><%=stage.getState()%></td></tr>
+    <tr><td align='right'>Started:</td><td><%=df.format(stage.getStartTime())%> ~ <%=stage.getFinishTime() == 0 ? "-" : df.format(stage.getFinishTime())%></td></tr>
+    <tr><td align='right'># Tasks:</td><td><%=numTasks%> (Local Tasks: <%=stage.getTaskScheduler().getHostLocalAssigned()%>, Rack Local Tasks: <%=stage.getTaskScheduler().getRackLocalAssigned()%>)</td></tr>
     <tr><td align='right'>Progress:</td><td><%=JSPUtil.percentFormat((float) (totalProgress / numTasks))%>%</td></tr>
     <tr><td align='right'># Shuffles:</td><td><%=numShuffles%></td></tr>
     <tr><td align='right'>Input Bytes:</td><td><%=FileUtil.humanReadableByteCount(totalInputBytes, false) + " (" + nf.format(totalInputBytes) + " B)"%></td></tr>

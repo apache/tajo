@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,28 +16,30 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.event;
+package org.apache.tajo.master.exec.prehook;
 
-/**
- * Event Types handled by SubQuery
- */
-public enum SubQueryEventType {
+import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.plan.LogicalPlan;
 
-  // Producer: Query
-  SQ_INIT,
-  SQ_START,
-  SQ_CONTAINER_ALLOCATED,
-  SQ_KILL,
-  SQ_LAUNCH,
+import java.util.ArrayList;
+import java.util.List;
 
-  // Producer: Task
-  SQ_TASK_COMPLETED,
-  SQ_FAILED,
+public class DistributedQueryHookManager {
+  private List<DistributedQueryHook> hooks = new ArrayList<DistributedQueryHook>();
 
-  // Producer: Completed
-  SQ_SUBQUERY_COMPLETED,
+  public void addHook(DistributedQueryHook hook) {
+    hooks.add(hook);
+  }
 
-  // Producer: Any component
-  SQ_DIAGNOSTIC_UPDATE,
-  SQ_INTERNAL_ERROR
+  public void doHooks(QueryContext queryContext, LogicalPlan plan) {
+    for (DistributedQueryHook hook : hooks) {
+      if (hook.isEligible(queryContext, plan)) {
+        try {
+          hook.hook(queryContext, plan);
+        } catch (Throwable t) {
+          t.printStackTrace();
+        }
+      }
+    }
+  }
 }

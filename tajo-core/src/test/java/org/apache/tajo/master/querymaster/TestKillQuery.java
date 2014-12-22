@@ -85,13 +85,13 @@ public class TestKillQuery {
       assertEquals(TajoProtos.QueryState.QUERY_RUNNING, queryMasterTask.getQuery().getSynchronizedState());
     }
 
-    SubQuery subQuery = queryMasterTask.getQuery().getSubQueries().iterator().next();
-    assertNotNull(subQuery);
+    Stage stage = queryMasterTask.getQuery().getStages().iterator().next();
+    assertNotNull(stage);
 
     try{
-      cluster.waitForSubQueryState(subQuery, SubQueryState.INITED, 2);
+      cluster.waitForStageState(stage, StageState.INITED, 2);
     } finally {
-      assertEquals(SubQueryState.INITED, subQuery.getSynchronizedState());
+      assertEquals(StageState.INITED, stage.getSynchronizedState());
     }
 
     // fire kill event

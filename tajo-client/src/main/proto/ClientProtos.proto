@@ -43,10 +43,9 @@ message CreateSessionRequest {
 }
 
 message CreateSessionResponse {
-  required ResultCode resultCode = 1;
+  required RequestResult result = 1;
   optional SessionIdProto sessionId = 2;
   optional KeyValueSetProto sessionVars = 3;
-  optional string message = 4;
 }
 
 message UpdateSessionVariableRequest {
@@ -56,9 +55,8 @@ message UpdateSessionVariableRequest {
 }
 
 message SessionUpdateResponse {
-  required ResultCode resultCode = 1;
+  required RequestResult result = 1;
   optional KeyValueSetProto sessionVars = 2;
-  optional string message = 3;
 }
 
 message SessionedStringProto {
@@ -248,7 +246,7 @@ message QueryInfoProto {
   optional int32 queryMasterInfoPort = 11;
 }
 
-message SubQueryHistoryProto {
+message StageHistoryProto {
   required string executionBlockId =1;
   required string state = 2;
   optional int64 startTime = 3;
@@ -278,7 +276,7 @@ message QueryHistoryProto {
   optional string logicalPlan = 4;
   optional string distributedPlan = 5;
   repeated KeyValueProto sessionVariables = 6;
-  repeated SubQueryHistoryProto subQueryHistories = 7;
+  repeated StageHistoryProto stageHistories = 7;
 }
 
 message GetQueryHistoryResponse {

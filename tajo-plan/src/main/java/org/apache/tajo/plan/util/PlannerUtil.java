@@ -79,13 +79,13 @@ public class PlannerUtil {
   }
 
   /**
-   * Most update queries requires only the updates to the catalog information,
-   * but some queires such as "CREATE INDEX" or CTAS requires the parallel execution in multiple cluster nodes.
-   * This function checks whether the plan requires the parallel execution or not.
+   * Most update queries require only the updates to the catalog information,
+   * but some queries such as "CREATE INDEX" or CTAS requires distributed execution on multiple cluster nodes.
+   * This function checks whether the given DDL plan requires distributed execution or not.
    * @param node the root node of a query plan
-   * @return Return true if the input query plan requires the parallel execution. Otherwise, return false.
+   * @return Return true if the input query plan requires distributed execution. Otherwise, return false.
    */
-  public static boolean requireParallelExecution(LogicalNode node) {
+  public static boolean isDistExecDDL(LogicalNode node) {
     LogicalNode baseNode = node;
     if (node instanceof LogicalRootNode) {
       baseNode = ((LogicalRootNode) node).getChild();
