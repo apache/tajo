@@ -46,6 +46,8 @@ import java.nio.channels.FileChannel;
 
 public class RawFile {
   private static final Log LOG = LogFactory.getLog(RawFile.class);
+  public static final String READ_BUFFER_SIZE = "tajo.storage.raw.io.read-buffer.bytes";
+  public static final String WRITE_BUFFER_SIZE = "tajo.storage.raw.io.write-buffer.bytes";
 
   public static class RawFileScanner extends FileScanner implements SeekableScanner {
     private FileChannel channel;
@@ -92,7 +94,7 @@ public class RawFile {
             + ", fragment length :" + fragment.getLength());
       }
 
-      buf = BufferPool.directBuffer(64 * StorageUnit.KB);
+      buf = BufferPool.directBuffer(conf.getInt(READ_BUFFER_SIZE, 128 * StorageUnit.KB));
       buffer = buf.nioBuffer(0, buf.capacity());
 
       columnTypes = new DataType[schema.size()];
@@ -382,7 +384,7 @@ public class RawFile {
       if (buffer.capacity() - buffer.remaining()  <  writableBytes) {
         buf.setIndex(buffer.position(), buffer.limit());
         buf.markReaderIndex();
-        buf.discardSomeReadBytes();
+        buf.discardReadBytes();
         buf.ensureWritable(writableBytes);
         buffer = buf.nioBuffer(0, buf.capacity());
         buffer.limit(buf.writerIndex());
@@ -491,7 +493,7 @@ public class RawFile {
         columnTypes[i] = schema.getColumn(i).getDataType();
       }
 
-      buf = BufferPool.directBuffer(64 * StorageUnit.KB);
+      buf = BufferPool.directBuffer(conf.getInt(WRITE_BUFFER_SIZE, 128 * StorageUnit.KB));
       buffer = buf.nioBuffer(0, buf.capacity());
 
       // comput the number of bytes, representing the null flags
@@ -532,6 +534,13 @@ public class RawFile {
         buffer.limit(limit);
         buffer.compact();
 
+        //increase the write-buffer
+        if(buffer.remaining() < sizeToBeWritten) {
+          buf.setIndex(buffer.position(), buffer.limit());
+          buf.ensureWritable(sizeToBeWritten);
+          buffer = buf.nioBuffer(0, buf.capacity());
+          buffer.position(buf.readerIndex());
+        }
         return true;
       } else {
         return false;
@@ -632,8 +641,8 @@ public class RawFile {
           continue;
         }
 
-        // 8 is the maximum bytes size of all types
-        if (flushBufferAndReplace(recordOffset, 8)) {
+        // 10 is the maximum bytes size of all types
+        if (flushBufferAndReplace(recordOffset, 10)) {
           recordOffset = 0;
         }
 
