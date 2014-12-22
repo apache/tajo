@@ -194,10 +194,13 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     return true;
   }
 
-  private boolean assertUnsupportedStoreType(VerificationState state, String name) {
-    if (name != null && name.equals(CatalogProtos.StoreType.RAW.name())) {
-      state.addVerification(String.format("Unsupported store type :%s", name));
-      return false;
+  private boolean assertUnsupportedStoreType(VerificationState state, boolean hasStorageType, String name) {
+    if (hasStorageType) {
+      CatalogProtos.StoreType storeType = CatalogUtil.getStoreType(name);
+      if (storeType == null || storeType == CatalogProtos.StoreType.RAW) {
+        state.addVerification(String.format("Unsupported store type :%s", name));
+        return false;
+      }
     }
     return true;
   }
@@ -248,7 +251,7 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     if (!expr.isIfNotExists()) {
       assertRelationNoExistence(context, expr.getTableName());
     }
-    assertUnsupportedStoreType(context.state, expr.getStorageType());
+    assertUnsupportedStoreType(context.state, expr.hasStorageType(), expr.getStorageType());
     return expr;
   }
 
@@ -271,6 +274,8 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     if (expr.hasTableName()) {
       assertRelationExistence(context, expr.getTableName());
     }
+
+    assertUnsupportedStoreType(context.state, expr.hasStorageType(), expr.getStorageType());
 
     if (child != null && child.getType() == OpType.Projection) {
       Projection projection = (Projection) child;
