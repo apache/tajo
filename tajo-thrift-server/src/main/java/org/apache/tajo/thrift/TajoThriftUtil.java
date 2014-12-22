@@ -27,12 +27,16 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionDescProto;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.client.ResultSetUtil;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.ipc.ClientProtos.BriefQueryInfo;
 import org.apache.tajo.thrift.generated.*;
 import org.apache.tajo.thrift.generated.TajoThriftService.Client;
 import org.apache.tajo.util.TajoIdUtils;
 
+import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -79,12 +83,86 @@ public class TajoThriftUtil {
     for (Column column: schema.getColumns()) {
       TColumn tColumn = new TColumn();
       tColumn.setName(column.getQualifiedName());
-      tColumn.setDataType(column.getDataType().getType().name());
+      tColumn.setSimpleName(column.getSimpleName());
+      try {
+        tColumn.setDataType(tajoTypeToThriftType(column.getDataType()));
+        tColumn.setDataTypeName(column.getDataType().getType().name());
+        tColumn.setSqlType(ResultSetUtil.tajoTypeToSqlType(column.getDataType()));
+      } catch (SQLException e) {
+        throw new RuntimeException(e.getMessage(), e);
+      }
+      tColumn.setSqlDataTypeName(ResultSetUtil.toSqlType(column.getDataType()));
       columns.add(tColumn);
     }
     tSchema.setColumns(columns);
 
     return tSchema;
+  }
+
+  public static TajoThriftDataType tajoTypeToThriftType(TajoDataTypes.DataType type) throws SQLException {
+    switch (type.getType()) {
+      case BOOLEAN:
+        return TajoThriftDataType.BOOLEAN;
+      case INT1:
+        return TajoThriftDataType.INT1;
+      case INT2:
+        return TajoThriftDataType.INT2;
+      case INT4:
+        return TajoThriftDataType.INT4;
+      case INT8:
+        return TajoThriftDataType.INT8;
+      case FLOAT4:
+        return TajoThriftDataType.FLOAT4;
+      case FLOAT8:
+        return TajoThriftDataType.FLOAT8;
+      case NUMERIC:
+        return TajoThriftDataType.NUMERIC;
+      case DATE:
+        return TajoThriftDataType.DATE;
+      case TIMESTAMP:
+        return TajoThriftDataType.TIMESTAMP;
+      case TIME:
+        return TajoThriftDataType.TIME;
+      case VARCHAR:
+        return TajoThriftDataType.VARCHAR;
+      case TEXT:
+        return TajoThriftDataType.VARCHAR;
+      default:
+        throw new SQLException("Unrecognized column type: " + type);
+    }
+  }
+
+  public static Type thriftTypeToTajoType(TajoThriftDataType type) throws SQLException {
+    switch (type) {
+      case BOOLEAN:
+        return Type.BOOLEAN;
+      case INT1:
+        return Type.INT1;
+      case INT2:
+        return Type.INT2;
+      case INT4:
+        return Type.INT4;
+      case INT8:
+        return Type.INT8;
+      case FLOAT4:
+        return Type.FLOAT4;
+      case FLOAT8:
+        return Type.FLOAT8;
+      case NUMERIC:
+        return Type.NUMERIC;
+      case DATE:
+        return Type.DATE;
+      case TIMESTAMP:
+        return Type.TIMESTAMP;
+      case TIME:
+        return Type.TIME;
+      case VARCHAR:
+        return Type.VARCHAR;
+      case TEXT:
+        return Type.VARCHAR;
+      default:
+        throw new SQLException("Unrecognized column type: " + type);
+    }
   }
 
   public static Schema convertSchema(TSchema tSchema) {
@@ -94,7 +172,12 @@ public class TajoThriftUtil {
     Schema schema = new Schema();
 
     for (TColumn tColumn: tSchema.getColumns()) {
-      Column column = new Column(tColumn.getName(), Type.valueOf(tColumn.getDataType()));
+      Column column = null;
+      try {
+        column = new Column(tColumn.getName(), thriftTypeToTajoType(tColumn.getDataType()));
+      } catch (SQLException e) {
+        throw new RuntimeException(e.getMessage(), e);
+      }
       schema.addColumn(column);
     }
 
