@@ -92,6 +92,7 @@ public class ThriftRowStoreDecoder {
           tuple.put(i, DatumFactory.createFloat8(colData));
           break;
 
+        case VARCHAR:
         case TEXT:
           tuple.put(i, DatumFactory.createText(colData));
           break;
