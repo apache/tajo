@@ -40,7 +40,7 @@ import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptSched
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 import org.apache.tajo.master.querymaster.Task;
 import org.apache.tajo.master.querymaster.TaskAttempt;
-import org.apache.tajo.master.querymaster.SubQuery;
+import org.apache.tajo.master.querymaster.Stage;
 import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -60,7 +60,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   private static final Log LOG = LogFactory.getLog(DefaultTaskScheduler.class);
 
   private final TaskSchedulerContext context;
-  private SubQuery subQuery;
+  private Stage stage;
 
   private Thread schedulingThread;
   private AtomicBoolean stopEventHandling = new AtomicBoolean(false);
@@ -71,10 +71,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   private int nextTaskId = 0;
   private int scheduledObjectNum = 0;
 
-  public DefaultTaskScheduler(TaskSchedulerContext context, SubQuery subQuery) {
+  public DefaultTaskScheduler(TaskSchedulerContext context, Stage stage) {
     super(DefaultTaskScheduler.class.getName());
     this.context = context;
-    this.subQuery = subQuery;
+    this.stage = stage;
   }
 
   @Override
@@ -117,8 +117,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
   private static final TaskAttemptId NULL_ATTEMPT_ID;
   public static final TajoWorkerProtocol.TaskRequestProto stopTaskRunnerReq;
   static {
-    ExecutionBlockId nullSubQuery = QueryIdFactory.newExecutionBlockId(QueryIdFactory.NULL_QUERY_ID, 0);
-    NULL_ATTEMPT_ID = QueryIdFactory.newTaskAttemptId(QueryIdFactory.newTaskId(nullSubQuery, 0), 0);
+    ExecutionBlockId nullStage = QueryIdFactory.newExecutionBlockId(QueryIdFactory.NULL_QUERY_ID, 0);
+    NULL_ATTEMPT_ID = QueryIdFactory.newTaskAttemptId(QueryIdFactory.newTaskId(nullStage, 0), 0);
 
     TajoWorkerProtocol.TaskRequestProto.Builder builder =
         TajoWorkerProtocol.TaskRequestProto.newBuilder();
@@ -192,13 +192,13 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         FragmentScheduleEvent castEvent = (FragmentScheduleEvent) event;
         if (context.isLeafQuery()) {
           TaskAttemptScheduleContext taskContext = new TaskAttemptScheduleContext();
-          Task task = SubQuery.newEmptyTask(context, taskContext, subQuery, nextTaskId++);
+          Task task = Stage.newEmptyTask(context, taskContext, stage, nextTaskId++);
           task.addFragment(castEvent.getLeftFragment(), true);
           scheduledObjectNum++;
           if (castEvent.hasRightFragments()) {
             task.addFragments(castEvent.getRightFragments());
           }
-          subQuery.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
+          stage.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
         } else {
           fragmentsForNonLeafTask = new FileFragment[2];
           fragmentsForNonLeafTask[0] = castEvent.getLeftFragment();
@@ -217,7 +217,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         FetchScheduleEvent castEvent = (FetchScheduleEvent) event;
         Map<String, List<FetchImpl>> fetches = castEvent.getFetches();
         TaskAttemptScheduleContext taskScheduleContext = new TaskAttemptScheduleContext();
-        Task task = SubQuery.newEmptyTask(context, taskScheduleContext, subQuery, nextTaskId++);
+        Task task = Stage.newEmptyTask(context, taskScheduleContext, stage, nextTaskId++);
         scheduledObjectNum++;
         for (Entry<String, List<FetchImpl>> eachFetch : fetches.entrySet()) {
           task.addFetches(eachFetch.getKey(), eachFetch.getValue());
@@ -229,7 +229,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         if (broadcastFragmentsForNonLeafTask != null && broadcastFragmentsForNonLeafTask.length > 0) {
           task.addFragments(Arrays.asList(broadcastFragmentsForNonLeafTask));
         }
-        subQuery.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
+        stage.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
       } else if (event instanceof TaskAttemptToSchedulerEvent) {
         TaskAttemptToSchedulerEvent castEvent = (TaskAttemptToSchedulerEvent) event;
         if (context.isLeafQuery()) {
@@ -239,7 +239,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         }
       }
     } else if (event.getType() == EventType.T_SCHEDULE_CANCEL) {
-      // when a subquery is killed, unassigned query unit attmpts are canceled from the scheduler.
+      // when a stage is killed, unassigned query unit attmpts are canceled from the scheduler.
       // This event is triggered by TaskAttempt.
       TaskAttemptToSchedulerEvent castedEvent = (TaskAttemptToSchedulerEvent) event;
       scheduledRequests.leafTasks.remove(castedEvent.getTaskAttempt().getId());
@@ -832,7 +832,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         }
 
         if (attemptId != null) {
-          Task task = subQuery.getTask(attemptId.getTaskId());
+          Task task = stage.getTask(attemptId.getTaskId());
           TaskRequest taskAssign = new TaskRequestImpl(
               attemptId,
               new ArrayList<FragmentProto>(task.getAllFragments()),
@@ -840,8 +840,8 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               false,
               task.getLogicalPlan().toJson(),
               context.getMasterContext().getQueryContext(),
-              subQuery.getDataChannel(), subQuery.getBlock().getEnforcer());
-          if (checkIfInterQuery(subQuery.getMasterPlan(), subQuery.getBlock())) {
+              stage.getDataChannel(), stage.getBlock().getEnforcer());
+          if (checkIfInterQuery(stage.getMasterPlan(), stage.getBlock())) {
             taskAssign.setInterQuery();
           }
 
@@ -888,7 +888,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           LOG.debug("Assigned based on * match");
 
           Task task;
-          task = subQuery.getTask(attemptId.getTaskId());
+          task = stage.getTask(attemptId.getTaskId());
           TaskRequest taskAssign = new TaskRequestImpl(
               attemptId,
               Lists.newArrayList(task.getAllFragments()),
@@ -896,9 +896,9 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               false,
               task.getLogicalPlan().toJson(),
               context.getMasterContext().getQueryContext(),
-              subQuery.getDataChannel(),
-              subQuery.getBlock().getEnforcer());
-          if (checkIfInterQuery(subQuery.getMasterPlan(), subQuery.getBlock())) {
+              stage.getDataChannel(),
+              stage.getBlock().getEnforcer());
+          if (checkIfInterQuery(stage.getMasterPlan(), stage.getBlock())) {
             taskAssign.setInterQuery();
           }
           for(Map.Entry<String, Set<FetchImpl>> entry: task.getFetchMap().entrySet()) {

@@ -19,16 +19,20 @@
 package org.apache.tajo.master.event;
 
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.master.container.TajoContainer;
 
-public class SubQueryDiagnosticsUpdateEvent extends SubQueryEvent {
-  private final String msg;
+import java.util.List;
 
-  public SubQueryDiagnosticsUpdateEvent(final ExecutionBlockId id, String diagnostic) {
-    super(id, SubQueryEventType.SQ_DIAGNOSTIC_UPDATE);
-    this.msg = diagnostic;
+public class StageContainerAllocationEvent extends StageEvent {
+  private List<TajoContainer> allocatedContainer;
+
+  public StageContainerAllocationEvent(final ExecutionBlockId id,
+                                       List<TajoContainer> allocatedContainer) {
+    super(id, StageEventType.SQ_CONTAINER_ALLOCATED);
+    this.allocatedContainer = allocatedContainer;
   }
 
-  public String getDiagnosticUpdate() {
-    return msg;
+  public List<TajoContainer> getAllocatedContainer() {
+    return this.allocatedContainer;
   }
 }

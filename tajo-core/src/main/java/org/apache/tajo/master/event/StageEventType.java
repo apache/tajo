@@ -18,21 +18,26 @@
 
 package org.apache.tajo.master.event;
 
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.master.container.TajoContainer;
+/**
+ * Event Types handled by Stage
+ */
+public enum StageEventType {
 
-import java.util.List;
+  // Producer: Query
+  SQ_INIT,
+  SQ_START,
+  SQ_CONTAINER_ALLOCATED,
+  SQ_KILL,
+  SQ_LAUNCH,
 
-public class SubQueryContainerAllocationEvent extends SubQueryEvent {
-  private List<TajoContainer> allocatedContainer;
+  // Producer: Task
+  SQ_TASK_COMPLETED,
+  SQ_FAILED,
 
-  public SubQueryContainerAllocationEvent(final ExecutionBlockId id,
-                                          List<TajoContainer> allocatedContainer) {
-    super(id, SubQueryEventType.SQ_CONTAINER_ALLOCATED);
-    this.allocatedContainer = allocatedContainer;
-  }
+  // Producer: Completed
+  SQ_STAGE_COMPLETED,
 
-  public List<TajoContainer> getAllocatedContainer() {
-    return this.allocatedContainer;
-  }
+  // Producer: Any component
+  SQ_DIAGNOSTIC_UPDATE,
+  SQ_INTERNAL_ERROR
 }

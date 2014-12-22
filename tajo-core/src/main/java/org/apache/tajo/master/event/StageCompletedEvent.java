@@ -18,18 +18,25 @@
 
 package org.apache.tajo.master.event;
 
-import org.apache.hadoop.yarn.event.AbstractEvent;
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.master.querymaster.StageState;
 
-public class SubQueryEvent extends AbstractEvent<SubQueryEventType> {
-  private final ExecutionBlockId id;
+public class StageCompletedEvent extends QueryEvent {
+  private final ExecutionBlockId executionBlockId;
+  private final StageState finalState;
 
-  public SubQueryEvent(ExecutionBlockId id, SubQueryEventType subQueryEventType) {
-    super(subQueryEventType);
-    this.id = id;
+  public StageCompletedEvent(final ExecutionBlockId executionBlockId,
+                             StageState finalState) {
+    super(executionBlockId.getQueryId(), QueryEventType.STAGE_COMPLETED);
+    this.executionBlockId = executionBlockId;
+    this.finalState = finalState;
   }
 
-  public ExecutionBlockId getSubQueryId() {
-    return id;
+  public ExecutionBlockId getExecutionBlockId() {
+    return executionBlockId;
+  }
+
+  public StageState getState() {
+    return finalState;
   }
 }

@@ -240,6 +240,8 @@ Release 0.9.1 - unreleased
 
   SUB TASKS
 
+    TAJO-1262: Rename the prefix 'SubQuery' to 'Stage'. (hyunsik)
+
     TAJO-324: Rename the prefix 'QueryUnit' to Task. (hyunsik)
 
     TAJO-1151: Implement the ByteBuffer-based De/Serializer. (jinho)

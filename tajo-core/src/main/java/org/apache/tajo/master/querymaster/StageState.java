@@ -16,20 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.event;
+package org.apache.tajo.master.querymaster;
 
-import org.apache.tajo.ExecutionBlockId;
-
-public class QuerySubQueryEvent extends QueryEvent {
-  private ExecutionBlockId executionBlockId;
-
-  public QuerySubQueryEvent(final ExecutionBlockId id,
-                            final QueryEventType queryEvent) {
-    super(id.getQueryId(), queryEvent);
-    this.executionBlockId = id;
-  }
-
-  public ExecutionBlockId getExecutionBlockId() {
-    return this.executionBlockId;
-  }
+public enum StageState {
+  NEW,
+  INITED,
+  RUNNING,
+  SUCCEEDED,
+  FAILED,
+  KILL_WAIT,
+  KILLED,
+  ERROR
 }
