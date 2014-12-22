@@ -22,43 +22,22 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.plan.function.AggFunction;
-import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
-import org.apache.tajo.storage.Tuple;
 
 @Description(
-  functionName = "min",
-  description = "the minimum value of expr",
-  example = "> SELECT min(expr);",
-  returnType = Type.INT4,
-  paramTypes = {@ParamTypes(paramTypes = {Type.INT4})}
+    functionName = "min",
+    description = "the minimum value of expr",
+    example = "> SELECT min(expr);",
+    returnType = Type.INT4,
+    paramTypes = {@ParamTypes(paramTypes = {Type.INT4})}
 )
-public class MinInt extends AggFunction<Datum> {
+public class MinInt extends Min {
 
   public MinInt() {
     super(new Column[] {
-        new Column("expr", Type.INT8)
+        new Column("expr", Type.INT4)
     });
-  }
-
-  @Override
-  public FunctionContext newContext() {
-    return new MinContext();
-  }
-
-  @Override
-  public void eval(FunctionContext ctx, Tuple params) {
-    MinContext minCtx = (MinContext) ctx;
-    minCtx.min = Math.min(minCtx.min, params.get(0).asInt4());
-  }
-
-  @Override
-  public Datum getPartialResult(FunctionContext ctx) {
-    return DatumFactory.createInt4(((MinContext) ctx).min);
   }
 
   @Override
@@ -66,12 +45,4 @@ public class MinInt extends AggFunction<Datum> {
     return CatalogUtil.newSimpleDataType(Type.INT4);
   }
 
-  @Override
-  public Datum terminate(FunctionContext ctx) {
-    return DatumFactory.createInt4(((MinContext) ctx).min);
-  }
-
-  private class MinContext implements FunctionContext {
-    int min = Integer.MAX_VALUE;
-  }
 }

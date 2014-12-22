@@ -21,10 +21,17 @@ package org.apache.tajo.engine.function;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
+
+import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
 public class TestBuiltinFunctions extends QueryTestCaseBase {
@@ -41,10 +48,62 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
   }
 
   @Test
+  public void testMaxLongWithNull() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("value", TajoDataTypes.Type.INT8);
+    String[] data = new String[]{ "1|-111", "2|\\N", "3|-333" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select max(value) as max_value from table11");
+      String ascExpected = "max_value\n" +
+              "-------------------------------\n" +
+              "-111\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+
+  }
+
+  @Test
   public void testMinLong() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+  }
+
+  @Test
+  public void testMinLongWithNull() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("value", TajoDataTypes.Type.INT8);
+    String[] data = new String[]{ "1|111", "2|\\N", "3|333" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select min(value) as min_value from table11");
+      String ascExpected = "min_value\n" +
+          "-------------------------------\n" +
+          "111\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+
   }
 
   @Test
@@ -55,10 +114,62 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
   }
 
   @Test
+  public void testMaxStringWithNull() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    String[] data = new String[]{ "1|\\N", "2|\\N", "3|\\N" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select max(name) as max_name from table11");
+      String ascExpected = "max_name\n" +
+          "-------------------------------\n" +
+          "null\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+
+  }
+
+  @Test
   public void testMinString() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+  }
+
+  @Test
+  public void testMinStringWithNull() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    String[] data = new String[]{ "1|def", "2|\\N", "3|abc" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select min(name) as min_name from table11");
+      String ascExpected = "min_name\n" +
+          "-------------------------------\n" +
+          "abc\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+
   }
 
   @Test
