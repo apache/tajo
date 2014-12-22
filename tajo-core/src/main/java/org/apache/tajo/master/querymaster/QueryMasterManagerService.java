@@ -150,7 +150,7 @@ public class QueryMasterManagerService extends CompositeService
       if (queryMasterTask == null) {
         queryMasterTask = queryMaster.getQueryMasterTask(queryId, true);
       }
-      SubQuery sq = queryMasterTask.getQuery().getSubQuery(attemptId.getTaskId().getExecutionBlockId());
+      Stage sq = queryMasterTask.getQuery().getStage(attemptId.getTaskId().getExecutionBlockId());
       Task task = sq.getTask(attemptId.getTaskId());
       TaskAttempt attempt = task.getAttempt(attemptId.getId());
 
@@ -221,7 +221,7 @@ public class QueryMasterManagerService extends CompositeService
     QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(new QueryId(request.getEbId().getQueryId()));
     if (queryMasterTask != null) {
       ExecutionBlockId ebId = new ExecutionBlockId(request.getEbId());
-      queryMasterTask.getQuery().getSubQuery(ebId).receiveExecutionBlockReport(request);
+      queryMasterTask.getQuery().getStage(ebId).receiveExecutionBlockReport(request);
     }
     done.run(TajoWorker.TRUE_PROTO);
   }

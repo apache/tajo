@@ -49,7 +49,7 @@ public class FileStorageManager extends StorageManager {
   private final Log LOG = LogFactory.getLog(FileStorageManager.class);
 
   static final String OUTPUT_FILE_PREFIX="part-";
-  static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_SUBQUERY =
+  static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_STAGE =
       new ThreadLocal<NumberFormat>() {
         @Override
         public NumberFormat initialValue() {
@@ -274,10 +274,10 @@ public class FileStorageManager extends StorageManager {
       return workDir;
     }
     // The final result of a task will be written in a file named part-ss-nnnnnnn,
-    // where ss is the subquery id associated with this task, and nnnnnn is the task id.
+    // where ss is the stage id associated with this task, and nnnnnn is the task id.
     Path outFilePath = StorageUtil.concatPath(workDir, TajoConstants.RESULT_DIR_NAME,
         OUTPUT_FILE_PREFIX +
-            OUTPUT_FILE_FORMAT_SUBQUERY.get().format(taskAttemptId.getTaskId().getExecutionBlockId().getId()) + "-" +
+            OUTPUT_FILE_FORMAT_STAGE.get().format(taskAttemptId.getTaskId().getExecutionBlockId().getId()) + "-" +
             OUTPUT_FILE_FORMAT_TASK.get().format(taskAttemptId.getTaskId().getId()) + "-" +
             OUTPUT_FILE_FORMAT_SEQ.get().format(0));
     LOG.info("Output File Path: " + outFilePath);

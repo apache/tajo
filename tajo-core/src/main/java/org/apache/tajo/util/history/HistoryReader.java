@@ -210,7 +210,7 @@ public class HistoryReader {
 
       in.readFully(buf, 0, buf.length);
 
-      return SubQueryHistory.fromJsonTasks(new String(buf));
+      return StageHistory.fromJsonTasks(new String(buf));
     } finally {
       if (in != null) {
         in.close();

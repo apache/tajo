@@ -25,7 +25,7 @@
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.List" %>
 <%@ page import="org.apache.tajo.util.history.QueryHistory" %>
-<%@ page import="org.apache.tajo.util.history.SubQueryHistory" %>
+<%@ page import="org.apache.tajo.util.history.StageHistory" %>
 <%@ page import="org.apache.tajo.util.history.HistoryReader" %>
 
 <%
@@ -36,8 +36,8 @@
   String startTime = request.getParameter("startTime");
   QueryHistory queryHistory = reader.getQueryHistory(queryId, Long.parseLong(startTime));
 
-  List<SubQueryHistory> subQueryHistories =
-      queryHistory != null ? JSPUtil.sortSubQueryHistory(queryHistory.getSubQueryHistories()) : null;
+  List<StageHistory> stageHistories =
+      queryHistory != null ? JSPUtil.sortStageHistories(queryHistory.getStageHistories()) : null;
 
   SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 %>
@@ -61,34 +61,34 @@ if (queryHistory == null) {
   <div>No Query history data.</div>
 <%
 } else {
-  if (subQueryHistories == null) {
+  if (stageHistories == null) {
 %>
-    <div>No SubQuery history data.</div>
+    <div>No Stage history data.</div>
 <%
   } else {
 %>
   <table width="100%" border="1" class="border_table">
     <tr><th>ID</th><th>State</th><th>Started</th><th>Finished</th><th>Running time</th><th>Progress</th><th>Succeeded/Total</th><th>Failed/Killed</th></tr>
 <%
-    for(SubQueryHistory eachSubQuery: subQueryHistories) {
-        String detailLink = "querytasks.jsp?queryId=" + queryId + "&ebid=" + eachSubQuery.getExecutionBlockId() + "&startTime=" + startTime;
+    for(StageHistory eachStage: stageHistories) {
+        String detailLink = "querytasks.jsp?queryId=" + queryId + "&ebid=" + eachStage.getExecutionBlockId() + "&startTime=" + startTime;
 %>
   <tr>
-    <td><a href='<%=detailLink%>'><%=eachSubQuery.getExecutionBlockId()%></a></td>
-    <td><%=eachSubQuery.getState()%></td>
-    <td><%=df.format(eachSubQuery.getStartTime())%></td>
-    <td><%=eachSubQuery.getFinishTime() == 0 ? "-" : df.format(eachSubQuery.getFinishTime())%></td>
-    <td><%=JSPUtil.getElapsedTime(eachSubQuery.getStartTime(), eachSubQuery.getFinishTime())%></td>
-    <td align='center'><%=JSPUtil.percentFormat(eachSubQuery.getProgress())%>%</td>
-    <td align='center'><%=eachSubQuery.getSucceededObjectCount()%> / <%=eachSubQuery.getTotalScheduledObjectsCount()%></td>
-    <td align='center'><%=eachSubQuery.getFailedObjectCount()%> / <%=eachSubQuery.getKilledObjectCount()%></td>
+    <td><a href='<%=detailLink%>'><%=eachStage.getExecutionBlockId()%></a></td>
+    <td><%=eachStage.getState()%></td>
+    <td><%=df.format(eachStage.getStartTime())%></td>
+    <td><%=eachStage.getFinishTime() == 0 ? "-" : df.format(eachStage.getFinishTime())%></td>
+    <td><%=JSPUtil.getElapsedTime(eachStage.getStartTime(), eachStage.getFinishTime())%></td>
+    <td align='center'><%=JSPUtil.percentFormat(eachStage.getProgress())%>%</td>
+    <td align='center'><%=eachStage.getSucceededObjectCount()%> / <%=eachStage.getTotalScheduledObjectsCount()%></td>
+    <td align='center'><%=eachStage.getFailedObjectCount()%> / <%=eachStage.getKilledObjectCount()%></td>
   </tr>
   <%
     }  //end of for
   %>
   </table>
 <%
-  }   //end of else [if (subQueryHistories == null)]
+  }   //end of else [if (stageHistories == null)]
 %>
   <p/>
   <h3>Applied Session Variables</h3>
