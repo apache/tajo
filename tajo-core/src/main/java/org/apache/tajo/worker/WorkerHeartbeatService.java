@@ -35,7 +35,7 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.DiskDeviceInfo;
 import org.apache.tajo.storage.DiskMountInfo;
 import org.apache.tajo.storage.DiskUtil;
-import org.apache.tajo.util.HAServiceUtil;
+import org.apache.tajo.ha.HAServiceUtil;
 
 import java.io.File;
 import java.util.List;

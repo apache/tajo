@@ -20,18 +20,18 @@ package org.apache.tajo;
 
 import com.google.common.base.Objects;
 
-public class QueryUnitId implements Comparable<QueryUnitId> {
+public class TaskId implements Comparable<TaskId> {
   public static final String QU_ID_PREFIX = "t";
 
   private ExecutionBlockId executionBlockId;
   private int id;
 
-  public QueryUnitId(ExecutionBlockId executionBlockId, int id) {
+  public TaskId(ExecutionBlockId executionBlockId, int id) {
     this.executionBlockId = executionBlockId;
     this.id = id;
   }
 
-  public QueryUnitId(TajoIdProtos.QueryUnitIdProto proto) {
+  public TaskId(TajoIdProtos.TaskIdProto proto) {
     this(new ExecutionBlockId(proto.getExecutionBlockId()), proto.getId());
   }
 
@@ -43,18 +43,18 @@ public class QueryUnitId implements Comparable<QueryUnitId> {
     return id;
   }
 
-  public TajoIdProtos.QueryUnitIdProto getProto() {
-    return TajoIdProtos.QueryUnitIdProto.newBuilder()
+  public TajoIdProtos.TaskIdProto getProto() {
+    return TajoIdProtos.TaskIdProto.newBuilder()
         .setExecutionBlockId(executionBlockId.getProto())
         .setId(id)
         .build();
   }
 
   @Override
-  public int compareTo(QueryUnitId queryUnitId) {
-    int result = executionBlockId.compareTo(queryUnitId.executionBlockId);
+  public int compareTo(TaskId taskId) {
+    int result = executionBlockId.compareTo(taskId.executionBlockId);
     if (result == 0) {
-      return id - queryUnitId.id;
+      return id - taskId.id;
     } else {
       return result;
     }
@@ -68,10 +68,10 @@ public class QueryUnitId implements Comparable<QueryUnitId> {
     if (this == obj) {
       return true;
     }
-    if (!(obj instanceof QueryUnitId)) {
+    if (!(obj instanceof TaskId)) {
       return false;
     }
-    return compareTo((QueryUnitId) obj) == 0;
+    return compareTo((TaskId) obj) == 0;
   }
 
   @Override

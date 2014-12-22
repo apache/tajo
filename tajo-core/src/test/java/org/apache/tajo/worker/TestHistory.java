@@ -20,7 +20,7 @@ package org.apache.tajo.worker;
 
 import com.google.protobuf.ServiceException;
 import org.apache.hadoop.service.Service;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
@@ -107,13 +107,13 @@ public class TestHistory {
     assertTrue(history.size() > 0);
     assertEquals(Service.STATE.STOPPED, history.getState());
 
-    Map.Entry<QueryUnitAttemptId, TaskHistory> entry =
+    Map.Entry<TaskAttemptId, TaskHistory> entry =
         history.getTaskHistoryMap().entrySet().iterator().next();
 
-    QueryUnitAttemptId queryUnitAttemptId = entry.getKey();
+    TaskAttemptId taskAttemptId = entry.getKey();
     TaskHistory taskHistory = entry.getValue();
 
     assertEquals(TajoProtos.TaskAttemptState.TA_SUCCEEDED, taskHistory.getState());
-    assertEquals(queryUnitAttemptId, taskHistory.getQueryUnitAttemptId());
+    assertEquals(taskAttemptId, taskHistory.getTaskAttemptId());
   }
 }

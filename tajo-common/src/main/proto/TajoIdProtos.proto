@@ -31,13 +31,13 @@ message ExecutionBlockIdProto {
     required int32 id = 2;
 }
 
-message QueryUnitIdProto {
+message TaskIdProto {
     required ExecutionBlockIdProto executionBlockId = 1;
     required int32 id = 2;
 }
 
-message QueryUnitAttemptIdProto {
-  required QueryUnitIdProto queryUnitId = 1;
+message TaskAttemptIdProto {
+  required TaskIdProto taskId = 1;
   required int32 id = 2;
 }
 

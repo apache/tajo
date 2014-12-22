@@ -155,7 +155,7 @@ public class TestNLJoinExec {
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testNLCrossJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
-        LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
+        LocalTajoTestingUtility.newTaskAttemptId(), merged, workDir);
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf),
@@ -184,7 +184,7 @@ public class TestNLJoinExec {
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testNLInnerJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
-        LocalTajoTestingUtility.newQueryUnitAttemptId(masterPlan), merged, workDir);
+        LocalTajoTestingUtility.newTaskAttemptId(masterPlan), merged, workDir);
     ctx.setEnforcer(new Enforcer());
     Expr expr =  analyzer.parse(QUERIES[1]);
     LogicalNode plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf),

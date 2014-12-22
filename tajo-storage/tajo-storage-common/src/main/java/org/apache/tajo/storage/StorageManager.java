@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -68,7 +69,7 @@ public abstract class StorageManager {
 
   private static final Class<?>[] DEFAULT_APPENDER_PARAMS = {
       Configuration.class,
-      QueryUnitAttemptId.class,
+      TaskAttemptId.class,
       Schema.class,
       TableMeta.class,
       Path.class
@@ -172,6 +173,18 @@ public abstract class StorageManager {
    * Release storage manager resource
    */
   public abstract void closeStorageManager();
+
+
+  /**
+   * Clear all class cache
+   */
+  @VisibleForTesting
+  protected synchronized static void clearCache() {
+    CONSTRUCTOR_CACHE.clear();
+    SCANNER_HANDLER_CACHE.clear();
+    APPENDER_HANDLER_CACHE.clear();
+    storageManagers.clear();
+  }
 
   /**
    * It is called by a Repartitioner for range shuffling when the SortRangeType of SortNode is USING_STORAGE_MANAGER.
@@ -446,7 +459,7 @@ public abstract class StorageManager {
    * @throws java.io.IOException
    */
   public Appender getAppender(OverridableConf queryContext,
-                              QueryUnitAttemptId taskAttemptId, TableMeta meta, Schema schema, Path workDir)
+                              TaskAttemptId taskAttemptId, TableMeta meta, Schema schema, Path workDir)
       throws IOException {
     Appender appender;
 
@@ -511,7 +524,7 @@ public abstract class StorageManager {
    * @param <T>
    * @return The scanner instance
    */
-  public static <T> T newAppenderInstance(Class<T> theClass, Configuration conf, QueryUnitAttemptId taskAttemptId,
+  public static <T> T newAppenderInstance(Class<T> theClass, Configuration conf, TaskAttemptId taskAttemptId,
                                           TableMeta meta, Schema schema, Path workDir) {
     T result;
     try {

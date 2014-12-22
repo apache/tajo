@@ -21,7 +21,7 @@
  */
 package org.apache.tajo.engine.query;
 
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.conf.TajoConf;
@@ -32,9 +32,9 @@ import org.apache.tajo.worker.FetchImpl;
 
 import java.util.List;
 
-public interface QueryUnitRequest extends ProtoObject<TajoWorkerProtocol.QueryUnitRequestProto> {
+public interface TaskRequest extends ProtoObject<TajoWorkerProtocol.TaskRequestProto> {
 
-	public QueryUnitAttemptId getId();
+	public TaskAttemptId getId();
 	public List<CatalogProtos.FragmentProto> getFragments();
 	public String getOutputTableId();
 	public boolean isClusteredOutput();

@@ -20,7 +20,7 @@ package org.apache.tajo.master;
 
 import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.tajo.master.querymaster.SubQuery;
+import org.apache.tajo.master.querymaster.Stage;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -29,7 +29,7 @@ import java.util.Map;
 public class TaskSchedulerFactory {
   private static Class<? extends AbstractTaskScheduler> CACHED_ALGORITHM_CLASS;
   private static final Map<Class<?>, Constructor<?>> CONSTRUCTOR_CACHE = Maps.newConcurrentMap();
-  private static final Class<?>[] DEFAULT_PARAMS = { TaskSchedulerContext.class, SubQuery.class };
+  private static final Class<?>[] DEFAULT_PARAMS = { TaskSchedulerContext.class, Stage.class };
 
   public static Class<? extends AbstractTaskScheduler> getTaskSchedulerClass(Configuration conf)
       throws IOException {
@@ -46,7 +46,7 @@ public class TaskSchedulerFactory {
   }
 
   public static <T extends AbstractTaskScheduler> T get(Class<T> clazz, TaskSchedulerContext context,
-                                                        SubQuery subQuery) {
+                                                        Stage stage) {
     T result;
     try {
       Constructor<T> constructor = (Constructor<T>) CONSTRUCTOR_CACHE.get(clazz);
@@ -55,15 +55,15 @@ public class TaskSchedulerFactory {
         constructor.setAccessible(true);
         CONSTRUCTOR_CACHE.put(clazz, constructor);
       }
-      result = constructor.newInstance(new Object[]{context, subQuery});
+      result = constructor.newInstance(new Object[]{context, stage});
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
     return result;
   }
 
-  public static AbstractTaskScheduler get(Configuration conf, TaskSchedulerContext context, SubQuery subQuery)
+  public static AbstractTaskScheduler get(Configuration conf, TaskSchedulerContext context, Stage stage)
       throws IOException {
-    return get(getTaskSchedulerClass(conf), context, subQuery);
+    return get(getTaskSchedulerClass(conf), context, stage);
   }
 }

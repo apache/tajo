@@ -30,7 +30,6 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.master.querymaster.QueryInfo;
 import org.apache.tajo.util.TajoIdUtils;
-import org.apache.tajo.worker.TaskHistory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -127,23 +126,23 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
       QueryId queryId = QueryIdFactory.newQueryId(startTime, 1);
       queryHistory.setQueryId(queryId.toString());
       queryHistory.setLogicalPlan("LogicalPlan");
-      List<SubQueryHistory> subQueries = new ArrayList<SubQueryHistory>();
+      List<StageHistory> stages = new ArrayList<StageHistory>();
       for (int i = 0; i < 3; i++) {
         ExecutionBlockId ebId = QueryIdFactory.newExecutionBlockId(queryId, i);
-        SubQueryHistory subQueryHistory = new SubQueryHistory();
-        subQueryHistory.setExecutionBlockId(ebId.toString());
-        subQueryHistory.setStartTime(startTime + i);
+        StageHistory stageHistory = new StageHistory();
+        stageHistory.setExecutionBlockId(ebId.toString());
+        stageHistory.setStartTime(startTime + i);
 
-        List<QueryUnitHistory> queryUnitHistories = new ArrayList<QueryUnitHistory>();
+        List<TaskHistory> taskHistories = new ArrayList<TaskHistory>();
         for (int j = 0; j < 5; j++) {
-          QueryUnitHistory queryUnitHistory = new QueryUnitHistory();
-          queryUnitHistory.setId(QueryIdFactory.newQueryUnitAttemptId(QueryIdFactory.newQueryUnitId(ebId), 1).toString());
-          queryUnitHistories.add(queryUnitHistory);
+          TaskHistory taskHistory = new TaskHistory();
+          taskHistory.setId(QueryIdFactory.newTaskAttemptId(QueryIdFactory.newTaskId(ebId), 1).toString());
+          taskHistories.add(taskHistory);
         }
-        subQueryHistory.setQueryUnits(queryUnitHistories);
-        subQueries.add(subQueryHistory);
+        stageHistory.setTasks(taskHistories);
+        stages.add(stageHistory);
       }
-      queryHistory.setSubQueryHistories(subQueries);
+      queryHistory.setStageHistories(stages);
 
       writer.appendHistory(queryHistory);
 
@@ -167,24 +166,24 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
       QueryHistory foundQueryHistory = reader.getQueryHistory(queryId.toString());
       assertNotNull(foundQueryHistory);
       assertEquals(queryId.toString(), foundQueryHistory.getQueryId());
-      assertEquals(3, foundQueryHistory.getSubQueryHistories().size());
+      assertEquals(3, foundQueryHistory.getStageHistories().size());
 
       for (int i = 0; i < 3; i++) {
         String ebId = QueryIdFactory.newExecutionBlockId(queryId, i).toString();
-        SubQueryHistory subQueryHistory = foundQueryHistory.getSubQueryHistories().get(i);
-        assertEquals(ebId, subQueryHistory.getExecutionBlockId());
-        assertEquals(startTime + i, subQueryHistory.getStartTime());
+        StageHistory stageHistory = foundQueryHistory.getStageHistories().get(i);
+        assertEquals(ebId, stageHistory.getExecutionBlockId());
+        assertEquals(startTime + i, stageHistory.getStartTime());
 
-        // QueryUnitHistory is stored in the other file.
-        assertNull(subQueryHistory.getQueryUnits());
+        // TaskHistory is stored in the other file.
+        assertNull(stageHistory.getTasks());
 
-        List<QueryUnitHistory> queryUnits = reader.getQueryUnitHistory(queryId.toString(), ebId);
-        assertNotNull(queryUnits);
-        assertEquals(5, queryUnits.size());
+        List<TaskHistory> tasks = reader.getTaskHistory(queryId.toString(), ebId);
+        assertNotNull(tasks);
+        assertEquals(5, tasks.size());
 
         for (int j = 0; j < 5; j++) {
-          QueryUnitHistory queryUnitHistory = queryUnits.get(j);
-          assertEquals(subQueries.get(i).getQueryUnits().get(j).getId(), queryUnitHistory.getId());
+          TaskHistory taskHistory = tasks.get(j);
+          assertEquals(stages.get(i).getTasks().get(j).getId(), taskHistory.getId());
         }
       }
     } finally {
@@ -210,13 +209,13 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
           .setNumBytes(100)
           .build();
       long startTime = System.currentTimeMillis() - 2000;
-      QueryUnitAttemptId id1 = TajoIdUtils.parseQueryUnitAttemptId("ta_1412326813565_0001_000001_000001_00");
-      TaskHistory taskHistory1 = new TaskHistory(
+      TaskAttemptId id1 = TajoIdUtils.parseTaskAttemptId("ta_1412326813565_0001_000001_000001_00");
+      org.apache.tajo.worker.TaskHistory taskHistory1 = new org.apache.tajo.worker.TaskHistory(
           id1, TaskAttemptState.TA_SUCCEEDED, 1.0f, startTime, System.currentTimeMillis(), tableStats);
       writer.appendHistory(taskHistory1);
 
-      QueryUnitAttemptId id2 = TajoIdUtils.parseQueryUnitAttemptId("ta_1412326813565_0001_000001_000002_00");
-      TaskHistory taskHistory2 = new TaskHistory(
+      TaskAttemptId id2 = TajoIdUtils.parseTaskAttemptId("ta_1412326813565_0001_000001_000002_00");
+      org.apache.tajo.worker.TaskHistory taskHistory2 = new org.apache.tajo.worker.TaskHistory(
           id2, TaskAttemptState.TA_SUCCEEDED, 1.0f, startTime, System.currentTimeMillis() - 500, tableStats);
       writer.appendHistory(taskHistory2);
 
@@ -232,14 +231,14 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
       assertTrue(fs.exists(taskParentPath));
 
       HistoryReader reader = new HistoryReader("127.0.0.1:28090", tajoConf);
-      TaskHistory foundTaskHistory = reader.getTaskHistory(id1.toString(), startTime);
+      org.apache.tajo.worker.TaskHistory foundTaskHistory = reader.getTaskHistory(id1.toString(), startTime);
       assertNotNull(foundTaskHistory);
-      assertEquals(id1, foundTaskHistory.getQueryUnitAttemptId());
+      assertEquals(id1, foundTaskHistory.getTaskAttemptId());
       assertEquals(taskHistory1, foundTaskHistory);
 
       foundTaskHistory = reader.getTaskHistory(id2.toString(), startTime);
       assertNotNull(foundTaskHistory);
-      assertEquals(id2, foundTaskHistory.getQueryUnitAttemptId());
+      assertEquals(id2, foundTaskHistory.getTaskAttemptId());
       assertEquals(taskHistory2, foundTaskHistory);
 
       foundTaskHistory = reader.getTaskHistory("ta_1412326813565_0001_000001_000003_00", startTime);

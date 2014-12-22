@@ -28,7 +28,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -61,7 +61,7 @@ public class AvroAppender extends FileAppender {
    * @param workDir The path of the Parquet file to write to.
    */
   public AvroAppender(Configuration conf,
-                      QueryUnitAttemptId taskAttemptId,
+                      TaskAttemptId taskAttemptId,
                       org.apache.tajo.catalog.Schema schema,
                       TableMeta meta, Path workDir) throws IOException {
     super(conf, taskAttemptId, schema, meta, workDir);

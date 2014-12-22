@@ -29,7 +29,7 @@ import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.SequenceFile.Metadata;
 import org.apache.hadoop.io.compress.*;
 import org.apache.hadoop.util.ReflectionUtils;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
@@ -710,7 +710,7 @@ public class RCFile {
       return out.getPos();
     }
 
-    public RCFileAppender(Configuration conf, final QueryUnitAttemptId taskAttemptId,
+    public RCFileAppender(Configuration conf, final TaskAttemptId taskAttemptId,
                           final Schema schema, final TableMeta meta, final Path workDir) throws IOException {
       super(conf, taskAttemptId, schema, meta, workDir);
 

@@ -363,18 +363,18 @@ public class PullServerAuxService extends AuxiliaryService {
           new QueryStringDecoder(request.getUri()).getParameters();
       final List<String> types = params.get("type");
       final List<String> taskIdList = params.get("ta");
-      final List<String> subQueryIds = params.get("sid");
+      final List<String> stageIds = params.get("sid");
       final List<String> partitionIds = params.get("p");
 
-      if (types == null || taskIdList == null || subQueryIds == null
+      if (types == null || taskIdList == null || stageIds == null
           || partitionIds == null) {
-        sendError(ctx, "Required type, taskIds, subquery Id, and partition id",
+        sendError(ctx, "Required type, taskIds, stage Id, and partition id",
             BAD_REQUEST);
         return;
       }
 
-      if (types.size() != 1 || subQueryIds.size() != 1) {
-        sendError(ctx, "Required type, taskIds, subquery Id, and partition id",
+      if (types.size() != 1 || stageIds.size() != 1) {
+        sendError(ctx, "Required type, taskIds, stage Id, and partition id",
             BAD_REQUEST);
         return;
       }
@@ -382,7 +382,7 @@ public class PullServerAuxService extends AuxiliaryService {
       final List<FileChunk> chunks = Lists.newArrayList();
 
       String repartitionType = types.get(0);
-      String sid = subQueryIds.get(0);
+      String sid = stageIds.get(0);
       String partitionId = partitionIds.get(0);
       List<String> taskIds = splitMaps(taskIdList);
 
@@ -399,7 +399,7 @@ public class PullServerAuxService extends AuxiliaryService {
       }
       LOG.info("PullServer baseDir: " + taskLocalDir + "/" + queryBaseDir);
 
-      // if a subquery requires a range partitioning
+      // if a stage requires a range partitioning
       if (repartitionType.equals("r")) {
         String ta = taskIds.get(0);
         Path path = localFS.makeQualified(
@@ -422,7 +422,7 @@ public class PullServerAuxService extends AuxiliaryService {
           chunks.add(chunk);
         }
 
-        // if a subquery requires a hash repartition  or a scattered hash repartition
+        // if a stage requires a hash repartition  or a scattered hash repartition
       } else if (repartitionType.equals("h") || repartitionType.equals("s")) {
         for (String ta : taskIds) {
           Path path = localFS.makeQualified(

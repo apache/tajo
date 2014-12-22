@@ -232,7 +232,7 @@ public class HttpDataServerHandler extends SimpleChannelUpstreamHandler {
 
   private List<String> splitMaps(List<String> qids) {
     if (null == qids) {
-      LOG.error("QueryUnitId is EMPTY");
+      LOG.error("QueryId is EMPTY");
       return null;
     }
 

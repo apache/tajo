@@ -161,4 +161,26 @@
     <name>tajo.storage.appender-handler.avro.class</name>
     <value>org.apache.tajo.storage.avro.AvroAppender</value>
   </property>
+
+  <!--- Storage buffer -->
+  <property>
+    <name>tajo.storage.text.io.read-buffer.bytes</name>
+    <value>131072</value>
+    <description>128KB read buffer</description>
+  </property>
+  <property>
+    <name>tajo.storage.text.io.write-buffer.bytes</name>
+    <value>131072</value>
+    <description>128KB write buffer</description>
+  </property>
+  <property>
+    <name>tajo.storage.raw.io.read-buffer.bytes</name>
+    <value>131072</value>
+    <description>128KB read buffer</description>
+  </property>
+  <property>
+    <name>tajo.storage.raw.io.write-buffer.bytes</name>
+    <value>131072</value>
+    <description>128KB write buffer</description>
+  </property>
 </configuration>

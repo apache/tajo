@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  *   <tajo.history.query.dir>/<yyyyMMdd>/query-list/query-list-<HHmmss>.hist (TajoMaster's query list, hourly rolling)
  *                                      /query-detail/<QUERY_ID>/query.hist    (QueryMaster's query detail)
- *                                                               /<EB_ID>.hist  (QueryMaster's subquery detail)
+ *                                                               /<EB_ID>.hist  (QueryMaster's stage detail)
  *   <tajo.history.task.dir>/<yyyyMMdd>/tasks/<WORKER_HOST>_<WORKER_PORT>/<WORKER_HOST>_<WORKER_PORT>_<HH>_<seq>.hist
  * History files are kept for "tajo.history.expiry-time-day" (default value is 7 days)
  */
@@ -238,7 +238,7 @@ public class HistoryWriter extends AbstractService {
               writeTaskHistory((TaskHistory) eachHistory);
             } catch (Exception e) {
               LOG.error("Error while saving task history: " +
-                  ((TaskHistory) eachHistory).getQueryUnitAttemptId() + ":" + e.getMessage(), e);
+                  ((TaskHistory) eachHistory).getTaskAttemptId() + ":" + e.getMessage(), e);
             }
             break;
           case QUERY:
@@ -267,7 +267,7 @@ public class HistoryWriter extends AbstractService {
       // QueryMaster's query detail history (json format)
       // <tajo.query-history.path>/<yyyyMMdd>/query-detail/<QUERY_ID>/query.hist
 
-      // QueryMaster's subquery detail history(proto binary format)
+      // QueryMaster's stage detail history(proto binary format)
       // <tajo.query-history.path>/<yyyyMMdd>/query-detail/<QUERY_ID>/<EB_ID>.hist
 
       Path queryHistoryFile = getQueryHistoryFilePath(historyParentPath, queryHistory.getQueryId());
@@ -295,13 +295,13 @@ public class HistoryWriter extends AbstractService {
         }
       }
 
-      if (queryHistory.getSubQueryHistories() != null) {
-        for (SubQueryHistory subQueryHistory : queryHistory.getSubQueryHistories()) {
-          Path path = new Path(queryHistoryFile.getParent(), subQueryHistory.getExecutionBlockId() + HISTORY_FILE_POSTFIX);
+      if (queryHistory.getStageHistories() != null) {
+        for (StageHistory stageHistory : queryHistory.getStageHistories()) {
+          Path path = new Path(queryHistoryFile.getParent(), stageHistory.getExecutionBlockId() + HISTORY_FILE_POSTFIX);
           out = null;
           try {
             out = fs.create(path);
-            out.write(subQueryHistory.toQueryUnitsJson().getBytes());
+            out.write(stageHistory.toTasksJson().getBytes());
             LOG.info("Saving query unit: " + path);
           } finally {
             if (out != null) {

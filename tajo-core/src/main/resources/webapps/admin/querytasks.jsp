@@ -28,10 +28,10 @@
 <%@ page import="org.apache.tajo.master.TajoMaster" %>
 <%@ page import="org.apache.tajo.util.history.HistoryReader" %>
 <%@ page import="org.apache.tajo.util.history.QueryHistory" %>
-<%@ page import="org.apache.tajo.util.history.SubQueryHistory" %>
+<%@ page import="org.apache.tajo.util.history.StageHistory" %>
 <%@ page import="org.apache.tajo.master.rm.Worker" %>
 <%@ page import="java.util.*" %>
-<%@ page import="org.apache.tajo.util.history.QueryUnitHistory" %>
+<%@ page import="org.apache.tajo.util.history.TaskHistory" %>
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
@@ -43,14 +43,14 @@
 
   QueryHistory queryHistory = reader.getQueryHistory(queryId);
 
-  List<SubQueryHistory> subQueryHistories =
-      queryHistory != null ? JSPUtil.sortSubQueryHistory(queryHistory.getSubQueryHistories()) : null;
+  List<StageHistory> stageHistories =
+      queryHistory != null ? JSPUtil.sortStageHistories(queryHistory.getStageHistories()) : null;
 
-  SubQueryHistory subQuery = null;
-  if (subQueryHistories != null) {
-    for (SubQueryHistory eachSubQuery: subQueryHistories) {
-      if (eachSubQuery.getExecutionBlockId().equals(ebId)) {
-        subQuery = eachSubQuery;
+  StageHistory stage = null;
+  if (stageHistories != null) {
+    for (StageHistory eachStage: stageHistories) {
+      if (eachStage.getExecutionBlockId().equals(ebId)) {
+        stage = eachStage;
         break;
       }
     }
@@ -92,23 +92,23 @@
   long totalWriteBytes = 0;
   long totalWriteRows = 0;
 
-  if (subQuery != null) {
-    totalInputBytes = subQuery.getTotalInputBytes();
-    totalReadBytes = subQuery.getTotalReadBytes();
-    totalReadRows = subQuery.getTotalReadRows();
-    totalWriteBytes = subQuery.getTotalWriteBytes();
-    totalWriteRows = subQuery.getTotalWriteRows();
+  if (stage != null) {
+    totalInputBytes = stage.getTotalInputBytes();
+    totalReadBytes = stage.getTotalReadBytes();
+    totalReadRows = stage.getTotalReadRows();
+    totalWriteBytes = stage.getTotalWriteBytes();
+    totalWriteRows = stage.getTotalWriteRows();
   }
 
-  List<QueryUnitHistory> allQueryUnits = reader.getQueryUnitHistory(queryId, ebId);
-  int numTasks = allQueryUnits.size();
+  List<TaskHistory> allTasks = reader.getTaskHistory(queryId, ebId);
+  int numTasks = allTasks.size();
   int numShuffles = 0;
   float totalProgress = 0.0f;
 
-  if (allQueryUnits != null) {
-    for(QueryUnitHistory eachQueryUnit: allQueryUnits) {
-      totalProgress += eachQueryUnit.getProgress();
-      numShuffles = eachQueryUnit.getNumShuffles();
+  if (allTasks != null) {
+    for(TaskHistory eachTask: allTasks) {
+      totalProgress += eachTask.getProgress();
+      numShuffles = eachTask.getNumShuffles();
     }
   }
 
@@ -150,12 +150,12 @@
   <h3><a href='querydetail.jsp?queryId=<%=queryId%>&startTime=<%=startTime%>'><%=ebId.toString()%></a></h3>
   <hr/>
   <p/>
-  <pre style="white-space:pre-wrap;"><%=subQuery.getPlan()%></pre>
+  <pre style="white-space:pre-wrap;"><%=stage.getPlan()%></pre>
   <p/>
   <table border="1" width="100%" class="border_table">
-    <tr><td align='right' width='180px'>Status:</td><td><%=subQuery.getState()%></td></tr>
-    <tr><td align='right'>Started:</td><td><%=df.format(subQuery.getStartTime())%> ~ <%=subQuery.getFinishTime() == 0 ? "-" : df.format(subQuery.getFinishTime())%></td></tr>
-    <tr><td align='right'># Tasks:</td><td><%=numTasks%> (Local Tasks: <%=subQuery.getHostLocalAssigned()%>, Rack Local Tasks: <%=subQuery.getRackLocalAssigned()%>)</td></tr>
+    <tr><td align='right' width='180px'>Status:</td><td><%=stage.getState()%></td></tr>
+    <tr><td align='right'>Started:</td><td><%=df.format(stage.getStartTime())%> ~ <%=stage.getFinishTime() == 0 ? "-" : df.format(stage.getFinishTime())%></td></tr>
+    <tr><td align='right'># Tasks:</td><td><%=numTasks%> (Local Tasks: <%=stage.getHostLocalAssigned()%>, Rack Local Tasks: <%=stage.getRackLocalAssigned()%>)</td></tr>
     <tr><td align='right'>Progress:</td><td><%=JSPUtil.percentFormat((float) (totalProgress / numTasks))%>%</td></tr>
     <tr><td align='right'># Shuffles:</td><td><%=numShuffles%></td></tr>
     <tr><td align='right'>Input Bytes:</td><td><%=FileUtil.humanReadableByteCount(totalInputBytes, false) + " (" + nf.format(totalInputBytes) + " B)"%></td></tr>
@@ -187,53 +187,53 @@
     <input type="hidden" name="startTime" value="<%=startTime%>"/>
   </form>
 <%
-  List<QueryUnitHistory> filteredQueryUnit = new ArrayList<QueryUnitHistory>();
-  for(QueryUnitHistory eachQueryUnit: allQueryUnits) {
+  List<TaskHistory> filteredTasks = new ArrayList<TaskHistory>();
+  for(TaskHistory eachTask: allTasks) {
     if (!"ALL".equals(status)) {
-      if (!status.equals(eachQueryUnit.getState().toString())) {
+      if (!status.equals(eachTask.getState().toString())) {
         continue;
       }
     }
-    filteredQueryUnit.add(eachQueryUnit);
+    filteredTasks.add(eachTask);
   }
-  JSPUtil.sortQueryUnitHistory(filteredQueryUnit, sort, sortOrder);
-  List<QueryUnitHistory> queryUnits = JSPUtil.getPageNavigationList(filteredQueryUnit, currentPage, pageSize);
+  JSPUtil.sortTaskHistory(filteredTasks, sort, sortOrder);
+  List<TaskHistory> tasks = JSPUtil.getPageNavigationList(filteredTasks, currentPage, pageSize);
 
-  int numOfQueryUnits = filteredQueryUnit.size();
-  int totalPage = numOfQueryUnits % pageSize == 0 ?
-      numOfQueryUnits / pageSize : numOfQueryUnits / pageSize + 1;
+  int numOfTasks = filteredTasks.size();
+  int totalPage = numOfTasks % pageSize == 0 ?
+      numOfTasks / pageSize : numOfTasks / pageSize + 1;
 %>
-  <div align="right"># Tasks: <%=numOfQueryUnits%> / # Pages: <%=totalPage%></div>
+  <div align="right"># Tasks: <%=numOfTasks%> / # Pages: <%=totalPage%></div>
   <table border="1" width="100%" class="border_table">
     <tr><th>No</th><th><a href='<%=url%>id'>Id</a></th><th>Status</th><th>Progress</th><th><a href='<%=url%>startTime'>Started</a></th><th><a href='<%=url%>runTime'>Running Time</a></th><th><a href='<%=url%>host'>Host</a></th></tr>
 <%
   int rowNo = (currentPage - 1) * pageSize + 1;
-  for (QueryUnitHistory eachQueryUnit: queryUnits) {
-    String queryUnitDetailUrl = "";
-    if (eachQueryUnit.getId() != null) {
-      queryUnitDetailUrl = "queryunit.jsp?queryId=" + queryId + "&ebid=" + ebId + "&startTime=" + startTime +
-          "&queryUnitAttemptId=" + eachQueryUnit.getId() + "&sort=" + sort + "&sortOrder=" + sortOrder;
+  for (TaskHistory eachTask: tasks) {
+    String taskDetailUrl = "";
+    if (eachTask.getId() != null) {
+      taskDetailUrl = "task.jsp?queryId=" + queryId + "&ebid=" + ebId + "&startTime=" + startTime +
+          "&taskAttemptId=" + eachTask.getId() + "&sort=" + sort + "&sortOrder=" + sortOrder;
     }
-    String queryUnitHost = eachQueryUnit.getHostAndPort() == null ? "-" : eachQueryUnit.getHostAndPort();
-    if (eachQueryUnit.getHostAndPort() != null) {
-      Worker worker = workerMap.get(eachQueryUnit.getHostAndPort());
+    String taskHost = eachTask.getHostAndPort() == null ? "-" : eachTask.getHostAndPort();
+    if (eachTask.getHostAndPort() != null) {
+      Worker worker = workerMap.get(eachTask.getHostAndPort());
       if (worker != null) {
-        String[] hostTokens = eachQueryUnit.getHostAndPort().split(":");
-        queryUnitHost = "<a href='http://" + hostTokens[0] + ":" + worker.getConnectionInfo().getHttpInfoPort() +
-            "/taskhistory.jsp?queryUnitAttemptId=" + eachQueryUnit.getId() + "&startTime=" + eachQueryUnit.getLaunchTime() +
-            "'>" + eachQueryUnit.getHostAndPort() + "</a>";
+        String[] hostTokens = eachTask.getHostAndPort().split(":");
+        taskHost = "<a href='http://" + hostTokens[0] + ":" + worker.getConnectionInfo().getHttpInfoPort() +
+            "/taskhistory.jsp?taskAttemptId=" + eachTask.getId() + "&startTime=" + eachTask.getLaunchTime() +
+            "'>" + eachTask.getHostAndPort() + "</a>";
       }
     }
 
 %>
     <tr>
       <td><%=rowNo%></td>
-      <td><a href="<%=queryUnitDetailUrl%>"><%=eachQueryUnit.getId()%></a></td>
-      <td><%=eachQueryUnit.getState()%></td>
-      <td><%=JSPUtil.percentFormat(eachQueryUnit.getProgress())%>%</td>
-      <td><%=eachQueryUnit.getLaunchTime() == 0 ? "-" : df.format(eachQueryUnit.getLaunchTime())%></td>
-      <td align='right'><%=eachQueryUnit.getLaunchTime() == 0 ? "-" : eachQueryUnit.getRunningTime() + " ms"%></td>
-      <td><%=queryUnitHost%></td>
+      <td><a href="<%=taskDetailUrl%>"><%=eachTask.getId()%></a></td>
+      <td><%=eachTask.getState()%></td>
+      <td><%=JSPUtil.percentFormat(eachTask.getProgress())%>%</td>
+      <td><%=eachTask.getLaunchTime() == 0 ? "-" : df.format(eachTask.getLaunchTime())%></td>
+      <td align='right'><%=eachTask.getLaunchTime() == 0 ? "-" : eachTask.getRunningTime() + " ms"%></td>
+      <td><%=taskHost%></td>
     </tr>
     <%
         rowNo++;
