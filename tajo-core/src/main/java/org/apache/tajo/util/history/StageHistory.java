@@ -21,13 +21,13 @@ package org.apache.tajo.util.history;
 import com.google.gson.annotations.Expose;
 import com.google.gson.reflect.TypeToken;
 import org.apache.tajo.engine.json.CoreGsonHelper;
-import org.apache.tajo.ipc.ClientProtos.SubQueryHistoryProto;
+import org.apache.tajo.ipc.ClientProtos.StageHistoryProto;
 import org.apache.tajo.json.GsonObject;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class SubQueryHistory implements GsonObject {
+public class StageHistory implements GsonObject {
   @Expose
   private String executionBlockId;
   @Expose
@@ -223,7 +223,7 @@ public class SubQueryHistory implements GsonObject {
 
   @Override
   public String toJson() {
-    return CoreGsonHelper.toJson(this, SubQueryHistory.class);
+    return CoreGsonHelper.toJson(this, StageHistory.class);
   }
 
   public String toTasksJson() {
@@ -242,8 +242,8 @@ public class SubQueryHistory implements GsonObject {
     }.getType());
   }
 
-  public SubQueryHistoryProto getProto() {
-    SubQueryHistoryProto.Builder builder = SubQueryHistoryProto.newBuilder();
+  public StageHistoryProto getProto() {
+    StageHistoryProto.Builder builder = StageHistoryProto.newBuilder();
     builder.setExecutionBlockId(executionBlockId)
       .setState(state)
       .setStartTime(startTime)

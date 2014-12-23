@@ -126,12 +126,12 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
       QueryId queryId = QueryIdFactory.newQueryId(startTime, 1);
       queryHistory.setQueryId(queryId.toString());
       queryHistory.setLogicalPlan("LogicalPlan");
-      List<SubQueryHistory> subQueries = new ArrayList<SubQueryHistory>();
+      List<StageHistory> stages = new ArrayList<StageHistory>();
       for (int i = 0; i < 3; i++) {
         ExecutionBlockId ebId = QueryIdFactory.newExecutionBlockId(queryId, i);
-        SubQueryHistory subQueryHistory = new SubQueryHistory();
-        subQueryHistory.setExecutionBlockId(ebId.toString());
-        subQueryHistory.setStartTime(startTime + i);
+        StageHistory stageHistory = new StageHistory();
+        stageHistory.setExecutionBlockId(ebId.toString());
+        stageHistory.setStartTime(startTime + i);
 
         List<TaskHistory> taskHistories = new ArrayList<TaskHistory>();
         for (int j = 0; j < 5; j++) {
@@ -139,10 +139,10 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
           taskHistory.setId(QueryIdFactory.newTaskAttemptId(QueryIdFactory.newTaskId(ebId), 1).toString());
           taskHistories.add(taskHistory);
         }
-        subQueryHistory.setTasks(taskHistories);
-        subQueries.add(subQueryHistory);
+        stageHistory.setTasks(taskHistories);
+        stages.add(stageHistory);
       }
-      queryHistory.setSubQueryHistories(subQueries);
+      queryHistory.setStageHistories(stages);
 
       writer.appendHistory(queryHistory);
 
@@ -166,16 +166,16 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
       QueryHistory foundQueryHistory = reader.getQueryHistory(queryId.toString());
       assertNotNull(foundQueryHistory);
       assertEquals(queryId.toString(), foundQueryHistory.getQueryId());
-      assertEquals(3, foundQueryHistory.getSubQueryHistories().size());
+      assertEquals(3, foundQueryHistory.getStageHistories().size());
 
       for (int i = 0; i < 3; i++) {
         String ebId = QueryIdFactory.newExecutionBlockId(queryId, i).toString();
-        SubQueryHistory subQueryHistory = foundQueryHistory.getSubQueryHistories().get(i);
-        assertEquals(ebId, subQueryHistory.getExecutionBlockId());
-        assertEquals(startTime + i, subQueryHistory.getStartTime());
+        StageHistory stageHistory = foundQueryHistory.getStageHistories().get(i);
+        assertEquals(ebId, stageHistory.getExecutionBlockId());
+        assertEquals(startTime + i, stageHistory.getStartTime());
 
         // TaskHistory is stored in the other file.
-        assertNull(subQueryHistory.getTasks());
+        assertNull(stageHistory.getTasks());
 
         List<TaskHistory> tasks = reader.getTaskHistory(queryId.toString(), ebId);
         assertNotNull(tasks);
@@ -183,7 +183,7 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
 
         for (int j = 0; j < 5; j++) {
           TaskHistory taskHistory = tasks.get(j);
-          assertEquals(subQueries.get(i).getTasks().get(j).getId(), taskHistory.getId());
+          assertEquals(stages.get(i).getTasks().get(j).getId(), taskHistory.getId());
         }
       }
     } finally {

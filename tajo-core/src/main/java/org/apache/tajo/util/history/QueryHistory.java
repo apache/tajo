@@ -20,8 +20,9 @@ package org.apache.tajo.util.history;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.engine.json.CoreGsonHelper;
+import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.QueryHistoryProto;
-import org.apache.tajo.ipc.ClientProtos.SubQueryHistoryProto;
+import org.apache.tajo.ipc.ClientProtos.StageHistoryProto;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
 
@@ -42,7 +43,7 @@ public class QueryHistory implements GsonObject, History {
   @Expose
   private String distributedPlan;
   @Expose
-  private List<SubQueryHistory> subQueryHistories;
+  private List<StageHistory> stageHistories;
 
   public String getQueryId() {
     return queryId;
@@ -56,8 +57,8 @@ public class QueryHistory implements GsonObject, History {
     this.queryMaster = queryMaster;
   }
 
-  public void setSubQueryHistories(List<SubQueryHistory> subQueryHistories) {
-    this.subQueryHistories = subQueryHistories;
+  public void setStageHistories(List<StageHistory> stageHistories) {
+    this.stageHistories = stageHistories;
   }
 
   public String getQueryMaster() {
@@ -72,8 +73,8 @@ public class QueryHistory implements GsonObject, History {
     this.httpPort = httpPort;
   }
 
-  public List<SubQueryHistory> getSubQueryHistories() {
-    return subQueryHistories;
+  public List<StageHistory> getStageHistories() {
+    return stageHistories;
   }
 
   public List<String[]> getSessionVariables() {
@@ -138,13 +139,13 @@ public class QueryHistory implements GsonObject, History {
     builder.addAllSessionVariables(sessionProtos);
 
 
-    List<SubQueryHistoryProto> subQueryHistoryProtos = new ArrayList<SubQueryHistoryProto>();
-    if (subQueryHistories != null) {
-      for (SubQueryHistory eachSubQuery: subQueryHistories) {
-        subQueryHistoryProtos.add((eachSubQuery.getProto()));
+    List<StageHistoryProto> stageHistoryProtos = new ArrayList<ClientProtos.StageHistoryProto>();
+    if (stageHistories != null) {
+      for (StageHistory eachStage: stageHistories) {
+        stageHistoryProtos.add((eachStage.getProto()));
       }
     }
-    builder.addAllSubQueryHistories(subQueryHistoryProtos);
+    builder.addAllStageHistories(stageHistoryProtos);
 
     return builder.build();
   }

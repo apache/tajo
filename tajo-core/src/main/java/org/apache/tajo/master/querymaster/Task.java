@@ -580,7 +580,7 @@ public class Task implements EventHandler<TaskEvent> {
 
     @Override
     public void transition(Task task, TaskEvent taskEvent) {
-      task.eventHandler.handle(new SubQueryTaskEvent(task.getId(), TaskState.KILLED));
+      task.eventHandler.handle(new StageTaskEvent(task.getId(), TaskState.KILLED));
     }
   }
 
@@ -598,7 +598,7 @@ public class Task implements EventHandler<TaskEvent> {
     @Override
     public void transition(Task task, TaskEvent event) {
       task.finishTask();
-      task.eventHandler.handle(new SubQueryTaskEvent(task.getId(), TaskState.KILLED));
+      task.eventHandler.handle(new StageTaskEvent(task.getId(), TaskState.KILLED));
     }
   }
 
@@ -617,7 +617,7 @@ public class Task implements EventHandler<TaskEvent> {
       task.succeededPullServerPort = attempt.getWorkerConnectionInfo().getPullServerPort();
 
       task.finishTask();
-      task.eventHandler.handle(new SubQueryTaskEvent(event.getTaskId(), TaskState.SUCCEEDED));
+      task.eventHandler.handle(new StageTaskEvent(event.getTaskId(), TaskState.SUCCEEDED));
     }
   }
 
@@ -644,7 +644,7 @@ public class Task implements EventHandler<TaskEvent> {
       task.finishedAttempts++;
 
       task.finishTask();
-      task.eventHandler.handle(new SubQueryTaskEvent(task.getId(), TaskState.FAILED));
+      task.eventHandler.handle(new StageTaskEvent(task.getId(), TaskState.FAILED));
     }
   }
 
@@ -669,7 +669,7 @@ public class Task implements EventHandler<TaskEvent> {
         }
       } else {
         task.finishTask();
-        task.eventHandler.handle(new SubQueryTaskEvent(task.getId(), TaskState.FAILED));
+        task.eventHandler.handle(new StageTaskEvent(task.getId(), TaskState.FAILED));
         return TaskState.FAILED;
       }
 
