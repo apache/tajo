@@ -25,7 +25,7 @@
 <%@ page import="org.apache.tajo.QueryId" %>
 <%@ page import="org.apache.tajo.util.TajoIdUtils" %>
 <%@ page import="org.apache.tajo.master.querymaster.QueryMasterTask" %>
-<%@ page import="org.apache.tajo.master.querymaster.SubQuery" %>
+<%@ page import="org.apache.tajo.master.querymaster.Stage" %>
 <%@ page import="org.apache.tajo.engine.planner.global.ExecutionBlock" %>
 <%@ page import="java.util.*" %>
 <%@ page import="org.apache.tajo.ExecutionBlockId" %>
@@ -46,22 +46,22 @@
 
   Query query = queryMasterTask.getQuery();
 
-  Map<ExecutionBlockId, SubQuery> subQueryMap = new HashMap<ExecutionBlockId, SubQuery>();
+  Map<ExecutionBlockId, Stage> stageMap = new HashMap<ExecutionBlockId, Stage>();
 
-  for(SubQuery eachSubQuery: query.getSubQueries()) {
-    subQueryMap.put(eachSubQuery.getId(), eachSubQuery);
+  for(Stage eachStage : query.getStages()) {
+    stageMap.put(eachStage.getId(), eachStage);
   }
 
-  class SubQueryInfo {
+  class StageInfo {
     ExecutionBlock executionBlock;
-    SubQuery subQuery;
+    Stage stage;
     ExecutionBlockId parentId;
     int px;
     int py;
     int pos; // 0: mid 1: left 2: right
-    public SubQueryInfo(ExecutionBlock executionBlock, SubQuery subQuery, ExecutionBlockId parentId, int px, int py, int pos) {
+    public StageInfo(ExecutionBlock executionBlock, Stage stage, ExecutionBlockId parentId, int px, int py, int pos) {
       this.executionBlock = executionBlock;
-      this.subQuery = subQuery;
+      this.stage = stage;
       this.parentId = parentId;
       this.px = px;
       this.py = py;
@@ -102,21 +102,21 @@
   String curIdStr = null;
   int x=35, y=1;
   int pos;
-  List<SubQueryInfo> subQueryInfos = new ArrayList<SubQueryInfo>();
+  List<StageInfo> stageInfos = new ArrayList<StageInfo>();
 
-  subQueryInfos.add(new SubQueryInfo(masterPlan.getRoot(), null, null, x, y, 0));
+  stageInfos.add(new StageInfo(masterPlan.getRoot(), null, null, x, y, 0));
 
-  while (!subQueryInfos.isEmpty()) {
-    SubQueryInfo eachSubQueryInfo = subQueryInfos.remove(0);
-    curIdStr = eachSubQueryInfo.executionBlock.getId().toString();
+  while (!stageInfos.isEmpty()) {
+    StageInfo eachStageInfo = stageInfos.remove(0);
+    curIdStr = eachStageInfo.executionBlock.getId().toString();
 
-    y = eachSubQueryInfo.py + 13;
-    if (eachSubQueryInfo.pos == 0) {
-      x = eachSubQueryInfo.px;
-    } else if (eachSubQueryInfo.pos == 1) {
-      x = eachSubQueryInfo.px - 20;
-    } else if (eachSubQueryInfo.pos == 2) {
-      x = eachSubQueryInfo.px + 20;
+    y = eachStageInfo.py + 13;
+    if (eachStageInfo.pos == 0) {
+      x = eachStageInfo.px;
+    } else if (eachStageInfo.pos == 1) {
+      x = eachStageInfo.px - 20;
+    } else if (eachStageInfo.pos == 2) {
+      x = eachStageInfo.px + 20;
     }
 %>
   <script type='text/javascript'>
@@ -128,17 +128,17 @@
   </div>
 
 <%
-    if (eachSubQueryInfo.parentId != null) {
+    if (eachStageInfo.parentId != null) {
       String outgoing = "";
       String prefix = "";
-      for (DataChannel channel : masterPlan.getOutgoingChannels(eachSubQueryInfo.executionBlock.getId())) {
+      for (DataChannel channel : masterPlan.getOutgoingChannels(eachStageInfo.executionBlock.getId())) {
         outgoing += prefix + channel.getShuffleType();
         prefix = "; ";
       }
 %>
   <script type="text/javascript">
     var srcId = "<%=curIdStr%>";
-    var destId = "<%=eachSubQueryInfo.parentId.toString()%>";
+    var destId = "<%=eachStageInfo.parentId.toString()%>";
     var src = window.jsPlumb.addEndpoint(srcId, {
         anchor:"AutoDefault",
         paintStyle:{
@@ -187,7 +187,7 @@
 
   <script type='text/javascript'>
     var e = document.getElementById("<%=curIdStr%>");
-    var state = "<%=eachSubQueryInfo.subQuery != null ? eachSubQueryInfo.subQuery.getState().name(): ""%>";
+    var state = "<%=eachStageInfo.stage != null ? eachStageInfo.stage.getState().name(): ""%>";
     switch (state) {
       case 'NEW':
         e.style.borderColor = "black";
@@ -219,7 +219,7 @@
   </script>
 
 <%
-    List<ExecutionBlock> children = masterPlan.getChilds(eachSubQueryInfo.executionBlock.getId());
+    List<ExecutionBlock> children = masterPlan.getChilds(eachStageInfo.executionBlock.getId());
 
     if (children.size() == 1) {
       pos = 0;
@@ -227,7 +227,7 @@
       pos = 1;
     }
     for (ExecutionBlock child : children) {
-      subQueryInfos.add(new SubQueryInfo(child, subQueryMap.get(child.getId()), eachSubQueryInfo.executionBlock.getId(), x, y, pos++));
+      stageInfos.add(new StageInfo(child, stageMap.get(child.getId()), eachStageInfo.executionBlock.getId(), x, y, pos++));
     }
   } //end of while
 %>

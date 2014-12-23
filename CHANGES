@@ -24,6 +24,15 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1261: Separate query and ddl execution codes from GlobalEngine. 
+    (hyunsik)
+
+    TAJO-1247: Store type 'TEXTFILE' should be TEXT while keeping enum 
+    'TEXTFILE' in protobuf. (DaeMyung Kang via hyunsik)
+
+    TAJO-1221: HA TajoClient should not connect TajoMaster at the first. 
+    (jaehwa)
+
     TAJO-1241: Change default client and table time zone behavior. (hyunsik)
 
     TAJO-1243: *-site.xml.template should have default configs commented out.
@@ -109,7 +118,26 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
-    TAJO-1239 ORDER BY with null column desc miss some data. 
+    TAJO-1250: RawFileAppender occasionally causes BufferOverflowException. 
+    (jinho)
+
+    TAJO-1259: A title in catalog configuration document is different from others. 
+    (Jongyoung Park via hyunsik)
+
+    TAJO-1232: Implicit groupby queries with LIMIT lead to wrong results. 
+    (jihoon)
+
+    TAJO-1254: Fix getProgress race conditions in Query. (jinho)
+
+    TAJO-1252: PathValidator should allow hdfs paths which contain IP addresses. 
+    (jihoon)
+
+    TAJO-1246: HBase info port conflict occasionally causes unit test 
+    failures in Jenkins CI. (hyunsik)
+
+    TAJO-1242: Json scanner can not read some case of trucated text. (jinho) 
+
+    TAJO-1239: ORDER BY with null column desc miss some data. 
     (Hyoungjun Kim via hyunsik)
 
     TAJO-1244: tajo.worker.tmpdir.locations should use a validator for a list 
@@ -211,6 +239,10 @@ Release 0.9.1 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1262: Rename the prefix 'SubQuery' to 'Stage'. (hyunsik)
+
+    TAJO-324: Rename the prefix 'QueryUnit' to Task. (hyunsik)
 
     TAJO-1151: Implement the ByteBuffer-based De/Serializer. (jinho)
 

@@ -241,7 +241,7 @@ public class TestRightOuterHashJoinExec {
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestRightOuter_HashJoinExec0");
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
-        LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
+        LocalTajoTestingUtility.newTaskAttemptId(), merged, workDir);
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
@@ -282,7 +282,7 @@ public class TestRightOuterHashJoinExec {
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestRightOuter_HashJoinExec1");
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
-        LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
+        LocalTajoTestingUtility.newTaskAttemptId(), merged, workDir);
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[1]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();
@@ -323,7 +323,7 @@ public class TestRightOuterHashJoinExec {
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestRightOuter_HashJoinExec2");
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
-        LocalTajoTestingUtility.newQueryUnitAttemptId(), merged, workDir);
+        LocalTajoTestingUtility.newTaskAttemptId(), merged, workDir);
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[2]);
     LogicalNode plan = planner.createPlan(defaultContext, expr).getRootBlock().getRoot();

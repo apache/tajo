@@ -25,7 +25,7 @@
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="org.apache.tajo.master.TajoMaster" %>
 <%@ page import="org.apache.tajo.util.history.HistoryReader" %>
-<%@ page import="org.apache.tajo.util.history.QueryUnitHistory" %>
+<%@ page import="org.apache.tajo.util.history.TaskHistory" %>
 <%@ page import="java.util.List" %>
 
 <%
@@ -40,14 +40,14 @@
       status = "ALL";
   }
 
-  String queryUnitAttemptId = request.getParameter("queryUnitAttemptId");
+  String taskAttemptId = request.getParameter("taskAttemptId");
 
-  List<QueryUnitHistory> allQueryUnits = reader.getQueryUnitHistory(queryId, ebId);
+  List<TaskHistory> allTasks = reader.getTaskHistory(queryId, ebId);
 
-  QueryUnitHistory queryUnit = null;
-  for(QueryUnitHistory eachQueryUnit: allQueryUnits) {
-    if (eachQueryUnit.getId().equals(queryUnitAttemptId)) {
-      queryUnit = eachQueryUnit;
+  TaskHistory task = null;
+  for(TaskHistory eachTask: allTasks) {
+    if (eachTask.getId().equals(taskAttemptId)) {
+      task = eachTask;
       break;
     }
   }
@@ -64,9 +64,9 @@
 </head>
 <body>
 <%
-  if (queryUnit == null) {
+  if (task == null) {
 %>
-    <div>No QueryUnit history.</div>
+    <div>No Task history.</div>
     <div><a href="<%=backUrl%>">Back</a></div>
 <%
     return;
@@ -75,7 +75,7 @@
   String fragmentInfo = "";
   String delim = "";
 
-  for (String eachFragment : queryUnit.getFragments()) {
+  for (String eachFragment : task.getFragments()) {
       fragmentInfo += delim + eachFragment;
       delim = "<br/>";
   }
@@ -83,7 +83,7 @@
   String fetchInfo = "";
   delim = "";
   String previousKey = null;
-  for (String[] e : queryUnit.getFetchs()) {
+  for (String[] e : task.getFetchs()) {
     if (previousKey == null || !previousKey.equals(e[0])) {
       fetchInfo += delim + "<b>" + e[0] + "</b>";
     }
@@ -95,17 +95,17 @@
 
   String dataLocationInfos = "";
   delim = "";
-  for (String eachLocation: queryUnit.getDataLocations()) {
+  for (String eachLocation: task.getDataLocations()) {
     dataLocationInfos += delim + eachLocation.toString();
     delim = "<br/>";
   }
 
-  int numShuffles = queryUnit.getNumShuffles();
+  int numShuffles = task.getNumShuffles();
   String shuffleKey = "-";
   String shuffleFileName = "-";
   if(numShuffles > 0) {
-    shuffleKey = queryUnit.getShuffleKey();
-    shuffleFileName = queryUnit.getShuffleFileName();
+    shuffleKey = task.getShuffleKey();
+    shuffleFileName = task.getShuffleFileName();
   }
 %>
 
@@ -117,13 +117,13 @@
   <h3><a href='<%=backUrl%>'><%=ebId%></a></h3>
   <hr/>
   <table border="1" width="100%" class="border_table">
-    <tr><td width="200" align="right">ID</td><td><%=queryUnit.getId()%></td></tr>
-    <tr><td align="right">Progress</td><td><%=JSPUtil.percentFormat(queryUnit.getProgress())%>%</td></tr>
-    <tr><td align="right">State</td><td><%=queryUnit.getState()%></td></tr>
-    <tr><td align="right">Launch Time</td><td><%=queryUnit.getLaunchTime() == 0 ? "-" : df.format(queryUnit.getLaunchTime())%></td></tr>
-    <tr><td align="right">Finish Time</td><td><%=queryUnit.getFinishTime() == 0 ? "-" : df.format(queryUnit.getFinishTime())%></td></tr>
-    <tr><td align="right">Running Time</td><td><%=queryUnit.getLaunchTime() == 0 ? "-" : queryUnit.getRunningTime() + " ms"%></td></tr>
-    <tr><td align="right">Host</td><td><%=queryUnit.getHostAndPort() == null ? "-" : queryUnit.getHostAndPort()%></td></tr>
+    <tr><td width="200" align="right">ID</td><td><%=task.getId()%></td></tr>
+    <tr><td align="right">Progress</td><td><%=JSPUtil.percentFormat(task.getProgress())%>%</td></tr>
+    <tr><td align="right">State</td><td><%=task.getState()%></td></tr>
+    <tr><td align="right">Launch Time</td><td><%=task.getLaunchTime() == 0 ? "-" : df.format(task.getLaunchTime())%></td></tr>
+    <tr><td align="right">Finish Time</td><td><%=task.getFinishTime() == 0 ? "-" : df.format(task.getFinishTime())%></td></tr>
+    <tr><td align="right">Running Time</td><td><%=task.getLaunchTime() == 0 ? "-" : task.getRunningTime() + " ms"%></td></tr>
+    <tr><td align="right">Host</td><td><%=task.getHostAndPort() == null ? "-" : task.getHostAndPort()%></td></tr>
     <tr><td align="right">Shuffles</td><td># Shuffle Outputs: <%=numShuffles%>, Shuffle Key: <%=shuffleKey%>, Shuffle file: <%=shuffleFileName%></td></tr>
     <tr><td align="right">Data Locations</td><td><%=dataLocationInfos%></td></tr>
     <tr><td align="right">Fragment</td><td><%=fragmentInfo%></td></tr>

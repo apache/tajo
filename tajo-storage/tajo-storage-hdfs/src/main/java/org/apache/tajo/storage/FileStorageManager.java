@@ -28,7 +28,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -49,7 +49,7 @@ public class FileStorageManager extends StorageManager {
   private final Log LOG = LogFactory.getLog(FileStorageManager.class);
 
   static final String OUTPUT_FILE_PREFIX="part-";
-  static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_SUBQUERY =
+  static final ThreadLocal<NumberFormat> OUTPUT_FILE_FORMAT_STAGE =
       new ThreadLocal<NumberFormat>() {
         @Override
         public NumberFormat initialValue() {
@@ -268,17 +268,17 @@ public class FileStorageManager extends StorageManager {
   /////////////////////////////////////////////////////////////////////////////
   // FileInputFormat Area
   /////////////////////////////////////////////////////////////////////////////
-  public Path getAppenderFilePath(QueryUnitAttemptId taskAttemptId, Path workDir) {
+  public Path getAppenderFilePath(TaskAttemptId taskAttemptId, Path workDir) {
     if (taskAttemptId == null) {
       // For testcase
       return workDir;
     }
     // The final result of a task will be written in a file named part-ss-nnnnnnn,
-    // where ss is the subquery id associated with this task, and nnnnnn is the task id.
+    // where ss is the stage id associated with this task, and nnnnnn is the task id.
     Path outFilePath = StorageUtil.concatPath(workDir, TajoConstants.RESULT_DIR_NAME,
         OUTPUT_FILE_PREFIX +
-            OUTPUT_FILE_FORMAT_SUBQUERY.get().format(taskAttemptId.getQueryUnitId().getExecutionBlockId().getId()) + "-" +
-            OUTPUT_FILE_FORMAT_TASK.get().format(taskAttemptId.getQueryUnitId().getId()) + "-" +
+            OUTPUT_FILE_FORMAT_STAGE.get().format(taskAttemptId.getTaskId().getExecutionBlockId().getId()) + "-" +
+            OUTPUT_FILE_FORMAT_TASK.get().format(taskAttemptId.getTaskId().getId()) + "-" +
             OUTPUT_FILE_FORMAT_SEQ.get().format(0));
     LOG.info("Output File Path: " + outFilePath);
 

@@ -24,8 +24,8 @@ public enum QueryEventType {
   START,
   KILL,
 
-  // Producer: SubQuery
-  SUBQUERY_COMPLETED,
+  // Producer: Stage
+  STAGE_COMPLETED,
 
   // Producer: Query
   QUERY_COMPLETED,

@@ -19,13 +19,13 @@
 package org.apache.tajo.master.event;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 
 public class TaskAttemptScheduleEvent extends TaskAttemptEvent {
   private Configuration conf;
 
   public TaskAttemptScheduleEvent(final Configuration conf,
-                                  final QueryUnitAttemptId id,
+                                  final TaskAttemptId id,
                                   final TaskAttemptEventType taskAttemptEventType) {
     super(id, taskAttemptEventType);
     this.conf = conf;

@@ -18,18 +18,18 @@
 
 package org.apache.tajo.master.event;
 
+import org.apache.hadoop.yarn.event.AbstractEvent;
 import org.apache.tajo.ExecutionBlockId;
 
-public class QuerySubQueryEvent extends QueryEvent {
-  private ExecutionBlockId executionBlockId;
+public class StageEvent extends AbstractEvent<StageEventType> {
+  private final ExecutionBlockId id;
 
-  public QuerySubQueryEvent(final ExecutionBlockId id,
-                            final QueryEventType queryEvent) {
-    super(id.getQueryId(), queryEvent);
-    this.executionBlockId = id;
+  public StageEvent(ExecutionBlockId id, StageEventType stageEventType) {
+    super(stageEventType);
+    this.id = id;
   }
 
-  public ExecutionBlockId getExecutionBlockId() {
-    return this.executionBlockId;
+  public ExecutionBlockId getStageId() {
+    return id;
   }
 }
