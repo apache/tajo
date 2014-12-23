@@ -51,7 +51,7 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
 
 /**
- * Contains the information about executing subquery.
+ * Contains the information about executing task attempt.
  */
 public class TaskAttemptContext {
   private static final Log LOG = LogFactory.getLog(TaskAttemptContext.class);

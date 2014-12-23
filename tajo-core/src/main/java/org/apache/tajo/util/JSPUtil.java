@@ -28,9 +28,9 @@ import org.apache.tajo.master.ha.HAService;
 import org.apache.tajo.master.querymaster.QueryInProgress;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.querymaster.Task;
-import org.apache.tajo.master.querymaster.SubQuery;
+import org.apache.tajo.master.querymaster.Stage;
 import org.apache.tajo.util.history.TaskHistory;
-import org.apache.tajo.util.history.SubQueryHistory;
+import org.apache.tajo.util.history.StageHistory;
 import org.apache.tajo.worker.TaskRunnerHistory;
 import org.apache.tajo.worker.TaskRunner;
 
@@ -144,50 +144,50 @@ public class JSPUtil {
     return queryProgressList;
   }
 
-  public static List<SubQuery> sortSubQuery(Collection<SubQuery> subQueries) {
-    List<SubQuery> subQueryList = new ArrayList<SubQuery>(subQueries);
-    Collections.sort(subQueryList, new Comparator<SubQuery>() {
+  public static List<Stage> sortStages(Collection<Stage> stages) {
+    List<Stage> stageList = new ArrayList<Stage>(stages);
+    Collections.sort(stageList, new Comparator<Stage>() {
       @Override
-      public int compare(SubQuery subQuery1, SubQuery subQuery2) {
-        long q1StartTime = subQuery1.getStartTime();
-        long q2StartTime = subQuery2.getStartTime();
+      public int compare(Stage stage1, Stage stage2) {
+        long q1StartTime = stage1.getStartTime();
+        long q2StartTime = stage2.getStartTime();
 
         q1StartTime = (q1StartTime == 0 ? Long.MAX_VALUE : q1StartTime);
         q2StartTime = (q2StartTime == 0 ? Long.MAX_VALUE : q2StartTime);
 
         int result = compareLong(q1StartTime, q2StartTime);
         if (result == 0) {
-          return subQuery1.getId().toString().compareTo(subQuery2.getId().toString());
+          return stage1.getId().toString().compareTo(stage2.getId().toString());
         } else {
           return result;
         }
       }
     });
 
-    return subQueryList;
+    return stageList;
   }
 
-  public static List<SubQueryHistory> sortSubQueryHistory(Collection<SubQueryHistory> subQueries) {
-    List<SubQueryHistory> subQueryList = new ArrayList<SubQueryHistory>(subQueries);
-    Collections.sort(subQueryList, new Comparator<SubQueryHistory>() {
+  public static List<StageHistory> sortStageHistories(Collection<StageHistory> stages) {
+    List<StageHistory> stageList = new ArrayList<StageHistory>(stages);
+    Collections.sort(stageList, new Comparator<StageHistory>() {
       @Override
-      public int compare(SubQueryHistory subQuery1, SubQueryHistory subQuery2) {
-        long q1StartTime = subQuery1.getStartTime();
-        long q2StartTime = subQuery2.getStartTime();
+      public int compare(StageHistory stage1, StageHistory stage2) {
+        long q1StartTime = stage1.getStartTime();
+        long q2StartTime = stage2.getStartTime();
 
         q1StartTime = (q1StartTime == 0 ? Long.MAX_VALUE : q1StartTime);
         q2StartTime = (q2StartTime == 0 ? Long.MAX_VALUE : q2StartTime);
 
         int result = compareLong(q1StartTime, q2StartTime);
         if (result == 0) {
-          return subQuery1.getExecutionBlockId().compareTo(subQuery2.getExecutionBlockId());
+          return stage1.getExecutionBlockId().compareTo(stage2.getExecutionBlockId());
         } else {
           return result;
         }
       }
     });
 
-    return subQueryList;
+    return stageList;
   }
 
   public static String getMasterActiveLabel(MasterContext context) {

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,23 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.event;
+package org.apache.tajo.master.exec.prehook;
 
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.master.container.TajoContainer;
+import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.plan.LogicalPlan;
 
-import java.util.List;
-
-public class SubQueryContainerAllocationEvent extends SubQueryEvent {
-  private List<TajoContainer> allocatedContainer;
-
-  public SubQueryContainerAllocationEvent(final ExecutionBlockId id,
-                                          List<TajoContainer> allocatedContainer) {
-    super(id, SubQueryEventType.SQ_CONTAINER_ALLOCATED);
-    this.allocatedContainer = allocatedContainer;
-  }
-
-  public List<TajoContainer> getAllocatedContainer() {
-    return this.allocatedContainer;
-  }
+public interface DistributedQueryHook {
+  boolean isEligible(QueryContext queryContext, LogicalPlan plan);
+  void hook(QueryContext queryContext, LogicalPlan plan) throws Exception;
 }

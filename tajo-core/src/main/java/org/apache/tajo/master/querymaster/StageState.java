@@ -18,7 +18,7 @@
 
 package org.apache.tajo.master.querymaster;
 
-public enum SubQueryState {
+public enum StageState {
   NEW,
   INITED,
   RUNNING,

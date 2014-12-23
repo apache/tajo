@@ -28,7 +28,7 @@
 <%@ page import="org.apache.tajo.master.querymaster.Query" %>
 <%@ page import="org.apache.tajo.master.querymaster.QueryMasterTask" %>
 <%@ page import="org.apache.tajo.master.querymaster.Task" %>
-<%@ page import="org.apache.tajo.master.querymaster.SubQuery" %>
+<%@ page import="org.apache.tajo.master.querymaster.Stage" %>
 <%@ page import="org.apache.tajo.storage.DataLocation" %>
 <%@ page import="org.apache.tajo.storage.fragment.FileFragment" %>
 <%@ page import="org.apache.tajo.storage.fragment.FragmentConvertor" %>
@@ -65,14 +65,14 @@
     }
 
     Query query = queryMasterTask.getQuery();
-    SubQuery subQuery = query.getSubQuery(ebid);
+    Stage stage = query.getStage(ebid);
 
-    if(subQuery == null) {
+    if(stage == null) {
         out.write("<script type='text/javascript'>alert('no sub-query'); history.back(0); </script>");
         return;
     }
 
-    if(subQuery == null) {
+    if(stage == null) {
 %>
 <script type="text/javascript">
     alert("No Execution Block for" + ebid);
@@ -84,7 +84,7 @@
     SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     TaskId taskId = new TaskId(ebid, taskSeq);
-    Task task = subQuery.getTask(taskId);
+    Task task = stage.getTask(taskId);
     if(task == null) {
 %>
 <script type="text/javascript">
