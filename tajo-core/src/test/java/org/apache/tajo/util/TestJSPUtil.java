@@ -20,10 +20,10 @@ package org.apache.tajo.util;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryUnitId;
+import org.apache.tajo.TaskId;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.master.event.QueryUnitAttemptScheduleEvent;
-import org.apache.tajo.master.querymaster.QueryUnit;
+import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent;
+import org.apache.tajo.master.querymaster.Task;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -34,52 +34,52 @@ import static org.junit.Assert.assertEquals;
 
 public class TestJSPUtil {
   @Test
-  public void testSortQueryUnit() throws Exception {
-    List<QueryUnit> queryUnits = new ArrayList<QueryUnit>();
+  public void testSortTask() throws Exception {
+    List<Task> tasks = new ArrayList<Task>();
 
     Configuration conf = new TajoConf();
 
-    QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext scheduleContext =
-        new QueryUnitAttemptScheduleEvent.QueryUnitAttemptScheduleContext();
+    TaskAttemptToSchedulerEvent.TaskAttemptScheduleContext scheduleContext =
+        new TaskAttemptToSchedulerEvent.TaskAttemptScheduleContext();
 
     ExecutionBlockId ebId = TajoIdUtils.createExecutionBlockId("eb_000001_00001_00001");
 
     for (int i = 0; i < 10; i++) {
-      QueryUnitId id = new QueryUnitId(ebId, i);
-      QueryUnit queryUnit = new QueryUnit(conf, scheduleContext, id, true, null);
-      queryUnits.add(queryUnit);
+      TaskId id = new TaskId(ebId, i);
+      Task task = new Task(conf, scheduleContext, id, true, null);
+      tasks.add(task);
 
       int launchTime = i + 1;
       int runningTime = i + 1;
       if(i < 9) {
-        queryUnit.setLaunchTime(launchTime);
-        queryUnit.setFinishTime(launchTime + runningTime);
+        task.setLaunchTime(launchTime);
+        task.setFinishTime(launchTime + runningTime);
       }
     }
 
-    Collections.shuffle(queryUnits);
+    Collections.shuffle(tasks);
 
-    QueryUnit[] queryUnitArray = queryUnits.toArray(new QueryUnit[]{});
-    JSPUtil.sortQueryUnitArray(queryUnitArray, "id", "asc");
+    Task[] taskArray = tasks.toArray(new Task[]{});
+    JSPUtil.sortTaskArray(taskArray, "id", "asc");
     for (int i = 0; i < 10; i++) {
-      assertEquals(i, queryUnitArray[i].getId().getId());
+      assertEquals(i, taskArray[i].getId().getId());
     }
 
-    queryUnitArray = queryUnits.toArray(new QueryUnit[]{});
-    JSPUtil.sortQueryUnitArray(queryUnitArray, "id", "desc");
+    taskArray = tasks.toArray(new Task[]{});
+    JSPUtil.sortTaskArray(taskArray, "id", "desc");
     for (int i = 0; i < 10; i++) {
-      assertEquals(9 - i, queryUnitArray[i].getId().getId());
+      assertEquals(9 - i, taskArray[i].getId().getId());
     }
 
-    queryUnitArray = queryUnits.toArray(new QueryUnit[]{});
-    JSPUtil.sortQueryUnitArray(queryUnitArray, "runTime", "asc");
-    assertEquals(0, queryUnitArray[0].getId().getId());
-    assertEquals(9, queryUnitArray[9].getId().getId());
+    taskArray = tasks.toArray(new Task[]{});
+    JSPUtil.sortTaskArray(taskArray, "runTime", "asc");
+    assertEquals(0, taskArray[0].getId().getId());
+    assertEquals(9, taskArray[9].getId().getId());
 
-    queryUnitArray = queryUnits.toArray(new QueryUnit[]{});
-    JSPUtil.sortQueryUnitArray(queryUnitArray, "runTime", "desc");
-    assertEquals(8, queryUnitArray[0].getId().getId());
-    assertEquals(9, queryUnitArray[9].getId().getId());
+    taskArray = tasks.toArray(new Task[]{});
+    JSPUtil.sortTaskArray(taskArray, "runTime", "desc");
+    assertEquals(8, taskArray[0].getId().getId());
+    assertEquals(9, taskArray[9].getId().getId());
   }
 
   @Test

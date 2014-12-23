@@ -19,16 +19,24 @@
 package org.apache.tajo.master.event;
 
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.master.querymaster.StageState;
 
-public class SubQueryDiagnosticsUpdateEvent extends SubQueryEvent {
-  private final String msg;
+public class StageCompletedEvent extends QueryEvent {
+  private final ExecutionBlockId executionBlockId;
+  private final StageState finalState;
 
-  public SubQueryDiagnosticsUpdateEvent(final ExecutionBlockId id, String diagnostic) {
-    super(id, SubQueryEventType.SQ_DIAGNOSTIC_UPDATE);
-    this.msg = diagnostic;
+  public StageCompletedEvent(final ExecutionBlockId executionBlockId,
+                             StageState finalState) {
+    super(executionBlockId.getQueryId(), QueryEventType.STAGE_COMPLETED);
+    this.executionBlockId = executionBlockId;
+    this.finalState = finalState;
   }
 
-  public String getDiagnosticUpdate() {
-    return msg;
+  public ExecutionBlockId getExecutionBlockId() {
+    return executionBlockId;
+  }
+
+  public StageState getState() {
+    return finalState;
   }
 }

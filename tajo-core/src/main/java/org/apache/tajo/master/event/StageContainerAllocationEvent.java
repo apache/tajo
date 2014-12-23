@@ -18,26 +18,21 @@
 
 package org.apache.tajo.master.event;
 
-import org.apache.tajo.QueryUnitId;
-import org.apache.tajo.master.TaskState;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.master.container.TajoContainer;
 
-/**
- * Event Class: From Task to SubQuery
- */
-public class SubQueryTaskEvent extends SubQueryEvent {
-  private QueryUnitId taskId;
-  private TaskState state;
-  public SubQueryTaskEvent(QueryUnitId taskId, TaskState state) {
-    super(taskId.getExecutionBlockId(), SubQueryEventType.SQ_TASK_COMPLETED);
-    this.taskId = taskId;
-    this.state = state;
+import java.util.List;
+
+public class StageContainerAllocationEvent extends StageEvent {
+  private List<TajoContainer> allocatedContainer;
+
+  public StageContainerAllocationEvent(final ExecutionBlockId id,
+                                       List<TajoContainer> allocatedContainer) {
+    super(id, StageEventType.SQ_CONTAINER_ALLOCATED);
+    this.allocatedContainer = allocatedContainer;
   }
 
-  public QueryUnitId getTaskId() {
-    return this.taskId;
-  }
-
-  public TaskState getState() {
-    return state;
+  public List<TajoContainer> getAllocatedContainer() {
+    return this.allocatedContainer;
   }
 }

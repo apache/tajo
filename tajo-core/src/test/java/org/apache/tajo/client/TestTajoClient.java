@@ -38,7 +38,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.QueryHistoryProto;
 import org.apache.tajo.ipc.ClientProtos.QueryInfoProto;
-import org.apache.tajo.ipc.ClientProtos.SubQueryHistoryProto;
+import org.apache.tajo.ipc.ClientProtos.StageHistoryProto;
 import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.StorageUtil;
@@ -785,19 +785,19 @@ public class TestTajoClient {
     QueryHistoryProto queryHistory = client.getQueryHistory(queryId);
     assertNotNull(queryHistory);
     assertEquals(queryId.toString(), queryHistory.getQueryId());
-    assertEquals(2, queryHistory.getSubQueryHistoriesCount());
+    assertEquals(2, queryHistory.getStageHistoriesCount());
 
-    List<SubQueryHistoryProto> queryUnitHistories =
-        new ArrayList<SubQueryHistoryProto>(queryHistory.getSubQueryHistoriesList());
-    Collections.sort(queryUnitHistories, new Comparator<SubQueryHistoryProto>() {
+    List<ClientProtos.StageHistoryProto> taskHistories =
+        new ArrayList<StageHistoryProto>(queryHistory.getStageHistoriesList());
+    Collections.sort(taskHistories, new Comparator<StageHistoryProto>() {
       @Override
-      public int compare(SubQueryHistoryProto o1, SubQueryHistoryProto o2) {
+      public int compare(ClientProtos.StageHistoryProto o1, StageHistoryProto o2) {
         return o1.getExecutionBlockId().compareTo(o2.getExecutionBlockId());
       }
     });
-    assertEquals(5, queryUnitHistories.get(0).getTotalReadRows());
-    assertEquals(1, queryUnitHistories.get(0).getTotalWriteRows());
-    assertEquals(1, queryUnitHistories.get(1).getTotalReadRows());
-    assertEquals(1, queryUnitHistories.get(1).getTotalWriteRows());
+    assertEquals(5, taskHistories.get(0).getTotalReadRows());
+    assertEquals(1, taskHistories.get(0).getTotalWriteRows());
+    assertEquals(1, taskHistories.get(1).getTotalReadRows());
+    assertEquals(1, taskHistories.get(1).getTotalWriteRows());
   }
 }

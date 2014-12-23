@@ -37,17 +37,17 @@ import org.apache.tajo.master.container.TajoContainer;
 import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.master.event.ContainerAllocationEvent;
 import org.apache.tajo.master.event.ContainerAllocatorEventType;
-import org.apache.tajo.master.event.SubQueryContainerAllocationEvent;
+import org.apache.tajo.master.event.StageContainerAllocationEvent;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
-import org.apache.tajo.master.querymaster.SubQuery;
-import org.apache.tajo.master.querymaster.SubQueryState;
+import org.apache.tajo.master.querymaster.Stage;
+import org.apache.tajo.master.querymaster.StageState;
 import org.apache.tajo.master.rm.*;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.util.ApplicationIdUtils;
-import org.apache.tajo.util.HAServiceUtil;
+import org.apache.tajo.ha.HAServiceUtil;
 
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -352,8 +352,8 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
           containers.add(container);
         }
 
-        SubQueryState state = queryTaskContext.getSubQuery(executionBlockId).getSynchronizedState();
-        if (!SubQuery.isRunningState(state)) {
+        StageState state = queryTaskContext.getStage(executionBlockId).getSynchronizedState();
+        if (!Stage.isRunningState(state)) {
           try {
             List<TajoContainerId> containerIds = new ArrayList<TajoContainerId>();
             for(TajoContainer eachContainer: containers) {
@@ -368,9 +368,9 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
 
         if (allocatedResources.size() > 0) {
           if(LOG.isDebugEnabled()) {
-            LOG.debug("SubQueryContainerAllocationEvent fire:" + executionBlockId);
+            LOG.debug("StageContainerAllocationEvent fire:" + executionBlockId);
           }
-          queryTaskContext.getEventHandler().handle(new SubQueryContainerAllocationEvent(executionBlockId, containers));
+          queryTaskContext.getEventHandler().handle(new StageContainerAllocationEvent(executionBlockId, containers));
         }
         numAllocatedContainers += allocatedResources.size();
 

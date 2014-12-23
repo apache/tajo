@@ -36,6 +36,7 @@ import org.apache.tajo.storage.ByteBufInputChannel;
 import org.apache.tajo.storage.FileScanner;
 import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.unit.StorageUnit;
 
 import java.io.Closeable;
 import java.io.DataInputStream;
@@ -45,7 +46,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class DelimitedLineReader implements Closeable {
   private static final Log LOG = LogFactory.getLog(DelimitedLineReader.class);
-  private final static int DEFAULT_PAGE_SIZE = 128 * 1024;
 
   private FileSystem fs;
   private FSDataInputStream fis;
@@ -60,12 +60,18 @@ public class DelimitedLineReader implements Closeable {
   private AtomicInteger lineReadBytes = new AtomicInteger();
   private FileFragment fragment;
   private Configuration conf;
+  private int bufferSize;
 
   public DelimitedLineReader(Configuration conf, final FileFragment fragment) throws IOException {
+    this(conf, fragment, 128 * StorageUnit.KB);
+  }
+
+  public DelimitedLineReader(Configuration conf, final FileFragment fragment, int bufferSize) throws IOException {
     this.fragment = fragment;
     this.conf = conf;
     this.factory = new CompressionCodecFactory(conf);
     this.codec = factory.getCodec(fragment.getPath());
+    this.bufferSize = bufferSize;
     if (this.codec instanceof SplittableCompressionCodec) {
       throw new NotImplementedException(); // bzip2 does not support multi-thread model
     }
@@ -83,14 +89,16 @@ public class DelimitedLineReader implements Closeable {
       decompressor = CodecPool.getDecompressor(codec);
       is = new DataInputStream(codec.createInputStream(fis, decompressor));
       ByteBufInputChannel channel = new ByteBufInputChannel(is);
-      lineReader = new ByteBufLineReader(channel, BufferPool.directBuffer(DEFAULT_PAGE_SIZE));
+
+      ByteBuf buf = BufferPool.directBuffer(bufferSize);
+      lineReader = new ByteBufLineReader(channel, buf);
     } else {
       fis.seek(startOffset);
       is = fis;
 
       ByteBufInputChannel channel = new ByteBufInputChannel(is);
       lineReader = new ByteBufLineReader(channel,
-          BufferPool.directBuffer((int) Math.min(DEFAULT_PAGE_SIZE, end)));
+          BufferPool.directBuffer((int) Math.min(bufferSize, end)));
     }
     eof = false;
   }

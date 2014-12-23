@@ -224,9 +224,9 @@
                   <arguments>
                     <argument>Tajo</argument>
                     <argument>org.apache.tajo.master.querymaster.Query,
-                      org.apache.tajo.master.querymaster.SubQuery,
-                      org.apache.tajo.master.querymaster.QueryUnit,
-                      org.apache.tajo.master.querymaster.QueryUnitAttempt
+                      org.apache.tajo.master.querymaster.Stage,
+                      org.apache.tajo.master.querymaster.Task,
+                      org.apache.tajo.master.querymaster.TaskAttempt
                     </argument>
                     <argument>Tajo.gv</argument>
                   </arguments>

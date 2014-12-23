@@ -160,4 +160,21 @@ public class TestDelimitedTextFile {
     }
     fail();
   }
+
+  @Test
+  public void testIgnoreTruncatedValueErrorTolerance() throws IOException {
+    TajoConf conf = new TajoConf();
+    TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.JSON);
+    meta.putOption(StorageUtil.TEXT_ERROR_TOLERANCE_MAXNUM, "1");
+    FileFragment fragment = getFileFragment("testErrorTolerance3.json");
+    Scanner scanner = StorageManager.getFileStorageManager(conf).getScanner(meta, schema, fragment);
+    scanner.init();
+
+    try {
+      Tuple tuple = scanner.next();
+      assertNull(tuple);
+    } finally {
+      scanner.close();
+    }
+  }
 }

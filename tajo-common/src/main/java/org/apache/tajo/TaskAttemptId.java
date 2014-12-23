@@ -20,14 +20,14 @@ package org.apache.tajo;
 
 import com.google.common.base.Objects;
 
-public class QueryUnitAttemptId implements Comparable<QueryUnitAttemptId> {
+public class TaskAttemptId implements Comparable<TaskAttemptId> {
   public static final String QUA_ID_PREFIX = "ta";
 
-  private QueryUnitId queryUnitId;
+  private TaskId taskId;
   private int id;
 
-  public QueryUnitId getQueryUnitId() {
-    return queryUnitId;
+  public TaskId getTaskId() {
+    return taskId;
   }
 
   public int getId() {
@@ -38,27 +38,27 @@ public class QueryUnitAttemptId implements Comparable<QueryUnitAttemptId> {
     this.id = id;
   }
 
-  public QueryUnitAttemptId(QueryUnitId queryUnitId, int id) {
-    this.queryUnitId = queryUnitId;
+  public TaskAttemptId(TaskId taskId, int id) {
+    this.taskId = taskId;
     this.id = id;
   }
 
-  public QueryUnitAttemptId(TajoIdProtos.QueryUnitAttemptIdProto proto) {
-    this(new QueryUnitId(proto.getQueryUnitId()), proto.getId());
+  public TaskAttemptId(TajoIdProtos.TaskAttemptIdProto proto) {
+    this(new TaskId(proto.getTaskId()), proto.getId());
   }
 
-  public TajoIdProtos.QueryUnitAttemptIdProto getProto() {
-    return TajoIdProtos.QueryUnitAttemptIdProto.newBuilder()
-        .setQueryUnitId(queryUnitId.getProto())
+  public TajoIdProtos.TaskAttemptIdProto getProto() {
+    return TajoIdProtos.TaskAttemptIdProto.newBuilder()
+        .setTaskId(taskId.getProto())
         .setId(id)
         .build();
   }
 
   @Override
-  public int compareTo(QueryUnitAttemptId queryUnitAttemptId) {
-    int result = queryUnitId.compareTo(queryUnitAttemptId.queryUnitId);
+  public int compareTo(TaskAttemptId taskAttemptId) {
+    int result = taskId.compareTo(taskAttemptId.taskId);
     if (result == 0) {
-      return id - queryUnitAttemptId.id;
+      return id - taskAttemptId.id;
     } else {
       return result;
     }
@@ -72,15 +72,15 @@ public class QueryUnitAttemptId implements Comparable<QueryUnitAttemptId> {
     if (this == obj) {
       return true;
     }
-    if(!(obj instanceof QueryUnitAttemptId)) {
+    if(!(obj instanceof TaskAttemptId)) {
       return false;
     }
-    return compareTo((QueryUnitAttemptId)obj) == 0;
+    return compareTo((TaskAttemptId)obj) == 0;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(queryUnitId, id);
+    return Objects.hashCode(taskId, id);
   }
 
   @Override
@@ -89,6 +89,6 @@ public class QueryUnitAttemptId implements Comparable<QueryUnitAttemptId> {
   }
 
   public String toStringNoPrefix() {
-    return queryUnitId.toStringNoPrefix() + QueryId.SEPARATOR + QueryIdFactory.ATTEMPT_ID_FORMAT.format(id);
+    return taskId.toStringNoPrefix() + QueryId.SEPARATOR + QueryIdFactory.ATTEMPT_ID_FORMAT.format(id);
   }
 }

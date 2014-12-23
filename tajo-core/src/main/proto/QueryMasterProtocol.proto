@@ -33,7 +33,7 @@ package hadoop.yarn;
 
 service QueryMasterProtocolService {
   //from Worker
-  rpc getTask(GetTaskRequestProto) returns (QueryUnitRequestProto);
+  rpc getTask(GetTaskRequestProto) returns (TaskRequestProto);
   rpc statusUpdate (TaskStatusProto) returns (BoolProto);
   rpc ping (ExecutionBlockIdProto) returns (BoolProto);
   rpc fatalError(TaskFatalErrorReport) returns (BoolProto);

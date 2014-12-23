@@ -22,7 +22,7 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.json.GsonObject;
 
-public class QueryUnitHistory implements GsonObject {
+public class TaskHistory implements GsonObject {
   @Expose private String id;
   @Expose private String hostAndPort;
   @Expose private int httpPort;
@@ -154,7 +154,7 @@ public class QueryUnitHistory implements GsonObject {
 
   @Override
   public String toJson() {
-    return CoreGsonHelper.toJson(this, QueryUnitHistory.class);
+    return CoreGsonHelper.toJson(this, TaskHistory.class);
   }
 
   public long getRunningTime() {

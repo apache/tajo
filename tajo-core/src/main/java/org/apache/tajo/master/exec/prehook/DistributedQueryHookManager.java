@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,27 +16,30 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.event;
+package org.apache.tajo.master.exec.prehook;
 
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.master.querymaster.SubQueryState;
+import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.plan.LogicalPlan;
 
-public class SubQueryCompletedEvent extends QueryEvent {
-  private final ExecutionBlockId executionBlockId;
-  private final SubQueryState finalState;
+import java.util.ArrayList;
+import java.util.List;
 
-  public SubQueryCompletedEvent(final ExecutionBlockId executionBlockId,
-                                SubQueryState finalState) {
-    super(executionBlockId.getQueryId(), QueryEventType.SUBQUERY_COMPLETED);
-    this.executionBlockId = executionBlockId;
-    this.finalState = finalState;
+public class DistributedQueryHookManager {
+  private List<DistributedQueryHook> hooks = new ArrayList<DistributedQueryHook>();
+
+  public void addHook(DistributedQueryHook hook) {
+    hooks.add(hook);
   }
 
-  public ExecutionBlockId getExecutionBlockId() {
-    return executionBlockId;
-  }
-
-  public SubQueryState getState() {
-    return finalState;
+  public void doHooks(QueryContext queryContext, LogicalPlan plan) {
+    for (DistributedQueryHook hook : hooks) {
+      if (hook.isEligible(queryContext, plan)) {
+        try {
+          hook.hook(queryContext, plan);
+        } catch (Throwable t) {
+          t.printStackTrace();
+        }
+      }
+    }
   }
 }

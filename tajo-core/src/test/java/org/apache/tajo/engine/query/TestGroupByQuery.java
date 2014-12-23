@@ -26,8 +26,8 @@ import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.master.querymaster.Query;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
-import org.apache.tajo.master.querymaster.QueryUnit;
-import org.apache.tajo.master.querymaster.SubQuery;
+import org.apache.tajo.master.querymaster.Task;
+import org.apache.tajo.master.querymaster.Stage;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
@@ -367,7 +367,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     assertResultSet(res, "testDistinctAggregation_case4.result");
     res.close();
 
-    // two groupby, two distinct, two aggregation with subquery
+    // two groupby, two distinct, two aggregation with stage
     res = executeFile("testDistinctAggregation_case5.sql");
     assertResultSet(res, "testDistinctAggregation_case5.result");
     res.close();
@@ -731,12 +731,12 @@ public class TestGroupByQuery extends QueryTestCaseBase {
       Set<Integer> partitionIds = new HashSet<Integer>();
 
       Query query = qmTasks.get(qmTasks.size() - 1).getQuery();
-      Collection<SubQuery> subQueries = query.getSubQueries();
-      assertNotNull(subQueries);
-      assertTrue(!subQueries.isEmpty());
-      for (SubQuery subQuery: subQueries) {
-        if (subQuery.getId().toStringNoPrefix().endsWith("_000001")) {
-          for (QueryUnit.IntermediateEntry eachInterm: subQuery.getHashShuffleIntermediateEntries()) {
+      Collection<Stage> stages = query.getStages();
+      assertNotNull(stages);
+      assertTrue(!stages.isEmpty());
+      for (Stage stage : stages) {
+        if (stage.getId().toStringNoPrefix().endsWith("_000001")) {
+          for (Task.IntermediateEntry eachInterm: stage.getHashShuffleIntermediateEntries()) {
             partitionIds.add(eachInterm.getPartId());
           }
         }
@@ -748,5 +748,26 @@ public class TestGroupByQuery extends QueryTestCaseBase {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME.varname,
           ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME.defaultVal);
     }
+  }
+
+  @Test
+  public final void testGroupbyWithLimit1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testGroupbyWithLimit2() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testGroupbyWithLimit3() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
   }
 }

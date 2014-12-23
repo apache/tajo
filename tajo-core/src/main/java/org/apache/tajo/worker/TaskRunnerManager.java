@@ -27,7 +27,7 @@ import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.event.Dispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.utils.TupleCache;
 import org.apache.tajo.worker.event.TaskRunnerEvent;
@@ -137,15 +137,15 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
     return taskRunnerMap.get(taskRunnerId);
   }
 
-  public Task getTaskByQueryUnitAttemptId(QueryUnitAttemptId queryUnitAttemptId) {
-    ExecutionBlockContext context = executionBlockContextMap.get(queryUnitAttemptId.getQueryUnitId().getExecutionBlockId());
+  public Task getTaskByTaskAttemptId(TaskAttemptId taskAttemptId) {
+    ExecutionBlockContext context = executionBlockContextMap.get(taskAttemptId.getTaskId().getExecutionBlockId());
     if (context != null) {
-      return context.getTask(queryUnitAttemptId);
+      return context.getTask(taskAttemptId);
     }
     return null;
   }
 
-  public TaskHistory getTaskHistoryByQueryUnitAttemptId(QueryUnitAttemptId quAttemptId) {
+  public TaskHistory getTaskHistoryByTaskAttemptId(TaskAttemptId quAttemptId) {
     synchronized (taskRunnerHistoryMap) {
       for (TaskRunnerHistory history : taskRunnerHistoryMap.values()) {
         TaskHistory taskHistory = history.getTaskHistory(quAttemptId);

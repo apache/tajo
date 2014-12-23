@@ -32,7 +32,6 @@ import org.apache.tajo.common.exception.NotImplementedException;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.datum.protobuf.ProtobufJsonFormat;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.text.TextLineDeserializer;
 import org.apache.tajo.storage.text.TextLineParsingError;
@@ -42,8 +41,8 @@ import java.util.Iterator;
 
 public class JsonLineDeserializer extends TextLineDeserializer {
   private JSONParser parser;
-  private Type [] types;
-  private String [] columnNames;
+  private Type[] types;
+  private String[] columnNames;
 
   public JsonLineDeserializer(Schema schema, TableMeta meta, int[] targetColumnIndexes) {
     super(schema, meta, targetColumnIndexes);
@@ -54,27 +53,34 @@ public class JsonLineDeserializer extends TextLineDeserializer {
     types = SchemaUtil.toTypes(schema);
     columnNames = SchemaUtil.toSimpleNames(schema);
 
-    parser = new JSONParser(JSONParser.MODE_JSON_SIMPLE);
+    parser = new JSONParser(JSONParser.MODE_JSON_SIMPLE | JSONParser.IGNORE_CONTROL_CHAR);
   }
 
   @Override
   public void deserialize(ByteBuf buf, Tuple output) throws IOException, TextLineParsingError {
-    byte [] line = new byte[buf.readableBytes()];
+    byte[] line = new byte[buf.readableBytes()];
     buf.readBytes(line);
 
+    JSONObject object;
     try {
-      JSONObject object = (JSONObject) parser.parse(line);
+      object = (JSONObject) parser.parse(line);
+    } catch (ParseException pe) {
+      throw new TextLineParsingError(new String(line, TextDatum.DEFAULT_CHARSET), pe);
+    } catch (ArrayIndexOutOfBoundsException ae) {
+      // truncated value
+      throw new TextLineParsingError(new String(line, TextDatum.DEFAULT_CHARSET), ae);
+    }
 
-      for (int i = 0; i < targetColumnIndexes.length; i++) {
-        int actualIdx = targetColumnIndexes[i];
-        String fieldName = columnNames[actualIdx];
+    for (int i = 0; i < targetColumnIndexes.length; i++) {
+      int actualIdx = targetColumnIndexes[i];
+      String fieldName = columnNames[actualIdx];
 
-        if (!object.containsKey(fieldName)) {
-          output.put(actualIdx, NullDatum.get());
-          continue;
-        }
+      if (!object.containsKey(fieldName)) {
+        output.put(actualIdx, NullDatum.get());
+        continue;
+      }
 
-        switch (types[actualIdx]) {
+      switch (types[actualIdx]) {
         case BOOLEAN:
           String boolStr = object.getAsString(fieldName);
           if (boolStr != null) {
@@ -210,12 +216,7 @@ public class JsonLineDeserializer extends TextLineDeserializer {
 
         default:
           throw new NotImplementedException(types[actualIdx].name() + " is not supported.");
-        }
       }
-    } catch (ParseException pe) {
-      throw new TextLineParsingError(new String(line, TextDatum.DEFAULT_CHARSET), pe);
-    } catch (Throwable e) {
-      throw new IOException(e);
     }
   }
 
