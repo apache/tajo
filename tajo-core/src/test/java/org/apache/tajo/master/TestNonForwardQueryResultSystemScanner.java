@@ -199,7 +199,7 @@ public class TestNonForwardQueryResultSystemScanner {
     QueryId queryId = QueryIdFactory.newQueryId(masterContext.getResourceManager().getSeedQueryId());
     String sessionId = UUID.randomUUID().toString();
     NonForwardQueryResultScanner queryResultScanner = 
-        getScanner("SELECT SPACE_ID, SPACE_URI FROM SYSTEM.TABLESPACE", 
+        getScanner("SELECT SPACE_ID, SPACE_URI FROM INFORMATION_SCHEMA.TABLESPACE",
             queryId, sessionId);
     
     queryResultScanner.init();
@@ -261,7 +261,7 @@ public class TestNonForwardQueryResultSystemScanner {
   @Test
   public void testGetNextRowsForAggregateFunction() throws Exception {
     NonForwardQueryResultScanner queryResultScanner = 
-        getScanner("SELECT COUNT(*) FROM SYSTEM.TABLES");
+        getScanner("SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES");
     
     queryResultScanner.init();
     
@@ -279,7 +279,7 @@ public class TestNonForwardQueryResultSystemScanner {
   @Test
   public void testGetNextRowsForTable() throws Exception {
     NonForwardQueryResultScanner queryResultScanner =
-        getScanner("SELECT TABLE_NAME, TABLE_TYPE FROM SYSTEM.TABLES");
+        getScanner("SELECT TABLE_NAME, TABLE_TYPE FROM INFORMATION_SCHEMA.TABLES");
     
     queryResultScanner.init();
     
