@@ -48,7 +48,14 @@ public abstract class Min extends AggFunction<Datum> {
 
   @Override
   public Datum getPartialResult(FunctionContext ctx) {
-    return ((MinContext) ctx).min;
+    Datum min = ((MinContext)ctx).min;
+
+    if (min == null) {
+      return NullDatum.get();
+    }
+    else {
+      return min;
+    }
   }
 
   @Override

@@ -48,7 +48,14 @@ public abstract class Max extends AggFunction<Datum> {
 
     @Override
     public Datum getPartialResult(FunctionContext ctx) {
-        return ((MaxContext) ctx).max;
+        Datum max = ((MaxContext)ctx).max;
+
+        if (max == null) {
+            return NullDatum.get();
+        }
+        else {
+            return max;
+        }
     }
 
     @Override
