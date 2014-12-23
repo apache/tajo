@@ -19,20 +19,25 @@
 package org.apache.tajo.master.event;
 
 /**
- * Event types handled by Task.
+ * Event Types handled by Stage
  */
-public enum TaskEventType {
+public enum StageEventType {
 
-  //Producer:Client, Stage
-  T_KILL,
+  // Producer: Query
+  SQ_INIT,
+  SQ_START,
+  SQ_CONTAINER_ALLOCATED,
+  SQ_KILL,
+  SQ_LAUNCH,
 
-  //Producer:Stage
-  T_SCHEDULE,
+  // Producer: Task
+  SQ_TASK_COMPLETED,
+  SQ_FAILED,
 
-  //Producer:TaskAttempt
-  T_ATTEMPT_LAUNCHED,
-  T_ATTEMPT_COMMIT_PENDING,
-  T_ATTEMPT_FAILED,
-  T_ATTEMPT_SUCCEEDED,
-  T_ATTEMPT_KILLED
+  // Producer: Completed
+  SQ_STAGE_COMPLETED,
+
+  // Producer: Any component
+  SQ_DIAGNOSTIC_UPDATE,
+  SQ_INTERNAL_ERROR
 }

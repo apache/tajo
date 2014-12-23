@@ -19,14 +19,14 @@
 package org.apache.tajo.master.event;
 
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.master.querymaster.SubQueryState;
+import org.apache.tajo.master.querymaster.StageState;
 
 public class QueryCompletedEvent extends QueryEvent {
   private final ExecutionBlockId executionBlockId;
-  private final SubQueryState finalState;
+  private final StageState finalState;
 
   public QueryCompletedEvent(final ExecutionBlockId executionBlockId,
-                             SubQueryState finalState) {
+                             StageState finalState) {
     super(executionBlockId.getQueryId(), QueryEventType.QUERY_COMPLETED);
     this.executionBlockId = executionBlockId;
     this.finalState = finalState;
@@ -36,7 +36,7 @@ public class QueryCompletedEvent extends QueryEvent {
     return executionBlockId;
   }
 
-  public SubQueryState getState() {
+  public StageState getState() {
     return finalState;
   }
 }
