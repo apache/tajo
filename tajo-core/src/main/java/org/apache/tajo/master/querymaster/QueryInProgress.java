@@ -284,7 +284,6 @@ public class QueryInProgress extends CompositeService {
     }
 
     if(isFinishState(this.queryInfo.getQueryState())) {
-      LOG.info(">>>>> " + queryId + ", hasResultDesc" + queryInfo.hasResultdesc());
       this.queryInfo.setResultDesc(queryInfo.getResultDesc());
 
       getEventHandler().handle(
