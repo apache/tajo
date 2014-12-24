@@ -24,6 +24,8 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1259: Change tsql history behavior. (Jaewoong Jung via hyunsik)
+
     TAJO-1261: Separate query and ddl execution codes from GlobalEngine. 
     (hyunsik)
 

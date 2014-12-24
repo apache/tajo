@@ -29,11 +29,9 @@ public class TajoFileHistory extends FileHistory {
     super(file);
   }
 
+  @Override
   public void add(CharSequence item) {
-    // skip add
-  }
-
-  public void addStatement(String item) {
-    internalAdd(item);
+    // TODO: Filter out the quit command. Users wouldn't want it in the history.
+    super.add(item);
   }
 }
