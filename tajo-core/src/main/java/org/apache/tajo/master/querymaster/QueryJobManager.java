@@ -302,7 +302,6 @@ public class QueryJobManager extends CompositeService {
     }
 
     if (queryHeartbeat.hasResultDesc()) {
-      LOG.info(">>>>> " + new QueryId(queryHeartbeat.getQueryId()) + ", hasResultDesc" + queryHeartbeat.hasResultDesc());
       queryInfo.setResultDesc(new TableDesc(queryHeartbeat.getResultDesc()));
     }
 

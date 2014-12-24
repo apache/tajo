@@ -20,8 +20,6 @@ package org.apache.tajo.master.querymaster;
 
 
 import com.google.gson.annotations.Expose;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.TableDesc;
@@ -161,12 +159,8 @@ public class QueryInfo implements GsonObject, History {
     this.progress = progress;
   }
 
-  Log LOG = LogFactory.getLog(QueryInfo.class);
-
   public synchronized void setResultDesc(TableDesc result) {
-    LOG.info(">>>>> " + queryId);
     this.resultDesc = result;
-    LOG.info(">>>>> hasResultDesc" + hasResultdesc());
   }
 
   public synchronized boolean hasResultdesc() {
@@ -219,6 +213,10 @@ public class QueryInfo implements GsonObject, History {
         .setQueryMasterPort(queryMasterPort)
         .setQueryMasterClientPort(queryMasterClientPort)
         .setQueryMasterInfoPort(queryMasterInfoPort);
+
+    if (resultDesc != null) {
+      builder.setResultDesc(resultDesc.getProto());
+    }
 
     if (sql != null) {
       builder.setSql(sql);

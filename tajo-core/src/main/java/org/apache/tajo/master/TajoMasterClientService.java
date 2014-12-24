@@ -330,7 +330,6 @@ public class TajoMasterClientService extends AbstractService {
     @Override
     public GetQueryResultResponse getQueryResult(RpcController controller,
                                                  GetQueryResultRequest request) throws ServiceException {
-      LOG.info(">>>>> Enter TajoMasterClientService::getQueryResult");
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
         QueryId queryId = new QueryId(request.getQueryId());
@@ -345,8 +344,6 @@ public class TajoMasterClientService extends AbstractService {
           queryInfo = queryInProgress.getQueryInfo();
         }
 
-        LOG.info(">>>>> Get QueryInfo: " + queryInfo);
-
         GetQueryResultResponse.Builder builder = GetQueryResultResponse.newBuilder();
         builder.setTajoUserName(UserGroupInformation.getCurrentUser().getUserName());
 
@@ -355,17 +352,13 @@ public class TajoMasterClientService extends AbstractService {
         // In this case, we will result in error.
         if (queryInfo == null) {
           builder.setErrorMessage("No such query: " + queryId.toString());
-          LOG.info(">>>>> no QueryInfo");
           return builder.build();
         }
 
         switch (queryInfo.getQueryState()) {
           case QUERY_SUCCEEDED:
             if (queryInfo.hasResultdesc()) {
-              LOG.info(">>>>> hasResultDesc: " + queryInfo.getResultDesc().getPath());
               builder.setTableDesc(queryInfo.getResultDesc().getProto());
-            } else {
-              LOG.info(">>>>> no ResultDesc");
             }
             break;
           case QUERY_FAILED:

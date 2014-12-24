@@ -18,7 +18,6 @@
 
 package org.apache.tajo.master.querymaster;
 
-import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -27,7 +26,6 @@ import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
-import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol;
@@ -72,8 +70,6 @@ public class QueryInProgress extends CompositeService {
   private NettyClientBase queryMasterRpc;
 
   private QueryMasterProtocolService queryMasterRpcClient;
-
-  private ContainerProtocol.TajoContainerIdProto qmContainerId;
 
   public QueryInProgress(
       TajoMaster.MasterContext masterContext,
