@@ -18,9 +18,8 @@
 
 package org.apache.tajo.cli.tools;
 
-import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.cli.tools.TajoDump;
+import org.apache.tajo.auth.UserRoleInfo;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -34,7 +33,7 @@ public class TestTajoDump extends QueryTestCaseBase {
       executeString("CREATE TABLE \"" + getCurrentDatabase() +
           "\".\"TableName1\" (\"Age\" int, \"FirstName\" TEXT, lastname TEXT)");
 
-      UserGroupInformation userInfo = UserGroupInformation.getCurrentUser();
+      UserRoleInfo userInfo = UserRoleInfo.getCurrentUser();
       ByteArrayOutputStream bos = new ByteArrayOutputStream();
       PrintWriter printWriter = new PrintWriter(bos);
       TajoDump.dump(client, userInfo, getCurrentDatabase(), false, false, false, printWriter);
