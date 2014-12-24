@@ -255,7 +255,7 @@ message QueryInfoProto {
   optional TableDescProto resultDesc = 13;
 }
 
-message SubQueryHistoryProto {
+message StageHistoryProto {
   required string executionBlockId =1;
   required string state = 2;
   optional int64 startTime = 3;
@@ -285,7 +285,7 @@ message QueryHistoryProto {
   optional string logicalPlan = 4;
   optional string distributedPlan = 5;
   repeated KeyValueProto sessionVariables = 6;
-  repeated SubQueryHistoryProto subQueryHistories = 7;
+  repeated StageHistoryProto stageHistories = 7;
 }
 
 message GetQueryHistoryResponse {

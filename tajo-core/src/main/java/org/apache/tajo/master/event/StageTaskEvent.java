@@ -22,13 +22,13 @@ import org.apache.tajo.TaskId;
 import org.apache.tajo.master.TaskState;
 
 /**
- * Event Class: From Task to SubQuery
+ * Event Class: From Task to Stage
  */
-public class SubQueryTaskEvent extends SubQueryEvent {
+public class StageTaskEvent extends StageEvent {
   private TaskId taskId;
   private TaskState state;
-  public SubQueryTaskEvent(TaskId taskId, TaskState state) {
-    super(taskId.getExecutionBlockId(), SubQueryEventType.SQ_TASK_COMPLETED);
+  public StageTaskEvent(TaskId taskId, TaskState state) {
+    super(taskId.getExecutionBlockId(), StageEventType.SQ_TASK_COMPLETED);
     this.taskId = taskId;
     this.state = state;
   }

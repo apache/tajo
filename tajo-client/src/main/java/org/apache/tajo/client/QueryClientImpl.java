@@ -94,6 +94,7 @@ public class QueryClientImpl implements QueryClient {
 
   @Override
   public void closeQuery(QueryId queryId) {
+    // nothing to do
   }
 
   @Override

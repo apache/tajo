@@ -37,7 +37,7 @@ import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptSched
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 import org.apache.tajo.master.querymaster.Task;
 import org.apache.tajo.master.querymaster.TaskAttempt;
-import org.apache.tajo.master.querymaster.SubQuery;
+import org.apache.tajo.master.querymaster.Stage;
 import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -57,7 +57,7 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
   private static final Log LOG = LogFactory.getLog(LazyTaskScheduler.class);
 
   private final TaskSchedulerContext context;
-  private final SubQuery subQuery;
+  private final Stage stage;
 
   private Thread schedulingThread;
   private volatile boolean stopEventHandling;
@@ -77,10 +77,10 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
   private int nextTaskId = 0;
   private int containerNum;
 
-  public LazyTaskScheduler(TaskSchedulerContext context, SubQuery subQuery) {
+  public LazyTaskScheduler(TaskSchedulerContext context, Stage stage) {
     super(LazyTaskScheduler.class.getName());
     this.context = context;
-    this.subQuery = subQuery;
+    this.stage = stage;
   }
 
   @Override
@@ -101,8 +101,8 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
 
   @Override
   public void start() {
-    containerNum = subQuery.getContext().getResourceAllocator().calculateNumRequestContainers(
-        subQuery.getContext().getQueryMasterContext().getWorkerContext(),
+    containerNum = stage.getContext().getResourceAllocator().calculateNumRequestContainers(
+        stage.getContext().getQueryMasterContext().getWorkerContext(),
         context.getEstimatedTaskNum(), 512);
 
     LOG.info("Start TaskScheduler");
@@ -129,8 +129,8 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
   private static final TaskAttemptId NULL_ATTEMPT_ID;
   public static final TajoWorkerProtocol.TaskRequestProto stopTaskRunnerReq;
   static {
-    ExecutionBlockId nullSubQuery = QueryIdFactory.newExecutionBlockId(QueryIdFactory.NULL_QUERY_ID, 0);
-    NULL_ATTEMPT_ID = QueryIdFactory.newTaskAttemptId(QueryIdFactory.newTaskId(nullSubQuery, 0), 0);
+    ExecutionBlockId nullStage = QueryIdFactory.newExecutionBlockId(QueryIdFactory.NULL_QUERY_ID, 0);
+    NULL_ATTEMPT_ID = QueryIdFactory.newTaskAttemptId(QueryIdFactory.newTaskId(nullStage, 0), 0);
 
     TajoWorkerProtocol.TaskRequestProto.Builder builder =
         TajoWorkerProtocol.TaskRequestProto.newBuilder();
@@ -362,7 +362,7 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
       String host = container.getTaskHostName();
       TaskAttemptScheduleContext taskContext = new TaskAttemptScheduleContext(container.containerID,
           host, taskRequest.getCallback());
-      Task task = SubQuery.newEmptyTask(context, taskContext, subQuery, nextTaskId++);
+      Task task = Stage.newEmptyTask(context, taskContext, stage, nextTaskId++);
 
       FragmentPair fragmentPair;
       List<FragmentPair> fragmentPairs = new ArrayList<FragmentPair>();
@@ -371,7 +371,7 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
       long taskSize = adjustTaskSize();
       LOG.info("Adjusted task size: " + taskSize);
 
-      TajoConf conf = subQuery.getContext().getConf();
+      TajoConf conf = stage.getContext().getConf();
       // host local, disk local
       String normalized = NetUtils.normalizeHost(host);
       Integer diskId = hostDiskBalancerMap.get(normalized).getDiskId(container.containerID);
@@ -450,7 +450,7 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
       LOG.info("host: " + host + " disk id: " + diskId + " fragment num: " + fragmentPairs.size());
 
       task.setFragment(fragmentPairs.toArray(new FragmentPair[fragmentPairs.size()]));
-      subQuery.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
+      stage.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
     }
   }
 
@@ -469,9 +469,9 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
             taskRequest.getContainerId());
         TaskAttemptScheduleContext taskScheduleContext = new TaskAttemptScheduleContext(container.containerID,
             container.getTaskHostName(), taskRequest.getCallback());
-        Task task = SubQuery.newEmptyTask(context, taskScheduleContext, subQuery, nextTaskId++);
+        Task task = Stage.newEmptyTask(context, taskScheduleContext, stage, nextTaskId++);
         task.setFragment(scheduledFragments.getAllFragments());
-        subQuery.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
+        stage.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
       }
     }
   }
@@ -485,8 +485,8 @@ public class LazyTaskScheduler extends AbstractTaskScheduler {
         false,
         taskAttempt.getTask().getLogicalPlan().toJson(),
         context.getMasterContext().getQueryContext(),
-        subQuery.getDataChannel(), subQuery.getBlock().getEnforcer());
-    if (checkIfInterQuery(subQuery.getMasterPlan(), subQuery.getBlock())) {
+        stage.getDataChannel(), stage.getBlock().getEnforcer());
+    if (checkIfInterQuery(stage.getMasterPlan(), stage.getBlock())) {
       taskAssign.setInterQuery();
     }
 

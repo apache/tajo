@@ -420,11 +420,11 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
             + ", nextState:" + getState().name()
             , e);
         eventHandler.handle(
-            new SubQueryDiagnosticsUpdateEvent(event.getTaskAttemptId().getTaskId().getExecutionBlockId(),
+            new StageDiagnosticsUpdateEvent(event.getTaskAttemptId().getTaskId().getExecutionBlockId(),
                 "Can't handle this event at current state of " + event.getTaskAttemptId() + ")"));
         eventHandler.handle(
-            new SubQueryEvent(event.getTaskAttemptId().getTaskId().getExecutionBlockId(),
-                SubQueryEventType.SQ_INTERNAL_ERROR));
+            new StageEvent(event.getTaskAttemptId().getTaskId().getExecutionBlockId(),
+                StageEventType.SQ_INTERNAL_ERROR));
       }
 
       //notify the eventhandler of state change

@@ -493,19 +493,19 @@ public class TajoPullServerService extends AbstractService {
       final List<String> types = params.get("type");
       final List<String> qids = params.get("qid");
       final List<String> taskIdList = params.get("ta");
-      final List<String> subQueryIds = params.get("sid");
+      final List<String> stageIds = params.get("sid");
       final List<String> partIds = params.get("p");
       final List<String> offsetList = params.get("offset");
       final List<String> lengthList = params.get("length");
 
-      if (types == null || subQueryIds == null || qids == null || partIds == null) {
-        sendError(ctx, "Required queryId, type, subquery Id, and part id",
+      if (types == null || stageIds == null || qids == null || partIds == null) {
+        sendError(ctx, "Required queryId, type, stage Id, and part id",
             BAD_REQUEST);
         return;
       }
 
-      if (qids.size() != 1 && types.size() != 1 || subQueryIds.size() != 1) {
-        sendError(ctx, "Required qids, type, taskIds, subquery Id, and part id",
+      if (qids.size() != 1 && types.size() != 1 || stageIds.size() != 1) {
+        sendError(ctx, "Required qids, type, taskIds, stage Id, and part id",
             BAD_REQUEST);
         return;
       }
@@ -513,7 +513,7 @@ public class TajoPullServerService extends AbstractService {
       String partId = partIds.get(0);
       String queryId = qids.get(0);
       String shuffleType = types.get(0);
-      String sid = subQueryIds.get(0);
+      String sid = stageIds.get(0);
 
       long offset = (offsetList != null && !offsetList.isEmpty()) ? Long.parseLong(offsetList.get(0)) : -1L;
       long length = (lengthList != null && !lengthList.isEmpty()) ? Long.parseLong(lengthList.get(0)) : -1L;
@@ -536,7 +536,7 @@ public class TajoPullServerService extends AbstractService {
 
       final List<FileChunk> chunks = Lists.newArrayList();
 
-      // if a subquery requires a range shuffle
+      // if a stage requires a range shuffle
       if (shuffleType.equals("r")) {
         String ta = taskIds.get(0);
         if(!lDirAlloc.ifExists(queryBaseDir + "/" + sid + "/" + ta + "/output/", conf)){
@@ -562,7 +562,7 @@ public class TajoPullServerService extends AbstractService {
           chunks.add(chunk);
         }
 
-        // if a subquery requires a hash shuffle or a scattered hash shuffle
+        // if a stage requires a hash shuffle or a scattered hash shuffle
       } else if (shuffleType.equals("h") || shuffleType.equals("s")) {
         int partParentId = HashShuffleAppenderManager.getPartParentId(Integer.parseInt(partId), (TajoConf) conf);
         String partPath = queryBaseDir + "/" + sid + "/hash-shuffle/" + partParentId + "/" + partId;
