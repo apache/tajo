@@ -330,6 +330,7 @@ public class TajoMasterClientService extends AbstractService {
     @Override
     public GetQueryResultResponse getQueryResult(RpcController controller,
                                                  GetQueryResultRequest request) throws ServiceException {
+      LOG.info(">>>>> Enter TajoMasterClientService::getQueryResult");
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
         QueryId queryId = new QueryId(request.getQueryId());
@@ -344,31 +345,33 @@ public class TajoMasterClientService extends AbstractService {
           queryInfo = queryInProgress.getQueryInfo();
         }
 
+        LOG.info(">>>>> Get QueryInfo: " + queryInfo);
+
         GetQueryResultResponse.Builder builder = GetQueryResultResponse.newBuilder();
+        builder.setTajoUserName(UserGroupInformation.getCurrentUser().getUserName());
 
         // If we cannot the QueryInfo instance from the finished list,
         // the query result was expired due to timeout.
         // In this case, we will result in error.
         if (queryInfo == null) {
           builder.setErrorMessage("No such query: " + queryId.toString());
+          LOG.info(">>>>> no QueryInfo");
           return builder.build();
         }
 
-        try {
-          //TODO After implementation Tajo's user security feature, Should be modified.
-          builder.setTajoUserName(UserGroupInformation.getCurrentUser().getUserName());
-        } catch (IOException e) {
-          LOG.warn("Can't get current user name");
-        }
         switch (queryInfo.getQueryState()) {
           case QUERY_SUCCEEDED:
             if (queryInfo.hasResultdesc()) {
+              LOG.info(">>>>> hasResultDesc: " + queryInfo.getResultDesc().getPath());
               builder.setTableDesc(queryInfo.getResultDesc().getProto());
+            } else {
+              LOG.info(">>>>> no ResultDesc");
             }
             break;
           case QUERY_FAILED:
           case QUERY_ERROR:
             builder.setErrorMessage("Query " + queryId + " is failed");
+            break;
           default:
             builder.setErrorMessage("Query " + queryId + " is still running");
         }

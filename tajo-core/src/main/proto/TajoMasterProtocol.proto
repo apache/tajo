@@ -66,9 +66,10 @@ message TajoHeartbeat {
   required WorkerConnectionInfoProto connectionInfo = 1;
   optional QueryIdProto queryId = 2;
   optional QueryState state = 3;
-  optional string statusMessage = 4;
-  optional float queryProgress = 5;
-  optional int64 queryFinishTime = 6;
+  optional TableDescProto resultDesc = 4;
+  optional string statusMessage = 5;
+  optional float queryProgress = 6;
+  optional int64 queryFinishTime = 7;
 }
 
 message TajoHeartbeatResponse {
@@ -138,16 +139,10 @@ message WorkerResourceAllocationResponse {
     repeated WorkerAllocatedResource workerAllocatedResource = 2;
 }
 
-message QueryCompleteReport {
-  required QueryIdProto queryId = 1;
-  optional QueryState finalState = 2;
-  optional TableDescProto tableDesc = 3;
-}
-
 service TajoMasterProtocolService {
   rpc heartbeat(TajoHeartbeat) returns (TajoHeartbeatResponse);
   rpc allocateWorkerResources(WorkerResourceAllocationRequest) returns (WorkerResourceAllocationResponse);
   rpc releaseWorkerResource(WorkerResourceReleaseRequest) returns (BoolProto);
-  rpc stopQueryMaster(QueryCompleteReport) returns (BoolProto);
+  rpc stopQueryMaster(QueryIdProto) returns (BoolProto);
   rpc getAllWorkerResource(NullProto) returns (WorkerResourcesRequest);
 }

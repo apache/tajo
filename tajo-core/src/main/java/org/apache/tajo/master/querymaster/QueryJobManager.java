@@ -29,7 +29,6 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoProtos;
-import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoMasterProtocol;
@@ -41,6 +40,7 @@ import org.apache.tajo.scheduler.SimpleFifoScheduler;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -215,14 +215,6 @@ public class QueryJobManager extends CompositeService {
   }
 
   public void stopQuery(QueryId queryId) {
-    stopQuery(queryId, null, null);
-  }
-
-  public void stopQuery(QueryId queryId, TajoProtos.QueryState finalState) {
-    stopQuery(queryId, finalState, null);
-  }
-
-  public void stopQuery(QueryId queryId, @Nullable TajoProtos.QueryState finalState, @Nullable TableDesc resultDesc) {
     LOG.info("Stop QueryInProgress:" + queryId);
     QueryInProgress queryInProgress = getQueryInProgress(queryId);
     if(queryInProgress != null) {
@@ -236,15 +228,6 @@ public class QueryJobManager extends CompositeService {
       }
 
       QueryInfo queryInfo = queryInProgress.getQueryInfo();
-
-      if (finalState != null) {
-        queryInfo.setQueryState(finalState);
-      }
-
-      if (resultDesc != null) {
-        queryInfo.setResultDesc(resultDesc);
-      }
-
       long executionTime = queryInfo.getFinishTime() - queryInfo.getStartTime();
       if (executionTime < minExecutionTime.get()) {
         minExecutionTime.set(executionTime);
@@ -316,6 +299,11 @@ public class QueryJobManager extends CompositeService {
 
     if (queryHeartbeat.hasQueryFinishTime()) {
       queryInfo.setFinishTime(queryHeartbeat.getQueryFinishTime());
+    }
+
+    if (queryHeartbeat.hasResultDesc()) {
+      LOG.info(">>>>> " + new QueryId(queryHeartbeat.getQueryId()) + ", hasResultDesc" + queryHeartbeat.hasResultDesc());
+      queryInfo.setResultDesc(new TableDesc(queryHeartbeat.getResultDesc()));
     }
 
     return queryInfo;

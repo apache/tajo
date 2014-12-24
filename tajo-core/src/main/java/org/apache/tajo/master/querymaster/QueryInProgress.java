@@ -18,6 +18,7 @@
 
 package org.apache.tajo.master.querymaster;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -74,8 +75,6 @@ public class QueryInProgress extends CompositeService {
 
   private ContainerProtocol.TajoContainerIdProto qmContainerId;
 
-  private TableDesc resultDesc;
-
   public QueryInProgress(
       TajoMaster.MasterContext masterContext,
       Session session,
@@ -103,18 +102,6 @@ public class QueryInProgress extends CompositeService {
   public synchronized void kill() {
     if(queryMasterRpcClient != null){
       queryMasterRpcClient.killQuery(null, queryId.getProto(), NullCallback.get());
-    }
-  }
-
-  public void setResultDesc(TableDesc resultDesc) {
-    synchronized (this) {
-      this.resultDesc = resultDesc;
-    }
-  }
-
-  public TableDesc getResultDesc() {
-    synchronized (this) {
-      return resultDesc;
     }
   }
 
@@ -297,6 +284,9 @@ public class QueryInProgress extends CompositeService {
     }
 
     if(isFinishState(this.queryInfo.getQueryState())) {
+      LOG.info(">>>>> " + queryId + ", hasResultDesc" + queryInfo.hasResultdesc());
+      this.queryInfo.setResultDesc(queryInfo.getResultDesc());
+
       getEventHandler().handle(
           new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_FINISH, this.queryInfo));
     }

@@ -316,27 +316,6 @@ public class QueryClientImpl implements QueryClient {
 
       res = tajoMasterService.getQueryStatus(null, builder.build());
 
-      String queryMasterHost = res.getQueryMasterHost();
-
-      if(queryMasterHost != null && !queryMasterHost.isEmpty()) {
-        NettyClientBase qmClient = null;
-
-        try {
-
-          InetSocketAddress qmAddr = NetUtils.createSocketAddr(queryMasterHost, res.getQueryMasterPort());
-          qmClient = connection.connPool.getConnection(qmAddr, QueryMasterClientProtocol.class, false);
-          QueryMasterClientProtocolService.BlockingInterface queryMasterService = qmClient.getStub();
-          res = queryMasterService.getQueryStatus(null, builder.build());
-
-          connection.queryMasterMap.put(queryId, qmAddr);
-
-        } catch (Exception e) {
-          throw new ServiceException(e.getMessage(), e);
-        } finally {
-          connection.connPool.releaseConnection(qmClient);
-        }
-      }
-
     } catch (Exception e) {
       throw new ServiceException(e.getMessage(), e);
     } finally {
@@ -370,29 +349,25 @@ public class QueryClientImpl implements QueryClient {
       return null;
     }
 
-    NettyClientBase client = null;
+    NettyClientBase tmClient = null;
 
     try {
 
-      InetSocketAddress queryMasterAddr = connection.queryMasterMap.get(queryId);
-      if(queryMasterAddr == null) {
-        LOG.warn("No Connection to QueryMaster for " + queryId);
-        return null;
-      }
-
-      client = connection.getConnection(queryMasterAddr, QueryMasterClientProtocol.class, false);
-      QueryMasterClientProtocolService.BlockingInterface queryMasterService = client.getStub();
+      tmClient = connection.getTajoMasterConnection(false);
+      connection.checkSessionAndGet(tmClient);
+      TajoMasterClientProtocolService.BlockingInterface tajoMasterService = tmClient.getStub();
 
       GetQueryResultRequest.Builder builder = GetQueryResultRequest.newBuilder();
       builder.setQueryId(queryId.getProto());
-      GetQueryResultResponse response = queryMasterService.getQueryResult(null,builder.build());
+      builder.setSessionId(connection.sessionId);
+      GetQueryResultResponse response = tajoMasterService.getQueryResult(null,builder.build());
 
       return response;
 
     } catch (Exception e) {
       throw new ServiceException(e.getMessage(), e);
     } finally {
-      connection.connPool.releaseConnection(client);
+      connection.connPool.releaseConnection(tmClient);
     }
   }
 

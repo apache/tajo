@@ -87,7 +87,7 @@ message GetQueryResultRequest {
 message GetQueryResultResponse {
   optional TableDescProto tableDesc = 1;
   optional string errorMessage = 2;
-  required string tajoUserName = 3;
+  optional string tajoUserName = 3;
 }
 
 message QueryIdRequest {
@@ -252,6 +252,7 @@ message QueryInfoProto {
   optional int32 queryMasterPort = 10;
   optional int32 queryMasterClientPort = 11;
   optional int32 queryMasterInfoPort = 12;
+  optional TableDescProto resultDesc = 13;
 }
 
 message SubQueryHistoryProto {
