@@ -19,30 +19,21 @@
 package org.apache.tajo.util;
 
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.Int8Datum;
 import org.apache.tajo.util.datetime.DateTimeConstants;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.junit.Test;
 
 import java.util.Calendar;
+import java.util.Date;
 import java.util.TimeZone;
 
 import static org.junit.Assert.*;
 
 public class TestDateTimeUtil {
-  private static final int TEST_YEAR = 2014;
-  private static final int TEST_MONTH_OF_YEAR = 4;
-  private static final int TEST_DAY_OF_MONTH = 18;
-  private static final int TEST_HOUR_OF_DAY = 0;
-  private static final int TEST_MINUTE_OF_HOUR = 15;
-  private static final int TEST_SECOND_OF_MINUTE = 25;
-  private static final DateTime TEST_DATETIME = new DateTime(TEST_YEAR, TEST_MONTH_OF_YEAR, TEST_DAY_OF_MONTH,
-      TEST_HOUR_OF_DAY, TEST_MINUTE_OF_HOUR, TEST_SECOND_OF_MINUTE, DateTimeZone.UTC);
-  private static final DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+  private static final TimeMeta TEST_DATETIME = DateTimeUtil.decodeDateTime("2014-04-18 01:15:25.69148");
 
   @Test
   public void testDecodeDateTime() {
@@ -400,40 +391,76 @@ public class TestDateTimeUtil {
     assertEquals("-09", DateTimeUtil.getTimeZoneDisplayTime(TimeZone.getTimeZone("GMT-9")));
     assertEquals("-09:10", DateTimeUtil.getTimeZoneDisplayTime(TimeZone.getTimeZone("GMT-9:10")));
   }
-
+  
   @Test
   public void testGetYear() {
-    assertEquals(DateTime.parse("2014-01-01 00:00:00", fmt.withZoneUTC()).getMillis() * 1000,
-        DateTimeUtil.getYear(TEST_DATETIME));
+    long javaTimestamp = 
+        DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp("2014-01-01 00:00:00")) *
+        DateTimeConstants.USECS_PER_MSEC;
+    assertEquals(javaTimestamp, DateTimeUtil.getYear(TEST_DATETIME));
   }
 
   @Test
   public void testGetMonth() {
-    assertEquals(DateTime.parse("2014-04-01 00:00:00", fmt.withZoneUTC()).getMillis() * 1000,
-        DateTimeUtil.getMonth(TEST_DATETIME));
+    long javaTimestamp = 
+        DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp("2014-04-01 00:00:00")) *
+        DateTimeConstants.USECS_PER_MSEC;
+    assertEquals(javaTimestamp, DateTimeUtil.getMonth(TEST_DATETIME));
   }
 
   @Test
   public void testGetDay() {
-    assertEquals(DateTime.parse("2014-04-18 00:00:00", fmt.withZoneUTC()).getMillis() * 1000,
-        DateTimeUtil.getDay(TEST_DATETIME));
+    long javaTimestamp = 
+        DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp("2014-04-18 00:00:00")) *
+        DateTimeConstants.USECS_PER_MSEC;
+    assertEquals(javaTimestamp, DateTimeUtil.getDay(TEST_DATETIME));
+  }
+  
+  @Test
+  public void testGetDayOfWeek() {
+    long javaTimestamp = 
+        DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp("2014-04-14 00:00:00")) *
+        DateTimeConstants.USECS_PER_MSEC;
+    assertEquals(javaTimestamp, DateTimeUtil.getDayOfWeek(TEST_DATETIME, DateTimeConstants.MONDAY));
+    
+    javaTimestamp = 
+        DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp("2014-04-15 00:00:00")) *
+        DateTimeConstants.USECS_PER_MSEC;
+    assertEquals(javaTimestamp, DateTimeUtil.getDayOfWeek(TEST_DATETIME, DateTimeConstants.TUESDAY));
   }
 
   @Test
   public void testGetHour() {
-    assertEquals(DateTime.parse("2014-04-18 00:00:00",fmt.withZoneUTC()).getMillis() * 1000,
-        DateTimeUtil.getHour(TEST_DATETIME));
+    long javaTimestamp = 
+        DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp("2014-04-18 01:00:00")) *
+        DateTimeConstants.USECS_PER_MSEC;
+    assertEquals(javaTimestamp, DateTimeUtil.getHour(TEST_DATETIME));
   }
 
   @Test
   public void testGetMinute() {
-    assertEquals(DateTime.parse("2014-04-18 00:15:00",fmt.withZoneUTC()).getMillis() * 1000,
-        DateTimeUtil.getMinute(TEST_DATETIME));
+    long javaTimestamp = 
+        DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp("2014-04-18 01:15:00")) *
+        DateTimeConstants.USECS_PER_MSEC;
+    assertEquals(javaTimestamp, DateTimeUtil.getMinute(TEST_DATETIME));
   }
 
   @Test
   public void testGetSecond() {
-    assertEquals(DateTime.parse("2014-04-18 00:15:25",fmt.withZoneUTC()).getMillis() * 1000,
-        DateTimeUtil.getSecond(TEST_DATETIME));
+    long javaTimestamp = 
+        DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp("2014-04-18 01:15:25")) *
+        DateTimeConstants.USECS_PER_MSEC;
+    assertEquals(javaTimestamp, DateTimeUtil.getSecond(TEST_DATETIME));
   }
+  
+  @Test
+  public void testGetUTCDateTime() {
+    long javaTimestamp = DateTimeUtil.julianTimeToJavaTime(DateTimeUtil.toJulianTimestamp(TEST_DATETIME)) *
+        DateTimeConstants.USECS_PER_MSEC;
+    javaTimestamp += (TEST_DATETIME.fsecs%DateTimeConstants.USECS_PER_MSEC);
+    Int8Datum datum = DatumFactory.createInt8(javaTimestamp);
+    
+    assertTrue(TEST_DATETIME.equals(DateTimeUtil.getUTCDateTime(datum)));
+  }
+  
 }

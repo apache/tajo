@@ -29,6 +29,7 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -114,8 +115,19 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
   @Test
   public final void testInsertIntoLocation() throws Exception {
+    Path dfsPath = new Path("/tajo-data/testInsertIntoLocation");
+    assertTestInsertIntoLocation(dfsPath);
+  }
+
+  @Test
+  public final void testInsertIntoLocationDifferentFSs() throws Exception {
+    Path localPath = CommonTestingUtil.getTestDir();
+    assertTestInsertIntoLocation(localPath);
+  }
+
+  public final void assertTestInsertIntoLocation(Path path) throws Exception {
     FileSystem fs = null;
-    Path path = new Path("/tajo-data/testInsertIntoLocation");
+
     try {
       executeString("insert into location '" + path + "' select l_orderkey, l_partkey, l_linenumber from default.lineitem").close();
 
@@ -266,7 +278,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
       TableDesc tableDesc = testingCluster.getMaster().getCatalog().getTableDesc(getCurrentDatabase(), tableName);
       assertNotNull(tableDesc);
 
-      Path path = tableDesc.getPath();
+      Path path = new Path(tableDesc.getPath());
       FileSystem fs = path.getFileSystem(testingCluster.getConfiguration());
 
       FileStatus[] files = fs.listStatus(path);
@@ -380,6 +392,28 @@ public class TestInsertQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testInsertOverwriteWithAsteriskAndMore() throws Exception {
+    ResultSet res = executeFile("lineitem_year_month_ddl.sql");
+    res.close();
+
+    CatalogService catalog = testingCluster.getMaster().getCatalog();
+    assertTrue(catalog.existsTable(getCurrentDatabase(), "lineitem_year_month"));
+
+    res = executeFile("load_to_lineitem_year_month.sql");
+    res.close();
+    TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "lineitem_year_month");
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      assertEquals(5, desc.getStats().getNumRows().intValue());
+    }
+
+    res = executeQuery();
+    assertResultSet(res);
+    res.close();
+
+    executeString("DROP TABLE lineitem_year_month PURGE");
+  }
+
+  @Test
   public final void testInsertOverwriteIntoSelect() throws Exception {
     String tableName = CatalogUtil.normalizeIdentifier("insertoverwriteintoselect");
     ResultSet res = executeString("create table " + tableName + " as select l_orderkey from default.lineitem");
@@ -451,10 +485,10 @@ public class TestInsertQuery extends QueryTestCaseBase {
     }
 
     FileSystem fs = FileSystem.get(testingCluster.getConfiguration());
-    assertTrue(fs.exists(desc.getPath()));
+    assertTrue(fs.exists(new Path(desc.getPath())));
     CompressionCodecFactory factory = new CompressionCodecFactory(testingCluster.getConfiguration());
 
-    for (FileStatus file : fs.listStatus(desc.getPath())) {
+    for (FileStatus file : fs.listStatus(new Path(desc.getPath()))) {
       CompressionCodec codec = factory.getCodec(file.getPath());
       assertTrue(codec instanceof DeflateCodec);
     }

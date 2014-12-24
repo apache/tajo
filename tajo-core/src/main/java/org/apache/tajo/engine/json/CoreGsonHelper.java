@@ -22,20 +22,23 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.function.Function;
 import org.apache.tajo.catalog.json.FunctionAdapter;
 import org.apache.tajo.catalog.json.TableMetaAdapter;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.function.AggFunction;
-import org.apache.tajo.engine.function.GeneralFunction;
-import org.apache.tajo.engine.planner.logical.LogicalNode;
 import org.apache.tajo.json.*;
+import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.function.AggFunction;
+import org.apache.tajo.plan.function.GeneralFunction;
+import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.function.Function;
+import org.apache.tajo.plan.serder.EvalNodeAdapter;
+import org.apache.tajo.plan.serder.LogicalNodeAdapter;
 import org.apache.tajo.util.TUtil;
 
 import java.lang.reflect.Type;
 import java.util.Map;
+import java.util.TimeZone;
 
 public class CoreGsonHelper {
   private static Gson gson;
@@ -56,6 +59,7 @@ public class CoreGsonHelper {
     adapters.put(AggFunction.class, new FunctionAdapter());
     adapters.put(Datum.class, new DatumAdapter());
     adapters.put(DataType.class, new DataTypeAdapter());
+    adapters.put(TimeZone.class, new TimeZoneGsonSerdeAdapter());
 
     return adapters;
 	}

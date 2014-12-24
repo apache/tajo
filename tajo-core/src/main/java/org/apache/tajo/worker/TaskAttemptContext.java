@@ -24,15 +24,15 @@ import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
@@ -51,7 +51,7 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 
 
 /**
- * Contains the information about executing subquery.
+ * Contains the information about executing task attempt.
  */
 public class TaskAttemptContext {
   private static final Log LOG = LogFactory.getLog(TaskAttemptContext.class);
@@ -59,7 +59,7 @@ public class TaskAttemptContext {
 
   private TaskAttemptState state;
   private TableStats resultStats;
-  private QueryUnitAttemptId queryId;
+  private TaskAttemptId queryId;
   private final Path workDir;
   private boolean needFetch = false;
   private CountDownLatch doneFetchPhaseSignal;
@@ -84,7 +84,7 @@ public class TaskAttemptContext {
   private HashShuffleAppenderManager hashShuffleAppenderManager;
 
   public TaskAttemptContext(QueryContext queryContext, final ExecutionBlockContext executionBlockContext,
-                            final QueryUnitAttemptId queryId,
+                            final TaskAttemptId queryId,
                             final FragmentProto[] fragments,
                             final Path workDir) {
     this.queryContext = queryContext;
@@ -118,8 +118,6 @@ public class TaskAttemptContext {
     if (workerContext != null) {
       this.hashShuffleAppenderManager = workerContext.getHashShuffleAppenderManager();
     } else {
-      // For TestCase
-      LOG.warn("WorkerContext is null, so create HashShuffleAppenderManager created per a Task.");
       try {
         this.hashShuffleAppenderManager = new HashShuffleAppenderManager(queryContext.getConf());
       } catch (IOException e) {
@@ -129,7 +127,7 @@ public class TaskAttemptContext {
   }
 
   @VisibleForTesting
-  public TaskAttemptContext(final QueryContext queryContext, final QueryUnitAttemptId queryId,
+  public TaskAttemptContext(final QueryContext queryContext, final TaskAttemptId queryId,
                             final Fragment [] fragments,  final Path workDir) {
     this(queryContext, null, queryId, FragmentConvertor.toFragmentProtoArray(fragments), workDir);
   }
@@ -308,7 +306,7 @@ public class TaskAttemptContext {
     return this.workDir;
   }
   
-  public QueryUnitAttemptId getTaskId() {
+  public TaskAttemptId getTaskId() {
     return this.queryId;
   }
   
@@ -398,7 +396,7 @@ public class TaskAttemptContext {
     return queryContext;
   }
 
-  public QueryUnitAttemptId getQueryId() {
+  public TaskAttemptId getQueryId() {
     return queryId;
   }
 

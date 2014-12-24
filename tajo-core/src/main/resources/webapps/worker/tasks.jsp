@@ -19,7 +19,7 @@
 %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
-<%@ page import="org.apache.tajo.QueryUnitAttemptId" %>
+<%@ page import="org.apache.tajo.TaskAttemptId" %>
 <%@ page import="org.apache.tajo.util.JSPUtil" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="java.text.SimpleDateFormat" %>
@@ -65,15 +65,15 @@
         <tr><th>Id</th><th>StartTime</th><th>FinishTime</th><th>RunTime</th><th>Status</th></tr>
         <%
             if (taskRunner != null) {
-                TaskRunner.TaskRunnerContext taskRunnerContext = taskRunner.getContext();
+                ExecutionBlockContext context = taskRunner.getContext();
 
-                for (Map.Entry<QueryUnitAttemptId, Task> entry : taskRunnerContext.getTasks().entrySet()) {
-                    QueryUnitAttemptId queryUnitId = entry.getKey();
+                for (Map.Entry<TaskAttemptId, Task> entry : context.getTasks().entrySet()) {
+                    TaskAttemptId taskAttemptId = entry.getKey();
                     TaskHistory eachTask = entry.getValue().createTaskHistory();
         %>
                     <tr>
                         <td>
-                            <a href="taskdetail.jsp?containerId=<%=containerId%>&queryUnitAttemptId=<%=queryUnitId%>"><%=queryUnitId%></a></td>
+                            <a href="taskdetail.jsp?containerId=<%=containerId%>&taskAttemptId=<%=taskAttemptId%>"><%=taskAttemptId%></a></td>
                         <td><%=df.format(eachTask.getStartTime())%></td>
                         <td><%=eachTask.getFinishTime() == 0 ? "-" : df.format(eachTask.getFinishTime())%></td>
                         <td><%=JSPUtil.getElapsedTime(eachTask.getStartTime(), eachTask.getFinishTime())%></td>
@@ -86,12 +86,12 @@
             if (history != null) {
 
 
-                for (Map.Entry<QueryUnitAttemptId, TaskHistory> entry : history.getTaskHistoryMap().entrySet()) {
-                    QueryUnitAttemptId queryUnitId = entry.getKey();
+                for (Map.Entry<TaskAttemptId, TaskHistory> entry : history.getTaskHistoryMap().entrySet()) {
+                    TaskAttemptId taskAttemptId = entry.getKey();
                     TaskHistory eachTask = entry.getValue();
         %>
                         <tr>
-                            <td><a href="taskdetail.jsp?containerId=<%=containerId%>&queryUnitAttemptId=<%=queryUnitId%>"><%=queryUnitId%></a></td>
+                            <td><a href="taskdetail.jsp?containerId=<%=containerId%>&taskAttemptId=<%=taskAttemptId%>"><%=taskAttemptId%></a></td>
                             <td><%=df.format(eachTask.getStartTime())%></td>
                             <td><%=eachTask.getFinishTime() == 0 ? "-" : df.format(eachTask.getFinishTime())%></td>
                             <td><%=JSPUtil.getElapsedTime(eachTask.getStartTime(), eachTask.getFinishTime())%></td>

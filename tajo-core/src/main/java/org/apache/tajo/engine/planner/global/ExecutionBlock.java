@@ -16,7 +16,7 @@ package org.apache.tajo.engine.planner.global;
 
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
-import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.plan.logical.*;
 
 import java.util.*;
 
@@ -82,6 +82,8 @@ public class ExecutionBlock {
       } else if (node instanceof TableSubQueryNode) {
         TableSubQueryNode subQuery = (TableSubQueryNode) node;
         s.add(s.size(), subQuery.getSubQuery());
+      } else if (node instanceof StoreTableNode) {
+        store = (StoreTableNode)node;
       }
     }
   }

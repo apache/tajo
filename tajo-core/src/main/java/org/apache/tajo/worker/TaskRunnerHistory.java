@@ -21,11 +21,11 @@ package org.apache.tajo.worker;
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.service.Service;
-import org.apache.hadoop.yarn.api.records.ContainerId;
-import org.apache.hadoop.yarn.util.ConverterUtils;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.master.container.TajoContainerId;
+import org.apache.tajo.master.container.TajoConverterUtils;
 
 import java.util.Collections;
 import java.util.Map;
@@ -39,13 +39,13 @@ import static org.apache.tajo.ipc.TajoWorkerProtocol.TaskRunnerHistoryProto;
 public class TaskRunnerHistory implements ProtoObject<TaskRunnerHistoryProto> {
 
   private Service.STATE state;
-  private ContainerId containerId;
+  private TajoContainerId containerId;
   private long startTime;
   private long finishTime;
   private ExecutionBlockId executionBlockId;
-  private Map<QueryUnitAttemptId, TaskHistory> taskHistoryMap = null;
+  private Map<TaskAttemptId, TaskHistory> taskHistoryMap = null;
 
-  public TaskRunnerHistory(ContainerId containerId, ExecutionBlockId executionBlockId) {
+  public TaskRunnerHistory(TajoContainerId containerId, ExecutionBlockId executionBlockId) {
     init();
     this.containerId = containerId;
     this.executionBlockId = executionBlockId;
@@ -53,14 +53,14 @@ public class TaskRunnerHistory implements ProtoObject<TaskRunnerHistoryProto> {
 
   public TaskRunnerHistory(TaskRunnerHistoryProto proto) {
     this.state = Service.STATE.valueOf(proto.getState());
-    this.containerId = ConverterUtils.toContainerId(proto.getContainerId());
+    this.containerId = TajoConverterUtils.toTajoContainerId(proto.getContainerId());
     this.startTime = proto.getStartTime();
     this.finishTime = proto.getFinishTime();
     this.executionBlockId = new ExecutionBlockId(proto.getExecutionBlockId());
     this.taskHistoryMap = Maps.newTreeMap();
     for (TaskHistoryProto taskHistoryProto : proto.getTaskHistoriesList()) {
       TaskHistory taskHistory = new TaskHistory(taskHistoryProto);
-      taskHistoryMap.put(taskHistory.getQueryUnitAttemptId(), taskHistory);
+      taskHistoryMap.put(taskHistory.getTaskAttemptId(), taskHistory);
     }
   }
 
@@ -129,23 +129,23 @@ public class TaskRunnerHistory implements ProtoObject<TaskRunnerHistoryProto> {
     this.state = state;
   }
 
-  public ContainerId getContainerId() {
+  public TajoContainerId getContainerId() {
     return containerId;
   }
 
-  public void setContainerId(ContainerId containerId) {
+  public void setContainerId(TajoContainerId containerId) {
     this.containerId = containerId;
   }
 
-  public TaskHistory getTaskHistory(QueryUnitAttemptId queryUnitAttemptId) {
-    return taskHistoryMap.get(queryUnitAttemptId);
+  public TaskHistory getTaskHistory(TaskAttemptId taskAttemptId) {
+    return taskHistoryMap.get(taskAttemptId);
   }
 
-  public Map<QueryUnitAttemptId, TaskHistory> getTaskHistoryMap() {
+  public Map<TaskAttemptId, TaskHistory> getTaskHistoryMap() {
     return Collections.unmodifiableMap(taskHistoryMap);
   }
 
-  public void addTaskHistory(QueryUnitAttemptId queryUnitAttemptId, TaskHistory taskHistory) {
-    taskHistoryMap.put(queryUnitAttemptId, taskHistory);
+  public void addTaskHistory(TaskAttemptId taskAttemptId, TaskHistory taskHistory) {
+    taskHistoryMap.put(taskAttemptId, taskHistory);
   }
 }

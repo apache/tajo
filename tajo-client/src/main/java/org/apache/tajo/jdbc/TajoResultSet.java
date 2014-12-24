@@ -27,13 +27,12 @@ import org.apache.hadoop.fs.PathFilter;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.storage.FileScanner;
-import org.apache.tajo.storage.MergeScanner;
-import org.apache.tajo.storage.Scanner;
-import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -47,20 +46,22 @@ public class TajoResultSet extends TajoResultSetBase {
 
   private FileSystem fs;
   private Scanner scanner;
-  private TajoClient tajoClient;
+  private QueryClient tajoClient;
   private TajoConf conf;
   private TableDesc desc;
   private Long maxRowNum = null;
   private QueryId queryId;
   private AtomicBoolean closed = new AtomicBoolean(false);
 
-  public TajoResultSet(TajoClient tajoClient, QueryId queryId) {
+  public TajoResultSet(QueryClient tajoClient, QueryId queryId) {
+    super(tajoClient.getClientSideSessionVars());
     this.tajoClient = tajoClient;
     this.queryId = queryId;
     init();
   }
 
-  public TajoResultSet(TajoClient tajoClient, QueryId queryId, TajoConf conf, TableDesc table) throws IOException {
+  public TajoResultSet(QueryClient tajoClient, QueryId queryId, TajoConf conf, TableDesc table) throws IOException {
+    super(tajoClient.getClientSideSessionVars());
     this.tajoClient = tajoClient;
     this.queryId = queryId;
     this.conf = conf;
@@ -80,7 +81,7 @@ public class TajoResultSet extends TajoResultSetBase {
   private void initScanner() throws IOException {
     if(desc != null) {
       schema = desc.getSchema();
-      fs = FileScanner.getFileSystem(conf, desc.getPath());
+      fs = FileScanner.getFileSystem(conf, new Path(desc.getPath()));
       if (maxRowNum != null) {
         this.totalRow = maxRowNum;
       } else {
@@ -91,7 +92,7 @@ public class TajoResultSet extends TajoResultSetBase {
         totalRow = INFINITE_ROW_NUM;
       }
 
-      List<FileFragment> frags = getFragments(desc.getPath());
+      List<Fragment> frags = getFragments(new Path(desc.getPath()));
       scanner = new MergeScanner(conf, desc.getSchema(), desc.getMeta(), frags);
     }
   }
@@ -110,9 +111,9 @@ public class TajoResultSet extends TajoResultSetBase {
     }
   }
 
-  private List<FileFragment> getFragments(Path tablePath)
+  private List<Fragment> getFragments(Path tablePath)
       throws IOException {
-    List<FileFragment> fragments = Lists.newArrayList();
+    List<Fragment> fragments = Lists.newArrayList();
     FileStatus[] files = fs.listStatus(tablePath, new PathFilter() {
       @Override
       public boolean accept(Path path) {

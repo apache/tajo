@@ -33,7 +33,7 @@ service TajoMasterClientProtocolService {
   // Session APIs
   rpc createSession(CreateSessionRequest) returns (CreateSessionResponse);
   rpc removeSession(SessionIdProto) returns (BoolProto);
-  rpc updateSessionVariables(UpdateSessionVariableRequest) returns (BoolProto);
+  rpc updateSessionVariables(UpdateSessionVariableRequest) returns (SessionUpdateResponse);
   rpc existSessionVariable(SessionedStringProto) returns (BoolProto);
   rpc getSessionVariable(SessionedStringProto) returns (StringProto);
   rpc getAllSessionVariables(SessionIdProto) returns (KeyValueSetProto);
@@ -42,13 +42,16 @@ service TajoMasterClientProtocolService {
   rpc submitQuery(QueryRequest) returns (SubmitQueryResponse);
   rpc updateQuery(QueryRequest) returns (UpdateQueryResponse);
   rpc getQueryResult(GetQueryResultRequest) returns (GetQueryResultResponse);
+  rpc getQueryResultData(GetQueryResultDataRequest) returns (GetQueryResultDataResponse);
 
   // Query And Resource Management APIs
   rpc getQueryStatus(GetQueryStatusRequest) returns (GetQueryStatusResponse);
   rpc getRunningQueryList(GetQueryListRequest) returns (GetQueryListResponse);
   rpc getFinishedQueryList(GetQueryListRequest) returns (GetQueryListResponse);
-  rpc killQuery(KillQueryRequest) returns (BoolProto);
+  rpc killQuery(QueryIdRequest) returns (BoolProto);
   rpc getClusterInfo(GetClusterInfoRequest) returns (GetClusterInfoResponse);
+  rpc closeNonForwardQuery(QueryIdRequest) returns (BoolProto);
+  rpc getQueryInfo(QueryIdRequest) returns (GetQueryInfoResponse);
 
   // Database Management APIs
   rpc createDatabase(SessionedStringProto) returns (BoolProto);

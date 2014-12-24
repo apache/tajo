@@ -36,8 +36,6 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.TableIdentifierProto;
  * <code>PartitionMethodDesc</code> presents a table description, including partition type, and partition keys.
  */
 public class PartitionMethodDesc implements ProtoObject<CatalogProtos.PartitionMethodProto>, Cloneable, GsonObject {
-  private CatalogProtos.PartitionMethodProto.Builder builder;
-
   @Expose private String databaseName;                         // required
   @Expose private String tableName;                            // required
   @Expose private PartitionType partitionType;                 // required
@@ -45,7 +43,6 @@ public class PartitionMethodDesc implements ProtoObject<CatalogProtos.PartitionM
   @Expose private Schema expressionSchema;                     // required
 
   public PartitionMethodDesc() {
-    builder = CatalogProtos.PartitionMethodProto.newBuilder();
   }
 
   public PartitionMethodDesc(String databaseName, String tableName,
@@ -118,10 +115,6 @@ public class PartitionMethodDesc implements ProtoObject<CatalogProtos.PartitionM
 
   @Override
   public CatalogProtos.PartitionMethodProto getProto() {
-    if(builder == null) {
-      builder = CatalogProtos.PartitionMethodProto.newBuilder();
-    }
-
     TableIdentifierProto.Builder tableIdentifierBuilder = TableIdentifierProto.newBuilder();
     if (databaseName != null) {
       tableIdentifierBuilder.setDatabaseName(databaseName);
@@ -141,7 +134,6 @@ public class PartitionMethodDesc implements ProtoObject<CatalogProtos.PartitionM
 
   public Object clone() throws CloneNotSupportedException {
     PartitionMethodDesc desc = (PartitionMethodDesc) super.clone();
-    desc.builder = builder;
     desc.tableName = tableName;
     desc.partitionType = partitionType;
     desc.expression = expression;

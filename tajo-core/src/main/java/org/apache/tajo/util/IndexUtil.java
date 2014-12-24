@@ -23,11 +23,11 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.json.CoreGsonHelper;
-import org.apache.tajo.engine.planner.LogicalPlan;
-import org.apache.tajo.engine.planner.logical.IndexScanNode;
-import org.apache.tajo.engine.planner.logical.ScanNode;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.expr.*;
+import org.apache.tajo.plan.logical.IndexScanNode;
+import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.fragment.FileFragment;
 
 import java.util.Iterator;
@@ -38,7 +38,7 @@ public class IndexUtil {
   public static String getIndexNameOfFrag(FileFragment fragment, SortSpec[] keys) {
     StringBuilder builder = new StringBuilder(); 
     builder.append(fragment.getPath().getName() + "_");
-    builder.append(fragment.getStartKey() + "_" + fragment.getEndKey() + "_");
+    builder.append(fragment.getStartKey() + "_" + fragment.getLength() + "_");
     for(int i = 0 ; i < keys.length ; i ++) {
       builder.append(keys[i].getSortKey().getSimpleName()+"_");
     }

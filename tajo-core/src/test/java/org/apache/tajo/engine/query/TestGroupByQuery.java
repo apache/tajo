@@ -20,23 +20,24 @@ package org.apache.tajo.engine.query;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.IntegrationTest;
-import org.apache.tajo.QueryTestCaseBase;
-import org.apache.tajo.TajoConstants;
-import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.*;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleFileOutput;
 import org.apache.tajo.master.querymaster.Query;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
-import org.apache.tajo.master.querymaster.QueryUnit;
-import org.apache.tajo.master.querymaster.SubQuery;
+import org.apache.tajo.master.querymaster.Task;
+import org.apache.tajo.master.querymaster.Stage;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TajoWorker;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import java.sql.ResultSet;
 import java.util.*;
@@ -44,11 +45,33 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
+@RunWith(Parameterized.class)
 public class TestGroupByQuery extends QueryTestCaseBase {
   private static final Log LOG = LogFactory.getLog(TestGroupByQuery.class);
 
-  public TestGroupByQuery() throws Exception {
+  public TestGroupByQuery(String groupByOption) throws Exception {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
+
+    Map<String, String> variables = new HashMap<String, String>();
+    if (groupByOption.equals("MultiLevel")) {
+      variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "true");
+    } else {
+      variables.put(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname(), "false");
+    }
+    client.updateSessionVariables(variables);
+  }
+
+  @AfterClass
+  public static void tearDown() throws Exception {
+    client.unsetSessionVariables(TUtil.newList(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED.keyname()));
+  }
+
+  @Parameters
+  public static Collection<Object[]> generateParameters() {
+    return Arrays.asList(new Object[][]{
+        {"MultiLevel"},
+        {"No-MultiLevel"},
+    });
   }
 
   @Test
@@ -285,6 +308,24 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testDistinctAggregation8() throws Exception {
+    /*
+    select
+    sum(distinct l_orderkey),
+        l_linenumber, l_returnflag, l_linestatus, l_shipdate,
+        count(distinct l_partkey),
+        sum(l_orderkey)
+    from
+        lineitem
+    group by
+    l_linenumber, l_returnflag, l_linestatus, l_shipdate;
+    */
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testDistinctAggregationWithHaving1() throws Exception {
     // select l_linenumber, count(*), count(distinct l_orderkey), sum(distinct l_orderkey) from lineitem
     // group by l_linenumber having sum(distinct l_orderkey) >= 6;
@@ -326,7 +367,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     assertResultSet(res, "testDistinctAggregation_case4.result");
     res.close();
 
-    // two groupby, two distinct, two aggregation with subquery
+    // two groupby, two distinct, two aggregation with stage
     res = executeFile("testDistinctAggregation_case5.sql");
     assertResultSet(res, "testDistinctAggregation_case5.result");
     res.close();
@@ -343,10 +384,18 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     assertResultSet(res, "testDistinctAggregation_case8.result");
     res.close();
 
+    res = executeFile("testDistinctAggregation_case9.sql");
+    assertResultSet(res, "testDistinctAggregation_case9.result");
+    res.close();
+
+    res = executeFile("testDistinctAggregation_case10.sql");
+    assertResultSet(res, "testDistinctAggregation_case10.result");
+    res.close();
+
     // case9
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("id", Type.TEXT);
@@ -399,8 +448,8 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   public final void testDistinctAggregationCaseByCase3() throws Exception {
     // first distinct is smaller than second distinct.
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.TEXT);
@@ -429,8 +478,8 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   public final void testDistinctAggregationCaseByCase4() throws Exception {
     // Reproduction case for TAJO-994
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.TEXT);
@@ -616,8 +665,8 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   @Test
   public final void testNumShufflePartition() throws Exception {
     KeyValueSet tableOptions = new KeyValueSet();
-    tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
-    tableOptions.set(StorageConstants.CSVFILE_NULL, "\\\\N");
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
 
     Schema schema = new Schema();
     schema.addColumn("col1", Type.TEXT);
@@ -682,12 +731,12 @@ public class TestGroupByQuery extends QueryTestCaseBase {
       Set<Integer> partitionIds = new HashSet<Integer>();
 
       Query query = qmTasks.get(qmTasks.size() - 1).getQuery();
-      Collection<SubQuery> subQueries = query.getSubQueries();
-      assertNotNull(subQueries);
-      assertTrue(!subQueries.isEmpty());
-      for (SubQuery subQuery: subQueries) {
-        if (subQuery.getId().toStringNoPrefix().endsWith("_000001")) {
-          for (QueryUnit.IntermediateEntry eachInterm: subQuery.getHashShuffleIntermediateEntries()) {
+      Collection<Stage> stages = query.getStages();
+      assertNotNull(stages);
+      assertTrue(!stages.isEmpty());
+      for (Stage stage : stages) {
+        if (stage.getId().toStringNoPrefix().endsWith("_000001")) {
+          for (Task.IntermediateEntry eachInterm: stage.getHashShuffleIntermediateEntries()) {
             partitionIds.add(eachInterm.getPartId());
           }
         }
@@ -699,5 +748,26 @@ public class TestGroupByQuery extends QueryTestCaseBase {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME.varname,
           ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME.defaultVal);
     }
+  }
+
+  @Test
+  public final void testGroupbyWithLimit1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testGroupbyWithLimit2() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testGroupbyWithLimit3() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
   }
 }

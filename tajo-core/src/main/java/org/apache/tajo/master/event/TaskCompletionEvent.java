@@ -18,14 +18,14 @@
 
 package org.apache.tajo.master.event;
 
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.ipc.TajoWorkerProtocol.TaskCompletionReport;
 
 public class TaskCompletionEvent extends TaskAttemptEvent {
   private TaskCompletionReport report;
 
   public TaskCompletionEvent(TaskCompletionReport report) {
-    super(new QueryUnitAttemptId(report.getId()), TaskAttemptEventType.TA_DONE);
+    super(new TaskAttemptId(report.getId()), TaskAttemptEventType.TA_DONE);
     this.report = report;
   }
 

@@ -38,21 +38,21 @@ public class TestQueryIdFactory {
   }
   
   @Test
-  public void testNewSubQueryId() {
+  public void testNewStageId() {
     QueryId qid = LocalTajoTestingUtility.newQueryId();
     MasterPlan plan = new MasterPlan(qid, null, null);
-    ExecutionBlockId subqid1 = plan.newExecutionBlockId();
-    ExecutionBlockId subqid2 = plan.newExecutionBlockId();
-    assertTrue(subqid1.compareTo(subqid2) < 0);
+    ExecutionBlockId stageId1 = plan.newExecutionBlockId();
+    ExecutionBlockId stageId2 = plan.newExecutionBlockId();
+    assertTrue(stageId1.compareTo(stageId2) < 0);
   }
   
   @Test
-  public void testNewQueryUnitId() {
+  public void testNewTaskId() {
     QueryId qid = LocalTajoTestingUtility.newQueryId();
     MasterPlan plan = new MasterPlan(qid, null, null);
     ExecutionBlockId subid = plan.newExecutionBlockId();
-    QueryUnitId quid1 = QueryIdFactory.newQueryUnitId(subid);
-    QueryUnitId quid2 = QueryIdFactory.newQueryUnitId(subid);
+    TaskId quid1 = QueryIdFactory.newTaskId(subid);
+    TaskId quid2 = QueryIdFactory.newTaskId(subid);
     assertTrue(quid1.compareTo(quid2) < 0);
   }
 }

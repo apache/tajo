@@ -19,7 +19,6 @@
 package org.apache.tajo.datum;
 
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.util.datetime.DateTimeUtil;
@@ -29,8 +28,8 @@ import org.junit.Test;
 import java.util.Calendar;
 import java.util.TimeZone;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.*;
 
 public class TestTimestampDatum {
   private static long javatime;
@@ -40,7 +39,7 @@ public class TestTimestampDatum {
   @BeforeClass
   public static void setUp() {
     javatime = System.currentTimeMillis();
-    calendar = Calendar.getInstance(TajoConf.getCurrentTimeZone());
+    calendar = Calendar.getInstance(TimeZone.getTimeZone("PST"));
     calendar.setTimeInMillis(javatime);
     unixtime = (int) (javatime / 1000);
   }
@@ -151,7 +150,8 @@ public class TestTimestampDatum {
     assertEquals(datum2, datum);
 
     for (int i = 0; i < 100; i++) {
-      Calendar cal = Calendar.getInstance();
+      TimeZone timeZone = TimeZone.getTimeZone("GMT");
+      Calendar cal = Calendar.getInstance(timeZone);
       long jTime = System.currentTimeMillis();
       int uTime = (int)(jTime / 1000);
       cal.setTimeInMillis(jTime);
@@ -178,5 +178,18 @@ public class TestTimestampDatum {
    assertEquals(Boolean.FALSE,d.equals(DatumFactory.createNullDatum()));
    assertEquals(DatumFactory.createNullDatum(),d.equalsTo(DatumFactory.createNullDatum()));
    assertEquals(-1,d.compareTo(DatumFactory.createNullDatum()));
+  }
+  
+  @Test
+  public void testCompareTo() {
+    TimestampDatum theday = DatumFactory.createTimestamp("2014-11-12 15:00:00.68");
+    TimestampDatum thedaybefore = DatumFactory.createTimestamp("2014-11-11 15:00:00.56");
+    
+    assertThat(theday.compareTo(thedaybefore) > 0, is(true));
+    assertThat(thedaybefore.compareTo(theday) > 0, is(false));
+    
+    DateDatum date = DatumFactory.createDate("2014-11-12");
+    
+    assertThat(theday.compareTo(date) > 0, is(true));
   }
 }

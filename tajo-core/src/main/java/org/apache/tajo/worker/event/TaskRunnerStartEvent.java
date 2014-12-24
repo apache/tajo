@@ -20,25 +20,33 @@ package org.apache.tajo.worker.event;
 
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 
 public class TaskRunnerStartEvent extends TaskRunnerEvent {
 
   private final QueryContext queryContext;
-  private final String[] params;
+  private final WorkerConnectionInfo queryMaster;
+  private final String containerId;
   private final String plan;
 
-  public TaskRunnerStartEvent(String[] params,
+  public TaskRunnerStartEvent(WorkerConnectionInfo queryMaster,
                               ExecutionBlockId executionBlockId,
+                              String containerId,
                               QueryContext context,
                               String plan) {
     super(EventType.START, executionBlockId);
-    this.params = params;
+    this.queryMaster = queryMaster;
+    this.containerId = containerId;
     this.queryContext = context;
     this.plan = plan;
   }
 
-  public String[] getParams(){
-    return this.params;
+  public WorkerConnectionInfo getQueryMaster() {
+    return queryMaster;
+  }
+
+  public String getContainerId() {
+    return containerId;
   }
 
   public QueryContext getQueryContext() {

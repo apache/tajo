@@ -193,9 +193,9 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         String fileOutputformat = properties.getProperty(hive_metastoreConstants.FILE_OUTPUT_FORMAT);
         storeType = CatalogUtil.getStoreType(HCatalogUtil.getStoreType(fileOutputformat));
 
-        if (storeType.equals(CatalogProtos.StoreType.CSV)) {
-          options.set(StorageConstants.CSVFILE_DELIMITER, StringEscapeUtils.escapeJava(fieldDelimiter));
-          options.set(StorageConstants.CSVFILE_NULL, StringEscapeUtils.escapeJava(nullFormat));
+        if (storeType.equals(CatalogProtos.StoreType.TEXTFILE)) {
+          options.set(StorageConstants.TEXT_DELIMITER, StringEscapeUtils.escapeJava(fieldDelimiter));
+          options.set(StorageConstants.TEXT_NULL, StringEscapeUtils.escapeJava(nullFormat));
         } else if (storeType.equals(CatalogProtos.StoreType.RCFILE)) {
           options.set(StorageConstants.RCFILE_NULL, StringEscapeUtils.escapeJava(nullFormat));
           String serde = properties.getProperty(serdeConstants.SERIALIZATION_LIB);
@@ -262,7 +262,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       if(client != null) client.release();
     }
     TableMeta meta = new TableMeta(storeType, options);
-    TableDesc tableDesc = new TableDesc(databaseName + "." + tableName, schema, meta, path);
+    TableDesc tableDesc = new TableDesc(databaseName + "." + tableName, schema, meta, path.toUri());
     if (table.getTableType().equals(TableType.EXTERNAL_TABLE)) {
       tableDesc.setExternal(true);
     }
@@ -330,6 +330,12 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     } else {
       throw new CatalogException("tablespace concept is not supported in HCatalogStore");
     }
+  }
+
+  @Override
+  public void updateTableStats(CatalogProtos.UpdateTableStatsProto statsProto) throws
+    CatalogException {
+    // TODO - not implemented yet
   }
 
   @Override
@@ -442,12 +448,13 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         table.setTableType(TableType.EXTERNAL_TABLE.name());
         table.putToParameters("EXTERNAL", "TRUE");
 
-        FileSystem fs = tableDesc.getPath().getFileSystem(conf);
-        if (fs.isFile(tableDesc.getPath())) {
+        Path tablePath = new Path(tableDesc.getPath());
+        FileSystem fs = tablePath.getFileSystem(conf);
+        if (fs.isFile(tablePath)) {
           LOG.warn("A table path is a file, but HCatalog does not allow a file path.");
-          sd.setLocation(tableDesc.getPath().getParent().toString());
+          sd.setLocation(tablePath.getParent().toString());
         } else {
-          sd.setLocation(tableDesc.getPath().toString());
+          sd.setLocation(tablePath.toString());
         }
       }
 
@@ -486,12 +493,13 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
           table.putToParameters(serdeConstants.SERIALIZATION_NULL_FORMAT,
               StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(StorageConstants.RCFILE_NULL)));
         }
-      } else if (tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.CSV)) {
+      } else if (tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.CSV)
+          || tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.TEXTFILE)) {
         sd.getSerdeInfo().setSerializationLib(org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe.class.getName());
         sd.setInputFormat(org.apache.hadoop.mapred.TextInputFormat.class.getName());
         sd.setOutputFormat(org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat.class.getName());
 
-        String fieldDelimiter = tableDesc.getMeta().getOption(StorageConstants.CSVFILE_DELIMITER,
+        String fieldDelimiter = tableDesc.getMeta().getOption(StorageConstants.TEXT_DELIMITER,
             StorageConstants.DEFAULT_FIELD_DELIMITER);
 
         // User can use an unicode for filed delimiter such as \u0001, \001.
@@ -503,12 +511,12 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
             StringEscapeUtils.unescapeJava(fieldDelimiter));
         sd.getSerdeInfo().putToParameters(serdeConstants.FIELD_DELIM,
             StringEscapeUtils.unescapeJava(fieldDelimiter));
-        table.getParameters().remove(StorageConstants.CSVFILE_DELIMITER);
+        table.getParameters().remove(StorageConstants.TEXT_DELIMITER);
 
-        if (tableDesc.getMeta().containsOption(StorageConstants.CSVFILE_NULL)) {
+        if (tableDesc.getMeta().containsOption(StorageConstants.TEXT_NULL)) {
           table.putToParameters(serdeConstants.SERIALIZATION_NULL_FORMAT,
-              StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(StorageConstants.CSVFILE_NULL)));
-          table.getParameters().remove(StorageConstants.CSVFILE_NULL);
+              StringEscapeUtils.unescapeJava(tableDesc.getMeta().getOption(StorageConstants.TEXT_NULL)));
+          table.getParameters().remove(StorageConstants.TEXT_NULL);
         }
       } else if (tableDesc.getMeta().getStoreType().equals(CatalogProtos.StoreType.SEQUENCEFILE)) {
         String serde = tableDesc.getMeta().getOption(StorageConstants.SEQUENCEFILE_SERDE);

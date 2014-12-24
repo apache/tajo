@@ -27,6 +27,10 @@ import "tajo_protos.proto";
 import "TajoIdProtos.proto";
 import "CatalogProtos.proto";
 import "PrimitiveProtos.proto";
+import "Plan.proto";
+import "ContainerProtocol.proto";
+
+package hadoop.yarn;
 
 message SessionProto {
   required string session_id = 1;
@@ -37,7 +41,7 @@ message SessionProto {
 }
 
 message TaskStatusProto {
-  required QueryUnitAttemptIdProto id = 1;
+  required TaskAttemptIdProto id = 1;
   required string workerName = 2;
   required float progress = 3;
   required TaskAttemptState state = 4;
@@ -48,7 +52,7 @@ message TaskStatusProto {
 }
 
 message TaskCompletionReport {
-  required QueryUnitAttemptIdProto id = 1;
+  required TaskAttemptIdProto id = 1;
   optional StatSetProto stats = 2;
   optional TableStatsProto inputStats = 3;
   optional TableStatsProto resultStats = 4;
@@ -56,13 +60,13 @@ message TaskCompletionReport {
 }
 
 message TaskFatalErrorReport {
-  required QueryUnitAttemptIdProto id = 1;
+  required TaskAttemptIdProto id = 1;
   optional string errorMessage = 2;
   optional string errorTrace = 3;
 }
 
-message QueryUnitRequestProto {
-    required QueryUnitAttemptIdProto id = 1;
+message TaskRequestProto {
+    required TaskAttemptIdProto id = 1;
     repeated FragmentProto fragments = 2;
     required string outputTable = 3;
     required bool clusteredOutput = 4;
@@ -122,7 +126,7 @@ message ExecutionBlockReport {
     repeated IntermediateEntryProto intermediateEntries = 5;
 }
 
-message QueryUnitResponseProto {
+message TaskResponseProto {
     required string id = 1;
     required QueryState status = 2;
 }
@@ -131,7 +135,7 @@ message StatusReportProto {
   required int64 timestamp = 1;
   required string serverName = 2;
   repeated TaskStatusProto status = 3;
-  repeated QueryUnitAttemptIdProto pings = 4;
+  repeated TaskAttemptIdProto pings = 4;
 }
 
 message CommandRequestProto {
@@ -142,7 +146,7 @@ message CommandResponseProto {
 }
 
 message Command {
-    required QueryUnitAttemptIdProto id = 1;
+    required TaskAttemptIdProto id = 1;
     required CommandType type = 2;
 }
 
@@ -168,21 +172,9 @@ message QueryExecutionRequestProto {
 }
 
 message GetTaskRequestProto {
-    required hadoop.yarn.ContainerIdProto containerId = 1;
-    required ExecutionBlockIdProto executionBlockId = 2;
-}
-
-enum ShuffleType {
-  NONE_SHUFFLE = 0;
-  HASH_SHUFFLE = 1;
-  RANGE_SHUFFLE = 2;
-  SCATTERED_HASH_SHUFFLE = 3;
-}
-
-enum TransmitType {
-  PUSH_TRANSMIT = 0;
-  PULL_TRANSMIT = 1;
-  FILE_WRITE = 2;
+    required int32 workerId = 1;
+    required TajoContainerIdProto containerId = 2;
+    required ExecutionBlockIdProto executionBlockId = 3;
 }
 
 message DataChannelProto {
@@ -202,14 +194,13 @@ message DataChannelProto {
 
 message RunExecutionBlockRequestProto {
     required ExecutionBlockIdProto executionBlockId = 1;
-    required string queryMasterHost = 2;
-    required int32 queryMasterPort = 3;
-    required string nodeId = 4;
-    required string containerId = 5;
-    optional string queryOutputPath = 6;
+    required WorkerConnectionInfoProto queryMaster = 2;
+    required string nodeId = 3;
+    required string containerId = 4;
+    optional string queryOutputPath = 5;
 
-    required KeyValueSetProto queryContext = 7;
-    required string planJson = 8;
+    required KeyValueSetProto queryContext = 6;
+    required string planJson = 7;
 }
 
 message ExecutionBlockListProto {
@@ -217,12 +208,12 @@ message ExecutionBlockListProto {
 }
 
 service TajoWorkerProtocolService {
-  rpc ping (QueryUnitAttemptIdProto) returns (BoolProto);
+  rpc ping (TaskAttemptIdProto) returns (BoolProto);
 
   // from QueryMaster(Worker)
   rpc startExecutionBlock(RunExecutionBlockRequestProto) returns (BoolProto);
   rpc stopExecutionBlock(ExecutionBlockIdProto) returns (BoolProto);
-  rpc killTaskAttempt(QueryUnitAttemptIdProto) returns (BoolProto);
+  rpc killTaskAttempt(TaskAttemptIdProto) returns (BoolProto);
   rpc cleanup(QueryIdProto) returns (BoolProto);
   rpc cleanupExecutionBlocks(ExecutionBlockListProto) returns (BoolProto);
 }
@@ -315,6 +306,12 @@ message DistinctGroupbyEnforcer {
     SORT_AGGREGATION = 1;
   }
 
+  enum MultipleAggregationStage {
+    FIRST_STAGE = 0;
+    SECOND_STAGE = 1;
+    THRID_STAGE = 3;
+  }
+
   message SortSpecArray {
     required int32 pid = 1;
     repeated SortSpecProto sortSpecs = 2;
@@ -322,6 +319,8 @@ message DistinctGroupbyEnforcer {
   required int32 pid = 1;
   required DistinctAggregationAlgorithm algorithm = 2;
   repeated SortSpecArray sortSpecArrays = 3;
+  required bool isMultipleAggregation = 4 [default = false];
+  optional MultipleAggregationStage multipleAggregationStage = 5;
 }
 
 message EnforcerProto {
@@ -337,7 +336,7 @@ message FetcherHistoryProto {
 }
 
 message TaskHistoryProto {
-  required QueryUnitAttemptIdProto queryUnitAttemptId = 1;
+  required TaskAttemptIdProto taskAttemptId = 1;
   required TaskAttemptState state = 2;
   required float progress = 3;
   required int64 startTime = 4;

@@ -21,11 +21,12 @@ package org.apache.tajo.engine.query;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ConfigKey;
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.QueryVars;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.planner.logical.NodeType;
 import org.apache.tajo.master.session.Session;
+import org.apache.tajo.plan.logical.NodeType;
 
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
 
@@ -33,42 +34,17 @@ import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetPro
  * QueryContent is a overridable config, and it provides a set of various configs for a query instance.
  */
 public class QueryContext extends OverridableConf {
-  public static enum QueryVars implements ConfigKey {
-    COMMAND_TYPE,
-    STAGING_DIR,
-    OUTPUT_TABLE_NAME,
-    OUTPUT_TABLE_PATH,
-    OUTPUT_PARTITIONS,
-    OUTPUT_OVERWRITE,
-    OUTPUT_AS_DIRECTORY,
-    OUTPUT_PER_FILE_SIZE,
-    ;
-
-    QueryVars() {
-    }
-
-    @Override
-    public String keyname() {
-      return name().toLowerCase();
-    }
-
-    @Override
-    public ConfigType type() {
-      return ConfigType.QUERY;
-    }
-  }
-
   public QueryContext(TajoConf conf) {
     super(conf, ConfigKey.ConfigType.QUERY);
   }
 
   public QueryContext(TajoConf conf, Session session) {
-    super(conf);
+    super(conf, ConfigKey.ConfigType.QUERY, ConfigKey.ConfigType.SESSION);
     putAll(session.getAllVariables());
   }
 
   public QueryContext(TajoConf conf, KeyValueSetProto proto) {
-    super(conf, proto, ConfigKey.ConfigType.QUERY);
+    super(conf, proto, ConfigKey.ConfigType.QUERY, ConfigKey.ConfigType.SESSION);
   }
 
   //-----------------------------------------------------------------------------------------------
@@ -92,8 +68,8 @@ public class QueryContext extends OverridableConf {
   }
 
   public Path getStagingDir() {
-    String strVal = get(QueryVars.STAGING_DIR);
-    return strVal != null ? new Path(strVal) : null;
+    String strVal = get(QueryVars.STAGING_DIR, "");
+    return strVal != null && !strVal.isEmpty() ? new Path(strVal) : null;
   }
 
   /**
@@ -116,7 +92,9 @@ public class QueryContext extends OverridableConf {
   }
 
   public void setOutputPath(Path path) {
-    put(QueryVars.OUTPUT_TABLE_PATH, path.toUri().toString());
+    if (path != null) {
+      put(QueryVars.OUTPUT_TABLE_PATH, path.toUri().toString());
+    }
   }
 
   public Path getOutputPath() {
@@ -132,9 +110,9 @@ public class QueryContext extends OverridableConf {
     put(QueryVars.OUTPUT_PARTITIONS, partitionMethodDesc != null ? partitionMethodDesc.toJson() : null);
   }
 
-  public PartitionMethodDesc getPartitionMethod() {
-    return PartitionMethodDesc.fromJson(get(QueryVars.OUTPUT_PARTITIONS));
-  }
+//  public PartitionMethodDesc getPartitionMethod() {
+//    return PartitionMethodDesc.fromJson(get(QueryVars.OUTPUT_PARTITIONS));
+//  }
 
   public void setOutputOverwrite() {
     setBool(QueryVars.OUTPUT_OVERWRITE, true);
@@ -160,8 +138,8 @@ public class QueryContext extends OverridableConf {
     }
   }
 
-  public boolean isCommandType(NodeType commandType) {
-    return equalKey(QueryVars.COMMAND_TYPE, commandType.name());
+  public boolean isCommandType(String commandType) {
+    return equalKey(QueryVars.COMMAND_TYPE, commandType);
   }
 
   public void setCommandType(NodeType nodeType) {
@@ -178,7 +156,7 @@ public class QueryContext extends OverridableConf {
   }
 
   public boolean isCreateTable() {
-    return isCommandType(NodeType.CREATE_TABLE);
+    return isCommandType(NodeType.CREATE_TABLE.name());
   }
 
   public void setInsert() {
@@ -186,6 +164,6 @@ public class QueryContext extends OverridableConf {
   }
 
   public boolean isInsert() {
-    return isCommandType(NodeType.INSERT);
+    return isCommandType(NodeType.INSERT.name());
   }
 }

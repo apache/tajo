@@ -37,14 +37,15 @@
 package org.apache.tajo.client;
 
 import com.google.protobuf.ServiceException;
-import org.apache.tajo.cli.TajoCli.TajoCliContext;
+import org.apache.tajo.cli.tsql.TajoCli.TajoCliContext;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.util.HAServiceUtil;
+import org.apache.tajo.ha.HAServiceUtil;
+import org.apache.tajo.util.NetUtils;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 
 public class TajoHAClientUtil {
-
   /**
    * In TajoMaster HA mode, if TajoCli can't connect existing active master,
    * this should try to connect new active master.
@@ -65,13 +66,13 @@ public class TajoHAClientUtil {
 
     if (conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
       if (!HAServiceUtil.isMasterAlive(conf.getVar(
-          TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS), conf)) {
+        TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS), conf)) {
         TajoClient tajoClient = null;
         String baseDatabase = client.getBaseDatabase();
         conf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS,
-            HAServiceUtil.getMasterClientName(conf));
+          HAServiceUtil.getMasterClientName(conf));
         client.close();
-        tajoClient = new TajoClient(conf, baseDatabase);
+        tajoClient = new TajoClientImpl(conf, baseDatabase);
 
         if (context != null && context.getCurrentDatabase() != null) {
           tajoClient.selectDatabase(context.getCurrentDatabase());
@@ -84,4 +85,15 @@ public class TajoHAClientUtil {
       return client;
     }
   }
+
+
+  public static InetSocketAddress getRpcClientAddress(TajoConf conf) {
+    if (conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+      return NetUtils.createSocketAddr(HAServiceUtil.getMasterClientName(conf));
+    } else {
+      return NetUtils.createSocketAddr(conf.getVar(TajoConf.ConfVars
+        .TAJO_MASTER_CLIENT_RPC_ADDRESS));
+    }
+  }
+
 }

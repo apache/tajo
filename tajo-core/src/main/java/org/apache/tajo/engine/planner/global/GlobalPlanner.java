@@ -33,13 +33,19 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.eval.*;
-import org.apache.tajo.engine.function.AggFunction;
-import org.apache.tajo.engine.planner.*;
+import org.apache.tajo.engine.planner.BroadcastJoinMarkCandidateVisitor;
+import org.apache.tajo.engine.planner.BroadcastJoinPlanVisitor;
 import org.apache.tajo.engine.planner.global.builder.DistinctGroupbyBuilder;
-import org.apache.tajo.engine.planner.logical.*;
-import org.apache.tajo.engine.planner.rewrite.ProjectionPushDownRule;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.plan.Target;
+import org.apache.tajo.plan.expr.*;
+import org.apache.tajo.plan.function.AggFunction;
+import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
+import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TajoWorker;
@@ -48,7 +54,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.apache.tajo.conf.TajoConf.ConfVars;
-import static org.apache.tajo.ipc.TajoWorkerProtocol.ShuffleType.*;
+import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.*;
 
 /**
  * Build DAG
@@ -171,7 +177,7 @@ public class GlobalPlanner {
         "Channel schema (" + channel.getSrcId().getId() + " -> " + channel.getTargetId().getId() +
             ") is not initialized");
     TableMeta meta = new TableMeta(channel.getStoreType(), new KeyValueSet());
-    TableDesc desc = new TableDesc(channel.getSrcId().toString(), channel.getSchema(), meta, new Path("/"));
+    TableDesc desc = new TableDesc(channel.getSrcId().toString(), channel.getSchema(), meta, new Path("/").toUri());
     ScanNode scanNode = plan.createNode(ScanNode.class);
     scanNode.init(desc);
     return scanNode;
@@ -520,7 +526,7 @@ public class GlobalPlanner {
     }
   }
 
-  private AggregationFunctionCallEval createSumFunction(EvalNode [] args) throws InternalException {
+  private AggregationFunctionCallEval createSumFunction(EvalNode[] args) throws InternalException {
     FunctionDesc functionDesc = getCatalog().getFunction("sum", CatalogProtos.FunctionType.AGGREGATION,
         args[0].getValueType());
     return new AggregationFunctionCallEval(functionDesc, (AggFunction) functionDesc.newInstance(), args);
@@ -556,7 +562,7 @@ public class GlobalPlanner {
    */
   private static class RewrittenFunctions {
     AggregationFunctionCallEval [] firstStageEvals;
-    Target [] firstStageTargets;
+    Target[] firstStageTargets;
     AggregationFunctionCallEval secondStageEvals;
 
     public RewrittenFunctions(int firstStageEvalNum) {
@@ -656,47 +662,6 @@ public class GlobalPlanner {
     }
 
     return rewritten;
-  }
-
-  public ExecutionBlock buildDistinctGroupbyAndUnionPlan(MasterPlan masterPlan, ExecutionBlock lastBlock,
-                                                  DistinctGroupbyNode firstPhaseGroupBy,
-                                                  DistinctGroupbyNode secondPhaseGroupBy) {
-    DataChannel lastDataChannel = null;
-
-    // It pushes down the first phase group-by operator into all child blocks.
-    //
-    // (second phase)    G (currentBlock)
-    //                  /|\
-    //                / / | \
-    // (first phase) G G  G  G (child block)
-
-    // They are already connected one another.
-    // So, we don't need to connect them again.
-    for (DataChannel dataChannel : masterPlan.getIncomingChannels(lastBlock.getId())) {
-      if (firstPhaseGroupBy.isEmptyGrouping()) {
-        dataChannel.setShuffle(HASH_SHUFFLE, firstPhaseGroupBy.getGroupingColumns(), 1);
-      } else {
-        dataChannel.setShuffle(HASH_SHUFFLE, firstPhaseGroupBy.getGroupingColumns(), 32);
-      }
-      dataChannel.setSchema(firstPhaseGroupBy.getOutSchema());
-      ExecutionBlock childBlock = masterPlan.getExecBlock(dataChannel.getSrcId());
-
-      // Why must firstPhaseGroupby be copied?
-      //
-      // A groupby in each execution block can have different child.
-      // It affects groupby's input schema.
-      DistinctGroupbyNode firstPhaseGroupbyCopy = PlannerUtil.clone(masterPlan.getLogicalPlan(), firstPhaseGroupBy);
-      firstPhaseGroupbyCopy.setChild(childBlock.getPlan());
-      childBlock.setPlan(firstPhaseGroupbyCopy);
-
-      // just keep the last data channel.
-      lastDataChannel = dataChannel;
-    }
-
-    ScanNode scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), lastDataChannel);
-    secondPhaseGroupBy.setChild(scanNode);
-    lastBlock.setPlan(secondPhaseGroupBy);
-    return lastBlock;
   }
 
   /**
@@ -824,8 +789,20 @@ public class GlobalPlanner {
     ExecutionBlock currentBlock;
 
     if (groupbyNode.isDistinct()) { // if there is at one distinct aggregation function
-      DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
-      return builder.buildPlan(context, lastBlock, groupbyNode);
+      boolean multiLevelEnabled = context.getPlan().getContext().getBool(SessionVars.GROUPBY_MULTI_LEVEL_ENABLED);
+
+      if (multiLevelEnabled) {
+        if (PlannerUtil.findTopNode(groupbyNode, NodeType.UNION) == null) {
+          DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
+          return builder.buildMultiLevelPlan(context, lastBlock, groupbyNode);
+        } else {
+          DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
+          return builder.buildPlan(context, lastBlock, groupbyNode);
+        }
+      } else {
+        DistinctGroupbyBuilder builder = new DistinctGroupbyBuilder(this);
+        return builder.buildPlan(context, lastBlock, groupbyNode);
+      }
     } else {
       GroupbyNode firstPhaseGroupby = createFirstPhaseGroupBy(masterPlan.getLogicalPlan(), groupbyNode);
 
@@ -968,6 +945,7 @@ public class GlobalPlanner {
         firstPhaseEvals[i].setFirstPhase();
         firstPhaseEvalNames[i] = plan.generateUniqueColumnName(firstPhaseEvals[i]);
         FieldEval param = new FieldEval(firstPhaseEvalNames[i], firstPhaseEvals[i].getValueType());
+        secondPhaseEvals[i].setFinalPhase();
         secondPhaseEvals[i].setArgs(new EvalNode[] {param});
       }
 

@@ -28,20 +28,24 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryMasterProtocol;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.StorageUtil;
+import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.worker.event.TaskRunnerStartEvent;
+import org.jboss.netty.channel.ConnectTimeoutException;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
+import org.jboss.netty.util.Timer;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -78,6 +82,7 @@ public class ExecutionBlockContext {
   private TajoQueryEngine queryEngine;
   private RpcConnectionPool connPool;
   private InetSocketAddress qmMasterAddr;
+  private WorkerConnectionInfo queryMaster;
   private TajoConf systemConf;
   // for the doAs block
   private UserGroupInformation taskOwner;
@@ -87,16 +92,16 @@ public class ExecutionBlockContext {
   private AtomicBoolean stop = new AtomicBoolean();
 
   // It keeps all of the query unit attempts while a TaskRunner is running.
-  private final ConcurrentMap<QueryUnitAttemptId, Task> tasks = Maps.newConcurrentMap();
+  private final ConcurrentMap<TaskAttemptId, Task> tasks = Maps.newConcurrentMap();
 
   private final ConcurrentMap<String, TaskRunnerHistory> histories = Maps.newConcurrentMap();
 
-  public ExecutionBlockContext(TaskRunnerManager manager, TaskRunnerStartEvent event, InetSocketAddress queryMaster)
+  public ExecutionBlockContext(TaskRunnerManager manager, TaskRunnerStartEvent event, WorkerConnectionInfo queryMaster)
       throws Throwable {
     this.manager = manager;
     this.executionBlockId = event.getExecutionBlockId();
     this.connPool = RpcConnectionPool.getPool(manager.getTajoConf());
-    this.qmMasterAddr = queryMaster;
+    this.queryMaster = queryMaster;
     this.systemConf = manager.getTajoConf();
     this.reporter = new Reporter();
     this.defaultFS = TajoConf.getTajoRootDir(systemConf).getFileSystem(systemConf);
@@ -117,6 +122,7 @@ public class ExecutionBlockContext {
     LOG.info("Tajo Root Dir: " + systemConf.getVar(TajoConf.ConfVars.ROOT_DIR));
     LOG.info("Worker Local Dir: " + systemConf.getVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR));
 
+    this.qmMasterAddr = NetUtils.createSocketAddr(queryMaster.getHost(), queryMaster.getQueryMasterPort());
     LOG.info("QueryMaster Address:" + qmMasterAddr);
 
     UserGroupInformation.setConfiguration(systemConf);
@@ -141,7 +147,8 @@ public class ExecutionBlockContext {
     return resource;
   }
 
-  public QueryMasterProtocol.QueryMasterProtocolService.Interface getQueryMasterStub() throws Exception {
+  public QueryMasterProtocol.QueryMasterProtocolService.Interface getQueryMasterStub()
+      throws NoSuchMethodException, ConnectTimeoutException, ClassNotFoundException {
     NettyClientBase clientBase = null;
     try {
       clientBase = connPool.getConnection(qmMasterAddr, QueryMasterProtocol.class, true);
@@ -235,12 +242,12 @@ public class ExecutionBlockContext {
     return executionBlockId;
   }
 
-  public Map<QueryUnitAttemptId, Task> getTasks() {
+  public Map<TaskAttemptId, Task> getTasks() {
     return tasks;
   }
 
-  public Task getTask(QueryUnitAttemptId queryUnitAttemptId){
-    return tasks.get(queryUnitAttemptId);
+  public Task getTask(TaskAttemptId taskAttemptId){
+    return tasks.get(taskAttemptId);
   }
 
   public void stopTaskRunner(String id){
@@ -251,7 +258,7 @@ public class ExecutionBlockContext {
     return manager.getTaskRunner(taskRunnerId);
   }
 
-  public void addTaskHistory(String taskRunnerId, QueryUnitAttemptId quAttemptId, TaskHistory taskHistory) {
+  public void addTaskHistory(String taskRunnerId, TaskAttemptId quAttemptId, TaskHistory taskHistory) {
     histories.get(taskRunnerId).addTaskHistory(quAttemptId, taskHistory);
   }
 
@@ -270,6 +277,10 @@ public class ExecutionBlockContext {
       channelFactory = RpcChannelFactory.createClientChannelFactory("Fetcher", workerNum);
     }
     return channelFactory;
+  }
+
+  public Timer getRPCTimer() {
+    return manager.getRPCTimer();
   }
 
   protected void releaseShuffleChannelFactory(){
@@ -324,8 +335,8 @@ public class ExecutionBlockContext {
         intermediateBuilder.clear();
 
         intermediateBuilder.setEbId(ebId.getProto())
-            .setHost(getWorkerContext().getTajoWorkerManagerService().getBindAddr().getHostName() + ":" +
-                getWorkerContext().getPullServerPort())
+            .setHost(getWorkerContext().getConnectionInfo().getHost() + ":" +
+                getWorkerContext().getConnectionInfo().getPullServerPort())
             .setTaskId(-1)
             .setAttemptId(-1)
             .setPartId(eachShuffle.getPartId())

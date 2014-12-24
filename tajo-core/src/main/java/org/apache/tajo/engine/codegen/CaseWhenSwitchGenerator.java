@@ -19,8 +19,8 @@
 package org.apache.tajo.engine.codegen;
 
 import com.google.common.collect.Maps;
-import org.apache.tajo.engine.eval.EvalNode;
 import org.apache.tajo.org.objectweb.asm.Label;
+import org.apache.tajo.plan.expr.EvalNode;
 
 import java.util.NavigableMap;
 import java.util.Stack;

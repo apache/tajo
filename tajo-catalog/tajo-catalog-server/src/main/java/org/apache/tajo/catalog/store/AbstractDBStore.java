@@ -22,6 +22,7 @@
 package org.apache.tajo.catalog.store;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -35,7 +36,6 @@ import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.exception.UnimplementedException;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.Pair;
 
@@ -58,21 +58,40 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   protected final String catalogUri;
 
   private Connection conn;
-
+  
   protected Map<String, Boolean> baseTableMaps = new HashMap<String, Boolean>();
+  
+  protected XMLCatalogSchemaManager catalogSchemaManager;
 
   protected abstract String getCatalogDriverName();
+  
+  protected String getCatalogSchemaPath() {
+    return "";
+  }
 
   protected abstract Connection createConnection(final Configuration conf) throws SQLException;
+  
+  protected void createDatabaseDependants() throws CatalogException {
+    
+  }
+  
+  protected boolean isInitialized() throws CatalogException {
+    return catalogSchemaManager.isInitialized(getConnection());
+  }
 
-  protected abstract boolean isInitialized() throws CatalogException;
+  protected void createBaseTable() throws CatalogException {
+    createDatabaseDependants();
+    
+    catalogSchemaManager.createBaseSchema(getConnection());
+    
+    insertSchemaVersion();
+  }
 
-  protected abstract void createBaseTable() throws CatalogException;
-
-  protected abstract void dropBaseTable() throws CatalogException;
+  protected void dropBaseTable() throws CatalogException {
+    catalogSchemaManager.dropBaseSchema(getConnection());
+  }
 
   public AbstractDBStore(Configuration conf) throws InternalException {
-
     this.conf = conf;
 
     if (conf.get(CatalogConstants.DEPRECATED_CATALOG_URI) != null) {
@@ -116,6 +135,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           + ")", e);
     }
 
+    String schemaPath = getCatalogSchemaPath();
+    if (schemaPath != null && !schemaPath.isEmpty()) {
+      this.catalogSchemaManager = new XMLCatalogSchemaManager(schemaPath);
+    }
+    
     try {
       if (isInitialized()) {
         LOG.info("The base tables of CatalogServer already is initialized.");
@@ -138,7 +162,9 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
   }
 
-  public abstract int getDriverVersion();
+  public int getDriverVersion() {
+    return catalogSchemaManager.getCatalogStore().getSchema().getVersion();
+  }
 
   public String readSchemaFile(String path) throws CatalogException {
     try {
@@ -176,41 +202,51 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     return conn;
   }
 
-  private void verifySchemaVersion() throws CatalogException {
+  private int getSchemaVersion() {
     Connection conn = null;
     PreparedStatement pstmt = null;
     ResultSet result = null;
+    int schemaVersion = -1;
+    
+    String sql = "SELECT version FROM META";
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(sql.toString());
+    }
 
     try {
-      String sql = "SELECT version FROM META";
-      if (LOG.isDebugEnabled()) {
-        LOG.debug(sql.toString());
-      }
-
       conn = getConnection();
       pstmt = conn.prepareStatement(sql);
       result = pstmt.executeQuery();
 
-      boolean noVersion = !result.next();
-
-      int schemaVersion = result.getInt(1);
-      if (noVersion || schemaVersion != getDriverVersion()) {
-        LOG.error(String.format("Catalog version (%d) and current driver version (%d) are mismatch to each other",
-            schemaVersion, getDriverVersion()));
-        LOG.error("=========================================================================");
-        LOG.error("|                Catalog Store Migration Is Needed                      |");
-        LOG.error("=========================================================================");
-        LOG.error("| You might downgrade or upgrade Apache Tajo. Downgrading or upgrading  |");
-        LOG.error("| Tajo without migration process is only available in some versions.    |");
-        LOG.error("| In order to learn how to migration Apache Tajo instance,              |");
-        LOG.error("| please refer http://s.apache.org/0_8_migration.                       |");
-        LOG.error("=========================================================================");
-        throw new CatalogException("Migration Needed. Please refer http://s.apache.org/0_8_migration.");
+      if (result.next()) {
+        schemaVersion = result.getInt("VERSION");
       }
     } catch (SQLException e) {
-      throw new CatalogException(e);
+      throw new CatalogException(e.getMessage(), e);
     } finally {
       CatalogUtil.closeQuietly(pstmt, result);
+    }
+    
+    return schemaVersion;
+  }
+
+  private void verifySchemaVersion() throws CatalogException {
+    int schemaVersion = -1;
+
+    schemaVersion = getSchemaVersion();
+
+    if (schemaVersion == -1 || schemaVersion != getDriverVersion()) {
+      LOG.error(String.format("Catalog version (%d) and current driver version (%d) are mismatch to each other",
+          schemaVersion, getDriverVersion()));
+      LOG.error("=========================================================================");
+      LOG.error("| Catalog Store Migration Is Needed |");
+      LOG.error("=========================================================================");
+      LOG.error("| You might downgrade or upgrade Apache Tajo. Downgrading or upgrading |");
+      LOG.error("| Tajo without migration process is only available in some versions. |");
+      LOG.error("| In order to learn how to migration Apache Tajo instance, |");
+      LOG.error("| please refer http://s.apache.org/0_8_migration. |");
+      LOG.error("=========================================================================");
+      throw new CatalogException("Migration Needed. Please refer http://s.apache.org/0_8_migration.");
     }
 
     LOG.info(String.format("The compatibility of the catalog schema (version: %d) has been verified.",
@@ -767,6 +803,74 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         pstmt.setString(2, table.getPartition().getPartitionType().name());
         pstmt.setString(3, table.getPartition().getExpression());
         pstmt.setBytes(4, table.getPartition().getExpressionSchema().toByteArray());
+        pstmt.executeUpdate();
+      }
+
+      // If there is no error, commit the changes.
+      conn.commit();
+    } catch (SQLException se) {
+      if (conn != null) {
+        try {
+          conn.rollback();
+        } catch (SQLException e) {
+          LOG.error(e);
+        }
+      }
+      throw new CatalogException(se);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt, res);
+    }
+  }
+
+  @Override
+  public void updateTableStats(final CatalogProtos.UpdateTableStatsProto statsProto) throws
+    CatalogException {
+    Connection conn = null;
+    PreparedStatement pstmt = null;
+    ResultSet res = null;
+
+    try {
+      conn = getConnection();
+      conn.setAutoCommit(false);
+
+      String[] splitted = CatalogUtil.splitTableName(statsProto.getTableName());
+      if (splitted.length == 1) {
+        throw new IllegalArgumentException("updateTableStats() requires a qualified table name, but it is \""
+          + statsProto.getTableName() + "\".");
+      }
+      String databaseName = splitted[0];
+      String tableName = splitted[1];
+
+      int dbid = getDatabaseId(databaseName);
+
+      String tidSql =
+        "SELECT TID from " + TB_TABLES + " WHERE " + COL_DATABASES_PK + "=? AND " + COL_TABLES_NAME + "=?";
+      pstmt = conn.prepareStatement(tidSql);
+      pstmt.setInt(1, dbid);
+      pstmt.setString(2, tableName);
+      res = pstmt.executeQuery();
+
+      if (!res.next()) {
+        throw new CatalogException("ERROR: there is no TID matched to " + statsProto.getTableName());
+      }
+
+      int tableId = res.getInt("TID");
+      res.close();
+      pstmt.close();
+
+      if (statsProto.hasStats()) {
+
+        String statSql = "UPDATE " + TB_STATISTICS + " SET NUM_ROWS = ?, " +
+          "NUM_BYTES = ? WHERE TID = ?";
+
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(statSql);
+        }
+
+        pstmt = conn.prepareStatement(statSql);
+        pstmt.setInt(1, tableId);
+        pstmt.setLong(2, statsProto.getStats().getNumRows());
+        pstmt.setLong(3, statsProto.getStats().getNumBytes());
         pstmt.executeUpdate();
       }
 

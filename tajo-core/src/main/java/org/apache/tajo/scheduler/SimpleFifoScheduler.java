@@ -31,7 +31,7 @@ public class SimpleFifoScheduler implements Scheduler {
   private static final Log LOG = LogFactory.getLog(SimpleFifoScheduler.class.getName());
   private LinkedList<QuerySchedulingInfo> pool = new LinkedList<QuerySchedulingInfo>();
   private final Thread queryProcessor;
-  private static AtomicBoolean stopped = new AtomicBoolean();
+  private AtomicBoolean stopped = new AtomicBoolean();
   private QueryJobManager manager;
   private Comparator<QuerySchedulingInfo> COMPARATOR = new SchedulingAlgorithms.FifoComparator();
 

@@ -20,14 +20,15 @@ package org.apache.tajo.worker;
 
 import com.google.protobuf.ServiceException;
 import org.apache.hadoop.service.Service;
-import org.apache.tajo.QueryUnitAttemptId;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.TajoMaster;
-import org.apache.tajo.master.querymaster.QueryInProgress;
+import org.apache.tajo.master.querymaster.QueryInfo;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -49,7 +50,7 @@ public class TestHistory {
     cluster = TpchTestBase.getInstance().getTestingCluster();
     master = cluster.getMaster();
     conf = cluster.getConfiguration();
-    client = new TajoClient(conf);
+    client = new TajoClientImpl(conf);
   }
 
   @After
@@ -63,7 +64,7 @@ public class TestHistory {
     int beforeFinishedQueriesCount = master.getContext().getQueryJobManager().getFinishedQueries().size();
     client.executeQueryAndGetResult("select sleep(1) from lineitem");
 
-    Collection<QueryInProgress> finishedQueries = master.getContext().getQueryJobManager().getFinishedQueries();
+    Collection<QueryInfo> finishedQueries = master.getContext().getQueryJobManager().getFinishedQueries();
     assertTrue(finishedQueries.size() > beforeFinishedQueriesCount);
 
     TajoWorker worker = cluster.getTajoWorkers().get(0);
@@ -76,8 +77,13 @@ public class TestHistory {
 
     TaskRunnerHistory history = histories.iterator().next();
     assertEquals(Service.STATE.STOPPED, history.getState());
-
-    assertEquals(history, new TaskRunnerHistory(history.getProto()));
+    TaskRunnerHistory fromProto = new TaskRunnerHistory(history.getProto());
+    assertEquals(history.getExecutionBlockId(), fromProto.getExecutionBlockId());
+    assertEquals(history.getFinishTime(), fromProto.getFinishTime());
+    assertEquals(history.getStartTime(), fromProto.getStartTime());
+    assertEquals(history.getState(), fromProto.getState());
+    assertEquals(history.getContainerId(), fromProto.getContainerId());
+    assertEquals(history.getProto().getTaskHistoriesCount(), fromProto.getProto().getTaskHistoriesCount());
   }
 
   @Test
@@ -85,7 +91,7 @@ public class TestHistory {
     int beforeFinishedQueriesCount = master.getContext().getQueryJobManager().getFinishedQueries().size();
     client.executeQueryAndGetResult("select sleep(1) from lineitem");
 
-    Collection<QueryInProgress> finishedQueries = master.getContext().getQueryJobManager().getFinishedQueries();
+    Collection<QueryInfo> finishedQueries = master.getContext().getQueryJobManager().getFinishedQueries();
     assertTrue(finishedQueries.size() > beforeFinishedQueriesCount);
 
     TajoWorker worker = cluster.getTajoWorkers().get(0);
@@ -101,13 +107,13 @@ public class TestHistory {
     assertTrue(history.size() > 0);
     assertEquals(Service.STATE.STOPPED, history.getState());
 
-    Map.Entry<QueryUnitAttemptId, TaskHistory> entry =
+    Map.Entry<TaskAttemptId, TaskHistory> entry =
         history.getTaskHistoryMap().entrySet().iterator().next();
 
-    QueryUnitAttemptId queryUnitAttemptId = entry.getKey();
+    TaskAttemptId taskAttemptId = entry.getKey();
     TaskHistory taskHistory = entry.getValue();
 
     assertEquals(TajoProtos.TaskAttemptState.TA_SUCCEEDED, taskHistory.getState());
-    assertEquals(queryUnitAttemptId, taskHistory.getQueryUnitAttemptId());
+    assertEquals(taskAttemptId, taskHistory.getTaskAttemptId());
   }
 }

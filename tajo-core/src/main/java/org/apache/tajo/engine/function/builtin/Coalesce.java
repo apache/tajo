@@ -21,7 +21,7 @@ package org.apache.tajo.engine.function.builtin;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.engine.function.GeneralFunction;
+import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.storage.Tuple;
 
 public abstract class Coalesce extends GeneralFunction {

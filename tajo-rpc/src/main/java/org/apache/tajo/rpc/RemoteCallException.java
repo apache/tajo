@@ -41,12 +41,19 @@ public class RemoteCallException extends RemoteException {
   public RemoteCallException(int seqId, Throwable t) {
     super(t);
     this.seqId = seqId;
+    if (t != null) {
+      originExceptionClass = t.getClass().getCanonicalName();
+    }
   }
 
   public RpcResponse getResponse() {
     RpcResponse.Builder builder = RpcResponse.newBuilder();
     builder.setId(seqId);
-    builder.setErrorMessage(getCause().getMessage());
+    if (getCause().getMessage() == null) {
+      builder.setErrorMessage(getCause().getClass().getName());
+    } else {
+      builder.setErrorMessage(getCause().getMessage());
+    }
     builder.setErrorTrace(getStackTraceString(getCause()));
     builder.setErrorClass(originExceptionClass);
 

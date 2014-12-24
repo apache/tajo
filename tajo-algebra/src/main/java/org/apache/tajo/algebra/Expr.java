@@ -22,6 +22,7 @@ import com.google.gson.*;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
+import org.apache.tajo.json.CommonGsonHelper;
 
 import java.lang.reflect.Type;
 
@@ -124,9 +125,9 @@ public abstract class Expr implements JsonSerializable, Cloneable {
                                     JsonDeserializationContext context)
         throws JsonParseException {
       JsonObject jsonObject = json.getAsJsonObject();
-      String opType = jsonObject.get(SERIALIZED_NAME_OF_OP_TYPE).getAsString();
+      String opType = CommonGsonHelper.getOrDie(jsonObject, SERIALIZED_NAME_OF_OP_TYPE).getAsString();
       if (OpType.valueOf(opType).equals(OpType.Literal)) {
-        String value = jsonObject.get("Value").getAsString();
+        String value = CommonGsonHelper.getOrDie(jsonObject, "Value").getAsString();
         JsonElement valueTypeElem = jsonObject.get("ValueType");
         if (valueTypeElem != null) {
           return new LiteralValue(value, LiteralType.valueOf(valueTypeElem.getAsString()));

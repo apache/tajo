@@ -21,13 +21,12 @@ package org.apache.tajo.master.rm;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.yarn.event.Dispatcher;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.ipc.ContainerProtocol;
 
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
-import static org.apache.hadoop.yarn.proto.YarnProtos.ContainerIdProto;
 
 /**
  * It's a worker resource manager context. It contains all context data about TajoWorkerResourceManager.
@@ -37,16 +36,17 @@ public class TajoRMContext {
   final Dispatcher rmDispatcher;
 
   /** map between workerIds and running workers */
-  private final ConcurrentMap<String, Worker> workers = new ConcurrentHashMap<String, Worker>();
+  private final ConcurrentMap<Integer, Worker> workers = Maps.newConcurrentMap();
 
   /** map between workerIds and inactive workers */
-  private final ConcurrentMap<String, Worker> inactiveWorkers = new ConcurrentHashMap<String, Worker>();
+  private final ConcurrentMap<Integer, Worker> inactiveWorkers = Maps.newConcurrentMap();
 
   /** map between queryIds and query master ContainerId */
-  private final ConcurrentMap<QueryId, ContainerIdProto> qmContainerMap = Maps.newConcurrentMap();
+  private final ConcurrentMap<QueryId, ContainerProtocol.TajoContainerIdProto> qmContainerMap = Maps
+    .newConcurrentMap();
 
-  private final Set<String> liveQueryMasterWorkerResources =
-      Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+  private final Set<Integer> liveQueryMasterWorkerResources =
+      Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
   private final Set<QueryId> stoppedQueryIds =
       Collections.newSetFromMap(new ConcurrentHashMap<QueryId, Boolean>());
@@ -62,14 +62,14 @@ public class TajoRMContext {
   /**
    * @return The Map for active workers
    */
-  public ConcurrentMap<String, Worker> getWorkers() {
+  public ConcurrentMap<Integer, Worker> getWorkers() {
     return workers;
   }
 
   /**
    * @return The Map for inactive workers
    */
-  public ConcurrentMap<String, Worker> getInactiveWorkers() {
+  public ConcurrentMap<Integer, Worker> getInactiveWorkers() {
     return inactiveWorkers;
   }
 
@@ -77,11 +77,11 @@ public class TajoRMContext {
    *
    * @return The Map for query master containers
    */
-  public ConcurrentMap<QueryId, ContainerIdProto> getQueryMasterContainer() {
+  public ConcurrentMap<QueryId, ContainerProtocol.TajoContainerIdProto> getQueryMasterContainer() {
     return qmContainerMap;
   }
 
-  public Set<String> getQueryMasterWorker() {
+  public Set<Integer> getQueryMasterWorker() {
     return liveQueryMasterWorkerResources;
   }
 

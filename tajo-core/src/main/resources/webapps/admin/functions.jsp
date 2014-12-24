@@ -62,7 +62,7 @@
         }
 %>
         <tr>
-            <td><%=eachFunction.getSignature()%></td>
+            <td><%=eachFunction.getFunctionName()%></td>
             <td><%=eachFunction.getHelpSignature()%></td>
             <td><%=eachFunction.getFuncType()%></td>
             <td><%=HtmlQuoting.quoteHtmlChars(fullDecription).replace("\n", "<br/>")%></td>

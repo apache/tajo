@@ -20,15 +20,16 @@ package org.apache.tajo.engine.function.string;
 
 import com.google.gson.annotations.Expose;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.engine.eval.FunctionEval;
-import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
+import org.apache.tajo.plan.expr.FunctionEval;
+import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.storage.Tuple;
 
 
@@ -58,7 +59,8 @@ public class Rpad extends GeneralFunction {
     });
   }
 
-  public void init(FunctionEval.ParamType[] paramTypes) {
+  @Override
+  public void init(OverridableConf context, FunctionEval.ParamType[] paramTypes) {
     if (paramTypes.length == 3) {
       hasFillCharacters = true;
     }

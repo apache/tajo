@@ -22,9 +22,12 @@ import com.google.common.base.Objects;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.conf.TajoConf;
+import org.jboss.netty.channel.ConnectTimeoutException;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
+import org.jboss.netty.logging.CommonsLoggerFactory;
+import org.jboss.netty.logging.InternalLoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,6 +45,8 @@ public class RpcConnectionPool {
   private final ClientSocketChannelFactory channelFactory;
   private final TajoConf conf;
 
+  public final static int RPC_RETRIES = 3;
+
   private RpcConnectionPool(TajoConf conf, ClientSocketChannelFactory channelFactory) {
     this.conf = conf;
     this.channelFactory =  channelFactory;
@@ -49,6 +54,7 @@ public class RpcConnectionPool {
 
   public synchronized static RpcConnectionPool getPool(TajoConf conf) {
     if(instance == null) {
+      InternalLoggerFactory.setDefaultFactory(new CommonsLoggerFactory());
       instance = new RpcConnectionPool(conf, RpcChannelFactory.getSharedClientChannelFactory());
     }
     return instance;
@@ -58,19 +64,21 @@ public class RpcConnectionPool {
     return new RpcConnectionPool(conf, RpcChannelFactory.createClientChannelFactory(poolName, workerNum));
   }
 
-  private NettyClientBase makeConnection(RpcConnectionKey rpcConnectionKey) throws Exception {
+  private NettyClientBase makeConnection(RpcConnectionKey rpcConnectionKey)
+      throws NoSuchMethodException, ClassNotFoundException, ConnectTimeoutException {
     NettyClientBase client;
     if(rpcConnectionKey.asyncMode) {
-      client = new AsyncRpcClient(rpcConnectionKey.protocolClass, rpcConnectionKey.addr, channelFactory);
+      client = new AsyncRpcClient(rpcConnectionKey.protocolClass, rpcConnectionKey.addr, channelFactory, RPC_RETRIES);
     } else {
-      client = new BlockingRpcClient(rpcConnectionKey.protocolClass, rpcConnectionKey.addr, channelFactory);
+      client = new BlockingRpcClient(rpcConnectionKey.protocolClass, rpcConnectionKey.addr, channelFactory, RPC_RETRIES);
     }
     accepted.add(client.getChannel());
     return client;
   }
 
   public NettyClientBase getConnection(InetSocketAddress addr,
-                                       Class protocolClass, boolean asyncMode) throws Exception {
+                                       Class protocolClass, boolean asyncMode)
+      throws NoSuchMethodException, ClassNotFoundException, ConnectTimeoutException {
     RpcConnectionKey key = new RpcConnectionKey(addr, protocolClass, asyncMode);
     NettyClientBase client = connections.get(key);
 

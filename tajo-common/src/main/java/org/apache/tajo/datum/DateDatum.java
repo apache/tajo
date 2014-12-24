@@ -31,6 +31,7 @@ import org.apache.tajo.util.datetime.TimeMeta;
 public class DateDatum extends Datum {
   public static final int SIZE = 4;
 
+  // Dates are stored in UTC.
   private int year;
   private int monthOfYear;
   private int dayOfMonth;
@@ -119,17 +120,12 @@ public class DateDatum extends Datum {
         if (interval.getMonths() > 0) {
           tm.plusMonths(interval.getMonths());
         }
-        DateTimeUtil.toUTCTimezone(tm);
         return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
       }
       case TIME: {
         TimeMeta tm1 = toTimeMeta();
-
         TimeMeta tm2 = ((TimeDatum)datum).toTimeMeta();
-        DateTimeUtil.toUserTimezone(tm2);     //TimeDatum is UTC
-
         tm1.plusTime(DateTimeUtil.toTime(tm2));
-        DateTimeUtil.toUTCTimezone(tm1);
         return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm1));
       }
       default:
@@ -155,17 +151,12 @@ public class DateDatum extends Datum {
           tm.plusMonths(0 - interval.getMonths());
         }
         tm.plusMillis(0 - interval.getMilliSeconds());
-        DateTimeUtil.toUTCTimezone(tm);
         return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
       }
       case TIME: {
         TimeMeta tm1 = toTimeMeta();
-
         TimeMeta tm2 = ((TimeDatum)datum).toTimeMeta();
-        DateTimeUtil.toUserTimezone(tm2);     //TimeDatum is UTC
-
         tm1.plusTime(0 - DateTimeUtil.toTime(tm2));
-        DateTimeUtil.toUTCTimezone(tm1);
         return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm1));
       }
       case DATE: {
@@ -241,16 +232,16 @@ public class DateDatum extends Datum {
   public int compareTo(Datum datum) {
     if (datum.type() == TajoDataTypes.Type.DATE) {
       DateDatum another = (DateDatum) datum;
-      int compareResult = (year < another.year) ? -1 : ((year == another.year) ? 0 : 1);
-      if (compareResult != 0) {
-        return compareResult;
-      }
-      compareResult = (monthOfYear < another.monthOfYear) ? -1 : ((monthOfYear == another.monthOfYear) ? 0 : 1);
-      if (compareResult != 0) {
-        return compareResult;
-      }
-
-      return (dayOfMonth < another.dayOfMonth) ? -1 : ((dayOfMonth == another.dayOfMonth) ? 0 : 1);
+      TimeMeta myMeta, otherMeta;
+      myMeta = toTimeMeta();
+      otherMeta = another.toTimeMeta();
+      return myMeta.compareTo(otherMeta);
+    } else if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
+      TimestampDatum another = (TimestampDatum) datum;
+      TimeMeta myMeta, otherMeta;
+      myMeta = toTimeMeta();
+      otherMeta = another.toTimeMeta();
+      return myMeta.compareTo(otherMeta);
     } else if (datum instanceof NullDatum || datum.isNull()) {
       return -1;
     } else {

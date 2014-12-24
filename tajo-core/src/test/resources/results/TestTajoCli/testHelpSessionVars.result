@@ -8,7 +8,7 @@ Available Session Variables:
 \set CLI_PAGING_ENABLED [true or false] - Enable paging of result display
 \set CLI_DISPLAY_ERROR_TRACE [true or false] - Enable display of error trace
 \set ON_ERROR_STOP [true or false] - tsql will exist if an error occurs.
-\set TZ [text value] - Sets timezone
+\set TIMEZONE [text value] - Sets timezone
 \set DATE_ORDER [text value] - date order (default is YMD)
 \set LANG [text value] - Language
 \set LC_ALL [text value] - String sort order
@@ -25,6 +25,7 @@ Available Session Variables:
 \set JOIN_PER_SHUFFLE_SIZE [int value] - shuffle output size for join (mb)
 \set GROUPBY_PER_SHUFFLE_SIZE [int value] - shuffle output size for sort (mb)
 \set TABLE_PARTITION_PER_SHUFFLE_SIZE [int value] - shuffle output size for partition table write (mb)
+\set GROUPBY_MULTI_LEVEL_ENABLED [true or false] - Multiple level groupby enabled
 \set EXTSORT_BUFFER_SIZE [long value] - sort buffer size for external sort (mb)
 \set HASH_JOIN_SIZE_LIMIT [long value] - limited size for hash join (mb)
 \set INNER_HASH_JOIN_SIZE_LIMIT [long value] - limited size for hash inner join (mb)
@@ -34,4 +35,5 @@ Available Session Variables:
 \set NULL_CHAR [text value] - null char of text file output
 \set CODEGEN [true or false] - Runtime code generation enabled (experiment)
 \set ARITHABORT [true or false] - If true, a running query will be terminated when an overflow or divide-by-zero occurs.
+\set FETCH_ROWNUM [int value] - Sets the number of rows at a time from Master
 \set DEBUG_ENABLED [true or false] - (debug only) debug mode enabled

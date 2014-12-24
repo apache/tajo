@@ -20,8 +20,8 @@ package org.apache.tajo.master.rm;
 
 import com.google.protobuf.RpcCallback;
 import org.apache.hadoop.service.Service;
-import org.apache.hadoop.yarn.proto.YarnProtos.ContainerIdProto;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.querymaster.QueryInProgress;
 
@@ -63,7 +63,7 @@ public interface WorkerResourceManager extends Service {
    *
    * @param containerId ContainerIdProto to be released
    */
-  public void releaseWorkerResource(ContainerIdProto containerId);
+  public void releaseWorkerResource(ContainerProtocol.TajoContainerIdProto containerId);
 
   public String getSeedQueryId() throws IOException;
 
@@ -86,13 +86,13 @@ public interface WorkerResourceManager extends Service {
    *
    * @return a Map instance containing active workers
    */
-  public Map<String, Worker> getWorkers();
+  public Map<Integer, Worker> getWorkers();
 
   /**
    *
    * @return a Map instance containing inactive workers
    */
-  public Map<String, Worker> getInactiveWorkers();
+  public Map<Integer, Worker> getInactiveWorkers();
 
   public void stop();
 
@@ -106,5 +106,5 @@ public interface WorkerResourceManager extends Service {
    *
    * @return WorkerIds on which QueryMasters are running
    */
-  Collection<String> getQueryMasters();
+  Collection<Integer> getQueryMasters();
 }

@@ -17,13 +17,12 @@
   limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.apache.tajo</groupId>
     <artifactId>tajo-main</artifactId>
-    <version>0.9.0-SNAPSHOT</version>
+    <version>0.9.1-SNAPSHOT</version>
   </parent>
   <groupId>org.apache.tajo</groupId>
   <artifactId>tajo-project</artifactId>
@@ -34,9 +33,10 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <hadoop.version>2.3.0</hadoop.version>
+    <hadoop.version>2.5.1</hadoop.version>
     <protobuf.version>2.5.0</protobuf.version>
-    <tajo.version>0.9.0-SNAPSHOT</tajo.version>
+    <tajo.version>0.9.1-SNAPSHOT</tajo.version>
+    <hbase.version>0.98.7-hadoop2</hbase.version>
     <tajo.root>${project.parent.relativePath}/..</tajo.root>
     <extra.source.path>src/main/hadoop-${hadoop.version}</extra.source.path>
   </properties>
@@ -58,21 +58,21 @@
       <id>akarasulu</id>
       <name>Alex Karasulu</name>
       <email>akarasulu@apache.org</email>
-      <organization></organization>
+      <organization />
       <roles>
         <role>PMC</role>
       </roles>
-      <timezone></timezone>
+      <timezone />
     </developer>
     <developer>
       <id>ahenrick</id>
       <name>Alvin Derek Henrick</name>
       <email>ahenrick@apache.org</email>
-      <organization></organization>
+      <organization />
       <roles>
         <role>Committer</role>
       </roles>
-      <timezone></timezone>
+      <timezone />
     </developer>
     <developer>
       <id>mattmann</id>
@@ -88,7 +88,7 @@
       <id>ereisman</id>
       <name>Eli Reisman</name>
       <email>ereisman@apache.org</email>
-      <organization>Hortonworks</organization>
+      <organization>Etsy</organization>
       <roles>
         <role>PMC</role>
       </roles>
@@ -121,7 +121,7 @@
       <roles>
         <role>V.P.</role>
       </roles>
-      <timezone>+9</timezone>
+      <timezone>-8</timezone>
     </developer>
     <developer>
       <id>blrunner</id>
@@ -137,7 +137,7 @@
       <id>jghoman</id>
       <name>Jakob Homan</name>
       <email>jghoman@apache.org</email>
-      <organization>LinkedIn</organization>
+      <organization>Microsoft</organization>
       <roles>
         <role>PMC</role>
       </roles>
@@ -167,7 +167,7 @@
       <id>mzhou</id>
       <name>Min Zhou</name>
       <email>mzhou@apache.org</email>
-      <organization>LinkedIn</organization>
+      <organization>Tango Me</organization>
       <roles>
         <role>Committer</role>
       </roles>
@@ -197,7 +197,7 @@
       <id>rsumbaly</id>
       <name>Roshan Sumbaly</name>
       <email>rsumbaly@apache.org</email>
-      <organization>LinkedIn</organization>
+      <organization>Coursera</organization>
       <roles>
         <role>PMC</role>
       </roles>
@@ -237,7 +237,7 @@
     </contributor>
     <contributor>
       <name>David Chen</name>
-      <organization>LinkedIn</organization>
+      <organization>Google</organization>
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
@@ -266,6 +266,11 @@
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
+      <name>Jihun Kang</name>
+      <organization />
+      <roles><role>Contributor</role></roles>
+    </contributor>
+    <contributor>
       <name>KyoungBok Lee</name>
       <organization>Line</organization>
       <roles><role>Contributor</role></roles>
@@ -277,7 +282,7 @@
     </contributor>        
     <contributor>
       <name>Prafulla T.</name>
-      <organization></organization>
+      <organization />
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
@@ -320,6 +325,7 @@
     <url>https://git-wip-us.apache.org/repos/asf/tajo.git</url>
     <connection>scm:git:https://git-wip-us.apache.org/repos/asf/tajo.git</connection>
     <developerConnection>scm:git:https://git-wip-us.apache.org/repos/asf/tajo.git</developerConnection>
+    <tag>HEAD</tag>
   </scm>
 
   <mailingLists>
@@ -484,7 +490,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -498,7 +504,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -512,7 +518,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -525,7 +531,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -539,7 +545,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -552,7 +558,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -565,7 +571,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -724,6 +730,11 @@
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
+        <artifactId>tajo-plan</artifactId>
+        <version>${tajo.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-core</artifactId>
         <version>${tajo.version}</version>
         <type>test-jar</type>
@@ -733,10 +744,26 @@
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-storage</artifactId>
         <version>${tajo.version}</version>
+        <type>pom</type>
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
-        <artifactId>tajo-yarn-pullserver</artifactId>
+        <artifactId>tajo-storage-common</artifactId>
+        <version>${tajo.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tajo</groupId>
+        <artifactId>tajo-storage-hdfs</artifactId>
+        <version>${tajo.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tajo</groupId>
+        <artifactId>tajo-storage-hbase</artifactId>
+        <version>${tajo.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tajo</groupId>
+        <artifactId>tajo-pullserver</artifactId>
         <version>${tajo.version}</version>
       </dependency>
       <dependency>
@@ -1002,9 +1029,9 @@
         <version>3.6.6.Final</version>
       </dependency>
       <dependency>
-        <groupId>joda-time</groupId>
-        <artifactId>joda-time</artifactId>
-        <version>2.3</version>
+        <groupId>io.netty</groupId>
+        <artifactId>netty-buffer</artifactId>
+        <version>4.0.24.Final</version>
       </dependency>
       <dependency>
         <groupId>org.apache.derby</groupId>

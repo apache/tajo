@@ -23,10 +23,14 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.master.TajoMaster.MasterContext;
+import org.apache.tajo.master.ha.HAService;
 import org.apache.tajo.master.querymaster.QueryInProgress;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
-import org.apache.tajo.master.querymaster.QueryUnit;
-import org.apache.tajo.master.querymaster.SubQuery;
+import org.apache.tajo.master.querymaster.Task;
+import org.apache.tajo.master.querymaster.Stage;
+import org.apache.tajo.util.history.TaskHistory;
+import org.apache.tajo.util.history.StageHistory;
 import org.apache.tajo.worker.TaskRunnerHistory;
 import org.apache.tajo.worker.TaskRunner;
 
@@ -38,12 +42,28 @@ import static org.apache.tajo.conf.TajoConf.ConfVars;
 public class JSPUtil {
   static DecimalFormat decimalF = new DecimalFormat("###.0");
 
-  public static void sortQueryUnit(QueryUnit[] queryUnits, String sortField, String sortOrder) {
+  public static void sortTaskArray(Task[] tasks, String sortField, String sortOrder) {
     if(sortField == null || sortField.isEmpty()) {
       sortField = "id";
     }
 
-    Arrays.sort(queryUnits, new QueryUnitComparator(sortField, "asc".equals(sortOrder)));
+    Arrays.sort(tasks, new TaskComparator(sortField, "asc".equals(sortOrder)));
+  }
+
+  public static void sortTasks(List<Task> tasks, String sortField, String sortOrder) {
+    if(sortField == null || sortField.isEmpty()) {
+      sortField = "id";
+    }
+
+    Collections.sort(tasks, new TaskComparator(sortField, "asc".equals(sortOrder)));
+  }
+
+  public static void sortTaskHistory(List<TaskHistory> tasks, String sortField, String sortOrder) {
+    if(sortField == null || sortField.isEmpty()) {
+      sortField = "id";
+    }
+
+    Collections.sort(tasks, new TaskHistoryComparator(sortField, "asc".equals(sortOrder)));
   }
 
   public static void sortTaskRunner(List<TaskRunner> taskRunners) {
@@ -124,71 +144,155 @@ public class JSPUtil {
     return queryProgressList;
   }
 
-  public static List<SubQuery> sortSubQuery(Collection<SubQuery> subQueries) {
-    List<SubQuery> subQueryList = new ArrayList<SubQuery>(subQueries);
-    Collections.sort(subQueryList, new Comparator<SubQuery>() {
+  public static List<Stage> sortStages(Collection<Stage> stages) {
+    List<Stage> stageList = new ArrayList<Stage>(stages);
+    Collections.sort(stageList, new Comparator<Stage>() {
       @Override
-      public int compare(SubQuery subQuery1, SubQuery subQuery2) {
-        long q1StartTime = subQuery1.getStartTime();
-        long q2StartTime = subQuery2.getStartTime();
+      public int compare(Stage stage1, Stage stage2) {
+        long q1StartTime = stage1.getStartTime();
+        long q2StartTime = stage2.getStartTime();
 
         q1StartTime = (q1StartTime == 0 ? Long.MAX_VALUE : q1StartTime);
         q2StartTime = (q2StartTime == 0 ? Long.MAX_VALUE : q2StartTime);
 
         int result = compareLong(q1StartTime, q2StartTime);
         if (result == 0) {
-          return subQuery1.getId().toString().compareTo(subQuery2.getId().toString());
+          return stage1.getId().toString().compareTo(stage2.getId().toString());
         } else {
           return result;
         }
       }
     });
 
-    return subQueryList;
+    return stageList;
   }
 
-  static class QueryUnitComparator implements Comparator<QueryUnit> {
+  public static List<StageHistory> sortStageHistories(Collection<StageHistory> stages) {
+    List<StageHistory> stageList = new ArrayList<StageHistory>(stages);
+    Collections.sort(stageList, new Comparator<StageHistory>() {
+      @Override
+      public int compare(StageHistory stage1, StageHistory stage2) {
+        long q1StartTime = stage1.getStartTime();
+        long q2StartTime = stage2.getStartTime();
+
+        q1StartTime = (q1StartTime == 0 ? Long.MAX_VALUE : q1StartTime);
+        q2StartTime = (q2StartTime == 0 ? Long.MAX_VALUE : q2StartTime);
+
+        int result = compareLong(q1StartTime, q2StartTime);
+        if (result == 0) {
+          return stage1.getExecutionBlockId().compareTo(stage2.getExecutionBlockId());
+        } else {
+          return result;
+        }
+      }
+    });
+
+    return stageList;
+  }
+
+  public static String getMasterActiveLabel(MasterContext context) {
+    HAService haService = context.getHAService();
+    String activeLabel = "";
+    if (haService != null) {
+      if (haService.isActiveStatus()) {
+        activeLabel = "<font color='#1e90ff'>(active)</font>";
+      } else {
+        activeLabel = "<font color='#1e90ff'>(backup)</font>";
+      }
+    }
+
+    return activeLabel;
+  }
+
+  static class TaskComparator implements Comparator<Task> {
     private String sortField;
     private boolean asc;
-    public QueryUnitComparator(String sortField, boolean asc) {
+    public TaskComparator(String sortField, boolean asc) {
       this.sortField = sortField;
       this.asc = asc;
     }
 
     @Override
-    public int compare(QueryUnit queryUnit, QueryUnit queryUnit2) {
+    public int compare(Task task, Task task2) {
       if(asc) {
         if("id".equals(sortField)) {
-          return queryUnit.getId().compareTo(queryUnit2.getId());
+          return task.getId().compareTo(task2.getId());
         } else if("host".equals(sortField)) {
-          String host1 = queryUnit.getSucceededHost() == null ? "-" : queryUnit.getSucceededHost();
-          String host2 = queryUnit2.getSucceededHost() == null ? "-" : queryUnit2.getSucceededHost();
+          String host1 = task.getSucceededHost() == null ? "-" : task.getSucceededHost();
+          String host2 = task2.getSucceededHost() == null ? "-" : task2.getSucceededHost();
           return host1.compareTo(host2);
         } else if("runTime".equals(sortField)) {
-          return compareLong(queryUnit.getRunningTime(), queryUnit2.getRunningTime());
+          return compareLong(task.getRunningTime(), task2.getRunningTime());
         } else if("startTime".equals(sortField)) {
-          return compareLong(queryUnit.getLaunchTime(), queryUnit2.getLaunchTime());
+          return compareLong(task.getLaunchTime(), task2.getLaunchTime());
         } else {
-          return queryUnit.getId().compareTo(queryUnit2.getId());
+          return task.getId().compareTo(task2.getId());
         }
       } else {
         if("id".equals(sortField)) {
-          return queryUnit2.getId().compareTo(queryUnit.getId());
+          return task2.getId().compareTo(task.getId());
         } else if("host".equals(sortField)) {
-          String host1 = queryUnit.getSucceededHost() == null ? "-" : queryUnit.getSucceededHost();
-          String host2 = queryUnit2.getSucceededHost() == null ? "-" : queryUnit2.getSucceededHost();
+          String host1 = task.getSucceededHost() == null ? "-" : task.getSucceededHost();
+          String host2 = task2.getSucceededHost() == null ? "-" : task2.getSucceededHost();
           return host2.compareTo(host1);
         } else if("runTime".equals(sortField)) {
-          if(queryUnit2.getLaunchTime() == 0) {
+          if(task2.getLaunchTime() == 0) {
             return -1;
-          } else if(queryUnit.getLaunchTime() == 0) {
+          } else if(task.getLaunchTime() == 0) {
             return 1;
           }
-          return compareLong(queryUnit2.getRunningTime(), queryUnit.getRunningTime());
+          return compareLong(task2.getRunningTime(), task.getRunningTime());
         } else if("startTime".equals(sortField)) {
-          return compareLong(queryUnit2.getLaunchTime(), queryUnit.getLaunchTime());
+          return compareLong(task2.getLaunchTime(), task.getLaunchTime());
         } else {
-          return queryUnit2.getId().compareTo(queryUnit.getId());
+          return task2.getId().compareTo(task.getId());
+        }
+      }
+    }
+  }
+
+  static class TaskHistoryComparator implements Comparator<TaskHistory> {
+    private String sortField;
+    private boolean asc;
+    public TaskHistoryComparator(String sortField, boolean asc) {
+      this.sortField = sortField;
+      this.asc = asc;
+    }
+
+    @Override
+    public int compare(TaskHistory task1, TaskHistory task2) {
+      if(asc) {
+        if("id".equals(sortField)) {
+          return task1.getId().compareTo(task2.getId());
+        } else if("host".equals(sortField)) {
+          String host1 = task1.getHostAndPort() == null ? "-" : task1.getHostAndPort();
+          String host2 = task2.getHostAndPort() == null ? "-" : task2.getHostAndPort();
+          return host1.compareTo(host2);
+        } else if("runTime".equals(sortField)) {
+          return compareLong(task1.getRunningTime(), task2.getRunningTime());
+        } else if("startTime".equals(sortField)) {
+          return compareLong(task1.getLaunchTime(), task2.getLaunchTime());
+        } else {
+          return task1.getId().compareTo(task2.getId());
+        }
+      } else {
+        if("id".equals(sortField)) {
+          return task2.getId().compareTo(task1.getId());
+        } else if("host".equals(sortField)) {
+          String host1 = task1.getHostAndPort() == null ? "-" : task1.getHostAndPort();
+          String host2 = task2.getHostAndPort() == null ? "-" : task2.getHostAndPort();
+          return host2.compareTo(host1);
+        } else if("runTime".equals(sortField)) {
+          if(task2.getLaunchTime() == 0) {
+            return -1;
+          } else if(task1.getLaunchTime() == 0) {
+            return 1;
+          }
+          return compareLong(task2.getRunningTime(), task1.getRunningTime());
+        } else if("startTime".equals(sortField)) {
+          return compareLong(task2.getLaunchTime(), task1.getLaunchTime());
+        } else {
+          return task2.getId().compareTo(task1.getId());
         }
       }
     }
@@ -208,7 +312,7 @@ public class JSPUtil {
     Collections.sort(functions, new java.util.Comparator<FunctionDesc>() {
       @Override
       public int compare(FunctionDesc f1, FunctionDesc f2) {
-        int nameCompared = f1.getSignature().compareTo(f2.getSignature());
+        int nameCompared = f1.getFunctionName().compareTo(f2.getFunctionName());
         if(nameCompared != 0) {
           return nameCompared;
         } else {
@@ -218,7 +322,7 @@ public class JSPUtil {
     });
   }
 
-  static final DecimalFormat PERCENT_FORMAT = new DecimalFormat("###.0");
+  static final DecimalFormat PERCENT_FORMAT = new DecimalFormat("###.#");
   public static String percentFormat(float value) {
     return PERCENT_FORMAT.format(value * 100.0f);
   }
@@ -245,5 +349,61 @@ public class JSPUtil {
     result += ", ReadRows: " + (tableStats.getNumRows() == 0 ? "-" : tableStats.getNumRows());
 
     return result;
+  }
+
+  public static String getPageNavigation(int currentPage, int totalPage, String url) {
+    StringBuilder sb = new StringBuilder();
+
+    int pageIndex = (currentPage - 1) / 10;
+    int totalPageIndex = (totalPage - 1) / 10;
+
+    String prefix = "";
+
+    if (pageIndex > 0) {
+      int prevPage = pageIndex * 10;
+      sb.append(prefix).append("<a href='").append(url)
+          .append("&page=").append(prevPage).append("'>")
+          .append("&lt;</a>");
+      prefix = "&nbsp;&nbsp;";
+    }
+
+    for (int i = 1; i <= 10; i++) {
+      int printPage = pageIndex * 10 + i;
+      if (printPage == currentPage) {
+        sb.append(prefix).append(printPage);
+      } else {
+        sb.append(prefix).append("<a href='").append(url)
+            .append("&page=").append(printPage).append("'>")
+            .append("[").append(printPage).append("]</a>");
+      }
+      prefix = "&nbsp;&nbsp;";
+      if (printPage >= totalPage) {
+        break;
+      }
+    }
+
+    if(totalPageIndex > pageIndex) {
+      int nextPage = (pageIndex + 1) * 10 + 1;
+      sb.append(prefix).append("<a href='").append(url)
+          .append("&page=").append(nextPage).append("'>")
+          .append("&gt;</a>");
+    }
+    return sb.toString();
+  }
+
+  public static <T extends Object> List<T> getPageNavigationList(List<T> originList, int page, int pageSize) {
+    if (originList == null) {
+      return new ArrayList<T>();
+    }
+    int start = (page - 1) * pageSize;
+    int end = start + pageSize;
+    if (end > originList.size()) {
+      end = originList.size();
+    }
+    if (!originList.isEmpty()) {
+      return originList.subList(start, end);
+    }
+
+    return originList;
   }
 }

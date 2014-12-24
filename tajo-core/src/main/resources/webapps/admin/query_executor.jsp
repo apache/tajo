@@ -91,17 +91,18 @@ function runQuery() {
   }
   init();
   var query = $("#query").val();
+  var sbox = document.getElementById("selectDatabase");
 
   $.ajax({
     type: "POST",
     url: "query_exec",
-    data: { action: "runQuery", query: query, limitSize:SIZE_LIMIT }
+    data: { action: "runQuery", query: query, prevQueryId: queryRunnerId, limitSize:SIZE_LIMIT, database: sbox.options[sbox.selectedIndex].text }
   })
   .done(function(msg) {
     var resultJson = $.parseJSON(msg);
     if(resultJson.success == "false") {
       clearTimer();
-      alert(resultJson.errorMessage);
+      alert("query execution failed.");
       return;
     }
     queryRunnerId = resultJson.queryRunnerId;
@@ -115,7 +116,7 @@ function runQuery() {
         var resultJson = $.parseJSON(msg);
         if(resultJson.success == "false") {
           clearTimer();
-          alert(resultJson.errorMessage);
+          alert("query execution failed.");
           $("#queryStatus").html(getQueryStatusHtml(resultJson));
           return;
         }
@@ -289,7 +290,18 @@ function getPage() {
   <h2>Tajo Master: <%=master.getMasterName()%> <%=activeLabel%></h2>
   <hr/>
   <h3>Query</h3>
-  <textarea id="query" style="width:800px; height:250px; font-family:Tahoma; font-size:12px;"></textarea>
+  Database :  
+  <select id="selectDatabase" name="database" width="190" style="width: 190px">
+    <%
+	for (String databaseName : master.getCatalog().getAllDatabaseNames()) {
+	%>
+	  <option value="<%=databaseName%>"><%=databaseName%></option>
+	<%
+	}
+	%>
+  </select>
+  <p />
+<textarea id="query" style="width:800px; height:250px; font-family:Tahoma; font-size:12px;"></textarea>
   <p />
   Limit : <input id="sizeLimit" type="text" value="10" style="width:30px; text-align:center;" /> MB
   <p />
@@ -317,7 +329,7 @@ function getPage() {
   <hr/>
   <div id="queryResultTools"></div>
   <hr/>
-  <div style="dispaly:none;"><form name="dataForm" id="dataForm" method="post" action="getCSV.jsp"><input type="hidden" id="csvData" name="csvData" value="" /></div>
+  <div style="display:none;"><form name="dataForm" id="dataForm" method="post" action="getCSV.jsp"><input type="hidden" id="csvData" name="csvData" value="" /></div>
 </div>
 </body>
 </html>

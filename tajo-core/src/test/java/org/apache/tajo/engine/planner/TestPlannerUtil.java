@@ -18,28 +18,40 @@
 
 package org.apache.tajo.engine.planner;
 
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.engine.eval.*;
 import org.apache.tajo.engine.function.builtin.SumInt;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.engine.planner.logical.*;
+import org.apache.tajo.engine.planner.physical.PhysicalPlanUtil;
+import org.apache.tajo.plan.LogicalPlanner;
+import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.plan.expr.*;
+import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
@@ -76,19 +88,19 @@ public class TestPlannerUtil {
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
     TableDesc people = new TableDesc(
         CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, "employee"), schema, meta,
-        CommonTestingUtil.getTestDir());
+        CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(people);
 
     TableDesc student =
         new TableDesc(
             CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "dept"), schema2, StoreType.CSV,
-            new KeyValueSet(), CommonTestingUtil.getTestDir());
+            new KeyValueSet(), CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(student);
 
     TableDesc score =
         new TableDesc(
             CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "score"), schema3, StoreType.CSV,
-            new KeyValueSet(), CommonTestingUtil.getTestDir());
+            new KeyValueSet(), CommonTestingUtil.getTestDir().toUri());
     catalog.createTable(score);
 
     FunctionDesc funcDesc = new FunctionDesc("sumtest", SumInt.class, FunctionType.AGGREGATION,
@@ -114,7 +126,7 @@ public class TestPlannerUtil {
 
     assertEquals(NodeType.ROOT, plan.getType());
     LogicalRootNode root = (LogicalRootNode) plan;
-    TestLogicalNode.testCloneLogicalNode(root);
+    TestLogicalPlanner.testCloneLogicalNode(root);
 
     assertEquals(NodeType.PROJECTION, root.getChild().getType());
     ProjectionNode projNode = root.getChild();
@@ -287,7 +299,7 @@ public class TestPlannerUtil {
     FieldEval f4 = new FieldEval("people.fid2", CatalogUtil.newSimpleDataType(Type.INT4));
 
     EvalNode joinQual = new BinaryEval(EvalType.EQUAL, f1, f2);
-    TupleComparator [] comparators = PlannerUtil.getComparatorsFromJoinQual(joinQual, outerSchema, innerSchema);
+    TupleComparator[] comparators = PhysicalPlanUtil.getComparatorsFromJoinQual(joinQual, outerSchema, innerSchema);
 
     Tuple t1 = new VTuple(2);
     t1.put(0, DatumFactory.createInt4(1));
@@ -308,7 +320,7 @@ public class TestPlannerUtil {
     // tests for composited join key
     EvalNode joinQual2 = new BinaryEval(EvalType.EQUAL, f3, f4);
     EvalNode compositedJoinQual = new BinaryEval(EvalType.AND, joinQual, joinQual2);
-    comparators = PlannerUtil.getComparatorsFromJoinQual(compositedJoinQual, outerSchema, innerSchema);
+    comparators = PhysicalPlanUtil.getComparatorsFromJoinQual(compositedJoinQual, outerSchema, innerSchema);
 
     outerComparator = comparators[0];
     assertTrue(outerComparator.compare(t1, t2) < 0);
@@ -317,5 +329,59 @@ public class TestPlannerUtil {
     innerComparator = comparators[1];
     assertTrue(innerComparator.compare(t1, t2) < 0);
     assertTrue(innerComparator.compare(t2, t1) > 0);
+  }
+
+  @Test
+  public void testGetNonZeroLengthDataFiles() throws Exception {
+    String queryFiles = ClassLoader.getSystemResource("queries").toString() + "/TestSelectQuery";
+    Path path = new Path(queryFiles);
+
+    TableDesc tableDesc = new TableDesc();
+    tableDesc.setName("Test");
+    tableDesc.setPath(path.toUri());
+
+    FileSystem fs = path.getFileSystem(util.getConfiguration());
+
+    List<Path> expectedFiles = new ArrayList<Path>();
+    RemoteIterator<LocatedFileStatus> files = fs.listFiles(path, true);
+    while (files.hasNext()) {
+      LocatedFileStatus file = files.next();
+      if (file.isFile() && file.getLen() > 0) {
+        expectedFiles.add(file.getPath());
+      }
+    }
+    int fileNum = expectedFiles.size() / 5;
+
+    int numResultFiles = 0;
+    for (int i = 0; i <= 5; i++) {
+      int start = i * fileNum;
+
+      FragmentProto[] fragments =
+          PhysicalPlanUtil.getNonZeroLengthDataFiles(util.getConfiguration(), tableDesc, start, fileNum);
+      assertNotNull(fragments);
+
+      numResultFiles += fragments.length;
+      int expectedSize = fileNum;
+      if (i == 5) {
+        //last
+        expectedSize = expectedFiles.size() - (fileNum * 5);
+      }
+
+      comparePath(expectedFiles, fragments, start, expectedSize);
+    }
+
+    assertEquals(expectedFiles.size(), numResultFiles);
+  }
+
+  private void comparePath(List<Path> expectedFiles, FragmentProto[] fragments,
+                           int startIndex, int expectedSize) throws Exception {
+    assertEquals(expectedSize, fragments.length);
+
+    int index = 0;
+
+    for (int i = startIndex; i < startIndex + expectedSize; i++, index++) {
+      FileFragment fragment = FragmentConvertor.convert(util.getConfiguration(), fragments[index]);
+      assertEquals(expectedFiles.get(i), fragment.getPath());
+    }
   }
 }

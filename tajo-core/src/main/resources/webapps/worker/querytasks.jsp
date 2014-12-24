@@ -21,22 +21,18 @@
 
 <%@ page import="org.apache.tajo.ExecutionBlockId" %>
 <%@ page import="org.apache.tajo.QueryId" %>
-<%@ page import="org.apache.tajo.QueryUnitAttemptId" %>
+<%@ page import="org.apache.tajo.TaskAttemptId" %>
 <%@ page import="org.apache.tajo.catalog.statistics.TableStats" %>
-<%@ page import="org.apache.tajo.engine.planner.PlannerUtil" %>
+<%@ page import="org.apache.tajo.plan.util.PlannerUtil" %>
 <%@ page import="org.apache.tajo.ipc.TajoMasterProtocol" %>
 <%@ page import="org.apache.tajo.master.querymaster.*" %>
-<%@ page import="org.apache.tajo.util.FileUtil" %>
-<%@ page import="org.apache.tajo.util.JSPUtil" %>
-<%@ page import="org.apache.tajo.util.TajoIdUtils" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="org.apache.tajo.worker.TajoWorker" %>
 <%@ page import="java.text.NumberFormat" %>
 <%@ page import="java.text.SimpleDateFormat" %>
-<%@ page import="java.util.HashMap" %>
-<%@ page import="java.util.List" %>
-<%@ page import="java.util.Locale" %>
-<%@ page import="java.util.Map" %>
+<%@ page import="org.apache.tajo.util.history.HistoryReader" %>
+<%@ page import="org.apache.tajo.util.*" %>
+<%@ page import="java.util.*" %>
 
 <%
   String paramQueryId = request.getParameter("queryId");
@@ -67,10 +63,10 @@
   List<TajoMasterProtocol.WorkerResourceProto> allWorkers = tajoWorker.getWorkerContext()
             .getQueryMasterManagerService().getQueryMaster().getAllWorker();
 
-  Map<String, TajoMasterProtocol.WorkerResourceProto> workerMap = new HashMap<String, TajoMasterProtocol.WorkerResourceProto>();
+  Map<Integer, TajoMasterProtocol.WorkerResourceProto> workerMap = new HashMap<Integer, TajoMasterProtocol.WorkerResourceProto>();
   if(allWorkers != null) {
     for(TajoMasterProtocol.WorkerResourceProto eachWorker: allWorkers) {
-      workerMap.put(eachWorker.getHost(), eachWorker);
+      workerMap.put(eachWorker.getConnectionInfo().getId(), eachWorker);
     }
   }
   QueryMasterTask queryMasterTask = tajoWorker.getWorkerContext()
@@ -82,14 +78,14 @@
   }
 
   Query query = queryMasterTask.getQuery();
-  SubQuery subQuery = query.getSubQuery(ebid);
+  Stage stage = query.getStage(ebid);
 
-  if(subQuery == null) {
+  if(stage == null) {
     out.write("<script type='text/javascript'>alert('no sub-query'); history.back(0); </script>");
     return;
   }
 
-  if(subQuery == null) {
+  if(stage == null) {
 %>
 <script type="text/javascript">
   alert("No Execution Block for" + ebid);
@@ -101,32 +97,28 @@
 
   SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-  String url = "querytasks.jsp?queryId=" + queryId + "&ebid=" + ebid + "&status=" + status + "&sortOrder=" + nextSortOrder + "&sort=";
-  QueryUnit[] queryUnits = subQuery.getQueryUnits();
-
+  Task[] allTasks = stage.getTasks();
 
   long totalInputBytes = 0;
   long totalReadBytes = 0;
   long totalReadRows = 0;
   long totalWriteBytes = 0;
   long totalWriteRows = 0;
-  int numTasks = queryUnits.length;
-//  int numSucceededTasks = 0;
-//  int localReadTasks = subQuery.;
+  int numTasks = allTasks.length;
   int numShuffles = 0;
 
   float totalProgress = 0.0f;
-  for(QueryUnit eachQueryUnit: queryUnits) {
-    totalProgress += eachQueryUnit.getLastAttempt() != null ? eachQueryUnit.getLastAttempt().getProgress(): 0.0f;
-    numShuffles = eachQueryUnit.getShuffleOutpuNum();
-    if (eachQueryUnit.getLastAttempt() != null) {
-      TableStats inputStats = eachQueryUnit.getLastAttempt().getInputStats();
+  for(Task eachTask : allTasks) {
+    totalProgress += eachTask.getLastAttempt() != null ? eachTask.getLastAttempt().getProgress(): 0.0f;
+    numShuffles = eachTask.getShuffleOutpuNum();
+    if (eachTask.getLastAttempt() != null) {
+      TableStats inputStats = eachTask.getLastAttempt().getInputStats();
       if (inputStats != null) {
         totalInputBytes += inputStats.getNumBytes();
         totalReadBytes += inputStats.getReadBytes();
         totalReadRows += inputStats.getNumRows();
       }
-      TableStats outputStats = eachQueryUnit.getLastAttempt().getResultStats();
+      TableStats outputStats = eachTask.getLastAttempt().getResultStats();
       if (outputStats != null) {
         totalWriteBytes += outputStats.getNumBytes();
         totalWriteRows += outputStats.getNumRows();
@@ -134,7 +126,27 @@
     }
   }
 
-    NumberFormat nf = NumberFormat.getInstance(Locale.US);
+  int currentPage = 1;
+  if (request.getParameter("page") != null && !request.getParameter("page").isEmpty()) {
+    currentPage = Integer.parseInt(request.getParameter("page"));
+  }
+  int pageSize = HistoryReader.DEFAULT_TASK_PAGE_SIZE;
+  if (request.getParameter("pageSize") != null && !request.getParameter("pageSize").isEmpty()) {
+    try {
+      pageSize = Integer.parseInt(request.getParameter("pageSize"));
+    } catch (NumberFormatException e) {
+      pageSize = HistoryReader.DEFAULT_TASK_PAGE_SIZE;
+    }
+  }
+
+  String url = "querytasks.jsp?queryId=" + queryId + "&ebid=" + ebid +
+      "&page=" + currentPage + "&pageSize=" + pageSize +
+      "&status=" + status + "&sortOrder=" + nextSortOrder + "&sort=";
+
+  String pageUrl = "querytasks.jsp?queryId=" + paramQueryId + "&ebid=" + paramEbId +
+      "&status=" + status + "&sortOrder=" + nextSortOrder + "&sort=";
+
+  NumberFormat nf = NumberFormat.getInstance(Locale.US);
 %>
 
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
@@ -152,12 +164,12 @@
   <h3><a href='querydetail.jsp?queryId=<%=paramQueryId%>'><%=ebid.toString()%></a></h3>
   <hr/>
   <p/>
-  <pre style="white-space:pre-wrap;"><%=PlannerUtil.buildExplainString(subQuery.getBlock().getPlan())%></pre>
+  <pre style="white-space:pre-wrap;"><%=PlannerUtil.buildExplainString(stage.getBlock().getPlan())%></pre>
   <p/>
   <table border="1" width="100%" class="border_table">
-    <tr><td align='right' width='180px'>Status:</td><td><%=subQuery.getState()%></td></tr>
-    <tr><td align='right'>Started:</td><td><%=df.format(subQuery.getStartTime())%> ~ <%=subQuery.getFinishTime() == 0 ? "-" : df.format(subQuery.getFinishTime())%></td></tr>
-    <tr><td align='right'># Tasks:</td><td><%=numTasks%> (Local Tasks: <%=subQuery.getTaskScheduler().getHostLocalAssigned()%>, Rack Local Tasks: <%=subQuery.getTaskScheduler().getRackLocalAssigned()%>)</td></tr>
+    <tr><td align='right' width='180px'>Status:</td><td><%=stage.getState()%></td></tr>
+    <tr><td align='right'>Started:</td><td><%=df.format(stage.getStartTime())%> ~ <%=stage.getFinishTime() == 0 ? "-" : df.format(stage.getFinishTime())%></td></tr>
+    <tr><td align='right'># Tasks:</td><td><%=numTasks%> (Local Tasks: <%=stage.getTaskScheduler().getHostLocalAssigned()%>, Rack Local Tasks: <%=stage.getTaskScheduler().getRackLocalAssigned()%>)</td></tr>
     <tr><td align='right'>Progress:</td><td><%=JSPUtil.percentFormat((float) (totalProgress / numTasks))%>%</td></tr>
     <tr><td align='right'># Shuffles:</td><td><%=numShuffles%></td></tr>
     <tr><td align='right'>Input Bytes:</td><td><%=FileUtil.humanReadableByteCount(totalInputBytes, false) + " (" + nf.format(totalInputBytes) + " B)"%></td></tr>
@@ -168,15 +180,18 @@
   </table>
   <hr/>
 
-
   <form action='querytasks.jsp' method='GET'>
   Status:
     <select name="status" onchange="this.form.submit()">
-        <option value="ALL" <%="ALL".equals(status) ? "selected" : ""%>>ALL</option>
-        <option value="SCHEDULED" <%="SCHEDULED".equals(status) ? "selected" : ""%>>SCHEDULED</option>
-        <option value="RUNNING" <%="RUNNING".equals(status) ? "selected" : ""%>>RUNNING</option>
-        <option value="SUCCEEDED" <%="SUCCEEDED".equals(status) ? "selected" : ""%>>SUCCEEDED</option>
+      <option value="ALL" <%="ALL".equals(status) ? "selected" : ""%>>ALL</option>
+      <option value="TA_ASSIGNED" <%="TA_ASSIGNED".equals(status) ? "selected" : ""%>>TA_ASSIGNED</option>
+      <option value="TA_PENDING" <%="TA_PENDING".equals(status) ? "selected" : ""%>>TA_PENDING</option>
+      <option value="TA_RUNNING" <%="TA_RUNNING".equals(status) ? "selected" : ""%>>TA_RUNNING</option>
+      <option value="TA_SUCCEEDED" <%="TA_SUCCEEDED".equals(status) ? "selected" : ""%>>TA_SUCCEEDED</option>
+      <option value="TA_FAILED" <%="TA_FAILED".equals(status) ? "selected" : ""%>>TA_FAILED</option>
     </select>
+    &nbsp;&nbsp;
+    Page Size: <input type="text" name="pageSize" value="<%=pageSize%>" size="5"/>
     &nbsp;&nbsp;
     <input type="submit" value="Filter">
     <input type="hidden" name="queryId" value="<%=paramQueryId%>"/>
@@ -184,50 +199,66 @@
     <input type="hidden" name="sort" value="<%=sort%>"/>
     <input type="hidden" name="sortOrder" value="<%=sortOrder%>"/>
   </form>
+<%
+  List<Task> filteredTask = new ArrayList<Task>();
+  for(Task eachTask : allTasks) {
+    if (!"ALL".equals(status)) {
+      if (!status.equals(eachTask.getLastAttemptStatus().toString())) {
+        continue;
+      }
+    }
+    filteredTask.add(eachTask);
+  }
+  JSPUtil.sortTasks(filteredTask, sort, sortOrder);
+  List<Task> tasks = JSPUtil.getPageNavigationList(filteredTask, currentPage, pageSize);
+
+  int numOfTasks = filteredTask.size();
+  int totalPage = numOfTasks % pageSize == 0 ?
+      numOfTasks / pageSize : numOfTasks / pageSize + 1;
+
+  int rowNo = (currentPage - 1) * pageSize + 1;
+%>
+  <div align="right"># Tasks: <%=numOfTasks%> / # Pages: <%=totalPage%></div>
   <table border="1" width="100%" class="border_table">
     <tr><th>No</th><th><a href='<%=url%>id'>Id</a></th><th>Status</th><th>Progress</th><th><a href='<%=url%>startTime'>Started</a></th><th><a href='<%=url%>runTime'>Running Time</a></th><th><a href='<%=url%>host'>Host</a></th></tr>
-    <%
-      JSPUtil.sortQueryUnit(queryUnits, sort, sortOrder);
-      int rowNo = 1;
-      for(QueryUnit eachQueryUnit: queryUnits) {
-          if(!"ALL".equals(status)) {
-            if(!status.equals(eachQueryUnit.getState().toString())) {
-              continue;
+<%
+  for(Task eachTask : tasks) {
+    int taskSeq = eachTask.getId().getId();
+    String taskDetailUrl = "task.jsp?queryId=" + paramQueryId + "&ebid=" + paramEbId +
+            "&page=" + currentPage + "&pageSize=" + pageSize +
+            "&taskSeq=" + taskSeq + "&sort=" + sort + "&sortOrder=" + sortOrder;
+
+    String taskHost = eachTask.getSucceededHost() == null ? "-" : eachTask.getSucceededHost();
+    if(eachTask.getSucceededHost() != null) {
+        TajoMasterProtocol.WorkerResourceProto worker =
+                workerMap.get(eachTask.getLastAttempt().getWorkerConnectionInfo().getId());
+        if(worker != null) {
+            TaskAttempt lastAttempt = eachTask.getLastAttempt();
+            if(lastAttempt != null) {
+              TaskAttemptId lastAttemptId = lastAttempt.getId();
+              taskHost = "<a href='http://" + eachTask.getSucceededHost() + ":" + worker.getConnectionInfo().getHttpInfoPort() + "/taskdetail.jsp?taskAttemptId=" + lastAttemptId + "'>" + eachTask.getSucceededHost() + "</a>";
             }
-          }
-          int queryUnitSeq = eachQueryUnit.getId().getId();
-          String queryUnitDetailUrl = "queryunit.jsp?queryId=" + paramQueryId + "&ebid=" + paramEbId +
-                  "&queryUnitSeq=" + queryUnitSeq + "&sort=" + sort + "&sortOrder=" + sortOrder;
-
-          String queryUnitHost = eachQueryUnit.getSucceededHost() == null ? "-" : eachQueryUnit.getSucceededHost();
-          if(eachQueryUnit.getSucceededHost() != null) {
-              TajoMasterProtocol.WorkerResourceProto worker = workerMap.get(eachQueryUnit.getSucceededHost());
-              if(worker != null) {
-                  QueryUnitAttempt lastAttempt = eachQueryUnit.getLastAttempt();
-                  if(lastAttempt != null) {
-                    QueryUnitAttemptId lastAttemptId = lastAttempt.getId();
-                    queryUnitHost = "<a href='http://" + eachQueryUnit.getSucceededHost() + ":" + worker.getInfoPort() + "/taskdetail.jsp?queryUnitAttemptId=" + lastAttemptId + "'>" + eachQueryUnit.getSucceededHost() + "</a>";
-                  }
-              }
-          }
-
-    %>
+        }
+    }
+%>
     <tr>
       <td><%=rowNo%></td>
-      <td><a href="<%=queryUnitDetailUrl%>"><%=eachQueryUnit.getId()%></a></td>
-      <td><%=eachQueryUnit.getState()%></td>
-      <td><%=JSPUtil.percentFormat(eachQueryUnit.getLastAttempt().getProgress())%>%</td>
-      <td><%=eachQueryUnit.getLaunchTime() == 0 ? "-" : df.format(eachQueryUnit.getLaunchTime())%></td>
-      <td align='right'><%=eachQueryUnit.getLaunchTime() == 0 ? "-" : eachQueryUnit.getRunningTime() + " ms"%></td>
-      <td><%=queryUnitHost%></td>
+      <td><a href="<%=taskDetailUrl%>"><%=eachTask.getId()%></a></td>
+      <td><%=eachTask.getLastAttemptStatus()%></td>
+      <td><%=JSPUtil.percentFormat(eachTask.getLastAttempt().getProgress())%>%</td>
+      <td><%=eachTask.getLaunchTime() == 0 ? "-" : df.format(eachTask.getLaunchTime())%></td>
+      <td align='right'><%=eachTask.getLaunchTime() == 0 ? "-" : eachTask.getRunningTime() + " ms"%></td>
+      <td><%=taskHost%></td>
     </tr>
     <%
         rowNo++;
       }
     %>
   </table>
-  <%
-  %>
+  <div align="center">
+    <%=JSPUtil.getPageNavigation(currentPage, totalPage, pageUrl + "&pageSize=" + pageSize)%>
+  </div>
+  <p/>
 </div>
 </body>
 </html>

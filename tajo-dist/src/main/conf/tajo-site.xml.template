@@ -20,4 +20,94 @@
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 
 <configuration>
+
+<!-- System Settings -->
+<!--
+
+ <property>
+  <name>tajo.rootdir</name>
+  <value>hdfs://namenode_hostname:port/path</value>
+  <description>Base directory including system directories.</description>
+</property>
+
+<property>
+  <name>tajo.master.umbilical-rpc.address</name>
+  <value>hostname:26001</value>
+  <description>TajoMaster binding address between master and workers.</description>
+</property>
+
+<property>
+  <name>tajo.master.client-rpc.address</name>
+  <value>hostname:26002</value>
+  <description>TajoMaster binding address between master and clients.</description>
+</property>
+
+<property>
+  <name>tajo.resource-tracker.rpc.address</name>
+  <value>hostname:26003</value>
+  <description>TajoMaster binding address between master and workers.</description>
+</property>
+
+<property>
+  <name>tajo.catalog.client-rpc.address</name>
+  <value>hostname:26005</value>
+  <description>CatalogServer binding address between catalog server and workers.</description>
+</property>
+-->
+
+
+<!-- Worker Settings -->
+<!--
+<property>
+  <name>tajo.worker.resource.cpu-cores</name>
+  <value>1</value>
+  <description>Number of CPU cores</description>
+</property>
+
+<property>
+  <name>tajo.worker.resource.memory-mb</name>
+  <value>1024</value>
+  <description>Available memory size (MB)</description>
+</property>
+
+<property>
+  <name>tajo.worker.resource.disks</name>
+  <value>1</value>
+  <description>Available disk capacity (usually number of disks)</description>
+</property>
+
+<property>
+  <name>tajo.worker.tmpdir.locations</name>
+  <value>/tmp/tajo-${user.name}/tmpdir</value>
+  <description>A base for other temporary directories.</description>
+</property>
+-->
+
+
+<!-- Date/Time -->
+<!--
+ <property>
+  <name>tajo.timezone</name>
+  <value>GMT</value>
+  <description>Global system time zone which affects all tables in which table time zones are not specified</description>
+ </property>
+
+ <property>
+  <name>tajo.datetime.date-order</name>
+  <value>YMD</value>
+  <description>Determine date order. One of them YMD, DMY, MDY should be here.</description>
+ </property>
+-->
+
+
+<!-- Debug -->
+<!--
+ <property>
+  <name>tajo.debug.enabled</name>
+  <value>false</value>
+  <description>Debug mode</description>
+ </property>
+-->
+
+
 </configuration>

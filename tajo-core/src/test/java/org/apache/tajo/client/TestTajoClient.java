@@ -22,18 +22,23 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.protobuf.ServiceException;
-import com.sun.org.apache.commons.logging.Log;
-import com.sun.org.apache.commons.logging.LogFactory;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.*;
+import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.ipc.ClientProtos.QueryHistoryProto;
+import org.apache.tajo.ipc.ClientProtos.QueryInfoProto;
+import org.apache.tajo.ipc.ClientProtos.StageHistoryProto;
 import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.StorageUtil;
@@ -62,7 +67,7 @@ public class TestTajoClient {
   public static void setUp() throws Exception {
     cluster = TpchTestBase.getInstance().getTestingCluster();
     conf = cluster.getConfiguration();
-    client = new TajoClient(conf);
+    client = new TajoClientImpl(conf);
     testDir = CommonTestingUtil.getTestDir();
   }
 
@@ -319,7 +324,7 @@ public class TestTajoClient {
     client.updateQuery(sql);
     assertTrue(client.existTable(tableName));
 
-    Path tablePath = client.getTableDesc(tableName).getPath();
+    Path tablePath = new Path(client.getTableDesc(tableName).getPath());
     FileSystem hdfs = tablePath.getFileSystem(conf);
     assertTrue(hdfs.exists(tablePath));
 
@@ -340,7 +345,7 @@ public class TestTajoClient {
     client.updateQuery(sql);
     assertTrue(client.existTable(tableName));
 
-    Path tablePath = client.getTableDesc(tableName).getPath();
+    Path tablePath = new Path(client.getTableDesc(tableName).getPath());
     FileSystem hdfs = tablePath.getFileSystem(conf);
     assertTrue(hdfs.exists(tablePath));
 
@@ -417,7 +422,7 @@ public class TestTajoClient {
     client.updateQuery(sql);
     assertTrue(client.existTable(tableName));
 
-    Path tablePath = client.getTableDesc(tableName).getPath();
+    Path tablePath = new Path(client.getTableDesc(tableName).getPath());
     FileSystem hdfs = tablePath.getFileSystem(conf);
     assertTrue(hdfs.exists(tablePath));
 
@@ -441,7 +446,7 @@ public class TestTajoClient {
     client.updateQuery(sql);
     assertTrue(client.existTable(tableName));
 
-    Path tablePath = client.getTableDesc(tableName).getPath();
+    Path tablePath = new Path(client.getTableDesc(tableName).getPath());
     FileSystem hdfs = tablePath.getFileSystem(conf);
     assertTrue(hdfs.exists(tablePath));
 
@@ -465,7 +470,7 @@ public class TestTajoClient {
     client.updateQuery(sql);
     assertTrue(client.existTable(tableName));
 
-    Path tablePath = client.getTableDesc(tableName).getPath();
+    Path tablePath = new Path(client.getTableDesc(tableName).getPath());
     FileSystem hdfs = tablePath.getFileSystem(conf);
     assertTrue(hdfs.exists(tablePath));
 
@@ -490,7 +495,7 @@ public class TestTajoClient {
     client.updateQuery(sql);
     assertTrue(client.existTable(tableName));
 
-    Path tablePath = client.getTableDesc(tableName).getPath();
+    Path tablePath = new Path(client.getTableDesc(tableName).getPath());
     FileSystem hdfs = tablePath.getFileSystem(conf);
     assertTrue(hdfs.exists(tablePath));
 
@@ -516,7 +521,7 @@ public class TestTajoClient {
     client.updateQuery(sql);
     assertTrue(client.existTable(tableName));
 
-    Path tablePath = client.getTableDesc(tableName).getPath();
+    Path tablePath = new Path(client.getTableDesc(tableName).getPath());
     FileSystem hdfs = tablePath.getFileSystem(conf);
     assertTrue(hdfs.exists(tablePath));
 
@@ -569,7 +574,7 @@ public class TestTajoClient {
     client.updateQuery(sql);
     assertTrue(client.existTable(tableName));
 
-    Path tablePath = client.getTableDesc(tableName).getPath();
+    Path tablePath = new Path(client.getTableDesc(tableName).getPath());
     FileSystem hdfs = tablePath.getFileSystem(conf);
     assertTrue(hdfs.exists(tablePath));
 
@@ -585,7 +590,7 @@ public class TestTajoClient {
     String functionName = "sum";
     int numFunctions = 0;
     for(FunctionDesc eachFunction: catalogFunctions) {
-      if(functionName.equals(eachFunction.getSignature())) {
+      if(functionName.equals(eachFunction.getFunctionName())) {
         numFunctions++;
       }
     }
@@ -658,7 +663,7 @@ public class TestTajoClient {
 
       QueryStatus queryStatus = client.getQueryStatus(queryId);
       assertNotNull(queryStatus);
-      assertTrue(TajoClient.isInCompleteState(queryStatus.getState()));
+      assertTrue(TajoClientUtil.isQueryComplete(queryStatus.getState()));
 
       TajoResultSet resultSet = (TajoResultSet) client.getQueryResult(queryId);
       assertNotNull(resultSet);
@@ -675,7 +680,7 @@ public class TestTajoClient {
   }
 
   @Test
-  public void testSetCvsNull() throws Exception {
+  public void testNullCharSession() throws Exception {
     String sql =
         "select\n" +
             "  c_custkey,\n" +
@@ -687,17 +692,44 @@ public class TestTajoClient {
             "  c_custkey,\n" +
             "  orders.o_orderkey;\n";
 
-    TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
+    Map<String, String> variables = new HashMap<String, String>();
+    variables.put(SessionVars.NULL_CHAR.keyname(), "\\\\T");
+    client.updateSessionVariables(variables);
+    TajoResultSet resultDesc = (TajoResultSet)client.executeQueryAndGetResult(sql);
+    resultDesc.close();
+    assertNullCharSessionVar(resultDesc.getTableDesc());
+  }
+
+  @Test
+  public void testNullCharSessionInCTAS() throws Exception {
+    String sql =
+        "create table nullcharsession as select\n" +
+            "  c_custkey,\n" +
+            "  orders.o_orderkey,\n" +
+            "  orders.o_orderstatus \n" +
+            "from\n" +
+            "  orders full outer join customer on c_custkey = o_orderkey\n" +
+            "order by\n" +
+            "  c_custkey,\n" +
+            "  orders.o_orderkey;\n";
 
     Map<String, String> variables = new HashMap<String, String>();
     variables.put(SessionVars.NULL_CHAR.keyname(), "\\\\T");
     client.updateSessionVariables(variables);
-
     TajoResultSet res = (TajoResultSet)client.executeQueryAndGetResult(sql);
+    res.close();
 
-    assertEquals(res.getTableDesc().getMeta().getOption(StorageConstants.CSVFILE_NULL), "\\\\T");
+    TableDesc resultDesc = client.getTableDesc("nullcharsession");
+    assertNullCharSessionVar(resultDesc);
+  }
 
-    Path path = res.getTableDesc().getPath();
+
+  public void assertNullCharSessionVar(TableDesc resultDesc) throws Exception {
+    TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
+
+    assertEquals(resultDesc.getMeta().getOption(StorageConstants.TEXT_NULL), "\\\\T");
+
+    Path path = new Path(resultDesc.getPath());
     FileSystem fs = path.getFileSystem(tajoConf);
 
     FileStatus[] files = fs.listStatus(path);
@@ -721,5 +753,51 @@ public class TestTajoClient {
     String resultDatas = new String(buf, 0, readBytes);
 
     assertEquals(expected, resultDatas);
+  }
+
+  @Test
+  public void testGetQueryInfoAndHistory() throws Exception {
+    String sql = "select count(*) from lineitem";
+    ClientProtos.SubmitQueryResponse response = client.executeQuery(sql);
+
+    assertNotNull(response);
+    QueryId queryId = new QueryId(response.getQueryId());
+
+    QueryInfoProto queryInfo = null;
+    long startTime = System.currentTimeMillis();
+    while (true) {
+      queryInfo = client.getQueryInfo(queryId);
+
+      if (queryInfo != null && queryInfo.getQueryState() == QueryState.QUERY_SUCCEEDED) {
+        break;
+      }
+      Thread.sleep(100);
+
+      if (System.currentTimeMillis() - startTime > 30 * 1000) {
+        fail("Too long running query");
+      }
+    }
+    Thread.sleep(5 * 1000);
+
+    assertNotNull(queryInfo);
+    assertEquals(queryId.toString(), queryInfo.getQueryId());
+
+    QueryHistoryProto queryHistory = client.getQueryHistory(queryId);
+    assertNotNull(queryHistory);
+    assertEquals(queryId.toString(), queryHistory.getQueryId());
+    assertEquals(2, queryHistory.getStageHistoriesCount());
+
+    List<ClientProtos.StageHistoryProto> taskHistories =
+        new ArrayList<StageHistoryProto>(queryHistory.getStageHistoriesList());
+    Collections.sort(taskHistories, new Comparator<StageHistoryProto>() {
+      @Override
+      public int compare(ClientProtos.StageHistoryProto o1, StageHistoryProto o2) {
+        return o1.getExecutionBlockId().compareTo(o2.getExecutionBlockId());
+      }
+    });
+    assertEquals(5, taskHistories.get(0).getTotalReadRows());
+    assertEquals(1, taskHistories.get(0).getTotalWriteRows());
+    assertEquals(1, taskHistories.get(1).getTotalReadRows());
+    assertEquals(1, taskHistories.get(1).getTotalWriteRows());
   }
 }

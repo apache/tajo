@@ -23,7 +23,6 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.ContentSummary;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.event.EventHandler;
@@ -32,29 +31,28 @@ import org.apache.hadoop.yarn.util.Clock;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
-import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoProtos.QueryState;
+import org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.ExecutionBlockCursor;
 import org.apache.tajo.engine.planner.global.MasterPlan;
-import org.apache.tajo.engine.planner.logical.CreateTableNode;
-import org.apache.tajo.engine.planner.logical.InsertNode;
-import org.apache.tajo.engine.planner.logical.NodeType;
+import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.event.*;
-import org.apache.tajo.storage.AbstractStorageManager;
+import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.StorageConstants;
-import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.history.QueryHistory;
+import org.apache.tajo.util.history.StageHistory;
 
 import java.io.IOException;
-import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -67,10 +65,9 @@ public class Query implements EventHandler<QueryEvent> {
   private final TajoConf systemConf;
   private final Clock clock;
   private String queryStr;
-  private Map<ExecutionBlockId, SubQuery> subqueries;
+  private Map<ExecutionBlockId, Stage> stages;
   private final EventHandler eventHandler;
   private final MasterPlan plan;
-  private final AbstractStorageManager sm;
   QueryMasterTask.QueryMasterTaskContext context;
   private ExecutionBlockCursor cursor;
 
@@ -80,11 +77,11 @@ public class Query implements EventHandler<QueryEvent> {
   private long startTime;
   private long finishTime;
   private TableDesc resultDesc;
-  private int completedSubQueryCount = 0;
-  private int successedSubQueryCount = 0;
-  private int killedSubQueryCount = 0;
-  private int failedSubQueryCount = 0;
-  private int erroredSubQueryCount = 0;
+  private int completedStagesCount = 0;
+  private int successedStagesCount = 0;
+  private int killedStagesCount = 0;
+  private int failedStagesCount = 0;
+  private int erroredStagesCount = 0;
   private final List<String> diagnostics = new ArrayList<String>();
 
   // Internal Variables
@@ -99,7 +96,7 @@ public class Query implements EventHandler<QueryEvent> {
   // Transition Handler
   private static final SingleArcTransition INTERNAL_ERROR_TRANSITION = new InternalErrorTransition();
   private static final DiagnosticsUpdateTransition DIAGNOSTIC_UPDATE_TRANSITION = new DiagnosticsUpdateTransition();
-  private static final SubQueryCompletedTransition SUBQUERY_COMPLETED_TRANSITION = new SubQueryCompletedTransition();
+  private static final StageCompletedTransition STAGE_COMPLETED_TRANSITION = new StageCompletedTransition();
   private static final QueryCompletedTransition QUERY_COMPLETED_TRANSITION = new QueryCompletedTransition();
 
   protected static final StateMachineFactory
@@ -123,8 +120,8 @@ public class Query implements EventHandler<QueryEvent> {
 
           // Transitions from RUNNING state
           .addTransition(QueryState.QUERY_RUNNING, QueryState.QUERY_RUNNING,
-              QueryEventType.SUBQUERY_COMPLETED,
-              SUBQUERY_COMPLETED_TRANSITION)
+              QueryEventType.STAGE_COMPLETED,
+              STAGE_COMPLETED_TRANSITION)
           .addTransition(QueryState.QUERY_RUNNING,
               EnumSet.of(QueryState.QUERY_SUCCEEDED, QueryState.QUERY_FAILED, QueryState.QUERY_KILLED,
                   QueryState.QUERY_ERROR),
@@ -135,7 +132,7 @@ public class Query implements EventHandler<QueryEvent> {
               DIAGNOSTIC_UPDATE_TRANSITION)
           .addTransition(QueryState.QUERY_RUNNING, QueryState.QUERY_KILL_WAIT,
               QueryEventType.KILL,
-              new KillSubQueriesTransition())
+              new KillAllStagesTransition())
           .addTransition(QueryState.QUERY_RUNNING, QueryState.QUERY_ERROR,
               QueryEventType.INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
@@ -146,8 +143,8 @@ public class Query implements EventHandler<QueryEvent> {
               DIAGNOSTIC_UPDATE_TRANSITION)
           // ignore-able transitions
           .addTransition(QueryState.QUERY_SUCCEEDED, QueryState.QUERY_SUCCEEDED,
-              QueryEventType.SUBQUERY_COMPLETED,
-              SUBQUERY_COMPLETED_TRANSITION)
+              QueryEventType.STAGE_COMPLETED,
+              STAGE_COMPLETED_TRANSITION)
           .addTransition(QueryState.QUERY_SUCCEEDED, QueryState.QUERY_SUCCEEDED,
               QueryEventType.KILL)
           .addTransition(QueryState.QUERY_SUCCEEDED, QueryState.QUERY_ERROR,
@@ -156,8 +153,8 @@ public class Query implements EventHandler<QueryEvent> {
 
           // Transitions from KILL_WAIT state
           .addTransition(QueryState.QUERY_KILL_WAIT, QueryState.QUERY_KILL_WAIT,
-              QueryEventType.SUBQUERY_COMPLETED,
-              SUBQUERY_COMPLETED_TRANSITION)
+              QueryEventType.STAGE_COMPLETED,
+              STAGE_COMPLETED_TRANSITION)
           .addTransition(QueryState.QUERY_KILL_WAIT,
               EnumSet.of(QueryState.QUERY_SUCCEEDED, QueryState.QUERY_FAILED, QueryState.QUERY_KILLED,
                   QueryState.QUERY_ERROR),
@@ -194,7 +191,7 @@ public class Query implements EventHandler<QueryEvent> {
               INTERNAL_ERROR_TRANSITION)
           // Ignore-able transitions
           .addTransition(QueryState.QUERY_ERROR, QueryState.QUERY_ERROR,
-              QueryEventType.KILL)
+              EnumSet.of(QueryEventType.KILL, QueryEventType.STAGE_COMPLETED))
 
           .installTopology();
 
@@ -209,10 +206,9 @@ public class Query implements EventHandler<QueryEvent> {
     this.clock = context.getClock();
     this.appSubmitTime = appSubmitTime;
     this.queryStr = queryStr;
-    subqueries = Maps.newHashMap();
+    this.stages = Maps.newConcurrentMap();
     this.eventHandler = eventHandler;
     this.plan = plan;
-    this.sm = context.getStorageManager();
     this.cursor = new ExecutionBlockCursor(plan, true);
 
     StringBuilder sb = new StringBuilder("\n=======================================================");
@@ -241,30 +237,22 @@ public class Query implements EventHandler<QueryEvent> {
       return 1.0f;
     } else {
       int idx = 0;
-      List<SubQuery> tempSubQueries = new ArrayList<SubQuery>();
-      synchronized(subqueries) {
-        tempSubQueries.addAll(subqueries.values());
+      List<Stage> tempStages = new ArrayList<Stage>();
+      synchronized(stages) {
+        tempStages.addAll(stages.values());
       }
-      float [] subProgresses = new float[tempSubQueries.size()];
-      boolean finished = true;
-      for (SubQuery subquery: tempSubQueries) {
-        if (subquery.getState() != SubQueryState.NEW) {
-          subProgresses[idx] = subquery.getProgress();
-          if (finished && subquery.getState() != SubQueryState.SUCCEEDED) {
-            finished = false;
-          }
+
+      float [] subProgresses = new float[tempStages.size()];
+      for (Stage stage: tempStages) {
+        if (stage.getState() != StageState.NEW) {
+          subProgresses[idx] = stage.getProgress();
         } else {
           subProgresses[idx] = 0.0f;
-          finished = false;
         }
         idx++;
       }
 
-      if (finished) {
-        return 1.0f;
-      }
-
-      float totalProgress = 0;
+      float totalProgress = 0.0f;
       float proportion = 1.0f / (float)(getExecutionBlockCursor().size() - 1); // minus one is due to
 
       for (int i = 0; i < subProgresses.length; i++) {
@@ -293,6 +281,42 @@ public class Query implements EventHandler<QueryEvent> {
 
   public void setFinishTime() {
     finishTime = clock.getTime();
+  }
+
+  public QueryHistory getQueryHistory() {
+    QueryHistory queryHistory = makeQueryHistory();
+    queryHistory.setStageHistories(makeStageHistories());
+    return queryHistory;
+  }
+
+  private List<StageHistory> makeStageHistories() {
+    List<StageHistory> stageHistories = new ArrayList<StageHistory>();
+    for(Stage eachStage : getStages()) {
+      stageHistories.add(eachStage.getStageHistory());
+    }
+
+    return stageHistories;
+  }
+
+  private QueryHistory makeQueryHistory() {
+    QueryHistory queryHistory = new QueryHistory();
+
+    queryHistory.setQueryId(getId().toString());
+    queryHistory.setQueryMaster(context.getQueryMasterContext().getWorkerContext().getWorkerName());
+    queryHistory.setHttpPort(context.getQueryMasterContext().getWorkerContext().getConnectionInfo().getHttpInfoPort());
+    queryHistory.setLogicalPlan(plan.toString());
+    queryHistory.setLogicalPlan(plan.getLogicalPlan().toString());
+    queryHistory.setDistributedPlan(plan.toString());
+
+    List<String[]> sessionVariables = new ArrayList<String[]>();
+    for(Map.Entry<String,String> entry: plan.getContext().getAllKeyValus().entrySet()) {
+      if (SessionVars.exists(entry.getKey()) && SessionVars.isPublic(SessionVars.get(entry.getKey()))) {
+        sessionVariables.add(new String[]{entry.getKey(), entry.getValue()});
+      }
+    }
+    queryHistory.setSessionVariables(sessionVariables);
+
+    return queryHistory;
   }
 
   public List<String> getDiagnostics() {
@@ -324,20 +348,20 @@ public class Query implements EventHandler<QueryEvent> {
     return stateMachine;
   }
   
-  public void addSubQuery(SubQuery subquery) {
-    subqueries.put(subquery.getId(), subquery);
+  public void addStage(Stage stage) {
+    stages.put(stage.getId(), stage);
   }
   
   public QueryId getId() {
     return this.id;
   }
 
-  public SubQuery getSubQuery(ExecutionBlockId id) {
-    return this.subqueries.get(id);
+  public Stage getStage(ExecutionBlockId id) {
+    return this.stages.get(id);
   }
 
-  public Collection<SubQuery> getSubQueries() {
-    return this.subqueries.values();
+  public Collection<Stage> getStages() {
+    return this.stages.values();
   }
 
   public QueryState getSynchronizedState() {
@@ -365,13 +389,13 @@ public class Query implements EventHandler<QueryEvent> {
     public void transition(Query query, QueryEvent queryEvent) {
 
       query.setStartTime();
-      SubQuery subQuery = new SubQuery(query.context, query.getPlan(),
-          query.getExecutionBlockCursor().nextBlock(), query.sm);
-      subQuery.setPriority(query.priority--);
-      query.addSubQuery(subQuery);
+      Stage stage = new Stage(query.context, query.getPlan(),
+          query.getExecutionBlockCursor().nextBlock());
+      stage.setPriority(query.priority--);
+      query.addStage(stage);
 
-      subQuery.handle(new SubQueryEvent(subQuery.getId(), SubQueryEventType.SQ_INIT));
-      LOG.debug("Schedule unit plan: \n" + subQuery.getBlock().getPlan());
+      stage.handle(new StageEvent(stage.getId(), StageEventType.SQ_INIT));
+      LOG.debug("Schedule unit plan: \n" + stage.getBlock().getPlan());
     }
   }
 
@@ -379,224 +403,58 @@ public class Query implements EventHandler<QueryEvent> {
 
     @Override
     public QueryState transition(Query query, QueryEvent queryEvent) {
-      QueryCompletedEvent subQueryEvent = (QueryCompletedEvent) queryEvent;
+      QueryCompletedEvent stageEvent = (QueryCompletedEvent) queryEvent;
       QueryState finalState;
-      if (subQueryEvent.getState() == SubQueryState.SUCCEEDED) {
-        finalizeQuery(query, subQueryEvent);
-        finalState = QueryState.QUERY_SUCCEEDED;
-      } else if (subQueryEvent.getState() == SubQueryState.FAILED) {
+
+      if (stageEvent.getState() == StageState.SUCCEEDED) {
+        finalState = finalizeQuery(query, stageEvent);
+      } else if (stageEvent.getState() == StageState.FAILED) {
         finalState = QueryState.QUERY_FAILED;
-      } else if (subQueryEvent.getState() == SubQueryState.KILLED) {
+      } else if (stageEvent.getState() == StageState.KILLED) {
         finalState = QueryState.QUERY_KILLED;
       } else {
         finalState = QueryState.QUERY_ERROR;
       }
+      if (finalState != QueryState.QUERY_SUCCEEDED) {
+        Stage lastStage = query.getStage(stageEvent.getExecutionBlockId());
+        if (lastStage != null && lastStage.getTableMeta() != null) {
+          StoreType storeType = lastStage.getTableMeta().getStoreType();
+          if (storeType != null) {
+            LogicalRootNode rootNode = lastStage.getMasterPlan().getLogicalPlan().getRootBlock().getRoot();
+            try {
+              StorageManager.getStorageManager(query.systemConf, storeType).rollbackOutputCommit(rootNode.getChild());
+            } catch (IOException e) {
+              LOG.warn(query.getId() + ", failed processing cleanup storage when query failed:" + e.getMessage(), e);
+            }
+          }
+        }
+      }
       query.eventHandler.handle(new QueryMasterQueryCompletedEvent(query.getId()));
       query.setFinishTime();
+
       return finalState;
     }
 
-    private void finalizeQuery(Query query, QueryCompletedEvent event) {
-      MasterPlan masterPlan = query.getPlan();
-
-      ExecutionBlock terminal = query.getPlan().getTerminalBlock();
-      DataChannel finalChannel = masterPlan.getChannel(event.getExecutionBlockId(), terminal.getId());
-      Path finalOutputDir = commitOutputData(query);
-
-      QueryHookExecutor hookExecutor = new QueryHookExecutor(query.context.getQueryMasterContext());
+    private QueryState finalizeQuery(Query query, QueryCompletedEvent event) {
+      Stage lastStage = query.getStage(event.getExecutionBlockId());
+      StoreType storeType = lastStage.getTableMeta().getStoreType();
       try {
-        hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(),
-            finalOutputDir);
+        LogicalRootNode rootNode = lastStage.getMasterPlan().getLogicalPlan().getRootBlock().getRoot();
+        CatalogService catalog = lastStage.getContext().getQueryMasterContext().getWorkerContext().getCatalog();
+        TableDesc tableDesc =  PlannerUtil.getTableDesc(catalog, rootNode.getChild());
+
+        Path finalOutputDir = StorageManager.getStorageManager(query.systemConf, storeType)
+            .commitOutputData(query.context.getQueryContext(),
+                lastStage.getId(), lastStage.getMasterPlan().getLogicalPlan(), lastStage.getSchema(), tableDesc);
+
+        QueryHookExecutor hookExecutor = new QueryHookExecutor(query.context.getQueryMasterContext());
+        hookExecutor.execute(query.context.getQueryContext(), query, event.getExecutionBlockId(), finalOutputDir);
       } catch (Exception e) {
         query.eventHandler.handle(new QueryDiagnosticsUpdateEvent(query.id, ExceptionUtils.getStackTrace(e)));
-      }
-    }
-
-    /**
-     * It moves a result data stored in a staging output dir into a final output dir.
-     */
-    public Path commitOutputData(Query query) {
-      QueryContext queryContext = query.context.getQueryContext();
-      Path stagingResultDir = new Path(queryContext.getStagingDir(), TajoConstants.RESULT_DIR_NAME);
-      Path finalOutputDir;
-      if (queryContext.hasOutputPath()) {
-        finalOutputDir = queryContext.getOutputPath();
-        try {
-          FileSystem fs = stagingResultDir.getFileSystem(query.systemConf);
-
-          if (queryContext.isOutputOverwrite()) { // INSERT OVERWRITE INTO
-
-            // it moves the original table into the temporary location.
-            // Then it moves the new result table into the original table location.
-            // Upon failed, it recovers the original table if possible.
-            boolean movedToOldTable = false;
-            boolean committed = false;
-            Path oldTableDir = new Path(queryContext.getStagingDir(), TajoConstants.INSERT_OVERWIRTE_OLD_TABLE_NAME);
-            try {
-              if (fs.exists(finalOutputDir)) {
-                fs.rename(finalOutputDir, oldTableDir);
-                movedToOldTable = fs.exists(oldTableDir);
-              } else { // if the parent does not exist, make its parent directory.
-                fs.mkdirs(finalOutputDir.getParent());
-              }
-              fs.rename(stagingResultDir, finalOutputDir);
-              committed = fs.exists(finalOutputDir);
-            } catch (IOException ioe) {
-              // recover the old table
-              if (movedToOldTable && !committed) {
-                fs.rename(oldTableDir, finalOutputDir);
-              }
-            }
-          } else {
-            NodeType queryType = queryContext.getCommandType();
-
-            if (queryType == NodeType.INSERT) { // INSERT INTO an existing table
-
-              NumberFormat fmt = NumberFormat.getInstance();
-              fmt.setGroupingUsed(false);
-              fmt.setMinimumIntegerDigits(3);
-
-              if (queryContext.hasPartition()) {
-                for(FileStatus eachFile: fs.listStatus(stagingResultDir)) {
-                  if (eachFile.isFile()) {
-                    LOG.warn("Partition table can't have file in a staging dir: " + eachFile.getPath());
-                    continue;
-                  }
-                  moveResultFromStageToFinal(fs, stagingResultDir, eachFile, finalOutputDir, fmt, -1);
-                }
-              } else {
-                int maxSeq = StorageUtil.getMaxFileSequence(fs, finalOutputDir, false) + 1;
-                for(FileStatus eachFile: fs.listStatus(stagingResultDir)) {
-                  moveResultFromStageToFinal(fs, stagingResultDir, eachFile, finalOutputDir, fmt, maxSeq++);
-                }
-              }
-              // checking all file moved and remove empty dir
-              verifyAllFileMoved(fs, stagingResultDir);
-              FileStatus[] files = fs.listStatus(stagingResultDir);
-              if (files != null && files.length != 0) {
-                for (FileStatus eachFile: files) {
-                  LOG.error("There are some unmoved files in staging dir:" + eachFile.getPath());
-                }
-              }
-            } else { // CREATE TABLE AS SELECT (CTAS)
-              fs.rename(stagingResultDir, finalOutputDir);
-              LOG.info("Moved from the staging dir to the output directory '" + finalOutputDir);
-            }
-          }
-        } catch (IOException e) {
-          // TODO report to client
-          e.printStackTrace();
-        }
-      } else {
-        finalOutputDir = new Path(queryContext.getStagingDir(), TajoConstants.RESULT_DIR_NAME);
+        return QueryState.QUERY_ERROR;
       }
 
-      return finalOutputDir;
-    }
-
-    private boolean verifyAllFileMoved(FileSystem fs, Path stagingPath) throws IOException {
-      FileStatus[] files = fs.listStatus(stagingPath);
-      if (files != null && files.length != 0) {
-        for (FileStatus eachFile: files) {
-          if (eachFile.isFile()) {
-            LOG.error("There are some unmoved files in staging dir:" + eachFile.getPath());
-            return false;
-          } else {
-            if (verifyAllFileMoved(fs, eachFile.getPath())) {
-              fs.delete(eachFile.getPath(), false);
-            } else {
-              return false;
-            }
-          }
-        }
-      }
-
-      return true;
-    }
-
-    /**
-     * Attach the sequence number to a path.
-     *
-     * @param path Path
-     * @param seq sequence number
-     * @param nf Number format
-     * @return New path attached with sequence number
-     * @throws IOException
-     */
-    private String replaceFileNameSeq(Path path, int seq, NumberFormat nf) throws IOException {
-      String[] tokens = path.getName().split("-");
-      if (tokens.length != 4) {
-        throw new IOException("Wrong result file name:" + path);
-      }
-      return tokens[0] + "-" + tokens[1] + "-" + tokens[2] + "-" + nf.format(seq);
-    }
-
-    /**
-     * Attach the sequence number to the output file name and than move the file into the final result path.
-     *
-     * @param fs FileSystem
-     * @param stagingResultDir The staging result dir
-     * @param fileStatus The file status
-     * @param finalOutputPath Final output path
-     * @param nf Number format
-     * @param fileSeq The sequence number
-     * @throws IOException
-     */
-    private void moveResultFromStageToFinal(FileSystem fs, Path stagingResultDir,
-                                            FileStatus fileStatus, Path finalOutputPath,
-                                            NumberFormat nf,
-                                            int fileSeq) throws IOException {
-      if (fileStatus.isDirectory()) {
-        String subPath = extractSubPath(stagingResultDir, fileStatus.getPath());
-        if (subPath != null) {
-          Path finalSubPath = new Path(finalOutputPath, subPath);
-          if (!fs.exists(finalSubPath)) {
-            fs.mkdirs(finalSubPath);
-          }
-          int maxSeq = StorageUtil.getMaxFileSequence(fs, finalSubPath, false);
-          for (FileStatus eachFile : fs.listStatus(fileStatus.getPath())) {
-            moveResultFromStageToFinal(fs, stagingResultDir, eachFile, finalOutputPath, nf, ++maxSeq);
-          }
-        } else {
-          throw new IOException("Wrong staging dir:" + stagingResultDir + "," + fileStatus.getPath());
-        }
-      } else {
-        String subPath = extractSubPath(stagingResultDir, fileStatus.getPath());
-        if (subPath != null) {
-          Path finalSubPath = new Path(finalOutputPath, subPath);
-          finalSubPath = new Path(finalSubPath.getParent(), replaceFileNameSeq(finalSubPath, fileSeq, nf));
-          if (!fs.exists(finalSubPath.getParent())) {
-            fs.mkdirs(finalSubPath.getParent());
-          }
-          if (fs.exists(finalSubPath)) {
-            throw new IOException("Already exists data file:" + finalSubPath);
-          }
-          boolean success = fs.rename(fileStatus.getPath(), finalSubPath);
-          if (success) {
-            LOG.info("Moving staging file[" + fileStatus.getPath() + "] + " +
-                "to final output[" + finalSubPath + "]");
-          } else {
-            LOG.error("Can't move staging file[" + fileStatus.getPath() + "] + " +
-                "to final output[" + finalSubPath + "]");
-          }
-        }
-      }
-    }
-
-    private String extractSubPath(Path parentPath, Path childPath) {
-      String parentPathStr = parentPath.toUri().getPath();
-      String childPathStr = childPath.toUri().getPath();
-
-      if (parentPathStr.length() > childPathStr.length()) {
-        return null;
-      }
-
-      int index = childPathStr.indexOf(parentPathStr);
-      if (index != 0) {
-        return null;
-      }
-
-      return childPathStr.substring(parentPathStr.length() + 1);
+      return QueryState.QUERY_SUCCEEDED;
     }
 
     private static interface QueryHook {
@@ -632,7 +490,7 @@ public class Query implements EventHandler<QueryEvent> {
       @Override
       public boolean isEligible(QueryContext queryContext, Query query, ExecutionBlockId finalExecBlockId,
                                 Path finalOutputDir) {
-        SubQuery lastStage = query.getSubQuery(finalExecBlockId);
+        Stage lastStage = query.getStage(finalExecBlockId);
         NodeType type = lastStage.getBlock().getPlan().getType();
         return type != NodeType.CREATE_TABLE && type != NodeType.INSERT;
       }
@@ -641,11 +499,11 @@ public class Query implements EventHandler<QueryEvent> {
       public void execute(QueryMaster.QueryMasterContext context, QueryContext queryContext,
                           Query query, ExecutionBlockId finalExecBlockId,
                           Path finalOutputDir) throws Exception {
-        SubQuery lastStage = query.getSubQuery(finalExecBlockId);
+        Stage lastStage = query.getStage(finalExecBlockId);
         TableMeta meta = lastStage.getTableMeta();
 
         String nullChar = queryContext.get(SessionVars.NULL_CHAR);
-        meta.putOption(StorageConstants.CSVFILE_NULL, nullChar);
+        meta.putOption(StorageConstants.TEXT_NULL, nullChar);
 
         TableStats stats = lastStage.getResultStats();
 
@@ -654,7 +512,7 @@ public class Query implements EventHandler<QueryEvent> {
                 query.getId().toString(),
                 lastStage.getSchema(),
                 meta,
-                finalOutputDir);
+                finalOutputDir.toUri());
         resultTableDesc.setExternal(true);
 
         stats.setNumBytes(getTableVolume(query.systemConf, finalOutputDir));
@@ -668,7 +526,7 @@ public class Query implements EventHandler<QueryEvent> {
       @Override
       public boolean isEligible(QueryContext queryContext, Query query, ExecutionBlockId finalExecBlockId,
                                 Path finalOutputDir) {
-        SubQuery lastStage = query.getSubQuery(finalExecBlockId);
+        Stage lastStage = query.getStage(finalExecBlockId);
         return lastStage.getBlock().getPlan().getType() == NodeType.CREATE_TABLE;
       }
 
@@ -676,7 +534,7 @@ public class Query implements EventHandler<QueryEvent> {
       public void execute(QueryMaster.QueryMasterContext context, QueryContext queryContext,
                           Query query, ExecutionBlockId finalExecBlockId, Path finalOutputDir) throws Exception {
         CatalogService catalog = context.getWorkerContext().getCatalog();
-        SubQuery lastStage = query.getSubQuery(finalExecBlockId);
+        Stage lastStage = query.getStage(finalExecBlockId);
         TableStats stats = lastStage.getResultStats();
 
         CreateTableNode createTableNode = (CreateTableNode) lastStage.getBlock().getPlan();
@@ -687,7 +545,7 @@ public class Query implements EventHandler<QueryEvent> {
                 createTableNode.getTableName(),
                 createTableNode.getTableSchema(),
                 meta,
-                finalOutputDir);
+                finalOutputDir.toUri());
         tableDescTobeCreated.setExternal(createTableNode.isExternal());
 
         if (createTableNode.hasPartition()) {
@@ -707,7 +565,7 @@ public class Query implements EventHandler<QueryEvent> {
       @Override
       public boolean isEligible(QueryContext queryContext, Query query, ExecutionBlockId finalExecBlockId,
                                 Path finalOutputDir) {
-        SubQuery lastStage = query.getSubQuery(finalExecBlockId);
+        Stage lastStage = query.getStage(finalExecBlockId);
         return lastStage.getBlock().getPlan().getType() == NodeType.INSERT;
       }
 
@@ -717,7 +575,7 @@ public class Query implements EventHandler<QueryEvent> {
           throws Exception {
 
         CatalogService catalog = context.getWorkerContext().getCatalog();
-        SubQuery lastStage = query.getSubQuery(finalExecBlockId);
+        Stage lastStage = query.getStage(finalExecBlockId);
         TableMeta meta = lastStage.getTableMeta();
         TableStats stats = lastStage.getResultStats();
 
@@ -729,7 +587,7 @@ public class Query implements EventHandler<QueryEvent> {
           finalTable = catalog.getTableDesc(tableName);
         } else {
           String tableName = query.getId().toString();
-          finalTable = new TableDesc(tableName, lastStage.getSchema(), meta, finalOutputDir);
+          finalTable = new TableDesc(tableName, lastStage.getSchema(), meta, finalOutputDir.toUri());
         }
 
         long volume = getTableVolume(query.systemConf, finalOutputDir);
@@ -737,8 +595,11 @@ public class Query implements EventHandler<QueryEvent> {
         finalTable.setStats(stats);
 
         if (insertNode.hasTargetTable()) {
-          catalog.dropTable(insertNode.getTableName());
-          catalog.createTable(finalTable);
+          UpdateTableStatsProto.Builder builder = UpdateTableStatsProto.newBuilder();
+          builder.setTableName(finalTable.getName());
+          builder.setStats(stats.getProto());
+
+          catalog.updateTableStats(builder.build());
         }
 
         query.setResultDesc(finalTable);
@@ -752,7 +613,7 @@ public class Query implements EventHandler<QueryEvent> {
     return directorySummary.getLength();
   }
 
-  public static class SubQueryCompletedTransition implements SingleArcTransition<Query, QueryEvent> {
+  public static class StageCompletedTransition implements SingleArcTransition<Query, QueryEvent> {
 
     private boolean hasNext(Query query) {
       ExecutionBlockCursor cursor = query.getExecutionBlockCursor();
@@ -763,43 +624,43 @@ public class Query implements EventHandler<QueryEvent> {
     private void executeNextBlock(Query query) {
       ExecutionBlockCursor cursor = query.getExecutionBlockCursor();
       ExecutionBlock nextBlock = cursor.nextBlock();
-      SubQuery nextSubQuery = new SubQuery(query.context, query.getPlan(), nextBlock, query.sm);
-      nextSubQuery.setPriority(query.priority--);
-      query.addSubQuery(nextSubQuery);
-      nextSubQuery.handle(new SubQueryEvent(nextSubQuery.getId(), SubQueryEventType.SQ_INIT));
+      Stage nextStage = new Stage(query.context, query.getPlan(), nextBlock);
+      nextStage.setPriority(query.priority--);
+      query.addStage(nextStage);
+      nextStage.handle(new StageEvent(nextStage.getId(), StageEventType.SQ_INIT));
 
-      LOG.info("Scheduling SubQuery:" + nextSubQuery.getId());
+      LOG.info("Scheduling Stage:" + nextStage.getId());
       if(LOG.isDebugEnabled()) {
-        LOG.debug("Scheduling SubQuery's Priority: " + nextSubQuery.getPriority());
-        LOG.debug("Scheduling SubQuery's Plan: \n" + nextSubQuery.getBlock().getPlan());
+        LOG.debug("Scheduling Stage's Priority: " + nextStage.getPriority());
+        LOG.debug("Scheduling Stage's Plan: \n" + nextStage.getBlock().getPlan());
       }
     }
 
     @Override
     public void transition(Query query, QueryEvent event) {
       try {
-        query.completedSubQueryCount++;
-        SubQueryCompletedEvent castEvent = (SubQueryCompletedEvent) event;
+        query.completedStagesCount++;
+        StageCompletedEvent castEvent = (StageCompletedEvent) event;
 
-        if (castEvent.getState() == SubQueryState.SUCCEEDED) {
-          query.successedSubQueryCount++;
-        } else if (castEvent.getState() == SubQueryState.KILLED) {
-          query.killedSubQueryCount++;
-        } else if (castEvent.getState() == SubQueryState.FAILED) {
-          query.failedSubQueryCount++;
-        } else if (castEvent.getState() == SubQueryState.ERROR) {
-          query.erroredSubQueryCount++;
+        if (castEvent.getState() == StageState.SUCCEEDED) {
+          query.successedStagesCount++;
+        } else if (castEvent.getState() == StageState.KILLED) {
+          query.killedStagesCount++;
+        } else if (castEvent.getState() == StageState.FAILED) {
+          query.failedStagesCount++;
+        } else if (castEvent.getState() == StageState.ERROR) {
+          query.erroredStagesCount++;
         } else {
-          LOG.error(String.format("Invalid SubQuery (%s) State %s at %s",
+          LOG.error(String.format("Invalid Stage (%s) State %s at %s",
               castEvent.getExecutionBlockId().toString(), castEvent.getState().name(), query.getSynchronizedState().name()));
           query.eventHandler.handle(new QueryEvent(event.getQueryId(), QueryEventType.INTERNAL_ERROR));
         }
 
-        // if a subquery is succeeded and a query is running
-        if (castEvent.getState() == SubQueryState.SUCCEEDED &&  // latest subquery succeeded
+        // if a stage is succeeded and a query is running
+        if (castEvent.getState() == StageState.SUCCEEDED &&  // latest stage succeeded
             query.getSynchronizedState() == QueryState.QUERY_RUNNING &&     // current state is not in KILL_WAIT, FAILED, or ERROR.
-            hasNext(query)) {                                   // there remains at least one subquery.
-          query.getSubQuery(castEvent.getExecutionBlockId()).waitingIntermediateReport();
+            hasNext(query)) {                                   // there remains at least one stage.
+          query.getStage(castEvent.getExecutionBlockId()).waitingIntermediateReport();
           executeNextBlock(query);
         } else { // if a query is completed due to finished, kill, failure, or error
           query.eventHandler.handle(new QueryCompletedEvent(castEvent.getExecutionBlockId(), castEvent.getState()));
@@ -826,12 +687,12 @@ public class Query implements EventHandler<QueryEvent> {
     }
   }
 
-  private static class KillSubQueriesTransition implements SingleArcTransition<Query, QueryEvent> {
+  private static class KillAllStagesTransition implements SingleArcTransition<Query, QueryEvent> {
     @Override
     public void transition(Query query, QueryEvent event) {
-      synchronized (query.subqueries) {
-        for (SubQuery subquery : query.subqueries.values()) {
-          query.eventHandler.handle(new SubQueryEvent(subquery.getId(), SubQueryEventType.SQ_KILL));
+      synchronized (query.stages) {
+        for (Stage stage : query.stages.values()) {
+          query.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_KILL));
         }
       }
     }

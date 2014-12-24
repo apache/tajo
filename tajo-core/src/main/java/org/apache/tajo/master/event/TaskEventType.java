@@ -23,10 +23,10 @@ package org.apache.tajo.master.event;
  */
 public enum TaskEventType {
 
-  //Producer:Client, SubQuery
+  //Producer:Client, Stage
   T_KILL,
 
-  //Producer:SubQuery
+  //Producer:Stage
   T_SCHEDULE,
 
   //Producer:TaskAttempt

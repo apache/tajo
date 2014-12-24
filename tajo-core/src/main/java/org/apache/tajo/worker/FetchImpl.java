@@ -24,7 +24,7 @@ import com.google.common.collect.Lists;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.master.querymaster.QueryUnit;
+import org.apache.tajo.master.querymaster.Task;
 import org.apache.tajo.master.querymaster.Repartitioner;
 import org.apache.tajo.util.TUtil;
 
@@ -32,14 +32,14 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
+
 /**
  * <code>FetchImpl</code> information to indicate the locations of intermediate data.
  */
 public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto>, Cloneable {
-  private TajoWorkerProtocol.FetchProto.Builder builder = null;
-
-  private QueryUnit.PullHost host;             // The pull server host information
-  private TajoWorkerProtocol.ShuffleType type; // hash or range partition method.
+  private Task.PullHost host;             // The pull server host information
+  private ShuffleType type; // hash or range partition method.
   private ExecutionBlockId executionBlockId;   // The executionBlock id
   private int partitionId;                     // The hash partition id
   private String name;                         // The intermediate source name
@@ -53,13 +53,12 @@ public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto>, Cl
   private long length = -1;
 
   public FetchImpl() {
-    builder = TajoWorkerProtocol.FetchProto.newBuilder();
     taskIds = new ArrayList<Integer>();
     attemptIds = new ArrayList<Integer>();
   }
 
   public FetchImpl(TajoWorkerProtocol.FetchProto proto) {
-    this(new QueryUnit.PullHost(proto.getHost(), proto.getPort()),
+    this(new Task.PullHost(proto.getHost(), proto.getPort()),
         proto.getType(),
         new ExecutionBlockId(proto.getExecutionBlockId()),
         proto.getPartitionId(),
@@ -77,22 +76,22 @@ public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto>, Cl
     }
   }
 
-  public FetchImpl(QueryUnit.PullHost host, TajoWorkerProtocol.ShuffleType type, ExecutionBlockId executionBlockId,
+  public FetchImpl(Task.PullHost host, ShuffleType type, ExecutionBlockId executionBlockId,
                    int partitionId) {
     this(host, type, executionBlockId, partitionId, null, false, null,
         new ArrayList<Integer>(), new ArrayList<Integer>());
   }
 
-  public FetchImpl(QueryUnit.PullHost host, TajoWorkerProtocol.ShuffleType type, ExecutionBlockId executionBlockId,
-                   int partitionId, List<QueryUnit.IntermediateEntry> intermediateEntryList) {
+  public FetchImpl(Task.PullHost host, ShuffleType type, ExecutionBlockId executionBlockId,
+                   int partitionId, List<Task.IntermediateEntry> intermediateEntryList) {
     this(host, type, executionBlockId, partitionId, null, false, null,
         new ArrayList<Integer>(), new ArrayList<Integer>());
-    for (QueryUnit.IntermediateEntry entry : intermediateEntryList){
+    for (Task.IntermediateEntry entry : intermediateEntryList){
       addPart(entry.getTaskId(), entry.getAttemptId());
     }
   }
 
-  public FetchImpl(QueryUnit.PullHost host, TajoWorkerProtocol.ShuffleType type, ExecutionBlockId executionBlockId,
+  public FetchImpl(Task.PullHost host, ShuffleType type, ExecutionBlockId executionBlockId,
                    int partitionId, String rangeParams, boolean hasNext, String name,
                    List<Integer> taskIds, List<Integer> attemptIds) {
     this.host = host;
@@ -108,14 +107,14 @@ public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto>, Cl
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(host, type, executionBlockId, partitionId, name, rangeParams, hasNext, taskIds, attemptIds);
+    return Objects.hashCode(host, type, executionBlockId, partitionId, name, rangeParams,
+        hasNext, taskIds, attemptIds, offset, length);
   }
 
   @Override
   public TajoWorkerProtocol.FetchProto getProto() {
-    if (builder == null) {
-      builder = TajoWorkerProtocol.FetchProto.newBuilder();
-    }
+    TajoWorkerProtocol.FetchProto.Builder builder = TajoWorkerProtocol.FetchProto.newBuilder();
+
     builder.setHost(host.getHost());
     builder.setPort(host.getPort());
     builder.setType(type);
@@ -142,7 +141,7 @@ public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto>, Cl
     this.attemptIds.add(attemptId);
   }
 
-  public QueryUnit.PullHost getPullHost() {
+  public Task.PullHost getPullHost() {
     return this.host;
   }
 
@@ -178,11 +177,11 @@ public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto>, Cl
     this.hasNext = hasNext;
   }
 
-  public TajoWorkerProtocol.ShuffleType getType() {
+  public ShuffleType getType() {
     return type;
   }
 
-  public void setType(TajoWorkerProtocol.ShuffleType type) {
+  public void setType(ShuffleType type) {
     this.type = type;
   }
 
@@ -235,7 +234,6 @@ public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto>, Cl
   public FetchImpl clone() throws CloneNotSupportedException {
     FetchImpl newFetchImpl = (FetchImpl) super.clone();
 
-    newFetchImpl.builder = TajoWorkerProtocol.FetchProto.newBuilder();
     newFetchImpl.host = host.clone();
     newFetchImpl.type = type;
     newFetchImpl.executionBlockId = executionBlockId;
@@ -273,6 +271,8 @@ public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto>, Cl
         TUtil.checkEquals(name, fetch.name) &&
         TUtil.checkEquals(rangeParams, fetch.rangeParams) &&
         TUtil.checkEquals(taskIds, fetch.taskIds) &&
-        TUtil.checkEquals(type, fetch.type);
+        TUtil.checkEquals(type, fetch.type) &&
+        TUtil.checkEquals(offset, fetch.offset) &&
+        TUtil.checkEquals(length, fetch.length);
   }
 }

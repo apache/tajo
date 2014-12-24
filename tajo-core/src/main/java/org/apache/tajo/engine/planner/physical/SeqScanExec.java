@@ -21,25 +21,28 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.codegen.CompilationError;
-import org.apache.tajo.engine.eval.ConstEval;
-import org.apache.tajo.engine.eval.EvalNode;
-import org.apache.tajo.engine.eval.EvalTreeUtil;
-import org.apache.tajo.engine.eval.FieldEval;
 import org.apache.tajo.engine.planner.Projector;
-import org.apache.tajo.engine.planner.Target;
-import org.apache.tajo.engine.planner.logical.ScanNode;
-import org.apache.tajo.engine.utils.SchemaUtil;
 import org.apache.tajo.engine.utils.TupleCache;
 import org.apache.tajo.engine.utils.TupleCacheKey;
-import org.apache.tajo.engine.utils.TupleUtil;
+import org.apache.tajo.catalog.SchemaUtil;
+import org.apache.tajo.plan.Target;
+import org.apache.tajo.plan.expr.ConstEval;
+import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.expr.EvalTreeUtil;
+import org.apache.tajo.plan.expr.FieldEval;
+import org.apache.tajo.plan.logical.ScanNode;
+import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
+import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -67,7 +70,7 @@ public class SeqScanExec extends PhysicalExec {
 
   private boolean cacheRead = false;
 
-  public SeqScanExec(TaskAttemptContext context, AbstractStorageManager sm, ScanNode plan,
+  public SeqScanExec(TaskAttemptContext context, ScanNode plan,
                      CatalogProtos.FragmentProto [] fragments) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema());
 
@@ -79,14 +82,13 @@ public class SeqScanExec extends PhysicalExec {
       String pathNameKey = "";
       if (fragments != null) {
         for (FragmentProto f : fragments) {
-          FileFragment fileFragement = FragmentConvertor.convert(
-              context.getConf(), plan.getTableDesc().getMeta().getStoreType(), f);
-          pathNameKey += fileFragement.getPath();
+          Fragment fragement = FragmentConvertor.convert(context.getConf(), f);
+          pathNameKey += fragement.getKey();
         }
       }
 
       cacheKey = new TupleCacheKey(
-          context.getTaskId().getQueryUnitId().getExecutionBlockId().toString(), plan.getTableName(), pathNameKey);
+          context.getTaskId().getTaskId().getExecutionBlockId().toString(), plan.getTableName(), pathNameKey);
     }
 
     if (fragments != null
@@ -118,7 +120,8 @@ public class SeqScanExec extends PhysicalExec {
 
     // Get a partition key value from a given path
     Tuple partitionRow =
-        TupleUtil.buildTupleFromPartitionPath(columnPartitionSchema, fileFragments.get(0).getPath(), false);
+        PartitionedTableRewriter.buildTupleFromPartitionPath(columnPartitionSchema, fileFragments.get(0).getPath(),
+            false);
 
     // Targets or search conditions may contain column references.
     // However, actual values absent in tuples. So, Replace all column references by constant datum.
@@ -211,16 +214,26 @@ public class SeqScanExec extends PhysicalExec {
 
   private void initScanner(Schema projected) throws IOException {
     this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
+    TableMeta meta = null;
+    try {
+      meta = (TableMeta) plan.getTableDesc().getMeta().clone();
+    } catch (CloneNotSupportedException e) {
+      throw new RuntimeException(e);
+    }
+
+    // set system default properties
+    PlannerUtil.applySystemDefaultToTableProperties(context.getQueryContext(), meta);
+
     if (fragments != null) {
       if (fragments.length > 1) {
-        this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), plan.getTableDesc().getMeta(),
-            FragmentConvertor.<FileFragment>convert(context.getConf(), plan.getTableDesc().getMeta().getStoreType(),
-                fragments), projected
+        this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), meta,
+            FragmentConvertor.convert(context.getConf(), fragments), projected
         );
       } else {
-        this.scanner = StorageManagerFactory.getStorageManager(
-            context.getConf()).getScanner(plan.getTableDesc().getMeta(), plan.getPhysicalSchema(), fragments[0],
-            projected);
+        StorageManager storageManager = StorageManager.getStorageManager(
+            context.getConf(), plan.getTableDesc().getMeta().getStoreType());
+        this.scanner = storageManager.getScanner(meta,
+            plan.getPhysicalSchema(), fragments[0], projected);
       }
       scanner.init();
     }
@@ -331,7 +344,12 @@ public class SeqScanExec extends PhysicalExec {
     if (scanner != null) {
       return scanner.getInputStats();
     } else {
-      return inputStats;
+      if (inputStats != null) {
+        return inputStats;
+      } else {
+        // If no fragment, there is no scanner. So, we need to create a dummy table stat.
+        return new TableStats();
+      }
     }
   }
 

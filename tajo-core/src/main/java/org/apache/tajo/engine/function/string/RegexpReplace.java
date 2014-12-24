@@ -19,18 +19,22 @@
 package org.apache.tajo.engine.function.string;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.engine.function.GeneralFunction;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.*;
+import org.apache.tajo.datum.BooleanDatum;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
+import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.storage.Tuple;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.apache.tajo.engine.eval.FunctionEval.ParamType;
+import static org.apache.tajo.plan.expr.FunctionEval.ParamType;
 
 /**
  * This function is defined as:
@@ -67,7 +71,8 @@ public class RegexpReplace extends GeneralFunction {
     });
   }
 
-  public void init(ParamType [] paramTypes) {
+  @Override
+  public void init(OverridableConf context, ParamType[] paramTypes) {
     if (paramTypes[0] == ParamType.NULL || paramTypes[1] == ParamType.NULL || paramTypes[2] == ParamType.NULL) {
       isAlwaysNull = true;
     } else if (paramTypes[1] == ParamType.CONSTANT) {

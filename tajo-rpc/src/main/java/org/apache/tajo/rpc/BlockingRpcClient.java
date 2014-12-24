@@ -60,13 +60,8 @@ public class BlockingRpcClient extends NettyClientBase {
    * new an instance through this constructor.
    */
   BlockingRpcClient(final Class<?> protocol,
-                 final InetSocketAddress addr) throws Exception {
-    this(protocol, addr, RpcChannelFactory.getSharedClientChannelFactory());
-  }
-
-  BlockingRpcClient(final Class<?> protocol,
-                           final InetSocketAddress addr, ClientSocketChannelFactory factory)
-      throws Exception {
+                           final InetSocketAddress addr, ClientSocketChannelFactory factory, int retries)
+      throws ClassNotFoundException, NoSuchMethodException, ConnectTimeoutException {
 
     this.protocol = protocol;
     String serviceClassName = protocol.getName() + "$"
@@ -78,7 +73,7 @@ public class BlockingRpcClient extends NettyClientBase {
     this.handler = new ClientChannelUpstreamHandler();
     pipeFactory = new ProtoPipelineFactory(handler,
         RpcResponse.getDefaultInstance());
-    super.init(addr, pipeFactory, factory);
+    super.init(addr, pipeFactory, factory, retries);
     rpcChannel = new ProxyRpcChannel();
 
     this.key = new RpcConnectionKey(addr, protocol, false);
@@ -227,7 +222,7 @@ public class BlockingRpcClient extends NettyClientBase {
     }
   }
 
-  class ProtoCallFuture implements Future<Message> {
+ static class ProtoCallFuture implements Future<Message> {
     private Semaphore sem = new Semaphore(0);
     private Message response = null;
     private Message returnType;

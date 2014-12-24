@@ -19,9 +19,9 @@
 package org.apache.tajo.engine.planner.global;
 
 import org.apache.tajo.LocalTajoTestingUtility;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.junit.Test;
 
+import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -35,11 +35,11 @@ public class TestMasterPlan {
     ExecutionBlock eb2 = masterPlan.newExecutionBlock();
     ExecutionBlock eb3 = masterPlan.newExecutionBlock();
 
-    masterPlan.addConnect(eb1, eb2, TajoWorkerProtocol.ShuffleType.RANGE_SHUFFLE);
+    masterPlan.addConnect(eb1, eb2, ShuffleType.RANGE_SHUFFLE);
     assertTrue(masterPlan.isConnected(eb1.getId(), eb2.getId()));
     assertTrue(masterPlan.isReverseConnected(eb2.getId(), eb1.getId()));
 
-    masterPlan.addConnect(eb3, eb2, TajoWorkerProtocol.ShuffleType.RANGE_SHUFFLE);
+    masterPlan.addConnect(eb3, eb2, ShuffleType.RANGE_SHUFFLE);
     assertTrue(masterPlan.isConnected(eb1.getId(), eb2.getId()));
     assertTrue(masterPlan.isConnected(eb3.getId(), eb2.getId()));
 

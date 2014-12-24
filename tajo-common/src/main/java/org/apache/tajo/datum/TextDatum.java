@@ -20,17 +20,18 @@ package org.apache.tajo.datum;
 
 import com.google.common.primitives.UnsignedBytes;
 import com.google.gson.annotations.Expose;
-import com.sun.tools.javac.util.Convert;
+
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.MurmurHash;
+import org.apache.tajo.util.StringUtils;
 
 import java.nio.charset.Charset;
 import java.util.Comparator;
 
 public class TextDatum extends Datum {
-  static Charset defaultCharset = Charset.forName("UTF-8");
+  public static Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
 
   @Expose private final int size;
   /* encoded in UTF-8 */
@@ -47,7 +48,7 @@ public class TextDatum extends Datum {
   }
 
   public TextDatum(String string) {
-    this(string.getBytes(defaultCharset));
+    this(string.getBytes(DEFAULT_CHARSET));
   }
 
   @Override
@@ -92,12 +93,12 @@ public class TextDatum extends Datum {
 
   @Override
   public String asChars() {
-    return new String(this.bytes, defaultCharset);
+    return new String(this.bytes, DEFAULT_CHARSET);
   }
 
   @Override
   public char[] asUnicodeChars() {
-    return Convert.utf2chars(this.bytes);
+    return StringUtils.convertBytesToChars(bytes, DEFAULT_CHARSET);
   }
 
   @Override

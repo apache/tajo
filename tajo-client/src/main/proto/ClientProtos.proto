@@ -37,19 +37,22 @@ message CreateSessionRequest {
 }
 
 message CreateSessionResponse {
-  enum ResultState {
-      SUCCESS = 0;
-      FAILED = 1;
-  }
-  required ResultState state = 1;
+  required ResultCode resultCode = 1;
   optional SessionIdProto sessionId = 2;
-  optional string message = 3;
+  optional KeyValueSetProto sessionVars = 3;
+  optional string message = 4;
 }
 
 message UpdateSessionVariableRequest {
   optional SessionIdProto sessionId = 1;
-  optional KeyValueSetProto setVariables = 2;
+  optional KeyValueSetProto sessionVars = 2;
   repeated string unsetVariables = 3;
+}
+
+message SessionUpdateResponse {
+  required ResultCode resultCode = 1;
+  optional KeyValueSetProto sessionVars = 2;
+  optional string message = 3;
 }
 
 message SessionedStringProto {
@@ -66,13 +69,14 @@ message ExplainQueryResponse {
 message QueryRequest {
   optional SessionIdProto sessionId = 1;
   required string query = 2;
-  repeated KeyValueProto setVariables = 3;
+  repeated KeyValueProto sessionVars = 3;
   required bool isJson = 4;
 }
 
 message UpdateQueryResponse {
   required ResultCode resultCode = 1;
   optional string errorMessage = 2;
+  optional KeyValueSetProto sessionVars = 3;
 }
 
 message GetQueryResultRequest {
@@ -86,7 +90,7 @@ message GetQueryResultResponse {
   required string tajoUserName = 3;
 }
 
-message KillQueryRequest {
+message QueryIdRequest {
   optional SessionIdProto sessionId = 1;
   required QueryIdProto queryId = 2;
 }
@@ -115,6 +119,12 @@ message GetQueryStatusRequest {
   required QueryIdProto queryId = 2;
 }
 
+message SerializedResultSet {
+  optional SchemaProto schema = 1;
+  optional int32 bytesNum = 2;
+  repeated bytes serializedTuples = 3;
+}
+
 message SubmitQueryResponse {
   required ResultCode resultCode = 1;
   required QueryIdProto queryId = 2;
@@ -124,18 +134,14 @@ message SubmitQueryResponse {
   optional string queryMasterHost = 5;
   optional int32 queryMasterPort = 6;
 
-  message SerializedResultSet {
-    optional SchemaProto schema = 1;
-    optional int32 bytesNum = 2;
-    repeated bytes serializedTuples = 3;
-  }
-
   optional SerializedResultSet resultSet = 7;
   optional TableDescProto tableDesc = 8;
   optional int32 maxRowNum = 9;
 
   optional string errorMessage = 10;
   optional string errorTrace = 11;
+
+  optional KeyValueSetProto sessionVars = 12;
 }
 
 message GetQueryStatusResponse {
@@ -152,32 +158,40 @@ message GetQueryStatusResponse {
   optional int32 queryMasterPort = 12;
 }
 
+message GetQueryResultDataRequest {
+  required SessionIdProto sessionId = 1;
+  required QueryIdProto queryId = 2;
+  required int32 fetchRowNum = 3;
+}
+
+message GetQueryResultDataResponse {
+  required ResultCode resultCode = 1;
+  required SerializedResultSet resultSet = 2;
+  optional string errorMessage = 3;
+  optional string errorTrace = 4;
+}
+
 message GetClusterInfoRequest {
   optional SessionIdProto sessionId = 1;
 }
 
 message WorkerResourceInfo {
-  required string allocatedHost = 1;
-  required int32 peerRpcPort = 2;
-  required int32 queryMasterPort = 3;
-  required int32 clientPort = 4;
-  required int32 pullServerPort = 5;
-  required int32 httpPort = 6;
-  required float diskSlots = 7;
-  required int32 cpuCoreSlots = 8;
-  required int32 memoryMB = 9;
-  required float usedDiskSlots = 10;
-  required int32 usedMemoryMB = 11;
-  required int32 usedCpuCoreSlots = 12;
-  required int64 maxHeap = 13;
-  required int64 freeHeap = 14;
-  required int64 totalHeap = 15;
-  required int32 numRunningTasks = 16;
-  required string workerStatus = 17;
-  required int64 lastHeartbeat = 18;
-  required bool queryMasterMode = 19;
-  required bool taskRunnerMode = 20;
-  required int32 numQueryMasterTasks = 21;
+  required WorkerConnectionInfoProto connectionInfo = 1;
+  required float diskSlots = 2;
+  required int32 cpuCoreSlots = 3;
+  required int32 memoryMB = 4;
+  required float usedDiskSlots = 5;
+  required int32 usedMemoryMB = 6;
+  required int32 usedCpuCoreSlots = 7;
+  required int64 maxHeap = 8;
+  required int64 freeHeap = 9;
+  required int64 totalHeap = 10;
+  required int32 numRunningTasks = 11;
+  required string workerStatus = 12;
+  required int64 lastHeartbeat = 13;
+  required bool queryMasterMode = 14;
+  required bool taskRunnerMode = 15;
+  required int32 numQueryMasterTasks = 16;
 }
 
 message GetClusterInfoResponse {
@@ -224,3 +238,63 @@ message FunctionResponse {
   repeated FunctionDescProto functions = 2;
   optional string errorMessage = 3;
 }
+
+message QueryInfoProto {
+  required string queryId = 1;
+  optional string sql = 2;
+  optional QueryState queryState = 3;
+  optional float progress = 4;
+  optional int64 startTime = 5;
+  optional int64 finishTime = 6;
+  optional string lastMessage = 7;
+  optional string hostNameOfQM = 8;
+  optional int32 queryMasterPort = 9;
+  optional int32 queryMasterClientPort = 10;
+  optional int32 queryMasterInfoPort = 11;
+}
+
+message StageHistoryProto {
+  required string executionBlockId =1;
+  required string state = 2;
+  optional int64 startTime = 3;
+  optional int64 finishTime = 4;
+  optional int32 succeededObjectCount = 5;
+  optional int32 failedObjectCount = 6;
+  optional int32 killedObjectCount = 7;
+  optional int32 totalScheduledObjectsCount = 8;
+
+  optional int64 totalInputBytes = 9;
+  optional int64 totalReadBytes = 10;
+  optional int64 totalReadRows = 11;
+  optional int64 totalWriteBytes = 12;
+  optional int64 totalWriteRows = 13;
+  optional int32 numShuffles = 14;
+  optional float progress =15;
+
+  optional string plan = 16;
+  optional int32 hostLocalAssigned = 17;
+  optional int32 rackLocalAssigned = 18;
+}
+
+message QueryHistoryProto {
+  required string queryId = 1;
+  optional string queryMaster = 2;
+  optional int32 httpPort = 3;
+  optional string logicalPlan = 4;
+  optional string distributedPlan = 5;
+  repeated KeyValueProto sessionVariables = 6;
+  repeated StageHistoryProto stageHistories = 7;
+}
+
+message GetQueryHistoryResponse {
+  required ResultCode resultCode = 1;
+  optional QueryHistoryProto queryHistory = 2;
+  optional string errorMessage = 3;
+}
+
+message GetQueryInfoResponse {
+  required ResultCode resultCode = 1;
+  optional QueryInfoProto queryInfo = 2;
+  optional string errorMessage = 3;
+}
+

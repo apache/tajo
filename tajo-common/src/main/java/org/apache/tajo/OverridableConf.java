@@ -51,7 +51,7 @@ import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetPro
 public class OverridableConf extends KeyValueSet {
   private static final Log LOG = LogFactory.getLog(OverridableConf.class);
   private ConfigType [] configTypes;
-  private TajoConf conf;
+  protected TajoConf conf;
 
   public OverridableConf(final TajoConf conf, ConfigType...configTypes) {
     this.conf = conf;
@@ -181,10 +181,13 @@ public class OverridableConf extends KeyValueSet {
   private void assertRegisteredEnum(ConfigKey key) {
     boolean registered = false;
 
-    for (ConfigType c : configTypes) {
-      registered = key.type() == c;
+    if (configTypes != null) {
+      for (ConfigType c : configTypes) {
+        registered = key.type() == c;
+      }
     }
 
+    // default permitted keys
     registered |= key.type() == ConfigType.SESSION || key.type() != ConfigType.SYSTEM;
 
     Preconditions.checkArgument(registered, key.keyname() + " (" + key.type() + ") is not allowed in " +

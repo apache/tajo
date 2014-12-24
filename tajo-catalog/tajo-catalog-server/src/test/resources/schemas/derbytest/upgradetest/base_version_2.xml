@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+<tns:store xmlns:tns="http://tajo.apache.org/catalogstore" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://tajo.apache.org/catalogstore ../../../../../main/resources/schemas/DBMSSchemaDefinition.xsd ">
+	<tns:base version="2" schemaname="tajo">
+		<tns:objects>
+		  <tns:Object order="0" type="table" name="TESTTABLE1">
+				<tns:sql><![CDATA[CREATE TABLE TESTTABLE1 (COL1 INT, COL2 VARCHAR(20))]]></tns:sql>
+			</tns:Object>
+			<tns:Object order="1" type="index" name="TESTINDEX1" dependsOn="TESTTABLE1">
+				<tns:sql><![CDATA[CREATE INDEX TESTINDEX1 ON TESTTABLE1 (COL1)]]></tns:sql>
+			</tns:Object>
+			<tns:Object order="2" type="table" name="TESTTABLE2">
+				<tns:sql><![CDATA[CREATE TABLE TESTTABLE2 (COL1 INT, COL2 VARCHAR(20), COL3 VARCHAR(25))]]></tns:sql>
+			</tns:Object>
+		  <tns:Object order="3" type="trigger" name="TESTTRIGGER1">
+				<tns:sql><![CDATA[
+				CREATE TRIGGER TESTTRIGGER1
+				AFTER INSERT ON TESTTABLE1
+				REFERENCING NEW AS NEWROW
+				FOR EACH ROW
+				  INSERT INTO TESTTABLE2
+				  (COL1, COL2)
+				  VALUES
+				  (NEWROW.COL1, NEWROW.COL2)
+				]]></tns:sql>
+			</tns:Object>
+		</tns:objects>
+	</tns:base>
+	<tns:patches>
+		<tns:patch priorVersion="1" nextVersion="2">
+			<tns:objects>
+				<tns:Object name="TESTTABLE2" type="table" order="0">
+					<tns:sql><![CDATA[ALTER TABLE TESTTABLE2 ALTER COLUMN COL2 SET DATA TYPE VARCHAR(20)]]></tns:sql>
+				</tns:Object>
+				<tns:Object name="TESTTABLE2" type="table" order="1">
+					<tns:sql><![CDATA[ALTER TABLE TESTTABLE2 ADD COLUMN COL3 VARCHAR(25)]]></tns:sql>
+				</tns:Object>
+			</tns:objects>
+		</tns:patch>
+	</tns:patches>
+</tns:store>

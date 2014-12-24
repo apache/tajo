@@ -31,8 +31,9 @@ Table of Contents:
    introduction
    getting_started
    configuration
-   cli
+   tsql
    sql_language
+   time_zone
    functions
    table_management
    table_partitioning

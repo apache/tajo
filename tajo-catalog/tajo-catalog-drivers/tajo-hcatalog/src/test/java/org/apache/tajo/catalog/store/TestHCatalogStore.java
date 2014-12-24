@@ -97,7 +97,7 @@ public class TestHCatalogStore {
     schema.addColumn("c_comment", TajoDataTypes.Type.TEXT);
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, CUSTOMER), schema, meta,
-        new Path(warehousePath, new Path(DB_NAME, CUSTOMER)));
+        new Path(warehousePath, new Path(DB_NAME, CUSTOMER)).toUri());
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, CUSTOMER));
 
@@ -110,7 +110,7 @@ public class TestHCatalogStore {
     }
 
     assertEquals(StringEscapeUtils.escapeJava(StorageConstants.DEFAULT_FIELD_DELIMITER),
-        table1.getMeta().getOption(StorageConstants.CSVFILE_DELIMITER));
+        table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER));
     store.dropTable(DB_NAME, CUSTOMER);
   }
 
@@ -126,7 +126,7 @@ public class TestHCatalogStore {
     schema.addColumn("r_comment", TajoDataTypes.Type.TEXT);
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, REGION), schema, meta,
-        new Path(warehousePath, new Path(DB_NAME, REGION)));
+        new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, REGION));
 
@@ -155,7 +155,7 @@ public class TestHCatalogStore {
     schema.addColumn("r_comment", TajoDataTypes.Type.TEXT);
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, REGION), schema, meta,
-        new Path(warehousePath, new Path(DB_NAME, REGION)));
+        new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, REGION));
 
@@ -174,8 +174,8 @@ public class TestHCatalogStore {
   @Test
   public void testTableWithNullValue() throws Exception {
     KeyValueSet options = new KeyValueSet();
-    options.set(StorageConstants.CSVFILE_DELIMITER, StringEscapeUtils.escapeJava("\u0002"));
-    options.set(StorageConstants.CSVFILE_NULL, StringEscapeUtils.escapeJava("\u0003"));
+    options.set(StorageConstants.TEXT_DELIMITER, StringEscapeUtils.escapeJava("\u0002"));
+    options.set(StorageConstants.TEXT_NULL, StringEscapeUtils.escapeJava("\u0003"));
     TableMeta meta = new TableMeta(CatalogProtos.StoreType.CSV, options);
 
     org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
@@ -188,7 +188,7 @@ public class TestHCatalogStore {
     schema.addColumn("s_comment", TajoDataTypes.Type.TEXT);
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, SUPPLIER), schema, meta,
-        new Path(warehousePath, new Path(DB_NAME, SUPPLIER)));
+        new Path(warehousePath, new Path(DB_NAME, SUPPLIER)).toUri());
 
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, SUPPLIER));
@@ -201,16 +201,16 @@ public class TestHCatalogStore {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
     }
 
-    assertEquals(table.getMeta().getOption(StorageConstants.CSVFILE_DELIMITER),
-        table1.getMeta().getOption(StorageConstants.CSVFILE_DELIMITER));
+    assertEquals(table.getMeta().getOption(StorageConstants.TEXT_DELIMITER),
+        table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER));
 
-    assertEquals(table.getMeta().getOption(StorageConstants.CSVFILE_NULL),
-        table1.getMeta().getOption(StorageConstants.CSVFILE_NULL));
+    assertEquals(table.getMeta().getOption(StorageConstants.TEXT_NULL),
+        table1.getMeta().getOption(StorageConstants.TEXT_NULL));
 
-    assertEquals(table1.getMeta().getOption(StorageConstants.CSVFILE_DELIMITER),
+    assertEquals(table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER),
         StringEscapeUtils.escapeJava("\u0002"));
 
-    assertEquals(table1.getMeta().getOption(StorageConstants.CSVFILE_NULL),
+    assertEquals(table1.getMeta().getOption(StorageConstants.TEXT_NULL),
         StringEscapeUtils.escapeJava("\u0003"));
 
     store.dropTable(DB_NAME, SUPPLIER);
@@ -228,7 +228,7 @@ public class TestHCatalogStore {
 
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, NATION), schema, meta,
-        new Path(warehousePath, new Path(DB_NAME, NATION)));
+        new Path(warehousePath, new Path(DB_NAME, NATION)).toUri());
 
     org.apache.tajo.catalog.Schema expressionSchema = new org.apache.tajo.catalog.Schema();
     expressionSchema.addColumn("n_nationkey", TajoDataTypes.Type.INT4);
@@ -274,7 +274,7 @@ public class TestHCatalogStore {
 
     for(String tableName : tableNames){
       TableDesc table = new TableDesc(CatalogUtil.buildFQName("default", tableName), schema, meta,
-          new Path(warehousePath, new Path(DB_NAME, tableName)));
+          new Path(warehousePath, new Path(DB_NAME, tableName)).toUri());
       store.createTable(table.getProto());
     }
 
@@ -299,13 +299,13 @@ public class TestHCatalogStore {
     schema.addColumn("n_comment", TajoDataTypes.Type.TEXT);
 
     String tableName = "table1";
-    TableDesc table = new TableDesc(DB_NAME + "." + tableName, schema, meta, warehousePath);
+    TableDesc table = new TableDesc(DB_NAME + "." + tableName, schema, meta, warehousePath.toUri());
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, tableName));
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, tableName));
     FileSystem fs = FileSystem.getLocal(new Configuration());
-    assertTrue(fs.exists(table1.getPath()));
+    assertTrue(fs.exists(new Path(table1.getPath())));
 
     store.dropTable(DB_NAME, tableName);
     assertFalse(store.existTable(DB_NAME, tableName));
@@ -324,7 +324,7 @@ public class TestHCatalogStore {
     schema.addColumn("r_comment", TajoDataTypes.Type.TEXT);
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, REGION), schema, meta,
-        new Path(warehousePath, new Path(DB_NAME, REGION)));
+        new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, REGION));
 
@@ -353,7 +353,7 @@ public class TestHCatalogStore {
     schema.addColumn("r_comment", TajoDataTypes.Type.TEXT);
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, REGION), schema, meta,
-        new Path(warehousePath, new Path(DB_NAME, REGION)));
+        new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, REGION));
 
@@ -385,7 +385,7 @@ public class TestHCatalogStore {
     schema.addColumn("c_comment", TajoDataTypes.Type.TEXT);
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, CUSTOMER), schema, meta,
-        new Path(warehousePath, new Path(DB_NAME, CUSTOMER)));
+        new Path(warehousePath, new Path(DB_NAME, CUSTOMER)).toUri());
     store.createTable(table.getProto());
     assertTrue(store.existTable(DB_NAME, CUSTOMER));
 

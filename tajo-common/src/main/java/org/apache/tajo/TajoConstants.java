@@ -31,6 +31,8 @@ public class TajoConstants {
   public static final String DEFAULT_DATABASE_NAME = "default";
   public static final String DEFAULT_SCHEMA_NAME = "public";
 
+  /** Java 6 only recognize GMT instead of UTC. So, we should keep using GMT. */
+  public static final String DEFAULT_SYSTEM_TIMEZONE = "GMT";
 
   public static final String EMPTY_STRING = "";
 
@@ -38,6 +40,8 @@ public class TajoConstants {
   public static final String SYSTEM_HA_ACTIVE_DIR_NAME = "active";
   public static final String SYSTEM_HA_BACKUP_DIR_NAME = "backup";
 
+  public static final int UNKNOWN_ROW_NUMBER = -1;
+  public static final int UNKNOWN_LENGTH = -1;
 
   private TajoConstants() {}
 }
