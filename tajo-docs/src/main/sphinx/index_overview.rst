@@ -2,12 +2,11 @@
 Index (Experimental Feature)
 ******************
 
-Index has been widely used for efficient query processing in database systems.
-
-Tajo supports index scan.
+An index is a data structure that is used for efficient query processing. Using an index, the Tajo query engine can directly retrieve search values. For more information, please refer the following sections.
 
 .. toctree::
-:maxdepth: 1
+      :maxdepth: 1
 
-      index/how_to_use
       index/types
+      index/how_to_use
+      index/future_work

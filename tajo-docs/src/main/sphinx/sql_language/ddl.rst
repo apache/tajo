@@ -96,10 +96,10 @@ If you want to add an external table that contains compressed data, you should g
 Currently, Tajo supports only one type of index.
 
 Index methods:
-  * TWO_LEVEL_BIN_TREE
+  * TWO_LEVEL_BIN_TREE: This method is used by default in Tajo. For more information about its structure, please refer to :doc:`/index/types`.
 
 ========================
- CREATE INDEX
+ DROP INDEX
 ========================
 
 *Synopsis*
