@@ -251,10 +251,17 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
   public RESULT visitUnion(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, UnionNode node,
                            Stack<LogicalNode> stack) throws PlanningException {
     stack.push(node);
-    LogicalPlan.QueryBlock leftBlock = plan.getBlock(node.getLeftChild());
-    RESULT result = visit(context, plan, leftBlock, leftBlock.getRoot(), stack);
-    LogicalPlan.QueryBlock rightBlock = plan.getBlock(node.getRightChild());
-    visit(context, plan, rightBlock, rightBlock.getRoot(), stack);
+    RESULT result = null;
+    if (plan != null) {
+      LogicalPlan.QueryBlock leftBlock = plan.getBlock(node.getLeftChild());
+      result = visit(context, plan, leftBlock, leftBlock.getRoot(), stack);
+      LogicalPlan.QueryBlock rightBlock = plan.getBlock(node.getRightChild());
+      visit(context, plan, rightBlock, rightBlock.getRoot(), stack);
+    } else {
+      result = visit(context, plan, null, node.getLeftChild(), stack);
+      visit(context, plan, null, node.getRightChild(), stack);
+    }
+
     stack.pop();
     return result;
   }
@@ -283,8 +290,13 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
   public RESULT visitTableSubQuery(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                    TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
     stack.push(node);
-    LogicalPlan.QueryBlock childBlock = plan.getBlock(node.getSubQuery());
-    RESULT result = visit(context, plan, childBlock, childBlock.getRoot(), stack);
+    RESULT result = null;
+    if (plan != null) {
+      LogicalPlan.QueryBlock childBlock = plan.getBlock(node.getSubQuery());
+      result = visit(context, plan, childBlock, childBlock.getRoot(), stack);
+    } else {
+      result = visit(context, plan, null, node.getSubQuery(), stack);
+    }
     stack.pop();
     return result;
   }

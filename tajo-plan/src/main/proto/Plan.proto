@@ -26,34 +26,36 @@ import "CatalogProtos.proto";
 import "DataTypes.proto";
 
 enum NodeType {
-  ROOT = 0;
-  EXPRS = 1;
-  PROJECTION = 2;
-  LIMIT = 3;
-  WINDOW_AGG = 4;
-  SORT = 5;
-  HAVING = 6;
-  GROUP_BY = 7;
-  DISTINCT_GROUP_BY = 8;
-  SELECTION = 9;
-  JOIN = 10;
-  UNION = 11;
-  INTERSECT = 12;
-  EXCEPT = 13;
-  TABLE_SUBQUERY = 14;
-  SCAN = 15;
-  PARTITIONS_SCAN = 16;
-  BST_INDEX_SCAN = 17;
-  STORE = 18;
-  INSERT = 19;
+  SET_SESSION = 0;
 
-  CREATE_DATABASE = 20;
-  DROP_DATABASE = 21;
-  CREATE_TABLE = 22;
-  DROP_TABLE = 23;
-  ALTER_TABLESPACE = 24;
-  ALTER_TABLE = 25;
-  TRUNCATE_TABLE = 26;
+  ROOT = 1;
+  EXPRS = 2;
+  PROJECTION = 3;
+  LIMIT = 4;
+  WINDOW_AGG = 5;
+  SORT = 6;
+  HAVING = 7;
+  GROUP_BY = 8;
+  DISTINCT_GROUP_BY = 9;
+  SELECTION = 10;
+  JOIN = 11;
+  UNION = 12;
+  INTERSECT = 13;
+  EXCEPT = 14;
+  TABLE_SUBQUERY = 15;
+  SCAN = 16;
+  PARTITIONS_SCAN = 17;
+  BST_INDEX_SCAN = 18;
+  STORE = 19;
+  INSERT = 20;
+
+  CREATE_DATABASE = 21;
+  DROP_DATABASE = 22;
+  CREATE_TABLE = 23;
+  DROP_TABLE = 24;
+  ALTER_TABLESPACE = 25;
+  ALTER_TABLE = 26;
+  TRUNCATE_TABLE = 27;
 }
 
 message LogicalNodeTree {
@@ -64,8 +66,8 @@ message LogicalNode {
   required int32 sid = 1;
   required int32 pid = 2;
   required NodeType type = 3;
-  required SchemaProto in_schema = 4;
-  required SchemaProto out_schema = 5;
+  optional SchemaProto in_schema = 4;
+  optional SchemaProto out_schema = 5;
 
   optional ScanNode scan = 6;
   optional JoinNode join = 7;
@@ -76,17 +78,22 @@ message LogicalNode {
   optional WindowAggNode window = 13;
   optional ProjectionNode projection = 14;
   optional EvalExprNode exprEval = 15;
-  optional SetNode set = 16;
+  optional UnionNode union = 16;
   optional TableSubQueryNode tableSubQuery = 17;
   optional PersistentStoreNode persistentStore = 18;
   optional StoreTableNodeSpec storeTable = 19;
   optional InsertNodeSpec insert = 20;
   optional CreateTableNodeSpec createTable = 21;
   optional RootNode root = 22;
+  optional SetSessionNode setSession = 23;
 
-  optional CreateDatabaseNode createDatabase = 23;
-  optional DropDatabaseNode dropDatabase = 24;
-  optional DropTableNode dropTable = 25;
+  optional CreateDatabaseNode createDatabase = 24;
+  optional DropDatabaseNode dropDatabase = 25;
+  optional DropTableNode dropTable = 26;
+
+  optional AlterTablespaceNode alterTablespace = 27;
+  optional AlterTableNode alterTable = 28;
+  optional TruncateTableNode truncateTableNode = 29;
 }
 
 message ScanNode {
@@ -142,38 +149,16 @@ message WindowAggNode {
   repeated Target targets = 6;
 }
 
-message SetNode {
+message UnionNode {
   required int32 leftChildId = 1;
   required int32 rightChildId = 2;
+  required bool all = 3;
 }
 
 message TableSubQueryNode {
   required int32 childId = 1;
   required string tableName = 2;
   repeated Target targets = 3;
-}
-
-message PartitionTableScanSpec {
-  repeated string paths = 1;
-}
-
-message PersistentStoreNode {
-  required int32 childId = 1;
-  required StoreType storageType = 2;
-  required KeyValueSetProto tableProperties = 3;
-}
-
-message StoreTableNodeSpec { // required PersistentStoreSpec
-  repeated string tableName = 2;
-  optional PartitionDescProto partitionDesc = 3;
-}
-
-message InsertNodeSpec { // required StoreTableSpec
-  required bool overwrite = 1;
-  required SchemaProto tableSchema = 2;
-  required SchemaProto targetSchema = 3;
-  required SchemaProto projectedSchema = 4;
-  required string path = 5;
 }
 
 message ProjectionNode {
@@ -190,32 +175,14 @@ message RootNode {
   required int32 childId = 1;
 }
 
-message CreateDatabaseNode {
-  required string dbName = 1;
-  required bool ifNotExists = 2;
-}
-
-message DropDatabaseNode {
-  required string dbName = 1;
-  required bool ifExists = 2;
-}
-
-message CreateTableNodeSpec { // required PersistentStoreSpec
-  required SchemaProto schema = 1;
-  required string path = 2;
-  required bool external = 3;
-  required bool ifNotExists = 4;
-}
-
-message DropTableNode {
-  required string tableName = 1;
-  required bool ifExists = 2;
-  required bool purge = 3;
+message SetSessionNode {
+  required string name = 1;
+  optional string value = 2;
 }
 
 message Target {
   required EvalTree expr = 1;
-  required string alias = 2;
+  optional string alias = 2;
 }
 
 enum JoinType {
@@ -229,6 +196,97 @@ enum JoinType {
   RIGHT_ANTI_JOIN = 7;
   LEFT_SEMI_JOIN = 8;
   RIGHT_SEMI_JOIN = 9;
+}
+
+message PartitionTableScanSpec {
+  repeated string paths = 1;
+}
+
+message PersistentStoreNode {
+  required int32 childId = 1;
+  required StoreType storageType = 2;
+  required KeyValueSetProto tableProperties = 3;
+}
+
+message StoreTableNodeSpec { // required PersistentStoreSpec
+  optional string tableName = 1; // 'INSERT INTO LOCATION' does not require 'table name'.
+  optional PartitionMethodProto partitionMethod = 2;
+}
+
+message InsertNodeSpec { // required PersistentStoreSpec and StoreTableSpec
+  required bool overwrite = 1;
+  required SchemaProto tableSchema = 2;
+  optional SchemaProto targetSchema = 4;
+  optional SchemaProto projectedSchema = 3;
+  optional string path = 5;
+}
+
+message CreateTableNodeSpec { // required PersistentStoreSpec and StoreTableNodeSpec
+  required SchemaProto schema = 1;
+  required bool external = 2;
+  required bool ifNotExists = 3;
+  optional string path = 4;
+}
+
+message DropTableNode {
+  required string tableName = 1;
+  required bool ifExists = 2;
+  required bool purge = 3;
+}
+
+message TruncateTableNode {
+  repeated string tableNames = 1;
+}
+
+message CreateDatabaseNode {
+  required string dbName = 1;
+  required bool ifNotExists = 2;
+}
+
+message DropDatabaseNode {
+  required string dbName = 1;
+  required bool ifExists = 2;
+}
+
+message AlterTablespaceNode {
+  enum Type {
+    LOCATION = 0;
+  }
+
+  message SetLocation {
+    required string location = 1;
+  }
+
+  required string tableSpaceName = 1;
+  required Type setType = 2;
+  optional SetLocation setLocation = 3;
+}
+
+message AlterTableNode {
+  enum Type {
+    RENAME_TABLE = 0;
+    RENAME_COLUMN = 1;
+    ADD_COLUMN = 2;
+  }
+
+  message RenameTable {
+    required string newName = 1;
+  }
+
+  message RenameColumn {
+    required string oldName = 1;
+    required string newName = 2;
+  }
+
+  message AddColumn {
+    required ColumnProto addColumn = 1;
+  }
+
+  required string tableName = 1;
+  required Type setType = 2;
+  optional RenameTable renameTable = 3;
+  optional RenameColumn renameColumn = 4;
+  optional AddColumn addColumn = 5;
 }
 
 enum EvalType {

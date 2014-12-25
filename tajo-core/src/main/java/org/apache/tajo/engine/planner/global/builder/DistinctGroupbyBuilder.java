@@ -534,7 +534,7 @@ public class DistinctGroupbyBuilder {
 
       if (firstStageGroupbyNode.isDistinct()) {
         // FirstStage: Remove aggregation, Set target with only grouping columns
-        firstStageGroupbyNode.setAggFunctions(null);
+        firstStageGroupbyNode.setAggFunctions(GroupbyNode.EMPTY_AGG_FUNCS);
 
         List<Target> firstGroupbyTargets = new ArrayList<Target>();
         for (Column column : firstStageGroupbyNode.getGroupingColumns()) {

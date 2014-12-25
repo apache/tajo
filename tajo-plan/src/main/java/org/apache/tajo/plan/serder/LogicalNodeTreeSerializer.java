@@ -23,10 +23,16 @@ import com.google.common.collect.Maps;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.serder.PlanProto.AlterTableNode.AddColumn;
+import org.apache.tajo.plan.serder.PlanProto.AlterTableNode.RenameColumn;
+import org.apache.tajo.plan.serder.PlanProto.AlterTableNode.RenameTable;
+import org.apache.tajo.plan.serder.PlanProto.AlterTablespaceNode.SetLocation;
+import org.apache.tajo.plan.serder.PlanProto.LogicalNodeTree;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 
 import java.util.List;
@@ -42,7 +48,7 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     instance = new LogicalNodeTreeSerializer();
   }
 
-  public static PlanProto.LogicalNodeTree serialize(LogicalNode node) throws PlanningException {
+  public static LogicalNodeTree serialize(LogicalNode node) throws PlanningException {
     SerializeContext context = new SerializeContext();
     instance.visit(context, null, null, node, new Stack<LogicalNode>());
     return context.treeBuilder.build();
@@ -61,15 +67,21 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     nodeBuilder.setSid(selfId);
     nodeBuilder.setPid(node.getPID());
     nodeBuilder.setType(convertType(node.getType()));
-    nodeBuilder.setInSchema(node.getInSchema().getProto());
-    nodeBuilder.setOutSchema(node.getOutSchema().getProto());
+
+    // some DDL statements like DropTable or DropDatabase do not have in/out schemas
+    if (node.getInSchema() != null) {
+      nodeBuilder.setInSchema(node.getInSchema().getProto());
+    }
+    if (node.getOutSchema() != null) {
+      nodeBuilder.setOutSchema(node.getOutSchema().getProto());
+    }
     return nodeBuilder;
   }
 
   public static class SerializeContext {
     private int seqId = 0;
     private Map<LogicalNode, Integer> idMap = Maps.newHashMap();
-    private PlanProto.LogicalNodeTree.Builder treeBuilder = PlanProto.LogicalNodeTree.newBuilder();
+    private LogicalNodeTree.Builder treeBuilder = LogicalNodeTree.newBuilder();
   }
 
   public LogicalNode visitRoot(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
@@ -86,6 +98,24 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     context.treeBuilder.addNodes(nodeBuilder);
 
     return root;
+  }
+
+  @Override
+  public LogicalNode visitSetSession(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                     SetSessionNode node, Stack<LogicalNode> stack) throws PlanningException {
+    super.visitSetSession(context, plan, block, node, stack);
+
+    PlanProto.SetSessionNode.Builder builder = PlanProto.SetSessionNode.newBuilder();
+    builder.setName(node.getName());
+    if (node.hasValue()) {
+      builder.setValue(node.getValue());
+    }
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
+    nodeBuilder.setSetSession(builder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return node;
   }
 
   public LogicalNode visitEvalExpr(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
@@ -111,6 +141,7 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     projectionBuilder.setChildId(childIds[0]);
     projectionBuilder.addAllTargets(
         LogicalNodeTreeSerializer.<PlanProto.Target>toProtoObjects(projection.getTargets()));
+    projectionBuilder.setDistinct(projection.isDistinct());
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, projection);
     nodeBuilder.setProjection(projectionBuilder);
@@ -274,6 +305,25 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
   }
 
   @Override
+  public LogicalNode visitUnion(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, UnionNode node,
+                           Stack<LogicalNode> stack) throws PlanningException {
+    super.visitUnion(context, plan, block, node, stack);
+
+    int [] childIds = registerGetChildIds(context, node);
+
+    PlanProto.UnionNode.Builder unionBuilder = PlanProto.UnionNode.newBuilder();
+    unionBuilder.setAll(true);
+    unionBuilder.setLeftChildId(childIds[0]);
+    unionBuilder.setRightChildId(childIds[1]);
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
+    nodeBuilder.setUnion(unionBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return node;
+  }
+
+  @Override
   public LogicalNode visitScan(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                ScanNode scan, Stack<LogicalNode> stack) throws PlanningException {
 
@@ -296,6 +346,218 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     context.treeBuilder.addNodes(nodeBuilder);
 
     return scan;
+  }
+
+  public LogicalNode visitTableSubQuery(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                   TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
+    super.visitTableSubQuery(context, plan, block, node, stack);
+
+    int [] childIds = registerGetChildIds(context, node);
+
+    PlanProto.TableSubQueryNode.Builder builder = PlanProto.TableSubQueryNode.newBuilder();
+    builder.setChildId(childIds[0]);
+
+    builder.setTableName(node.getTableName());
+
+    if (node.hasTargets()) {
+      builder.addAllTargets(LogicalNodeTreeSerializer.<PlanProto.Target>toProtoObjects(node.getTargets()));
+    }
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
+    nodeBuilder.setTableSubQuery(builder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return node;
+  }
+
+  public LogicalNode visitCreateTable(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                      CreateTableNode node, Stack<LogicalNode> stack) throws PlanningException {
+    super.visitCreateTable(context, plan, block, node, stack);
+
+    int [] childIds = registerGetChildIds(context, node);
+
+    PlanProto.PersistentStoreNode.Builder persistentStoreBuilder = buildPersistentStoreBuilder(node, childIds);
+    PlanProto.StoreTableNodeSpec.Builder storeTableBuilder = buildStoreTableNodeSpec(node);
+
+    PlanProto.CreateTableNodeSpec.Builder createTableBuilder = PlanProto.CreateTableNodeSpec.newBuilder();
+    createTableBuilder.setSchema(node.getTableSchema().getProto());
+    createTableBuilder.setExternal(node.isExternal());
+    if (node.isExternal() && node.hasPath()) {
+      createTableBuilder.setPath(node.getPath().toString());
+    }
+    createTableBuilder.setIfNotExists(node.isIfNotExists());
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
+    nodeBuilder.setPersistentStore(persistentStoreBuilder);
+    nodeBuilder.setStoreTable(storeTableBuilder);
+    nodeBuilder.setCreateTable(createTableBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return node;
+  }
+
+  @Override
+  public LogicalNode visitDropTable(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                    DropTableNode node, Stack<LogicalNode> stack) {
+    PlanProto.DropTableNode.Builder dropTableBuilder = PlanProto.DropTableNode.newBuilder();
+    dropTableBuilder.setTableName(node.getTableName());
+    dropTableBuilder.setIfExists(node.isIfExists());
+    dropTableBuilder.setPurge(node.isPurge());
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
+    nodeBuilder.setDropTable(dropTableBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return node;
+  }
+
+  @Override
+  public LogicalNode visitAlterTablespace(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                     AlterTablespaceNode node, Stack<LogicalNode> stack) throws PlanningException {
+    PlanProto.AlterTablespaceNode.Builder alterTablespaceBuilder = PlanProto.AlterTablespaceNode.newBuilder();
+    alterTablespaceBuilder.setTableSpaceName(node.getTablespaceName());
+
+    switch (node.getSetType()) {
+    case LOCATION:
+      alterTablespaceBuilder.setSetType(PlanProto.AlterTablespaceNode.Type.LOCATION);
+      alterTablespaceBuilder.setSetLocation(SetLocation.newBuilder().setLocation(node.getLocation()));
+      break;
+
+    default:
+      throw new UnimplementedException("Unknown SET type in ALTER TABLESPACE: " + node.getSetType().name());
+    }
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
+    nodeBuilder.setAlterTablespace(alterTablespaceBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return node;
+  }
+
+  @Override
+  public LogicalNode visitAlterTable(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                     AlterTableNode node, Stack<LogicalNode> stack) {
+    PlanProto.AlterTableNode.Builder alterTableBuilder = PlanProto.AlterTableNode.newBuilder();
+    alterTableBuilder.setTableName(node.getTableName());
+
+    switch (node.getAlterTableOpType()) {
+    case RENAME_TABLE:
+      alterTableBuilder.setSetType(PlanProto.AlterTableNode.Type.RENAME_TABLE);
+      alterTableBuilder.setRenameTable(RenameTable.newBuilder().setNewName(node.getNewTableName()));
+      break;
+    case ADD_COLUMN:
+      alterTableBuilder.setSetType(PlanProto.AlterTableNode.Type.ADD_COLUMN);
+      alterTableBuilder.setAddColumn(AddColumn.newBuilder().setAddColumn(node.getAddNewColumn().getProto()));
+      break;
+    case RENAME_COLUMN:
+      alterTableBuilder.setSetType(PlanProto.AlterTableNode.Type.RENAME_COLUMN);
+      alterTableBuilder.setRenameColumn(RenameColumn.newBuilder()
+          .setOldName(node.getColumnName())
+          .setNewName(node.getNewColumnName()));
+      break;
+    default:
+      throw new UnimplementedException("Unknown SET type in ALTER TABLE: " + node.getAlterTableOpType().name());
+    }
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
+    nodeBuilder.setAlterTable(alterTableBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return node;
+  }
+
+  @Override
+  public LogicalNode visitTruncateTable(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                   TruncateTableNode node, Stack<LogicalNode> stack) throws PlanningException {
+    PlanProto.TruncateTableNode.Builder truncateTableBuilder = PlanProto.TruncateTableNode.newBuilder();
+    truncateTableBuilder.addAllTableNames(node.getTableNames());
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
+    nodeBuilder.setTruncateTableNode(truncateTableBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return node;
+  }
+
+  public LogicalNode visitInsert(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                 InsertNode node, Stack<LogicalNode> stack) throws PlanningException {
+    super.visitInsert(context, plan, block, node, stack);
+
+    int [] childIds = registerGetChildIds(context, node);
+
+    PlanProto.PersistentStoreNode.Builder persistentStoreBuilder = buildPersistentStoreBuilder(node, childIds);
+    PlanProto.StoreTableNodeSpec.Builder storeTableBuilder = buildStoreTableNodeSpec(node);
+
+    PlanProto.InsertNodeSpec.Builder insertNodeSpec = PlanProto.InsertNodeSpec.newBuilder();
+    insertNodeSpec.setOverwrite(node.isOverwrite());
+    insertNodeSpec.setTableSchema(node.getTableSchema().getProto());
+    if (node.hasProjectedSchema()) {
+      insertNodeSpec.setProjectedSchema(node.getProjectedSchema().getProto());
+    }
+    if (node.hasTargetSchema()) {
+      insertNodeSpec.setTargetSchema(node.getTargetSchema().getProto());
+    }
+    if (node.hasPath()) {
+      insertNodeSpec.setPath(node.getPath().toString());
+    }
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
+    nodeBuilder.setPersistentStore(persistentStoreBuilder);
+    nodeBuilder.setStoreTable(storeTableBuilder);
+    nodeBuilder.setInsert(insertNodeSpec);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return node;
+  }
+
+  private static PlanProto.PersistentStoreNode.Builder buildPersistentStoreBuilder(PersistentStoreNode node,
+                                                                                   int [] childIds) {
+    PlanProto.PersistentStoreNode.Builder persistentStoreBuilder = PlanProto.PersistentStoreNode.newBuilder();
+    persistentStoreBuilder.setChildId(childIds[0]);
+    persistentStoreBuilder.setStorageType(node.getStorageType());
+    if (node.hasOptions()) {
+      persistentStoreBuilder.setTableProperties(node.getOptions().getProto());
+    }
+    return persistentStoreBuilder;
+  }
+
+  private static PlanProto.StoreTableNodeSpec.Builder buildStoreTableNodeSpec(StoreTableNode node) {
+    PlanProto.StoreTableNodeSpec.Builder storeTableBuilder = PlanProto.StoreTableNodeSpec.newBuilder();
+    if (node.hasPartition()) {
+      storeTableBuilder.setPartitionMethod(node.getPartitionMethod().getProto());
+    }
+    if (node.hasTableName()) { // It will be false if node is for INSERT INTO LOCATION '...'
+      storeTableBuilder.setTableName(node.getTableName());
+    }
+    return storeTableBuilder;
+  }
+
+  @Override
+  public LogicalNode visitCreateDatabase(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                    CreateDatabaseNode node, Stack<LogicalNode> stack) throws PlanningException {
+    PlanProto.CreateDatabaseNode.Builder createDatabaseBuilder = PlanProto.CreateDatabaseNode.newBuilder();
+    createDatabaseBuilder.setDbName(node.getDatabaseName());
+    createDatabaseBuilder.setIfNotExists(node.isIfNotExists());
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
+    nodeBuilder.setCreateDatabase(createDatabaseBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return node;
+  }
+
+  @Override
+  public LogicalNode visitDropDatabase(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                       DropDatabaseNode node, Stack<LogicalNode> stack) throws PlanningException {
+    PlanProto.DropDatabaseNode.Builder dropDatabaseBuilder = PlanProto.DropDatabaseNode.newBuilder();
+    dropDatabaseBuilder.setDbName(node.getDatabaseName());
+    dropDatabaseBuilder.setIfExists(node.isIfExists());
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
+    nodeBuilder.setDropDatabase(dropDatabaseBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return node;
   }
 
   public static PlanProto.NodeType convertType(NodeType type) {

@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.logical;
 
+import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.plan.PlanString;
@@ -28,7 +29,7 @@ import org.apache.tajo.util.TUtil;
 
 public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   private static final Column [] EMPTY_GROUPING_KEYS = new Column[] {};
-  private static final AggregationFunctionCallEval [] EMPTY_AGG_FUNCS = new AggregationFunctionCallEval[] {};
+  public static final AggregationFunctionCallEval [] EMPTY_AGG_FUNCS = new AggregationFunctionCallEval[] {};
 
 	/** Grouping key sets */
   @Expose private Column [] groupingKeys = EMPTY_GROUPING_KEYS;
@@ -70,7 +71,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   }
 
   public boolean hasAggFunctions() {
-    return this.aggrFunctions.length > 0;
+    return aggrFunctions.length > 0;
   }
 
   public int aggregationFunctionNum() {
@@ -82,6 +83,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   }
 
   public void setAggFunctions(AggregationFunctionCallEval[] evals) {
+    Preconditions.checkNotNull(evals);
     this.aggrFunctions = evals;
   }
 

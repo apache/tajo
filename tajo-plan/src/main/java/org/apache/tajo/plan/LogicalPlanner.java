@@ -46,6 +46,9 @@ import org.apache.tajo.plan.exprrewrite.EvalTreeOptimizer;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
+import org.apache.tajo.plan.serder.LogicalNodeTreeDeserializer;
+import org.apache.tajo.plan.serder.LogicalNodeTreeSerializer;
+import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.catalog.SchemaUtil;
@@ -144,10 +147,15 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     // Add Root Node
     LogicalRootNode root = plan.createNode(LogicalRootNode.class);
+
     root.setInSchema(topMostNode.getOutSchema());
     root.setChild(topMostNode);
     root.setOutSchema(topMostNode.getOutSchema());
     plan.getRootBlock().setRoot(root);
+
+    PlanProto.LogicalNodeTree serialized = LogicalNodeTreeSerializer.serialize(root);
+    LogicalNode deserialized = LogicalNodeTreeDeserializer.deserialize(queryContext, serialized);
+    assert root.deepEquals(deserialized);
 
     return plan;
   }
@@ -1569,7 +1577,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     if (child instanceof Projectable) {
-      Projectable projectionNode = (Projectable) insertNode.getChild();
+      Projectable projectionNode = insertNode.getChild();
 
       // Modifying projected columns by adding NULL constants
       // It is because that table appender does not support target columns to be written.

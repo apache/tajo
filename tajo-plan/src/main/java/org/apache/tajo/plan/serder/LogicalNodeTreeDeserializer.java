@@ -20,17 +20,26 @@ package org.apache.tajo.plan.serder;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.sun.tools.javac.util.Name;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.algebra.DropTable;
+import org.apache.tajo.algebra.Insert;
 import org.apache.tajo.algebra.JoinType;
+import org.apache.tajo.algebra.TruncateTable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.expr.FieldEval;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.util.KeyValueSet;
 
 import java.util.*;
 
@@ -67,6 +76,9 @@ public class LogicalNodeTreeDeserializer {
       case ROOT:
         current = convertRoot(nodeMap, protoNode);
         break;
+      case SET_SESSION:
+        current = convertSetSession(protoNode);
+        break;
       case EXPRS:
         current = convertEvalExpr(context, protoNode);
         break;
@@ -91,15 +103,48 @@ public class LogicalNodeTreeDeserializer {
       case JOIN:
         current = convertJoin(context, nodeMap, protoNode);
         break;
+      case TABLE_SUBQUERY:
+        current = convertTableSubQuery(context, nodeMap, protoNode);
+        break;
+      case UNION:
+        current = convertUnion(nodeMap, protoNode);
+        break;
       case SCAN:
         current = convertScan(context, protoNode);
+        break;
+
+      case CREATE_TABLE:
+        current = convertCreateTable(nodeMap, protoNode);
+        break;
+      case INSERT:
+        current = convertInsert(nodeMap, protoNode);
+        break;
+      case DROP_TABLE:
+        current = convertDropTable(protoNode);
+        break;
+
+      case CREATE_DATABASE:
+        current = convertCreateDatabase(protoNode);
+        break;
+      case DROP_DATABASE:
+        current = convertDropDatabase(protoNode);
+        break;
+
+      case ALTER_TABLESPACE:
+        current = convertAlterTablespace(protoNode);
+        break;
+      case ALTER_TABLE:
+        current = convertAlterTable(protoNode);
+        break;
+      case TRUNCATE_TABLE:
+        current = convertTruncateTable(protoNode);
         break;
 
       default:
         throw new RuntimeException("Unknown NodeType: " + protoNode.getType().name());
       }
 
-      nodeMap.put(protoNode.getPid(), current);
+      nodeMap.put(protoNode.getSid(), current);
     }
 
     return current;
@@ -111,8 +156,23 @@ public class LogicalNodeTreeDeserializer {
 
     LogicalRootNode root = new LogicalRootNode(protoNode.getPid());
     root.setChild(nodeMap.get(rootProto.getChildId()));
+    if (protoNode.hasInSchema()) {
+      root.setInSchema(convertSchema(protoNode.getInSchema()));
+    }
+    if (protoNode.hasOutSchema()) {
+      root.setOutSchema(convertSchema(protoNode.getOutSchema()));
+    }
 
     return root;
+  }
+
+  public static SetSessionNode convertSetSession(PlanProto.LogicalNode protoNode) {
+    PlanProto.SetSessionNode setSessionProto = protoNode.getSetSession();
+
+    SetSessionNode setSession = new SetSessionNode(protoNode.getPid());
+    setSession.init(setSessionProto.getName(), setSessionProto.hasValue() ? setSessionProto.getValue() : null);
+
+    return setSession;
   }
 
   public static EvalExprNode convertEvalExpr(OverridableConf context, PlanProto.LogicalNode protoNode) {
@@ -133,7 +193,7 @@ public class LogicalNodeTreeDeserializer {
     projectionNode.init(projectionProto.getDistinct(), convertTargets(context, projectionProto.getTargetsList()));
     projectionNode.setChild(nodeMap.get(projectionProto.getChildId()));
     projectionNode.setInSchema(convertSchema(protoNode.getInSchema()));
-    projectionNode.setTargets(convertTargets(context, projectionProto.getTargetsList()));
+    projectionNode.setOutSchema(convertSchema(protoNode.getOutSchema()));
 
     return projectionNode;
   }
@@ -187,8 +247,7 @@ public class LogicalNodeTreeDeserializer {
       groupby.setGroupingColumns(convertColumns(groupbyProto.getGroupingKeysList()));
     }
     if (groupbyProto.getAggFunctionsCount() > 0) {
-      groupby.setAggFunctions((AggregationFunctionCallEval[])convertEvalNodes(context,
-          groupbyProto.getAggFunctionsList()));
+      groupby.setAggFunctions(convertAggFuncCallEvals(context, groupbyProto.getAggFunctionsList()));
     }
     return groupby;
   }
@@ -226,6 +285,18 @@ public class LogicalNodeTreeDeserializer {
     return selection;
   }
 
+  public static UnionNode convertUnion(Map<Integer, LogicalNode> nodeMap, PlanProto.LogicalNode protoNode) {
+    PlanProto.UnionNode unionProto = protoNode.getUnion();
+
+    UnionNode union = new UnionNode(protoNode.getPid());
+    union.setInSchema(convertSchema(protoNode.getInSchema()));
+    union.setOutSchema(convertSchema(protoNode.getOutSchema()));
+    union.setLeftChild(nodeMap.get(unionProto.getLeftChildId()));
+    union.setRightChild(nodeMap.get(unionProto.getRightChildId()));
+
+    return union;
+  }
+
   public static ScanNode convertScan(OverridableConf context, PlanProto.LogicalNode protoNode) {
     ScanNode scan = new ScanNode(protoNode.getPid());
 
@@ -243,6 +314,167 @@ public class LogicalNodeTreeDeserializer {
     return scan;
   }
 
+  public static TableSubQueryNode convertTableSubQuery(OverridableConf context,
+                                                                 Map<Integer, LogicalNode> nodeMap,
+                                                                 PlanProto.LogicalNode protoNode) {
+    PlanProto.TableSubQueryNode proto = protoNode.getTableSubQuery();
+
+    TableSubQueryNode tableSubQuery = new TableSubQueryNode(protoNode.getPid());
+    tableSubQuery.setInSchema(convertSchema(protoNode.getInSchema()));
+    tableSubQuery.setSubQuery(nodeMap.get(proto.getChildId()));
+    tableSubQuery.setTargets(convertTargets(context, proto.getTargetsList()));
+
+    return tableSubQuery;
+  }
+
+  public static CreateTableNode convertCreateTable(Map<Integer, LogicalNode> nodeMap,
+                                            PlanProto.LogicalNode protoNode) {
+    PlanProto.PersistentStoreNode persistentStoreProto = protoNode.getPersistentStore();
+    PlanProto.StoreTableNodeSpec storeTableNodeSpec = protoNode.getStoreTable();
+    PlanProto.CreateTableNodeSpec createTableNodeSpec = protoNode.getCreateTable();
+
+    CreateTableNode createTable = new CreateTableNode(protoNode.getPid());
+    if (protoNode.hasInSchema()) {
+      createTable.setInSchema(convertSchema(protoNode.getInSchema()));
+    }
+    if (protoNode.hasOutSchema()) {
+      createTable.setOutSchema(convertSchema(protoNode.getOutSchema()));
+    }
+    createTable.setChild(nodeMap.get(persistentStoreProto.getChildId()));
+    createTable.setStorageType(persistentStoreProto.getStorageType());
+    createTable.setOptions(new KeyValueSet(persistentStoreProto.getTableProperties()));
+
+    createTable.setTableName(storeTableNodeSpec.getTableName());
+    if (storeTableNodeSpec.hasPartitionMethod()) {
+      createTable.setPartitionMethod(new PartitionMethodDesc(storeTableNodeSpec.getPartitionMethod()));
+    }
+
+    createTable.setTableSchema(convertSchema(createTableNodeSpec.getSchema()));
+    createTable.setExternal(createTableNodeSpec.getExternal());
+    if (createTableNodeSpec.getExternal() && createTableNodeSpec.hasPath()) {
+      createTable.setPath(new Path(createTableNodeSpec.getPath()));
+    }
+    createTable.setIfNotExists(createTableNodeSpec.getIfNotExists());
+
+    return createTable;
+  }
+
+  public static InsertNode convertInsert(Map<Integer, LogicalNode> nodeMap,
+                                                   PlanProto.LogicalNode protoNode) {
+    PlanProto.PersistentStoreNode persistentStoreProto = protoNode.getPersistentStore();
+    PlanProto.StoreTableNodeSpec storeTableNodeSpec = protoNode.getStoreTable();
+    PlanProto.InsertNodeSpec insertNodeSpec = protoNode.getInsert();
+
+    InsertNode insertNode = new InsertNode(protoNode.getPid());
+    if (protoNode.hasInSchema()) {
+      insertNode.setInSchema(convertSchema(protoNode.getInSchema()));
+    }
+    if (protoNode.hasOutSchema()) {
+      insertNode.setOutSchema(convertSchema(protoNode.getOutSchema()));
+    }
+    insertNode.setChild(nodeMap.get(persistentStoreProto.getChildId()));
+    insertNode.setStorageType(persistentStoreProto.getStorageType());
+    insertNode.setOptions(new KeyValueSet(persistentStoreProto.getTableProperties()));
+
+    if (storeTableNodeSpec.hasTableName()) {
+      insertNode.setTableName(storeTableNodeSpec.getTableName());
+    }
+    if (storeTableNodeSpec.hasPartitionMethod()) {
+      insertNode.setPartitionMethod(new PartitionMethodDesc(storeTableNodeSpec.getPartitionMethod()));
+    }
+
+    insertNode.setOverwrite(insertNodeSpec.getOverwrite());
+    insertNode.setTableSchema(convertSchema(insertNodeSpec.getTableSchema()));
+    if (insertNodeSpec.hasTargetSchema()) {
+      insertNode.setTargetSchema(convertSchema(insertNodeSpec.getTargetSchema()));
+    }
+    if (insertNodeSpec.hasProjectedSchema()) {
+      insertNode.setProjectedSchema(convertSchema(insertNodeSpec.getProjectedSchema()));
+    }
+    if (insertNodeSpec.hasPath()) {
+      insertNode.setPath(new Path(insertNodeSpec.getPath()));
+    }
+
+    return insertNode;
+  }
+
+  public static DropTableNode convertDropTable(PlanProto.LogicalNode protoNode) {
+    DropTableNode dropTable = new DropTableNode(protoNode.getPid());
+
+    PlanProto.DropTableNode dropTableProto = protoNode.getDropTable();
+    dropTable.init(dropTableProto.getTableName(), dropTableProto.getIfExists(), dropTableProto.getPurge());
+
+    return dropTable;
+  }
+
+  public static CreateDatabaseNode convertCreateDatabase(PlanProto.LogicalNode protoNode) {
+    CreateDatabaseNode createDatabase = new CreateDatabaseNode(protoNode.getPid());
+
+    PlanProto.CreateDatabaseNode createDatabaseProto = protoNode.getCreateDatabase();
+    createDatabase.init(createDatabaseProto.getDbName(), createDatabaseProto.getIfNotExists());
+
+    return createDatabase;
+  }
+
+  public static DropDatabaseNode convertDropDatabase(PlanProto.LogicalNode protoNode) {
+    DropDatabaseNode dropDatabase = new DropDatabaseNode(protoNode.getPid());
+
+    PlanProto.DropDatabaseNode dropDatabaseProto = protoNode.getDropDatabase();
+    dropDatabase.init(dropDatabaseProto.getDbName(), dropDatabase.isIfExists());
+
+    return dropDatabase;
+  }
+
+  public static AlterTablespaceNode convertAlterTablespace(PlanProto.LogicalNode protoNode) {
+    AlterTablespaceNode alterTablespace = new AlterTablespaceNode(protoNode.getPid());
+
+    PlanProto.AlterTablespaceNode alterTablespaceProto = protoNode.getAlterTablespace();
+    alterTablespace.setTablespaceName(alterTablespaceProto.getTableSpaceName());
+
+    switch (alterTablespaceProto.getSetType()) {
+    case LOCATION:
+      alterTablespace.setLocation(alterTablespaceProto.getSetLocation().getLocation());
+      break;
+    default:
+      throw new UnimplementedException("Unknown SET type in ALTER TABLE: " + alterTablespaceProto.getSetType().name());
+    }
+
+    return alterTablespace;
+  }
+
+  public static AlterTableNode convertAlterTable(PlanProto.LogicalNode protoNode) {
+    AlterTableNode alterTable = new AlterTableNode(protoNode.getPid());
+
+    PlanProto.AlterTableNode alterTableProto = protoNode.getAlterTable();
+    alterTable.setTableName(alterTableProto.getTableName());
+
+    switch (alterTableProto.getSetType()) {
+    case RENAME_TABLE:
+      alterTable.setNewTableName(alterTableProto.getRenameTable().getNewName());
+      break;
+    case ADD_COLUMN:
+      alterTable.setAddNewColumn(new Column(alterTableProto.getAddColumn().getAddColumn()));
+      break;
+    case RENAME_COLUMN:
+      alterTable.setColumnName(alterTableProto.getRenameColumn().getOldName());
+      alterTable.setNewColumnName(alterTableProto.getRenameColumn().getNewName());
+      break;
+    default:
+      throw new UnimplementedException("Unknown SET type in ALTER TABLE: " + alterTableProto.getSetType().name());
+    }
+
+    return alterTable;
+  }
+
+  public static TruncateTableNode convertTruncateTable(PlanProto.LogicalNode protoNode) {
+    TruncateTableNode truncateTable = new TruncateTableNode(protoNode.getPid());
+
+    PlanProto.TruncateTableNode truncateTableProto = protoNode.getTruncateTableNode();
+    truncateTable.setTableNames(truncateTableProto.getTableNamesList());
+
+    return truncateTable;
+  }
+
   public static Schema convertSchema(CatalogProtos.SchemaProto proto) {
     return new Schema(proto);
   }
@@ -254,6 +486,15 @@ public class LogicalNodeTreeDeserializer {
       evalNodes[i] = EvalTreeProtoDeserializer.deserialize(context, evalTrees.get(i));
     }
     return (T[]) evalNodes;
+  }
+
+  public static AggregationFunctionCallEval [] convertAggFuncCallEvals(OverridableConf context,
+                                                                       List<PlanProto.EvalTree> evalTrees) {
+    AggregationFunctionCallEval [] aggFuncs = new AggregationFunctionCallEval[evalTrees.size()];
+    for (int i = 0; i < aggFuncs.length; i++) {
+      aggFuncs[i] = (AggregationFunctionCallEval) EvalTreeProtoDeserializer.deserialize(context, evalTrees.get(i));
+    }
+    return aggFuncs;
   }
 
   public static Column[] convertColumns(List<CatalogProtos.ColumnProto> columnProtos) {
@@ -268,8 +509,12 @@ public class LogicalNodeTreeDeserializer {
     Target [] targets = new Target[targetsProto.size()];
     for (int i = 0; i < targets.length; i++) {
       PlanProto.Target targetProto = targetsProto.get(i);
-      targets[i] = new Target(EvalTreeProtoDeserializer.deserialize(context, targetProto.getExpr()),
-          targetProto.getAlias());
+      EvalNode evalNode = EvalTreeProtoDeserializer.deserialize(context, targetProto.getExpr());
+      if (targetProto.hasAlias()) {
+        targets[i] = new Target(evalNode, targetProto.getAlias());
+      } else {
+        targets[i] = new Target((FieldEval) evalNode);
+      }
     }
     return targets;
   }
