@@ -227,6 +227,8 @@ Release 0.9.1 - unreleased
 
   TASKS
 
+    TAJO-1267: Remove LazyTaskScheduler. (DaeMyung Kang via jihoon)
+
     TAJO-1233: Merge hbase_storage branch to the master branch. 
     (Hyoungjun via hyunsik)
  
