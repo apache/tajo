@@ -24,6 +24,9 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1266: Too many logs when writing a parquet relation. 
+    (DaeMyung Kang via jihoon)
+
     TAJO-1268: tajo-client module should not use UserGroupInformation. 
     (hyunsik)
 
