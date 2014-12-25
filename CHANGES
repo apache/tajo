@@ -24,6 +24,14 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1266: Too many logs when writing a parquet relation. 
+    (DaeMyung Kang via jihoon)
+
+    TAJO-1268: tajo-client module should not use UserGroupInformation. 
+    (hyunsik)
+
+    TAJO-1259: Change tsql history behavior. (Jaewoong Jung via hyunsik)
+
     TAJO-1261: Separate query and ddl execution codes from GlobalEngine. 
     (hyunsik)
 
@@ -118,11 +126,14 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1249: Tajo should check if a file format given in DDL is supported.
+    (DaeMyung Kang via hyunsik)
+ 
     TAJO-1250: RawFileAppender occasionally causes BufferOverflowException. 
     (jinho)
 
-    TAJO-1259: A title in catalog configuration document is different from others. 
-    (Jongyoung Park via hyunsik)
+    TAJO-1259: A title in catalog configuration document is different from 
+    others. (Jongyoung Park via hyunsik)
 
     TAJO-1232: Implicit groupby queries with LIMIT lead to wrong results. 
     (jihoon)
@@ -218,6 +229,8 @@ Release 0.9.1 - unreleased
 
 
   TASKS
+
+    TAJO-1267: Remove LazyTaskScheduler. (DaeMyung Kang via jihoon)
 
     TAJO-1233: Merge hbase_storage branch to the master branch. 
     (Hyoungjun via hyunsik)

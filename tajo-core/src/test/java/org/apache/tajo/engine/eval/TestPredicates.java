@@ -403,11 +403,4 @@ public class TestPredicates extends ExprTestBase {
     testEval(schema, "table1", "t,f", "select not col1 is not true, not col2 is not false from table1",
         new String [] {"t", "t"});
   }
-
-  @Test
-  public void testCreateTableWithUnsupportedStoreType() throws IOException {
-    testSimpleEval("create table table1 (name text, age int) using RAW;",
-        new String[] {"Wrong query statement or query plan: create table table1 (name text, age int) using RAW"},
-        false);
-  }
 }

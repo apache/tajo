@@ -338,6 +338,8 @@ public class TajoCli {
       String historyPath = HOME_DIR + File.separator + HISTORY_FILE;
       if ((new File(HOME_DIR)).exists()) {
         history = new TajoFileHistory(new File(historyPath));
+        history.setAutoTrim(false);
+        history.setIgnoreDuplicates(false);
         reader.setHistory(history);
       } else {
         System.err.println(ERROR_PREFIX + "home directory : '" + HOME_DIR +"' does not exist.");
@@ -391,6 +393,7 @@ public class TajoCli {
     String line;
     String currentPrompt = context.getCurrentDatabase();
     int exitCode;
+    ParsingState latestState = SimpleParser.START_STATE;
 
     sout.write("Try \\? for help.\n");
 
@@ -407,14 +410,15 @@ public class TajoCli {
         } else {
           List<ParsedResult> parsedResults = parser.parseLines(line);
 
-          if (parsedResults.size() > 0) {
-            for (ParsedResult parsed : parsedResults) {
-              history.addStatement(parsed.getHistoryStatement() + (parsed.getType() == STATEMENT ? ";" : ""));
-            }
+          if (latestState != ParsingState.TOK_START && parsedResults.size() > 0) {
+            // Add multi-line statements to history in addition to individual lines.
+            ParsedResult parsed = parsedResults.get(0);
+            history.add(parsed.getHistoryStatement() + (parsed.getType() == STATEMENT ? ";" : ""));
           }
 
           exitCode = executeParsedResults(parsedResults);
-          currentPrompt = updatePrompt(parser.getState());
+          latestState = parser.getState();
+          currentPrompt = updatePrompt(latestState);
 
           // if at least one failed
           if (exitCode != 0) {
