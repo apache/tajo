@@ -20,7 +20,7 @@ package org.apache.tajo.cli.tools;
 
 import com.google.protobuf.ServiceException;
 import org.apache.commons.cli.*;
-import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.DDLBuilder;
 import org.apache.tajo.catalog.TableDesc;
@@ -85,7 +85,7 @@ public class TajoDump {
     final Pair<String, Integer> hostAndPort = getConnectionAddr(conf, cmd);
     final String hostName = hostAndPort.getFirst();
     final Integer port = hostAndPort.getSecond();
-    final UserGroupInformation userInfo = UserGroupInformation.getCurrentUser();
+    final UserRoleInfo userInfo = UserRoleInfo.getCurrentUser();
 
     String baseDatabaseName = null;
     if (cmd.getArgList().size() > 0) {
@@ -117,7 +117,7 @@ public class TajoDump {
     System.exit(0);
   }
 
-  public static void dump(TajoClient client, UserGroupInformation userInfo, String baseDatabaseName,
+  public static void dump(TajoClient client, UserRoleInfo userInfo, String baseDatabaseName,
                    boolean isDumpingAllDatabases, boolean includeUserName, boolean includeDate, PrintWriter out)
       throws SQLException, ServiceException {
     printHeader(out, userInfo, includeUserName, includeDate);
@@ -136,7 +136,7 @@ public class TajoDump {
     out.flush();
   }
 
-  private static void printHeader(PrintWriter writer, UserGroupInformation userInfo, boolean includeUSerName,
+  private static void printHeader(PrintWriter writer, UserRoleInfo userInfo, boolean includeUSerName,
                                   boolean includeDate) {
     writer.write("--\n");
     writer.write("-- Tajo database dump\n");
