@@ -420,7 +420,7 @@ public class LogicalNodeTreeDeserializer {
     DropDatabaseNode dropDatabase = new DropDatabaseNode(protoNode.getPid());
 
     PlanProto.DropDatabaseNode dropDatabaseProto = protoNode.getDropDatabase();
-    dropDatabase.init(dropDatabaseProto.getDbName(), dropDatabase.isIfExists());
+    dropDatabase.init(dropDatabaseProto.getDbName(), dropDatabaseProto.getIfExists());
 
     return dropDatabase;
   }

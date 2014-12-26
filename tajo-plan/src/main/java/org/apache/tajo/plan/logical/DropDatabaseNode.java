@@ -24,7 +24,7 @@ import org.apache.tajo.plan.PlanString;
 
 public class DropDatabaseNode extends LogicalNode implements Cloneable {
   @Expose private String databaseName;
-  @Expose private boolean ifExists;
+  @Expose private boolean ifExists = false;
 
   public DropDatabaseNode(int pid) {
     super(pid, NodeType.DROP_DATABASE);
@@ -65,7 +65,10 @@ public class DropDatabaseNode extends LogicalNode implements Cloneable {
   public boolean equals(Object obj) {
     if (obj instanceof DropDatabaseNode) {
       DropDatabaseNode other = (DropDatabaseNode) obj;
-      return super.equals(other) && this.databaseName.equals(other.databaseName) && ifExists == other.ifExists;
+      boolean eq = super.equals(other);
+      eq &= this.databaseName.equals(other.databaseName);
+      eq &= ifExists == other.ifExists;
+      return eq;
     } else {
       return false;
     }

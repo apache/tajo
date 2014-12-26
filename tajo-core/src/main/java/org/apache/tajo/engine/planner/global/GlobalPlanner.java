@@ -38,6 +38,9 @@ import org.apache.tajo.engine.planner.BroadcastJoinPlanVisitor;
 import org.apache.tajo.engine.planner.global.builder.DistinctGroupbyBuilder;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.serder.LogicalNodeTreeDeserializer;
+import org.apache.tajo.plan.serder.LogicalNodeTreeSerializer;
+import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
@@ -163,6 +166,15 @@ public class GlobalPlanner {
 
     masterPlan.setTerminal(terminalBlock);
     LOG.info("\n" + masterPlan.toString());
+
+    ExecutionBlockCursor cursor = new ExecutionBlockCursor(masterPlan);
+    while (cursor.hasNext()) {
+      ExecutionBlock eb = cursor.nextBlock();
+      LogicalNode node = eb.getPlan();
+      PlanProto.LogicalNodeTree tree = LogicalNodeTreeSerializer.serialize(node);
+      LogicalNode deserialize = LogicalNodeTreeDeserializer.deserialize(masterPlan.getContext(), tree);
+      assert node.deepEquals(deserialize);
+    }
   }
 
   private static void setFinalOutputChannel(DataChannel outputChannel, Schema outputSchema) {
