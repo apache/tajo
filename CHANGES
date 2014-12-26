@@ -5,6 +5,9 @@ Release 0.9.1 - unreleased
 
   NEW FEATURES
 
+    TAJO-920: Add FIRST_VALUE and LAST_VALUE window functions. 
+    (Keuntae Park via hyunsik)
+
     TAJO-1238: Add SET SESSION and RESET statement. (hyunsik)
 
     TAJO-1222: DelimitedTextFile should be tolerant against parsing errors.

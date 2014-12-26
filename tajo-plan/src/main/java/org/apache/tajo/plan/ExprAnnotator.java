@@ -679,7 +679,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   public static final Set<String> WINDOW_FUNCTIONS =
-      Sets.newHashSet("row_number", "rank", "dense_rank", "percent_rank", "cume_dist");
+      Sets.newHashSet("row_number", "rank", "dense_rank", "percent_rank", "cume_dist", "first_value");
 
   public EvalNode visitWindowFunction(Context ctx, Stack<Expr> stack, WindowFunctionExpr windowFunc)
       throws PlanningException {
