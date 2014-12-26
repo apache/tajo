@@ -5,6 +5,9 @@ Release 0.9.1 - unreleased
 
   NEW FEATURES
 
+    TAJO-920: Add FIRST_VALUE and LAST_VALUE window functions. 
+    (Keuntae Park via hyunsik)
+
     TAJO-1238: Add SET SESSION and RESET statement. (hyunsik)
 
     TAJO-1222: DelimitedTextFile should be tolerant against parsing errors.
@@ -23,6 +26,9 @@ Release 0.9.1 - unreleased
     TAJO-1095: Implement Json file scanner. (hyunsik)
 
   IMPROVEMENT
+
+    TAJO-1266: Too many logs when writing a parquet relation. 
+    (DaeMyung Kang via jihoon)
 
     TAJO-1268: tajo-client module should not use UserGroupInformation. 
     (hyunsik)
@@ -226,6 +232,8 @@ Release 0.9.1 - unreleased
 
 
   TASKS
+
+    TAJO-1267: Remove LazyTaskScheduler. (DaeMyung Kang via jihoon)
 
     TAJO-1233: Merge hbase_storage branch to the master branch. 
     (Hyoungjun via hyunsik)
