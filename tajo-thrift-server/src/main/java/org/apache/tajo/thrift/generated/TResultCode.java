@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.HashMap;
 import org.apache.thrift.TEnum;
 
-public enum TResultCode implements TEnum {
+public enum TResultCode implements org.apache.thrift.TEnum {
   OK(0),
   ERROR(1);
 

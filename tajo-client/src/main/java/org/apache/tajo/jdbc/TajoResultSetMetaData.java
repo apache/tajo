@@ -98,7 +98,7 @@ public class TajoResultSetMetaData implements ResultSetMetaData {
   public String getColumnTypeName(int column) throws SQLException {
     DataType type = schema.getColumn(column - 1).getDataType();
 
-    return ResultSetUtil.toSqlType(type);
+    return ResultSetUtil.tajoTypeToSqlTypeName(type);
   }
 
   @Override

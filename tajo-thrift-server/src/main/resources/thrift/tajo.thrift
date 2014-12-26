@@ -34,80 +34,6 @@ namespace py tajo
 namespace perl Tajo
 namespace php Tajo
 
-enum TajoThriftDataType {
-  NULL_TYPE = 0; // NULL type
-
-  BOOLEAN = 1; // state of true of false [1 byte]
-
-  INT1 = 2; // tinyint [1 byte] [0-255]
-  INT2 = 3; // smallint [2 bytes] [-2^15(-32,768) ~ 2^15-1(32,767)]
-  INT4 = 4; // int [4 bytes] [-2^31(-2,147,483,648) ~ 2^31-1(2,147,483,647)]
-  INT8 = 5; // bigint [8 bytes] [-2^63(-9,223,372,036,854,775,808) ~ 2^63-1(9,223,372,036,854,775,807)]
-  UINT1 = 6; // unsigned int1
-  UINT2 = 7; // unsigned int2
-  UINT4 = 8; // unsigned int4
-  UINT8 = 9; // unsigned int8
-  FLOAT4 = 10; // variable-precision, inexact [4 bytes]
-  FLOAT8 = 11; // variable-precision, inexact [8 bytes]
-
-  NUMERIC = 12; // variable length
-
-  CHAR = 21; // fixed-width n-character string
-  NCHAR = 22; // fixed width string supporting an international character set
-  VARCHAR = 23; // variable-width string
-  NVARCHAR = 24; // variable-width NCHAR string
-  TEXT = 25; // variable unlimited length
-
-  DATE = 31;
-  TIME = 32;
-  TIMEZ = 33;
-  TIMESTAMP = 34;
-  TIMESTAMPZ = 35;
-  INTERVAL = 36;
-
-  BIT = 41; // fixed-width bits. BIT without the length L means a single bit. It can be used for boolean type.
-  VARBIT = 42; // variable-width bits
-  BINARY = 43; // fixed-width binary strings. BINARY without the length L means a single byte.
-  VARBINARY = 44; // variable-width binary strings
-  BLOB = 45;
-
-  ANY = 51; // Any type
-  UDT = 52; // user-defined function
-  PROTOBUF = 53; // protocol buffer type
-
-  INET4 = 91;
-  INET6 = 92;
-
-  // array types
-  BOOLEAN_ARRAY = 101;
-  INT1_ARRAY = 102;
-  INT2_ARRAY = 103;
-  INT4_ARRAY = 104;
-  INT8_ARRAY = 105;
-  UINT1_ARRAY = 106;
-  UINT2_ARRAY = 107;
-  UINT4_ARRAY = 108;
-  UINT8_ARRAY = 109;
-
-  FLOAT4_ARRAY = 110;
-  FLOAT8_ARRAY = 111;
-
-  NUMERIC_ARRAY = 112;
-
-  CHAR_ARRAY = 121;
-  NCHAR_ARRAY = 122;
-  VARCHAR_ARRAY = 123;
-  NVARCHAR_ARRAY = 124;
-  TEXT_ARRAY = 125;
-
-  DATE_ARRAY = 131;
-  TIME_ARRAY = 132;
-  TIMEZ_ARRAY = 133;
-  TIMESTAMP_ARRAY = 134;
-  TIMESTAMPZ_ARRAY = 135;
-  INTERVAL_ARRAY = 136;
-}
-
 exception TServiceException {
   1:string message,
   2:string trace
@@ -121,10 +47,10 @@ enum TResultCode {
 struct TColumn {
   1:string name,
   2:string simpleName,
-  3:TajoThriftDataType dataType;
+  3:i32 dataType,
   4:string dataTypeName,
   5:string sqlDataTypeName,
-  6:i32 sqlType
+  6:i32 sqlDataType
 }
 
 struct TSchema {

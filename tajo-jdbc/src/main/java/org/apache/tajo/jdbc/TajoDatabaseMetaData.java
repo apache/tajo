@@ -523,7 +523,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
                 tuple.put(index++, new TextDatum(column.getSimpleName()));  // COLUMN_NAME
                 // TODO - DATA_TYPE
                 tuple.put(index++, new TextDatum("" + ResultSetUtil.tajoTypeToSqlType(column.getDataType())));
-                tuple.put(index++, new TextDatum(ResultSetUtil.toSqlType(column.getDataType())));  //TYPE_NAME
+                tuple.put(index++, new TextDatum(ResultSetUtil.tajoTypeToSqlTypeName(column.getDataType())));  //TYPE_NAME
                 tuple.put(index++, new TextDatum("0"));                     // COLUMN_SIZE
                 tuple.put(index++, new TextDatum("0"));                     // BUFFER_LENGTH
                 tuple.put(index++, new TextDatum("0"));                     // DECIMAL_DIGITS
