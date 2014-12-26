@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,23 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master;
+package org.apache.tajo.engine.function.window;
 
-/**
- * FragmentScheduleAlgorithm is used by LazyTaskScheduler.
- * FragmentScheduleAlgorithm selects a fragment for the given argument.
- *
- * There are two implementations of DefaultFragmentScheduleAlgorithm and GreedyFragmentScheduleAlgorithm.
- */
-public interface FragmentScheduleAlgorithm {
-  void addFragment(FragmentPair fragmentPair);
-  void removeFragment(FragmentPair fragmentPair);
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 
-  FragmentPair getHostLocalFragment(String host);
-  FragmentPair getHostLocalFragment(String host, Integer diskId);
-  FragmentPair getRackLocalFragment(String host);
-  FragmentPair getRandomFragment();
-  FragmentPair[] getAllFragments();
+@Description(
+    functionName = "first_value",
+    description = "the first value of retrieved rows",
+    example = "> SELECT first_value(column) OVER ();",
+    returnType = Type.FLOAT8,
+    paramTypes = {@ParamTypes(paramTypes = {Type.FLOAT8})}
+)
+public class FirstValueDouble extends FirstValue {
 
-  int size();
+  public FirstValueDouble() {
+    super(new Column[] {
+        new Column("expr", Type.FLOAT8)
+    });
+  }
 }
