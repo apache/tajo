@@ -340,22 +340,22 @@ public class Repartitioner {
 
       if (childExecSM.getHashShuffleIntermediateEntries() != null &&
           !childExecSM.getHashShuffleIntermediateEntries().isEmpty()) {
-        for (IntermediateEntry intermEntry: childExecSM.getHashShuffleIntermediateEntries()) {
-          intermEntry.setEbId(childBlock.getId());
-          if (hashEntries.containsKey(intermEntry.getPartId())) {
+        for (IntermediateEntry interimEntry: childExecSM.getHashShuffleIntermediateEntries()) {
+          interimEntry.setEbId(childBlock.getId());
+          if (hashEntries.containsKey(interimEntry.getPartId())) {
             Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
-                hashEntries.get(intermEntry.getPartId());
+                hashEntries.get(interimEntry.getPartId());
 
             if (tbNameToInterm.containsKey(scanEbId)) {
-              tbNameToInterm.get(scanEbId).add(intermEntry);
+              tbNameToInterm.get(scanEbId).add(interimEntry);
             } else {
-              tbNameToInterm.put(scanEbId, TUtil.newList(intermEntry));
+              tbNameToInterm.put(scanEbId, TUtil.newList(interimEntry));
             }
           } else {
             Map<ExecutionBlockId, List<IntermediateEntry>> tbNameToInterm =
                 new HashMap<ExecutionBlockId, List<IntermediateEntry>>();
-            tbNameToInterm.put(scanEbId, TUtil.newList(intermEntry));
-            hashEntries.put(intermEntry.getPartId(), tbNameToInterm);
+            tbNameToInterm.put(scanEbId, TUtil.newList(interimEntry));
+            hashEntries.put(interimEntry.getPartId(), tbNameToInterm);
           }
         }
       } else {

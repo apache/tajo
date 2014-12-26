@@ -99,7 +99,7 @@ public class DiskUtil {
 				DiskDeviceInfo diskDeviceInfo = new DiskDeviceInfo(id++);
 				diskDeviceInfo.setName(eachDeviceName);
 				
-				//TODO set addtional info
+				//TODO set additional info
 				// /sys/block/sda/queue
 				infos.add(diskDeviceInfo);
 			}
