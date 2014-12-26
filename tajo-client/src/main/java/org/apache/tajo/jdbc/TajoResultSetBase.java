@@ -42,7 +42,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   protected TimeZone timezone;
 
   protected int curRow;
-  protected long totalRow;
+  protected long totalRows;
   protected boolean wasNull;
   protected Schema schema;
   protected Tuple cur;
@@ -65,7 +65,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   protected void init() {
     cur = null;
     curRow = 0;
-    totalRow = 0;
+    totalRows = 0;
     wasNull = false;
   }
 
@@ -727,7 +727,7 @@ public abstract class TajoResultSetBase implements ResultSet {
 
   @Override
   public boolean isAfterLast() throws SQLException {
-    return this.curRow > this.totalRow;
+    return this.curRow > this.totalRows;
   }
 
   @Override
@@ -747,7 +747,7 @@ public abstract class TajoResultSetBase implements ResultSet {
 
   @Override
   public boolean isLast() throws SQLException {
-    return this.curRow == this.totalRow;
+    return this.curRow == this.totalRows;
   }
 
   @Override
@@ -773,7 +773,7 @@ public abstract class TajoResultSetBase implements ResultSet {
   @Override
   public boolean next() throws SQLException {
     try {
-      if (totalRow <= 0) {
+      if (totalRows <= 0) {
         return false;
       }
 

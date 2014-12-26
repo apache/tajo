@@ -51,7 +51,7 @@ public class ResultSetUtil {
     return sb.toString();
   }
 
-  public static String toSqlType(TajoDataTypes.DataType type) {
+  public static String tajoTypeToSqlTypeName(TajoDataTypes.DataType type) {
     switch (type.getType()) {
     case BOOLEAN:
       return "boolean";

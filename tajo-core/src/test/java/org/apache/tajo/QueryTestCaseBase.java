@@ -468,7 +468,7 @@ public class QueryTestCaseBase {
    * @return String
    * @throws SQLException
    */
-  public String resultSetToString(ResultSet resultSet) throws SQLException {
+  public static String resultSetToString(ResultSet resultSet) throws SQLException {
     StringBuilder sb = new StringBuilder();
     ResultSetMetaData rsmd = resultSet.getMetaData();
     int numOfColumns = rsmd.getColumnCount();

@@ -290,9 +290,9 @@ public class TajoMasterClientService extends AbstractService {
         responseBuilder.setUserName(context.getConf().getVar(ConfVars.USERNAME));
         responseBuilder.setResultCode(ResultCode.ERROR);
         if (e.getMessage() != null) {
-          responseBuilder.setErrorMessage(ExceptionUtils.getStackTrace(e));
+          responseBuilder.setErrorMessage(e.getMessage() + "\n" + ExceptionUtils.getStackTrace(e));
         } else {
-          responseBuilder.setErrorMessage("Internal Error");
+          responseBuilder.setErrorMessage(e.getClass() + "\n" + ExceptionUtils.getStackTrace(e));
         }
         return responseBuilder.build();
       }
@@ -319,6 +319,8 @@ public class TajoMasterClientService extends AbstractService {
           builder.setResultCode(ResultCode.ERROR);
           if (e.getMessage() == null) {
             builder.setErrorMessage(ExceptionUtils.getStackTrace(e));
+          } else {
+            builder.setErrorMessage(e.getMessage());
           }
           return builder.build();
         }

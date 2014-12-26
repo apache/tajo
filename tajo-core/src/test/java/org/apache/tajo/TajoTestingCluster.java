@@ -48,6 +48,9 @@ import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.querymaster.Stage;
 import org.apache.tajo.master.querymaster.StageState;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
+import org.apache.tajo.thrift.TajoThriftServer;
+import org.apache.tajo.thrift.ThriftServerConstants;
+import org.apache.tajo.thrift.generated.TajoThriftService;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
@@ -75,6 +78,8 @@ public class TajoTestingCluster {
   private TajoMaster tajoMaster;
   private List<TajoWorker> tajoWorkers = new ArrayList<TajoWorker>();
   private boolean standbyWorkerMode = false;
+
+  private TajoThriftServer thriftServer;
 
 	// If non-null, then already a cluster running.
 	private File clusterTestBuildDir = null;
@@ -186,6 +191,10 @@ public class TajoTestingCluster {
 		return new File(System.getProperty(TEST_DIRECTORY_KEY,
 			DEFAULT_TEST_DIRECTORY));
 	}
+
+  public TajoThriftServer getThriftServer() {
+    return thriftServer;
+  }
 
 	/**
 	 * @param subdirName
@@ -370,6 +379,9 @@ public class TajoTestingCluster {
     if(standbyWorkerMode) {
       startTajoWorkers(numSlaves);
     }
+
+    startThriftServer();
+
     LOG.info("Mini Tajo cluster is up");
     LOG.info("====================================================================================");
     LOG.info("=                           MiniTajoCluster starts up                              =");
@@ -437,6 +449,24 @@ public class TajoTestingCluster {
     }
   }
 
+  private void startThriftServer() throws Exception {
+    conf.set(ThriftServerConstants.SERVER_ADDRESS_CONF_KEY, "localhost");
+    conf.setInt(ThriftServerConstants.SERVER_PORT_CONF_KEY, 0);
+
+    conf.set(ThriftServerConstants.INFO_SERVER_ADDRESS_CONF_KEY, "localhost:0");
+
+    thriftServer = new TajoThriftServer(conf);
+    thriftServer.startServer(new String[]{"start"}, false);
+
+    //waiting until binding server address
+    while (true) {
+      Thread.sleep(1000);
+      if (thriftServer.getContext().getServerName() != null) {
+        break;
+      }
+    }
+  }
+
   public void restartTajoCluster(int numSlaves) throws Exception {
     tajoMaster.stop();
     tajoMaster.start();
@@ -453,6 +483,10 @@ public class TajoTestingCluster {
   }
 
   public void shutdownMiniTajoCluster() {
+    if (thriftServer != null) {
+      thriftServer.stop();
+    }
+
     if(this.tajoMaster != null) {
       this.tajoMaster.stop();
     }

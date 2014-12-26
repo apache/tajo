@@ -167,12 +167,10 @@ public class QueryClientImpl implements QueryClient {
 
   @Override
   public ClientProtos.SubmitQueryResponse executeQuery(final String sql) throws ServiceException {
-
     return new ServerCallable<ClientProtos.SubmitQueryResponse>(connection.connPool, connection.getTajoMasterAddr(),
         TajoMasterClientProtocol.class, false, true) {
 
       public ClientProtos.SubmitQueryResponse call(NettyClientBase client) throws ServiceException {
-
         connection.checkSessionAndGet(client);
 
         final QueryRequest.Builder builder = QueryRequest.newBuilder();
@@ -215,7 +213,6 @@ public class QueryClientImpl implements QueryClient {
 
   @Override
   public ResultSet executeQueryAndGetResult(String sql) throws ServiceException, IOException {
-
     ClientProtos.SubmitQueryResponse response = executeQuery(sql);
 
     if (response.getResultCode() == ClientProtos.ResultCode.ERROR) {

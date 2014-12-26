@@ -53,12 +53,12 @@ public class TajoMetaDataResultSet extends TajoResultSetBase {
 
   protected void setDataTuples(List<MetaDataTuple> values) {
     this.values = values;
-    this.totalRow = values == null ? 0 : values.size();
+    this.totalRows = values == null ? 0 : values.size();
   }
 
   @Override
   protected Tuple nextTuple() throws IOException {
-    if(curRow >= totalRow) {
+    if(curRow >= totalRows) {
       return null;
     }
     return values.get(curRow);

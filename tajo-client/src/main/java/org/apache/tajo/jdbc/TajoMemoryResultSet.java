@@ -38,7 +38,7 @@ public class TajoMemoryResultSet extends TajoResultSetBase {
                              Map<String, String> clientSideSessionVars) {
     super(clientSideSessionVars);
     this.schema = schema;
-    this.totalRow = maxRowNum;
+    this.totalRows = maxRowNum;
     this.serializedTuples = serializedTuples;
     decoder = RowStoreUtil.createDecoder(schema);
     init();
@@ -68,7 +68,7 @@ public class TajoMemoryResultSet extends TajoResultSetBase {
 
   @Override
   protected Tuple nextTuple() throws IOException {
-    if (curRow < totalRow) {
+    if (curRow < totalRows) {
       cur = decoder.toTuple(serializedTuples.get(curRow).toByteArray());
       return cur;
     } else {
@@ -78,5 +78,9 @@ public class TajoMemoryResultSet extends TajoResultSetBase {
 
   public boolean hasResult() {
     return serializedTuples.size() > 0;
+  }
+
+  public List<ByteString> getSerializedTuples() {
+    return serializedTuples;
   }
 }
