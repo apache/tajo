@@ -34,6 +34,8 @@ import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.FieldEval;
+import org.apache.tajo.plan.expr.WindowFunctionEval;
+import org.apache.tajo.plan.function.WindowAggFunc;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -89,6 +91,9 @@ public class LogicalNodeTreeDeserializer {
       case SORT:
         current = convertSort(nodeMap, protoNode);
         break;
+      case WINDOW_AGG:
+        current = convertWindowAgg(context, nodeMap, protoNode);
+        break;
       case HAVING:
         current = convertHaving(context, nodeMap, protoNode);
         break;
@@ -109,6 +114,9 @@ public class LogicalNodeTreeDeserializer {
         break;
       case UNION:
         current = convertUnion(nodeMap, protoNode);
+        break;
+      case PARTITIONS_SCAN:
+        current = convertPartitionScan(context, protoNode);
         break;
       case SCAN:
         current = convertScan(context, protoNode);
@@ -236,6 +244,37 @@ public class LogicalNodeTreeDeserializer {
     return having;
   }
 
+  public static WindowAggNode convertWindowAgg(OverridableConf context, Map<Integer, LogicalNode> nodeMap,
+                                               PlanProto.LogicalNode protoNode) {
+    PlanProto.WindowAggNode windowAggProto = protoNode.getWindowAgg();
+
+    WindowAggNode windowAgg = new WindowAggNode(protoNode.getPid());
+    windowAgg.setChild(nodeMap.get(windowAggProto.getChildId()));
+
+    if (windowAggProto.getPartitionKeysCount() > 0) {
+      windowAgg.setPartitionKeys(convertColumns(windowAggProto.getPartitionKeysList()));
+    }
+
+    if (windowAggProto.getWindowFunctionsCount() > 0) {
+      windowAgg.setWindowFunctions(convertWindowFunccEvals(context, windowAggProto.getWindowFunctionsList()));
+    }
+
+    windowAgg.setDistinct(windowAggProto.getDistinct());
+
+    if (windowAggProto.getSortSpecsCount() > 0) {
+      windowAgg.setSortSpecs(convertSortSpecs(windowAggProto.getSortSpecsList()));
+    }
+
+    if (windowAggProto.getTargetsCount() > 0) {
+      windowAgg.setTargets(convertTargets(context, windowAggProto.getTargetsList()));
+    }
+
+    windowAgg.setInSchema(convertSchema(protoNode.getInSchema()));
+    windowAgg.setOutSchema(convertSchema(protoNode.getOutSchema()));
+
+    return windowAgg;
+  }
+
   public static GroupbyNode convertGroupby(OverridableConf context, Map<Integer, LogicalNode> nodeMap,
                                            PlanProto.LogicalNode protoNode) {
     PlanProto.GroupbyNode groupbyProto = protoNode.getGroupby();
@@ -313,7 +352,7 @@ public class LogicalNodeTreeDeserializer {
     if (joinProto.hasJoinQual()) {
       join.setJoinQual(EvalTreeProtoDeserializer.deserialize(context, joinProto.getJoinQual()));
     }
-    if (joinProto.getTargetsCount() > 0) {
+    if (joinProto.getExistsTargets()) {
       join.setTargets(convertTargets(context, joinProto.getTargetsList()));
     }
 
@@ -347,7 +386,12 @@ public class LogicalNodeTreeDeserializer {
 
   public static ScanNode convertScan(OverridableConf context, PlanProto.LogicalNode protoNode) {
     ScanNode scan = new ScanNode(protoNode.getPid());
+    fillScanNode(context, protoNode, scan);
 
+    return scan;
+  }
+
+  public static void fillScanNode(OverridableConf context, PlanProto.LogicalNode protoNode, ScanNode scan) {
     PlanProto.ScanNode scanProto = protoNode.getScan();
     if (scanProto.hasAlias()) {
       scan.init(new TableDesc(scanProto.getTable()), scanProto.getAlias());
@@ -365,8 +409,19 @@ public class LogicalNodeTreeDeserializer {
 
     scan.setInSchema(convertSchema(protoNode.getInSchema()));
     scan.setOutSchema(convertSchema(protoNode.getOutSchema()));
+  }
 
-    return scan;
+  public static PartitionedTableScanNode convertPartitionScan(OverridableConf context, PlanProto.LogicalNode protoNode) {
+    PartitionedTableScanNode partitionedScan = new PartitionedTableScanNode(protoNode.getPid());
+    fillScanNode(context, protoNode, partitionedScan);
+
+    PlanProto.PartitionScanSpec partitionScanProto = protoNode.getPartitionScan();
+    Path [] paths = new Path[partitionScanProto.getPathsCount()];
+    for (int i = 0; i < partitionScanProto.getPathsCount(); i++) {
+      paths[i] = new Path(partitionScanProto.getPaths(i));
+    }
+    partitionedScan.setInputPaths(paths);
+    return partitionedScan;
   }
 
   public static TableSubQueryNode convertTableSubQuery(OverridableConf context,
@@ -552,6 +607,15 @@ public class LogicalNodeTreeDeserializer {
       aggFuncs[i] = (AggregationFunctionCallEval) EvalTreeProtoDeserializer.deserialize(context, evalTrees.get(i));
     }
     return aggFuncs;
+  }
+
+  public static WindowFunctionEval[] convertWindowFunccEvals(OverridableConf context,
+                                                                       List<PlanProto.EvalTree> evalTrees) {
+    WindowFunctionEval[] winFuncEvals = new WindowFunctionEval[evalTrees.size()];
+    for (int i = 0; i < winFuncEvals.length; i++) {
+      winFuncEvals[i] = (WindowFunctionEval) EvalTreeProtoDeserializer.deserialize(context, evalTrees.get(i));
+    }
+    return winFuncEvals;
   }
 
   public static Column[] convertColumns(List<CatalogProtos.ColumnProto> columnProtos) {

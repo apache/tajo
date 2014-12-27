@@ -20,6 +20,7 @@ package org.apache.tajo.plan.serder;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
@@ -177,10 +178,12 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
 
     PlanProto.WindowAggNode.Builder windowAggBuilder = PlanProto.WindowAggNode.newBuilder();
     windowAggBuilder.setChildId(childIds[0]);
+
     if (windowAgg.hasPartitionKeys()) {
       windowAggBuilder.addAllPartitionKeys(
           LogicalNodeTreeSerializer.<CatalogProtos.ColumnProto>toProtoObjects(windowAgg.getPartitionKeys()));
     }
+
     if (windowAgg.hasAggFunctions()) {
       windowAggBuilder.addAllWindowFunctions(
           LogicalNodeTreeSerializer.<PlanProto.EvalTree>toProtoObjects(windowAgg.getWindowFunctions()));
@@ -195,6 +198,10 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
       windowAggBuilder.addAllTargets(
           LogicalNodeTreeSerializer.<PlanProto.Target>toProtoObjects(windowAgg.getTargets()));
     }
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, windowAgg);
+    nodeBuilder.setWindowAgg(windowAggBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
 
     return windowAgg;
   }
@@ -241,12 +248,12 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
                                   GroupbyNode node, Stack<LogicalNode> stack) throws PlanningException {
     super.visitGroupBy(context, plan, block, node, new Stack<LogicalNode>());
 
-    PlanProto.LogicalNode.Builder nodeBuilder = convertGroupby(context, node);
+    PlanProto.LogicalNode.Builder nodeBuilder = buildGroupby(context, node);
     context.treeBuilder.addNodes(nodeBuilder);
     return node;
   }
 
-  private PlanProto.LogicalNode.Builder convertGroupby(SerializeContext context, GroupbyNode node)
+  private PlanProto.LogicalNode.Builder buildGroupby(SerializeContext context, GroupbyNode node)
       throws PlanningException {
     int [] childIds = registerGetChildIds(context, node);
 
@@ -280,11 +287,11 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     PlanProto.DistinctGroupbyNode.Builder distGroupbyBuilder = PlanProto.DistinctGroupbyNode.newBuilder();
     distGroupbyBuilder.setChildId(childIds[0]);
     if (node.getGroupbyPlan() != null) {
-      distGroupbyBuilder.setGroupbyNode(convertGroupby(context, node.getGroupbyPlan()));
+      distGroupbyBuilder.setGroupbyNode(buildGroupby(context, node.getGroupbyPlan()));
     }
 
     for (GroupbyNode subPlan : node.getSubPlans()) {
-      distGroupbyBuilder.addSubPlans(convertGroupby(context, subPlan));
+      distGroupbyBuilder.addSubPlans(buildGroupby(context, subPlan));
     }
 
     if (node.getGroupingColumns().length > 0) {
@@ -341,8 +348,12 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     if (join.hasJoinQual()) {
       joinBuilder.setJoinQual(EvalTreeProtoSerializer.serialize(join.getJoinQual()));
     }
+
     if (join.hasTargets()) {
+      joinBuilder.setExistsTargets(true);
       joinBuilder.addAllTargets(LogicalNodeTreeSerializer.<PlanProto.Target>toProtoObjects(join.getTargets()));
+    } else {
+      joinBuilder.setExistsTargets(false);
     }
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, join);
@@ -375,6 +386,16 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
   public LogicalNode visitScan(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                ScanNode scan, Stack<LogicalNode> stack) throws PlanningException {
 
+    PlanProto.ScanNode.Builder scanBuilder = buildScanNode(scan);
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, scan);
+    nodeBuilder.setScan(scanBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return scan;
+  }
+
+  public PlanProto.ScanNode.Builder buildScanNode(ScanNode scan) {
     PlanProto.ScanNode.Builder scanBuilder = PlanProto.ScanNode.newBuilder();
     scanBuilder.setTable(scan.getTableDesc().getProto());
     if (scan.hasAlias()) {
@@ -391,12 +412,29 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     if (scan.hasQual()) {
       scanBuilder.setQual(EvalTreeProtoSerializer.serialize(scan.getQual()));
     }
+    return scanBuilder;
+  }
 
-    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, scan);
+  @Override
+  public LogicalNode visitPartitionedTableScan(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                          PartitionedTableScanNode node, Stack<LogicalNode> stack)
+      throws PlanningException {
+
+    PlanProto.ScanNode.Builder scanBuilder = buildScanNode(node);
+
+    PlanProto.PartitionScanSpec.Builder partitionScan = PlanProto.PartitionScanSpec.newBuilder();
+    List<String> pathStrs = TUtil.newList();
+    for (Path p : node.getInputPaths()) {
+      pathStrs.add(p.toString());
+    }
+    partitionScan.addAllPaths(pathStrs);
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
     nodeBuilder.setScan(scanBuilder);
+    nodeBuilder.setPartitionScan(partitionScan);
     context.treeBuilder.addNodes(nodeBuilder);
 
-    return scan;
+    return node;
   }
 
   public LogicalNode visitTableSubQuery(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,

@@ -70,31 +70,32 @@ message LogicalNode {
   optional SchemaProto out_schema = 5;
 
   optional ScanNode scan = 6;
-  optional JoinNode join = 7;
-  optional FilterNode filter = 8;
-  optional GroupbyNode groupby = 9;
-  optional DistinctGroupbyNode distinctGroupby = 10;
-  optional SortNode sort = 11;
-  optional LimitNode limit = 12;
-  optional WindowAggNode window = 13;
-  optional ProjectionNode projection = 14;
-  optional EvalExprNode exprEval = 15;
-  optional UnionNode union = 16;
-  optional TableSubQueryNode tableSubQuery = 17;
-  optional PersistentStoreNode persistentStore = 18;
-  optional StoreTableNodeSpec storeTable = 19;
-  optional InsertNodeSpec insert = 20;
-  optional CreateTableNodeSpec createTable = 21;
-  optional RootNode root = 22;
-  optional SetSessionNode setSession = 23;
+  optional PartitionScanSpec partitionScan = 7;
+  optional JoinNode join = 8;
+  optional FilterNode filter = 9;
+  optional GroupbyNode groupby = 10;
+  optional DistinctGroupbyNode distinctGroupby = 11;
+  optional SortNode sort = 12;
+  optional LimitNode limit = 13;
+  optional WindowAggNode windowAgg = 14;
+  optional ProjectionNode projection = 15;
+  optional EvalExprNode exprEval = 16;
+  optional UnionNode union = 17;
+  optional TableSubQueryNode tableSubQuery = 18;
+  optional PersistentStoreNode persistentStore = 19;
+  optional StoreTableNodeSpec storeTable = 20;
+  optional InsertNodeSpec insert = 21;
+  optional CreateTableNodeSpec createTable = 22;
+  optional RootNode root = 23;
+  optional SetSessionNode setSession = 24;
 
-  optional CreateDatabaseNode createDatabase = 24;
-  optional DropDatabaseNode dropDatabase = 25;
-  optional DropTableNode dropTable = 26;
+  optional CreateDatabaseNode createDatabase = 25;
+  optional DropDatabaseNode dropDatabase = 26;
+  optional DropTableNode dropTable = 27;
 
-  optional AlterTablespaceNode alterTablespace = 27;
-  optional AlterTableNode alterTable = 28;
-  optional TruncateTableNode truncateTableNode = 29;
+  optional AlterTablespaceNode alterTablespace = 28;
+  optional AlterTableNode alterTable = 29;
+  optional TruncateTableNode truncateTableNode = 30;
 }
 
 message ScanNode {
@@ -103,6 +104,10 @@ message ScanNode {
   required bool existTargets = 3;
   repeated Target targets = 4;
   optional EvalTree qual = 5;
+}
+
+message PartitionScanSpec {
+  repeated string paths = 1;
 }
 
 message FilterNode {
@@ -115,7 +120,8 @@ message JoinNode {
   required int32 rightChildId = 2;
   required JoinType joinType = 3;
   optional EvalTree joinQual = 4;
-  repeated Target targets = 5;
+  required bool existsTargets = 5;
+  repeated Target targets = 6;
 }
 
 message GroupbyNode {
