@@ -73,6 +73,7 @@ message LogicalNode {
   optional JoinNode join = 7;
   optional FilterNode filter = 8;
   optional GroupbyNode groupby = 9;
+  optional DistinctGroupbyNode distinctGroupby = 10;
   optional SortNode sort = 11;
   optional LimitNode limit = 12;
   optional WindowAggNode window = 13;
@@ -99,6 +100,7 @@ message LogicalNode {
 message ScanNode {
   required TableDescProto table = 1;
   optional string alias = 2;
+  required bool existTargets = 3;
   repeated Target targets = 4;
   optional EvalTree qual = 5;
 }
@@ -120,14 +122,17 @@ message GroupbyNode {
   required int32 childId = 1;
   repeated ColumnProto groupingKeys = 2;
   repeated EvalTree aggFunctions = 3;
+  repeated Target targets = 4;
 }
 
 message DistinctGroupbyNode {
   required int32 childId = 1;
-  repeated GroupbyNode groupbyNodes = 2;
-  repeated Target targets = 3;
-  repeated ColumnProto groupingKeys = 4;
-  repeated int32 resultId = 5;
+  optional LogicalNode groupbyNode = 2;
+  repeated LogicalNode subPlans = 3;
+  repeated Target targets = 4;
+  repeated ColumnProto groupingKeys = 5;
+  repeated int32 resultId = 6;
+  repeated EvalTree aggFunctions = 7;
 }
 
 message SortNode {

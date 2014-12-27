@@ -100,7 +100,7 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
 
     numGroupingColumns = plan.getGroupingColumns().length;
 
-    List<GroupbyNode> groupbyNodes = plan.getGroupByNodes();
+    List<GroupbyNode> groupbyNodes = plan.getSubPlans();
 
     // Finding distinct group by column index.
     Set<Integer> groupingKeyIndexSet = new HashSet<Integer>();

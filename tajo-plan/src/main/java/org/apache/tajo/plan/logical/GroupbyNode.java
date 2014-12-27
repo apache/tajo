@@ -28,13 +28,10 @@ import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.util.TUtil;
 
 public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
-  private static final Column [] EMPTY_GROUPING_KEYS = new Column[] {};
-  public static final AggregationFunctionCallEval [] EMPTY_AGG_FUNCS = new AggregationFunctionCallEval[] {};
-
-	/** Grouping key sets */
-  @Expose private Column [] groupingKeys = EMPTY_GROUPING_KEYS;
+  /** Grouping key sets */
+  @Expose private Column [] groupingKeys = PlannerUtil.EMPTY_COLUMNS;
   /** Aggregation Functions */
-  @Expose private AggregationFunctionCallEval [] aggrFunctions = EMPTY_AGG_FUNCS;
+  @Expose private AggregationFunctionCallEval [] aggrFunctions = PlannerUtil.EMPTY_AGG_FUNCS;
   /**
    * It's a list of targets. The grouping columns should be followed by aggregation functions.
    * aggrFunctions keep actual aggregation functions, but it only contains field references.

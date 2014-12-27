@@ -20,13 +20,9 @@ package org.apache.tajo.plan.serder;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.sun.tools.javac.util.Name;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.algebra.DropTable;
-import org.apache.tajo.algebra.Insert;
 import org.apache.tajo.algebra.JoinType;
-import org.apache.tajo.algebra.TruncateTable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
@@ -39,7 +35,9 @@ import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.FieldEval;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.TUtil;
 
 import java.util.*;
 
@@ -96,6 +94,9 @@ public class LogicalNodeTreeDeserializer {
         break;
       case GROUP_BY:
         current = convertGroupby(context, nodeMap, protoNode);
+        break;
+      case DISTINCT_GROUP_BY:
+        current = convertDistinctGroupby(context, nodeMap, protoNode);
         break;
       case SELECTION:
         current = convertFilter(context, nodeMap, protoNode);
@@ -241,15 +242,62 @@ public class LogicalNodeTreeDeserializer {
 
     GroupbyNode groupby = new GroupbyNode(protoNode.getPid());
     groupby.setChild(nodeMap.get(groupbyProto.getChildId()));
-    groupby.setInSchema(convertSchema(protoNode.getInSchema()));
-    groupby.setOutSchema(convertSchema(protoNode.getOutSchema()));
-    if (groupbyProto.getAggFunctionsCount() > 0) {
+
+    if (groupbyProto.getGroupingKeysCount() > 0) {
       groupby.setGroupingColumns(convertColumns(groupbyProto.getGroupingKeysList()));
     }
     if (groupbyProto.getAggFunctionsCount() > 0) {
       groupby.setAggFunctions(convertAggFuncCallEvals(context, groupbyProto.getAggFunctionsList()));
     }
+    if (groupbyProto.getTargetsCount() > 0) {
+      groupby.setTargets(convertTargets(context, groupbyProto.getTargetsList()));
+    }
+
+    groupby.setInSchema(convertSchema(protoNode.getInSchema()));
+    groupby.setOutSchema(convertSchema(protoNode.getOutSchema()));
+
     return groupby;
+  }
+
+  public static DistinctGroupbyNode convertDistinctGroupby(OverridableConf context, Map<Integer, LogicalNode> nodeMap,
+                                           PlanProto.LogicalNode protoNode) {
+    PlanProto.DistinctGroupbyNode distinctGroupbyProto = protoNode.getDistinctGroupby();
+
+    DistinctGroupbyNode distinctGroupby = new DistinctGroupbyNode(protoNode.getPid());
+    distinctGroupby.setChild(nodeMap.get(distinctGroupbyProto.getChildId()));
+
+    if (distinctGroupbyProto.hasGroupbyNode()) {
+      distinctGroupby.setGroupbyPlan(convertGroupby(context, nodeMap, distinctGroupbyProto.getGroupbyNode()));
+    }
+
+    if (distinctGroupbyProto.getSubPlansCount() > 0) {
+      List<GroupbyNode> subPlans = TUtil.newList();
+      for (int i = 0; i < distinctGroupbyProto.getSubPlansCount(); i++) {
+        subPlans.add(convertGroupby(context, nodeMap, distinctGroupbyProto.getSubPlans(i)));
+      }
+      distinctGroupby.setSubPlans(subPlans);
+    }
+
+    if (distinctGroupbyProto.getGroupingKeysCount() > 0) {
+      distinctGroupby.setGroupingColumns(convertColumns(distinctGroupbyProto.getGroupingKeysList()));
+    }
+    if (distinctGroupbyProto.getAggFunctionsCount() > 0) {
+      distinctGroupby.setAggFunctions(convertAggFuncCallEvals(context, distinctGroupbyProto.getAggFunctionsList()));
+    }
+    if (distinctGroupbyProto.getTargetsCount() > 0) {
+      distinctGroupby.setTargets(convertTargets(context, distinctGroupbyProto.getTargetsList()));
+    }
+    int [] resultColumnIds = new int[distinctGroupbyProto.getResultIdCount()];
+    for (int i = 0; i < distinctGroupbyProto.getResultIdCount(); i++) {
+      resultColumnIds[i] = distinctGroupbyProto.getResultId(i);
+    }
+    distinctGroupby.setResultColumnIds(resultColumnIds);
+
+    // TODO - in distinct groupby, output and target are not matched to each other. It does not follow the convention.
+    distinctGroupby.setInSchema(convertSchema(protoNode.getInSchema()));
+    distinctGroupby.setOutSchema(convertSchema(protoNode.getOutSchema()));
+
+    return distinctGroupby;
   }
 
   public static JoinNode convertJoin(OverridableConf context, Map<Integer, LogicalNode> nodeMap,
@@ -307,9 +355,16 @@ public class LogicalNodeTreeDeserializer {
       scan.init(new TableDesc(scanProto.getTable()));
     }
 
-    if (scanProto.getTargetsCount() > 0) {
+    if (scanProto.getExistTargets()) {
       scan.setTargets(convertTargets(context, scanProto.getTargetsList()));
     }
+
+    if (scanProto.hasQual()) {
+      scan.setQual(EvalTreeProtoDeserializer.deserialize(context, scanProto.getQual()));
+    }
+
+    scan.setInSchema(convertSchema(protoNode.getInSchema()));
+    scan.setOutSchema(convertSchema(protoNode.getOutSchema()));
 
     return scan;
   }
@@ -320,9 +375,11 @@ public class LogicalNodeTreeDeserializer {
     PlanProto.TableSubQueryNode proto = protoNode.getTableSubQuery();
 
     TableSubQueryNode tableSubQuery = new TableSubQueryNode(protoNode.getPid());
+    tableSubQuery.init(proto.getTableName(), nodeMap.get(proto.getChildId()));
     tableSubQuery.setInSchema(convertSchema(protoNode.getInSchema()));
-    tableSubQuery.setSubQuery(nodeMap.get(proto.getChildId()));
-    tableSubQuery.setTargets(convertTargets(context, proto.getTargetsList()));
+    if (proto.getTargetsCount() > 0) {
+      tableSubQuery.setTargets(convertTargets(context, proto.getTargetsList()));
+    }
 
     return tableSubQuery;
   }

@@ -134,6 +134,10 @@ public class EvalTreeProtoSerializer
     binaryBuilder.setLhsId(childIds[0]);
     binaryBuilder.setRhsId(childIds[1]);
 
+    if (binary instanceof InEval) {
+      binaryBuilder.setNegative(((InEval)binary).isNot());
+    }
+
     // registering itself and building EvalNode
     PlanProto.EvalNode.Builder builder = createEvalBuilder(context, binary);
     builder.setBinary(binaryBuilder);

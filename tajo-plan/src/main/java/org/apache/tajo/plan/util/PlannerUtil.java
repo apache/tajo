@@ -26,10 +26,8 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
@@ -47,6 +45,10 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType.CSV;
 import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType.TEXTFILE;
 
 public class PlannerUtil {
+
+  public static final Column [] EMPTY_COLUMNS = new Column[] {};
+  public static final Target [] EMPTY_TARGETS = new Target[] {};
+  public static final AggregationFunctionCallEval [] EMPTY_AGG_FUNCS = new AggregationFunctionCallEval[] {};
 
   public static boolean checkIfSetSession(LogicalNode node) {
     LogicalNode baseNode = node;
@@ -698,7 +700,7 @@ public class PlannerUtil {
         copy.setPID(plan.newPID());
         if (node instanceof DistinctGroupbyNode) {
           DistinctGroupbyNode dNode = (DistinctGroupbyNode)copy;
-          for (GroupbyNode eachNode: dNode.getGroupByNodes()) {
+          for (GroupbyNode eachNode: dNode.getSubPlans()) {
             eachNode.setPID(plan.newPID());
           }
         }

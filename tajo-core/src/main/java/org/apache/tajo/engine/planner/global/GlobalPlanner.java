@@ -171,9 +171,11 @@ public class GlobalPlanner {
     while (cursor.hasNext()) {
       ExecutionBlock eb = cursor.nextBlock();
       LogicalNode node = eb.getPlan();
-      PlanProto.LogicalNodeTree tree = LogicalNodeTreeSerializer.serialize(node);
-      LogicalNode deserialize = LogicalNodeTreeDeserializer.deserialize(masterPlan.getContext(), tree);
-      assert node.deepEquals(deserialize);
+      if (node != null) {
+        PlanProto.LogicalNodeTree tree = LogicalNodeTreeSerializer.serialize(node);
+        LogicalNode deserialize = LogicalNodeTreeDeserializer.deserialize(masterPlan.getContext(), tree);
+        assert node.deepEquals(deserialize);
+      }
     }
   }
 

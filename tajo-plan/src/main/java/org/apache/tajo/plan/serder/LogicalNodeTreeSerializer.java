@@ -34,6 +34,7 @@ import org.apache.tajo.plan.serder.PlanProto.AlterTableNode.RenameTable;
 import org.apache.tajo.plan.serder.PlanProto.AlterTablespaceNode.SetLocation;
 import org.apache.tajo.plan.serder.PlanProto.LogicalNodeTree;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
+import org.apache.tajo.util.TUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -237,28 +238,75 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
   }
 
   public LogicalNode visitGroupBy(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                  GroupbyNode groupbyNode, Stack<LogicalNode> stack) throws PlanningException {
-    super.visitGroupBy(context, plan, block, groupbyNode, new Stack<LogicalNode>());
+                                  GroupbyNode node, Stack<LogicalNode> stack) throws PlanningException {
+    super.visitGroupBy(context, plan, block, node, new Stack<LogicalNode>());
 
-    int [] childIds = registerGetChildIds(context, groupbyNode);
+    PlanProto.LogicalNode.Builder nodeBuilder = convertGroupby(context, node);
+    context.treeBuilder.addNodes(nodeBuilder);
+    return node;
+  }
+
+  private PlanProto.LogicalNode.Builder convertGroupby(SerializeContext context, GroupbyNode node)
+      throws PlanningException {
+    int [] childIds = registerGetChildIds(context, node);
 
     PlanProto.GroupbyNode.Builder groupbyBuilder = PlanProto.GroupbyNode.newBuilder();
     groupbyBuilder.setChildId(childIds[0]);
 
-    if (groupbyNode.groupingKeyNum() > 0) {
+    if (node.groupingKeyNum() > 0) {
       groupbyBuilder.addAllGroupingKeys(
-          LogicalNodeTreeSerializer.<CatalogProtos.ColumnProto>toProtoObjects(groupbyNode.getGroupingColumns()));
+          LogicalNodeTreeSerializer.<CatalogProtos.ColumnProto>toProtoObjects(node.getGroupingColumns()));
     }
-    if (groupbyNode.hasAggFunctions()) {
+    if (node.hasAggFunctions()) {
       groupbyBuilder.addAllAggFunctions(
-          LogicalNodeTreeSerializer.<PlanProto.EvalTree>toProtoObjects(groupbyNode.getAggFunctions()));
+          LogicalNodeTreeSerializer.<PlanProto.EvalTree>toProtoObjects(node.getAggFunctions()));
+    }
+    if (node.hasTargets()) {
+      groupbyBuilder.addAllTargets(LogicalNodeTreeSerializer.<PlanProto.Target>toProtoObjects(node.getTargets()));
     }
 
-    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, groupbyNode);
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
     nodeBuilder.setGroupby(groupbyBuilder);
+
+    return nodeBuilder;
+  }
+
+  public LogicalNode visitDistinctGroupby(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                          DistinctGroupbyNode node, Stack<LogicalNode> stack) throws PlanningException {
+    super.visitDistinctGroupby(context, plan, block, node, new Stack<LogicalNode>());
+
+    int [] childIds = registerGetChildIds(context, node);
+
+    PlanProto.DistinctGroupbyNode.Builder distGroupbyBuilder = PlanProto.DistinctGroupbyNode.newBuilder();
+    distGroupbyBuilder.setChildId(childIds[0]);
+    if (node.getGroupbyPlan() != null) {
+      distGroupbyBuilder.setGroupbyNode(convertGroupby(context, node.getGroupbyPlan()));
+    }
+
+    for (GroupbyNode subPlan : node.getSubPlans()) {
+      distGroupbyBuilder.addSubPlans(convertGroupby(context, subPlan));
+    }
+
+    if (node.getGroupingColumns().length > 0) {
+      distGroupbyBuilder.addAllGroupingKeys(
+          LogicalNodeTreeSerializer.<CatalogProtos.ColumnProto>toProtoObjects(node.getGroupingColumns()));
+    }
+    if (node.getAggFunctions().length > 0) {
+      distGroupbyBuilder.addAllAggFunctions(
+          LogicalNodeTreeSerializer.<PlanProto.EvalTree>toProtoObjects(node.getAggFunctions()));
+    }
+    if (node.hasTargets()) {
+      distGroupbyBuilder.addAllTargets(LogicalNodeTreeSerializer.<PlanProto.Target>toProtoObjects(node.getTargets()));
+    }
+    for (int cid : node.getResultColumnIds()) {
+      distGroupbyBuilder.addResultId(cid);
+    }
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
+    nodeBuilder.setDistinctGroupby(distGroupbyBuilder);
     context.treeBuilder.addNodes(nodeBuilder);
 
-    return groupbyNode;
+    return node;
   }
 
   @Override
@@ -334,7 +382,10 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     }
 
     if (scan.hasTargets()) {
+      scanBuilder.setExistTargets(true);
       scanBuilder.addAllTargets(LogicalNodeTreeSerializer.<PlanProto.Target>toProtoObjects(scan.getTargets()));
+    } else {
+      scanBuilder.setExistTargets(false);
     }
 
     if (scan.hasQual()) {

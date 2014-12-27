@@ -1090,7 +1090,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     if (phase == 3) {
       sortSpecs.add(new SortSpec(distinctNode.getTargets()[0].getNamedColumn()));
     }
-    for (GroupbyNode eachGroupbyNode: distinctNode.getGroupByNodes()) {
+    for (GroupbyNode eachGroupbyNode: distinctNode.getSubPlans()) {
       for (Column eachColumn: eachGroupbyNode.getGroupingColumns()) {
         sortSpecs.add(new SortSpec(eachColumn));
       }
@@ -1111,7 +1111,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   private PhysicalExec createSortAggregationDistinctGroupbyExec(TaskAttemptContext ctx,
       DistinctGroupbyNode distinctGroupbyNode, PhysicalExec subOp,
       DistinctGroupbyEnforcer enforcer) throws IOException {
-    List<GroupbyNode> groupbyNodes = distinctGroupbyNode.getGroupByNodes();
+    List<GroupbyNode> groupbyNodes = distinctGroupbyNode.getSubPlans();
 
     SortAggregateExec[] sortAggregateExec = new SortAggregateExec[groupbyNodes.size()];
 
