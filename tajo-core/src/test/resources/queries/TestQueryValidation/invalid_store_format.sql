@@ -1,0 +1,1 @@
+create table table1 (name text, age int) using RAW;
