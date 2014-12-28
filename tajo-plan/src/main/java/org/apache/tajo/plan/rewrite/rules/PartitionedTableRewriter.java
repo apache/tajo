@@ -23,15 +23,15 @@ import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.*;
+import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.rewrite.RewriteRule;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.*;
@@ -46,17 +46,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
-public class PartitionedTableRewriter implements RewriteRule {
+public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
   private static final Log LOG = LogFactory.getLog(PartitionedTableRewriter.class);
 
   private static final String NAME = "Partitioned Table Rewriter";
   private final Rewriter rewriter = new Rewriter();
-
-  private final TajoConf systemConf;
-
-  public PartitionedTableRewriter(TajoConf conf) {
-    systemConf = conf;
-  }
 
   @Override
   public String getName() {
@@ -64,7 +58,7 @@ public class PartitionedTableRewriter implements RewriteRule {
   }
 
   @Override
-  public boolean isEligible(LogicalPlan plan) {
+  public boolean isEligible(OverridableConf queryContext, LogicalPlan plan) {
     for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
       for (RelationNode relation : block.getRelations()) {
         if (relation.getType() == NodeType.SCAN) {
@@ -79,9 +73,9 @@ public class PartitionedTableRewriter implements RewriteRule {
   }
 
   @Override
-  public LogicalPlan rewrite(LogicalPlan plan) throws PlanningException {
+  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws PlanningException {
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
-    rewriter.visit(rootBlock, plan, rootBlock, rootBlock.getRoot(), new Stack<LogicalNode>());
+    rewriter.visit(queryContext, plan, rootBlock, rootBlock.getRoot(), new Stack<LogicalNode>());
     return plan;
   }
 
@@ -120,10 +114,11 @@ public class PartitionedTableRewriter implements RewriteRule {
    * @return
    * @throws IOException
    */
-  private Path [] findFilteredPaths(Schema partitionColumns, EvalNode [] conjunctiveForms, Path tablePath)
+  private Path [] findFilteredPaths(OverridableConf queryContext, Schema partitionColumns, EvalNode [] conjunctiveForms,
+                                    Path tablePath)
       throws IOException {
 
-    FileSystem fs = tablePath.getFileSystem(systemConf);
+    FileSystem fs = tablePath.getFileSystem(queryContext.getConf());
 
     PathFilter [] filters;
     if (conjunctiveForms == null) {
@@ -223,7 +218,7 @@ public class PartitionedTableRewriter implements RewriteRule {
     return paths;
   }
 
-  private Path [] findFilteredPartitionPaths(ScanNode scanNode) throws IOException {
+  private Path [] findFilteredPartitionPaths(OverridableConf queryContext, ScanNode scanNode) throws IOException {
     TableDesc table = scanNode.getTableDesc();
     PartitionMethodDesc partitionDesc = scanNode.getTableDesc().getPartitionMethod();
 
@@ -262,10 +257,10 @@ public class PartitionedTableRewriter implements RewriteRule {
     }
 
     if (indexablePredicateSet.size() > 0) { // There are at least one indexable predicates
-      return findFilteredPaths(paritionValuesSchema,
+      return findFilteredPaths(queryContext, paritionValuesSchema,
           indexablePredicateSet.toArray(new EvalNode[indexablePredicateSet.size()]), new Path(table.getPath()));
     } else { // otherwise, we will get all partition paths.
-      return findFilteredPaths(paritionValuesSchema, null, new Path(table.getPath()));
+      return findFilteredPaths(queryContext, paritionValuesSchema, null, new Path(table.getPath()));
     }
   }
 
@@ -314,10 +309,11 @@ public class PartitionedTableRewriter implements RewriteRule {
     }
   }
 
-  private void updateTableStat(PartitionedTableScanNode scanNode) throws PlanningException {
+  private void updateTableStat(OverridableConf queryContext, PartitionedTableScanNode scanNode)
+      throws PlanningException {
     if (scanNode.getInputPaths().length > 0) {
       try {
-        FileSystem fs = scanNode.getInputPaths()[0].getFileSystem(systemConf);
+        FileSystem fs = scanNode.getInputPaths()[0].getFileSystem(queryContext.getConf());
         long totalVolume = 0;
 
         for (Path input : scanNode.getInputPaths()) {
@@ -396,10 +392,10 @@ public class PartitionedTableRewriter implements RewriteRule {
     return sb.toString();
   }
 
-  private final class Rewriter extends BasicLogicalPlanVisitor<Object, Object> {
+  private final class Rewriter extends BasicLogicalPlanVisitor<OverridableConf, Object> {
     @Override
-    public Object visitScan(Object object, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode scanNode,
-                            Stack<LogicalNode> stack) throws PlanningException {
+    public Object visitScan(OverridableConf queryContext, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                            ScanNode scanNode, Stack<LogicalNode> stack) throws PlanningException {
 
       TableDesc table = scanNode.getTableDesc();
       if (!table.hasPartition()) {
@@ -407,11 +403,11 @@ public class PartitionedTableRewriter implements RewriteRule {
       }
 
       try {
-        Path [] filteredPaths = findFilteredPartitionPaths(scanNode);
+        Path [] filteredPaths = findFilteredPartitionPaths(queryContext, scanNode);
         plan.addHistory("PartitionTableRewriter chooses " + filteredPaths.length + " of partitions");
         PartitionedTableScanNode rewrittenScanNode = plan.createNode(PartitionedTableScanNode.class);
         rewrittenScanNode.init(scanNode, filteredPaths);
-        updateTableStat(rewrittenScanNode);
+        updateTableStat(queryContext, rewrittenScanNode);
 
         // if it is topmost node, set it as the rootnode of this block.
         if (stack.empty() || block.getRoot().equals(scanNode)) {

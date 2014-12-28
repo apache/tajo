@@ -153,10 +153,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     root.setOutSchema(topMostNode.getOutSchema());
     plan.getRootBlock().setRoot(root);
 
-    PlanProto.LogicalNodeTree serialized = LogicalNodeTreeSerializer.serialize(root);
-    LogicalNode deserialized = LogicalNodeTreeDeserializer.deserialize(queryContext, serialized);
-    assert root.deepEquals(deserialized);
-
     return plan;
   }
 

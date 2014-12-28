@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,25 +16,18 @@
  * limitations under the License.
  */
 
-// JitVecEngine -> JetVecTestServer
+package org.apache.tajo.plan.rewrite;
 
-package tajo;
-option cc_generic_services = true;
+import org.apache.tajo.OverridableConf;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.PlanningException;
 
-option java_package = "org.apache.tajo.jitvec";
-option java_outer_classname = "JitVecTestServerProtocol";
-option java_generic_services = true;
-option java_generate_equals_and_hash = true;
-
-message RequestPlan {
-  required string sql = 1;
-}
-
-message PlanResponse {
-  optional string serializedPlan = 1;
-  optional string errorMessage = 2;
-}
-
-service JitVecTestServerProtocolService {
-  rpc requestPlan(RequestPlan) returns (PlanResponse);
+public interface LogicalPlanRewriteEngine {
+  /**
+   * Rewrite a logical plan with all query rewrite rules added to this engine.
+   *
+   * @param plan The plan to be rewritten with all query rewrite rule.
+   * @return The rewritten plan.
+   */
+  LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws PlanningException;
 }

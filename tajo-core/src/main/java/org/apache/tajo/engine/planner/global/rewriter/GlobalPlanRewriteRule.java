@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,17 +16,34 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.plan.rewrite;
+package org.apache.tajo.engine.planner.global.rewriter;
 
-import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.engine.planner.global.MasterPlan;
 
-public interface QueryRewriteEngine {
+/**
+ * A rewrite rule for global plans
+ */
+public interface GlobalPlanRewriteRule {
+
   /**
-   * Rewrite a logical plan with all query rewrite rules added to this engine.
-   *
-   * @param plan The plan to be rewritten with all query rewrite rule.
-   * @return The rewritten plan.
+   * Return rule name
+   * @return Rule name
    */
-  LogicalPlan rewrite(LogicalPlan plan) throws PlanningException;
+  public abstract String getName();
+
+  /**
+   * Check if this rule should be applied.
+   *
+   * @param plan Global Plan
+   * @return
+   */
+  public abstract boolean isEligible(MasterPlan plan);
+
+  /**
+   * Rewrite a global plan
+   *
+   * @param plan Global Plan
+   * @return
+   */
+  public abstract MasterPlan rewrite(MasterPlan plan);
 }

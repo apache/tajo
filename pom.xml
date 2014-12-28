@@ -92,7 +92,6 @@
     <module>tajo-pullserver</module>
     <module>tajo-dist</module>
     <module>tajo-thirdparty/asm</module>
-    <module>tajo-jitvec-tests</module>    
   </modules>
 
   <build>

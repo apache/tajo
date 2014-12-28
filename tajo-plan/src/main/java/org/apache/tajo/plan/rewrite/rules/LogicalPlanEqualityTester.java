@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,18 +16,27 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.utils.test;
+package org.apache.tajo.plan.rewrite.rules;
 
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
+import org.apache.tajo.plan.serder.LogicalNodeTreeDeserializer;
+import org.apache.tajo.plan.serder.LogicalNodeTreeSerializer;
+import org.apache.tajo.plan.serder.PlanProto;
 
+/**
+ * It verifies the equality between the input and output of LogicalNodeTree(De)Serializer in logical planning.
+ * It is used only for testing.
+ */
 @SuppressWarnings("unused")
-public class ErrorInjectionRewriter implements LogicalPlanRewriteRule {
+public class LogicalPlanEqualityTester implements LogicalPlanRewriteRule {
+
   @Override
   public String getName() {
-    return "ErrorInjectionRewriter";
+    return "LogicalPlanEqualityTester";
   }
 
   @Override
@@ -37,6 +46,10 @@ public class ErrorInjectionRewriter implements LogicalPlanRewriteRule {
 
   @Override
   public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws PlanningException {
-    throw new NullPointerException();
+    LogicalNode root = plan.getRootBlock().getRoot();
+    PlanProto.LogicalNodeTree serialized = LogicalNodeTreeSerializer.serialize(plan.getRootBlock().getRoot());
+    LogicalNode deserialized = LogicalNodeTreeDeserializer.deserialize(queryContext, serialized);
+    assert root.deepEquals(deserialized);
+    return plan;
   }
 }

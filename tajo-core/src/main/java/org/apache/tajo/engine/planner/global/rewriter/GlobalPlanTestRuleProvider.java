@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,27 +16,29 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.utils.test;
+package org.apache.tajo.engine.planner.global.rewriter;
 
-import org.apache.tajo.OverridableConf;
-import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
-import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
+import com.google.common.collect.Lists;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.planner.global.rewriter.rules.GlobalPlanEqualityTester;
 
+import java.util.Collection;
+import java.util.List;
+
+/**
+ * It is used only for test.
+ */
 @SuppressWarnings("unused")
-public class ErrorInjectionRewriter implements LogicalPlanRewriteRule {
-  @Override
-  public String getName() {
-    return "ErrorInjectionRewriter";
+public class GlobalPlanTestRuleProvider extends BaseGlobalPlanRewriteRuleProvider {
+
+  public GlobalPlanTestRuleProvider(TajoConf conf) {
+    super(conf);
   }
 
   @Override
-  public boolean isEligible(OverridableConf queryContext, LogicalPlan plan) {
-    return true;
-  }
-
-  @Override
-  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws PlanningException {
-    throw new NullPointerException();
+  public Collection<Class<? extends GlobalPlanRewriteRule>> getRules() {
+    List<Class<? extends GlobalPlanRewriteRule>> injectedRules = Lists.newArrayList(super.getRules());
+    injectedRules.add(GlobalPlanEqualityTester.class);
+    return injectedRules;
   }
 }
