@@ -16,22 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.cli.tsql;
+package org.apache.tajo.engine.function.window;
 
-import jline.console.history.FileHistory;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 
-import java.io.File;
-import java.io.IOException;
+@Description(
+    functionName = "first_value",
+    description = "the first value of retrieved rows",
+    example = "> SELECT first_value(column) OVER ();",
+    returnType = Type.FLOAT4,
+    paramTypes = {@ParamTypes(paramTypes = {Type.FLOAT4})}
+)
+public class FirstValueFloat extends FirstValue {
 
-public class TajoFileHistory extends FileHistory {
-
-  public TajoFileHistory(File file) throws IOException {
-    super(file);
-  }
-
-  @Override
-  public void add(CharSequence item) {
-    // TODO: Filter out the quit command. Users wouldn't want it in the history.
-    super.add(item);
+  public FirstValueFloat() {
+    super(new Column[] {
+        new Column("expr", Type.FLOAT4)
+    });
   }
 }
