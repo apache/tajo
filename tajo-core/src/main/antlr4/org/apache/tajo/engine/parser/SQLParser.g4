@@ -266,6 +266,7 @@ nonreserved_keywords
   | EXTRACT
   | FILTER
   | FIRST
+  | FIRST_VALUE
   | FOLLOWING
   | FORMAT
   | FUSION
@@ -277,6 +278,7 @@ nonreserved_keywords
   | ISODOW
   | ISOYEAR
   | LAST
+  | LAST_VALUE
   | LESS
   | LIST
   | LOCATION
@@ -636,6 +638,8 @@ window_function_type
   : rank_function_type LEFT_PAREN RIGHT_PAREN
   | ROW_NUMBER LEFT_PAREN RIGHT_PAREN
   | aggregate_function
+  | FIRST_VALUE LEFT_PAREN column_reference RIGHT_PAREN
+  | LAST_VALUE LEFT_PAREN column_reference RIGHT_PAREN
   ;
 
 rank_function_type
