@@ -1570,7 +1570,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     if (child instanceof Projectable) {
-      Projectable projectionNode = insertNode.getChild();
+      Projectable projectionNode = (Projectable)insertNode.getChild();
 
       // Modifying projected columns by adding NULL constants
       // It is because that table appender does not support target columns to be written.
