@@ -337,14 +337,15 @@ public class TajoPullServerService extends AbstractService {
       if (selector != null) {
         if (selector.group() != null) {
           selector.group().shutdownGracefully();
-          selector.group().terminationFuture();
         }
         if (selector.childGroup() != null) {
           selector.childGroup().shutdownGracefully();
-          selector.childGroup().terminationFuture();
         }
       }
-      channelInitializer.destroy();
+
+      if (channelInitializer != null) {
+        channelInitializer.destroy();
+      }
 
       localFS.close();
     } catch (Throwable t) {
@@ -539,7 +540,7 @@ public class TajoPullServerService extends AbstractService {
         long offset = (offsetList != null && !offsetList.isEmpty()) ? Long.parseLong(offsetList.get(0)) : -1L;
         long length = (lengthList != null && !lengthList.isEmpty()) ? Long.parseLong(lengthList.get(0)) : -1L;
 
-        if (!shuffleType.equals("h") && !shuffleType.equals("s") && taskIdList == null) {
+        if (!shuffleType.equals("r") && !shuffleType.equals("h") && !shuffleType.equals("s") && taskIdList == null) {
           sendError(ctx, "Required taskIds", HttpResponseStatus.BAD_REQUEST);
           return;
         }

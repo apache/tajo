@@ -283,7 +283,6 @@ public class ExecutionBlockContext {
   protected void releaseShuffleChannelFactory(){
     if(loopGroup != null) {
       loopGroup.shutdownGracefully();
-      loopGroup.terminationFuture();
       loopGroup = null;
     }
   }
