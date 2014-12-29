@@ -37,6 +37,8 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
+import org.apache.tajo.master.exec.prehook.InsertIntoHook;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
@@ -158,7 +160,7 @@ public class QueryMasterTask extends CompositeService {
       dispatcher = new TajoAsyncDispatcher(queryId.toString());
       addService(dispatcher);
 
-      dispatcher.register(SubQueryEventType.class, new SubQueryEventDispatcher());
+      dispatcher.register(StageEventType.class, new StageEventDispatcher());
       dispatcher.register(TaskEventType.class, new TaskEventDispatcher());
       dispatcher.register(TaskAttemptEventType.class, new TaskAttemptEventDispatcher());
       dispatcher.register(QueryMasterQueryCompletedEvent.EventType.class, new QueryFinishEventHandler());
@@ -253,7 +255,7 @@ public class QueryMasterTask extends CompositeService {
 
   public void handleTaskRequestEvent(TaskRequestEvent event) {
     ExecutionBlockId id = event.getExecutionBlockId();
-    query.getSubQuery(id).handleTaskRequestEvent(event);
+    query.getStage(id).handleTaskRequestEvent(event);
   }
 
   public void handleTaskFailed(TajoWorkerProtocol.TaskFatalErrorReport report) {
@@ -272,13 +274,13 @@ public class QueryMasterTask extends CompositeService {
     }
   }
 
-  private class SubQueryEventDispatcher implements EventHandler<SubQueryEvent> {
-    public void handle(SubQueryEvent event) {
-      ExecutionBlockId id = event.getSubQueryId();
+  private class StageEventDispatcher implements EventHandler<StageEvent> {
+    public void handle(StageEvent event) {
+      ExecutionBlockId id = event.getStageId();
       if(LOG.isDebugEnabled()) {
-        LOG.debug("SubQueryEventDispatcher:" + id + "," + event.getType());
+        LOG.debug("StageEventDispatcher:" + id + "," + event.getType());
       }
-      query.getSubQuery(id).handle(event);
+      query.getStage(id).handle(event);
     }
   }
 
@@ -289,7 +291,7 @@ public class QueryMasterTask extends CompositeService {
       if(LOG.isDebugEnabled()) {
         LOG.debug("TaskEventDispatcher>" + taskId + "," + event.getType());
       }
-      Task task = query.getSubQuery(taskId.getExecutionBlockId()).
+      Task task = query.getStage(taskId.getExecutionBlockId()).
           getTask(taskId);
       task.handle(event);
     }
@@ -299,8 +301,8 @@ public class QueryMasterTask extends CompositeService {
       implements EventHandler<TaskAttemptEvent> {
     public void handle(TaskAttemptEvent event) {
       TaskAttemptId attemptId = event.getTaskAttemptId();
-      SubQuery subQuery = query.getSubQuery(attemptId.getTaskId().getExecutionBlockId());
-      Task task = subQuery.getTask(attemptId.getTaskId());
+      Stage stage = query.getStage(attemptId.getTaskId().getExecutionBlockId());
+      Task task = stage.getTask(attemptId.getTaskId());
       TaskAttempt attempt = task.getAttempt(attemptId);
       attempt.handle(event);
     }
@@ -309,8 +311,8 @@ public class QueryMasterTask extends CompositeService {
   private class TaskSchedulerDispatcher
       implements EventHandler<TaskSchedulerEvent> {
     public void handle(TaskSchedulerEvent event) {
-      SubQuery subQuery = query.getSubQuery(event.getExecutionBlockId());
-      subQuery.getTaskScheduler().handle(event);
+      Stage stage = query.getStage(event.getExecutionBlockId());
+      stage.getTaskScheduler().handle(event);
     }
   }
 
@@ -389,10 +391,6 @@ public class QueryMasterTask extends CompositeService {
       }
 
       optimizer.optimize(queryContext, plan);
-
-      GlobalEngine.DistributedQueryHookManager hookManager = new GlobalEngine.DistributedQueryHookManager();
-      hookManager.addHook(new GlobalEngine.InsertHook());
-      hookManager.doHooks(queryContext, plan);
 
       for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
         LogicalNode[] scanNodes = PlannerUtil.findAllNodes(block.getRoot(), NodeType.SCAN);
@@ -629,8 +627,8 @@ public class QueryMasterTask extends CompositeService {
       return dispatcher;
     }
 
-    public SubQuery getSubQuery(ExecutionBlockId id) {
-      return query.getSubQuery(id);
+    public Stage getStage(ExecutionBlockId id) {
+      return query.getStage(id);
     }
 
     public Map<String, TableDesc> getTableDescMap() {

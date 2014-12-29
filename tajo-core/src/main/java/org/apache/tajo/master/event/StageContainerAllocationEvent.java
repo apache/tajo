@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,23 +16,23 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master;
+package org.apache.tajo.master.event;
 
-/**
- * FragmentScheduleAlgorithm is used by LazyTaskScheduler.
- * FragmentScheduleAlgorithm selects a fragment for the given argument.
- *
- * There are two implementations of DefaultFragmentScheduleAlgorithm and GreedyFragmentScheduleAlgorithm.
- */
-public interface FragmentScheduleAlgorithm {
-  void addFragment(FragmentPair fragmentPair);
-  void removeFragment(FragmentPair fragmentPair);
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.master.container.TajoContainer;
 
-  FragmentPair getHostLocalFragment(String host);
-  FragmentPair getHostLocalFragment(String host, Integer diskId);
-  FragmentPair getRackLocalFragment(String host);
-  FragmentPair getRandomFragment();
-  FragmentPair[] getAllFragments();
+import java.util.List;
 
-  int size();
+public class StageContainerAllocationEvent extends StageEvent {
+  private List<TajoContainer> allocatedContainer;
+
+  public StageContainerAllocationEvent(final ExecutionBlockId id,
+                                       List<TajoContainer> allocatedContainer) {
+    super(id, StageEventType.SQ_CONTAINER_ALLOCATED);
+    this.allocatedContainer = allocatedContainer;
+  }
+
+  public List<TajoContainer> getAllocatedContainer() {
+    return this.allocatedContainer;
+  }
 }

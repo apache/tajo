@@ -5,6 +5,9 @@ Release 0.9.1 - unreleased
 
   NEW FEATURES
 
+    TAJO-920: Add FIRST_VALUE and LAST_VALUE window functions. 
+    (Keuntae Park via hyunsik)
+
     TAJO-1238: Add SET SESSION and RESET statement. (hyunsik)
 
     TAJO-1222: DelimitedTextFile should be tolerant against parsing errors.
@@ -24,8 +27,19 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
-    TAJO-1247: Store type 'TEXTFILE' should be TEXT while keeping enum 'TEXTFILE' in protobuf.
-    (DaeMyung Kang via hyunsik)
+    TAJO-1266: Too many logs when writing a parquet relation. 
+    (DaeMyung Kang via jihoon)
+
+    TAJO-1268: tajo-client module should not use UserGroupInformation. 
+    (hyunsik)
+
+    TAJO-1259: Change tsql history behavior. (Jaewoong Jung via hyunsik)
+
+    TAJO-1261: Separate query and ddl execution codes from GlobalEngine. 
+    (hyunsik)
+
+    TAJO-1247: Store type 'TEXTFILE' should be TEXT while keeping enum 
+    'TEXTFILE' in protobuf. (DaeMyung Kang via hyunsik)
 
     TAJO-1221: HA TajoClient should not connect TajoMaster at the first. 
     (jaehwa)
@@ -115,8 +129,14 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
-    TAJO-1259: A title in catalog configuration document is different from others. 
-    (Jongyoung Park via hyunsik)
+    TAJO-1249: Tajo should check if a file format given in DDL is supported.
+    (DaeMyung Kang via hyunsik)
+ 
+    TAJO-1250: RawFileAppender occasionally causes BufferOverflowException. 
+    (jinho)
+
+    TAJO-1259: A title in catalog configuration document is different from 
+    others. (Jongyoung Park via hyunsik)
 
     TAJO-1232: Implicit groupby queries with LIMIT lead to wrong results. 
     (jihoon)
@@ -213,6 +233,8 @@ Release 0.9.1 - unreleased
 
   TASKS
 
+    TAJO-1267: Remove LazyTaskScheduler. (DaeMyung Kang via jihoon)
+
     TAJO-1233: Merge hbase_storage branch to the master branch. 
     (Hyoungjun via hyunsik)
  
@@ -233,6 +255,8 @@ Release 0.9.1 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1262: Rename the prefix 'SubQuery' to 'Stage'. (hyunsik)
 
     TAJO-324: Rename the prefix 'QueryUnit' to Task. (hyunsik)
 

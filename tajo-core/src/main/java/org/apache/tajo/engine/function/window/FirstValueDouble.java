@@ -16,19 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.event;
+package org.apache.tajo.engine.function.window;
 
-import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 
-public class SubQueryDiagnosticsUpdateEvent extends SubQueryEvent {
-  private final String msg;
+@Description(
+    functionName = "first_value",
+    description = "the first value of retrieved rows",
+    example = "> SELECT first_value(column) OVER ();",
+    returnType = Type.FLOAT8,
+    paramTypes = {@ParamTypes(paramTypes = {Type.FLOAT8})}
+)
+public class FirstValueDouble extends FirstValue {
 
-  public SubQueryDiagnosticsUpdateEvent(final ExecutionBlockId id, String diagnostic) {
-    super(id, SubQueryEventType.SQ_DIAGNOSTIC_UPDATE);
-    this.msg = diagnostic;
-  }
-
-  public String getDiagnosticUpdate() {
-    return msg;
+  public FirstValueDouble() {
+    super(new Column[] {
+        new Column("expr", Type.FLOAT8)
+    });
   }
 }

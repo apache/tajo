@@ -658,7 +658,7 @@ public class TajoMasterClientService extends AbstractService {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
         QueryContext queryContext = new QueryContext(conf, session);
 
-        if (context.getGlobalEngine().createDatabase(queryContext, request.getValue(), null, false)) {
+        if (context.getGlobalEngine().getDDLExecutor().createDatabase(queryContext, request.getValue(), null, false)) {
           return BOOL_TRUE;
         } else {
           return BOOL_FALSE;
@@ -688,7 +688,7 @@ public class TajoMasterClientService extends AbstractService {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
         QueryContext queryContext = new QueryContext(conf, session);
 
-        if (context.getGlobalEngine().dropDatabase(queryContext, request.getValue(), false)) {
+        if (context.getGlobalEngine().getDDLExecutor().dropDatabase(queryContext, request.getValue(), false)) {
           return BOOL_TRUE;
         } else {
           return BOOL_FALSE;
@@ -814,7 +814,7 @@ public class TajoMasterClientService extends AbstractService {
 
         TableDesc desc;
         try {
-          desc = context.getGlobalEngine().createTable(queryContext, request.getName(),
+          desc = context.getGlobalEngine().getDDLExecutor().createTable(queryContext, request.getName(),
               meta.getStoreType(), schema,
               meta, path, true, partitionDesc, false);
         } catch (Exception e) {
@@ -843,7 +843,8 @@ public class TajoMasterClientService extends AbstractService {
         Session session = context.getSessionManager().getSession(dropTable.getSessionId().getId());
         QueryContext queryContext = new QueryContext(conf, session);
 
-        context.getGlobalEngine().dropTable(queryContext, dropTable.getName(), false, dropTable.getPurge());
+        context.getGlobalEngine().getDDLExecutor().dropTable(queryContext, dropTable.getName(), false,
+            dropTable.getPurge());
         return BOOL_TRUE;
       } catch (Throwable t) {
         throw new ServiceException(t);

@@ -16,28 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.event;
+package org.apache.tajo.engine.function.window;
 
-import org.apache.tajo.TaskId;
-import org.apache.tajo.master.TaskState;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 
-/**
- * Event Class: From Task to SubQuery
- */
-public class SubQueryTaskEvent extends SubQueryEvent {
-  private TaskId taskId;
-  private TaskState state;
-  public SubQueryTaskEvent(TaskId taskId, TaskState state) {
-    super(taskId.getExecutionBlockId(), SubQueryEventType.SQ_TASK_COMPLETED);
-    this.taskId = taskId;
-    this.state = state;
-  }
+@Description(
+    functionName = "first_value",
+    description = "the first value of retrieved rows",
+    example = "> SELECT first_value(column) OVER ();",
+    returnType = Type.FLOAT4,
+    paramTypes = {@ParamTypes(paramTypes = {Type.FLOAT4})}
+)
+public class FirstValueFloat extends FirstValue {
 
-  public TaskId getTaskId() {
-    return this.taskId;
-  }
-
-  public TaskState getState() {
-    return state;
+  public FirstValueFloat() {
+    super(new Column[] {
+        new Column("expr", Type.FLOAT4)
+    });
   }
 }
