@@ -41,15 +41,15 @@ import java.util.*;
 /**
  * It deserializes a serialized eval tree consisting of a number of EvalNodes.
  *
- * {@link EvalTreeProtoSerializer} serializes an eval tree in a postfix traverse order.
+ * {@link EvalNodeSerializer} serializes an eval tree in a postfix traverse order.
  * So, this class firstly sorts all serialized eval nodes in ascending order of their sequence IDs. Then,
  * it sequentially restores each serialized node to EvalNode instance.
  *
- * @see EvalTreeProtoSerializer
+ * @see EvalNodeSerializer
  */
-public class EvalTreeProtoDeserializer {
+public class EvalNodeDeserializer {
 
-  public static EvalNode deserialize(OverridableConf context, PlanProto.EvalTree tree) {
+  public static EvalNode deserialize(OverridableConf context, PlanProto.EvalNodeTree tree) {
     Map<Integer, EvalNode> evalNodeMap = Maps.newHashMap();
 
     // sort serialized eval nodes in an ascending order of their IDs.
@@ -202,7 +202,7 @@ public class EvalTreeProtoDeserializer {
                       convertWindowFrame(windowFuncProto.getWindowFrame()));
 
               if (windowFuncProto.getSortSpecCount() > 0) {
-                SortSpec[] sortSpecs = LogicalNodeTreeDeserializer.convertSortSpecs(windowFuncProto.getSortSpecList());
+                SortSpec[] sortSpecs = LogicalNodeDeserializer.convertSortSpecs(windowFuncProto.getSortSpecList());
                 winFunc.setSortSpecs(sortSpecs);
               }
 

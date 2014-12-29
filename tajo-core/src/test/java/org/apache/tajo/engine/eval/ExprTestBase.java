@@ -38,8 +38,8 @@ import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.serder.EvalTreeProtoDeserializer;
-import org.apache.tajo.plan.serder.EvalTreeProtoSerializer;
+import org.apache.tajo.plan.serder.EvalNodeDeserializer;
+import org.apache.tajo.plan.serder.EvalNodeSerializer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.serder.PlanProto;
@@ -320,7 +320,7 @@ public class ExprTestBase {
   }
 
   public static void assertEvalTreeProtoSerDer(OverridableConf context, EvalNode evalNode) {
-    PlanProto.EvalTree converted = EvalTreeProtoSerializer.serialize(evalNode);
-    assertEquals(evalNode, EvalTreeProtoDeserializer.deserialize(context, converted));
+    PlanProto.EvalNodeTree converted = EvalNodeSerializer.serialize(evalNode);
+    assertEquals(evalNode, EvalNodeDeserializer.deserialize(context, converted));
   }
 }

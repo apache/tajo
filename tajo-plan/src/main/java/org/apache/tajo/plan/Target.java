@@ -25,7 +25,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.FieldEval;
-import org.apache.tajo.plan.serder.LogicalNodeTreeSerializer;
+import org.apache.tajo.plan.serder.LogicalNodeSerializer;
 import org.apache.tajo.plan.serder.PlanGsonHelper;
 import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.util.TUtil;
@@ -132,6 +132,6 @@ public class Target implements Cloneable, GsonObject, ProtoObject<PlanProto.Targ
 
   @Override
   public PlanProto.Target getProto() {
-    return LogicalNodeTreeSerializer.convertTarget(this);
+    return LogicalNodeSerializer.convertTarget(this);
   }
 }

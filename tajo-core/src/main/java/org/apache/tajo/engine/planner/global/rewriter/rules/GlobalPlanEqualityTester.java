@@ -23,8 +23,8 @@ import org.apache.tajo.engine.planner.global.ExecutionBlockCursor;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRule;
 import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.plan.serder.LogicalNodeTreeDeserializer;
-import org.apache.tajo.plan.serder.LogicalNodeTreeSerializer;
+import org.apache.tajo.plan.serder.LogicalNodeDeserializer;
+import org.apache.tajo.plan.serder.LogicalNodeSerializer;
 import org.apache.tajo.plan.serder.PlanProto;
 
 /**
@@ -50,8 +50,8 @@ public class GlobalPlanEqualityTester implements GlobalPlanRewriteRule {
         ExecutionBlock eb = cursor.nextBlock();
         LogicalNode node = eb.getPlan();
         if (node != null) {
-          PlanProto.LogicalNodeTree tree = LogicalNodeTreeSerializer.serialize(node);
-          LogicalNode deserialize = LogicalNodeTreeDeserializer.deserialize(plan.getContext(), tree);
+          PlanProto.LogicalNodeTree tree = LogicalNodeSerializer.serialize(node);
+          LogicalNode deserialize = LogicalNodeDeserializer.deserialize(plan.getContext(), tree);
           assert node.deepEquals(deserialize);
         }
       }

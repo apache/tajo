@@ -42,7 +42,7 @@ import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
 import org.apache.tajo.master.querymaster.Stage;
 import org.apache.tajo.master.querymaster.Task;
 import org.apache.tajo.master.querymaster.TaskAttempt;
-import org.apache.tajo.plan.serder.LogicalNodeTreeSerializer;
+import org.apache.tajo.plan.serder.LogicalNodeSerializer;
 import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -840,7 +840,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               new ArrayList<FragmentProto>(task.getAllFragments()),
               "",
               false,
-              LogicalNodeTreeSerializer.serialize(task.getLogicalPlan()),
+              LogicalNodeSerializer.serialize(task.getLogicalPlan()),
               context.getMasterContext().getQueryContext(),
               stage.getDataChannel(), stage.getBlock().getEnforcer());
           if (checkIfInterQuery(stage.getMasterPlan(), stage.getBlock())) {
@@ -896,7 +896,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               Lists.newArrayList(task.getAllFragments()),
               "",
               false,
-              LogicalNodeTreeSerializer.serialize(task.getLogicalPlan()),
+              LogicalNodeSerializer.serialize(task.getLogicalPlan()),
               context.getMasterContext().getQueryContext(),
               stage.getDataChannel(),
               stage.getBlock().getEnforcer());

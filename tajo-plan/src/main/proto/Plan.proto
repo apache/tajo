@@ -103,7 +103,7 @@ message ScanNode {
   optional string alias = 2;
   required bool existTargets = 3;
   repeated Target targets = 4;
-  optional EvalTree qual = 5;
+  optional EvalNodeTree qual = 5;
 }
 
 message PartitionScanSpec {
@@ -112,14 +112,14 @@ message PartitionScanSpec {
 
 message FilterNode {
   required int32 childId = 1;
-  required EvalTree qual = 2;
+  required EvalNodeTree qual = 2;
 }
 
 message JoinNode {
   required int32 leftChildId = 1;
   required int32 rightChildId = 2;
   required JoinType joinType = 3;
-  optional EvalTree joinQual = 4;
+  optional EvalNodeTree joinQual = 4;
   required bool existsTargets = 5;
   repeated Target targets = 6;
 }
@@ -128,7 +128,7 @@ message GroupbyNode {
   required int32 childId = 1;
   required bool distinct = 2;
   repeated ColumnProto groupingKeys = 3;
-  repeated EvalTree aggFunctions = 4;
+  repeated EvalNodeTree aggFunctions = 4;
   repeated Target targets = 5;
 }
 
@@ -139,7 +139,7 @@ message DistinctGroupbyNode {
   repeated Target targets = 4;
   repeated ColumnProto groupingKeys = 5;
   repeated int32 resultId = 6;
-  repeated EvalTree aggFunctions = 7;
+  repeated EvalNodeTree aggFunctions = 7;
 }
 
 message SortNode {
@@ -156,7 +156,7 @@ message WindowAggNode {
   required int32 childId = 1;
   repeated ColumnProto partitionKeys = 2;
   repeated SortSpecProto sortSpecs = 3;
-  repeated EvalTree windowFunctions = 4;
+  repeated EvalNodeTree windowFunctions = 4;
   required bool  distinct = 5; // if distinct aggregation function is included in window function
   repeated Target targets = 6;
 }
@@ -193,7 +193,7 @@ message SetSessionNode {
 }
 
 message Target {
-  required EvalTree expr = 1;
+  required EvalNodeTree expr = 1;
   optional string alias = 2;
 }
 
@@ -348,7 +348,7 @@ enum EvalType {
   CONST = 33;
 }
 
-message EvalTree {
+message EvalNodeTree {
   repeated EvalNode nodes = 1;
 }
 
@@ -451,12 +451,12 @@ message WinFunctionEvalSpec {
 
   message WindowStartBound {
     required WindowFrameStartBoundType boundType = 1;
-    optional EvalTree number = 2;
+    optional EvalNodeTree number = 2;
   }
 
   message WindowEndBound {
     required WindowFrameEndBoundType boundType = 1;
-    optional EvalTree number = 2;
+    optional EvalNodeTree number = 2;
   }
 
   repeated SortSpecProto sortSpec = 1;

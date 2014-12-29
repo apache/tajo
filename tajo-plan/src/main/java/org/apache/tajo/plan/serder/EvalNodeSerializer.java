@@ -40,24 +40,24 @@ import java.util.Stack;
  * in a postfix traverse order. The postfix traverse order guarantees that all child nodes of some node N
  * were already visited when the node N is visited. This manner makes tree serialization possible in a simple logic.
  */
-public class EvalTreeProtoSerializer
-    extends SimpleEvalNodeVisitor<EvalTreeProtoSerializer.EvalTreeProtoBuilderContext> {
+public class EvalNodeSerializer
+    extends SimpleEvalNodeVisitor<EvalNodeSerializer.EvalTreeProtoBuilderContext> {
 
-  private static final EvalTreeProtoSerializer instance;
+  private static final EvalNodeSerializer instance;
 
   static {
-    instance = new EvalTreeProtoSerializer();
+    instance = new EvalNodeSerializer();
   }
 
   public static class EvalTreeProtoBuilderContext {
     private int seqId = 0;
     private Map<EvalNode, Integer> idMap = Maps.newHashMap();
-    private PlanProto.EvalTree.Builder treeBuilder = PlanProto.EvalTree.newBuilder();
+    private PlanProto.EvalNodeTree.Builder treeBuilder = PlanProto.EvalNodeTree.newBuilder();
   }
 
-  public static PlanProto.EvalTree serialize(EvalNode evalNode) {
-    EvalTreeProtoSerializer.EvalTreeProtoBuilderContext context =
-        new EvalTreeProtoSerializer.EvalTreeProtoBuilderContext();
+  public static PlanProto.EvalNodeTree serialize(EvalNode evalNode) {
+    EvalNodeSerializer.EvalTreeProtoBuilderContext context =
+        new EvalNodeSerializer.EvalTreeProtoBuilderContext();
     instance.visit(context, evalNode, new Stack<EvalNode>());
     return context.treeBuilder.build();
   }

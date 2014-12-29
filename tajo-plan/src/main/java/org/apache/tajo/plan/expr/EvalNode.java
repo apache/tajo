@@ -24,7 +24,7 @@ import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.json.GsonObject;
-import org.apache.tajo.plan.serder.EvalTreeProtoSerializer;
+import org.apache.tajo.plan.serder.EvalNodeSerializer;
 import org.apache.tajo.plan.serder.PlanGsonHelper;
 import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.storage.Tuple;
@@ -33,7 +33,7 @@ import org.apache.tajo.storage.Tuple;
  * An annotated expression which includes actual data domains.
  * It is also used for evaluation.
  */
-public abstract class EvalNode implements Cloneable, GsonObject, ProtoObject<PlanProto.EvalTree> {
+public abstract class EvalNode implements Cloneable, GsonObject, ProtoObject<PlanProto.EvalNodeTree> {
 	@Expose protected EvalType type;
 
   public EvalNode() {
@@ -76,7 +76,7 @@ public abstract class EvalNode implements Cloneable, GsonObject, ProtoObject<Pla
   }
 
   @Override
-  public PlanProto.EvalTree getProto() {
-    return EvalTreeProtoSerializer.serialize(this);
+  public PlanProto.EvalNodeTree getProto() {
+    return EvalNodeSerializer.serialize(this);
   }
 }

@@ -40,15 +40,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
-public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNodeTreeSerializer.SerializeContext,
+/**
+ * It serializes a logical plan into a protobuf-based serialized bytes.
+ *
+ * In detail, it traverses all logical nodes in a postfix order.
+ * For each visiting node, it serializes the node and adds the serialized bytes into a list.
+ * Then, a list will contains a list of serialized nodes in a postfix order.
+ *
+ * @see org.apache.tajo.plan.serder.LogicalNodeDeserializer
+ */
+public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSerializer.SerializeContext,
     LogicalNode> {
 
-  private static final LogicalNodeTreeSerializer instance;
+  private static final LogicalNodeSerializer instance;
 
   static {
-    instance = new LogicalNodeTreeSerializer();
+    instance = new LogicalNodeSerializer();
   }
 
+  /**
+   * Serialize a logical plan into a protobuf-based serialized bytes.
+   *
+   * @param node LogicalNode to be serialized
+   * @return A list of serialized nodes
+   */
   public static LogicalNodeTree serialize(LogicalNode node) {
     SerializeContext context = new SerializeContext();
     try {
@@ -59,7 +74,7 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     return context.treeBuilder.build();
   }
 
-  public static PlanProto.LogicalNode.Builder createNodeBuilder(SerializeContext context, LogicalNode node) {
+  private static PlanProto.LogicalNode.Builder createNodeBuilder(SerializeContext context, LogicalNode node) {
     int selfId;
     if (context.idMap.containsKey(node)) {
       selfId = context.idMap.get(node);
@@ -189,7 +204,7 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
 
     if (windowAgg.hasAggFunctions()) {
       windowAggBuilder.addAllWindowFunctions(
-          ProtoUtil.<PlanProto.EvalTree>toProtoObjects(windowAgg.getWindowFunctions()));
+          ProtoUtil.<PlanProto.EvalNodeTree>toProtoObjects(windowAgg.getWindowFunctions()));
     }
     windowAggBuilder.setDistinct(windowAgg.isDistinct());
 
@@ -238,7 +253,7 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
 
     PlanProto.FilterNode.Builder filterBuilder = PlanProto.FilterNode.newBuilder();
     filterBuilder.setChildId(childIds[0]);
-    filterBuilder.setQual(EvalTreeProtoSerializer.serialize(having.getQual()));
+    filterBuilder.setQual(EvalNodeSerializer.serialize(having.getQual()));
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, having);
     nodeBuilder.setFilter(filterBuilder);
@@ -270,7 +285,7 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     }
     if (node.hasAggFunctions()) {
       groupbyBuilder.addAllAggFunctions(
-          ProtoUtil.<PlanProto.EvalTree>toProtoObjects(node.getAggFunctions()));
+          ProtoUtil.<PlanProto.EvalNodeTree>toProtoObjects(node.getAggFunctions()));
     }
     if (node.hasTargets()) {
       groupbyBuilder.addAllTargets(ProtoUtil.<PlanProto.Target>toProtoObjects(node.getTargets()));
@@ -304,7 +319,7 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     }
     if (node.getAggFunctions().length > 0) {
       distGroupbyBuilder.addAllAggFunctions(
-          ProtoUtil.<PlanProto.EvalTree>toProtoObjects(node.getAggFunctions()));
+          ProtoUtil.<PlanProto.EvalNodeTree>toProtoObjects(node.getAggFunctions()));
     }
     if (node.hasTargets()) {
       distGroupbyBuilder.addAllTargets(ProtoUtil.<PlanProto.Target>toProtoObjects(node.getTargets()));
@@ -329,7 +344,7 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
 
     PlanProto.FilterNode.Builder filterBuilder = PlanProto.FilterNode.newBuilder();
     filterBuilder.setChildId(childIds[0]);
-    filterBuilder.setQual(EvalTreeProtoSerializer.serialize(filter.getQual()));
+    filterBuilder.setQual(EvalNodeSerializer.serialize(filter.getQual()));
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, filter);
     nodeBuilder.setFilter(filterBuilder);
@@ -350,7 +365,7 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     joinBuilder.setLeftChildId(childIds[0]);
     joinBuilder.setRightChildId(childIds[1]);
     if (join.hasJoinQual()) {
-      joinBuilder.setJoinQual(EvalTreeProtoSerializer.serialize(join.getJoinQual()));
+      joinBuilder.setJoinQual(EvalNodeSerializer.serialize(join.getJoinQual()));
     }
 
     if (join.hasTargets()) {
@@ -414,7 +429,7 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
     }
 
     if (scan.hasQual()) {
-      scanBuilder.setQual(EvalTreeProtoSerializer.serialize(scan.getQual()));
+      scanBuilder.setQual(EvalNodeSerializer.serialize(scan.getQual()));
     }
     return scanBuilder;
   }
@@ -688,7 +703,7 @@ public class LogicalNodeTreeSerializer extends BasicLogicalPlanVisitor<LogicalNo
 
   public static PlanProto.Target convertTarget(Target target) {
     PlanProto.Target.Builder targetBuilder = PlanProto.Target.newBuilder();
-    targetBuilder.setExpr(EvalTreeProtoSerializer.serialize(target.getEvalTree()));
+    targetBuilder.setExpr(EvalNodeSerializer.serialize(target.getEvalTree()));
     if (target.hasAlias()) {
       targetBuilder.setAlias(target.getAlias());
     }
