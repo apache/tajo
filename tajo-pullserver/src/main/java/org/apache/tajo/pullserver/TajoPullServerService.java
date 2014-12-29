@@ -500,7 +500,7 @@ public class TajoPullServerService extends AbstractService {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg)
-        throws Exception {
+            throws Exception {
 
       if (msg instanceof HttpRequest) {
         HttpRequest request = (HttpRequest) msg;
@@ -541,6 +541,7 @@ public class TajoPullServerService extends AbstractService {
 
         if (!shuffleType.equals("h") && !shuffleType.equals("s") && taskIdList == null) {
           sendError(ctx, "Required taskIds", HttpResponseStatus.BAD_REQUEST);
+          return;
         }
 
         List<String> taskIds = splitMaps(taskIdList);
@@ -549,7 +550,7 @@ public class TajoPullServerService extends AbstractService {
 
         if (LOG.isDebugEnabled()) {
           LOG.debug("PullServer request param: shuffleType=" + shuffleType + ", sid=" + sid + ", partId=" + partId
-              + ", taskIds=" + taskIdList);
+                  + ", taskIds=" + taskIdList);
 
           // the working dir of tajo worker for each query
           LOG.debug("PullServer baseDir: " + conf.get(ConfVars.WORKER_TEMPORAL_DIR.varname) + "/" + queryBaseDir);
@@ -557,19 +558,20 @@ public class TajoPullServerService extends AbstractService {
 
         final List<FileChunk> chunks = Lists.newArrayList();
 
-      // if a stage requires a range shuffle
-      if (shuffleType.equals("r")) {
-        String ta = taskIds.get(0);
-        if(!lDirAlloc.ifExists(queryBaseDir + "/" + sid + "/" + ta + "/output/", conf)){
-          LOG.warn(e);
-          sendError(ctx, NO_CONTENT);
-          return;
-        }
-        Path path = localFS.makeQualified(
-            lDirAlloc.getLocalPathToRead(queryBaseDir + "/" + sid + "/" + ta + "/output/", conf));
-        String startKey = params.get("start").get(0);
-        String endKey = params.get("end").get(0);
-        boolean last = params.get("final") != null;
+        // if a stage requires a range shuffle
+        if (shuffleType.equals("r")) {
+          String ta = taskIds.get(0);
+          String pathString = queryBaseDir + "/" + sid + "/" + ta + "/output/";
+          if (!lDirAlloc.ifExists(pathString, conf)) {
+            LOG.warn(pathString + "does not exist.");
+            sendError(ctx, HttpResponseStatus.NO_CONTENT);
+            return;
+          }
+          Path path = localFS.makeQualified(
+                  lDirAlloc.getLocalPathToRead(queryBaseDir + "/" + sid + "/" + ta + "/output/", conf));
+          String startKey = params.get("start").get(0);
+          String endKey = params.get("end").get(0);
+          boolean last = params.get("final") != null;
 
           FileChunk chunk;
           try {
@@ -583,15 +585,15 @@ public class TajoPullServerService extends AbstractService {
             chunks.add(chunk);
           }
 
-        // if a stage requires a hash shuffle or a scattered hash shuffle
-      } else if (shuffleType.equals("h") || shuffleType.equals("s")) {
-        int partParentId = HashShuffleAppenderManager.getPartParentId(Integer.parseInt(partId), (TajoConf) conf);
-        String partPath = queryBaseDir + "/" + sid + "/hash-shuffle/" + partParentId + "/" + partId;
-        if (!lDirAlloc.ifExists(partPath, conf)) {
-          LOG.warn("Partition shuffle file not exists: " + partPath);
-          sendError(ctx, NO_CONTENT);
-          return;
-        }
+          // if a stage requires a hash shuffle or a scattered hash shuffle
+        } else if (shuffleType.equals("h") || shuffleType.equals("s")) {
+          int partParentId = HashShuffleAppenderManager.getPartParentId(Integer.parseInt(partId), (TajoConf) conf);
+          String partPath = queryBaseDir + "/" + sid + "/hash-shuffle/" + partParentId + "/" + partId;
+          if (!lDirAlloc.ifExists(partPath, conf)) {
+            LOG.warn("Partition shuffle file not exists: " + partPath);
+            sendError(ctx, HttpResponseStatus.NO_CONTENT);
+            return;
+          }
 
           Path path = localFS.makeQualified(lDirAlloc.getLocalPathToRead(partPath, conf));
 

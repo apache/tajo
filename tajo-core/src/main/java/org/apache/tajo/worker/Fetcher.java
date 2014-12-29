@@ -149,12 +149,12 @@ public class Fetcher {
     this.state = TajoProtos.FetcherState.FETCH_FETCHING;
     ChannelFuture future = null;
     try {
-      future = bootstrap.clone().connect(new InetSocketAddress(host, port));
+      future = bootstrap.clone().connect(new InetSocketAddress(host, port))
+              .addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
 
       // Wait until the connection attempt succeeds or fails.
       Channel channel = future.awaitUninterruptibly().channel();
       if (!future.isSuccess()) {
-        future.channel().close();
         state = TajoProtos.FetcherState.FETCH_FAILED;
         throw new IOException(future.cause());
       }
@@ -262,7 +262,9 @@ public class Fetcher {
             
             IOUtils.cleanup(LOG, fc, raf);
             finishTime = System.currentTimeMillis();
-            state = TajoProtos.FetcherState.FETCH_FINISHED;
+            if (state != TajoProtos.FetcherState.FETCH_FAILED) {
+              state = TajoProtos.FetcherState.FETCH_FINISHED;
+            }
           }
         }
       } catch(Exception e) {

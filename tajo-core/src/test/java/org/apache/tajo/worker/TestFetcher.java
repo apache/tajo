@@ -29,9 +29,7 @@ import org.apache.tajo.pullserver.retriever.FileChunk;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.util.CommonTestingUtil;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 import io.netty.channel.EventLoopGroup;
 
@@ -48,7 +46,12 @@ public class TestFetcher {
   private String OUTPUT_DIR = TEST_DATA+"/out/";
   private TajoConf conf = new TajoConf();
   private TajoPullServerService pullServerService;
-  private EventLoopGroup loopGroup;
+  private static EventLoopGroup loopGroup;
+
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    loopGroup = RpcChannelFactory.createClientEventloopGroup("Fetcher", 2);
+  }
 
   @Before
   public void setUp() throws Exception {
@@ -62,17 +65,18 @@ public class TestFetcher {
     pullServerService = new TajoPullServerService();
     pullServerService.init(conf);
     pullServerService.start();
+  }
 
-    loopGroup = RpcChannelFactory.createClientEventloopGroup("Fetcher", 1);
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    if (loopGroup != null) {
+      loopGroup.shutdownGracefully();
+    }
   }
 
   @After
   public void tearDown(){
     pullServerService.stop();
-    if (loopGroup != null) {
-      loopGroup.shutdownGracefully();
-      loopGroup.terminationFuture();
-    }
   }
 
   @Test
