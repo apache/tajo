@@ -70,7 +70,7 @@ message TaskRequestProto {
     repeated FragmentProto fragments = 2;
     required string outputTable = 3;
     required bool clusteredOutput = 4;
-    required string serializedData = 5;
+    required LogicalNodeTree plan = 5;
     optional bool interQuery = 6 [default = false];
     repeated FetchProto fetches = 7;
     optional bool shouldDie = 8;

@@ -281,6 +281,7 @@ public class LogicalNodeTreeDeserializer {
 
     GroupbyNode groupby = new GroupbyNode(protoNode.getPid());
     groupby.setChild(nodeMap.get(groupbyProto.getChildId()));
+    groupby.setDistinct(groupbyProto.getDistinct());
 
     if (groupbyProto.getGroupingKeysCount() > 0) {
       groupby.setGroupingColumns(convertColumns(groupbyProto.getGroupingKeysList()));

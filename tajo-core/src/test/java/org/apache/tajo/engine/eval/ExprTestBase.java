@@ -144,7 +144,7 @@ public class ExprTestBase {
       assertFalse(state.getErrorMessages().get(0), true);
     }
     LogicalPlan plan = planner.createPlan(context, expr, true);
-    optimizer.optimize(plan);
+    optimizer.optimize(context, plan);
     annotatedPlanVerifier.verify(context, state, plan);
 
     if (state.getErrorMessages().size() > 0) {

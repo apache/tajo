@@ -126,9 +126,10 @@ message JoinNode {
 
 message GroupbyNode {
   required int32 childId = 1;
-  repeated ColumnProto groupingKeys = 2;
-  repeated EvalTree aggFunctions = 3;
-  repeated Target targets = 4;
+  required bool distinct = 2;
+  repeated ColumnProto groupingKeys = 3;
+  repeated EvalTree aggFunctions = 4;
+  repeated Target targets = 5;
 }
 
 message DistinctGroupbyNode {
@@ -361,10 +362,13 @@ message EvalNode {
   optional ConstEval const = 6;
   optional ColumnProto field = 7; // field eval
   optional FunctionEval function = 8;
-  optional RowConstEval rowConst = 9;
-  optional BetweenEval between = 10;
-  optional CaseWhenEval casewhen = 11;
-  optional IfCondEval ifCond = 12;
+  optional AggFunctionEvalSpec aggFunction = 9;
+  optional WinFunctionEvalSpec winFunction = 10;
+  optional RowConstEval rowConst = 11;
+  optional BetweenEval between = 12;
+  optional CaseWhenEval casewhen = 13;
+  optional IfCondEval ifCond = 14;
+  optional PatternMatchEvalSpec patternMatch = 15;
 }
 
 message UnaryEval {
@@ -378,6 +382,10 @@ message BinaryEval {
   required int32 lhs_id = 1;
   required int32 rhs_id = 2;
   optional bool negative = 3 [default = false];
+}
+
+message PatternMatchEvalSpec { // requires BinaryEval
+  optional bool caseSensitive = 1;
 }
 
 message BetweenEval {
@@ -409,6 +417,50 @@ message RowConstEval {
 message FunctionEval {
   required FunctionDescProto funcion = 1;
   repeated int32 paramIds = 2;
+}
+
+message AggFunctionEvalSpec { // requires FunctionEval
+  required bool intermediatePhase = 1;
+  required bool finalPhase = 2;
+  optional string alias = 3;
+}
+
+message WinFunctionEvalSpec {
+  message WindowFrame {
+    required WindowStartBound startBound = 1;
+    required WindowEndBound endBound = 2;
+    optional WindowFrameUnit unit = 3;
+  }
+
+  enum WindowFrameStartBoundType {
+    S_UNBOUNDED_PRECEDING = 0;
+    S_CURRENT_ROW = 1;
+    S_PRECEDING = 2;
+  }
+
+  enum WindowFrameEndBoundType {
+    E_UNBOUNDED_FOLLOWING = 0;
+    E_CURRENT_ROW = 1;
+    E_FOLLOWING = 2;
+  }
+
+  enum WindowFrameUnit {
+    ROW = 0;
+    RANGE = 1;
+  }
+
+  message WindowStartBound {
+    required WindowFrameStartBoundType boundType = 1;
+    optional EvalTree number = 2;
+  }
+
+  message WindowEndBound {
+    required WindowFrameEndBoundType boundType = 1;
+    optional EvalTree number = 2;
+  }
+
+  repeated SortSpecProto sortSpec = 1;
+  required WindowFrame windowFrame = 2;
 }
 
 message Datum {

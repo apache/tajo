@@ -122,6 +122,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
     if (obj instanceof GroupbyNode) {
       GroupbyNode other = (GroupbyNode) obj;
       boolean eq = super.equals(other);
+      eq = eq && isDistinct() == other.isDistinct();
       eq = eq && TUtil.checkEquals(groupingKeys, other.groupingKeys);
       eq = eq && TUtil.checkEquals(aggrFunctions, other.aggrFunctions);
       eq = eq && TUtil.checkEquals(targets, other.targets);

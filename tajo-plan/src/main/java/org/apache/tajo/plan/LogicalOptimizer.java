@@ -18,11 +18,13 @@
 
 package org.apache.tajo.plan;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceStability;
+import org.apache.tajo.ConfigKey;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
@@ -76,8 +78,11 @@ public class LogicalOptimizer {
     }
   }
 
+  @VisibleForTesting
   public LogicalNode optimize(LogicalPlan plan) throws PlanningException {
-    return optimize(null, plan);
+    OverridableConf conf = new OverridableConf(new TajoConf(),
+        ConfigKey.ConfigType.SESSION, ConfigKey.ConfigType.QUERY, ConfigKey.ConfigType.SYSTEM);
+    return optimize(conf, plan);
   }
 
   public LogicalNode optimize(OverridableConf context, LogicalPlan plan) throws PlanningException {
