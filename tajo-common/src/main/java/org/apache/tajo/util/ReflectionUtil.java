@@ -30,11 +30,16 @@ public class ReflectionUtil {
   private static final Class<?>[] CONF_PARAM = new Class[]{TajoConf.class};
 
   /**
-   * Cache of constructors for each class. Pins the classes so they
+   * Caches of constructors for each class. Pins the classes so they
    * can't be garbage collected until ReflectionUtils can be collected.
+   *
+   * EMPTY_CONSTRUCTOR_CACHE keeps classes which don't have any parameterized constructor, and
+   * CONF_CONSTRUCTOR_CACHE keeps classes which have one constructor to take TajoConf.
    */
-  private static final Map<Class<?>, Constructor<?>> EMPTY_CONSTRUCTOR_CACHE = new ConcurrentHashMap<Class<?>, Constructor<?>>();
-  private static final Map<Class<?>, Constructor<?>> CONF_CONSTRUCTOR_CACHE = new ConcurrentHashMap<Class<?>, Constructor<?>>();
+  private static final Map<Class<?>, Constructor<?>> EMPTY_CONSTRUCTOR_CACHE =
+      new ConcurrentHashMap<Class<?>, Constructor<?>>();
+  private static final Map<Class<?>, Constructor<?>> CONF_CONSTRUCTOR_CACHE =
+      new ConcurrentHashMap<Class<?>, Constructor<?>>();
 
   /**
    * Initialize an instance by a given class

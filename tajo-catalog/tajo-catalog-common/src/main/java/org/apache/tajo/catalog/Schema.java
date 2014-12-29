@@ -199,10 +199,12 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
   }
 	
 	public int getColumnId(String name) {
+    // if the same column exists, immediately return that column.
     if (fieldsByQualifiedName.containsKey(name)) {
       return fieldsByQualifiedName.get(name);
     }
 
+    // The following is some workaround code.
     String [] parts = name.split("\\.");
     if (parts.length == 2 || parts.length == 3) {
       if (fieldsByQualifiedName.containsKey(name)) {

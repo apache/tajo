@@ -282,6 +282,8 @@ public class EvalTreeProtoSerializer
 
       builder.setAggFunction(aggFunctionEvalBuilder);
     }
+
+
     if (function instanceof WindowFunctionEval) {
       WindowFunctionEval winFunc = (WindowFunctionEval) function;
       WinFunctionEvalSpec.Builder windowFuncBuilder = WinFunctionEvalSpec.newBuilder();
@@ -294,6 +296,7 @@ public class EvalTreeProtoSerializer
       windowFuncBuilder.setWindowFrame(buildWindowFrame(winFunc.getWindowFrame()));
       builder.setWinFunction(windowFuncBuilder);
     }
+
 
     context.treeBuilder.addNodes(builder);
     return function;

@@ -35,9 +35,7 @@ import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.FieldEval;
 import org.apache.tajo.plan.expr.WindowFunctionEval;
-import org.apache.tajo.plan.function.WindowAggFunc;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 

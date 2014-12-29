@@ -28,7 +28,6 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.worker.FetchImpl;
 

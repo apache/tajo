@@ -41,6 +41,14 @@ public class TUtil {
     return Objects.equal(s1, s2);
   }
 
+  /**
+   * check two collections as equals. It also check the equivalence of null.
+   * It will return true even if they are all null.
+   *
+   * @param s1 the first collection to be compared.
+   * @param s2 the second collection to be compared
+   * @return true if they are equal or all null
+   */
   public static boolean checkEquals(Collection<?> s1, Collection<?> s2) {
     if (s1 == null ^ s2 == null) {
       return false;

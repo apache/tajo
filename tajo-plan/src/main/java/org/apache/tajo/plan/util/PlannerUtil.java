@@ -47,7 +47,6 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType.TEXTFILE;
 public class PlannerUtil {
 
   public static final Column [] EMPTY_COLUMNS = new Column[] {};
-  public static final Target [] EMPTY_TARGETS = new Target[] {};
   public static final AggregationFunctionCallEval [] EMPTY_AGG_FUNCS = new AggregationFunctionCallEval[] {};
 
   public static boolean checkIfSetSession(LogicalNode node) {

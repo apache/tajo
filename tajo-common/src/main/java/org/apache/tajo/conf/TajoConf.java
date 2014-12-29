@@ -249,8 +249,10 @@ public class TajoConf extends Configuration {
     TASK_DEFAULT_SIZE("tajo.task.size-mb", 128),
 
     // Query and Optimization -------------------------------------------------
+    // This class provides a ordered list of logical plan rewrite rule classes.
     LOGICAL_PLAN_REWRITE_RULE_PROVIDER_CLASS("tajo.plan.logical.rewriter.provider",
         "org.apache.tajo.plan.rewrite.BaseLogicalPlanRewriteRuleProvider"),
+    // This class provides a ordered list of global plan rewrite rule classes.
     GLOBAL_PLAN_REWRITE_RULE_PROVIDER_CLASS("tajo.plan.global.rewriter.provider",
         "org.apache.tajo.engine.planner.global.rewriter.BaseGlobalPlanRewriteRuleProvider"),
     EXECUTOR_EXTERNAL_SORT_THREAD_NUM("tajo.executor.external-sort.thread-num", 1),

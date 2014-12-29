@@ -57,6 +57,13 @@ public class ProtoUtil {
     return new KeyValueSet(map).getProto();
   }
 
+  /**
+   * It converts an array of ProtoObjects into Iteratable one.
+   *
+   * @param protoObjects
+   * @param <T>
+   * @return
+   */
   public static <T> Iterable<T> toProtoObjects(ProtoObject[] protoObjects) {
     List<T> converted = Lists.newArrayList();
     for (int i = 0; i < protoObjects.length; i++) {
