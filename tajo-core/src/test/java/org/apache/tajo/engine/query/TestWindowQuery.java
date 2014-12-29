@@ -21,10 +21,17 @@ package org.apache.tajo.engine.query;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
+
+import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
 public class TestWindowQuery extends QueryTestCaseBase {
@@ -243,5 +250,73 @@ public class TestWindowQuery extends QueryTestCaseBase {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+  }
+
+  @Test
+  public final void firstValue1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void firstValueTime() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("time", TajoDataTypes.Type.TIME);
+    String[] data = new String[]{ "1|12:11:12", "2|10:11:13", "2|05:42:41" };
+    TajoTestingCluster.createTable("firstvaluetime", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select id, first_value(time) over ( partition by id order by time ) as time_first from firstvaluetime");
+      String ascExpected = "id,time_first\n" +
+          "-------------------------------\n" +
+          "1,12:11:12\n" +
+          "2,05:42:41\n" +
+          "2,05:42:41\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE firstvaluetime PURGE");
+    }
+  }
+
+  @Test
+  public final void lastValue1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void lastValueTime() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("time", TajoDataTypes.Type.TIME);
+    String[] data = new String[]{ "1|12:11:12", "2|10:11:13", "2|05:42:41" };
+    TajoTestingCluster.createTable("lastvaluetime", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select id, last_value(time) over ( partition by id order by time ) as time_last from lastvaluetime");
+      String ascExpected = "id,time_last\n" +
+          "-------------------------------\n" +
+          "1,12:11:12\n" +
+          "2,10:11:13\n" +
+          "2,10:11:13\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE lastvaluetime PURGE");
+    }
   }
 }

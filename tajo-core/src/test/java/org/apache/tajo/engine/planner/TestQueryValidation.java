@@ -50,4 +50,10 @@ public class TestQueryValidation extends QueryTestCaseBase {
     // See TAJO-1098
     assertInvalidSQL("invalid_casewhen_1.sql");
   }
+
+  @Test
+  public void testUnsupportedStoreType() throws PlanningException, IOException {
+    // See TAJO-1249
+    assertInvalidSQL("invalid_store_format.sql");
+  }
 }
