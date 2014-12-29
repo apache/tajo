@@ -20,6 +20,8 @@ package org.apache.tajo.rpc;
 
 import com.google.protobuf.RpcCallback;
 
+import io.netty.util.internal.logging.InternalLoggerFactory;
+import io.netty.util.internal.logging.Log4JLoggerFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.test.DummyProtocol;
@@ -29,6 +31,8 @@ import org.apache.tajo.rpc.test.TestProtos.SumRequest;
 import org.apache.tajo.rpc.test.TestProtos.SumResponse;
 import org.apache.tajo.rpc.test.impl.DummyProtocolAsyncImpl;
 import org.apache.tajo.util.NetUtils;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
@@ -61,7 +65,7 @@ public class TestAsyncRpc {
   static AsyncRpcClient client;
   static Interface stub;
   static DummyProtocolAsyncImpl service;
-  EventLoopGroup clientLoopGroup;
+  static EventLoopGroup clientLoopGroup;
   int retries;
   
   @Retention(RetentionPolicy.RUNTIME)
@@ -85,7 +89,7 @@ public class TestAsyncRpc {
     @Override
     protected void before() throws Throwable {
       SetupRpcConnection setupRpcConnection = description.getAnnotation(SetupRpcConnection.class);
-      
+
       if (setupRpcConnection == null || setupRpcConnection.setupRpcServer()) {
         setUpRpcServer();
       }
@@ -98,7 +102,7 @@ public class TestAsyncRpc {
     @Override
     protected void after() {
       SetupRpcConnection setupRpcConnection = description.getAnnotation(SetupRpcConnection.class);
-      
+
       if (setupRpcConnection == null || setupRpcConnection.setupRpcClient()) {
         try {
           tearDownRpcClient();
@@ -117,6 +121,11 @@ public class TestAsyncRpc {
     }
     
   };
+
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    clientLoopGroup = RpcChannelFactory.createClientEventloopGroup("TestAsyncRpc", 2);
+  }
   
   public void setUpRpcServer() throws Exception {
     service = new DummyProtocolAsyncImpl();
@@ -128,10 +137,17 @@ public class TestAsyncRpc {
   public void setUpRpcClient() throws Exception {
     retries = 1;
 
-    clientLoopGroup = RpcChannelFactory.createClientEventloopGroup("TestAsyncRpc", 2);
     client = new AsyncRpcClient(DummyProtocol.class,
         NetUtils.getConnectAddress(server.getListenAddress()), clientLoopGroup, retries);
     stub = client.getStub();
+  }
+
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    if (clientLoopGroup != null) {
+      clientLoopGroup.shutdownGracefully();
+      clientLoopGroup.terminationFuture().awaitUninterruptibly(10, TimeUnit.SECONDS);
+    }
   }
   
   public void tearDownRpcServer() throws Exception {
@@ -146,14 +162,10 @@ public class TestAsyncRpc {
       client.close();
       client = null;
     }
-
-    if (clientLoopGroup != null) {
-      clientLoopGroup.shutdownGracefully();
-      clientLoopGroup.terminationFuture().syncUninterruptibly();
-    }
   }
 
   boolean calledMarker = false;
+
   @Test
   public void testRpc() throws Exception {
 
@@ -249,7 +261,7 @@ public class TestAsyncRpc {
     assertTrue(future.getController().errorText() != null);
   }
 
-  @Test
+  @Test(timeout = 180L)
   public void testStubDisconnected() throws Exception {
 
     EchoMessage echoMessage = EchoMessage.newBuilder()

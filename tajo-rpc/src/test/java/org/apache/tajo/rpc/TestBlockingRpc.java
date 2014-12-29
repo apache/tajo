@@ -26,6 +26,8 @@ import org.apache.tajo.rpc.test.TestProtos.SumRequest;
 import org.apache.tajo.rpc.test.TestProtos.SumResponse;
 import org.apache.tajo.rpc.test.impl.DummyProtocolBlockingImpl;
 import org.apache.tajo.util.NetUtils;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
@@ -54,7 +56,7 @@ public class TestBlockingRpc {
   private BlockingInterface stub;
   private DummyProtocolBlockingImpl service;
   private int retries;
-  private EventLoopGroup clientLoopGroup;
+  private static EventLoopGroup clientLoopGroup;
   
   @Retention(RetentionPolicy.RUNTIME)
   @Target(ElementType.METHOD)
@@ -109,6 +111,11 @@ public class TestBlockingRpc {
     }
     
   };
+
+  @BeforeClass
+  public static void setUpClass() throws Exception {
+    clientLoopGroup = RpcChannelFactory.createClientEventloopGroup(MESSAGE, 5);
+  }
   
   public void setUpRpcServer() throws Exception {
     service = new DummyProtocolBlockingImpl();
@@ -120,10 +127,17 @@ public class TestBlockingRpc {
   public void setUpRpcClient() throws Exception {
     retries = 1;
 
-    clientLoopGroup = RpcChannelFactory.createClientEventloopGroup(MESSAGE, 2);
     client = new BlockingRpcClient(DummyProtocol.class,
         NetUtils.getConnectAddress(server.getListenAddress()), clientLoopGroup, retries);
     stub = client.getStub();
+  }
+
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    if(clientLoopGroup != null){
+      clientLoopGroup.shutdownGracefully();
+      clientLoopGroup.terminationFuture();
+    }
   }
   
   public void tearDownRpcServer() throws Exception {
@@ -137,11 +151,6 @@ public class TestBlockingRpc {
     if(client != null) {
       client.close();
       client = null;
-    }
-
-    if(clientLoopGroup != null){
-      clientLoopGroup.shutdownGracefully();
-      clientLoopGroup.terminationFuture().syncUninterruptibly();
     }
   }
 
