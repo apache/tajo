@@ -557,18 +557,19 @@ public class TajoPullServerService extends AbstractService {
 
         final List<FileChunk> chunks = Lists.newArrayList();
 
-        // if a subquery requires a range shuffle
-        if (shuffleType.equals("r")) {
-          String ta = taskIds.get(0);
-          if (!lDirAlloc.ifExists(queryBaseDir + "/" + sid + "/" + ta + "/output/", conf)) {
-            sendError(ctx, HttpResponseStatus.NO_CONTENT);
-            return;
-          }
-          Path path = localFS.makeQualified(lDirAlloc.getLocalPathToRead(queryBaseDir + "/" + sid + "/" + ta
-              + "/output/", conf));
-          String startKey = params.get("start").get(0);
-          String endKey = params.get("end").get(0);
-          boolean last = params.get("final") != null;
+      // if a stage requires a range shuffle
+      if (shuffleType.equals("r")) {
+        String ta = taskIds.get(0);
+        if(!lDirAlloc.ifExists(queryBaseDir + "/" + sid + "/" + ta + "/output/", conf)){
+          LOG.warn(e);
+          sendError(ctx, NO_CONTENT);
+          return;
+        }
+        Path path = localFS.makeQualified(
+            lDirAlloc.getLocalPathToRead(queryBaseDir + "/" + sid + "/" + ta + "/output/", conf));
+        String startKey = params.get("start").get(0);
+        String endKey = params.get("end").get(0);
+        boolean last = params.get("final") != null;
 
           FileChunk chunk;
           try {
@@ -582,15 +583,15 @@ public class TajoPullServerService extends AbstractService {
             chunks.add(chunk);
           }
 
-          // if a subquery requires a hash shuffle or a scattered hash shuffle
-        } else if (shuffleType.equals("h") || shuffleType.equals("s")) {
-          int partParentId = HashShuffleAppenderManager.getPartParentId(Integer.parseInt(partId), (TajoConf) conf);
-          String partPath = queryBaseDir + "/" + sid + "/hash-shuffle/" + partParentId + "/" + partId;
-          if (!lDirAlloc.ifExists(partPath, conf)) {
-            LOG.warn("Partition shuffle file not exists: " + partPath);
-            sendError(ctx, HttpResponseStatus.NO_CONTENT);
-            return;
-          }
+        // if a stage requires a hash shuffle or a scattered hash shuffle
+      } else if (shuffleType.equals("h") || shuffleType.equals("s")) {
+        int partParentId = HashShuffleAppenderManager.getPartParentId(Integer.parseInt(partId), (TajoConf) conf);
+        String partPath = queryBaseDir + "/" + sid + "/hash-shuffle/" + partParentId + "/" + partId;
+        if (!lDirAlloc.ifExists(partPath, conf)) {
+          LOG.warn("Partition shuffle file not exists: " + partPath);
+          sendError(ctx, NO_CONTENT);
+          return;
+        }
 
           Path path = localFS.makeQualified(lDirAlloc.getLocalPathToRead(partPath, conf));
 

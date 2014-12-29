@@ -20,7 +20,6 @@ package org.apache.tajo.pullserver;
 
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -55,39 +54,17 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.util.TajoIdUtils;
-
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.group.ChannelGroup;
-import io.netty.channel.group.DefaultChannelGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.TooLongFrameException;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.DefaultHttpResponse;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpObjectAggregator;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpRequestDecoder;
-import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.HttpResponseEncoder;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.codec.http.QueryStringDecoder;
-import io.netty.handler.ssl.SslHandler;
-import io.netty.handler.stream.ChunkedWriteHandler;
-import io.netty.util.CharsetUtil;
-import io.netty.util.concurrent.GenericFutureListener;
-import io.netty.util.concurrent.GlobalEventExecutor;
+import org.jboss.netty.bootstrap.ServerBootstrap;
+import org.jboss.netty.buffer.ChannelBuffers;
+import org.jboss.netty.channel.*;
+import org.jboss.netty.channel.group.ChannelGroup;
+import org.jboss.netty.channel.group.DefaultChannelGroup;
+import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import org.jboss.netty.handler.codec.frame.TooLongFrameException;
+import org.jboss.netty.handler.codec.http.*;
+import org.jboss.netty.handler.ssl.SslHandler;
+import org.jboss.netty.handler.stream.ChunkedWriteHandler;
+import org.jboss.netty.util.CharsetUtil;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -101,8 +78,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+
+import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
+import static org.jboss.netty.handler.codec.http.HttpHeaders.isKeepAlive;
+import static org.jboss.netty.handler.codec.http.HttpHeaders.setContentLength;
+import static org.jboss.netty.handler.codec.http.HttpMethod.GET;
+import static org.jboss.netty.handler.codec.http.HttpResponseStatus.*;
+import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
 
 public class PullServerAuxService extends AuxiliaryService {
 
@@ -115,9 +100,9 @@ public class PullServerAuxService extends AuxiliaryService {
   public static final int DEFAULT_SHUFFLE_READAHEAD_BYTES = 4 * 1024 * 1024;
 
   private int port;
-  private ServerBootstrap selector;
-  private final ChannelGroup accepted = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
-  private HttpChannelInitializer initializer;
+  private ChannelFactory selector;
+  private final ChannelGroup accepted = new DefaultChannelGroup();
+  private HttpPipelineFactory pipelineFact;
   private int sslFileBufferSize;
 
   private ApplicationId appId;
@@ -145,7 +130,7 @@ public class PullServerAuxService extends AuxiliaryService {
   public static final int DEFAULT_SUFFLE_SSL_FILE_BUFFER_SIZE = 60 * 1024;
 
   @Metrics(name="PullServerShuffleMetrics", about="PullServer output metrics", context="tajo")
-  static class ShuffleMetrics implements GenericFutureListener<ChannelFuture> {
+  static class ShuffleMetrics implements ChannelFutureListener {
     @Metric({"OutputBytes","PullServer output in bytes"})
     MutableCounterLong shuffleOutputBytes;
     @Metric({"Failed","# of failed shuffle outputs"})
@@ -233,9 +218,9 @@ public class PullServerAuxService extends AuxiliaryService {
           .setNameFormat("PullServerAuxService Netty Worker #%d")
           .build();
 
-      selector = new ServerBootstrap()
-        .group(new NioEventLoopGroup(0, bossFactory), 
-          new NioEventLoopGroup(0, workerFactory));
+      selector = new NioServerSocketChannelFactory(
+          Executors.newCachedThreadPool(bossFactory),
+          Executors.newCachedThreadPool(workerFactory));
 
       localFS = new LocalFileSystem();
       super.init(new Configuration(conf));
@@ -248,23 +233,20 @@ public class PullServerAuxService extends AuxiliaryService {
   @Override
   public synchronized void start() {
     Configuration conf = getConfig();
-    ServerBootstrap bootstrap = selector.clone();
+    ServerBootstrap bootstrap = new ServerBootstrap(selector);
     try {
-      initializer = new HttpChannelInitializer(conf);
+      pipelineFact = new HttpPipelineFactory(conf);
     } catch (Exception ex) {
       throw new RuntimeException(ex);
     }
-    bootstrap.channel(NioServerSocketChannel.class)
-      .childHandler(initializer);
+    bootstrap.setPipelineFactory(pipelineFact);
     port = conf.getInt(ConfVars.PULLSERVER_PORT.varname,
         ConfVars.PULLSERVER_PORT.defaultIntVal);
-    ChannelFuture future = bootstrap.bind(new InetSocketAddress(port))
-        .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE)
-        .syncUninterruptibly();
-    accepted.add(future.channel());
-    port = ((InetSocketAddress)future.channel().localAddress()).getPort();
+    Channel ch = bootstrap.bind(new InetSocketAddress(port));
+    accepted.add(ch);
+    port = ((InetSocketAddress)ch.getLocalAddress()).getPort();
     conf.set(ConfVars.PULLSERVER_PORT.varname, Integer.toString(port));
-    initializer.PullServer.setPort(port);
+    pipelineFact.PullServer.setPort(port);
     LOG.info(getName() + " listening on port " + port);
     super.start();
 
@@ -280,17 +262,9 @@ public class PullServerAuxService extends AuxiliaryService {
   public synchronized void stop() {
     try {
       accepted.close().awaitUninterruptibly(10, TimeUnit.SECONDS);
-      if (selector != null) {
-        if (selector.group() != null) {
-          selector.group().shutdownGracefully();
-          selector.group().terminationFuture();
-        }
-        if (selector.childGroup() != null) {
-          selector.childGroup().shutdownGracefully();
-          selector.childGroup().terminationFuture();
-        }
-      }
-      initializer.destroy();
+      ServerBootstrap bootstrap = new ServerBootstrap(selector);
+      bootstrap.releaseExternalResources();
+      pipelineFact.destroy();
 
       localFS.close();
     } catch (Throwable t) {
@@ -311,12 +285,12 @@ public class PullServerAuxService extends AuxiliaryService {
     }
   }
 
-  class HttpChannelInitializer extends ChannelInitializer<Channel> {
+  class HttpPipelineFactory implements ChannelPipelineFactory {
 
     final PullServer PullServer;
     private SSLFactory sslFactory;
 
-    public HttpChannelInitializer(Configuration conf) throws Exception {
+    public HttpPipelineFactory(Configuration conf) throws Exception {
       PullServer = new PullServer(conf);
       if (conf.getBoolean(ConfVars.SHUFFLE_SSL_ENABLED_KEY.varname,
           ConfVars.SHUFFLE_SSL_ENABLED_KEY.defaultBoolVal)) {
@@ -332,20 +306,24 @@ public class PullServerAuxService extends AuxiliaryService {
     }
 
     @Override
-    protected void initChannel(Channel channel) throws Exception {
-      ChannelPipeline pipeline = channel.pipeline();
+    public ChannelPipeline getPipeline() throws Exception {
+      ChannelPipeline pipeline = Channels.pipeline();
       if (sslFactory != null) {
         pipeline.addLast("ssl", new SslHandler(sslFactory.createSSLEngine()));
       }
       pipeline.addLast("decoder", new HttpRequestDecoder());
-      pipeline.addLast("aggregator", new HttpObjectAggregator(1 << 16));
+      pipeline.addLast("aggregator", new HttpChunkAggregator(1 << 16));
       pipeline.addLast("encoder", new HttpResponseEncoder());
       pipeline.addLast("chunking", new ChunkedWriteHandler());
       pipeline.addLast("shuffle", PullServer);
+      return pipeline;
+      // TODO factor security manager into pipeline
+      // TODO factor out encode/decode to permit binary shuffle
+      // TODO factor out decode of index to permit alt. models
     }
   }
 
-  class PullServer extends ChannelInboundHandlerAdapter {
+  class PullServer extends SimpleChannelUpstreamHandler {
     private final Configuration conf;
     private final LocalDirAllocator lDirAlloc = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
     private int port;
@@ -371,124 +349,128 @@ public class PullServerAuxService extends AuxiliaryService {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg)
+    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
         throws Exception {
 
-      if (msg instanceof HttpRequest) {
-        HttpRequest request = (HttpRequest) msg;
-        if (request.getMethod() != HttpMethod.GET) {
-          sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED);
+      HttpRequest request = (HttpRequest) e.getMessage();
+      if (request.getMethod() != GET) {
+        sendError(ctx, METHOD_NOT_ALLOWED);
+        return;
+      }
+
+      // Parsing the URL into key-values
+      final Map<String, List<String>> params =
+          new QueryStringDecoder(request.getUri()).getParameters();
+      final List<String> types = params.get("type");
+      final List<String> taskIdList = params.get("ta");
+      final List<String> stageIds = params.get("sid");
+      final List<String> partitionIds = params.get("p");
+
+      if (types == null || taskIdList == null || stageIds == null
+          || partitionIds == null) {
+        sendError(ctx, "Required type, taskIds, stage Id, and partition id",
+            BAD_REQUEST);
+        return;
+      }
+
+      if (types.size() != 1 || stageIds.size() != 1) {
+        sendError(ctx, "Required type, taskIds, stage Id, and partition id",
+            BAD_REQUEST);
+        return;
+      }
+
+      final List<FileChunk> chunks = Lists.newArrayList();
+
+      String repartitionType = types.get(0);
+      String sid = stageIds.get(0);
+      String partitionId = partitionIds.get(0);
+      List<String> taskIds = splitMaps(taskIdList);
+
+      // the working dir of tajo worker for each query
+      String queryBaseDir = queryId + "/output" + "/";
+
+      LOG.info("PullServer request param: repartitionType=" + repartitionType +
+          ", sid=" + sid + ", partitionId=" + partitionId + ", taskIds=" + taskIdList);
+
+      String taskLocalDir = conf.get(ConfVars.WORKER_TEMPORAL_DIR.varname);
+      if (taskLocalDir == null ||
+          taskLocalDir.equals("")) {
+        LOG.error("Tajo local directory should be specified.");
+      }
+      LOG.info("PullServer baseDir: " + taskLocalDir + "/" + queryBaseDir);
+
+      // if a stage requires a range partitioning
+      if (repartitionType.equals("r")) {
+        String ta = taskIds.get(0);
+        Path path = localFS.makeQualified(
+            lDirAlloc.getLocalPathToRead(queryBaseDir + "/" + sid + "/"
+                + ta + "/output/", conf));
+
+        String startKey = params.get("start").get(0);
+        String endKey = params.get("end").get(0);
+        boolean last = params.get("final") != null;
+
+        FileChunk chunk;
+        try {
+          chunk = getFileCunks(path, startKey, endKey, last);
+        } catch (Throwable t) {
+          LOG.error("ERROR Request: " + request.getUri(), t);
+          sendError(ctx, "Cannot get file chunks to be sent", BAD_REQUEST);
           return;
         }
-
-        // Parsing the URL into key-values
-        final Map<String, List<String>> params = new QueryStringDecoder(request.getUri()).parameters();
-        final List<String> types = params.get("type");
-        final List<String> taskIdList = params.get("ta");
-        final List<String> subQueryIds = params.get("sid");
-        final List<String> partitionIds = params.get("p");
-
-        if (types == null || taskIdList == null || subQueryIds == null || partitionIds == null) {
-          sendError(ctx, "Required type, taskIds, subquery Id, and partition id", HttpResponseStatus.BAD_REQUEST);
-          return;
+        if (chunk != null) {
+          chunks.add(chunk);
         }
 
-        if (types.size() != 1 || subQueryIds.size() != 1) {
-          sendError(ctx, "Required type, taskIds, subquery Id, and partition id", HttpResponseStatus.BAD_REQUEST);
-          return;
+        // if a stage requires a hash repartition  or a scattered hash repartition
+      } else if (repartitionType.equals("h") || repartitionType.equals("s")) {
+        for (String ta : taskIds) {
+          Path path = localFS.makeQualified(
+              lDirAlloc.getLocalPathToRead(queryBaseDir + "/" + sid + "/" +
+                  ta + "/output/" + partitionId, conf));
+          File file = new File(path.toUri());
+          FileChunk chunk = new FileChunk(file, 0, file.length());
+          chunks.add(chunk);
         }
+      } else {
+        LOG.error("Unknown repartition type: " + repartitionType);
+        return;
+      }
 
-        final List<FileChunk> chunks = Lists.newArrayList();
-
-        String repartitionType = types.get(0);
-        String sid = subQueryIds.get(0);
-        String partitionId = partitionIds.get(0);
-        List<String> taskIds = splitMaps(taskIdList);
-
-        // the working dir of tajo worker for each query
-        String queryBaseDir = queryId + "/output" + "/";
-
-        LOG.info("PullServer request param: repartitionType=" + repartitionType + ", sid=" + sid + ", partitionId="
-            + partitionId + ", taskIds=" + taskIdList);
-
-        String taskLocalDir = conf.get(ConfVars.WORKER_TEMPORAL_DIR.varname);
-        if (taskLocalDir == null || taskLocalDir.equals("")) {
-          LOG.error("Tajo local directory should be specified.");
+      // Write the content.
+      Channel ch = e.getChannel();
+      if (chunks.size() == 0) {
+        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, NO_CONTENT);
+        ch.write(response);
+        if (!isKeepAlive(request)) {
+          ch.close();
         }
-        LOG.info("PullServer baseDir: " + taskLocalDir + "/" + queryBaseDir);
+      }  else {
+        FileChunk[] file = chunks.toArray(new FileChunk[chunks.size()]);
+        HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+        long totalSize = 0;
+        for (FileChunk chunk : file) {
+          totalSize += chunk.length();
+        }
+        setContentLength(response, totalSize);
 
-        // if a subquery requires a range partitioning
-        if (repartitionType.equals("r")) {
-          String ta = taskIds.get(0);
-          Path path = localFS.makeQualified(lDirAlloc.getLocalPathToRead(queryBaseDir + "/" + sid + "/" + ta
-              + "/output/", conf));
+        // Write the initial line and the header.
+        ch.write(response);
 
-          String startKey = params.get("start").get(0);
-          String endKey = params.get("end").get(0);
-          boolean last = params.get("final") != null;
+        ChannelFuture writeFuture = null;
 
-          FileChunk chunk;
-          try {
-            chunk = getFileCunks(path, startKey, endKey, last);
-          } catch (Throwable t) {
-            LOG.error("ERROR Request: " + request.getUri(), t);
-            sendError(ctx, "Cannot get file chunks to be sent", HttpResponseStatus.BAD_REQUEST);
+        for (FileChunk chunk : file) {
+          writeFuture = sendFile(ctx, ch, chunk);
+          if (writeFuture == null) {
+            sendError(ctx, NOT_FOUND);
             return;
           }
-          if (chunk != null) {
-            chunks.add(chunk);
-          }
-
-          // if a subquery requires a hash repartition or a scattered hash
-          // repartition
-        } else if (repartitionType.equals("h") || repartitionType.equals("s")) {
-          for (String ta : taskIds) {
-            Path path = localFS.makeQualified(lDirAlloc.getLocalPathToRead(queryBaseDir + "/" + sid + "/" + ta
-                + "/output/" + partitionId, conf));
-            File file = new File(path.toUri());
-            FileChunk chunk = new FileChunk(file, 0, file.length());
-            chunks.add(chunk);
-          }
-        } else {
-          LOG.error("Unknown repartition type: " + repartitionType);
-          return;
         }
 
-        // Write the content.
-        Channel ch = ctx.channel();
-        if (chunks.size() == 0) {
-          HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
-          ch.write(response);
-          if (!HttpHeaders.isKeepAlive(request)) {
-            ch.close();
-          }
-        } else {
-          FileChunk[] file = chunks.toArray(new FileChunk[chunks.size()]);
-          HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-          long totalSize = 0;
-          for (FileChunk chunk : file) {
-            totalSize += chunk.length();
-          }
-          HttpHeaders.setContentLength(response, totalSize);
-
-          // Write the initial line and the header.
-          ch.write(response);
-
-          ChannelFuture writeFuture = null;
-
-          for (FileChunk chunk : file) {
-            writeFuture = sendFile(ctx, ch, chunk);
-            if (writeFuture == null) {
-              sendError(ctx, HttpResponseStatus.NOT_FOUND);
-              return;
-            }
-          }
-
-          // Decide whether to close the connection or not.
-          if (!HttpHeaders.isKeepAlive(request)) {
-            // Close the connection when the whole content is written out.
-            writeFuture.addListener(ChannelFutureListener.CLOSE);
-          }
+        // Decide whether to close the connection or not.
+        if (!isKeepAlive(request)) {
+          // Close the connection when the whole content is written out.
+          writeFuture.addListener(ChannelFutureListener.CLOSE);
         }
       }
     }
@@ -504,7 +486,7 @@ public class PullServerAuxService extends AuxiliaryService {
         return null;
       }
       ChannelFuture writeFuture;
-      if (ch.pipeline().get(SslHandler.class) == null) {
+      if (ch.getPipeline().get(SslHandler.class) == null) {
         final FadvisedFileRegion partition = new FadvisedFileRegion(spill,
             file.startOffset(), file.length(), manageOsCache, readaheadLength,
             readaheadPool, file.getFile().getAbsolutePath());
@@ -530,27 +512,29 @@ public class PullServerAuxService extends AuxiliaryService {
 
     private void sendError(ChannelHandlerContext ctx, String message,
         HttpResponseStatus status) {
-      FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status,
-          Unpooled.copiedBuffer(message, CharsetUtil.UTF_8));
-      response.headers().add(HttpHeaders.Names.CONTENT_TYPE, "text/plain; charset=UTF-8");
+      HttpResponse response = new DefaultHttpResponse(HTTP_1_1, status);
+      response.setHeader(CONTENT_TYPE, "text/plain; charset=UTF-8");
+      response.setContent(
+        ChannelBuffers.copiedBuffer(message, CharsetUtil.UTF_8));
 
       // Close the connection as soon as the error message is sent.
-      ctx.channel().write(response).addListener(ChannelFutureListener.CLOSE);
+      ctx.getChannel().write(response).addListener(ChannelFutureListener.CLOSE);
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
+    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
         throws Exception {
-      Channel ch = ctx.channel();
+      Channel ch = e.getChannel();
+      Throwable cause = e.getCause();
       if (cause instanceof TooLongFrameException) {
-        sendError(ctx, HttpResponseStatus.BAD_REQUEST);
+        sendError(ctx, BAD_REQUEST);
         return;
       }
 
       LOG.error("PullServer error: ", cause);
-      if (ch.isActive()) {
-        LOG.error("PullServer error " + ctx);
-        sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+      if (ch.isConnected()) {
+        LOG.error("PullServer error " + e);
+        sendError(ctx, INTERNAL_SERVER_ERROR);
       }
     }
   }

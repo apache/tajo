@@ -145,7 +145,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   @Test
   public final void testUnion12() throws Exception {
     // test filter pushdown
-    // with subquery in union query
+    // with stage in union query
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
@@ -154,7 +154,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   @Test
   public final void testUnion13() throws Exception {
     // test filter pushdown
-    // with subquery in union query
+    // with stage in union query
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
@@ -163,7 +163,7 @@ public class TestUnionQuery extends QueryTestCaseBase {
   @Test
   public final void testUnion14() throws Exception {
     // test filter pushdown
-    // with group by subquery in union query
+    // with group by stage in union query
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);

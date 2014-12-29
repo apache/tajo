@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.verifier;
 
+import com.google.common.base.Preconditions;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
@@ -194,9 +195,12 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     return true;
   }
 
-  private boolean assertUnsupportedStoreType(VerificationState state, String name) {
-    if (name != null && name.equals(CatalogProtos.StoreType.RAW.name())) {
-      state.addVerification(String.format("Unsupported store type :%s", name));
+  private boolean assertSupportedStoreType(VerificationState state, String name) {
+    Preconditions.checkNotNull(name);
+
+    CatalogProtos.StoreType storeType = CatalogUtil.getStoreType(name);
+    if (storeType == null || storeType == CatalogProtos.StoreType.RAW) {
+      state.addVerification(String.format("Store format %s is not supported.", name));
       return false;
     }
     return true;
@@ -248,7 +252,9 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
     if (!expr.isIfNotExists()) {
       assertRelationNoExistence(context, expr.getTableName());
     }
-    assertUnsupportedStoreType(context.state, expr.getStorageType());
+    if (expr.hasStorageType()) {
+      assertSupportedStoreType(context.state, expr.getStorageType());
+    }
     return expr;
   }
 
@@ -270,6 +276,10 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
 
     if (expr.hasTableName()) {
       assertRelationExistence(context, expr.getTableName());
+    }
+
+    if (expr.hasStorageType()) {
+      assertSupportedStoreType(context.state, expr.getStorageType());
     }
 
     if (child != null && child.getType() == OpType.Projection) {

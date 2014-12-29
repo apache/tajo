@@ -18,26 +18,25 @@
 
 package org.apache.tajo.master.event;
 
-/**
- * Event Types handled by SubQuery
- */
-public enum SubQueryEventType {
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.master.querymaster.StageState;
 
-  // Producer: Query
-  SQ_INIT,
-  SQ_START,
-  SQ_CONTAINER_ALLOCATED,
-  SQ_KILL,
-  SQ_LAUNCH,
+public class StageCompletedEvent extends QueryEvent {
+  private final ExecutionBlockId executionBlockId;
+  private final StageState finalState;
 
-  // Producer: Task
-  SQ_TASK_COMPLETED,
-  SQ_FAILED,
+  public StageCompletedEvent(final ExecutionBlockId executionBlockId,
+                             StageState finalState) {
+    super(executionBlockId.getQueryId(), QueryEventType.STAGE_COMPLETED);
+    this.executionBlockId = executionBlockId;
+    this.finalState = finalState;
+  }
 
-  // Producer: Completed
-  SQ_SUBQUERY_COMPLETED,
+  public ExecutionBlockId getExecutionBlockId() {
+    return executionBlockId;
+  }
 
-  // Producer: Any component
-  SQ_DIAGNOSTIC_UPDATE,
-  SQ_INTERNAL_ERROR
+  public StageState getState() {
+    return finalState;
+  }
 }

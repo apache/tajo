@@ -30,9 +30,9 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.master.LazyTaskScheduler;
-import org.apache.tajo.master.event.*;
+import org.apache.tajo.master.DefaultTaskScheduler;
 import org.apache.tajo.master.container.TajoContainerId;
+import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.session.Session;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
@@ -128,7 +128,7 @@ public class QueryMasterManagerService extends CompositeService
       QueryMasterTask queryMasterTask = workerContext.getQueryMaster().getQueryMasterTask(ebId.getQueryId());
 
       if(queryMasterTask == null || queryMasterTask.isStopped()) {
-        done.run(LazyTaskScheduler.stopTaskRunnerReq);
+        done.run(DefaultTaskScheduler.stopTaskRunnerReq);
       } else {
         TajoContainerId cid =
             queryMasterTask.getQueryTaskContext().getResourceAllocator().makeContainerId(request.getContainerId());
@@ -150,7 +150,7 @@ public class QueryMasterManagerService extends CompositeService
       if (queryMasterTask == null) {
         queryMasterTask = queryMaster.getQueryMasterTask(queryId, true);
       }
-      SubQuery sq = queryMasterTask.getQuery().getSubQuery(attemptId.getTaskId().getExecutionBlockId());
+      Stage sq = queryMasterTask.getQuery().getStage(attemptId.getTaskId().getExecutionBlockId());
       Task task = sq.getTask(attemptId.getTaskId());
       TaskAttempt attempt = task.getAttempt(attemptId.getId());
 
@@ -221,7 +221,7 @@ public class QueryMasterManagerService extends CompositeService
     QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(new QueryId(request.getEbId().getQueryId()));
     if (queryMasterTask != null) {
       ExecutionBlockId ebId = new ExecutionBlockId(request.getEbId());
-      queryMasterTask.getQuery().getSubQuery(ebId).receiveExecutionBlockReport(request);
+      queryMasterTask.getQuery().getStage(ebId).receiveExecutionBlockReport(request);
     }
     done.run(TajoWorker.TRUE_PROTO);
   }

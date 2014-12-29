@@ -19,8 +19,8 @@
 package org.apache.tajo.client;
 
 import com.google.protobuf.ServiceException;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.QueryHistoryProto;
 import org.apache.tajo.ipc.ClientProtos.QueryInfoProto;
@@ -49,7 +49,7 @@ public interface QueryClient extends Closeable {
   @Override
   public void close();
 
-  public UserGroupInformation getUserInfo();
+  public UserRoleInfo getUserInfo();
 
   /**
    * Call to QueryMaster closing query resources

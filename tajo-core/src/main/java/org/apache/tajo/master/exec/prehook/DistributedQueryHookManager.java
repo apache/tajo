@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,15 +16,30 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.querymaster;
+package org.apache.tajo.master.exec.prehook;
 
-public enum SubQueryState {
-  NEW,
-  INITED,
-  RUNNING,
-  SUCCEEDED,
-  FAILED,
-  KILL_WAIT,
-  KILLED,
-  ERROR
+import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.plan.LogicalPlan;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class DistributedQueryHookManager {
+  private List<DistributedQueryHook> hooks = new ArrayList<DistributedQueryHook>();
+
+  public void addHook(DistributedQueryHook hook) {
+    hooks.add(hook);
+  }
+
+  public void doHooks(QueryContext queryContext, LogicalPlan plan) {
+    for (DistributedQueryHook hook : hooks) {
+      if (hook.isEligible(queryContext, plan)) {
+        try {
+          hook.hook(queryContext, plan);
+        } catch (Throwable t) {
+          t.printStackTrace();
+        }
+      }
+    }
+  }
 }

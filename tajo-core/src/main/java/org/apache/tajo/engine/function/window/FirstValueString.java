@@ -16,27 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.event;
+package org.apache.tajo.engine.function.window;
 
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.master.querymaster.SubQueryState;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 
-public class SubQueryCompletedEvent extends QueryEvent {
-  private final ExecutionBlockId executionBlockId;
-  private final SubQueryState finalState;
+@Description(
+    functionName = "first_value",
+    description = "the first value of retrieved rows",
+    example = "> SELECT first_value(column) OVER ();",
+    returnType = Type.TEXT,
+    paramTypes = {@ParamTypes(paramTypes = {Type.TEXT})}
+)
+public class FirstValueString extends FirstValue {
 
-  public SubQueryCompletedEvent(final ExecutionBlockId executionBlockId,
-                                SubQueryState finalState) {
-    super(executionBlockId.getQueryId(), QueryEventType.SUBQUERY_COMPLETED);
-    this.executionBlockId = executionBlockId;
-    this.finalState = finalState;
-  }
-
-  public ExecutionBlockId getExecutionBlockId() {
-    return executionBlockId;
-  }
-
-  public SubQueryState getState() {
-    return finalState;
+  public FirstValueString() {
+    super(new Column[] {
+        new Column("expr", Type.TEXT)
+    });
   }
 }

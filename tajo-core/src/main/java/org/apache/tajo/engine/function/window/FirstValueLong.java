@@ -16,23 +16,26 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.event;
+package org.apache.tajo.engine.function.window;
 
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.master.container.TajoContainer;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 
-import java.util.List;
+@Description(
+    functionName = "first_value",
+    description = "the first value of retrieved rows",
+    example = "> SELECT first_value(column) OVER ();",
+    returnType = Type.INT8,
+    paramTypes = {@ParamTypes(paramTypes = {Type.INT8})}
+)
+public class FirstValueLong extends FirstValue {
 
-public class SubQueryContainerAllocationEvent extends SubQueryEvent {
-  private List<TajoContainer> allocatedContainer;
-
-  public SubQueryContainerAllocationEvent(final ExecutionBlockId id,
-                                          List<TajoContainer> allocatedContainer) {
-    super(id, SubQueryEventType.SQ_CONTAINER_ALLOCATED);
-    this.allocatedContainer = allocatedContainer;
-  }
-
-  public List<TajoContainer> getAllocatedContainer() {
-    return this.allocatedContainer;
+  public FirstValueLong() {
+    super(new Column[] {
+        new Column("expr", Type.INT8)
+    });
   }
 }

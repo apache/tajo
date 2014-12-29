@@ -20,16 +20,15 @@ package org.apache.tajo.master.event;
 
 import org.apache.tajo.ExecutionBlockId;
 
-public class QuerySubQueryEvent extends QueryEvent {
-  private ExecutionBlockId executionBlockId;
+public class StageDiagnosticsUpdateEvent extends StageEvent {
+  private final String msg;
 
-  public QuerySubQueryEvent(final ExecutionBlockId id,
-                            final QueryEventType queryEvent) {
-    super(id.getQueryId(), queryEvent);
-    this.executionBlockId = id;
+  public StageDiagnosticsUpdateEvent(final ExecutionBlockId id, String diagnostic) {
+    super(id, StageEventType.SQ_DIAGNOSTIC_UPDATE);
+    this.msg = diagnostic;
   }
 
-  public ExecutionBlockId getExecutionBlockId() {
-    return this.executionBlockId;
+  public String getDiagnosticUpdate() {
+    return msg;
   }
 }

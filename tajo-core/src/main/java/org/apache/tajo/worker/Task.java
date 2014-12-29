@@ -162,7 +162,7 @@ public class Task {
     
     context.setState(TaskAttemptState.TA_PENDING);
     LOG.info("==================================");
-    LOG.info("* Subquery " + request.getId() + " is initialized");
+    LOG.info("* Stage " + request.getId() + " is initialized");
     LOG.info("* InterQuery: " + interQuery
         + (interQuery ? ", Use " + this.shuffleType + " shuffle":"") +
         ", Fragments (num: " + request.getFragments().size() + ")" +
@@ -733,24 +733,24 @@ public class Task {
     final List<String> types = params.get("type");
     final List<String> qids = params.get("qid");
     final List<String> taskIdList = params.get("ta");
-    final List<String> subQueryIds = params.get("sid");
+    final List<String> stageIds = params.get("sid");
     final List<String> partIds = params.get("p");
     final List<String> offsetList = params.get("offset");
     final List<String> lengthList = params.get("length");
 
-    if (types == null || subQueryIds == null || qids == null || partIds == null) {
-      LOG.error("Invalid URI - Required queryId, type, subquery Id, and part id");
+    if (types == null || stageIds == null || qids == null || partIds == null) {
+      LOG.error("Invalid URI - Required queryId, type, stage Id, and part id");
       return null;
     }
 
-    if (qids.size() != 1 && types.size() != 1 || subQueryIds.size() != 1) {
-      LOG.error("Invalid URI - Required qids, type, taskIds, subquery Id, and part id");
+    if (qids.size() != 1 && types.size() != 1 || stageIds.size() != 1) {
+      LOG.error("Invalid URI - Required qids, type, taskIds, stage Id, and part id");
       return null;
     }
 
     String queryId = qids.get(0);
     String shuffleType = types.get(0);
-    String sid = subQueryIds.get(0);
+    String sid = stageIds.get(0);
     String partId = partIds.get(0);
 
     if (shuffleType.equals("r") && taskIdList == null) {
@@ -766,10 +766,10 @@ public class Task {
     LOG.info("PullServer request param: shuffleType=" + shuffleType + ", sid=" + sid + ", partId=" + partId
 	+ ", taskIds=" + taskIdList);
 
-    // The working directory of Tajo worker for each query, including subquery
+    // The working directory of Tajo worker for each query, including stage
     String queryBaseDir = queryId.toString() + "/output" + "/" + sid + "/";
 
-    // If the subquery requires a range shuffle
+    // If the stage requires a range shuffle
     if (shuffleType.equals("r")) {
       String ta = taskIds.get(0);
       if (!executionBlockContext.getLocalDirAllocator().ifExists(queryBaseDir + ta + "/output/", conf)) {
@@ -789,7 +789,7 @@ public class Task {
         return null;
       }
 
-      // If the subquery requires a hash shuffle or a scattered hash shuffle
+      // If the stage requires a hash shuffle or a scattered hash shuffle
     } else if (shuffleType.equals("h") || shuffleType.equals("s")) {
       int partParentId = HashShuffleAppenderManager.getPartParentId(Integer.parseInt(partId), (TajoConf) conf);
       String partPath = queryBaseDir + "hash-shuffle/" + partParentId + "/" + partId;
