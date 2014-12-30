@@ -261,8 +261,11 @@ public class QueryInProgress extends CompositeService {
   private void heartbeat(QueryInfo queryInfo) {
     LOG.info("Received QueryMaster heartbeat:" + queryInfo);
 
+    // to avoid partial update by different heartbeats
     synchronized (this.queryInfo) {
 
+      // terminal state will let client to retrieve a query result
+      // So, we must set the query result before changing query state
       if (isFinishState(queryInfo.getQueryState())) {
         if (queryInfo.hasResultdesc()) {
           this.queryInfo.setResultDesc(queryInfo.getResultDesc());
@@ -283,6 +286,7 @@ public class QueryInProgress extends CompositeService {
       if (this.queryInfo.getQueryState() == TajoProtos.QueryState.QUERY_FAILED) {
         LOG.warn(queryId + " failed, " + queryInfo.getLastMessage());
       }
+
 
       if (isFinishState(this.queryInfo.getQueryState())) {
         stop();
