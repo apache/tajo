@@ -27,6 +27,9 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1176: Implements queryable virtual tables for catalog information
+    (jihun)
+
     TAJO-269: Protocol buffer De/Serialization for LogicalNode. (hyunsik)
 
     TAJO-1266: Too many logs when writing a parquet relation. 
