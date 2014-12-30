@@ -16,31 +16,32 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master;
+package org.apache.tajo.catalog.dictionary;
 
-import java.io.IOException;
-import java.util.List;
+import org.apache.tajo.common.TajoDataTypes.Type;
 
-import org.apache.tajo.QueryId;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
+class ColumnDescriptor {
 
-import com.google.protobuf.ByteString;
-
-public interface NonForwardQueryResultScanner {
-
-  public void close() throws Exception;
-
-  public Schema getLogicalSchema();
-
-  public List<ByteString> getNextRows(int fetchRowNum) throws IOException;
-
-  public QueryId getQueryId();
+  private final String name;
+  private final Type type;
+  private final int length;
   
-  public String getSessionId();
+  public ColumnDescriptor(String columnName, Type columnType, int dataLength) {
+    name = columnName;
+    type = columnType;
+    length = dataLength;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public Type getType() {
+    return type;
+  }
+
+  public int getLength() {
+    return length;
+  }
   
-  public TableDesc getTableDesc();
-
-  public void init() throws IOException;
-
 }

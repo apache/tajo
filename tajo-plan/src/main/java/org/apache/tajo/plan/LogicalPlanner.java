@@ -37,6 +37,7 @@ import org.apache.tajo.algebra.WindowSpec;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
@@ -1314,7 +1315,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   private void updatePhysicalInfo(TableDesc desc) {
-    if (desc.getPath() != null) {
+    if (desc.getPath() != null && desc.getMeta().getStoreType() != StoreType.SYSTEM) {
       try {
         Path path = new Path(desc.getPath());
         FileSystem fs = path.getFileSystem(new Configuration());

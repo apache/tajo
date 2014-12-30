@@ -16,31 +16,14 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master;
+package org.apache.tajo.catalog.dictionary;
 
-import java.io.IOException;
-import java.util.List;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 
-import org.apache.tajo.QueryId;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
+public interface TableDescriptor {
 
-import com.google.protobuf.ByteString;
-
-public interface NonForwardQueryResultScanner {
-
-  public void close() throws Exception;
-
-  public Schema getLogicalSchema();
-
-  public List<ByteString> getNextRows(int fetchRowNum) throws IOException;
-
-  public QueryId getQueryId();
+  public String getTableNameString();
   
-  public String getSessionId();
+  public CatalogProtos.TableDescProto getTableDescription();
   
-  public TableDesc getTableDesc();
-
-  public void init() throws IOException;
-
 }

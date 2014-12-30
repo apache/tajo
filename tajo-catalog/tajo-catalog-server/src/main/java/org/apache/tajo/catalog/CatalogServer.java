@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -30,6 +31,7 @@ import org.apache.hadoop.service.AbstractService;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.annotation.ThreadSafe;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService;
+import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.store.CatalogStore;
@@ -79,6 +81,7 @@ public class CatalogServer extends AbstractService {
   private CatalogStore store;
   private Map<String, List<FunctionDescProto>> functions = new ConcurrentHashMap<String,
       List<FunctionDescProto>>();
+  private final InfoSchemaMetadataDictionary metaDictionary = new InfoSchemaMetadataDictionary();
 
   // RPC variables
   private BlockingRpcServer rpcServer;
@@ -298,6 +301,18 @@ public class CatalogServer extends AbstractService {
         rlock.unlock();
       }
     }
+    
+    @Override
+    public GetTablespacesProto getAllTablespaces(RpcController controller, NullProto request) throws ServiceException {
+      rlock.lock();
+      try {
+        return GetTablespacesProto.newBuilder().addAllTablespace(store.getTablespaces()).build();
+      } catch (Exception e) {
+        throw new ServiceException(e);
+      } finally {
+        rlock.unlock();
+      }
+    }
 
     @Override
     public TablespaceProto getTablespace(RpcController controller, StringProto request) throws ServiceException {
@@ -349,6 +364,10 @@ public class CatalogServer extends AbstractService {
       String databaseName = request.getDatabaseName();
       String tablespaceName = request.getTablespaceName();
 
+      if (metaDictionary.isSystemDatabase(databaseName)) {
+        throw new ServiceException(databaseName + " is a system database name.");
+      }
+      
       wlock.lock();
       try {
         if (store.existDatabase(databaseName)) {
@@ -389,9 +408,14 @@ public class CatalogServer extends AbstractService {
 
     @Override
     public BoolProto alterTable(RpcController controller, AlterTableDescProto proto) throws ServiceException {
+      String [] split = CatalogUtil.splitTableName(proto.getTableName());
+      
+      if (metaDictionary.isSystemDatabase(split[0])) {
+        throw new ServiceException(split[0] + " is a system database.");
+      }
+      
       wlock.lock();
       try {
-        String [] split = CatalogUtil.splitTableName(proto.getTableName());
         if (!store.existTable(split[0], split[1])) {
           throw new NoSuchTableException(proto.getTableName());
         }
@@ -410,6 +434,10 @@ public class CatalogServer extends AbstractService {
     @Override
     public BoolProto dropDatabase(RpcController controller, StringProto request) throws ServiceException {
       String databaseName = request.getValue();
+      
+      if (metaDictionary.isSystemDatabase(databaseName)) {
+        throw new ServiceException(databaseName + " is a system database.");
+      }
 
       wlock.lock();
       try {
@@ -432,18 +460,22 @@ public class CatalogServer extends AbstractService {
     public BoolProto existDatabase(RpcController controller, StringProto request) throws ServiceException {
       String databaseName = request.getValue();
 
-      rlock.lock();
-      try {
-        if (store.existDatabase(databaseName)) {
-          return ProtoUtil.TRUE;
-        } else {
-          return ProtoUtil.FALSE;
+      if (!metaDictionary.isSystemDatabase(databaseName)) {
+        rlock.lock();
+        try {
+          if (store.existDatabase(databaseName)) {
+            return ProtoUtil.TRUE;
+          } else {
+            return ProtoUtil.FALSE;
+          }
+        } catch (Exception e) {
+          LOG.error(e);
+          throw new ServiceException(e);
+        } finally {
+          rlock.unlock();
         }
-      } catch (Exception e) {
-        LOG.error(e);
-        throw new ServiceException(e);
-      } finally {
-        rlock.unlock();
+      } else {
+        return ProtoUtil.TRUE;
       }
     }
 
@@ -451,9 +483,24 @@ public class CatalogServer extends AbstractService {
     public StringListProto getAllDatabaseNames(RpcController controller, NullProto request) throws ServiceException {
       rlock.lock();
       try {
-        return ProtoUtil.convertStrings(store.getAllDatabaseNames());
+        StringListProto.Builder builder = StringListProto.newBuilder();
+        builder.addAllValues(store.getAllDatabaseNames());
+        builder.addValues(metaDictionary.getSystemDatabaseName());
+        return builder.build();
       } catch (Exception e) {
         LOG.error(e);
+        throw new ServiceException(e);
+      } finally {
+        rlock.unlock();
+      }
+    }
+    
+    @Override
+    public GetDatabasesProto getAllDatabases(RpcController controller, NullProto request) throws ServiceException {
+      rlock.lock();
+      try {
+        return GetDatabasesProto.newBuilder().addAllDatabase(store.getAllDatabases()).build();
+      } catch (Exception e) {
         throw new ServiceException(e);
       } finally {
         rlock.unlock();
@@ -466,27 +513,31 @@ public class CatalogServer extends AbstractService {
       String databaseName = request.getDatabaseName();
       String tableName = request.getTableName();
 
-      rlock.lock();
-      try {
-        boolean contain;
+      if (metaDictionary.isSystemDatabase(databaseName)){
+        return metaDictionary.getTableDesc(tableName);
+      } else {
+        rlock.lock();
+        try {
+          boolean contain;
 
-        contain = store.existDatabase(databaseName);
+          contain = store.existDatabase(databaseName);
 
-        if (contain) {
-          contain = store.existTable(databaseName, tableName);
           if (contain) {
-            return store.getTable(databaseName, tableName);
+            contain = store.existTable(databaseName, tableName);
+            if (contain) {
+              return store.getTable(databaseName, tableName);
+            } else {
+              throw new NoSuchTableException(tableName);
+            }
           } else {
-            throw new NoSuchTableException(tableName);
+            throw new NoSuchDatabaseException(databaseName);
           }
-        } else {
-          throw new NoSuchDatabaseException(databaseName);
+        } catch (Exception e) {
+          LOG.error(e);
+          throw new ServiceException(e);
+        } finally {
+          rlock.unlock();
         }
-      } catch (Exception e) {
-        LOG.error(e);
-        throw new ServiceException(e);
-      } finally {
-        rlock.unlock();
       }
     }
 
@@ -496,18 +547,22 @@ public class CatalogServer extends AbstractService {
 
       String databaseName = request.getValue();
 
-      rlock.lock();
-      try {
-        if (store.existDatabase(databaseName)) {
-          return ProtoUtil.convertStrings(store.getAllTableNames(databaseName));
-        } else {
-          throw new NoSuchDatabaseException(databaseName);
+      if (metaDictionary.isSystemDatabase(databaseName)) {
+        return ProtoUtil.convertStrings(metaDictionary.getAllSystemTables());
+      } else {
+        rlock.lock();
+        try {
+          if (store.existDatabase(databaseName)) {
+            return ProtoUtil.convertStrings(store.getAllTableNames(databaseName));
+          } else {
+            throw new NoSuchDatabaseException(databaseName);
+          }
+        } catch (Exception e) {
+          LOG.error(e);
+          throw new ServiceException(e);
+        } finally {
+          rlock.unlock();
         }
-      } catch (Exception e) {
-        LOG.error(e);
-        throw new ServiceException(e);
-      } finally {
-        rlock.unlock();
       }
     }
 
@@ -532,6 +587,10 @@ public class CatalogServer extends AbstractService {
       String databaseName = splitted[0];
       String tableName = splitted[1];
 
+      if (metaDictionary.isSystemDatabase(databaseName)) {
+        throw new ServiceException(databaseName + " is a system database.");
+      }
+      
       wlock.lock();
       try {
 
@@ -563,6 +622,10 @@ public class CatalogServer extends AbstractService {
 
       String databaseName = request.getDatabaseName();
       String tableName = request.getTableName();
+      
+      if (metaDictionary.isSystemDatabase(databaseName)) {
+        throw new ServiceException(databaseName + " is a system database.");
+      }
 
       wlock.lock();
       try {
@@ -595,27 +658,83 @@ public class CatalogServer extends AbstractService {
       String databaseName = request.getDatabaseName();
       String tableName = request.getTableName();
 
+      if (!metaDictionary.isSystemDatabase(databaseName)) {
+        rlock.lock();
+        try {
+
+          boolean contain = store.existDatabase(databaseName);
+
+          if (contain) {
+            if (store.existTable(databaseName, tableName)) {
+              return BOOL_TRUE;
+            } else {
+              return BOOL_FALSE;
+            }
+          } else {
+            throw new NoSuchDatabaseException(databaseName);
+          }
+        } catch (Exception e) {
+          LOG.error(e);
+          throw new ServiceException(e);
+        } finally {
+          rlock.unlock();
+        }
+      } else {
+        if (metaDictionary.existTable(tableName)) {
+          return BOOL_TRUE;
+        } else {
+          return BOOL_FALSE;
+        }
+      }
+
+    }
+    
+    @Override
+    public GetTablesProto getAllTables(RpcController controller, NullProto request) throws ServiceException {
       rlock.lock();
       try {
-
-        boolean contain = store.existDatabase(databaseName);
-
-        if (contain) {
-          if (store.existTable(databaseName, tableName)) {
-            return BOOL_TRUE;
-          } else {
-            return BOOL_FALSE;
-          }
-        } else {
-          throw new NoSuchDatabaseException(databaseName);
-        }
+        return GetTablesProto.newBuilder().addAllTable(store.getAllTables()).build();
       } catch (Exception e) {
-        LOG.error(e);
         throw new ServiceException(e);
       } finally {
         rlock.unlock();
       }
-
+    }
+    
+    @Override
+    public GetTableOptionsProto getAllTableOptions(RpcController controller, NullProto request) throws ServiceException {
+      rlock.lock();
+      try {
+        return GetTableOptionsProto.newBuilder().addAllTableOption(store.getAllTableOptions()).build();
+      } catch (Exception e) {
+        throw new ServiceException(e);
+      } finally {
+        rlock.unlock();
+      }
+    }
+    
+    @Override
+    public GetTableStatsProto getAllTableStats(RpcController controller, NullProto request) throws ServiceException {
+      rlock.lock();
+      try {
+        return GetTableStatsProto.newBuilder().addAllStat(store.getAllTableStats()).build();
+      } catch (Exception e) {
+        throw new ServiceException(e);
+      } finally {
+        rlock.unlock();
+      }
+    }
+    
+    @Override
+    public GetColumnsProto getAllColumns(RpcController controller, NullProto request) throws ServiceException {
+      rlock.lock();
+      try {
+        return GetColumnsProto.newBuilder().addAllColumn(store.getAllColumns()).build();
+      } catch (Exception e) {
+        throw new ServiceException(e);
+      } finally {
+        rlock.unlock();
+      }
     }
 
     @Override
@@ -625,6 +744,10 @@ public class CatalogServer extends AbstractService {
       String databaseName = request.getDatabaseName();
       String tableName = request.getTableName();
 
+      if (metaDictionary.isSystemDatabase(databaseName)) {
+        throw new ServiceException(databaseName + " is a system databsae. It does not contain any partitioned tables.");
+      }
+      
       rlock.lock();
       try {
         boolean contain;
@@ -658,6 +781,10 @@ public class CatalogServer extends AbstractService {
         throws ServiceException {
       String databaseName = request.getDatabaseName();
       String tableName = request.getTableName();
+      
+      if (metaDictionary.isSystemDatabase(databaseName)) {
+        throw new ServiceException(databaseName + " is a system database. Partition Method does not support yet.");
+      }
 
       rlock.lock();
       try {
@@ -721,14 +848,28 @@ public class CatalogServer extends AbstractService {
         throws ServiceException {
       return null;
     }
+    
+    @Override
+    public GetTablePartitionsProto getAllPartitions(RpcController controller, NullProto request) throws ServiceException {
+      rlock.lock();
+      try {
+        return GetTablePartitionsProto.newBuilder().addAllPart(store.getAllPartitions()).build();
+      } catch (Exception e) {
+        throw new ServiceException(e);
+      } finally {
+        rlock.unlock();
+      }
+    }
 
     @Override
     public BoolProto createIndex(RpcController controller, IndexDescProto indexDesc)
         throws ServiceException {
+      String databaseName = indexDesc.getTableIdentifier().getDatabaseName();
+      
       rlock.lock();
       try {
         if (store.existIndexByName(
-            indexDesc.getTableIdentifier().getDatabaseName(),
+            databaseName,
             indexDesc.getIndexName())) {
           throw new AlreadyExistsIndexException(indexDesc.getIndexName());
         }
@@ -846,6 +987,18 @@ public class CatalogServer extends AbstractService {
       }
 
       return BOOL_TRUE;
+    }
+    
+    @Override
+    public GetIndexesProto getAllIndexes(RpcController controller, NullProto request) throws ServiceException {
+      rlock.lock();
+      try {
+        return GetIndexesProto.newBuilder().addAllIndex(store.getAllIndexes()).build();
+      } catch (Exception e) {
+        throw new ServiceException(e);
+      } finally {
+        rlock.unlock();
+      }
     }
 
     public boolean checkIfBuiltin(FunctionType type) {

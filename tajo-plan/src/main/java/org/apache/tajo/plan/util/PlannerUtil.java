@@ -139,6 +139,27 @@ public class PlannerUtil {
         (simpleOperator && noComplexComputation && isOneQueryBlock &&
             noOrderBy && noGroupBy && noWhere && noJoin && singleRelation);
   }
+  
+  /**
+   * Checks whether the target of this query is a virtual table or not.
+   * It will be removed after tajo storage supports catalog service access.
+   * 
+   */
+  public static boolean checkIfQueryTargetIsVirtualTable(LogicalPlan plan) {
+    LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+    
+    boolean hasScanNode = plan.getRootBlock().hasNode(NodeType.SCAN);
+    LogicalNode[] scanNodes = findAllNodes(rootNode, NodeType.SCAN);
+    boolean isVirtualTable = scanNodes.length > 0;
+    ScanNode scanNode = null;
+    
+    for (LogicalNode node: scanNodes) {
+      scanNode = (ScanNode) node;
+      isVirtualTable &= (scanNode.getTableDesc().getMeta().getStoreType() == StoreType.SYSTEM);
+    }
+    
+    return !checkIfDDLPlan(rootNode) && hasScanNode && isVirtualTable;
+  }
 
   /**
    * Checks whether the query has 'from clause' or not.

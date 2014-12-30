@@ -16,31 +16,33 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master;
+package org.apache.tajo.catalog.dictionary;
 
-import java.io.IOException;
-import java.util.List;
+import org.apache.tajo.common.TajoDataTypes.Type;
 
-import org.apache.tajo.QueryId;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
+class TablespacesTableDescriptor extends AbstractTableDescriptor {
 
-import com.google.protobuf.ByteString;
-
-public interface NonForwardQueryResultScanner {
-
-  public void close() throws Exception;
-
-  public Schema getLogicalSchema();
-
-  public List<ByteString> getNextRows(int fetchRowNum) throws IOException;
-
-  public QueryId getQueryId();
+  private static final String TABLENAME = "tablespace";
   
-  public String getSessionId();
+  private final ColumnDescriptor[] columns = new ColumnDescriptor[] {
+      new ColumnDescriptor("space_id", Type.INT4, 0),
+      new ColumnDescriptor("space_name", Type.TEXT, 0),
+      new ColumnDescriptor("space_handler", Type.TEXT, 0),
+      new ColumnDescriptor("space_uri", Type.TEXT, 0)
+  };
   
-  public TableDesc getTableDesc();
+  public TablespacesTableDescriptor(InfoSchemaMetadataDictionary metadataDictionary) {
+    super(metadataDictionary);
+  }
 
-  public void init() throws IOException;
+  @Override
+  public String getTableNameString() {
+    return TABLENAME;
+  }
+
+  @Override
+  protected ColumnDescriptor[] getColumnDescriptors() {
+    return columns;
+  }
 
 }
