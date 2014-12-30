@@ -260,30 +260,33 @@ public class QueryInProgress extends CompositeService {
 
   private void heartbeat(QueryInfo queryInfo) {
     LOG.info("Received QueryMaster heartbeat:" + queryInfo);
-    this.queryInfo.setQueryState(queryInfo.getQueryState());
-    this.queryInfo.setProgress(queryInfo.getProgress());
-    this.queryInfo.setFinishTime(queryInfo.getFinishTime());
 
-    if(queryInfo.getLastMessage() != null && !queryInfo.getLastMessage().isEmpty()) {
-      this.queryInfo.setLastMessage(queryInfo.getLastMessage());
-      LOG.info(queryId + queryInfo.getLastMessage());
-    }
-    if(this.queryInfo.getQueryState() == TajoProtos.QueryState.QUERY_FAILED) {
-      //TODO needed QueryMaster's detail status(failed before or after launching worker)
-      //queryMasterStopped.set(true);
-      LOG.warn(queryId + " failed, " + queryInfo.getLastMessage());
-    }
+    synchronized (this.queryInfo) {
 
-    if(!querySubmitted.get()) {
-      getEventHandler().handle(
-          new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_START, this.queryInfo));
-    }
+      if (isFinishState(queryInfo.getQueryState())) {
+        if (queryInfo.hasResultdesc()) {
+          this.queryInfo.setResultDesc(queryInfo.getResultDesc());
+        }
+      }
 
-    if(isFinishState(this.queryInfo.getQueryState())) {
-      this.queryInfo.setResultDesc(queryInfo.getResultDesc());
+      this.queryInfo.setQueryState(queryInfo.getQueryState());
+      this.queryInfo.setProgress(queryInfo.getProgress());
+      this.queryInfo.setFinishTime(queryInfo.getFinishTime());
 
-      getEventHandler().handle(
-          new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_FINISH, this.queryInfo));
+      // Update diagnosis message
+      if (queryInfo.getLastMessage() != null && !queryInfo.getLastMessage().isEmpty()) {
+        this.queryInfo.setLastMessage(queryInfo.getLastMessage());
+        LOG.info(queryId + queryInfo.getLastMessage());
+      }
+
+      // if any error occurs, print outs the error message
+      if (this.queryInfo.getQueryState() == TajoProtos.QueryState.QUERY_FAILED) {
+        LOG.warn(queryId + " failed, " + queryInfo.getLastMessage());
+      }
+
+      if (isFinishState(this.queryInfo.getQueryState())) {
+        stop();
+      }
     }
   }
 

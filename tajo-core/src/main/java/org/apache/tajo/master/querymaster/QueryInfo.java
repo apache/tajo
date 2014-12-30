@@ -37,13 +37,13 @@ public class QueryInfo implements GsonObject, History {
   @Expose
   private String sql;
   @Expose
-  private TajoProtos.QueryState queryState;
+  private volatile TajoProtos.QueryState queryState;
   @Expose
-  private float progress;
+  private volatile float progress;
   @Expose
-  private long startTime;
+  private volatile long startTime;
   @Expose
-  private long finishTime;
+  private volatile  long finishTime;
   @Expose
   private String lastMessage;
   @Expose
@@ -159,15 +159,15 @@ public class QueryInfo implements GsonObject, History {
     this.progress = progress;
   }
 
-  public synchronized void setResultDesc(TableDesc result) {
+  public void setResultDesc(TableDesc result) {
     this.resultDesc = result;
   }
 
-  public synchronized boolean hasResultdesc() {
+  public boolean hasResultdesc() {
     return resultDesc != null;
   }
 
-  public synchronized TableDesc getResultDesc() {
+  public TableDesc getResultDesc() {
     return resultDesc;
   }
 
