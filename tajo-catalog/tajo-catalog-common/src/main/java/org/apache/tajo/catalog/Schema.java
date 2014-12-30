@@ -205,24 +205,15 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     }
 
     // The following is some workaround code.
-    String [] parts = name.split("\\.");
-    if (parts.length == 2 || parts.length == 3) {
-      if (fieldsByQualifiedName.containsKey(name)) {
-        return fieldsByQualifiedName.get(name);
-      } else {
-        return -1;
-      }
-    } else {
-      List<Integer> list = fieldsByName.get(name);
-      if (list == null) {
-        return -1;
-      } else  if (list.size() == 1) {
-        return fieldsByName.get(name).get(0);
-      } else if (list.size() == 0) {
-        return -1;
-      } else { // if list.size > 2
-        throw throwAmbiguousFieldException(list);
-      }
+    List<Integer> list = fieldsByName.get(name);
+    if (list == null) {
+      return -1;
+    } else  if (list.size() == 1) {
+      return fieldsByName.get(name).get(0);
+    } else if (list.size() == 0) {
+      return -1;
+    } else { // if list.size > 2
+      throw throwAmbiguousFieldException(list);
     }
 	}
 
