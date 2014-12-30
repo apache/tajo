@@ -37,13 +37,11 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
-import org.apache.tajo.master.exec.prehook.InsertIntoHook;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.logical.LogicalRootNode;
-import org.apache.tajo.plan.rewrite.RewriteRule;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.plan.logical.LogicalNode;
@@ -53,7 +51,6 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.master.GlobalEngine;
 import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.TajoContainerProxy;
 import org.apache.tajo.master.event.*;
@@ -380,10 +377,10 @@ public class QueryMasterTask extends CompositeService {
           if (tableDesc == null) {
             throw new VerifyException("Can't get table meta data from catalog: " + tableName);
           }
-          List<RewriteRule> storageSpecifiedRewriteRules = sm.getRewriteRules(
+          List<LogicalPlanRewriteRule> storageSpecifiedRewriteRules = sm.getRewriteRules(
               getQueryTaskContext().getQueryContext(), tableDesc);
           if (storageSpecifiedRewriteRules != null) {
-            for (RewriteRule eachRule: storageSpecifiedRewriteRules) {
+            for (LogicalPlanRewriteRule eachRule: storageSpecifiedRewriteRules) {
               optimizer.addRuleAfterToJoinOpt(eachRule);
             }
           }

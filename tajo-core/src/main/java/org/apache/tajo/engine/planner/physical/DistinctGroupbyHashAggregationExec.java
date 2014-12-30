@@ -76,7 +76,7 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
       distinctGroupingKeyIds[idx++] = intVal.intValue();
     }
 
-    List<GroupbyNode> groupbyNodes = plan.getGroupByNodes();
+    List<GroupbyNode> groupbyNodes = plan.getSubPlans();
     groupbyNodeNum = groupbyNodes.size();
     this.hashAggregators = new HashAggregator[groupbyNodeNum];
 
@@ -88,7 +88,7 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
     outputColumnNum = plan.getOutSchema().size();
 
     int allGroupbyOutColNum = 0;
-    for (GroupbyNode eachGroupby: plan.getGroupByNodes()) {
+    for (GroupbyNode eachGroupby: plan.getSubPlans()) {
       allGroupbyOutColNum += eachGroupby.getOutSchema().size();
     }
 

@@ -18,15 +18,16 @@
 
 package org.apache.tajo.plan.rewrite;
 
+import org.apache.tajo.OverridableConf;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 
-public interface QueryRewriteEngine {
+public interface LogicalPlanRewriteEngine {
   /**
    * Rewrite a logical plan with all query rewrite rules added to this engine.
    *
    * @param plan The plan to be rewritten with all query rewrite rule.
    * @return The rewritten plan.
    */
-  LogicalPlan rewrite(LogicalPlan plan) throws PlanningException;
+  LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws PlanningException;
 }

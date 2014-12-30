@@ -70,7 +70,7 @@ message TaskRequestProto {
     repeated FragmentProto fragments = 2;
     required string outputTable = 3;
     required bool clusteredOutput = 4;
-    required string serializedData = 5;
+    required LogicalNodeTree plan = 5;
     optional bool interQuery = 6 [default = false];
     repeated FetchProto fetches = 7;
     optional bool shouldDie = 8;
@@ -261,7 +261,7 @@ message JoinEnforce {
     MERGE_JOIN = 4;
   }
 
-  required int32 pid = 1;
+  required int32 nodeId = 1;
   required JoinAlgorithm algorithm = 2;
 }
 
@@ -271,7 +271,7 @@ message GroupbyEnforce {
     SORT_AGGREGATION = 1;
   }
 
-  required int32 pid = 1;
+  required int32 nodeId = 1;
   required GroupbyAlgorithm algorithm = 2;
   repeated SortSpecProto sortSpecs = 3;
 }
@@ -282,7 +282,7 @@ message SortEnforce {
     MERGE_SORT = 1;
   }
 
-  required int32 pid = 1;
+  required int32 nodeId = 1;
   required SortAlgorithm algorithm = 2;
 }
 
@@ -296,7 +296,7 @@ message ColumnPartitionEnforcer {
     SORT_PARTITION = 1;
   }
 
-  required int32 pid = 1;
+  required int32 nodeId = 1;
   required ColumnPartitionAlgorithm algorithm = 2;
 }
 
@@ -313,10 +313,10 @@ message DistinctGroupbyEnforcer {
   }
 
   message SortSpecArray {
-    required int32 pid = 1;
+    required int32 nodeId = 1;
     repeated SortSpecProto sortSpecs = 2;
   }
-  required int32 pid = 1;
+  required int32 nodeId = 1;
   required DistinctAggregationAlgorithm algorithm = 2;
   repeated SortSpecArray sortSpecArrays = 3;
   required bool isMultipleAggregation = 4 [default = false];

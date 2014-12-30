@@ -38,8 +38,8 @@ import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.serder.EvalTreeProtoDeserializer;
-import org.apache.tajo.plan.serder.EvalTreeProtoSerializer;
+import org.apache.tajo.plan.serder.EvalNodeDeserializer;
+import org.apache.tajo.plan.serder.EvalNodeSerializer;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.serder.PlanProto;
@@ -62,7 +62,9 @@ import java.util.TimeZone;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
 public class ExprTestBase {
   private static TajoTestingCluster util;
@@ -141,7 +143,7 @@ public class ExprTestBase {
       assertFalse(state.getErrorMessages().get(0), true);
     }
     LogicalPlan plan = planner.createPlan(context, expr, true);
-    optimizer.optimize(plan);
+    optimizer.optimize(context, plan);
     annotatedPlanVerifier.verify(context, state, plan);
 
     if (state.getErrorMessages().size() > 0) {
@@ -318,7 +320,7 @@ public class ExprTestBase {
   }
 
   public static void assertEvalTreeProtoSerDer(OverridableConf context, EvalNode evalNode) {
-    PlanProto.EvalTree converted = EvalTreeProtoSerializer.serialize(evalNode);
-    assertEquals(evalNode, EvalTreeProtoDeserializer.deserialize(context, converted));
+    PlanProto.EvalNodeTree converted = EvalNodeSerializer.serialize(evalNode);
+    assertEquals(evalNode, EvalNodeDeserializer.deserialize(context, converted));
   }
 }

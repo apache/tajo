@@ -42,12 +42,14 @@ import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanTestRuleProvider;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.querymaster.Query;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.master.querymaster.Stage;
 import org.apache.tajo.master.querymaster.StageState;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
+import org.apache.tajo.plan.rewrite.LogicalPlanTestRuleProvider;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
@@ -57,10 +59,7 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.sql.ResultSet;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.TimeZone;
-import java.util.UUID;
+import java.util.*;
 
 public class TajoTestingCluster {
 	private static Log LOG = LogFactory.getLog(TajoTestingCluster.class);
@@ -119,10 +118,18 @@ public class TajoTestingCluster {
   }
 
   void initPropertiesAndConfigs() {
+
+    // Set time zone
     TimeZone testDefaultTZ = TimeZone.getTimeZone(TajoConstants.DEFAULT_SYSTEM_TIMEZONE);
     conf.setSystemTimezone(testDefaultTZ);
     TimeZone.setDefault(testDefaultTZ);
 
+    // Injection of equality testing code of logical plan (de)serialization
+    conf.setClassVar(ConfVars.LOGICAL_PLAN_REWRITE_RULE_PROVIDER_CLASS, LogicalPlanTestRuleProvider.class);
+    conf.setClassVar(ConfVars.GLOBAL_PLAN_REWRITE_RULE_PROVIDER_CLASS, GlobalPlanTestRuleProvider.class);
+
+
+    // default resource manager
     if (System.getProperty(ConfVars.RESOURCE_MANAGER_CLASS.varname) != null) {
       String testResourceManager = System.getProperty(ConfVars.RESOURCE_MANAGER_CLASS.varname);
       Preconditions.checkState(testResourceManager.equals(TajoWorkerResourceManager.class.getCanonicalName()));

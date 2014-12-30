@@ -21,6 +21,7 @@ package org.apache.tajo.plan.rewrite.rules;
 import com.google.common.collect.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.OverridableConf;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -29,7 +30,7 @@ import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.plan.rewrite.RewriteRule;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
@@ -44,7 +45,7 @@ import java.util.*;
  * It also enables scanners to read only necessary columns.
  */
 public class ProjectionPushDownRule extends
-    BasicLogicalPlanVisitor<ProjectionPushDownRule.Context, LogicalNode> implements RewriteRule {
+    BasicLogicalPlanVisitor<ProjectionPushDownRule.Context, LogicalNode> implements LogicalPlanRewriteRule {
   /** Class Logger */
   private final Log LOG = LogFactory.getLog(ProjectionPushDownRule.class);
   private static final String name = "ProjectionPushDown";
@@ -55,7 +56,7 @@ public class ProjectionPushDownRule extends
   }
 
   @Override
-  public boolean isEligible(LogicalPlan plan) {
+  public boolean isEligible(OverridableConf queryContext, LogicalPlan plan) {
     LogicalNode toBeOptimized = plan.getRootBlock().getRoot();
 
     if (PlannerUtil.checkIfDDLPlan(toBeOptimized)) {
@@ -70,7 +71,7 @@ public class ProjectionPushDownRule extends
   }
 
   @Override
-  public LogicalPlan rewrite(LogicalPlan plan) throws PlanningException {
+  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws PlanningException {
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
 
     LogicalPlan.QueryBlock topmostBlock = rootBlock;
@@ -1044,7 +1045,7 @@ public class ProjectionPushDownRule extends
     if (node.hasTargets()) {
       targets = node.getTargets();
     } else {
-      targets = PlannerUtil.schemaToTargets(node.getTableSchema());
+      targets = PlannerUtil.schemaToTargets(node.getLogicalSchema());
     }
 
     LinkedHashSet<Target> projectedTargets = Sets.newLinkedHashSet();

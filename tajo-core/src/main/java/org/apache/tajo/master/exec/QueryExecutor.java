@@ -144,10 +144,10 @@ public class QueryExecutor {
 
       // others
     } else {
-      if (setSessionNode.isDefaultValue()) {
-        session.removeVariable(varName);
-      } else {
+      if (setSessionNode.hasValue()) {
         session.setVariable(varName, setSessionNode.getValue());
+      } else {
+        session.removeVariable(varName);
       }
     }
 

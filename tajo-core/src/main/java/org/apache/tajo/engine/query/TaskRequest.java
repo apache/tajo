@@ -28,6 +28,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.worker.FetchImpl;
 
 import java.util.List;
@@ -38,7 +39,7 @@ public interface TaskRequest extends ProtoObject<TajoWorkerProtocol.TaskRequestP
 	public List<CatalogProtos.FragmentProto> getFragments();
 	public String getOutputTableId();
 	public boolean isClusteredOutput();
-	public String getSerializedData();
+	public PlanProto.LogicalNodeTree getPlan();
 	public boolean isInterQuery();
 	public void setInterQuery();
 	public void addFetch(String name, FetchImpl fetch);

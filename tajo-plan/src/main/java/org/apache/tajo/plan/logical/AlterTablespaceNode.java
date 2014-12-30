@@ -23,9 +23,6 @@ import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.algebra.AlterTablespaceSetType;
 import org.apache.tajo.plan.PlanString;
-import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.plan.logical.LogicalNodeVisitor;
-import org.apache.tajo.plan.logical.NodeType;
 
 public class AlterTablespaceNode extends LogicalNode implements Cloneable {
 
@@ -36,6 +33,16 @@ public class AlterTablespaceNode extends LogicalNode implements Cloneable {
 
   public AlterTablespaceNode(int pid) {
     super(pid, NodeType.ALTER_TABLESPACE);
+  }
+
+  @Override
+  public int childNum() {
+    return 0;
+  }
+
+  @Override
+  public LogicalNode getChild(int idx) {
+    return null;
   }
 
   public String getTablespaceName() {

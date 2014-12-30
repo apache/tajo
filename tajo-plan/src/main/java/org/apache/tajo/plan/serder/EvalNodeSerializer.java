@@ -21,9 +21,16 @@ package org.apache.tajo.plan.serder;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.protobuf.ByteString;
+import org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
+import org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.plan.expr.*;
+import org.apache.tajo.plan.logical.WindowSpec;
+import org.apache.tajo.plan.serder.PlanProto.WinFunctionEvalSpec;
+import org.apache.tajo.plan.serder.PlanProto.WinFunctionEvalSpec.WindowFrame;
+import org.apache.tajo.util.ProtoUtil;
 
 import java.util.Map;
 import java.util.Stack;
@@ -33,24 +40,24 @@ import java.util.Stack;
  * in a postfix traverse order. The postfix traverse order guarantees that all child nodes of some node N
  * were already visited when the node N is visited. This manner makes tree serialization possible in a simple logic.
  */
-public class EvalTreeProtoSerializer
-    extends SimpleEvalNodeVisitor<EvalTreeProtoSerializer.EvalTreeProtoBuilderContext> {
+public class EvalNodeSerializer
+    extends SimpleEvalNodeVisitor<EvalNodeSerializer.EvalTreeProtoBuilderContext> {
 
-  private static final EvalTreeProtoSerializer instance;
+  private static final EvalNodeSerializer instance;
 
   static {
-    instance = new EvalTreeProtoSerializer();
+    instance = new EvalNodeSerializer();
   }
 
   public static class EvalTreeProtoBuilderContext {
     private int seqId = 0;
     private Map<EvalNode, Integer> idMap = Maps.newHashMap();
-    private PlanProto.EvalTree.Builder treeBuilder = PlanProto.EvalTree.newBuilder();
+    private PlanProto.EvalNodeTree.Builder treeBuilder = PlanProto.EvalNodeTree.newBuilder();
   }
 
-  public static PlanProto.EvalTree serialize(EvalNode evalNode) {
-    EvalTreeProtoSerializer.EvalTreeProtoBuilderContext context =
-        new EvalTreeProtoSerializer.EvalTreeProtoBuilderContext();
+  public static PlanProto.EvalNodeTree serialize(EvalNode evalNode) {
+    EvalNodeSerializer.EvalTreeProtoBuilderContext context =
+        new EvalNodeSerializer.EvalTreeProtoBuilderContext();
     instance.visit(context, evalNode, new Stack<EvalNode>());
     return context.treeBuilder.build();
   }
@@ -129,13 +136,23 @@ public class EvalTreeProtoSerializer
     super.visitBinaryEval(context, stack, binary);
     int [] childIds = registerGetChildIds(context, binary);
 
+    // registering itself and building EvalNode
+    PlanProto.EvalNode.Builder builder = createEvalBuilder(context, binary);
+
     // building itself
     PlanProto.BinaryEval.Builder binaryBuilder = PlanProto.BinaryEval.newBuilder();
     binaryBuilder.setLhsId(childIds[0]);
     binaryBuilder.setRhsId(childIds[1]);
 
-    // registering itself and building EvalNode
-    PlanProto.EvalNode.Builder builder = createEvalBuilder(context, binary);
+    if (binary instanceof InEval) {
+      binaryBuilder.setNegative(((InEval)binary).isNot());
+    } else if (binary instanceof PatternMatchPredicateEval) {
+      PatternMatchPredicateEval patternMatch = (PatternMatchPredicateEval) binary;
+      binaryBuilder.setNegative(patternMatch.isNot());
+      builder.setPatternMatch(
+          PlanProto.PatternMatchEvalSpec.newBuilder().setCaseSensitive(patternMatch.isCaseInsensitive()));
+    }
+
     builder.setBinary(binaryBuilder);
     context.treeBuilder.addNodes(builder);
     return binary;
@@ -252,9 +269,79 @@ public class EvalTreeProtoSerializer
     // registering itself and building EvalNode
     PlanProto.EvalNode.Builder builder = createEvalBuilder(context, function);
     builder.setFunction(funcBuilder);
-    context.treeBuilder.addNodes(builder);
 
+    if (function instanceof AggregationFunctionCallEval) {
+      AggregationFunctionCallEval aggFunc = (AggregationFunctionCallEval) function;
+
+      PlanProto.AggFunctionEvalSpec.Builder aggFunctionEvalBuilder = PlanProto.AggFunctionEvalSpec.newBuilder();
+      aggFunctionEvalBuilder.setIntermediatePhase(aggFunc.isIntermediatePhase());
+      aggFunctionEvalBuilder.setFinalPhase(aggFunc.isFinalPhase());
+      if (aggFunc.hasAlias()) {
+        aggFunctionEvalBuilder.setAlias(aggFunc.getAlias());
+      }
+
+      builder.setAggFunction(aggFunctionEvalBuilder);
+    }
+
+
+    if (function instanceof WindowFunctionEval) {
+      WindowFunctionEval winFunc = (WindowFunctionEval) function;
+      WinFunctionEvalSpec.Builder windowFuncBuilder = WinFunctionEvalSpec.newBuilder();
+
+      if (winFunc.hasSortSpecs()) {
+        windowFuncBuilder.addAllSortSpec(ProtoUtil.<CatalogProtos.SortSpecProto>toProtoObjects
+            (winFunc.getSortSpecs()));
+      }
+
+      windowFuncBuilder.setWindowFrame(buildWindowFrame(winFunc.getWindowFrame()));
+      builder.setWinFunction(windowFuncBuilder);
+    }
+
+
+    context.treeBuilder.addNodes(builder);
     return function;
+  }
+
+  private WindowFrame buildWindowFrame(WindowSpec.WindowFrame frame) {
+    WindowFrame.Builder windowFrameBuilder = WindowFrame.newBuilder();
+
+    WindowSpec.WindowStartBound startBound = frame.getStartBound();
+    WindowSpec.WindowEndBound endBound = frame.getEndBound();
+
+    WinFunctionEvalSpec.WindowStartBound.Builder startBoundBuilder = WinFunctionEvalSpec.WindowStartBound.newBuilder();
+    startBoundBuilder.setBoundType(convertStartBoundType(startBound.getBoundType()));
+
+    WinFunctionEvalSpec.WindowEndBound.Builder endBoundBuilder = WinFunctionEvalSpec.WindowEndBound.newBuilder();
+    endBoundBuilder.setBoundType(convertEndBoundType(endBound.getBoundType()));
+
+    windowFrameBuilder.setStartBound(startBoundBuilder);
+    windowFrameBuilder.setEndBound(endBoundBuilder);
+
+    return windowFrameBuilder.build();
+  }
+
+  private WinFunctionEvalSpec.WindowFrameStartBoundType convertStartBoundType(WindowFrameStartBoundType type) {
+    if (type == WindowFrameStartBoundType.UNBOUNDED_PRECEDING) {
+      return WinFunctionEvalSpec.WindowFrameStartBoundType.S_UNBOUNDED_PRECEDING;
+    } else if (type == WindowFrameStartBoundType.CURRENT_ROW) {
+      return WinFunctionEvalSpec.WindowFrameStartBoundType.S_CURRENT_ROW;
+    } else if (type == WindowFrameStartBoundType.PRECEDING) {
+      return WinFunctionEvalSpec.WindowFrameStartBoundType.S_PRECEDING;
+    } else {
+      throw new IllegalStateException("Unknown Window Start Bound type: " + type.name());
+    }
+  }
+
+  private WinFunctionEvalSpec.WindowFrameEndBoundType convertEndBoundType(WindowFrameEndBoundType type) {
+    if (type == WindowFrameEndBoundType.UNBOUNDED_FOLLOWING) {
+      return WinFunctionEvalSpec.WindowFrameEndBoundType.E_UNBOUNDED_FOLLOWING;
+    } else if (type == WindowFrameEndBoundType.CURRENT_ROW) {
+      return WinFunctionEvalSpec.WindowFrameEndBoundType.E_CURRENT_ROW;
+    } else if (type == WindowFrameEndBoundType.FOLLOWING) {
+      return WinFunctionEvalSpec.WindowFrameEndBoundType.E_FOLLOWING;
+    } else {
+      throw new IllegalStateException("Unknown Window End Bound type: " + type.name());
+    }
   }
 
   public static PlanProto.Datum serialize(Datum datum) {

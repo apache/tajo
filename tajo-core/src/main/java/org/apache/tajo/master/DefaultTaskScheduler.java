@@ -35,13 +35,15 @@ import org.apache.tajo.engine.query.TaskRequest;
 import org.apache.tajo.engine.query.TaskRequestImpl;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
+import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptScheduleContext;
 import org.apache.tajo.master.event.TaskSchedulerEvent.EventType;
+import org.apache.tajo.master.querymaster.Stage;
 import org.apache.tajo.master.querymaster.Task;
 import org.apache.tajo.master.querymaster.TaskAttempt;
-import org.apache.tajo.master.querymaster.Stage;
-import org.apache.tajo.master.container.TajoContainerId;
+import org.apache.tajo.plan.serder.LogicalNodeSerializer;
+import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.storage.DataLocation;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
@@ -125,7 +127,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     builder.setId(NULL_ATTEMPT_ID.getProto());
     builder.setShouldDie(true);
     builder.setOutputTable("");
-    builder.setSerializedData("");
+    builder.setPlan(PlanProto.LogicalNodeTree.newBuilder());
     builder.setClusteredOutput(false);
     stopTaskRunnerReq = builder.build();
   }
@@ -838,7 +840,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               new ArrayList<FragmentProto>(task.getAllFragments()),
               "",
               false,
-              task.getLogicalPlan().toJson(),
+              LogicalNodeSerializer.serialize(task.getLogicalPlan()),
               context.getMasterContext().getQueryContext(),
               stage.getDataChannel(), stage.getBlock().getEnforcer());
           if (checkIfInterQuery(stage.getMasterPlan(), stage.getBlock())) {
@@ -894,7 +896,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               Lists.newArrayList(task.getAllFragments()),
               "",
               false,
-              task.getLogicalPlan().toJson(),
+              LogicalNodeSerializer.serialize(task.getLogicalPlan()),
               context.getMasterContext().getQueryContext(),
               stage.getDataChannel(),
               stage.getBlock().getEnforcer());
