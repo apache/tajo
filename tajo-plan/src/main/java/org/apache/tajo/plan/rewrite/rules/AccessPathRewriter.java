@@ -56,7 +56,7 @@ public class AccessPathRewriter implements RewriteRule {
           if (accessPathInfos.size() > 1) {
             for (AccessPathInfo accessPathInfo : accessPathInfos) {
               if (accessPathInfo.getScanType() == AccessPathInfo.ScanTypeControl.INDEX_SCAN) {
-                rewriter = new Rewriter(conf);
+                rewriter = new Rewriter();
                 return true;
               }
             }
@@ -70,6 +70,7 @@ public class AccessPathRewriter implements RewriteRule {
   @Override
   public LogicalPlan rewrite(OverridableConf conf, LogicalPlan plan) throws PlanningException {
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
+    rewriter.init(conf);
     rewriter.visit(rootBlock, plan, rootBlock, rootBlock.getRoot(), new Stack<LogicalNode>());
     return plan;
   }
@@ -77,7 +78,8 @@ public class AccessPathRewriter implements RewriteRule {
   private final class Rewriter extends BasicLogicalPlanVisitor<Object, Object> {
 
     private OverridableConf conf;
-    public Rewriter(OverridableConf conf) {
+
+    public void init(OverridableConf conf) {
       this.conf = conf;
     }
 
