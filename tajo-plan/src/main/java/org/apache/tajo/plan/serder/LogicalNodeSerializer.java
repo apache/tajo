@@ -84,8 +84,8 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     }
 
     PlanProto.LogicalNode.Builder nodeBuilder = PlanProto.LogicalNode.newBuilder();
-    nodeBuilder.setSid(selfId);
-    nodeBuilder.setPid(node.getPID());
+    nodeBuilder.setVisitSeq(selfId);
+    nodeBuilder.setNodeId(node.getPID());
     nodeBuilder.setType(convertType(node.getType()));
 
     // some DDL statements like DropTable or DropDatabase do not have in/out schemas
@@ -111,7 +111,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     int [] childIds = registerGetChildIds(context, root);
 
     PlanProto.RootNode.Builder rootBuilder = PlanProto.RootNode.newBuilder();
-    rootBuilder.setChildId(childIds[0]);
+    rootBuilder.setChildSeq(childIds[0]);
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, root);
     nodeBuilder.setRoot(rootBuilder);
@@ -158,7 +158,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     int [] childIds = registerGetChildIds(context, projection);
 
     PlanProto.ProjectionNode.Builder projectionBuilder = PlanProto.ProjectionNode.newBuilder();
-    projectionBuilder.setChildId(childIds[0]);
+    projectionBuilder.setChildSeq(childIds[0]);
     projectionBuilder.addAllTargets(
         ProtoUtil.<PlanProto.Target>toProtoObjects(projection.getTargets()));
     projectionBuilder.setDistinct(projection.isDistinct());
@@ -178,7 +178,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     int [] childIds = registerGetChildIds(context, limit);
 
     PlanProto.LimitNode.Builder limitBuilder = PlanProto.LimitNode.newBuilder();
-    limitBuilder.setChildId(childIds[0]);
+    limitBuilder.setChildSeq(childIds[0]);
     limitBuilder.setFetchFirstNum(limit.getFetchFirstNum());
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, limit);
@@ -195,7 +195,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     int [] childIds = registerGetChildIds(context, windowAgg);
 
     PlanProto.WindowAggNode.Builder windowAggBuilder = PlanProto.WindowAggNode.newBuilder();
-    windowAggBuilder.setChildId(childIds[0]);
+    windowAggBuilder.setChildSeq(childIds[0]);
 
     if (windowAgg.hasPartitionKeys()) {
       windowAggBuilder.addAllPartitionKeys(
@@ -232,7 +232,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     int [] childIds = registerGetChildIds(context, sort);
 
     PlanProto.SortNode.Builder sortBuilder = PlanProto.SortNode.newBuilder();
-    sortBuilder.setChildId(childIds[0]);
+    sortBuilder.setChildSeq(childIds[0]);
     for (int i = 0; i < sort.getSortKeys().length; i++) {
       sortBuilder.addSortSpecs(sort.getSortKeys()[i].getProto());
     }
@@ -252,7 +252,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     int [] childIds = registerGetChildIds(context, having);
 
     PlanProto.FilterNode.Builder filterBuilder = PlanProto.FilterNode.newBuilder();
-    filterBuilder.setChildId(childIds[0]);
+    filterBuilder.setChildSeq(childIds[0]);
     filterBuilder.setQual(EvalNodeSerializer.serialize(having.getQual()));
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, having);
@@ -276,7 +276,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     int [] childIds = registerGetChildIds(context, node);
 
     PlanProto.GroupbyNode.Builder groupbyBuilder = PlanProto.GroupbyNode.newBuilder();
-    groupbyBuilder.setChildId(childIds[0]);
+    groupbyBuilder.setChildSeq(childIds[0]);
     groupbyBuilder.setDistinct(node.isDistinct());
 
     if (node.groupingKeyNum() > 0) {
@@ -304,7 +304,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     int [] childIds = registerGetChildIds(context, node);
 
     PlanProto.DistinctGroupbyNode.Builder distGroupbyBuilder = PlanProto.DistinctGroupbyNode.newBuilder();
-    distGroupbyBuilder.setChildId(childIds[0]);
+    distGroupbyBuilder.setChildSeq(childIds[0]);
     if (node.getGroupbyPlan() != null) {
       distGroupbyBuilder.setGroupbyNode(buildGroupby(context, node.getGroupbyPlan()));
     }
@@ -343,7 +343,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     int [] childIds = registerGetChildIds(context, filter);
 
     PlanProto.FilterNode.Builder filterBuilder = PlanProto.FilterNode.newBuilder();
-    filterBuilder.setChildId(childIds[0]);
+    filterBuilder.setChildSeq(childIds[0]);
     filterBuilder.setQual(EvalNodeSerializer.serialize(filter.getQual()));
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, filter);
@@ -362,8 +362,8 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     // building itself
     PlanProto.JoinNode.Builder joinBuilder = PlanProto.JoinNode.newBuilder();
     joinBuilder.setJoinType(convertJoinType(join.getJoinType()));
-    joinBuilder.setLeftChildId(childIds[0]);
-    joinBuilder.setRightChildId(childIds[1]);
+    joinBuilder.setLeftChildSeq(childIds[0]);
+    joinBuilder.setRightChilSeq(childIds[1]);
     if (join.hasJoinQual()) {
       joinBuilder.setJoinQual(EvalNodeSerializer.serialize(join.getJoinQual()));
     }
@@ -391,8 +391,8 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
     PlanProto.UnionNode.Builder unionBuilder = PlanProto.UnionNode.newBuilder();
     unionBuilder.setAll(true);
-    unionBuilder.setLeftChildId(childIds[0]);
-    unionBuilder.setRightChildId(childIds[1]);
+    unionBuilder.setLeftChildSeq(childIds[0]);
+    unionBuilder.setRightChildSeq(childIds[1]);
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
     nodeBuilder.setUnion(unionBuilder);
@@ -465,7 +465,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     int [] childIds = registerGetChildIds(context, node);
 
     PlanProto.TableSubQueryNode.Builder builder = PlanProto.TableSubQueryNode.newBuilder();
-    builder.setChildId(childIds[0]);
+    builder.setChildSeq(childIds[0]);
 
     builder.setTableName(node.getTableName());
 
@@ -623,7 +623,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
   private static PlanProto.PersistentStoreNode.Builder buildPersistentStoreBuilder(PersistentStoreNode node,
                                                                                    int [] childIds) {
     PlanProto.PersistentStoreNode.Builder persistentStoreBuilder = PlanProto.PersistentStoreNode.newBuilder();
-    persistentStoreBuilder.setChildId(childIds[0]);
+    persistentStoreBuilder.setChildSeq(childIds[0]);
     persistentStoreBuilder.setStorageType(node.getStorageType());
     if (node.hasOptions()) {
       persistentStoreBuilder.setTableProperties(node.getOptions().getProto());

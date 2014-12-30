@@ -63,8 +63,8 @@ message LogicalNodeTree {
 }
 
 message LogicalNode {
-  required int32 sid = 1;
-  required int32 pid = 2;
+  required int32 visitSeq = 1;
+  required int32 nodeId = 2;
   required NodeType type = 3;
   optional SchemaProto in_schema = 4;
   optional SchemaProto out_schema = 5;
@@ -111,13 +111,13 @@ message PartitionScanSpec {
 }
 
 message FilterNode {
-  required int32 childId = 1;
+  required int32 childSeq = 1;
   required EvalNodeTree qual = 2;
 }
 
 message JoinNode {
-  required int32 leftChildId = 1;
-  required int32 rightChildId = 2;
+  required int32 leftChildSeq = 1;
+  required int32 rightChilSeq = 2;
   required JoinType joinType = 3;
   optional EvalNodeTree joinQual = 4;
   required bool existsTargets = 5;
@@ -125,7 +125,7 @@ message JoinNode {
 }
 
 message GroupbyNode {
-  required int32 childId = 1;
+  required int32 childSeq = 1;
   required bool distinct = 2;
   repeated ColumnProto groupingKeys = 3;
   repeated EvalNodeTree aggFunctions = 4;
@@ -133,7 +133,7 @@ message GroupbyNode {
 }
 
 message DistinctGroupbyNode {
-  required int32 childId = 1;
+  required int32 childSeq = 1;
   optional LogicalNode groupbyNode = 2;
   repeated LogicalNode subPlans = 3;
   repeated Target targets = 4;
@@ -143,17 +143,17 @@ message DistinctGroupbyNode {
 }
 
 message SortNode {
-  required int32 childId = 1;
+  required int32 childSeq = 1;
   repeated SortSpecProto sortSpecs = 2;
 }
 
 message LimitNode {
-  required int32 childId = 1;
+  required int32 childSeq = 1;
   required int64 fetchFirstNum = 2;
 }
 
 message WindowAggNode {
-  required int32 childId = 1;
+  required int32 childSeq = 1;
   repeated ColumnProto partitionKeys = 2;
   repeated SortSpecProto sortSpecs = 3;
   repeated EvalNodeTree windowFunctions = 4;
@@ -162,19 +162,19 @@ message WindowAggNode {
 }
 
 message UnionNode {
-  required int32 leftChildId = 1;
-  required int32 rightChildId = 2;
+  required int32 leftChildSeq = 1;
+  required int32 rightChildSeq = 2;
   required bool all = 3;
 }
 
 message TableSubQueryNode {
-  required int32 childId = 1;
+  required int32 childSeq = 1;
   required string tableName = 2;
   repeated Target targets = 3;
 }
 
 message ProjectionNode {
-  required int32 childId = 1;
+  required int32 childSeq = 1;
   required bool distinct = 2;
   repeated Target targets = 3;
 }
@@ -184,7 +184,7 @@ message EvalExprNode {
 }
 
 message RootNode {
-  required int32 childId = 1;
+  required int32 childSeq = 1;
 }
 
 message SetSessionNode {
@@ -215,7 +215,7 @@ message PartitionTableScanSpec {
 }
 
 message PersistentStoreNode {
-  required int32 childId = 1;
+  required int32 childSeq = 1;
   required StoreType storageType = 2;
   required KeyValueSetProto tableProperties = 3;
 }

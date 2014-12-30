@@ -1217,15 +1217,15 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       List<EnforceProperty> properties = enforcer.getEnforceProperties(type);
       EnforceProperty found = null;
       for (EnforceProperty property : properties) {
-        if (type == EnforceType.JOIN && property.getJoin().getPid() == node.getPID()) {
+        if (type == EnforceType.JOIN && property.getJoin().getNodeId() == node.getPID()) {
           found = property;
-        } else if (type == EnforceType.GROUP_BY && property.getGroupby().getPid() == node.getPID()) {
+        } else if (type == EnforceType.GROUP_BY && property.getGroupby().getNodeId() == node.getPID()) {
           found = property;
-        } else if (type == EnforceType.DISTINCT_GROUP_BY && property.getDistinct().getPid() == node.getPID()) {
+        } else if (type == EnforceType.DISTINCT_GROUP_BY && property.getDistinct().getNodeId() == node.getPID()) {
           found = property;
-        } else if (type == EnforceType.SORT && property.getSort().getPid() == node.getPID()) {
+        } else if (type == EnforceType.SORT && property.getSort().getNodeId() == node.getPID()) {
           found = property;
-        } else if (type == EnforceType.COLUMN_PARTITION && property.getColumnPartition().getPid() == node.getPID()) {
+        } else if (type == EnforceType.COLUMN_PARTITION && property.getColumnPartition().getNodeId() == node.getPID()) {
           found = property;
         }
       }

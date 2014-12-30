@@ -701,7 +701,7 @@ public class DistinctGroupbyBuilder {
         sortSpecs.add(SortSpecProto.newBuilder().setColumn(column.getProto()).build());
       }
       sortSpecArrays.add( SortSpecArray.newBuilder()
-          .setPid(secondStageDistinctNode.getSubPlans().get(index).getPID())
+          .setNodeId(secondStageDistinctNode.getSubPlans().get(index).getPID())
           .addAllSortSpecs(sortSpecs).build());
     }
     secondStageBlock.getEnforcer().enforceDistinctAggregation(secondStageDistinctNode.getPID(),
@@ -729,7 +729,7 @@ public class DistinctGroupbyBuilder {
         sortSpecs.add(SortSpecProto.newBuilder().setColumn(column.getProto()).build());
       }
       sortSpecArrays.add( SortSpecArray.newBuilder()
-          .setPid(thirdStageDistinctNode.getSubPlans().get(index).getPID())
+          .setNodeId(thirdStageDistinctNode.getSubPlans().get(index).getPID())
           .addAllSortSpecs(sortSpecs).build());
     }
     thirdStageBlock.getEnforcer().enforceDistinctAggregation(thirdStageDistinctNode.getPID(),

@@ -66,7 +66,7 @@ public class LogicalNodeDeserializer {
     Collections.sort(nodeList, new Comparator<PlanProto.LogicalNode>() {
       @Override
       public int compare(PlanProto.LogicalNode o1, PlanProto.LogicalNode o2) {
-        return o1.getSid() - o2.getSid();
+        return o1.getVisitSeq() - o2.getVisitSeq();
       }
     });
 
@@ -161,7 +161,7 @@ public class LogicalNodeDeserializer {
         throw new RuntimeException("Unknown NodeType: " + protoNode.getType().name());
       }
 
-      nodeMap.put(protoNode.getSid(), current);
+      nodeMap.put(protoNode.getVisitSeq(), current);
     }
 
     return current;
@@ -171,8 +171,8 @@ public class LogicalNodeDeserializer {
                                             PlanProto.LogicalNode protoNode) {
     PlanProto.RootNode rootProto = protoNode.getRoot();
 
-    LogicalRootNode root = new LogicalRootNode(protoNode.getPid());
-    root.setChild(nodeMap.get(rootProto.getChildId()));
+    LogicalRootNode root = new LogicalRootNode(protoNode.getNodeId());
+    root.setChild(nodeMap.get(rootProto.getChildSeq()));
     if (protoNode.hasInSchema()) {
       root.setInSchema(convertSchema(protoNode.getInSchema()));
     }
@@ -186,7 +186,7 @@ public class LogicalNodeDeserializer {
   private static SetSessionNode convertSetSession(PlanProto.LogicalNode protoNode) {
     PlanProto.SetSessionNode setSessionProto = protoNode.getSetSession();
 
-    SetSessionNode setSession = new SetSessionNode(protoNode.getPid());
+    SetSessionNode setSession = new SetSessionNode(protoNode.getNodeId());
     setSession.init(setSessionProto.getName(), setSessionProto.hasValue() ? setSessionProto.getValue() : null);
 
     return setSession;
@@ -195,7 +195,7 @@ public class LogicalNodeDeserializer {
   private static EvalExprNode convertEvalExpr(OverridableConf context, PlanProto.LogicalNode protoNode) {
     PlanProto.EvalExprNode evalExprProto = protoNode.getExprEval();
 
-    EvalExprNode evalExpr = new EvalExprNode(protoNode.getPid());
+    EvalExprNode evalExpr = new EvalExprNode(protoNode.getNodeId());
     evalExpr.setInSchema(convertSchema(protoNode.getInSchema()));
     evalExpr.setTargets(convertTargets(context, evalExprProto.getTargetsList()));
 
@@ -206,9 +206,9 @@ public class LogicalNodeDeserializer {
                                                  PlanProto.LogicalNode protoNode) {
     PlanProto.ProjectionNode projectionProto = protoNode.getProjection();
 
-    ProjectionNode projectionNode = new ProjectionNode(protoNode.getPid());
+    ProjectionNode projectionNode = new ProjectionNode(protoNode.getNodeId());
     projectionNode.init(projectionProto.getDistinct(), convertTargets(context, projectionProto.getTargetsList()));
-    projectionNode.setChild(nodeMap.get(projectionProto.getChildId()));
+    projectionNode.setChild(nodeMap.get(projectionProto.getChildSeq()));
     projectionNode.setInSchema(convertSchema(protoNode.getInSchema()));
     projectionNode.setOutSchema(convertSchema(protoNode.getOutSchema()));
 
@@ -218,8 +218,8 @@ public class LogicalNodeDeserializer {
   private static LimitNode convertLimit(Map<Integer, LogicalNode> nodeMap, PlanProto.LogicalNode protoNode) {
     PlanProto.LimitNode limitProto = protoNode.getLimit();
 
-    LimitNode limitNode = new LimitNode(protoNode.getPid());
-    limitNode.setChild(nodeMap.get(limitProto.getChildId()));
+    LimitNode limitNode = new LimitNode(protoNode.getNodeId());
+    limitNode.setChild(nodeMap.get(limitProto.getChildSeq()));
     limitNode.setInSchema(convertSchema(protoNode.getInSchema()));
     limitNode.setOutSchema(convertSchema(protoNode.getOutSchema()));
     limitNode.setFetchFirst(limitProto.getFetchFirstNum());
@@ -230,8 +230,8 @@ public class LogicalNodeDeserializer {
   private static SortNode convertSort(Map<Integer, LogicalNode> nodeMap, PlanProto.LogicalNode protoNode) {
     PlanProto.SortNode sortProto = protoNode.getSort();
 
-    SortNode sortNode = new SortNode(protoNode.getPid());
-    sortNode.setChild(nodeMap.get(sortProto.getChildId()));
+    SortNode sortNode = new SortNode(protoNode.getNodeId());
+    sortNode.setChild(nodeMap.get(sortProto.getChildSeq()));
     sortNode.setInSchema(convertSchema(protoNode.getInSchema()));
     sortNode.setOutSchema(convertSchema(protoNode.getOutSchema()));
     sortNode.setSortSpecs(convertSortSpecs(sortProto.getSortSpecsList()));
@@ -243,8 +243,8 @@ public class LogicalNodeDeserializer {
                                          PlanProto.LogicalNode protoNode) {
     PlanProto.FilterNode havingProto = protoNode.getFilter();
 
-    HavingNode having = new HavingNode(protoNode.getPid());
-    having.setChild(nodeMap.get(havingProto.getChildId()));
+    HavingNode having = new HavingNode(protoNode.getNodeId());
+    having.setChild(nodeMap.get(havingProto.getChildSeq()));
     having.setQual(EvalNodeDeserializer.deserialize(context, havingProto.getQual()));
     having.setInSchema(convertSchema(protoNode.getInSchema()));
     having.setOutSchema(convertSchema(protoNode.getOutSchema()));
@@ -256,8 +256,8 @@ public class LogicalNodeDeserializer {
                                                PlanProto.LogicalNode protoNode) {
     PlanProto.WindowAggNode windowAggProto = protoNode.getWindowAgg();
 
-    WindowAggNode windowAgg = new WindowAggNode(protoNode.getPid());
-    windowAgg.setChild(nodeMap.get(windowAggProto.getChildId()));
+    WindowAggNode windowAgg = new WindowAggNode(protoNode.getNodeId());
+    windowAgg.setChild(nodeMap.get(windowAggProto.getChildSeq()));
 
     if (windowAggProto.getPartitionKeysCount() > 0) {
       windowAgg.setPartitionKeys(convertColumns(windowAggProto.getPartitionKeysList()));
@@ -287,8 +287,8 @@ public class LogicalNodeDeserializer {
                                            PlanProto.LogicalNode protoNode) {
     PlanProto.GroupbyNode groupbyProto = protoNode.getGroupby();
 
-    GroupbyNode groupby = new GroupbyNode(protoNode.getPid());
-    groupby.setChild(nodeMap.get(groupbyProto.getChildId()));
+    GroupbyNode groupby = new GroupbyNode(protoNode.getNodeId());
+    groupby.setChild(nodeMap.get(groupbyProto.getChildSeq()));
     groupby.setDistinct(groupbyProto.getDistinct());
 
     if (groupbyProto.getGroupingKeysCount() > 0) {
@@ -311,8 +311,8 @@ public class LogicalNodeDeserializer {
                                            PlanProto.LogicalNode protoNode) {
     PlanProto.DistinctGroupbyNode distinctGroupbyProto = protoNode.getDistinctGroupby();
 
-    DistinctGroupbyNode distinctGroupby = new DistinctGroupbyNode(protoNode.getPid());
-    distinctGroupby.setChild(nodeMap.get(distinctGroupbyProto.getChildId()));
+    DistinctGroupbyNode distinctGroupby = new DistinctGroupbyNode(protoNode.getNodeId());
+    distinctGroupby.setChild(nodeMap.get(distinctGroupbyProto.getChildSeq()));
 
     if (distinctGroupbyProto.hasGroupbyNode()) {
       distinctGroupby.setGroupbyPlan(convertGroupby(context, nodeMap, distinctGroupbyProto.getGroupbyNode()));
@@ -352,9 +352,9 @@ public class LogicalNodeDeserializer {
                                      PlanProto.LogicalNode protoNode) {
     PlanProto.JoinNode joinProto = protoNode.getJoin();
 
-    JoinNode join = new JoinNode(protoNode.getPid());
-    join.setLeftChild(nodeMap.get(joinProto.getLeftChildId()));
-    join.setRightChild(nodeMap.get(joinProto.getRightChildId()));
+    JoinNode join = new JoinNode(protoNode.getNodeId());
+    join.setLeftChild(nodeMap.get(joinProto.getLeftChildSeq()));
+    join.setRightChild(nodeMap.get(joinProto.getRightChilSeq()));
     join.setJoinType(convertJoinType(joinProto.getJoinType()));
     join.setInSchema(convertSchema(protoNode.getInSchema()));
     join.setOutSchema(convertSchema(protoNode.getOutSchema()));
@@ -372,10 +372,10 @@ public class LogicalNodeDeserializer {
                                             PlanProto.LogicalNode protoNode) {
     PlanProto.FilterNode filterProto = protoNode.getFilter();
 
-    SelectionNode selection = new SelectionNode(protoNode.getPid());
+    SelectionNode selection = new SelectionNode(protoNode.getNodeId());
     selection.setInSchema(convertSchema(protoNode.getInSchema()));
     selection.setOutSchema(convertSchema(protoNode.getOutSchema()));
-    selection.setChild(nodeMap.get(filterProto.getChildId()));
+    selection.setChild(nodeMap.get(filterProto.getChildSeq()));
     selection.setQual(EvalNodeDeserializer.deserialize(context, filterProto.getQual()));
 
     return selection;
@@ -384,17 +384,17 @@ public class LogicalNodeDeserializer {
   private static UnionNode convertUnion(Map<Integer, LogicalNode> nodeMap, PlanProto.LogicalNode protoNode) {
     PlanProto.UnionNode unionProto = protoNode.getUnion();
 
-    UnionNode union = new UnionNode(protoNode.getPid());
+    UnionNode union = new UnionNode(protoNode.getNodeId());
     union.setInSchema(convertSchema(protoNode.getInSchema()));
     union.setOutSchema(convertSchema(protoNode.getOutSchema()));
-    union.setLeftChild(nodeMap.get(unionProto.getLeftChildId()));
-    union.setRightChild(nodeMap.get(unionProto.getRightChildId()));
+    union.setLeftChild(nodeMap.get(unionProto.getLeftChildSeq()));
+    union.setRightChild(nodeMap.get(unionProto.getRightChildSeq()));
 
     return union;
   }
 
   private static ScanNode convertScan(OverridableConf context, PlanProto.LogicalNode protoNode) {
-    ScanNode scan = new ScanNode(protoNode.getPid());
+    ScanNode scan = new ScanNode(protoNode.getNodeId());
     fillScanNode(context, protoNode, scan);
 
     return scan;
@@ -421,7 +421,7 @@ public class LogicalNodeDeserializer {
   }
 
   private static PartitionedTableScanNode convertPartitionScan(OverridableConf context, PlanProto.LogicalNode protoNode) {
-    PartitionedTableScanNode partitionedScan = new PartitionedTableScanNode(protoNode.getPid());
+    PartitionedTableScanNode partitionedScan = new PartitionedTableScanNode(protoNode.getNodeId());
     fillScanNode(context, protoNode, partitionedScan);
 
     PlanProto.PartitionScanSpec partitionScanProto = protoNode.getPartitionScan();
@@ -438,8 +438,8 @@ public class LogicalNodeDeserializer {
                                                                  PlanProto.LogicalNode protoNode) {
     PlanProto.TableSubQueryNode proto = protoNode.getTableSubQuery();
 
-    TableSubQueryNode tableSubQuery = new TableSubQueryNode(protoNode.getPid());
-    tableSubQuery.init(proto.getTableName(), nodeMap.get(proto.getChildId()));
+    TableSubQueryNode tableSubQuery = new TableSubQueryNode(protoNode.getNodeId());
+    tableSubQuery.init(proto.getTableName(), nodeMap.get(proto.getChildSeq()));
     tableSubQuery.setInSchema(convertSchema(protoNode.getInSchema()));
     if (proto.getTargetsCount() > 0) {
       tableSubQuery.setTargets(convertTargets(context, proto.getTargetsList()));
@@ -454,14 +454,14 @@ public class LogicalNodeDeserializer {
     PlanProto.StoreTableNodeSpec storeTableNodeSpec = protoNode.getStoreTable();
     PlanProto.CreateTableNodeSpec createTableNodeSpec = protoNode.getCreateTable();
 
-    CreateTableNode createTable = new CreateTableNode(protoNode.getPid());
+    CreateTableNode createTable = new CreateTableNode(protoNode.getNodeId());
     if (protoNode.hasInSchema()) {
       createTable.setInSchema(convertSchema(protoNode.getInSchema()));
     }
     if (protoNode.hasOutSchema()) {
       createTable.setOutSchema(convertSchema(protoNode.getOutSchema()));
     }
-    createTable.setChild(nodeMap.get(persistentStoreProto.getChildId()));
+    createTable.setChild(nodeMap.get(persistentStoreProto.getChildSeq()));
     createTable.setStorageType(persistentStoreProto.getStorageType());
     createTable.setOptions(new KeyValueSet(persistentStoreProto.getTableProperties()));
 
@@ -486,14 +486,14 @@ public class LogicalNodeDeserializer {
     PlanProto.StoreTableNodeSpec storeTableNodeSpec = protoNode.getStoreTable();
     PlanProto.InsertNodeSpec insertNodeSpec = protoNode.getInsert();
 
-    InsertNode insertNode = new InsertNode(protoNode.getPid());
+    InsertNode insertNode = new InsertNode(protoNode.getNodeId());
     if (protoNode.hasInSchema()) {
       insertNode.setInSchema(convertSchema(protoNode.getInSchema()));
     }
     if (protoNode.hasOutSchema()) {
       insertNode.setOutSchema(convertSchema(protoNode.getOutSchema()));
     }
-    insertNode.setChild(nodeMap.get(persistentStoreProto.getChildId()));
+    insertNode.setChild(nodeMap.get(persistentStoreProto.getChildSeq()));
     insertNode.setStorageType(persistentStoreProto.getStorageType());
     insertNode.setOptions(new KeyValueSet(persistentStoreProto.getTableProperties()));
 
@@ -520,7 +520,7 @@ public class LogicalNodeDeserializer {
   }
 
   private static DropTableNode convertDropTable(PlanProto.LogicalNode protoNode) {
-    DropTableNode dropTable = new DropTableNode(protoNode.getPid());
+    DropTableNode dropTable = new DropTableNode(protoNode.getNodeId());
 
     PlanProto.DropTableNode dropTableProto = protoNode.getDropTable();
     dropTable.init(dropTableProto.getTableName(), dropTableProto.getIfExists(), dropTableProto.getPurge());
@@ -529,7 +529,7 @@ public class LogicalNodeDeserializer {
   }
 
   private static CreateDatabaseNode convertCreateDatabase(PlanProto.LogicalNode protoNode) {
-    CreateDatabaseNode createDatabase = new CreateDatabaseNode(protoNode.getPid());
+    CreateDatabaseNode createDatabase = new CreateDatabaseNode(protoNode.getNodeId());
 
     PlanProto.CreateDatabaseNode createDatabaseProto = protoNode.getCreateDatabase();
     createDatabase.init(createDatabaseProto.getDbName(), createDatabaseProto.getIfNotExists());
@@ -538,7 +538,7 @@ public class LogicalNodeDeserializer {
   }
 
   private static DropDatabaseNode convertDropDatabase(PlanProto.LogicalNode protoNode) {
-    DropDatabaseNode dropDatabase = new DropDatabaseNode(protoNode.getPid());
+    DropDatabaseNode dropDatabase = new DropDatabaseNode(protoNode.getNodeId());
 
     PlanProto.DropDatabaseNode dropDatabaseProto = protoNode.getDropDatabase();
     dropDatabase.init(dropDatabaseProto.getDbName(), dropDatabaseProto.getIfExists());
@@ -547,7 +547,7 @@ public class LogicalNodeDeserializer {
   }
 
   private static AlterTablespaceNode convertAlterTablespace(PlanProto.LogicalNode protoNode) {
-    AlterTablespaceNode alterTablespace = new AlterTablespaceNode(protoNode.getPid());
+    AlterTablespaceNode alterTablespace = new AlterTablespaceNode(protoNode.getNodeId());
 
     PlanProto.AlterTablespaceNode alterTablespaceProto = protoNode.getAlterTablespace();
     alterTablespace.setTablespaceName(alterTablespaceProto.getTableSpaceName());
@@ -564,7 +564,7 @@ public class LogicalNodeDeserializer {
   }
 
   private static AlterTableNode convertAlterTable(PlanProto.LogicalNode protoNode) {
-    AlterTableNode alterTable = new AlterTableNode(protoNode.getPid());
+    AlterTableNode alterTable = new AlterTableNode(protoNode.getNodeId());
 
     PlanProto.AlterTableNode alterTableProto = protoNode.getAlterTable();
     alterTable.setTableName(alterTableProto.getTableName());
@@ -588,7 +588,7 @@ public class LogicalNodeDeserializer {
   }
 
   private static TruncateTableNode convertTruncateTable(PlanProto.LogicalNode protoNode) {
-    TruncateTableNode truncateTable = new TruncateTableNode(protoNode.getPid());
+    TruncateTableNode truncateTable = new TruncateTableNode(protoNode.getNodeId());
 
     PlanProto.TruncateTableNode truncateTableProto = protoNode.getTruncateTableNode();
     truncateTable.setTableNames(truncateTableProto.getTableNamesList());

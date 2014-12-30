@@ -30,24 +30,24 @@ import org.apache.tajo.plan.serder.PlanGsonHelper;
 import org.apache.tajo.util.TUtil;
 
 public abstract class LogicalNode implements Cloneable, GsonObject {
-  @Expose private int pid;
+  @Expose private int nodeId;
   @Expose private NodeType type;
 	@Expose private Schema inputSchema;
 	@Expose	private Schema outputSchema;
 
 	@Expose	private double cost = 0;
 
-	protected LogicalNode(int pid, NodeType type) {
-    this.pid = pid;
+	protected LogicalNode(int nodeId, NodeType type) {
+    this.nodeId = nodeId;
     this.type = type;
 	}
 
   public int getPID() {
-    return pid;
+    return nodeId;
   }
 
   public void setPID(int pid) {
-    this.pid = pid;
+    this.nodeId = pid;
   }
 	
 	public NodeType getType() {
@@ -109,7 +109,7 @@ public abstract class LogicalNode implements Cloneable, GsonObject {
 	@Override
 	public Object clone() throws CloneNotSupportedException {
 	  LogicalNode node = (LogicalNode)super.clone();
-    node.pid = pid;
+    node.nodeId = nodeId;
 	  node.type = type;
 	  node.inputSchema =  (Schema) (inputSchema != null ? inputSchema.clone() : null);
 	  node.outputSchema = (Schema) (outputSchema != null ? outputSchema.clone() : null);
