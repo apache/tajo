@@ -210,6 +210,20 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       }
     }
 
+      // non-equi filter should not be push down as a join qualifier until theta join is implemented
+    List<EvalNode> thetaJoinFilter = new ArrayList<EvalNode>();
+    for (EvalNode eachEval: context.pushingDownFilters) {
+      if (eachEval.getType() != EvalType.EQUAL) {
+        if (EvalTreeUtil.isJoinQual(block,
+            joinNode.getLeftChild().getOutSchema(),
+            joinNode.getRightChild().getOutSchema(),
+            eachEval, true)) {
+          thetaJoinFilter.add(eachEval);
+        }
+      }
+    }
+    context.pushingDownFilters.removeAll(thetaJoinFilter);
+
     // get evals from ON clause
     List<EvalNode> onConditions = new ArrayList<EvalNode>();
     if (joinNode.hasJoinQual()) {
@@ -344,6 +358,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     }
 
     context.pushingDownFilters.addAll(outerJoinFilterEvalsExcludePredication);
+    context.pushingDownFilters.addAll(thetaJoinFilter);
     return joinNode;
   }
 
