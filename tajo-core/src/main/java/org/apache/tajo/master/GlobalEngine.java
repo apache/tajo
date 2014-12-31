@@ -94,6 +94,7 @@ public class GlobalEngine extends AbstractService {
       annotatedPlanVerifier = new LogicalPlanVerifier(context.getConf(), context.getCatalog());
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
+      throw new RuntimeException(t);
     }
     super.start();
   }

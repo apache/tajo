@@ -20,17 +20,20 @@ package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.plan.serder.EvalNodeSerializer;
 import org.apache.tajo.plan.serder.PlanGsonHelper;
+import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.storage.Tuple;
 
 /**
  * An annotated expression which includes actual data domains.
  * It is also used for evaluation.
  */
-public abstract class EvalNode implements Cloneable, GsonObject {
+public abstract class EvalNode implements Cloneable, GsonObject, ProtoObject<PlanProto.EvalNodeTree> {
 	@Expose protected EvalType type;
 
   public EvalNode() {
@@ -70,5 +73,10 @@ public abstract class EvalNode implements Cloneable, GsonObject {
     EvalNode evalNode = (EvalNode) super.clone();
     evalNode.type = type;
     return evalNode;
+  }
+
+  @Override
+  public PlanProto.EvalNodeTree getProto() {
+    return EvalNodeSerializer.serialize(this);
   }
 }

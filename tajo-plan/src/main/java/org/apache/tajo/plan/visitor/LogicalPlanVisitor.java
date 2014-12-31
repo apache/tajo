@@ -32,6 +32,9 @@ public interface LogicalPlanVisitor<CONTEXT, RESULT> {
   RESULT visitSetSession(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, SetSessionNode node,
                          Stack<LogicalNode> stack) throws PlanningException;
 
+  RESULT visitEvalExpr(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, EvalExprNode node,
+                       Stack<LogicalNode> stack) throws PlanningException;
+
   RESULT visitProjection(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, ProjectionNode node,
                          Stack<LogicalNode> stack) throws PlanningException;
 
@@ -48,8 +51,8 @@ public interface LogicalPlanVisitor<CONTEXT, RESULT> {
                       Stack<LogicalNode> stack) throws PlanningException;
   RESULT visitWindowAgg(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, WindowAggNode node,
                       Stack<LogicalNode> stack) throws PlanningException;
-  RESULT visitDistinct(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, DistinctGroupbyNode node,
-                                Stack<LogicalNode> stack) throws PlanningException;
+  RESULT visitDistinctGroupby(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, DistinctGroupbyNode node,
+                              Stack<LogicalNode> stack) throws PlanningException;
 
   RESULT visitFilter(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, SelectionNode node,
                      Stack<LogicalNode> stack) throws PlanningException;

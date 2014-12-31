@@ -25,15 +25,25 @@ import org.apache.tajo.plan.Target;
 import org.apache.tajo.util.TUtil;
 
 public class ProjectionNode extends UnaryNode implements Projectable {
+
+  @Expose private boolean distinct = false;
   /**
    * the targets are always filled even if the query is 'select *'
    */
   @Expose	private Target [] targets;
-  @Expose private boolean distinct = false;
 
 	public ProjectionNode(int pid) {
 		super(pid, NodeType.PROJECTION);
 	}
+
+  public void init(boolean distinct, Target [] targets) {
+    this.distinct = distinct;
+    this.targets = targets;
+  }
+
+  public boolean isDistinct() {
+    return distinct;
+  }
 
   public boolean hasTargets() {
     return this.targets != null;

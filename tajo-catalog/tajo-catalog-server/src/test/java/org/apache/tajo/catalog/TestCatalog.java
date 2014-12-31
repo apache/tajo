@@ -19,8 +19,10 @@
 package org.apache.tajo.catalog;
 
 import com.google.common.collect.Sets;
+
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
 import org.apache.tajo.catalog.store.PostgreSQLStore;
@@ -53,7 +55,6 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceType;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.SetLocation;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 public class TestCatalog {
 	static final String FieldName1="f1";
@@ -211,6 +212,7 @@ public class TestCatalog {
   @Test
   public void testCreateAndDropManyDatabases() throws Exception {
     List<String> createdDatabases = new ArrayList<String>();
+    InfoSchemaMetadataDictionary dictionary = new InfoSchemaMetadataDictionary();
     String namePrefix = "database_";
     final int NUM = 10;
     for (int i = 0; i < NUM; i++) {
@@ -223,10 +225,11 @@ public class TestCatalog {
 
     Collection<String> allDatabaseNames = catalog.getAllDatabaseNames();
     for (String databaseName : allDatabaseNames) {
-      assertTrue(databaseName.equals(DEFAULT_DATABASE_NAME) || createdDatabases.contains(databaseName));
+      assertTrue(databaseName.equals(DEFAULT_DATABASE_NAME) || createdDatabases.contains(databaseName) ||
+          dictionary.isSystemDatabase(databaseName));
     }
-    // additional one is 'default' database.
-    assertEquals(NUM + 1, allDatabaseNames.size());
+    // additional ones are 'default' and 'system' databases.
+    assertEquals(NUM + 2, allDatabaseNames.size());
 
     Collections.shuffle(createdDatabases);
     for (String tobeDropped : createdDatabases) {
@@ -351,8 +354,8 @@ public class TestCatalog {
       }
     }
 
-    // Finally, only default database will remain. So, its result is 1.
-    assertEquals(1, catalog.getAllDatabaseNames().size());
+    // Finally, default and system database will remain. So, its result is 1.
+    assertEquals(2, catalog.getAllDatabaseNames().size());
   }
 	
 	@Test

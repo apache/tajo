@@ -73,7 +73,7 @@ public class WindowSpec {
     return Objects.hashCode(windowName, partitionKeys, windowFrame);
   }
 
-  public static class WindowFrame {
+  public static class WindowFrame implements Cloneable {
     @Expose private WindowStartBound startBound;
     @Expose private WindowEndBound endBound;
     @Expose org.apache.tajo.algebra.WindowSpec.WindowFrameUnit unit; // TODO - to be supported
@@ -83,12 +83,8 @@ public class WindowSpec {
       this.endBound = new WindowEndBound(WindowFrameEndBoundType.UNBOUNDED_FOLLOWING);
     }
 
-    public WindowFrame(WindowStartBound startBound) {
-      this.startBound = startBound;
-    }
-
     public WindowFrame(WindowStartBound startBound, WindowEndBound endBound) {
-      this(startBound);
+      this.startBound = startBound;
       this.endBound = endBound;
     }
 
@@ -120,13 +116,21 @@ public class WindowSpec {
     public boolean equals(Object obj) {
       if (obj instanceof WindowFrame) {
         WindowFrame another = (WindowFrame) obj;
-        return
-            TUtil.checkEquals(startBound, another.startBound) &&
-            TUtil.checkEquals(endBound, another.endBound) &&
-            TUtil.checkEquals(unit, another.unit);
+        boolean eq = TUtil.checkEquals(startBound, another.startBound);
+        eq &= TUtil.checkEquals(endBound, another.endBound);
+        eq &= TUtil.checkEquals(unit, another.unit);
+        return eq;
       } else {
         return false;
       }
+    }
+
+    public WindowFrame clone() throws CloneNotSupportedException {
+      WindowFrame newFrame = (WindowFrame) super.clone();
+      newFrame.startBound = startBound.clone();
+      newFrame.endBound = endBound.clone();
+      newFrame.unit = unit;
+      return newFrame;
     }
 
     public int hashCode() {
@@ -134,7 +138,7 @@ public class WindowSpec {
     }
   }
 
-  public static class WindowStartBound {
+  public static class WindowStartBound implements Cloneable {
     @Expose private WindowFrameStartBoundType boundType;
     @Expose private EvalNode number;
 
@@ -158,7 +162,9 @@ public class WindowSpec {
     public boolean equals(Object obj) {
       if (obj instanceof WindowStartBound) {
         WindowStartBound other = (WindowStartBound) obj;
-        return boundType == other.boundType && number.equals(other.number);
+        boolean eq = boundType == other.boundType;
+        eq &= TUtil.checkEquals(number, other.number);
+        return eq;
       } else {
         return false;
       }
@@ -168,9 +174,19 @@ public class WindowSpec {
     public int hashCode() {
       return Objects.hashCode(boundType, number);
     }
+
+    @Override
+    public WindowStartBound clone() throws CloneNotSupportedException {
+      WindowStartBound newStartBound = (WindowStartBound) super.clone();
+      newStartBound.boundType = boundType;
+      if (number != null) {
+        newStartBound.number = (EvalNode) number.clone();
+      }
+      return newStartBound;
+    }
   }
 
-  public static class WindowEndBound {
+  public static class WindowEndBound implements Cloneable {
     @Expose private WindowFrameEndBoundType boundType;
     @Expose private EvalNode number;
 
@@ -192,9 +208,11 @@ public class WindowSpec {
 
     @Override
     public boolean equals(Object obj) {
-      if (obj instanceof WindowStartBound) {
+      if (obj instanceof WindowEndBound) {
         WindowEndBound other = (WindowEndBound) obj;
-        return boundType == other.boundType && number.equals(other.number);
+        boolean eq = boundType == other.boundType;
+        eq &= TUtil.checkEquals(number, other.number);
+        return eq;
       } else {
         return false;
       }
@@ -203,6 +221,15 @@ public class WindowSpec {
     @Override
     public int hashCode() {
       return Objects.hashCode(boundType, number);
+    }
+
+    public WindowEndBound clone() throws CloneNotSupportedException {
+      WindowEndBound newEndBound = (WindowEndBound) super.clone();
+      newEndBound.boundType = boundType;
+      if (number != null) {
+        newEndBound.number = (EvalNode) number.clone();
+      }
+      return newEndBound;
     }
   }
 }

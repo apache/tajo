@@ -42,6 +42,16 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
     super(pid, nodeType);
   }
 
+  @Override
+  public int childNum() {
+    return 0;
+  }
+
+  @Override
+  public LogicalNode getChild(int idx) {
+    return null;
+  }
+
   public ScanNode(int pid) {
     super(pid, NodeType.SCAN);
   }
@@ -101,8 +111,7 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
     }
   }
 
-  @Override
-  public Schema getTableSchema() {
+  public Schema getLogicalSchema() {
     return logicalSchema;
   }
 

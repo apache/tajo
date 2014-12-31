@@ -18,7 +18,11 @@
 
 package org.apache.tajo.util;
 
+import com.google.common.collect.Lists;
+import org.apache.tajo.common.ProtoObject;
+
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.*;
@@ -51,5 +55,20 @@ public class ProtoUtil {
 
   public static KeyValueSetProto convertFromMap(Map<String, String> map) {
     return new KeyValueSet(map).getProto();
+  }
+
+  /**
+   * It converts an array of ProtoObjects into Iteratable one.
+   *
+   * @param protoObjects
+   * @param <T>
+   * @return
+   */
+  public static <T> Iterable<T> toProtoObjects(ProtoObject[] protoObjects) {
+    List<T> converted = Lists.newArrayList();
+    for (int i = 0; i < protoObjects.length; i++) {
+      converted.add((T) protoObjects[i].getProto());
+    }
+    return converted;
   }
 }

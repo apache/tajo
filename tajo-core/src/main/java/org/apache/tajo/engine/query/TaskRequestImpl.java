@@ -25,6 +25,7 @@ import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol.TaskRequestProto;
 import org.apache.tajo.ipc.TajoWorkerProtocol.TaskRequestProtoOrBuilder;
+import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.worker.FetchImpl;
 
 import java.util.ArrayList;
@@ -39,7 +40,7 @@ public class TaskRequestImpl implements TaskRequest {
   private String outputTable;
 	private boolean isUpdated;
 	private boolean clusteredOutput;
-	private String serializedData;     // logical node
+	private PlanProto.LogicalNodeTree plan;     // logical node
 	private Boolean interQuery;
 	private List<FetchImpl> fetches;
   private Boolean shouldDie;
@@ -59,9 +60,10 @@ public class TaskRequestImpl implements TaskRequest {
 	
 	public TaskRequestImpl(TaskAttemptId id, List<FragmentProto> fragments,
 												 String outputTable, boolean clusteredOutput,
-												 String serializedData, QueryContext queryContext, DataChannel channel, Enforcer enforcer) {
+												 PlanProto.LogicalNodeTree plan, QueryContext queryContext, DataChannel channel,
+												 Enforcer enforcer) {
 		this();
-		this.set(id, fragments, outputTable, clusteredOutput, serializedData, queryContext, channel, enforcer);
+		this.set(id, fragments, outputTable, clusteredOutput, plan, queryContext, channel, enforcer);
 	}
 	
 	public TaskRequestImpl(TaskRequestProto proto) {
@@ -73,12 +75,12 @@ public class TaskRequestImpl implements TaskRequest {
 	
 	public void set(TaskAttemptId id, List<FragmentProto> fragments,
 			String outputTable, boolean clusteredOutput,
-			String serializedData, QueryContext queryContext, DataChannel dataChannel, Enforcer enforcer) {
+			PlanProto.LogicalNodeTree plan, QueryContext queryContext, DataChannel dataChannel, Enforcer enforcer) {
 		this.id = id;
 		this.fragments = fragments;
 		this.outputTable = outputTable;
 		this.clusteredOutput = clusteredOutput;
-		this.serializedData = serializedData;
+		this.plan = plan;
 		this.isUpdated = true;
     this.queryContext = queryContext;
     this.queryContext = queryContext;
@@ -150,16 +152,16 @@ public class TaskRequestImpl implements TaskRequest {
 	}
 
 	@Override
-	public String getSerializedData() {
+	public PlanProto.LogicalNodeTree getPlan() {
 		TaskRequestProtoOrBuilder p = viaProto ? proto : builder;
-		if (this.serializedData != null) {
-			return this.serializedData;
+		if (this.plan != null) {
+			return this.plan;
 		}
-		if (!p.hasSerializedData()) {
+		if (!p.hasPlan()) {
 			return null;
 		}
-		this.serializedData = p.getSerializedData();
-		return this.serializedData;
+		this.plan = p.getPlan();
+		return this.plan;
 	}
 
 	public boolean isInterQuery() {
@@ -292,8 +294,8 @@ public class TaskRequestImpl implements TaskRequest {
 		if (this.isUpdated) {
 			builder.setClusteredOutput(this.clusteredOutput);
 		}
-		if (this.serializedData != null) {
-			builder.setSerializedData(this.serializedData);
+		if (this.plan != null) {
+			builder.setPlan(this.plan);
 		}
 		if (this.interQuery != null) {
 		  builder.setInterQuery(this.interQuery);

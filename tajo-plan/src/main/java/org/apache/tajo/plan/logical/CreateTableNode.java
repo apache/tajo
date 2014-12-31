@@ -99,11 +99,12 @@ public class CreateTableNode extends StoreTableNode implements Cloneable {
   public boolean equals(Object obj) {
     if (obj instanceof CreateTableNode) {
       CreateTableNode other = (CreateTableNode) obj;
-      return super.equals(other)
-          && this.schema.equals(other.schema)
-          && this.external == other.external
-          && TUtil.checkEquals(path, other.path)
-          && ifNotExists == other.ifNotExists;
+      boolean eq = super.equals(other);
+      eq &= this.schema.equals(other.schema);
+      eq &= this.external == other.external;
+      eq &= TUtil.checkEquals(path, other.path);
+      eq &= ifNotExists == other.ifNotExists;;
+      return eq;
     } else {
       return false;
     }
