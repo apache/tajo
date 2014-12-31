@@ -36,6 +36,16 @@ public class DropIndexNode extends LogicalNode implements Cloneable {
     return Objects.hashCode(indexName);
   }
 
+  @Override
+  public int childNum() {
+    return 0;
+  }
+
+  @Override
+  public LogicalNode getChild(int idx) {
+    return null;
+  }
+
   public boolean equals(Object obj) {
     if (obj instanceof DropIndexNode) {
       DropIndexNode other = (DropIndexNode) obj;

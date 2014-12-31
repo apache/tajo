@@ -21,21 +21,23 @@ package org.apache.tajo.engine.utils.test;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
-import org.apache.tajo.plan.rewrite.RewriteRule;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 
-public class ErrorInjectionRewriter implements RewriteRule {
+@SuppressWarnings("unused")
+public class ErrorInjectionRewriter implements LogicalPlanRewriteRule {
   @Override
   public String getName() {
     return "ErrorInjectionRewriter";
   }
 
   @Override
-  public boolean isEligible(OverridableConf conf, LogicalPlan plan) {
+  public boolean isEligible(LogicalPlanRewriteRuleContext context) {
     return true;
   }
 
   @Override
-  public LogicalPlan rewrite(OverridableConf conf, LogicalPlan plan) throws PlanningException {
+  public LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws PlanningException {
     throw new NullPointerException();
   }
 }

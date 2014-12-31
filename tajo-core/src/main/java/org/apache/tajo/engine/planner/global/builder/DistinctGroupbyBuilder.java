@@ -99,7 +99,7 @@ public class DistinctGroupbyBuilder {
       DistinctGroupbyNode thirdStageDistinctNode = PlannerUtil.clone(plan, baseDistinctNode);
 
       // Set second, third non-distinct aggregation's eval node to field eval
-      GroupbyNode lastGroupbyNode = secondStageDistinctNode.getGroupByNodes().get(secondStageDistinctNode.getGroupByNodes().size() - 1);
+      GroupbyNode lastGroupbyNode = secondStageDistinctNode.getSubPlans().get(secondStageDistinctNode.getSubPlans().size() - 1);
       if (!lastGroupbyNode.isDistinct()) {
         int index = 0;
         for (AggregationFunctionCallEval aggrFunction: lastGroupbyNode.getAggFunctions()) {
@@ -108,7 +108,7 @@ public class DistinctGroupbyBuilder {
           index++;
         }
       }
-      lastGroupbyNode = thirdStageDistinctNode.getGroupByNodes().get(thirdStageDistinctNode.getGroupByNodes().size() - 1);
+      lastGroupbyNode = thirdStageDistinctNode.getSubPlans().get(thirdStageDistinctNode.getSubPlans().size() - 1);
       if (!lastGroupbyNode.isDistinct()) {
         int index = 0;
         for (AggregationFunctionCallEval aggrFunction: lastGroupbyNode.getAggFunctions()) {
@@ -300,11 +300,11 @@ public class DistinctGroupbyBuilder {
 
     DistinctGroupbyNode baseDistinctNode = new DistinctGroupbyNode(context.getPlan().getLogicalPlan().newPID());
     baseDistinctNode.setTargets(baseGroupByTargets.toArray(new Target[]{}));
-    baseDistinctNode.setGroupColumns(groupbyNode.getGroupingColumns());
+    baseDistinctNode.setGroupingColumns(groupbyNode.getGroupingColumns());
     baseDistinctNode.setInSchema(groupbyNode.getInSchema());
     baseDistinctNode.setChild(groupbyNode.getChild());
 
-    baseDistinctNode.setGroupbyNodes(childGroupbyNodes);
+    baseDistinctNode.setSubPlans(childGroupbyNodes);
 
     return baseDistinctNode;
   }
@@ -468,11 +468,11 @@ public class DistinctGroupbyBuilder {
 
     DistinctGroupbyNode baseDistinctNode = new DistinctGroupbyNode(context.getPlan().getLogicalPlan().newPID());
     baseDistinctNode.setTargets(groupbyNode.getTargets());
-    baseDistinctNode.setGroupColumns(groupbyNode.getGroupingColumns());
+    baseDistinctNode.setGroupingColumns(groupbyNode.getGroupingColumns());
     baseDistinctNode.setInSchema(groupbyNode.getInSchema());
     baseDistinctNode.setChild(groupbyNode.getChild());
 
-    baseDistinctNode.setGroupbyNodes(childGroupbyNodes);
+    baseDistinctNode.setSubPlans(childGroupbyNodes);
 
     return baseDistinctNode;
   }
@@ -529,12 +529,12 @@ public class DistinctGroupbyBuilder {
     // - Change SecondStage's aggregation expr and target column name. For example:
     //     exprs: (sum(default.lineitem.l_quantity (FLOAT8))) ==> exprs: (sum(?sum_3 (FLOAT8)))
     int grpIdx = 0;
-    for (GroupbyNode firstStageGroupbyNode: firstStageDistinctNode.getGroupByNodes()) {
-      GroupbyNode secondStageGroupbyNode = secondStageDistinctNode.getGroupByNodes().get(grpIdx);
+    for (GroupbyNode firstStageGroupbyNode: firstStageDistinctNode.getSubPlans()) {
+      GroupbyNode secondStageGroupbyNode = secondStageDistinctNode.getSubPlans().get(grpIdx);
 
       if (firstStageGroupbyNode.isDistinct()) {
         // FirstStage: Remove aggregation, Set target with only grouping columns
-        firstStageGroupbyNode.setAggFunctions(null);
+        firstStageGroupbyNode.setAggFunctions(PlannerUtil.EMPTY_AGG_FUNCS);
 
         List<Target> firstGroupbyTargets = new ArrayList<Target>();
         for (Column column : firstStageGroupbyNode.getGroupingColumns()) {
@@ -614,7 +614,7 @@ public class DistinctGroupbyBuilder {
 
     // In the case of distinct query without group by clause
     // other aggregation function is added to last distinct group by node.
-    List<GroupbyNode> secondStageGroupbyNodes = secondStageDistinctNode.getGroupByNodes();
+    List<GroupbyNode> secondStageGroupbyNodes = secondStageDistinctNode.getSubPlans();
     GroupbyNode lastSecondStageGroupbyNode = secondStageGroupbyNodes.get(secondStageGroupbyNodes.size() - 1);
     if (!lastSecondStageGroupbyNode.isDistinct() && lastSecondStageGroupbyNode.isEmptyGrouping()) {
       GroupbyNode otherGroupbyNode = lastSecondStageGroupbyNode;
@@ -644,7 +644,7 @@ public class DistinctGroupbyBuilder {
     List<Integer> firstStageColumnIds = new ArrayList<Integer>();
     columnIdIndex = 0;
     List<Target> firstTargets = new ArrayList<Target>();
-    for (GroupbyNode firstStageGroupbyNode: firstStageDistinctNode.getGroupByNodes()) {
+    for (GroupbyNode firstStageGroupbyNode: firstStageDistinctNode.getSubPlans()) {
       if (firstStageGroupbyNode.isDistinct()) {
         for (Column column : firstStageGroupbyNode.getGroupingColumns()) {
           Target firstTarget = new Target(new FieldEval(column));
@@ -674,7 +674,7 @@ public class DistinctGroupbyBuilder {
     Schema secondStageInSchema = new Schema();
     //TODO merged tuple schema
     int index = 0;
-    for(GroupbyNode eachNode: secondStageDistinctNode.getGroupByNodes()) {
+    for(GroupbyNode eachNode: secondStageDistinctNode.getSubPlans()) {
       eachNode.setInSchema(firstStageDistinctNode.getOutSchema());
       for (Column column: eachNode.getOutSchema().getColumns()) {
         if (secondStageInSchema.getColumn(column) == null) {
@@ -695,13 +695,13 @@ public class DistinctGroupbyBuilder {
 
     List<SortSpecArray> sortSpecArrays = new ArrayList<SortSpecArray>();
     int index = 0;
-    for (GroupbyNode groupbyNode: firstStageDistinctNode.getGroupByNodes()) {
+    for (GroupbyNode groupbyNode: firstStageDistinctNode.getSubPlans()) {
       List<SortSpecProto> sortSpecs = new ArrayList<SortSpecProto>();
       for (Column column: groupbyNode.getGroupingColumns()) {
         sortSpecs.add(SortSpecProto.newBuilder().setColumn(column.getProto()).build());
       }
       sortSpecArrays.add( SortSpecArray.newBuilder()
-          .setPid(secondStageDistinctNode.getGroupByNodes().get(index).getPID())
+          .setNodeId(secondStageDistinctNode.getSubPlans().get(index).getPID())
           .addAllSortSpecs(sortSpecs).build());
     }
     secondStageBlock.getEnforcer().enforceDistinctAggregation(secondStageDistinctNode.getPID(),
@@ -723,13 +723,13 @@ public class DistinctGroupbyBuilder {
 
     List<SortSpecArray> sortSpecArrays = new ArrayList<SortSpecArray>();
     int index = 0;
-    for (GroupbyNode groupbyNode: firstStageDistinctNode.getGroupByNodes()) {
+    for (GroupbyNode groupbyNode: firstStageDistinctNode.getSubPlans()) {
       List<SortSpecProto> sortSpecs = new ArrayList<SortSpecProto>();
       for (Column column: groupbyNode.getGroupingColumns()) {
         sortSpecs.add(SortSpecProto.newBuilder().setColumn(column.getProto()).build());
       }
       sortSpecArrays.add( SortSpecArray.newBuilder()
-          .setPid(thirdStageDistinctNode.getGroupByNodes().get(index).getPID())
+          .setNodeId(thirdStageDistinctNode.getSubPlans().get(index).getPID())
           .addAllSortSpecs(sortSpecs).build());
     }
     thirdStageBlock.getEnforcer().enforceDistinctAggregation(thirdStageDistinctNode.getPID(),

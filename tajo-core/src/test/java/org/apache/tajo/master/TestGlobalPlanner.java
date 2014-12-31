@@ -126,9 +126,9 @@ public class TestGlobalPlanner {
 
   private MasterPlan buildPlan(String sql) throws PlanningException, IOException {
     Expr expr = sqlAnalyzer.parse(sql);
-    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(util.getConfiguration()), expr);
-    optimizer.optimize(plan);
-    QueryContext context = new QueryContext(util.getConfiguration());
+    QueryContext context = LocalTajoTestingUtility.createDummyContext(util.getConfiguration());
+    LogicalPlan plan = planner.createPlan(context, expr);
+    optimizer.optimize(context, plan);
     MasterPlan masterPlan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), context, plan);
     globalPlanner.build(masterPlan);
     return masterPlan;

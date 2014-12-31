@@ -44,7 +44,9 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
+import org.apache.tajo.master.NonForwardQueryResultFileScanner;
 import org.apache.tajo.master.NonForwardQueryResultScanner;
+import org.apache.tajo.master.NonForwardQueryResultSystemScanner;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.exec.prehook.CreateTableHook;
 import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
@@ -116,6 +118,8 @@ public class QueryExecutor {
     } else if (plan.isExplain()) { // explain query
       execExplain(plan, response);
 
+    } else if (PlannerUtil.checkIfQueryTargetIsVirtualTable(plan)) {
+      execQueryOnVirtualTable(queryContext, session, sql, plan, response);
 
       // Simple query indicates a form of 'select * from tb_name [LIMIT X];'.
     } else if (PlannerUtil.checkIfSimpleQuery(plan)) {
@@ -156,10 +160,10 @@ public class QueryExecutor {
 
       // others
     } else {
-      if (setSessionNode.isDefaultValue()) {
-        session.removeVariable(varName);
-      } else {
+      if (setSessionNode.hasValue()) {
         session.setVariable(varName, setSessionNode.getValue());
+      } else {
+        session.removeVariable(varName);
       }
     }
 
@@ -195,6 +199,27 @@ public class QueryExecutor {
     response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
   }
 
+  public void execQueryOnVirtualTable(QueryContext queryContext, Session session, String query, LogicalPlan plan,
+                              SubmitQueryResponse.Builder response) throws Exception {
+    int maxRow = Integer.MAX_VALUE;
+    if (plan.getRootBlock().hasNode(NodeType.LIMIT)) {
+      LimitNode limitNode = plan.getRootBlock().getNode(NodeType.LIMIT);
+      maxRow = (int) limitNode.getFetchFirstNum();
+    }
+    QueryId queryId = QueryIdFactory.newQueryId(context.getResourceManager().getSeedQueryId());
+
+    NonForwardQueryResultScanner queryResultScanner =
+            new NonForwardQueryResultSystemScanner(context, plan, queryId, session.getSessionId(), maxRow);
+
+    queryResultScanner.init();
+    session.addNonForwardQueryResultScanner(queryResultScanner);
+
+    response.setQueryId(queryId.getProto());
+    response.setMaxRowNum(maxRow);
+    response.setTableDesc(queryResultScanner.getTableDesc().getProto());
+    response.setResult(IPCUtil.buildOkRequestResult());
+  }
+
   public void execSimpleQuery(QueryContext queryContext, Session session, String query, LogicalPlan plan,
                               SubmitQueryResponse.Builder response) throws Exception {
     ScanNode scanNode = plan.getRootBlock().getNode(NodeType.SCAN);
@@ -214,7 +239,7 @@ public class QueryExecutor {
     QueryId queryId = QueryIdFactory.newQueryId(context.getResourceManager().getSeedQueryId());
 
     NonForwardQueryResultScanner queryResultScanner =
-        new NonForwardQueryResultScanner(context.getConf(), session.getSessionId(), queryId, scanNode, desc, maxRow);
+        new NonForwardQueryResultFileScanner(context.getConf(), session.getSessionId(), queryId, scanNode, desc, maxRow);
 
     queryResultScanner.init();
     session.addNonForwardQueryResultScanner(queryResultScanner);

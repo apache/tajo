@@ -520,7 +520,7 @@ public class Query implements EventHandler<QueryEvent> {
         IndexDesc indexDesc = new IndexDesc(databaseName, scanNode.getTableName(),
             simpleIndexName, createIndexNode.getIndexPath(),
             createIndexNode.getKeySortSpecs(), createIndexNode.getIndexMethod(),
-            createIndexNode.isUnique(), false, scanNode.getTableSchema());
+            createIndexNode.isUnique(), false, scanNode.getLogicalSchema());
         if (catalog.createIndex(indexDesc)) {
           LOG.info("Index " + qualifiedIndexName + " is created for the table " + scanNode.getTableName() + ".");
         } else {

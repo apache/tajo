@@ -30,7 +30,8 @@ import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.plan.rewrite.RewriteRule;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
@@ -45,7 +46,7 @@ import java.util.*;
  * It also enables scanners to read only necessary columns.
  */
 public class ProjectionPushDownRule extends
-    BasicLogicalPlanVisitor<ProjectionPushDownRule.Context, LogicalNode> implements RewriteRule {
+    BasicLogicalPlanVisitor<ProjectionPushDownRule.Context, LogicalNode> implements LogicalPlanRewriteRule {
   /** Class Logger */
   private final Log LOG = LogFactory.getLog(ProjectionPushDownRule.class);
   private static final String name = "ProjectionPushDown";
@@ -56,13 +57,13 @@ public class ProjectionPushDownRule extends
   }
 
   @Override
-  public boolean isEligible(OverridableConf conf, LogicalPlan plan) {
-    LogicalNode toBeOptimized = plan.getRootBlock().getRoot();
+  public boolean isEligible(LogicalPlanRewriteRuleContext context) {
+    LogicalNode toBeOptimized = context.getPlan().getRootBlock().getRoot();
 
     if (PlannerUtil.checkIfDDLPlan(toBeOptimized)) {
       return false;
     }
-    for (QueryBlock eachBlock: plan.getQueryBlocks()) {
+    for (QueryBlock eachBlock: context.getPlan().getQueryBlocks()) {
       if (eachBlock.hasTableExpression()) {
         return true;
       }
@@ -71,7 +72,8 @@ public class ProjectionPushDownRule extends
   }
 
   @Override
-  public LogicalPlan rewrite(OverridableConf conf, LogicalPlan plan) throws PlanningException {
+  public LogicalPlan rewrite(LogicalPlanRewriteRuleContext rewriteRuleContext) throws PlanningException {
+    LogicalPlan plan = rewriteRuleContext.getPlan();
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
 
     LogicalPlan.QueryBlock topmostBlock = rootBlock;
@@ -1050,7 +1052,7 @@ public class ProjectionPushDownRule extends
     if (node.hasTargets()) {
       targets = node.getTargets();
     } else {
-      targets = PlannerUtil.schemaToTargets(node.getTableSchema());
+      targets = PlannerUtil.schemaToTargets(node.getLogicalSchema());
     }
 
     LinkedHashSet<Target> projectedTargets = Sets.newLinkedHashSet();

@@ -18,14 +18,13 @@
 
 package org.apache.tajo.plan.rewrite;
 
-import org.apache.tajo.OverridableConf;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 
 /**
  * An interface for a rewrite rule.
  */
-public interface RewriteRule {
+public interface LogicalPlanRewriteRule {
 
   /**
    * It returns the rewrite rule name. It will be used for debugging and
@@ -43,7 +42,7 @@ public interface RewriteRule {
    * @param plan The plan to be checked
    * @return True if this rule can be applied to a given plan. Otherwise, false.
    */
-  boolean isEligible(OverridableConf conf, LogicalPlan plan);
+  boolean isEligible(LogicalPlanRewriteRuleContext context);
 
   /**
    * Updates a logical plan and returns an updated logical plan rewritten by this rule.
@@ -53,5 +52,5 @@ public interface RewriteRule {
    * @param plan Input logical plan. It will not be modified.
    * @return The rewritten logical plan.
    */
-  LogicalPlan rewrite(OverridableConf conf, LogicalPlan plan) throws PlanningException;
+  LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws PlanningException;
 }

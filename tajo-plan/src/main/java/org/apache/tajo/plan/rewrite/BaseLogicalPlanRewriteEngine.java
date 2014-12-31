@@ -20,7 +20,6 @@ package org.apache.tajo.plan.rewrite;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.OverridableConf;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 
@@ -32,19 +31,35 @@ import java.util.Map.Entry;
  * This is a basic query rewrite rule engine. This rewrite rule engine
  * rewrites a logical plan with various query rewrite rules.
  */
-public class BasicQueryRewriteEngine implements QueryRewriteEngine {
+public class BaseLogicalPlanRewriteEngine implements LogicalPlanRewriteEngine {
   /** class logger */
-  private Log LOG = LogFactory.getLog(BasicQueryRewriteEngine.class);
+  private Log LOG = LogFactory.getLog(BaseLogicalPlanRewriteEngine.class);
 
   /** a map for query rewrite rules  */
-  private Map<String, RewriteRule> rewriteRules = new LinkedHashMap<String, RewriteRule>();
+  private Map<String, LogicalPlanRewriteRule> rewriteRules = new LinkedHashMap<String, LogicalPlanRewriteRule>();
+
+  /**
+   * Add a query rewrite rule to this engine.
+   *
+   * @param rules Rule classes
+   */
+  public void addRewriteRule(Iterable<Class<? extends LogicalPlanRewriteRule>> rules) {
+    for (Class<? extends LogicalPlanRewriteRule> clazz : rules) {
+      try {
+        LogicalPlanRewriteRule rule = clazz.newInstance();
+        addRewriteRule(rule);
+      } catch (Throwable t) {
+        throw new RuntimeException(t);
+      }
+    }
+  }
 
   /**
    * Add a query rewrite rule to this engine.
    *
    * @param rule The rule to be added to this engine.
    */
-  public void addRewriteRule(RewriteRule rule) {
+  public void addRewriteRule(LogicalPlanRewriteRule rule) {
     if (!rewriteRules.containsKey(rule.getName())) {
       rewriteRules.put(rule.getName(), rule);
     }
@@ -53,15 +68,16 @@ public class BasicQueryRewriteEngine implements QueryRewriteEngine {
   /**
    * Rewrite a logical plan with all query rewrite rules added to this engine.
    *
-   * @param plan The plan to be rewritten with all query rewrite rule.
+   * @param context
    * @return The rewritten plan.
    */
-  public LogicalPlan rewrite(OverridableConf conf, LogicalPlan plan) throws PlanningException {
-    RewriteRule rule;
-    for (Entry<String, RewriteRule> rewriteRule : rewriteRules.entrySet()) {
+  public LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws PlanningException {
+    LogicalPlanRewriteRule rule;
+    LogicalPlan plan = null;
+    for (Entry<String, LogicalPlanRewriteRule> rewriteRule : rewriteRules.entrySet()) {
       rule = rewriteRule.getValue();
-      if (rule.isEligible(conf, plan)) {
-        plan = rule.rewrite(conf, plan);
+      if (rule.isEligible(context)) {
+        plan = rule.rewrite(context);
         if (LOG.isDebugEnabled()) {
           LOG.debug("The rule \"" + rule.getName() + " \" rewrites the query.");
         }

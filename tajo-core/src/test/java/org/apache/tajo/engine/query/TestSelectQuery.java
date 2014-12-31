@@ -26,18 +26,18 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.engine.utils.test.ErrorInjectionRewriter;
 import org.apache.tajo.jdbc.TajoResultSet;
+import org.apache.tajo.plan.rewrite.BaseLogicalPlanRewriteRuleProvider;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TimeZone;
+import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
@@ -416,11 +416,23 @@ public class TestSelectQuery extends QueryTestCaseBase {
     cleanupQuery(res);
   }
 
+  public static class RulesForErrorInjection extends BaseLogicalPlanRewriteRuleProvider {
+    public RulesForErrorInjection(TajoConf conf) {
+      super(conf);
+    }
+
+    @Override
+    public Collection<Class<? extends LogicalPlanRewriteRule>> getPostRules() {
+      List<Class<? extends LogicalPlanRewriteRule>> addedRules = Lists.newArrayList(super.getPostRules());
+      return addedRules;
+    }
+  }
+
   @Test
   public final void testQueryMasterTaskInitError() throws Exception {
     // In this testcase we can check that a TajoClient receives QueryMasterTask's init error message.
-    testingCluster.setAllWorkersConfValue("tajo.plan.rewriter.classes",
-        ErrorInjectionRewriter.class.getCanonicalName());
+    testingCluster.setAllWorkersConfValue(ConfVars.LOGICAL_PLAN_REWRITE_RULE_PROVIDER_CLASS.name(),
+        RulesForErrorInjection.class.getCanonicalName());
 
     try {
       // If client can't receive error status, thread runs forever.
@@ -450,7 +462,8 @@ public class TestSelectQuery extends QueryTestCaseBase {
       // If query runs more than 10 secs, test is fail.
       assertFalse(t.isAlive());
     } finally {
-      testingCluster.setAllWorkersConfValue("tajo.plan.rewriter.classes", "");
+      // recover the rewrite rule provider to default
+      testingCluster.setAllWorkersConfValue(ConfVars.LOGICAL_PLAN_REWRITE_RULE_PROVIDER_CLASS.name(), "");
     }
   }
 

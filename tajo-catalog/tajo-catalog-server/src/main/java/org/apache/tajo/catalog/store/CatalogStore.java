@@ -20,17 +20,14 @@ package org.apache.tajo.catalog.store;
 
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.*;
 
 import java.io.Closeable;
+
 import org.apache.tajo.catalog.exception.CatalogException;
 
 import java.util.Collection;
 import java.util.List;
-
-import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
-import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionMethodProto;
-import static org.apache.tajo.catalog.proto.CatalogProtos.TablespaceProto;
 
 public interface CatalogStore extends Closeable {
   /*************************** Tablespace ******************************/
@@ -41,6 +38,8 @@ public interface CatalogStore extends Closeable {
   void dropTablespace(String spaceName) throws CatalogException;
 
   Collection<String> getAllTablespaceNames() throws CatalogException;
+  
+  List<TablespaceProto> getTablespaces() throws CatalogException;
 
   TablespaceProto getTablespace(String spaceName) throws CatalogException;
 
@@ -54,6 +53,8 @@ public interface CatalogStore extends Closeable {
   void dropDatabase(String databaseName) throws CatalogException;
 
   Collection<String> getAllDatabaseNames() throws CatalogException;
+  
+  List<DatabaseProto> getAllDatabases() throws CatalogException;
 
   /*************************** TABLE ******************************/
   void createTable(CatalogProtos.TableDescProto desc) throws CatalogException;
@@ -67,6 +68,14 @@ public interface CatalogStore extends Closeable {
   List<String> getAllTableNames(String databaseName) throws CatalogException;
 
   void alterTable(CatalogProtos.AlterTableDescProto alterTableDescProto) throws CatalogException;
+  
+  List<TableDescriptorProto> getAllTables() throws CatalogException;
+  
+  List<TableOptionProto> getAllTableOptions() throws CatalogException;
+  
+  List<TableStatsProto> getAllTableStats() throws CatalogException;
+  
+  List<ColumnProto> getAllColumns() throws CatalogException;
 
   void updateTableStats(CatalogProtos.UpdateTableStatsProto statsProto) throws CatalogException;
 
@@ -100,6 +109,8 @@ public interface CatalogStore extends Closeable {
   void delPartition(String partitionName) throws CatalogException;
 
   void dropPartitions(String tableName) throws CatalogException;
+  
+  List<TablePartitionProto> getAllPartitions() throws CatalogException;
 
   /**************************** INDEX *******************************/
   void createIndex(IndexDescProto proto) throws CatalogException;
@@ -119,6 +130,8 @@ public interface CatalogStore extends Closeable {
   List<String> getAllIndexNamesByTable(String databaseName, String tableName) throws CatalogException;
 
   boolean existIndexesByTable(String databaseName, String tableName) throws CatalogException;
+
+  List<IndexDescProto> getAllIndexes() throws CatalogException;
 
   /************************** FUNCTION *****************************/
 

@@ -24,12 +24,15 @@ import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceStability;
+import org.apache.tajo.ConfigKey;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.util.ReflectionUtil;
+import org.apache.tajo.util.graph.DirectedGraphCursor;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.joinorder.FoundJoinOrder;
@@ -37,18 +40,15 @@ import org.apache.tajo.plan.joinorder.GreedyHeuristicJoinOrderAlgorithm;
 import org.apache.tajo.plan.joinorder.JoinGraph;
 import org.apache.tajo.plan.joinorder.JoinOrderAlgorithm;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.plan.rewrite.BasicQueryRewriteEngine;
-import org.apache.tajo.plan.rewrite.RewriteRule;
 import org.apache.tajo.plan.rewrite.rules.AccessPathRewriter;
 import org.apache.tajo.plan.rewrite.rules.FilterPushDownRule;
 import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
 import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
+import org.apache.tajo.plan.rewrite.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
-import org.apache.tajo.util.graph.DirectedGraphCursor;
 
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
@@ -62,41 +62,59 @@ import static org.apache.tajo.plan.joinorder.GreedyHeuristicJoinOrderAlgorithm.g
 public class LogicalOptimizer {
   private static final Log LOG = LogFactory.getLog(LogicalOptimizer.class.getName());
 
-  private final TajoConf systemConf;
+//<<<<<<< HEAD
+//  private final TajoConf systemConf;
   private CatalogService catalog;
-  private BasicQueryRewriteEngine rulesBeforeJoinOpt;
-  private BasicQueryRewriteEngine rulesAfterToJoinOpt;
+//  private BasicQueryRewriteEngine rulesBeforeJoinOpt;
+//  private BasicQueryRewriteEngine rulesAfterToJoinOpt;
+//  private JoinOrderAlgorithm joinOrderAlgorithm = new GreedyHeuristicJoinOrderAlgorithm();
+//
+//  public LogicalOptimizer(TajoConf systemConf, CatalogService catalog) {
+//    this.systemConf = systemConf;
+//    this.catalog = catalog;
+//    rulesBeforeJoinOpt = new BasicQueryRewriteEngine();
+//    if (systemConf.getBoolVar(ConfVars.$TEST_FILTER_PUSHDOWN_ENABLED)) {
+//      rulesBeforeJoinOpt.addRewriteRule(new FilterPushDownRule(catalog));
+//    }
+//
+//    rulesAfterToJoinOpt = new BasicQueryRewriteEngine();
+//    rulesAfterToJoinOpt.addRewriteRule(new ProjectionPushDownRule());
+//    rulesAfterToJoinOpt.addRewriteRule(new PartitionedTableRewriter(systemConf));
+//    rulesAfterToJoinOpt.addRewriteRule(new AccessPathRewriter());
+//
+//    // Currently, it is only used for some test cases to inject exception manually.
+//    String userDefinedRewriterClass = systemConf.get("tajo.plan.rewriter.classes");
+//    if (userDefinedRewriterClass != null && !userDefinedRewriterClass.isEmpty()) {
+//      for (String eachRewriterClass : userDefinedRewriterClass.split(",")) {
+//        try {
+//          RewriteRule rule = (RewriteRule) Class.forName(eachRewriterClass).newInstance();
+//          rulesAfterToJoinOpt.addRewriteRule(rule);
+//        } catch (Exception e) {
+//          LOG.error("Can't initiate a Rewriter object: " + eachRewriterClass, e);
+//          continue;
+//        }
+//      }
+//    }
+//=======
+  private BaseLogicalPlanRewriteEngine rulesBeforeJoinOpt;
+  private BaseLogicalPlanRewriteEngine rulesAfterToJoinOpt;
   private JoinOrderAlgorithm joinOrderAlgorithm = new GreedyHeuristicJoinOrderAlgorithm();
 
-  public LogicalOptimizer(TajoConf systemConf, CatalogService catalog) {
-    this.systemConf = systemConf;
+  public LogicalOptimizer(TajoConf conf, CatalogService catalog) {
+
     this.catalog = catalog;
-    rulesBeforeJoinOpt = new BasicQueryRewriteEngine();
-    if (systemConf.getBoolVar(ConfVars.$TEST_FILTER_PUSHDOWN_ENABLED)) {
-      rulesBeforeJoinOpt.addRewriteRule(new FilterPushDownRule(catalog));
-    }
+    // TODO: set the catalog instance to FilterPushdownRule
+    Class clazz = conf.getClassVar(ConfVars.LOGICAL_PLAN_REWRITE_RULE_PROVIDER_CLASS);
+    LogicalPlanRewriteRuleProvider provider = (LogicalPlanRewriteRuleProvider) ReflectionUtil.newInstance(clazz, conf);
 
-    rulesAfterToJoinOpt = new BasicQueryRewriteEngine();
-    rulesAfterToJoinOpt.addRewriteRule(new ProjectionPushDownRule());
-    rulesAfterToJoinOpt.addRewriteRule(new PartitionedTableRewriter(systemConf));
-    rulesAfterToJoinOpt.addRewriteRule(new AccessPathRewriter());
-
-    // Currently, it is only used for some test cases to inject exception manually.
-    String userDefinedRewriterClass = systemConf.get("tajo.plan.rewriter.classes");
-    if (userDefinedRewriterClass != null && !userDefinedRewriterClass.isEmpty()) {
-      for (String eachRewriterClass : userDefinedRewriterClass.split(",")) {
-        try {
-          RewriteRule rule = (RewriteRule) Class.forName(eachRewriterClass).newInstance();
-          rulesAfterToJoinOpt.addRewriteRule(rule);
-        } catch (Exception e) {
-          LOG.error("Can't initiate a Rewriter object: " + eachRewriterClass, e);
-          continue;
-        }
-      }
-    }
+    rulesBeforeJoinOpt = new BaseLogicalPlanRewriteEngine();
+    rulesBeforeJoinOpt.addRewriteRule(provider.getPreRules());
+    rulesAfterToJoinOpt = new BaseLogicalPlanRewriteEngine();
+    rulesAfterToJoinOpt.addRewriteRule(provider.getPostRules());
+//>>>>>>> 8e52ed43a72a51f78dce1547cd642a24aa860c58
   }
 
-  public void addRuleAfterToJoinOpt(RewriteRule rewriteRule) {
+  public void addRuleAfterToJoinOpt(LogicalPlanRewriteRule rewriteRule) {
     if (rewriteRule != null) {
       rulesAfterToJoinOpt.addRewriteRule(rewriteRule);
     }
@@ -104,11 +122,13 @@ public class LogicalOptimizer {
 
   @VisibleForTesting
   public LogicalNode optimize(LogicalPlan plan) throws PlanningException {
-    return optimize(new OverridableConf(systemConf), plan);
+    OverridableConf conf = new OverridableConf(new TajoConf(),
+        ConfigKey.ConfigType.SESSION, ConfigKey.ConfigType.QUERY, ConfigKey.ConfigType.SYSTEM);
+    return optimize(conf, plan);
   }
 
   public LogicalNode optimize(OverridableConf context, LogicalPlan plan) throws PlanningException {
-    rulesBeforeJoinOpt.rewrite(context, plan);
+    rulesBeforeJoinOpt.rewrite(new LogicalPlanRewriteRuleContext(context, plan, catalog));
 
     DirectedGraphCursor<String, BlockEdge> blockCursor =
         new DirectedGraphCursor<String, BlockEdge>(plan.getQueryBlockGraph(), plan.getRootBlock().getName());
@@ -121,7 +141,7 @@ public class LogicalOptimizer {
     } else {
       LOG.info("Skip Join Optimized.");
     }
-    rulesAfterToJoinOpt.rewrite(context, plan);
+    rulesAfterToJoinOpt.rewrite(new LogicalPlanRewriteRuleContext(context, plan, catalog));
     return plan.getRootBlock().getRoot();
   }
 

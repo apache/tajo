@@ -22,6 +22,7 @@
 package org.apache.tajo.catalog.store;
 
 import com.google.common.collect.Maps;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
@@ -31,9 +32,18 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.DatabaseProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableDescriptorProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableOptionProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
+import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
+import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.*;
@@ -86,6 +96,22 @@ public class MemStore implements CatalogStore {
   @Override
   public Collection<String> getAllTablespaceNames() throws CatalogException {
     return tablespaces.keySet();
+  }
+  
+  @Override
+  public List<TablespaceProto> getTablespaces() throws CatalogException {
+    List<TablespaceProto> tablespaceList = TUtil.newList();
+    int tablespaceId = 0;
+    
+    for (String spaceName: tablespaces.keySet()) {
+      TablespaceProto.Builder builder = TablespaceProto.newBuilder();
+      builder.setSpaceName(spaceName);
+      builder.setUri(tablespaces.get(spaceName));
+      builder.setId(tablespaceId++);
+      tablespaceList.add(builder.build());
+    }
+    
+    return tablespaceList;
   }
 
   @Override
@@ -145,6 +171,24 @@ public class MemStore implements CatalogStore {
   @Override
   public Collection<String> getAllDatabaseNames() throws CatalogException {
     return databases.keySet();
+  }
+  
+  @Override
+  public List<DatabaseProto> getAllDatabases() throws CatalogException {
+    List<DatabaseProto> databaseList = new ArrayList<DatabaseProto>();
+    int dbId = 0;
+    
+    for (String databaseName: databases.keySet()) {
+      DatabaseProto.Builder builder = DatabaseProto.newBuilder();
+      
+      builder.setId(dbId++);
+      builder.setName(databaseName);
+      builder.setSpaceId(0);
+      
+      databaseList.add(builder.build());
+    }
+    
+    return databaseList;
   }
 
   /**
@@ -310,6 +354,118 @@ public class MemStore implements CatalogStore {
     Map<String, CatalogProtos.TableDescProto> database = checkAndGetDatabaseNS(databases, databaseName);
     return new ArrayList<String>(database.keySet());
   }
+  
+  @Override
+  public List<TableDescriptorProto> getAllTables() throws CatalogException {
+    List<TableDescriptorProto> tableList = new ArrayList<CatalogProtos.TableDescriptorProto>();
+    int dbId = 0, tableId = 0;
+    
+    for (String databaseName: databases.keySet()) {
+      Map<String, TableDescProto> tables = databases.get(databaseName);
+      List<String> tableNameList = TUtil.newList(tables.keySet());
+      Collections.sort(tableNameList);
+      
+      for (String tableName: tableNameList) {
+        TableDescProto tableDesc = tables.get(tableName);
+        TableDescriptorProto.Builder builder = TableDescriptorProto.newBuilder();
+        
+        builder.setDbId(dbId);
+        builder.setTid(tableId);
+        builder.setName(tableName);
+        builder.setPath(tableDesc.getPath());
+        builder.setTableType(tableDesc.getIsExternal()?"EXTERNAL":"BASE");
+        builder.setStoreType(tableDesc.getMeta().getStoreType().toString());
+        
+        tableList.add(builder.build());
+        tableId++;
+      }
+      dbId++;
+    }
+    
+    return tableList;
+  }
+  
+  @Override
+  public List<TableOptionProto> getAllTableOptions() throws CatalogException {
+    List<TableOptionProto> optionList = new ArrayList<CatalogProtos.TableOptionProto>();
+    int tid = 0;
+    
+    for (String databaseName: databases.keySet()) {
+      Map<String, TableDescProto> tables = databases.get(databaseName);
+      List<String> tableNameList = TUtil.newList(tables.keySet());
+      Collections.sort(tableNameList);
+      
+      for (String tableName: tableNameList) {
+        TableDescProto table = tables.get(tableName); 
+        List<KeyValueProto> keyValueList = table.getMeta().getParams().getKeyvalList();
+        
+        for (KeyValueProto keyValue: keyValueList) {
+          TableOptionProto.Builder builder = TableOptionProto.newBuilder();
+          
+          builder.setTid(tid);
+          builder.setKeyval(keyValue);
+          
+          optionList.add(builder.build());
+        }
+      }
+      tid++;
+    }
+    
+    return optionList;
+  }
+  
+  @Override
+  public List<TableStatsProto> getAllTableStats() throws CatalogException {
+    List<TableStatsProto> statList = new ArrayList<CatalogProtos.TableStatsProto>();
+    int tid = 0;
+    
+    for (String databaseName: databases.keySet()) {
+      Map<String, TableDescProto> tables = databases.get(databaseName);
+      List<String> tableNameList = TUtil.newList(tables.keySet());
+      Collections.sort(tableNameList);
+      
+      for (String tableName: tableNameList) {
+        TableDescProto table = tables.get(tableName);
+        TableStatsProto.Builder builder = TableStatsProto.newBuilder();
+        
+        builder.setTid(tid);
+        builder.setNumRows(table.getStats().getNumRows());
+        builder.setNumBytes(table.getStats().getNumBytes());
+        
+        statList.add(builder.build());
+      }
+      tid++;
+    }
+    
+    return statList;
+  }
+  
+  @Override
+  public List<ColumnProto> getAllColumns() throws CatalogException {
+    List<ColumnProto> columnList = new ArrayList<CatalogProtos.ColumnProto>();
+    int tid = 0;
+    
+    for (String databaseName: databases.keySet()) {
+      Map<String, TableDescProto> tables = databases.get(databaseName);
+      List<String> tableNameList = TUtil.newList(tables.keySet());
+      Collections.sort(tableNameList);
+      
+      for (String tableName: tableNameList) {
+        TableDescProto tableDesc = tables.get(tableName);
+        
+        for (ColumnProto column: tableDesc.getSchema().getFieldsList()) {
+          ColumnProto.Builder builder = ColumnProto.newBuilder();
+          builder.setTid(tid);
+          builder.setName(column.getName());
+          builder.setDataType(column.getDataType());
+          columnList.add(builder.build());
+        }
+      }
+      tid++;
+    }
+    
+    return columnList;
+  }
 
   @Override
   public void addPartitionMethod(CatalogProtos.PartitionMethodProto partitionMethodProto) throws CatalogException {
@@ -376,6 +532,11 @@ public class MemStore implements CatalogStore {
   @Override
   public void dropPartitions(String tableName) throws CatalogException {
     throw new RuntimeException("not supported!");
+  }
+  
+  @Override
+  public List<TablePartitionProto> getAllPartitions() throws CatalogException {
+    throw new UnsupportedOperationException();
   }
 
   /* (non-Javadoc)
@@ -490,6 +651,15 @@ public class MemStore implements CatalogStore {
       }
     }
     return false;
+  }
+
+  @Override
+  public List<IndexDescProto> getAllIndexes() throws CatalogException {
+    List<IndexDescProto> indexDescProtos = TUtil.newList();
+    for (Map<String,IndexDescProto> indexMap : indexes.values()) {
+      indexDescProtos.addAll(indexMap.values());
+    }
+    return indexDescProtos;
   }
 
   @Override

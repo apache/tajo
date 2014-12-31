@@ -86,6 +86,17 @@ public class WindowFunctionEval extends AggregationFunctionCallEval implements C
     return funcDesc.getReturnType();
   }
 
+  public boolean equals(Object obj) {
+    if (obj instanceof WindowFunctionEval) {
+      WindowFunctionEval other = (WindowFunctionEval) obj;
+      boolean eq = TUtil.checkEquals(sortSpecs, other.sortSpecs);
+      eq &= TUtil.checkEquals(windowFrame, other.windowFrame);
+      return eq;
+    } else {
+      return false;
+    }
+  }
+
   @Override
   public Object clone() throws CloneNotSupportedException {
     WindowFunctionEval windowFunctionEval = (WindowFunctionEval) super.clone();
@@ -95,6 +106,7 @@ public class WindowFunctionEval extends AggregationFunctionCallEval implements C
         windowFunctionEval.sortSpecs[i] = (SortSpec) sortSpecs[i].clone();
       }
     }
+    windowFunctionEval.windowFrame = windowFrame.clone();
     return windowFunctionEval;
   }
 

@@ -28,14 +28,15 @@ import org.apache.tajo.plan.logical.IndexScanNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.RelationNode;
 import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.plan.rewrite.RewriteRule;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 
 import java.util.List;
 import java.util.Stack;
 
-public class AccessPathRewriter implements RewriteRule {
+public class AccessPathRewriter implements LogicalPlanRewriteRule {
   private static final Log LOG = LogFactory.getLog(AccessPathRewriter.class);
 
   private static final String NAME = "Access Path Rewriter";
@@ -47,9 +48,9 @@ public class AccessPathRewriter implements RewriteRule {
   }
 
   @Override
-  public boolean isEligible(OverridableConf conf, LogicalPlan plan) {
-    if (conf.getBool(SessionVars.INDEX_ENABLED)) {
-      for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
+  public boolean isEligible(LogicalPlanRewriteRuleContext context) {
+    if (context.getQueryContext().getBool(SessionVars.INDEX_ENABLED)) {
+      for (LogicalPlan.QueryBlock block : context.getPlan().getQueryBlocks()) {
         for (RelationNode relationNode : block.getRelations()) {
           List<AccessPathInfo> accessPathInfos = block.getAccessInfos(relationNode);
           // If there are any alternative access paths
@@ -68,9 +69,10 @@ public class AccessPathRewriter implements RewriteRule {
   }
 
   @Override
-  public LogicalPlan rewrite(OverridableConf conf, LogicalPlan plan) throws PlanningException {
+  public LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws PlanningException {
+    LogicalPlan plan = context.getPlan();
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
-    rewriter.init(conf);
+    rewriter.init(context.getQueryContext());
     rewriter.visit(rootBlock, plan, rootBlock, rootBlock.getRoot(), new Stack<LogicalNode>());
     return plan;
   }

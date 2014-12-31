@@ -28,10 +28,11 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.rewrite.rules.FilterPushDownRule.FilterPushDownContext;
-import org.apache.tajo.plan.rewrite.RewriteRule;
 import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.plan.util.IndexUtil;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
@@ -43,7 +44,7 @@ import java.util.*;
  * It is likely to significantly reduces the intermediate data.
  */
 public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownContext, LogicalNode>
-    implements RewriteRule {
+    implements LogicalPlanRewriteRule {
   private final static Log LOG = LogFactory.getLog(FilterPushDownRule.class);
   private static final String NAME = "FilterPushDown";
 
@@ -76,18 +77,14 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     }
   }
 
-  public FilterPushDownRule(CatalogService catalog) {
-    this.catalog = catalog;
-  }
-
   @Override
   public String getName() {
     return NAME;
   }
 
   @Override
-  public boolean isEligible(OverridableConf conf, LogicalPlan plan) {
-    for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
+  public boolean isEligible(LogicalPlanRewriteRuleContext context) {
+    for (LogicalPlan.QueryBlock block : context.getPlan().getQueryBlocks()) {
       if (block.hasNode(NodeType.SELECTION) || block.hasNode(NodeType.JOIN)) {
         return true;
       }
@@ -96,7 +93,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   }
 
   @Override
-  public LogicalPlan rewrite(OverridableConf conf, LogicalPlan plan) throws PlanningException {
+  public LogicalPlan rewrite(LogicalPlanRewriteRuleContext rewriteRuleContext) throws PlanningException {
     /*
     FilterPushDown rule: processing when visits each node
       - If a target which is corresponding on a filter EvalNode's column is not FieldEval, do not PushDown.
@@ -108,6 +105,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         . It not, create new HavingNode and set parent's child.
      */
     FilterPushDownContext context = new FilterPushDownContext();
+    LogicalPlan plan = rewriteRuleContext.getPlan();
+    catalog = rewriteRuleContext.getCatalog();
     for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
       context.clear();
       this.visit(context, plan, block, block.getRoot(), new Stack<LogicalNode>());

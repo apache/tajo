@@ -512,7 +512,7 @@ public class TajoMasterClientService extends AbstractService {
 
         List<ByteString> rows = queryResultScanner.getNextRows(request.getFetchRowNum());
         SerializedResultSet.Builder resultSetBuilder = SerializedResultSet.newBuilder();
-        resultSetBuilder.setSchema(queryResultScanner.getTableDesc().getLogicalSchema().getProto());
+        resultSetBuilder.setSchema(queryResultScanner.getLogicalSchema().getProto());
         resultSetBuilder.addAllSerializedTuples(rows);
 
         builder.setResultSet(resultSetBuilder.build());

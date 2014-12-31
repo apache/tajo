@@ -18,149 +18,29 @@
 
 package org.apache.tajo.master;
 
-import com.google.protobuf.ByteString;
-import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.TaskAttemptId;
-import org.apache.tajo.TaskId;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
-import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.engine.planner.physical.SeqScanExec;
-import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.storage.RowStoreUtil;
-import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
-import org.apache.tajo.storage.StorageManager;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.storage.fragment.FragmentConvertor;
-import org.apache.tajo.worker.TaskAttemptContext;
-
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
-public class NonForwardQueryResultScanner {
-  private static final int MAX_FRAGMENT_NUM_PER_SCAN = 100;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableDesc;
 
-  private QueryId queryId;
-  private String sessionId;
-  private SeqScanExec scanExec;
-  private TableDesc tableDesc;
-  private RowStoreEncoder rowEncoder;
-  private int maxRow;
-  private int currentNumRows;
-  private TaskAttemptContext taskContext;
-  private TajoConf tajoConf;
-  private ScanNode scanNode;
+import com.google.protobuf.ByteString;
 
-  private int currentFragmentIndex = 0;
+public interface NonForwardQueryResultScanner {
 
-  public NonForwardQueryResultScanner(TajoConf tajoConf, String sessionId,
-                                      QueryId queryId,
-                                      ScanNode scanNode,
-                                      TableDesc tableDesc,
-                                      int maxRow) throws IOException {
-    this.tajoConf = tajoConf;
-    this.sessionId = sessionId;
-    this.queryId = queryId;
-    this.scanNode = scanNode;
-    this.tableDesc = tableDesc;
-    this.maxRow = maxRow;
+  public void close() throws Exception;
 
-    this.rowEncoder =  RowStoreUtil.createEncoder(tableDesc.getLogicalSchema());
-  }
+  public Schema getLogicalSchema();
 
-  public void init() throws IOException {
-    initSeqScanExec();
-  }
+  public List<ByteString> getNextRows(int fetchRowNum) throws IOException;
 
-  private void initSeqScanExec() throws IOException {
-    List<Fragment> fragments = StorageManager.getStorageManager(tajoConf, tableDesc.getMeta().getStoreType())
-        .getNonForwardSplit(tableDesc, currentFragmentIndex, MAX_FRAGMENT_NUM_PER_SCAN);
+  public QueryId getQueryId();
+  
+  public String getSessionId();
+  
+  public TableDesc getTableDesc();
 
-    if (fragments != null && !fragments.isEmpty()) {
-      FragmentProto[] fragmentProtos = FragmentConvertor.toFragmentProtoArray(fragments.toArray(new Fragment[]{}));
-      this.taskContext = new TaskAttemptContext(
-          new QueryContext(tajoConf), null,
-          new TaskAttemptId(new TaskId(new ExecutionBlockId(queryId, 1), 0), 0),
-          fragmentProtos, null);
+  public void init() throws IOException;
 
-      try {
-        // scanNode must be clone cause SeqScanExec change target in the case of a partitioned table.
-        scanExec = new SeqScanExec(taskContext, (ScanNode)scanNode.clone(), fragmentProtos);
-      } catch (CloneNotSupportedException e) {
-        throw new IOException(e.getMessage(), e);
-      }
-      scanExec.init();
-      currentFragmentIndex += fragments.size();
-    }
-  }
-
-  public QueryId getQueryId() {
-    return queryId;
-  }
-
-  public String getSessionId() {
-    return sessionId;
-  }
-
-  public void setScanExec(SeqScanExec scanExec) {
-    this.scanExec = scanExec;
-  }
-
-  public TableDesc getTableDesc() {
-    return tableDesc;
-  }
-
-  public void close() throws Exception {
-    if (scanExec != null) {
-      scanExec.close();
-      scanExec = null;
-    }
-  }
-
-  public List<ByteString> getNextRows(int fetchRowNum) throws IOException {
-    List<ByteString> rows = new ArrayList<ByteString>();
-    if (scanExec == null) {
-      return rows;
-    }
-    int rowCount = 0;
-
-    while (true) {
-      Tuple tuple = scanExec.next();
-      if (tuple == null) {
-        scanExec.close();
-        scanExec = null;
-
-        initSeqScanExec();
-        if (scanExec != null) {
-          tuple = scanExec.next();
-        }
-        if (tuple == null) {
-          if (scanExec != null ) {
-            scanExec.close();
-            scanExec = null;
-          }
-
-          break;
-        }
-      }
-      rows.add(ByteString.copyFrom((rowEncoder.toBytes(tuple))));
-      rowCount++;
-      currentNumRows++;
-      if (rowCount >= fetchRowNum) {
-        break;
-      }
-
-      if (currentNumRows >= maxRow) {
-        scanExec.close();
-        scanExec = null;
-        break;
-      }
-    }
-
-    return rows;
-  }
 }

@@ -19,10 +19,11 @@
 package org.apache.tajo.catalog;
 
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 
 import java.util.Collection;
+import java.util.List;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
@@ -58,6 +59,11 @@ public interface CatalogService {
    * @return All tablespace names
    */
   Collection<String> getAllTablespaceNames();
+  
+  /**
+   * 
+   */
+  List<TablespaceProto> getAllTablespaces();
 
   /**
    *
@@ -99,6 +105,11 @@ public interface CatalogService {
    * @return All database names
    */
   Collection<String> getAllDatabaseNames();
+  
+  /**
+   * 
+   */
+  List<DatabaseProto> getAllDatabases();
 
   /**
    * Get a table description by name
@@ -122,6 +133,22 @@ public interface CatalogService {
    * @return All table names which belong to a given database.
    */
   Collection<String> getAllTableNames(String databaseName);
+  
+  /**
+   * 
+   */
+  List<TableDescriptorProto> getAllTables();
+  
+  List<TableOptionProto> getAllTableOptions();
+  
+  List<TableStatsProto> getAllTableStats();
+  
+  /**
+   * 
+   */
+  List<ColumnProto> getAllColumns();
+
+  List<IndexDescProto> getAllIndexes();
 
   /**
    *
@@ -152,6 +179,8 @@ public interface CatalogService {
   PartitionMethodDesc getPartitionMethod(String databaseName, String tableName);
 
   boolean existPartitionMethod(String databaseName, String tableName);
+  
+  List<TablePartitionProto> getAllPartitions();
 
   boolean createIndex(IndexDesc index);
 
