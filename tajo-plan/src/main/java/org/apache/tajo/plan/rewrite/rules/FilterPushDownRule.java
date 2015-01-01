@@ -21,6 +21,7 @@ package org.apache.tajo.plan.rewrite.rules;
 import com.google.common.collect.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.OverridableConf;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
@@ -30,7 +31,7 @@ import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.rules.FilterPushDownRule.FilterPushDownContext;
-import org.apache.tajo.plan.rewrite.RewriteRule;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
@@ -42,7 +43,7 @@ import java.util.*;
  * It is likely to significantly reduces the intermediate data.
  */
 public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownContext, LogicalNode>
-    implements RewriteRule {
+    implements LogicalPlanRewriteRule {
   private final static Log LOG = LogFactory.getLog(FilterPushDownRule.class);
   private static final String NAME = "FilterPushDown";
 
@@ -79,7 +80,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   }
 
   @Override
-  public boolean isEligible(LogicalPlan plan) {
+  public boolean isEligible(OverridableConf queryContext, LogicalPlan plan) {
     for (LogicalPlan.QueryBlock block : plan.getQueryBlocks()) {
       if (block.hasNode(NodeType.SELECTION) || block.hasNode(NodeType.JOIN)) {
         return true;
@@ -89,7 +90,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   }
 
   @Override
-  public LogicalPlan rewrite(LogicalPlan plan) throws PlanningException {
+  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws PlanningException {
     /*
     FilterPushDown rule: processing when visits each node
       - If a target which is corresponding on a filter EvalNode's column is not FieldEval, do not PushDown.

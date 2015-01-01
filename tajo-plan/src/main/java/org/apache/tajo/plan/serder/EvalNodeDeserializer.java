@@ -21,8 +21,11 @@ package org.apache.tajo.plan.serder;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
+import org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.datum.*;
@@ -30,21 +33,23 @@ import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.function.AggFunction;
 import org.apache.tajo.plan.function.GeneralFunction;
+import org.apache.tajo.plan.logical.WindowSpec;
+import org.apache.tajo.plan.serder.PlanProto.WinFunctionEvalSpec;
 
 import java.util.*;
 
 /**
  * It deserializes a serialized eval tree consisting of a number of EvalNodes.
  *
- * {@link EvalTreeProtoSerializer} serializes an eval tree in a postfix traverse order.
+ * {@link EvalNodeSerializer} serializes an eval tree in a postfix traverse order.
  * So, this class firstly sorts all serialized eval nodes in ascending order of their sequence IDs. Then,
  * it sequentially restores each serialized node to EvalNode instance.
  *
- * @see EvalTreeProtoSerializer
+ * @see EvalNodeSerializer
  */
-public class EvalTreeProtoDeserializer {
+public class EvalNodeDeserializer {
 
-  public static EvalNode deserialize(OverridableConf context, PlanProto.EvalTree tree) {
+  public static EvalNode deserialize(OverridableConf context, PlanProto.EvalNodeTree tree) {
     Map<Integer, EvalNode> evalNodeMap = Maps.newHashMap();
 
     // sort serialized eval nodes in an ascending order of their IDs.
@@ -98,6 +103,25 @@ public class EvalTreeProtoDeserializer {
         case IN:
           current = new InEval(lhs, (RowConstantEval) rhs, binProto.getNegative());
           break;
+        case LIKE: {
+          PlanProto.PatternMatchEvalSpec patternMatchProto = protoNode.getPatternMatch();
+          current = new LikePredicateEval(binProto.getNegative(), lhs, (ConstEval) rhs,
+              patternMatchProto.getCaseSensitive());
+          break;
+        }
+        case REGEX: {
+          PlanProto.PatternMatchEvalSpec patternMatchProto = protoNode.getPatternMatch();
+          current = new RegexPredicateEval(binProto.getNegative(), lhs, (ConstEval) rhs,
+              patternMatchProto.getCaseSensitive());
+          break;
+        }
+        case SIMILAR_TO: {
+          PlanProto.PatternMatchEvalSpec patternMatchProto = protoNode.getPatternMatch();
+          current = new SimilarToPredicateEval(binProto.getNegative(), lhs, (ConstEval) rhs,
+              patternMatchProto.getCaseSensitive());
+          break;
+        }
+
         default:
           current = new BinaryEval(type, lhs, rhs);
         }
@@ -155,12 +179,34 @@ public class EvalTreeProtoDeserializer {
           if (type == EvalType.FUNCTION) {
             GeneralFunction instance = (GeneralFunction) funcDesc.newInstance();
             current = new GeneralFunctionEval(context, new FunctionDesc(funcProto.getFuncion()), instance, params);
+
           } else if (type == EvalType.AGG_FUNCTION || type == EvalType.WINDOW_FUNCTION) {
             AggFunction instance = (AggFunction) funcDesc.newInstance();
             if (type == EvalType.AGG_FUNCTION) {
-              current = new AggregationFunctionCallEval(new FunctionDesc(funcProto.getFuncion()), instance, params);
+              AggregationFunctionCallEval aggFunc =
+                  new AggregationFunctionCallEval(new FunctionDesc(funcProto.getFuncion()), instance, params);
+
+              PlanProto.AggFunctionEvalSpec aggFunctionProto = protoNode.getAggFunction();
+              aggFunc.setIntermediatePhase(aggFunctionProto.getIntermediatePhase());
+              aggFunc.setFinalPhase(aggFunctionProto.getFinalPhase());
+              if (aggFunctionProto.hasAlias()) {
+                aggFunc.setAlias(aggFunctionProto.getAlias());
+              }
+              current = aggFunc;
+
             } else {
-              current = new WindowFunctionEval(new FunctionDesc(funcProto.getFuncion()), instance, params, null);
+              WinFunctionEvalSpec windowFuncProto = protoNode.getWinFunction();
+
+              WindowFunctionEval winFunc =
+                  new WindowFunctionEval(new FunctionDesc(funcProto.getFuncion()), instance, params,
+                      convertWindowFrame(windowFuncProto.getWindowFrame()));
+
+              if (windowFuncProto.getSortSpecCount() > 0) {
+                SortSpec[] sortSpecs = LogicalNodeDeserializer.convertSortSpecs(windowFuncProto.getSortSpecList());
+                winFunc.setSortSpecs(sortSpecs);
+              }
+
+              current = winFunc;
             }
           }
         } catch (ClassNotFoundException cnfe) {
@@ -176,6 +222,43 @@ public class EvalTreeProtoDeserializer {
     }
 
     return current;
+  }
+
+  private static WindowSpec.WindowFrame convertWindowFrame(WinFunctionEvalSpec.WindowFrame windowFrame) {
+    WindowFrameStartBoundType startBoundType = convertWindowStartBound(windowFrame.getStartBound().getBoundType());
+    WindowSpec.WindowStartBound startBound = new WindowSpec.WindowStartBound(startBoundType);
+
+    WindowFrameEndBoundType endBoundType = convertWindowEndBound(windowFrame.getEndBound().getBoundType());
+    WindowSpec.WindowEndBound endBound = new WindowSpec.WindowEndBound(endBoundType);
+
+    WindowSpec.WindowFrame frame = new WindowSpec.WindowFrame(startBound, endBound);
+    return frame;
+  }
+
+  private static WindowFrameStartBoundType convertWindowStartBound(
+      WinFunctionEvalSpec.WindowFrameStartBoundType type) {
+    if (type == WinFunctionEvalSpec.WindowFrameStartBoundType.S_UNBOUNDED_PRECEDING) {
+      return WindowFrameStartBoundType.UNBOUNDED_PRECEDING;
+    } else if (type == WinFunctionEvalSpec.WindowFrameStartBoundType.S_CURRENT_ROW) {
+      return WindowFrameStartBoundType.CURRENT_ROW;
+    } else if (type == WinFunctionEvalSpec.WindowFrameStartBoundType.S_PRECEDING) {
+      return WindowFrameStartBoundType.PRECEDING;
+    } else {
+      throw new IllegalStateException("Unknown Window Start Bound type: " + type.name());
+    }
+  }
+
+  private static WindowFrameEndBoundType convertWindowEndBound(
+      WinFunctionEvalSpec.WindowFrameEndBoundType type) {
+    if (type == WinFunctionEvalSpec.WindowFrameEndBoundType.E_UNBOUNDED_FOLLOWING) {
+      return WindowFrameEndBoundType.UNBOUNDED_FOLLOWING;
+    } else if (type == WinFunctionEvalSpec.WindowFrameEndBoundType.E_CURRENT_ROW) {
+      return WindowFrameEndBoundType.CURRENT_ROW;
+    } else if (type == WinFunctionEvalSpec.WindowFrameEndBoundType.E_FOLLOWING) {
+      return WindowFrameEndBoundType.FOLLOWING;
+    } else {
+      throw new IllegalStateException("Unknown Window Start Bound type: " + type.name());
+    }
   }
 
   public static Datum deserialize(PlanProto.Datum datum) {

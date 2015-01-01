@@ -35,6 +35,16 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
     super(pid, NodeType.TABLE_SUBQUERY);
   }
 
+  @Override
+  public int childNum() {
+    return 1;
+  }
+
+  @Override
+  public LogicalNode getChild(int idx) {
+    return subQuery;
+  }
+
   public void init(String tableName, LogicalNode subQuery) {
     this.tableName = tableName;
     if (subQuery != null) {
@@ -66,7 +76,7 @@ public class TableSubQueryNode extends RelationNode implements Projectable {
   }
 
   @Override
-  public Schema getTableSchema() {
+  public Schema getLogicalSchema() {
     // an output schema can be determined by targets. So, an input schema of
     // TableSubQueryNode is only eligible for table schema.
     //

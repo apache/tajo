@@ -42,9 +42,4 @@
     <value>org.apache.tajo.master.DefaultTaskScheduler</value>
   </property>
 
-  <property>
-    <name>tajo.querymaster.lazy-task-scheduler.algorithm</name>
-    <value>org.apache.tajo.master.GreedyFragmentScheduleAlgorithm</value>
-  </property>
-
 </configuration>

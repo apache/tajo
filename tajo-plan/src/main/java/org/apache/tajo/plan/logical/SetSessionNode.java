@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.logical;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.PlanString;
 
 public class SetSessionNode extends LogicalNode {
@@ -29,6 +30,13 @@ public class SetSessionNode extends LogicalNode {
     super(pid, NodeType.SET_SESSION);
   }
 
+  /**
+   * If both name and value are given, it will set a session variable.
+   * If a name is only given, it will unset a session variable.
+   *
+   * @param name Session variable name
+   * @param value Session variable value
+   */
   public void init(String name, String value) {
     this.name = name;
     this.value = value;
@@ -38,12 +46,22 @@ public class SetSessionNode extends LogicalNode {
     return name;
   }
 
-  public boolean isDefaultValue() {
-    return value == null;
+  public boolean hasValue() {
+    return value != null;
   }
 
   public String getValue() {
     return value;
+  }
+
+  @Override
+  public int childNum() {
+    return 0;
+  }
+
+  @Override
+  public LogicalNode getChild(int idx) {
+    throw new UnsupportedException();
   }
 
   @Override

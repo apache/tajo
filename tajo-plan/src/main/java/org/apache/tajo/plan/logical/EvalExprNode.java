@@ -35,6 +35,16 @@ public class EvalExprNode extends LogicalNode implements Projectable {
   }
 
   @Override
+  public int childNum() {
+    return 0;
+  }
+
+  @Override
+  public LogicalNode getChild(int idx) {
+    return null;
+  }
+
+  @Override
   public boolean hasTargets() {
     return true;
   }
@@ -42,7 +52,7 @@ public class EvalExprNode extends LogicalNode implements Projectable {
   @Override
   public void setTargets(Target[] targets) {
     this.exprs = targets;
-    setOutSchema(PlannerUtil.targetToSchema(targets));
+    this.setOutSchema(PlannerUtil.targetToSchema(targets));
   }
 
   @Override

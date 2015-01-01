@@ -66,7 +66,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
     numGroupingColumns = plan.getGroupingColumns().length;
     resultTupleLength = numGroupingColumns;
 
-    List<GroupbyNode> groupbyNodes = plan.getGroupByNodes();
+    List<GroupbyNode> groupbyNodes = plan.getSubPlans();
 
     List<DistinctFinalAggregator> aggregatorList = new ArrayList<DistinctFinalAggregator>();
     int inTupleIndex = 1 + numGroupingColumns;

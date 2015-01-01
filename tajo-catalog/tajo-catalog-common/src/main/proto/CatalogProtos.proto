@@ -38,6 +38,7 @@ enum StoreType {
   TEXTFILE = 10;
   JSON = 11;
   HBASE = 12;
+  SYSTEM = 13;
 }
 
 enum OrderType {
@@ -61,6 +62,7 @@ enum AlterTableType {
 
 message ColumnProto {
   required string name = 1;
+  optional int32 tid = 2;
   required DataType dataType = 3;
 }
 
@@ -101,7 +103,9 @@ message TableDescProto {
 
 message TableIdentifierProto {
   required string database_name = 1;
-  required string table_name = 3;
+  required string table_name = 2;
+  optional int32 dbId = 3;
+  optional int32 tid = 4;
 }
 
 message NamespaceProto {
@@ -128,6 +132,63 @@ enum IndexMethod {
 
 message GetAllTableNamesResponse {
   repeated string tableName = 1;
+}
+
+message GetTablespacesProto {
+  repeated TablespaceProto tablespace = 1;
+}
+
+message GetDatabasesProto {
+  repeated DatabaseProto database = 1;
+}
+
+message GetTablesProto {
+  repeated TableDescriptorProto table = 1;
+}
+
+message GetColumnsProto {
+  repeated ColumnProto column = 1;
+}
+
+message GetIndexesProto {
+  repeated IndexProto index = 1;
+}
+
+message GetTableOptionsProto {
+  repeated TableOptionProto tableOption = 1;
+}
+
+message GetTableStatsProto {
+  repeated TableStatsProto stat = 1;
+}
+
+message GetTablePartitionsProto {
+  repeated TablePartitionProto part = 1;
+}
+
+message IndexProto {
+  required int32 dbId = 1;
+  required int32 tId = 2;
+  required string indexName = 3;
+  required string columnName = 4;
+  required string dataType = 5;
+  required string indexType = 6;
+  optional bool isUnique = 7 [default = false];
+  optional bool isClustered = 8 [default = false];
+  optional bool isAscending = 9 [default = false];
+}
+
+message TableOptionProto {
+  required int32 tid = 1;
+  required KeyValueProto keyval = 2;
+}
+
+message TablePartitionProto {
+  required int32 pid = 1;
+  required int32 tid = 2;
+  optional string partitionName = 3;
+  required int32  ordinalPosition = 4;
+  optional string path = 5;
 }
 
 message GetIndexByColumnRequest {
@@ -169,6 +230,7 @@ message TableStatsProto {
   optional int64 avgRows = 6;
   optional int64 readBytes = 7;
   repeated ColumnStatsProto colStat = 8;
+  optional int32 tid = 9;
 }
 
 message ColumnStatsProto {
@@ -240,6 +302,23 @@ message PartitionDescProto {
 message TablespaceProto {
   required string spaceName = 1;
   required string uri = 2;
+  optional string handler = 3;
+  optional int32 id = 4; 
+}
+
+message DatabaseProto {
+	required int32 spaceId = 1;
+	required int32 id = 2;
+	required string name = 3;
+}
+
+message TableDescriptorProto {
+	required int32 dbId = 1;
+	required int32 tid = 2;
+	required string name = 3;
+	optional string tableType = 4;
+	required string path = 5;
+	required string storeType = 6;
 }
 
 message AlterTablespaceProto {
