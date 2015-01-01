@@ -43,6 +43,16 @@ public class AlterTableNode extends LogicalNode {
     super(pid, NodeType.ALTER_TABLE);
   }
 
+  @Override
+  public int childNum() {
+    return 0;
+  }
+
+  @Override
+  public LogicalNode getChild(int idx) {
+    return null;
+  }
+
   public String getTableName() {
     return tableName;
   }

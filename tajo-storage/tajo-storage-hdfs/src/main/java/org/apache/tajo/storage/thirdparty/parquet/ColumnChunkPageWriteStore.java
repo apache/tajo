@@ -36,7 +36,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.apache.tajo.storage.thirdparty.parquet.CodecFactory.BytesCompressor;
-import static parquet.Log.INFO;
+import static parquet.Log.DEBUG;
 
 class ColumnChunkPageWriteStore implements PageWriteStore {
   private static final Log LOG = Log.getLog(ColumnChunkPageWriteStore.class);
@@ -140,8 +140,8 @@ class ColumnChunkPageWriteStore implements PageWriteStore {
       }
       writer.writeDataPages(BytesInput.from(buf), uncompressedLength, compressedLength, totalStatistics, new ArrayList<Encoding>(encodings));
       writer.endColumn();
-      if (INFO) {
-        LOG.info(
+      if (DEBUG) {
+        LOG.debug(
             String.format(
                 "written %,dB for %s: %,d values, %,dB raw, %,dB comp, %d pages, encodings: %s",
                 buf.size(), path, totalValueCount, uncompressedLength, compressedLength, pageCount, encodings)

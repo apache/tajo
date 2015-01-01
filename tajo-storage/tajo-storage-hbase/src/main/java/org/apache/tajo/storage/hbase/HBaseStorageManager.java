@@ -49,7 +49,7 @@ import org.apache.tajo.plan.logical.CreateTableNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.plan.rewrite.RewriteRule;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.util.Bytes;
@@ -1050,9 +1050,9 @@ public class HBaseStorageManager extends StorageManager {
     }
   }
 
-  public List<RewriteRule> getRewriteRules(OverridableConf queryContext, TableDesc tableDesc) throws IOException {
+  public List<LogicalPlanRewriteRule> getRewriteRules(OverridableConf queryContext, TableDesc tableDesc) throws IOException {
     if ("false".equalsIgnoreCase(queryContext.get(HBaseStorageConstants.INSERT_PUT_MODE, "false"))) {
-      List<RewriteRule> rules = new ArrayList<RewriteRule>();
+      List<LogicalPlanRewriteRule> rules = new ArrayList<LogicalPlanRewriteRule>();
       rules.add(new AddSortForInsertRewriter(tableDesc, getIndexColumns(tableDesc)));
       return rules;
     } else {

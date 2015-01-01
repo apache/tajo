@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,17 +16,32 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.plan.rewrite;
+package org.apache.tajo.catalog.dictionary;
 
-import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.common.TajoDataTypes.Type;
 
-public interface QueryRewriteEngine {
-  /**
-   * Rewrite a logical plan with all query rewrite rules added to this engine.
-   *
-   * @param plan The plan to be rewritten with all query rewrite rule.
-   * @return The rewritten plan.
-   */
-  LogicalPlan rewrite(LogicalPlan plan) throws PlanningException;
+class ColumnDescriptor {
+
+  private final String name;
+  private final Type type;
+  private final int length;
+  
+  public ColumnDescriptor(String columnName, Type columnType, int dataLength) {
+    name = columnName;
+    type = columnType;
+    length = dataLength;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public Type getType() {
+    return type;
+  }
+
+  public int getLength() {
+    return length;
+  }
+  
 }

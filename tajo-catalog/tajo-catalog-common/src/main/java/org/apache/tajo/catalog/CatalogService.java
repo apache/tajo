@@ -19,10 +19,17 @@
 package org.apache.tajo.catalog;
 
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
-import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.DatabaseProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.IndexProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableDescriptorProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableOptionProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 
 import java.util.Collection;
+import java.util.List;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
@@ -58,6 +65,11 @@ public interface CatalogService {
    * @return All tablespace names
    */
   Collection<String> getAllTablespaceNames();
+  
+  /**
+   * 
+   */
+  List<TablespaceProto> getAllTablespaces();
 
   /**
    *
@@ -99,6 +111,11 @@ public interface CatalogService {
    * @return All database names
    */
   Collection<String> getAllDatabaseNames();
+  
+  /**
+   * 
+   */
+  List<DatabaseProto> getAllDatabases();
 
   /**
    * Get a table description by name
@@ -122,6 +139,20 @@ public interface CatalogService {
    * @return All table names which belong to a given database.
    */
   Collection<String> getAllTableNames(String databaseName);
+  
+  /**
+   * 
+   */
+  List<TableDescriptorProto> getAllTables();
+  
+  List<TableOptionProto> getAllTableOptions();
+  
+  List<TableStatsProto> getAllTableStats();
+  
+  /**
+   * 
+   */
+  List<ColumnProto> getAllColumns();
 
   /**
    *
@@ -152,6 +183,8 @@ public interface CatalogService {
   PartitionMethodDesc getPartitionMethod(String databaseName, String tableName);
 
   boolean existPartitionMethod(String databaseName, String tableName);
+  
+  List<TablePartitionProto> getAllPartitions();
 
   boolean createIndex(IndexDesc index);
 
@@ -164,6 +197,8 @@ public interface CatalogService {
   IndexDesc getIndexByColumn(String databaseName, String tableName, String columnName);
 
   boolean dropIndex(String databaseName, String indexName);
+  
+  List<IndexProto> getAllIndexes();
 
   boolean createFunction(FunctionDesc funcDesc);
 

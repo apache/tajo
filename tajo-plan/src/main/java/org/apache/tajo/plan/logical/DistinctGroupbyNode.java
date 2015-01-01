@@ -34,19 +34,19 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
   private GroupbyNode groupbyPlan;
 
   @Expose
-  private List<GroupbyNode> groupByNodes;
+  private List<GroupbyNode> subGroupbyPlan;
 
   @Expose
   private Target[] targets;
 
   @Expose
-  private Column[] groupingColumns;
+  private Column[] groupingColumns = PlannerUtil.EMPTY_COLUMNS;
 
   @Expose
-  private int[] resultColumnIds;
+  private int[] resultColumnIds = new int[]{};
 
   /** Aggregation Functions */
-  @Expose private AggregationFunctionCallEval[] aggrFunctions;
+  @Expose private AggregationFunctionCallEval[] aggrFunctions = PlannerUtil.EMPTY_AGG_FUNCS;
 
   public DistinctGroupbyNode(int pid) {
     super(pid, NodeType.DISTINCT_GROUP_BY);
@@ -54,7 +54,7 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
 
   @Override
   public boolean hasTargets() {
-    return targets != null && targets.length > 0;
+    return targets.length > 0;
   }
 
   @Override
@@ -72,19 +72,19 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
     }
   }
 
-  public void setGroupbyNodes(List<GroupbyNode> groupByNodes) {
-    this.groupByNodes =  groupByNodes;
+  public void setSubPlans(List<GroupbyNode> groupByNodes) {
+    this.subGroupbyPlan =  groupByNodes;
   }
 
-  public List<GroupbyNode> getGroupByNodes() {
-    return groupByNodes;
+  public List<GroupbyNode> getSubPlans() {
+    return subGroupbyPlan;
   }
 
   public final Column[] getGroupingColumns() {
     return groupingColumns;
   }
 
-  public final void setGroupColumns(Column[] groupingColumns) {
+  public final void setGroupingColumns(Column[] groupingColumns) {
     this.groupingColumns = groupingColumns;
   }
 
@@ -119,12 +119,12 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
       }
     }
 
-    if (groupByNodes != null) {
-      cloneNode.groupByNodes = new ArrayList<GroupbyNode>();
-      for (GroupbyNode eachNode: groupByNodes) {
+    if (subGroupbyPlan != null) {
+      cloneNode.subGroupbyPlan = new ArrayList<GroupbyNode>();
+      for (GroupbyNode eachNode: subGroupbyPlan) {
         GroupbyNode groupbyNode = (GroupbyNode)eachNode.clone();
         groupbyNode.setPID(-1);
-        cloneNode.groupByNodes.add(groupbyNode);
+        cloneNode.subGroupbyPlan.add(groupbyNode);
       }
     }
 
@@ -151,7 +151,7 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
       sb.append("grouping set=").append(TUtil.arrayToString(groupingColumns));
       sb.append(", ");
     }
-    for (GroupbyNode eachNode: groupByNodes) {
+    for (GroupbyNode eachNode: subGroupbyPlan) {
       sb.append(", groupbyNode=").append(eachNode.toString());
     }
     sb.append(")");
@@ -164,8 +164,9 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
       DistinctGroupbyNode other = (DistinctGroupbyNode) obj;
       boolean eq = super.equals(other);
       eq = eq && TUtil.checkEquals(groupingColumns, other.groupingColumns);
-      eq = eq && TUtil.checkEquals(groupByNodes, other.groupByNodes);
+      eq = eq && TUtil.checkEquals(subGroupbyPlan, other.subGroupbyPlan);
       eq = eq && TUtil.checkEquals(targets, other.targets);
+      eq = eq && TUtil.checkEquals(resultColumnIds, other.resultColumnIds);
       return eq;
     } else {
       return false;
@@ -194,7 +195,7 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
     sb.append("(");
 
     String prefix = "";
-    for (GroupbyNode eachNode: groupByNodes) {
+    for (GroupbyNode eachNode: subGroupbyPlan) {
       if (eachNode.hasAggFunctions()) {
         AggregationFunctionCallEval[] aggrFunctions = eachNode.getAggFunctions();
         for (int j = 0; j < aggrFunctions.length; j++) {
@@ -218,7 +219,7 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
     planStr.addDetail("out schema:").appendDetail(getOutSchema().toString());
     planStr.addDetail("in schema:").appendDetail(getInSchema().toString());
 
-    for (GroupbyNode eachNode: groupByNodes) {
+    for (GroupbyNode eachNode: subGroupbyPlan) {
       planStr.addDetail("\t").appendDetail("distinct: " + eachNode.isDistinct())
           .appendDetail(", " + eachNode.getShortPlanString());
     }
@@ -236,7 +237,7 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
         }
       }
     }
-    for (GroupbyNode eachGroupbyNode: groupByNodes) {
+    for (GroupbyNode eachGroupbyNode: subGroupbyPlan) {
       if (eachGroupbyNode.getGroupingColumns() != null && eachGroupbyNode.getGroupingColumns().length > 0) {
         for (Column eachColumn: eachGroupbyNode.getGroupingColumns()) {
           if (!shuffleKeyColumns.contains(eachColumn)) {

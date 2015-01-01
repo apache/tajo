@@ -20,17 +20,20 @@ package org.apache.tajo.plan;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.FieldEval;
+import org.apache.tajo.plan.serder.LogicalNodeSerializer;
 import org.apache.tajo.plan.serder.PlanGsonHelper;
+import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.util.TUtil;
 
 /**
  * A Target contains how to evaluate an expression and its alias name.
  */
-public class Target implements Cloneable, GsonObject {
+public class Target implements Cloneable, GsonObject, ProtoObject<PlanProto.Target> {
   @Expose private EvalNode expr;
   @Expose private Column column;
   @Expose private String alias = null;
@@ -46,8 +49,7 @@ public class Target implements Cloneable, GsonObject {
     String normalized = alias;
 
     // If an expr is a column reference and its alias is equivalent to column name, ignore a given alias.
-    if (eval instanceof FieldEval
-        && eval.getName().equals(normalized)) {
+    if (eval instanceof FieldEval && eval.getName().equals(normalized)) {
       column = ((FieldEval) eval).getColumnRef();
     } else {
       column = new Column(normalized, eval.getValueType());
@@ -126,5 +128,10 @@ public class Target implements Cloneable, GsonObject {
 
   public String toJson() {
     return PlanGsonHelper.toJson(this, Target.class);
+  }
+
+  @Override
+  public PlanProto.Target getProto() {
+    return LogicalNodeSerializer.convertTarget(this);
   }
 }

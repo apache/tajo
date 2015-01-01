@@ -47,13 +47,13 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
     super(context, plan.getInSchema(), plan.getOutSchema());
     this.plan = plan;
     this.aggregateExecs = aggregateExecs;
-    this.groupbyNodeNum = plan.getGroupByNodes().size();
+    this.groupbyNodeNum = plan.getSubPlans().size();
 
     currentTuples = new Tuple[groupbyNodeNum];
     outColumnNum = outSchema.size();
 
     int allGroupbyOutColNum = 0;
-    for (GroupbyNode eachGroupby: plan.getGroupByNodes()) {
+    for (GroupbyNode eachGroupby: plan.getSubPlans()) {
       allGroupbyOutColNum += eachGroupby.getOutSchema().size();
     }
 
