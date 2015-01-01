@@ -19,6 +19,7 @@
 package org.apache.tajo.cli.tsql;
 
 import jline.console.history.FileHistory;
+import org.apache.tajo.cli.tsql.commands.ExitCommand;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,7 +32,10 @@ public class TajoFileHistory extends FileHistory {
 
   @Override
   public void add(CharSequence item) {
-    // TODO: Filter out the quit command. Users wouldn't want it in the history.
+    // Don't store an exit command. Most users wouldn't want it.
+    if (item.equals(ExitCommand.COMMAND_STRING)) {
+      return;
+    }
     super.add(item);
   }
 }
