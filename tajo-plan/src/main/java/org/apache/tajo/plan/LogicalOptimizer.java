@@ -62,40 +62,7 @@ import static org.apache.tajo.plan.joinorder.GreedyHeuristicJoinOrderAlgorithm.g
 public class LogicalOptimizer {
   private static final Log LOG = LogFactory.getLog(LogicalOptimizer.class.getName());
 
-//<<<<<<< HEAD
-//  private final TajoConf systemConf;
   private CatalogService catalog;
-//  private BasicQueryRewriteEngine rulesBeforeJoinOpt;
-//  private BasicQueryRewriteEngine rulesAfterToJoinOpt;
-//  private JoinOrderAlgorithm joinOrderAlgorithm = new GreedyHeuristicJoinOrderAlgorithm();
-//
-//  public LogicalOptimizer(TajoConf systemConf, CatalogService catalog) {
-//    this.systemConf = systemConf;
-//    this.catalog = catalog;
-//    rulesBeforeJoinOpt = new BasicQueryRewriteEngine();
-//    if (systemConf.getBoolVar(ConfVars.$TEST_FILTER_PUSHDOWN_ENABLED)) {
-//      rulesBeforeJoinOpt.addRewriteRule(new FilterPushDownRule(catalog));
-//    }
-//
-//    rulesAfterToJoinOpt = new BasicQueryRewriteEngine();
-//    rulesAfterToJoinOpt.addRewriteRule(new ProjectionPushDownRule());
-//    rulesAfterToJoinOpt.addRewriteRule(new PartitionedTableRewriter(systemConf));
-//    rulesAfterToJoinOpt.addRewriteRule(new AccessPathRewriter());
-//
-//    // Currently, it is only used for some test cases to inject exception manually.
-//    String userDefinedRewriterClass = systemConf.get("tajo.plan.rewriter.classes");
-//    if (userDefinedRewriterClass != null && !userDefinedRewriterClass.isEmpty()) {
-//      for (String eachRewriterClass : userDefinedRewriterClass.split(",")) {
-//        try {
-//          RewriteRule rule = (RewriteRule) Class.forName(eachRewriterClass).newInstance();
-//          rulesAfterToJoinOpt.addRewriteRule(rule);
-//        } catch (Exception e) {
-//          LOG.error("Can't initiate a Rewriter object: " + eachRewriterClass, e);
-//          continue;
-//        }
-//      }
-//    }
-//=======
   private BaseLogicalPlanRewriteEngine rulesBeforeJoinOpt;
   private BaseLogicalPlanRewriteEngine rulesAfterToJoinOpt;
   private JoinOrderAlgorithm joinOrderAlgorithm = new GreedyHeuristicJoinOrderAlgorithm();
@@ -111,7 +78,6 @@ public class LogicalOptimizer {
     rulesBeforeJoinOpt.addRewriteRule(provider.getPreRules());
     rulesAfterToJoinOpt = new BaseLogicalPlanRewriteEngine();
     rulesAfterToJoinOpt.addRewriteRule(provider.getPostRules());
-//>>>>>>> 8e52ed43a72a51f78dce1547cd642a24aa860c58
   }
 
   public void addRuleAfterToJoinOpt(LogicalPlanRewriteRule rewriteRule) {
