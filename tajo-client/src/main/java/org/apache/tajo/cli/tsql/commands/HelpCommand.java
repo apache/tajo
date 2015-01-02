@@ -85,7 +85,7 @@ public class HelpCommand extends TajoShellCommand {
       sout.println();
 
       sout.println("Documentations");
-      sout.println("  tsql guide        http://tajo.apache.org/docs/" + targetDocVersion + "/cli.html");
+      sout.println("  tsql guide        http://tajo.apache.org/docs/" + targetDocVersion + "/tsql.html");
       sout.println("  Query language    http://tajo.apache.org/docs/" + targetDocVersion + "/sql_language.html");
       sout.println("  Functions         http://tajo.apache.org/docs/" + targetDocVersion + "/functions.html");
       sout.println("  Backup & restore  http://tajo.apache.org/docs/" + targetDocVersion + "/backup_and_restore.html");
