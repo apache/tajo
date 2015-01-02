@@ -45,7 +45,7 @@ enum NodeType {
   TABLE_SUBQUERY = 15;
   SCAN = 16;
   PARTITIONS_SCAN = 17;
-  BST_INDEX_SCAN = 18;
+  INDEX_SCAN = 18;
   STORE = 19;
   INSERT = 20;
 
@@ -113,6 +113,13 @@ message ScanNode {
 
 message PartitionScanSpec {
   repeated string paths = 1;
+}
+
+message IndexScanNode {
+  required ScanNode scanNode = 1;
+  required SchemaProto keySchema = 2;
+  required string indexPath = 3;
+  repeated
 }
 
 message FilterNode {
@@ -307,11 +314,19 @@ message AlterTableNode {
 }
 
 message CreateIndexNode {
-
+  required int32 childSeq = 1;
+  required string indexName = 2;
+  required IndexMethod indexMethod = 3;
+  required string indexPath = 4;
+  repeated SortSpecProto keySortSpecs = 5;
+  required SchemaProto targetRelationSchema = 6;
+  optional bool isUnique = 7 [default = false];
+  optional bool isClustered = 8 [default = false];
+  optional KeyValueSetProto indexProperties = 9;
 }
 
 message DropIndexNode {
-
+  required string indexName = 1;
 }
 
 enum EvalType {

@@ -31,6 +31,10 @@ public class IndexScanNode extends ScanNode {
   @Expose private Schema keySchema = null;
   @Expose private URI indexPath = null;
   @Expose private SimplePredicate[] predicates = null;
+
+  public IndexScanNode(int pid) {
+    super(pid);
+  }
   
   public IndexScanNode(int pid, ScanNode scanNode ,
       Schema keySchema , SimplePredicate[] predicates, URI indexPath) {

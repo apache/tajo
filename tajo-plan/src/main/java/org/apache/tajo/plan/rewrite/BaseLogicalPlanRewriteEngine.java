@@ -77,10 +77,10 @@ public class BaseLogicalPlanRewriteEngine implements LogicalPlanRewriteEngine {
     for (Entry<String, LogicalPlanRewriteRule> rewriteRule : rewriteRules.entrySet()) {
       rule = rewriteRule.getValue();
       if (rule.isEligible(context)) {
-        plan = rule.rewrite(context);
         if (LOG.isDebugEnabled()) {
           LOG.debug("The rule \"" + rule.getName() + " \" rewrites the query.");
         }
+        plan = rule.rewrite(context);
       }
     }
 

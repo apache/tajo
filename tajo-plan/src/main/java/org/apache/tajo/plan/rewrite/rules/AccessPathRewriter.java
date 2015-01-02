@@ -40,7 +40,7 @@ public class AccessPathRewriter implements LogicalPlanRewriteRule {
   private static final Log LOG = LogFactory.getLog(AccessPathRewriter.class);
 
   private static final String NAME = "Access Path Rewriter";
-  private Rewriter rewriter = null;
+  private Rewriter rewriter = new Rewriter();
 
   @Override
   public String getName() {
@@ -57,7 +57,6 @@ public class AccessPathRewriter implements LogicalPlanRewriteRule {
           if (accessPathInfos.size() > 1) {
             for (AccessPathInfo accessPathInfo : accessPathInfos) {
               if (accessPathInfo.getScanType() == AccessPathInfo.ScanTypeControl.INDEX_SCAN) {
-                rewriter = new Rewriter();
                 return true;
               }
             }

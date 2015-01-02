@@ -89,6 +89,18 @@ public class CreateIndexNode extends UnaryNode implements Cloneable {
     return indexMeta.getTargetRelationSchema();
   }
 
+  public boolean hasOptions() {
+    return indexMeta.getOptions() != null;
+  }
+
+  public void setClustered(boolean clustered) {
+    indexMeta.setClustered(clustered);
+  }
+
+  public boolean isClustered() {
+    return indexMeta.isClustered();
+  }
+
   @Override
   public int hashCode() {
     return indexMeta.hashCode();
