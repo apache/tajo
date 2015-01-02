@@ -644,7 +644,7 @@ public class TestLogicalPlanner {
         , new FieldEval(new Column("default.t.n_nationkey", Type.INT4))
         , new FieldEval(new Column("default.s.s_suppkey", Type.INT4))
     );
-    joinQualMap.put(joinQual, Boolean.FALSE);
+    //joinQualMap.put(joinQual, Boolean.FALSE);
 
     LogicalNode[] nodes = PlannerUtil.findAllNodes(node, NodeType.JOIN);
     for(LogicalNode eachNode : nodes) {

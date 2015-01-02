@@ -121,6 +121,34 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testCrossJoinWithThetaJoinConditionInWhere() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testInnerJoinWithThetaJoinConditionInWhere() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testLeftOuterJoinWithThetaJoinConditionInWhere() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testRightOuterJoinWithThetaJoinConditionInWhere() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testWhereClauseJoin1() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
