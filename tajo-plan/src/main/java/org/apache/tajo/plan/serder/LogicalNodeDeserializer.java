@@ -36,6 +36,7 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.FieldEval;
 import org.apache.tajo.plan.expr.WindowFunctionEval;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 
@@ -132,6 +133,7 @@ public class LogicalNodeDeserializer {
         current = convertScan(context, protoNode);
         break;
       case INDEX_SCAN:
+        current = convertIndexScan(context, protoNode);
         break;
 
       case CREATE_TABLE:
@@ -433,12 +435,22 @@ public class LogicalNodeDeserializer {
 
   private static IndexScanNode convertIndexScan(OverridableConf context, PlanProto.LogicalNode protoNode) {
     IndexScanNode indexScan = new IndexScanNode(protoNode.getNodeId());
+    fillScanNode(context, protoNode, indexScan);
 
+    PlanProto.IndexScanSpec indexScanSpec = protoNode.getIndexScan();
+    SimplePredicate[] predicates = new SimplePredicate[indexScanSpec.getPredicatesCount()];
+    for (int i = 0; i < predicates.length; i++) {
+      predicates[i] = new SimplePredicate(indexScanSpec.getPredicates(i));
+    }
+
+    indexScan.set(new Schema(indexScanSpec.getKeySchema()), predicates,
+        TUtil.stringToURI(indexScanSpec.getIndexPath()));
 
     return indexScan;
   }
 
-  private static PartitionedTableScanNode convertPartitionScan(OverridableConf context, PlanProto.LogicalNode protoNode) {
+  private static PartitionedTableScanNode convertPartitionScan(OverridableConf context,
+                                                               PlanProto.LogicalNode protoNode) {
     PartitionedTableScanNode partitionedScan = new PartitionedTableScanNode(protoNode.getNodeId());
     fillScanNode(context, protoNode, partitionedScan);
 

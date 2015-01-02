@@ -73,34 +73,35 @@ message LogicalNode {
 
   optional ScanNode scan = 6;
   optional PartitionScanSpec partitionScan = 7;
-  optional JoinNode join = 8;
-  optional FilterNode filter = 9;
-  optional GroupbyNode groupby = 10;
-  optional DistinctGroupbyNode distinctGroupby = 11;
-  optional SortNode sort = 12;
-  optional LimitNode limit = 13;
-  optional WindowAggNode windowAgg = 14;
-  optional ProjectionNode projection = 15;
-  optional EvalExprNode exprEval = 16;
-  optional UnionNode union = 17;
-  optional TableSubQueryNode tableSubQuery = 18;
-  optional PersistentStoreNode persistentStore = 19;
-  optional StoreTableNodeSpec storeTable = 20;
-  optional InsertNodeSpec insert = 21;
-  optional CreateTableNodeSpec createTable = 22;
-  optional RootNode root = 23;
-  optional SetSessionNode setSession = 24;
+  optional IndexScanSpec indexScan = 8;
+  optional JoinNode join = 9;
+  optional FilterNode filter = 10;
+  optional GroupbyNode groupby = 11;
+  optional DistinctGroupbyNode distinctGroupby = 12;
+  optional SortNode sort = 13;
+  optional LimitNode limit = 14;
+  optional WindowAggNode windowAgg = 15;
+  optional ProjectionNode projection = 16;
+  optional EvalExprNode exprEval = 17;
+  optional UnionNode union = 18;
+  optional TableSubQueryNode tableSubQuery = 19;
+  optional PersistentStoreNode persistentStore = 20;
+  optional StoreTableNodeSpec storeTable = 21;
+  optional InsertNodeSpec insert = 22;
+  optional CreateTableNodeSpec createTable = 23;
+  optional RootNode root = 24;
+  optional SetSessionNode setSession = 25;
 
-  optional CreateDatabaseNode createDatabase = 25;
-  optional DropDatabaseNode dropDatabase = 26;
-  optional DropTableNode dropTable = 27;
+  optional CreateDatabaseNode createDatabase = 26;
+  optional DropDatabaseNode dropDatabase = 27;
+  optional DropTableNode dropTable = 28;
 
-  optional AlterTablespaceNode alterTablespace = 28;
-  optional AlterTableNode alterTable = 29;
-  optional TruncateTableNode truncateTableNode = 30;
+  optional AlterTablespaceNode alterTablespace = 29;
+  optional AlterTableNode alterTable = 30;
+  optional TruncateTableNode truncateTableNode = 31;
 
-  optional CreateIndexNode createIndex = 31;
-  optional DropIndexNode dropIndex = 32;
+  optional CreateIndexNode createIndex = 32;
+  optional DropIndexNode dropIndex = 33;
 }
 
 message ScanNode {
@@ -115,11 +116,15 @@ message PartitionScanSpec {
   repeated string paths = 1;
 }
 
-message IndexScanNode {
-  required ScanNode scanNode = 1;
-  required SchemaProto keySchema = 2;
-  required string indexPath = 3;
-  repeated
+message IndexScanSpec {
+  required SchemaProto keySchema = 1;
+  required string indexPath = 2;
+  repeated SimplePredicateProto predicates = 3;
+}
+
+message SimplePredicateProto {
+  required SortSpecProto keySortSpec = 1;
+  required Datum value = 2;
 }
 
 message FilterNode {

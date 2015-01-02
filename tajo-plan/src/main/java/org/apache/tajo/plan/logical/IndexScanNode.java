@@ -34,16 +34,20 @@ public class IndexScanNode extends ScanNode {
 
   public IndexScanNode(int pid) {
     super(pid);
+    setType(NodeType.INDEX_SCAN);
   }
   
   public IndexScanNode(int pid, ScanNode scanNode ,
       Schema keySchema , SimplePredicate[] predicates, URI indexPath) {
-    super(pid);
+    this(pid);
     init(scanNode.getTableDesc());
     setQual(scanNode.getQual());
     setInSchema(scanNode.getInSchema());
     setTargets(scanNode.getTargets());
-    setType(NodeType.INDEX_SCAN);
+    this.set(keySchema, predicates, indexPath);
+  }
+
+  public void set(Schema keySchema, SimplePredicate[] predicates, URI indexPath) {
     this.keySchema = keySchema;
     this.indexPath = indexPath;
     this.predicates = predicates;
@@ -75,10 +79,12 @@ public class IndexScanNode extends ScanNode {
   public boolean equals(Object obj) {
     if (obj instanceof IndexScanNode) {
       IndexScanNode other = (IndexScanNode) obj;
-      return super.equals(other) &&
-          this.indexPath.equals(other.indexPath) &&
-          TUtil.checkEquals(this.predicates, other.predicates) &&
-          this.keySchema.equals(other.keySchema);
+      boolean eq = super.equals(other);
+      eq &= this.indexPath.equals(other.indexPath);
+      eq &= TUtil.checkEquals(this.predicates, other.predicates);
+      eq &= this.keySchema.equals(other.keySchema);
+
+      return eq;
     }   
     return false;
   } 

@@ -20,7 +20,6 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.Column;
@@ -73,7 +72,7 @@ public class BSTIndexScanExec extends PhysicalExec {
     SortSpec[] keySortSpecs = new SortSpec[predicates.length];
     values = new Datum[predicates.length];
     for (int i = 0; i < predicates.length; i++) {
-      keySortSpecs[i] = predicates[i].getSortSpec();
+      keySortSpecs[i] = predicates[i].getKeySortSpec();
       values[i] = predicates[i].getValue();
     }
 

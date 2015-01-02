@@ -23,7 +23,11 @@ import org.apache.tajo.catalog.IndexDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.plan.serder.EvalNodeDeserializer;
+import org.apache.tajo.plan.serder.EvalNodeSerializer;
+import org.apache.tajo.plan.serder.PlanProto.SimplePredicateProto;
 
 import java.net.URI;
 
@@ -34,17 +38,22 @@ public class IndexScanInfo extends AccessPathInfo {
    * a column and a value.
    */
   // TODO: extend to represent more complex expressions
-  public static class SimplePredicate {
-    @Expose private SortSpec sortSpec;
+  public static class SimplePredicate implements ProtoObject<SimplePredicateProto> {
+    @Expose private SortSpec keySortSpec;
     @Expose private Datum value;
 
-    public SimplePredicate(SortSpec sortSpec, Datum value) {
-      this.sortSpec = sortSpec;
+    public SimplePredicate(SortSpec keySortSpec, Datum value) {
+      this.keySortSpec = keySortSpec;
       this.value = value;
     }
 
-    public SortSpec getSortSpec() {
-      return sortSpec;
+    public SimplePredicate(SimplePredicateProto proto) {
+      keySortSpec = new SortSpec(proto.getKeySortSpec());
+      value = EvalNodeDeserializer.deserialize(proto.getValue());
+    }
+
+    public SortSpec getKeySortSpec() {
+      return keySortSpec;
     }
 
     public Datum getValue() {
@@ -55,7 +64,7 @@ public class IndexScanInfo extends AccessPathInfo {
     public boolean equals(Object o) {
       if (o instanceof SimplePredicate) {
         SimplePredicate other = (SimplePredicate) o;
-        return this.sortSpec.equals(other.sortSpec) && this.value.equals(other.sortSpec);
+        return this.keySortSpec.equals(other.keySortSpec) && this.value.equals(other.value);
       } else {
         return false;
       }
@@ -63,8 +72,16 @@ public class IndexScanInfo extends AccessPathInfo {
 
     @Override
     public Object clone() throws CloneNotSupportedException {
-      SimplePredicate clone = new SimplePredicate(this.sortSpec, this.value);
+      SimplePredicate clone = new SimplePredicate(this.keySortSpec, this.value);
       return clone;
+    }
+
+    @Override
+    public SimplePredicateProto getProto() {
+      SimplePredicateProto.Builder builder = SimplePredicateProto.newBuilder();
+      builder.setKeySortSpec(keySortSpec.getProto());
+      builder.setValue(EvalNodeSerializer.serialize(value));
+      return builder.build();
     }
   }
 
@@ -78,7 +95,7 @@ public class IndexScanInfo extends AccessPathInfo {
     keySchema = new Schema();
     this.predicates = predicates;
     for (SimplePredicate predicate : predicates) {
-      keySchema.addColumn(predicate.getSortSpec().getSortKey());
+      keySchema.addColumn(predicate.getKeySortSpec().getSortKey());
     }
   }
 

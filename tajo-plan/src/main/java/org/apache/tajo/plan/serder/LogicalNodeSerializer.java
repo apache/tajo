@@ -29,6 +29,7 @@ import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.plan.serder.PlanProto.AlterTableNode.AddColumn;
 import org.apache.tajo.plan.serder.PlanProto.AlterTableNode.RenameColumn;
 import org.apache.tajo.plan.serder.PlanProto.AlterTableNode.RenameTable;
@@ -445,8 +446,22 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
   @Override
   public LogicalNode visitIndexScan(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                    IndexScanNode indexScan, Stack<LogicalNode> stack) throws PlanningException {
-    return null;
+                                    IndexScanNode node, Stack<LogicalNode> stack) throws PlanningException {
+
+    PlanProto.ScanNode.Builder scanBuilder = buildScanNode(node);
+
+    PlanProto.IndexScanSpec.Builder indexScanSpecBuilder = PlanProto.IndexScanSpec.newBuilder();
+    indexScanSpecBuilder.setKeySchema(node.getKeySchema().getProto());
+    indexScanSpecBuilder.setIndexPath(node.getIndexPath().toString());
+    for (SimplePredicate predicate : node.getPredicates()) {
+      indexScanSpecBuilder.addPredicates(predicate.getProto());
+    }
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
+    nodeBuilder.setScan(scanBuilder);
+    nodeBuilder.setIndexScan(indexScanSpecBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+    return node;
   }
 
   @Override
