@@ -271,7 +271,7 @@ public class ExecutionBlockContext {
     return manager.getWorkerContext();
   }
 
-  protected ClientSocketChannelFactory getShuffleChannelFactory(){
+  protected synchronized ClientSocketChannelFactory getShuffleChannelFactory(){
     if(channelFactory == null) {
       int workerNum = getConf().getIntVar(TajoConf.ConfVars.SHUFFLE_RPC_CLIENT_WORKER_THREAD_NUM);
       channelFactory = RpcChannelFactory.createClientChannelFactory("Fetcher", workerNum);
@@ -283,9 +283,8 @@ public class ExecutionBlockContext {
     return manager.getRPCTimer();
   }
 
-  protected void releaseShuffleChannelFactory(){
+  protected synchronized void releaseShuffleChannelFactory(){
     if(channelFactory != null) {
-      channelFactory.shutdown();
       channelFactory.releaseExternalResources();
       channelFactory = null;
     }
