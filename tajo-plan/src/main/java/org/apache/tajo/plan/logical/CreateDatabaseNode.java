@@ -30,6 +30,16 @@ public class CreateDatabaseNode extends LogicalNode implements Cloneable {
     super(pid, NodeType.CREATE_DATABASE);
   }
 
+  @Override
+  public int childNum() {
+    return 0;
+  }
+
+  @Override
+  public LogicalNode getChild(int idx) {
+    return null;
+  }
+
   public void init(String databaseName, boolean ifNotExists) {
     this.databaseName = databaseName;
     this.ifNotExists = ifNotExists;

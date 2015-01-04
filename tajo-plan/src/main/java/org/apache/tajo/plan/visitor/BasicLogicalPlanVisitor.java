@@ -63,7 +63,8 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
         current = visitSetSession(context, plan, block, (SetSessionNode) node, stack);
         break;
       case EXPRS:
-        return null;
+        current = visitEvalExpr(context, plan, block, (EvalExprNode) node, stack);
+        break;
       case PROJECTION:
         current = visitProjection(context, plan, block, (ProjectionNode) node, stack);
         break;
@@ -83,7 +84,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
         current = visitWindowAgg(context, plan, block, (WindowAggNode) node, stack);
         break;
       case DISTINCT_GROUP_BY:
-        current = visitDistinct(context, plan, block, (DistinctGroupbyNode) node, stack);
+        current = visitDistinctGroupby(context, plan, block, (DistinctGroupbyNode) node, stack);
         break;
       case SELECTION:
         current = visitFilter(context, plan, block, (SelectionNode) node, stack);
@@ -159,6 +160,12 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
   }
 
   @Override
+  public RESULT visitEvalExpr(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, EvalExprNode node,
+                              Stack<LogicalNode> stack) throws PlanningException {
+    return null;
+  }
+
+  @Override
   public RESULT visitProjection(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, ProjectionNode node,
                                 Stack<LogicalNode> stack)
       throws PlanningException {
@@ -213,8 +220,8 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
     return result;
   }
 
-  public RESULT visitDistinct(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, DistinctGroupbyNode node,
-                             Stack<LogicalNode> stack) throws PlanningException {
+  public RESULT visitDistinctGroupby(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                     DistinctGroupbyNode node, Stack<LogicalNode> stack) throws PlanningException {
     stack.push(node);
     RESULT result = visit(context, plan, block, node.getChild(), stack);
     stack.pop();
@@ -244,10 +251,17 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
   public RESULT visitUnion(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, UnionNode node,
                            Stack<LogicalNode> stack) throws PlanningException {
     stack.push(node);
-    LogicalPlan.QueryBlock leftBlock = plan.getBlock(node.getLeftChild());
-    RESULT result = visit(context, plan, leftBlock, leftBlock.getRoot(), stack);
-    LogicalPlan.QueryBlock rightBlock = plan.getBlock(node.getRightChild());
-    visit(context, plan, rightBlock, rightBlock.getRoot(), stack);
+    RESULT result = null;
+    if (plan != null) {
+      LogicalPlan.QueryBlock leftBlock = plan.getBlock(node.getLeftChild());
+      result = visit(context, plan, leftBlock, leftBlock.getRoot(), stack);
+      LogicalPlan.QueryBlock rightBlock = plan.getBlock(node.getRightChild());
+      visit(context, plan, rightBlock, rightBlock.getRoot(), stack);
+    } else {
+      result = visit(context, plan, null, node.getLeftChild(), stack);
+      visit(context, plan, null, node.getRightChild(), stack);
+    }
+
     stack.pop();
     return result;
   }
@@ -276,8 +290,13 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
   public RESULT visitTableSubQuery(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                    TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
     stack.push(node);
-    LogicalPlan.QueryBlock childBlock = plan.getBlock(node.getSubQuery());
-    RESULT result = visit(context, plan, childBlock, childBlock.getRoot(), stack);
+    RESULT result = null;
+    if (plan != null) {
+      LogicalPlan.QueryBlock childBlock = plan.getBlock(node.getSubQuery());
+      result = visit(context, plan, childBlock, childBlock.getRoot(), stack);
+    } else {
+      result = visit(context, plan, null, node.getSubQuery(), stack);
+    }
     stack.pop();
     return result;
   }

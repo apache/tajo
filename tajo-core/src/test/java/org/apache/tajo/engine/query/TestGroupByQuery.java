@@ -344,55 +344,84 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testDistinctAggregationCasebyCase() throws Exception {
-    ResultSet res;
-
+  public final void testDistinctAggregationCasebyCase1() throws Exception {
     // one groupby, distinct, aggregation
-    res = executeFile("testDistinctAggregation_case1.sql");
+    ResultSet res = executeFile("testDistinctAggregation_case1.sql");
     assertResultSet(res, "testDistinctAggregation_case1.result");
     res.close();
+  }
 
+  @Test
+  public final void testDistinctAggregationCasebyCase2() throws Exception {
     // one groupby, two distinct, one aggregation
-    res = executeFile("testDistinctAggregation_case2.sql");
+    ResultSet res = executeFile("testDistinctAggregation_case2.sql");
     assertResultSet(res, "testDistinctAggregation_case2.result");
     res.close();
+  }
 
+  @Test
+  public final void testDistinctAggregationCasebyCase3() throws Exception {
     // one groupby, two distinct, two aggregation(no alias)
-    res = executeFile("testDistinctAggregation_case3.sql");
+    ResultSet res = executeFile("testDistinctAggregation_case3.sql");
     assertResultSet(res, "testDistinctAggregation_case3.result");
     res.close();
+  }
 
+  @Test
+  public final void testDistinctAggregationCasebyCase4() throws Exception {
     // two groupby, two distinct, two aggregation
-    res = executeFile("testDistinctAggregation_case4.sql");
+    ResultSet res = executeFile("testDistinctAggregation_case4.sql");
     assertResultSet(res, "testDistinctAggregation_case4.result");
     res.close();
+  }
 
+  @Test
+  public final void testDistinctAggregationCasebyCase5() throws Exception {
     // two groupby, two distinct, two aggregation with stage
-    res = executeFile("testDistinctAggregation_case5.sql");
+    ResultSet res = executeFile("testDistinctAggregation_case5.sql");
     assertResultSet(res, "testDistinctAggregation_case5.result");
     res.close();
+  }
 
-    res = executeFile("testDistinctAggregation_case6.sql");
+  @Test
+  public final void testDistinctAggregationCasebyCase6() throws Exception {
+    ResultSet res = executeFile("testDistinctAggregation_case6.sql");
     assertResultSet(res, "testDistinctAggregation_case6.result");
     res.close();
+  }
 
-    res = executeFile("testDistinctAggregation_case7.sql");
+  @Test
+  public final void testDistinctAggregationCasebyCase7() throws Exception {
+    ResultSet res = executeFile("testDistinctAggregation_case7.sql");
     assertResultSet(res, "testDistinctAggregation_case7.result");
     res.close();
+  }
 
-    res = executeFile("testDistinctAggregation_case8.sql");
+  @Test
+  public final void testDistinctAggregationCasebyCase8() throws Exception {
+    ResultSet res = executeFile("testDistinctAggregation_case8.sql");
     assertResultSet(res, "testDistinctAggregation_case8.result");
     res.close();
+  }
 
-    res = executeFile("testDistinctAggregation_case9.sql");
+  @Test
+  public final void testDistinctAggregationCasebyCase9() throws Exception {
+    ResultSet res = executeFile("testDistinctAggregation_case9.sql");
     assertResultSet(res, "testDistinctAggregation_case9.result");
     res.close();
+  }
 
-    res = executeFile("testDistinctAggregation_case10.sql");
+  @Test
+  public final void testDistinctAggregationCasebyCase10() throws Exception {
+    ResultSet res = executeFile("testDistinctAggregation_case10.sql");
     assertResultSet(res, "testDistinctAggregation_case10.result");
     res.close();
+  }
 
-    // case9
+  @Test
+  public final void testDistinctAggregationCasebyCase11() throws Exception {
+    ResultSet res;
+
     KeyValueSet tableOptions = new KeyValueSet();
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
@@ -417,7 +446,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
     assertEquals(expected, resultSetToString(res));
 
-  // multiple distinct with expression
+    // multiple distinct with expression
     res = executeString(
         "select count(distinct code) + count(distinct qty) from table10"
     );

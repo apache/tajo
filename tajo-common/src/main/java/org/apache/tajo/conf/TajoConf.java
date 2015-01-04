@@ -249,6 +249,12 @@ public class TajoConf extends Configuration {
     TASK_DEFAULT_SIZE("tajo.task.size-mb", 128),
 
     // Query and Optimization -------------------------------------------------
+    // This class provides a ordered list of logical plan rewrite rule classes.
+    LOGICAL_PLAN_REWRITE_RULE_PROVIDER_CLASS("tajo.plan.logical.rewriter.provider",
+        "org.apache.tajo.plan.rewrite.BaseLogicalPlanRewriteRuleProvider"),
+    // This class provides a ordered list of global plan rewrite rule classes.
+    GLOBAL_PLAN_REWRITE_RULE_PROVIDER_CLASS("tajo.plan.global.rewriter.provider",
+        "org.apache.tajo.engine.planner.global.rewriter.BaseGlobalPlanRewriteRuleProvider"),
     EXECUTOR_EXTERNAL_SORT_THREAD_NUM("tajo.executor.external-sort.thread-num", 1),
     EXECUTOR_EXTERNAL_SORT_FANOUT("tajo.executor.external-sort.fanout-num", 8),
 
@@ -559,6 +565,20 @@ public class TajoConf extends Configuration {
 
   public void setBoolVar(ConfVars var, boolean val) {
     setBoolVar(this, var, val);
+  }
+
+  public void setClassVar(ConfVars var, Class<?> clazz) {
+    setVar(var, clazz.getCanonicalName());
+  }
+
+  public Class<?> getClassVar(ConfVars var) {
+    String valueString = getVar(var);
+
+    try {
+      return getClassByName(valueString);
+    } catch (ClassNotFoundException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public static String getVar(Configuration conf, ConfVars var) {

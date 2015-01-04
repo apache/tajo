@@ -42,6 +42,37 @@ public class TUtil {
   }
 
   /**
+   * check two collections as equals. It also check the equivalence of null.
+   * It will return true even if they are all null.
+   *
+   * @param s1 the first collection to be compared.
+   * @param s2 the second collection to be compared
+   * @return true if they are equal or all null
+   */
+  public static boolean checkEquals(Collection<?> s1, Collection<?> s2) {
+    if (s1 == null ^ s2 == null) {
+      return false;
+    } else if (s1 == null && s2 == null) {
+      return true;
+    } else {
+      if (s1.size() == 0 && s2.size() == 0) {
+        return true;
+      } else if (s1.size() == s2.size()) {
+        Iterator<?> it1 = s1.iterator();
+        Iterator<?> it2 = s2.iterator();
+        Object o1;
+        Object o2;
+        for (o1 = it1.next(), o2 = it2.next(); it1.hasNext() && it2.hasNext(); o1 = it1.next(), o2 = it2.next()) {
+          if (!o1.equals(o2)) {
+            return false;
+          }
+        }
+      }
+      return true;
+    }
+  }
+
+  /**
    * check two arrays as equals. It also check the equivalence of null.
    * It will return true even if they are all null.
    *
@@ -50,6 +81,16 @@ public class TUtil {
    * @return true if they are equal or all null
    */
   public static boolean checkEquals(Object [] s1, Object [] s2) {
+    if (s1 == null ^ s2 == null) {
+      return false;
+    } else if (s1 == null && s2 == null) {
+      return true;
+    } else {
+      return Arrays.equals(s1, s2);
+    }
+  }
+
+  public static boolean checkEquals(int [] s1, int [] s2) {
     if (s1 == null ^ s2 == null) {
       return false;
     } else if (s1 == null && s2 == null) {

@@ -130,7 +130,7 @@ public class DistinctGroupbyFirstAggregationExec extends PhysicalExec {
     }
     resultTupleLength = groupingKeyIndexes.length + 1;  //1 is Sequence Datum which indicates sequence of DistinctNode.
 
-    List<GroupbyNode> groupbyNodes = plan.getGroupByNodes();
+    List<GroupbyNode> groupbyNodes = plan.getSubPlans();
 
     List<DistinctHashAggregator> distinctAggrList = new ArrayList<DistinctHashAggregator>();
     int distinctSeq = 0;

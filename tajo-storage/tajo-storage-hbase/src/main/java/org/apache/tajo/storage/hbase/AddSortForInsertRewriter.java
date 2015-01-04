@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.hbase;
 
+import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
@@ -30,12 +31,13 @@ import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.logical.SortNode;
 import org.apache.tajo.plan.logical.SortNode.SortPurpose;
 import org.apache.tajo.plan.logical.UnaryNode;
-import org.apache.tajo.plan.rewrite.RewriteRule;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.util.PlannerUtil;
 
-public class AddSortForInsertRewriter implements RewriteRule {
+public class AddSortForInsertRewriter implements LogicalPlanRewriteRule {
   private int[] sortColumnIndexes;
   private Column[] sortColumns;
+
   public AddSortForInsertRewriter(TableDesc tableDesc, Column[] sortColumns) {
     this.sortColumns = sortColumns;
     this.sortColumnIndexes = new int[sortColumns.length];
@@ -52,13 +54,13 @@ public class AddSortForInsertRewriter implements RewriteRule {
   }
 
   @Override
-  public boolean isEligible(LogicalPlan plan) {
+  public boolean isEligible(OverridableConf queryContext, LogicalPlan plan) {
     StoreType storeType = PlannerUtil.getStoreType(plan);
     return storeType != null;
   }
 
   @Override
-  public LogicalPlan rewrite(LogicalPlan plan) throws PlanningException {
+  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws PlanningException {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
     UnaryNode insertNode = rootNode.getChild();
     LogicalNode childNode = insertNode.getChild();

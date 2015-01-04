@@ -26,7 +26,7 @@
   </parent>
   <groupId>org.apache.tajo</groupId>
   <artifactId>tajo-main</artifactId>
-  <version>0.9.1-SNAPSHOT</version>
+  <version>0.10.0-SNAPSHOT</version>
   <description>Tajo Main</description>
   <name>Tajo Main</name>
   <packaging>pom</packaging>

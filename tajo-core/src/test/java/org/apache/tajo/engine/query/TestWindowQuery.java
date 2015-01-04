@@ -272,7 +272,8 @@ public class TestWindowQuery extends QueryTestCaseBase {
     TajoTestingCluster.createTable("firstvaluetime", schema, tableOptions, data, 1);
 
     try {
-      ResultSet res = executeString("select id, first_value(time) over ( partition by id order by time ) as time_first from firstvaluetime");
+      ResultSet res = executeString(
+          "select id, first_value(time) over ( partition by id order by time ) as time_first from firstvaluetime");
       String ascExpected = "id,time_first\n" +
           "-------------------------------\n" +
           "1,12:11:12\n" +
@@ -306,7 +307,8 @@ public class TestWindowQuery extends QueryTestCaseBase {
     TajoTestingCluster.createTable("lastvaluetime", schema, tableOptions, data, 1);
 
     try {
-      ResultSet res = executeString("select id, last_value(time) over ( partition by id order by time ) as time_last from lastvaluetime");
+      ResultSet res = executeString(
+          "select id, last_value(time) over ( partition by id order by time ) as time_last from lastvaluetime");
       String ascExpected = "id,time_last\n" +
           "-------------------------------\n" +
           "1,12:11:12\n" +

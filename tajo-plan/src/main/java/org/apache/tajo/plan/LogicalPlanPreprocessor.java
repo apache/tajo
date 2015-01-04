@@ -112,7 +112,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
         throw new NoSuchColumnException(CatalogUtil.buildFQName(qualifier, "*"));
       }
 
-      Schema schema = relationOp.getTableSchema();
+      Schema schema = relationOp.getLogicalSchema();
       Column[] resolvedColumns = new Column[schema.size()];
       return schema.getColumns().toArray(resolvedColumns);
     } else { // if a column reference is not qualified
@@ -123,7 +123,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
 
       while (iterator.hasNext()) {
         relationOp = iterator.next();
-        schema = relationOp.getTableSchema();
+        schema = relationOp.getLogicalSchema();
         resolvedColumns.addAll(schema.getColumns());
       }
 
