@@ -665,6 +665,7 @@ public class TestPhysicalPlanner {
     exec.next();
     exec.close();
     ctx.getHashShuffleAppenderManager().close(ebId);
+    ctx.getHashShuffleAppenderManager().shutdown();
 
     String executionBlockBaseDir = queryId.toString() + "/output" + "/" + ebId.getId() + "/hash-shuffle";
     Path queryLocalTmpDir = new Path(conf.getVar(ConfVars.WORKER_TEMPORAL_DIR) + "/" + executionBlockBaseDir);
@@ -799,6 +800,7 @@ public class TestPhysicalPlanner {
     exec.next();
     exec.close();
     ctx.getHashShuffleAppenderManager().close(ebId);
+    ctx.getHashShuffleAppenderManager().shutdown();
 
     String executionBlockBaseDir = queryId.toString() + "/output" + "/" + ebId.getId() + "/hash-shuffle";
     Path queryLocalTmpDir = new Path(conf.getVar(ConfVars.WORKER_TEMPORAL_DIR) + "/" + executionBlockBaseDir);

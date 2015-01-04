@@ -356,6 +356,8 @@ public class RowStoreUtil {
       case FLOAT8:
         writer.putFloat8(tuple.getFloat8(i));
         break;
+
+      case CHAR:
       case TEXT:
         writer.putText(tuple.getBytes(i));
         break;

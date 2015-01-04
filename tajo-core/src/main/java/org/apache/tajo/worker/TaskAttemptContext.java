@@ -119,6 +119,7 @@ public class TaskAttemptContext {
       this.hashShuffleAppenderManager = workerContext.getHashShuffleAppenderManager();
     } else {
       try {
+        // for testing ?
         this.hashShuffleAppenderManager = new HashShuffleAppenderManager(queryContext.getConf());
       } catch (IOException e) {
         LOG.error(e.getMessage(), e);

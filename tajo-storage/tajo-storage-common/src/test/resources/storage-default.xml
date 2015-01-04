@@ -180,7 +180,7 @@
   </property>
   <property>
     <name>tajo.storage.raw.io.write-buffer.bytes</name>
-    <value>131072</value>
-    <description>128KB write buffer</description>
+    <value>65536</value>
+    <description>64KB write buffer</description>
   </property>
 </configuration>

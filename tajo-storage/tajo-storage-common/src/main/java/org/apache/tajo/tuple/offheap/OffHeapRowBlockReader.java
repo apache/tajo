@@ -60,4 +60,9 @@ public class OffHeapRowBlockReader implements RowBlockReader<ZeroCopyTuple> {
     curPosForRead = 0;
     curRowIdxForRead = 0;
   }
+
+  @Override
+  public int rows() {
+    return rowBlock.rows();
+  }
 }
