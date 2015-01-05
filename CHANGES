@@ -243,6 +243,9 @@ Release 0.9.1 - unreleased
 
   TASKS
 
+    TAJO-967: tajoCli doesn't remeber the last '\q' command.
+    (Jaewoong Jung via jihoon)
+
     TAJO-1272: Change snapshot version from 0.9.1 to 0.10. (hyunsik)
 
     TAJO-1267: Remove LazyTaskScheduler. (DaeMyung Kang via jihoon)
