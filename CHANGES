@@ -243,6 +243,9 @@ Release 0.9.1 - unreleased
 
   TASKS
 
+    TAJO-1274: Merge separate pages of getting started document into a single 
+    page. (hyunsik)
+
     TAJO-967: tajoCli doesn't remeber the last '\q' command.
     (Jaewoong Jung via jihoon)
 
