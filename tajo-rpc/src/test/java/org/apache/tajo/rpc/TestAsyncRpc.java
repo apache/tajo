@@ -259,7 +259,7 @@ public class TestAsyncRpc {
     assertTrue(future.getController().errorText() != null);
   }
 
-  @Test(timeout = 180L)
+  @Test
   public void testStubDisconnected() throws Exception {
 
     EchoMessage echoMessage = EchoMessage.newBuilder()
