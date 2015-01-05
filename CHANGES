@@ -134,6 +134,8 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1276: Link to tsql guide 404s in tajo cli. (Jakob Homan via jihoon)
+
     TAJO-1275: Optimizer pushs down non-equi filter as theta join qualifier.
     (Keuntae Park)
 
