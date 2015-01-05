@@ -20,14 +20,14 @@ package org.apache.tajo.rpc;
 
 import com.google.protobuf.RpcCallback;
 
-public class NullCallback implements RpcCallback {
+public class NullCallback implements RpcCallback<Object> {
   private final static NullCallback instance;
 
   static {
     instance = new NullCallback();
   }
 
-  public static RpcCallback get() {
+  public static RpcCallback<Object> get() {
     return instance;
   }
 

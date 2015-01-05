@@ -27,7 +27,6 @@ import org.apache.tajo.rpc.test.TestProtos.EchoMessage;
 import org.apache.tajo.rpc.test.TestProtos.SumRequest;
 import org.apache.tajo.rpc.test.TestProtos.SumResponse;
 
-@SuppressWarnings("UnusedDeclaration")
 public class DummyProtocolAsyncImpl implements Interface {
   private static final Log LOG =
       LogFactory.getLog(DummyProtocolAsyncImpl.class);

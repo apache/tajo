@@ -205,7 +205,7 @@ public class QueryMasterTask extends CompositeService {
 
     CallFuture future = new CallFuture();
 
-    RpcConnectionPool connPool = RpcConnectionPool.getPool(queryMasterContext.getConf());
+    RpcConnectionPool connPool = RpcConnectionPool.getPool();
     NettyClientBase tmClient = null;
     try {
       // In TajoMaster HA mode, if backup master be active status,

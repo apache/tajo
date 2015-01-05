@@ -20,8 +20,6 @@ package org.apache.tajo.rpc;
 
 import com.google.protobuf.RpcCallback;
 
-import io.netty.util.internal.logging.InternalLoggerFactory;
-import io.netty.util.internal.logging.Log4JLoggerFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.test.DummyProtocol;

@@ -44,7 +44,7 @@ import org.apache.tajo.worker.TajoWorker;
 public class ConnectivityCheckerRuleForTajoWorker implements SelfDiagnosisRule {
   
   private void checkTajoMasterConnectivity(TajoConf tajoConf) throws Exception {
-    RpcConnectionPool pool = RpcConnectionPool.getPool(tajoConf);
+    RpcConnectionPool pool = RpcConnectionPool.getPool();
     NettyClientBase masterClient = null;
     InetSocketAddress masterAddress = null;
     

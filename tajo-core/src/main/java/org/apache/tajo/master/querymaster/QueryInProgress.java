@@ -145,7 +145,7 @@ public class QueryInProgress extends CompositeService {
     }
 
     if(queryMasterRpc != null) {
-      RpcConnectionPool.getPool((TajoConf)getConfig()).closeConnection(queryMasterRpc);
+      RpcConnectionPool.getPool().closeConnection(queryMasterRpc);
     }
 
     masterContext.getHistoryWriter().appendHistory(queryInfo);
@@ -212,7 +212,7 @@ public class QueryInProgress extends CompositeService {
     InetSocketAddress addr = NetUtils.createSocketAddr(queryInfo.getQueryMasterHost(), queryInfo.getQueryMasterPort());
     LOG.info("Connect to QueryMaster:" + addr);
     queryMasterRpc =
-        RpcConnectionPool.getPool((TajoConf) getConfig()).getConnection(addr, QueryMasterProtocol.class, true);
+        RpcConnectionPool.getPool().getConnection(addr, QueryMasterProtocol.class, true);
     queryMasterRpcClient = queryMasterRpc.getStub();
   }
 

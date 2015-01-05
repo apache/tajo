@@ -46,25 +46,23 @@ public class RpcConnectionPool {
 
   private static RpcConnectionPool instance;
   private final EventLoopGroup clientLoopGroup;
-  private final TajoConf conf;
 
   public final static int RPC_RETRIES = 3;
 
-  private RpcConnectionPool(TajoConf conf, EventLoopGroup loopGroup) {
-    this.conf = conf;
+  private RpcConnectionPool(EventLoopGroup loopGroup) {
     this.clientLoopGroup =  loopGroup;
   }
 
-  public synchronized static RpcConnectionPool getPool(TajoConf conf) {
+  public synchronized static RpcConnectionPool getPool() {
     if(instance == null) {
       InternalLoggerFactory.setDefaultFactory(new CommonsLoggerFactory());
-      instance = new RpcConnectionPool(conf, RpcChannelFactory.getSharedClientChannelFactory());
+      instance = new RpcConnectionPool(RpcChannelFactory.getSharedClientChannelFactory());
     }
     return instance;
   }
 
-  public synchronized static RpcConnectionPool newPool(TajoConf conf, String poolName, int workerNum) {
-    return new RpcConnectionPool(conf, RpcChannelFactory.createClientEventloopGroup(poolName, workerNum));
+  public synchronized static RpcConnectionPool newPool(String poolName, int workerNum) {
+    return new RpcConnectionPool(RpcChannelFactory.createClientEventloopGroup(poolName, workerNum));
   }
 
   private NettyClientBase makeConnection(RpcConnectionKey rpcConnectionKey)
@@ -80,7 +78,7 @@ public class RpcConnectionPool {
   }
 
   public NettyClientBase getConnection(InetSocketAddress addr,
-                                       Class protocolClass, boolean asyncMode)
+                                       Class<?> protocolClass, boolean asyncMode)
       throws NoSuchMethodException, ClassNotFoundException, ConnectTimeoutException {
     RpcConnectionKey key = new RpcConnectionKey(addr, protocolClass, asyncMode);
     NettyClientBase client = connections.get(key);
@@ -174,11 +172,11 @@ public class RpcConnectionPool {
 
   static class RpcConnectionKey {
     final InetSocketAddress addr;
-    final Class protocolClass;
+    final Class<?> protocolClass;
     final boolean asyncMode;
 
     public RpcConnectionKey(InetSocketAddress addr,
-                            Class protocolClass, boolean asyncMode) {
+                            Class<?> protocolClass, boolean asyncMode) {
       this.addr = addr;
       this.protocolClass = protocolClass;
       this.asyncMode = asyncMode;

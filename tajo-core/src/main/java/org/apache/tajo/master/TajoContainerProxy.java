@@ -79,13 +79,13 @@ public class TajoContainerProxy extends ContainerProxy {
     NettyClientBase tajoWorkerRpc = null;
     try {
       InetSocketAddress addr = new InetSocketAddress(container.getNodeId().getHost(), container.getNodeId().getPort());
-      tajoWorkerRpc = RpcConnectionPool.getPool(context.getConf()).getConnection(addr, TajoWorkerProtocol.class, true);
+      tajoWorkerRpc = RpcConnectionPool.getPool().getConnection(addr, TajoWorkerProtocol.class, true);
       TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
       tajoWorkerRpcClient.killTaskAttempt(null, taskAttemptId.getProto(), NullCallback.get());
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
     } finally {
-      RpcConnectionPool.getPool(context.getConf()).releaseConnection(tajoWorkerRpc);
+      RpcConnectionPool.getPool().releaseConnection(tajoWorkerRpc);
     }
   }
 
@@ -96,7 +96,7 @@ public class TajoContainerProxy extends ContainerProxy {
           .getQueryMasterManagerService().getBindAddr();
 
       InetSocketAddress addr = new InetSocketAddress(container.getNodeId().getHost(), container.getNodeId().getPort());
-      tajoWorkerRpc = RpcConnectionPool.getPool(context.getConf()).getConnection(addr, TajoWorkerProtocol.class, true);
+      tajoWorkerRpc = RpcConnectionPool.getPool().getConnection(addr, TajoWorkerProtocol.class, true);
       TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
 
       TajoWorkerProtocol.RunExecutionBlockRequestProto request =
@@ -114,7 +114,7 @@ public class TajoContainerProxy extends ContainerProxy {
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
     } finally {
-      RpcConnectionPool.getPool(context.getConf()).releaseConnection(tajoWorkerRpc);
+      RpcConnectionPool.getPool().releaseConnection(tajoWorkerRpc);
     }
   }
 
@@ -166,7 +166,7 @@ public class TajoContainerProxy extends ContainerProxy {
       containerIdProtos.add(TajoWorkerContainerId.getContainerIdProto(eachContainerId));
     }
 
-    RpcConnectionPool connPool = RpcConnectionPool.getPool(context.getConf());
+    RpcConnectionPool connPool = RpcConnectionPool.getPool();
     NettyClientBase tmClient = null;
     try {
       // In TajoMaster HA mode, if backup master be active status,

@@ -72,7 +72,7 @@ public class WorkerHeartbeatService extends AbstractService {
     Preconditions.checkArgument(conf instanceof TajoConf, "Configuration must be a TajoConf instance.");
     this.systemConf = (TajoConf) conf;
 
-    connectionPool = RpcConnectionPool.getPool(systemConf);
+    connectionPool = RpcConnectionPool.getPool();
     super.serviceInit(conf);
   }
 

@@ -54,7 +54,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   abstract CatalogProtocolService.BlockingInterface getStub(NettyClientBase client);
 
   public AbstractCatalogClient(TajoConf conf, InetSocketAddress catalogServerAddr) {
-    this.pool = RpcConnectionPool.getPool(conf);
+    this.pool = RpcConnectionPool.getPool();
     this.catalogServerAddr = catalogServerAddr;
     this.conf = conf;
   }

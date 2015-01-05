@@ -122,12 +122,10 @@ public class NettyServerBase {
     if(bootstrap != null) {
       if (bootstrap.childGroup() != null) {
         bootstrap.childGroup().shutdownGracefully();
-        bootstrap.childGroup().terminationFuture();
       }
       
       if (bootstrap.group() != null) {
         bootstrap.group().shutdownGracefully();
-        bootstrap.group().terminationFuture();
       }
     }
 

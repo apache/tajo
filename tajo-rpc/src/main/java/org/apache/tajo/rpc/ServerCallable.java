@@ -25,24 +25,23 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.google.protobuf.ServiceException;
-import org.apache.tajo.conf.TajoConf;
 
 public abstract class ServerCallable<T> {
   protected InetSocketAddress addr;
   protected long startTime;
   protected long endTime;
-  protected Class protocol;
+  protected Class<?> protocol;
   protected boolean asyncMode;
   protected boolean closeConn;
   protected RpcConnectionPool connPool;
 
   public abstract T call(NettyClientBase client) throws Exception;
 
-  public ServerCallable(RpcConnectionPool connPool,  InetSocketAddress addr, Class protocol, boolean asyncMode) {
+  public ServerCallable(RpcConnectionPool connPool,  InetSocketAddress addr, Class<?> protocol, boolean asyncMode) {
     this(connPool, addr, protocol, asyncMode, false);
   }
 
-  public ServerCallable(RpcConnectionPool connPool, InetSocketAddress addr, Class protocol,
+  public ServerCallable(RpcConnectionPool connPool, InetSocketAddress addr, Class<?> protocol,
                         boolean asyncMode, boolean closeConn) {
     this.connPool = connPool;
     this.addr = addr;
