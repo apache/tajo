@@ -22,13 +22,16 @@ import org.apache.tajo.cli.tsql.TajoCli;
 
 public class ExitCommand extends TajoShellCommand {
 
+  // Sharing the exit command string publicly to filter it out from the command history.
+  public static final String COMMAND_STRING = "\\q";
+
   public ExitCommand(TajoCli.TajoCliContext context) {
     super(context);
   }
 
   @Override
   public String getCommand() {
-    return "\\q";
+    return COMMAND_STRING;
   }
 
   @Override

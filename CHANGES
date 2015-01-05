@@ -27,6 +27,9 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1228: TajoClient should communicate with only TajoMaster without 
+    TajoWorker. (hyunsik)
+
     TAJO-1176: Implements queryable virtual tables for catalog information
     (jihun)
 
@@ -134,6 +137,8 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1276: Link to tsql guide 404s in tajo cli. (Jakob Homan via jihoon)
+
     TAJO-1275: Optimizer pushs down non-equi filter as theta join qualifier.
     (Keuntae Park)
 
@@ -240,6 +245,12 @@ Release 0.9.1 - unreleased
 
 
   TASKS
+
+    TAJO-1274: Merge separate pages of getting started document into a single 
+    page. (hyunsik)
+
+    TAJO-967: tajoCli doesn't remeber the last '\q' command.
+    (Jaewoong Jung via jihoon)
 
     TAJO-1272: Change snapshot version from 0.9.1 to 0.10. (hyunsik)
 
