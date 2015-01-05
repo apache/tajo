@@ -344,6 +344,8 @@ public class DelimitedTextFile {
 
     @Override
     public float getProgress() {
+      if(reader == null) return 0.0f;
+
       try {
         if (!reader.isReadable()) {
           return 1.0f;
@@ -356,7 +358,7 @@ public class DelimitedTextFile {
           long remainingBytes = Math.max(endOffset - filePos, 0);
           return Math.min(1.0f, (float) (readBytes) / (float) (readBytes + remainingBytes));
         }
-      } catch (IOException e) {
+      } catch (Throwable e) {
         LOG.error(e.getMessage(), e);
         return 0.0f;
       }
@@ -448,7 +450,6 @@ public class DelimitedTextFile {
         }
       } finally {
         IOUtils.cleanup(LOG, reader);
-        reader = null;
       }
     }
 
