@@ -41,7 +41,7 @@ In the current implementation, there are meta commands as follows: ::
 
 
   Documentations
-    tsql guide        http://tajo.apache.org/docs/current/cli.html
+    tsql guide        http://tajo.apache.org/docs/current/tsql.html
     Query language    http://tajo.apache.org/docs/current/sql_language.html
     Functions         http://tajo.apache.org/docs/current/functions.html
     Backup & restore  http://tajo.apache.org/docs/current/backup_and_restore.html
