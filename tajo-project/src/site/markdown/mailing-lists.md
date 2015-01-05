@@ -31,7 +31,7 @@ The Tajo user mailing list is : user@tajo.apache.org.
 * [Unsubscribe from List] (mailto:user-unsubscribe@tajo.apache.org)
 * [Archives] (http://mail-archives.apache.org/mod_mbox/tajo-user/)
 
-### Devlopers
+### Developers
 
 If you'd like to contribute to Tajo, please subscribe to the Tajo developer mailing list.
 
