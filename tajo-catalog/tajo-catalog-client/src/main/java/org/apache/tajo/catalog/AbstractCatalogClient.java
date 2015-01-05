@@ -19,12 +19,20 @@
 package org.apache.tajo.catalog;
 
 import com.google.protobuf.ServiceException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.DatabaseProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableDescriptorProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableOptionProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TablespaceProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
@@ -139,6 +147,24 @@ public abstract class AbstractCatalogClient implements CatalogService {
       return null;
     }
   }
+  
+  @Override
+  public List<TablespaceProto> getAllTablespaces() {
+    try {
+      return new ServerCallable<List<TablespaceProto>>(pool, getCatalogServerAddr(), CatalogProtocol.class, false) {
+
+        @Override
+        public List<TablespaceProto> call(NettyClientBase client) throws Exception {
+          CatalogProtocolService.BlockingInterface stub = getStub(client);
+          CatalogProtos.GetTablespacesProto response = stub.getAllTablespaces(null, ProtoUtil.NULL_PROTO);
+          return response.getTablespaceList();
+        }
+      }.withRetries();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return null;
+    }
+  }
 
   @Override
   public TablespaceProto getTablespace(final String tablespaceName) {
@@ -236,6 +262,24 @@ public abstract class AbstractCatalogClient implements CatalogService {
       return null;
     }
   }
+  
+  @Override
+  public List<DatabaseProto> getAllDatabases() {
+    try {
+      return new ServerCallable<List<DatabaseProto>>(pool, getCatalogServerAddr(), CatalogProtocol.class, false) {
+
+        @Override
+        public List<DatabaseProto> call(NettyClientBase client) throws Exception {
+          CatalogProtocolService.BlockingInterface stub = getStub(client);
+          GetDatabasesProto response = stub.getAllDatabases(null, ProtoUtil.NULL_PROTO);
+          return response.getDatabaseList();
+        }
+      }.withRetries();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return null;
+    }
+  }
 
   @Override
   public final TableDesc getTableDesc(final String databaseName, final String tableName) {
@@ -260,6 +304,78 @@ public abstract class AbstractCatalogClient implements CatalogService {
   public TableDesc getTableDesc(String qualifiedName) {
     String [] splitted = CatalogUtil.splitFQTableName(qualifiedName);
     return getTableDesc(splitted[0], splitted[1]);
+  }
+  
+  @Override
+  public List<TableDescriptorProto> getAllTables() {
+    try {
+      return new ServerCallable<List<TableDescriptorProto>>(pool, getCatalogServerAddr(), CatalogProtocol.class, false) {
+
+        @Override
+        public List<TableDescriptorProto> call(NettyClientBase client) throws Exception {
+          CatalogProtocolService.BlockingInterface stub = getStub(client);
+          GetTablesProto response = stub.getAllTables(null, ProtoUtil.NULL_PROTO);
+          return response.getTableList();
+        }
+      }.withRetries();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return null;
+    }
+  }
+  
+  @Override
+  public List<TableOptionProto> getAllTableOptions() {
+    try {
+      return new ServerCallable<List<TableOptionProto>>(pool, getCatalogServerAddr(), CatalogProtocol.class, false) {
+
+        @Override
+        public List<TableOptionProto> call(NettyClientBase client) throws Exception {
+          CatalogProtocolService.BlockingInterface stub = getStub(client);
+          GetTableOptionsProto response = stub.getAllTableOptions(null, ProtoUtil.NULL_PROTO);
+          return response.getTableOptionList();
+        }
+      }.withRetries();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return null;
+    }
+  }
+  
+  @Override
+  public List<TableStatsProto> getAllTableStats() {
+    try {
+      return new ServerCallable<List<TableStatsProto>>(pool, getCatalogServerAddr(), CatalogProtocol.class, false) {
+
+        @Override
+        public List<TableStatsProto> call(NettyClientBase client) throws Exception {
+          CatalogProtocolService.BlockingInterface stub = getStub(client);
+          GetTableStatsProto response = stub.getAllTableStats(null, ProtoUtil.NULL_PROTO);
+          return response.getStatList();
+        }
+      }.withRetries();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return null;
+    }
+  }
+  
+  @Override
+  public List<ColumnProto> getAllColumns() {
+    try {
+      return new ServerCallable<List<ColumnProto>>(pool, getCatalogServerAddr(), CatalogProtocol.class, false) {
+
+        @Override
+        public List<ColumnProto> call(NettyClientBase client) throws Exception {
+          CatalogProtocolService.BlockingInterface stub = getStub(client);
+          GetColumnsProto response = stub.getAllColumns(null, ProtoUtil.NULL_PROTO);
+          return response.getColumnList();
+        }
+      }.withRetries();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return null;
+    }
   }
 
   @Override
@@ -299,6 +415,24 @@ public abstract class AbstractCatalogClient implements CatalogService {
     } catch (ServiceException e) {
       LOG.error(e.getMessage(), e);
       return false;
+    }
+  }
+  
+  @Override
+  public List<TablePartitionProto> getAllPartitions() {
+    try {
+      return new ServerCallable<List<TablePartitionProto>>(pool, getCatalogServerAddr(), CatalogProtocol.class, false) {
+
+        @Override
+        public List<TablePartitionProto> call(NettyClientBase client) throws Exception {
+          CatalogProtocolService.BlockingInterface stub = getStub(client);
+          GetTablePartitionsProto response = stub.getAllPartitions(null, ProtoUtil.NULL_PROTO);
+          return response.getPartList();
+        }
+      }.withRetries();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return null;
     }
   }
 
@@ -527,6 +661,24 @@ public abstract class AbstractCatalogClient implements CatalogService {
     } catch (ServiceException e) {
       LOG.error(e.getMessage(), e);
       return false;
+    }
+  }
+  
+  @Override
+  public List<IndexProto> getAllIndexes() {
+    try {
+      return new ServerCallable<List<IndexProto>>(pool, getCatalogServerAddr(), CatalogProtocol.class, false) {
+
+        @Override
+        public List<IndexProto> call(NettyClientBase client) throws Exception {
+          CatalogProtocolService.BlockingInterface stub = getStub(client);
+          GetIndexesProto response = stub.getAllIndexes(null, ProtoUtil.NULL_PROTO);
+          return response.getIndexList();
+        }
+      }.withRetries();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return null;
     }
   }
 

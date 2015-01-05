@@ -39,6 +39,15 @@ public class StoreTableNode extends PersistentStoreNode implements Cloneable {
     return tableName != null;
   }
 
+  /**
+   * Check if a table name is specified.
+   *
+   * @return FALSE if this node is used for 'INSERT INTO LOCATION'. Otherwise, it will be TRUE.
+   */
+  public boolean hasTableName() {
+    return tableName != null;
+  }
+
   public void setTableName(String tableName) {
     this.tableName = tableName;
   }
@@ -73,7 +82,7 @@ public class StoreTableNode extends PersistentStoreNode implements Cloneable {
     if (obj instanceof StoreTableNode) {
       StoreTableNode other = (StoreTableNode) obj;
       boolean eq = super.equals(other);
-      eq = eq && this.tableName.equals(other.tableName);
+      eq = eq && TUtil.checkEquals(this.tableName, other.tableName);
       eq = eq && TUtil.checkEquals(partitionDesc, other.partitionDesc);
       return eq;
     } else {

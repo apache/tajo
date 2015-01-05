@@ -29,23 +29,28 @@ service CatalogProtocolService {
   rpc createTablespace(CreateTablespaceRequest) returns (BoolProto);
   rpc dropTablespace(StringProto) returns (BoolProto);
   rpc existTablespace(StringProto) returns (BoolProto);
+  rpc getAllTablespaces(NullProto) returns (GetTablespacesProto);
   rpc getAllTablespaceNames(NullProto) returns (StringListProto);
   rpc getTablespace(StringProto) returns (TablespaceProto);
   rpc alterTablespace(AlterTablespaceProto) returns (BoolProto);
   rpc alterTable(AlterTableDescProto) returns (BoolProto);
   rpc updateTableStats(UpdateTableStatsProto) returns (BoolProto);
 
-
   rpc createDatabase(CreateDatabaseRequest) returns (BoolProto);
   rpc dropDatabase(StringProto) returns (BoolProto);
   rpc existDatabase(StringProto) returns (BoolProto);
   rpc getAllDatabaseNames(NullProto) returns (StringListProto);
+  rpc getAllDatabases(NullProto) returns (GetDatabasesProto);
 
   rpc createTable(TableDescProto) returns (BoolProto);
   rpc dropTable(TableIdentifierProto) returns (BoolProto);
   rpc existsTable(TableIdentifierProto) returns (BoolProto);
   rpc getTableDesc(TableIdentifierProto) returns (TableDescProto);
   rpc getAllTableNames(StringProto) returns (StringListProto);
+  rpc getAllTables(NullProto) returns (GetTablesProto);
+  rpc getAllTableOptions(NullProto) returns (GetTableOptionsProto);
+  rpc getAllTableStats(NullProto) returns (GetTableStatsProto);
+  rpc getAllColumns(NullProto) returns (GetColumnsProto);
 
   rpc getPartitionMethodByTableName(TableIdentifierProto) returns (PartitionMethodProto);
   rpc existPartitionMethod(TableIdentifierProto) returns (BoolProto);
@@ -56,6 +61,7 @@ service CatalogProtocolService {
   rpc getPartitionByPartitionName(StringProto) returns (PartitionDescProto);
   rpc getPartitionsByTableName(StringProto) returns (PartitionsProto);
   rpc delAllPartitions(StringProto) returns (PartitionsProto);
+  rpc getAllPartitions(NullProto) returns (GetTablePartitionsProto);
 
   rpc createIndex(IndexDescProto) returns (BoolProto);
   rpc dropIndex(IndexNameProto) returns (BoolProto);
@@ -63,6 +69,7 @@ service CatalogProtocolService {
   rpc existIndexByColumn(GetIndexByColumnRequest) returns (BoolProto);
   rpc getIndexByName(IndexNameProto) returns (IndexDescProto);
   rpc getIndexByColumn(GetIndexByColumnRequest) returns (IndexDescProto);
+  rpc getAllIndexes(NullProto) returns (GetIndexesProto);
 
   rpc createFunction(FunctionDescProto) returns (BoolProto);
   rpc dropFunction(UnregisterFunctionRequest) returns (BoolProto);

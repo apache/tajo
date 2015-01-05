@@ -95,6 +95,10 @@ public class InsertNode extends StoreTableNode implements Cloneable {
     this.targetSchema = schema;
   }
 
+  public boolean hasProjectedSchema() {
+    return this.projectedSchema != null;
+  }
+
   public Schema getProjectedSchema() {
     return this.projectedSchema;
   }
@@ -123,11 +127,12 @@ public class InsertNode extends StoreTableNode implements Cloneable {
   public boolean equals(Object obj) {
     if (obj instanceof InsertNode) {
       InsertNode other = (InsertNode) obj;
-      return super.equals(other)
-          && this.overwrite == other.overwrite
-          && TUtil.checkEquals(this.tableSchema, other.tableSchema)
-          && TUtil.checkEquals(this.targetSchema, other.targetSchema)
-          && TUtil.checkEquals(path, other.path);
+      boolean eq = super.equals(other);
+      eq &= this.overwrite == other.overwrite;
+      eq &= TUtil.checkEquals(this.tableSchema, other.tableSchema);
+      eq &= TUtil.checkEquals(this.targetSchema, other.targetSchema);
+      eq &= TUtil.checkEquals(path, other.path);
+      return eq;
     } else {
       return false;
     }

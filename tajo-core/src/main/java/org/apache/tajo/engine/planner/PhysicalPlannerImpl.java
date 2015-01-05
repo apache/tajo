@@ -34,6 +34,7 @@ import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.plan.serder.LogicalNodeDeserializer;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.physical.*;
@@ -877,7 +878,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       TajoWorkerProtocol.SortedInputEnforce sortEnforcer = property.get(0).getSortedInput();
 
       boolean condition = scanNode.getTableName().equals(sortEnforcer.getTableName());
-      SortSpec [] sortSpecs = PlannerUtil.convertSortSpecs(sortEnforcer.getSortSpecsList());
+      SortSpec [] sortSpecs = LogicalNodeDeserializer.convertSortSpecs(sortEnforcer.getSortSpecsList());
       return condition && TUtil.checkEquals(sortNode.getSortKeys(), sortSpecs);
     } else {
       return false;
@@ -1089,7 +1090,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     if (phase == 3) {
       sortSpecs.add(new SortSpec(distinctNode.getTargets()[0].getNamedColumn()));
     }
-    for (GroupbyNode eachGroupbyNode: distinctNode.getGroupByNodes()) {
+    for (GroupbyNode eachGroupbyNode: distinctNode.getSubPlans()) {
       for (Column eachColumn: eachGroupbyNode.getGroupingColumns()) {
         sortSpecs.add(new SortSpec(eachColumn));
       }
@@ -1110,7 +1111,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
   private PhysicalExec createSortAggregationDistinctGroupbyExec(TaskAttemptContext ctx,
       DistinctGroupbyNode distinctGroupbyNode, PhysicalExec subOp,
       DistinctGroupbyEnforcer enforcer) throws IOException {
-    List<GroupbyNode> groupbyNodes = distinctGroupbyNode.getGroupByNodes();
+    List<GroupbyNode> groupbyNodes = distinctGroupbyNode.getSubPlans();
 
     SortAggregateExec[] sortAggregateExec = new SortAggregateExec[groupbyNodes.size()];
 
@@ -1216,15 +1217,15 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       List<EnforceProperty> properties = enforcer.getEnforceProperties(type);
       EnforceProperty found = null;
       for (EnforceProperty property : properties) {
-        if (type == EnforceType.JOIN && property.getJoin().getPid() == node.getPID()) {
+        if (type == EnforceType.JOIN && property.getJoin().getNodeId() == node.getPID()) {
           found = property;
-        } else if (type == EnforceType.GROUP_BY && property.getGroupby().getPid() == node.getPID()) {
+        } else if (type == EnforceType.GROUP_BY && property.getGroupby().getNodeId() == node.getPID()) {
           found = property;
-        } else if (type == EnforceType.DISTINCT_GROUP_BY && property.getDistinct().getPid() == node.getPID()) {
+        } else if (type == EnforceType.DISTINCT_GROUP_BY && property.getDistinct().getNodeId() == node.getPID()) {
           found = property;
-        } else if (type == EnforceType.SORT && property.getSort().getPid() == node.getPID()) {
+        } else if (type == EnforceType.SORT && property.getSort().getNodeId() == node.getPID()) {
           found = property;
-        } else if (type == EnforceType.COLUMN_PARTITION && property.getColumnPartition().getPid() == node.getPID()) {
+        } else if (type == EnforceType.COLUMN_PARTITION && property.getColumnPartition().getNodeId() == node.getPID()) {
           found = property;
         }
       }

@@ -25,8 +25,10 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.sql.ResultSet;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 @Category(IntegrationTest.class)
 public class TestTruncateTable extends QueryTestCaseBase {
@@ -63,11 +65,6 @@ public class TestTruncateTable extends QueryTestCaseBase {
     }
   }
 
-
-  /*
-  Currently TajoClient can't throw exception when plan error.
-  The following test cast should be uncommented after https://issues.apache.org/jira/browse/TAJO-762
-
   @Test
   public final void testTruncateExternalTable() throws Exception {
     try {
@@ -100,5 +97,4 @@ public class TestTruncateTable extends QueryTestCaseBase {
       executeString("DROP TABLE truncate_table2 PURGE");
     }
   }
-  */
 }

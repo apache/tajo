@@ -28,6 +28,22 @@ public abstract class BinaryNode extends LogicalNode implements Cloneable, GsonO
 	public BinaryNode(int pid, NodeType nodeType) {
 		super(pid, nodeType);
 	}
+
+  @Override
+  public int childNum() {
+    return 2;
+  }
+
+  @Override
+  public LogicalNode getChild(int idx) {
+    if (idx == 0) {
+      return leftChild;
+    } else if (idx == 1) {
+      return rightChild;
+    } else {
+      throw new ArrayIndexOutOfBoundsException(idx);
+    }
+  }
 	
 	public <T extends LogicalNode> T getLeftChild() {
 		return (T) this.leftChild;
