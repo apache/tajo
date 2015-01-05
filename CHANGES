@@ -134,6 +134,9 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1275: Optimizer pushs down non-equi filter as theta join qualifier.
+    (Keuntae Park)
+
     TAJO-1249: Tajo should check if a file format given in DDL is supported.
     (DaeMyung Kang via hyunsik)
  

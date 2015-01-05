@@ -644,7 +644,10 @@ public class TestLogicalPlanner {
         , new FieldEval(new Column("default.t.n_nationkey", Type.INT4))
         , new FieldEval(new Column("default.s.s_suppkey", Type.INT4))
     );
-    joinQualMap.put(joinQual, Boolean.FALSE);
+
+    /* following code is commented because theta join is not supported yet
+     * TODO It SHOULD be restored after TAJO-742 is resolved. */
+    //joinQualMap.put(joinQual, Boolean.FALSE);
 
     LogicalNode[] nodes = PlannerUtil.findAllNodes(node, NodeType.JOIN);
     for(LogicalNode eachNode : nodes) {
