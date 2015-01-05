@@ -27,7 +27,7 @@ public class NullCallback implements RpcCallback<Object> {
     instance = new NullCallback();
   }
 
-  public static RpcCallback<Object> get() {
+  public static RpcCallback get() {
     return instance;
   }
 
