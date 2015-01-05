@@ -42,41 +42,11 @@ import org.apache.tajo.storage.Tuple;
   returnType = Type.INT8,
   paramTypes = {@ParamTypes(paramTypes = {Type.INT4})}
 )
-public class SumInt extends AggFunction<Datum> {
+public class SumInt extends SumLong {
 
   public SumInt() {
     super(new Column[] {
         new Column("expr", Type.INT4)
     });
-  }
-
-  @Override
-  public SumIntContext newContext() {
-    return new SumIntContext();
-  }
-
-  @Override
-  public void eval(FunctionContext ctx, Tuple params) {
-    SumIntContext sumCtx = (SumIntContext) ctx;
-    sumCtx.sum += params.get(0).asInt8();
-  }
-
-  @Override
-  public Datum getPartialResult(FunctionContext ctx) {
-    return DatumFactory.createInt8(((SumIntContext) ctx).sum);
-  }
-
-  @Override
-  public DataType getPartialResultType() {
-    return CatalogUtil.newSimpleDataType(Type.INT8);
-  }
-
-  @Override
-  public Datum terminate(FunctionContext ctx) {
-    return DatumFactory.createInt8(((SumIntContext) ctx).sum);
-  }
-
-  private class SumIntContext implements FunctionContext {
-    long sum;
   }
 }

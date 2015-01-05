@@ -200,6 +200,129 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     cleanupQuery(res);
   }
 
+  @Test
+  public void testAvgLongOverflow() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testAvgWithNull() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_int", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_long", TajoDataTypes.Type.INT8);
+    schema.addColumn("value_float", TajoDataTypes.Type.FLOAT4);
+    schema.addColumn("value_double", TajoDataTypes.Type.FLOAT8);
+    String[] data = new String[]{ "1|\\N|-111|1.2|-50.5", "2|1|\\N|\\N|52.5", "3|2|-333|2.8|\\N" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select avg(value_int) as avg_int, avg(value_long) as avg_long, avg(value_float) as avg_float, avg(value_double) as avg_double from table11");
+      String ascExpected = "avg_int,avg_long,avg_float,avg_double\n" +
+          "-------------------------------\n" +
+          "1.5,-222.0,2.0,1.0\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+
+  }
+
+  @Test
+  public void testAvgWithAllNulls() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_int", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_long", TajoDataTypes.Type.INT8);
+    schema.addColumn("value_float", TajoDataTypes.Type.FLOAT4);
+    schema.addColumn("value_double", TajoDataTypes.Type.FLOAT8);
+    String[] data = new String[]{ "1|\\N|\\N|\\N|\\N", "2|\\N|\\N|\\N|\\N", "3|\\N|\\N|\\N|\\N" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select avg(value_int) as avg_int, avg(value_long) as avg_long, avg(value_float) as avg_float, avg(value_double) as avg_double from table11");
+      String ascExpected = "avg_int,avg_long,avg_float,avg_double\n" +
+          "-------------------------------\n" +
+          "null,null,null,null\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+
+  }
+
+  @Test
+  public void testSumWithNull() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_int", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_long", TajoDataTypes.Type.INT8);
+    schema.addColumn("value_float", TajoDataTypes.Type.FLOAT4);
+    schema.addColumn("value_double", TajoDataTypes.Type.FLOAT8);
+    String[] data = new String[]{ "1|\\N|-111|1.2|-50.5", "2|1|\\N|\\N|52.5", "3|2|-333|2.8|\\N" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select sum(value_int) as sum_int, sum(value_long) as sum_long, sum(value_float) as sum_float, sum(value_double) as sum_double from table11");
+      String ascExpected = "sum_int,sum_long,sum_float,sum_double\n" +
+          "-------------------------------\n" +
+          "3,-444,4.0,2.0\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+
+  }
+
+  @Test
+  public void testSumWithAllNulls() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_int", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_long", TajoDataTypes.Type.INT8);
+    schema.addColumn("value_float", TajoDataTypes.Type.FLOAT4);
+    schema.addColumn("value_double", TajoDataTypes.Type.FLOAT8);
+    String[] data = new String[]{ "1|\\N|\\N|\\N|\\N", "2|\\N|\\N|\\N|\\N", "3|\\N|\\N|\\N|\\N" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select sum(value_int) as sum_int, sum(value_long) as sum_long, sum(value_float) as sum_float, sum(value_double) as sum_double from table11");
+      String ascExpected = "sum_int,sum_long,sum_float,sum_double\n" +
+          "-------------------------------\n" +
+          "null,null,null,null\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+
+  }
+
 //  @Test
 //  public void testRandom() throws Exception {
 //    ResultSet res = executeQuery();

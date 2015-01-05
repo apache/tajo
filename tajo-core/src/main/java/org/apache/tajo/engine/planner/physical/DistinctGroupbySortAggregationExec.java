@@ -135,7 +135,7 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
     for (SortAggregateExec aggExec: aggregateExecs) {
       for (int i = 0; i < aggExec.aggFunctionsNum; i++, tupleIndex++) {
         String funcName = aggExec.aggFunctions[i].getName();
-        if ("min".equals(funcName) || "max".equals(funcName)) {
+        if ("min".equals(funcName) || "max".equals(funcName) || "avg".equals(funcName) || "sum".equals(funcName)) {
           tuple.put(resultColumnIdIndexes[tupleIndex], DatumFactory.createNullDatum());
         }
         else
