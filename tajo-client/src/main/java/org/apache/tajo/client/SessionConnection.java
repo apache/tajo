@@ -22,7 +22,7 @@ import com.google.protobuf.ServiceException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.QueryId;
+import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.auth.UserRoleInfo;
@@ -48,7 +48,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.tajo.ipc.ClientProtos.CreateSessionRequest;
@@ -60,8 +59,6 @@ public class SessionConnection implements Closeable {
   private final Log LOG = LogFactory.getLog(TajoClientImpl.class);
 
   private final TajoConf conf;
-
-  final Map<QueryId, InetSocketAddress> queryMasterMap = new ConcurrentHashMap<QueryId, InetSocketAddress>();
 
   final InetSocketAddress tajoMasterAddr;
 
@@ -119,21 +116,9 @@ public class SessionConnection implements Closeable {
     return Collections.unmodifiableMap(sessionVarsCache);
   }
 
-  public <T> T getStub(QueryId queryId, Class protocolClass, boolean asyncMode) throws NoSuchMethodException,
-      ConnectTimeoutException, ClassNotFoundException {
-    InetSocketAddress addr = queryMasterMap.get(queryId);
-    return connPool.getConnection(addr, protocolClass, asyncMode).getStub();
-  }
-
   public NettyClientBase getTajoMasterConnection(boolean asyncMode) throws NoSuchMethodException,
       ConnectTimeoutException, ClassNotFoundException {
     return connPool.getConnection(getTajoMasterAddr(), TajoMasterClientProtocol.class, asyncMode);
-  }
-
-  public NettyClientBase getConnection(QueryId queryId, Class protocolClass, boolean asyncMode)
-      throws NoSuchMethodException, ConnectTimeoutException, ClassNotFoundException {
-    InetSocketAddress addr = queryMasterMap.get(queryId);
-    return connPool.getConnection(addr, protocolClass, asyncMode);
   }
 
   public NettyClientBase getConnection(InetSocketAddress addr, Class protocolClass, boolean asyncMode)
@@ -323,8 +308,6 @@ public class SessionConnection implements Closeable {
     if(connPool != null) {
       connPool.shutdown();
     }
-
-    queryMasterMap.clear();
   }
 
   protected InetSocketAddress getTajoMasterAddr() {

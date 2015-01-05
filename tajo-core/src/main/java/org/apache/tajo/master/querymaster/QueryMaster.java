@@ -454,10 +454,12 @@ public class QueryMaster extends CompositeService implements EventHandler {
     TajoHeartbeat.Builder builder = TajoHeartbeat.newBuilder();
 
     builder.setConnectionInfo(workerContext.getConnectionInfo().getProto());
-    builder.setState(queryMasterTask.getState());
     builder.setQueryId(queryMasterTask.getQueryId().getProto());
-
+    builder.setState(queryMasterTask.getState());
     if (queryMasterTask.getQuery() != null) {
+      if (queryMasterTask.getQuery().getResultDesc() != null) {
+        builder.setResultDesc(queryMasterTask.getQuery().getResultDesc().getProto());
+      }
       builder.setQueryProgress(queryMasterTask.getQuery().getProgress());
       builder.setQueryFinishTime(queryMasterTask.getQuery().getFinishTime());
     }

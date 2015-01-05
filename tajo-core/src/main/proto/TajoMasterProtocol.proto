@@ -66,9 +66,10 @@ message TajoHeartbeat {
   required WorkerConnectionInfoProto connectionInfo = 1;
   optional QueryIdProto queryId = 2;
   optional QueryState state = 3;
-  optional string statusMessage = 4;
-  optional float queryProgress = 5;
-  optional int64 queryFinishTime = 6;
+  optional TableDescProto resultDesc = 4;
+  optional string statusMessage = 5;
+  optional float queryProgress = 6;
+  optional int64 queryFinishTime = 7;
 }
 
 message TajoHeartbeatResponse {
