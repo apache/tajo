@@ -332,6 +332,7 @@ public class TajoMasterClientService extends AbstractService {
         }
 
         GetQueryResultResponse.Builder builder = GetQueryResultResponse.newBuilder();
+        builder.setTajoUserName(UserGroupInformation.getCurrentUser().getUserName());
 
         // If we cannot the QueryInfo instance from the finished list,
         // the query result was expired due to timeout.
@@ -341,20 +342,16 @@ public class TajoMasterClientService extends AbstractService {
           return builder.build();
         }
 
-        try {
-          //TODO After implementation Tajo's user security feature, Should be modified.
-          builder.setTajoUserName(UserGroupInformation.getCurrentUser().getUserName());
-        } catch (IOException e) {
-          LOG.warn("Can't get current user name");
-        }
         switch (queryInfo.getQueryState()) {
           case QUERY_SUCCEEDED:
-            // TODO check this logic needed
-            //builder.setTableDesc((TableDescProto) queryJobManager.getResultDesc().getProto());
+            if (queryInfo.hasResultdesc()) {
+              builder.setTableDesc(queryInfo.getResultDesc().getProto());
+            }
             break;
           case QUERY_FAILED:
           case QUERY_ERROR:
             builder.setErrorMessage("Query " + queryId + " is failed");
+            break;
           default:
             builder.setErrorMessage("Query " + queryId + " is still running");
         }
@@ -466,6 +463,11 @@ public class TajoMasterClientService extends AbstractService {
           if (queryInfo != null) {
             builder.setResult(IPCUtil.buildOkRequestResult());
             builder.setState(queryInfo.getQueryState());
+
+            boolean isCreateTable = queryInfo.getQueryContext().isCreateTable();
+            boolean isInsert = queryInfo.getQueryContext().isInsert();
+            builder.setHasResult(!(isCreateTable || isInsert));
+
             builder.setProgress(queryInfo.getProgress());
             builder.setSubmitTime(queryInfo.getStartTime());
             if(queryInfo.getQueryMasterHost() != null) {
