@@ -28,6 +28,7 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.util.StringUtils;
+import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.tajo.*;
@@ -51,7 +52,6 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.TajoContainerProxy;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
@@ -104,7 +104,7 @@ public class QueryMasterTask extends CompositeService {
 
   private String logicalPlanJson;
 
-  private TajoAsyncDispatcher dispatcher;
+  private AsyncDispatcher dispatcher;
 
   private final long querySubmitTime;
 
@@ -154,7 +154,7 @@ public class QueryMasterTask extends CompositeService {
       }
       addService(resourceAllocator);
 
-      dispatcher = new TajoAsyncDispatcher(queryId.toString());
+      dispatcher = new AsyncDispatcher();
       addService(dispatcher);
 
       dispatcher.register(StageEventType.class, new StageEventDispatcher());
@@ -339,7 +339,8 @@ public class QueryMasterTask extends CompositeService {
         }
       }
       LOG.info("Query final state: " + query.getSynchronizedState());
-      queryMasterContext.stopQuery(queryId);
+
+      queryMasterContext.getEventHandler().handle(new QueryStopEvent(queryId));
     }
   }
 
@@ -620,7 +621,7 @@ public class QueryMasterTask extends CompositeService {
       return eventHandler;
     }
 
-    public TajoAsyncDispatcher getDispatcher() {
+    public AsyncDispatcher getDispatcher() {
       return dispatcher;
     }
 

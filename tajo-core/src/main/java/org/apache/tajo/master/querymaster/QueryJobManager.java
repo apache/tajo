@@ -40,7 +40,6 @@ import org.apache.tajo.scheduler.SimpleFifoScheduler;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -187,15 +186,16 @@ public class QueryJobManager extends CompositeService {
         LOG.warn("No query info in running queries.[" + event.getQueryInfo().getQueryId() + "]");
         return;
       }
-      if(queryInProgress.isStarted()){
-        queryInProgress.getEventHandler().handle(event);
-      } else {
-        if(event.getType() == QueryJobEvent.Type.QUERY_JOB_KILL){
-          scheduler.removeQuery(queryInProgress.getQueryId());
-          queryInProgress.getQueryInfo().setQueryState(TajoProtos.QueryState.QUERY_KILLED);
 
-          stopQuery(queryInProgress.getQueryId());
-        }
+      if (event.getType() == QueryJobEvent.Type.QUERY_JOB_STOP) {
+        queryInProgress.stop();
+      } else if (queryInProgress.isStarted()) {
+        queryInProgress.getEventHandler().handle(event);
+      } else if (event.getType() == QueryJobEvent.Type.QUERY_JOB_KILL) {
+        scheduler.removeQuery(queryInProgress.getQueryId());
+        queryInProgress.getQueryInfo().setQueryState(TajoProtos.QueryState.QUERY_KILLED);
+
+        stopQuery(queryInProgress.getQueryId());
       }
     }
   }

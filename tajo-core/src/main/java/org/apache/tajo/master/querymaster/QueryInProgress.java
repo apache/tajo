@@ -23,16 +23,15 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.util.StringUtils;
+import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol.QueryExecutionRequestProto;
-import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.rm.WorkerResourceManager;
 import org.apache.tajo.master.session.Session;
@@ -55,7 +54,7 @@ public class QueryInProgress extends CompositeService {
 
   private Session session;
 
-  private TajoAsyncDispatcher dispatcher;
+  private AsyncDispatcher dispatcher;
 
   private LogicalRootNode plan;
 
@@ -88,7 +87,7 @@ public class QueryInProgress extends CompositeService {
 
   @Override
   public void init(Configuration conf) {
-    dispatcher = new TajoAsyncDispatcher("QueryInProgress:" + queryId);
+    dispatcher = new AsyncDispatcher();
     this.addService(dispatcher);
 
     dispatcher.register(QueryJobEvent.Type.class, new QueryInProgressEventHandler());
@@ -194,7 +193,8 @@ public class QueryInProgress extends CompositeService {
       } else if(queryJobEvent.getType() == QueryJobEvent.Type.QUERY_JOB_START) {
         submmitQueryToMaster();
       } else if(queryJobEvent.getType() == QueryJobEvent.Type.QUERY_JOB_FINISH) {
-        stop();
+        masterContext.getQueryJobManager().getEventHandler().handle(
+            new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_STOP, queryJobEvent.getQueryInfo()));
       } else if (queryJobEvent.getType() == QueryJobEvent.Type.QUERY_JOB_KILL) {
         kill();
       }
@@ -289,7 +289,8 @@ public class QueryInProgress extends CompositeService {
 
 
       if (isFinishState(this.queryInfo.getQueryState())) {
-        stop();
+        masterContext.getQueryJobManager().getEventHandler().handle(
+            new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_STOP, this.queryInfo));
       }
     }
   }
