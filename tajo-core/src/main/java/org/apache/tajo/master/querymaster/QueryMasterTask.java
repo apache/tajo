@@ -58,7 +58,6 @@ import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.verifier.VerifyException;
-import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.storage.StorageManager;
@@ -198,8 +197,6 @@ public class QueryMasterTask extends CompositeService {
     } catch (Throwable t) {
       LOG.fatal(t.getMessage(), t);
     }
-
-    CallFuture future = new CallFuture();
 
     RpcConnectionPool connPool = RpcConnectionPool.getPool(queryMasterContext.getConf());
     NettyClientBase tmClient = null;
