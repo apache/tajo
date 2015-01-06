@@ -321,14 +321,14 @@ public class TestTajoCli {
     setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);
+    TajoCli tajoCli = new TajoCli(tajoConf, new String[]{}, System.in, out);
     tajoCli.executeMetaCommand("\\admin -showmasters");
 
     String consoleResult = new String(out.toByteArray());
 
     String masterAddress = tajoCli.getContext().getConf().getVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
     String host = masterAddress.split(":")[0];
-
+    tajoCli.close();
     assertEquals(consoleResult, host + "\n");
   }
 
