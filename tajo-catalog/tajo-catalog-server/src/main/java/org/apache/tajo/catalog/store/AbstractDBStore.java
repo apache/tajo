@@ -1058,13 +1058,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       resultSet = pstmt.executeQuery();
 
       CatalogProtos.ColumnProto columnProto = null;
-      int ordinalPostion = -1;
+      int ordinalPosition = -1;
 
       if (resultSet.next()) {
         columnProto = resultToColumnProto(resultSet);
         //NOTE ==> Setting new column Name
         columnProto = columnProto.toBuilder().setName(alterColumnProto.getNewColumnName()).build();
-        ordinalPostion = resultSet.getInt("ORDINAL_POSITION");
+        ordinalPosition = resultSet.getInt("ORDINAL_POSITION");
       } else {
         throw new NoSuchColumnException(alterColumnProto.getOldColumnName());
       }
@@ -1084,7 +1084,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt = conn.prepareStatement(insertNewColumnSql);
       pstmt.setInt(1, tableId);
       pstmt.setString(2, CatalogUtil.extractSimpleName(columnProto.getName()));
-      pstmt.setInt(3, ordinalPostion);
+      pstmt.setInt(3, ordinalPosition);
       pstmt.setString(4, columnProto.getDataType().getType().name());
       pstmt.setInt(5, (columnProto.getDataType().hasLength() ? columnProto.getDataType().getLength() : 0));
       pstmt.executeUpdate();
@@ -1478,7 +1478,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     try {
       return Enum.valueOf(Type.class, typeStr);
     } catch (IllegalArgumentException iae) {
-      LOG.error("Cannot find a matched type aginst from '" + typeStr + "'");
+      LOG.error("Cannot find a matched type against from '" + typeStr + "'");
       return null;
     }
   }
@@ -2333,7 +2333,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     if (typeStr.equals(IndexMethod.TWO_LEVEL_BIN_TREE.toString())) {
       return IndexMethod.TWO_LEVEL_BIN_TREE;
     } else {
-      LOG.error("Cannot find a matched type aginst from '"
+      LOG.error("Cannot find a matched type against from '"
           + typeStr + "'");
       // TODO - needs exception handling
       return null;
