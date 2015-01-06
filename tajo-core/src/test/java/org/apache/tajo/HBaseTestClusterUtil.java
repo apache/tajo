@@ -101,6 +101,12 @@ public class HBaseTestClusterUtil {
       conf.setInt(ServerManager.WAIT_ON_REGIONSERVERS_MAXTOSTART, 1);
     }
     conf.setBoolean(REPLICATION_ENABLE_KEY, false);
+    conf.setInt(HConstants.HBASE_CLIENT_IPC_POOL_SIZE, 5);
+    conf.setInt(HConstants.REGION_SERVER_HANDLER_COUNT, 5);
+    conf.setInt(HConstants.REGION_SERVER_META_HANDLER_COUNT, 2);
+    conf.setInt(HConstants.MASTER_HANDLER_COUNT, 5);
+    conf.setInt("hbase.hconnection.threads.max", 5);
+    conf.setInt("hbase.hconnection.threads.core", 5);
     createRootDir();
 
     Configuration c = HBaseConfiguration.create(this.conf);
