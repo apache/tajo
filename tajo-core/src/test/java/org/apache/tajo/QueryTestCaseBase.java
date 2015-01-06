@@ -204,7 +204,7 @@ public class QueryTestCaseBase {
   @Before
   public void printTestName() {
     /* protect a travis stalled build */
-    System.out.println("Run: " + name);
+    System.out.println("Run: " + name.getMethodName());
   }
 
   public QueryTestCaseBase() {

@@ -18,7 +18,10 @@
 
 package org.apache.tajo.scheduler;
 
-import org.apache.tajo.*;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.TajoProtos;
+import org.apache.tajo.TajoTestingCluster;
+import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.client.TajoClientUtil;
@@ -27,34 +30,41 @@ import org.apache.tajo.ipc.ClientProtos;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
+import java.io.File;
 import java.sql.ResultSet;
 
 import static org.junit.Assert.*;
 
-@Category(IntegrationTest.class)
 public class TestFifoScheduler {
   private static TajoTestingCluster cluster;
   private static TajoConf conf;
   private static TajoClient client;
+  private static String query =
+      "select l_orderkey, l_partkey from lineitem group by l_orderkey, l_partkey order by l_orderkey";
 
   @BeforeClass
   public static void setUp() throws Exception {
-    cluster = TpchTestBase.getInstance().getTestingCluster();
+    cluster = new TajoTestingCluster();
+    cluster.startMiniClusterInLocal(1);
     conf = cluster.getConfiguration();
-    client = new TajoClientImpl(conf);
+    client = new TajoClientImpl(cluster.getConfiguration());
+    File file = TPCH.getDataFile("lineitem");
+    client.executeQueryAndGetResult("create external table default.lineitem (l_orderkey int, l_partkey int) "
+        + "using text location 'file://" + file.getAbsolutePath() + "'");
+    assertTrue(client.existTable("default.lineitem"));
   }
 
   @AfterClass
   public static void tearDown() throws Exception {
-    client.close();
+    if (client != null) client.close();
+    if (cluster != null) cluster.shutdownMiniCluster();
   }
 
   @Test
   public final void testKillScheduledQuery() throws Exception {
-    ClientProtos.SubmitQueryResponse res = client.executeQuery("select sleep(1) from lineitem");
-    ClientProtos.SubmitQueryResponse res2 = client.executeQuery("select sleep(1) from lineitem");
+    ClientProtos.SubmitQueryResponse res = client.executeQuery(query);
+    ClientProtos.SubmitQueryResponse res2 = client.executeQuery(query);
     QueryId queryId = new QueryId(res.getQueryId());
     QueryId queryId2 = new QueryId(res2.getQueryId());
 
@@ -67,7 +77,7 @@ public class TestFifoScheduler {
 
   @Test
   public final void testForwardedQuery() throws Exception {
-    ClientProtos.SubmitQueryResponse res = client.executeQuery("select sleep(1) from lineitem");
+    ClientProtos.SubmitQueryResponse res = client.executeQuery(query);
     ClientProtos.SubmitQueryResponse res2 = client.executeQuery("select * from lineitem limit 1");
     assertTrue(res.getIsForwarded());
     assertFalse(res2.getIsForwarded());
@@ -86,9 +96,9 @@ public class TestFifoScheduler {
   @Test
   public final void testScheduledQuery() throws Exception {
     ClientProtos.SubmitQueryResponse res = client.executeQuery("select sleep(1) from lineitem");
-    ClientProtos.SubmitQueryResponse res2 = client.executeQuery("select sleep(1) from lineitem");
-    ClientProtos.SubmitQueryResponse res3 = client.executeQuery("select sleep(1) from lineitem");
-    ClientProtos.SubmitQueryResponse res4 = client.executeQuery("select sleep(1) from lineitem");
+    ClientProtos.SubmitQueryResponse res2 = client.executeQuery(query);
+    ClientProtos.SubmitQueryResponse res3 = client.executeQuery(query);
+    ClientProtos.SubmitQueryResponse res4 = client.executeQuery(query);
 
     QueryId queryId = new QueryId(res.getQueryId());
     QueryId queryId2 = new QueryId(res2.getQueryId());

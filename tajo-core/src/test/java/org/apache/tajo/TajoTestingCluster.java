@@ -628,8 +628,10 @@ public class TajoTestingCluster {
       this.clusterTestBuildDir = null;
     }
 
-    hbaseUtil.stopZooKeeperCluster();
-    hbaseUtil.stopHBaseCluster();
+    if(hbaseUtil != null) {
+      hbaseUtil.stopZooKeeperCluster();
+      hbaseUtil.stopHBaseCluster();
+    }
 
     LOG.info("Minicluster is down");
   }
