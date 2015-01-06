@@ -188,7 +188,7 @@ public class QueryJobManager extends CompositeService {
       }
 
       if (event.getType() == QueryJobEvent.Type.QUERY_JOB_STOP) {
-        queryInProgress.stop();
+        stopQuery(event.getQueryInfo().getQueryId());
       } else if (queryInProgress.isStarted()) {
         queryInProgress.getEventHandler().handle(event);
       } else if (event.getType() == QueryJobEvent.Type.QUERY_JOB_KILL) {
