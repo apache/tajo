@@ -78,7 +78,7 @@ And then, you need to prepare MySQL JDBC driver on the machine which can be ran 
 
 .. code-block:: sh
 
-  export TAJO_CLASSPATH=/usr/local/mysql/lib/mysql-connector-java-x.x.x.jar
+  $ export TAJO_CLASSPATH=/usr/local/mysql/lib/mysql-connector-java-x.x.x.jar
 
 Or you just can copy jdbc driver into ``$TAJO_HOME/lib``.
 
@@ -112,7 +112,7 @@ All configurations for using MariaDBStore is compatible with MySQLStore except f
 
 .. code-block:: sh
 
-  export TAJO_CLASSPATH=/usr/local/mariadb/lib/mariadb-java-client-x.x.x.jar
+  $ export TAJO_CLASSPATH=/usr/local/mariadb/lib/mariadb-java-client-x.x.x.jar
 
 .. code-block:: xml
 
@@ -123,6 +123,78 @@ All configurations for using MariaDBStore is compatible with MySQLStore except f
   <property>
     <name>tajo.catalog.jdbc.uri</name>
     <value>jdbc:mariadb://<mariadb host name>:<mariadb port>/<database name for tajo>?createDatabaseIfNotExist=true</value>
+  </property>
+
+=================================
+PostgreSQL Configuration
+=================================
+
+1. Preparing the user and the database:
+
+.. code-block:: sql
+
+  postgres=# create database tajo;
+  CREATE DATABASE
+
+  postgres=# grant all on database tajo to tajo;
+  GRANT
+
+2. Preparing the JDBC driver:
+
+.. code-block:: sh
+
+  $ export TAJO_CLASSPATH=/usr/share/java/postgresql-jdbc4.jar
+
+3. Configuring the catalog:
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.catalog.store.class</name>
+    <value>org.apache.tajo.catalog.store.PostgreSQLStore</value>
+  </property>
+  <property>
+    <name>tajo.catalog.jdbc.uri</name>
+    <value>jdbc:postgresql://<postgresql host name>:<postgresql port>/<database name for tajo>?createDatabaseIfNotExist=true</value>
+  </property>
+  <property>
+    <name>tajo.catalog.jdbc.connection.id</name>
+    <value><postgresql user name></value>
+  </property>
+  <property>
+    <name>tajo.catalog.jdbc.connection.password</name>
+    <value><postgresql user password></value>
+  </property>
+
+=================================
+Oracle Configuration
+=================================
+
+1. Preparing the JDBC driver:
+
+.. code-block:: sh
+
+  $ export TAJO_CLASSPATH=/path/to/oracle/driver/ojdbc7.jar
+
+2. Configuring the catalog:
+
+.. code-block:: xml
+
+  <property>
+    <name>tajo.catalog.store.class</name>
+    <value>org.apache.tajo.catalog.store.OracleStore</value>
+  </property>
+  <property>
+    <name>tajo.catalog.jdbc.uri</name>
+    <value>jdbc:oracle:thin:@//<oracle host name>:<oracle port>/<ServiceName for tajo database></value>
+  </property>
+  <property>
+    <name>tajo.catalog.jdbc.connection.id</name>
+    <value><oracle user name></value>
+  </property>
+  <property>
+    <name>tajo.catalog.jdbc.connection.password</name>
+    <value><oracle user password></value>
   </property>
 
 
