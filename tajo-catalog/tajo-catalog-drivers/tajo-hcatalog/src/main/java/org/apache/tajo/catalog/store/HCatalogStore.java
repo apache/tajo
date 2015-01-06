@@ -19,6 +19,7 @@
 package org.apache.tajo.catalog.store;
 
 import com.google.common.collect.Lists;
+
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -37,10 +38,17 @@ import org.apache.hcatalog.data.schema.HCatFieldSchema;
 import org.apache.hcatalog.data.schema.HCatSchema;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.*;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.DatabaseProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.IndexProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableDescriptorProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableOptionProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TablespaceProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.exception.NotImplementedException;
@@ -54,7 +62,6 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionType;
-import static org.apache.tajo.catalog.proto.CatalogProtos.TablespaceProto;
 
 public class HCatalogStore extends CatalogConstants implements CatalogStore {
   protected final Log LOG = LogFactory.getLog(getClass());
@@ -236,7 +243,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       List<FieldSchema> partitionKeys = table.getPartitionKeys();
 
       if (null != partitionKeys) {
-        Schema expressionSchema = new Schema();
+        org.apache.tajo.catalog.Schema expressionSchema = new org.apache.tajo.catalog.Schema();
         StringBuilder sb = new StringBuilder();
         if (partitionKeys.size() > 0) {
           for (int i = 0; i < partitionKeys.size(); i++) {
@@ -840,5 +847,45 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     }
 
     return exist;
+  }
+
+  @Override
+  public List<ColumnProto> getAllColumns() throws CatalogException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public List<DatabaseProto> getAllDatabases() throws CatalogException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public List<IndexProto> getAllIndexes() throws CatalogException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public List<TablePartitionProto> getAllPartitions() throws CatalogException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public List<TableOptionProto> getAllTableOptions() throws CatalogException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public List<TableStatsProto> getAllTableStats() throws CatalogException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public List<TableDescriptorProto> getAllTables() throws CatalogException {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public List<TablespaceProto> getTablespaces() throws CatalogException {
+    throw new UnsupportedOperationException();
   }
 }

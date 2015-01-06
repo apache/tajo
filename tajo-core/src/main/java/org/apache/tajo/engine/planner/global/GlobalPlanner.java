@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.global;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -36,17 +37,20 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.BroadcastJoinMarkCandidateVisitor;
 import org.apache.tajo.engine.planner.BroadcastJoinPlanVisitor;
 import org.apache.tajo.engine.planner.global.builder.DistinctGroupbyBuilder;
+import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteEngine;
+import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRuleProvider;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.function.AggFunction;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.KeyValueSet;
+import org.apache.tajo.util.ReflectionUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TajoWorker;
 
@@ -54,6 +58,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.apache.tajo.conf.TajoConf.ConfVars;
+import static org.apache.tajo.conf.TajoConf.ConfVars.GLOBAL_PLAN_REWRITE_RULE_PROVIDER_CLASS;
 import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.*;
 
 /**
@@ -64,34 +69,29 @@ public class GlobalPlanner {
 
   private final TajoConf conf;
   private final CatalogProtos.StoreType storeType;
-  private CatalogService catalog;
-  private TajoWorker.WorkerContext workerContext;
+  private final CatalogService catalog;
+  private final GlobalPlanRewriteEngine rewriteEngine;
 
+  @VisibleForTesting
   public GlobalPlanner(final TajoConf conf, final CatalogService catalog) throws IOException {
     this.conf = conf;
     this.catalog = catalog;
     this.storeType = CatalogProtos.StoreType.valueOf(conf.getVar(ConfVars.SHUFFLE_FILE_FORMAT).toUpperCase());
     Preconditions.checkArgument(storeType != null);
+
+    Class<? extends GlobalPlanRewriteRuleProvider> clazz =
+        (Class<? extends GlobalPlanRewriteRuleProvider>) conf.getClassVar(GLOBAL_PLAN_REWRITE_RULE_PROVIDER_CLASS);
+    GlobalPlanRewriteRuleProvider provider = ReflectionUtil.newInstance(clazz, conf);
+    rewriteEngine = new GlobalPlanRewriteEngine();
+    rewriteEngine.addRewriteRule(provider.getRules());
   }
 
   public GlobalPlanner(final TajoConf conf, final TajoWorker.WorkerContext workerContext) throws IOException {
-    this.conf = conf;
-    this.workerContext = workerContext;
-    this.storeType = CatalogProtos.StoreType.valueOf(conf.getVar(ConfVars.SHUFFLE_FILE_FORMAT).toUpperCase());
-    Preconditions.checkArgument(storeType != null);
+    this(conf, workerContext.getCatalog());
   }
 
-  /**
-   * TODO: this is hack. it must be refactored at TAJO-602.
-   */
   public CatalogService getCatalog() {
-    if (workerContext.getCatalog() != null) {
-      return workerContext.getCatalog();
-    } else if (catalog != null) {
-      return catalog;
-    } else {
-      throw new IllegalStateException("No Catalog Instance");
-    }
+    return catalog;
   }
 
   public CatalogProtos.StoreType getStoreType() {
@@ -163,6 +163,8 @@ public class GlobalPlanner {
 
     masterPlan.setTerminal(terminalBlock);
     LOG.info("\n" + masterPlan.toString());
+
+    masterPlan = rewriteEngine.rewrite(masterPlan);
   }
 
   private static void setFinalOutputChannel(DataChannel outputChannel, Schema outputSchema) {

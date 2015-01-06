@@ -28,9 +28,5 @@ import "PrimitiveProtos.proto";
 import "ClientProtos.proto";
 
 service QueryMasterClientProtocolService {
-  rpc updateSessionVariables(UpdateSessionVariableRequest) returns (BoolProto);
-  rpc getQueryResult(GetQueryResultRequest) returns (GetQueryResultResponse);
-  rpc getQueryStatus(GetQueryStatusRequest) returns (GetQueryStatusResponse);
-  rpc closeQuery(QueryIdProto) returns (BoolProto);
   rpc getQueryHistory(QueryIdRequest) returns (GetQueryHistoryResponse);
 }

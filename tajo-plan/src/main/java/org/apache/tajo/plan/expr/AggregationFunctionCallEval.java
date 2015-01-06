@@ -27,13 +27,14 @@ import org.apache.tajo.plan.function.AggFunction;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.util.TUtil;
 
 public class AggregationFunctionCallEval extends FunctionEval implements Cloneable {
-  @Expose protected AggFunction instance;
   @Expose boolean intermediatePhase = false;
   @Expose boolean finalPhase = true;
   @Expose String alias;
 
+  protected AggFunction instance;
   private Tuple params;
 
   protected AggregationFunctionCallEval(EvalType type, FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs) {
@@ -91,6 +92,10 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
     }
   }
 
+  public boolean hasAlias() {
+    return this.alias != null;
+  }
+
   public void setAlias(String alias) { this.alias = alias; }
 
   public String getAlias() { return  this.alias; }
@@ -106,6 +111,22 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
     return clone;
   }
 
+  public boolean isIntermediatePhase() {
+    return intermediatePhase;
+  }
+
+  public void setIntermediatePhase(boolean flag) {
+    this.intermediatePhase = flag;
+  }
+
+  public void setFinalPhase(boolean flag) {
+    this.finalPhase = flag;
+  }
+
+  public boolean isFinalPhase() {
+    return finalPhase;
+  }
+
   public void setFirstPhase() {
     this.finalPhase = false;
     this.intermediatePhase = false;
@@ -119,5 +140,20 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   public void setIntermediatePhase() {
     this.finalPhase = false;
     this.intermediatePhase = true;
+  }
+
+  public boolean equals(Object obj) {
+    if (obj instanceof AggregationFunctionCallEval) {
+      AggregationFunctionCallEval other = (AggregationFunctionCallEval) obj;
+
+      boolean eq = super.equals(other);
+      eq &= instance.equals(other.instance);
+      eq &= intermediatePhase == other.intermediatePhase;
+      eq &= finalPhase == other.finalPhase;
+      eq &= TUtil.checkEquals(alias, other.alias);
+      return eq;
+    }
+
+    return false;
   }
 }

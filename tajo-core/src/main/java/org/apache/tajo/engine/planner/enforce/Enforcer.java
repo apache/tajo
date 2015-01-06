@@ -98,7 +98,7 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
   public void enforceJoinAlgorithm(int pid, JoinEnforce.JoinAlgorithm algorithm) {
     EnforceProperty.Builder builder = newProperty();
     JoinEnforce.Builder enforce = JoinEnforce.newBuilder();
-    enforce.setPid(pid);
+    enforce.setNodeId(pid);
     enforce.setAlgorithm(algorithm);
 
     builder.setType(EnforceType.JOIN);
@@ -109,7 +109,7 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
   public void enforceSortAggregation(int pid, @Nullable SortSpec[] sortSpecs) {
     EnforceProperty.Builder builder = newProperty();
     GroupbyEnforce.Builder enforce = GroupbyEnforce.newBuilder();
-    enforce.setPid(pid);
+    enforce.setNodeId(pid);
     enforce.setAlgorithm(GroupbyAlgorithm.SORT_AGGREGATION);
     if (sortSpecs != null) {
       for (SortSpec sortSpec : sortSpecs) {
@@ -125,7 +125,7 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
   public void enforceHashAggregation(int pid) {
     EnforceProperty.Builder builder = newProperty();
     GroupbyEnforce.Builder enforce = GroupbyEnforce.newBuilder();
-    enforce.setPid(pid);
+    enforce.setNodeId(pid);
     enforce.setAlgorithm(GroupbyAlgorithm.HASH_AGGREGATION);
 
     builder.setType(EnforceType.GROUP_BY);
@@ -146,7 +146,7 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
                                          List<SortSpecArray> sortSpecArrays) {
     EnforceProperty.Builder builder = newProperty();
     DistinctGroupbyEnforcer.Builder enforce = DistinctGroupbyEnforcer.newBuilder();
-    enforce.setPid(pid);
+    enforce.setNodeId(pid);
     enforce.setIsMultipleAggregation(isMultipleAggregation);
     enforce.setAlgorithm(algorithm);
     if (sortSpecArrays != null) {
@@ -164,7 +164,7 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
   public void enforceSortAlgorithm(int pid, SortEnforce.SortAlgorithm algorithm) {
     EnforceProperty.Builder builder = newProperty();
     SortEnforce.Builder enforce = SortEnforce.newBuilder();
-    enforce.setPid(pid);
+    enforce.setNodeId(pid);
     enforce.setAlgorithm(algorithm);
 
     builder.setType(EnforceType.SORT);
@@ -203,7 +203,7 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
   public void enforceColumnPartitionAlgorithm(int pid, ColumnPartitionAlgorithm algorithm) {
     EnforceProperty.Builder builder = newProperty();
     ColumnPartitionEnforcer.Builder enforce = ColumnPartitionEnforcer.newBuilder();
-    enforce.setPid(pid);
+    enforce.setNodeId(pid);
     enforce.setAlgorithm(algorithm);
 
     builder.setType(EnforceType.COLUMN_PARTITION);

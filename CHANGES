@@ -27,6 +27,14 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1228: TajoClient should communicate with only TajoMaster without 
+    TajoWorker. (hyunsik)
+
+    TAJO-1176: Implements queryable virtual tables for catalog information
+    (jihun)
+
+    TAJO-269: Protocol buffer De/Serialization for LogicalNode. (hyunsik)
+
     TAJO-1266: Too many logs when writing a parquet relation. 
     (DaeMyung Kang via jihoon)
 
@@ -128,6 +136,14 @@ Release 0.9.1 - unreleased
 
 
   BUG FIXES
+
+    TAJO-1180: digitValue should throw Exception when char is not in 
+    valid range. (DaeMyung Kang via hyunsik)
+
+    TAJO-1276: Link to tsql guide 404s in tajo cli. (Jakob Homan via jihoon)
+
+    TAJO-1275: Optimizer pushs down non-equi filter as theta join qualifier.
+    (Keuntae Park)
 
     TAJO-1249: Tajo should check if a file format given in DDL is supported.
     (DaeMyung Kang via hyunsik)
@@ -232,6 +248,14 @@ Release 0.9.1 - unreleased
 
 
   TASKS
+
+    TAJO-1274: Merge separate pages of getting started document into a single 
+    page. (hyunsik)
+
+    TAJO-967: tajoCli doesn't remeber the last '\q' command.
+    (Jaewoong Jung via jihoon)
+
+    TAJO-1272: Change snapshot version from 0.9.1 to 0.10. (hyunsik)
 
     TAJO-1267: Remove LazyTaskScheduler. (DaeMyung Kang via jihoon)
 

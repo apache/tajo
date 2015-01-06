@@ -37,6 +37,7 @@ import org.apache.tajo.algebra.WindowSpec;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
@@ -144,6 +145,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     // Add Root Node
     LogicalRootNode root = plan.createNode(LogicalRootNode.class);
+
     root.setInSchema(topMostNode.getOutSchema());
     root.setChild(topMostNode);
     root.setOutSchema(topMostNode.getOutSchema());
@@ -257,9 +259,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     // Set ProjectionNode
     projectionNode = context.queryBlock.getNodeFromExpr(projection);
-    projectionNode.setInSchema(child.getOutSchema());
-    projectionNode.setTargets(targets);
+    projectionNode.init(projection.isDistinct(), targets);
     projectionNode.setChild(child);
+    projectionNode.setInSchema(child.getOutSchema());
 
     if (projection.isDistinct() && block.hasNode(NodeType.GROUP_BY)) {
       throw new VerifyException("Cannot support grouping and distinct at the same time yet");
@@ -521,7 +523,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     } else if (projectable instanceof RelationNode) {
       RelationNode relationNode = (RelationNode) projectable;
-      verifyIfTargetsCanBeEvaluated(relationNode.getTableSchema(), (Projectable) relationNode);
+      verifyIfTargetsCanBeEvaluated(relationNode.getLogicalSchema(), (Projectable) relationNode);
 
     } else {
       verifyIfTargetsCanBeEvaluated(projectable.getInSchema(), projectable);
@@ -1300,7 +1302,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   private static LinkedHashSet<Target> createFieldTargetsFromRelation(QueryBlock block, RelationNode relationNode,
                                                       Set<String> newlyEvaluatedRefNames) {
     LinkedHashSet<Target> targets = Sets.newLinkedHashSet();
-    for (Column column : relationNode.getTableSchema().getColumns()) {
+    for (Column column : relationNode.getLogicalSchema().getColumns()) {
       String aliasName = block.namedExprsMgr.checkAndGetIfAliasedColumn(column.getQualifiedName());
       if (aliasName != null) {
         targets.add(new Target(new FieldEval(column), aliasName));
@@ -1313,7 +1315,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   private void updatePhysicalInfo(TableDesc desc) {
-    if (desc.getPath() != null) {
+    if (desc.getPath() != null && desc.getMeta().getStoreType() != StoreType.SYSTEM) {
       try {
         Path path = new Path(desc.getPath());
         FileSystem fs = path.getFileSystem(new Configuration());
@@ -1569,7 +1571,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     if (child instanceof Projectable) {
-      Projectable projectionNode = (Projectable) insertNode.getChild();
+      Projectable projectionNode = (Projectable)insertNode.getChild();
 
       // Modifying projected columns by adding NULL constants
       // It is because that table appender does not support target columns to be written.
@@ -2017,7 +2019,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       return false;
     }
 
-    if (columnRefs.size() > 0 && !node.getTableSchema().containsAll(columnRefs)) {
+    if (columnRefs.size() > 0 && !node.getLogicalSchema().containsAll(columnRefs)) {
       return false;
     }
 

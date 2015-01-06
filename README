@@ -27,7 +27,7 @@ Documents
 * Configuration Guide (http://tajo.apache.org/docs/current/configuration.html)
 * Backup and Restore Guide (http://tajo.apache.org/docs/current/backup_and_restore.html)
 * Functions (http://tajo.apache.org/docs/current/functions.html)
-* Tajo Interactive Shell (http://tajo.apache.org/docs/current/cli.html)
+* Tajo Interactive Shell (http://tajo.apache.org/docs/current/tsql.html)
 
 Requirements
 ============

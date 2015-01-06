@@ -128,7 +128,7 @@ public abstract class NameResolver {
             CatalogUtil.buildFQName(relationOp.getCanonicalName(), CatalogUtil.extractSimpleName(canonicalName));
       }
 
-      Schema schema = relationOp.getTableSchema();
+      Schema schema = relationOp.getLogicalSchema();
       Column column = schema.getColumn(canonicalName);
 
       return column;
@@ -173,7 +173,7 @@ public abstract class NameResolver {
     List<Column> candidates = TUtil.newList();
 
     for (RelationNode rel : block.getRelations()) {
-      Column found = rel.getTableSchema().getColumn(columnRef.getName());
+      Column found = rel.getLogicalSchema().getColumn(columnRef.getName());
       if (found != null) {
         candidates.add(found);
       }
@@ -201,7 +201,7 @@ public abstract class NameResolver {
     for (LogicalPlan.QueryBlock eachBlock : plan.getQueryBlocks()) {
 
       for (RelationNode rel : eachBlock.getRelations()) {
-        Column found = rel.getTableSchema().getColumn(columnRef.getName());
+        Column found = rel.getLogicalSchema().getColumn(columnRef.getName());
         if (found != null) {
           candidates.add(found);
         }

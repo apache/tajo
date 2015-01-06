@@ -168,7 +168,7 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
       boolean eq = tableName.equals(other.tableName);
       eq = eq && schema.equals(other.schema);
       eq = eq && meta.equals(other.meta);
-      eq = eq && uri.equals(other.uri);
+      eq = eq && TUtil.checkEquals(uri, other.uri);
       eq = eq && TUtil.checkEquals(partitionMethodDesc, other.partitionMethodDesc);
       eq = eq && TUtil.checkEquals(external, other.external);
       return eq && TUtil.checkEquals(stats, other.stats);

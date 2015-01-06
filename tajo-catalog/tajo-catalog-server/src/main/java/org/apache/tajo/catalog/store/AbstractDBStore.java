@@ -38,12 +38,14 @@ import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
@@ -403,6 +405,37 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     return tablespaceNames;
   }
+  
+  @Override
+  public List<TablespaceProto> getTablespaces() throws CatalogException {
+    Connection conn = null;
+    Statement stmt = null;
+    ResultSet resultSet = null;
+    List<TablespaceProto> tablespaces = TUtil.newList();
+
+    try {
+      String sql = "SELECT SPACE_ID, SPACE_NAME, SPACE_HANDLER, SPACE_URI FROM " + TB_SPACES ;
+      conn = getConnection();
+      stmt = conn.createStatement();
+      resultSet = stmt.executeQuery(sql);
+
+      while (resultSet.next()) {
+        TablespaceProto.Builder builder = TablespaceProto.newBuilder();
+        builder.setId(resultSet.getInt("SPACE_ID"));
+        builder.setSpaceName(resultSet.getString("SPACE_NAME"));
+        builder.setHandler(resultSet.getString("SPACE_HANDLER"));
+        builder.setUri(resultSet.getString("SPACE_URI"));
+        
+        tablespaces.add(builder.build());
+      }
+      return tablespaces;
+
+    } catch (SQLException se) {
+      throw new CatalogException(se);
+    } finally {
+      CatalogUtil.closeQuietly(stmt, resultSet);
+    }
+  }
 
   @Override
   public TablespaceProto getTablespace(String spaceName) throws CatalogException {
@@ -592,6 +625,38 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
 
     return databaseNames;
+  }
+  
+  @Override
+  public List<DatabaseProto> getAllDatabases() throws CatalogException {
+    Connection conn = null;
+    Statement stmt = null;
+    ResultSet resultSet = null;
+
+    List<DatabaseProto> databases = new ArrayList<DatabaseProto>();
+
+    try {
+      String sql = "SELECT DB_ID, DB_NAME, SPACE_ID FROM " + TB_DATABASES;
+
+      conn = getConnection();
+      stmt = conn.createStatement();
+      resultSet = stmt.executeQuery(sql);
+      while (resultSet.next()) {
+        DatabaseProto.Builder builder = DatabaseProto.newBuilder();
+        
+        builder.setId(resultSet.getInt("DB_ID"));
+        builder.setName(resultSet.getString("DB_NAME"));
+        builder.setSpaceId(resultSet.getInt("SPACE_ID"));
+        
+        databases.add(builder.build());
+      }
+    } catch (SQLException se) {
+      throw new CatalogException(se);
+    } finally {
+      CatalogUtil.closeQuietly(stmt, resultSet);
+    }
+    
+    return databases;
   }
 
   private static class TableSpaceInternal {
@@ -1450,6 +1515,163 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
     return tables;
   }
+  
+  @Override
+  public List<TableDescriptorProto> getAllTables() throws CatalogException {
+    Connection conn = null;
+    Statement stmt = null;
+    ResultSet resultSet = null;
+
+    List<TableDescriptorProto> tables = new ArrayList<TableDescriptorProto>();
+
+    try {
+      String sql = "SELECT t.TID, t.DB_ID, t." + COL_TABLES_NAME + ", t.TABLE_TYPE, t.PATH, t.STORE_TYPE, " +
+          " s.SPACE_URI FROM " + TB_TABLES + " t, " + TB_DATABASES + " d, " + TB_SPACES +
+          " s WHERE t.DB_ID = d.DB_ID AND d.SPACE_ID = s.SPACE_ID";
+
+      conn = getConnection();
+      stmt = conn.createStatement();
+      resultSet = stmt.executeQuery(sql);
+      while (resultSet.next()) {
+        TableDescriptorProto.Builder builder = TableDescriptorProto.newBuilder();
+        
+        builder.setTid(resultSet.getInt("TID"));
+        builder.setDbId(resultSet.getInt("DB_ID"));
+        String tableName = resultSet.getString(COL_TABLES_NAME);
+        builder.setName(tableName);
+        String tableTypeString = resultSet.getString("TABLE_TYPE");
+        TableType tableType = TableType.valueOf(tableTypeString);
+        builder.setTableType(tableTypeString);
+
+        if (tableType == TableType.BASE_TABLE) {
+          builder.setPath(resultSet.getString("SPACE_URI") + "/" + tableName);
+        } else {
+          builder.setPath(resultSet.getString("PATH"));
+        }
+        String storeType = resultSet.getString("STORE_TYPE");
+        if (storeType != null) {
+          storeType = storeType.trim();
+          builder.setStoreType(storeType);
+        }
+        
+        tables.add(builder.build());
+      }
+    } catch (SQLException se) {
+      throw new CatalogException(se);
+    } finally {
+      CatalogUtil.closeQuietly(stmt, resultSet);
+    }
+    
+    return tables;
+  }
+  
+  @Override
+  public List<TableOptionProto> getAllTableOptions() throws CatalogException {
+    Connection conn = null;
+    Statement stmt = null;
+    ResultSet resultSet = null;
+
+    List<TableOptionProto> options = new ArrayList<TableOptionProto>();
+
+    try {
+      String sql = "SELECT tid, key_, value_ FROM " + TB_OPTIONS;
+
+      conn = getConnection();
+      stmt = conn.createStatement();
+      resultSet = stmt.executeQuery(sql);
+      while (resultSet.next()) {
+        TableOptionProto.Builder builder = TableOptionProto.newBuilder();
+        
+        builder.setTid(resultSet.getInt("TID"));
+        
+        KeyValueProto.Builder keyValueBuilder = KeyValueProto.newBuilder();
+        keyValueBuilder.setKey(resultSet.getString("KEY_"));
+        keyValueBuilder.setValue(resultSet.getString("VALUE_"));
+        builder.setKeyval(keyValueBuilder.build());
+        
+        options.add(builder.build());
+      }
+    } catch (SQLException se) {
+      throw new CatalogException(se);
+    } finally {
+      CatalogUtil.closeQuietly(stmt, resultSet);
+    }
+    
+    return options;
+  }
+  
+  @Override
+  public List<TableStatsProto> getAllTableStats() throws CatalogException {
+    Connection conn = null;
+    Statement stmt = null;
+    ResultSet resultSet = null;
+
+    List<TableStatsProto> stats = new ArrayList<TableStatsProto>();
+
+    try {
+      String sql = "SELECT tid, num_rows, num_bytes FROM " + TB_STATISTICS;
+
+      conn = getConnection();
+      stmt = conn.createStatement();
+      resultSet = stmt.executeQuery(sql);
+      while (resultSet.next()) {
+        TableStatsProto.Builder builder = TableStatsProto.newBuilder();
+        
+        builder.setTid(resultSet.getInt("TID"));
+        builder.setNumRows(resultSet.getLong("NUM_ROWS"));
+        builder.setNumBytes(resultSet.getLong("NUM_BYTES"));
+        
+        stats.add(builder.build());
+      }
+    } catch (SQLException se) {
+      throw new CatalogException(se);
+    } finally {
+      CatalogUtil.closeQuietly(stmt, resultSet);
+    }
+    
+    return stats;
+  }
+  
+  @Override
+  public List<ColumnProto> getAllColumns() throws CatalogException {
+    Connection conn = null;
+    Statement stmt = null;
+    ResultSet resultSet = null;
+
+    List<ColumnProto> columns = new ArrayList<ColumnProto>();
+
+    try {
+      String sql = "SELECT TID, COLUMN_NAME, ORDINAL_POSITION, DATA_TYPE, TYPE_LENGTH FROM " + TB_COLUMNS +
+          " ORDER BY TID ASC, ORDINAL_POSITION ASC";
+
+      conn = getConnection();
+      stmt = conn.createStatement();
+      resultSet = stmt.executeQuery(sql);
+      while (resultSet.next()) {
+        ColumnProto.Builder builder = ColumnProto.newBuilder();
+        
+        builder.setTid(resultSet.getInt("TID"));
+        builder.setName(resultSet.getString("COLUMN_NAME"));
+        
+        Type type = getDataType(resultSet.getString("DATA_TYPE").trim());
+        int typeLength = resultSet.getInt("TYPE_LENGTH");
+        
+        if (typeLength > 0) {
+          builder.setDataType(CatalogUtil.newDataTypeWithLen(type, typeLength));
+        } else {
+          builder.setDataType(CatalogUtil.newSimpleDataType(type));
+        }
+        
+        columns.add(builder.build());
+      }
+    } catch (SQLException se) {
+      throw new CatalogException(se);
+    } finally {
+      CatalogUtil.closeQuietly(stmt, resultSet);
+    }
+    
+    return columns;
+  }
 
   private static final String ADD_PARTITION_SQL =
       "INSERT INTO " + TB_PARTTIONS + " (TID, PARTITION_NAME, ORDINAL_POSITION, PATH) VALUES (?,?,?,?)";
@@ -1704,6 +1926,40 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     } finally {
       CatalogUtil.closeQuietly(pstmt);
     }
+  }
+  
+  @Override
+  public List<TablePartitionProto> getAllPartitions() throws CatalogException {
+    Connection conn = null;
+    Statement stmt = null;
+    ResultSet resultSet = null;
+
+    List<TablePartitionProto> partitions = new ArrayList<TablePartitionProto>();
+
+    try {
+      String sql = "SELECT PID, TID, PARTITION_NAME, ORDINAL_POSITION, PATH FROM " + TB_PARTTIONS;
+
+      conn = getConnection();
+      stmt = conn.createStatement();
+      resultSet = stmt.executeQuery(sql);
+      while (resultSet.next()) {
+        TablePartitionProto.Builder builder = TablePartitionProto.newBuilder();
+        
+        builder.setPid(resultSet.getInt("PID"));
+        builder.setTid(resultSet.getInt("TID"));
+        builder.setPartitionName(resultSet.getString("PARTITION_NAME"));
+        builder.setOrdinalPosition(resultSet.getInt("ORDINAL_POSITION"));
+        builder.setPath(resultSet.getString("PATH"));
+        
+        partitions.add(builder.build());
+      }
+    } catch (SQLException se) {
+      throw new CatalogException(se);
+    } finally {
+      CatalogUtil.closeQuietly(stmt, resultSet);
+    }
+    
+    return partitions;
   }
 
 
@@ -1983,6 +2239,45 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
 
     return protos.toArray(new IndexDescProto[protos.size()]);
+  }
+  
+  @Override
+  public List<IndexProto> getAllIndexes() throws CatalogException {
+    Connection conn = null;
+    Statement stmt = null;
+    ResultSet resultSet = null;
+
+    List<IndexProto> indexes = new ArrayList<IndexProto>();
+
+    try {
+      String sql = "SELECT " + COL_DATABASES_PK + ", " + COL_TABLES_PK + ", INDEX_NAME, " +
+        "COLUMN_NAME, DATA_TYPE, INDEX_TYPE, IS_UNIQUE, IS_CLUSTERED, IS_ASCENDING FROM " + TB_INDEXES;
+
+      conn = getConnection();
+      stmt = conn.createStatement();
+      resultSet = stmt.executeQuery(sql);
+      while (resultSet.next()) {
+        IndexProto.Builder builder = IndexProto.newBuilder();
+        
+        builder.setDbId(resultSet.getInt(COL_DATABASES_PK));
+        builder.setTId(resultSet.getInt(COL_TABLES_PK));
+        builder.setIndexName(resultSet.getString("INDEX_NAME"));
+        builder.setColumnName(resultSet.getString("COLUMN_NAME"));
+        builder.setDataType(resultSet.getString("DATA_TYPE"));
+        builder.setIndexType(resultSet.getString("INDEX_TYPE"));
+        builder.setIsUnique(resultSet.getBoolean("IS_UNIQUE"));
+        builder.setIsClustered(resultSet.getBoolean("IS_CLUSTERED"));
+        builder.setIsAscending(resultSet.getBoolean("IS_ASCENDING"));
+        
+        indexes.add(builder.build());
+      }
+    } catch (SQLException se) {
+      throw new CatalogException(se);
+    } finally {
+      CatalogUtil.closeQuietly(stmt, resultSet);
+    }
+    
+    return indexes;
   }
 
   private void resultToIndexDescProtoBuilder(IndexDescProto.Builder builder,

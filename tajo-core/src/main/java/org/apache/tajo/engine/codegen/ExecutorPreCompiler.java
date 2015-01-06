@@ -149,9 +149,9 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
     return node;
   }
 
-  public LogicalNode visitDistinct(CompilationContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                   DistinctGroupbyNode node, Stack<LogicalNode> stack) throws PlanningException {
-    super.visitDistinct(context, plan, block, node, stack);
+  public LogicalNode visitDistinctGroupby(CompilationContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                          DistinctGroupbyNode node, Stack<LogicalNode> stack) throws PlanningException {
+    super.visitDistinctGroupby(context, plan, block, node, stack);
 
     compileProjectableNode(context, node.getInSchema(), node);
     return node;
@@ -190,7 +190,7 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
 
     if (node.hasTargets()) {
       for (Target target : node.getTargets()) {
-        compileIfAbsent(context, node.getTableSchema(), target.getEvalTree());
+        compileIfAbsent(context, node.getLogicalSchema(), target.getEvalTree());
       }
     }
 
