@@ -255,7 +255,7 @@ public class QueryInProgress extends CompositeService {
   }
 
   public boolean isStarted() {
-    return this.querySubmitted.get();
+    return !stopped.get() && this.querySubmitted.get();
   }
 
   private void heartbeat(QueryInfo queryInfo) {
