@@ -27,6 +27,9 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1228: TajoClient should communicate with only TajoMaster without 
+    TajoWorker. (hyunsik)
+
     TAJO-1176: Implements queryable virtual tables for catalog information
     (jihun)
 
@@ -133,6 +136,9 @@ Release 0.9.1 - unreleased
 
 
   BUG FIXES
+
+    TAJO-1180: digitValue should throw Exception when char is not in 
+    valid range. (DaeMyung Kang via hyunsik)
 
     TAJO-1276: Link to tsql guide 404s in tajo cli. (Jakob Homan via jihoon)
 

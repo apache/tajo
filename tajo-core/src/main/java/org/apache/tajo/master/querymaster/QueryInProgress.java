@@ -24,13 +24,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.event.EventHandler;
-import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
-import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.ContainerProtocol;
-import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -39,6 +36,7 @@ import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.rm.WorkerResourceManager;
 import org.apache.tajo.master.session.Session;
+import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcConnectionPool;
@@ -57,8 +55,6 @@ public class QueryInProgress extends CompositeService {
 
   private Session session;
 
-  private QueryContext queryContext;
-
   private TajoAsyncDispatcher dispatcher;
 
   private LogicalRootNode plan;
@@ -75,8 +71,6 @@ public class QueryInProgress extends CompositeService {
 
   private QueryMasterProtocolService queryMasterRpcClient;
 
-  private ContainerProtocol.TajoContainerIdProto qmContainerId;
-
   public QueryInProgress(
       TajoMaster.MasterContext masterContext,
       Session session,
@@ -85,11 +79,10 @@ public class QueryInProgress extends CompositeService {
     super(QueryInProgress.class.getName());
     this.masterContext = masterContext;
     this.session = session;
-    this.queryContext = queryContext;
     this.queryId = queryId;
     this.plan = plan;
 
-    queryInfo = new QueryInfo(queryId, sql, jsonExpr);
+    queryInfo = new QueryInfo(queryId, queryContext, sql, jsonExpr);
     queryInfo.setStartTime(System.currentTimeMillis());
   }
 
@@ -145,7 +138,7 @@ public class QueryInProgress extends CompositeService {
     }
 
     if(queryMasterRpc != null) {
-      RpcConnectionPool.getPool((TajoConf)getConfig()).closeConnection(queryMasterRpc);
+      RpcConnectionPool.getPool(masterContext.getConf()).closeConnection(queryMasterRpc);
     }
 
     masterContext.getHistoryWriter().appendHistory(queryInfo);
@@ -212,7 +205,7 @@ public class QueryInProgress extends CompositeService {
     InetSocketAddress addr = NetUtils.createSocketAddr(queryInfo.getQueryMasterHost(), queryInfo.getQueryMasterPort());
     LOG.info("Connect to QueryMaster:" + addr);
     queryMasterRpc =
-        RpcConnectionPool.getPool((TajoConf) getConfig()).getConnection(addr, QueryMasterProtocol.class, true);
+        RpcConnectionPool.getPool(masterContext.getConf()).getConnection(addr, QueryMasterProtocol.class, true);
     queryMasterRpcClient = queryMasterRpc.getStub();
   }
 
@@ -235,8 +228,8 @@ public class QueryInProgress extends CompositeService {
 
       QueryExecutionRequestProto.Builder builder = TajoWorkerProtocol.QueryExecutionRequestProto.newBuilder();
       builder.setQueryId(queryId.getProto())
+          .setQueryContext(queryInfo.getQueryContext().getProto())
           .setSession(session.getProto())
-          .setQueryContext(queryContext.getProto())
           .setExprInJson(PrimitiveProtos.StringProto.newBuilder().setValue(queryInfo.getJsonExpr()))
           .setLogicalPlanJson(PrimitiveProtos.StringProto.newBuilder().setValue(plan.toJson()).build());
 
@@ -267,28 +260,37 @@ public class QueryInProgress extends CompositeService {
 
   private void heartbeat(QueryInfo queryInfo) {
     LOG.info("Received QueryMaster heartbeat:" + queryInfo);
-    this.queryInfo.setQueryState(queryInfo.getQueryState());
-    this.queryInfo.setProgress(queryInfo.getProgress());
-    this.queryInfo.setFinishTime(queryInfo.getFinishTime());
 
-    if(queryInfo.getLastMessage() != null && !queryInfo.getLastMessage().isEmpty()) {
-      this.queryInfo.setLastMessage(queryInfo.getLastMessage());
-      LOG.info(queryId + queryInfo.getLastMessage());
-    }
-    if(this.queryInfo.getQueryState() == TajoProtos.QueryState.QUERY_FAILED) {
-      //TODO needed QueryMaster's detail status(failed before or after launching worker)
-      //queryMasterStopped.set(true);
-      LOG.warn(queryId + " failed, " + queryInfo.getLastMessage());
-    }
+    // to avoid partial update by different heartbeats
+    synchronized (this.queryInfo) {
 
-    if(!querySubmitted.get()) {
-      getEventHandler().handle(
-          new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_START, this.queryInfo));
-    }
+      // terminal state will let client to retrieve a query result
+      // So, we must set the query result before changing query state
+      if (isFinishState(queryInfo.getQueryState())) {
+        if (queryInfo.hasResultdesc()) {
+          this.queryInfo.setResultDesc(queryInfo.getResultDesc());
+        }
+      }
 
-    if(isFinishState(this.queryInfo.getQueryState())) {
-      getEventHandler().handle(
-          new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_FINISH, this.queryInfo));
+      this.queryInfo.setQueryState(queryInfo.getQueryState());
+      this.queryInfo.setProgress(queryInfo.getProgress());
+      this.queryInfo.setFinishTime(queryInfo.getFinishTime());
+
+      // Update diagnosis message
+      if (queryInfo.getLastMessage() != null && !queryInfo.getLastMessage().isEmpty()) {
+        this.queryInfo.setLastMessage(queryInfo.getLastMessage());
+        LOG.info(queryId + queryInfo.getLastMessage());
+      }
+
+      // if any error occurs, print outs the error message
+      if (this.queryInfo.getQueryState() == TajoProtos.QueryState.QUERY_FAILED) {
+        LOG.warn(queryId + " failed, " + queryInfo.getLastMessage());
+      }
+
+
+      if (isFinishState(this.queryInfo.getQueryState())) {
+        stop();
+      }
     }
   }
 

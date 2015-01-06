@@ -87,7 +87,7 @@ message GetQueryResultRequest {
 message GetQueryResultResponse {
   optional TableDescProto tableDesc = 1;
   optional string errorMessage = 2;
-  required string tajoUserName = 3;
+  optional string tajoUserName = 3;
 }
 
 message QueryIdRequest {
@@ -242,15 +242,17 @@ message FunctionResponse {
 message QueryInfoProto {
   required string queryId = 1;
   optional string sql = 2;
-  optional QueryState queryState = 3;
-  optional float progress = 4;
-  optional int64 startTime = 5;
-  optional int64 finishTime = 6;
-  optional string lastMessage = 7;
-  optional string hostNameOfQM = 8;
-  optional int32 queryMasterPort = 9;
-  optional int32 queryMasterClientPort = 10;
-  optional int32 queryMasterInfoPort = 11;
+  optional KeyValueSetProto contextVars= 3;
+  optional QueryState queryState = 4;
+  optional float progress = 5;
+  optional int64 startTime = 6;
+  optional int64 finishTime = 7;
+  optional string lastMessage = 8;
+  optional string hostNameOfQM = 9;
+  optional int32 queryMasterPort = 10;
+  optional int32 queryMasterClientPort = 11;
+  optional int32 queryMasterInfoPort = 12;
+  optional TableDescProto resultDesc = 13;
 }
 
 message StageHistoryProto {
