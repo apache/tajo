@@ -114,8 +114,10 @@ public class TextUtils {
         return c - '0';
       } else if ('a' <= c && c <= 'z') {
         return c - 'a' + 10;
-      } else {
+      } else if ('A' <= c && c <= 'Z') {
         return c - 'A' + 10;
+      } else {
+        throw new IllegalArgumentException("Expected \"0-9\" or \"a-z, A-Z\".");
       }
     }
     
