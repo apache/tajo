@@ -192,9 +192,6 @@ public class QueryInProgress extends CompositeService {
             new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_START, queryInProgress.getQueryInfo()));
       } else if(queryJobEvent.getType() == QueryJobEvent.Type.QUERY_JOB_START) {
         submmitQueryToMaster();
-      } else if(queryJobEvent.getType() == QueryJobEvent.Type.QUERY_JOB_FINISH) {
-        masterContext.getQueryJobManager().getEventHandler().handle(
-            new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_STOP, queryJobEvent.getQueryInfo()));
       } else if (queryJobEvent.getType() == QueryJobEvent.Type.QUERY_JOB_KILL) {
         kill();
       }

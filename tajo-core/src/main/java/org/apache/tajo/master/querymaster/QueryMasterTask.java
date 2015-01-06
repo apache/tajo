@@ -225,9 +225,6 @@ public class QueryMasterTask extends CompositeService {
         tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
             TajoMasterProtocol.class, true);
       }
-
-      TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
-      masterClientService.stopQueryMaster(null, queryId.getProto(), future);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
     } finally {
