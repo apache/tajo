@@ -109,7 +109,7 @@
       <email>hjkim@apache.org</email>
       <organization>Gruter</organization>
       <roles>
-        <role>Committer</role>
+        <role>PMC</role>
       </roles>
       <timezone>+9</timezone>
     </developer>      
@@ -160,6 +160,16 @@
       <organization>Korea University</organization>
       <roles>
         <role>PMC</role>
+      </roles>
+      <timezone>+9</timezone>
+    </developer>
+    <developer>
+      <id>jihun</id>
+      <name>Jihun Kang</name>
+      <email>jihun@apache.org</email>
+      <organization></organization>
+      <roles>
+        <role>Committer</role>
       </roles>
       <timezone>+9</timezone>
     </developer>
@@ -246,11 +256,6 @@
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>
-      <name>Hyoung Jun Kim</name>
-      <organization>Gruter</organization>
-      <roles><role>Contributor</role></roles>
-    </contributor>
-    <contributor>
       <name>Ilhyun Suh</name>
       <organization>Korea University</organization>
       <roles><role>Contributor</role></roles>
@@ -263,11 +268,6 @@
     <contributor>
       <name>Jinhang Choi</name>
       <organization>Korea University</organization>
-      <roles><role>Contributor</role></roles>
-    </contributor>
-    <contributor>
-      <name>Jihun Kang</name>
-      <organization />
       <roles><role>Contributor</role></roles>
     </contributor>
     <contributor>

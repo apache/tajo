@@ -95,7 +95,7 @@ public interface CatalogService {
   /**
    *
    * @param databaseName Database name to be dropped
-   * @return True if database is dropped sucessfully. Otherwise, it will return FALSE.
+   * @return True if database is dropped successfully. Otherwise, it will return FALSE.
    */
   Boolean dropDatabase(String databaseName);
 

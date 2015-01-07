@@ -205,7 +205,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
     for (int i = 0; i < expr.getNamedExprs().length; i++) {
       NamedExpr namedExpr = projectTargetExprs[i];
 
-      // 1) Normalize all field names occured in each expr into full qualified names
+      // 1) Normalize all field names occurred in each expr into full qualified names
       NameRefInSelectListNormalizer.normalize(ctx, namedExpr.getExpr());
 
       // 2) Register explicit column aliases to block
