@@ -20,6 +20,7 @@ package org.apache.tajo.master;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.QueryId;
@@ -31,19 +32,18 @@ import org.apache.tajo.master.querymaster.Repartitioner;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.FetchImpl;
-import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.junit.Test;
+
+import io.netty.handler.codec.http.QueryStringDecoder;
 
 import java.net.URI;
 import java.util.*;
 
-import static junit.framework.Assert.assertEquals;
 import static org.apache.tajo.master.querymaster.Repartitioner.FetchGroupMeta;
 import static org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.HASH_SHUFFLE;
 import static org.apache.tajo.plan.serder.PlanProto.ShuffleType.SCATTERED_HASH_SHUFFLE;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestRepartitioner {
   @Test
@@ -89,7 +89,7 @@ public class TestRepartitioner {
 
       URI uri = uris.get(0);
       final Map<String, List<String>> params =
-          new QueryStringDecoder(uri).getParameters();
+          new QueryStringDecoder(uri).parameters();
 
       assertEquals(eachEntry.getKey().toString(), params.get("p").get(0));
       assertEquals("h", params.get("type").get(0));

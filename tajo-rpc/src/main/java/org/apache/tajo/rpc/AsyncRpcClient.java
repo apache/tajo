@@ -95,7 +95,7 @@ public class AsyncRpcClient extends NettyClientBase {
     try {
       return (T) stubMethod.invoke(null, rpcChannel);
     } catch (Exception e) {
-      throw new RuntimeException(e.getMessage(), e);
+      throw new RemoteException(e.getMessage(), e);
     }
   }
 

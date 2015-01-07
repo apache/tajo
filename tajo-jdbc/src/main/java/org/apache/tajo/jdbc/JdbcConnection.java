@@ -19,6 +19,7 @@
 package org.apache.tajo.jdbc;
 
 import com.google.protobuf.ServiceException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.TajoConstants;
@@ -27,7 +28,8 @@ import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
-import org.jboss.netty.handler.codec.http.QueryStringDecoder;
+
+import io.netty.handler.codec.http.QueryStringDecoder;
 
 import java.io.IOException;
 import java.net.URI;
@@ -93,7 +95,7 @@ public class JdbcConnection implements Connection {
         databaseName = this.uri.getPath().split("/")[1];
       }
 
-      params = new QueryStringDecoder(rawURI).getParameters();
+      params = new QueryStringDecoder(rawURI).parameters();
     } catch (SQLException se) {
       throw se;
     } catch (Throwable t) { // for unexpected exceptions like ArrayIndexOutOfBoundsException.

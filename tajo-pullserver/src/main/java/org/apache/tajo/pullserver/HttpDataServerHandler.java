@@ -122,7 +122,7 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
       Channel ch = ctx.channel();
       if (file == null) {
         HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
-        ch.write(response);
+        ch.writeAndFlush(response);
         if (!HttpHeaders.isKeepAlive(request)) {
           ch.close();
         }
@@ -135,7 +135,7 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
         HttpHeaders.setContentLength(response, totalSize);
 
         // Write the initial line and the header.
-        ch.write(response);
+        ch.writeAndFlush(response);
 
         ChannelFuture writeFuture = null;
 
@@ -169,16 +169,18 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
     ChannelFuture writeFuture;
     if (ch.pipeline().get(SslHandler.class) != null) {
       // Cannot use zero-copy with HTTPS.
-      writeFuture = ch.write(new ChunkedFile(raf, file.startOffset(),
+      writeFuture = ch.writeAndFlush(new ChunkedFile(raf, file.startOffset(),
           file.length(), 8192));
     } else {
       // No encryption - use zero-copy.
       final FileRegion region = new DefaultFileRegion(raf.getChannel(),
           file.startOffset(), file.length());
-      writeFuture = ch.write(region);
+      writeFuture = ch.writeAndFlush(region);
       writeFuture.addListener(new ChannelFutureListener() {
         public void operationComplete(ChannelFuture future) {
-          region.release();
+          if (region.refCnt() > 0) {
+            region.release();
+          }
         }
       });
     }
@@ -195,7 +197,7 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
       return;
     }
 
-    cause.printStackTrace();
+    LOG.error(cause.getMessage(), cause);
     if (ch.isActive()) {
       sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR);
     }
@@ -234,7 +236,7 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
     response.headers().add(HttpHeaders.Names.CONTENT_TYPE, "text/plain; charset=UTF-8");
 
     // Close the connection as soon as the error message is sent.
-    ctx.channel().write(response).addListener(ChannelFutureListener.CLOSE);
+    ctx.channel().writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
   }
 
   private List<String> splitMaps(List<String> qids) {

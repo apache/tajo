@@ -23,14 +23,16 @@ package org.apache.tajo.worker;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.apache.tajo.TaskId;
 import org.apache.tajo.worker.dataserver.FileAccessForbiddenException;
 import org.apache.tajo.worker.dataserver.retriever.DataRetriever;
 import org.apache.tajo.worker.dataserver.retriever.FileChunk;
+
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.HttpRequest;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -65,9 +67,6 @@ public class InterDataRetriever implements DataRetriever {
     }
   }
 
-  /* (non-Javadoc)
-   * @see org.apache.tajo.worker.dataserver.retriever.DataRetriever#handle(org.jboss.netty.channel.ChannelHandlerContext, org.jboss.netty.handler.codec.http.HttpRequest)
-   */
   @Override
   public FileChunk [] handle(ChannelHandlerContext ctx, HttpRequest request)
       throws IOException {

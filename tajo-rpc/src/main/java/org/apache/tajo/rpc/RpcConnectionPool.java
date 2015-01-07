@@ -22,8 +22,6 @@ import com.google.common.base.Objects;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.conf.TajoConf;
-
 import io.netty.channel.ConnectTimeoutException;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroup;

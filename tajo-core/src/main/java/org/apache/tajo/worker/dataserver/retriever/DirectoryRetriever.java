@@ -18,10 +18,11 @@
 
 package org.apache.tajo.worker.dataserver.retriever;
 
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.HttpRequest;
 import org.apache.tajo.worker.dataserver.FileAccessForbiddenException;
 import org.apache.tajo.worker.dataserver.HttpDataServerHandler;
+
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.HttpRequest;
 
 import java.io.File;
 import java.io.FileNotFoundException;
