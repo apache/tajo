@@ -71,8 +71,6 @@ public class TestFifoScheduler {
     cluster.waitForQueryRunning(queryId);
     client.killQuery(queryId2);
     assertEquals(TajoProtos.QueryState.QUERY_KILLED, client.getQueryStatus(queryId2).getState());
-
-    client.killQuery(queryId); // cleanup
   }
 
   @Test
@@ -89,8 +87,6 @@ public class TestFifoScheduler {
     assertEquals(TajoProtos.QueryState.QUERY_SUCCEEDED, client.getQueryStatus(queryId2).getState());
     ResultSet resSet = TajoClientUtil.createResultSet(conf, client, res2);
     assertNotNull(resSet);
-
-    client.killQuery(queryId); //cleanup
   }
 
   @Test
@@ -113,9 +109,8 @@ public class TestFifoScheduler {
     assertEquals(TajoProtos.QueryState.QUERY_MASTER_INIT, client.getQueryStatus(queryId3).getState());
     assertEquals(TajoProtos.QueryState.QUERY_MASTER_INIT, client.getQueryStatus(queryId4).getState());
 
-    client.killQuery(queryId2);
-    client.killQuery(queryId3);
     client.killQuery(queryId4);
-    client.killQuery(queryId);
+    client.killQuery(queryId3);
+    client.killQuery(queryId2);
   }
 }
