@@ -53,7 +53,7 @@ The JDBC driver class name is ``org.apache.tajo.jdbc.TajoDriver``.
 You can get the driver ``Class.forName("org.apache.tajo.jdbc.TajoDriver")``.
 The connection url should be ``jdbc:tajo://<TajoMaster hostname>:<TajoMaster client rpc port>/<database name>``.
 The default TajoMaster client rpc port is ``26002``.
-If you want to change the listening port, please refer :doc:`/configuration/configuration_defaults`.
+If you want to change the listening port, please refer :doc:`/configuration/cluster_setup`.
 
 .. note::
   
