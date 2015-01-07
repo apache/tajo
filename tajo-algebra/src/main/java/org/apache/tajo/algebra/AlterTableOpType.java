@@ -18,5 +18,5 @@
 package org.apache.tajo.algebra;
 
 public enum AlterTableOpType {
-  RENAME_TABLE, RENAME_COLUMN, ADD_COLUMN
+  RENAME_TABLE, RENAME_COLUMN, ADD_COLUMN, ADD_PARTITION, DROP_PARTITION
 }

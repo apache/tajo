@@ -20,10 +20,7 @@ package org.apache.tajo.engine.parser;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
-import org.apache.tajo.algebra.CreateTable;
-import org.apache.tajo.algebra.Expr;
-import org.apache.tajo.algebra.LiteralValue;
-import org.apache.tajo.algebra.OpType;
+import org.apache.tajo.algebra.*;
 import org.apache.tajo.engine.parser.SQLParser.SqlContext;
 import org.apache.tajo.util.FileUtil;
 import org.junit.Test;
@@ -364,6 +361,59 @@ public class TestSQLAnalyzer {
     assertEquals("col3", columnPartition.getColumns()[0].getColumnName());
     assertEquals("col4", columnPartition.getColumns()[1].getColumnName());
     assertEquals("col5", columnPartition.getColumns()[2].getColumnName());
+  }
+
+  @Test
+  public void testAlterTableAddPartition1() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/alter_table_add_partition_1.sql"));
+    Expr expr = parseQuery(sql);
+    assertEquals(OpType.AlterTable, expr.getType());
+    AlterTable alterTable = (AlterTable)expr;
+    assertEquals(alterTable.getAlterTableOpType(), AlterTableOpType.ADD_PARTITION);
+    assertEquals(2, alterTable.getColumns().length);
+    assertEquals(2, alterTable.getValues().length);
+    assertEquals("col1", alterTable.getColumns()[0].getName());
+    assertEquals("col2", alterTable.getColumns()[1].getName());
+    LiteralValue value1 = (LiteralValue)alterTable.getValues()[0];
+    assertEquals("1", value1.getValue());
+    LiteralValue value2 = (LiteralValue)alterTable.getValues()[1];
+    assertEquals("2", value2.getValue());
+  }
+
+  @Test
+  public void testAlterTableAddPartition2() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/alter_table_add_partition_2.sql"));
+    Expr expr = parseQuery(sql);
+    assertEquals(OpType.AlterTable, expr.getType());
+    AlterTable alterTable = (AlterTable)expr;
+    assertEquals(alterTable.getAlterTableOpType(), AlterTableOpType.ADD_PARTITION);
+    assertEquals(2, alterTable.getColumns().length);
+    assertEquals(2, alterTable.getValues().length);
+    assertEquals("col1", alterTable.getColumns()[0].getName());
+    assertEquals("col2", alterTable.getColumns()[1].getName());
+    LiteralValue value1 = (LiteralValue)alterTable.getValues()[0];
+    assertEquals("1", value1.getValue());
+    LiteralValue value2 = (LiteralValue)alterTable.getValues()[1];
+    assertEquals("2", value2.getValue());
+    assertEquals(alterTable.getLocation(), "hdfs://xxx.com/warehouse/table1/col1=1/col2=2");
+  }
+
+
+  @Test
+  public void testAlterTableDropPartition1() throws IOException {
+    String sql = FileUtil.readTextFile(new File("src/test/resources/queries/default/alter_table_drop_partition_1.sql"));
+    Expr expr = parseQuery(sql);
+    assertEquals(OpType.AlterTable, expr.getType());
+    AlterTable alterTable = (AlterTable)expr;
+    assertEquals(alterTable.getAlterTableOpType(), AlterTableOpType.DROP_PARTITION);
+    assertEquals(2, alterTable.getColumns().length);
+    assertEquals(2, alterTable.getValues().length);
+    assertEquals("col1", alterTable.getColumns()[0].getName());
+    assertEquals("col2", alterTable.getColumns()[1].getName());
+    LiteralValue value1 = (LiteralValue)alterTable.getValues()[0];
+    assertEquals("1", value1.getValue());
+    LiteralValue value2 = (LiteralValue)alterTable.getValues()[1];
+    assertEquals("2", value2.getValue());
   }
 
   @Test
