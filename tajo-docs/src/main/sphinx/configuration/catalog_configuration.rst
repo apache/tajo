@@ -56,11 +56,13 @@ Since Derby is a file-based embedded database, it stores data into a specified d
 
   By default, *Catalog server* stores catalog data into ``/tmp/tajo-catalog-${username}`` directory. But, some operating systems may remove all contents in ``/tmp`` when booting up. In order to ensure persistent store of your catalog data, you need to set a proper location of derby directory.
 
-=========================
-MySQLStore Configuration
-=========================
+==================================================
+MySQL/MariaDB/PostgreSQL/Oracle Configuration
+==================================================
 
-In order to use MySQLStore, you need to create database and user on MySQL for Tajo.
+Tajo supports several database systems, including MySQL, MariaDB, PostgreSQL, and Oracle, as its catalog store.
+In order to use these systems, you first need to create a database and a user for Tajo.
+The following example shows the creation of a user and a database with MySQL.
 
 .. code-block:: sh
   
@@ -74,48 +76,48 @@ In order to use MySQLStore, you need to create database and user on MySQL for Ta
   Query OK, 0 rows affected (0.01 sec)
 
 
-And then, you need to prepare MySQL JDBC driver on the machine which can be ran TajoMaster. If you do, you should set ``TAJO_CLASSPATH`` variable in ``conf/tajo-env.sh`` with it as follows:
+Second, you must install the proper JDBC driver on the TajoMaster node. And then, you need to set the ``TAJO_CLASSPATH`` variable in ``conf/tajo-env.sh`` as follows:
 
 .. code-block:: sh
 
-  export TAJO_CLASSPATH=/usr/local/mysql/lib/mysql-connector-java-x.x.x.jar
+  (MySQL)
+  $ export TAJO_CLASSPATH=/usr/local/mysql/lib/mysql-connector-java-x.x.x.jar
 
-Or you just can copy jdbc driver into ``$TAJO_HOME/lib``.
+  (MariaDB)
+  $ export TAJO_CLASSPATH=/usr/local/mariadb/lib/mariadb-java-client-x.x.x.jar
 
-Finally, you should add the following config to `conf/catalog-site.xml` :
+  (PostgreSQL)
+  $ export TAJO_CLASSPATH=/usr/share/java/postgresql-jdbc4.jar
+
+  (Oracle)
+  $ export TAJO_CLASSPATH=/path/to/oracle/driver/ojdbc7.jar
+
+Alternatively, you can copy the jdbc driver into ``$TAJO_HOME/lib``.
+
+Finally, you must add the following configurations to `conf/catalog-site.xml` :
 
 .. code-block:: xml
 
   <property>
-    <name>tajo.catalog.store.class</name>
-    <value>org.apache.tajo.catalog.store.MySQLStore</value>
-  </property>
-  <property>
     <name>tajo.catalog.jdbc.connection.id</name>
-    <value><mysql user name></value>
+    <value><user name></value>
   </property>
   <property>
     <name>tajo.catalog.jdbc.connection.password</name>
-    <value><mysql user password></value>
+    <value><user password></value>
+  </property>
+
+  <!-- MySQL -->
+  <property>
+    <name>tajo.catalog.store.class</name>
+    <value>org.apache.tajo.catalog.store.MySQLStore</value>
   </property>
   <property>
     <name>tajo.catalog.jdbc.uri</name>
     <value>jdbc:mysql://<mysql host name>:<mysql port>/<database name for tajo>?createDatabaseIfNotExist=true</value>
   </property>
 
-
-===========================
-MariaDBStore Configuration
-===========================
-
-All configurations for using MariaDBStore is compatible with MySQLStore except following:
-
-.. code-block:: sh
-
-  export TAJO_CLASSPATH=/usr/local/mariadb/lib/mariadb-java-client-x.x.x.jar
-
-.. code-block:: xml
-
+  <!-- MariaDB -->
   <property>
     <name>tajo.catalog.store.class</name>
     <value>org.apache.tajo.catalog.store.MariaDBStore</value>
@@ -125,9 +127,28 @@ All configurations for using MariaDBStore is compatible with MySQLStore except f
     <value>jdbc:mariadb://<mariadb host name>:<mariadb port>/<database name for tajo>?createDatabaseIfNotExist=true</value>
   </property>
 
+  <!-- PostgreSQL -->
+  <property>
+    <name>tajo.catalog.store.class</name>
+    <value>org.apache.tajo.catalog.store.PostgreSQLStore</value>
+  </property>
+  <property>
+    <name>tajo.catalog.jdbc.uri</name>
+    <value>jdbc:postgresql://<postgresql host name>:<postgresql port>/<database name for tajo>?createDatabaseIfNotExist=true</value>
+  </property>
+
+  <!-- Oracle -->
+  <property>
+    <name>tajo.catalog.store.class</name>
+    <value>org.apache.tajo.catalog.store.OracleStore</value>
+  </property>
+  <property>
+    <name>tajo.catalog.jdbc.uri</name>
+    <value>jdbc:oracle:thin:@//<oracle host name>:<oracle port>/<ServiceName for tajo database></value>
+  </property>
 
 ==================================
-  HCatalogStore Configuration
+HCatalogStore Configuration
 ==================================
 
 Tajo support HCatalogStore to integrate with hive. If you want to use HCatalogStore, you just do as follows.

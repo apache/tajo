@@ -33,7 +33,7 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
  * It verifies one predicate or expression with the semantic and data type checks as follows:
  * <ul>
  *   <ul>Both expressions in a binary expression are compatible to each other</ul>
- *   <ul>All column references of one expression are avilable at this node</ul>
+ *   <ul>All column references of one expression are available at this node</ul>
  * </ul>
  */
 public class ExprsVerifier extends BasicEvalNodeVisitor<VerificationState, EvalNode> {

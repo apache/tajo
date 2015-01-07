@@ -27,6 +27,9 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1245: Add documentation about PostgreSQL and Oracle Catalog driver. 
+    (jihoon)
+
     TAJO-1228: TajoClient should communicate with only TajoMaster without 
     TajoWorker. (hyunsik)
 
@@ -136,6 +139,8 @@ Release 0.9.1 - unreleased
 
 
   BUG FIXES
+
+    TAJO-1270: Fix typos. (DaeMyung Kang via hyunsik)
 
     TAJO-1180: digitValue should throw Exception when char is not in 
     valid range. (DaeMyung Kang via hyunsik)
@@ -248,6 +253,9 @@ Release 0.9.1 - unreleased
 
 
   TASKS
+
+    TAJO-1280: Update the roles of Hyoungjun and Jihun in web site.
+    (hyunsik)
 
     TAJO-1274: Merge separate pages of getting started document into a single 
     page. (hyunsik)
@@ -1045,7 +1053,7 @@ Release 0.8.0
     TAJO-589: Add fine grained progress indicator for each task.
     (hyoungjunkim via hyunsik)
 
-    TAJO-614: Explaning a logical node should use ExplainLogicalPlanVisitor.
+    TAJO-614: Explaining a logical node should use ExplainLogicalPlanVisitor.
     (hyunsik)
 
     TAJO-610: Refactor Column class. (hyunsik)
@@ -1461,7 +1469,7 @@ Release 0.8.0
     TAJO-411: Fix Bug: createFromInt8's DATE type should be TIMESTAMP.
     (DaeMyung Kang via jihoon)
 
-    TAJO-390: Queries on history are expired ealier than a given expiry time.
+    TAJO-390: Queries on history are expired earlier than a given expiry time.
     (hyoungjunkim via hyunsik)
 
     TAJO-410: A query with a combination of general and distinct aggregation
@@ -1836,7 +1844,7 @@ Release 0.2.0
 
     TAJO-262: Integration test hang on jenkins. (jinho)
 
-    TAJO-257: Unit tests occassionally fail. (hyunsik)
+    TAJO-257: Unit tests occasionally fail. (hyunsik)
 
     TAJO-169: the default TAJO_WORKER_STANDBY_MODE in tajo-env.sh is wrong. 
     (hyunsik)
