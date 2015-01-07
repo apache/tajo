@@ -56,9 +56,9 @@ Since Derby is a file-based embedded database, it stores data into a specified d
 
   By default, *Catalog server* stores catalog data into ``/tmp/tajo-catalog-${username}`` directory. But, some operating systems may remove all contents in ``/tmp`` when booting up. In order to ensure persistent store of your catalog data, you need to set a proper location of derby directory.
 
-=========================
+==================================================
 MySQL/MariaDB/PostgreSQL/Oracle Configuration
-=========================
+==================================================
 
 Tajo supports several database systems, including MySQL, MariaDB, PostgreSQL, and Oracle, as its catalog store.
 In order to use these systems, you first need to create a database and a user for Tajo.
