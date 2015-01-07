@@ -623,7 +623,7 @@ public class TajoPullServerService extends AbstractService {
         Channel ch = ctx.channel();
         if (chunks.size() == 0) {
           HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
-          ch.write(response);
+          ch.writeAndFlush(response);
           if (!HttpHeaders.isKeepAlive(request)) {
             ch.close();
           }
@@ -637,7 +637,7 @@ public class TajoPullServerService extends AbstractService {
           HttpHeaders.setContentLength(response, totalSize);
 
           // Write the initial line and the header.
-          ch.write(response);
+          ch.writeAndFlush(response);
 
           ChannelFuture writeFuture = null;
 
@@ -718,6 +718,7 @@ public class TajoPullServerService extends AbstractService {
       //if channel.close() is not called, never closed files in this request
       if (ctx.channel().isActive()){
         ctx.channel().close();
+        accepted.remove(ctx.channel());
       }
     }
   }
