@@ -24,6 +24,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
+import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.Event;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.Clock;
@@ -35,8 +36,8 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.master.TajoAsyncDispatcher;
 import org.apache.tajo.master.event.QueryStartEvent;
+import org.apache.tajo.master.event.QueryStopEvent;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
@@ -66,7 +67,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   private Clock clock;
 
-  private TajoAsyncDispatcher dispatcher;
+  private AsyncDispatcher dispatcher;
 
   private GlobalPlanner globalPlanner;
 
@@ -110,12 +111,13 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
       clock = new SystemClock();
 
-      this.dispatcher = new TajoAsyncDispatcher("querymaster_" + System.currentTimeMillis());
+      this.dispatcher = new AsyncDispatcher();
       addIfService(dispatcher);
 
       globalPlanner = new GlobalPlanner(systemConf, workerContext);
 
       dispatcher.register(QueryStartEvent.EventType.class, new QueryStartEventHandler());
+      dispatcher.register(QueryStopEvent.EventType.class, new QueryStopEventHandler());
 
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
@@ -360,7 +362,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       return eventExecutor;
     }
 
-    public TajoAsyncDispatcher getDispatcher() {
+    public AsyncDispatcher getDispatcher() {
       return dispatcher;
     }
 
@@ -488,6 +490,13 @@ public class QueryMaster extends CompositeService implements EventHandler {
         queryMasterContext.stopQuery(queryMasterTask.getQueryId());
         return;
       }
+    }
+  }
+
+  private class QueryStopEventHandler implements EventHandler<QueryStopEvent> {
+    @Override
+    public void handle(QueryStopEvent event) {
+      queryMasterContext.stopQuery(event.getQueryId());
     }
   }
 

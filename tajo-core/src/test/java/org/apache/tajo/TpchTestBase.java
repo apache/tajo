@@ -22,10 +22,10 @@ import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.benchmark.TPCH;
-import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.FileUtil;
+import org.apache.tajo.util.KeyValueSet;
 
 import java.io.File;
 import java.io.IOException;
@@ -73,11 +73,7 @@ public class TpchTestBase {
     tables = new String[names.length][];
     File file;
     for (int i = 0; i < names.length; i++) {
-      file = new File("src/test/tpch/" + names[i] + ".tbl");
-      if(!file.exists()) {
-        file = new File(System.getProperty("user.dir") + "/tajo-core/src/test/tpch/" + names[i]
-            + ".tbl");
-      }
+      file = TPCH.getDataFile(names[i]);
       tables[i] = FileUtil.readTextFile(file).split("\n");
       paths[i] = file.getAbsolutePath();
     }
