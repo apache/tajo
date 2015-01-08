@@ -42,7 +42,7 @@ import org.apache.tajo.storage.Tuple;
   returnType = Type.FLOAT8,
   paramTypes = {@ParamTypes(paramTypes = {Type.FLOAT4})}
 )
-public class SumFloat extends AggFunction<Datum> {
+public class SumFloat extends SumDouble {
   public SumFloat() {
     super(new Column[] {
         new Column("expr", Type.FLOAT4)
@@ -50,31 +50,12 @@ public class SumFloat extends AggFunction<Datum> {
   }
 
   @Override
-  public FunctionContext newContext() {
-    return new SumContext();
-  }
-
-  @Override
   public void eval(FunctionContext ctx, Tuple params) {
-    ((SumContext)ctx).sum += params.get(0).asFloat4();
-  }
-
-  @Override
-  public Datum getPartialResult(FunctionContext ctx) {
-    return DatumFactory.createFloat8(((SumContext) ctx).sum);
-  }
-
-  @Override
-  public DataType getPartialResultType() {
-    return CatalogUtil.newSimpleDataType(Type.FLOAT8);
-  }
-
-  @Override
-  public Datum terminate(FunctionContext ctx) {
-    return DatumFactory.createFloat8(((SumContext) ctx).sum);
-  }
-
-  private class SumContext implements FunctionContext {
-    private double sum;
+    Datum datum = params.get(0);
+    if (datum.isNotNull()) {
+      SumContext sumCtx = (SumContext)ctx;
+      sumCtx.hasNonNull = true;
+      sumCtx.sum += datum.asFloat4();
+    }
   }
 }

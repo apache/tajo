@@ -39,7 +39,7 @@
 
   <property>
     <name>tajo.querymaster.task-scheduler</name>
-    <value>org.apache.tajo.master.DefaultTaskScheduler</value>
+    <value>org.apache.tajo.querymaster.DefaultTaskScheduler</value>
   </property>
 
 </configuration>

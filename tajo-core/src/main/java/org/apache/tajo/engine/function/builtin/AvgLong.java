@@ -38,12 +38,16 @@ import static org.apache.tajo.InternalTypes.AvgLongProto;
   returnType = Type.FLOAT8,
   paramTypes = {@ParamTypes(paramTypes = {Type.INT8})}
 )
-public class AvgLong extends AggFunction<Float8Datum> {
+public class AvgLong extends AggFunction<Datum> {
 
   public AvgLong() {
     super(new Column[] {
-        new Column("expr", Type.FLOAT8)
+        new Column("expr", Type.INT8)
     });
+  }
+
+  public AvgLong(Column[] definedArgs) {
+    super(definedArgs);
   }
 
   public AvgContext newContext() {
@@ -53,8 +57,11 @@ public class AvgLong extends AggFunction<Float8Datum> {
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
     AvgContext avgCtx = (AvgContext) ctx;
-    avgCtx.sum += params.get(0).asInt8();
-    avgCtx.count++;
+    Datum datum = params.get(0);
+    if (datum.isNotNull()) {
+      avgCtx.sum += datum.asInt8();
+      avgCtx.count++;
+    }
   }
 
   @Override
@@ -73,6 +80,9 @@ public class AvgLong extends AggFunction<Float8Datum> {
   @Override
   public Datum getPartialResult(FunctionContext ctx) {
     AvgContext avgCtx = (AvgContext) ctx;
+    if (avgCtx.count == 0) {
+      return NullDatum.get();
+    }
     AvgLongProto.Builder builder = AvgLongProto.newBuilder();
     builder.setSum(avgCtx.sum);
     builder.setCount(avgCtx.count);
@@ -85,13 +95,16 @@ public class AvgLong extends AggFunction<Float8Datum> {
   }
 
   @Override
-  public Float8Datum terminate(FunctionContext ctx) {
+  public Datum terminate(FunctionContext ctx) {
     AvgContext avgCtx = (AvgContext) ctx;
+    if (avgCtx.count == 0) {
+      return NullDatum.get();
+    }
     return DatumFactory.createFloat8((double) avgCtx.sum / avgCtx.count);
   }
 
   protected class AvgContext implements FunctionContext {
-    long sum;
-    long count;
+    long sum = 0;
+    long count = 0;
   }
 }

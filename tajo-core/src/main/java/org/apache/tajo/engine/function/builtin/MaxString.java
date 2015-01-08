@@ -20,62 +20,28 @@ package org.apache.tajo.engine.function.builtin;
 
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.TextDatum;
-import org.apache.tajo.plan.function.AggFunction;
-import org.apache.tajo.plan.function.FunctionContext;
+import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
-import org.apache.tajo.storage.Tuple;
 
 @Description(
     functionName = "max",
     description = "the maximum value of expr",
     example = "> SELECT max(expr);",
-    returnType = TajoDataTypes.Type.TEXT,
-    paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TEXT})}
+    returnType = Type.TEXT,
+    paramTypes = {@ParamTypes(paramTypes = {Type.TEXT})}
 )
-public class MaxString  extends AggFunction<Datum> {
-
+public class MaxString extends Max {
   public MaxString() {
     super(new Column[] {
-        new Column("expr", TajoDataTypes.Type.TEXT)
+        new Column("expr", Type.TEXT)
     });
   }
 
   @Override
-  public FunctionContext newContext() {
-    return new MaxContext();
+  public DataType getPartialResultType() {
+    return CatalogUtil.newSimpleDataType(Type.TEXT);
   }
 
-  @Override
-  public void eval(FunctionContext ctx, Tuple params) {
-    MaxContext maxCtx = (MaxContext) ctx;
-    if (maxCtx.max == null) {
-      maxCtx.max = params.get(0).asChars();
-    } else if (params.get(0).asChars().compareTo(maxCtx.max) > 0) {
-      maxCtx.max = params.get(0).asChars();
-    }
-  }
-
-  @Override
-  public Datum getPartialResult(FunctionContext ctx) {
-    return DatumFactory.createText(((MaxContext) ctx).max);
-  }
-
-  @Override
-  public TajoDataTypes.DataType getPartialResultType() {
-    return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TEXT);
-  }
-
-  @Override
-  public TextDatum terminate(FunctionContext ctx) {
-    return DatumFactory.createText(((MaxContext) ctx).max);
-  }
-
-  private class MaxContext implements FunctionContext {
-    String max;
-  }
 }
