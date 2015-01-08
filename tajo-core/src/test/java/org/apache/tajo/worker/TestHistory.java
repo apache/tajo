@@ -20,19 +20,20 @@ package org.apache.tajo.worker;
 
 import com.google.protobuf.ServiceException;
 import org.apache.hadoop.service.Service;
-import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TajoTestingCluster;
-import org.apache.tajo.TpchTestBase;
+import org.apache.tajo.TaskAttemptId;
+import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.TajoMaster;
-import org.apache.tajo.master.querymaster.QueryInfo;
-import org.junit.After;
-import org.junit.Before;
+import org.apache.tajo.master.QueryInfo;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
@@ -40,29 +41,34 @@ import java.util.Map;
 import static org.junit.Assert.*;
 
 public class TestHistory {
-  private TajoTestingCluster cluster;
-  private TajoMaster master;
-  private TajoConf conf;
-  private TajoClient client;
+  private static TajoTestingCluster cluster;
+  private static TajoMaster master;
+  private static  TajoConf conf;
+  private static TajoClient client;
 
-  @Before
-  public void setUp() throws Exception {
-    cluster = TpchTestBase.getInstance().getTestingCluster();
+  @BeforeClass
+  public static void setUp() throws Exception {
+    cluster = new TajoTestingCluster();
+    cluster.startMiniClusterInLocal(1);
     master = cluster.getMaster();
     conf = cluster.getConfiguration();
-    client = new TajoClientImpl(conf);
+    client = new TajoClientImpl(cluster.getConfiguration());
+    File file = TPCH.getDataFile("lineitem");
+    client.executeQueryAndGetResult("create external table default.lineitem (l_orderkey int, l_partkey int) "
+        + "using text location 'file://" + file.getAbsolutePath() + "'");
+    assertTrue(client.existTable("default.lineitem"));
   }
 
-  @After
-  public void tearDown() {
-    client.close();
+  @AfterClass
+  public static void tearDown() throws IOException {
+    if (client != null) client.close();
+    if (cluster != null) cluster.shutdownMiniCluster();
   }
-
 
   @Test
   public final void testTaskRunnerHistory() throws IOException, ServiceException, InterruptedException {
     int beforeFinishedQueriesCount = master.getContext().getQueryJobManager().getFinishedQueries().size();
-    client.executeQueryAndGetResult("select sleep(1) from lineitem");
+    client.executeQueryAndGetResult("select count(*) from lineitem");
 
     Collection<QueryInfo> finishedQueries = master.getContext().getQueryJobManager().getFinishedQueries();
     assertTrue(finishedQueries.size() > beforeFinishedQueriesCount);
@@ -89,7 +95,7 @@ public class TestHistory {
   @Test
   public final void testTaskHistory() throws IOException, ServiceException, InterruptedException {
     int beforeFinishedQueriesCount = master.getContext().getQueryJobManager().getFinishedQueries().size();
-    client.executeQueryAndGetResult("select sleep(1) from lineitem");
+    client.executeQueryAndGetResult("select count(*) from lineitem");
 
     Collection<QueryInfo> finishedQueries = master.getContext().getQueryJobManager().getFinishedQueries();
     assertTrue(finishedQueries.size() > beforeFinishedQueriesCount);

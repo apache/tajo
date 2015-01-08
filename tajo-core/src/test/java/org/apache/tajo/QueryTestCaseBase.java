@@ -201,6 +201,12 @@ public class QueryTestCaseBase {
     client.close();
   }
 
+  @Before
+  public void printTestName() {
+    /* protect a travis stalled build */
+    System.out.println("Run: " + name.getMethodName());
+  }
+
   public QueryTestCaseBase() {
     // hive 0.12 does not support quoted identifier.
     // So, we use lower case database names when Tajo uses HCatalogStore.

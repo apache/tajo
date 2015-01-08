@@ -27,6 +27,11 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1288: Refactoring org.apache.tajo.master package. (hyunsik)
+
+    TAJO-1279: Cleanup TajoAsyncDispatcher and interrupt stop events. 
+    (jinho)
+
     TAJO-1285: Refactoring Magic Number to HAConstants. 
     (DaeMyung Kang via jaehwa)
 
@@ -142,6 +147,8 @@ Release 0.9.1 - unreleased
 
 
   BUG FIXES
+
+    TAJO-1265: min(), max() does not handle null properly. (Keuntae Park)
 
     TAJO-1270: Fix typos. (DaeMyung Kang via hyunsik)
 

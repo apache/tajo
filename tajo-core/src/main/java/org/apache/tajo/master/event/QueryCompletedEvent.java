@@ -19,7 +19,7 @@
 package org.apache.tajo.master.event;
 
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.master.querymaster.StageState;
+import org.apache.tajo.querymaster.StageState;
 
 public class QueryCompletedEvent extends QueryEvent {
   private final ExecutionBlockId executionBlockId;

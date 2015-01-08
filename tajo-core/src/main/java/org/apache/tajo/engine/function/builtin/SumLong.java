@@ -24,7 +24,7 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.Int8Datum;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.plan.function.AggFunction;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.engine.function.annotation.Description;
@@ -51,6 +51,10 @@ public class SumLong extends AggFunction<Datum> {
     });
   }
 
+  public SumLong(Column[] definedArgs) {
+    super(definedArgs);
+  }
+
   @Override
   public FunctionContext newContext() {
     return new SumContext();
@@ -58,12 +62,22 @@ public class SumLong extends AggFunction<Datum> {
 
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
-    ((SumContext)ctx).sum += params.get(0).asInt8();
+    Datum datum = params.get(0);
+    if (datum.isNotNull()) {
+      SumContext sumCtx = (SumContext) ctx;
+      sumCtx.hasNonNull = true;
+      sumCtx.sum += datum.asInt8();
+    }
   }
 
   @Override
   public Datum getPartialResult(FunctionContext ctx) {
-    return DatumFactory.createInt8(((SumContext) ctx).sum);
+    SumContext sumCtx = (SumContext) ctx;
+    if (sumCtx.hasNonNull) {
+      return DatumFactory.createInt8(sumCtx.sum);
+    } else {
+      return NullDatum.get();
+    }
   }
 
   @Override
@@ -72,11 +86,17 @@ public class SumLong extends AggFunction<Datum> {
   }
 
   @Override
-  public Int8Datum terminate(FunctionContext ctx) {
-    return DatumFactory.createInt8(((SumContext) ctx).sum);
+  public Datum terminate(FunctionContext ctx) {
+    SumContext sumCtx = (SumContext) ctx;
+    if (sumCtx.hasNonNull) {
+      return DatumFactory.createInt8(sumCtx.sum);
+    } else {
+      return NullDatum.get();
+    }
   }
 
-  private class SumContext implements FunctionContext {
-    long sum;
+  protected class SumContext implements FunctionContext {
+    boolean hasNonNull;
+    long sum = 0;
   }
 }
