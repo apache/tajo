@@ -47,7 +47,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
   }
 
   @Override
-  public void setScirptMode() {
+  public void setScriptMode() {
     this.printPause = false;
   }
 

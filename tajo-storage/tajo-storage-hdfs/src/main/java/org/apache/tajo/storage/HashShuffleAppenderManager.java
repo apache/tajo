@@ -161,7 +161,7 @@ public class HashShuffleAppenderManager {
     }
 
     // Send Intermediate data to QueryMaster.
-    List<HashShuffleIntermediate> intermEntries = new ArrayList<HashShuffleIntermediate>();
+    List<HashShuffleIntermediate> intermediateEntries = new ArrayList<HashShuffleIntermediate>();
     for (PartitionAppenderMeta eachMeta : partitionAppenderMap.values()) {
       try {
         eachMeta.appender.close();
@@ -169,16 +169,16 @@ public class HashShuffleAppenderManager {
             new HashShuffleIntermediate(eachMeta.partId, eachMeta.appender.getOffset(),
                 eachMeta.appender.getPages(),
                 eachMeta.appender.getMergedTupleIndexes());
-        intermEntries.add(intermediate);
+        intermediateEntries.add(intermediate);
       } catch (IOException e) {
         LOG.error(e.getMessage(), e);
         throw e;
       }
     }
 
-    LOG.info("Close HashShuffleAppender:" + ebId + ", intermediates=" + intermEntries.size());
+    LOG.info("Close HashShuffleAppender:" + ebId + ", intermediates=" + intermediateEntries.size());
 
-    return intermEntries;
+    return intermediateEntries;
   }
 
   public void finalizeTask(TaskAttemptId taskId) {

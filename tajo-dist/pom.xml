@@ -223,10 +223,10 @@
                   <mainClass>org.apache.hadoop.yarn.state.VisualizeStateMachine</mainClass>
                   <arguments>
                     <argument>Tajo</argument>
-                    <argument>org.apache.tajo.master.querymaster.Query,
-                      org.apache.tajo.master.querymaster.Stage,
-                      org.apache.tajo.master.querymaster.Task,
-                      org.apache.tajo.master.querymaster.TaskAttempt
+                    <argument>org.apache.tajo.querymaster.Query,
+                      org.apache.tajo.querymaster.Stage,
+                      org.apache.tajo.querymaster.Task,
+                      org.apache.tajo.querymaster.TaskAttempt
                     </argument>
                     <argument>Tajo.gv</argument>
                   </arguments>

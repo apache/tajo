@@ -21,11 +21,11 @@
 
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="org.apache.tajo.worker.*" %>
-<%@ page import="org.apache.tajo.master.querymaster.Query" %>
+<%@ page import="org.apache.tajo.querymaster.Query" %>
 <%@ page import="org.apache.tajo.QueryId" %>
 <%@ page import="org.apache.tajo.util.TajoIdUtils" %>
-<%@ page import="org.apache.tajo.master.querymaster.QueryMasterTask" %>
-<%@ page import="org.apache.tajo.master.querymaster.Stage" %>
+<%@ page import="org.apache.tajo.querymaster.QueryMasterTask" %>
+<%@ page import="org.apache.tajo.querymaster.Stage" %>
 <%@ page import="org.apache.tajo.engine.planner.global.ExecutionBlock" %>
 <%@ page import="java.util.*" %>
 <%@ page import="org.apache.tajo.ExecutionBlockId" %>

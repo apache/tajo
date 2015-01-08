@@ -94,5 +94,5 @@ public interface TajoCliOutputFormatter {
    */
   void printErrorMessage(PrintWriter sout, QueryStatus status);
 
-  void setScirptMode();
+  void setScriptMode();
 }

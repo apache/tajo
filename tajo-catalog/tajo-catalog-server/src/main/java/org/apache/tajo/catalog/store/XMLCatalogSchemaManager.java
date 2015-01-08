@@ -155,7 +155,7 @@ public class XMLCatalogSchemaManager {
     return pstmt;
   }
   
-  protected boolean checkExistance(Connection conn, DatabaseObjectType type, String... params) 
+  protected boolean checkExistence(Connection conn, DatabaseObjectType type, String... params) 
       throws SQLException {
     boolean result = false;
     DatabaseMetaData metadata = null;
@@ -163,7 +163,7 @@ public class XMLCatalogSchemaManager {
     BaseSchema baseSchema = catalogStore.getSchema();
     
     if (params == null || params.length < 1) {
-      throw new IllegalArgumentException("checkExistance function needs at least one argument.");
+      throw new IllegalArgumentException("checkExistence function needs at least one argument.");
     }
     
     switch(type) {
@@ -190,7 +190,7 @@ public class XMLCatalogSchemaManager {
       
       pstmt = getExistQuery(conn, type);
       if (pstmt != null) {
-        result = checkExistanceByQuery(pstmt, baseSchema, params);
+        result = checkExistenceByQuery(pstmt, baseSchema, params);
       } else {
         metadata = conn.getMetaData();
         ResultSet indexes = metadata.getIndexInfo(null, baseSchema.getSchemaName() != null
@@ -208,7 +208,7 @@ public class XMLCatalogSchemaManager {
     case TABLE:
       pstmt = getExistQuery(conn, type);
       if (pstmt != null) {
-        result = checkExistanceByQuery(pstmt, baseSchema, params);
+        result = checkExistenceByQuery(pstmt, baseSchema, params);
       } else {
         metadata = conn.getMetaData();
         ResultSet tables = metadata.getTables(null, baseSchema.getSchemaName() != null
@@ -231,14 +231,14 @@ public class XMLCatalogSchemaManager {
             + " type of database object is not supported on this database system.");
       }
       
-      result = checkExistanceByQuery(pstmt, baseSchema, params);
+      result = checkExistenceByQuery(pstmt, baseSchema, params);
       break;
     }
     
     return result;
   }
 
-  private boolean checkExistanceByQuery(PreparedStatement pstmt, BaseSchema baseSchema,
+  private boolean checkExistenceByQuery(PreparedStatement pstmt, BaseSchema baseSchema,
       String... params) throws SQLException {
     int paramIdx = 1;
     boolean result = false;
@@ -288,7 +288,7 @@ public class XMLCatalogSchemaManager {
           params[0] = object.getName();
         }
         
-        if (checkExistance(conn, object.getType(), params)) {
+        if (checkExistence(conn, object.getType(), params)) {
           LOG.info("Skip to create " + object.getName() + " databse object. Already exists.");
         }
         else {
@@ -344,10 +344,10 @@ public class XMLCatalogSchemaManager {
     for (DatabaseObject object: catalogStore.getSchema().getObjects()) {
       try {
         if (DatabaseObjectType.INDEX == object.getType()) {
-          result &= checkExistance(conn, object.getType(), object.getDependsOn(), object.getName());
+          result &= checkExistence(conn, object.getType(), object.getDependsOn(), object.getName());
         }
         else {
-          result &= checkExistance(conn, object.getType(), object.getName());
+          result &= checkExistence(conn, object.getType(), object.getName());
         }
       } catch (SQLException e) {
         throw new CatalogException(e.getMessage(), e);
