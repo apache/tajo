@@ -736,16 +736,16 @@ public class Stage implements EventHandler<StageEvent> {
           stage.finalizeStats();
           state = StageState.SUCCEEDED;
         } else {
+          ExecutionBlock parent = stage.getMasterPlan().getParent(stage.getBlock());
+          DataChannel channel = stage.getMasterPlan().getChannel(stage.getId(), parent.getId());
+          setShuffleIfNecessary(stage, channel);
+          initTaskScheduler(stage);
           // execute pre-processing asyncronously
           stage.getContext().getQueryMasterContext().getEventExecutor()
               .submit(new Runnable() {
                         @Override
                         public void run() {
                           try {
-                            ExecutionBlock parent = stage.getMasterPlan().getParent(stage.getBlock());
-                            DataChannel channel = stage.getMasterPlan().getChannel(stage.getId(), parent.getId());
-                            setShuffleIfNecessary(stage, channel);
-                            initTaskScheduler(stage);
                             schedule(stage);
                             stage.totalScheduledObjectsCount = stage.getTaskScheduler().remainingScheduledObjectNum();
                             LOG.info(stage.totalScheduledObjectsCount + " objects are scheduled");
