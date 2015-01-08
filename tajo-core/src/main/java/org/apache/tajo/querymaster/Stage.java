@@ -140,7 +140,7 @@ public class Stage implements EventHandler<StageEvent> {
               StageEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
 
-              // Transitions from INITED state
+          // Transitions from INITED state
           .addTransition(StageState.INITED, StageState.RUNNING,
               StageEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINER_LAUNCH_TRANSITION)
@@ -153,7 +153,7 @@ public class Stage implements EventHandler<StageEvent> {
               StageEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
 
-              // Transitions from RUNNING state
+          // Transitions from RUNNING state
           .addTransition(StageState.RUNNING, StageState.RUNNING,
               StageEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINER_LAUNCH_TRANSITION)
@@ -179,11 +179,11 @@ public class Stage implements EventHandler<StageEvent> {
           .addTransition(StageState.RUNNING, StageState.ERROR,
               StageEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
-              // Ignore-able Transition
+          // Ignore-able Transition
           .addTransition(StageState.RUNNING, StageState.RUNNING,
               StageEventType.SQ_START)
 
-              // Transitions from KILL_WAIT state
+          // Transitions from KILL_WAIT state
           .addTransition(StageState.KILL_WAIT, StageState.KILL_WAIT,
               StageEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINERS_CANCEL_TRANSITION)
@@ -241,7 +241,7 @@ public class Stage implements EventHandler<StageEvent> {
                   StageEventType.SQ_KILL,
                   StageEventType.SQ_CONTAINER_ALLOCATED))
 
-              // Transitions from KILLED state
+          // Transitions from KILLED state
           .addTransition(StageState.KILLED, StageState.KILLED,
               StageEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINERS_CANCEL_TRANSITION)
@@ -259,7 +259,7 @@ public class Stage implements EventHandler<StageEvent> {
                   StageEventType.SQ_CONTAINER_ALLOCATED,
                   StageEventType.SQ_FAILED))
 
-              // Transitions from FAILED state
+          // Transitions from FAILED state
           .addTransition(StageState.FAILED, StageState.FAILED,
               StageEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINERS_CANCEL_TRANSITION)
@@ -269,7 +269,7 @@ public class Stage implements EventHandler<StageEvent> {
           .addTransition(StageState.FAILED, StageState.ERROR,
               StageEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
-              // Ignore-able transitions
+          // Ignore-able transitions
           .addTransition(StageState.FAILED, StageState.FAILED,
               EnumSet.of(
                   StageEventType.SQ_START,
@@ -277,14 +277,14 @@ public class Stage implements EventHandler<StageEvent> {
                   StageEventType.SQ_CONTAINER_ALLOCATED,
                   StageEventType.SQ_FAILED))
 
-              // Transitions from ERROR state
+          // Transitions from ERROR state
           .addTransition(StageState.ERROR, StageState.ERROR,
               StageEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINERS_CANCEL_TRANSITION)
           .addTransition(StageState.ERROR, StageState.ERROR,
               StageEventType.SQ_DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
-              // Ignore-able transitions
+          // Ignore-able transitions
           .addTransition(StageState.ERROR, StageState.ERROR,
               EnumSet.of(
                   StageEventType.SQ_START,
