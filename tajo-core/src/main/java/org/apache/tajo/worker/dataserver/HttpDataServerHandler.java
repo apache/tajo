@@ -63,12 +63,12 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
   @Override
   public void channelRead(ChannelHandlerContext ctx, Object msg)
       throws Exception {
-    if (msg instanceof HttpRequest) {
+    if (msg instanceof HttpRequest) {System.out.println("channelRead1");
       HttpRequest request = (HttpRequest) msg;
       if (request.getMethod() != HttpMethod.GET) {
         sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED);
         return;
-      }
+      }System.out.println("channelRead2");
 
       FileChunk[] file;
       try {
@@ -89,10 +89,10 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
         LOG.error(ioe);
         sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR);
         return;
-      }
+      }System.out.println("channelRead3");
 
       // Write the content.
-      Channel ch = ctx.channel();
+      Channel ch = ctx.channel();System.out.println("channelRead4");
       if (file == null) {
         HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
         ch.writeAndFlush(response);
@@ -105,12 +105,12 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
         for (FileChunk chunk : file) {
           totalSize += chunk.length();
         }
-        HttpHeaders.setContentLength(response, totalSize);
+        HttpHeaders.setContentLength(response, totalSize);System.out.println("channelRead5");
 
         // Write the initial line and the header.
-        ch.writeAndFlush(response);
+        ch.writeAndFlush(response);System.out.println("channelRead6");
 
-        ChannelFuture writeFuture = null;
+        ChannelFuture writeFuture = null;System.out.println("channelRead7");
 
         for (FileChunk chunk : file) {
           writeFuture = sendFile(ctx, ch, chunk);
@@ -118,13 +118,13 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
             sendError(ctx, HttpResponseStatus.NOT_FOUND);
             return;
           }
-        }
+        }System.out.println("channelRead8");
 
         // Decide whether to close the connection or not.
         if (!HttpHeaders.isKeepAlive(request)) {
           // Close the connection when the whole content is written out.
           writeFuture.addListener(ChannelFutureListener.CLOSE);
-        }
+        }System.out.println("channelRead9");
       }
     }
   }
