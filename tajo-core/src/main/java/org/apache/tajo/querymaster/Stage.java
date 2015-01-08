@@ -71,7 +71,9 @@ import org.apache.tajo.worker.FetchImpl;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -102,6 +104,8 @@ public class Stage implements EventHandler<StageEvent> {
 
   private long startTime;
   private long finishTime;
+  private AtomicLong lastContactTime = new AtomicLong();
+  private Thread timeoutChecker;
 
   volatile Map<TaskId, Task> tasks = new ConcurrentHashMap<TaskId, Task>();
   volatile Map<TajoContainerId, TajoContainer> containers = new ConcurrentHashMap<TajoContainerId,
@@ -114,12 +118,13 @@ public class Stage implements EventHandler<StageEvent> {
   private static final AllocatedContainersCancelTransition CONTAINERS_CANCEL_TRANSITION =
       new AllocatedContainersCancelTransition();
   private static final StageCompleteTransition STAGE_COMPLETED_TRANSITION = new StageCompleteTransition();
+  private static final StageFinalizeTransition STAGE_FINALIZE_TRANSITION = new StageFinalizeTransition();
   private StateMachine<StageState, StageEventType, StageEvent> stateMachine;
 
   protected static final StateMachineFactory<Stage, StageState,
       StageEventType, StageEvent> stateMachineFactory =
-      new StateMachineFactory <Stage, StageState,
-          StageEventType, StageEvent> (StageState.NEW)
+      new StateMachineFactory<Stage, StageState,
+          StageEventType, StageEvent>(StageState.NEW)
 
           // Transitions from NEW state
           .addTransition(StageState.NEW,
@@ -135,7 +140,7 @@ public class Stage implements EventHandler<StageEvent> {
               StageEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
 
-          // Transitions from INITED state
+              // Transitions from INITED state
           .addTransition(StageState.INITED, StageState.RUNNING,
               StageEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINER_LAUNCH_TRANSITION)
@@ -148,13 +153,16 @@ public class Stage implements EventHandler<StageEvent> {
               StageEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
 
-          // Transitions from RUNNING state
+              // Transitions from RUNNING state
           .addTransition(StageState.RUNNING, StageState.RUNNING,
               StageEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINER_LAUNCH_TRANSITION)
           .addTransition(StageState.RUNNING, StageState.RUNNING,
               StageEventType.SQ_TASK_COMPLETED,
               TASK_COMPLETED_TRANSITION)
+          .addTransition(StageState.RUNNING, StageState.FINALIZE,
+              StageEventType.SQ_STAGE_FINALIZE,
+              STAGE_FINALIZE_TRANSITION)
           .addTransition(StageState.RUNNING,
               EnumSet.of(StageState.SUCCEEDED, StageState.FAILED),
               StageEventType.SQ_STAGE_COMPLETED,
@@ -171,11 +179,11 @@ public class Stage implements EventHandler<StageEvent> {
           .addTransition(StageState.RUNNING, StageState.ERROR,
               StageEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
-          // Ignore-able Transition
+              // Ignore-able Transition
           .addTransition(StageState.RUNNING, StageState.RUNNING,
               StageEventType.SQ_START)
 
-          // Transitions from KILL_WAIT state
+              // Transitions from KILL_WAIT state
           .addTransition(StageState.KILL_WAIT, StageState.KILL_WAIT,
               StageEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINERS_CANCEL_TRANSITION)
@@ -198,6 +206,24 @@ public class Stage implements EventHandler<StageEvent> {
               StageEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
 
+              // Transitions from FINALIZE state
+          .addTransition(StageState.FINALIZE, StageState.FINALIZE,
+              StageEventType.SQ_STAGE_FINALIZE,
+              STAGE_FINALIZE_TRANSITION)
+          .addTransition(StageState.FINALIZE,
+              EnumSet.of(StageState.SUCCEEDED, StageState.FAILED),
+              StageEventType.SQ_STAGE_COMPLETED,
+              STAGE_COMPLETED_TRANSITION)
+          .addTransition(StageState.FINALIZE, StageState.FINALIZE,
+              StageEventType.SQ_DIAGNOSTIC_UPDATE,
+              DIAGNOSTIC_UPDATE_TRANSITION)
+          .addTransition(StageState.FINALIZE, StageState.ERROR,
+              StageEventType.SQ_INTERNAL_ERROR,
+              INTERNAL_ERROR_TRANSITION)
+              // Ignore-able Transition
+          .addTransition(StageState.FINALIZE, StageState.KILLED,
+              StageEventType.SQ_KILL)
+
               // Transitions from SUCCEEDED state
           .addTransition(StageState.SUCCEEDED, StageState.SUCCEEDED,
               StageEventType.SQ_CONTAINER_ALLOCATED,
@@ -215,7 +241,7 @@ public class Stage implements EventHandler<StageEvent> {
                   StageEventType.SQ_KILL,
                   StageEventType.SQ_CONTAINER_ALLOCATED))
 
-          // Transitions from KILLED state
+              // Transitions from KILLED state
           .addTransition(StageState.KILLED, StageState.KILLED,
               StageEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINERS_CANCEL_TRANSITION)
@@ -233,7 +259,7 @@ public class Stage implements EventHandler<StageEvent> {
                   StageEventType.SQ_CONTAINER_ALLOCATED,
                   StageEventType.SQ_FAILED))
 
-          // Transitions from FAILED state
+              // Transitions from FAILED state
           .addTransition(StageState.FAILED, StageState.FAILED,
               StageEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINERS_CANCEL_TRANSITION)
@@ -243,7 +269,7 @@ public class Stage implements EventHandler<StageEvent> {
           .addTransition(StageState.FAILED, StageState.ERROR,
               StageEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
-          // Ignore-able transitions
+              // Ignore-able transitions
           .addTransition(StageState.FAILED, StageState.FAILED,
               EnumSet.of(
                   StageEventType.SQ_START,
@@ -251,14 +277,14 @@ public class Stage implements EventHandler<StageEvent> {
                   StageEventType.SQ_CONTAINER_ALLOCATED,
                   StageEventType.SQ_FAILED))
 
-          // Transitions from ERROR state
+              // Transitions from ERROR state
           .addTransition(StageState.ERROR, StageState.ERROR,
               StageEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINERS_CANCEL_TRANSITION)
           .addTransition(StageState.ERROR, StageState.ERROR,
               StageEventType.SQ_DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
-          // Ignore-able transitions
+              // Ignore-able transitions
           .addTransition(StageState.ERROR, StageState.ERROR,
               EnumSet.of(
                   StageEventType.SQ_START,
@@ -273,14 +299,14 @@ public class Stage implements EventHandler<StageEvent> {
   private final Lock writeLock;
 
   private int totalScheduledObjectsCount;
-  private int succeededObjectCount = 0;
   private int completedTaskCount = 0;
-  private int succeededTaskCount = 0;
+  private int succeededObjectCount = 0;
   private int killedObjectCount = 0;
   private int failedObjectCount = 0;
   private TaskSchedulerContext schedulerContext;
-  private List<IntermediateEntry> hashShuffleIntermediateEntries = new ArrayList<IntermediateEntry>();
-  private AtomicInteger completeReportReceived = new AtomicInteger(0);
+  private List<IntermediateEntry> hashShuffleIntermediateEntries = Lists.newArrayList();
+  private AtomicInteger completedShuffleTasks = new AtomicInteger(0);
+  private AtomicBoolean stopShuffleReceiver = new AtomicBoolean();
   private StageHistory finalStageHistory;
 
   public Stage(QueryMasterTask.QueryMasterTaskContext context, MasterPlan masterPlan, ExecutionBlock block) {
@@ -465,10 +491,16 @@ public class Stage implements EventHandler<StageEvent> {
   }
 
   /**
-   * It finalizes this stage. It is only invoked when the stage is succeeded.
+   * It finalizes this stage. It is only invoked when the stage is finalizing.
+   */
+  public void finalizeStage() {
+    cleanup();
+  }
+
+  /**
+   * It complete this stage. It is only invoked when the stage is succeeded.
    */
   public void complete() {
-    cleanup();
     finalizeStats();
     setFinishTime();
     eventHandler.handle(new StageCompletedEvent(getId(), StageState.SUCCEEDED));
@@ -652,7 +684,7 @@ public class Stage implements EventHandler<StageEvent> {
   }
 
   private void releaseContainers() {
-    // If there are still live TaskRunners, try to kill the containers.
+    // If there are still live TaskRunners, try to kill the containers. and send the shuffle report request
     eventHandler.handle(new TaskRunnerGroupEvent(EventType.CONTAINER_REMOTE_CLEANUP, getId(), containers.values()));
   }
 
@@ -684,6 +716,7 @@ public class Stage implements EventHandler<StageEvent> {
 
   @Override
   public void handle(StageEvent event) {
+    lastContactTime.set(System.currentTimeMillis());
     if (LOG.isDebugEnabled()) {
       LOG.debug("Processing " + event.getStageId() + " of type " + event.getType() + ", preState="
           + getSynchronizedState());
@@ -751,6 +784,7 @@ public class Stage implements EventHandler<StageEvent> {
                             LOG.info(stage.totalScheduledObjectsCount + " objects are scheduled");
 
                             if (stage.getTaskScheduler().remainingScheduledObjectNum() == 0) { // if there is no tasks
+                              stage.finalizeStage();
                               stage.complete();
                             } else {
                               if(stage.getSynchronizedState() == StageState.INITED) {
@@ -1192,16 +1226,19 @@ public class Stage implements EventHandler<StageEvent> {
           stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_KILL));
         }
 
-        LOG.info(String.format("[%s] Task Completion Event (Total: %d, Success: %d, Killed: %d, Failed: %d)",
-            stage.getId(),
-            stage.getTotalScheduledObjectsCount(),
-            stage.succeededObjectCount,
-            stage.killedObjectCount,
-            stage.failedObjectCount));
-
-        if (stage.totalScheduledObjectsCount ==
-            stage.succeededObjectCount + stage.killedObjectCount + stage.failedObjectCount) {
-          stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_STAGE_COMPLETED));
+        if (stage.totalScheduledObjectsCount == stage.completedTaskCount) {
+          if (stage.succeededObjectCount == stage.completedTaskCount) {
+            stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_STAGE_FINALIZE));
+          } else {
+            stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_STAGE_COMPLETED));
+          }
+        } else {
+          LOG.info(String.format("[%s] Task Completion Event (Total: %d, Success: %d, Killed: %d, Failed: %d)",
+              stage.getId(),
+              stage.totalScheduledObjectsCount,
+              stage.succeededObjectCount,
+              stage.killedObjectCount,
+              stage.failedObjectCount));
         }
       }
     }
@@ -1244,47 +1281,93 @@ public class Stage implements EventHandler<StageEvent> {
     return hashShuffleIntermediateEntries;
   }
 
-  protected void waitingIntermediateReport() {
-    LOG.info(getId() + ", waiting IntermediateReport: expectedTaskNum=" + completeReportReceived.get());
-    synchronized(completeReportReceived) {
-      long startTime = System.currentTimeMillis();
-      while (true) {
-        if (completeReportReceived.get() >= tasks.size()) {
-          LOG.info(getId() + ", completed waiting IntermediateReport");
-          return;
-        } else {
-          try {
-            completeReportReceived.wait(10 * 1000);
-          } catch (InterruptedException e) {
-          }
-          long elapsedTime = System.currentTimeMillis() - startTime;
-          if (elapsedTime >= 120 * 1000) {
-            LOG.error(getId() + ", Timeout while receiving intermediate reports: " + elapsedTime + " ms");
-            abort(StageState.FAILED);
-            return;
-          }
-        }
-      }
-    }
+  protected void stopFinalization() {
+    stopShuffleReceiver.set(true);
   }
 
-  public void receiveExecutionBlockReport(TajoWorkerProtocol.ExecutionBlockReport report) {
-    LOG.info(getId() + ", receiveExecutionBlockReport:" +  report.getSucceededTasks());
-    if (!report.getReportSuccess()) {
-      LOG.error(getId() + ", ExecutionBlock final report fail cause:" + report.getReportErrorMessage());
-      abort(StageState.FAILED);
-      return;
-    }
-    if (report.getIntermediateEntriesCount() > 0) {
-      synchronized (hashShuffleIntermediateEntries) {
-        for (IntermediateEntryProto eachInterm: report.getIntermediateEntriesList()) {
-          hashShuffleIntermediateEntries.add(new IntermediateEntry(eachInterm));
-        }
+  private static class StageFinalizeTransition implements SingleArcTransition<Stage, StageEvent> {
+
+    @Override
+    public void transition(final Stage stage, StageEvent event) {
+      //If a shuffle report are failed, remaining reports will ignore
+      if (stage.stopShuffleReceiver.get()) {
+        return;
       }
-    }
-    synchronized(completeReportReceived) {
-      completeReportReceived.addAndGet(report.getSucceededTasks());
-      completeReportReceived.notifyAll();
+
+      stage.lastContactTime.set(System.currentTimeMillis());
+      try {
+        if (event instanceof StageFinalizeEvent) {
+
+          StageFinalizeEvent finalizeEvent = (StageFinalizeEvent) event;
+          TajoWorkerProtocol.ExecutionBlockReport report = finalizeEvent.getReport();
+
+          if (!report.getReportSuccess()) {
+            stage.stopFinalization();
+            LOG.error(stage.getId() + ", Shuffle report are failed. Caused by:" + report.getReportErrorMessage());
+            stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_FAILED));
+          }
+
+          stage.completedShuffleTasks.addAndGet(finalizeEvent.getReport().getSucceededTasks());
+          if (report.getIntermediateEntriesCount() > 0) {
+            for (IntermediateEntryProto eachInterm : report.getIntermediateEntriesList()) {
+              stage.hashShuffleIntermediateEntries.add(new IntermediateEntry(eachInterm));
+            }
+          }
+
+          if (stage.completedShuffleTasks.get() >= stage.succeededObjectCount) {
+            LOG.info(stage.getId() + ", Finalized shuffle reports: " + stage.completedShuffleTasks.get());
+            stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_STAGE_COMPLETED));
+            if (stage.timeoutChecker != null) {
+              stage.stopFinalization();
+              synchronized (stage.timeoutChecker){
+                stage.timeoutChecker.notifyAll();
+              }
+            }
+          } else {
+            LOG.info(stage.getId() + ", Received shuffle report: " +
+                stage.completedShuffleTasks.get() + "/" + stage.succeededObjectCount);
+          }
+
+        } else {
+          LOG.info(String.format("Stage finalize - %s (total=%d, success=%d, killed=%d)",
+              stage.getId().toString(),
+              stage.totalScheduledObjectsCount,
+              stage.succeededObjectCount,
+              stage.killedObjectCount));
+          stage.finalizeStage();
+          LOG.info(stage.getId() + ", waiting for shuffle reports. expected Tasks:" + stage.succeededObjectCount);
+
+          /* FIXME implement timeout handler of stage and task */
+          if (stage.timeoutChecker != null) {
+            stage.timeoutChecker = new Thread(new Runnable() {
+              @Override
+              public void run() {
+                while (stage.getSynchronizedState() == StageState.FINALIZE && !Thread.interrupted()) {
+                  long elapsedTime = System.currentTimeMillis() - stage.lastContactTime.get();
+                  if (elapsedTime > 120 * 1000) {
+                    stage.stopFinalization();
+                    LOG.error(stage.getId() + ": Timed out while receiving intermediate reports: " + elapsedTime
+                        + " ms, report:" + stage.completedShuffleTasks.get() + "/" + stage.succeededObjectCount);
+                    stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_FAILED));
+                  }
+                  synchronized (this) {
+                    try {
+                      this.wait(1 * 1000);
+                    } catch (InterruptedException e) {
+                    }
+                  }
+                }
+              }
+            });
+            stage.timeoutChecker.start();
+          }
+        }
+      } catch (Throwable t) {
+        LOG.error(t.getMessage(), t);
+        stage.stopFinalization();
+        stage.eventHandler.handle(new StageDiagnosticsUpdateEvent(stage.getId(), t.getMessage()));
+        stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_INTERNAL_ERROR));
+      }
     }
   }
 

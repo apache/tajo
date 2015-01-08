@@ -16,16 +16,23 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.querymaster;
+package org.apache.tajo.master.event;
 
-public enum StageState {
-  NEW,
-  INITED,
-  RUNNING,
-  FINALIZE,
-  SUCCEEDED,
-  FAILED,
-  KILL_WAIT,
-  KILLED,
-  ERROR
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
+
+/**
+ * Event Class: From Stage to Stage
+ */
+public class StageFinalizeEvent extends StageEvent {
+  private TajoWorkerProtocol.ExecutionBlockReport report;
+
+  public StageFinalizeEvent(ExecutionBlockId executionBlockId, TajoWorkerProtocol.ExecutionBlockReport report) {
+    super(executionBlockId, StageEventType.SQ_STAGE_FINALIZE);
+    this.report = report;
+  }
+
+  public TajoWorkerProtocol.ExecutionBlockReport getReport() {
+    return report;
+  }
 }
