@@ -24,31 +24,20 @@ import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.service.AbstractService;
-import org.apache.hadoop.util.StringUtils;
 import org.apache.tajo.QueryId;
-import org.apache.tajo.QueryIdFactory;
-import org.apache.tajo.TajoIdProtos;
-import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.GetQueryHistoryResponse;
 import org.apache.tajo.ipc.ClientProtos.QueryIdRequest;
 import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
-import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.master.querymaster.Query;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
 import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.history.QueryHistory;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.Collection;
 
 public class TajoWorkerClientService extends AbstractService {
   private static final Log LOG = LogFactory.getLog(TajoWorkerClientService.class);
@@ -79,15 +68,12 @@ public class TajoWorkerClientService extends AbstractService {
     this.serviceHandler = new TajoWorkerClientProtocolServiceHandler();
 
     // init RPC Server in constructor cause Heartbeat Thread use bindAddr
-    // Setup RPC server
     try {
-      // TODO initial port num is value of config and find unused port with sequence
       InetSocketAddress initIsa = new InetSocketAddress("0.0.0.0", port);
       if (initIsa.getAddress() == null) {
         throw new IllegalArgumentException("Failed resolve of " + initIsa);
       }
 
-      // TODO blocking/non-blocking??
       int workerNum = this.conf.getIntVar(TajoConf.ConfVars.WORKER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM);
       this.rpcServer = new BlockingRpcServer(QueryMasterClientProtocol.class, serviceHandler, initIsa, workerNum);
       this.rpcServer.start();
@@ -124,119 +110,6 @@ public class TajoWorkerClientService extends AbstractService {
 
   public class TajoWorkerClientProtocolServiceHandler
           implements QueryMasterClientProtocol.QueryMasterClientProtocolService.BlockingInterface {
-    @Override
-    public PrimitiveProtos.BoolProto updateSessionVariables(
-            RpcController controller,
-            ClientProtos.UpdateSessionVariableRequest request) throws ServiceException {
-      return null;
-    }
-
-    private boolean hasResultTableDesc(QueryContext queryContext) {
-      return !(queryContext.isCreateTable() || queryContext.isInsert());
-    }
-
-    @Override
-    public ClientProtos.GetQueryResultResponse getQueryResult(
-            RpcController controller,
-            ClientProtos.GetQueryResultRequest request) throws ServiceException {
-      QueryId queryId = new QueryId(request.getQueryId());
-      QueryMasterTask queryMasterTask = workerContext.getQueryMaster().getQueryMasterTask(queryId, true);
-
-      ClientProtos.GetQueryResultResponse.Builder builder = ClientProtos.GetQueryResultResponse.newBuilder();
-      try {
-        builder.setTajoUserName(UserGroupInformation.getCurrentUser().getUserName());
-      } catch (IOException e) {
-        LOG.warn("Can't get current user name");
-      }
-
-      if(queryMasterTask == null || queryMasterTask.getQuery() == null) {
-        builder.setErrorMessage("No Query for " + queryId);
-      } else {
-        switch (queryMasterTask.getState()) {
-          case QUERY_SUCCEEDED:
-//            if (hasResultTableDesc(queryMasterTask.getQueryTaskContext().getQueryContext())) {
-              builder.setTableDesc(queryMasterTask.getQuery().getResultDesc().getProto());
-            //}
-            break;
-          case QUERY_FAILED:
-          case QUERY_ERROR:
-            builder.setErrorMessage("Query " + queryId + " is failed");
-          default:
-            builder.setErrorMessage("Query " + queryId + " is still running");
-        }
-      }
-      return builder.build();
-    }
-
-    @Override
-    public ClientProtos.GetQueryStatusResponse getQueryStatus(
-            RpcController controller,
-            ClientProtos.GetQueryStatusRequest request) throws ServiceException {
-      ClientProtos.GetQueryStatusResponse.Builder builder
-              = ClientProtos.GetQueryStatusResponse.newBuilder();
-      QueryId queryId = new QueryId(request.getQueryId());
-
-      builder.setQueryId(request.getQueryId());
-
-      if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
-        builder.setResultCode(ClientProtos.ResultCode.OK);
-        builder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
-      } else {
-        QueryMasterTask queryMasterTask = workerContext.getQueryMaster().getQueryMasterTask(queryId);
-
-        builder.setResultCode(ClientProtos.ResultCode.OK);
-        builder.setQueryMasterHost(bindAddr.getHostName());
-        builder.setQueryMasterPort(bindAddr.getPort());
-
-        if (queryMasterTask == null) {
-          queryMasterTask = workerContext.getQueryMaster().getQueryMasterTask(queryId, true);
-        }
-        if (queryMasterTask == null) {
-          builder.setState(TajoProtos.QueryState.QUERY_NOT_ASSIGNED);
-          return builder.build();
-        }
-
-        builder.setHasResult(hasResultTableDesc(queryMasterTask.getQueryTaskContext().getQueryContext()));
-
-        queryMasterTask.touchSessionTime();
-        Query query = queryMasterTask.getQuery();
-
-        if (query != null) {
-          builder.setState(queryMasterTask.getState());
-          builder.setProgress(query.getProgress());
-          builder.setSubmitTime(query.getAppSubmitTime());
-          if (queryMasterTask.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
-            builder.setFinishTime(query.getFinishTime());
-          } else {
-            builder.setFinishTime(System.currentTimeMillis());
-          }
-        } 
-        Collection<TajoWorkerProtocol.TaskFatalErrorReport> diagnostics = queryMasterTask.getDiagnostics();
-        if(!diagnostics.isEmpty()) {
-          TajoWorkerProtocol.TaskFatalErrorReport firstError = diagnostics.iterator().next();
-          builder.setErrorMessage(firstError.getErrorMessage());
-          builder.setErrorTrace(firstError.getErrorTrace());
-        }
-
-        if (queryMasterTask.isInitError()) {
-          Throwable initError = queryMasterTask.getInitError();
-          builder.setErrorMessage(
-              initError.getMessage() == null ? initError.getClass().getName() : initError.getMessage());
-          builder.setErrorTrace(StringUtils.stringifyException(initError));
-          builder.setState(queryMasterTask.getState());
-        }
-      }
-      return builder.build();
-    }
-
-    @Override
-    public PrimitiveProtos.BoolProto closeQuery (
-            RpcController controller,
-            TajoIdProtos.QueryIdProto request) throws ServiceException {
-      final QueryId queryId = new QueryId(request);
-      LOG.info("Stop Query:" + queryId);
-      return BOOL_TRUE;
-    }
 
     @Override
     public GetQueryHistoryResponse getQueryHistory(RpcController controller, QueryIdRequest request) throws ServiceException {

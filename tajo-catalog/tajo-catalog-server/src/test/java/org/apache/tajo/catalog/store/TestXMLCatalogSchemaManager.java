@@ -407,12 +407,12 @@ public class TestXMLCatalogSchemaManager {
     stmt.executeBatch();
     manager.createBaseSchema(conn);
     
-    assertThat(manager.checkExistance(conn, DatabaseObjectType.TABLE, "TESTTABLE1"), is(true));
-    assertThat(manager.checkExistance(conn, DatabaseObjectType.TABLE, "TESTTABLE3"), is(false));
-    assertThat(manager.checkExistance(conn, DatabaseObjectType.INDEX, "testtable1", "TESTINDEX1"), is(true));
-    assertThat(manager.checkExistance(conn, DatabaseObjectType.TRIGGER, "TESTTRIGGER1"), is(true));
-    assertThat(manager.checkExistance(conn, DatabaseObjectType.SEQUENCE, "TESTSEQ"), is(true));
-    assertThat(manager.checkExistance(conn, DatabaseObjectType.VIEW, "TESTVIEW"), is(true));
+    assertThat(manager.checkExistence(conn, DatabaseObjectType.TABLE, "TESTTABLE1"), is(true));
+    assertThat(manager.checkExistence(conn, DatabaseObjectType.TABLE, "TESTTABLE3"), is(false));
+    assertThat(manager.checkExistence(conn, DatabaseObjectType.INDEX, "testtable1", "TESTINDEX1"), is(true));
+    assertThat(manager.checkExistence(conn, DatabaseObjectType.TRIGGER, "TESTTRIGGER1"), is(true));
+    assertThat(manager.checkExistence(conn, DatabaseObjectType.SEQUENCE, "TESTSEQ"), is(true));
+    assertThat(manager.checkExistence(conn, DatabaseObjectType.VIEW, "TESTVIEW"), is(true));
   }
   
   @Test
@@ -431,7 +431,7 @@ public class TestXMLCatalogSchemaManager {
     stmt.executeBatch();
     manager.createBaseSchema(conn);
     
-    assertTrue(manager.checkExistance(conn, DatabaseObjectType.TABLE, "TESTTABLE2"));
+    assertTrue(manager.checkExistence(conn, DatabaseObjectType.TABLE, "TESTTABLE2"));
   }
   
   @Test

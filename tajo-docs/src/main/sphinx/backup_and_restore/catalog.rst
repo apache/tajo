@@ -11,7 +11,7 @@ Now, Tajo supports a two backup methods for
 SQL dump 
 ==========
 
-SQL dump is an easy and strong way. If you use this approach, you don't need to concern database-level compatiblities. If you want to backup your catalog, just use bin/tajo-dump command. The basic usage of this command is: ::
+SQL dump is an easy and strong way. If you use this approach, you don't need to concern database-level compatibilities. If you want to backup your catalog, just use bin/tajo-dump command. The basic usage of this command is: ::
 
   $ tajo-dump table_name > outfile
 
