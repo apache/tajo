@@ -18,7 +18,6 @@
 
 package org.apache.tajo.engine.function.builtin;
 
-import org.apache.commons.lang.ObjectUtils;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes.DataType;
