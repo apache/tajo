@@ -735,7 +735,7 @@ public class DateTimeFormat {
         tmfc.cc = -tmfc.cc;
       }
       if (tmfc.cc >= 0) {
-			  /* +1 becuase 21st century started in 2001 */
+			  /* +1 because 21st century started in 2001 */
         tm.years = (tmfc.cc - 1) * 100 + 1;
       } else {
 			  /* +1 because year == 599 is 600 BC */

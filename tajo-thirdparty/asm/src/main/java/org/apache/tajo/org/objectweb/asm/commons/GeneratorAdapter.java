@@ -1532,7 +1532,7 @@ public class GeneratorAdapter extends LocalVariablesSorter {
     }
 
     // ------------------------------------------------------------------------
-    // Miscelaneous instructions
+    // Miscellaneous instructions
     // ------------------------------------------------------------------------
 
     /**

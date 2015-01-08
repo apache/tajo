@@ -16,30 +16,32 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.querymaster;
+package org.apache.tajo.master.event;
 
 import org.apache.hadoop.yarn.event.AbstractEvent;
+import org.apache.tajo.QueryId;
 
-public class QueryJobEvent extends AbstractEvent<QueryJobEvent.Type> {
-  private QueryInfo queryInfo;
-
-  public QueryJobEvent(Type type, QueryInfo queryInfo) {
-    super(type);
-
-    this.queryInfo = queryInfo;
+/**
+ * This event is conveyed to QueryMaster.
+ */
+public class QueryStopEvent extends AbstractEvent {
+  public enum EventType {
+    QUERY_STOP
   }
 
-  public QueryInfo getQueryInfo() {
-    return this.queryInfo;
+  private final QueryId queryId;
+
+  public QueryStopEvent(QueryId queryId) {
+    super(EventType.QUERY_STOP);
+    this.queryId = queryId;
   }
 
-  public enum Type {
-    QUERY_JOB_START,
-    QUERY_JOB_HEARTBEAT,
-    QUERY_JOB_FINISH,
-    QUERY_JOB_STOP,
-    QUERY_MASTER_START,
-    QUERY_MASTER_STOP,
-    QUERY_JOB_KILL
+  public QueryId getQueryId() {
+    return queryId;
+  }
+
+  @Override
+  public String toString() {
+    return getClass().getName() + "," + getType() + "," + queryId;
   }
 }

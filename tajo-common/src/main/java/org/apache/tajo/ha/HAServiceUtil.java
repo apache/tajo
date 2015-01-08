@@ -97,19 +97,19 @@ public class HAServiceUtil {
             String[] addresses = data.split("_");
 
             switch (type) {
-              case 1:
+              case HAConstants.MASTER_UMBILICAL_RPC_ADDRESS:
                 masterAddress = NetUtils.createSocketAddr(hostAddress);
                 break;
-              case 2:
+              case HAConstants.MASTER_CLIENT_RPC_ADDRESS:
                 masterAddress = NetUtils.createSocketAddr(addresses[0]);
                 break;
-              case 3:
+              case HAConstants.RESOURCE_TRACKER_RPC_ADDRESS:
                 masterAddress = NetUtils.createSocketAddr(addresses[1]);
                 break;
-              case 4:
+              case HAConstants.CATALOG_ADDRESS:
                 masterAddress = NetUtils.createSocketAddr(addresses[2]);
                 break;
-              case 5:
+              case HAConstants.MASTER_INFO_ADDRESS:
                 masterAddress = NetUtils.createSocketAddr(addresses[3]);
                 break;
               default:
@@ -125,23 +125,23 @@ public class HAServiceUtil {
 
     if (masterAddress == null) {
       switch (type) {
-        case 1:
+        case HAConstants.MASTER_UMBILICAL_RPC_ADDRESS:
           masterAddress = NetUtils.createSocketAddr(conf.getVar(TajoConf.ConfVars
               .TAJO_MASTER_UMBILICAL_RPC_ADDRESS));
           break;
-        case 2:
+        case HAConstants.MASTER_CLIENT_RPC_ADDRESS:
           masterAddress = NetUtils.createSocketAddr(conf.getVar(TajoConf.ConfVars
               .TAJO_MASTER_CLIENT_RPC_ADDRESS));
           break;
-        case 3:
+        case HAConstants.RESOURCE_TRACKER_RPC_ADDRESS:
           masterAddress = NetUtils.createSocketAddr(conf.getVar(TajoConf.ConfVars
               .RESOURCE_TRACKER_RPC_ADDRESS));
           break;
-        case 4:
+        case HAConstants.CATALOG_ADDRESS:
           masterAddress = NetUtils.createSocketAddr(conf.getVar(TajoConf.ConfVars
               .CATALOG_ADDRESS));
           break;
-        case 5:
+        case HAConstants.MASTER_INFO_ADDRESS:
           masterAddress = NetUtils.createSocketAddr(conf.getVar(TajoConf.ConfVars
               .TAJO_MASTER_INFO_ADDRESS));
           break;

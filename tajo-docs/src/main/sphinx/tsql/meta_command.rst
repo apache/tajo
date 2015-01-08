@@ -3,7 +3,7 @@ Meta Commands
 *********************************
 
 
-In tsql, any command that begins with an unquoted backslash ('\') is a tsql meta-command that is processed by tsql itself.
+In tsql, any command that begins with an unquoted backslash ('\\') is a tsql meta-command that is processed by tsql itself.
 
 In the current implementation, there are meta commands as follows: ::
 
