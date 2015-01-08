@@ -28,6 +28,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableMeta;
@@ -201,7 +202,7 @@ public class AvroAppender extends FileAppender {
    */
   @Override
   public void close() throws IOException {
-    dataFileWriter.close();
+    IOUtils.cleanup(null, dataFileWriter);
   }
 
   /**
