@@ -20,34 +20,51 @@ package org.apache.tajo.master.querymaster;
 
 import org.apache.tajo.*;
 import org.apache.tajo.algebra.Expr;
+import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
-import org.apache.tajo.plan.LogicalOptimizer;
-import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.event.QueryEvent;
 import org.apache.tajo.master.event.QueryEventType;
 import org.apache.tajo.master.session.Session;
+import org.apache.tajo.plan.LogicalOptimizer;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.LogicalPlanner;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import java.io.File;
+import java.io.IOException;
 
-@Category(IntegrationTest.class)
+import static org.junit.Assert.*;
+
 public class TestKillQuery {
   private static TajoTestingCluster cluster;
   private static TajoConf conf;
+  private static TajoClient client;
 
   @BeforeClass
   public static void setUp() throws Exception {
-    cluster = TpchTestBase.getInstance().getTestingCluster();
+    cluster = new TajoTestingCluster();
+    cluster.startMiniClusterInLocal(1);
     conf = cluster.getConfiguration();
+    client = new TajoClientImpl(cluster.getConfiguration());
+    File file = TPCH.getDataFile("lineitem");
+    client.executeQueryAndGetResult("create external table default.lineitem (l_orderkey int, l_partkey int) "
+        + "using text location 'file://" + file.getAbsolutePath() + "'");
+    assertTrue(client.existTable("default.lineitem"));
+  }
+
+  @AfterClass
+  public static void tearDown() throws IOException {
+    if (client != null) client.close();
+    if (cluster != null) cluster.shutdownMiniCluster();
   }
 
   @Test
@@ -56,7 +73,7 @@ public class TestKillQuery {
     QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(conf);
     Session session = LocalTajoTestingUtility.createDummySession();
     CatalogService catalog = cluster.getMaster().getCatalog();
-    String query = "select l_orderkey from lineitem group by l_orderkey";
+    String query = "select l_orderkey, l_partkey from lineitem group by l_orderkey, l_partkey order by l_orderkey";
 
     LogicalPlanner planner = new LogicalPlanner(catalog);
     LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
@@ -99,7 +116,7 @@ public class TestKillQuery {
     q.handle(new QueryEvent(queryId, QueryEventType.KILL));
 
     try{
-      cluster.waitForQueryState(queryMasterTask.getQuery(), TajoProtos.QueryState.QUERY_KILLED, 10);
+      cluster.waitForQueryState(queryMasterTask.getQuery(), TajoProtos.QueryState.QUERY_KILLED, 50);
     } finally {
       assertEquals(TajoProtos.QueryState.QUERY_KILLED, queryMasterTask.getQuery().getSynchronizedState());
     }

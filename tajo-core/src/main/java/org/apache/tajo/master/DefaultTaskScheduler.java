@@ -145,8 +145,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
     }
 
     // Return all of request callbacks instantly.
-    for (TaskRequestEvent req : taskRequests.taskRequestQueue) {
-      req.getCallback().run(stopTaskRunnerReq);
+    if(taskRequests != null){
+      for (TaskRequestEvent req : taskRequests.taskRequestQueue) {
+        req.getCallback().run(stopTaskRunnerReq);
+      }
     }
 
     LOG.info("Task Scheduler stopped");

@@ -92,7 +92,7 @@ public class AvroAppender extends FileAppender {
   }
 
   /**
-   * Gets the current offset. Tracking offsets is currenly not implemented, so
+   * Gets the current offset. Tracking offsets is currently not implemented, so
    * this method always returns 0.
    *
    * @return 0

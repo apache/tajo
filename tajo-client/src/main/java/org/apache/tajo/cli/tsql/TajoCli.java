@@ -246,13 +246,13 @@ public class TajoCli {
       }
 
       if (cmd.hasOption("c")) {
-        displayFormatter.setScirptMode();
+        displayFormatter.setScriptMode();
         int exitCode = executeScript(cmd.getOptionValue("c"));
         sout.flush();
         System.exit(exitCode);
       }
       if (cmd.hasOption("f")) {
-        displayFormatter.setScirptMode();
+        displayFormatter.setScriptMode();
         cmd.getOptionValues("");
         File sqlFile = new File(cmd.getOptionValue("f"));
         if (sqlFile.exists()) {

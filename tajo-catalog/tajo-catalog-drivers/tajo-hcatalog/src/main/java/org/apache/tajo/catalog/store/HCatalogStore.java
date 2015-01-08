@@ -287,7 +287,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     try {
       return Enum.valueOf(TajoDataTypes.Type.class, typeStr);
     } catch (IllegalArgumentException iae) {
-      LOG.error("Cannot find a matched type aginst from '" + typeStr + "'");
+      LOG.error("Cannot find a matched type against from '" + typeStr + "'");
       return null;
     }
   }
