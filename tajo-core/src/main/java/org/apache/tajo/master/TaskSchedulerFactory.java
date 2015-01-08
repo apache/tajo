@@ -20,7 +20,7 @@ package org.apache.tajo.master;
 
 import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.tajo.master.querymaster.Stage;
+import org.apache.tajo.querymaster.Stage;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;

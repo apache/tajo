@@ -24,7 +24,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.master.querymaster.QueryInfo;
+import org.apache.tajo.master.QueryInfo;
 import org.apache.tajo.worker.TaskHistory;
 
 import java.io.IOException;

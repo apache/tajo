@@ -19,7 +19,7 @@
 package org.apache.tajo.master;
 
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.master.querymaster.QueryMasterTask;
+import org.apache.tajo.querymaster.QueryMasterTask;
 
 public class TaskSchedulerContext {
   private QueryMasterTask.QueryMasterTaskContext masterContext;

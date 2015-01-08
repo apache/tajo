@@ -28,7 +28,7 @@ import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.master.querymaster.QueryInfo;
+import org.apache.tajo.master.QueryInfo;
 import org.apache.tajo.util.TajoIdUtils;
 import org.junit.After;
 import org.junit.Before;
