@@ -16,11 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master;
+package org.apache.tajo.querymaster;
 
 import com.google.common.collect.Maps;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.tajo.querymaster.Stage;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master;
+package org.apache.tajo.querymaster;
 
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.querymaster.QueryMasterTask;
