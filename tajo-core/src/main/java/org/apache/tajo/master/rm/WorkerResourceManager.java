@@ -23,7 +23,7 @@ import org.apache.hadoop.service.Service;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.TajoMasterProtocol;
-import org.apache.tajo.master.querymaster.QueryInProgress;
+import org.apache.tajo.querymaster.QueryInProgress;
 
 import java.io.IOException;
 import java.util.Collection;
