@@ -27,6 +27,12 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1285: Refactoring Magic Number to HAConstants. 
+    (DaeMyung Kang via jaehwa)
+
+    TAJO-1245: Add documentation about PostgreSQL and Oracle Catalog driver. 
+    (jihoon)
+
     TAJO-1228: TajoClient should communicate with only TajoMaster without 
     TajoWorker. (hyunsik)
 
