@@ -97,17 +97,20 @@
 			<tns:Object order="11" type="table" name="INDEXES">
 				<tns:sql><![CDATA[
 				CREATE TABLE INDEXES (
-				DB_ID INT NOT NULL REFERENCES DATABASES_ (DB_ID) ON DELETE CASCADE,
-				TID INT NOT NULL REFERENCES TABLES (TID) ON DELETE CASCADE,
-				INDEX_NAME VARCHAR(128) NOT NULL,
-				COLUMN_NAME VARCHAR(128) NOT NULL,
-				DATA_TYPE VARCHAR(128) NOT NULL,
-				INDEX_TYPE CHAR(32) NOT NULL,
-				PATH VARCHAR(4096),
-				IS_UNIQUE BOOLEAN NOT NULL,
-				IS_CLUSTERED BOOLEAN NOT NULL,
-				IS_ASCENDING BOOLEAN NOT NULL,
-				CONSTRAINT C_INDEXES_PK PRIMARY KEY (DB_ID, INDEX_NAME)
+					INDEX_ID INT NOT NULL GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1),
+					DB_ID INT NOT NULL REFERENCES DATABASES_ (DB_ID) ON DELETE CASCADE,
+					TID INT NOT NULL REFERENCES TABLES (TID) ON DELETE CASCADE,
+					INDEX_NAME VARCHAR(128) NOT NULL,
+					INDEX_TYPE CHAR(32) NOT NULL,
+					PATH VARCHAR(4096),
+					COLUMN_NAMES VARCHAR(128) NOT NULL, -- array of column names
+					DATA_TYPES VARCHAR(128) NOT NULL, -- array of column types
+					ORDERS VARCHAR(128) NOT NULL, -- array of column orders
+					NULL_ORDERS VARCHAR(128) NOT NULL, -- array of null orderings
+					IS_UNIQUE BOOLEAN NOT NULL,
+					IS_CLUSTERED BOOLEAN NOT NULL,
+					CONSTRAINT INDEXES_PK PRIMARY KEY (INDEX_ID),
+					CONSTRAINT C_INDEXES_UNIQ UNIQUE (DB_ID, INDEX_NAME)
 				)]]>
 				</tns:sql>
 			</tns:Object>
@@ -115,7 +118,7 @@
 				<tns:sql><![CDATA[CREATE UNIQUE INDEX idx_indexes_pk ON INDEXES (DB_ID,index_name)]]></tns:sql>
 			</tns:Object>
 			<tns:Object order="13" type="index" name="IDX_INDEXES_COLUMNS" dependsOn="INDEXES">
-				<tns:sql><![CDATA[CREATE INDEX idx_indexes_columns ON INDEXES (TID,column_name)]]></tns:sql>
+				<tns:sql><![CDATA[CREATE INDEX idx_col_names ON INDEXES (DB_ID,TID,column_names)]]></tns:sql>
 			</tns:Object>
 			<tns:Object order="14" type="table" name="STATS">
 				<tns:sql><![CDATA[

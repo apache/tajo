@@ -43,7 +43,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.DatabaseProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.IndexProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescriptorProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableOptionProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
@@ -704,115 +704,135 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
   @Override
   public void addPartitionMethod(CatalogProtos.PartitionMethodProto partitionMethodProto) throws CatalogException {
     // TODO - not implemented yet
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public CatalogProtos.PartitionMethodProto getPartitionMethod(String databaseName, String tableName)
       throws CatalogException {
-    return null;  // TODO - not implemented yet
+    // TODO - not implemented yet
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public boolean existPartitionMethod(String databaseName, String tableName) throws CatalogException {
-    return false;  // TODO - not implemented yet
+    // TODO - not implemented yet
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public void dropPartitionMethod(String databaseName, String tableName) throws CatalogException {
     // TODO - not implemented yet
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public void addPartitions(CatalogProtos.PartitionsProto partitionsProto) throws CatalogException {
     // TODO - not implemented yet
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public void addPartition(String databaseName, String tableName, CatalogProtos.PartitionDescProto partitionDescProto) throws CatalogException {
-
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public CatalogProtos.PartitionsProto getPartitions(String tableName) throws CatalogException {
-    return null; // TODO - not implemented yet
+    // TODO - not implemented yet
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public CatalogProtos.PartitionDescProto getPartition(String partitionName) throws CatalogException {
-    return null; // TODO - not implemented yet
+    // TODO - not implemented yet
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public void delPartition(String partitionName) throws CatalogException {
     // TODO - not implemented yet
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public void dropPartitions(String tableName) throws CatalogException {
-
+    throw new UnsupportedOperationException();
   }
 
 
   @Override
   public final void addFunction(final FunctionDesc func) throws CatalogException {
     // TODO - not implemented yet
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public final void deleteFunction(final FunctionDesc func) throws CatalogException {
     // TODO - not implemented yet
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public final void existFunction(final FunctionDesc func) throws CatalogException {
     // TODO - not implemented yet
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public final List<String> getAllFunctionNames() throws CatalogException {
     // TODO - not implemented yet
-    return null;
-  }
-
-  @Override
-  public void dropIndex(String databaseName, String indexName) throws CatalogException {
-    // TODO - not implemented yet
-  }
-
-  @Override
-  public boolean existIndexByName(String databaseName, String indexName) throws CatalogException {
-    // TODO - not implemented yet
-    return false;
-  }
-
-  @Override
-  public CatalogProtos.IndexDescProto[] getIndexes(String databaseName, String tableName) throws CatalogException {
-    // TODO - not implemented yet
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public void createIndex(CatalogProtos.IndexDescProto proto) throws CatalogException {
     // TODO - not implemented yet
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void dropIndex(String databaseName, String indexName) throws CatalogException {
+    // TODO - not implemented yet
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public CatalogProtos.IndexDescProto getIndexByName(String databaseName, String indexName) throws CatalogException {
     // TODO - not implemented yet
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override
-  public CatalogProtos.IndexDescProto getIndexByColumn(String databaseName, String tableName, String columnName)
+  public CatalogProtos.IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames)
       throws CatalogException {
     // TODO - not implemented yet
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean existIndexByColumn(String databaseName, String tableName, String columnName) throws CatalogException {
+  public boolean existIndexByName(String databaseName, String indexName) throws CatalogException {
     // TODO - not implemented yet
-    return false;
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames)
+      throws CatalogException {
+    // TODO - not implemented yet
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public List<String> getAllIndexNamesByTable(String databaseName, String tableName) throws CatalogException {
+    // TODO - not implemented yet
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean existIndexesByTable(String databaseName, String tableName) throws CatalogException {
+    // TODO - not implemented yet
+    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -860,7 +880,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public List<IndexProto> getAllIndexes() throws CatalogException {
+  public List<IndexDescProto> getAllIndexes() throws CatalogException {
     throw new UnsupportedOperationException();
   }
 

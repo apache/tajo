@@ -231,7 +231,8 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
     return projectionNode;
   }
 
-  private Target [] buildTargets(LogicalPlanner.PlanContext context, NamedExpr [] exprs) throws PlanningException {
+  private Target [] buildTargets(LogicalPlanner.PlanContext context, NamedExpr [] exprs)
+      throws PlanningException {
     Target [] targets = new Target[exprs.length];
     for (int i = 0; i < exprs.length; i++) {
       NamedExpr namedExpr = exprs[i];
@@ -478,6 +479,11 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
     createIndex.setInSchema(child.getOutSchema());
     createIndex.setOutSchema(child.getOutSchema());
     return createIndex;
+  }
+
+  @Override
+  public LogicalNode visitDropIndex(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, DropIndex expr) {
+    return ctx.plan.createNode(DropIndexNode.class);
   }
 
   public LogicalNode visitTruncateTable(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, TruncateTable expr)

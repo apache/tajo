@@ -319,6 +319,10 @@ public class TajoConf extends Configuration {
     $MAX_OUTPUT_FILE_SIZE("tajo.query.max-outfile-size-mb", 0), // zero means infinite
     $CODEGEN("tajo.executor.codegen.enabled", false), // Runtime code generation
 
+    // for index
+    $INDEX_ENABLED("tajo.query.index.enabled", false),
+    $INDEX_SELECTIVITY_THRESHOLD("tajo.query.index.selectivity.threshold", 0.05f),
+
     // Client -----------------------------------------------------------------
     $CLIENT_SESSION_EXPIRY_TIME("tajo.client.session.expiry-time-sec", 3600), // default time is one hour.
 
@@ -498,7 +502,7 @@ public class TajoConf extends Configuration {
   }
 
   public static long getLongVar(Configuration conf, ConfVars var) {
-    assert (var.valClass == Long.class || var.valClass == Integer.class);
+    assert (var.valClass == Long.class || var.valClass == Integer.class || var.valClass == Float.class);
     if (var.valClass == Integer.class) {
       return conf.getInt(var.varname, var.defaultIntVal);
     } else {

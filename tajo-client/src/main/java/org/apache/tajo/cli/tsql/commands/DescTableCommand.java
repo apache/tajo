@@ -21,9 +21,12 @@ package org.apache.tajo.cli.tsql.commands;
 import org.apache.commons.lang.CharUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
 import org.apache.tajo.cli.tsql.TajoCli;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.TUtil;
@@ -51,6 +54,22 @@ public class DescTableCommand extends TajoShellCommand {
         context.getOutput().println("Did not find any relation named \"" + tableName + "\"");
       } else {
         context.getOutput().println(toFormattedString(desc));
+        // If there exists any indexes for the table, print index information
+        if (client.hasIndexes(tableName)) {
+          StringBuilder sb = new StringBuilder();
+          sb.append("Indexes:\n");
+          for (IndexDescProto index : client.getIndexes(tableName)) {
+            sb.append("\"").append(index.getIndexName()).append("\" ");
+            sb.append(index.getIndexMethod()).append(" (");
+            for (SortSpecProto key : index.getKeySortSpecsList()) {
+              sb.append(CatalogUtil.extractSimpleName(key.getColumn().getName()));
+              sb.append(key.getAscending() ? " ASC" : " DESC");
+              sb.append(key.getNullFirst() ? " NULLS FIRST, " : " NULLS LAST, ");
+            }
+            sb.delete(sb.length()-2, sb.length()-1).append(")\n");
+          }
+          context.getOutput().println(sb.toString());
+        }
       }
     } else if (cmd.length == 1) {
       List<String> tableList = client.getTableList(null);

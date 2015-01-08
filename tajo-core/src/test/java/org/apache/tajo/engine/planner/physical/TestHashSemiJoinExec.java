@@ -64,6 +64,7 @@ public class TestHashSemiJoinExec {
   private LogicalOptimizer optimizer;
   private StorageManager sm;
   private Path testDir;
+  private QueryContext queryContext;
 
   private TableDesc employee;
   private TableDesc people;
@@ -133,11 +134,12 @@ public class TestHashSemiJoinExec {
     appender.flush();
     appender.close();
 
+    queryContext = new QueryContext(conf);
     people = CatalogUtil.newTableDesc("default.people", peopleSchema, peopleMeta, peoplePath);
     catalog.createTable(people);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
-    optimizer = new LogicalOptimizer(conf);
+    optimizer = new LogicalOptimizer(conf, catalog);
   }
 
   @After
@@ -164,7 +166,7 @@ public class TestHashSemiJoinExec {
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
     Path workDir = CommonTestingUtil.getTestDir("target/test-data/testHashSemiJoin");
-    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
+    TaskAttemptContext ctx = new TaskAttemptContext(queryContext,
         LocalTajoTestingUtility.newTaskAttemptId(), merged, workDir);
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[0]);

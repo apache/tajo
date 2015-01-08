@@ -21,11 +21,13 @@ package org.apache.tajo.client;
 import com.google.protobuf.ServiceException;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.annotation.Nullable;
+import org.apache.tajo.catalog.IndexMeta;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 
 import java.io.Closeable;
 import java.sql.SQLException;
@@ -134,4 +136,18 @@ public interface CatalogAdminClient extends Closeable {
   public TableDesc getTableDesc(final String tableName) throws ServiceException;
 
   public List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws ServiceException;
+
+  public IndexDescProto getIndex(final String indexName) throws ServiceException;
+
+  public boolean existIndex(final String indexName) throws ServiceException;
+
+  public List<IndexDescProto> getIndexes(final String tableName) throws ServiceException;
+
+  public boolean hasIndexes(final String tableName) throws ServiceException;
+
+  public IndexDescProto getIndex(final String tableName, final String[] columnNames) throws ServiceException;
+
+  public boolean existIndex(final String tableName, final String[] columnName) throws ServiceException;
+
+  public boolean dropIndex(final String indexName) throws ServiceException;
 }

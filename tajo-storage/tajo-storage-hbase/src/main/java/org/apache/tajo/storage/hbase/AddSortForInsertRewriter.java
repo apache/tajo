@@ -32,6 +32,7 @@ import org.apache.tajo.plan.logical.SortNode;
 import org.apache.tajo.plan.logical.SortNode.SortPurpose;
 import org.apache.tajo.plan.logical.UnaryNode;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.util.PlannerUtil;
 
 public class AddSortForInsertRewriter implements LogicalPlanRewriteRule {
@@ -54,13 +55,14 @@ public class AddSortForInsertRewriter implements LogicalPlanRewriteRule {
   }
 
   @Override
-  public boolean isEligible(OverridableConf queryContext, LogicalPlan plan) {
-    StoreType storeType = PlannerUtil.getStoreType(plan);
+  public boolean isEligible(LogicalPlanRewriteRuleContext context) {
+    StoreType storeType = PlannerUtil.getStoreType(context.getPlan());
     return storeType != null;
   }
 
   @Override
-  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws PlanningException {
+  public LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws PlanningException {
+    LogicalPlan plan = context.getPlan();
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
     UnaryNode insertNode = rootNode.getChild();
     LogicalNode childNode = insertNode.getChild();

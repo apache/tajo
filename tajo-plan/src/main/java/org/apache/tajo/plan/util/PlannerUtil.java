@@ -71,10 +71,31 @@ public class PlannerUtil {
         type == NodeType.CREATE_DATABASE ||
             type == NodeType.DROP_DATABASE ||
             (type == NodeType.CREATE_TABLE && !((CreateTableNode) baseNode).hasSubQuery()) ||
-            baseNode.getType() == NodeType.DROP_TABLE ||
-            baseNode.getType() == NodeType.ALTER_TABLESPACE ||
-            baseNode.getType() == NodeType.ALTER_TABLE ||
-            baseNode.getType() == NodeType.TRUNCATE_TABLE;
+            type == NodeType.DROP_TABLE ||
+            type == NodeType.ALTER_TABLESPACE ||
+            type == NodeType.ALTER_TABLE ||
+            type == NodeType.TRUNCATE_TABLE ||
+            type == NodeType.CREATE_INDEX ||
+            type == NodeType.DROP_INDEX;
+  }
+
+  /**
+   * Most update queries require only the updates to the catalog information,
+   * but some queries such as "CREATE INDEX" or CTAS requires distributed execution on multiple cluster nodes.
+   * This function checks whether the given DDL plan requires distributed execution or not.
+   * @param node the root node of a query plan
+   * @return Return true if the input query plan requires distributed execution. Otherwise, return false.
+   */
+  public static boolean isDistExecDDL(LogicalNode node) {
+    LogicalNode baseNode = node;
+    if (node instanceof LogicalRootNode) {
+      baseNode = ((LogicalRootNode) node).getChild();
+    }
+
+    NodeType type = baseNode.getType();
+
+    return type == NodeType.CREATE_INDEX ||
+        type == NodeType.CREATE_TABLE && ((CreateTableNode)baseNode).hasSubQuery();
   }
 
   /**
@@ -359,6 +380,12 @@ public class PlannerUtil {
         QueryBlock block, PartitionedTableScanNode node, Stack<LogicalNode> stack)
 
         throws PlanningException {
+      return node;
+    }
+
+    @Override
+    public LogicalNode visitIndexScan(ReplacerContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                      IndexScanNode node, Stack<LogicalNode> stack) throws PlanningException {
       return node;
     }
   }

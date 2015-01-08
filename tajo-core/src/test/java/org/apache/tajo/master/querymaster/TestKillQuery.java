@@ -76,7 +76,7 @@ public class TestKillQuery {
     String query = "select l_orderkey, l_partkey from lineitem group by l_orderkey, l_partkey order by l_orderkey";
 
     LogicalPlanner planner = new LogicalPlanner(catalog);
-    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+    LogicalOptimizer optimizer = new LogicalOptimizer(conf, catalog);
     Expr expr =  analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
 

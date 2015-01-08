@@ -77,8 +77,17 @@ schema_statement
   ;
 
 index_statement
+  : create_index_statement
+  | drop_index_statement
+  ;
+
+create_index_statement
   : CREATE (u=UNIQUE)? INDEX identifier ON table_name (method_specifier)?
     LEFT_PAREN sort_specifier_list RIGHT_PAREN param_clause? (where_clause)?
+  ;
+
+drop_index_statement
+  : DROP INDEX index_name = identifier
   ;
 
 database_definition

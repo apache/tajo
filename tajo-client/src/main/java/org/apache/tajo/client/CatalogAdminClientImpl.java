@@ -21,13 +21,12 @@ package org.apache.tajo.client;
 import com.google.protobuf.ServiceException;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.jdbc.SQLStates;
 import org.apache.tajo.rpc.NettyClientBase;
@@ -37,7 +36,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 
-import static org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService;
 import static org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService.BlockingInterface;
 
 public class CatalogAdminClientImpl implements CatalogAdminClient {
@@ -152,10 +150,10 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
           builder.setPartition(partitionMethodDesc.getProto());
         }
         ClientProtos.TableResponse res = tajoMasterService.createExternalTable(null, builder.build());
-        if (res.getResultCode() == ClientProtos.ResultCode.OK) {
+        if (res.getResult().getResultCode() == ClientProtos.ResultCode.OK) {
           return CatalogUtil.newTableDesc(res.getTableDesc());
         } else {
-          throw new SQLException(res.getErrorMessage(), SQLStates.ER_NO_SUCH_TABLE.getState());
+          throw new SQLException(res.getResult().getErrorMessage(), SQLStates.ER_NO_SUCH_TABLE.getState());
         }
       }
 
@@ -226,10 +224,10 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
         builder.setSessionId(connection.sessionId);
         builder.setTableName(tableName);
         ClientProtos.TableResponse res = tajoMasterService.getTableDesc(null, builder.build());
-        if (res.getResultCode() == ClientProtos.ResultCode.OK) {
+        if (res.getResult().getResultCode() == ClientProtos.ResultCode.OK) {
           return CatalogUtil.newTableDesc(res.getTableDesc());
         } else {
-          throw new SQLException(res.getErrorMessage(), SQLStates.ER_NO_SUCH_TABLE.getState());
+          throw new SQLException(res.getResult().getErrorMessage(), SQLStates.ER_NO_SUCH_TABLE.getState());
         }
       }
 
@@ -250,13 +248,131 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
         String paramFunctionName = functionName == null ? "" : functionName;
         ClientProtos.FunctionResponse res = tajoMasterService.getFunctionList(null,
             connection.convertSessionedString(paramFunctionName));
-        if (res.getResultCode() == ClientProtos.ResultCode.OK) {
+        if (res.getResult().getResultCode() == ClientProtos.ResultCode.OK) {
           return res.getFunctionsList();
         } else {
-          throw new SQLException(res.getErrorMessage());
+          throw new SQLException(res.getResult().getErrorMessage());
         }
       }
 
+    }.withRetries();
+  }
+
+  @Override
+  public IndexDescProto getIndex(final String indexName) throws ServiceException {
+    return new ServerCallable<IndexDescProto>(connection.connPool,
+        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
+
+      @Override
+      public IndexDescProto call(NettyClientBase client) throws Exception {
+        BlockingInterface tajoMasterService = client.getStub();
+        return tajoMasterService.getIndexWithName(null,
+            connection.convertSessionedString(indexName));
+      }
+    }.withRetries();
+  }
+
+  @Override
+  public boolean existIndex(final String indexName) throws ServiceException {
+    return new ServerCallable<Boolean>(connection.connPool,
+        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
+
+      @Override
+      public Boolean call(NettyClientBase client) throws Exception {
+        BlockingInterface tajoMasterService = client.getStub();
+        return tajoMasterService.existIndexWithName(null,
+            connection.convertSessionedString(indexName)).getValue();
+      }
+    }.withRetries();
+  }
+
+  @Override
+  public List<IndexDescProto> getIndexes(final String tableName) throws ServiceException {
+    return new ServerCallable<List<IndexDescProto>>(connection.connPool,
+        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
+
+      @Override
+      public List<IndexDescProto> call(NettyClientBase client) throws Exception {
+        BlockingInterface tajoMasterService = client.getStub();
+        GetIndexesResponse response = tajoMasterService.getIndexesForTable(null,
+            connection.convertSessionedString(tableName));
+        if (response.getResult().getResultCode() == ResultCode.OK) {
+          return response.getIndexesList();
+        } else {
+          throw new SQLException(response.getResult().getErrorMessage());
+        }
+      }
+    }.withRetries();
+  }
+
+  @Override
+  public boolean hasIndexes(final String tableName) throws ServiceException {
+    return new ServerCallable<Boolean>(connection.connPool,
+        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
+
+      @Override
+      public Boolean call(NettyClientBase client) throws Exception {
+        BlockingInterface tajoMasterService = client.getStub();
+        return tajoMasterService.existIndexesForTable(null,
+            connection.convertSessionedString(tableName)).getValue();
+      }
+    }.withRetries();
+  }
+
+  @Override
+  public IndexDescProto getIndex(final String tableName, final String[] columnNames) throws ServiceException {
+    return new ServerCallable<IndexDescProto>(connection.connPool,
+        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
+
+      @Override
+      public IndexDescProto call(NettyClientBase client) throws Exception {
+        BlockingInterface tajoMasterService = client.getStub();
+        GetIndexWithColumnsRequest.Builder builder = GetIndexWithColumnsRequest.newBuilder();
+        builder.setSessionId(connection.sessionId);
+        builder.setTableName(tableName);
+        for (String eachColumnName : columnNames) {
+          builder.addColumnNames(eachColumnName);
+        }
+        GetIndexWithColumnsResponse response = tajoMasterService.getIndexWithColumns(null, builder.build());
+        if (response.getResult().getResultCode() == ResultCode.OK) {
+          return response.getIndexDesc();
+        } else {
+          throw new SQLException(response.getResult().getErrorMessage());
+        }
+      }
+    }.withRetries();
+  }
+
+  @Override
+  public boolean existIndex(final String tableName, final String[] columnName) throws ServiceException {
+    return new ServerCallable<Boolean>(connection.connPool,
+        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
+
+      @Override
+      public Boolean call(NettyClientBase client) throws Exception {
+        BlockingInterface tajoMasterService = client.getStub();
+        GetIndexWithColumnsRequest.Builder builder = GetIndexWithColumnsRequest.newBuilder();
+        builder.setSessionId(connection.sessionId);
+        builder.setTableName(tableName);
+        for (String eachColumnName : columnName) {
+          builder.addColumnNames(eachColumnName);
+        }
+        return tajoMasterService.existIndexWithColumns(null, builder.build()).getValue();
+      }
+    }.withRetries();
+  }
+
+  @Override
+  public boolean dropIndex(final String indexName) throws ServiceException {
+    return new ServerCallable<Boolean>(connection.connPool,
+        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
+
+      @Override
+      public Boolean call(NettyClientBase client) throws Exception {
+        BlockingInterface tajoMasterService = client.getStub();
+        return tajoMasterService.dropIndex(null,
+            connection.convertSessionedString(indexName)).getValue();
+      }
     }.withRetries();
   }
 

@@ -45,7 +45,7 @@ public enum NodeType {
   TABLE_SUBQUERY(TableSubQueryNode.class),
   SCAN(ScanNode.class),
   PARTITIONS_SCAN(PartitionedTableScanNode.class),
-  BST_INDEX_SCAN(IndexScanNode.class),
+  INDEX_SCAN(IndexScanNode.class),
   STORE(StoreTableNode.class),
   INSERT(InsertNode.class),
 
@@ -56,6 +56,7 @@ public enum NodeType {
   ALTER_TABLESPACE (AlterTablespaceNode.class),
   ALTER_TABLE (AlterTableNode.class),
   CREATE_INDEX(CreateIndexNode.class),
+  DROP_INDEX(DropIndexNode.class),
   TRUNCATE_TABLE (TruncateTableNode.class);
 
   private final Class<? extends LogicalNode> baseClass;

@@ -24,7 +24,7 @@ public class NoSuchIndexException extends CatalogException {
   public NoSuchIndexException() {
   }
 
-  public NoSuchIndexException(String databaseName, String columnName) {
+  public NoSuchIndexException(String databaseName, String [] columnName) {
     super(String.format("ERROR: index \" %s \" in %s does not exist", columnName, databaseName));
   }
 

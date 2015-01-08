@@ -184,11 +184,11 @@ public class SessionConnection implements Closeable {
 
         SessionUpdateResponse response = tajoMasterService.updateSessionVariables(null, request);
 
-        if (response.getResultCode() == ResultCode.OK) {
+        if (response.getResult().getResultCode() == ResultCode.OK) {
           updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
           return Collections.unmodifiableMap(sessionVarsCache);
         } else {
-          throw new ServiceException(response.getMessage());
+          throw new ServiceException(response.getResult().getErrorMessage());
         }
       }
     }.withRetries();
@@ -207,11 +207,11 @@ public class SessionConnection implements Closeable {
 
         SessionUpdateResponse response = tajoMasterService.updateSessionVariables(null, request);
 
-        if (response.getResultCode() == ResultCode.OK) {
+        if (response.getResult().getResultCode() == ResultCode.OK) {
           updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
           return Collections.unmodifiableMap(sessionVarsCache);
         } else {
-          throw new ServiceException(response.getMessage());
+          throw new ServiceException(response.getResult().getErrorMessage());
         }
       }
     }.withRetries();
@@ -334,7 +334,7 @@ public class SessionConnection implements Closeable {
 
       CreateSessionResponse response = tajoMasterService.createSession(null, builder.build());
 
-      if (response.getResultCode() == ResultCode.OK) {
+      if (response.getResult().getResultCode() == ResultCode.OK) {
 
         sessionId = response.getSessionId();
         updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
@@ -343,7 +343,7 @@ public class SessionConnection implements Closeable {
         }
 
       } else {
-        throw new InvalidClientSessionException(response.getMessage());
+        throw new InvalidClientSessionException(response.getResult().getErrorMessage());
       }
     }
   }

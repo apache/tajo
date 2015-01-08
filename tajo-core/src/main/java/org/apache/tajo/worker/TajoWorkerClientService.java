@@ -25,10 +25,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.AbstractService;
+import org.apache.hadoop.util.StringUtils;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos.GetQueryHistoryResponse;
 import org.apache.tajo.ipc.ClientProtos.QueryIdRequest;
+import org.apache.tajo.ipc.ClientProtos.RequestResult;
 import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.master.querymaster.QueryMasterTask;
@@ -129,13 +132,31 @@ public class TajoWorkerClientService extends AbstractService {
         if (queryHistory != null) {
           builder.setQueryHistory(queryHistory.getProto());
         }
-        builder.setResultCode(ResultCode.OK);
+        builder.setResult(buildOkRequestResult());
       } catch (Throwable t) {
         LOG.warn(t.getMessage(), t);
-        builder.setResultCode(ResultCode.ERROR);
-        builder.setErrorMessage(org.apache.hadoop.util.StringUtils.stringifyException(t));
+        builder.setResult(buildRequestResult(ResultCode.ERROR,
+            StringUtils.stringifyException(t), null));
       }
 
+      return builder.build();
+    }
+
+    private RequestResult buildOkRequestResult() {
+      return buildRequestResult(ResultCode.OK, null, null);
+    }
+
+    private RequestResult buildRequestResult(ResultCode code,
+                                                    @Nullable String errorMessage,
+                                                    @Nullable String errorTrace) {
+      RequestResult.Builder builder = RequestResult.newBuilder();
+      builder.setResultCode(code);
+      if (errorMessage != null) {
+        builder.setErrorMessage(errorMessage);
+      }
+      if (errorTrace != null) {
+        builder.setErrorTrace(errorTrace);
+      }
       return builder.build();
     }
   }

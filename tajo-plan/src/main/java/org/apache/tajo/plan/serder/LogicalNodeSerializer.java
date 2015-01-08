@@ -21,12 +21,15 @@ package org.apache.tajo.plan.serder;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.JoinType;
+import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
 import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.plan.serder.PlanProto.AlterTableNode.AddColumn;
 import org.apache.tajo.plan.serder.PlanProto.AlterTableNode.RenameColumn;
 import org.apache.tajo.plan.serder.PlanProto.AlterTableNode.RenameTable;
@@ -104,6 +107,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     private LogicalNodeTree.Builder treeBuilder = LogicalNodeTree.newBuilder();
   }
 
+  @Override
   public LogicalNode visitRoot(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                LogicalRootNode root, Stack<LogicalNode> stack) throws PlanningException {
     super.visitRoot(context, plan, block, root, stack);
@@ -138,6 +142,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     return node;
   }
 
+  @Override
   public LogicalNode visitEvalExpr(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                    EvalExprNode exprEval, Stack<LogicalNode> stack) throws PlanningException {
     PlanProto.EvalExprNode.Builder exprEvalBuilder = PlanProto.EvalExprNode.newBuilder();
@@ -151,6 +156,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     return exprEval;
   }
 
+  @Override
   public LogicalNode visitProjection(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                      ProjectionNode projection, Stack<LogicalNode> stack) throws PlanningException {
     super.visitProjection(context, plan, block, projection, stack);
@@ -188,6 +194,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     return limit;
   }
 
+  @Override
   public LogicalNode visitWindowAgg(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                     WindowAggNode windowAgg, Stack<LogicalNode> stack) throws PlanningException {
     super.visitWindowAgg(context, plan, block, windowAgg, stack);
@@ -262,6 +269,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     return having;
   }
 
+  @Override
   public LogicalNode visitGroupBy(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                   GroupbyNode node, Stack<LogicalNode> stack) throws PlanningException {
     super.visitGroupBy(context, plan, block, node, new Stack<LogicalNode>());
@@ -297,6 +305,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     return nodeBuilder;
   }
 
+  @Override
   public LogicalNode visitDistinctGroupby(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                           DistinctGroupbyNode node, Stack<LogicalNode> stack) throws PlanningException {
     super.visitDistinctGroupby(context, plan, block, node, new Stack<LogicalNode>());
@@ -353,6 +362,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     return filter;
   }
 
+  @Override
   public LogicalNode visitJoin(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block, JoinNode join,
                           Stack<LogicalNode> stack) throws PlanningException {
     super.visitJoin(context, plan, block, join, stack);
@@ -435,6 +445,26 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
   }
 
   @Override
+  public LogicalNode visitIndexScan(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                    IndexScanNode node, Stack<LogicalNode> stack) throws PlanningException {
+
+    PlanProto.ScanNode.Builder scanBuilder = buildScanNode(node);
+
+    PlanProto.IndexScanSpec.Builder indexScanSpecBuilder = PlanProto.IndexScanSpec.newBuilder();
+    indexScanSpecBuilder.setKeySchema(node.getKeySchema().getProto());
+    indexScanSpecBuilder.setIndexPath(node.getIndexPath().toString());
+    for (SimplePredicate predicate : node.getPredicates()) {
+      indexScanSpecBuilder.addPredicates(predicate.getProto());
+    }
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
+    nodeBuilder.setScan(scanBuilder);
+    nodeBuilder.setIndexScan(indexScanSpecBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+    return node;
+  }
+
+  @Override
   public LogicalNode visitPartitionedTableScan(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                           PartitionedTableScanNode node, Stack<LogicalNode> stack)
       throws PlanningException {
@@ -458,6 +488,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     return node;
   }
 
+  @Override
   public LogicalNode visitTableSubQuery(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                    TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
     super.visitTableSubQuery(context, plan, block, node, stack);
@@ -480,6 +511,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     return node;
   }
 
+  @Override
   public LogicalNode visitCreateTable(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                       CreateTableNode node, Stack<LogicalNode> stack) throws PlanningException {
     super.visitCreateTable(context, plan, block, node, stack);
@@ -589,6 +621,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     return node;
   }
 
+  @Override
   public LogicalNode visitInsert(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                  InsertNode node, Stack<LogicalNode> stack) throws PlanningException {
     super.visitInsert(context, plan, block, node, stack);
@@ -665,6 +698,47 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
     nodeBuilder.setDropDatabase(dropDatabaseBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return node;
+  }
+
+  @Override
+  public LogicalNode visitCreateIndex(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                      CreateIndexNode node, Stack<LogicalNode> stack) throws PlanningException {
+    super.visitCreateIndex(context, plan, block, node, new Stack<LogicalNode>());
+
+    PlanProto.CreateIndexNode.Builder createIndexBuilder = PlanProto.CreateIndexNode.newBuilder();
+    int [] childIds = registerGetChildIds(context, node);
+    createIndexBuilder.setChildSeq(childIds[0]);
+    createIndexBuilder.setIndexName(node.getIndexName());
+    createIndexBuilder.setIndexMethod(node.getIndexMethod());
+    createIndexBuilder.setIndexPath(node.getIndexPath().toString());
+    for (SortSpec sortSpec : node.getKeySortSpecs()) {
+      createIndexBuilder.addKeySortSpecs(sortSpec.getProto());
+    }
+    createIndexBuilder.setTargetRelationSchema(node.getTargetRelationSchema().getProto());
+    createIndexBuilder.setIsUnique(node.isUnique());
+    createIndexBuilder.setIsClustered(node.isClustered());
+    if (node.hasOptions()) {
+      createIndexBuilder.setIndexProperties(node.getOptions().getProto());
+    }
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
+    nodeBuilder.setCreateIndex(createIndexBuilder);
+    context.treeBuilder.addNodes(nodeBuilder);
+
+    return node;
+  }
+
+  @Override
+  public LogicalNode visitDropIndex(SerializeContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                    DropIndexNode node, Stack<LogicalNode> stack) {
+    PlanProto.DropIndexNode.Builder dropIndexBuilder = PlanProto.DropIndexNode.newBuilder();
+    dropIndexBuilder.setIndexName(node.getIndexName());
+
+    PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
+    nodeBuilder.setDropIndex(dropIndexBuilder);
     context.treeBuilder.addNodes(nodeBuilder);
 
     return node;

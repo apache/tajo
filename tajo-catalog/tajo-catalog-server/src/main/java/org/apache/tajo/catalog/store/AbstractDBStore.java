@@ -27,9 +27,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.annotation.Nullable;
-import org.apache.tajo.catalog.CatalogConstants;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
@@ -1968,22 +1966,39 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     Connection conn = null;
     PreparedStatement pstmt = null;
 
-    String databaseName = proto.getTableIdentifier().getDatabaseName();
-    String tableName = proto.getTableIdentifier().getTableName();
-    String columnName = CatalogUtil.extractSimpleName(proto.getColumn().getName());
+    final String databaseName = proto.getTableIdentifier().getDatabaseName();
+    final String tableName = CatalogUtil.extractSimpleName(proto.getTableIdentifier().getTableName());
 
     try {
+      // indexes table
       int databaseId = getDatabaseId(databaseName);
       int tableId = getTableId(databaseId, databaseName, tableName);
 
       String sql = "INSERT INTO " + TB_INDEXES +
           " (" + COL_DATABASES_PK + ", " + COL_TABLES_PK + ", INDEX_NAME, " +
-          "COLUMN_NAME, DATA_TYPE, INDEX_TYPE, PATH, IS_UNIQUE, IS_CLUSTERED, IS_ASCENDING) " +
-          "VALUES (?,?,?,?,?,?,?,?,?,?)";
+          "INDEX_TYPE, PATH, COLUMN_NAMES, DATA_TYPES, ORDERS, NULL_ORDERS, IS_UNIQUE, IS_CLUSTERED) " +
+          "VALUES (?,?,?,?,?,?,?,?,?,?,?)";
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
+
+      StringBuilder columnNamesBuilder = new StringBuilder();
+      StringBuilder dataTypesBuilder= new StringBuilder();
+      StringBuilder ordersBuilder = new StringBuilder();
+      StringBuilder nullOrdersBuilder = new StringBuilder();
+      for (SortSpecProto columnSpec : proto.getKeySortSpecsList()) {
+        // Since the key columns are always sorted in order of their occurrence position in the relation schema,
+        // the concatenated name can be uniquely identified.
+        columnNamesBuilder.append(columnSpec.getColumn().getName()).append(",");
+        dataTypesBuilder.append(columnSpec.getColumn().getDataType().getType().name()).append(",");
+        ordersBuilder.append(columnSpec.getAscending()).append(",");
+        nullOrdersBuilder.append(columnSpec.getNullFirst()).append(",");
+      }
+      columnNamesBuilder.deleteCharAt(columnNamesBuilder.length()-1);
+      dataTypesBuilder.deleteCharAt(dataTypesBuilder.length()-1);
+      ordersBuilder.deleteCharAt(ordersBuilder.length()-1);
+      nullOrdersBuilder.deleteCharAt(nullOrdersBuilder.length()-1);
 
       conn = getConnection();
       conn.setAutoCommit(false);
@@ -1991,14 +2006,15 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
       pstmt.setInt(2, tableId);
-      pstmt.setString(3, proto.getName());
-      pstmt.setString(4, columnName);
-      pstmt.setString(5, proto.getColumn().getDataType().getType().name());
-      pstmt.setString(6, proto.getIndexMethod().toString());
-      pstmt.setString(7, proto.getIndexPath());
-      pstmt.setBoolean(8, proto.hasIsUnique() && proto.getIsUnique());
-      pstmt.setBoolean(9, proto.hasIsClustered() && proto.getIsClustered());
-      pstmt.setBoolean(10, proto.hasIsAscending() && proto.getIsAscending());
+      pstmt.setString(3, proto.getIndexName()); // index name
+      pstmt.setString(4, proto.getIndexMethod().toString()); // index type
+      pstmt.setString(5, proto.getIndexPath()); // index path
+      pstmt.setString(6, columnNamesBuilder.toString());
+      pstmt.setString(7, dataTypesBuilder.toString());
+      pstmt.setString(8, ordersBuilder.toString());
+      pstmt.setString(9, nullOrdersBuilder.toString());
+      pstmt.setBoolean(10, proto.hasIsUnique() && proto.getIsUnique());
+      pstmt.setBoolean(11, proto.hasIsClustered() && proto.getIsClustered());
       pstmt.executeUpdate();
       conn.commit();
     } catch (SQLException se) {
@@ -2052,9 +2068,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   final static String GET_INDEXES_SQL =
-      "SELECT " + COL_TABLES_PK + ", INDEX_NAME, COLUMN_NAME, DATA_TYPE, INDEX_TYPE, PATH, IS_UNIQUE, " +
-          "IS_CLUSTERED, IS_ASCENDING FROM " + TB_INDEXES;
-
+      "SELECT * FROM " + TB_INDEXES;
 
   @Override
   public IndexDescProto getIndexByName(String databaseName, final String indexName)
@@ -2085,6 +2099,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       resultToIndexDescProtoBuilder(builder, res);
       String tableName = getTableName(conn, res.getInt(COL_TABLES_PK));
       builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
+      builder.setTargetRelationSchema(getTable(databaseName, tableName).getSchema());
       proto = builder.build();
     } catch (SQLException se) {
       throw new CatalogException(se);
@@ -2096,9 +2111,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public IndexDescProto getIndexByColumn(final String databaseName,
-                                         final String tableName,
-                                         final String columnName) throws CatalogException {
+  public IndexDescProto getIndexByColumns(String databaseName, String tableName, String[] columnNames)
+      throws CatalogException {
     Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
@@ -2106,25 +2120,35 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     try {
       int databaseId = getDatabaseId(databaseName);
+      int tableId = getTableId(databaseId, databaseName, tableName);
+      TableDescProto tableDescProto = getTable(databaseName, tableName);
 
-      String sql = GET_INDEXES_SQL + " WHERE " + COL_DATABASES_PK + "=? AND COLUMN_NAME=?";
+      String sql = GET_INDEXES_SQL + " WHERE " + COL_DATABASES_PK + "=? AND " +
+          COL_TABLES_PK + "=? AND COLUMN_NAMES=?";
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
 
+      // Since the column names in the unified name are always sorted
+      // in order of occurrence position in the relation schema,
+      // they can be uniquely identified.
+      String unifiedName = CatalogUtil.buildFQName(databaseName, tableName,
+          CatalogUtil.getUnifiedSimpleColumnName(new Schema(tableDescProto.getSchema()), columnNames));
       conn = getConnection();
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
-      ;
-      pstmt.setString(2, columnName);
+      pstmt.setInt(2, tableId);
+      pstmt.setString(3, unifiedName);
       res = pstmt.executeQuery();
       if (!res.next()) {
-        throw new CatalogException("ERROR: there is no index matched to " + columnName);
+        throw new CatalogException("ERROR: there is no index matched to " + unifiedName);
       }
+
       IndexDescProto.Builder builder = IndexDescProto.newBuilder();
       resultToIndexDescProtoBuilder(builder, res);
       builder.setTableIdentifier(CatalogUtil.buildTableIdentifier(databaseName, tableName));
+      builder.setTargetRelationSchema(tableDescProto.getSchema());
       proto = builder.build();
     } catch (SQLException se) {
       throw new CatalogException(se);
@@ -2169,7 +2193,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public boolean existIndexByColumn(String databaseName, String tableName, String columnName)
+  public boolean existIndexByColumns(String databaseName, String tableName, String[] columnNames)
       throws CatalogException {
     Connection conn = null;
     ResultSet res = null;
@@ -2179,18 +2203,27 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
     try {
       int databaseId = getDatabaseId(databaseName);
+      int tableId = getTableId(databaseId, databaseName, tableName);
+      Schema relationSchema = new Schema(getTable(databaseName, tableName).getSchema());
 
       String sql =
-          "SELECT INDEX_NAME FROM " + TB_INDEXES + " WHERE " + COL_DATABASES_PK + "=? AND COLUMN_NAME=?";
+          "SELECT " + COL_INDEXES_PK + " FROM " + TB_INDEXES +
+              " WHERE " + COL_DATABASES_PK + "=? AND " + COL_TABLES_PK + "=? AND COLUMN_NAMES=?";
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
       }
 
+      // Since the column names in the unified name are always sorted
+      // in order of occurrence position in the relation schema,
+      // they can be uniquely identified.
+      String unifiedName = CatalogUtil.buildFQName(databaseName, tableName,
+          CatalogUtil.getUnifiedSimpleColumnName(new Schema(relationSchema), columnNames));
       conn = getConnection();
       pstmt = conn.prepareStatement(sql);
       pstmt.setInt(1, databaseId);
-      pstmt.setString(2, columnName);
+      pstmt.setInt(2, tableId);
+      pstmt.setString(3, unifiedName);
       res = pstmt.executeQuery();
       exist = res.next();
     } catch (SQLException se) {
@@ -2202,21 +2235,17 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   @Override
-  public IndexDescProto[] getIndexes(String databaseName, final String tableName)
+  public List<String> getAllIndexNamesByTable(final String databaseName, final String tableName)
       throws CatalogException {
-    Connection conn = null;
     ResultSet res = null;
     PreparedStatement pstmt = null;
-    final List<IndexDescProto> protos = new ArrayList<IndexDescProto>();
+    final List<String> indexNames = new ArrayList<String>();
 
     try {
       final int databaseId = getDatabaseId(databaseName);
       final int tableId = getTableId(databaseId, databaseName, tableName);
-      final TableIdentifierProto tableIdentifier = CatalogUtil.buildTableIdentifier(databaseName, tableName);
-
 
       String sql = GET_INDEXES_SQL + " WHERE " + COL_DATABASES_PK + "=? AND " + COL_TABLES_PK + "=?";
-
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
@@ -2229,10 +2258,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = pstmt.executeQuery();
 
       while (res.next()) {
-        IndexDescProto.Builder builder = IndexDescProto.newBuilder();
-        resultToIndexDescProtoBuilder(builder, res);
-        builder.setTableIdentifier(tableIdentifier);
-        protos.add(builder.build());
+        indexNames.add(res.getString("index_name"));
       }
     } catch (SQLException se) {
       throw new CatalogException(se);
@@ -2240,57 +2266,73 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       CatalogUtil.closeQuietly(pstmt, res);
     }
 
-    return protos.toArray(new IndexDescProto[protos.size()]);
+    return indexNames;
   }
-  
-  @Override
-  public List<IndexProto> getAllIndexes() throws CatalogException {
-    Connection conn = null;
-    Statement stmt = null;
-    ResultSet resultSet = null;
 
-    List<IndexProto> indexes = new ArrayList<IndexProto>();
+  @Override
+  public boolean existIndexesByTable(String databaseName, String tableName) throws CatalogException {
+    ResultSet res = null;
+    PreparedStatement pstmt = null;
+    final List<String> indexNames = new ArrayList<String>();
 
     try {
-      String sql = "SELECT " + COL_DATABASES_PK + ", " + COL_TABLES_PK + ", INDEX_NAME, " +
-        "COLUMN_NAME, DATA_TYPE, INDEX_TYPE, IS_UNIQUE, IS_CLUSTERED, IS_ASCENDING FROM " + TB_INDEXES;
+      final int databaseId = getDatabaseId(databaseName);
+      final int tableId = getTableId(databaseId, databaseName, tableName);
+
+      String sql = GET_INDEXES_SQL + " WHERE " + COL_DATABASES_PK + "=? AND " + COL_TABLES_PK + "=?";
+
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
 
       conn = getConnection();
-      stmt = conn.createStatement();
-      resultSet = stmt.executeQuery(sql);
-      while (resultSet.next()) {
-        IndexProto.Builder builder = IndexProto.newBuilder();
-        
-        builder.setDbId(resultSet.getInt(COL_DATABASES_PK));
-        builder.setTId(resultSet.getInt(COL_TABLES_PK));
-        builder.setIndexName(resultSet.getString("INDEX_NAME"));
-        builder.setColumnName(resultSet.getString("COLUMN_NAME"));
-        builder.setDataType(resultSet.getString("DATA_TYPE"));
-        builder.setIndexType(resultSet.getString("INDEX_TYPE"));
-        builder.setIsUnique(resultSet.getBoolean("IS_UNIQUE"));
-        builder.setIsClustered(resultSet.getBoolean("IS_CLUSTERED"));
-        builder.setIsAscending(resultSet.getBoolean("IS_ASCENDING"));
-        
-        indexes.add(builder.build());
-      }
+      pstmt = conn.prepareStatement(sql);
+      pstmt.setInt(1, databaseId);
+      pstmt.setInt(2, tableId);
+      res = pstmt.executeQuery();
+
+      return res.next();
     } catch (SQLException se) {
       throw new CatalogException(se);
     } finally {
-      CatalogUtil.closeQuietly(stmt, resultSet);
+      CatalogUtil.closeQuietly(pstmt, res);
     }
-    
-    return indexes;
+  }
+
+  @Override
+  public List<IndexDescProto> getAllIndexes() throws CatalogException {
+    List<IndexDescProto> indexDescProtos = TUtil.newList();
+    for (String databaseName : getAllDatabaseNames()) {
+      for (String tableName : getAllTableNames(databaseName)) {
+        for (String indexName: getAllIndexNamesByTable(databaseName, tableName)) {
+          indexDescProtos.add(getIndexByName(databaseName, indexName));
+        }
+      }
+    }
+    return indexDescProtos;
   }
 
   private void resultToIndexDescProtoBuilder(IndexDescProto.Builder builder,
                                              final ResultSet res) throws SQLException {
-    builder.setName(res.getString("index_name"));
-    builder.setColumn(indexResultToColumnProto(res));
+    builder.setIndexName(res.getString("index_name"));
     builder.setIndexMethod(getIndexMethod(res.getString("index_type").trim()));
     builder.setIndexPath(res.getString("path"));
+    String[] columnNames, dataTypes, orders, nullOrders;
+    columnNames = res.getString("column_names").trim().split(",");
+    dataTypes = res.getString("data_types").trim().split(",");
+    orders = res.getString("orders").trim().split(",");
+    nullOrders = res.getString("null_orders").trim().split(",");
+    int columnNum = columnNames.length;
+    for (int i = 0; i < columnNum; i++) {
+      SortSpecProto.Builder colSpecBuilder = SortSpecProto.newBuilder();
+      colSpecBuilder.setColumn(ColumnProto.newBuilder().setName(columnNames[i])
+          .setDataType(CatalogUtil.newSimpleDataType(getDataType(dataTypes[i]))).build());
+      colSpecBuilder.setAscending(orders[i].equals("true"));
+      colSpecBuilder.setNullFirst(nullOrders[i].equals("true"));
+      builder.addKeySortSpecs(colSpecBuilder.build());
+    }
     builder.setIsUnique(res.getBoolean("is_unique"));
     builder.setIsClustered(res.getBoolean("is_clustered"));
-    builder.setIsAscending(res.getBoolean("is_ascending"));
   }
 
   /**

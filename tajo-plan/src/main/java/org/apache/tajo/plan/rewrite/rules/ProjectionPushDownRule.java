@@ -31,6 +31,7 @@ import org.apache.tajo.plan.LogicalPlan.QueryBlock;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
@@ -56,13 +57,13 @@ public class ProjectionPushDownRule extends
   }
 
   @Override
-  public boolean isEligible(OverridableConf queryContext, LogicalPlan plan) {
-    LogicalNode toBeOptimized = plan.getRootBlock().getRoot();
+  public boolean isEligible(LogicalPlanRewriteRuleContext context) {
+    LogicalNode toBeOptimized = context.getPlan().getRootBlock().getRoot();
 
     if (PlannerUtil.checkIfDDLPlan(toBeOptimized)) {
       return false;
     }
-    for (QueryBlock eachBlock: plan.getQueryBlocks()) {
+    for (QueryBlock eachBlock: context.getPlan().getQueryBlocks()) {
       if (eachBlock.hasTableExpression()) {
         return true;
       }
@@ -71,7 +72,8 @@ public class ProjectionPushDownRule extends
   }
 
   @Override
-  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws PlanningException {
+  public LogicalPlan rewrite(LogicalPlanRewriteRuleContext rewriteRuleContext) throws PlanningException {
+    LogicalPlan plan = rewriteRuleContext.getPlan();
     LogicalPlan.QueryBlock rootBlock = plan.getRootBlock();
 
     LogicalPlan.QueryBlock topmostBlock = rootBlock;
@@ -1105,6 +1107,12 @@ public class ProjectionPushDownRule extends
     node.setTargets(projectedTargets.toArray(new Target[projectedTargets.size()]));
     LogicalPlanner.verifyProjectedFields(block, node);
     return node;
+  }
+
+  @Override
+  public LogicalNode visitIndexScan(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                    IndexScanNode node, Stack<LogicalNode> stack) throws PlanningException {
+    return visitScan(context, plan, block,node, stack);
   }
 
   @Override

@@ -41,7 +41,6 @@ import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.plan.LogicalPlan.QueryBlock;
 import org.apache.tajo.plan.algebra.BaseAlgebraVisitor;
@@ -52,12 +51,12 @@ import org.apache.tajo.plan.nameresolver.NameResolvingMode;
 import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
 import org.apache.tajo.plan.util.ExprFinder;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
+import java.net.URI;
 import java.util.*;
 
 import static org.apache.tajo.algebra.CreateTable.PartitionType;
@@ -1930,9 +1929,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return alterTableNode;
   }
 
-  private static Path getIndexPath(PlanContext context, String databaseName, String indexName) {
+  private static URI getIndexPath(PlanContext context, String databaseName, String indexName) {
     return new Path(TajoConf.getWarehouseDir(context.queryContext.getConf()),
-        databaseName + "/" + indexName + "/");
+        databaseName + "/" + indexName + "/").toUri();
   }
 
   @Override
@@ -1960,15 +1959,20 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       normalizedExprList[i] = normalizer.normalize(context, sortSpecs[i].getKey());
     }
     for (int i = 0; i < sortKeyNum; i++) {
+      // even if base expressions don't have their name,
+      // reference names should be identifiable for the later sort spec creation.
       referNames[i] = block.namedExprsMgr.addExpr(normalizedExprList[i].baseExpr);
       block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].aggExprs);
       block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs);
     }
 
-    createIndexNode.setSortSpecs(annotateSortSpecs(block, referNames, sortSpecs));
-    createIndexNode.setIndexType(IndexMethod.valueOf(createIndex.getMethodSpec().getName().toUpperCase()));
-    createIndexNode.setIndexPath(getIndexPath(context, context.queryContext.get(SessionVars.CURRENT_DATABASE),
-        createIndex.getIndexName()));
+    Collection<RelationNode> relations = block.getRelations();
+    assert relations.size() == 1;
+    createIndexNode.setKeySortSpecs(relations.iterator().next().getLogicalSchema(),
+        annotateSortSpecs(block, referNames, sortSpecs));
+    createIndexNode.setIndexMethod(IndexMethod.valueOf(createIndex.getMethodSpec().getName().toUpperCase()));
+    createIndexNode.setIndexPath(
+        getIndexPath(context, context.queryContext.get(SessionVars.CURRENT_DATABASE), createIndex.getIndexName()));
 
     if (createIndex.getParams() != null) {
       KeyValueSet keyValueSet = new KeyValueSet();
@@ -1978,6 +1982,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     createIndexNode.setChild(child);
     return createIndexNode;
+  }
+
+  @Override
+  public LogicalNode visitDropIndex(PlanContext context, Stack<Expr> stack, DropIndex dropIndex) {
+    DropIndexNode dropIndexNode = context.queryBlock.getNodeFromExpr(dropIndex);
+    dropIndexNode.setIndexName(dropIndex.getIndexName());
+    return dropIndexNode;
   }
 
   @Override

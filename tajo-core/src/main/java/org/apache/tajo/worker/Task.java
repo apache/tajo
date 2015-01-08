@@ -125,21 +125,9 @@ public class Task {
     this.inputStats = new TableStats();
 
     plan = LogicalNodeDeserializer.deserialize(queryContext, request.getPlan());
-    LogicalNode [] scanNode = PlannerUtil.findAllNodes(plan, NodeType.SCAN);
-    if (scanNode != null) {
-      for (LogicalNode node : scanNode) {
-        ScanNode scan = (ScanNode) node;
-        descs.put(scan.getCanonicalName(), scan.getTableDesc());
-      }
-    }
-
-    LogicalNode [] partitionScanNode = PlannerUtil.findAllNodes(plan, NodeType.PARTITIONS_SCAN);
-    if (partitionScanNode != null) {
-      for (LogicalNode node : partitionScanNode) {
-        PartitionedTableScanNode scan = (PartitionedTableScanNode) node;
-        descs.put(scan.getCanonicalName(), scan.getTableDesc());
-      }
-    }
+    updateDescsForScanNodes(NodeType.SCAN);
+    updateDescsForScanNodes(NodeType.PARTITIONS_SCAN);
+    updateDescsForScanNodes(NodeType.INDEX_SCAN);
 
     interQuery = request.getProto().getInterQuery();
     if (interQuery) {
@@ -179,6 +167,17 @@ public class Task {
       LOG.debug(plan.toString());
     }
     LOG.info("==================================");
+  }
+
+  private void updateDescsForScanNodes(NodeType nodeType) {
+    assert nodeType == NodeType.SCAN || nodeType == NodeType.PARTITIONS_SCAN || nodeType == NodeType.INDEX_SCAN;
+    LogicalNode[] scanNodes = PlannerUtil.findAllNodes(plan, nodeType);
+    if (scanNodes != null) {
+      for (LogicalNode node : scanNodes) {
+        ScanNode scanNode = (ScanNode) node;
+        descs.put(scanNode.getCanonicalName(), scanNode.getTableDesc());
+      }
+    }
   }
 
   public void init() throws IOException {

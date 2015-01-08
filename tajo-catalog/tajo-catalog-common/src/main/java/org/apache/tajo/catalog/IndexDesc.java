@@ -21,80 +21,91 @@ package org.apache.tajo.catalog;
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.common.ProtoObject;
 
-public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
-  private IndexDescProto.Builder builder;
+import java.net.URI;
+import java.net.URISyntaxException;
 
-  private String name;
-  private Path indexPath;            // required
+public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   private String databaseName;         // required
   private String tableName;            // required
-  private Column column;               // required
-  private IndexMethod indexMethod;     // required
-  private boolean isUnique = false;    // optional [default = false]
-  private boolean isClustered = false; // optional [default = false]
-  private boolean isAscending = false; // optional [default = false]
-  
+  private IndexMeta indexMeta;         // required
+
   public IndexDesc() {
   }
   
-  public IndexDesc(String name, Path indexPath, String databaseName, String tableName, Column column,
-                   IndexMethod type,  boolean isUnique, boolean isClustered, boolean isAscending) {
+  public IndexDesc(String databaseName, String tableName, String indexName, URI indexPath, SortSpec[] keySortSpecs,
+                   IndexMethod type,  boolean isUnique, boolean isClustered, Schema targetRelationSchema) {
     this();
-    this.name = name;
-    this.indexPath = indexPath;
-    this.databaseName = databaseName;
-    this.tableName = tableName;
-    this.column = column;
-    this.indexMethod = type;
-    this.isUnique = isUnique;
-    this.isClustered = isClustered;
-    this.isAscending = isAscending;
+    this.set(databaseName, tableName, indexName, indexPath, keySortSpecs, type, isUnique, isClustered,
+        targetRelationSchema);
   }
   
   public IndexDesc(IndexDescProto proto) {
-    this(proto.getName(), new Path(proto.getIndexPath()),
-        proto.getTableIdentifier().getDatabaseName(),
-        proto.getTableIdentifier().getTableName(),
-        new Column(proto.getColumn()),
-        proto.getIndexMethod(), proto.getIsUnique(), proto.getIsClustered(), proto.getIsAscending());
+    this();
+
+    SortSpec[] keySortSpecs = new SortSpec[proto.getKeySortSpecsCount()];
+    for (int i = 0; i < keySortSpecs.length; i++) {
+      keySortSpecs[i] = new SortSpec(proto.getKeySortSpecs(i));
+    }
+
+    try {
+      this.set(proto.getTableIdentifier().getDatabaseName(),
+          proto.getTableIdentifier().getTableName(),
+          proto.getIndexName(), new URI(proto.getIndexPath()),
+          keySortSpecs,
+          proto.getIndexMethod(), proto.getIsUnique(), proto.getIsClustered(),
+          new Schema(proto.getTargetRelationSchema()));
+    } catch (URISyntaxException e) {
+      e.printStackTrace();
+    }
   }
 
-  public String getName() {
-    return name;
+  public void set(String databaseName, String tableName, String indexName, URI indexPath, SortSpec[] keySortSpecs,
+                  IndexMethod type,  boolean isUnique, boolean isClustered, Schema targetRelationSchema) {
+    this.databaseName = databaseName;
+    this.tableName = tableName;
+    this.indexMeta = new IndexMeta(indexName, indexPath, keySortSpecs, type, isUnique, isClustered,
+        targetRelationSchema);
   }
-  
-  public Path getIndexPath() {
-    return indexPath;
+
+  public String getDatabaseName() {
+    return databaseName;
   }
-  
+
   public String getTableName() {
     return tableName;
   }
+
+  public String getName() {
+    return indexMeta.getIndexName();
+  }
   
-  public Column getColumn() {
-    return column;
+  public URI getIndexPath() {
+    return indexMeta.getIndexPath();
+  }
+
+  public SortSpec[] getKeySortSpecs() {
+    return indexMeta.getKeySortSpecs();
   }
   
   public IndexMethod getIndexMethod() {
-    return this.indexMethod;
+    return indexMeta.getIndexMethod();
   }
   
   public boolean isClustered() {
-    return this.isClustered;
+    return indexMeta.isClustered();
   }
   
   public boolean isUnique() {
-    return this.isUnique;
+    return indexMeta.isUnique();
   }
-  
-  public boolean isAscending() {
-    return this.isAscending;
+
+  public Schema getTargetRelationSchema() {
+    return indexMeta.getTargetRelationSchema();
   }
 
   @Override
@@ -110,13 +121,15 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
     }
 
     builder.setTableIdentifier(tableIdentifierBuilder.build());
-    builder.setName(this.name);
-    builder.setIndexPath(this.indexPath.toString());
-    builder.setColumn(this.column.getProto());
-    builder.setIndexMethod(indexMethod);
-    builder.setIsUnique(this.isUnique);
-    builder.setIsClustered(this.isClustered);
-    builder.setIsAscending(this.isAscending);
+    builder.setIndexName(indexMeta.getIndexName());
+    builder.setIndexPath(indexMeta.getIndexPath().toString());
+    for (SortSpec colSpec : indexMeta.getKeySortSpecs()) {
+      builder.addKeySortSpecs(colSpec.getProto());
+    }
+    builder.setIndexMethod(indexMeta.getIndexMethod());
+    builder.setIsUnique(indexMeta.isUnique());
+    builder.setIsClustered(indexMeta.isClustered());
+    builder.setTargetRelationSchema(indexMeta.getTargetRelationSchema().getProto());
 
     return builder.build();
   }
@@ -124,34 +137,23 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   public boolean equals(Object obj) {
     if (obj instanceof IndexDesc) {
       IndexDesc other = (IndexDesc) obj;
-      return getIndexPath().equals(other.getIndexPath())
-          && getName().equals(other.getName())
+      return getDatabaseName().equals(other.getDatabaseName())
           && getTableName().equals(other.getTableName())
-          && getColumn().equals(other.getColumn())
-          && getIndexMethod().equals(other.getIndexMethod())
-          && isUnique() == other.isUnique()
-          && isClustered() == other.isClustered()
-          && isAscending() == other.isAscending();
+          && this.indexMeta.equals(other.indexMeta);
     } else {
       return false;
     }
   }
   
   public int hashCode() {
-    return Objects.hashCode(getName(), getIndexPath(), getTableName(), getColumn(),
-        getIndexMethod(), isUnique(), isClustered(), isAscending());
+    return Objects.hashCode(databaseName, tableName, indexMeta);
   }
 
   public Object clone() throws CloneNotSupportedException {
     IndexDesc desc = (IndexDesc) super.clone();
-    desc.name = name;
-    desc.indexPath = indexPath;
-    desc.tableName = tableName;
-    desc.column = column;
-    desc.indexMethod = indexMethod;
-    desc.isUnique = isUnique;
-    desc.isClustered = isClustered;
-    desc.isAscending = isAscending;
+    desc.databaseName = this.databaseName;
+    desc.tableName = this.tableName;
+    desc.indexMeta = (IndexMeta) this.indexMeta.clone();
     return desc;
   }
   

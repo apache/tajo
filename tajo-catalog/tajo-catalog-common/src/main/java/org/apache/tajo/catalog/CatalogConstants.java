@@ -52,5 +52,6 @@ public class CatalogConstants {
   public static final String COL_TABLESPACE_PK = "SPACE_ID";
   public static final String COL_DATABASES_PK = "DB_ID";
   public static final String COL_TABLES_PK = "TID";
+  public static final String COL_INDEXES_PK = "INDEX_ID";
   public static final String COL_TABLES_NAME = "TABLE_NAME";
 }

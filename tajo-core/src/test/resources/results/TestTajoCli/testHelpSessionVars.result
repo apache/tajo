@@ -34,6 +34,8 @@ Available Session Variables:
 \set MAX_OUTPUT_FILE_SIZE [int value] - Maximum per-output file size (mb). 0 means infinite.
 \set NULL_CHAR [text value] - null char of text file output
 \set CODEGEN [true or false] - Runtime code generation enabled (experiment)
+\set INDEX_ENABLED [true or false] - index scan enabled
+\set INDEX_SELECTIVITY_THRESHOLD [real value] - the selectivity threshold for index scan
 \set ARITHABORT [true or false] - If true, a running query will be terminated when an overflow or divide-by-zero occurs.
 \set FETCH_ROWNUM [int value] - Sets the number of rows at a time from Master
 \set DEBUG_ENABLED [true or false] - (debug only) debug mode enabled

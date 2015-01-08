@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -39,12 +40,8 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-import static org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
 public class CatalogUtil {
@@ -867,5 +864,44 @@ public class CatalogUtil {
     }
 
     return options;
+  }
+
+  /**
+   * Make a unique name by concatenating column names.
+   * The concatenation is performed in sequence of columns' occurrence in the relation schema.
+   *
+   * @param originalSchema original relation schema
+   * @param columnNames column names which will be unified
+   * @return unified name
+   */
+  public static String getUnifiedSimpleColumnName(Schema originalSchema, String[] columnNames) {
+    String[] simpleNames = new String[columnNames.length];
+    for (int i = 0; i < simpleNames.length; i++) {
+      String[] identifiers = columnNames[i].split(CatalogConstants.IDENTIFIER_DELIMITER_REGEXP);
+      simpleNames[i] = identifiers[identifiers.length-1];
+    }
+    Arrays.sort(simpleNames, new ColumnPosComparator(originalSchema));
+    StringBuilder sb = new StringBuilder();
+    for (String colName : simpleNames) {
+      sb.append(colName).append("_");
+    }
+    sb.deleteCharAt(sb.length()-1);
+    return sb.toString();
+  }
+
+  /**
+   * Given column names, compare the position of columns in the relation schema.
+   */
+  public static class ColumnPosComparator implements Comparator<String> {
+
+    private Schema originlSchema;
+    public ColumnPosComparator(Schema originalSchema) {
+      this.originlSchema = originalSchema;
+    }
+
+    @Override
+    public int compare(String o1, String o2) {
+      return originlSchema.getColumnId(o1) - originlSchema.getColumnId(o2);
+    }
   }
 }

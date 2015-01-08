@@ -382,7 +382,7 @@ public class EvalTreeUtil {
     return !leftQualifier.equals(rightQualifier);
   }
 
-  static boolean isSingleColumn(EvalNode evalNode) {
+  public static boolean isSingleColumn(EvalNode evalNode) {
     return EvalTreeUtil.findUniqueColumns(evalNode).size() == 1;
   }
   
@@ -516,6 +516,10 @@ public class EvalTreeUtil {
       }
 
       return evalNode;
+    }
+
+    public List<EvalNode> getEvalNodes() {
+      return evalNodes;
     }
   }
 

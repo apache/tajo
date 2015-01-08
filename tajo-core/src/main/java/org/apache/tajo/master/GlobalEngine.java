@@ -34,7 +34,7 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.exec.DDLExecutor;
 import org.apache.tajo.master.exec.QueryExecutor;
@@ -51,6 +51,7 @@ import org.apache.tajo.plan.verifier.VerificationState;
 import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.IPCUtil;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -90,7 +91,8 @@ public class GlobalEngine extends AbstractService {
       analyzer = new SQLAnalyzer();
       preVerifier = new PreLogicalPlanVerifier(context.getCatalog());
       planner = new LogicalPlanner(context.getCatalog());
-      optimizer = new LogicalOptimizer(context.getConf());
+      // Access path rewriter is enabled only in QueryMasterTask
+      optimizer = new LogicalOptimizer(context.getConf(), context.getCatalog());
       annotatedPlanVerifier = new LogicalPlanVerifier(context.getConf(), context.getCatalog());
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
@@ -169,13 +171,12 @@ public class GlobalEngine extends AbstractService {
       responseBuilder.setUserName(queryContext.get(SessionVars.USERNAME));
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
       responseBuilder.setIsForwarded(true);
-      responseBuilder.setResultCode(ClientProtos.ResultCode.ERROR);
       String errorMessage = t.getMessage();
       if (t.getMessage() == null) {
         errorMessage = t.getClass().getName();
       }
-      responseBuilder.setErrorMessage(errorMessage);
-      responseBuilder.setErrorTrace(StringUtils.stringifyException(t));
+      responseBuilder.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR,
+          errorMessage, StringUtils.stringifyException(t)));
       return responseBuilder.build();
     }
   }
