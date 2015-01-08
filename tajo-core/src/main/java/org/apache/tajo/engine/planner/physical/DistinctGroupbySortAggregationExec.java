@@ -22,6 +22,7 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.logical.DistinctGroupbyNode;
 import org.apache.tajo.plan.logical.GroupbyNode;
 import org.apache.tajo.storage.Tuple;
@@ -127,23 +128,33 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
   }
 
   private Tuple getEmptyTuple() {
-    Tuple tuple = new VTuple(outColumnNum);
+    Tuple tuple = new VTuple(outSchema.size());
     NullDatum nullDatum = DatumFactory.createNullDatum();
 
-    for (int i = 0; i < outColumnNum; i++) {
-      TajoDataTypes.Type type = outSchema.getColumn(i).getDataType().getType();
-      if (type == TajoDataTypes.Type.INT8) {
-        tuple.put(i, DatumFactory.createInt8(nullDatum.asInt8()));
-      } else if (type == TajoDataTypes.Type.INT4) {
-        tuple.put(i, DatumFactory.createInt4(nullDatum.asInt4()));
-      } else if (type == TajoDataTypes.Type.INT2) {
-        tuple.put(i, DatumFactory.createInt2(nullDatum.asInt2()));
-      } else if (type == TajoDataTypes.Type.FLOAT4) {
-        tuple.put(i, DatumFactory.createFloat4(nullDatum.asFloat4()));
-      } else if (type == TajoDataTypes.Type.FLOAT8) {
-        tuple.put(i, DatumFactory.createFloat8(nullDatum.asFloat8()));
-      } else {
-        tuple.put(i, DatumFactory.createNullDatum());
+    int tupleIndex = 0;
+    for (SortAggregateExec aggExec: aggregateExecs) {
+      for (int i = 0; i < aggExec.aggFunctionsNum; i++, tupleIndex++) {
+        String funcName = aggExec.aggFunctions[i].getName();
+        if ("min".equals(funcName) || "max".equals(funcName) || "avg".equals(funcName) || "sum".equals(funcName)) {
+          tuple.put(resultColumnIdIndexes[tupleIndex], DatumFactory.createNullDatum());
+        }
+        else
+        {
+          TajoDataTypes.Type type = outSchema.getColumn(resultColumnIdIndexes[tupleIndex]).getDataType().getType();
+          if (type == TajoDataTypes.Type.INT8) {
+            tuple.put(resultColumnIdIndexes[tupleIndex], DatumFactory.createInt8(nullDatum.asInt8()));
+          } else if (type == TajoDataTypes.Type.INT4) {
+            tuple.put(resultColumnIdIndexes[tupleIndex], DatumFactory.createInt4(nullDatum.asInt4()));
+          } else if (type == TajoDataTypes.Type.INT2) {
+            tuple.put(resultColumnIdIndexes[tupleIndex], DatumFactory.createInt2(nullDatum.asInt2()));
+          } else if (type == TajoDataTypes.Type.FLOAT4) {
+            tuple.put(resultColumnIdIndexes[tupleIndex], DatumFactory.createFloat4(nullDatum.asFloat4()));
+          } else if (type == TajoDataTypes.Type.FLOAT8) {
+            tuple.put(resultColumnIdIndexes[tupleIndex], DatumFactory.createFloat8(nullDatum.asFloat8()));
+          } else {
+            tuple.put(resultColumnIdIndexes[tupleIndex], DatumFactory.createNullDatum());
+          }
+        }
       }
     }
 

@@ -19,36 +19,58 @@
 package org.apache.tajo.engine.function.builtin;
 
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.plan.function.AggFunction;
 import org.apache.tajo.plan.function.FunctionContext;
-import org.apache.tajo.engine.function.annotation.Description;
-import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.storage.Tuple;
 
-@Description(
-  functionName = "avg",
-  description = "the mean of a set of numbers.",
-  example = "> SELECT avg(expr);",
-  returnType = TajoDataTypes.Type.FLOAT8,
-  paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.INT4})}
-)
-public class AvgInt extends AvgLong {
+public abstract class Min extends AggFunction<Datum> {
+  public Min(Column[] definedArgs) {
+    super(definedArgs);
+  }
 
-  public AvgInt() {
-    super(new Column[] {
-        new Column("expr", TajoDataTypes.Type.INT4)
-    });
-
+  @Override
+  public FunctionContext newContext() {
+    return new MinContext();
   }
 
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
-    AvgContext avgCtx = (AvgContext) ctx;
+    MinContext minCtx = (MinContext) ctx;
     Datum datum = params.get(0);
     if (datum.isNotNull()) {
-      avgCtx.sum += datum.asInt4();
-      avgCtx.count++;
+      if (minCtx.min == null || minCtx.min.compareTo(datum) > 0) {
+        minCtx.min = datum;
+      }
     }
+  }
+
+  @Override
+  public Datum getPartialResult(FunctionContext ctx) {
+    Datum min = ((MinContext)ctx).min;
+
+    if (min == null) {
+      return NullDatum.get();
+    }
+    else {
+      return min;
+    }
+  }
+
+  @Override
+  public Datum terminate(FunctionContext ctx) {
+    Datum min = ((MinContext)ctx).min;
+
+    if (min == null) {
+      return NullDatum.get();
+    }
+    else {
+      return min;
+    }
+  }
+
+  private class MinContext implements FunctionContext {
+    Datum min = null;
   }
 }
