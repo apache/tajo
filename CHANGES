@@ -27,6 +27,9 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1282: Cleanup the relationship of QueryInProgress and 
+    QueryJobManager. (hyunsik)
+
     TAJO-1258: Close() for classes derived from FileAppender should be robust.
     (Jongyoung Park via jinho)
 
