@@ -27,7 +27,11 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ContainerProtocol;
-import org.apache.tajo.ipc.TajoMasterProtocol;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol.TajoHeartbeat;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol.WorkerResourceProto;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol.WorkerResourceReleaseRequest;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol.WorkerResourcesRequest;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.rm.Worker;
 import org.apache.tajo.master.rm.WorkerResource;
@@ -40,23 +44,23 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
 
-public class TajoMasterService extends AbstractService {
-  private final static Log LOG = LogFactory.getLog(TajoMasterService.class);
+public class TajoMasterUmbilicalService extends AbstractService {
+  private final static Log LOG = LogFactory.getLog(TajoMasterUmbilicalService.class);
 
   private final TajoMaster.MasterContext context;
   private final TajoConf conf;
-  private final TajoMasterServiceHandler masterHandler;
+  private final ProtocolServiceHandler masterHandler;
   private AsyncRpcServer server;
   private InetSocketAddress bindAddress;
 
   private final BoolProto BOOL_TRUE = BoolProto.newBuilder().setValue(true).build();
   private final BoolProto BOOL_FALSE = BoolProto.newBuilder().setValue(false).build();
 
-  public TajoMasterService(TajoMaster.MasterContext context) {
-    super(TajoMasterService.class.getName());
+  public TajoMasterUmbilicalService(TajoMaster.MasterContext context) {
+    super(TajoMasterUmbilicalService.class.getName());
     this.context = context;
     this.conf = context.getConf();
-    this.masterHandler = new TajoMasterServiceHandler();
+    this.masterHandler = new ProtocolServiceHandler();
   }
 
   @Override
@@ -65,7 +69,7 @@ public class TajoMasterService extends AbstractService {
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterServiceAddr);
     int workerNum = conf.getIntVar(TajoConf.ConfVars.MASTER_RPC_SERVER_WORKER_THREAD_NUM);
     try {
-      server = new AsyncRpcServer(TajoMasterProtocol.class, masterHandler, initIsa, workerNum);
+      server = new AsyncRpcServer(QueryCoordinatorProtocol.class, masterHandler, initIsa, workerNum);
     } catch (Exception e) {
       LOG.error(e);
     }
@@ -90,22 +94,25 @@ public class TajoMasterService extends AbstractService {
     return bindAddress;
   }
 
-  public class TajoMasterServiceHandler
-      implements TajoMasterProtocol.TajoMasterProtocolService.Interface {
+  /**
+   * Actual protocol service handler
+   */
+  private class ProtocolServiceHandler implements QueryCoordinatorProtocol.QueryCoordinatorProtocolService.Interface {
+
     @Override
     public void heartbeat(
         RpcController controller,
-        TajoMasterProtocol.TajoHeartbeat request, RpcCallback<TajoMasterProtocol.TajoHeartbeatResponse> done) {
+        TajoHeartbeat request, RpcCallback<QueryCoordinatorProtocol.TajoHeartbeatResponse> done) {
       if(LOG.isDebugEnabled()) {
         LOG.debug("Received QueryHeartbeat:" + new WorkerConnectionInfo(request.getConnectionInfo()));
       }
 
-      TajoMasterProtocol.TajoHeartbeatResponse.ResponseCommand command = null;
+      QueryCoordinatorProtocol.TajoHeartbeatResponse.ResponseCommand command = null;
 
-      QueryJobManager queryJobManager = context.getQueryJobManager();
-      command = queryJobManager.queryHeartbeat(request);
+      QueryManager queryManager = context.getQueryJobManager();
+      command = queryManager.queryHeartbeat(request);
 
-      TajoMasterProtocol.TajoHeartbeatResponse.Builder builder = TajoMasterProtocol.TajoHeartbeatResponse.newBuilder();
+      QueryCoordinatorProtocol.TajoHeartbeatResponse.Builder builder = QueryCoordinatorProtocol.TajoHeartbeatResponse.newBuilder();
       builder.setHeartbeatResult(BOOL_TRUE);
       if(command != null) {
         builder.setResponseCommand(command);
@@ -118,14 +125,13 @@ public class TajoMasterService extends AbstractService {
     @Override
     public void allocateWorkerResources(
         RpcController controller,
-        TajoMasterProtocol.WorkerResourceAllocationRequest request,
-        RpcCallback<TajoMasterProtocol.WorkerResourceAllocationResponse> done) {
+        QueryCoordinatorProtocol.WorkerResourceAllocationRequest request,
+        RpcCallback<QueryCoordinatorProtocol.WorkerResourceAllocationResponse> done) {
       context.getResourceManager().allocateWorkerResources(request, done);
     }
 
     @Override
-    public void releaseWorkerResource(RpcController controller,
-                                           TajoMasterProtocol.WorkerResourceReleaseRequest request,
+    public void releaseWorkerResource(RpcController controller, WorkerResourceReleaseRequest request,
                                            RpcCallback<PrimitiveProtos.BoolProto> done) {
       List<ContainerProtocol.TajoContainerIdProto> containerIds = request.getContainerIdsList();
 
@@ -144,17 +150,15 @@ public class TajoMasterService extends AbstractService {
 
     @Override
     public void getAllWorkerResource(RpcController controller, PrimitiveProtos.NullProto request,
-                                     RpcCallback<TajoMasterProtocol.WorkerResourcesRequest> done) {
+                                     RpcCallback<WorkerResourcesRequest> done) {
 
-      TajoMasterProtocol.WorkerResourcesRequest.Builder builder =
-          TajoMasterProtocol.WorkerResourcesRequest.newBuilder();
+      WorkerResourcesRequest.Builder builder = WorkerResourcesRequest.newBuilder();
       Collection<Worker> workers = context.getResourceManager().getWorkers().values();
 
       for(Worker worker: workers) {
         WorkerResource resource = worker.getResource();
 
-        TajoMasterProtocol.WorkerResourceProto.Builder workerResource =
-            TajoMasterProtocol.WorkerResourceProto.newBuilder();
+        WorkerResourceProto.Builder workerResource = WorkerResourceProto.newBuilder();
 
         workerResource.setConnectionInfo(worker.getConnectionInfo().getProto());
         workerResource.setMemoryMB(resource.getMemoryMB());
