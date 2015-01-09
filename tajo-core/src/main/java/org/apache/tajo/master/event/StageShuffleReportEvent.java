@@ -16,16 +16,23 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.querymaster;
+package org.apache.tajo.master.event;
 
-public enum StageState {
-  NEW,
-  INITED,
-  RUNNING,
-  FINALIZING,
-  SUCCEEDED,
-  FAILED,
-  KILL_WAIT,
-  KILLED,
-  ERROR
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
+
+/**
+ * Event Class: From {@link org.apache.tajo.querymaster.QueryMasterManagerService} to Stage
+ */
+public class StageShuffleReportEvent extends StageEvent {
+  private TajoWorkerProtocol.ExecutionBlockReport report;
+
+  public StageShuffleReportEvent(ExecutionBlockId executionBlockId, TajoWorkerProtocol.ExecutionBlockReport report) {
+    super(executionBlockId, StageEventType.SQ_SHUFFLE_REPORT);
+    this.report = report;
+  }
+
+  public TajoWorkerProtocol.ExecutionBlockReport getReport() {
+    return report;
+  }
 }

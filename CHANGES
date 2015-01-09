@@ -156,6 +156,8 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1251: Query is hanging occasionally by shuffle report. (jinho)
+
     TAJO-1287: Repeated using of the same order by key in multiple 
     window clauses should be supported. (Keuntae Park)
 
