@@ -35,12 +35,9 @@ public class QueryJobEvent extends AbstractEvent<QueryJobEvent.Type> {
   }
 
   public enum Type {
-    QUERY_JOB_START,
-    QUERY_JOB_HEARTBEAT,
-    QUERY_JOB_FINISH,
-    QUERY_JOB_STOP,
     QUERY_MASTER_START,
-    QUERY_MASTER_STOP,
+    QUERY_JOB_HEARTBEAT,
+    QUERY_JOB_STOP,
     QUERY_JOB_KILL
   }
 }

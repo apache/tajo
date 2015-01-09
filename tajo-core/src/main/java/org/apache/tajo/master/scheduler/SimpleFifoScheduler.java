@@ -58,7 +58,8 @@ public class SimpleFifoScheduler implements Scheduler {
       LOG.info("Size of Fifo queue is " + qSize);
     }
 
-    QuerySchedulingInfo querySchedulingInfo = new QuerySchedulingInfo(queryInProgress.getQueryId(), 1, queryInProgress.getStartTime());
+    QuerySchedulingInfo querySchedulingInfo = new QuerySchedulingInfo(queryInProgress.getQueryId(), 1,
+        queryInProgress.getQueryInfo().getStartTime());
     boolean result = pool.add(querySchedulingInfo);
     if (getRunningQueries().size() == 0) wakeupProcessor();
     return result;
