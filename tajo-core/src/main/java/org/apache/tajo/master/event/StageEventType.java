@@ -35,7 +35,7 @@ public enum StageEventType {
   SQ_FAILED,
 
   // Producer: Stage
-  SQ_STAGE_FINALIZE,
+  SQ_SHUFFLE_REPORT,
   SQ_STAGE_COMPLETED,
 
   // Producer: Any component

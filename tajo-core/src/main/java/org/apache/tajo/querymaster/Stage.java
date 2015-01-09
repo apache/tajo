@@ -50,22 +50,24 @@ import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.MultipleAggregationStage;
 import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty;
 import org.apache.tajo.ipc.TajoWorkerProtocol.IntermediateEntryProto;
-import org.apache.tajo.master.*;
+import org.apache.tajo.master.LaunchTaskRunnersEvent;
+import org.apache.tajo.master.TaskRunnerGroupEvent;
 import org.apache.tajo.master.TaskRunnerGroupEvent.EventType;
-import org.apache.tajo.master.event.*;
-import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptScheduleContext;
-import org.apache.tajo.querymaster.Task.IntermediateEntry;
+import org.apache.tajo.master.TaskState;
 import org.apache.tajo.master.container.TajoContainer;
 import org.apache.tajo.master.container.TajoContainerId;
-import org.apache.tajo.storage.FileStorageManager;
-import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.master.event.*;
+import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptScheduleContext;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.querymaster.Task.IntermediateEntry;
+import org.apache.tajo.storage.FileStorageManager;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.history.TaskHistory;
 import org.apache.tajo.util.history.StageHistory;
+import org.apache.tajo.util.history.TaskHistory;
 import org.apache.tajo.worker.FetchImpl;
 
 import java.io.IOException;
@@ -73,7 +75,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -104,7 +105,7 @@ public class Stage implements EventHandler<StageEvent> {
 
   private long startTime;
   private long finishTime;
-  private AtomicLong lastContactTime = new AtomicLong();
+  private volatile long lastContactTime;
   private Thread timeoutChecker;
 
   volatile Map<TaskId, Task> tasks = new ConcurrentHashMap<TaskId, Task>();
@@ -160,8 +161,8 @@ public class Stage implements EventHandler<StageEvent> {
           .addTransition(StageState.RUNNING, StageState.RUNNING,
               StageEventType.SQ_TASK_COMPLETED,
               TASK_COMPLETED_TRANSITION)
-          .addTransition(StageState.RUNNING, StageState.FINALIZE,
-              StageEventType.SQ_STAGE_FINALIZE,
+          .addTransition(StageState.RUNNING, StageState.FINALIZING,
+              StageEventType.SQ_SHUFFLE_REPORT,
               STAGE_FINALIZE_TRANSITION)
           .addTransition(StageState.RUNNING,
               EnumSet.of(StageState.SUCCEEDED, StageState.FAILED),
@@ -206,22 +207,22 @@ public class Stage implements EventHandler<StageEvent> {
               StageEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
 
-              // Transitions from FINALIZE state
-          .addTransition(StageState.FINALIZE, StageState.FINALIZE,
-              StageEventType.SQ_STAGE_FINALIZE,
+              // Transitions from FINALIZING state
+          .addTransition(StageState.FINALIZING, StageState.FINALIZING,
+              StageEventType.SQ_SHUFFLE_REPORT,
               STAGE_FINALIZE_TRANSITION)
-          .addTransition(StageState.FINALIZE,
+          .addTransition(StageState.FINALIZING,
               EnumSet.of(StageState.SUCCEEDED, StageState.FAILED),
               StageEventType.SQ_STAGE_COMPLETED,
               STAGE_COMPLETED_TRANSITION)
-          .addTransition(StageState.FINALIZE, StageState.FINALIZE,
+          .addTransition(StageState.FINALIZING, StageState.FINALIZING,
               StageEventType.SQ_DIAGNOSTIC_UPDATE,
               DIAGNOSTIC_UPDATE_TRANSITION)
-          .addTransition(StageState.FINALIZE, StageState.ERROR,
+          .addTransition(StageState.FINALIZING, StageState.ERROR,
               StageEventType.SQ_INTERNAL_ERROR,
               INTERNAL_ERROR_TRANSITION)
               // Ignore-able Transition
-          .addTransition(StageState.FINALIZE, StageState.KILLED,
+          .addTransition(StageState.FINALIZING, StageState.KILLED,
               StageEventType.SQ_KILL)
 
               // Transitions from SUCCEEDED state
@@ -716,7 +717,7 @@ public class Stage implements EventHandler<StageEvent> {
 
   @Override
   public void handle(StageEvent event) {
-    lastContactTime.set(System.currentTimeMillis());
+    lastContactTime = System.currentTimeMillis();
     if (LOG.isDebugEnabled()) {
       LOG.debug("Processing " + event.getStageId() + " of type " + event.getType() + ", preState="
           + getSynchronizedState());
@@ -1228,7 +1229,7 @@ public class Stage implements EventHandler<StageEvent> {
 
         if (stage.totalScheduledObjectsCount == stage.completedTaskCount) {
           if (stage.succeededObjectCount == stage.completedTaskCount) {
-            stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_STAGE_FINALIZE));
+            stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_SHUFFLE_REPORT));
           } else {
             stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_STAGE_COMPLETED));
           }
@@ -1294,7 +1295,7 @@ public class Stage implements EventHandler<StageEvent> {
         return;
       }
 
-      stage.lastContactTime.set(System.currentTimeMillis());
+      stage.lastContactTime = System.currentTimeMillis();
       try {
         if (event instanceof StageFinalizeEvent) {
 
@@ -1342,8 +1343,8 @@ public class Stage implements EventHandler<StageEvent> {
             stage.timeoutChecker = new Thread(new Runnable() {
               @Override
               public void run() {
-                while (stage.getSynchronizedState() == StageState.FINALIZE && !Thread.interrupted()) {
-                  long elapsedTime = System.currentTimeMillis() - stage.lastContactTime.get();
+                while (stage.getSynchronizedState() == StageState.FINALIZING && !Thread.interrupted()) {
+                  long elapsedTime = System.currentTimeMillis() - stage.lastContactTime;
                   if (elapsedTime > 120 * 1000) {
                     stage.stopFinalization();
                     LOG.error(stage.getId() + ": Timed out while receiving intermediate reports: " + elapsedTime

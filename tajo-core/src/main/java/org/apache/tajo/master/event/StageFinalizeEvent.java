@@ -28,7 +28,7 @@ public class StageFinalizeEvent extends StageEvent {
   private TajoWorkerProtocol.ExecutionBlockReport report;
 
   public StageFinalizeEvent(ExecutionBlockId executionBlockId, TajoWorkerProtocol.ExecutionBlockReport report) {
-    super(executionBlockId, StageEventType.SQ_STAGE_FINALIZE);
+    super(executionBlockId, StageEventType.SQ_SHUFFLE_REPORT);
     this.report = report;
   }
 
