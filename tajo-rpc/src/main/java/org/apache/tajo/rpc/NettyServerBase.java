@@ -113,25 +113,35 @@ public class NettyServerBase {
   }
 
   public void shutdown() {
+    shutdown(false);
+  }
+
+  public void shutdown(boolean waitUntilThreadsStop) {
     try {
       accepted.close().awaitUninterruptibly(10, TimeUnit.SECONDS);
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
     }
-    
+
     if(bootstrap != null) {
       if (bootstrap.childGroup() != null) {
         bootstrap.childGroup().shutdownGracefully();
+        if (waitUntilThreadsStop) {
+          bootstrap.childGroup().terminationFuture().awaitUninterruptibly();
+        }
       }
-      
+
       if (bootstrap.group() != null) {
         bootstrap.group().shutdownGracefully();
+        if (waitUntilThreadsStop) {
+          bootstrap.childGroup().terminationFuture().awaitUninterruptibly();
+        }
       }
     }
 
     if (bindAddress != null) {
       LOG.info("Rpc (" + serviceName + ") listened on "
-          + NetUtils.normalizeInetSocketAddress(bindAddress)+ ") shutdown");
+              + NetUtils.normalizeInetSocketAddress(bindAddress)+ ") shutdown");
     }
   }
 

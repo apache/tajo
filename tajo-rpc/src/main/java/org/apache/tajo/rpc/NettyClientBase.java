@@ -18,18 +18,13 @@
 
 package org.apache.tajo.rpc;
 
+import io.netty.channel.*;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.util.NetUtils;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.ConnectTimeoutException;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.GenericFutureListener;
 
@@ -46,6 +41,7 @@ public abstract class NettyClientBase implements Closeable {
   private int numRetries;
 
   protected Bootstrap bootstrap;
+  private EventLoopGroup loopGroup;
   private ChannelFuture channelFuture;
 
   public NettyClientBase() {
@@ -63,8 +59,9 @@ public abstract class NettyClientBase implements Closeable {
 
   public void init(InetSocketAddress addr, ChannelInitializer<Channel> initializer, EventLoopGroup loopGroup)
       throws ConnectTimeoutException {
+    this.loopGroup = loopGroup;
     this.bootstrap = new Bootstrap();
-    this.bootstrap.group(loopGroup)
+    this.bootstrap.group(this.loopGroup)
       .channel(NioSocketChannel.class)
       .handler(initializer)
       .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
@@ -74,22 +71,30 @@ public abstract class NettyClientBase implements Closeable {
 
     connect(addr);
   }
+
+  private void connectUsingNetty(InetSocketAddress address, GenericFutureListener<ChannelFuture> listener) {
+
+    this.channelFuture = bootstrap.clone().connect(address)
+            .addListener(listener);
+  }
   
   private void handleConnectionInternally(final InetSocketAddress addr) throws ConnectTimeoutException {
-    this.channelFuture = bootstrap.clone().connect(addr);
-
     final CountDownLatch latch = new CountDownLatch(1);
-    this.channelFuture.addListener(new GenericFutureListener<ChannelFuture>() {
+    GenericFutureListener<ChannelFuture> listener = new GenericFutureListener<ChannelFuture>() {
       private final AtomicInteger retryCount = new AtomicInteger();
-      
+
       @Override
-      public void operationComplete(ChannelFuture future) throws Exception {
-        if (!future.isSuccess()) {
-          
+      public void operationComplete(ChannelFuture channelFuture) throws Exception {
+        if (!channelFuture.isSuccess()) {
           if (numRetries > retryCount.getAndIncrement()) {
-            Thread.sleep(PAUSE);
-            channelFuture = bootstrap.clone().connect(addr);
-            channelFuture.addListener(this);
+            final GenericFutureListener<ChannelFuture> currentListener = this;
+
+            loopGroup.schedule(new Runnable() {
+              @Override
+              public void run() {
+                connectUsingNetty(addr, currentListener);
+              }
+            }, PAUSE, TimeUnit.MILLISECONDS);
 
             LOG.debug("Connecting to " + addr + " has been failed. Retrying to connect.");
           }
@@ -103,7 +108,8 @@ public abstract class NettyClientBase implements Closeable {
           latch.countDown();
         }
       }
-    });
+    };
+    connectUsingNetty(addr, listener);
 
     try {
       latch.await(CLIENT_CONNECTION_TIMEOUT_SEC, TimeUnit.SECONDS);

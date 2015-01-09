@@ -266,7 +266,10 @@ public class TestAsyncRpc {
         .setMessage(MESSAGE).build();
     CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
 
-    tearDownRpcServer();
+    if (server != null) {
+      server.shutdown(true);
+      server = null;
+    }
 
     stub = client.getStub();
     stub.echo(future.getController(), echoMessage, future);
@@ -305,7 +308,6 @@ public class TestAsyncRpc {
     });
     serverThread.start();
 
-    clientLoopGroup = RpcChannelFactory.createClientEventloopGroup(MESSAGE, 2);
     client = new AsyncRpcClient(DummyProtocol.class, address, clientLoopGroup, retries);
     stub = client.getStub();
     stub.echo(future.getController(), echoMessage, future);
