@@ -321,4 +321,33 @@ public class TestWindowQuery extends QueryTestCaseBase {
       executeString("DROP TABLE lastvaluetime PURGE");
     }
   }
+
+  @Test
+  public final void testMultipleWindow() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("time", TajoDataTypes.Type.TIME);
+    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    String[] data = new String[]{ "1|12:11:12|abc", "2|10:11:13|def", "2|05:42:41|ghi" };
+    TajoTestingCluster.createTable("multiwindow", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString(
+          "select id, last_value(time) over ( partition by id order by time ) as time_last, last_value(name) over ( partition by id order by time ) as name_last from multiwindow");
+      String ascExpected = "id,time_last,name_last\n" +
+          "-------------------------------\n" +
+          "1,12:11:12,abc\n" +
+          "2,10:11:13,def\n" +
+          "2,10:11:13,def\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE multiwindow PURGE");
+    }
+  }
 }

@@ -90,7 +90,7 @@ public class TestKillQuery {
 
     QueryMaster qm = cluster.getTajoWorkers().get(0).getWorkerContext().getQueryMaster();
     QueryMasterTask queryMasterTask = new QueryMasterTask(qm.getContext(),
-        queryId, session, defaultContext, expr.toJson(), plan.getRootBlock().getRoot().toJson());
+        queryId, session, defaultContext, expr.toJson());
 
     queryMasterTask.init(conf);
     queryMasterTask.getQueryTaskContext().getDispatcher().start();
