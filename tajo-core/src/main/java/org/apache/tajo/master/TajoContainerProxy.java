@@ -26,7 +26,7 @@ import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.ContainerProtocol;
-import org.apache.tajo.ipc.TajoMasterProtocol;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.master.container.TajoContainer;
@@ -177,23 +177,23 @@ public class TajoContainerProxy extends ContainerProxy {
       if (conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
         try {
           tmClient = connPool.getConnection(context.getQueryMasterContext().getWorkerContext().getTajoMasterAddress(),
-              TajoMasterProtocol.class, true);
+              QueryCoordinatorProtocol.class, true);
         } catch (Exception e) {
           context.getQueryMasterContext().getWorkerContext().setWorkerResourceTrackerAddr(
               HAServiceUtil.getResourceTrackerAddress(conf));
           context.getQueryMasterContext().getWorkerContext().setTajoMasterAddress(
               HAServiceUtil.getMasterUmbilicalAddress(conf));
           tmClient = connPool.getConnection(context.getQueryMasterContext().getWorkerContext().getTajoMasterAddress(),
-              TajoMasterProtocol.class, true);
+              QueryCoordinatorProtocol.class, true);
         }
       } else {
         tmClient = connPool.getConnection(context.getQueryMasterContext().getWorkerContext().getTajoMasterAddress(),
-            TajoMasterProtocol.class, true);
+            QueryCoordinatorProtocol.class, true);
       }
 
-      TajoMasterProtocol.TajoMasterProtocolService masterClientService = tmClient.getStub();
+      QueryCoordinatorProtocol.QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
         masterClientService.releaseWorkerResource(null,
-          TajoMasterProtocol.WorkerResourceReleaseRequest.newBuilder()
+            QueryCoordinatorProtocol.WorkerResourceReleaseRequest.newBuilder()
               .setExecutionBlockId(executionBlockId.getProto())
               .addAllContainerIds(containerIdProtos)
               .build(),
