@@ -141,7 +141,11 @@ public abstract class NettyClientBase implements Closeable {
 
   @Override
   public void close() {
-    if(this.bootstrap != null) {
+    if (channelFuture != null && getChannel().isActive()) {
+      getChannel().close().awaitUninterruptibly();
+    }
+
+    if (this.bootstrap != null) {
       InetSocketAddress address = getRemoteAddress();
       if (address != null) {
         LOG.debug("Proxy is disconnected from " + address.getHostName() + ":" + address.getPort());
