@@ -1,7 +1,7 @@
 c_custkey,?sum,?max_1,?max_2
 -------------------------------
-1,0,,
-2,0,,
-3,0,,
-4,0,,
-5,0,,
+1,null,null,null
+2,null,null,null
+3,null,null,null
+4,null,null,null
+5,null,null,null

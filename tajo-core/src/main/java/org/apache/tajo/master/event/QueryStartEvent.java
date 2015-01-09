@@ -21,7 +21,7 @@ package org.apache.tajo.master.event;
 import org.apache.hadoop.yarn.event.AbstractEvent;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.master.session.Session;
+import org.apache.tajo.session.Session;
 
 /**
  * This event is conveyed to QueryMaster.

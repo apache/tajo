@@ -23,7 +23,7 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.TaskId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent;
-import org.apache.tajo.master.querymaster.Task;
+import org.apache.tajo.querymaster.Task;
 import org.junit.Test;
 
 import java.util.ArrayList;

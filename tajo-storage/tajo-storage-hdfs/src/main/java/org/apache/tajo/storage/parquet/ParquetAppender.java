@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.parquet;
 
+import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.storage.StorageConstants;
 import parquet.hadoop.ParquetOutputFormat;
@@ -128,7 +129,7 @@ public class ParquetAppender extends FileAppender {
    */
   @Override
   public void close() throws IOException {
-    writer.close();
+    IOUtils.cleanup(null, writer);
   }
 
   public long getEstimatedOutputSize() throws IOException {

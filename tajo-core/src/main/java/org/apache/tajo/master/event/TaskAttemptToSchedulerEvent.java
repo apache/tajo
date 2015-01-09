@@ -21,7 +21,7 @@ package org.apache.tajo.master.event;
 import com.google.protobuf.RpcCallback;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.master.querymaster.TaskAttempt;
+import org.apache.tajo.querymaster.TaskAttempt;
 import org.apache.tajo.master.container.TajoContainerId;
 
 public class TaskAttemptToSchedulerEvent extends TaskSchedulerEvent {
