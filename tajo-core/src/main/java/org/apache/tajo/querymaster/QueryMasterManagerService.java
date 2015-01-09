@@ -220,7 +220,7 @@ public class QueryMasterManagerService extends CompositeService
     QueryMasterTask queryMasterTask = queryMaster.getQueryMasterTask(new QueryId(request.getEbId().getQueryId()));
     if (queryMasterTask != null) {
       ExecutionBlockId ebId = new ExecutionBlockId(request.getEbId());
-      queryMasterTask.getEventHandler().handle(new StageFinalizeEvent(ebId, request));
+      queryMasterTask.getEventHandler().handle(new StageShuffleReportEvent(ebId, request));
     }
     done.run(TajoWorker.TRUE_PROTO);
   }

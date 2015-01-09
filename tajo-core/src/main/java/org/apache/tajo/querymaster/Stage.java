@@ -1297,9 +1297,9 @@ public class Stage implements EventHandler<StageEvent> {
 
       stage.lastContactTime = System.currentTimeMillis();
       try {
-        if (event instanceof StageFinalizeEvent) {
+        if (event instanceof StageShuffleReportEvent) {
 
-          StageFinalizeEvent finalizeEvent = (StageFinalizeEvent) event;
+          StageShuffleReportEvent finalizeEvent = (StageShuffleReportEvent) event;
           TajoWorkerProtocol.ExecutionBlockReport report = finalizeEvent.getReport();
 
           if (!report.getReportSuccess()) {

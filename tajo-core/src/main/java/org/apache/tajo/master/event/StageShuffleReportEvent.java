@@ -22,12 +22,12 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 
 /**
- * Event Class: From Stage to Stage
+ * Event Class: From {@link org.apache.tajo.querymaster.QueryMasterManagerService} to Stage
  */
-public class StageFinalizeEvent extends StageEvent {
+public class StageShuffleReportEvent extends StageEvent {
   private TajoWorkerProtocol.ExecutionBlockReport report;
 
-  public StageFinalizeEvent(ExecutionBlockId executionBlockId, TajoWorkerProtocol.ExecutionBlockReport report) {
+  public StageShuffleReportEvent(ExecutionBlockId executionBlockId, TajoWorkerProtocol.ExecutionBlockReport report) {
     super(executionBlockId, StageEventType.SQ_SHUFFLE_REPORT);
     this.report = report;
   }
