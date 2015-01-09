@@ -27,6 +27,8 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1286: Remove netty dependency from tajo-jdbc. (jihun)
+
     TAJO-1282: Cleanup the relationship of QueryInProgress and 
     QueryJobManager. (hyunsik)
 

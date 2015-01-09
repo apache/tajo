@@ -19,6 +19,7 @@
 package org.apache.tajo.jdbc;
 
 import com.google.protobuf.ServiceException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.TajoConstants;
@@ -27,7 +28,7 @@ import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
-import org.jboss.netty.handler.codec.http.QueryStringDecoder;
+import org.apache.tajo.jdbc.util.QueryStringDecoder;
 
 import java.io.IOException;
 import java.net.URI;
