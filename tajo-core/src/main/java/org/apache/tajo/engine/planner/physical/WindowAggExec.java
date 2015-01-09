@@ -143,7 +143,16 @@ public class WindowAggExec extends UnaryPhysicalExec {
 
           for (SortSpec sortSpec : functions[i].getSortSpecs()) {
             if (!rewrittenSchema.contains(sortSpec.getSortKey())) {
-              additionalSortKeyColumns.add(sortSpec.getSortKey());
+              // check if additionalSortKeyColumns already has that sort key
+              boolean newKey = true;
+              for (Column c : additionalSortKeyColumns) {
+                if (c.equals(sortSpec.getSortKey())) {
+                  newKey = false;
+                }
+              }
+              if (newKey) {
+                additionalSortKeyColumns.add(sortSpec.getSortKey());
+              }
             }
           }
         }

@@ -154,6 +154,9 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1287: Repeated using of the same order by key in multiple 
+    window clauses should be supported. (Keuntae Park)
+
     TAJO-1265: min(), max() does not handle null properly. (Keuntae Park)
 
     TAJO-1270: Fix typos. (DaeMyung Kang via hyunsik)
