@@ -27,6 +27,9 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1258: Close() for classes derived from FileAppender should be robust.
+    (Jongyoung Park via jinho)
+
     TAJO-1288: Refactoring org.apache.tajo.master package. (hyunsik)
 
     TAJO-1279: Cleanup TajoAsyncDispatcher and interrupt stop events. 
