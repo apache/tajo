@@ -248,7 +248,6 @@ public class SequenceFileAppender extends FileAppender {
   @Override
   public void flush() throws IOException {
     os.flush();
-    writer.close();
   }
 
   @Override
@@ -258,8 +257,7 @@ public class SequenceFileAppender extends FileAppender {
       stats.setNumBytes(getOffset());
     }
 
-    os.close();
-    writer.close();
+    IOUtils.cleanup(LOG, os, writer);
   }
 
   @Override

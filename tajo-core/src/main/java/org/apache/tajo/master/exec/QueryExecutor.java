@@ -400,10 +400,10 @@ public class QueryExecutor {
     context.getSystemMetrics().counter("Query", "numDMLQuery").inc();
     hookManager.doHooks(queryContext, plan);
 
-    QueryJobManager queryJobManager = this.context.getQueryJobManager();
+    QueryManager queryManager = this.context.getQueryJobManager();
     QueryInfo queryInfo;
 
-    queryInfo = queryJobManager.createNewQueryJob(session, queryContext, sql, jsonExpr, rootNode);
+    queryInfo = queryManager.scheduleQuery(session, queryContext, sql, jsonExpr, rootNode);
 
     if(queryInfo == null) {
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());

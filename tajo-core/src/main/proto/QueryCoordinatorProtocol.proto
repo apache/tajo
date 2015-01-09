@@ -19,7 +19,7 @@
 //TajoWorker -> TajoMaster protocol
 
 option java_package = "org.apache.tajo.ipc";
-option java_outer_classname = "TajoMasterProtocol";
+option java_outer_classname = "QueryCoordinatorProtocol";
 option java_generic_services = true;
 option java_generate_equals_and_hash = true;
 
@@ -139,10 +139,9 @@ message WorkerResourceAllocationResponse {
     repeated WorkerAllocatedResource workerAllocatedResource = 2;
 }
 
-service TajoMasterProtocolService {
+service QueryCoordinatorProtocolService {
   rpc heartbeat(TajoHeartbeat) returns (TajoHeartbeatResponse);
   rpc allocateWorkerResources(WorkerResourceAllocationRequest) returns (WorkerResourceAllocationResponse);
   rpc releaseWorkerResource(WorkerResourceReleaseRequest) returns (BoolProto);
-  rpc stopQueryMaster(QueryIdProto) returns (BoolProto);
   rpc getAllWorkerResource(NullProto) returns (WorkerResourcesRequest);
 }

@@ -26,7 +26,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.TajoMasterProtocol;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol.ClusterResourceSummary;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol.TajoHeartbeatResponse;
 import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.rpc.AsyncRpcServer;
@@ -36,8 +37,6 @@ import org.apache.tajo.util.ProtoUtil;
 import java.io.IOError;
 import java.net.InetSocketAddress;
 
-import static org.apache.tajo.ipc.TajoMasterProtocol.TajoHeartbeatResponse;
-import static org.apache.tajo.ipc.TajoMasterProtocol.TajoHeartbeatResponse.Builder;
 import static org.apache.tajo.ipc.TajoResourceTrackerProtocol.NodeHeartbeat;
 import static org.apache.tajo.ipc.TajoResourceTrackerProtocol.TajoResourceTrackerProtocolService;
 
@@ -110,7 +109,8 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
   }
 
   /** The response builder */
-  private static final Builder builder = TajoHeartbeatResponse.newBuilder().setHeartbeatResult(ProtoUtil.TRUE);
+  private static final TajoHeartbeatResponse.Builder builder =
+      TajoHeartbeatResponse.newBuilder().setHeartbeatResult(ProtoUtil.TRUE);
 
   private static WorkerStatusEvent createStatusEvent(int workerId, NodeHeartbeat heartbeat) {
     return new WorkerStatusEvent(
@@ -204,7 +204,7 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
     return new Worker(rmContext, workerResource, new WorkerConnectionInfo(request.getConnectionInfo()));
   }
 
-  public TajoMasterProtocol.ClusterResourceSummary getClusterResourceSummary() {
+  public ClusterResourceSummary getClusterResourceSummary() {
     int totalDiskSlots = 0;
     int totalCpuCoreSlots = 0;
     int totalMemoryMB = 0;
@@ -230,7 +230,7 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
       }
     }
 
-    return TajoMasterProtocol.ClusterResourceSummary.newBuilder()
+    return ClusterResourceSummary.newBuilder()
         .setNumWorkers(rmContext.getWorkers().size())
         .setTotalCpuCoreSlots(totalCpuCoreSlots)
         .setTotalDiskSlots(totalDiskSlots)
