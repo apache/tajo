@@ -27,6 +27,14 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1286: Remove netty dependency from tajo-jdbc. (jihun)
+
+    TAJO-1282: Cleanup the relationship of QueryInProgress and 
+    QueryJobManager. (hyunsik)
+
+    TAJO-1258: Close() for classes derived from FileAppender should be robust.
+    (Jongyoung Park via jinho)
+
     TAJO-1288: Refactoring org.apache.tajo.master package. (hyunsik)
 
     TAJO-1279: Cleanup TajoAsyncDispatcher and interrupt stop events. 
@@ -147,6 +155,9 @@ Release 0.9.1 - unreleased
 
 
   BUG FIXES
+
+    TAJO-1287: Repeated using of the same order by key in multiple 
+    window clauses should be supported. (Keuntae Park)
 
     TAJO-1265: min(), max() does not handle null properly. (Keuntae Park)
 

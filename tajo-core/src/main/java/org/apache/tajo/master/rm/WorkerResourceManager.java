@@ -79,7 +79,7 @@ public interface WorkerResourceManager extends Service {
    *
    * @param queryId QueryId to be stopped
    */
-  public void stopQueryMaster(QueryId queryId);
+  public void releaseQueryMaster(QueryId queryId);
 
   /**
    *

@@ -524,7 +524,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
   }
 
   @Override
-  public void stopQueryMaster(QueryId queryId) {
+  public void releaseQueryMaster(QueryId queryId) {
     if(!rmContext.getQueryMasterContainer().containsKey(queryId)) {
       LOG.warn("No QueryMaster resource info for " + queryId);
       return;

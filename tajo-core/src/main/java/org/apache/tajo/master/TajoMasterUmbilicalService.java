@@ -142,13 +142,6 @@ public class TajoMasterUmbilicalService extends AbstractService {
     }
 
     @Override
-    public void stopQueryMaster(RpcController controller, TajoIdProtos.QueryIdProto request,
-                                RpcCallback<BoolProto> done) {
-      context.getQueryJobManager().stopQuery(new QueryId(request));
-      done.run(BOOL_TRUE);
-    }
-
-    @Override
     public void getAllWorkerResource(RpcController controller, PrimitiveProtos.NullProto request,
                                      RpcCallback<WorkerResourcesRequest> done) {
 

@@ -143,6 +143,5 @@ service QueryCoordinatorProtocolService {
   rpc heartbeat(TajoHeartbeat) returns (TajoHeartbeatResponse);
   rpc allocateWorkerResources(WorkerResourceAllocationRequest) returns (WorkerResourceAllocationResponse);
   rpc releaseWorkerResource(WorkerResourceReleaseRequest) returns (BoolProto);
-  rpc stopQueryMaster(QueryIdProto) returns (BoolProto);
   rpc getAllWorkerResource(NullProto) returns (WorkerResourcesRequest);
 }
