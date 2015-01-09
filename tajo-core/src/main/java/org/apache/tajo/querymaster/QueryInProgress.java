@@ -95,32 +95,7 @@ public class QueryInProgress {
     LOG.info("=========================================================");
     LOG.info("Stop query:" + queryId);
 
-    masterContext.getResourceManager().stopQueryMaster(queryId);
-
-    long startTime = System.currentTimeMillis();
-    while(true) {
-      try {
-        if(masterContext.getResourceManager().isQueryMasterStopped(queryId)) {
-          LOG.info(queryId + " QueryMaster stopped");
-          break;
-        }
-      } catch (Exception e) {
-        LOG.error(e.getMessage(), e);
-        break;
-      }
-
-      try {
-        synchronized (this){
-          wait(100);
-        }
-      } catch (InterruptedException e) {
-        break;
-      }
-      if(System.currentTimeMillis() - startTime > 60 * 1000) {
-        LOG.warn("Failed to stop QueryMaster:" + queryId);
-        break;
-      }
-    }
+    masterContext.getResourceManager().releaseQueryMaster(queryId);
 
     if(queryMasterRpc != null) {
       RpcConnectionPool.getPool(masterContext.getConf()).closeConnection(queryMasterRpc);
