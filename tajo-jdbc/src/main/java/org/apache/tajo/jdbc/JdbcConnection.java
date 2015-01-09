@@ -28,8 +28,7 @@ import org.apache.tajo.client.QueryClient;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
-
-import io.netty.handler.codec.http.QueryStringDecoder;
+import org.apache.tajo.jdbc.util.QueryStringDecoder;
 
 import java.io.IOException;
 import java.net.URI;
@@ -95,7 +94,7 @@ public class JdbcConnection implements Connection {
         databaseName = this.uri.getPath().split("/")[1];
       }
 
-      params = new QueryStringDecoder(rawURI).parameters();
+      params = new QueryStringDecoder(rawURI).getParameters();
     } catch (SQLException se) {
       throw se;
     } catch (Throwable t) { // for unexpected exceptions like ArrayIndexOutOfBoundsException.
@@ -269,7 +268,7 @@ public class JdbcConnection implements Connection {
   @Override
   public boolean isValid(int timeout) throws SQLException {
     try {
-      if (tajoClient.isActive()) {
+      if (tajoClient.isConnected()) {
         ResultSet resultSet = tajoClient.executeQueryAndGetResult("SELECT 1;");
         boolean next = resultSet.next();
         boolean valid = next && resultSet.getLong(1) == 1;

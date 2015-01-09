@@ -23,14 +23,12 @@ import com.google.protobuf.RpcController;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.service.AbstractService;
-import org.apache.hadoop.yarn.proto.YarnProtos;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.TajoMasterProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
-import org.apache.tajo.master.querymaster.QueryJobManager;
 import org.apache.tajo.master.rm.Worker;
 import org.apache.tajo.master.rm.WorkerResource;
 import org.apache.tajo.rpc.AsyncRpcServer;
@@ -134,13 +132,6 @@ public class TajoMasterService extends AbstractService {
       for(ContainerProtocol.TajoContainerIdProto eachContainer: containerIds) {
         context.getResourceManager().releaseWorkerResource(eachContainer);
       }
-      done.run(BOOL_TRUE);
-    }
-
-    @Override
-    public void stopQueryMaster(RpcController controller, TajoIdProtos.QueryIdProto request,
-                                RpcCallback<BoolProto> done) {
-      context.getQueryJobManager().stopQuery(new QueryId(request));
       done.run(BOOL_TRUE);
     }
 

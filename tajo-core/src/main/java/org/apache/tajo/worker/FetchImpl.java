@@ -24,8 +24,8 @@ import com.google.common.collect.Lists;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
-import org.apache.tajo.master.querymaster.Task;
-import org.apache.tajo.master.querymaster.Repartitioner;
+import org.apache.tajo.querymaster.Task;
+import org.apache.tajo.querymaster.Repartitioner;
 import org.apache.tajo.util.TUtil;
 
 import java.net.URI;

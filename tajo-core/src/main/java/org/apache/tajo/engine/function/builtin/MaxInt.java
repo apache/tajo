@@ -22,43 +22,21 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.plan.function.AggFunction;
-import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
-import org.apache.tajo.storage.Tuple;
 
 @Description(
-  functionName = "max",
-  description = "the maximum value of expr",
-  example = "> SELECT max(expr);",
-  returnType = Type.INT4,
-  paramTypes = {@ParamTypes(paramTypes = {Type.INT4})}
+    functionName = "max",
+    description = "the maximum value of expr",
+    example = "> SELECT max(expr);",
+    returnType = Type.INT4,
+    paramTypes = {@ParamTypes(paramTypes = {Type.INT4})}
 )
-public class MaxInt extends AggFunction<Datum> {
-
+public class MaxInt extends Max {
   public MaxInt() {
     super(new Column[] {
-        new Column("expr", Type.INT8)
+        new Column("expr", Type.INT4)
     });
-  }
-
-  @Override
-  public FunctionContext newContext() {
-    return new MaxContext();
-  }
-
-  @Override
-  public void eval(FunctionContext ctx, Tuple params) {
-    MaxContext maxCtx = (MaxContext) ctx;
-    maxCtx.max = Math.max(maxCtx.max, params.get(0).asInt4());
-  }
-
-  @Override
-  public Datum getPartialResult(FunctionContext ctx) {
-    return DatumFactory.createInt4(((MaxContext) ctx).max);
   }
 
   @Override
@@ -66,12 +44,4 @@ public class MaxInt extends AggFunction<Datum> {
     return CatalogUtil.newSimpleDataType(Type.INT4);
   }
 
-  @Override
-  public Datum terminate(FunctionContext ctx) {
-    return DatumFactory.createInt4(((MaxContext) ctx).max);
-  }
-
-  private class MaxContext implements FunctionContext {
-    int max;
-  }
 }

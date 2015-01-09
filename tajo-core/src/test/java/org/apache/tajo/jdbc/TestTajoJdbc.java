@@ -26,7 +26,6 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryClient;
-import org.apache.tajo.conf.TajoConf;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,11 +33,13 @@ import org.junit.experimental.categories.Category;
 
 import java.net.InetSocketAddress;
 import java.sql.*;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
 public class TestTajoJdbc extends QueryTestCaseBase {
@@ -112,6 +113,9 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       }
       if (stmt != null) {
         stmt.close();
+      }
+      if (conn != null) {
+        conn.close();
       }
     }
   }
@@ -193,6 +197,9 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       }
       if (stmt != null) {
         stmt.close();
+      }
+      if (conn != null) {
+        conn.close();
       }
     }
   }
@@ -494,11 +501,11 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     int result;
     Statement stmt = null;
     ResultSet res = null;
-
+    Connection conn = null;
     try {
       String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
         DEFAULT_DATABASE_NAME);
-      Connection conn = DriverManager.getConnection(connUri);
+      conn = DriverManager.getConnection(connUri);
       assertTrue(conn.isValid(100));
 
       stmt = conn.createStatement();
@@ -532,6 +539,10 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       if (stmt != null) {
         stmt.close();
       }
+
+      if(conn != null) {
+        conn.close();
+      }
     }
   }
 
@@ -539,11 +550,11 @@ public class TestTajoJdbc extends QueryTestCaseBase {
   public void testSortWithDateTime() throws Exception {
     Statement stmt = null;
     ResultSet res = null;
+    Connection conn = null;
     int result;
 
     // skip this test if catalog uses HCatalogStore.
     // It is because HCatalogStore does not support Time data type.
-
     try {
       if (!testingCluster.isHCatalogStoreRunning()) {
         executeDDL("create_table_with_date_ddl.sql", "table1");
@@ -551,7 +562,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
         String connUri = buildConnectionUri(tajoMasterAddress.getHostName(),
           tajoMasterAddress.getPort(), "TestTajoJdbc");
 
-        Connection conn = DriverManager.getConnection(connUri);
+        conn = DriverManager.getConnection(connUri);
         assertTrue(conn.isValid(100));
 
         stmt = conn.createStatement();
@@ -575,6 +586,10 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       cleanupQuery(res);
       if (stmt != null) {
         stmt.close();
+      }
+
+      if(conn != null) {
+        conn.close();
       }
     }
   }

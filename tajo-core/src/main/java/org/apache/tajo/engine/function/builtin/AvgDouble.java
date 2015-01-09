@@ -41,11 +41,15 @@ import static org.apache.tajo.InternalTypes.AvgDoubleProto;
   returnType = Type.FLOAT8,
   paramTypes = {@ParamTypes(paramTypes = {Type.FLOAT8})}
 )
-public class AvgDouble extends AggFunction {
+public class AvgDouble extends AggFunction<Datum> {
   public AvgDouble() {
     super(new Column[] {
         new Column("expr", Type.FLOAT8)
     });
+  }
+
+  public AvgDouble(Column[] definedArgs) {
+    super(definedArgs);
   }
 
   public AvgContext newContext() {
@@ -55,8 +59,11 @@ public class AvgDouble extends AggFunction {
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
     AvgContext avgCtx = (AvgContext) ctx;
-    avgCtx.sum += params.get(0).asFloat8();
-    avgCtx.count++;
+    Datum datum = params.get(0);
+    if (datum.isNotNull()) {
+      avgCtx.sum += datum.asFloat8();
+      avgCtx.count++;
+    }
   }
 
   @Override
@@ -75,6 +82,9 @@ public class AvgDouble extends AggFunction {
   @Override
   public Datum getPartialResult(FunctionContext ctx) {
     AvgContext avgCtx = (AvgContext) ctx;
+    if (avgCtx.count == 0) {
+      return NullDatum.get();
+    }
     AvgDoubleProto.Builder builder = AvgDoubleProto.newBuilder();
     builder.setSum(avgCtx.sum);
     builder.setCount(avgCtx.count);
@@ -89,11 +99,14 @@ public class AvgDouble extends AggFunction {
   @Override
   public Datum terminate(FunctionContext ctx) {
     AvgContext avgCtx = (AvgContext) ctx;
+    if (avgCtx.count == 0) {
+      return NullDatum.get();
+    }
     return DatumFactory.createFloat8(avgCtx.sum / avgCtx.count);
   }
 
   protected class AvgContext implements FunctionContext {
-    double sum;
-    long count;
+    double sum = 0.0;
+    long count = 0;
   }
 }

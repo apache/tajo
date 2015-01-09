@@ -18,7 +18,9 @@
 
 package org.apache.tajo.engine.function.builtin;
 
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
@@ -34,13 +36,19 @@ import org.apache.tajo.storage.Tuple;
 public class AvgFloat extends AvgDouble {
 
   public AvgFloat() {
+    super(new Column[] {
+        new Column("expr", TajoDataTypes.Type.FLOAT4)
+    });
   }
 
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
     AvgContext avgCtx = (AvgContext) ctx;
-    avgCtx.sum += params.get(0).asFloat4();
-    avgCtx.count++;
+    Datum datum = params.get(0);
+    if (datum.isNotNull()) {
+      avgCtx.sum += datum.asFloat4();
+      avgCtx.count++;
+    }
   }
 
 }
