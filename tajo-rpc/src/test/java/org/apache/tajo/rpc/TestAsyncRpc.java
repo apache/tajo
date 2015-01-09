@@ -27,7 +27,6 @@ import org.apache.tajo.rpc.test.TestProtos.EchoMessage;
 import org.apache.tajo.rpc.test.TestProtos.SumRequest;
 import org.apache.tajo.rpc.test.TestProtos.SumResponse;
 import org.apache.tajo.rpc.test.impl.DummyProtocolAsyncImpl;
-import org.apache.tajo.util.NetUtils;
 import org.jboss.netty.channel.ConnectTimeoutException;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.junit.After;
@@ -65,7 +64,7 @@ public class TestAsyncRpc {
         service, new InetSocketAddress("127.0.0.1", 0), 2);
     server.start();
     client = new AsyncRpcClient(DummyProtocol.class,
-        NetUtils.getConnectAddress(server.getListenAddress()), clientChannelFactory, retries);
+        RpcUtils.getConnectAddress(server.getListenAddress()), clientChannelFactory, retries);
     stub = client.getStub();
   }
 
@@ -256,9 +255,9 @@ public class TestAsyncRpc {
     client.close();
     client = null;
 
-    String hostAndPort = NetUtils.normalizeInetSocketAddress(server.getListenAddress());
+    String hostAndPort = RpcUtils.normalizeInetSocketAddress(server.getListenAddress());
     client = new AsyncRpcClient(DummyProtocol.class,
-        NetUtils.createUnresolved(hostAndPort), clientChannelFactory, retries);
+        RpcUtils.createUnresolved(hostAndPort), clientChannelFactory, retries);
     Interface stub = client.getStub();
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
