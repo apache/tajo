@@ -23,15 +23,10 @@ import com.google.protobuf.RpcController;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.service.AbstractService;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol.TajoHeartbeat;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol.WorkerResourceProto;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol.WorkerResourceReleaseRequest;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol.WorkerResourcesRequest;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol.*;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.rm.Worker;
 import org.apache.tajo.master.rm.WorkerResource;
@@ -44,8 +39,8 @@ import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
 
-public class TajoMasterUmbilicalService extends AbstractService {
-  private final static Log LOG = LogFactory.getLog(TajoMasterUmbilicalService.class);
+public class QueryCoordinatorService extends AbstractService {
+  private final static Log LOG = LogFactory.getLog(QueryCoordinatorService.class);
 
   private final TajoMaster.MasterContext context;
   private final TajoConf conf;
@@ -56,8 +51,8 @@ public class TajoMasterUmbilicalService extends AbstractService {
   private final BoolProto BOOL_TRUE = BoolProto.newBuilder().setValue(true).build();
   private final BoolProto BOOL_FALSE = BoolProto.newBuilder().setValue(false).build();
 
-  public TajoMasterUmbilicalService(TajoMaster.MasterContext context) {
-    super(TajoMasterUmbilicalService.class.getName());
+  public QueryCoordinatorService(TajoMaster.MasterContext context) {
+    super(QueryCoordinatorService.class.getName());
     this.context = context;
     this.conf = context.getConf();
     this.masterHandler = new ProtocolServiceHandler();
@@ -97,7 +92,7 @@ public class TajoMasterUmbilicalService extends AbstractService {
   /**
    * Actual protocol service handler
    */
-  private class ProtocolServiceHandler implements QueryCoordinatorProtocol.QueryCoordinatorProtocolService.Interface {
+  private class ProtocolServiceHandler implements QueryCoordinatorProtocolService.Interface {
 
     @Override
     public void heartbeat(

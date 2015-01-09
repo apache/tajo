@@ -114,7 +114,7 @@ public class TajoMaster extends CompositeService {
   private GlobalEngine globalEngine;
   private AsyncDispatcher dispatcher;
   private TajoMasterClientService tajoMasterClientService;
-  private TajoMasterUmbilicalService tajoMasterService;
+  private QueryCoordinatorService tajoMasterService;
   private SessionManager sessionManager;
 
   private WorkerResourceManager resourceManager;
@@ -189,7 +189,7 @@ public class TajoMaster extends CompositeService {
       tajoMasterClientService = new TajoMasterClientService(context);
       addIfService(tajoMasterClientService);
 
-      tajoMasterService = new TajoMasterUmbilicalService(context);
+      tajoMasterService = new QueryCoordinatorService(context);
       addIfService(tajoMasterService);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
@@ -469,7 +469,7 @@ public class TajoMaster extends CompositeService {
       return storeManager;
     }
 
-    public TajoMasterUmbilicalService getTajoMasterService() {
+    public QueryCoordinatorService getTajoMasterService() {
       return tajoMasterService;
     }
 
