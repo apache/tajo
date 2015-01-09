@@ -81,7 +81,11 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
     this.partitioner = new HashPartitioner(shuffleKeyIds, numShuffleOutputs);
     this.hashShuffleAppenderManager = context.getHashShuffleAppenderManager();
     this.maxBufferSize = context.getConf().getIntVar(ConfVars.SHUFFLE_HASH_APPENDER_BUFFER_SIZE);
-    this.initialRowBufferSize = Math.max(maxBufferSize / numShuffleOutputs, 64 * StorageUnit.KB);
+    if(numShuffleOutputs > 0){
+      this.initialRowBufferSize = Math.max(maxBufferSize / numShuffleOutputs, 64 * StorageUnit.KB);
+    } else {
+      this.initialRowBufferSize = 64 * StorageUnit.KB;
+    }
   }
 
   @Override
