@@ -139,7 +139,7 @@ public class SessionConnection implements Closeable {
     return baseDatabase;
   }
 
-  public boolean isActive() {
+  public boolean isConnected() {
     if(!closed.get()){
       try {
         return connPool.getConnection(tajoMasterAddr, TajoMasterClientProtocol.class, false).isActive();

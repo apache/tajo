@@ -268,7 +268,7 @@ public class JdbcConnection implements Connection {
   @Override
   public boolean isValid(int timeout) throws SQLException {
     try {
-      if (tajoClient.isActive()) {
+      if (tajoClient.isConnected()) {
         ResultSet resultSet = tajoClient.executeQueryAndGetResult("SELECT 1;");
         boolean next = resultSet.next();
         boolean valid = next && resultSet.getLong(1) == 1;

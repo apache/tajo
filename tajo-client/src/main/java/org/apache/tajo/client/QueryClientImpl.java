@@ -63,8 +63,8 @@ public class QueryClientImpl implements QueryClient {
   }
 
   @Override
-  public boolean isActive() {
-    return connection.isActive();
+  public boolean isConnected() {
+    return connection.isConnected();
   }
 
   @Override
