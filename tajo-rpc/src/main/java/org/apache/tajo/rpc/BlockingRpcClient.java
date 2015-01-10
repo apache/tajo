@@ -27,7 +27,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
-import org.apache.tajo.util.NetUtils;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 
@@ -159,7 +158,7 @@ public class BlockingRpcClient extends NettyClientBase {
   private String getErrorMessage(String message) {
     if(protocol != null && getChannel() != null) {
       return protocol.getName() +
-          "(" + NetUtils.normalizeInetSocketAddress((InetSocketAddress)
+          "(" + RpcUtils.normalizeInetSocketAddress((InetSocketAddress)
           getChannel().getRemoteAddress()) + "): " + message;
     } else {
       return "Exception " + message;
@@ -169,7 +168,7 @@ public class BlockingRpcClient extends NettyClientBase {
   private TajoServiceException makeTajoServiceException(RpcResponse response, Throwable cause) {
     if(protocol != null && getChannel() != null) {
       return new TajoServiceException(response.getErrorMessage(), cause, protocol.getName(),
-          NetUtils.normalizeInetSocketAddress((InetSocketAddress)getChannel().getRemoteAddress()));
+          RpcUtils.normalizeInetSocketAddress((InetSocketAddress)getChannel().getRemoteAddress()));
     } else {
       return new TajoServiceException(response.getErrorMessage());
     }

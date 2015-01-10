@@ -21,7 +21,6 @@ package org.apache.tajo.rpc;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.conf.TajoConf;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.ServerSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.*;
@@ -34,6 +33,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public final class RpcChannelFactory {
   private static final Log LOG = LogFactory.getLog(RpcChannelFactory.class);
+
+  private static final int DEFAULT_WORKER_NUM = Runtime.getRuntime().availableProcessors() * 2;
+
   private static ClientSocketChannelFactory factory;
   private static AtomicInteger clientCount = new AtomicInteger(0);
   private static AtomicInteger serverCount = new AtomicInteger(0);
@@ -45,11 +47,19 @@ public final class RpcChannelFactory {
    * make this factory static thus all clients can share its thread pool.
    * NioClientSocketChannelFactory has only one method newChannel() visible for user, which is thread-safe
    */
-  public static synchronized ClientSocketChannelFactory getSharedClientChannelFactory(){
+  public static synchronized ClientSocketChannelFactory getSharedClientChannelFactory() {
+    return getSharedClientChannelFactory(DEFAULT_WORKER_NUM);
+  }
+
+  /**
+   * make this factory static thus all clients can share its thread pool.
+   * NioClientSocketChannelFactory has only one method newChannel() visible for user, which is thread-safe
+   *
+   * @param workerNum The number of workers
+   */
+  public static synchronized ClientSocketChannelFactory getSharedClientChannelFactory(int workerNum){
     //shared woker and boss pool
     if(factory == null){
-      TajoConf conf = new TajoConf();
-      int workerNum = conf.getIntVar(TajoConf.ConfVars.INTERNAL_RPC_CLIENT_WORKER_THREAD_NUM);
       factory = createClientChannelFactory("Internal-Client", workerNum);
     }
     return factory;

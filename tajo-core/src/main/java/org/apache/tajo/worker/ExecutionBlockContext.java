@@ -100,7 +100,7 @@ public class ExecutionBlockContext {
       throws Throwable {
     this.manager = manager;
     this.executionBlockId = event.getExecutionBlockId();
-    this.connPool = RpcConnectionPool.getPool(manager.getTajoConf());
+    this.connPool = RpcConnectionPool.getPool();
     this.queryMaster = queryMaster;
     this.systemConf = manager.getTajoConf();
     this.reporter = new Reporter();
