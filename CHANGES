@@ -282,6 +282,8 @@ Release 0.9.1 - unreleased
 
   TASKS
 
+    TAJO-1294: Add index documents. (jihoon)
+
     TAJO-1280: Update the roles of Hyoungjun and Jihun in web site.
     (hyunsik)
 
