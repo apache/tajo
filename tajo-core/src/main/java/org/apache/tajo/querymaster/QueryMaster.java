@@ -101,7 +101,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
     LOG.info("QueryMaster init");
     try {
       this.systemConf = (TajoConf)conf;
-      this.connPool = RpcConnectionPool.getPool(systemConf);
+      this.connPool = RpcConnectionPool.getPool();
 
       querySessionTimeout = systemConf.getIntVar(TajoConf.ConfVars.QUERY_SESSION_TIMEOUT);
       queryMasterContext = new QueryMasterContext(systemConf);

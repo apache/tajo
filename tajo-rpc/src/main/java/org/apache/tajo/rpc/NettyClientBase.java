@@ -21,7 +21,6 @@ package org.apache.tajo.rpc;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.util.NetUtils;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
@@ -110,7 +109,7 @@ public abstract class NettyClientBase implements Closeable {
 
   public void connect(InetSocketAddress addr) throws ConnectTimeoutException {
     if(addr.isUnresolved()){
-       addr = NetUtils.createSocketAddr(addr.getHostName(), addr.getPort());
+       addr = RpcUtils.createSocketAddr(addr.getHostName(), addr.getPort());
     }
 
     handleConnectionInternally(addr);
