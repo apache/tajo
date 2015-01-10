@@ -21,7 +21,7 @@
 
 <%@ page import="org.apache.hadoop.fs.FileSystem" %>
 <%@ page import="org.apache.tajo.conf.TajoConf" %>
-<%@ page import="org.apache.tajo.ipc.TajoMasterProtocol" %>
+<%@ page import="org.apache.tajo.ipc.QueryCoordinatorProtocol" %>
 <%@ page import="org.apache.tajo.master.TajoMaster" %>
 <%@ page import="org.apache.tajo.ha.HAService" %>
 <%@ page import="org.apache.tajo.ha.TajoMasterInfo" %>
@@ -52,7 +52,7 @@
   int runningQueryMasterTask = 0;
 
 
-  TajoMasterProtocol.ClusterResourceSummary clusterResourceSummary =
+  QueryCoordinatorProtocol.ClusterResourceSummary clusterResourceSummary =
           master.getContext().getResourceManager().getClusterResourceSummary();
 
   for(Worker eachWorker: workers.values()) {

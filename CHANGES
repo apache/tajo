@@ -27,6 +27,8 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1281: Remove hadoop-common dependency from tajo-rpc. (hyunsik)
+
     TAJO-1291: Rename TajoMasterProtocol to QueryCoordinatorProtocol.
     (hyunsik)
 
@@ -159,6 +161,8 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1297: Tajo Web UI does not work after TAJO-1291. (jihoon)
+
     TAJO-1251: Query is hanging occasionally by shuffle report. (jinho)
 
     TAJO-1287: Repeated using of the same order by key in multiple 
@@ -279,6 +283,11 @@ Release 0.9.1 - unreleased
 
 
   TASKS
+
+    TAJO-1296: Remove obsolete classes from tajo.master.container package.
+    (hyunsik)
+
+    TAJO-1294: Add index documents. (jihoon)
 
     TAJO-1280: Update the roles of Hyoungjun and Jihun in web site.
     (hyunsik)

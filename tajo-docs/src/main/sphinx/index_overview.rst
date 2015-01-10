@@ -1,6 +1,6 @@
-***********************
+*****************************
 Index (Experimental Feature)
-***********************
+*****************************
 
 An index is a data structure that is used for efficient query processing. Using an index, the Tajo query engine can directly retrieve search values.
 

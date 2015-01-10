@@ -10,7 +10,7 @@ The first step for utilizing index is index creation. You can create index using
 
 .. code-block:: sql
 
-     create index l_orderkey_idx on lineitem (l_orderkey);
+     default> create index l_orderkey_idx on lineitem (l_orderkey);
 
 If the index is created successfully, you can see the information about that index as follows: ::
 
@@ -56,14 +56,14 @@ When an index is successfully created, you must enable the index scan feature as
 
 .. code-block:: sql
 
-     \set INDEX_ENABLED true
+     default> \set INDEX_ENABLED true
 
 If you don't want to use the index scan feature anymore, you can simply disable it as follows:
 
 .. code-block:: sql
 
-     \set INDEX_ENABLED false
+     default> \set INDEX_ENABLED false
 
 .. note::
 
-     If the index scan feature is enabled, Tajo currently always performs index scan regardless of its efficiency. You should set this option when the expected number of retrieved tuples is sufficiently small.
+     Once the index scan feature is enabled, Tajo currently always performs the index scan regardless of its efficiency. You should set this option when the expected number of retrieved tuples is sufficiently small.
