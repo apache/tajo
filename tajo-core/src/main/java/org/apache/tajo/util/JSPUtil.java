@@ -25,7 +25,7 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.ha.HAService;
-import org.apache.tajo.querymaster.QueryInProgress;
+import org.apache.tajo.master.QueryInProgress;
 import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.querymaster.Task;
 import org.apache.tajo.querymaster.Stage;

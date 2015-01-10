@@ -30,11 +30,10 @@ import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ipc.TajoMasterProtocol;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.master.scheduler.SimpleFifoScheduler;
 import org.apache.tajo.plan.logical.LogicalRootNode;
-import org.apache.tajo.querymaster.QueryInProgress;
 import org.apache.tajo.querymaster.QueryJobEvent;
 import org.apache.tajo.session.Session;
 
@@ -44,11 +43,11 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * QueryJobManager manages all scheduled and running queries.
+ * QueryManager manages all scheduled and running queries.
  * It receives all Query related events and routes them to each QueryInProgress.
  */
-public class QueryJobManager extends CompositeService {
-  private static final Log LOG = LogFactory.getLog(QueryJobManager.class.getName());
+public class QueryManager extends CompositeService {
+  private static final Log LOG = LogFactory.getLog(QueryManager.class.getName());
 
   // TajoMaster Context
   private final TajoMaster.MasterContext masterContext;
@@ -66,8 +65,8 @@ public class QueryJobManager extends CompositeService {
   private AtomicLong avgExecutionTime = new AtomicLong();
   private AtomicLong executedQuerySize = new AtomicLong();
 
-  public QueryJobManager(final TajoMaster.MasterContext masterContext) {
-    super(QueryJobManager.class.getName());
+  public QueryManager(final TajoMaster.MasterContext masterContext) {
+    super(QueryManager.class.getName());
     this.masterContext = masterContext;
   }
 
@@ -139,8 +138,8 @@ public class QueryJobManager extends CompositeService {
     }
   }
 
-  public QueryInfo createNewQueryJob(Session session, QueryContext queryContext, String sql,
-                                     String jsonExpr, LogicalRootNode plan)
+  public QueryInfo scheduleQuery(Session session, QueryContext queryContext, String sql,
+                                 String jsonExpr, LogicalRootNode plan)
       throws Exception {
     QueryId queryId = QueryIdFactory.newQueryId(masterContext.getResourceManager().getSeedQueryId());
     QueryInProgress queryInProgress = new QueryInProgress(masterContext, session, queryContext, queryId, sql,
@@ -279,8 +278,8 @@ public class QueryJobManager extends CompositeService {
     queryInProgress.catchException(e);
   }
 
-  public synchronized TajoMasterProtocol.TajoHeartbeatResponse.ResponseCommand queryHeartbeat(
-      TajoMasterProtocol.TajoHeartbeat queryHeartbeat) {
+  public synchronized QueryCoordinatorProtocol.TajoHeartbeatResponse.ResponseCommand queryHeartbeat(
+      QueryCoordinatorProtocol.TajoHeartbeat queryHeartbeat) {
     QueryInProgress queryInProgress = getQueryInProgress(new QueryId(queryHeartbeat.getQueryId()));
     if(queryInProgress == null) {
       return null;
@@ -292,7 +291,7 @@ public class QueryJobManager extends CompositeService {
     return null;
   }
 
-  private QueryInfo makeQueryInfoFromHeartbeat(TajoMasterProtocol.TajoHeartbeat queryHeartbeat) {
+  private QueryInfo makeQueryInfoFromHeartbeat(QueryCoordinatorProtocol.TajoHeartbeat queryHeartbeat) {
     QueryInfo queryInfo = new QueryInfo(new QueryId(queryHeartbeat.getQueryId()));
     WorkerConnectionInfo connectionInfo = new WorkerConnectionInfo(queryHeartbeat.getConnectionInfo());
 

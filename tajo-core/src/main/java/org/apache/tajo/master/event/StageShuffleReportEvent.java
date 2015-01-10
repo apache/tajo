@@ -16,26 +16,23 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.scheduler;
+package org.apache.tajo.master.event;
 
-import org.apache.tajo.QueryId;
-import org.apache.tajo.master.QueryInProgress;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 
-import java.util.List;
+/**
+ * Event Class: From {@link org.apache.tajo.querymaster.QueryMasterManagerService} to Stage
+ */
+public class StageShuffleReportEvent extends StageEvent {
+  private TajoWorkerProtocol.ExecutionBlockReport report;
 
-public interface Scheduler {
+  public StageShuffleReportEvent(ExecutionBlockId executionBlockId, TajoWorkerProtocol.ExecutionBlockReport report) {
+    super(executionBlockId, StageEventType.SQ_SHUFFLE_REPORT);
+    this.report = report;
+  }
 
-  public Mode getMode();
-
-  public String getName();
-
-  public boolean addQuery(QueryInProgress resource);
-
-  public boolean removeQuery(QueryId queryId);
-
-  public List<QueryInProgress> getRunningQueries();
-
-  public enum Mode {
-    FIFO
+  public TajoWorkerProtocol.ExecutionBlockReport getReport() {
+    return report;
   }
 }
