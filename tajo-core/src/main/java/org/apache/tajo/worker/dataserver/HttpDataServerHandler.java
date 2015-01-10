@@ -18,6 +18,7 @@
 
 package org.apache.tajo.worker.dataserver;
 
+import io.netty.handler.codec.http.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.worker.dataserver.retriever.DataRetriever;
@@ -32,15 +33,6 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.DefaultFileRegion;
 import io.netty.channel.FileRegion;
 import io.netty.handler.codec.TooLongFrameException;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.DefaultHttpResponse;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedFile;
 import io.netty.util.CharsetUtil;
@@ -138,13 +130,15 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     ChannelFuture writeFuture;
+    ChannelFuture lastContentFuture;
     if (ch.pipeline().get(SslHandler.class) != null) {
       // Cannot use zero-copy with HTTPS.
-      writeFuture = ch.writeAndFlush(new ChunkedFile(raf, file.startOffset(), file.length(), 8192));
+      lastContentFuture = ch.writeAndFlush(new HttpChunkedInput(new ChunkedFile(raf, file.startOffset(), file.length(), 8192)));
     } else {
       // No encryption - use zero-copy.
       final FileRegion region = new DefaultFileRegion(raf.getChannel(), file.startOffset(), file.length());
-      writeFuture = ch.writeAndFlush(region);
+      writeFuture = ch.write(region);
+      lastContentFuture = ch.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
       writeFuture.addListener(new ChannelFutureListener() {
         public void operationComplete(ChannelFuture future) {
           if (region.refCnt() > 0) {
@@ -154,7 +148,7 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
       });
     }
 
-    return writeFuture;
+    return lastContentFuture;
   }
 
   @Override
