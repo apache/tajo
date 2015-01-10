@@ -161,6 +161,8 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1297: Tajo Web UI does not work after TAJO-1291. (jihoon)
+
     TAJO-1251: Query is hanging occasionally by shuffle report. (jinho)
 
     TAJO-1287: Repeated using of the same order by key in multiple 
