@@ -80,35 +80,7 @@ public abstract class NettyClientBase implements Closeable {
   
   private void handleConnectionInternally(final InetSocketAddress addr) throws ConnectTimeoutException {
     final CountDownLatch latch = new CountDownLatch(1);
-    GenericFutureListener<ChannelFuture> listener = new GenericFutureListener<ChannelFuture>() {
-      private final AtomicInteger retryCount = new AtomicInteger();
-
-      @Override
-      public void operationComplete(ChannelFuture channelFuture) throws Exception {
-        if (!channelFuture.isSuccess()) {
-          if (numRetries > retryCount.getAndIncrement()) {
-            final GenericFutureListener<ChannelFuture> currentListener = this;
-
-            loopGroup.schedule(new Runnable() {
-              @Override
-              public void run() {
-                connectUsingNetty(addr, currentListener);
-              }
-            }, PAUSE, TimeUnit.MILLISECONDS);
-
-            LOG.debug("Connecting to " + addr + " has been failed. Retrying to connect.");
-          }
-          else {
-            latch.countDown();
-
-            LOG.error("Max retry count has been exceeded. attempts=" + numRetries);
-          }
-        }
-        else {
-          latch.countDown();
-        }
-      }
-    };
+    GenericFutureListener<ChannelFuture> listener = new RetryConnectionListener(addr, latch);
     connectUsingNetty(addr, listener);
 
     try {
@@ -128,6 +100,43 @@ public abstract class NettyClientBase implements Closeable {
     }
 
     handleConnectionInternally(addr);
+  }
+
+  class RetryConnectionListener implements GenericFutureListener<ChannelFuture> {
+    private final AtomicInteger retryCount = new AtomicInteger();
+    private final InetSocketAddress address;
+    private final CountDownLatch latch;
+
+    RetryConnectionListener(InetSocketAddress address, CountDownLatch latch) {
+      this.address = address;
+      this.latch = latch;
+    }
+
+    @Override
+    public void operationComplete(ChannelFuture channelFuture) throws Exception {
+      if (!channelFuture.isSuccess()) {
+        if (numRetries > retryCount.getAndIncrement()) {
+          final GenericFutureListener<ChannelFuture> currentListener = this;
+
+          loopGroup.schedule(new Runnable() {
+            @Override
+            public void run() {
+              connectUsingNetty(address, currentListener);
+            }
+          }, PAUSE, TimeUnit.MILLISECONDS);
+
+          LOG.debug("Connecting to " + address + " has been failed. Retrying to connect.");
+        }
+        else {
+          latch.countDown();
+
+          LOG.error("Max retry count has been exceeded. attempts=" + numRetries);
+        }
+      }
+      else {
+        latch.countDown();
+      }
+    }
   }
 
   public boolean isActive() {
