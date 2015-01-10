@@ -18,6 +18,7 @@
 
 package org.apache.tajo.worker.dataserver;
 
+import io.netty.channel.ChannelFutureListener;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.net.NetUtils;
@@ -66,7 +67,8 @@ public class HttpDataServer {
 
   public void start() {
     // Bind and start to accept incoming connections.
-    ChannelFuture future = bootstrap.bind(addr).syncUninterruptibly();
+    ChannelFuture future = bootstrap.bind(addr).syncUninterruptibly()
+            .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
     channelGroup.add(future.channel());    
     this.bindAddr = (InetSocketAddress) future.channel().localAddress();
     LOG.info("HttpDataServer starts up ("
