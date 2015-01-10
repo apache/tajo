@@ -282,6 +282,9 @@ Release 0.9.1 - unreleased
 
   TASKS
 
+    TAJO-1296: Remove obsolete classes from tajo.master.container package.
+    (hyunsik)
+
     TAJO-1294: Add index documents. (jihoon)
 
     TAJO-1280: Update the roles of Hyoungjun and Jihun in web site.

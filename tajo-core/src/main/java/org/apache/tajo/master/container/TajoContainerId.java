@@ -26,7 +26,6 @@ import org.apache.hadoop.classification.InterfaceStability.Stable;
 import org.apache.hadoop.classification.InterfaceStability.Unstable;
 import org.apache.hadoop.yarn.api.records.ApplicationAttemptId;
 import org.apache.hadoop.yarn.api.records.ApplicationId;
-import org.apache.hadoop.yarn.util.Records;
 
 /**
  * This class is borrowed from the following source code :
@@ -43,7 +42,7 @@ public abstract class TajoContainerId implements Comparable<TajoContainerId>{
   @Unstable
   public static TajoContainerId newInstance(ApplicationAttemptId appAttemptId,
                                         int containerId) {
-    TajoContainerId id = TajoRecords.newRecord(TajoContainerId.class);
+    TajoContainerId id = new TajoContainerIdPBImpl();
     id.setId(containerId);
     id.setApplicationAttemptId(appAttemptId);
     id.build();
