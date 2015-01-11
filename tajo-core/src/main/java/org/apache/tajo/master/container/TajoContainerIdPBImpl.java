@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.container.impl.pb;
+package org.apache.tajo.master.container;
 
 
 import org.apache.hadoop.classification.InterfaceAudience.Private;

@@ -26,7 +26,10 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.TajoMasterProtocol;
+import org.apache.tajo.ha.HAServiceUtil;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol.ClusterResourceSummary;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol.ServerStatusProto;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol.TajoHeartbeatResponse;
 import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
@@ -35,7 +38,6 @@ import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.DiskDeviceInfo;
 import org.apache.tajo.storage.DiskMountInfo;
 import org.apache.tajo.storage.DiskUtil;
-import org.apache.tajo.ha.HAServiceUtil;
 
 import java.io.File;
 import java.util.List;
@@ -72,7 +74,7 @@ public class WorkerHeartbeatService extends AbstractService {
     Preconditions.checkArgument(conf instanceof TajoConf, "Configuration must be a TajoConf instance.");
     this.systemConf = (TajoConf) conf;
 
-    connectionPool = RpcConnectionPool.getPool(systemConf);
+    connectionPool = RpcConnectionPool.getPool();
     super.serviceInit(conf);
   }
 
@@ -98,8 +100,8 @@ public class WorkerHeartbeatService extends AbstractService {
 
   class WorkerHeartbeatThread extends Thread {
     private volatile AtomicBoolean stopped = new AtomicBoolean(false);
-    TajoMasterProtocol.ServerStatusProto.System systemInfo;
-    List<TajoMasterProtocol.ServerStatusProto.Disk> diskInfos = Lists.newArrayList();
+    ServerStatusProto.System systemInfo;
+    List<ServerStatusProto.Disk> diskInfos = Lists.newArrayList();
     float workerDiskSlots;
     int workerMemoryMB;
     List<DiskDeviceInfo> diskDeviceInfos;
@@ -137,7 +139,7 @@ public class WorkerHeartbeatService extends AbstractService {
         }
       }
 
-      systemInfo = TajoMasterProtocol.ServerStatusProto.System.newBuilder()
+      systemInfo = ServerStatusProto.System.newBuilder()
           .setAvailableProcessors(workerCpuCoreNum)
           .setFreeMemoryMB(0)
           .setMaxMemoryMB(0)
@@ -153,14 +155,14 @@ public class WorkerHeartbeatService extends AbstractService {
         if(sendDiskInfoCount == 0 && diskDeviceInfos != null) {
           getDiskUsageInfos();
         }
-        TajoMasterProtocol.ServerStatusProto.JvmHeap jvmHeap =
-            TajoMasterProtocol.ServerStatusProto.JvmHeap.newBuilder()
+        ServerStatusProto.JvmHeap jvmHeap =
+            ServerStatusProto.JvmHeap.newBuilder()
                 .setMaxHeap(Runtime.getRuntime().maxMemory())
                 .setFreeHeap(Runtime.getRuntime().freeMemory())
                 .setTotalHeap(Runtime.getRuntime().totalMemory())
                 .build();
 
-        TajoMasterProtocol.ServerStatusProto serverStatus = TajoMasterProtocol.ServerStatusProto.newBuilder()
+        ServerStatusProto serverStatus = ServerStatusProto.newBuilder()
             .addAllDisk(diskInfos)
             .setRunningTaskNum(
                 context.getTaskRunnerManager() == null ? 1 : context.getTaskRunnerManager().getNumTasks())
@@ -179,8 +181,7 @@ public class WorkerHeartbeatService extends AbstractService {
 
         NettyClientBase rmClient = null;
         try {
-          CallFuture<TajoMasterProtocol.TajoHeartbeatResponse> callBack =
-              new CallFuture<TajoMasterProtocol.TajoHeartbeatResponse>();
+          CallFuture<TajoHeartbeatResponse> callBack = new CallFuture<TajoHeartbeatResponse>();
 
           // In TajoMaster HA mode, if backup master be active status,
           // worker may fail to connect existing active master. Thus,
@@ -201,9 +202,9 @@ public class WorkerHeartbeatService extends AbstractService {
           TajoResourceTrackerProtocol.TajoResourceTrackerProtocolService resourceTracker = rmClient.getStub();
           resourceTracker.heartbeat(callBack.getController(), heartbeatProto, callBack);
 
-          TajoMasterProtocol.TajoHeartbeatResponse response = callBack.get(2, TimeUnit.SECONDS);
+          TajoHeartbeatResponse response = callBack.get(2, TimeUnit.SECONDS);
           if(response != null) {
-            TajoMasterProtocol.ClusterResourceSummary clusterResourceSummary = response.getClusterResourceSummary();
+            ClusterResourceSummary clusterResourceSummary = response.getClusterResourceSummary();
             if(clusterResourceSummary.getNumWorkers() > 0) {
               context.setNumClusterNodes(clusterResourceSummary.getNumWorkers());
             }
@@ -249,7 +250,7 @@ public class WorkerHeartbeatService extends AbstractService {
         if(mountInfos != null) {
           for(DiskMountInfo eachMount: mountInfos) {
             File eachFile = new File(eachMount.getMountPath());
-            diskInfos.add(TajoMasterProtocol.ServerStatusProto.Disk.newBuilder()
+            diskInfos.add(ServerStatusProto.Disk.newBuilder()
                 .setAbsolutePath(eachFile.getAbsolutePath())
                 .setTotalSpace(eachFile.getTotalSpace())
                 .setFreeSpace(eachFile.getFreeSpace())

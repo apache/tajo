@@ -24,7 +24,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
-import org.apache.tajo.util.NetUtils;
 import org.jboss.netty.channel.*;
 import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
 
@@ -180,7 +179,7 @@ public class AsyncRpcClient extends NettyClientBase {
 
   private String getErrorMessage(String message) {
     return "Exception [" + protocol.getCanonicalName() +
-        "(" + NetUtils.normalizeInetSocketAddress((InetSocketAddress)
+        "(" + RpcUtils.normalizeInetSocketAddress((InetSocketAddress)
         getChannel().getRemoteAddress()) + ")]: " + message;
   }
 

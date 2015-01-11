@@ -19,7 +19,7 @@
 package org.apache.tajo.master.scheduler;
 
 import org.apache.tajo.QueryId;
-import org.apache.tajo.querymaster.QueryInProgress;
+import org.apache.tajo.master.QueryInProgress;
 
 import java.util.List;
 

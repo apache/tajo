@@ -16,16 +16,23 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.container;
+package org.apache.tajo.master.event;
 
-import org.apache.hadoop.classification.InterfaceStability.Unstable;
+import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.ipc.TajoWorkerProtocol;
 
 /**
- * This class is borrowed from the following source code :
- * ${hadoop-yarn-api}/src/main/java/org/apache/hadoop/yarn/factories/RecordFactory.java
- *
+ * Event Class: From {@link org.apache.tajo.querymaster.QueryMasterManagerService} to Stage
  */
-@Unstable
-public interface TajoRecordFactory {
-  public <T> T newRecordInstance(Class<T> clazz);
+public class StageShuffleReportEvent extends StageEvent {
+  private TajoWorkerProtocol.ExecutionBlockReport report;
+
+  public StageShuffleReportEvent(ExecutionBlockId executionBlockId, TajoWorkerProtocol.ExecutionBlockReport report) {
+    super(executionBlockId, StageEventType.SQ_SHUFFLE_REPORT);
+    this.report = report;
+  }
+
+  public TajoWorkerProtocol.ExecutionBlockReport getReport() {
+    return report;
+  }
 }
