@@ -284,6 +284,9 @@ Release 0.9.1 - unreleased
 
   TASKS
 
+    TAJO-1295: Remove legacy worker.dataserver package and its unit tests.
+    (hyunsik)
+
     TAJO-1296: Remove obsolete classes from tajo.master.container package.
     (hyunsik)
 
