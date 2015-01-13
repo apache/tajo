@@ -164,6 +164,9 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1299: TB and PB representations in StorageUnit are overflow.
+    (jihun)
+
     TAJO-1297: Tajo Web UI does not work after TAJO-1291. (jihoon)
 
     TAJO-1251: Query is hanging occasionally by shuffle report. (jinho)
