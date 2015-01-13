@@ -20,7 +20,6 @@ package org.apache.tajo.rpc;
 
 import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.*;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
@@ -201,8 +200,8 @@ public class AsyncRpcClient extends NettyClientBase {
 
   private String getErrorMessage(String message) {
     return "Exception [" + protocol.getCanonicalName() +
-        "(" + NetUtils.normalizeInetSocketAddress((InetSocketAddress)
-        getChannel().remoteAddress()) + ")]: " + message;
+        "(" + RpcUtils.normalizeInetSocketAddress((InetSocketAddress)
+        getChannel().getRemoteAddress()) + ")]: " + message;
   }
 
   @Sharable

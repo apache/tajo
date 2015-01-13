@@ -23,7 +23,6 @@ import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
@@ -167,8 +166,8 @@ public class BlockingRpcClient extends NettyClientBase {
   private String getErrorMessage(String message) {
     if(protocol != null && getChannel() != null) {
       return protocol.getName() +
-          "(" + NetUtils.normalizeInetSocketAddress((InetSocketAddress)
-          getChannel().remoteAddress()) + "): " + message;
+          "(" + RpcUtils.normalizeInetSocketAddress((InetSocketAddress)
+          getChannel().getRemoteAddress()) + "): " + message;
     } else {
       return "Exception " + message;
     }
@@ -177,7 +176,7 @@ public class BlockingRpcClient extends NettyClientBase {
   private TajoServiceException makeTajoServiceException(RpcResponse response, Throwable cause) {
     if(protocol != null && getChannel() != null) {
       return new TajoServiceException(response.getErrorMessage(), cause, protocol.getName(),
-          NetUtils.normalizeInetSocketAddress((InetSocketAddress)getChannel().remoteAddress()));
+          RpcUtils.normalizeInetSocketAddress((InetSocketAddress)getChannel().getRemoteAddress()));
     } else {
       return new TajoServiceException(response.getErrorMessage());
     }

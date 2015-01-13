@@ -19,7 +19,6 @@
 package org.apache.tajo.rpc;
 
 import com.google.protobuf.RpcCallback;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.test.DummyProtocol;
@@ -28,7 +27,6 @@ import org.apache.tajo.rpc.test.TestProtos.EchoMessage;
 import org.apache.tajo.rpc.test.TestProtos.SumRequest;
 import org.apache.tajo.rpc.test.TestProtos.SumResponse;
 import org.apache.tajo.rpc.test.impl.DummyProtocolAsyncImpl;
-import org.apache.tajo.util.NetUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -136,7 +134,7 @@ public class TestAsyncRpc {
     retries = 1;
 
     client = new AsyncRpcClient(DummyProtocol.class,
-        NetUtils.getConnectAddress(server.getListenAddress()), clientLoopGroup, retries);
+        RpcUtils.getConnectAddress(server.getListenAddress()), clientChannelFactory, retries);
     stub = client.getStub();
   }
 
@@ -335,9 +333,9 @@ public class TestAsyncRpc {
   @Test
   @SetupRpcConnection(setupRpcClient=false)
   public void testUnresolvedAddress() throws Exception {
-    String hostAndPort = NetUtils.normalizeInetSocketAddress(server.getListenAddress());
+    String hostAndPort = RpcUtils.normalizeInetSocketAddress(server.getListenAddress());
     client = new AsyncRpcClient(DummyProtocol.class,
-        NetUtils.createUnresolved(hostAndPort), 
+        RpcUtils.createUnresolved(hostAndPort), 
         RpcChannelFactory.createClientEventloopGroup("TestAsyncRpc", 2), retries);
     Interface stub = client.getStub();
     EchoMessage echoMessage = EchoMessage.newBuilder()

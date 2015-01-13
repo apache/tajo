@@ -20,7 +20,6 @@ package org.apache.tajo.rpc;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.util.NetUtils;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
@@ -141,7 +140,7 @@ public class NettyServerBase {
 
     if (bindAddress != null) {
       LOG.info("Rpc (" + serviceName + ") listened on "
-              + NetUtils.normalizeInetSocketAddress(bindAddress)+ ") shutdown");
+          + RpcUtils.normalizeInetSocketAddress(bindAddress)+ ") shutdown");
     }
   }
 

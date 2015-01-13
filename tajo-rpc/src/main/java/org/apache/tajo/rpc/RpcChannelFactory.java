@@ -19,10 +19,8 @@
 package org.apache.tajo.rpc;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.conf.TajoConf;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.EventLoopGroup;
@@ -40,6 +38,10 @@ public final class RpcChannelFactory {
   private RpcChannelFactory(){
   }
 
+  /**
+   * make this factory static thus all clients can share its thread pool.
+   * NioClientSocketChannelFactory has only one method newChannel() visible for user, which is thread-safe
+   */
   public static synchronized EventLoopGroup getSharedClientChannelFactory(){
     //shared woker and boss pool
     if(loopGroup == null){
@@ -50,6 +52,7 @@ public final class RpcChannelFactory {
     return loopGroup;
   }
 
+  // Client must release the external resources
   public static synchronized EventLoopGroup createClientEventloopGroup(String name, int workerNum) {
     name = name + "-" + clientCount.incrementAndGet();
     if(LOG.isDebugEnabled()){
