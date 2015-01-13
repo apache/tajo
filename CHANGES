@@ -27,6 +27,9 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1293: Tajo have to accept hostname beginning with digits.
+    (Jinhang Choi via jihun)
+
     TAJO-1281: Remove hadoop-common dependency from tajo-rpc. (hyunsik)
 
     TAJO-1291: Rename TajoMasterProtocol to QueryCoordinatorProtocol.
@@ -160,6 +163,9 @@ Release 0.9.1 - unreleased
 
 
   BUG FIXES
+
+    TAJO-1299: TB and PB representations in StorageUnit are overflow.
+    (jihun)
 
     TAJO-1297: Tajo Web UI does not work after TAJO-1291. (jihoon)
 

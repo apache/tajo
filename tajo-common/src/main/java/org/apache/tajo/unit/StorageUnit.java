@@ -22,8 +22,9 @@ public class StorageUnit {
 
 	public static final int B = 8;
 	public static final int KB = 1024;
-	public static final int MB = KB * 1024;
-	public static final int GB = MB * 1024;
-	public static final int TB = GB * 1024;
-	public static final int PB = TB * 1024;
+	public static final int MB = KB * KB;
+	public static final int GB = MB * KB;
+	// To prevent a overflow in a integer variable, this variable size increased to 64bit size.
+	public static final long TB = (long)GB * KB;
+	public static final long PB = TB * KB;
 }

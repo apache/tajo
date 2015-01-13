@@ -31,7 +31,7 @@ public class NetworkAddressValidator extends AbstractValidator {
   
   public NetworkAddressValidator() {
     hostnamePattern = Pattern.compile(
-        "^[a-zA-Z][-a-zA-Z0-9\\\\._]+$");
+        "^\\w[\\w-]*(\\.\\w[\\w-]*)*\\.[a-zA-Z][\\w-]*.?$|[a-zA-Z][\\w-]*.?$");
     portNumberPattern = Pattern.compile("^[1-6]?[0-9]{1,4}$");
   }
 
