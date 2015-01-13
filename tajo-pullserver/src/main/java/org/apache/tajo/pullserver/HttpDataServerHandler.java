@@ -39,12 +39,14 @@ import io.netty.handler.codec.TooLongFrameException;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpChunkedInput;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedFile;
@@ -119,12 +121,13 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
       // }
 
       // Write the content.
-      Channel ch = ctx.channel();
       if (file == null) {
         HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
-        ch.writeAndFlush(response);
         if (!HttpHeaders.isKeepAlive(request)) {
-          ch.close();
+          ctx.write(response).addListener(ChannelFutureListener.CLOSE);
+        } else {
+          response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+          ctx.write(response);
         }
       } else {
         HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
@@ -133,14 +136,17 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
           totalSize += chunk.length();
         }
         HttpHeaders.setContentLength(response, totalSize);
-
+        
+        if (HttpHeaders.isKeepAlive(request)) {
+          response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+        }
         // Write the initial line and the header.
-        ch.writeAndFlush(response);
+        ctx.write(response);
 
         ChannelFuture writeFuture = null;
 
         for (FileChunk chunk : file) {
-          writeFuture = sendFile(ctx, ch, chunk);
+          writeFuture = sendFile(ctx, chunk);
           if (writeFuture == null) {
             sendError(ctx, HttpResponseStatus.NOT_FOUND);
             return;
@@ -156,8 +162,13 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
     }
   }
 
+  @Override
+  public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+    ctx.flush();
+    super.channelReadComplete(ctx);
+  }
+
   private ChannelFuture sendFile(ChannelHandlerContext ctx,
-                                 Channel ch,
                                  FileChunk file) throws IOException {
     RandomAccessFile raf;
     try {
@@ -167,15 +178,17 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     ChannelFuture writeFuture;
-    if (ch.pipeline().get(SslHandler.class) != null) {
+    ChannelFuture lastContentFuture;
+    if (ctx.pipeline().get(SslHandler.class) != null) {
       // Cannot use zero-copy with HTTPS.
-      writeFuture = ch.writeAndFlush(new ChunkedFile(raf, file.startOffset(),
-          file.length(), 8192));
+      lastContentFuture = ctx.write(new HttpChunkedInput(new ChunkedFile(raf, file.startOffset(),
+          file.length(), 8192)));
     } else {
       // No encryption - use zero-copy.
       final FileRegion region = new DefaultFileRegion(raf.getChannel(),
           file.startOffset(), file.length());
-      writeFuture = ch.writeAndFlush(region);
+      writeFuture = ctx.write(region);
+      lastContentFuture = ctx.write(LastHttpContent.EMPTY_LAST_CONTENT);
       writeFuture.addListener(new ChannelFutureListener() {
         public void operationComplete(ChannelFuture future) {
           if (region.refCnt() > 0) {
@@ -185,7 +198,7 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
       });
     }
 
-    return writeFuture;
+    return lastContentFuture;
   }
 
   @Override
@@ -201,6 +214,7 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
     if (ch.isActive()) {
       sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR);
     }
+    ctx.close();
   }
 
   public static String sanitizeUri(String uri) {

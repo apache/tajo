@@ -24,7 +24,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
-import org.apache.tajo.util.NetUtils;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -201,7 +200,7 @@ public class AsyncRpcClient extends NettyClientBase {
   private String getErrorMessage(String message) {
     return "Exception [" + protocol.getCanonicalName() +
         "(" + RpcUtils.normalizeInetSocketAddress((InetSocketAddress)
-        getChannel().getRemoteAddress()) + ")]: " + message;
+        getChannel().remoteAddress()) + ")]: " + message;
   }
 
   @Sharable
@@ -247,12 +246,16 @@ public class AsyncRpcClient extends NettyClientBase {
         
         callback.run(responseBuilder.build());
       }
+      
       if(LOG.isDebugEnabled()) {
         LOG.error(cause.getMessage(), cause);
       } else {
         LOG.error("RPC Exception:" + cause.getMessage());
       }
-      ctx.close();
+      
+      if (ctx != null) {
+        ctx.close();
+      }
     }
   }
 }

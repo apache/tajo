@@ -77,7 +77,7 @@ public class AsyncRpcServer extends NettyServerBase {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg)
+    public void channelRead(final ChannelHandlerContext ctx, Object msg)
         throws Exception {
 
       if (msg instanceof RpcRequest) {
@@ -100,7 +100,6 @@ public class AsyncRpcServer extends NettyServerBase {
           }
         }
 
-        final Channel channel = ctx.channel();
         final RpcController controller = new NettyRpcController();
 
         RpcCallback<Message> callback = !request.hasId() ? null : new RpcCallback<Message>() {
@@ -117,7 +116,7 @@ public class AsyncRpcServer extends NettyServerBase {
               builder.setErrorMessage(controller.errorText());
             }
 
-            channel.writeAndFlush(builder.build());
+            ctx.write(builder.build());
           }
         };
 
@@ -126,14 +125,22 @@ public class AsyncRpcServer extends NettyServerBase {
     }
 
     @Override
+    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+      ctx.flush();
+      super.channelReadComplete(ctx);
+    }
+
+    @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
         throws Exception{
       if (cause instanceof RemoteCallException) {
         RemoteCallException callException = (RemoteCallException) cause;
-        ctx.channel().writeAndFlush(callException.getResponse());
+        ctx.writeAndFlush(callException.getResponse());
       } else {
         LOG.error(cause.getMessage());
       }
+      
+      ctx.close();
     }
   }
 }

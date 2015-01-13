@@ -134,7 +134,7 @@ public class TestAsyncRpc {
     retries = 1;
 
     client = new AsyncRpcClient(DummyProtocol.class,
-        RpcUtils.getConnectAddress(server.getListenAddress()), clientChannelFactory, retries);
+        RpcUtils.getConnectAddress(server.getListenAddress()), clientLoopGroup, retries);
     stub = client.getStub();
   }
 

@@ -19,6 +19,7 @@
 package org.apache.tajo.rpc;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -31,6 +32,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public final class RpcChannelFactory {
   private static final Log LOG = LogFactory.getLog(RpcChannelFactory.class);
+  
+  private static final int DEFAULT_WORKER_NUM = Runtime.getRuntime().availableProcessors() * 2;
+  
   private static EventLoopGroup loopGroup;
   private static AtomicInteger clientCount = new AtomicInteger(0);
   private static AtomicInteger serverCount = new AtomicInteger(0);
@@ -39,14 +43,22 @@ public final class RpcChannelFactory {
   }
 
   /**
-   * make this factory static thus all clients can share its thread pool.
-   * NioClientSocketChannelFactory has only one method newChannel() visible for user, which is thread-safe
-   */
-  public static synchronized EventLoopGroup getSharedClientChannelFactory(){
+  * make this factory static thus all clients can share its thread pool.
+  * NioClientSocketChannelFactory has only one method newChannel() visible for user, which is thread-safe
+  */
+  public static synchronized EventLoopGroup getSharedClientEventloopGroup() {
+    return getSharedClientEventloopGroup(DEFAULT_WORKER_NUM);
+  }
+  
+  /**
+  * make this factory static thus all clients can share its thread pool.
+  * NioClientSocketChannelFactory has only one method newChannel() visible for user, which is thread-safe
+  *
+  * @param workerNum The number of workers
+  */
+  public static synchronized EventLoopGroup getSharedClientEventloopGroup(int workerNum){
     //shared woker and boss pool
     if(loopGroup == null){
-      TajoConf conf = new TajoConf();
-      int workerNum = conf.getIntVar(TajoConf.ConfVars.INTERNAL_RPC_CLIENT_WORKER_THREAD_NUM);
       loopGroup = createClientEventloopGroup("Internal-Client", workerNum);
     }
     return loopGroup;
@@ -56,7 +68,7 @@ public final class RpcChannelFactory {
   public static synchronized EventLoopGroup createClientEventloopGroup(String name, int workerNum) {
     name = name + "-" + clientCount.incrementAndGet();
     if(LOG.isDebugEnabled()){
-      LOG.debug("Create " + name + " ClientSocketChannelFactory. Worker:" + workerNum);
+      LOG.debug("Create " + name + " ClientEventLoopGroup. Worker:" + workerNum);
     }
 
     ThreadFactoryBuilder builder = new ThreadFactoryBuilder();

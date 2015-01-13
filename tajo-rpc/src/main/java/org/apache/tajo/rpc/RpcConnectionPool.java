@@ -53,7 +53,7 @@ public class RpcConnectionPool {
   public synchronized static RpcConnectionPool getPool() {
     if(instance == null) {
       InternalLoggerFactory.setDefaultFactory(new CommonsLoggerFactory());
-      instance = new RpcConnectionPool(RpcChannelFactory.getSharedClientChannelFactory());
+      instance = new RpcConnectionPool(RpcChannelFactory.getSharedClientEventloopGroup());
     }
     return instance;
   }

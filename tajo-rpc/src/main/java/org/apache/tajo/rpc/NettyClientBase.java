@@ -95,7 +95,7 @@ public abstract class NettyClientBase implements Closeable {
 
   public void connect(InetSocketAddress addr) throws ConnectTimeoutException {
     if(addr.isUnresolved()){
-       addr = NetUtils.createSocketAddr(addr.getHostName(), addr.getPort());
+       addr = RpcUtils.createSocketAddr(addr.getHostName(), addr.getPort());
     }
 
     handleConnectionInternally(addr);

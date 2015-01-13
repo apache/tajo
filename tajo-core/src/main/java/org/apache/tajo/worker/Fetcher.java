@@ -48,6 +48,8 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.ReadTimeoutException;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 
@@ -288,6 +290,7 @@ public class Fetcher {
       }
       finishTime = System.currentTimeMillis();
       state = TajoProtos.FetcherState.FETCH_FAILED;
+      ctx.close();
     }
 
     @Override
@@ -321,6 +324,7 @@ public class Fetcher {
       pipeline.addLast("inflater", new HttpContentDecompressor());
       pipeline.addLast("timeout", new ReadTimeoutHandler(readTimeout, TimeUnit.SECONDS));
       pipeline.addLast("handler", new HttpClientHandler(file));
+      pipeline.addLast(new LoggingHandler(LogLevel.ERROR));
     }
   }
 }
