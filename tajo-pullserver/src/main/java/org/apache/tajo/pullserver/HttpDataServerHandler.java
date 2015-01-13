@@ -247,7 +247,7 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
   private void sendError(ChannelHandlerContext ctx, HttpResponseStatus status) {
     FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status,
         Unpooled.copiedBuffer("Failure: " + status.toString() + "\r\n", CharsetUtil.UTF_8));
-    response.headers().add(HttpHeaders.Names.CONTENT_TYPE, "text/plain; charset=UTF-8");
+    response.headers().set(HttpHeaders.Names.CONTENT_TYPE, "text/plain; charset=UTF-8");
 
     // Close the connection as soon as the error message is sent.
     ctx.channel().writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);

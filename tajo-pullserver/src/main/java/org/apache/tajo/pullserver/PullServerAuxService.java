@@ -20,6 +20,7 @@ package org.apache.tajo.pullserver;
 
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
@@ -34,6 +35,7 @@ import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
+
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -445,12 +447,14 @@ public class PullServerAuxService extends AuxiliaryService {
         }
 
         // Write the content.
-        Channel ch = ctx.channel();
         if (chunks.size() == 0) {
           HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
-          ch.write(response);
+          ctx.write(response);
           if (!HttpHeaders.isKeepAlive(request)) {
-            ch.close();
+            ctx.close();
+          } else {
+            response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+            ctx.write(response);
           }
         } else {
           FileChunk[] file = chunks.toArray(new FileChunk[chunks.size()]);
@@ -461,13 +465,16 @@ public class PullServerAuxService extends AuxiliaryService {
           }
           HttpHeaders.setContentLength(response, totalSize);
 
+          if (HttpHeaders.isKeepAlive(request)) {
+            response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+          }
           // Write the initial line and the header.
-          ch.write(response);
+          ctx.write(response);
 
           ChannelFuture writeFuture = null;
 
           for (FileChunk chunk : file) {
-            writeFuture = sendFile(ctx, ch, chunk);
+            writeFuture = sendFile(ctx, chunk);
             if (writeFuture == null) {
               sendError(ctx, HttpResponseStatus.NOT_FOUND);
               return;
@@ -484,7 +491,6 @@ public class PullServerAuxService extends AuxiliaryService {
     }
 
     private ChannelFuture sendFile(ChannelHandlerContext ctx,
-                                   Channel ch,
                                    FileChunk file) throws IOException {
       RandomAccessFile spill;
       try {
@@ -493,12 +499,15 @@ public class PullServerAuxService extends AuxiliaryService {
         LOG.info(file.getFile() + " not found");
         return null;
       }
+      
       ChannelFuture writeFuture;
-      if (ch.pipeline().get(SslHandler.class) == null) {
+      ChannelFuture lastContentFuture;
+      if (ctx.pipeline().get(SslHandler.class) == null) {
         final FadvisedFileRegion partition = new FadvisedFileRegion(spill,
             file.startOffset(), file.length(), manageOsCache, readaheadLength,
             readaheadPool, file.getFile().getAbsolutePath());
-        writeFuture = ch.write(partition);
+        writeFuture = ctx.write(partition);
+        lastContentFuture = ctx.write(LastHttpContent.EMPTY_LAST_CONTENT);
         writeFuture.addListener(new FileCloseListener(partition, null, 0, null));
       } else {
         // HTTPS cannot be done with zero copy.
@@ -506,11 +515,17 @@ public class PullServerAuxService extends AuxiliaryService {
             file.startOffset(), file.length(), sslFileBufferSize,
             manageOsCache, readaheadLength, readaheadPool,
             file.getFile().getAbsolutePath());
-        writeFuture = ch.write(chunk);
+        lastContentFuture = ctx.write(new HttpChunkedInput(chunk));
       }
       metrics.shuffleConnections.incr();
       metrics.shuffleOutputBytes.incr(file.length()); // optimistic
-      return writeFuture;
+      return lastContentFuture;
+    }
+    
+    @Override
+    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+      ctx.flush();
+      super.channelReadComplete(ctx);
     }
 
     private void sendError(ChannelHandlerContext ctx,
@@ -522,10 +537,10 @@ public class PullServerAuxService extends AuxiliaryService {
         HttpResponseStatus status) {
       FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status,
               Unpooled.copiedBuffer(message, CharsetUtil.UTF_8));
-      response.headers().add(HttpHeaders.Names.CONTENT_TYPE, "text/plain; charset=UTF-8");
+      response.headers().set(HttpHeaders.Names.CONTENT_TYPE, "text/plain; charset=UTF-8");
 
       // Close the connection as soon as the error message is sent.
-      ctx.channel().write(response).addListener(ChannelFutureListener.CLOSE);
+      ctx.channel().writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
     }
 
     @Override

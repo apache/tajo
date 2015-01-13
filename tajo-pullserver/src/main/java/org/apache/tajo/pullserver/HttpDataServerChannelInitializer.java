@@ -24,8 +24,6 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.http.HttpContentCompressor;
 import io.netty.handler.codec.http.HttpRequestDecoder;
 import io.netty.handler.codec.http.HttpResponseEncoder;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
 
 public class HttpDataServerChannelInitializer extends ChannelInitializer<Channel> {
@@ -53,6 +51,5 @@ public class HttpDataServerChannelInitializer extends ChannelInitializer<Channel
     pipeline.addLast("chunkedWriter", new ChunkedWriteHandler());
     pipeline.addLast("deflater", new HttpContentCompressor());
     pipeline.addLast("handler", new HttpDataServerHandler(userName, appId));
-    pipeline.addLast(new LoggingHandler(LogLevel.ERROR));
   }
 }

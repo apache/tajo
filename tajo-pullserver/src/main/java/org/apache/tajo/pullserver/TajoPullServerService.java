@@ -71,6 +71,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpChunkedInput;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpObjectAggregator;
@@ -79,6 +80,7 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
@@ -620,12 +622,14 @@ public class TajoPullServerService extends AbstractService {
         processingStatus.setNumFiles(chunks.size());
         processingStatus.makeFileListTime = System.currentTimeMillis() - processingStatus.startTime;
         // Write the content.
-        Channel ch = ctx.channel();
         if (chunks.size() == 0) {
           HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
-          ch.writeAndFlush(response);
+          ctx.write(response);
           if (!HttpHeaders.isKeepAlive(request)) {
-            ch.close();
+            ctx.close();
+          } else {
+            response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+            ctx.write(response);
           }
         } else {
           FileChunk[] file = chunks.toArray(new FileChunk[chunks.size()]);
@@ -636,13 +640,16 @@ public class TajoPullServerService extends AbstractService {
           }
           HttpHeaders.setContentLength(response, totalSize);
 
+          if (HttpHeaders.isKeepAlive(request)) {
+            response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+          }
           // Write the initial line and the header.
-          ch.writeAndFlush(response);
+          ctx.write(response);
 
           ChannelFuture writeFuture = null;
 
           for (FileChunk chunk : file) {
-            writeFuture = sendFile(ctx, ch, chunk, request.getUri().toString());
+            writeFuture = sendFile(ctx, chunk, request.getUri().toString());
             if (writeFuture == null) {
               sendError(ctx, HttpResponseStatus.NOT_FOUND);
               return;
@@ -659,27 +666,28 @@ public class TajoPullServerService extends AbstractService {
     }
 
     private ChannelFuture sendFile(ChannelHandlerContext ctx,
-                                   Channel ch,
                                    FileChunk file,
                                    String requestUri) throws IOException {
       long startTime = System.currentTimeMillis();
-      RandomAccessFile spill = null;
+      RandomAccessFile spill = null;      
       ChannelFuture writeFuture;
+      ChannelFuture lastContentFuture;
       try {
         spill = new RandomAccessFile(file.getFile(), "r");
-        if (ch.pipeline().get(SslHandler.class) == null) {
+        if (ctx.pipeline().get(SslHandler.class) == null) {
           final FadvisedFileRegion filePart = new FadvisedFileRegion(spill,
               file.startOffset(), file.length(), manageOsCache, readaheadLength,
               readaheadPool, file.getFile().getAbsolutePath());
-          writeFuture = ch.writeAndFlush(filePart);
+          writeFuture = ctx.write(filePart);
           writeFuture.addListener(new FileCloseListener(filePart, requestUri, startTime, TajoPullServerService.this));
+          lastContentFuture = ctx.write(LastHttpContent.EMPTY_LAST_CONTENT);
         } else {
           // HTTPS cannot be done with zero copy.
           final FadvisedChunkedFile chunk = new FadvisedChunkedFile(spill,
               file.startOffset(), file.length(), sslFileBufferSize,
               manageOsCache, readaheadLength, readaheadPool,
               file.getFile().getAbsolutePath());
-          writeFuture = ch.writeAndFlush(chunk);
+          lastContentFuture = ctx.write(new HttpChunkedInput(chunk));
         }
       } catch (FileNotFoundException e) {
         LOG.info(file.getFile() + " not found");
@@ -693,7 +701,13 @@ public class TajoPullServerService extends AbstractService {
       }
       metrics.shuffleConnections.incr();
       metrics.shuffleOutputBytes.incr(file.length()); // optimistic
-      return writeFuture;
+      return lastContentFuture;
+    }
+
+    @Override
+    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+      ctx.flush();
+      super.channelReadComplete(ctx);
     }
 
     private void sendError(ChannelHandlerContext ctx,
@@ -705,7 +719,7 @@ public class TajoPullServerService extends AbstractService {
         HttpResponseStatus status) {
       FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status,
           Unpooled.copiedBuffer(message, CharsetUtil.UTF_8));
-      response.headers().add(HttpHeaders.Names.CONTENT_TYPE, "text/plain; charset=UTF-8");
+      response.headers().set(HttpHeaders.Names.CONTENT_TYPE, "text/plain; charset=UTF-8");
 
       // Close the connection as soon as the error message is sent.
       ctx.channel().writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
@@ -716,10 +730,8 @@ public class TajoPullServerService extends AbstractService {
         throws Exception {
       LOG.error(cause.getMessage(), cause);
       //if channel.close() is not called, never closed files in this request
-      if (ctx.channel().isActive()){
-        ctx.channel().close();
-        accepted.remove(ctx.channel());
-      }
+      ctx.close();
+      accepted.remove(ctx.channel());
     }
   }
 

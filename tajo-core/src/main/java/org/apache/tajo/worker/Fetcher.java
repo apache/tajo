@@ -48,8 +48,6 @@ import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.ReadTimeoutException;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 
@@ -165,9 +163,9 @@ public class Fetcher {
           + (uri.getRawQuery() != null ? "?" + uri.getRawQuery() : "");
       // Prepare the HTTP request.
       HttpRequest request = new DefaultHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, query);
-      request.headers().add(HttpHeaders.Names.HOST, host);
-      request.headers().add(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.CLOSE);
-      request.headers().add(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
+      request.headers().set(HttpHeaders.Names.HOST, host);
+      request.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.CLOSE);
+      request.headers().set(HttpHeaders.Names.ACCEPT_ENCODING, HttpHeaders.Values.GZIP);
 
       LOG.info("Status: " + getState() + ", URI:" + uri);
       // Send the HTTP request.
@@ -324,7 +322,6 @@ public class Fetcher {
       pipeline.addLast("inflater", new HttpContentDecompressor());
       pipeline.addLast("timeout", new ReadTimeoutHandler(readTimeout, TimeUnit.SECONDS));
       pipeline.addLast("handler", new HttpClientHandler(file));
-      pipeline.addLast(new LoggingHandler(LogLevel.ERROR));
     }
   }
 }

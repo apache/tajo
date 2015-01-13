@@ -32,12 +32,14 @@ import io.netty.handler.codec.TooLongFrameException;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpChunkedInput;
 import io.netty.handler.codec.http.HttpHeaders;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedFile;
 import io.netty.util.CharsetUtil;
@@ -96,20 +98,20 @@ public class HttpFileServerHandler extends ChannelInboundHandlerAdapter {
       HttpHeaders.setContentLength(response, fileLength);
       setContentTypeHeader(response);
 
-      Channel ch = ctx.channel();
-
       // Write the initial line and the header.
-      ch.writeAndFlush(response);
+      ctx.write(response);
 
       // Write the content.
       ChannelFuture writeFuture;
-      if (ch.pipeline().get(SslHandler.class) != null) {
+      ChannelFuture lastContentFuture;
+      if (ctx.pipeline().get(SslHandler.class) != null) {
         // Cannot use zero-copy with HTTPS.
-        writeFuture = ch.writeAndFlush(new ChunkedFile(raf, 0, fileLength, 8192));
+        lastContentFuture = ctx.write(new HttpChunkedInput(new ChunkedFile(raf, 0, fileLength, 8192)));
       } else {
         // No encryption - use zero-copy.
         final FileRegion region = new DefaultFileRegion(raf.getChannel(), 0, fileLength);
-        writeFuture = ch.writeAndFlush(region);
+        writeFuture = ctx.write(region);
+        lastContentFuture = ctx.write(LastHttpContent.EMPTY_LAST_CONTENT);
         writeFuture.addListener(new ChannelProgressiveFutureListener() {
           @Override
           public void operationProgressed(ChannelProgressiveFuture future, long progress, long total) throws Exception {
@@ -126,9 +128,15 @@ public class HttpFileServerHandler extends ChannelInboundHandlerAdapter {
       // Decide whether to close the connection or not.
       if (!HttpHeaders.isKeepAlive(request)) {
         // Close the connection when the whole content is written out.
-        writeFuture.addListener(ChannelFutureListener.CLOSE);
+        lastContentFuture.addListener(ChannelFutureListener.CLOSE);
       }
     }
+  }
+  
+  @Override
+  public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+    ctx.flush();
+    super.channelReadComplete(ctx);
   }
 
   @Override
@@ -176,7 +184,7 @@ public class HttpFileServerHandler extends ChannelInboundHandlerAdapter {
     FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status,
         Unpooled.copiedBuffer("Failure: " + status.toString() + "\r\n",
         CharsetUtil.UTF_8));
-    response.headers().add(HttpHeaders.Names.CONTENT_TYPE, "text/plain; charset=UTF-8");
+    response.headers().set(HttpHeaders.Names.CONTENT_TYPE, "text/plain; charset=UTF-8");
 
     // Close the connection as soon as the error message is sent.
     ctx.channel().writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
@@ -189,7 +197,7 @@ public class HttpFileServerHandler extends ChannelInboundHandlerAdapter {
    *            HTTP response
    */
   private static void setContentTypeHeader(HttpResponse response) {
-    response.headers().add(HttpHeaders.Names.CONTENT_TYPE, "text/plain; charset=UTF-8");
+    response.headers().set(HttpHeaders.Names.CONTENT_TYPE, "text/plain; charset=UTF-8");
   }
 
 }

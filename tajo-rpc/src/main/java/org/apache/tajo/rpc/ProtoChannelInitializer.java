@@ -26,8 +26,6 @@ import io.netty.handler.codec.protobuf.ProtobufDecoder;
 import io.netty.handler.codec.protobuf.ProtobufEncoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
 
 import com.google.protobuf.MessageLite;
 
@@ -49,6 +47,5 @@ public class ProtoChannelInitializer extends ChannelInitializer<Channel> {
     pipeline.addLast("frameEncoder", new ProtobufVarint32LengthFieldPrepender());
     pipeline.addLast("protobufEncoder", new ProtobufEncoder());
     pipeline.addLast("handler", handler);
-    pipeline.addLast(new LoggingHandler(LogLevel.ERROR));
   }
 }
