@@ -226,7 +226,7 @@ public class CSVFile {
           deflateFilter = null;
         }
       } finally {
-        IOUtils.cleanup(LOG, os, outputStream, fos);
+        IOUtils.cleanup(LOG, os, fos);
         if (compressor != null) {
           CodecPool.returnCompressor(compressor);
           compressor = null;
