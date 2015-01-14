@@ -2,10 +2,10 @@ SELECT
   lag(l_shipmode, 1, 'default') over (PARTITION BY L_ORDERKEY order by l_shipmode ) as shipmode_lag,
   lag(l_linenumber, 1, 100) over (PARTITION BY L_ORDERKEY order by l_shipmode ) as linenumber_lag,
   lag(l_suppkey_t, 1, 1000::int8) over (PARTITION BY L_ORDERKEY order by l_shipmode ) as suppkey_lag,
-  lag(l_shipdate_t, 1, '15-01-01') over (PARTITION BY L_ORDERKEY order by l_shipmode ) as shipdate_lag,
-  lag(l_commitdate_t, 1, '15-01-01 12:00:00') over (PARTITION BY L_ORDERKEY order by l_shipmode ) as commitdate_lag,
-  lag(l_extendedprice, 1, 1.234) over (PARTITION BY L_ORDERKEY order by l_shipmode ) as extendedprice_lag,
-  lag(l_discount_t, 1, 0.11) over (PARTITION BY L_ORDERKEY order by l_shipmode ) as discount_lag,
+  lag(l_shipdate_t, 1, '15-01-01'::date) over (PARTITION BY L_ORDERKEY order by l_shipmode ) as shipdate_lag,
+  lag(l_commitdate_t, 1, '15-01-01 12:00:00'::timestamp) over (PARTITION BY L_ORDERKEY order by l_shipmode ) as commitdate_lag,
+  lag(l_extendedprice, 1, 1.234::float8) over (PARTITION BY L_ORDERKEY order by l_shipmode ) as extendedprice_lag,
+  lag(l_discount_t, 1, 0.11::float4) over (PARTITION BY L_ORDERKEY order by l_shipmode ) as discount_lag,
   l_orderkey
 FROM
 (

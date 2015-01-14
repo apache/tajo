@@ -78,7 +78,7 @@ public abstract class Lead extends AggFunction<Datum> {
   public Datum terminate(FunctionContext ctx) {
     LeadContext leadCtx = (LeadContext)ctx;
     if (leadCtx.leadBuffer.isEmpty()) {
-      return NullDatum.get();
+      return leadCtx.defaultDatum;
     } else {
       return leadCtx.leadBuffer.removeFirst();
     }

@@ -414,6 +414,13 @@ public class TestWindowQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testLeadWithDefault() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testMultipleWindow() throws Exception {
     KeyValueSet tableOptions = new KeyValueSet();
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
