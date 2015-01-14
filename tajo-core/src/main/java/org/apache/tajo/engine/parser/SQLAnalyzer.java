@@ -383,6 +383,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       functionBody = new GeneralSetFunctionExpr("first_value", false, new Expr[]{ visitColumn_reference(functionType.column_reference())});
     } else if (checkIfExist(functionType.LAST_VALUE())) {
       functionBody = new GeneralSetFunctionExpr("last_value", false, new Expr[]{visitColumn_reference(functionType.column_reference())});
+    } else if (checkIfExist(functionType.LAG())) {
+      functionBody = new GeneralSetFunctionExpr("lag", false, new Expr[]{visitColumn_reference(functionType.column_reference()),
+          visitNumeric_value_expression(functionType.numeric_value_expression())});
+    } else if (checkIfExist(functionType.LEAD())) {
+      functionBody = new GeneralSetFunctionExpr("lead", false, new Expr[]{visitColumn_reference(functionType.column_reference()),
+          visitNumeric_value_expression(functionType.numeric_value_expression())});
     } else {
       functionBody = visitAggregate_function(functionType.aggregate_function());
     }

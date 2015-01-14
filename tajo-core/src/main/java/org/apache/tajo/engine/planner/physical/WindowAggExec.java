@@ -314,8 +314,8 @@ public class WindowAggExec extends UnaryPhysicalExec {
       }
 
       if (aggFuncFlags[idx]) {
-        Datum result = functions[idx].terminate(contexts[idx]);
         for (int i = 0; i < evaluatedTuples.size(); i++) {
+          Datum result = functions[idx].terminate(contexts[idx]);
           Tuple outTuple = evaluatedTuples.get(i);
           outTuple.put(nonFunctionColumnNum + idx, result);
         }
