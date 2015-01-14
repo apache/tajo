@@ -631,8 +631,8 @@ window_function_type
   | aggregate_function
   | FIRST_VALUE LEFT_PAREN column_reference RIGHT_PAREN
   | LAST_VALUE LEFT_PAREN column_reference RIGHT_PAREN
-  | LAG LEFT_PAREN column_reference COMMA numeric_value_expression RIGHT_PAREN
-  | LEAD LEFT_PAREN column_reference COMMA numeric_value_expression RIGHT_PAREN
+  | LAG LEFT_PAREN column_reference ( COMMA numeric_value_expression ( COMMA common_value_expression )? )? RIGHT_PAREN
+  | LEAD LEFT_PAREN column_reference ( COMMA numeric_value_expression ( COMMA common_value_expression )? )? RIGHT_PAREN
   ;
 
 rank_function_type

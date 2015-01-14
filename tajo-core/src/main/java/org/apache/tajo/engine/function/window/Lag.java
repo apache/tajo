@@ -41,7 +41,12 @@ public abstract class Lag extends WindowAggFunc<Datum> {
   public void eval(FunctionContext ctx, Tuple params) {
     LagContext lagCtx = (LagContext)ctx;
     if(lagCtx.lagBuffer == null) {
-      int lagNum = params.get(1).asInt4();
+      int lagNum = 0;
+      if (params.size() == 1) {
+        lagNum = 1;
+      } else {
+        lagNum = params.get(1).asInt4();
+      }
       lagCtx.lagBuffer = new CircularFifoBuffer(lagNum+1);
     }
 
@@ -49,6 +54,14 @@ public abstract class Lag extends WindowAggFunc<Datum> {
       lagCtx.lagBuffer.add(params.get(0));
     } else {
       lagCtx.lagBuffer.add(NullDatum.get());
+    }
+
+    if (lagCtx.defaultDatum == null) {
+     if (params.size() == 3) {
+       lagCtx.defaultDatum = params.get(2);
+     } else {
+       lagCtx.defaultDatum = NullDatum.get();
+     }
     }
   }
 
@@ -58,11 +71,12 @@ public abstract class Lag extends WindowAggFunc<Datum> {
     if(lagCtx.lagBuffer.isFull()) {
       return (Datum)(lagCtx.lagBuffer.get());
     } else {
-      return NullDatum.get();
+      return lagCtx.defaultDatum;
     }
   }
 
   protected class LagContext implements FunctionContext {
     CircularFifoBuffer lagBuffer = null;
+    Datum defaultDatum = null;
   }
 }

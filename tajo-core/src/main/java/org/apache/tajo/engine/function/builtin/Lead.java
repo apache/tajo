@@ -42,7 +42,11 @@ public abstract class Lead extends AggFunction<Datum> {
   public void eval(FunctionContext ctx, Tuple params) {
     LeadContext leadCtx = (LeadContext)ctx;
     if (leadCtx.leadNum < 0) {
-      leadCtx.leadNum = params.get(1).asInt4();
+      if (params.size() == 1) {
+        leadCtx.leadNum = 1;
+      } else {
+        leadCtx.leadNum = params.get(1).asInt4();
+      }
     }
 
     if (leadCtx.leadNum > 0) {
@@ -50,13 +54,21 @@ public abstract class Lead extends AggFunction<Datum> {
     } else {
       leadCtx.leadBuffer.add(params.get(0));
     }
+
+    if (leadCtx.defaultDatum == null) {
+      if (params.size() == 3) {
+        leadCtx.defaultDatum = params.get(2);
+      } else {
+        leadCtx.defaultDatum = NullDatum.get();
+      }
+    }
   }
 
   @Override
   public Datum getPartialResult(FunctionContext ctx) {
     LeadContext leadCtx = (LeadContext)ctx;
     if (leadCtx.leadBuffer.isEmpty()) {
-      return NullDatum.get();
+      return leadCtx.defaultDatum;
     } else {
       return leadCtx.leadBuffer.removeFirst();
     }
@@ -75,5 +87,6 @@ public abstract class Lead extends AggFunction<Datum> {
   private class LeadContext implements FunctionContext {
     LinkedList<Datum> leadBuffer = new LinkedList<Datum>();
     int leadNum = -1;
+    Datum defaultDatum = null;
   }
 }

@@ -30,14 +30,15 @@ import org.apache.tajo.engine.function.annotation.ParamTypes;
     description = "the nth previous row value of current row",
     example = "> SELECT lag(column, n) OVER ();",
     returnType = Type.FLOAT4,
-    paramTypes = {@ParamTypes(paramTypes = {Type.FLOAT4, Type.INT4})}
+    paramTypes = {@ParamTypes(paramTypes = {Type.FLOAT4}), @ParamTypes(paramTypes = {Type.FLOAT4, Type.INT4}), @ParamTypes(paramTypes = {Type.FLOAT4, Type.INT4, Type.FLOAT4})}
 )
 public class LeadFloat extends Lead {
 
   public LeadFloat() {
     super(new Column[] {
         new Column("col", Type.FLOAT4),
-        new Column("num", Type.INT4)
+        new Column("num", Type.INT4),
+        new Column("default", Type.FLOAT4)
     });
   }
 

@@ -358,6 +358,20 @@ public class TestWindowQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testLagWithNoArgs() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testLagWithDefault() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testLead1() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -390,6 +404,13 @@ public class TestWindowQuery extends QueryTestCaseBase {
     } finally {
       executeString("DROP TABLE leadtime PURGE");
     }
+  }
+
+  @Test
+  public final void testLeadWithNoArgs() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
   }
 
   @Test

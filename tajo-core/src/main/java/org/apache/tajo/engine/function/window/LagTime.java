@@ -28,14 +28,15 @@ import org.apache.tajo.engine.function.annotation.ParamTypes;
     description = "the nth previous row value of current row",
     example = "> SELECT lag(column, n) OVER ();",
     returnType = Type.TIME,
-    paramTypes = {@ParamTypes(paramTypes = {Type.TIME, Type.INT4})}
+    paramTypes = {@ParamTypes(paramTypes = {Type.TIME}), @ParamTypes(paramTypes = {Type.TIME, Type.INT4}), @ParamTypes(paramTypes = {Type.TIME, Type.INT4, Type.TIME})}
 )
 public class LagTime extends Lag {
 
   public LagTime() {
     super(new Column[] {
         new Column("col", Type.TIME),
-        new Column("num", Type.INT4)
+        new Column("num", Type.INT4),
+        new Column("default", Type.TIME)
     });
   }
 }
