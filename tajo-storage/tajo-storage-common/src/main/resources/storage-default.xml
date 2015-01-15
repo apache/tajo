@@ -39,12 +39,12 @@
   <!--- Registered Scanner Handler -->
   <property>
     <name>tajo.storage.scanner-handler</name>
-    <value>textfile,csv,json,raw,rcfile,row,parquet,sequencefile,avro,hbase</value>
+    <value>text,csv,json,raw,rcfile,row,parquet,sequencefile,avro,hbase</value>
   </property>
 
   <!--- Fragment Class Configurations -->
   <property>
-    <name>tajo.storage.fragment.textfile.class</name>
+    <name>tajo.storage.fragment.text.class</name>
     <value>org.apache.tajo.storage.fragment.FileFragment</value>
   </property>
   <property>
@@ -86,7 +86,7 @@
 
   <!--- Scanner Handler -->
   <property>
-    <name>tajo.storage.scanner-handler.textfile.class</name>
+    <name>tajo.storage.scanner-handler.text.class</name>
     <value>org.apache.tajo.storage.text.DelimitedTextFile$DelimitedTextFileScanner</value>
   </property>
 
@@ -138,11 +138,11 @@
   <!--- Appender Handler -->
   <property>
     <name>tajo.storage.appender-handler</name>
-    <value>textfile,csv,raw,rcfile,row,parquet,sequencefile,avro,hbase</value>
+    <value>text,csv,raw,rcfile,row,parquet,sequencefile,avro,hbase</value>
   </property>
 
   <property>
-    <name>tajo.storage.appender-handler.textfile.class</name>
+    <name>tajo.storage.appender-handler.text.class</name>
     <value>org.apache.tajo.storage.text.DelimitedTextFile$DelimitedTextFileAppender</value>
   </property>
 
