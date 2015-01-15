@@ -242,7 +242,7 @@ public class DelimitedTextFile {
           deflateFilter = null;
         }
       } finally {
-        IOUtils.cleanup(LOG, fos, os, outputStream);
+        IOUtils.cleanup(LOG, os, fos);
         if (compressor != null) {
           CodecPool.returnCompressor(compressor);
           compressor = null;
