@@ -265,18 +265,8 @@ public class CatalogUtil {
   public static String getStoreTypeString(final StoreType type) {
     if (type == StoreType.TEXTFILE) {
       return TEXTFILE_NAME;
-    } else if (type == StoreType.CSV ||
-               type == StoreType.RAW ||
-               type == StoreType.ROWFILE ||
-               type == StoreType.RCFILE ||
-               type == StoreType.PARQUET ||
-               type == StoreType.SEQUENCEFILE ||
-               type == StoreType.AVRO ||
-               type == StoreType.JSON ||
-               type == StoreType.HBASE) {
-      return type.name();
     } else {
-      return null;
+      return type.name();
     }
   }
 

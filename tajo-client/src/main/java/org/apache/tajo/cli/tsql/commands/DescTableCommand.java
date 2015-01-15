@@ -21,6 +21,7 @@ package org.apache.tajo.cli.tsql.commands;
 import org.apache.commons.lang.CharUtils;
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.tajo.TajoConstants;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -79,7 +80,7 @@ public class DescTableCommand extends TajoShellCommand {
     StringBuilder sb = new StringBuilder();
     sb.append("\ntable name: ").append(desc.getName()).append("\n");
     sb.append("table path: ").append(desc.getPath()).append("\n");
-    sb.append("store type: ").append(desc.getMeta().getStoreType()).append("\n");
+    sb.append("store type: ").append(CatalogUtil.getStoreTypeString(desc.getMeta().getStoreType())).append("\n");
     if (desc.getStats() != null) {
 
       long row = desc.getStats().getNumRows();

@@ -368,7 +368,7 @@ public class MemStore implements CatalogStore {
         builder.setName(tableName);
         builder.setPath(tableDesc.getPath());
         builder.setTableType(tableDesc.getIsExternal()?"EXTERNAL":"BASE");
-        builder.setStoreType(tableDesc.getMeta().getStoreType().toString());
+        builder.setStoreType(CatalogUtil.getStoreTypeString(tableDesc.getMeta().getStoreType()));
         
         tableList.add(builder.build());
         tableId++;
