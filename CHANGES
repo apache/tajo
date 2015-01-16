@@ -27,6 +27,22 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1293: Tajo have to accept hostname beginning with digits.
+    (Jinhang Choi via jihun)
+
+    TAJO-1281: Remove hadoop-common dependency from tajo-rpc. (hyunsik)
+
+    TAJO-1291: Rename TajoMasterProtocol to QueryCoordinatorProtocol.
+    (hyunsik)
+
+    TAJO-1286: Remove netty dependency from tajo-jdbc. (jihun)
+
+    TAJO-1282: Cleanup the relationship of QueryInProgress and 
+    QueryJobManager. (hyunsik)
+
+    TAJO-1258: Close() for classes derived from FileAppender should be robust.
+    (Jongyoung Park via jinho)
+
     TAJO-1288: Refactoring org.apache.tajo.master package. (hyunsik)
 
     TAJO-1279: Cleanup TajoAsyncDispatcher and interrupt stop events. 
@@ -148,6 +164,18 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1304: Can not found TextFile in catalog. (jinho)
+
+    TAJO-1299: TB and PB representations in StorageUnit are overflow.
+    (jihun)
+
+    TAJO-1297: Tajo Web UI does not work after TAJO-1291. (jihoon)
+
+    TAJO-1251: Query is hanging occasionally by shuffle report. (jinho)
+
+    TAJO-1287: Repeated using of the same order by key in multiple 
+    window clauses should be supported. (Keuntae Park)
+
     TAJO-1265: min(), max() does not handle null properly. (Keuntae Park)
 
     TAJO-1270: Fix typos. (DaeMyung Kang via hyunsik)
@@ -263,6 +291,14 @@ Release 0.9.1 - unreleased
 
 
   TASKS
+
+    TAJO-1295: Remove legacy worker.dataserver package and its unit tests.
+    (hyunsik)
+
+    TAJO-1296: Remove obsolete classes from tajo.master.container package.
+    (hyunsik)
+
+    TAJO-1294: Add index documents. (jihoon)
 
     TAJO-1280: Update the roles of Hyoungjun and Jihun in web site.
     (hyunsik)

@@ -660,7 +660,6 @@ public class Query implements EventHandler<QueryEvent> {
         if (castEvent.getState() == StageState.SUCCEEDED &&  // latest stage succeeded
             query.getSynchronizedState() == QueryState.QUERY_RUNNING &&     // current state is not in KILL_WAIT, FAILED, or ERROR.
             hasNext(query)) {                                   // there remains at least one stage.
-          query.getStage(castEvent.getExecutionBlockId()).waitingIntermediateReport();
           executeNextBlock(query);
         } else { // if a query is completed due to finished, kill, failure, or error
           query.eventHandler.handle(new QueryCompletedEvent(castEvent.getExecutionBlockId(), castEvent.getState()));
@@ -692,6 +691,7 @@ public class Query implements EventHandler<QueryEvent> {
     public void transition(Query query, QueryEvent event) {
       synchronized (query.stages) {
         for (Stage stage : query.stages.values()) {
+          stage.stopFinalization();
           query.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_KILL));
         }
       }

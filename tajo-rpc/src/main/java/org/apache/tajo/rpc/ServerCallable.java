@@ -18,14 +18,13 @@
 
 package org.apache.tajo.rpc;
 
+import com.google.protobuf.ServiceException;
+
 import java.io.IOException;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.google.protobuf.ServiceException;
-import org.apache.tajo.conf.TajoConf;
 
 public abstract class ServerCallable<T> {
   protected InetSocketAddress addr;

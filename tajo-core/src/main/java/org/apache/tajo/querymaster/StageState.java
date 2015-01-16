@@ -22,6 +22,7 @@ public enum StageState {
   NEW,
   INITED,
   RUNNING,
+  FINALIZING,
   SUCCEEDED,
   FAILED,
   KILL_WAIT,

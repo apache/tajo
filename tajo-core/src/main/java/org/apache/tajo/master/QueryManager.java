@@ -28,24 +28,26 @@ import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
-import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ipc.TajoMasterProtocol;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
-import org.apache.tajo.querymaster.QueryInProgress;
+import org.apache.tajo.master.scheduler.SimpleFifoScheduler;
+import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.querymaster.QueryJobEvent;
 import org.apache.tajo.session.Session;
-import org.apache.tajo.plan.logical.LogicalRootNode;
-import org.apache.tajo.master.scheduler.SimpleFifoScheduler;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class QueryJobManager extends CompositeService {
-  private static final Log LOG = LogFactory.getLog(QueryJobManager.class.getName());
+/**
+ * QueryManager manages all scheduled and running queries.
+ * It receives all Query related events and routes them to each QueryInProgress.
+ */
+public class QueryManager extends CompositeService {
+  private static final Log LOG = LogFactory.getLog(QueryManager.class.getName());
 
   // TajoMaster Context
   private final TajoMaster.MasterContext masterContext;
@@ -63,13 +65,13 @@ public class QueryJobManager extends CompositeService {
   private AtomicLong avgExecutionTime = new AtomicLong();
   private AtomicLong executedQuerySize = new AtomicLong();
 
-  public QueryJobManager(final TajoMaster.MasterContext masterContext) {
-    super(QueryJobManager.class.getName());
+  public QueryManager(final TajoMaster.MasterContext masterContext) {
+    super(QueryManager.class.getName());
     this.masterContext = masterContext;
   }
 
   @Override
-  public void init(Configuration conf) {
+  public void serviceInit(Configuration conf) throws Exception {
     try {
       this.dispatcher = new AsyncDispatcher();
       addService(this.dispatcher);
@@ -81,24 +83,24 @@ public class QueryJobManager extends CompositeService {
       catchException(null, e);
     }
 
-    super.init(conf);
+    super.serviceInit(conf);
   }
 
   @Override
-  public void stop() {
+  public void serviceStop() throws Exception {
     synchronized(runningQueries) {
       for(QueryInProgress eachQueryInProgress: runningQueries.values()) {
-        eachQueryInProgress.stop();
+        eachQueryInProgress.stopProgress();
       }
     }
     this.scheduler.stop();
-    super.stop();
+    super.serviceStop();
   }
 
   @Override
-  public void start() {
+  public void serviceStart() throws Exception {
     this.scheduler.start();
-    super.start();
+    super.serviceStart();
   }
 
   public EventHandler getEventHandler() {
@@ -136,8 +138,8 @@ public class QueryJobManager extends CompositeService {
     }
   }
 
-  public QueryInfo createNewQueryJob(Session session, QueryContext queryContext, String sql,
-                                     String jsonExpr, LogicalRootNode plan)
+  public QueryInfo scheduleQuery(Session session, QueryContext queryContext, String sql,
+                                 String jsonExpr, LogicalRootNode plan)
       throws Exception {
     QueryId queryId = QueryIdFactory.newQueryId(masterContext.getResourceManager().getSeedQueryId());
     QueryInProgress queryInProgress = new QueryInProgress(masterContext, session, queryContext, queryId, sql,
@@ -164,39 +166,42 @@ public class QueryJobManager extends CompositeService {
       runningQueries.put(queryInProgress.getQueryId(), queryInProgress);
     }
 
-    addService(queryInProgress);
-    queryInProgress.init(getConfig());
-    queryInProgress.start();
-
-    if (!queryInProgress.startQueryMaster()) {
+    if (queryInProgress.startQueryMaster()) {
+      dispatcher.getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_MASTER_START,
+          queryInProgress.getQueryInfo()));
+    } else {
       stopQuery(queryId);
     }
 
     return queryInProgress.getQueryInfo();
   }
 
-  public TajoMaster.MasterContext getMasterContext() {
-    return masterContext;
-  }
-
   class QueryJobManagerEventHandler implements EventHandler<QueryJobEvent> {
+
     @Override
     public void handle(QueryJobEvent event) {
       QueryInProgress queryInProgress = getQueryInProgress(event.getQueryInfo().getQueryId());
-      if(queryInProgress == null) {
+
+
+      if (queryInProgress == null) {
         LOG.warn("No query info in running queries.[" + event.getQueryInfo().getQueryId() + "]");
         return;
       }
 
-      if (event.getType() == QueryJobEvent.Type.QUERY_JOB_STOP) {
+
+      if (event.getType() == QueryJobEvent.Type.QUERY_MASTER_START) {
+        queryInProgress.submmitQueryToMaster();
+
+      } else if (event.getType() == QueryJobEvent.Type.QUERY_JOB_STOP) {
         stopQuery(event.getQueryInfo().getQueryId());
-      } else if (queryInProgress.isStarted()) {
-        queryInProgress.getEventHandler().handle(event);
+
       } else if (event.getType() == QueryJobEvent.Type.QUERY_JOB_KILL) {
         scheduler.removeQuery(queryInProgress.getQueryId());
-        queryInProgress.getQueryInfo().setQueryState(TajoProtos.QueryState.QUERY_KILLED);
-
+        queryInProgress.kill();
         stopQuery(queryInProgress.getQueryId());
+
+      } else if (event.getType() == QueryJobEvent.Type.QUERY_JOB_HEARTBEAT) {
+        queryInProgress.heartbeat(event.getQueryInfo());
       }
     }
   }
@@ -219,7 +224,7 @@ public class QueryJobManager extends CompositeService {
     LOG.info("Stop QueryInProgress:" + queryId);
     QueryInProgress queryInProgress = getQueryInProgress(queryId);
     if(queryInProgress != null) {
-      queryInProgress.stop();
+      queryInProgress.stopProgress();
       synchronized(submittedQueries) {
         submittedQueries.remove(queryId);
       }
@@ -245,7 +250,6 @@ public class QueryJobManager extends CompositeService {
         avgExecutionTime.set(executionTime);
       }
       executedQuerySize.incrementAndGet();
-      removeService(queryInProgress);
     } else {
       LOG.warn("No QueryInProgress while query stopping: " + queryId);
     }
@@ -274,8 +278,8 @@ public class QueryJobManager extends CompositeService {
     queryInProgress.catchException(e);
   }
 
-  public synchronized TajoMasterProtocol.TajoHeartbeatResponse.ResponseCommand queryHeartbeat(
-      TajoMasterProtocol.TajoHeartbeat queryHeartbeat) {
+  public synchronized QueryCoordinatorProtocol.TajoHeartbeatResponse.ResponseCommand queryHeartbeat(
+      QueryCoordinatorProtocol.TajoHeartbeat queryHeartbeat) {
     QueryInProgress queryInProgress = getQueryInProgress(new QueryId(queryHeartbeat.getQueryId()));
     if(queryInProgress == null) {
       return null;
@@ -287,7 +291,7 @@ public class QueryJobManager extends CompositeService {
     return null;
   }
 
-  private QueryInfo makeQueryInfoFromHeartbeat(TajoMasterProtocol.TajoHeartbeat queryHeartbeat) {
+  private QueryInfo makeQueryInfoFromHeartbeat(QueryCoordinatorProtocol.TajoHeartbeat queryHeartbeat) {
     QueryInfo queryInfo = new QueryInfo(new QueryId(queryHeartbeat.getQueryId()));
     WorkerConnectionInfo connectionInfo = new WorkerConnectionInfo(queryHeartbeat.getConnectionInfo());
 

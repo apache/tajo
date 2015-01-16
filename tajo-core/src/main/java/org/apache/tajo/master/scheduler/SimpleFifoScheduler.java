@@ -21,8 +21,8 @@ package org.apache.tajo.master.scheduler;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.QueryId;
-import org.apache.tajo.querymaster.QueryInProgress;
-import org.apache.tajo.master.QueryJobManager;
+import org.apache.tajo.master.QueryInProgress;
+import org.apache.tajo.master.QueryManager;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,10 +32,10 @@ public class SimpleFifoScheduler implements Scheduler {
   private LinkedList<QuerySchedulingInfo> pool = new LinkedList<QuerySchedulingInfo>();
   private final Thread queryProcessor;
   private AtomicBoolean stopped = new AtomicBoolean();
-  private QueryJobManager manager;
+  private QueryManager manager;
   private Comparator<QuerySchedulingInfo> COMPARATOR = new SchedulingAlgorithms.FifoComparator();
 
-  public SimpleFifoScheduler(QueryJobManager manager) {
+  public SimpleFifoScheduler(QueryManager manager) {
     this.manager = manager;
     this.queryProcessor = new Thread(new QueryProcessor());
     this.queryProcessor.setName("Query Processor");
@@ -58,7 +58,8 @@ public class SimpleFifoScheduler implements Scheduler {
       LOG.info("Size of Fifo queue is " + qSize);
     }
 
-    QuerySchedulingInfo querySchedulingInfo = new QuerySchedulingInfo(queryInProgress.getQueryId(), 1, queryInProgress.getStartTime());
+    QuerySchedulingInfo querySchedulingInfo = new QuerySchedulingInfo(queryInProgress.getQueryId(), 1,
+        queryInProgress.getQueryInfo().getStartTime());
     boolean result = pool.add(querySchedulingInfo);
     if (getRunningQueries().size() == 0) wakeupProcessor();
     return result;

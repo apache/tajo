@@ -25,10 +25,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 import org.apache.tajo.*;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -336,7 +333,7 @@ public abstract class StorageManager {
   public static synchronized StorageManager getStorageManager (
       TajoConf tajoConf, StoreType storeType, String managerKey) throws IOException {
     synchronized (storageManagers) {
-      String storeKey = storeType + managerKey;
+      String storeKey = CatalogUtil.getStoreTypeString(storeType) + managerKey;
       StorageManager manager = storageManagers.get(storeKey);
       if (manager == null) {
         String typeName = "hdfs";
@@ -465,12 +462,11 @@ public abstract class StorageManager {
 
     Class<? extends Appender> appenderClass;
 
-    String handlerName = meta.getStoreType().name().toLowerCase();
+    String handlerName = CatalogUtil.getStoreTypeString(meta.getStoreType()).toLowerCase();
     appenderClass = APPENDER_HANDLER_CACHE.get(handlerName);
     if (appenderClass == null) {
       appenderClass = conf.getClass(
-          String.format("tajo.storage.appender-handler.%s.class",
-              meta.getStoreType().name().toLowerCase()), null, Appender.class);
+          String.format("tajo.storage.appender-handler.%s.class", handlerName), null, Appender.class);
       APPENDER_HANDLER_CACHE.put(handlerName, appenderClass);
     }
 
@@ -550,11 +546,11 @@ public abstract class StorageManager {
    * @throws java.io.IOException
    */
   public Class<? extends Scanner> getScannerClass(CatalogProtos.StoreType storeType) throws IOException {
-    String handlerName = storeType.name().toLowerCase();
+    String handlerName = CatalogUtil.getStoreTypeString(storeType).toLowerCase();
     Class<? extends Scanner> scannerClass = SCANNER_HANDLER_CACHE.get(handlerName);
     if (scannerClass == null) {
       scannerClass = conf.getClass(
-          String.format("tajo.storage.scanner-handler.%s.class",storeType.name().toLowerCase()), null, Scanner.class);
+          String.format("tajo.storage.scanner-handler.%s.class", handlerName), null, Scanner.class);
       SCANNER_HANDLER_CACHE.put(handlerName, scannerClass);
     }
 

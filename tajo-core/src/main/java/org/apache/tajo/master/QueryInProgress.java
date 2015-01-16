@@ -16,46 +16,38 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.querymaster;
+package org.apache.tajo.master;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.util.StringUtils;
-import org.apache.hadoop.yarn.event.AsyncDispatcher;
-import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol.WorkerAllocatedResource;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.QueryMasterProtocol.QueryMasterProtocolService;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol.QueryExecutionRequestProto;
-import org.apache.tajo.master.QueryInfo;
-import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.master.rm.WorkerResourceManager;
-import org.apache.tajo.session.Session;
 import org.apache.tajo.plan.logical.LogicalRootNode;
+import org.apache.tajo.querymaster.QueryJobEvent;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.session.Session;
 import org.apache.tajo.util.NetUtils;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.apache.tajo.ipc.TajoMasterProtocol.WorkerAllocatedResource;
-
-public class QueryInProgress extends CompositeService {
+public class QueryInProgress {
   private static final Log LOG = LogFactory.getLog(QueryInProgress.class.getName());
 
   private QueryId queryId;
 
   private Session session;
-
-  private AsyncDispatcher dispatcher;
 
   private LogicalRootNode plan;
 
@@ -76,7 +68,7 @@ public class QueryInProgress extends CompositeService {
       Session session,
       QueryContext queryContext,
       QueryId queryId, String sql, String jsonExpr, LogicalRootNode plan) {
-    super(QueryInProgress.class.getName());
+
     this.masterContext = masterContext;
     this.session = session;
     this.queryId = queryId;
@@ -86,23 +78,14 @@ public class QueryInProgress extends CompositeService {
     queryInfo.setStartTime(System.currentTimeMillis());
   }
 
-  @Override
-  public void init(Configuration conf) {
-    dispatcher = new AsyncDispatcher();
-    this.addService(dispatcher);
-
-    dispatcher.register(QueryJobEvent.Type.class, new QueryInProgressEventHandler());
-    super.init(conf);
-  }
-
   public synchronized void kill() {
+    getQueryInfo().setQueryState(TajoProtos.QueryState.QUERY_KILLED);
     if(queryMasterRpcClient != null){
       queryMasterRpcClient.killQuery(null, queryId.getProto(), NullCallback.get());
     }
   }
 
-  @Override
-  public void stop() {
+  public void stopProgress() {
     if(stopped.getAndSet(true)) {
       return;
     }
@@ -110,51 +93,14 @@ public class QueryInProgress extends CompositeService {
     LOG.info("=========================================================");
     LOG.info("Stop query:" + queryId);
 
-    masterContext.getResourceManager().stopQueryMaster(queryId);
-
-    long startTime = System.currentTimeMillis();
-    while(true) {
-      try {
-        if(masterContext.getResourceManager().isQueryMasterStopped(queryId)) {
-          LOG.info(queryId + " QueryMaster stopped");
-          break;
-        }
-      } catch (Exception e) {
-        LOG.error(e.getMessage(), e);
-        break;
-      }
-
-      try {
-        synchronized (this){
-          wait(100);
-        }
-      } catch (InterruptedException e) {
-        break;
-      }
-      if(System.currentTimeMillis() - startTime > 60 * 1000) {
-        LOG.warn("Failed to stop QueryMaster:" + queryId);
-        break;
-      }
-    }
+    masterContext.getResourceManager().releaseQueryMaster(queryId);
 
     if(queryMasterRpc != null) {
-      RpcConnectionPool.getPool(masterContext.getConf()).closeConnection(queryMasterRpc);
+      RpcConnectionPool.getPool().closeConnection(queryMasterRpc);
     }
 
     masterContext.getHistoryWriter().appendHistory(queryInfo);
-    super.stop();
   }
-
-  @Override
-  public void start() {
-    super.start();
-  }
-
-  public EventHandler getEventHandler() {
-    return dispatcher.getEventHandler();
-  }
-
-
 
   public boolean startQueryMaster() {
     try {
@@ -173,8 +119,6 @@ public class QueryInProgress extends CompositeService {
       queryInfo.setQueryMasterclientPort(resource.getConnectionInfo().getClientPort());
       queryInfo.setQueryMasterInfoPort(resource.getConnectionInfo().getHttpInfoPort());
 
-      getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_MASTER_START, queryInfo));
-
       return true;
     } catch (Exception e) {
       catchException(e);
@@ -182,32 +126,15 @@ public class QueryInProgress extends CompositeService {
     }
   }
 
-  class QueryInProgressEventHandler implements EventHandler<QueryJobEvent> {
-    @Override
-    public void handle(QueryJobEvent queryJobEvent) {
-      if(queryJobEvent.getType() == QueryJobEvent.Type.QUERY_JOB_HEARTBEAT) {
-        heartbeat(queryJobEvent.getQueryInfo());
-      } else if(queryJobEvent.getType() == QueryJobEvent.Type.QUERY_MASTER_START) {
-        QueryInProgress queryInProgress = masterContext.getQueryJobManager().getQueryInProgress(queryId);
-        queryInProgress.getEventHandler().handle(
-            new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_START, queryInProgress.getQueryInfo()));
-      } else if(queryJobEvent.getType() == QueryJobEvent.Type.QUERY_JOB_START) {
-        submmitQueryToMaster();
-      } else if (queryJobEvent.getType() == QueryJobEvent.Type.QUERY_JOB_KILL) {
-        kill();
-      }
-    }
-  }
-
   private void connectQueryMaster() throws Exception {
     InetSocketAddress addr = NetUtils.createSocketAddr(queryInfo.getQueryMasterHost(), queryInfo.getQueryMasterPort());
     LOG.info("Connect to QueryMaster:" + addr);
     queryMasterRpc =
-        RpcConnectionPool.getPool(masterContext.getConf()).getConnection(addr, QueryMasterProtocol.class, true);
+        RpcConnectionPool.getPool().getConnection(addr, QueryMasterProtocol.class, true);
     queryMasterRpcClient = queryMasterRpc.getStub();
   }
 
-  private synchronized void submmitQueryToMaster() {
+  public synchronized void submmitQueryToMaster() {
     if(querySubmitted.get()) {
       return;
     }
@@ -256,7 +183,7 @@ public class QueryInProgress extends CompositeService {
     return !stopped.get() && this.querySubmitted.get();
   }
 
-  private void heartbeat(QueryInfo queryInfo) {
+  public void heartbeat(QueryInfo queryInfo) {
     LOG.info("Received QueryMaster heartbeat:" + queryInfo);
 
     // to avoid partial update by different heartbeats

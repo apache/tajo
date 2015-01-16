@@ -18,22 +18,18 @@
 
 package org.apache.tajo.worker.rule;
 
-import java.net.InetSocketAddress;
-
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ha.HAServiceUtil;
-import org.apache.tajo.ipc.TajoMasterProtocol;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
-import org.apache.tajo.rule.EvaluationContext;
-import org.apache.tajo.rule.EvaluationResult;
-import org.apache.tajo.rule.SelfDiagnosisRuleDefinition;
-import org.apache.tajo.rule.SelfDiagnosisRuleVisibility;
+import org.apache.tajo.rule.*;
 import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
-import org.apache.tajo.rule.SelfDiagnosisRule;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.TajoWorker;
+
+import java.net.InetSocketAddress;
 
 /**
  * With this rule, Tajo worker will check the connectivity to tajo master server.
@@ -44,7 +40,7 @@ import org.apache.tajo.worker.TajoWorker;
 public class ConnectivityCheckerRuleForTajoWorker implements SelfDiagnosisRule {
   
   private void checkTajoMasterConnectivity(TajoConf tajoConf) throws Exception {
-    RpcConnectionPool pool = RpcConnectionPool.getPool(tajoConf);
+    RpcConnectionPool pool = RpcConnectionPool.getPool();
     NettyClientBase masterClient = null;
     InetSocketAddress masterAddress = null;
     
@@ -54,7 +50,7 @@ public class ConnectivityCheckerRuleForTajoWorker implements SelfDiagnosisRule {
       } else {
         masterAddress = NetUtils.createSocketAddr(tajoConf.getVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS));
       }
-      masterClient = pool.getConnection(masterAddress, TajoMasterProtocol.class, true);
+      masterClient = pool.getConnection(masterAddress, QueryCoordinatorProtocol.class, true);
       
       masterClient.getStub();
     } finally {
