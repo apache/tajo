@@ -27,8 +27,8 @@ import org.apache.tajo.engine.function.annotation.ParamTypes;
 
 @Description(
     functionName = "lead",
-    description = "the nth previous row value of current row",
-    example = "> SELECT lag(column, n) OVER ();",
+    description = "the nth next row value from current row",
+    example = "> SELECT lead(column, n) OVER ();",
     returnType = Type.DATE,
     paramTypes = {@ParamTypes(paramTypes = {Type.DATE}), @ParamTypes(paramTypes = {Type.DATE, Type.INT4}), @ParamTypes(paramTypes = {Type.DATE, Type.INT4, Type.DATE})}
 )
