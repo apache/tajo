@@ -20,12 +20,10 @@ package org.apache.tajo.rpc;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.util.NetUtils;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.DefaultChannelFuture;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 
@@ -126,7 +124,7 @@ public class NettyServerBase {
 
     if (bindAddress != null) {
       LOG.info("Rpc (" + serviceName + ") listened on "
-          + NetUtils.normalizeInetSocketAddress(bindAddress)+ ") shutdown");
+          + RpcUtils.normalizeInetSocketAddress(bindAddress)+ ") shutdown");
     }
   }
 

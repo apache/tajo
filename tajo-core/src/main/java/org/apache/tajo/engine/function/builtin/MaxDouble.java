@@ -22,24 +22,17 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.datum.Float8Datum;
-import org.apache.tajo.plan.function.AggFunction;
-import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
-import org.apache.tajo.storage.Tuple;
 
 @Description(
-  functionName = "max",
-  description = "the maximum value of expr",
-  example = "> SELECT max(expr);",
-  returnType = Type.FLOAT8,
-  paramTypes = {@ParamTypes(paramTypes = {Type.FLOAT8})}
+    functionName = "max",
+    description = "the maximum value of expr",
+    example = "> SELECT max(expr);",
+    returnType = Type.FLOAT8,
+    paramTypes = {@ParamTypes(paramTypes = {Type.FLOAT8})}
 )
-public class MaxDouble extends AggFunction<Float8Datum> {
-
+public class MaxDouble extends Max {
   public MaxDouble() {
     super(new Column[] {
         new Column("expr", Type.FLOAT8)
@@ -47,32 +40,8 @@ public class MaxDouble extends AggFunction<Float8Datum> {
   }
 
   @Override
-  public FunctionContext newContext() {
-    return new MaxContext();
-  }
-
-  @Override
-  public void eval(FunctionContext ctx, Tuple params) {
-    MaxContext maxCtx = (MaxContext) ctx;
-    maxCtx.max = Math.max(maxCtx.max, params.get(0).asFloat8());
-  }
-
-  @Override
-  public Datum getPartialResult(FunctionContext ctx) {
-    return DatumFactory.createFloat8(((MaxContext) ctx).max);
-  }
-
-  @Override
   public DataType getPartialResultType() {
     return CatalogUtil.newSimpleDataType(Type.FLOAT8);
   }
 
-  @Override
-  public Float8Datum terminate(FunctionContext ctx) {
-    return DatumFactory.createFloat8(((MaxContext) ctx).max);
-  }
-
-  private class MaxContext implements FunctionContext {
-    double max;
-  }
 }

@@ -28,12 +28,11 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -194,6 +193,20 @@ public class TestCTASQuery extends QueryTestCaseBase {
     TableDesc desc =  client.getTableDesc(CatalogUtil.normalizeIdentifier(res2.getMetaData().getTableName(1)));
     assertNotNull(desc);
     assertEquals(CatalogProtos.StoreType.RCFILE, desc.getMeta().getStoreType());
+  }
+
+  @Test
+  public final void testCtasWithTextFile() throws Exception {
+    ResultSet res = executeFile("CtasWithTextFile.sql");
+    res.close();
+
+    ResultSet res2 = executeQuery();
+    resultSetToString(res2);
+    res2.close();
+
+    TableDesc desc =  client.getTableDesc(CatalogUtil.normalizeIdentifier(res2.getMetaData().getTableName(1)));
+    assertNotNull(desc);
+    assertEquals(CatalogProtos.StoreType.TEXTFILE, desc.getMeta().getStoreType());
   }
 
   @Test

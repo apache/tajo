@@ -41,15 +41,12 @@ import org.apache.tajo.engine.planner.physical.StoreTableExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
-import org.apache.tajo.master.NonForwardQueryResultFileScanner;
-import org.apache.tajo.master.NonForwardQueryResultScanner;
-import org.apache.tajo.master.NonForwardQueryResultSystemScanner;
-import org.apache.tajo.master.TajoMaster;
+import org.apache.tajo.master.*;
 import org.apache.tajo.master.exec.prehook.CreateTableHook;
 import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
 import org.apache.tajo.master.exec.prehook.InsertIntoHook;
-import org.apache.tajo.master.querymaster.*;
-import org.apache.tajo.master.session.Session;
+import org.apache.tajo.querymaster.*;
+import org.apache.tajo.session.Session;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
@@ -391,10 +388,10 @@ public class QueryExecutor {
     context.getSystemMetrics().counter("Query", "numDMLQuery").inc();
     hookManager.doHooks(queryContext, plan);
 
-    QueryJobManager queryJobManager = this.context.getQueryJobManager();
+    QueryManager queryManager = this.context.getQueryJobManager();
     QueryInfo queryInfo;
 
-    queryInfo = queryJobManager.createNewQueryJob(session, queryContext, sql, jsonExpr, rootNode);
+    queryInfo = queryManager.scheduleQuery(session, queryContext, sql, jsonExpr, rootNode);
 
     if(queryInfo == null) {
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());

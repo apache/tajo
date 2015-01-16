@@ -40,14 +40,13 @@ import org.apache.tajo.catalog.LocalCatalogWrapper;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.FunctionLoader;
-import org.apache.tajo.master.ha.HAService;
-import org.apache.tajo.master.ha.HAServiceHDFSImpl;
-import org.apache.tajo.master.metrics.CatalogMetricsGaugeSet;
-import org.apache.tajo.master.metrics.WorkerResourceMetricsGaugeSet;
-import org.apache.tajo.master.querymaster.QueryJobManager;
+import org.apache.tajo.ha.HAService;
+import org.apache.tajo.ha.HAServiceHDFSImpl;
+import org.apache.tajo.metrics.CatalogMetricsGaugeSet;
+import org.apache.tajo.metrics.WorkerResourceMetricsGaugeSet;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.master.rm.WorkerResourceManager;
-import org.apache.tajo.master.session.SessionManager;
+import org.apache.tajo.session.SessionManager;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rule.EvaluationContext;
 import org.apache.tajo.rule.EvaluationFailedException;
@@ -115,14 +114,14 @@ public class TajoMaster extends CompositeService {
   private GlobalEngine globalEngine;
   private AsyncDispatcher dispatcher;
   private TajoMasterClientService tajoMasterClientService;
-  private TajoMasterService tajoMasterService;
+  private QueryCoordinatorService tajoMasterService;
   private SessionManager sessionManager;
 
   private WorkerResourceManager resourceManager;
   //Web Server
   private StaticHttpServer webServer;
 
-  private QueryJobManager queryJobManager;
+  private QueryManager queryManager;
 
   private ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
 
@@ -184,13 +183,13 @@ public class TajoMaster extends CompositeService {
       globalEngine = new GlobalEngine(context);
       addIfService(globalEngine);
 
-      queryJobManager = new QueryJobManager(context);
-      addIfService(queryJobManager);
+      queryManager = new QueryManager(context);
+      addIfService(queryManager);
 
       tajoMasterClientService = new TajoMasterClientService(context);
       addIfService(tajoMasterClientService);
 
-      tajoMasterService = new TajoMasterService(context);
+      tajoMasterService = new QueryCoordinatorService(context);
       addIfService(tajoMasterService);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
@@ -442,8 +441,8 @@ public class TajoMaster extends CompositeService {
       return clock;
     }
 
-    public QueryJobManager getQueryJobManager() {
-      return queryJobManager;
+    public QueryManager getQueryJobManager() {
+      return queryManager;
     }
 
     public WorkerResourceManager getResourceManager() {
@@ -470,7 +469,7 @@ public class TajoMaster extends CompositeService {
       return storeManager;
     }
 
-    public TajoMasterService getTajoMasterService() {
+    public QueryCoordinatorService getTajoMasterService() {
       return tajoMasterService;
     }
 

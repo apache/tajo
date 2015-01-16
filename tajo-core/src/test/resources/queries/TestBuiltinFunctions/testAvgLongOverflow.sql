@@ -1,0 +1,1 @@
+select avg(cast(l_quantity * 25264513 as INT4)) as avg from lineitem where l_quantity > 0;

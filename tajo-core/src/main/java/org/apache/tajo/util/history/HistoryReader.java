@@ -27,7 +27,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoWorkerProtocol.TaskHistoryProto;
-import org.apache.tajo.master.querymaster.QueryInfo;
+import org.apache.tajo.master.QueryInfo;
 
 import java.io.EOFException;
 import java.io.IOException;

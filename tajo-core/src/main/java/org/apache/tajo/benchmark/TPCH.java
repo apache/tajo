@@ -18,6 +18,7 @@
 
 package org.apache.tajo.benchmark;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
@@ -33,8 +34,10 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.storage.StorageConstants;
 
+import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 
 public class TPCH extends BenchmarkSet {
@@ -224,5 +227,24 @@ public class TPCH extends BenchmarkSet {
     } catch (SQLException s) {
       throw new ServiceException(s);
     }
+  }
+
+  public static List<String> getDataFilePaths(String... tables) {
+    List<String> tablePaths = Lists.newArrayList();
+    File file;
+    for (String table : tables) {
+      file = getDataFile(table);
+      tablePaths.add(file.getAbsolutePath());
+    }
+    return tablePaths;
+  }
+
+  public static File getDataFile(String table) {
+    File file = new File("src/test/tpch/" + table + ".tbl");
+    if (!file.exists()) {
+      file = new File(System.getProperty("user.dir") + "/tajo-core/src/test/tpch/" + table
+          + ".tbl");
+    }
+    return file;
   }
 }

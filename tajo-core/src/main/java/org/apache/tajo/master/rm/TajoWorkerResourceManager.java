@@ -34,12 +34,11 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ContainerProtocol;
-import org.apache.tajo.ipc.TajoMasterProtocol;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol.*;
+import org.apache.tajo.master.QueryInProgress;
 import org.apache.tajo.master.TajoMaster;
-import org.apache.tajo.master.querymaster.QueryInProgress;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.util.ApplicationIdUtils;
-import org.apache.tajo.util.StringUtils;
 
 import java.io.IOException;
 import java.util.*;
@@ -49,8 +48,6 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.apache.tajo.ipc.TajoMasterProtocol.*;
 
 
 /**
@@ -163,7 +160,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
   }
 
   @Override
-  public TajoMasterProtocol.ClusterResourceSummary getClusterResourceSummary() {
+  public ClusterResourceSummary getClusterResourceSummary() {
     return resourceTracker.getClusterResourceSummary();
   }
 
@@ -205,7 +202,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
     builder.setMinMemoryMBPerContainer(queryMasterDefaultMemoryMB);
     builder.setMaxDiskSlotPerContainer(queryMasterDefaultDiskSlot);
     builder.setMinDiskSlotPerContainer(queryMasterDefaultDiskSlot);
-    builder.setResourceRequestPriority(TajoMasterProtocol.ResourceRequestPriority.MEMORY);
+    builder.setResourceRequestPriority(ResourceRequestPriority.MEMORY);
     builder.setNumContainers(1);
     return builder.build();
   }
@@ -359,10 +356,10 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
 
     int allocatedResources = 0;
 
-    TajoMasterProtocol.ResourceRequestPriority resourceRequestPriority
+    ResourceRequestPriority resourceRequestPriority
       = resourceRequest.request.getResourceRequestPriority();
 
-    if(resourceRequestPriority == TajoMasterProtocol.ResourceRequestPriority.MEMORY) {
+    if(resourceRequestPriority == ResourceRequestPriority.MEMORY) {
       synchronized(rmContext) {
         List<Integer> randomWorkers = new ArrayList<Integer>(rmContext.getWorkers().keySet());
         Collections.shuffle(randomWorkers);
@@ -527,7 +524,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
   }
 
   @Override
-  public void stopQueryMaster(QueryId queryId) {
+  public void releaseQueryMaster(QueryId queryId) {
     if(!rmContext.getQueryMasterContainer().containsKey(queryId)) {
       LOG.warn("No QueryMaster resource info for " + queryId);
       return;

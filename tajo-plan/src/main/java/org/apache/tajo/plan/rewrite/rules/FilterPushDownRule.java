@@ -820,13 +820,13 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     List<EvalNode> notMatched = new ArrayList<EvalNode>();
     // transform
-    Map<EvalNode, EvalNode> tranformed =
+    Map<EvalNode, EvalNode> transformed =
         findCanPushdownAndTransform(context, block, groupbyNode,groupbyNode.getChild(), notMatched, null, false, 0);
 
-    context.setFiltersTobePushed(tranformed.keySet());
+    context.setFiltersTobePushed(transformed.keySet());
     LogicalNode current = super.visitGroupBy(context, plan, block, groupbyNode, stack);
 
-    context.setToOrigin(tranformed);
+    context.setToOrigin(transformed);
     context.addFiltersTobePushed(notMatched);
 
     return current;

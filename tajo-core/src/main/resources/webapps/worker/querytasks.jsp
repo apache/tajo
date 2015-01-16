@@ -24,8 +24,8 @@
 <%@ page import="org.apache.tajo.TaskAttemptId" %>
 <%@ page import="org.apache.tajo.catalog.statistics.TableStats" %>
 <%@ page import="org.apache.tajo.plan.util.PlannerUtil" %>
-<%@ page import="org.apache.tajo.ipc.TajoMasterProtocol" %>
-<%@ page import="org.apache.tajo.master.querymaster.*" %>
+<%@ page import="org.apache.tajo.ipc.QueryCoordinatorProtocol" %>
+<%@ page import="org.apache.tajo.querymaster.*" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="org.apache.tajo.worker.TajoWorker" %>
 <%@ page import="java.text.NumberFormat" %>
@@ -60,12 +60,12 @@
   }
   TajoWorker tajoWorker = (TajoWorker) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
 
-  List<TajoMasterProtocol.WorkerResourceProto> allWorkers = tajoWorker.getWorkerContext()
+  List<QueryCoordinatorProtocol.WorkerResourceProto> allWorkers = tajoWorker.getWorkerContext()
             .getQueryMasterManagerService().getQueryMaster().getAllWorker();
 
-  Map<Integer, TajoMasterProtocol.WorkerResourceProto> workerMap = new HashMap<Integer, TajoMasterProtocol.WorkerResourceProto>();
+  Map<Integer, QueryCoordinatorProtocol.WorkerResourceProto> workerMap = new HashMap<Integer, QueryCoordinatorProtocol.WorkerResourceProto>();
   if(allWorkers != null) {
-    for(TajoMasterProtocol.WorkerResourceProto eachWorker: allWorkers) {
+    for(QueryCoordinatorProtocol.WorkerResourceProto eachWorker: allWorkers) {
       workerMap.put(eachWorker.getConnectionInfo().getId(), eachWorker);
     }
   }
@@ -230,7 +230,7 @@
 
     String taskHost = eachTask.getSucceededHost() == null ? "-" : eachTask.getSucceededHost();
     if(eachTask.getSucceededHost() != null) {
-        TajoMasterProtocol.WorkerResourceProto worker =
+        QueryCoordinatorProtocol.WorkerResourceProto worker =
                 workerMap.get(eachTask.getLastAttempt().getWorkerConnectionInfo().getId());
         if(worker != null) {
             TaskAttempt lastAttempt = eachTask.getLastAttempt();

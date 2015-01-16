@@ -21,7 +21,6 @@ package org.apache.tajo.rpc;
 import com.google.common.base.Objects;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.conf.TajoConf;
 import org.jboss.netty.channel.ConnectTimeoutException;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
@@ -43,25 +42,23 @@ public class RpcConnectionPool {
 
   private static RpcConnectionPool instance;
   private final ClientSocketChannelFactory channelFactory;
-  private final TajoConf conf;
 
   public final static int RPC_RETRIES = 3;
 
-  private RpcConnectionPool(TajoConf conf, ClientSocketChannelFactory channelFactory) {
-    this.conf = conf;
+  private RpcConnectionPool(ClientSocketChannelFactory channelFactory) {
     this.channelFactory =  channelFactory;
   }
 
-  public synchronized static RpcConnectionPool getPool(TajoConf conf) {
+  public synchronized static RpcConnectionPool getPool() {
     if(instance == null) {
       InternalLoggerFactory.setDefaultFactory(new CommonsLoggerFactory());
-      instance = new RpcConnectionPool(conf, RpcChannelFactory.getSharedClientChannelFactory());
+      instance = new RpcConnectionPool(RpcChannelFactory.getSharedClientChannelFactory());
     }
     return instance;
   }
 
-  public synchronized static RpcConnectionPool newPool(TajoConf conf, String poolName, int workerNum) {
-    return new RpcConnectionPool(conf, RpcChannelFactory.createClientChannelFactory(poolName, workerNum));
+  public synchronized static RpcConnectionPool newPool(String poolName, int workerNum) {
+    return new RpcConnectionPool(RpcChannelFactory.createClientChannelFactory(poolName, workerNum));
   }
 
   private NettyClientBase makeConnection(RpcConnectionKey rpcConnectionKey)

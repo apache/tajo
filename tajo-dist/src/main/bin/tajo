@@ -172,7 +172,7 @@ if [ "x$HADOOP_VERSION" == "x" ]; then
     HADOOP_VERSION=$($HADOOP version | awk '{if (NR == 1) {print $2;}}');
 fi
 
-# Save the regex to a var to workaround quoting incompatabilities
+# Save the regex to a var to workaround quoting incompatibilities
 # between Bash 3.1 and 3.2
 hadoop_version_re="^([[:digit:]]+)\.([[:digit:]]+)(\.([[:digit:]]+))?.*$"
 

@@ -19,9 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -44,7 +42,6 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.master.session.Session;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
@@ -53,27 +50,22 @@ import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 import org.apache.tajo.plan.util.PlannerUtil;
+import org.apache.tajo.session.Session;
 import org.apache.tajo.storage.*;
-import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.storage.index.bst.BSTIndex;
 import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
-import org.apache.tajo.worker.RangeRetrieverHandler;
 import org.apache.tajo.worker.TaskAttemptContext;
-import org.apache.tajo.worker.dataserver.retriever.FileChunk;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
@@ -1042,99 +1034,6 @@ public class TestPhysicalPlanner {
   public String [] SORT_QUERY = {
       "select name, empId from employee order by empId"
   };
-
-  @Test
-  public final void testIndexedStoreExec() throws IOException, PlanningException {
-    FileFragment[] frags = FileStorageManager.splitNG(conf, "default.employee", employee.getMeta(),
-        new Path(employee.getPath()), Integer.MAX_VALUE);
-
-    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testIndexedStoreExec");
-    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
-        LocalTajoTestingUtility.newTaskAttemptId(masterPlan),
-        new FileFragment[] {frags[0]}, workDir);
-    ctx.setEnforcer(new Enforcer());
-    Expr context = analyzer.parse(SORT_QUERY[0]);
-    LogicalPlan plan = planner.createPlan(defaultContext, context);
-    LogicalNode rootNode = optimizer.optimize(plan);
-
-    SortNode sortNode = PlannerUtil.findTopNode(rootNode, NodeType.SORT);
-    DataChannel channel = new DataChannel(masterPlan.newExecutionBlockId(), masterPlan.newExecutionBlockId(),
-        ShuffleType.RANGE_SHUFFLE);
-    channel.setShuffleKeys(PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys()).toArray());
-    ctx.setDataChannel(channel);
-
-    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
-    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
-
-    Tuple tuple;
-    exec.init();
-    exec.next();
-    exec.close();
-
-    Schema keySchema = new Schema();
-    keySchema.addColumn("?empId", Type.INT4);
-    SortSpec[] sortSpec = new SortSpec[1];
-    sortSpec[0] = new SortSpec(keySchema.getColumn(0), true, false);
-    BaseTupleComparator comp = new BaseTupleComparator(keySchema, sortSpec);
-    BSTIndex bst = new BSTIndex(conf);
-    BSTIndex.BSTIndexReader reader = bst.getIndexReader(new Path(workDir, "output/index"),
-        keySchema, comp);
-    reader.open();
-    Path outputPath = StorageUtil.concatPath(workDir, "output", "output");
-    TableMeta meta = CatalogUtil.newTableMeta(channel.getStoreType(), new KeyValueSet());
-    SeekableScanner scanner =
-        FileStorageManager.getSeekableScanner(conf, meta, exec.getSchema(), outputPath);
-    scanner.init();
-
-    int cnt = 0;
-
-    while(scanner.next() != null) {
-      cnt++;
-    }
-    scanner.reset();
-
-    assertEquals(100 ,cnt);
-
-    Tuple keytuple = new VTuple(1);
-    for(int i = 1 ; i < 100 ; i ++) {
-      keytuple.put(0, DatumFactory.createInt4(i));
-      long offsets = reader.find(keytuple);
-      scanner.seek(offsets);
-      tuple = scanner.next();
-
-      assertTrue("[seek check " + (i) + " ]", ("name_" + i).equals(tuple.get(0).asChars()));
-      assertTrue("[seek check " + (i) + " ]" , i == tuple.get(1).asInt4());
-    }
-
-
-    // The below is for testing RangeRetrieverHandler.
-    RowStoreEncoder encoder = RowStoreUtil.createEncoder(keySchema);
-    RangeRetrieverHandler handler = new RangeRetrieverHandler(
-        new File(new Path(workDir, "output").toUri()), keySchema, comp);
-    Map<String,List<String>> kvs = Maps.newHashMap();
-    Tuple startTuple = new VTuple(1);
-    startTuple.put(0, DatumFactory.createInt4(50));
-    kvs.put("start", Lists.newArrayList(
-        new String(Base64.encodeBase64(
-            encoder.toBytes(startTuple), false))));
-    Tuple endTuple = new VTuple(1);
-    endTuple.put(0, DatumFactory.createInt4(80));
-    kvs.put("end", Lists.newArrayList(
-        new String(Base64.encodeBase64(
-            encoder.toBytes(endTuple), false))));
-    FileChunk chunk = handler.get(kvs);
-
-    scanner.seek(chunk.startOffset());
-    keytuple = scanner.next();
-    assertEquals(50, keytuple.get(1).asInt4());
-
-    long endOffset = chunk.startOffset() + chunk.length();
-    while((keytuple = scanner.next()) != null && scanner.getNextOffset() <= endOffset) {
-      assertTrue(keytuple.get(1).asInt4() <= 80);
-    }
-
-    scanner.close();
-  }
 
   @Test
   public final void testSortEnforcer() throws IOException, PlanningException {

@@ -22,15 +22,14 @@ import com.google.protobuf.RpcCallback;
 import org.apache.hadoop.service.Service;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.ipc.ContainerProtocol;
-import org.apache.tajo.ipc.TajoMasterProtocol;
-import org.apache.tajo.master.querymaster.QueryInProgress;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol.ClusterResourceSummary;
+import org.apache.tajo.ipc.QueryCoordinatorProtocol.WorkerResourceAllocationRequest;
+import org.apache.tajo.master.QueryInProgress;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
-
-import static org.apache.tajo.ipc.TajoMasterProtocol.WorkerAllocatedResource;
-import static org.apache.tajo.ipc.TajoMasterProtocol.WorkerResourceAllocationResponse;
 
 /**
  * An interface of WorkerResourceManager which allows TajoMaster to request allocation for containers
@@ -45,7 +44,7 @@ public interface WorkerResourceManager extends Service {
    * @return A allocated container resource
    */
   @Deprecated
-  public WorkerAllocatedResource allocateQueryMaster(QueryInProgress queryInProgress);
+  public QueryCoordinatorProtocol.WorkerAllocatedResource allocateQueryMaster(QueryInProgress queryInProgress);
 
   /**
    * Request one or more resource containers. You can set the number of containers and resource capabilities, such as
@@ -55,8 +54,8 @@ public interface WorkerResourceManager extends Service {
    * @param request Request description
    * @param rpcCallBack Callback function
    */
-  public void allocateWorkerResources(TajoMasterProtocol.WorkerResourceAllocationRequest request,
-      RpcCallback<WorkerResourceAllocationResponse> rpcCallBack);
+  public void allocateWorkerResources(WorkerResourceAllocationRequest request,
+      RpcCallback<QueryCoordinatorProtocol.WorkerResourceAllocationResponse> rpcCallBack);
 
   /**
    * Release a container
@@ -80,7 +79,7 @@ public interface WorkerResourceManager extends Service {
    *
    * @param queryId QueryId to be stopped
    */
-  public void stopQueryMaster(QueryId queryId);
+  public void releaseQueryMaster(QueryId queryId);
 
   /**
    *
@@ -100,7 +99,7 @@ public interface WorkerResourceManager extends Service {
    *
    * @return The overall summary of cluster resources
    */
-  public TajoMasterProtocol.ClusterResourceSummary getClusterResourceSummary();
+  public ClusterResourceSummary getClusterResourceSummary();
 
   /**
    *

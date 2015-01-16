@@ -765,7 +765,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         pstmt.setString(2, tableName);
         pstmt.setString(3, TableType.EXTERNAL_TABLE.name());
         pstmt.setString(4, table.getPath());
-        pstmt.setString(5, table.getMeta().getStoreType().name());
+        pstmt.setString(5, CatalogUtil.getStoreTypeString(table.getMeta().getStoreType()));
         pstmt.executeUpdate();
         pstmt.close();
       } else {
@@ -779,7 +779,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         pstmt.setInt(1, dbid);
         pstmt.setString(2, tableName);
         pstmt.setString(3, TableType.BASE_TABLE.name());
-        pstmt.setString(4, table.getMeta().getStoreType().name());
+        pstmt.setString(4, CatalogUtil.getStoreTypeString(table.getMeta().getStoreType()));
         pstmt.executeUpdate();
         pstmt.close();
       }
@@ -1058,13 +1058,13 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       resultSet = pstmt.executeQuery();
 
       CatalogProtos.ColumnProto columnProto = null;
-      int ordinalPostion = -1;
+      int ordinalPosition = -1;
 
       if (resultSet.next()) {
         columnProto = resultToColumnProto(resultSet);
         //NOTE ==> Setting new column Name
         columnProto = columnProto.toBuilder().setName(alterColumnProto.getNewColumnName()).build();
-        ordinalPostion = resultSet.getInt("ORDINAL_POSITION");
+        ordinalPosition = resultSet.getInt("ORDINAL_POSITION");
       } else {
         throw new NoSuchColumnException(alterColumnProto.getOldColumnName());
       }
@@ -1084,7 +1084,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt = conn.prepareStatement(insertNewColumnSql);
       pstmt.setInt(1, tableId);
       pstmt.setString(2, CatalogUtil.extractSimpleName(columnProto.getName()));
-      pstmt.setInt(3, ordinalPostion);
+      pstmt.setInt(3, ordinalPosition);
       pstmt.setString(4, columnProto.getDataType().getType().name());
       pstmt.setInt(5, (columnProto.getDataType().hasLength() ? columnProto.getDataType().getLength() : 0));
       pstmt.executeUpdate();
@@ -1375,6 +1375,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       } else {
         tableBuilder.setPath(res.getString(4).trim());
       }
+
       storeType = CatalogUtil.getStoreType(res.getString(5).trim());
 
       res.close();
@@ -1409,6 +1410,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       // Geting Table Properties
       //////////////////////////////////////////
       CatalogProtos.TableProto.Builder metaBuilder = CatalogProtos.TableProto.newBuilder();
+
       metaBuilder.setStoreType(storeType);
       sql = "SELECT key_, value_ FROM " + TB_OPTIONS + " WHERE " + COL_TABLES_PK + " = ?";
 
@@ -1478,7 +1480,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     try {
       return Enum.valueOf(Type.class, typeStr);
     } catch (IllegalArgumentException iae) {
-      LOG.error("Cannot find a matched type aginst from '" + typeStr + "'");
+      LOG.error("Cannot find a matched type against from '" + typeStr + "'");
       return null;
     }
   }
@@ -2333,7 +2335,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     if (typeStr.equals(IndexMethod.TWO_LEVEL_BIN_TREE.toString())) {
       return IndexMethod.TWO_LEVEL_BIN_TREE;
     } else {
-      LOG.error("Cannot find a matched type aginst from '"
+      LOG.error("Cannot find a matched type against from '"
           + typeStr + "'");
       // TODO - needs exception handling
       return null;

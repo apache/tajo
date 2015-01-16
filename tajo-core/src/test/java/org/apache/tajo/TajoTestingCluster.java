@@ -43,11 +43,11 @@ import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanTestRuleProvider;
+import org.apache.tajo.master.QueryInProgress;
 import org.apache.tajo.master.TajoMaster;
-import org.apache.tajo.master.querymaster.*;
-import org.apache.tajo.master.querymaster.Query;
-import org.apache.tajo.master.querymaster.Stage;
-import org.apache.tajo.master.querymaster.StageState;
+import org.apache.tajo.querymaster.Query;
+import org.apache.tajo.querymaster.Stage;
+import org.apache.tajo.querymaster.StageState;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.plan.rewrite.LogicalPlanTestRuleProvider;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -164,8 +164,6 @@ public class TajoTestingCluster {
     if (!StringUtils.isEmpty(LOG_LEVEL)) {
       Level defaultLevel = Logger.getRootLogger().getLevel();
       Logger.getLogger("org.apache.tajo").setLevel(Level.toLevel(LOG_LEVEL.toUpperCase(), defaultLevel));
-      Logger.getLogger("org.apache.tajo.master.TajoAsyncDispatcher").setLevel(Level.toLevel(LOG_LEVEL.toUpperCase(),
-        defaultLevel));
       Logger.getLogger("org.apache.hadoop").setLevel(Level.toLevel(LOG_LEVEL.toUpperCase(), defaultLevel));
       Logger.getLogger("org.apache.zookeeper").setLevel(Level.toLevel(LOG_LEVEL.toUpperCase(), defaultLevel));
       Logger.getLogger("BlockStateChange").setLevel(Level.toLevel(LOG_LEVEL.toUpperCase(), defaultLevel));
@@ -630,8 +628,10 @@ public class TajoTestingCluster {
       this.clusterTestBuildDir = null;
     }
 
-    hbaseUtil.stopZooKeeperCluster();
-    hbaseUtil.stopHBaseCluster();
+    if(hbaseUtil != null) {
+      hbaseUtil.stopZooKeeperCluster();
+      hbaseUtil.stopHBaseCluster();
+    }
 
     LOG.info("Minicluster is down");
   }

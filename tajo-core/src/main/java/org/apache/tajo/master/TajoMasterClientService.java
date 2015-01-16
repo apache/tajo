@@ -44,15 +44,13 @@ import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService;
 import org.apache.tajo.master.TajoMaster.MasterContext;
-import org.apache.tajo.master.querymaster.QueryInProgress;
-import org.apache.tajo.master.querymaster.QueryInfo;
-import org.apache.tajo.master.querymaster.QueryJobEvent;
-import org.apache.tajo.master.querymaster.QueryJobManager;
+import org.apache.tajo.master.exec.NonForwardQueryResultScanner;
+import org.apache.tajo.querymaster.QueryJobEvent;
 import org.apache.tajo.master.rm.Worker;
 import org.apache.tajo.master.rm.WorkerResource;
-import org.apache.tajo.master.session.InvalidSessionException;
-import org.apache.tajo.master.session.NoSuchSessionVariableException;
-import org.apache.tajo.master.session.Session;
+import org.apache.tajo.session.InvalidSessionException;
+import org.apache.tajo.session.NoSuchSessionVariableException;
+import org.apache.tajo.session.Session;
 import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
@@ -568,8 +566,8 @@ public class TajoMasterClientService extends AbstractService {
         context.getSessionManager().touch(request.getSessionId().getId());
         QueryId queryId = new QueryId(request.getQueryId());
 
-        QueryJobManager queryJobManager = context.getQueryJobManager();
-        QueryInProgress queryInProgress = queryJobManager.getQueryInProgress(queryId);
+        QueryManager queryManager = context.getQueryJobManager();
+        QueryInProgress queryInProgress = queryManager.getQueryInProgress(queryId);
 
         QueryInfo queryInfo = null;
         if (queryInProgress == null) {
@@ -599,8 +597,8 @@ public class TajoMasterClientService extends AbstractService {
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
         QueryId queryId = new QueryId(request.getQueryId());
-        QueryJobManager queryJobManager = context.getQueryJobManager();
-        queryJobManager.getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_KILL,
+        QueryManager queryManager = context.getQueryJobManager();
+        queryManager.getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_KILL,
             new QueryInfo(queryId)));
         return BOOL_TRUE;
       } catch (Throwable t) {
