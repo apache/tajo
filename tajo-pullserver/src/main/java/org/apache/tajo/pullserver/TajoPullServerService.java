@@ -729,7 +729,9 @@ public class TajoPullServerService extends AbstractService {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
         throws Exception {
       LOG.error(cause.getMessage(), cause);
-      sendError(ctx, cause.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR);
+      if (ctx.channel().isActive()) {
+        sendError(ctx, cause.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR);
+      }
       //if channel.close() is not called, never closed files in this request
       ctx.close();
       accepted.remove(ctx.channel());

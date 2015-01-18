@@ -39,7 +39,6 @@ import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcConnectionPool;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.NetUtils;
@@ -188,7 +187,7 @@ public class ExecutionBlockContext {
     resource.release();
 
     try {
-      releaseShuffleChannelFactory();
+      releaseShuffleEventLoopGroup();
     } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
     }
@@ -281,7 +280,7 @@ public class ExecutionBlockContext {
     return loopGroup;
   }
 
-  protected void releaseShuffleChannelFactory(){
+  protected void releaseShuffleEventLoopGroup(){
     if(loopGroup != null) {
       loopGroup.shutdownGracefully();
       loopGroup = null;
