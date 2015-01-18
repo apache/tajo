@@ -163,7 +163,7 @@ public class RpcConnectionPool {
     close();
     if(clientLoopGroup != null){
       clientLoopGroup.shutdownGracefully();
-      clientLoopGroup.terminationFuture().syncUninterruptibly();
+      clientLoopGroup.terminationFuture().awaitUninterruptibly(10, TimeUnit.SECONDS);
     }
   }
 

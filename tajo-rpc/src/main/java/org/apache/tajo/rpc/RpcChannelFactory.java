@@ -28,6 +28,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public final class RpcChannelFactory {
@@ -78,10 +79,10 @@ public final class RpcChannelFactory {
   }
 
   // Client must release the external resources
-  public static synchronized ServerBootstrap createServerChannelFactory(String name, int workerNum) {
+  public static synchronized ServerBootstrap createServerBootstrap(String name, int workerNum) {
     name = name + "-" + serverCount.incrementAndGet();
     if(LOG.isInfoEnabled()){
-      LOG.info("Create " + name + " ServerSocketChannelFactory. Worker:" + workerNum);
+      LOG.info("Create " + name + " ServerBootstrap. Worker:" + workerNum);
     }
     ThreadFactoryBuilder builder = new ThreadFactoryBuilder();
     ThreadFactory bossFactory = builder.setNameFormat(name + " Server Boss #%d").build();
@@ -101,7 +102,7 @@ public final class RpcChannelFactory {
     }
     if (loopGroup != null) {
       loopGroup.shutdownGracefully();
-      loopGroup.terminationFuture().syncUninterruptibly();
+      loopGroup.terminationFuture().awaitUninterruptibly(10, TimeUnit.SECONDS);
     }
     loopGroup = null;
   }

@@ -156,7 +156,7 @@ public abstract class NettyClientBase implements Closeable {
   @Override
   public void close() {
     if (channelFuture != null && getChannel().isActive()) {
-      getChannel().close().awaitUninterruptibly();
+      getChannel().close().awaitUninterruptibly(10, TimeUnit.SECONDS);
     }
 
     if (this.bootstrap != null) {

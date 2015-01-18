@@ -540,7 +540,7 @@ public class PullServerAuxService extends AuxiliaryService {
       response.headers().set(HttpHeaders.Names.CONTENT_TYPE, "text/plain; charset=UTF-8");
 
       // Close the connection as soon as the error message is sent.
-      ctx.channel().writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+      ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
     }
 
     @Override
