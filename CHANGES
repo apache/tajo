@@ -27,6 +27,8 @@ Release 0.9.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1290: Add HBase Storage Integration Documentation. (jaehwa)
+
     TAJO-1293: Tajo have to accept hostname beginning with digits.
     (Jinhang Choi via jihun)
 
