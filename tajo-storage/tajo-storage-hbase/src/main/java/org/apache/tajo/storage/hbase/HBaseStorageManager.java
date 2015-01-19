@@ -299,7 +299,14 @@ public class HBaseStorageManager extends StorageManager {
    * @throws java.io.IOException
    */
   public static Configuration getHBaseConfiguration(Configuration conf, TableMeta tableMeta) throws IOException {
-    String zkQuorum = tableMeta.getOption(HBaseStorageConstants.META_ZK_QUORUM_KEY, "");
+    boolean hasZkQuorum = tableMeta.containsOption(HBaseStorageConstants.META_ZK_QUORUM_KEY);
+    String zkQuorum = null;
+    if (hasZkQuorum) {
+      zkQuorum = tableMeta.getOption(HBaseStorageConstants.META_ZK_QUORUM_KEY, "");
+    } else {
+      zkQuorum = conf.get(HBaseStorageConstants.META_ZK_QUORUM_KEY, "");
+    }
+
     if (zkQuorum == null || zkQuorum.trim().isEmpty()) {
       throw new IOException("HBase mapped table is required a '" +
           HBaseStorageConstants.META_ZK_QUORUM_KEY + "' attribute.");
