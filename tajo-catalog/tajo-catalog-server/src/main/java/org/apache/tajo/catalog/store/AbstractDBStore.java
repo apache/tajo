@@ -765,7 +765,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         pstmt.setString(2, tableName);
         pstmt.setString(3, TableType.EXTERNAL_TABLE.name());
         pstmt.setString(4, table.getPath());
-        pstmt.setString(5, table.getMeta().getStoreType().name());
+        pstmt.setString(5, CatalogUtil.getStoreTypeString(table.getMeta().getStoreType()));
         pstmt.executeUpdate();
         pstmt.close();
       } else {
@@ -779,7 +779,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         pstmt.setInt(1, dbid);
         pstmt.setString(2, tableName);
         pstmt.setString(3, TableType.BASE_TABLE.name());
-        pstmt.setString(4, table.getMeta().getStoreType().name());
+        pstmt.setString(4, CatalogUtil.getStoreTypeString(table.getMeta().getStoreType()));
         pstmt.executeUpdate();
         pstmt.close();
       }
@@ -1375,6 +1375,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       } else {
         tableBuilder.setPath(res.getString(4).trim());
       }
+
       storeType = CatalogUtil.getStoreType(res.getString(5).trim());
 
       res.close();
@@ -1409,6 +1410,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       // Geting Table Properties
       //////////////////////////////////////////
       CatalogProtos.TableProto.Builder metaBuilder = CatalogProtos.TableProto.newBuilder();
+
       metaBuilder.setStoreType(storeType);
       sql = "SELECT key_, value_ FROM " + TB_OPTIONS + " WHERE " + COL_TABLES_PK + " = ?";
 

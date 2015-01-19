@@ -23,6 +23,7 @@ import com.google.gson.annotations.Expose;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.storage.fragment.Fragment;
@@ -156,7 +157,7 @@ public class HBaseFragment implements Fragment, Comparable<HBaseFragment>, Clone
     FragmentProto.Builder fragmentBuilder = FragmentProto.newBuilder();
     fragmentBuilder.setId(this.tableName);
     fragmentBuilder.setContents(builder.buildPartial().toByteString());
-    fragmentBuilder.setStoreType(StoreType.HBASE.name());
+    fragmentBuilder.setStoreType(CatalogUtil.getStoreTypeString(StoreType.HBASE));
     return fragmentBuilder.build();
   }
 
