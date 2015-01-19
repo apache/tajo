@@ -11,7 +11,7 @@ This section describes how to setup HBase integration.
 
 First, you need to set your HBase home directory to the environment variable ``HBASE_HOME`` in conf/tajo-env.sh as follows: ::
 
-  export HBASE_HOME=/path/to/your/hive/directory
+  export HBASE_HOME=/path/to/your/hbase/directory
 
 If you set the directory, Tajo will add HBase library file to classpath.
 
@@ -52,7 +52,7 @@ Options
 
   DROP TABLE [IF EXISTS] <table_name> [PURGE]
 
-``IF EXISTS`` allows ``DROP TABLE`` statement to avoid an error which occurs when the database does not exist. ``DROP TABLE`` statement removes a table from Tajo catalog, but it does not remove the contents on HBase cluster. If ``PURGE`` option is given, ``DROP TABLE`` statement will eliminate the entry in the catalog as well as the contents on HBase cluster.
+``IF EXISTS`` allows ``DROP TABLE`` statement to avoid an error which occurs when the table does not exist. ``DROP TABLE`` statement removes a table from Tajo catalog, but it does not remove the contents on HBase cluster. If ``PURGE`` option is given, ``DROP TABLE`` statement will eliminate the entry in the catalog as well as the contents on HBase cluster.
 
 
 ========================
