@@ -164,6 +164,8 @@ Release 0.9.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1225: Fix wrong schema name in JDBC driver. (jaehwa)
+
     TAJO-1304: Can not found TextFile in catalog. (jinho)
 
     TAJO-1299: TB and PB representations in StorageUnit are overflow.
