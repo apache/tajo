@@ -97,13 +97,19 @@ public class TupleUtil {
         continue;
       }
       if (columnStat.hasNullValue()) {
-        int rangeIndex = sortSpecs[i].isAscending() ? ranges.length - 1 : 0;
-        VTuple rangeTuple = sortSpecs[i].isAscending() ? (VTuple) ranges[rangeIndex].getEnd() : (VTuple) ranges[rangeIndex].getStart();
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("Set null into range: " + col.getQualifiedName() + ", previous tuple is " + rangeTuple);
+        if (sortSpecs[i].isNullFirst()) {
+          int rangeIndex = 0;
+          VTuple rangeTuple = (VTuple) ranges[rangeIndex].getStart();
+          rangeTuple.put(i, NullDatum.get());
+        } else {
+          int rangeIndex = sortSpecs[i].isAscending() ? ranges.length - 1 : 0;
+          VTuple rangeTuple = sortSpecs[i].isAscending() ? (VTuple) ranges[rangeIndex].getEnd() : (VTuple) ranges[rangeIndex].getStart();
+          if (LOG.isDebugEnabled()) {
+            LOG.debug("Set null into range: " + col.getQualifiedName() + ", previous tuple is " + rangeTuple);
+          }
+          rangeTuple.put(i, NullDatum.get());
+          LOG.info("Set null into range: " + col.getQualifiedName() + ", current tuple is " + rangeTuple);
         }
-        rangeTuple.put(i, NullDatum.get());
-        LOG.info("Set null into range: " + col.getQualifiedName() + ", current tuple is " + rangeTuple);
       }
       i++;
     }

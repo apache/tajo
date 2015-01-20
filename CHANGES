@@ -169,6 +169,8 @@ Release 0.10.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1257: ORDER BY with NULL FIRST misses some data. (Keuntae Park)
+
     TAJO-1225: Fix wrong schema name in JDBC driver. (jaehwa)
 
     TAJO-1304: Can not found TextFile in catalog. (jinho)
