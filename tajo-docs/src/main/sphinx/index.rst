@@ -40,7 +40,8 @@ Table of Contents:
    index_overview
    backup_and_restore
    hcatalog_integration
-   jdbc_driver   
+   hbase_integration
+   jdbc_driver
    tajo_client_api
    faq
 

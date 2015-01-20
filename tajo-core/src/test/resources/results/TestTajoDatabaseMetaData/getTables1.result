@@ -1,4 +1,4 @@
 TABLE_CAT,TABLE_SCHEM,TABLE_NAME,TABLE_TYPE,REMARKS
 -------------------------------
-jdbc_test3,public,table1,TABLE,
-jdbc_test3,public,table2,TABLE,
+jdbc_test3,,table1,TABLE,
+jdbc_test3,,table2,TABLE,

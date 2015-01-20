@@ -1,7 +1,7 @@
 Tajo Change Log 
 
 
-Release 0.9.1 - unreleased
+Release 0.10.0 - unreleased
 
   NEW FEATURES
 
@@ -26,6 +26,11 @@ Release 0.9.1 - unreleased
     TAJO-1095: Implement Json file scanner. (hyunsik)
 
   IMPROVEMENT
+
+    TAJO-1307: HBaseStorageManager need to support for users to use
+    hbase-site.xml file. (jaehwa)
+
+    TAJO-1290: Add HBase Storage Integration Documentation. (jaehwa)
 
     TAJO-1293: Tajo have to accept hostname beginning with digits.
     (Jinhang Choi via jihun)
@@ -163,6 +168,10 @@ Release 0.9.1 - unreleased
 
 
   BUG FIXES
+
+    TAJO-1257: ORDER BY with NULL FIRST misses some data. (Keuntae Park)
+
+    TAJO-1225: Fix wrong schema name in JDBC driver. (jaehwa)
 
     TAJO-1304: Can not found TextFile in catalog. (jinho)
 
