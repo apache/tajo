@@ -26,7 +26,6 @@ import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
 import org.apache.tajo.catalog.store.PostgreSQLStore;
-import org.apache.tajo.function.Function;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
@@ -39,6 +38,7 @@ import org.apache.tajo.catalog.store.OracleStore;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.function.Function;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
@@ -208,6 +208,20 @@ public class TestCatalog {
     assertTrue(catalog.existDatabase("testCreateAndDropDatabases"));
     assertTrue(catalog.dropDatabase("testCreateAndDropDatabases"));
   }
+  
+  @Test
+  public void testCreateAndDropDatabaseWithCharacterSensitivity() throws Exception {
+    assertFalse(catalog.existDatabase("TestDatabase1"));
+    assertFalse(catalog.existDatabase("testDatabase1"));
+    assertTrue(catalog.createDatabase("TestDatabase1", TajoConstants.DEFAULT_TABLESPACE_NAME));
+    assertTrue(catalog.existDatabase("TestDatabase1"));
+    assertFalse(catalog.existDatabase("testDatabase1"));
+    assertTrue(catalog.createDatabase("testDatabase1", TajoConstants.DEFAULT_TABLESPACE_NAME));
+    assertTrue(catalog.existDatabase("TestDatabase1"));
+    assertTrue(catalog.existDatabase("testDatabase1"));
+    assertTrue(catalog.dropDatabase("TestDatabase1"));
+    assertTrue(catalog.dropDatabase("testDatabase1"));
+  }
 
   @Test
   public void testCreateAndDropManyDatabases() throws Exception {
@@ -284,6 +298,43 @@ public class TestCatalog {
 
     assertTrue(catalog.dropDatabase("tmpdb2"));
     assertFalse(catalog.existDatabase("tmpdb2"));
+  }
+  
+  @Test
+  public void testCreateAndDropTableWithCharacterSensivity() throws Exception {
+    String databaseName = "TestDatabase1";
+    assertTrue(catalog.createDatabase(databaseName, TajoConstants.DEFAULT_TABLESPACE_NAME));
+    assertTrue(catalog.existDatabase(databaseName));
+    
+    String tableName = "TestTable1";
+    Schema schema = new Schema();
+    schema.addColumn("Column", Type.BLOB);
+    schema.addColumn("column", Type.INT4);
+    schema.addColumn("cOlumn", Type.INT8);
+    Path path = new Path(CommonTestingUtil.getTestDir(), tableName);
+    TableDesc table = new TableDesc(
+        CatalogUtil.buildFQName(databaseName, tableName),
+        schema,
+        new TableMeta(StoreType.CSV, new KeyValueSet()),
+        path.toUri(), true);
+    
+    assertTrue(catalog.createTable(table));
+    
+    tableName = "testTable1";
+    schema = new Schema();
+    schema.addColumn("Column", Type.BLOB);
+    schema.addColumn("column", Type.INT4);
+    schema.addColumn("cOlumn", Type.INT8);
+    path = new Path(CommonTestingUtil.getTestDir(), tableName);
+    table = new TableDesc(
+        CatalogUtil.buildFQName(databaseName, tableName),
+        schema,
+        new TableMeta(StoreType.CSV, new KeyValueSet()),
+        path.toUri(), true);
+    
+    assertTrue(catalog.createTable(table));
+    
+    assertTrue(catalog.dropDatabase(databaseName));
   }
 
   static String dbPrefix = "db_";
