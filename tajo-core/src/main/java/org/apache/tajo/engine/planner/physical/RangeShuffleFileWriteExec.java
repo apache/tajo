@@ -96,7 +96,7 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
     long offset;
 
 
-    while((tuple = child.next()) != null) {
+    while(!context.isStopped() && (tuple = child.next()) != null) {
       offset = appender.getOffset();
       appender.addTuple(tuple);
       keyTuple = new VTuple(keySchema.size());

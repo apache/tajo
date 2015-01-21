@@ -88,8 +88,6 @@ public class Task {
   private final Map<String, TableDesc> descs = Maps.newHashMap();
   private PhysicalExec executor;
   private boolean interQuery;
-  private boolean killed = false;
-  private boolean aborted = false;
   private Path inputTableBaseDir;
 
   private long startTime;
@@ -254,13 +252,11 @@ public class Task {
   }
 
   public void kill() {
-    killed = true;
-    context.stop();
     context.setState(TaskAttemptState.TA_KILLED);
+    context.stop();
   }
 
   public void abort() {
-    aborted = true;
     context.stop();
   }
 
@@ -299,7 +295,7 @@ public class Task {
   }
 
   public void updateProgress() {
-    if(killed || aborted){
+    if(context != null && context.isStopped()){
       return;
     }
 
@@ -403,12 +399,12 @@ public class Task {
           createPlan(context, plan);
       this.executor.init();
 
-      while(!killed && !aborted && executor.next() != null) {
+      while(!context.isStopped() && executor.next() != null) {
       }
     } catch (Throwable e) {
       error = e ;
       LOG.error(e.getMessage(), e);
-      aborted = true;
+      context.stop();
     } finally {
       if (executor != null) {
         try {
@@ -423,10 +419,10 @@ public class Task {
       executionBlockContext.completedTasksNum.incrementAndGet();
       context.getHashShuffleAppenderManager().finalizeTask(taskId);
       QueryMasterProtocol.QueryMasterProtocolService.Interface queryMasterStub = executionBlockContext.getQueryMasterStub();
-      if (killed || aborted) {
+      if (context.isStopped()) {
         context.setExecutorProgress(0.0f);
-        if(killed) {
-          context.setState(TaskAttemptState.TA_KILLED);
+
+        if(context.getState() == TaskAttemptState.TA_KILLED) {
           queryMasterStub.statusUpdate(null, getReport(), NullCallback.get());
           executionBlockContext.killedTasksNum.incrementAndGet();
         } else {
@@ -593,7 +589,7 @@ public class Task {
       int retryWaitTime = 1000; //sec
 
       try { // for releasing fetch latch
-        while(!killed && retryNum < maxRetryNum) {
+        while(!context.isStopped() && retryNum < maxRetryNum) {
           if (retryNum > 0) {
             try {
               Thread.sleep(retryWaitTime);
@@ -625,7 +621,7 @@ public class Task {
           if (retryNum == maxRetryNum) {
             LOG.error("ERROR: the maximum retry (" + retryNum + ") on the fetch exceeded (" + fetcher.getURI() + ")");
           }
-          aborted = true; // retry task
+          context.stop(); // retry task
           ctx.getFetchLatch().countDown();
         }
       }

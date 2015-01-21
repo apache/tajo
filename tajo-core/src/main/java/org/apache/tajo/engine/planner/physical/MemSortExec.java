@@ -51,7 +51,7 @@ public class MemSortExec extends SortExec {
 
     if (!sorted) {
       Tuple tuple;
-      while ((tuple = child.next()) != null) {
+      while (!context.isStopped() && (tuple = child.next()) != null) {
         tupleSlots.add(new VTuple(tuple));
       }
       

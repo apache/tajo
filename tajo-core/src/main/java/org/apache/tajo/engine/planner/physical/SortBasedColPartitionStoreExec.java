@@ -73,7 +73,7 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
   @Override
   public Tuple next() throws IOException {
     Tuple tuple;
-    while((tuple = child.next()) != null) {
+    while(!context.isStopped() && (tuple = child.next()) != null) {
 
       fillKeyTuple(tuple, currentKey);
 

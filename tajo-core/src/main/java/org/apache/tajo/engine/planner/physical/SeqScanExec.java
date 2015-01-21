@@ -251,7 +251,7 @@ public class SeqScanExec extends PhysicalExec {
     initScanner(projected);
 
     List<Tuple> broadcastTupleCacheList = new ArrayList<Tuple>();
-    while (true) {
+    while (!context.isStopped()) {
       Tuple tuple = next();
       if (tuple != null) {
         broadcastTupleCacheList.add(tuple);

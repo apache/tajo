@@ -115,7 +115,7 @@ public class StoreTableExec extends UnaryPhysicalExec {
    */
   @Override
   public Tuple next() throws IOException {
-    while((tuple = child.next()) != null) {
+    while(!context.isStopped() && (tuple = child.next()) != null) {
       appender.addTuple(tuple);
 
       if (maxPerFileSize > 0 && maxPerFileSize <= appender.getEstimatedOutputSize()) {

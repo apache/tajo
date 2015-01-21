@@ -44,7 +44,7 @@ public class SelectionExec extends UnaryPhysicalExec  {
   @Override
   public Tuple next() throws IOException {
     Tuple tuple;
-    while ((tuple = child.next()) != null) {
+    while (!context.isStopped() && (tuple = child.next()) != null) {
       if (qual.eval(inSchema, tuple).isTrue()) {
         return tuple;
       }

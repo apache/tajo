@@ -48,7 +48,7 @@ public class HashAggregateExec extends AggregationExec {
   private void compute() throws IOException {
     Tuple tuple;
     Tuple keyTuple;
-    while((tuple = child.next()) != null && !context.isStopped()) {
+    while(!context.isStopped() && (tuple = child.next()) != null) {
       keyTuple = new VTuple(groupingKeyIds.length);
       // build one key tuple
       for(int i = 0; i < groupingKeyIds.length; i++) {
