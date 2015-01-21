@@ -31,6 +31,7 @@ import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.container.TajoContainer;
 import org.apache.tajo.master.container.TajoContainerId;
+import org.apache.tajo.master.event.TaskFatalErrorEvent;
 import org.apache.tajo.master.rm.TajoWorkerContainer;
 import org.apache.tajo.master.rm.TajoWorkerContainerId;
 import org.apache.tajo.querymaster.QueryMasterTask;
@@ -83,7 +84,8 @@ public class TajoContainerProxy extends ContainerProxy {
       TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
       tajoWorkerRpcClient.killTaskAttempt(null, taskAttemptId.getProto(), NullCallback.get());
     } catch (Throwable e) {
-      LOG.error(e.getMessage(), e);
+      /* Worker RPC failure */
+      context.getEventHandler().handle(new TaskFatalErrorEvent(taskAttemptId, e.getMessage()));
     } finally {
       RpcConnectionPool.getPool().releaseConnection(tajoWorkerRpc);
     }
