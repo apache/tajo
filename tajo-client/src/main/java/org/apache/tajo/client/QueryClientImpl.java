@@ -376,7 +376,7 @@ public class QueryClientImpl implements QueryClient {
       throws ServiceException {
 
     try {
-      ServerCallable<ClientProtos.SerializedResultSet> callable =
+      final ServerCallable<ClientProtos.SerializedResultSet> callable =
           new ServerCallable<ClientProtos.SerializedResultSet>(connection.connPool, connection.getTajoMasterAddr(),
               TajoMasterClientProtocol.class, false, true) {
 
@@ -392,7 +392,8 @@ public class QueryClientImpl implements QueryClient {
               try {
                 GetQueryResultDataResponse response = tajoMasterService.getQueryResultData(null, builder.build());
                 if (response.getResultCode() == ClientProtos.ResultCode.ERROR) {
-                  throw new ServiceException(response.getErrorTrace());
+                  abort();
+                  throw new ServiceException(response.getErrorMessage());
                 }
 
                 return response.getResultSet();
@@ -412,7 +413,9 @@ public class QueryClientImpl implements QueryClient {
           serializedResultSet.getSerializedTuplesList(),
           serializedResultSet.getSerializedTuplesCount(),
           getClientSideSessionVars());
-    } catch (Exception e) {
+    } catch (ServiceException e) {
+      throw e;
+    } catch (Throwable e) {
       throw new ServiceException(e.getMessage(), e);
     }
   }

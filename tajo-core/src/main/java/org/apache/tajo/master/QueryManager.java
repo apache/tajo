@@ -170,7 +170,8 @@ public class QueryManager extends CompositeService {
       dispatcher.getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_MASTER_START,
           queryInProgress.getQueryInfo()));
     } else {
-      stopQuery(queryId);
+      dispatcher.getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_STOP,
+          queryInProgress.getQueryInfo()));
     }
 
     return queryInProgress.getQueryInfo();
