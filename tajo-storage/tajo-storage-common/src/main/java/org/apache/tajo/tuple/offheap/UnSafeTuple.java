@@ -160,7 +160,7 @@ public abstract class UnSafeTuple implements Tuple {
     case FLOAT8:
       return DatumFactory.createFloat8(getFloat8(fieldId));
     case TEXT:
-      return DatumFactory.createText(getText(fieldId));
+      return DatumFactory.createText(getBytes(fieldId));
     case TIMESTAMP:
       return DatumFactory.createTimestamp(getInt8(fieldId));
     case DATE:
@@ -241,13 +241,7 @@ public abstract class UnSafeTuple implements Tuple {
 
   @Override
   public String getText(int fieldId) {
-    long pos = getFieldAddr(fieldId);
-    int len = UNSAFE.getInt(pos);
-    pos += SizeOf.SIZE_OF_INT;
-
-    byte [] bytes = new byte[len];
-    UNSAFE.copyMemory(null, pos, bytes, UnsafeUtil.ARRAY_BYTE_BASE_OFFSET, len);
-    return new String(bytes);
+    return new String(getBytes(fieldId), Charset.forName("UTF-8"));
   }
 
   public IntervalDatum getInterval(int fieldId) {

@@ -23,6 +23,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.tuple.RowBlockReader;
+import org.apache.tajo.tuple.offheap.ZeroCopyTuple;
 import org.apache.tajo.util.Pair;
 
 import java.io.IOException;
@@ -38,6 +40,7 @@ public class HashShuffleAppender implements Appender {
   private FileAppender appender;
   private AtomicBoolean closed = new AtomicBoolean(false);
   private int partId;
+  private int volumeId;
 
   private TableStats tableStats;
 
@@ -59,11 +62,14 @@ public class HashShuffleAppender implements Appender {
 
   private ExecutionBlockId ebId;
 
-  public HashShuffleAppender(ExecutionBlockId ebId, int partId, int pageSize, FileAppender appender) {
+  private final ZeroCopyTuple zeroCopyTuple = new ZeroCopyTuple();
+
+  public HashShuffleAppender(ExecutionBlockId ebId, int partId, int pageSize, FileAppender appender, int volumeId) {
     this.ebId = ebId;
     this.partId = partId;
     this.appender = appender;
     this.pageSize = pageSize;
+    this.volumeId = volumeId;
   }
 
   @Override
@@ -77,25 +83,26 @@ public class HashShuffleAppender implements Appender {
    * Write multiple tuples. Each tuple is written by a FileAppender which is responsible specified partition.
    * After writing if a current page exceeds pageSize, pageOffset will be added.
    * @param taskId
-   * @param tuples
+   * @param rowBlockReader
    * @return written bytes
    * @throws java.io.IOException
    */
-  public int addTuples(TaskAttemptId taskId, List<Tuple> tuples) throws IOException {
+  public int writeRowBlock(TaskAttemptId taskId, RowBlockReader rowBlockReader) throws IOException {
     synchronized(appender) {
       if (closed.get()) {
         return 0;
       }
       long currentPos = appender.getOffset();
 
-      for (Tuple eachTuple: tuples) {
-        appender.addTuple(eachTuple);
+      while (rowBlockReader.next(zeroCopyTuple)){
+        appender.addTuple(zeroCopyTuple);
       }
+
       long posAfterWritten = appender.getOffset();
 
       int writtenBytes = (int)(posAfterWritten - currentPos);
 
-      int nextRowNum = rowNumInPage + tuples.size();
+      int nextRowNum = rowNumInPage + rowBlockReader.rows();
       List<Pair<Long, Pair<Integer, Integer>>> taskIndexes = taskTupleIndexes.get(taskId);
       if (taskIndexes == null) {
         taskIndexes = new ArrayList<Pair<Long, Pair<Integer, Integer>>>();
@@ -110,7 +117,7 @@ public class HashShuffleAppender implements Appender {
         rowNumInPage = 0;
       }
 
-      totalRows += tuples.size();
+      totalRows += rowBlockReader.rows();
       return writtenBytes;
     }
   }
@@ -205,5 +212,9 @@ public class HashShuffleAppender implements Appender {
 
   public void taskFinished(TaskAttemptId taskId) {
     taskTupleIndexes.remove(taskId);
+  }
+
+  public int getVolumeId() {
+    return volumeId;
   }
 }

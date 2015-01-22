@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -29,14 +30,18 @@ import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.plan.logical.ShuffleFileWriteNode;
 import org.apache.tajo.storage.HashShuffleAppender;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
+import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
+import org.apache.tajo.tuple.offheap.RowWriter;
+import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 
 /**
  * <code>HashShuffleFileWriteExec</code> is a physical executor to store intermediate data into a number of
@@ -52,7 +57,8 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
   private final int numShuffleOutputs;
   private final int [] shuffleKeyIds;
   private HashShuffleAppenderManager hashShuffleAppenderManager;
-  private int numHashShuffleBufferTuples;
+  private int maxBufferSize;
+  private int initialRowBufferSize;
 
   public HashShuffleFileWriteExec(TaskAttemptContext context,
                                   final ShuffleFileWriteNode plan, final PhysicalExec child) throws IOException {
@@ -74,7 +80,12 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
     }
     this.partitioner = new HashPartitioner(shuffleKeyIds, numShuffleOutputs);
     this.hashShuffleAppenderManager = context.getHashShuffleAppenderManager();
-    this.numHashShuffleBufferTuples = context.getConf().getIntVar(ConfVars.SHUFFLE_HASH_APPENDER_BUFFER_SIZE);
+    this.maxBufferSize = context.getConf().getIntVar(ConfVars.SHUFFLE_HASH_APPENDER_BUFFER_SIZE);
+    if(numShuffleOutputs > 0){
+      this.initialRowBufferSize = Math.max(maxBufferSize / numShuffleOutputs, 64 * StorageUnit.KB);
+    } else {
+      this.initialRowBufferSize = 64 * StorageUnit.KB;
+    }
   }
 
   @Override
@@ -92,52 +103,65 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
     return appender;
   }
 
-//  Map<Integer, Long> partitionStats = new HashMap<Integer, Long>();
-  Map<Integer, List<Tuple>> partitionTuples = new HashMap<Integer, List<Tuple>>();
+  Map<Integer, OffHeapRowBlock> partitionTuples = new HashMap<Integer, OffHeapRowBlock>();
   long writtenBytes = 0L;
+  long usedMem = 0;
 
   @Override
   public Tuple next() throws IOException {
     try {
       Tuple tuple;
       int partId;
-      int tupleCount = 0;
       long numRows = 0;
       while ((tuple = child.next()) != null) {
-        tupleCount++;
         numRows++;
 
         partId = partitioner.getPartition(tuple);
-        List<Tuple> partitionTupleList = partitionTuples.get(partId);
-        if (partitionTupleList == null) {
-          partitionTupleList = new ArrayList<Tuple>(1000);
-          partitionTuples.put(partId, partitionTupleList);
+        OffHeapRowBlock rowBlock = partitionTuples.get(partId);
+        if (rowBlock == null) {
+          rowBlock = new OffHeapRowBlock(outSchema, initialRowBufferSize);
+          partitionTuples.put(partId, rowBlock);
         }
-        try {
-          partitionTupleList.add(tuple.clone());
-        } catch (CloneNotSupportedException e) {
-        }
-        if (tupleCount >= numHashShuffleBufferTuples) {
-          for (Map.Entry<Integer, List<Tuple>> entry : partitionTuples.entrySet()) {
+
+        RowWriter writer = rowBlock.getWriter();
+        long prevUsedMem = rowBlock.usedMem();
+        RowStoreUtil.convert(tuple, writer);
+        usedMem += (rowBlock.usedMem() - prevUsedMem);
+
+        if (usedMem >= maxBufferSize) {
+          List<Future<Integer>> resultList = Lists.newArrayList();
+          for (Map.Entry<Integer, OffHeapRowBlock> entry : partitionTuples.entrySet()) {
             int appendPartId = entry.getKey();
             HashShuffleAppender appender = getAppender(appendPartId);
-            int appendedSize = appender.addTuples(context.getTaskId(), entry.getValue());
-            writtenBytes += appendedSize;
-            entry.getValue().clear();
+
+            resultList.add(hashShuffleAppenderManager.
+                writePartitions(appender, context.getTaskId(), entry.getValue(), false));
+
           }
-          tupleCount = 0;
+
+          for (Future<Integer> future : resultList) {
+            writtenBytes += future.get();
+          }
+          usedMem = 0;
         }
       }
 
       // processing remained tuples
-      for (Map.Entry<Integer, List<Tuple>> entry : partitionTuples.entrySet()) {
+      List<Future<Integer>> resultList = Lists.newArrayList();
+      for (Map.Entry<Integer, OffHeapRowBlock> entry : partitionTuples.entrySet()) {
         int appendPartId = entry.getKey();
         HashShuffleAppender appender = getAppender(appendPartId);
-        int appendedSize = appender.addTuples(context.getTaskId(), entry.getValue());
-        writtenBytes += appendedSize;
-        entry.getValue().clear();
+
+        resultList.add(hashShuffleAppenderManager.
+            writePartitions(appender, context.getTaskId(), entry.getValue(), true));
+
       }
 
+      for (Future<Integer> future : resultList) {
+        writtenBytes += future.get();
+      }
+
+      usedMem = 0;
       TableStats aggregated = (TableStats)child.getInputStats().clone();
       aggregated.setNumBytes(writtenBytes);
       aggregated.setNumRows(numRows);
@@ -146,7 +170,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
       partitionTuples.clear();
 
       return null;
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
       throw new IOException(e);
     }
@@ -163,6 +187,13 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
     if (appenderMap != null) {
       appenderMap.clear();
       appenderMap = null;
+    }
+
+    if(partitionTuples != null && partitionTuples.size() > 0){
+      for (OffHeapRowBlock rowBlock : partitionTuples.values()) {
+        rowBlock.release();
+      }
+      partitionTuples.clear();
     }
 
     partitioner = null;

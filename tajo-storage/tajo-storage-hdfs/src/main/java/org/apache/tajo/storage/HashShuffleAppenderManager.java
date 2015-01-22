@@ -18,6 +18,9 @@
 
 package org.apache.tajo.storage;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
@@ -30,6 +33,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.tuple.offheap.OffHeapRowBlock;
 import org.apache.tajo.util.Pair;
 
 import java.io.IOException;
@@ -37,13 +41,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 
 public class HashShuffleAppenderManager {
   private static final Log LOG = LogFactory.getLog(HashShuffleAppenderManager.class);
 
-  private Map<ExecutionBlockId, Map<Integer, PartitionAppenderMeta>> appenderMap =
-      new ConcurrentHashMap<ExecutionBlockId, Map<Integer, PartitionAppenderMeta>>();
+  private ConcurrentMap<ExecutionBlockId, Map<Integer, PartitionAppenderMeta>> appenderMap = Maps.newConcurrentMap();
+  private ConcurrentMap<Integer, ExecutorService> executors = Maps.newConcurrentMap(); // parallel writing
+  private List<String> temporalPaths = Lists.newArrayList();
+
   private TajoConf systemConf;
   private FileSystem defaultFS;
   private FileSystem localFS;
@@ -60,6 +66,26 @@ public class HashShuffleAppenderManager {
     defaultFS = TajoConf.getTajoRootDir(systemConf).getFileSystem(systemConf);
     localFS = FileSystem.getLocal(systemConf);
     pageSize = systemConf.getIntVar(ConfVars.SHUFFLE_HASH_APPENDER_PAGE_VOLUME) * 1024 * 1024;
+
+    Iterable<Path> allLocalPath = lDirAllocator.getAllLocalPathsToRead(".", systemConf);
+    int parallelExecution = systemConf.getIntVar(ConfVars.SHUFFLE_HASH_PARALLEL_EXECUTION_NUM_PER_DISK);
+    for (Path path : allLocalPath) {
+      temporalPaths.add(localFS.makeQualified(path).toString());
+      //concurrency control of root path
+      executors.put(temporalPaths.size() - 1, Executors.newFixedThreadPool(parallelExecution));
+    }
+  }
+
+  protected int getVolumeId(Path path) {
+    int i = 0;
+    for (String rootPath : temporalPaths) {
+      if (path.toString().startsWith(rootPath)) {
+        break;
+      }
+      i++;
+    }
+    Preconditions.checkPositionIndex(i, temporalPaths.size() - 1);
+    return i;
   }
 
   public HashShuffleAppender getAppender(TajoConf tajoConf, ExecutionBlockId ebId, int partId,
@@ -92,7 +118,8 @@ public class HashShuffleAppenderManager {
         partitionAppenderMeta = new PartitionAppenderMeta();
         partitionAppenderMeta.partId = partId;
         partitionAppenderMeta.dataFile = dataFile;
-        partitionAppenderMeta.appender = new HashShuffleAppender(ebId, partId, pageSize, appender);
+        partitionAppenderMeta.appender =
+            new HashShuffleAppender(ebId, partId, pageSize, appender, getVolumeId(dataFile));
         partitionAppenderMeta.appender.init();
         partitionAppenderMap.put(partId, partitionAppenderMeta);
 
@@ -165,6 +192,29 @@ public class HashShuffleAppenderManager {
       for (PartitionAppenderMeta eachAppender: partitionAppenderMap.values()) {
         eachAppender.appender.taskFinished(taskId);
       }
+    }
+  }
+
+  /**
+   * Asynchronously write partitions.
+   */
+  public Future<Integer> writePartitions(final HashShuffleAppender appender, final TaskAttemptId taskId,
+                                         final OffHeapRowBlock rowBlock, final boolean releaseBlock) {
+    ExecutorService executor = executors.get(appender.getVolumeId());
+    return executor.submit(new Callable<Integer>() {
+      @Override
+      public Integer call() throws Exception {
+        int bytes = appender.writeRowBlock(taskId, rowBlock.getReader());
+        rowBlock.clear();
+        if (releaseBlock) rowBlock.release();
+        return bytes;
+      }
+    });
+  }
+
+  public void shutdown() {
+    for (ExecutorService service : executors.values()) {
+      service.shutdown();
     }
   }
 

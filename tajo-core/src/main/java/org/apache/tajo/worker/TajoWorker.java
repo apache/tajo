@@ -376,6 +376,10 @@ public class TajoWorker extends CompositeService {
       return;
     }
 
+    if (hashShuffleAppenderManager != null) {
+      hashShuffleAppenderManager.shutdown();
+    }
+
     if(webServer != null) {
       try {
         webServer.stop();

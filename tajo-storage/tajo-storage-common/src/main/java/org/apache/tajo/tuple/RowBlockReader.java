@@ -30,4 +30,6 @@ public interface RowBlockReader<T extends Tuple> {
   public boolean next(T tuple);
 
   public void reset();
+
+  public int rows();
 }
