@@ -512,6 +512,7 @@ public class TajoMasterClientService extends AbstractService {
     public GetQueryResultDataResponse getQueryResultData(RpcController controller, GetQueryResultDataRequest request)
         throws ServiceException {
       GetQueryResultDataResponse.Builder builder = GetQueryResultDataResponse.newBuilder();
+      SerializedResultSet.Builder resultSetBuilder = SerializedResultSet.newBuilder();
 
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
@@ -524,7 +525,7 @@ public class TajoMasterClientService extends AbstractService {
         }
 
         List<ByteString> rows = queryResultScanner.getNextRows(request.getFetchRowNum());
-        SerializedResultSet.Builder resultSetBuilder = SerializedResultSet.newBuilder();
+
         resultSetBuilder.setSchema(queryResultScanner.getLogicalSchema().getProto());
         resultSetBuilder.addAllSerializedTuples(rows);
 
@@ -536,6 +537,7 @@ public class TajoMasterClientService extends AbstractService {
 
       } catch (Throwable t) {
         LOG.error(t.getMessage(), t);
+        builder.setResultSet(resultSetBuilder.build()); // required field
         builder.setResultCode(ResultCode.ERROR);
         String errorMessage = t.getMessage() == null ? t.getClass().getName() : t.getMessage();
         builder.setErrorMessage(errorMessage);
