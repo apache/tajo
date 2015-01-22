@@ -41,7 +41,6 @@ import java.util.Date;
 import java.util.List;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertTrue;
 
 public class TestHistoryWriterReader extends QueryTestCaseBase {
   public static final String HISTORY_DIR = "/tmp/tajo-test-history";
@@ -71,17 +70,13 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
       queryInfo1.setStartTime(startTime);
       queryInfo1.setProgress(1.0f);
       queryInfo1.setQueryState(QueryState.QUERY_SUCCEEDED);
+      writer.appendHistory(queryInfo1);
 
       QueryInfo queryInfo2 = new QueryInfo(QueryIdFactory.newQueryId(startTime, 2));
       queryInfo2.setStartTime(startTime);
       queryInfo2.setProgress(0.5f);
       queryInfo2.setQueryState(QueryState.QUERY_FAILED);
-
-      writer.appendHistory(queryInfo1);
-      writer.appendHistory(queryInfo2);
-
-      // HistoryWriter writes asynchronous.
-      Thread.sleep(5 * 1000);
+      writer.appendAndSync(queryInfo2);
 
       SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
       Path path = new Path(tajoConf.getVar(ConfVars.HISTORY_QUERY_DIR));
@@ -144,10 +139,7 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
       }
       queryHistory.setStageHistories(stages);
 
-      writer.appendHistory(queryHistory);
-
-      // HistoryWriter writes asynchronous.
-      Thread.sleep(5 * 1000);
+      writer.appendAndSync(queryHistory);
 
       SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
       Path path = new Path(tajoConf.getVar(ConfVars.HISTORY_QUERY_DIR));
@@ -217,10 +209,7 @@ public class TestHistoryWriterReader extends QueryTestCaseBase {
       TaskAttemptId id2 = TajoIdUtils.parseTaskAttemptId("ta_1412326813565_0001_000001_000002_00");
       org.apache.tajo.worker.TaskHistory taskHistory2 = new org.apache.tajo.worker.TaskHistory(
           id2, TaskAttemptState.TA_SUCCEEDED, 1.0f, startTime, System.currentTimeMillis() - 500, tableStats);
-      writer.appendHistory(taskHistory2);
-
-      // HistoryWriter writes asynchronous.
-      Thread.sleep(5 * 1000);
+      writer.appendAndSync(taskHistory2);
 
       SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHH");
       String startDate = df.format(new Date(startTime));

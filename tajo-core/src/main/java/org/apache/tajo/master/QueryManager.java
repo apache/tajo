@@ -20,6 +20,7 @@ package org.apache.tajo.master;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import org.apache.commons.collections.map.LRUMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -36,6 +37,7 @@ import org.apache.tajo.master.scheduler.SimpleFifoScheduler;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.querymaster.QueryJobEvent;
 import org.apache.tajo.session.Session;
+import org.apache.tajo.util.history.HistoryReader;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -59,6 +61,7 @@ public class QueryManager extends CompositeService {
   private final Map<QueryId, QueryInProgress> submittedQueries = Maps.newConcurrentMap();
 
   private final Map<QueryId, QueryInProgress> runningQueries = Maps.newConcurrentMap();
+  private final LRUMap historyCache = new LRUMap(HistoryReader.DEFAULT_PAGE_SIZE);
 
   private AtomicLong minExecutionTime = new AtomicLong(Long.MAX_VALUE);
   private AtomicLong maxExecutionTime = new AtomicLong();
@@ -131,9 +134,13 @@ public class QueryManager extends CompositeService {
 
   public synchronized QueryInfo getFinishedQuery(QueryId queryId) {
     try {
-      return this.masterContext.getHistoryReader().getQueryInfo(queryId.toString());
+      QueryInfo queryInfo = (QueryInfo) historyCache.get(queryId);
+      if (queryInfo == null) {
+        queryInfo = this.masterContext.getHistoryReader().getQueryInfo(queryId.toString());
+      }
+      return queryInfo;
     } catch (Throwable e) {
-      LOG.error(e);
+      LOG.error(e.getMessage(), e);
       return null;
     }
   }
@@ -234,6 +241,10 @@ public class QueryManager extends CompositeService {
       }
 
       QueryInfo queryInfo = queryInProgress.getQueryInfo();
+      synchronized (historyCache) {
+        historyCache.put(queryInfo.getQueryId(), queryInfo);
+      }
+
       long executionTime = queryInfo.getFinishTime() - queryInfo.getStartTime();
       if (executionTime < minExecutionTime.get()) {
         minExecutionTime.set(executionTime);
