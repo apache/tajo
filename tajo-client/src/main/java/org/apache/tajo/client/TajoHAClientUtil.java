@@ -65,6 +65,7 @@ public class TajoHAClientUtil {
       TajoCliContext context) throws IOException, ServiceException {
 
     if (conf.getBoolVar(TajoConf.ConfVars.HA_ENABLE)) {
+
       if (!HAServiceUtil.isMasterAlive(conf.getVar(
         TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS), conf)) {
         TajoClient tajoClient = null;
@@ -85,15 +86,4 @@ public class TajoHAClientUtil {
       return client;
     }
   }
-
-
-  public static InetSocketAddress getRpcClientAddress(TajoConf conf) {
-    if (conf.getBoolVar(TajoConf.ConfVars.HA_ENABLE)) {
-      return NetUtils.createSocketAddr(HAServiceUtil.getMasterClientName(conf));
-    } else {
-      return NetUtils.createSocketAddr(conf.getVar(TajoConf.ConfVars
-        .TAJO_MASTER_CLIENT_RPC_ADDRESS));
-    }
-  }
-
 }

@@ -27,6 +27,8 @@ import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.TajoMaster;
+import org.apache.tajo.service.ServiceTracker;
+import org.apache.tajo.service.ServiceTrackerFactory;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
@@ -56,7 +58,8 @@ public class TestHAServiceHDFSImpl  {
     try {
       FileSystem fs = cluster.getDefaultFileSystem();
 
-      masterAddress = HAServiceUtil.getMasterUmbilicalName(conf).split(":")[0];
+      ServiceTracker serviceTracker = ServiceTrackerFactory.get(conf);
+      masterAddress = serviceTracker.getUmbilicalAddress().getHostName();
 
       setConfiguration();
 

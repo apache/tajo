@@ -23,7 +23,7 @@ import org.apache.tajo.util.ReflectionUtil;
 
 public class ServiceTrackerFactory {
 
-  public static ServiceTracker getServiceTracker(TajoConf conf) {
+  public static ServiceTracker get(TajoConf conf) {
     Class<ServiceTracker> trackerClass;
 
     try {

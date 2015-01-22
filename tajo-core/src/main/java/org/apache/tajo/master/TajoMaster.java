@@ -317,7 +317,7 @@ public class TajoMaster extends CompositeService {
 
     initSystemMetrics();
 
-    haService = ServiceTrackerFactory.getServiceTracker(systemConf);
+    haService = ServiceTrackerFactory.get(systemConf);
     haService.register();
 
     historyWriter = new HistoryWriter(getMasterName(), true);

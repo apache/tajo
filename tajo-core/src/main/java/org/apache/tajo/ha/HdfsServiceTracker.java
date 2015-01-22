@@ -331,29 +331,55 @@ public class HdfsServiceTracker extends HAServiceTracker {
   private final static int CATALOG_ADDRESS = 3;
   private final static int MASTER_HTTP_INFO = 4;
 
+  private volatile InetSocketAddress umbilicalRpcAddr;
+  private volatile InetSocketAddress clientRpcAddr;
+  private volatile InetSocketAddress resourceTrackerRpcAddr;
+  private volatile InetSocketAddress catalogAddr;
+  private volatile InetSocketAddress masterHttpInfoAddr;
+
   @Override
   public InetSocketAddress getUmbilicalAddress() {
-    return org.apache.tajo.util.NetUtils.createSocketAddr(getAddressElements(conf).get(MASTER_UMBILICAL_RPC_ADDRESS));
+    if (!checkConnection(umbilicalRpcAddr)) {
+      umbilicalRpcAddr = NetUtils.createSocketAddr(getAddressElements(conf).get(MASTER_UMBILICAL_RPC_ADDRESS));
+    }
+
+    return umbilicalRpcAddr;
   }
 
   @Override
   public InetSocketAddress getClientServiceAddress() {
-    return org.apache.tajo.util.NetUtils.createSocketAddr(getAddressElements(conf).get(MASTER_CLIENT_RPC_ADDRESS));
+    if (!checkConnection(clientRpcAddr)) {
+      clientRpcAddr = NetUtils.createSocketAddr(getAddressElements(conf).get(MASTER_CLIENT_RPC_ADDRESS));
+    }
+
+    return clientRpcAddr;
   }
 
   @Override
   public InetSocketAddress getResourceTrackerAddress() {
-    return org.apache.tajo.util.NetUtils.createSocketAddr(getAddressElements(conf).get(RESOURCE_TRACKER_RPC_ADDRESS));
+    if (!checkConnection(resourceTrackerRpcAddr)) {
+      resourceTrackerRpcAddr = NetUtils.createSocketAddr(getAddressElements(conf).get(RESOURCE_TRACKER_RPC_ADDRESS));
+    }
+
+    return resourceTrackerRpcAddr;
   }
 
   @Override
   public InetSocketAddress getCatalogAddress() {
-    return org.apache.tajo.util.NetUtils.createSocketAddr(getAddressElements(conf).get(CATALOG_ADDRESS));
+    if (!checkConnection(catalogAddr)) {
+      catalogAddr = NetUtils.createSocketAddr(getAddressElements(conf).get(CATALOG_ADDRESS));
+    }
+
+    return catalogAddr;
   }
 
   @Override
   public InetSocketAddress getMasterHttpInfo() throws ServiceTrackerException {
-    return org.apache.tajo.util.NetUtils.createSocketAddr(getAddressElements(conf).get(MASTER_HTTP_INFO));
+    if (!checkConnection(masterHttpInfoAddr)) {
+      masterHttpInfoAddr = NetUtils.createSocketAddr(getAddressElements(conf).get(MASTER_HTTP_INFO));
+    }
+
+    return masterHttpInfoAddr;
   }
 
   /**
@@ -367,29 +393,42 @@ public class HdfsServiceTracker extends HAServiceTracker {
 
     try {
       FileSystem fs = getFileSystem(conf);
-      Path activePath = new Path(TajoConf.getSystemHADir(conf), TajoConstants.SYSTEM_HA_ACTIVE_DIR_NAME);
+      Path activeMasterBaseDir = new Path(TajoConf.getSystemHADir(conf), TajoConstants.SYSTEM_HA_ACTIVE_DIR_NAME);
 
-      if (!fs.exists(activePath)) {
-        throw new ServiceTrackerException("No such HDFS HA system directory: " + activePath);
+      if (!fs.exists(activeMasterBaseDir)) {
+        throw new ServiceTrackerException("No such active master base path: " + activeMasterBaseDir);
+      }
+      if (!fs.isDirectory(activeMasterBaseDir)) {
+        throw new ServiceTrackerException("Active master base path must be a directory.");
       }
 
-      if (!fs.isFile(activePath)) {
-        throw new ServiceTrackerException("HA active entry file must be a file, but it is directory");
+      FileStatus[] files = fs.listStatus(activeMasterBaseDir);
+
+      if (files.length < 1) {
+        throw new ServiceTrackerException("No active master entry");
+      } else if (files.length > 1) {
+        throw new ServiceTrackerException("Two or more than active master entries.");
       }
 
+      // We can ensure that there is only one file due to the above assertion.
+      Path activeMasterEntry = files[0].getPath();
+
+      if (!fs.isFile(activeMasterEntry)) {
+        throw new ServiceTrackerException("Active master entry must be a file, but it is a directory.");
+      }
 
       List<String> addressElements = TUtil.newList();
 
-      addressElements.add(activePath.getName().replaceAll("_", ":")); // Add UMBILICAL_RPC_ADDRESS to elements
+      addressElements.add(activeMasterEntry.getName().replaceAll("_", ":")); // Add UMBILICAL_RPC_ADDRESS to elements
 
-      FSDataInputStream stream = fs.open(activePath);
+      FSDataInputStream stream = fs.open(activeMasterEntry);
       String data = stream.readUTF();
       stream.close();
 
       addressElements.addAll(TUtil.newList(data.split("_"))); // Add remains entries to elements
 
       // ensure the number of entries
-      Preconditions.checkState(addressElements.size() == 4);
+      Preconditions.checkState(addressElements.size() == 5, "Fewer service addresses than necessary.");
 
       return addressElements;
 
@@ -397,7 +436,6 @@ public class HdfsServiceTracker extends HAServiceTracker {
       throw new ServiceTrackerException(t);
     }
   }
-
 
 
   public static boolean isMasterAlive(InetSocketAddress masterAddress, TajoConf conf) {
