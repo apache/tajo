@@ -79,7 +79,7 @@ public class HAServiceUtil {
   public static InetSocketAddress getMasterAddress(TajoConf conf, int type) {
     InetSocketAddress masterAddress = null;
 
-    if (conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+    if (conf.getBoolVar(TajoConf.ConfVars.HA_ENABLE)) {
       try {
         FileSystem fs = getFileSystem(conf);
         Path activePath = new Path(TajoConf.getSystemHADir(conf), TajoConstants.SYSTEM_HA_ACTIVE_DIR_NAME);

@@ -279,7 +279,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
         // worker may fail to connect existing active master. Thus,
         // if worker can't connect the master, worker should try to connect another master and
         // update master address in worker context.
-        if (tajoConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+        if (tajoConf.getBoolVar(TajoConf.ConfVars.HA_ENABLE)) {
           try {
             tmClient = connPool.getConnection(
               queryTaskContext.getQueryMasterContext().getWorkerContext().getTajoMasterAddress(),

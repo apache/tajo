@@ -187,7 +187,7 @@ public class WorkerHeartbeatService extends AbstractService {
           // worker may fail to connect existing active master. Thus,
           // if worker can't connect the master, worker should try to connect another master and
           // update master address in worker context.
-          if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+          if (systemConf.getBoolVar(TajoConf.ConfVars.HA_ENABLE)) {
             try {
               rmClient = connectionPool.getConnection(context.getResourceTrackerAddress(), TajoResourceTrackerProtocol.class, true);
             } catch (Exception e) {

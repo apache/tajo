@@ -38,14 +38,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class StorageUtil extends StorageConstants {
-  public static int getRowByteSize(Schema schema) {
-    int sum = 0;
-    for(Column col : schema.getColumns()) {
-      sum += StorageUtil.getColByteSize(col);
-    }
-
-    return sum;
-  }
 
   public static int getColByteSize(Column col) {
     switch (col.getDataType().getType()) {
@@ -82,14 +74,6 @@ public class StorageUtil extends StorageConstants {
       default:
         return 0;
     }
-  }
-
-  public static void writeTableMeta(Configuration conf, Path tableroot, TableMeta meta) throws IOException {
-    FileSystem fs = tableroot.getFileSystem(conf);
-    FSDataOutputStream out = fs.create(new Path(tableroot, ".meta"));
-    FileUtil.writeProto(out, meta.getProto());
-    out.flush();
-    out.close();
   }
   
   public static Path concatPath(String parent, String...childs) {

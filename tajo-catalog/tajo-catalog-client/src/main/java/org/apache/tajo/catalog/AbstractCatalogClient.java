@@ -64,7 +64,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
     if (catalogServerAddr == null) {
       return null;
     } else {
-      if (!conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+      if (!conf.getBoolVar(TajoConf.ConfVars.HA_ENABLE)) {
         return catalogServerAddr;
       } else {
         if (!HAServiceUtil.isMasterAlive(catalogServerAddr, conf)) {

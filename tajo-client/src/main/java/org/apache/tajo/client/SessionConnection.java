@@ -21,7 +21,6 @@ package org.apache.tajo.client;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.auth.UserRoleInfo;
@@ -309,7 +308,7 @@ public class SessionConnection implements Closeable {
   }
 
   protected InetSocketAddress getTajoMasterAddr() {
-    if (!conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+    if (!conf.getBoolVar(TajoConf.ConfVars.HA_ENABLE)) {
       return tajoMasterAddr;
     } else {
       if (!HAServiceUtil.isMasterAlive(tajoMasterAddr, conf)) {

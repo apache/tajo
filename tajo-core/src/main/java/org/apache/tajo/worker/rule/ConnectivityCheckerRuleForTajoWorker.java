@@ -45,7 +45,7 @@ public class ConnectivityCheckerRuleForTajoWorker implements SelfDiagnosisRule {
     InetSocketAddress masterAddress = null;
     
     try {
-      if (tajoConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+      if (tajoConf.getBoolVar(TajoConf.ConfVars.HA_ENABLE)) {
         masterAddress = HAServiceUtil.getMasterUmbilicalAddress(tajoConf);
       } else {
         masterAddress = NetUtils.createSocketAddr(tajoConf.getVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS));

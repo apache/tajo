@@ -174,7 +174,7 @@ public class TajoContainerProxy extends ContainerProxy {
       // if worker can't connect the master, worker should try to connect another master and
       // update master address in worker context.
       TajoConf conf = context.getConf();
-      if (conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+      if (conf.getBoolVar(TajoConf.ConfVars.HA_ENABLE)) {
         try {
           tmClient = connPool.getConnection(context.getQueryMasterContext().getWorkerContext().getTajoMasterAddress(),
               QueryCoordinatorProtocol.class, true);

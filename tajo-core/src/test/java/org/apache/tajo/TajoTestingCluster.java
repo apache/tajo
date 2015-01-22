@@ -106,7 +106,7 @@ public class TajoTestingCluster {
 
   public TajoTestingCluster(boolean masterHaEMode) {
     this.conf = new TajoConf();
-    this.conf.setBoolVar(ConfVars.TAJO_MASTER_HA_ENABLE, masterHaEMode);
+    this.conf.setBoolVar(ConfVars.HA_ENABLE, masterHaEMode);
 
     setTestingFlagProperties();
     initPropertiesAndConfigs();

@@ -18,6 +18,7 @@
 
 package org.apache.tajo.ha;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.*;
@@ -25,22 +26,28 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.master.TajoMaster;
-import org.apache.tajo.master.TajoMaster.MasterContext;
+import org.apache.tajo.service.HAServiceTracker;
+import org.apache.tajo.service.ServiceTrackerException;
+import org.apache.tajo.service.TajoMasterInfo;
 import org.apache.tajo.util.TUtil;
 
+import javax.net.SocketFactory;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * This implements HAService utilizing HDFS cluster. This saves master status to HDFS cluster.
  *
  */
-public class HAServiceHDFSImpl implements HAService {
-  private static Log LOG = LogFactory.getLog(HAServiceHDFSImpl.class);
+@SuppressWarnings("unused")
+public class HdfsServiceTracker extends HAServiceTracker {
+  private static Log LOG = LogFactory.getLog(HdfsServiceTracker.class);
 
-  private MasterContext context;
   private TajoConf conf;
 
   private FileSystem fs;
@@ -61,15 +68,14 @@ public class HAServiceHDFSImpl implements HAService {
 
   private String currentActiveMaster;
 
-  public HAServiceHDFSImpl(MasterContext context) throws IOException {
-    this.context = context;
-    this.conf = context.getConf();
+  public HdfsServiceTracker(TajoConf conf) throws IOException {
+    this.conf = conf;
     initSystemDirectory();
 
-    InetSocketAddress socketAddress = context.getTajoMasterService().getBindAddress();
+    InetSocketAddress socketAddress = conf.getSocketAddrVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
     this.masterName = socketAddress.getAddress().getHostAddress() + ":" + socketAddress.getPort();
 
-    monitorInterval = conf.getIntVar(TajoConf.ConfVars.TAJO_MASTER_HA_MONITOR_INTERVAL);
+    monitorInterval = conf.getIntVar(ConfVars.HA_MONITOR_INTERVAL);
   }
 
   private void initSystemDirectory() throws IOException {
@@ -135,6 +141,16 @@ public class HAServiceHDFSImpl implements HAService {
     }
   }
 
+  /**
+   * It will creates the following form string. It includes
+   *
+   * <pre>
+   * {CLIENT_RPC_HOST:PORT}_{RESOURCE_TRACKER_HOST:PORT}_{CATALOG_HOST:PORT}_{MASTER_WEB_HOST:PORT}
+   * </pre>
+   *
+   * @param isActive A boolean flag to indicate if it is for master or not.
+   * @throws IOException
+   */
   private void createMasterFile(boolean isActive) throws IOException {
     String fileName = masterName.replaceAll(":", "_");
     Path path = null;
@@ -183,24 +199,19 @@ public class HAServiceHDFSImpl implements HAService {
 
     switch (type) {
       case HAConstants.MASTER_UMBILICAL_RPC_ADDRESS:
-        address = context.getConf().getSocketAddrVar(TajoConf.ConfVars
-          .TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
+        address = conf.getSocketAddrVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
         break;
       case HAConstants.MASTER_CLIENT_RPC_ADDRESS:
-        address = context.getConf().getSocketAddrVar(TajoConf.ConfVars
-          .TAJO_MASTER_CLIENT_RPC_ADDRESS);
+        address = conf.getSocketAddrVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS);
         break;
       case HAConstants.RESOURCE_TRACKER_RPC_ADDRESS:
-        address = context.getConf().getSocketAddrVar(TajoConf.ConfVars
-          .RESOURCE_TRACKER_RPC_ADDRESS);
+        address = conf.getSocketAddrVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS);
         break;
       case HAConstants.CATALOG_ADDRESS:
-        address = context.getConf().getSocketAddrVar(TajoConf.ConfVars
-          .CATALOG_ADDRESS);
+        address = conf.getSocketAddrVar(ConfVars.CATALOG_ADDRESS);
         break;
       case HAConstants.MASTER_INFO_ADDRESS:
-        address = context.getConf().getSocketAddrVar(TajoConf.ConfVars
-        .TAJO_MASTER_INFO_ADDRESS);
+        address = conf.getSocketAddrVar(ConfVars.TAJO_MASTER_INFO_ADDRESS);
       default:
         break;
     }
@@ -280,7 +291,7 @@ public class HAServiceHDFSImpl implements HAService {
     @Override
     public void run() {
       while (!stopped && !Thread.currentThread().isInterrupted()) {
-        synchronized (HAServiceHDFSImpl.this) {
+        synchronized (HdfsServiceTracker.this) {
           try {
             if (!currentActiveMaster.equals(masterName)) {
               boolean isAlive = HAServiceUtil.isMasterAlive(currentActiveMaster, conf);
@@ -312,5 +323,216 @@ public class HAServiceHDFSImpl implements HAService {
         }
       }
     }
+  }
+
+  private final static int MASTER_UMBILICAL_RPC_ADDRESS = 0;
+  private final static int MASTER_CLIENT_RPC_ADDRESS = 1;
+  private final static int RESOURCE_TRACKER_RPC_ADDRESS = 2;
+  private final static int CATALOG_ADDRESS = 3;
+  private final static int MASTER_HTTP_INFO = 4;
+
+  @Override
+  public InetSocketAddress getUmbilicalAddress() {
+    return org.apache.tajo.util.NetUtils.createSocketAddr(getAddressElements(conf).get(MASTER_UMBILICAL_RPC_ADDRESS));
+  }
+
+  @Override
+  public InetSocketAddress getClientServiceAddress() {
+    return org.apache.tajo.util.NetUtils.createSocketAddr(getAddressElements(conf).get(MASTER_CLIENT_RPC_ADDRESS));
+  }
+
+  @Override
+  public InetSocketAddress getResourceTrackerAddress() {
+    return org.apache.tajo.util.NetUtils.createSocketAddr(getAddressElements(conf).get(RESOURCE_TRACKER_RPC_ADDRESS));
+  }
+
+  @Override
+  public InetSocketAddress getCatalogAddress() {
+    return org.apache.tajo.util.NetUtils.createSocketAddr(getAddressElements(conf).get(CATALOG_ADDRESS));
+  }
+
+  @Override
+  public InetSocketAddress getMasterHttpInfo() throws ServiceTrackerException {
+    return org.apache.tajo.util.NetUtils.createSocketAddr(getAddressElements(conf).get(MASTER_HTTP_INFO));
+  }
+
+  /**
+   * Reads a text file stored in HDFS file, and then return all service addresses read from a HDFS file.   *
+   *
+   * @param conf
+   * @return all service addresses
+   * @throws ServiceTrackerException
+   */
+  private static List<String> getAddressElements(TajoConf conf) throws ServiceTrackerException {
+
+    try {
+      FileSystem fs = getFileSystem(conf);
+      Path activePath = new Path(TajoConf.getSystemHADir(conf), TajoConstants.SYSTEM_HA_ACTIVE_DIR_NAME);
+
+      if (!fs.exists(activePath)) {
+        throw new ServiceTrackerException("No such HDFS HA system directory: " + activePath);
+      }
+
+      if (!fs.isFile(activePath)) {
+        throw new ServiceTrackerException("HA active entry file must be a file, but it is directory");
+      }
+
+
+      List<String> addressElements = TUtil.newList();
+
+      addressElements.add(activePath.getName().replaceAll("_", ":")); // Add UMBILICAL_RPC_ADDRESS to elements
+
+      FSDataInputStream stream = fs.open(activePath);
+      String data = stream.readUTF();
+      stream.close();
+
+      addressElements.addAll(TUtil.newList(data.split("_"))); // Add remains entries to elements
+
+      // ensure the number of entries
+      Preconditions.checkState(addressElements.size() == 4);
+
+      return addressElements;
+
+    } catch (Throwable t) {
+      throw new ServiceTrackerException(t);
+    }
+  }
+
+
+
+  public static boolean isMasterAlive(InetSocketAddress masterAddress, TajoConf conf) {
+    return isMasterAlive(org.apache.tajo.util.NetUtils.normalizeInetSocketAddress(masterAddress), conf);
+  }
+
+  public static boolean isMasterAlive(String masterName, TajoConf conf) {
+    boolean isAlive = true;
+
+    try {
+      // how to create sockets
+      SocketFactory socketFactory = org.apache.hadoop.net.NetUtils.getDefaultSocketFactory(conf);
+
+      int connectionTimeout = conf.getInt(CommonConfigurationKeys.IPC_CLIENT_CONNECT_TIMEOUT_KEY,
+          CommonConfigurationKeys.IPC_CLIENT_CONNECT_TIMEOUT_DEFAULT);
+
+      InetSocketAddress server = org.apache.hadoop.net.NetUtils.createSocketAddr(masterName);
+
+      // connected socket
+      Socket socket = socketFactory.createSocket();
+      org.apache.hadoop.net.NetUtils.connect(socket, server, connectionTimeout);
+    } catch (Exception e) {
+      isAlive = false;
+    }
+    return isAlive;
+  }
+
+  public static int getState(String masterName, TajoConf conf) {
+    String targetMaster = masterName.replaceAll(":", "_");
+    int retValue = -1;
+
+    try {
+      FileSystem fs = getFileSystem(conf);
+      Path activePath = new Path(TajoConf.getSystemHADir(conf), TajoConstants.SYSTEM_HA_ACTIVE_DIR_NAME);
+      Path backupPath = new Path(TajoConf.getSystemHADir(conf), TajoConstants.SYSTEM_HA_BACKUP_DIR_NAME);
+
+      Path temPath = null;
+
+      // Check backup masters
+      FileStatus[] files = fs.listStatus(backupPath);
+      for (FileStatus status : files) {
+        temPath = status.getPath();
+        if (temPath.getName().equals(targetMaster)) {
+          return 0;
+        }
+      }
+
+      // Check active master
+      files = fs.listStatus(activePath);
+      if (files.length == 1) {
+        temPath = files[0].getPath();
+        if (temPath.getName().equals(targetMaster)) {
+          return 1;
+        }
+      }
+      retValue = -2;
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return retValue;
+  }
+
+  public static int formatHA(TajoConf conf) {
+    int retValue = -1;
+    try {
+      FileSystem fs = getFileSystem(conf);
+      Path activePath = new Path(TajoConf.getSystemHADir(conf), TajoConstants.SYSTEM_HA_ACTIVE_DIR_NAME);
+      Path backupPath = new Path(TajoConf.getSystemHADir(conf), TajoConstants.SYSTEM_HA_BACKUP_DIR_NAME);
+      Path temPath = null;
+
+      int aliveMasterCount = 0;
+      // Check backup masters
+      FileStatus[] files = fs.listStatus(backupPath);
+      for (FileStatus status : files) {
+        temPath = status.getPath();
+        if (isMasterAlive(temPath.getName().replaceAll("_", ":"), conf)) {
+          aliveMasterCount++;
+        }
+      }
+
+      // Check active master
+      files = fs.listStatus(activePath);
+      if (files.length == 1) {
+        temPath = files[0].getPath();
+        if (isMasterAlive(temPath.getName().replaceAll("_", ":"), conf)) {
+          aliveMasterCount++;
+        }
+      }
+
+      // If there is any alive master, users can't format storage.
+      if (aliveMasterCount > 0) {
+        return 0;
+      }
+
+      // delete ha path.
+      fs.delete(TajoConf.getSystemHADir(conf), true);
+      retValue = 1;
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return retValue;
+  }
+
+
+  public static List<String> getMasters(TajoConf conf) {
+    List<String> list = new ArrayList<String>();
+
+    try {
+      FileSystem fs = getFileSystem(conf);
+      Path activePath = new Path(TajoConf.getSystemHADir(conf), TajoConstants.SYSTEM_HA_ACTIVE_DIR_NAME);
+      Path backupPath = new Path(TajoConf.getSystemHADir(conf), TajoConstants.SYSTEM_HA_BACKUP_DIR_NAME);
+      Path temPath = null;
+
+      // Check backup masters
+      FileStatus[] files = fs.listStatus(backupPath);
+      for (FileStatus status : files) {
+        temPath = status.getPath();
+        list.add(temPath.getName().replaceAll("_", ":"));
+      }
+
+      // Check active master
+      files = fs.listStatus(activePath);
+      if (files.length == 1) {
+        temPath = files[0].getPath();
+        list.add(temPath.getName().replaceAll("_", ":"));
+      }
+
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return list;
+  }
+
+  private static FileSystem getFileSystem(TajoConf conf) throws IOException {
+    Path rootPath = TajoConf.getTajoRootDir(conf);
+    return rootPath.getFileSystem(conf);
   }
 }

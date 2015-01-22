@@ -229,7 +229,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       // worker may fail to connect existing active master. Thus,
       // if worker can't connect the master, worker should try to connect another master and
       // update master address in worker context.
-      if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+      if (systemConf.getBoolVar(TajoConf.ConfVars.HA_ENABLE)) {
         try {
           rpc = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
               QueryCoordinatorProtocol.class, true);
@@ -357,7 +357,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
         // worker may fail to connect existing active master. Thus,
         // if worker can't connect the master, worker should try to connect another master and
         // update master address in worker context.
-        if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+        if (systemConf.getBoolVar(TajoConf.ConfVars.HA_ENABLE)) {
           try {
             tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
                 QueryCoordinatorProtocol.class, true);
@@ -474,7 +474,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
               // worker may fail to connect existing active master. Thus,
               // if worker can't connect the master, worker should try to connect another master and
               // update master address in worker context.
-              if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
+              if (systemConf.getBoolVar(TajoConf.ConfVars.HA_ENABLE)) {
                 try {
                   tmClient = connPool.getConnection(queryMasterContext.getWorkerContext().getTajoMasterAddress(),
                       QueryCoordinatorProtocol.class, true);
