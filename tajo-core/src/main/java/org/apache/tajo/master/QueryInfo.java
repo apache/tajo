@@ -30,7 +30,7 @@ import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.util.history.History;
 
-public class QueryInfo implements GsonObject, History {
+public class QueryInfo implements GsonObject, History, Comparable<QueryInfo> {
   private QueryId queryId;
   @Expose
   private QueryContext context;
@@ -231,5 +231,10 @@ public class QueryInfo implements GsonObject, History {
     }
 
     return builder.build();
+  }
+
+  @Override
+  public int compareTo(QueryInfo o) {
+    return queryId.compareTo(o.queryId);
   }
 }
