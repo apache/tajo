@@ -222,6 +222,7 @@ public class QueryInProgress {
 
   private boolean isFinishState(TajoProtos.QueryState state) {
     return state == TajoProtos.QueryState.QUERY_FAILED ||
+        state == TajoProtos.QueryState.QUERY_ERROR ||
         state == TajoProtos.QueryState.QUERY_KILLED ||
         state == TajoProtos.QueryState.QUERY_SUCCEEDED;
   }
