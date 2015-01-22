@@ -41,7 +41,6 @@ import org.apache.tajo.rule.SelfDiagnosisRuleEngine;
 import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
-import org.apache.tajo.util.NetUtils;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

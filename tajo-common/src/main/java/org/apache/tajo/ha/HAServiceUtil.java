@@ -18,8 +18,6 @@
 
 package org.apache.tajo.ha;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.*;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
@@ -46,7 +44,7 @@ public class HAServiceUtil {
   public static InetSocketAddress getMasterAddress(TajoConf conf, int type) {
     InetSocketAddress masterAddress = null;
 
-    if (conf.getBoolVar(TajoConf.ConfVars.HA_ENABLE)) {
+    if (conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
       try {
         FileSystem fs = getFileSystem(conf);
         Path activePath = new Path(TajoConf.getSystemHADir(conf), TajoConstants.SYSTEM_HA_ACTIVE_DIR_NAME);

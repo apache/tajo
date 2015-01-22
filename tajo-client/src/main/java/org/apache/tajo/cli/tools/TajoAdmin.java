@@ -422,7 +422,7 @@ public class TajoAdmin {
   private void processMasters(Writer writer) throws ParseException, IOException,
       ServiceException, SQLException {
     tajoClient = TajoHAClientUtil.getTajoClient(tajoConf, tajoClient);
-    if (tajoConf.getBoolVar(TajoConf.ConfVars.HA_ENABLE)) {
+    if (tajoConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
 
       List<String> list = HAServiceUtil.getMasters(tajoConf);
       int i = 0;

@@ -75,7 +75,7 @@ public class HdfsServiceTracker extends HAServiceTracker {
     InetSocketAddress socketAddress = conf.getSocketAddrVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
     this.masterName = socketAddress.getAddress().getHostAddress() + ":" + socketAddress.getPort();
 
-    monitorInterval = conf.getIntVar(ConfVars.HA_MONITOR_INTERVAL);
+    monitorInterval = conf.getIntVar(ConfVars.TAJO_MASTER_HA_MONITOR_INTERVAL);
   }
 
   private void initSystemDirectory() throws IOException {

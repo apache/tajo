@@ -112,7 +112,7 @@ public class TestHAServiceHDFSImpl  {
     conf.setVar(TajoConf.ConfVars.TAJO_MASTER_INFO_ADDRESS,
       masterAddress + ":" + NetUtils.getFreeSocketPort());
 
-    conf.setBoolVar(TajoConf.ConfVars.HA_ENABLE, true);
+    conf.setBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE, true);
 
     //Client API service RPC Server
     conf.setIntVar(TajoConf.ConfVars.MASTER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM, 2);

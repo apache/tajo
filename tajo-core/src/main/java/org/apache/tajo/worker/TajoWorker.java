@@ -34,7 +34,6 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.CatalogClient;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.service.TajoMasterInfo;
@@ -64,7 +63,6 @@ import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -356,7 +354,7 @@ public class TajoWorker extends CompositeService {
     startJvmPauseMonitor();
 
     tajoMasterInfo = new TajoMasterInfo();
-    if (systemConf.getBoolVar(TajoConf.ConfVars.HA_ENABLE)) {
+    if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
       tajoMasterInfo.setTajoMasterAddress(serviceTracker.getUmbilicalAddress());
       tajoMasterInfo.setWorkerResourceTrackerAddr(serviceTracker.getResourceTrackerAddress());
     } else {
@@ -428,16 +426,8 @@ public class TajoWorker extends CompositeService {
       return serviceTracker;
     }
 
-    public TajoWorkerManagerService getTajoWorkerManagerService() {
-      return tajoWorkerManagerService;
-    }
-
     public QueryMasterManagerService getQueryMasterManagerService() {
       return queryMasterManagerService;
-    }
-
-    public TajoWorkerClientService getTajoWorkerClientService() {
-      return tajoWorkerClientService;
     }
 
     public TaskRunnerManager getTaskRunnerManager() {

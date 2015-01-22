@@ -132,7 +132,7 @@ public class TajoHAAdmin {
       tajoClient = new TajoClientImpl(tajoConf);
     }
 
-    if (!tajoConf.getBoolVar(TajoConf.ConfVars.HA_ENABLE)) {
+    if (!tajoConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
       writer.write("HA is not enabled for this tajo cluster.");
     } else {
       switch (cmdType) {

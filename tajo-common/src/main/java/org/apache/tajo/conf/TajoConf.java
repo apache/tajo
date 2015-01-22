@@ -136,8 +136,8 @@ public class TajoConf extends Configuration {
     TAJO_MASTER_INFO_ADDRESS("tajo.master.info-http.address", "0.0.0.0:26080", Validators.networkAddr()),
 
     // High availability configurations
-    HA_ENABLE("tajo.ha.enable", false, Validators.bool()),
-    HA_MONITOR_INTERVAL("tajo.ha.monitor.interval", 5 * 1000), // 5 sec
+    TAJO_MASTER_HA_ENABLE("tajo.master.ha.enable", false, Validators.bool()),
+    TAJO_MASTER_HA_MONITOR_INTERVAL("tajo.master.ha.monitor.interval", 5 * 1000), // 5 sec
 
     // Service discovery
     DEFAULT_SERVICE_TRACKER_CLASS("tajo.discovery.service-tracker.class", BaseServiceTracker.class.getCanonicalName()),

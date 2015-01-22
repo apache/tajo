@@ -27,7 +27,7 @@ public class ServiceTrackerFactory {
     Class<ServiceTracker> trackerClass;
 
     try {
-      if (conf.getBoolVar(TajoConf.ConfVars.HA_ENABLE)) {
+      if (conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
         trackerClass = (Class<ServiceTracker>) conf.getClassVar(TajoConf.ConfVars.HA_SERVICE_TRACKER_CLASS);
       } else {
         trackerClass = (Class<ServiceTracker>) conf.getClassVar(TajoConf.ConfVars.DEFAULT_SERVICE_TRACKER_CLASS);

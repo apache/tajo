@@ -40,10 +40,8 @@ import com.google.protobuf.ServiceException;
 import org.apache.tajo.cli.tsql.TajoCli.TajoCliContext;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ha.HAServiceUtil;
-import org.apache.tajo.util.NetUtils;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 
 public class TajoHAClientUtil {
   /**
@@ -64,7 +62,7 @@ public class TajoHAClientUtil {
   public static TajoClient getTajoClient(TajoConf conf, TajoClient client,
       TajoCliContext context) throws IOException, ServiceException {
 
-    if (conf.getBoolVar(TajoConf.ConfVars.HA_ENABLE)) {
+    if (conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
 
       if (!HAServiceUtil.isMasterAlive(conf.getVar(
         TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS), conf)) {
