@@ -81,3 +81,6 @@ export TAJO_WORKER_STANDBY_MODE=true
 
 # Tajo PullServer mode. the default mode is standalone mode
 # export TAJO_PULLSERVER_STANDALONE=false
+
+# It must be required to use HBase
+# export HBASE_HOME=

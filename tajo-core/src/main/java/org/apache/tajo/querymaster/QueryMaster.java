@@ -395,8 +395,12 @@ public class QueryMaster extends CompositeService implements EventHandler {
       if (query != null) {
         QueryHistory queryHisory = query.getQueryHistory();
         if (queryHisory != null) {
-          query.context.getQueryMasterContext().getWorkerContext().
-              getTaskHistoryWriter().appendHistory(queryHisory);
+          try {
+            query.context.getQueryMasterContext().getWorkerContext().
+                getTaskHistoryWriter().appendAndFlush(queryHisory);
+          } catch (Throwable e) {
+            LOG.warn(e);
+          }
         }
       }
       if(workerContext.isYarnContainerMode()) {

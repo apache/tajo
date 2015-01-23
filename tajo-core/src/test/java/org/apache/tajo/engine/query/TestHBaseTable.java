@@ -111,6 +111,26 @@ public class TestHBaseTable extends QueryTestCaseBase {
     }
   }
 
+
+  @Test
+  public void testVerifyCreateHBaseTableWithHBaseConfiguration() throws Exception {
+    String hostName = InetAddress.getLocalHost().getHostName();
+    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
+    assertNotNull(zkPort);
+
+    try {
+      testingCluster.getHBaseUtil().getConf().set(HConstants.ZOOKEEPER_QUORUM, hostName);
+
+      executeString("CREATE TABLE hbase_mapped_table3 (col1 text, col2 text) " +
+        "USING hbase " +
+        "WITH ('table'='hbase_mapped_table3', 'columns'='col1:,col2:')").close();
+
+      testingCluster.getHBaseUtil().getConf().set(HConstants.ZOOKEEPER_QUORUM, null);
+    } catch (Exception e) {
+      assertFalse(e.getMessage().indexOf("HBase mapped table") >= 0);
+    }
+  }
+
   @Test
   public void testCreateHBaseTable() throws Exception {
     String hostName = InetAddress.getLocalHost().getHostName();
