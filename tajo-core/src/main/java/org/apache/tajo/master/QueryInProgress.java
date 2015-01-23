@@ -80,8 +80,12 @@ public class QueryInProgress {
 
   public synchronized void kill() {
     getQueryInfo().setQueryState(TajoProtos.QueryState.QUERY_KILLED);
-    if(queryMasterRpcClient != null){
-      queryMasterRpcClient.killQuery(null, queryId.getProto(), NullCallback.get());
+    if (queryMasterRpcClient != null) {
+      try {
+        queryMasterRpcClient.killQuery(null, queryId.getProto(), NullCallback.get());
+      } catch (Throwable e) {
+        catchException(e);
+      }
     }
   }
 
@@ -169,7 +173,7 @@ public class QueryInProgress {
     }
   }
 
-  public void catchException(Exception e) {
+  public void catchException(Throwable e) {
     LOG.error(e.getMessage(), e);
     queryInfo.setQueryState(TajoProtos.QueryState.QUERY_FAILED);
     queryInfo.setLastMessage(StringUtils.stringifyException(e));

@@ -54,10 +54,10 @@ public class CheckHadoopRuntimeVersionRule implements SelfDiagnosisRule {
   
   private int[] getVersion() {
     int[] version = new int[0];
-    String versionString = versionInfo.getProperty("version");
+    String versionString = versionInfo.getProperty("version").split("-")[0];
     
     if (versionString != null && !versionString.isEmpty()) {
-      Validators.patternMatch("\\d+\\.\\d+\\.\\d+").validate(versionString, true);
+      Validators.patternMatch("\\d+\\.\\d+\\.\\d+.*").validate(versionString, true);
       
       String[] versionArray = versionString.split("\\.");
       version = new int[versionArray.length];

@@ -21,9 +21,8 @@ package org.apache.tajo.engine.planner.physical;
 import com.google.common.collect.Lists;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.logical.ScanNode;
-import org.apache.tajo.storage.StorageManager;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -70,7 +69,7 @@ public class PartitionMergeScanExec extends PhysicalExec {
   @Override
   public Tuple next() throws IOException {
     Tuple tuple;
-    while (currentScanner != null) {
+    while (!context.isStopped() && currentScanner != null) {
       tuple = currentScanner.next();
 
       if (tuple != null) {

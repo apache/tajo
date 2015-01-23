@@ -203,7 +203,7 @@ public class ExternalSortExec extends SortExec {
 
     int chunkId = 0;
     long runStartTime = System.currentTimeMillis();
-    while ((tuple = child.next()) != null) { // partition sort start
+    while (!context.isStopped() && (tuple = child.next()) != null) { // partition sort start
       Tuple vtuple = new VTuple(tuple);
       inMemoryTable.add(vtuple);
       memoryConsumption += MemoryUtil.calculateMemorySize(vtuple);
