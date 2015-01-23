@@ -103,7 +103,11 @@ public class QueryInProgress {
       RpcConnectionPool.getPool().closeConnection(queryMasterRpc);
     }
 
-    masterContext.getHistoryWriter().appendHistory(queryInfo);
+    try {
+      masterContext.getHistoryWriter().appendAndFlush(queryInfo);
+    } catch (Throwable e) {
+      LOG.warn(e);
+    }
   }
 
   public boolean startQueryMaster() {

@@ -171,6 +171,9 @@ Release 0.10.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1289: History reader fails to get the query information after 
+    a successful query execution. (jinho)
+
     TAJO-1303: CDH cannot pass hadoop version check test.
     (Keuntae Park via jihun)
 
