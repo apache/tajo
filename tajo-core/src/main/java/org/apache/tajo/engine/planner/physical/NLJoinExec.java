@@ -67,7 +67,7 @@ public class NLJoinExec extends BinaryPhysicalExec {
   }
 
   public Tuple next() throws IOException {
-    for (;;) {
+    while (!context.isStopped()) {
       if (needNewOuter) {
         outerTuple = leftChild.next();
         if (outerTuple == null) {
@@ -94,6 +94,7 @@ public class NLJoinExec extends BinaryPhysicalExec {
         return outTuple;
       }
     }
+    return null;
   }
 
   @Override

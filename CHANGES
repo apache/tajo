@@ -27,6 +27,8 @@ Release 0.10.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1309: Add missing break point in physical operator. (jinho)
+
     TAJO-1307: HBaseStorageManager need to support for users to use
     hbase-site.xml file. (jaehwa)
 
