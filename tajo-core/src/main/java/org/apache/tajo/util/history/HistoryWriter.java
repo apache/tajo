@@ -73,7 +73,8 @@ public class HistoryWriter extends AbstractService {
   private TajoConf tajoConf;
   private HistoryCleaner historyCleaner;
   private boolean isMaster;
-  private short replication;
+  private short queryReplication;
+  private short taskReplication;
 
   public HistoryWriter(String processName, boolean isMaster) {
     super(HistoryWriter.class.getName() + ":" + processName);
@@ -88,7 +89,8 @@ public class HistoryWriter extends AbstractService {
     taskHistoryParentPath = tajoConf.getTaskHistoryDir(tajoConf);
     writerThread = new WriterThread();
     historyCleaner = new HistoryCleaner(tajoConf, isMaster);
-    replication = (short) tajoConf.getIntVar(TajoConf.ConfVars.HISTORY_REPLICATION);
+    queryReplication = (short) tajoConf.getIntVar(TajoConf.ConfVars.HISTORY_QUERY_REPLICATION);
+    taskReplication = (short) tajoConf.getIntVar(TajoConf.ConfVars.HISTORY_TASK_REPLICATION);
     super.serviceInit(conf);
   }
 
@@ -355,7 +357,7 @@ public class HistoryWriter extends AbstractService {
       FSDataOutputStream out = null;
       try {
         LOG.info("Saving query summary: " + queryHistoryFile);
-        out = fs.create(queryHistoryFile, replication);
+        out = fs.create(queryHistoryFile, queryReplication);
         out.write(queryHistory.toJson().getBytes(Bytes.UTF8_CHARSET));
       } finally {
         IOUtils.cleanup(LOG, out);
@@ -366,7 +368,7 @@ public class HistoryWriter extends AbstractService {
           Path path = new Path(queryHistoryFile.getParent(), stageHistory.getExecutionBlockId() + HISTORY_FILE_POSTFIX);
           out = null;
           try {
-            out = fs.create(path, replication);
+            out = fs.create(path, queryReplication);
             out.write(stageHistory.toTasksJson().getBytes(Bytes.UTF8_CHARSET));
             LOG.info("Saving query unit: " + path);
           } finally {
@@ -422,7 +424,7 @@ public class HistoryWriter extends AbstractService {
       querySummaryWriter.path = historyFile;
       querySummaryWriter.lastWritingTime = System.currentTimeMillis();
       LOG.info("Create query history file: " + historyFile);
-      querySummaryWriter.out = fs.create(historyFile, replication);
+      querySummaryWriter.out = fs.create(historyFile, queryReplication);
     }
 
     private void flushTaskHistories() {
@@ -476,7 +478,7 @@ public class HistoryWriter extends AbstractService {
         }
       }
       writerHolder.path = path;
-      return fs.create(path, false, 4096, replication, fs.getDefaultBlockSize(path));
+      return fs.create(path, false, 4096, taskReplication, fs.getDefaultBlockSize(path));
     }
   }
 
