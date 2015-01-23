@@ -26,12 +26,9 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.pullserver.retriever.FileChunk;
-import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.junit.*;
-
-import io.netty.channel.EventLoopGroup;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,12 +43,6 @@ public class TestFetcher {
   private String OUTPUT_DIR = TEST_DATA+"/out/";
   private TajoConf conf = new TajoConf();
   private TajoPullServerService pullServerService;
-  private static EventLoopGroup loopGroup;
-
-  @BeforeClass
-  public static void setUpClass() throws Exception {
-    loopGroup = RpcChannelFactory.createClientEventloopGroup("Fetcher", 2);
-  }
 
   @Before
   public void setUp() throws Exception {
@@ -65,13 +56,6 @@ public class TestFetcher {
     pullServerService = new TajoPullServerService();
     pullServerService.init(conf);
     pullServerService.start();
-  }
-
-  @AfterClass
-  public static void tearDownClass() throws Exception {
-    if (loopGroup != null) {
-      loopGroup.shutdownGracefully();
-    }
   }
 
   @After
@@ -104,7 +88,7 @@ public class TestFetcher {
     URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
     FileChunk storeChunk = new FileChunk(new File(OUTPUT_DIR + "data"), 0, 0);
     storeChunk.setFromRemote(true);
-    final Fetcher fetcher = new Fetcher(conf, uri, storeChunk, loopGroup);
+    final Fetcher fetcher = new Fetcher(conf, uri, storeChunk);
     FileChunk chunk = fetcher.get();
     assertNotNull(chunk);
     assertNotNull(chunk.getFile());
@@ -150,7 +134,7 @@ public class TestFetcher {
     URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
     FileChunk storeChunk = new FileChunk(new File(OUTPUT_DIR + "data"), 0, 0);
     storeChunk.setFromRemote(true);
-    final Fetcher fetcher = new Fetcher(conf, uri, storeChunk, loopGroup);
+    final Fetcher fetcher = new Fetcher(conf, uri, storeChunk);
     assertEquals(TajoProtos.FetcherState.FETCH_INIT, fetcher.getState());
 
     fetcher.get();
@@ -180,7 +164,7 @@ public class TestFetcher {
     URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
     FileChunk storeChunk = new FileChunk(new File(OUTPUT_DIR + "data"), 0, 0);
     storeChunk.setFromRemote(true);
-    final Fetcher fetcher = new Fetcher(conf, uri, storeChunk, loopGroup);
+    final Fetcher fetcher = new Fetcher(conf, uri, storeChunk);
     assertEquals(TajoProtos.FetcherState.FETCH_INIT, fetcher.getState());
 
     fetcher.get();
@@ -214,7 +198,7 @@ public class TestFetcher {
     URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
     FileChunk storeChunk = new FileChunk(new File(OUTPUT_DIR + "data"), 0, 0);
     storeChunk.setFromRemote(true);
-    final Fetcher fetcher = new Fetcher(conf, uri, storeChunk, loopGroup);
+    final Fetcher fetcher = new Fetcher(conf, uri, storeChunk);
     assertEquals(TajoProtos.FetcherState.FETCH_INIT, fetcher.getState());
 
     fetcher.get();
@@ -234,7 +218,7 @@ public class TestFetcher {
     URI uri = URI.create("http://127.0.0.1:" + pullServerService.getPort() + "/?" + params);
     FileChunk storeChunk = new FileChunk(new File(OUTPUT_DIR + "data"), 0, 0);
     storeChunk.setFromRemote(true);
-    final Fetcher fetcher = new Fetcher(conf, uri, storeChunk, loopGroup);
+    final Fetcher fetcher = new Fetcher(conf, uri, storeChunk);
     assertEquals(TajoProtos.FetcherState.FETCH_INIT, fetcher.getState());
 
     pullServerService.stop();

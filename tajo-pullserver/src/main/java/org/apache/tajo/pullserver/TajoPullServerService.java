@@ -230,7 +230,7 @@ public class TajoPullServerService extends AbstractService {
       int workerNum = conf.getInt("tajo.shuffle.rpc.server.worker-thread-num",
           Runtime.getRuntime().availableProcessors() * 2);
 
-      selector = RpcChannelFactory.createServerBootstrap("PullServerAuxService", workerNum);
+      selector = RpcChannelFactory.createServerChannelFactory("PullServerAuxService", workerNum);
 
       localFS = new LocalFileSystem();
 
@@ -729,9 +729,6 @@ public class TajoPullServerService extends AbstractService {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
         throws Exception {
       LOG.error(cause.getMessage(), cause);
-      if (ctx.channel().isActive()) {
-        sendError(ctx, cause.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR);
-      }
       //if channel.close() is not called, never closed files in this request
       ctx.close();
       accepted.remove(ctx.channel());

@@ -25,14 +25,11 @@ import org.apache.tajo.rpc.test.TestProtos.SumRequest;
 import org.apache.tajo.rpc.test.TestProtos.SumResponse;
 import org.apache.tajo.rpc.test.impl.DummyProtocolBlockingImpl;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-
-import io.netty.channel.EventLoopGroup;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -54,7 +51,6 @@ public class TestBlockingRpc {
   private BlockingInterface stub;
   private DummyProtocolBlockingImpl service;
   private int retries;
-  private static EventLoopGroup clientLoopGroup;
   
   @Retention(RetentionPolicy.RUNTIME)
   @Target(ElementType.METHOD)
@@ -109,11 +105,6 @@ public class TestBlockingRpc {
     }
     
   };
-
-  @BeforeClass
-  public static void setUpClass() throws Exception {
-    clientLoopGroup = RpcChannelFactory.createClientEventloopGroup(MESSAGE, 5);
-  }
   
   public void setUpRpcServer() throws Exception {
     service = new DummyProtocolBlockingImpl();
@@ -126,16 +117,13 @@ public class TestBlockingRpc {
     retries = 1;
 
     client = new BlockingRpcClient(DummyProtocol.class,
-        RpcUtils.getConnectAddress(server.getListenAddress()), clientLoopGroup, retries);
+        RpcUtils.getConnectAddress(server.getListenAddress()), retries);
     stub = client.getStub();
   }
 
   @AfterClass
   public static void tearDownClass() throws Exception {
-    if(clientLoopGroup != null){
-      clientLoopGroup.shutdownGracefully();
-      clientLoopGroup.terminationFuture();
-    }
+    RpcChannelFactory.shutdownGracefully();
   }
   
   public void tearDownRpcServer() throws Exception {
@@ -171,7 +159,7 @@ public class TestBlockingRpc {
   @Test
   @SetupRpcConnection(setupRpcClient=false)
   public void testRpcWithServiceCallable() throws Exception {
-    RpcConnectionPool pool = RpcConnectionPool.newPool(getClass().getSimpleName(), 2);
+    RpcConnectionPool pool = RpcConnectionPool.getPool();
     final SumRequest request = SumRequest.newBuilder()
         .setX1(1)
         .setX2(2)
@@ -250,8 +238,7 @@ public class TestBlockingRpc {
     });
     serverThread.start();
 
-    clientLoopGroup = RpcChannelFactory.createClientEventloopGroup(MESSAGE, 2);
-    client = new BlockingRpcClient(DummyProtocol.class, address, clientLoopGroup, retries);
+    client = new BlockingRpcClient(DummyProtocol.class, address, retries);
     stub = client.getStub();
 
     EchoMessage response = stub.echo(null, message);
@@ -266,7 +253,7 @@ public class TestBlockingRpc {
     try {
       int port = server.getListenAddress().getPort() + 1;
       client = new BlockingRpcClient(DummyProtocol.class,
-          RpcUtils.getConnectAddress(new InetSocketAddress("127.0.0.1", port)), clientLoopGroup, retries);
+          RpcUtils.getConnectAddress(new InetSocketAddress("127.0.0.1", port)), retries);
       client.close();
       fail("Connection should be failed.");
     } catch (ConnectException ce) {
@@ -343,7 +330,7 @@ public class TestBlockingRpc {
   public void testUnresolvedAddress() throws Exception {
     String hostAndPort = RpcUtils.normalizeInetSocketAddress(server.getListenAddress());
     client = new BlockingRpcClient(DummyProtocol.class,
-        RpcUtils.createUnresolved(hostAndPort), clientLoopGroup, retries);
+        RpcUtils.createUnresolved(hostAndPort), retries);
     BlockingInterface stub = client.getStub();
 
     EchoMessage message = EchoMessage.newBuilder()

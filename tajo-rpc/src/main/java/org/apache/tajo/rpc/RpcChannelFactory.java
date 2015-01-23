@@ -26,6 +26,7 @@ import org.apache.commons.logging.LogFactory;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.concurrent.Future;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +38,7 @@ public final class RpcChannelFactory {
   private static final int DEFAULT_WORKER_NUM = Runtime.getRuntime().availableProcessors() * 2;
   
   private static EventLoopGroup loopGroup;
+  private static final Object lockObjectForLoopGroup = new Object();
   private static AtomicInteger clientCount = new AtomicInteger(0);
   private static AtomicInteger serverCount = new AtomicInteger(0);
 
@@ -51,6 +53,10 @@ public final class RpcChannelFactory {
     return getSharedClientEventloopGroup(DEFAULT_WORKER_NUM);
   }
   
+  protected static boolean isClientLoopGroupShuttingDown() {
+    return (loopGroup == null || loopGroup.isShuttingDown());
+  }
+  
   /**
   * make this factory static thus all clients can share its thread pool.
   * NioClientSocketChannelFactory has only one method newChannel() visible for user, which is thread-safe
@@ -59,14 +65,19 @@ public final class RpcChannelFactory {
   */
   public static synchronized EventLoopGroup getSharedClientEventloopGroup(int workerNum){
     //shared woker and boss pool
-    if(loopGroup == null){
-      loopGroup = createClientEventloopGroup("Internal-Client", workerNum);
+    if (isClientLoopGroupShuttingDown()) {
+      synchronized (lockObjectForLoopGroup) {
+        if (isClientLoopGroupShuttingDown()) {
+          loopGroup = createClientEventloopGroup("Internal-Client", workerNum);
+        }
+      }
     }
+    
     return loopGroup;
   }
 
   // Client must release the external resources
-  public static synchronized EventLoopGroup createClientEventloopGroup(String name, int workerNum) {
+  protected static synchronized EventLoopGroup createClientEventloopGroup(String name, int workerNum) {
     name = name + "-" + clientCount.incrementAndGet();
     if(LOG.isDebugEnabled()){
       LOG.debug("Create " + name + " ClientEventLoopGroup. Worker:" + workerNum);
@@ -79,10 +90,10 @@ public final class RpcChannelFactory {
   }
 
   // Client must release the external resources
-  public static synchronized ServerBootstrap createServerBootstrap(String name, int workerNum) {
+  public static synchronized ServerBootstrap createServerChannelFactory(String name, int workerNum) {
     name = name + "-" + serverCount.incrementAndGet();
     if(LOG.isInfoEnabled()){
-      LOG.info("Create " + name + " ServerBootstrap. Worker:" + workerNum);
+      LOG.info("Create " + name + " ServerSocketChannelFactory. Worker:" + workerNum);
     }
     ThreadFactoryBuilder builder = new ThreadFactoryBuilder();
     ThreadFactory bossFactory = builder.setNameFormat(name + " Server Boss #%d").build();
@@ -95,15 +106,29 @@ public final class RpcChannelFactory {
     
     return new ServerBootstrap().group(bossGroup, workerGroup);
   }
+  
+  public static void rebuildSelectors() {
+    if (loopGroup != null && loopGroup instanceof NioEventLoopGroup) {
+      synchronized (lockObjectForLoopGroup) {
+        if (loopGroup != null && loopGroup instanceof NioEventLoopGroup) {
+          NioEventLoopGroup nioEventLoopGroup = (NioEventLoopGroup) loopGroup;
+          nioEventLoopGroup.rebuildSelectors();
+        }
+      }
+    }
+  }
 
-  public static synchronized void shutdown(){
+  public static void shutdownGracefully(){
     if(LOG.isDebugEnabled()) {
       LOG.debug("Shutdown Shared RPC Pool");
     }
+    
     if (loopGroup != null) {
-      loopGroup.shutdownGracefully();
-      loopGroup.terminationFuture().awaitUninterruptibly(10, TimeUnit.SECONDS);
+      synchronized(lockObjectForLoopGroup) {
+        loopGroup.shutdownGracefully();
+        loopGroup.terminationFuture().awaitUninterruptibly(10, TimeUnit.SECONDS);
+        loopGroup = null;
+      }
     }
-    loopGroup = null;
   }
 }

@@ -24,6 +24,7 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.pullserver.retriever.FileChunk;
+import org.apache.tajo.rpc.RpcChannelFactory;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -35,7 +36,6 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.DefaultHttpRequest;
 import io.netty.handler.codec.http.HttpClientCodec;
@@ -84,7 +84,7 @@ public class Fetcher {
 
   private Bootstrap bootstrap;
 
-  public Fetcher(TajoConf conf, URI uri, FileChunk chunk, EventLoopGroup loopGroup) {
+  public Fetcher(TajoConf conf, URI uri, FileChunk chunk) {
     this.uri = uri;
     this.fileChunk = chunk;
     this.useLocalFile = !chunk.fromRemote();
@@ -104,7 +104,7 @@ public class Fetcher {
 
     if (!useLocalFile) {
       bootstrap = new Bootstrap();
-      bootstrap.group(loopGroup);
+      bootstrap.group(RpcChannelFactory.getSharedClientEventloopGroup());
       bootstrap.channel(NioSocketChannel.class);
       bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000); // set 5 sec
       bootstrap.option(ChannelOption.SO_RCVBUF, 1048576); // set 1M
@@ -147,7 +147,7 @@ public class Fetcher {
     LOG.info("Get real fetch from remote host");
     this.startTime = System.currentTimeMillis();
     this.state = TajoProtos.FetcherState.FETCH_FETCHING;
-    ChannelFuture future = null, channelFuture = null;
+    ChannelFuture future = null;
     try {
       future = bootstrap.clone().connect(new InetSocketAddress(host, port))
               .addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
@@ -169,10 +169,12 @@ public class Fetcher {
 
       LOG.info("Status: " + getState() + ", URI:" + uri);
       // Send the HTTP request.
-      channelFuture = channel.writeAndFlush(request);
+      ChannelFuture channelFuture = channel.writeAndFlush(request);
 
       // Wait for the server to close the connection.
       channel.closeFuture().awaitUninterruptibly();
+
+      channelFuture.addListener(ChannelFutureListener.CLOSE);
 
       fileChunk.setLength(fileChunk.getFile().length());
       return fileChunk;
@@ -180,10 +182,6 @@ public class Fetcher {
       if(future != null){
         // Close the channel to exit.
         future.channel().close();
-      }
-
-      if (channelFuture != null) {
-        channelFuture.channel().close();
       }
 
       this.finishTime = System.currentTimeMillis();
@@ -223,19 +221,18 @@ public class Fetcher {
                 .append(", VERSION: ").append(response.getProtocolVersion())
                 .append(", HEADER: ");
           }
-
-          this.length = HttpHeaders.getContentLength(response);
-
           if (!response.headers().names().isEmpty()) {
             for (String name : response.headers().names()) {
               for (String value : response.headers().getAll(name)) {
                 if (LOG.isDebugEnabled()) {
                   sb.append(name).append(" = ").append(value);
                 }
+                if (this.length == -1 && name.equals("Content-Length")) {
+                  this.length = Long.parseLong(value);
+                }
               }
             }
           }
-
           if (LOG.isDebugEnabled()) {
             LOG.debug(sb.toString());
           }

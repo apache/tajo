@@ -61,7 +61,6 @@ public class TestAsyncRpc {
   static AsyncRpcClient client;
   static Interface stub;
   static DummyProtocolAsyncImpl service;
-  static EventLoopGroup clientLoopGroup;
   int retries;
   
   @Retention(RetentionPolicy.RUNTIME)
@@ -117,11 +116,6 @@ public class TestAsyncRpc {
     }
     
   };
-
-  @BeforeClass
-  public static void setUpClass() throws Exception {
-    clientLoopGroup = RpcChannelFactory.createClientEventloopGroup("TestAsyncRpc", 2);
-  }
   
   public void setUpRpcServer() throws Exception {
     service = new DummyProtocolAsyncImpl();
@@ -134,16 +128,13 @@ public class TestAsyncRpc {
     retries = 1;
 
     client = new AsyncRpcClient(DummyProtocol.class,
-        RpcUtils.getConnectAddress(server.getListenAddress()), clientLoopGroup, retries);
+        RpcUtils.getConnectAddress(server.getListenAddress()), retries);
     stub = client.getStub();
   }
 
   @AfterClass
   public static void tearDownClass() throws Exception {
-    if (clientLoopGroup != null) {
-      clientLoopGroup.shutdownGracefully();
-      clientLoopGroup.terminationFuture().awaitUninterruptibly(10, TimeUnit.SECONDS);
-    }
+    RpcChannelFactory.shutdownGracefully();
   }
   
   public void tearDownRpcServer() throws Exception {
@@ -306,7 +297,7 @@ public class TestAsyncRpc {
     });
     serverThread.start();
 
-    client = new AsyncRpcClient(DummyProtocol.class, address, clientLoopGroup, retries);
+    client = new AsyncRpcClient(DummyProtocol.class, address, retries);
     stub = client.getStub();
     stub.echo(future.getController(), echoMessage, future);
 
@@ -320,7 +311,7 @@ public class TestAsyncRpc {
     InetSocketAddress address = new InetSocketAddress("test", 0);
     boolean expected = false;
     try {
-      new AsyncRpcClient(DummyProtocol.class, address, clientLoopGroup, retries);
+      new AsyncRpcClient(DummyProtocol.class, address, retries);
       fail();
     } catch (ConnectTimeoutException e) {
       expected = true;
@@ -335,8 +326,7 @@ public class TestAsyncRpc {
   public void testUnresolvedAddress() throws Exception {
     String hostAndPort = RpcUtils.normalizeInetSocketAddress(server.getListenAddress());
     client = new AsyncRpcClient(DummyProtocol.class,
-        RpcUtils.createUnresolved(hostAndPort), 
-        RpcChannelFactory.createClientEventloopGroup("TestAsyncRpc", 2), retries);
+        RpcUtils.createUnresolved(hostAndPort), retries);
     Interface stub = client.getStub();
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();

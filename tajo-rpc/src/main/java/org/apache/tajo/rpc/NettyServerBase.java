@@ -68,7 +68,7 @@ public class NettyServerBase {
   }
 
   public void init(ChannelInitializer<Channel> initializer, int workerNum) {
-    bootstrap = RpcChannelFactory.createServerBootstrap(serviceName, workerNum);
+    bootstrap = RpcChannelFactory.createServerChannelFactory(serviceName, workerNum);
 
     this.initializer = initializer;
     bootstrap

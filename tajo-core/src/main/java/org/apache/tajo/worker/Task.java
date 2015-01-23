@@ -56,7 +56,6 @@ import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.NetUtils;
 
-import io.netty.channel.EventLoopGroup;
 import io.netty.handler.codec.http.QueryStringDecoder;
 
 import java.io.File;
@@ -658,7 +657,6 @@ public class Task {
                                         List<FetchImpl> fetches) throws IOException {
 
     if (fetches.size() > 0) {
-      EventLoopGroup loopGroup = executionBlockContext.getShuffleEventLoopGroup();
       Path inputDir = executionBlockContext.getLocalDirAllocator().
           getLocalPathToRead(getTaskAttemptDir(ctx.getTaskId()).toString(), systemConf);
 
@@ -709,7 +707,7 @@ public class Task {
           // If we decide that intermediate data should be really fetched from a remote host, storeChunk
           // represents a complete file. Otherwise, storeChunk may represent a complete file or only a part of it
           storeChunk.setEbId(f.getName());
-          Fetcher fetcher = new Fetcher(systemConf, uri, storeChunk, loopGroup);
+          Fetcher fetcher = new Fetcher(systemConf, uri, storeChunk);
           LOG.info("Create a new Fetcher with storeChunk:" + storeChunk.toString());
           runnerList.add(fetcher);
           i++;

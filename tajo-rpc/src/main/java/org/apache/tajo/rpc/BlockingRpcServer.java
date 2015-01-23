@@ -23,12 +23,15 @@ import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.RpcController;
 
-import io.netty.channel.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelHandler.Sharable;
 
 import java.lang.reflect.Method;
@@ -128,7 +131,7 @@ public class BlockingRpcServer extends NettyServerBase {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
       if (cause instanceof RemoteCallException) {
         RemoteCallException callException = (RemoteCallException) cause;
-        ctx.writeAndFlush(callException.getResponse()).addListener(ChannelFutureListener.CLOSE);
+        ctx.writeAndFlush(callException.getResponse());
       }
       ctx.close();
     }

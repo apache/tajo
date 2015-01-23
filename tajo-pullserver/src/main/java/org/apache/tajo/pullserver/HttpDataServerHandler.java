@@ -100,6 +100,25 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
       }
 
       FileChunk[] file = chunks.toArray(new FileChunk[chunks.size()]);
+      // try {
+      // file = retriever.handle(ctx, request);
+      // } catch (FileNotFoundException fnf) {
+      // LOG.error(fnf);
+      // sendError(ctx, NOT_FOUND);
+      // return;
+      // } catch (IllegalArgumentException iae) {
+      // LOG.error(iae);
+      // sendError(ctx, BAD_REQUEST);
+      // return;
+      // } catch (FileAccessForbiddenException fafe) {
+      // LOG.error(fafe);
+      // sendError(ctx, FORBIDDEN);
+      // return;
+      // } catch (IOException ioe) {
+      // LOG.error(ioe);
+      // sendError(ctx, INTERNAL_SERVER_ERROR);
+      // return;
+      // }
 
       // Write the content.
       if (file == null) {
@@ -158,6 +177,7 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
       return null;
     }
 
+    ChannelFuture writeFuture;
     ChannelFuture lastContentFuture;
     if (ctx.pipeline().get(SslHandler.class) != null) {
       // Cannot use zero-copy with HTTPS.
@@ -167,8 +187,15 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
       // No encryption - use zero-copy.
       final FileRegion region = new DefaultFileRegion(raf.getChannel(),
           file.startOffset(), file.length());
-      ctx.write(region);
+      writeFuture = ctx.write(region);
       lastContentFuture = ctx.write(LastHttpContent.EMPTY_LAST_CONTENT);
+      writeFuture.addListener(new ChannelFutureListener() {
+        public void operationComplete(ChannelFuture future) {
+          if (region.refCnt() > 0) {
+            region.release();
+          }
+        }
+      });
     }
 
     return lastContentFuture;

@@ -401,6 +401,7 @@ public class TajoMaster extends CompositeService {
     }
 
     if(pauseMonitor != null) pauseMonitor.stop();
+    RpcChannelFactory.shutdownGracefully();
     super.stop();
 
     LOG.info("Tajo Master main thread exiting");
@@ -573,7 +574,7 @@ public class TajoMaster extends CompositeService {
         LOG.info("TajoMaster received SIGINT Signal");
         LOG.info("============================================");
         stop();
-        RpcChannelFactory.shutdown();
+        RpcChannelFactory.shutdownGracefully();
       }
     }
   }

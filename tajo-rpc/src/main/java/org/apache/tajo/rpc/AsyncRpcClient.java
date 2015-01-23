@@ -33,7 +33,6 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.ConnectTimeoutException;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.util.concurrent.GenericFutureListener;
 
@@ -66,7 +65,7 @@ public class AsyncRpcClient extends NettyClientBase {
    * new an instance through this constructor.
    */
   AsyncRpcClient(final Class<?> protocol,
-                        final InetSocketAddress addr, EventLoopGroup loopGroup, int retries)
+                        final InetSocketAddress addr, int retries)
       throws ClassNotFoundException, NoSuchMethodException, ConnectTimeoutException {
 
     this.protocol = protocol;
@@ -78,7 +77,7 @@ public class AsyncRpcClient extends NettyClientBase {
     this.handler = new ClientChannelInboundHandler();
     initializer = new ProtoChannelInitializer(handler,
         RpcResponse.getDefaultInstance());
-    super.init(addr, initializer, loopGroup, retries);
+    super.init(addr, initializer, retries);
     rpcChannel = new ProxyRpcChannel();
     this.key = new RpcConnectionKey(addr, protocol, true);
   }

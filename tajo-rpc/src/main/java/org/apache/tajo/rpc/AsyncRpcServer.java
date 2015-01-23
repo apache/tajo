@@ -24,12 +24,15 @@ import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.Service;
 
-import io.netty.channel.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelHandler.Sharable;
 
 import java.lang.reflect.Method;
@@ -132,7 +135,7 @@ public class AsyncRpcServer extends NettyServerBase {
         throws Exception{
       if (cause instanceof RemoteCallException) {
         RemoteCallException callException = (RemoteCallException) cause;
-        ctx.writeAndFlush(callException.getResponse()).addListener(ChannelFutureListener.CLOSE);
+        ctx.writeAndFlush(callException.getResponse());
       } else {
         LOG.error(cause.getMessage());
       }

@@ -22,7 +22,6 @@ import com.google.common.base.Objects;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import io.netty.channel.ConnectTimeoutException;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.util.concurrent.GlobalEventExecutor;
@@ -42,33 +41,29 @@ public class RpcConnectionPool {
   private ChannelGroup accepted = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
   private static RpcConnectionPool instance;
-  private final EventLoopGroup clientLoopGroup;
 
   public final static int RPC_RETRIES = 3;
 
-  private RpcConnectionPool(EventLoopGroup loopGroup) {
-    this.clientLoopGroup =  loopGroup;
+  private RpcConnectionPool() {
   }
 
   public synchronized static RpcConnectionPool getPool() {
     if(instance == null) {
       InternalLoggerFactory.setDefaultFactory(new CommonsLoggerFactory());
-      instance = new RpcConnectionPool(RpcChannelFactory.getSharedClientEventloopGroup());
+      instance = new RpcConnectionPool();
     }
     return instance;
-  }
-
-  public synchronized static RpcConnectionPool newPool(String poolName, int workerNum) {
-    return new RpcConnectionPool(RpcChannelFactory.createClientEventloopGroup(poolName, workerNum));
   }
 
   private NettyClientBase makeConnection(RpcConnectionKey rpcConnectionKey)
       throws NoSuchMethodException, ClassNotFoundException, ConnectTimeoutException {
     NettyClientBase client;
     if(rpcConnectionKey.asyncMode) {
-      client = new AsyncRpcClient(rpcConnectionKey.protocolClass, rpcConnectionKey.addr, clientLoopGroup, RPC_RETRIES);
+      client = new AsyncRpcClient(rpcConnectionKey.protocolClass, rpcConnectionKey.addr, 
+          RPC_RETRIES);
     } else {
-      client = new BlockingRpcClient(rpcConnectionKey.protocolClass, rpcConnectionKey.addr, clientLoopGroup, RPC_RETRIES);
+      client = new BlockingRpcClient(rpcConnectionKey.protocolClass, rpcConnectionKey.addr, 
+          RPC_RETRIES);
     }
     accepted.add(client.getChannel());
     return client;
@@ -161,10 +156,7 @@ public class RpcConnectionPool {
 
   public synchronized void shutdown(){
     close();
-    if(clientLoopGroup != null){
-      clientLoopGroup.shutdownGracefully();
-      clientLoopGroup.terminationFuture().awaitUninterruptibly(10, TimeUnit.SECONDS);
-    }
+    RpcChannelFactory.shutdownGracefully();
   }
 
   static class RpcConnectionKey {

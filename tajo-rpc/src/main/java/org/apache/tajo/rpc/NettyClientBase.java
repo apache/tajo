@@ -40,7 +40,6 @@ public abstract class NettyClientBase implements Closeable {
   private int numRetries;
 
   protected Bootstrap bootstrap;
-  private EventLoopGroup loopGroup;
   private ChannelFuture channelFuture;
 
   public NettyClientBase() {
@@ -49,18 +48,17 @@ public abstract class NettyClientBase implements Closeable {
   public abstract <T> T getStub();
   public abstract RpcConnectionPool.RpcConnectionKey getKey();
   
-  public void init(InetSocketAddress addr, ChannelInitializer<Channel> initializer, EventLoopGroup loopGroup, 
+  public void init(InetSocketAddress addr, ChannelInitializer<Channel> initializer, 
       int numRetries) throws ConnectTimeoutException {
     this.numRetries = numRetries;
     
-    init(addr, initializer, loopGroup);
+    init(addr, initializer);
   }
 
-  public void init(InetSocketAddress addr, ChannelInitializer<Channel> initializer, EventLoopGroup loopGroup)
+  public void init(InetSocketAddress addr, ChannelInitializer<Channel> initializer)
       throws ConnectTimeoutException {
-    this.loopGroup = loopGroup;
     this.bootstrap = new Bootstrap();
-    this.bootstrap.group(this.loopGroup)
+    this.bootstrap
       .channel(NioSocketChannel.class)
       .handler(initializer)
       .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
@@ -73,7 +71,8 @@ public abstract class NettyClientBase implements Closeable {
 
   private void connectUsingNetty(InetSocketAddress address, GenericFutureListener<ChannelFuture> listener) {
 
-    this.channelFuture = bootstrap.clone().connect(address)
+    this.channelFuture = bootstrap.clone().group(RpcChannelFactory.getSharedClientEventloopGroup())
+            .connect(address)
             .addListener(listener);
   }
   
@@ -117,7 +116,7 @@ public abstract class NettyClientBase implements Closeable {
         if (numRetries > retryCount.getAndIncrement()) {
           final GenericFutureListener<ChannelFuture> currentListener = this;
 
-          loopGroup.schedule(new Runnable() {
+          RpcChannelFactory.getSharedClientEventloopGroup().schedule(new Runnable() {
             @Override
             public void run() {
               connectUsingNetty(address, currentListener);
@@ -156,7 +155,7 @@ public abstract class NettyClientBase implements Closeable {
   @Override
   public void close() {
     if (channelFuture != null && getChannel().isActive()) {
-      getChannel().close().awaitUninterruptibly(10, TimeUnit.SECONDS);
+      getChannel().close().awaitUninterruptibly();
     }
 
     if (this.bootstrap != null) {

@@ -185,12 +185,6 @@ public class ExecutionBlockContext {
     tasks.clear();
 
     resource.release();
-
-    try {
-      releaseShuffleEventLoopGroup();
-    } catch (Throwable e) {
-      LOG.error(e.getMessage(), e);
-    }
   }
 
   public TajoConf getConf() {
@@ -270,21 +264,6 @@ public class ExecutionBlockContext {
 
   public TajoWorker.WorkerContext getWorkerContext(){
     return manager.getWorkerContext();
-  }
-
-  protected EventLoopGroup getShuffleEventLoopGroup(){
-    if(loopGroup == null) {
-      int workerNum = getConf().getIntVar(TajoConf.ConfVars.SHUFFLE_RPC_CLIENT_WORKER_THREAD_NUM);
-      loopGroup = RpcChannelFactory.createClientEventloopGroup("Fetcher", workerNum);
-    }
-    return loopGroup;
-  }
-
-  protected void releaseShuffleEventLoopGroup(){
-    if(loopGroup != null) {
-      loopGroup.shutdownGracefully();
-      loopGroup = null;
-    }
   }
 
   private void sendExecutionBlockReport(ExecutionBlockReport reporter) throws Exception {

@@ -107,7 +107,7 @@ public class SessionConnection implements Closeable {
     this.tajoMasterAddr = addr;
     int workerNum = conf.getIntVar(TajoConf.ConfVars.RPC_CLIENT_WORKER_THREAD_NUM);
     // Don't share connection pool per client
-    connPool = RpcConnectionPool.newPool(getClass().getSimpleName(), workerNum);
+    connPool = RpcConnectionPool.getPool();
     userInfo = UserRoleInfo.getCurrentUser();
     this.baseDatabase = baseDatabase != null ? baseDatabase : null;
   }
