@@ -237,6 +237,34 @@ public class TestSortQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testSortOnNullColumn3() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("name", Type.TEXT);
+    String[] data = new String[]{ "1|111", "2|\\N", "3|333" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select * from table11 order by name null first");
+      String ascExpected = "id,name\n" +
+          "-------------------------------\n" +
+          "2,null\n" +
+          "1,111\n" +
+          "3,333\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+  }
+
+  @Test
   public final void testSortOnUnicodeTextAsc() throws Exception {
     try {
       testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "2");

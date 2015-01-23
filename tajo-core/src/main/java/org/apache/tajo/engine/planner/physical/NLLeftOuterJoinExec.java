@@ -73,7 +73,7 @@ public class NLLeftOuterJoinExec extends BinaryPhysicalExec {
   }
 
   public Tuple next() throws IOException {
-    for (;;) {
+    while (!context.isStopped()) {
       if (needNextRightTuple) {
         leftTuple = leftChild.next();
         if (leftTuple == null) {
@@ -112,6 +112,7 @@ public class NLLeftOuterJoinExec extends BinaryPhysicalExec {
         return outTuple;
       }
     }
+    return null;
   }
 
   @Override

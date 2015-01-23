@@ -109,7 +109,7 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
   public Tuple next() throws IOException {
     Tuple previous;
 
-    for (;;) {
+    while (!context.isStopped()) {
       boolean newRound = false;
       if((posRightTupleSlots == -1) && (posLeftTupleSlots == -1)) {
         newRound = true;
@@ -313,6 +313,7 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
         }
       } // the second if end false
     } // for
+    return null;
   }
 
 

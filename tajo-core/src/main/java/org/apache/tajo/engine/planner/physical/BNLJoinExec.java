@@ -128,7 +128,7 @@ public class BNLJoinExec extends BinaryPhysicalExec {
       rightEnd = true;
     }
 
-    while (true) {
+    while (!context.isStopped()) {
       if (!rightIterator.hasNext()) { // if leftIterator ended
         if (leftIterator.hasNext()) { // if rightTupleslot remains
           leftTuple = leftIterator.next();
@@ -201,6 +201,7 @@ public class BNLJoinExec extends BinaryPhysicalExec {
         return outputTuple;
       }
     }
+    return null;
   }
 
   @Override
