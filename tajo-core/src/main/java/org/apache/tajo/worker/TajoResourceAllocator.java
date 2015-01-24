@@ -129,7 +129,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
     for(ContainerProxy eachProxy: list) {
       try {
         eachProxy.stopContainer();
-      } catch (Exception e) {
+      } catch (Throwable e) {
         LOG.warn(e.getMessage());
       }
     }
@@ -279,7 +279,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
         tmClient = connPool.getConnection(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
         QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
         masterClientService.allocateWorkerResources(null, request, callBack);
-      } catch (Exception e) {
+      } catch (Throwable e) {
         LOG.error(e.getMessage(), e);
       } finally {
         connPool.releaseConnection(tmClient);
@@ -341,7 +341,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
               containerIds.add(eachContainer.getId());
             }
             TajoContainerProxy.releaseWorkerResource(queryTaskContext, executionBlockId, containerIds);
-          } catch (Exception e) {
+          } catch (Throwable e) {
             LOG.error(e.getMessage(), e);
           }
           return;

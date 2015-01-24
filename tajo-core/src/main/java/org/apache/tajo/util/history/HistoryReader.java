@@ -24,10 +24,12 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.TajoWorkerProtocol.TaskHistoryProto;
 import org.apache.tajo.master.QueryInfo;
+import org.apache.tajo.util.Bytes;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -56,30 +58,33 @@ public class HistoryReader {
     List<QueryInfo> queryInfos = new ArrayList<QueryInfo>();
 
     FileSystem fs = HistoryWriter.getNonCrcFileSystem(historyParentPath, tajoConf);
-    if (!fs.exists(historyParentPath)) {
+    try {
+      if (!fs.exists(historyParentPath)) {
+        return queryInfos;
+      }
+    } catch (Throwable e){
       return queryInfos;
     }
+
     FileStatus[] files = fs.listStatus(historyParentPath);
     if (files == null || files.length == 0) {
       return queryInfos;
     }
 
     for (FileStatus eachDateFile: files) {
-      if (eachDateFile.isFile()) {
+      Path queryListPath = new Path(eachDateFile.getPath(), HistoryWriter.QUERY_LIST);
+      if (eachDateFile.isFile() || !fs.exists(queryListPath)) {
         continue;
       }
-      FileStatus[] dateFiles = fs.listStatus(new Path(eachDateFile.getPath(), HistoryWriter.QUERY_LIST));
+
+      FileStatus[] dateFiles = fs.listStatus(queryListPath);
       if (dateFiles == null || dateFiles.length == 0) {
         continue;
       }
 
       for (FileStatus eachFile: dateFiles) {
-        if (eachFile.isDirectory()) {
-          continue;
-        }
-
         Path path = eachFile.getPath();
-        if (!path.getName().endsWith(HistoryWriter.HISTORY_FILE_POSTFIX)) {
+        if (eachFile.isDirectory() || !path.getName().endsWith(HistoryWriter.HISTORY_FILE_POSTFIX)) {
           continue;
         }
 
@@ -94,7 +99,7 @@ public class HistoryReader {
               buf = new byte[length];
             }
             in.readFully(buf, 0, length);
-            String queryInfoJson = new String(buf, 0, length);
+            String queryInfoJson = new String(buf, 0, length, Bytes.UTF8_CHARSET);
             QueryInfo queryInfo = QueryInfo.fromJson(queryInfoJson);
             if (keyword != null) {
               if (queryInfo.getSql().indexOf(keyword) >= 0) {
@@ -105,10 +110,10 @@ public class HistoryReader {
             }
           }
         } catch (EOFException e) {
-        } catch (Exception e) {
-          LOG.error("Reading error:" + path + ", " +e.getMessage(), e);
+        } catch (Throwable e) {
+          LOG.warn("Reading error:" + path + ", " +e.getMessage());
         } finally {
-          in.close();
+          IOUtils.cleanup(LOG, in);
         }
       }
     }
@@ -178,7 +183,7 @@ public class HistoryReader {
 
       in.readFully(buf, 0, buf.length);
 
-      return QueryHistory.fromJson(new String(buf));
+      return QueryHistory.fromJson(new String(buf, Bytes.UTF8_CHARSET));
     } finally {
       if (in != null) {
         in.close();
@@ -210,7 +215,7 @@ public class HistoryReader {
 
       in.readFully(buf, 0, buf.length);
 
-      return StageHistory.fromJsonTasks(new String(buf));
+      return StageHistory.fromJsonTasks(new String(buf, Bytes.UTF8_CHARSET));
     } finally {
       if (in != null) {
         in.close();

@@ -103,7 +103,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
       int partId;
       int tupleCount = 0;
       long numRows = 0;
-      while ((tuple = child.next()) != null) {
+      while (!context.isStopped() && (tuple = child.next()) != null) {
         tupleCount++;
         numRows++;
 

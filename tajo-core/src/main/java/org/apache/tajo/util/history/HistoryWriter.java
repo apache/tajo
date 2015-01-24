@@ -18,19 +18,26 @@
 
 package org.apache.tajo.util.history;
 
+import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.QueryInfo;
+import org.apache.tajo.util.Bytes;
 import org.apache.tajo.worker.TaskHistory;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -50,7 +57,8 @@ public class HistoryWriter extends AbstractService {
   public static final String QUERY_DETAIL = "query-detail";
   public static final String HISTORY_FILE_POSTFIX = ".hist";
 
-  private final LinkedBlockingQueue<History> historyQueue = new LinkedBlockingQueue<History>();
+  private final LinkedBlockingQueue<WriterFuture<WriterHolder>>
+      historyQueue = new LinkedBlockingQueue<WriterFuture<WriterHolder>>();
   // key: yyyyMMddHH
   private Map<String, WriterHolder> taskWriters = new HashMap<String, WriterHolder>();
 
@@ -65,6 +73,8 @@ public class HistoryWriter extends AbstractService {
   private TajoConf tajoConf;
   private HistoryCleaner historyCleaner;
   private boolean isMaster;
+  private short queryReplication;
+  private short taskReplication;
 
   public HistoryWriter(String processName, boolean isMaster) {
     super(HistoryWriter.class.getName() + ":" + processName);
@@ -79,31 +89,25 @@ public class HistoryWriter extends AbstractService {
     taskHistoryParentPath = tajoConf.getTaskHistoryDir(tajoConf);
     writerThread = new WriterThread();
     historyCleaner = new HistoryCleaner(tajoConf, isMaster);
+    queryReplication = (short) tajoConf.getIntVar(TajoConf.ConfVars.HISTORY_QUERY_REPLICATION);
+    taskReplication = (short) tajoConf.getIntVar(TajoConf.ConfVars.HISTORY_TASK_REPLICATION);
     super.serviceInit(conf);
   }
 
   @Override
   public void serviceStop() throws Exception {
-    for (WriterHolder eachWriter : taskWriters.values()) {
-      if (eachWriter.out != null) {
-        try {
-          eachWriter.out.close();
-        } catch (Exception err) {
-          LOG.error(err.getMessage(), err);
-        }
-      }
+    if(stopped.getAndSet(true)){
+      return;
     }
+
+    for (WriterHolder eachWriter : taskWriters.values()) {
+      IOUtils.cleanup(LOG, eachWriter);
+    }
+
     taskWriters.clear();
-    stopped.set(true);
     writerThread.interrupt();
 
-    if (querySummaryWriter != null && querySummaryWriter.out != null) {
-      try {
-        querySummaryWriter.out.close();
-      } catch (Exception err) {
-        LOG.error(err.getMessage(), err);
-      }
-    }
+    IOUtils.cleanup(LOG, querySummaryWriter);
 
     if (historyCleaner != null) {
       historyCleaner.doStop();
@@ -117,10 +121,53 @@ public class HistoryWriter extends AbstractService {
     historyCleaner.start();
   }
 
-  public void appendHistory(History history) {
-    synchronized (historyQueue) {
-      historyQueue.add(history);
-      historyQueue.notifyAll();
+  /* asynchronously append to history file */
+  public WriterFuture<WriterHolder> appendHistory(History history) {
+    WriterFuture<WriterHolder> future = new WriterFuture<WriterHolder>(history);
+    historyQueue.add(future);
+    return future;
+  }
+
+  /* asynchronously flush to history file */
+  public synchronized WriterFuture<WriterHolder> appendAndFlush(History history) {
+    WriterFuture<WriterHolder> future = new WriterFuture<WriterHolder>(history) {
+      public void done(WriterHolder holder) {
+        try {
+          if (holder != null) holder.flush();
+          super.done(holder);
+        } catch (IOException e) {
+          super.failed(e);
+        }
+      }
+    };
+    historyQueue.add(future);
+    synchronized (writerThread) {
+      writerThread.notifyAll();
+    }
+    return future;
+  }
+
+  /* synchronously flush to history file */
+  public synchronized void appendAndSync(History history)
+      throws TimeoutException, InterruptedException, IOException {
+
+    WriterFuture<WriterHolder> future = appendAndFlush(history);
+
+    future.get(5, TimeUnit.SECONDS);
+    if(!future.isSucceed()){
+      throw new IOException(future.getError());
+    }
+  }
+
+  /* Flushing the buffer */
+  public synchronized void flushTaskHistories() {
+    if (historyQueue.size() > 0) {
+      synchronized (writerThread) {
+        writerThread.needTaskFlush.set(true);
+        writerThread.notifyAll();
+      }
+    } else {
+      writerThread.flushTaskHistories();
     }
   }
 
@@ -146,7 +193,7 @@ public class HistoryWriter extends AbstractService {
   public static Path getQueryHistoryFilePath(Path historyParentPath, String queryId) {
     SimpleDateFormat df = new SimpleDateFormat("yyyyMMdd");
 
-    Path datePath = null;
+    Path datePath;
     try {
       String[] tokens = queryId.split("_");
       //q_1412483083972_0005 = q_<timestamp>_<seq>
@@ -162,31 +209,27 @@ public class HistoryWriter extends AbstractService {
   }
 
   class WriterThread extends Thread {
+    private AtomicBoolean needTaskFlush = new AtomicBoolean(false);
+
     public void run() {
-      LOG.info("HistoryWriter_"+ processName + " started.");
+      LOG.info("HistoryWriter_" + processName + " started.");
       SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHH");
       while (!stopped.get()) {
-        List<History> histories = new ArrayList<History>();
-        synchronized (historyQueue) {
-          historyQueue.drainTo(histories);
-          if (histories.isEmpty()) {
-            try {
-              historyQueue.wait(60 * 1000);
-            } catch (InterruptedException e) {
-              if (stopped.get()) {
-                break;
-              }
-            }
-          }
+        List<WriterFuture<WriterHolder>> histories = Lists.newArrayList();
+
+        try {
+          drainHistory(histories, 100, 1000);
+        } catch (InterruptedException e) {
+          if (stopped.get()) break;
         }
-        if (stopped.get()) {
-          break;
-        }
+
         try {
           if (!histories.isEmpty()) {
             writeHistory(histories);
+          } else {
+            continue;
           }
-        } catch (Exception e) {
+        } catch (Throwable e) {
           LOG.error(e.getMessage(), e);
         }
 
@@ -207,60 +250,91 @@ public class HistoryWriter extends AbstractService {
           }
 
           for (String eachWriterTime : closingTargets) {
-            WriterHolder writerHolder = null;
+            WriterHolder writerHolder;
             synchronized (taskWriters) {
               writerHolder = taskWriters.remove(eachWriterTime);
             }
+
             if (writerHolder != null) {
               LOG.info("Closing task history file: " + writerHolder.path);
-              if (writerHolder.out != null) {
-                try {
-                  writerHolder.out.close();
-                } catch (IOException e) {
-                  LOG.error(e.getMessage(), e);
-                }
+              IOUtils.cleanup(LOG, writerHolder);
+            }
+          }
+        }
+      }
+      LOG.info("HistoryWriter_" + processName + " stopped.");
+    }
+
+    private int drainHistory(Collection<WriterFuture<WriterHolder>> buffer, int numElements,
+                             long timeoutMillis) throws InterruptedException {
+
+      long deadline = System.currentTimeMillis() + timeoutMillis;
+      int added = 0;
+      while (added < numElements) {
+        added += historyQueue.drainTo(buffer, numElements - added);
+        if (added < numElements) { // not enough elements immediately available; will have to wait
+          if (deadline <= System.currentTimeMillis()) {
+            break;
+          } else {
+            synchronized (writerThread) {
+              writerThread.wait(deadline - System.currentTimeMillis());
+              if (deadline > System.currentTimeMillis()) {
+                added += historyQueue.drainTo(buffer, numElements - added);
+                break;
               }
             }
           }
         }
       }
-      LOG.info("HistoryWriter_"+ processName + " stopped.");
+      return added;
     }
 
-    public void writeHistory(List<History> histories) {
+    private List<WriterFuture<WriterHolder>> writeHistory(List<WriterFuture<WriterHolder>> histories) {
+
       if (histories.isEmpty()) {
-        return;
+        return histories;
       }
-      for (History eachHistory : histories) {
-        switch(eachHistory.getHistoryType()) {
+
+      for (WriterFuture<WriterHolder> future : histories) {
+        History history = future.getHistory();
+        switch (history.getHistoryType()) {
           case TASK:
             try {
-              writeTaskHistory((TaskHistory) eachHistory);
-            } catch (Exception e) {
+              future.done(writeTaskHistory((TaskHistory) history));
+            } catch (Throwable e) {
               LOG.error("Error while saving task history: " +
-                  ((TaskHistory) eachHistory).getTaskAttemptId() + ":" + e.getMessage(), e);
+                  ((TaskHistory) history).getTaskAttemptId() + ":" + e.getMessage(), e);
+              future.failed(e);
             }
             break;
           case QUERY:
             try {
-              writeQueryHistory((QueryHistory) eachHistory);
-            } catch (Exception e) {
+              writeQueryHistory((QueryHistory) history);
+              future.done(null);
+            } catch (Throwable e) {
               LOG.error("Error while saving query history: " +
-                  ((QueryHistory) eachHistory).getQueryId() + ":" + e.getMessage(), e);
+                  ((QueryHistory) history).getQueryId() + ":" + e.getMessage(), e);
+              future.failed(e);
             }
             break;
           case QUERY_SUMMARY:
             try {
-              writeQuerySummary((QueryInfo) eachHistory);
-            } catch (Exception e) {
+              future.done(writeQuerySummary((QueryInfo) history));
+            } catch (Throwable e) {
               LOG.error("Error while saving query summary: " +
-                  ((QueryInfo) eachHistory).getQueryId() + ":" + e.getMessage(), e);
+                  ((QueryInfo) history).getQueryId() + ":" + e.getMessage(), e);
+              future.failed(e);
             }
             break;
           default:
-            LOG.warn("Wrong history type: " + eachHistory.getHistoryType());
+            LOG.warn("Wrong history type: " + history.getHistoryType());
         }
       }
+
+      if(needTaskFlush.getAndSet(false)){
+        flushTaskHistories();
+      }
+      return histories;
     }
 
     private synchronized void writeQueryHistory(QueryHistory queryHistory) throws Exception {
@@ -283,16 +357,10 @@ public class HistoryWriter extends AbstractService {
       FSDataOutputStream out = null;
       try {
         LOG.info("Saving query summary: " + queryHistoryFile);
-        out = fs.create(queryHistoryFile);
-        out.write(queryHistory.toJson().getBytes());
+        out = fs.create(queryHistoryFile, queryReplication);
+        out.write(queryHistory.toJson().getBytes(Bytes.UTF8_CHARSET));
       } finally {
-        if (out != null) {
-          try {
-            out.close();
-          } catch (Exception err) {
-            LOG.error(err.getMessage(), err);
-          }
-        }
+        IOUtils.cleanup(LOG, out);
       }
 
       if (queryHistory.getStageHistories() != null) {
@@ -300,24 +368,18 @@ public class HistoryWriter extends AbstractService {
           Path path = new Path(queryHistoryFile.getParent(), stageHistory.getExecutionBlockId() + HISTORY_FILE_POSTFIX);
           out = null;
           try {
-            out = fs.create(path);
-            out.write(stageHistory.toTasksJson().getBytes());
+            out = fs.create(path, queryReplication);
+            out.write(stageHistory.toTasksJson().getBytes(Bytes.UTF8_CHARSET));
             LOG.info("Saving query unit: " + path);
           } finally {
-            if (out != null) {
-              try {
-                out.close();
-              } catch (Exception err) {
-                LOG.error(err.getMessage(), err);
-              }
-            }
+            IOUtils.cleanup(LOG, out);
           }
         }
       }
     }
 
-    private synchronized void writeQuerySummary(QueryInfo queryInfo) throws Exception {
-      if(stopped.get()) return;
+    private synchronized WriterHolder writeQuerySummary(QueryInfo queryInfo) throws Exception {
+      if(stopped.get()) return null;
 
         // writing to HDFS and rolling hourly
       if (querySummaryWriter == null) {
@@ -327,18 +389,21 @@ public class HistoryWriter extends AbstractService {
         if (querySummaryWriter.out == null) {
           rollingQuerySummaryWriter();
         } else if (System.currentTimeMillis() - querySummaryWriter.lastWritingTime >= 60 * 60 * 1000) {
-          if (querySummaryWriter.out != null) {
-            LOG.info("Close query history file: " + querySummaryWriter.path);
-            querySummaryWriter.out.close();
-          }
+          LOG.info("Close query history file: " + querySummaryWriter.path);
+          IOUtils.cleanup(LOG, querySummaryWriter);
           rollingQuerySummaryWriter();
         }
       }
-      byte[] jsonBytes = ("\n" + queryInfo.toJson() + "\n").getBytes();
-
-      querySummaryWriter.out.writeInt(jsonBytes.length);
-      querySummaryWriter.out.write(jsonBytes);
-      querySummaryWriter.out.hflush();
+      byte[] jsonBytes = ("\n" + queryInfo.toJson() + "\n").getBytes(Bytes.UTF8_CHARSET);
+      try {
+        querySummaryWriter.out.writeInt(jsonBytes.length);
+        querySummaryWriter.out.write(jsonBytes);
+      } catch (IOException ie) {
+        IOUtils.cleanup(LOG, querySummaryWriter);
+        querySummaryWriter.out = null;
+        throw ie;
+      }
+      return querySummaryWriter;
     }
 
     private synchronized void rollingQuerySummaryWriter() throws Exception {
@@ -359,10 +424,22 @@ public class HistoryWriter extends AbstractService {
       querySummaryWriter.path = historyFile;
       querySummaryWriter.lastWritingTime = System.currentTimeMillis();
       LOG.info("Create query history file: " + historyFile);
-      querySummaryWriter.out = fs.create(historyFile);
+      querySummaryWriter.out = fs.create(historyFile, queryReplication);
     }
 
-    private synchronized void writeTaskHistory(TaskHistory taskHistory) throws Exception {
+    private void flushTaskHistories() {
+      synchronized (taskWriters) {
+        for (WriterHolder holder : taskWriters.values()) {
+          try {
+            holder.flush();
+          } catch (IOException e) {
+            LOG.warn(e);
+          }
+        }
+      }
+    }
+
+    private synchronized WriterHolder writeTaskHistory(TaskHistory taskHistory) throws Exception {
       SimpleDateFormat df = new SimpleDateFormat("yyyyMMddHH");
 
       String taskStartTime = df.format(new Date(taskHistory.getStartTime()));
@@ -378,11 +455,17 @@ public class HistoryWriter extends AbstractService {
       writerHolder.lastWritingTime = System.currentTimeMillis();
 
       if (writerHolder.out != null) {
-        byte[] taskHistoryBytes = taskHistory.getProto().toByteArray();
-        writerHolder.out.writeInt(taskHistoryBytes.length);
-        writerHolder.out.write(taskHistoryBytes);
-        writerHolder.out.flush();
+        try {
+          byte[] taskHistoryBytes = taskHistory.getProto().toByteArray();
+          writerHolder.out.writeInt(taskHistoryBytes.length);
+          writerHolder.out.write(taskHistoryBytes);
+        } catch (IOException ie) {
+          taskWriters.remove(taskStartTime);
+          IOUtils.cleanup(LOG, writerHolder);
+          throw ie;
+        }
       }
+      return writerHolder;
     }
 
     private FSDataOutputStream createTaskHistoryFile(String taskStartTime, WriterHolder writerHolder) throws IOException {
@@ -395,7 +478,7 @@ public class HistoryWriter extends AbstractService {
         }
       }
       writerHolder.path = path;
-      return fs.create(path, false);
+      return fs.create(path, false, 4096, taskReplication, fs.getDefaultBlockSize(path));
     }
   }
 
@@ -444,9 +527,89 @@ public class HistoryWriter extends AbstractService {
     return new Path(fileParent, processName + "_" + hour + "_" + maxSeq + HISTORY_FILE_POSTFIX);
   }
 
-  class WriterHolder {
+  static class WriterHolder implements Closeable {
     long lastWritingTime;
     Path path;
     FSDataOutputStream out;
+
+    @Override
+    public synchronized void close() throws IOException {
+      if (out != null) out.close();
+    }
+
+    /*
+     * Sync buffered data to DataNodes or disks (flush to disk devices).
+     */
+    private synchronized void flush() throws IOException {
+      if (out != null) out.hsync();
+    }
+  }
+
+  static class WriterFuture<T> implements Future<T> {
+    private boolean done = false;
+    private T result;
+    private History history;
+    private Throwable error;
+    private CountDownLatch latch = new CountDownLatch(1);
+
+    public WriterFuture(History history) {
+      this.history = history;
+    }
+
+    private History getHistory() {
+      return history;
+    }
+
+    public void done(T t) {
+      this.result = t;
+      this.done = true;
+      this.latch.countDown();
+    }
+
+    public void failed(Throwable e) {
+      this.error = e;
+      done(null);
+    }
+
+    @Override
+    public boolean cancel(boolean mayInterruptIfRunning) {
+      // TODO - to be implemented
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isCancelled() {
+      // TODO - to be implemented
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isDone() {
+      return done;
+    }
+
+    public boolean isSucceed() {
+      return error == null;
+    }
+
+    public Throwable getError() {
+      return error;
+    }
+
+    @Override
+    public T get() throws InterruptedException {
+      this.latch.await();
+      return result;
+    }
+
+    @Override
+    public T get(long timeout, TimeUnit unit)
+        throws InterruptedException, TimeoutException {
+      if (latch.await(timeout, unit)) {
+        return result;
+      } else {
+        throw new TimeoutException();
+      }
+    }
   }
 }
