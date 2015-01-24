@@ -178,7 +178,7 @@ public class HdfsServiceTracker extends HAServiceTracker {
 
     try {
       out.writeUTF(sb.toString());
-      out.hflush();
+      out.hsync();
       out.close();
     } catch (FileAlreadyExistsException e) {
       createMasterFile(false);
