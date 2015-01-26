@@ -50,6 +50,8 @@ import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedFile;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
 
 import java.io.*;
@@ -251,6 +253,15 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
 
     // Close the connection as soon as the error message is sent.
     ctx.channel().writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+  }
+
+  @Override
+  public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+    super.userEventTriggered(ctx, evt);
+    
+    if (evt instanceof IdleStateEvent) {
+      ctx.close();
+    }
   }
 
   private List<String> splitMaps(List<String> qids) {

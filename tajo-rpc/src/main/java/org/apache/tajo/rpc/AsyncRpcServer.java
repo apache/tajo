@@ -34,6 +34,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelHandler.Sharable;
+import io.netty.handler.timeout.IdleStateEvent;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
@@ -142,5 +143,15 @@ public class AsyncRpcServer extends NettyServerBase {
       
       ctx.close();
     }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+      super.userEventTriggered(ctx, evt);
+      
+      if (evt instanceof IdleStateEvent) {
+        ctx.close();
+      }
+    }
+    
   }
 }

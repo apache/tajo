@@ -26,7 +26,6 @@ import org.apache.commons.logging.LogFactory;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.util.concurrent.Future;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
@@ -53,10 +52,6 @@ public final class RpcChannelFactory {
     return getSharedClientEventloopGroup(DEFAULT_WORKER_NUM);
   }
   
-  protected static boolean isClientLoopGroupShuttingDown() {
-    return (loopGroup == null || loopGroup.isShuttingDown());
-  }
-  
   /**
   * make this factory static thus all clients can share its thread pool.
   * NioClientSocketChannelFactory has only one method newChannel() visible for user, which is thread-safe
@@ -65,9 +60,9 @@ public final class RpcChannelFactory {
   */
   public static synchronized EventLoopGroup getSharedClientEventloopGroup(int workerNum){
     //shared woker and boss pool
-    if (isClientLoopGroupShuttingDown()) {
+    if (loopGroup == null) {
       synchronized (lockObjectForLoopGroup) {
-        if (isClientLoopGroupShuttingDown()) {
+        if (loopGroup == null) {
           loopGroup = createClientEventloopGroup("Internal-Client", workerNum);
         }
       }
@@ -106,17 +101,6 @@ public final class RpcChannelFactory {
     
     return new ServerBootstrap().group(bossGroup, workerGroup);
   }
-  
-  public static void rebuildSelectors() {
-    if (loopGroup != null && loopGroup instanceof NioEventLoopGroup) {
-      synchronized (lockObjectForLoopGroup) {
-        if (loopGroup != null && loopGroup instanceof NioEventLoopGroup) {
-          NioEventLoopGroup nioEventLoopGroup = (NioEventLoopGroup) loopGroup;
-          nioEventLoopGroup.rebuildSelectors();
-        }
-      }
-    }
-  }
 
   public static void shutdownGracefully(){
     if(LOG.isDebugEnabled()) {
@@ -125,9 +109,11 @@ public final class RpcChannelFactory {
     
     if (loopGroup != null) {
       synchronized(lockObjectForLoopGroup) {
-        loopGroup.shutdownGracefully();
-        loopGroup.terminationFuture().awaitUninterruptibly(10, TimeUnit.SECONDS);
-        loopGroup = null;
+        if (loopGroup != null) {
+          loopGroup.shutdownGracefully();
+          loopGroup.terminationFuture().awaitUninterruptibly(10, TimeUnit.SECONDS);
+          loopGroup = null;
+        }
       }
     }
   }
