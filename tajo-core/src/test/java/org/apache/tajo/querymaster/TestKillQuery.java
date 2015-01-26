@@ -131,21 +131,21 @@ public class TestKillQuery {
 
   @Test
   public final void testStageIgnoreState() throws Exception {
-    String queryStr = "select count(*) from lineitem";
+    String queryStr = "select l_orderkey, l_partkey from lineitem group by l_orderkey, l_partkey order by l_orderkey";
     ClientProtos.SubmitQueryResponse res = client.executeQuery(queryStr);
     QueryId queryId = new QueryId(res.getQueryId());
-    cluster.waitForQueryRunning(queryId);
+    cluster.waitForQueryRunning(queryId, 10);
+    client.killQuery(queryId);
 
     QueryMasterTask qmt = null;
     for (TajoWorker worker : cluster.getTajoWorkers()) {
-      qmt = worker.getWorkerContext().getQueryMaster().getQueryMasterTask(queryId);
+      qmt = worker.getWorkerContext().getQueryMaster().getQueryMasterTask(queryId, true);
       if (qmt != null) {
         break;
       }
     }
-    Query query = qmt.getQuery();
-    client.killQuery(queryId);
 
+    Query query = qmt.getQuery();
     List<Stage> stages = Lists.newArrayList(query.getStages());
     Stage lastStage = stages.get(stages.size() - 1);
 
