@@ -136,7 +136,7 @@ public class TestKillQuery {
   }
 
   @Test
-  public final void testStageIgnoreState() throws Exception {
+  public final void testIgnoreStageStateFromKilled() throws Exception {
 
     ClientProtos.SubmitQueryResponse res = client.executeQuery(queryStr);
     QueryId queryId = new QueryId(res.getQueryId());
