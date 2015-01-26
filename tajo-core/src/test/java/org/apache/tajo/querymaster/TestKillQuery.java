@@ -39,7 +39,6 @@ import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.session.Session;
-import org.apache.tajo.worker.TajoWorker;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -54,6 +53,9 @@ public class TestKillQuery {
   private static TajoTestingCluster cluster;
   private static TajoConf conf;
   private static TajoClient client;
+  private static String queryStr = "select t1.l_orderkey, t1.l_partkey, t2.c_custkey " +
+      "from lineitem t1 join customer t2 " +
+      "on t1.l_orderkey = t2.c_custkey order by t1.l_orderkey";
 
   @BeforeClass
   public static void setUp() throws Exception {
@@ -65,6 +67,11 @@ public class TestKillQuery {
     client.executeQueryAndGetResult("create external table default.lineitem (l_orderkey int, l_partkey int) "
         + "using text location 'file://" + file.getAbsolutePath() + "'");
     assertTrue(client.existTable("default.lineitem"));
+
+    file = TPCH.getDataFile("customer");
+    client.executeQueryAndGetResult("create external table default.customer (c_custkey int, c_name text) "
+        + "using text location 'file://" + file.getAbsolutePath() + "'");
+    assertTrue(client.existTable("default.customer"));
   }
 
   @AfterClass
@@ -79,11 +86,10 @@ public class TestKillQuery {
     QueryContext defaultContext = LocalTajoTestingUtility.createDummyContext(conf);
     Session session = LocalTajoTestingUtility.createDummySession();
     CatalogService catalog = cluster.getMaster().getCatalog();
-    String query = "select l_orderkey, l_partkey from lineitem group by l_orderkey, l_partkey order by l_orderkey";
 
     LogicalPlanner planner = new LogicalPlanner(catalog);
     LogicalOptimizer optimizer = new LogicalOptimizer(conf);
-    Expr expr =  analyzer.parse(query);
+    Expr expr =  analyzer.parse(queryStr);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
 
     optimizer.optimize(plan);
@@ -131,25 +137,24 @@ public class TestKillQuery {
 
   @Test
   public final void testStageIgnoreState() throws Exception {
-    String queryStr = "select l_orderkey, l_partkey from lineitem group by l_orderkey, l_partkey order by l_orderkey";
+
     ClientProtos.SubmitQueryResponse res = client.executeQuery(queryStr);
     QueryId queryId = new QueryId(res.getQueryId());
-    cluster.waitForQueryRunning(queryId, 10);
-    client.killQuery(queryId);
+    cluster.waitForQuerySubmitted(queryId);
 
-    QueryMasterTask qmt = null;
-    for (TajoWorker worker : cluster.getTajoWorkers()) {
-      qmt = worker.getWorkerContext().getQueryMaster().getQueryMasterTask(queryId, true);
-      if (qmt != null) {
-        break;
-      }
+    QueryMasterTask qmt = cluster.getQueryMasterTask(queryId);
+    Query query = qmt.getQuery();
+
+    query.handle(new QueryEvent(queryId, QueryEventType.KILL));
+
+    try{
+      cluster.waitForQueryState(query, TajoProtos.QueryState.QUERY_KILLED, 50);
+    } finally {
+      assertEquals(TajoProtos.QueryState.QUERY_KILLED, query.getSynchronizedState());
     }
 
-    Query query = qmt.getQuery();
     List<Stage> stages = Lists.newArrayList(query.getStages());
     Stage lastStage = stages.get(stages.size() - 1);
-
-    cluster.waitForQueryState(qmt.getQuery(), TajoProtos.QueryState.QUERY_KILLED, 50);
 
     assertEquals(StageState.KILLED, lastStage.getSynchronizedState());
 
