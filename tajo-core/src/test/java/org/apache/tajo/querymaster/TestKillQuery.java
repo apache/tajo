@@ -18,6 +18,7 @@
 
 package org.apache.tajo.querymaster;
 
+import com.google.common.collect.Lists;
 import org.apache.tajo.*;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.benchmark.TPCH;
@@ -29,18 +30,23 @@ import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.master.event.QueryEvent;
 import org.apache.tajo.master.event.QueryEventType;
-import org.apache.tajo.session.Session;
+import org.apache.tajo.master.event.StageEvent;
+import org.apache.tajo.master.event.StageEventType;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
+import org.apache.tajo.session.Session;
+import org.apache.tajo.worker.TajoWorker;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -121,5 +127,48 @@ public class TestKillQuery {
       assertEquals(TajoProtos.QueryState.QUERY_KILLED, queryMasterTask.getQuery().getSynchronizedState());
     }
     queryMasterTask.stop();
+  }
+
+  @Test
+  public final void testStageIgnoreState() throws Exception {
+    String queryStr = "select count(*) from lineitem";
+    ClientProtos.SubmitQueryResponse res = client.executeQuery(queryStr);
+    QueryId queryId = new QueryId(res.getQueryId());
+    cluster.waitForQueryRunning(queryId);
+
+    QueryMasterTask qmt = null;
+    for (TajoWorker worker : cluster.getTajoWorkers()) {
+      qmt = worker.getWorkerContext().getQueryMaster().getQueryMasterTask(queryId);
+      if (qmt != null) {
+        break;
+      }
+    }
+    Query query = qmt.getQuery();
+    client.killQuery(queryId);
+
+    List<Stage> stages = Lists.newArrayList(query.getStages());
+    Stage lastStage = stages.get(stages.size() - 1);
+
+    cluster.waitForQueryState(qmt.getQuery(), TajoProtos.QueryState.QUERY_KILLED, 50);
+
+    assertEquals(StageState.KILLED, lastStage.getSynchronizedState());
+
+    lastStage.getStateMachine().doTransition(StageEventType.SQ_START,
+        new StageEvent(lastStage.getId(), StageEventType.SQ_START));
+
+    lastStage.getStateMachine().doTransition(StageEventType.SQ_KILL,
+        new StageEvent(lastStage.getId(), StageEventType.SQ_KILL));
+
+    lastStage.getStateMachine().doTransition(StageEventType.SQ_CONTAINER_ALLOCATED,
+        new StageEvent(lastStage.getId(), StageEventType.SQ_CONTAINER_ALLOCATED));
+
+    lastStage.getStateMachine().doTransition(StageEventType.SQ_SHUFFLE_REPORT,
+        new StageEvent(lastStage.getId(), StageEventType.SQ_SHUFFLE_REPORT));
+
+    lastStage.getStateMachine().doTransition(StageEventType.SQ_STAGE_COMPLETED,
+        new StageEvent(lastStage.getId(), StageEventType.SQ_STAGE_COMPLETED));
+
+    lastStage.getStateMachine().doTransition(StageEventType.SQ_FAILED,
+        new StageEvent(lastStage.getId(), StageEventType.SQ_FAILED));
   }
 }
