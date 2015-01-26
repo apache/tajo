@@ -70,7 +70,7 @@ public class TaskAttemptContext {
   /** a map of shuffled file outputs */
   private Map<Integer, String> shuffleFileOutputs;
   private File fetchIn;
-  private boolean stopped = false;
+  private volatile boolean stopped = false;
   private boolean interQuery = false;
   private Path outputPath;
   private DataChannel dataChannel;

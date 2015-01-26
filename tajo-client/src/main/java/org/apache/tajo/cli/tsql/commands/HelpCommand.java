@@ -18,10 +18,10 @@
 
 package org.apache.tajo.cli.tsql.commands;
 
-import java.io.PrintWriter;
-
 import org.apache.tajo.cli.tsql.TajoCli;
 import org.apache.tajo.util.VersionInfo;
+
+import java.io.PrintWriter;
 
 public class HelpCommand extends TajoShellCommand {
   private String targetDocVersion = "";
@@ -79,7 +79,7 @@ public class HelpCommand extends TajoShellCommand {
       sout.println();
 
       sout.println("Variables");
-      sout.println("  \\set [[NAME] [VALUE]  set session variable or list session variables");
+      sout.println("  \\set [NAME] [VALUE]  set session variable or list session variables");
       sout.println("  \\unset NAME           unset session variable");
       sout.println();
       sout.println();

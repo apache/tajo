@@ -268,6 +268,8 @@ public class TajoConf extends Configuration {
     HISTORY_QUERY_DIR("tajo.history.query.dir", STAGING_ROOT_DIR.defaultVal + "/history"),
     HISTORY_TASK_DIR("tajo.history.task.dir", "file:///tmp/tajo-${user.name}/history"),
     HISTORY_EXPIRY_TIME_DAY("tajo.history.expiry-time-day", 7),
+    HISTORY_QUERY_REPLICATION("tajo.history.query.replication", 1, Validators.min("1")),
+    HISTORY_TASK_REPLICATION("tajo.history.task.replication", 1, Validators.min("1")),
 
     // Misc -------------------------------------------------------------------
     // Fragment

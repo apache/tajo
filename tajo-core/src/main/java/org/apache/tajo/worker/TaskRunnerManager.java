@@ -192,6 +192,7 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
           TupleCache.getInstance().removeBroadcastCache(event.getExecutionBlockId());
           executionBlockContext.reportExecutionBlock(event.getExecutionBlockId());
           workerContext.getHashShuffleAppenderManager().close(event.getExecutionBlockId());
+          workerContext.getTaskHistoryWriter().flushTaskHistories();
         } catch (IOException e) {
           LOG.fatal(e.getMessage(), e);
           throw new RuntimeException(e);

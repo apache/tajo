@@ -27,6 +27,8 @@ Release 0.10.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1309: Add missing break point in physical operator. (jinho)
+
     TAJO-1307: HBaseStorageManager need to support for users to use
     hbase-site.xml file. (jaehwa)
 
@@ -168,6 +170,15 @@ Release 0.10.0 - unreleased
 
 
   BUG FIXES
+
+    TAJO-1289: History reader fails to get the query information after 
+    a successful query execution. (jinho)
+
+    TAJO-1303: CDH cannot pass hadoop version check test.
+    (Keuntae Park via jihun)
+
+    TAJO-1308: QueryInprogress can not release when query is QUERY_ERROR.
+    (jinho)
 
     TAJO-1305: With metadata storage of MySQL, columns with the same 
     character but difference case are not allowed. (jihun)

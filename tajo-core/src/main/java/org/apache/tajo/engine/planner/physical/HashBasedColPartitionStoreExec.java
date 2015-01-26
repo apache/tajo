@@ -67,7 +67,7 @@ public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
   public Tuple next() throws IOException {
     Tuple tuple;
     StringBuilder sb = new StringBuilder();
-    while((tuple = child.next()) != null) {
+    while(!context.isStopped() && (tuple = child.next()) != null) {
       // set subpartition directory name
       sb.delete(0, sb.length());
       if (keyIds != null) {
