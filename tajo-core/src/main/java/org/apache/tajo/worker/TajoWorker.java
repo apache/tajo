@@ -49,6 +49,7 @@ import org.apache.tajo.rule.EvaluationFailedException;
 import org.apache.tajo.rule.SelfDiagnosisRuleEngine;
 import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
+import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.JvmPauseMonitor;
 import org.apache.tajo.util.NetUtils;
@@ -393,6 +394,12 @@ public class TajoWorker extends CompositeService {
         webServer.stop();
       } catch (Throwable e) {
       }
+    }
+
+    try {
+      StorageManager.close();
+    } catch (IOException ie) {
+      LOG.error(ie.getMessage(), ie);
     }
 
     if(workerSystemMetrics != null) {
