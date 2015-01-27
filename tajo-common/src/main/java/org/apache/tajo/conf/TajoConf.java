@@ -54,7 +54,7 @@ public class TajoConf extends Configuration {
     Configuration.addDefaultResource("storage-site.xml");
     Configuration.addDefaultResource("tajo-default.xml");
     Configuration.addDefaultResource("tajo-site.xml");
-    
+
     for (ConfVars confVars: ConfVars.values()) {
       vars.put(confVars.keyname(), confVars);
     }
