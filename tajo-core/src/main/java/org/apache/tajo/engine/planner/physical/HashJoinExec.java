@@ -111,7 +111,7 @@ public class HashJoinExec extends BinaryPhysicalExec {
     Tuple rightTuple;
     boolean found = false;
 
-    while(!finished) {
+    while(!context.isStopped() && !finished) {
       if (shouldGetLeftTuple) { // initially, it is true.
         // getting new outer
         leftTuple = leftChild.next(); // it comes from a disk
@@ -156,7 +156,7 @@ public class HashJoinExec extends BinaryPhysicalExec {
     Tuple tuple;
     Tuple keyTuple;
 
-    while ((tuple = rightChild.next()) != null) {
+    while (!context.isStopped() && (tuple = rightChild.next()) != null) {
       keyTuple = new VTuple(joinKeyPairs.size());
       for (int i = 0; i < rightKeyList.length; i++) {
         keyTuple.put(i, tuple.get(rightKeyList[i]));

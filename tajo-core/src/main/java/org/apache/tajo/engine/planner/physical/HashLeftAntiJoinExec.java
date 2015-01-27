@@ -64,7 +64,7 @@ public class HashLeftAntiJoinExec extends HashJoinExec {
     Tuple rightTuple;
     boolean notFound;
 
-    while(!finished) {
+    while(!context.isStopped() && !finished) {
 
       // getting new outer
       leftTuple = leftChild.next(); // it comes from a disk
@@ -89,7 +89,7 @@ public class HashLeftAntiJoinExec extends HashJoinExec {
       // Reach here only when a hash bucket is found. Then, it checks all tuples in the found bucket.
       // If it finds a matched tuple, it escapes the loop for all tuples in the hash bucket.
       notFound = true;
-      while (notFound && iterator.hasNext()) {
+      while (!context.isStopped() && notFound && iterator.hasNext()) {
         rightTuple = iterator.next();
         frameTuple.set(leftTuple, rightTuple);
         if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if the matched one is found

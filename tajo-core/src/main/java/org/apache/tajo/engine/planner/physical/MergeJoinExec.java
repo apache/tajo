@@ -102,7 +102,7 @@ public class MergeJoinExec extends BinaryPhysicalExec {
   public Tuple next() throws IOException {
     Tuple previous;
 
-    for (;;) {
+    while (!context.isStopped()) {
       if (!outerIterator.hasNext() && !innerIterator.hasNext()) {
         if(end){
           return null;
@@ -170,6 +170,7 @@ public class MergeJoinExec extends BinaryPhysicalExec {
         return outTuple;
       }
     }
+    return null;
   }
 
   @Override

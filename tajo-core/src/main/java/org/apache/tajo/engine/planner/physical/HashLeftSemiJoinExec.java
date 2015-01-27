@@ -70,7 +70,7 @@ public class HashLeftSemiJoinExec extends HashJoinExec {
     Tuple rightTuple;
     boolean notFound;
 
-    while(!finished) {
+    while(!context.isStopped() && !finished) {
 
       // getting new outer
       leftTuple = leftChild.next(); // it comes from a disk

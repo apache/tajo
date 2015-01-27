@@ -55,14 +55,14 @@ import static com.google.common.base.Preconditions.*;
 public class Bytes {
   //HConstants.UTF8_ENCODING should be updated if this changed
   /** When we encode strings, we always specify UTF8 encoding */
-  private static final String UTF8_ENCODING = "UTF-8";
+  public static final String UTF8_ENCODING = "UTF-8";
 
   //HConstants.UTF8_CHARSET should be updated if this changed
   /** When we encode strings, we always specify UTF8 encoding */
-  private static final Charset UTF8_CHARSET = Charset.forName(UTF8_ENCODING);
+  public static final Charset UTF8_CHARSET = Charset.forName(UTF8_ENCODING);
 
   //HConstants.EMPTY_BYTE_ARRAY should be updated if this changed
-  private static final byte [] EMPTY_BYTE_ARRAY = new byte [0];
+  public static final byte [] EMPTY_BYTE_ARRAY = new byte [0];
 
   private static final Log LOG = LogFactory.getLog(Bytes.class);
 
