@@ -38,4 +38,6 @@ install: ./dev-support/travis-install-dependencies.sh
 
 script: 
   mvn clean compile test-compile -Phcatalog-0.12.0 -DLOG_LEVEL=ERROR
+
+after_script:
   mvn surefire:test -Pparallel-test,hcatalog-0.12.0 -DLOG_LEVEL=WARN -Dmaven.fork.count=3
