@@ -226,6 +226,42 @@ HDFS_LIBRARY_PATH="${HADOOP_HOME}/lib/native/"
 ##############################################################################
 
 ##############################################################################
+# HBase Configuration Start
+##############################################################################
+
+HBASE_CONF=$HBASE_HOME/conf
+
+if [ -d ${HBASE_CONF} ]; then
+  CLASSPATH=${HBASE_CONF}:${CLASSPATH}
+fi
+
+HBASE_LIB=$HBASE_HOME/lib
+
+if [ -d ${HBASE_LIB} ]; then
+
+  for f in ${HBASE_LIB}/hbase-client-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+
+  for f in ${HBASE_LIB}/hbase-common-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+
+  for f in ${HBASE_LIB}/hbase-protocol-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+
+  for f in ${HBASE_LIB}/htrace-core-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+
+fi
+
+##############################################################################
+# HBase Configuration End
+##############################################################################
+
+##############################################################################
 # Find and Set Hive CLASSPATH
 ##############################################################################
 
@@ -270,32 +306,6 @@ fi
 
 ##############################################################################
 # Hive Home Configuration End
-##############################################################################
-
-##############################################################################
-# HBase Configuration Start
-##############################################################################
-
-HBASE_CONF=$HBASE_HOME/conf
-
-if [ -d ${HBASE_CONF} ]; then
-  CLASSPATH=${HBASE_CONF}:${CLASSPATH}
-fi
-
-HBASE_LIB=$HBASE_HOME/lib
-
-if [ -d ${HBASE_LIB} ]; then
-
-  for f in ${HBASE_LIB}/hbase-*.jar; do
-    CLASSPATH=${CLASSPATH}:$f;
-  done
-  for f in ${HBASE_LIB}/htrace-*.jar; do
-    CLASSPATH=${CLASSPATH}:$f;
-  done
-fi
-
-##############################################################################
-# HBase Configuration End
 ##############################################################################
 
 
