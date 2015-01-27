@@ -61,10 +61,16 @@ import static org.junit.Assert.assertEquals;
 public class TestHBaseTable extends QueryTestCaseBase {
   private static final Log LOG = LogFactory.getLog(TestHBaseTable.class);
 
+  private static String hostName,zkPort;
+
   @BeforeClass
   public static void beforeClass() {
     try {
       testingCluster.getHBaseUtil().startHBaseCluster();
+      hostName = InetAddress.getLocalHost().getHostName();
+      zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
+      assertNotNull(hostName);
+      assertNotNull(zkPort);
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -99,44 +105,10 @@ public class TestHBaseTable extends QueryTestCaseBase {
     } catch (Exception e) {
       assertTrue(e.getMessage().indexOf("'columns' property is required") >= 0);
     }
-
-    try {
-      executeString("CREATE TABLE hbase_mapped_table1 (col1 text, col2 text) " +
-          "USING hbase " +
-          "WITH ('table'='hbase_table', 'columns'='col1:,col2:')").close();
-
-      fail("hbase table must have 'hbase.zookeeper.quorum' meta");
-    } catch (Exception e) {
-      assertTrue(e.getMessage().indexOf("HBase mapped table") >= 0);
-    }
-  }
-
-
-  @Test
-  public void testVerifyCreateHBaseTableWithHBaseConfiguration() throws Exception {
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
-    try {
-      testingCluster.getHBaseUtil().getConf().set(HConstants.ZOOKEEPER_QUORUM, hostName);
-
-      executeString("CREATE TABLE hbase_mapped_table3 (col1 text, col2 text) " +
-        "USING hbase " +
-        "WITH ('table'='hbase_mapped_table3', 'columns'='col1:,col2:')").close();
-
-      testingCluster.getHBaseUtil().getConf().set(HConstants.ZOOKEEPER_QUORUM, null);
-    } catch (Exception e) {
-      assertFalse(e.getMessage().indexOf("HBase mapped table") >= 0);
-    }
   }
 
   @Test
   public void testCreateHBaseTable() throws Exception {
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
     executeString("CREATE TABLE hbase_mapped_table1 (col1 text, col2 text, col3 text, col4 text) " +
         "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col2:a,col3:,col2:b', " +
         "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
@@ -166,10 +138,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testCreateNotExistsExternalHBaseTable() throws Exception {
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
     try {
       executeString("CREATE EXTERNAL TABLE external_hbase_mapped_table1 (col1 text, col2 text, col3 text, col4 text) " +
           "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col2:a,col3:,col2:b', " +
@@ -183,10 +151,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testCreateRowFieldWithNonText() throws Exception {
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
     try {
       executeString("CREATE TABLE hbase_mapped_table2 (rk1 int4, rk2 text, col3 text, col4 text) " +
           "USING hbase WITH ('table'='hbase_table', 'columns'='0:key#b,1:key,col3:,col2:b', " +
@@ -206,10 +170,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
     hTableDesc.addFamily(new HColumnDescriptor("col2"));
     hTableDesc.addFamily(new HColumnDescriptor("col3"));
     testingCluster.getHBaseUtil().createTable(hTableDesc);
-
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
 
     executeString("CREATE EXTERNAL TABLE external_hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
         "USING hbase WITH ('table'='external_hbase_table_not_purge', 'columns'=':key,col1:a,col2:,col3:b', " +
@@ -237,10 +197,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
     hTableDesc.addFamily(new HColumnDescriptor("col2"));
     hTableDesc.addFamily(new HColumnDescriptor("col3"));
     testingCluster.getHBaseUtil().createTable(hTableDesc);
-
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
 
     executeString("CREATE EXTERNAL TABLE external_hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
         "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col1:a,col2:,col3:b', " +
@@ -280,10 +236,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
     hTableDesc.addFamily(new HColumnDescriptor("col2"));
     hTableDesc.addFamily(new HColumnDescriptor("col3"));
     testingCluster.getHBaseUtil().createTable(hTableDesc);
-
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
 
     executeString("CREATE EXTERNAL TABLE external_hbase_mapped_table (rk int8, col1 text, col2 text, col3 int4)\n " +
         "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key#b,col1:a,col2:,col3:b#b', \n" +
@@ -337,10 +289,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
     hTableDesc.addFamily(new HColumnDescriptor("col3"));
     testingCluster.getHBaseUtil().createTable(hTableDesc);
 
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
     executeString("CREATE EXTERNAL TABLE external_hbase_mapped_table (rk1 text, col2_key text, col2_value text, col3 text) " +
         "USING hbase WITH ('table'='external_hbase_table', 'columns'=':key,col2:key:,col2:value:,col3:', " +
         "'hbase.rowkey.delimiter'='_', " +
@@ -378,10 +326,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
     hTableDesc.addFamily(new HColumnDescriptor("col3"));
     testingCluster.getHBaseUtil().createTable(hTableDesc);
 
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
     executeString("CREATE EXTERNAL TABLE external_hbase_mapped_table (rk1 text, rk2 text, col3 text) " +
         "USING hbase WITH ('table'='external_hbase_table', 'columns'='0:key,1:key,col3:a', " +
         "'hbase.rowkey.delimiter'='_', " +
@@ -412,10 +356,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testIndexPredication() throws Exception {
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
     executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 text) " +
         "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b', " +
         "'hbase.split.rowkeys'='010,040,060,080', " +
@@ -464,17 +404,12 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testCompositeRowIndexPredication() throws Exception {
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
     executeString("CREATE TABLE hbase_mapped_table (rk text, rk2 text, col1 text, col2 text, col3 text) " +
         "USING hbase WITH ('table'='hbase_table', 'columns'='0:key,1:key,col1:a,col2:,col3:b', " +
         "'hbase.split.rowkeys'='010,040,060,080', " +
         "'hbase.rowkey.delimiter'='_', " +
         "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
         "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
-
 
     assertTableExists("hbase_mapped_table");
     HBaseAdmin hAdmin = new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
@@ -623,16 +558,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testNonForwardQuery() throws Exception {
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
     executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 int) " +
         "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:#b', " +
         "'hbase.split.rowkeys'='010,040,060,080', " +
         "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
         "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
-
 
     assertTableExists("hbase_mapped_table");
     HBaseAdmin hAdmin =  new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
@@ -668,16 +598,11 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testJoin() throws Exception {
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
     executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 int8) " +
         "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b#b', " +
         "'hbase.split.rowkeys'='010,040,060,080', " +
         "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
         "'" + HConstants.ZOOKEEPER_CLIENT_PORT + "'='" + zkPort + "')").close();
-
 
     assertTableExists("hbase_mapped_table");
     HBaseAdmin hAdmin =  new HBaseAdmin(testingCluster.getHBaseUtil().getConf());
@@ -715,10 +640,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertInto() throws Exception {
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
     executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 int4) " +
         "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b#b', " +
         "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
@@ -761,10 +682,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertIntoMultiRegion() throws Exception {
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
     executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text) " +
         "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a', " +
         "'hbase.split.rowkeys'='010,040,060,080', " +
@@ -823,10 +740,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertIntoMultiRegion2() throws Exception {
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
     executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text) " +
         "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a', " +
         "'hbase.split.rowkeys'='1,2,3,4,5,6,7,8,9', " +
@@ -884,10 +797,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertIntoMultiRegionWithSplitFile() throws Exception {
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
     String splitFilePath = currentDatasetPath + "/splits.data";
 
     executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text) " +
@@ -948,10 +857,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertIntoMultiRegionMultiRowFields() throws Exception {
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
     executeString("CREATE TABLE hbase_mapped_table (rk1 text, rk2 text, col1 text) " +
         "USING hbase WITH ('table'='hbase_table', 'columns'='0:key,1:key,col1:a', " +
         "'hbase.split.rowkeys'='001,002,003,004,005,006,007,008,009', " +
@@ -1012,10 +917,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertIntoBinaryMultiRegion() throws Exception {
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
     executeString("CREATE TABLE hbase_mapped_table (rk int4, col1 text) " +
         "USING hbase WITH ('table'='hbase_table', 'columns'=':key#b,col1:a', " +
         "'hbase.split.rowkeys'='1,2,3,4,5,6,7,8,9', " +
@@ -1073,10 +974,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertIntoColumnKeyValue() throws Exception {
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
     executeString("CREATE TABLE hbase_mapped_table (rk text, col2_key text, col2_value text, col3 text) " +
         "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col2:key:,col2:value:,col3:', " +
         "'hbase.rowkey.delimiter'='_', " +
@@ -1168,10 +1065,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertIntoDifferentType() throws Exception {
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
     executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text) " +
         "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a', " +
         "'hbase.split.rowkeys'='1,2,3,4,5,6,7,8,9', " +
@@ -1209,10 +1102,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertIntoRowField() throws Exception {
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
     executeString("CREATE TABLE hbase_mapped_table (rk1 text, rk2 text, col1 text, col2 text, col3 text) " +
         "USING hbase WITH ('table'='hbase_table', 'columns'='0:key,1:key,col1:a,col2:,col3:b', " +
         "'hbase.rowkey.delimiter'='_', " +
@@ -1257,10 +1146,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testCATS() throws Exception {
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
     // create test table
     KeyValueSet tableOptions = new KeyValueSet();
     tableOptions.set(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
@@ -1319,10 +1204,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertIntoUsingPut() throws Exception {
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
     executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text, col3 int4) " +
         "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:,col3:b#b', " +
         "'" + HConstants.ZOOKEEPER_QUORUM + "'='" + hostName + "'," +
@@ -1372,10 +1253,6 @@ public class TestHBaseTable extends QueryTestCaseBase {
 
   @Test
   public void testInsertIntoLocation() throws Exception {
-    String hostName = InetAddress.getLocalHost().getHostName();
-    String zkPort = testingCluster.getHBaseUtil().getConf().get(HConstants.ZOOKEEPER_CLIENT_PORT);
-    assertNotNull(zkPort);
-
     executeString("CREATE TABLE hbase_mapped_table (rk text, col1 text, col2 text) " +
         "USING hbase WITH ('table'='hbase_table', 'columns'=':key,col1:a,col2:', " +
         "'hbase.split.rowkeys'='010,040,060,080', " +
