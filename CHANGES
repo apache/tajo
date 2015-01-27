@@ -171,6 +171,8 @@ Release 0.10.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1319: Tajo can't find HBase configuration file. (jaehwa)
+
     TAJO-1312: Stage causes Invalid event error: SQ_SHUFFLE_REPORT 
     at KILLED. (jinho)
 
