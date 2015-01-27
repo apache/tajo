@@ -225,6 +225,7 @@ public class BlockingRpcClient extends NettyClientBase {
       } else {
         LOG.error("RPC Exception:" + cause.getMessage());
       }
+      ctx.close();
     }
   }
 
@@ -260,6 +261,9 @@ public class BlockingRpcClient extends NettyClientBase {
     public Message get(long timeout, TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException {
       if(sem.tryAcquire(timeout, unit)) {
+        if (ee != null) {
+          throw ee;
+        }
         return response;
       } else {
         throw new TimeoutException();
