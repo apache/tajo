@@ -242,12 +242,13 @@ public abstract class StorageManager {
    * Close StorageManager
    * @throws java.io.IOException
    */
-  public void close() throws IOException {
+  public static void close() throws IOException {
     synchronized(storageManagers) {
       for (StorageManager eachStorageManager: storageManagers.values()) {
         eachStorageManager.closeStorageManager();
       }
     }
+    clearCache();
   }
 
   /**

@@ -172,7 +172,10 @@ public class Task implements EventHandler<TaskEvent> {
           // Ignore-able transitions
           .addTransition(TaskState.KILLED, TaskState.KILLED,
               EnumSet.of(
-                  TaskEventType.T_KILL, TaskEventType.T_ATTEMPT_SUCCEEDED, TaskEventType.T_ATTEMPT_FAILED))
+                  TaskEventType.T_KILL,
+                  TaskEventType.T_SCHEDULE,
+                  TaskEventType.T_ATTEMPT_SUCCEEDED,
+                  TaskEventType.T_ATTEMPT_FAILED))
 
           .installTopology();
 

@@ -171,6 +171,11 @@ Release 0.10.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1312: Stage causes Invalid event error: SQ_SHUFFLE_REPORT 
+    at KILLED. (jinho)
+
+    TAJO-1318: Unit test failure after miniDFS cluster restart. (jinho)
+
     TAJO-1289: History reader fails to get the query information after 
     a successful query execution. (jinho)
 

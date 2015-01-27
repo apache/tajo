@@ -168,6 +168,7 @@ public class QueryInProgress {
 
       queryMasterRpcClient.executeQuery(null, builder.build(), NullCallback.get());
       querySubmitted.set(true);
+      getQueryInfo().setQueryState(TajoProtos.QueryState.QUERY_MASTER_LAUNCHED);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
     }
