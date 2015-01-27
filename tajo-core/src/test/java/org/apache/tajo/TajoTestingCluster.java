@@ -87,7 +87,8 @@ public class TajoTestingCluster {
 	/**
 	 * Default parent directory for test output.
 	 */
-	public static final String DEFAULT_TEST_DIRECTORY = "target/test-data";
+	public static final String DEFAULT_TEST_DIRECTORY = "target/" + 
+	    System.getProperty("tajo.test.data.dir", "test-data");
 
   /**
    * True If HCatalogStore is used. Otherwise, it is FALSE.
@@ -167,6 +168,7 @@ public class TajoTestingCluster {
       Logger.getLogger("org.apache.hadoop").setLevel(Level.toLevel(LOG_LEVEL.toUpperCase(), defaultLevel));
       Logger.getLogger("org.apache.zookeeper").setLevel(Level.toLevel(LOG_LEVEL.toUpperCase(), defaultLevel));
       Logger.getLogger("BlockStateChange").setLevel(Level.toLevel(LOG_LEVEL.toUpperCase(), defaultLevel));
+      Logger.getLogger("org.mortbay.log").setLevel(Level.toLevel(LOG_LEVEL.toUpperCase(), defaultLevel));
     }
   }
 

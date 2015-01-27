@@ -55,7 +55,7 @@ import static org.junit.Assert.assertTrue;
 public class TestExternalSortExec {
   private TajoConf conf;
   private TajoTestingCluster util;
-  private final String TEST_PATH = "target/test-data/TestExternalSortExec";
+  private final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestExternalSortExec";
   private CatalogService catalog;
   private SQLAnalyzer analyzer;
   private LogicalPlanner planner;
