@@ -226,16 +226,37 @@ HDFS_LIBRARY_PATH="${HADOOP_HOME}/lib/native/"
 ##############################################################################
 
 ##############################################################################
-# Set HBase CLASSPATH
+# HBase Configuration Start
 ##############################################################################
-if [ "$HBASE_HOME" != "" ]; then
-  for f in ${HBASE_HOME}/lib/hbase-*.jar; do
-    CLASSPATH=${CLASSPATH}:$f;
-  done
-  for f in ${HBASE_HOME}/lib/htrace-*.jar; do
-    CLASSPATH=${CLASSPATH}:$f;
-  done
+
+HBASE_CONF=$HBASE_HOME/conf
+
+if [ -d ${HBASE_CONF} ]; then
+  CLASSPATH=${HBASE_CONF}:${CLASSPATH}
 fi
+
+HBASE_LIB=$HBASE_HOME/lib
+
+if [ -d ${HBASE_LIB} ]; then
+
+  for f in ${HBASE_LIB}/hbase-client-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+
+  for f in ${HBASE_LIB}/hbase-common-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+
+  for f in ${HBASE_LIB}/hbase-protocol-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+
+  for f in ${HBASE_LIB}/htrace-core-*.jar; do
+    CLASSPATH=${CLASSPATH}:$f;
+  done
+
+fi
+
 ##############################################################################
 # HBase Configuration End
 ##############################################################################
@@ -285,31 +306,6 @@ fi
 
 ##############################################################################
 # Hive Home Configuration End
-##############################################################################
-
-
-##############################################################################
-# Find and Set HBase CLASSPATH
-##############################################################################
-
-HBASE_CONF=$HBASE_HOME/conf/hbase-site.xml
-
-if [ -d ${HBASE_CONF} ]; then
-  CLASSPATH=${HBASE_CONF}:${CLASSPATH}
-fi
-
-
-HBASE_LIB=$HBASE_HOME/lib
-
-if [ -d ${HBASE_LIB} ]; then
-
-  for f in ${HBASE_LIB}/hbase-common-*.jar; do
-    CLASSPATH=${CLASSPATH}:$f;
-  done
-fi
-
-##############################################################################
-# Find and Set HBase CLASSPATH
 ##############################################################################
 
 

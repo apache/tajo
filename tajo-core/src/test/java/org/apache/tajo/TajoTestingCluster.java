@@ -43,13 +43,13 @@ import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanTestRuleProvider;
-import org.apache.tajo.master.QueryInProgress;
 import org.apache.tajo.master.TajoMaster;
-import org.apache.tajo.querymaster.Query;
-import org.apache.tajo.querymaster.Stage;
-import org.apache.tajo.querymaster.StageState;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.plan.rewrite.LogicalPlanTestRuleProvider;
+import org.apache.tajo.querymaster.Query;
+import org.apache.tajo.querymaster.QueryMasterTask;
+import org.apache.tajo.querymaster.Stage;
+import org.apache.tajo.querymaster.StageState;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
@@ -59,7 +59,10 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.net.URL;
 import java.sql.ResultSet;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.TimeZone;
+import java.util.UUID;
 
 public class TajoTestingCluster {
 	private static Log LOG = LogFactory.getLog(TajoTestingCluster.class);
@@ -237,18 +240,14 @@ public class TajoTestingCluster {
    * @throws java.io.IOException
    */
   public MiniDFSCluster startMiniDFSCluster(int servers,
-                                            final File dir,
+                                            File dir,
                                             final String hosts[])
       throws IOException {
     if (dir == null) {
-      this.clusterTestBuildDir = setupClusterTestBuildDir();
-    } else {
-      this.clusterTestBuildDir = dir;
+      dir = setupClusterTestBuildDir();
     }
 
-    System.setProperty(MiniDFSCluster.PROP_TEST_BUILD_DATA,
-        this.clusterTestBuildDir.toString());
-
+    conf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, dir.toString());
     conf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, 1);
     conf.setBoolean(DFSConfigKeys.DFS_CLIENT_READ_SHORTCIRCUIT_KEY, false);
     MiniDFSCluster.Builder builder = new MiniDFSCluster.Builder(new HdfsConfiguration(conf));
@@ -514,10 +513,7 @@ public class TajoTestingCluster {
     this.clusterTestBuildDir = testBuildPath == null?
         setupClusterTestBuildDir() : new File(testBuildPath);
 
-    System.setProperty(TEST_DIRECTORY_KEY,
-        this.clusterTestBuildDir.getAbsolutePath());
-
-    startMiniDFSCluster(numDataNodes, this.clusterTestBuildDir, dataNodeHosts);
+    startMiniDFSCluster(numDataNodes, setupClusterTestBuildDir(), dataNodeHosts);
     this.dfsCluster.waitClusterUp();
 
     hbaseUtil = new HBaseTestClusterUtil(conf, clusterTestBuildDir);
@@ -776,21 +772,20 @@ public class TajoTestingCluster {
     }
   }
 
-  public void waitForQueryRunning(QueryId queryId) throws Exception {
-    waitForQueryRunning(queryId, 50);
+  public void waitForQuerySubmitted(QueryId queryId) throws Exception {
+    waitForQuerySubmitted(queryId, 50);
   }
 
-  public void waitForQueryRunning(QueryId queryId, int delay) throws Exception {
-    QueryInProgress qip = null;
+  public void waitForQuerySubmitted(QueryId queryId, int delay) throws Exception {
+    QueryMasterTask qmt = null;
 
     int i = 0;
-    while (qip == null || TajoClientUtil.isQueryWaitingForSchedule(qip.getQueryInfo().getQueryState())) {
+    while (qmt == null || TajoClientUtil.isQueryWaitingForSchedule(qmt.getState())) {
       try {
         Thread.sleep(delay);
-        if(qip == null){
 
-          TajoMaster master = getMaster();
-          qip = master.getContext().getQueryJobManager().getQueryInProgress(queryId);
+        if (qmt == null) {
+          qmt = getQueryMasterTask(queryId);
         }
       } catch (InterruptedException e) {
       }
@@ -825,5 +820,16 @@ public class TajoTestingCluster {
         throw new IOException("Timed out waiting");
       }
     }
+  }
+
+  public QueryMasterTask getQueryMasterTask(QueryId queryId) {
+    QueryMasterTask qmt = null;
+    for (TajoWorker worker : getTajoWorkers()) {
+      qmt = worker.getWorkerContext().getQueryMaster().getQueryMasterTask(queryId, true);
+      if (qmt != null && queryId.equals(qmt.getQueryId())) {
+        break;
+      }
+    }
+    return qmt;
   }
 }

@@ -121,8 +121,8 @@ public class TajoWorkerClientService extends AbstractService {
       try {
         QueryId queryId = new QueryId(request.getQueryId());
 
-        QueryMasterTask queryMasterTask = workerContext.getQueryMaster().getQueryMasterTask(queryId);
-        QueryHistory queryHistory = null;
+        QueryMasterTask queryMasterTask = workerContext.getQueryMaster().getQueryMasterTask(queryId, true);
+        QueryHistory queryHistory;
         if (queryMasterTask == null) {
           queryHistory = workerContext.getHistoryReader().getQueryHistory(queryId.toString());
         } else {
