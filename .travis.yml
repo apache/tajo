@@ -37,7 +37,7 @@ notifications:
 install: ./dev-support/travis-install-dependencies.sh
 
 script: 
-  mvn clean test-compile install -Phcatalog-0.12.0 -DskipTests
+  MAVEN_OPTS="$MAVEN_OPTS -Dorg.slf4j.simpleLogger.defaultLogLevel=warn" mvn clean test-compile install -Phcatalog-0.12.0 -DskipTests
 
 after_success:
   mvn surefire:test -Pparallel-test,hcatalog-0.12.0 -DLOG_LEVEL=WARN -Dmaven.fork.count=3
