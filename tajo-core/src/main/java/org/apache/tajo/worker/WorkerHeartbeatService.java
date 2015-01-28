@@ -35,6 +35,7 @@ import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.storage.DiskDeviceInfo;
 import org.apache.tajo.storage.DiskMountInfo;
 import org.apache.tajo.storage.DiskUtil;
@@ -183,22 +184,9 @@ public class WorkerHeartbeatService extends AbstractService {
         try {
           CallFuture<TajoHeartbeatResponse> callBack = new CallFuture<TajoHeartbeatResponse>();
 
-          // In TajoMaster HA mode, if backup master be active status,
-          // worker may fail to connect existing active master. Thus,
-          // if worker can't connect the master, worker should try to connect another master and
-          // update master address in worker context.
-          if (systemConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
-            try {
-              rmClient = connectionPool.getConnection(context.getResourceTrackerAddress(), TajoResourceTrackerProtocol.class, true);
-            } catch (Exception e) {
-              context.setWorkerResourceTrackerAddr(HAServiceUtil.getResourceTrackerAddress(systemConf));
-              context.setTajoMasterAddress(HAServiceUtil.getMasterUmbilicalAddress(systemConf));
-              rmClient = connectionPool.getConnection(context.getResourceTrackerAddress(), TajoResourceTrackerProtocol.class, true);
-            }
-          } else {
-            rmClient = connectionPool.getConnection(context.getResourceTrackerAddress(), TajoResourceTrackerProtocol.class, true);
-          }
-
+          ServiceTracker serviceTracker = context.getServiceTracker();
+          rmClient = connectionPool.getConnection(serviceTracker.getResourceTrackerAddress(),
+              TajoResourceTrackerProtocol.class, true);
           TajoResourceTrackerProtocol.TajoResourceTrackerProtocolService resourceTracker = rmClient.getStub();
           resourceTracker.heartbeat(callBack.getController(), heartbeatProto, callBack);
 

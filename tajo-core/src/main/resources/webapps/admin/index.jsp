@@ -23,8 +23,8 @@
 <%@ page import="org.apache.tajo.conf.TajoConf" %>
 <%@ page import="org.apache.tajo.ipc.QueryCoordinatorProtocol" %>
 <%@ page import="org.apache.tajo.master.TajoMaster" %>
-<%@ page import="org.apache.tajo.ha.HAService" %>
-<%@ page import="org.apache.tajo.ha.TajoMasterInfo" %>
+<%@ page import="org.apache.tajo.service.ServiceTracker" %>
+<%@ page import="org.apache.tajo.service.TajoMasterInfo" %>
 <%@ page import="org.apache.tajo.master.QueryInProgress" %>
 <%@ page import="org.apache.tajo.master.rm.Worker" %>
 <%@ page import="org.apache.tajo.master.rm.WorkerState" %>
@@ -35,6 +35,7 @@
 <%@ page import="java.util.Collection" %>
 <%@ page import="java.util.Date" %>
 <%@ page import="java.util.Map" %>
+<%@ page import="org.apache.tajo.service.ServiceTracker" %>
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
@@ -85,7 +86,7 @@
   String numDeadWorkersHtml = numDeadWorkers == 0 ? "0" : "<font color='red'>" + numDeadWorkers + "</font>";
   String numDeadQueryMastersHtml = numDeadQueryMasters == 0 ? "0" : "<font color='red'>" + numDeadQueryMasters + "</font>";
 
-  HAService haService = master.getContext().getHAService();
+  ServiceTracker haService = master.getContext().getHAService();
   List<TajoMasterInfo> masters = TUtil.newList();
 
   String activeLabel = "";
