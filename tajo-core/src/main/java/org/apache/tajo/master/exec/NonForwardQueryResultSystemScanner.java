@@ -20,7 +20,10 @@ package org.apache.tajo.master.exec;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 
 import org.apache.commons.logging.Log;
@@ -56,6 +59,8 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.TajoMaster.MasterContext;
+import org.apache.tajo.master.rm.Worker;
+import org.apache.tajo.master.rm.WorkerResource;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.EvalNode;
@@ -426,6 +431,141 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     return tuples;
   }
   
+  private Tuple getQueryMasterTuple(Schema outSchema, Worker aWorker) {
+    List<Column> columns = outSchema.getColumns();
+    Tuple aTuple = new VTuple(outSchema.size());
+    WorkerResource aResource = aWorker.getResource();
+    
+    for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
+      Column column = columns.get(fieldId);
+      
+      if ("host".equalsIgnoreCase(column.getSimpleName())) {
+        if (aWorker.getConnectionInfo() != null && aWorker.getConnectionInfo().getHost() != null) {
+          aTuple.put(fieldId, DatumFactory.createText(aWorker.getConnectionInfo().getHost()));
+        } else {
+          aTuple.put(fieldId, DatumFactory.createNullDatum());
+        }
+      } else if ("port".equalsIgnoreCase(column.getSimpleName())) {
+        if (aWorker.getConnectionInfo() != null) {
+          aTuple.put(fieldId, DatumFactory.createInt4(aWorker.getConnectionInfo().getQueryMasterPort()));
+        } else {
+          aTuple.put(fieldId, DatumFactory.createNullDatum());
+        }
+      } else if ("type".equalsIgnoreCase(column.getSimpleName())) {
+        aTuple.put(fieldId, DatumFactory.createText("QueryMaster"));
+      } else if ("status".equalsIgnoreCase(column.getSimpleName())) {
+        aTuple.put(fieldId, DatumFactory.createText(aWorker.getState().toString()));
+      } else if ("RUNNING".equalsIgnoreCase(aWorker.getState().toString())) {
+        if ("running_tasks".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createInt4(aResource.getNumQueryMasterTasks()));
+        } else if ("free_heap".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createInt8(aResource.getFreeHeap()));
+        } else if ("max_heap".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createInt8(aResource.getMaxHeap()));
+        } else if ("heartbeat".equalsIgnoreCase(column.getSimpleName())) {
+          if (aWorker.getLastHeartbeatTime() > 0) {
+            aTuple.put(fieldId, DatumFactory.createTimestmpDatumWithJavaMillis(aWorker.getLastHeartbeatTime()));
+          } else {
+            aTuple.put(fieldId, DatumFactory.createNullDatum());
+          }
+        }
+      } else {
+        aTuple.put(fieldId, DatumFactory.createNullDatum());
+      }
+    }
+    
+    return aTuple;
+  }
+  
+  private Tuple getWorkerTuple(Schema outSchema, Worker aWorker) {
+    List<Column> columns = outSchema.getColumns();
+    Tuple aTuple = new VTuple(outSchema.size());
+    WorkerResource aResource = aWorker.getResource();
+    
+    for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
+      Column column = columns.get(fieldId);
+      
+      if ("host".equalsIgnoreCase(column.getSimpleName())) {
+        if (aWorker.getConnectionInfo() != null && aWorker.getConnectionInfo().getHost() != null) {
+          aTuple.put(fieldId, DatumFactory.createText(aWorker.getConnectionInfo().getHost()));
+        } else {
+          aTuple.put(fieldId, DatumFactory.createNullDatum());
+        }
+      } else if ("port".equalsIgnoreCase(column.getSimpleName())) {
+        if (aWorker.getConnectionInfo() != null) {
+          aTuple.put(fieldId, DatumFactory.createInt4(aWorker.getConnectionInfo().getPeerRpcPort()));
+        } else {
+          aTuple.put(fieldId, DatumFactory.createNullDatum());
+        }
+      } else if ("type".equalsIgnoreCase(column.getSimpleName())) {
+        aTuple.put(fieldId, DatumFactory.createText("Worker"));
+      } else if ("status".equalsIgnoreCase(column.getSimpleName())) {
+        aTuple.put(fieldId, DatumFactory.createText(aWorker.getState().toString()));
+      } else if ("RUNNING".equalsIgnoreCase(aWorker.getState().toString())) {
+        if ("total_cpu".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createInt4(aResource.getCpuCoreSlots()));
+        } else if ("used_mem".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createInt4(aResource.getUsedMemoryMB()));
+        } else if ("total_mem".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createInt4(aResource.getMemoryMB()));
+        } else if ("free_heap".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createInt8(aResource.getFreeHeap()));
+        } else if ("max_heap".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createInt8(aResource.getMaxHeap()));
+        } else if ("used_diskslots".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createFloat4(aResource.getUsedDiskSlots()));
+        } else if ("total_diskslots".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createFloat4(aResource.getDiskSlots()));
+        } else if ("running_tasks".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createInt4(aResource.getNumRunningTasks()));
+        } else if ("heartbeat".equalsIgnoreCase(column.getSimpleName())) {
+          if (aWorker.getLastHeartbeatTime() > 0) {
+            aTuple.put(fieldId, DatumFactory.createTimestmpDatumWithJavaMillis(aWorker.getLastHeartbeatTime()));
+          } else {
+            aTuple.put(fieldId, DatumFactory.createNullDatum());
+          }
+        }
+      }
+      else {
+        aTuple.put(fieldId, DatumFactory.createNullDatum());
+      }
+    }
+    
+    return aTuple;
+  }
+  
+  private List<Tuple> getWorkers(Schema outSchema) {
+    Map<Integer, Worker> workerMap = masterContext.getResourceManager().getWorkers();
+    Set<Integer> keySet = workerMap.keySet();
+    List<Tuple> tuples = Collections.emptyList();
+    List<Worker> queryMasterList = new ArrayList<Worker>();
+    List<Worker> workerList = new ArrayList<Worker>();
+    
+    for (Integer keyId: keySet) {
+      Worker aWorker = workerMap.get(keyId);
+      WorkerResource aResource = aWorker.getResource();
+      
+      if (aResource.isQueryMasterMode()) {
+        queryMasterList.add(aWorker);
+      }
+      
+      if (aResource.isTaskRunnerMode()) {
+        workerList.add(aWorker);
+      }
+    }
+    
+    tuples = new ArrayList<Tuple>(queryMasterList.size() + workerList.size());
+    for (Worker queryMaster: queryMasterList) {
+      tuples.add(getQueryMasterTuple(outSchema, queryMaster));
+    }
+    
+    for (Worker worker: workerList) {
+      tuples.add(getWorkerTuple(outSchema, worker));
+    }
+    
+    return tuples;
+  }
+  
   private List<Tuple> fetchSystemTable(TableDesc tableDesc, Schema inSchema) {
     List<Tuple> tuples = null;
     String tableName = CatalogUtil.extractSimpleName(tableDesc.getName());
@@ -446,6 +586,8 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
       tuples = getAllTableStats(inSchema);
     } else if ("partitions".equalsIgnoreCase(tableName)) {
       tuples = getAllPartitions(inSchema);
+    } else if ("workers".equalsIgnoreCase(tableName)) {
+      tuples = getWorkers(inSchema);
     }
     
     return tuples;    

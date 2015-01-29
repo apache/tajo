@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.apache.tajo.catalog.exception.NoSuchTableException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.util.TUtil;
 
 public class InfoSchemaMetadataDictionary {
@@ -39,6 +40,7 @@ public class InfoSchemaMetadataDictionary {
     TABLEOPTIONS,
     TABLESTATS,
     PARTITIONS,
+    WORKERS,
     MAX_TABLE;
   }
   
@@ -58,6 +60,7 @@ public class InfoSchemaMetadataDictionary {
     schemaInfoTableDescriptors.set(DEFINED_TABLES.TABLEOPTIONS.ordinal(), new TableOptionsTableDescriptor(this));
     schemaInfoTableDescriptors.set(DEFINED_TABLES.TABLESTATS.ordinal(), new TableStatsTableDescriptor(this));
     schemaInfoTableDescriptors.set(DEFINED_TABLES.PARTITIONS.ordinal(), new PartitionsTableDescriptor(this));
+    schemaInfoTableDescriptors.set(DEFINED_TABLES.WORKERS.ordinal(), new WorkersTableDescriptor(this));
   }
 
   public boolean isSystemDatabase(String databaseName) {
@@ -119,6 +122,6 @@ public class InfoSchemaMetadataDictionary {
   }
   
   protected String getTablePath() {
-    return "SYSTEM";
+    return StoreType.SYSTEM.name().toUpperCase();
   }
 }
