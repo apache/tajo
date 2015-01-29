@@ -27,6 +27,7 @@ public interface HBaseStorageConstants {
   public static final String META_SPLIT_ROW_KEYS_KEY = "hbase.split.rowkeys";
   public static final String META_SPLIT_ROW_KEYS_FILE_KEY = "hbase.split.rowkeys.file";
   public static final String META_ZK_QUORUM_KEY = "hbase.zookeeper.quorum";
+  public static final String META_ZK_CLIENT_PORT = "hbase.zookeeper.property.clientPort";
   public static final String META_ROWKEY_DELIMITER = "hbase.rowkey.delimiter";
 
   public static final String INSERT_PUT_MODE = "tajo.hbase.insert.put.mode";

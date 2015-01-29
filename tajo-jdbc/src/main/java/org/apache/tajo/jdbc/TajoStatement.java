@@ -118,7 +118,7 @@ public class TajoStatement implements Statement {
   @Override
   public ResultSet executeQuery(String sql) throws SQLException {
     if (isClosed) {
-      throw new SQLFeatureNotSupportedException("Can't execute after statement has been closed");
+      throw new SQLException("Can't execute after statement has been closed");
     }
 
     try {
@@ -130,7 +130,7 @@ public class TajoStatement implements Statement {
         return tajoClient.executeQueryAndGetResult(sql);
       }
     } catch (Exception e) {
-      throw new SQLFeatureNotSupportedException(e.getMessage(), e);
+      throw new SQLException(e.getMessage(), e);
     }
   }
 

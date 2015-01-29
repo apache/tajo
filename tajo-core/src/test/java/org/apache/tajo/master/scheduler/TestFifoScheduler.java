@@ -68,7 +68,7 @@ public class TestFifoScheduler {
     QueryId queryId = new QueryId(res.getQueryId());
     QueryId queryId2 = new QueryId(res2.getQueryId());
 
-    cluster.waitForQueryRunning(queryId);
+    cluster.waitForQuerySubmitted(queryId);
     client.killQuery(queryId2);
     assertEquals(TajoProtos.QueryState.QUERY_KILLED, client.getQueryStatus(queryId2).getState());
   }
@@ -82,7 +82,7 @@ public class TestFifoScheduler {
 
     QueryId queryId = new QueryId(res.getQueryId());
     QueryId queryId2 = new QueryId(res2.getQueryId());
-    cluster.waitForQueryRunning(queryId);
+    cluster.waitForQuerySubmitted(queryId);
 
     assertEquals(TajoProtos.QueryState.QUERY_SUCCEEDED, client.getQueryStatus(queryId2).getState());
     ResultSet resSet = TajoClientUtil.createResultSet(conf, client, res2);
@@ -101,9 +101,9 @@ public class TestFifoScheduler {
     QueryId queryId3 = new QueryId(res3.getQueryId());
     QueryId queryId4 = new QueryId(res4.getQueryId());
 
-    cluster.waitForQueryRunning(queryId);
+    cluster.waitForQuerySubmitted(queryId);
 
-    assertTrue(TajoClientUtil.isQueryRunning(client.getQueryStatus(queryId).getState()));
+    assertFalse(TajoClientUtil.isQueryComplete(client.getQueryStatus(queryId).getState()));
 
     assertEquals(TajoProtos.QueryState.QUERY_MASTER_INIT, client.getQueryStatus(queryId2).getState());
     assertEquals(TajoProtos.QueryState.QUERY_MASTER_INIT, client.getQueryStatus(queryId3).getState());

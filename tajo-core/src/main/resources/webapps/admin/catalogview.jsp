@@ -24,12 +24,13 @@
 <%@ page import="org.apache.tajo.catalog.TableDesc" %>
 <%@ page import="org.apache.tajo.catalog.partition.PartitionMethodDesc" %>
 <%@ page import="org.apache.tajo.master.TajoMaster" %>
-<%@ page import="org.apache.tajo.ha.HAService" %>
+<%@ page import="org.apache.tajo.service.ServiceTracker" %>
 <%@ page import="org.apache.tajo.util.FileUtil" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="java.util.Collection" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
+<%@ page import="org.apache.tajo.service.ServiceTracker" %>
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
   CatalogService catalog = master.getCatalog();
@@ -59,7 +60,7 @@
   //TODO filter with database
   Collection<String> tableNames = catalog.getAllTableNames(selectedDatabase);
 
-  HAService haService = master.getContext().getHAService();
+  ServiceTracker haService = master.getContext().getHAService();
   String activeLabel = "";
   if (haService != null) {
     if (haService.isActiveStatus()) {
