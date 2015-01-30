@@ -16,41 +16,15 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.ha;
+package org.apache.tajo.service;
 
-import java.io.IOException;
-import java.util.List;
+public class ServiceTrackerException extends RuntimeException {
 
-/**
- * The HAService is responsible for setting active TajoMaster on startup or when the
- * current active is changing (eg due to failure), monitoring the health of TajoMaster.
- *
- */
-public interface HAService {
+  public ServiceTrackerException(Throwable t) {
+    super(t);
+  }
 
-  /**
-   * Add master name to shared storage.
-   */
-  public void register() throws IOException;
-
-
-  /**
-   * Delete master name to shared storage.
-   *
-   */
-  public void delete() throws IOException;
-
-  /**
-   *
-   * @return True if current master is an active master.
-   */
-  public boolean isActiveStatus();
-
-  /**
-   *
-   * @return return all master list
-   * @throws IOException
-   */
-  public List<TajoMasterInfo> getMasters() throws IOException;
-
+  public ServiceTrackerException(String message) {
+    super(message);
+  }
 }

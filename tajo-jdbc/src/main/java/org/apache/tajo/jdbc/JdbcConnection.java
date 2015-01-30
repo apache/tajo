@@ -23,12 +23,11 @@ import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.TajoConstants;
-import org.apache.tajo.client.CatalogAdminClient;
-import org.apache.tajo.client.QueryClient;
-import org.apache.tajo.client.TajoClient;
-import org.apache.tajo.client.TajoClientImpl;
+import org.apache.tajo.client.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.jdbc.util.QueryStringDecoder;
+import org.apache.tajo.service.ServiceTracker;
+import org.apache.tajo.util.NetUtils;
 
 import java.io.IOException;
 import java.net.URI;
@@ -109,7 +108,8 @@ public class JdbcConnection implements Connection {
     }
 
     try {
-      tajoClient = new TajoClientImpl(hostName, port, databaseName);
+      ServiceTracker serviceTracker = new DummyServiceTracker(NetUtils.createSocketAddr(hostName, port));
+      tajoClient = new TajoClientImpl(tajoConf, serviceTracker, databaseName);
     } catch (Exception e) {
       throw new SQLException("Cannot create TajoClient instance:" + e.getMessage(), "TAJO-002");
     }

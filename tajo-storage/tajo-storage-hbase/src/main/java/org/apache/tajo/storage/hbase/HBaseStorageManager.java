@@ -312,6 +312,17 @@ public class HBaseStorageManager extends StorageManager {
           HBaseStorageConstants.META_ZK_QUORUM_KEY + "' attribute.");
     }
 
+    String zkPort = hbaseConf.get(HConstants.ZOOKEEPER_CLIENT_PORT);
+    if (tableMeta.containsOption(HBaseStorageConstants.META_ZK_CLIENT_PORT)) {
+      zkPort = tableMeta.getOption(HBaseStorageConstants.META_ZK_CLIENT_PORT, "");
+      hbaseConf.set(HConstants.ZOOKEEPER_CLIENT_PORT, zkPort);
+    }
+
+    if (zkPort == null || zkPort.trim().isEmpty()) {
+      throw new IOException("HBase mapped table is required a '" +
+        HBaseStorageConstants.META_ZK_CLIENT_PORT + "' attribute.");
+    }
+
     for (Map.Entry<String, String> eachOption: tableMeta.getOptions().getAllKeyValus().entrySet()) {
       String key = eachOption.getKey();
       if (key.startsWith(HConstants.ZK_CFG_PROPERTY_PREFIX)) {

@@ -29,12 +29,13 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.ServerCallable;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
+import org.apache.tajo.service.ServiceTracker;
+import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.ProtoUtil;
 import org.apache.tajo.util.TUtil;
 
@@ -49,6 +50,7 @@ import java.util.List;
 public abstract class AbstractCatalogClient implements CatalogService {
   private final Log LOG = LogFactory.getLog(AbstractCatalogClient.class);
 
+  protected ServiceTracker serviceTracker;
   protected RpcConnectionPool pool;
   protected InetSocketAddress catalogServerAddr;
   protected TajoConf conf;
@@ -58,6 +60,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
   public AbstractCatalogClient(TajoConf conf, InetSocketAddress catalogServerAddr) {
     this.pool = RpcConnectionPool.getPool();
     this.catalogServerAddr = catalogServerAddr;
+    this.serviceTracker = ServiceTrackerFactory.get(conf);
     this.conf = conf;
   }
 
@@ -65,14 +68,11 @@ public abstract class AbstractCatalogClient implements CatalogService {
     if (catalogServerAddr == null) {
       return null;
     } else {
+
       if (!conf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
         return catalogServerAddr;
       } else {
-        if (!HAServiceUtil.isMasterAlive(catalogServerAddr, conf)) {
-          return HAServiceUtil.getCatalogAddress(conf);
-        } else {
-          return catalogServerAddr;
-        }
+        return serviceTracker.getCatalogAddress();
       }
     }
   }
