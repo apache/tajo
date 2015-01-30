@@ -315,7 +315,6 @@ public abstract class StorageManager {
    * @throws java.io.IOException
    */
   public static StorageManager getStorageManager(TajoConf tajoConf, StoreType storeType) throws IOException {
-
     FileSystem fileSystem = TajoConf.getWarehouseDir(tajoConf).getFileSystem(tajoConf);
     if (fileSystem != null) {
       return getStorageManager(tajoConf, storeType, fileSystem.getUri().toString());
