@@ -48,7 +48,6 @@ import static org.junit.Assert.*;
 public class TestFileStorageManager {
 	private TajoConf conf;
 	private static String TEST_PATH = "target/test-data/TestFileStorageManager";
-  StorageManager sm = null;
   private Path testDir;
   private FileSystem fs;
 
@@ -57,7 +56,6 @@ public class TestFileStorageManager {
 		conf = new TajoConf();
     testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     fs = testDir.getFileSystem(conf);
-    sm = StorageManager.getFileStorageManager(conf, testDir);
 	}
 
 	@After
@@ -84,14 +82,17 @@ public class TestFileStorageManager {
 
     Path path = StorageUtil.concatPath(testDir, "testGetScannerAndAppender", "table.csv");
     fs.mkdirs(path.getParent());
-		Appender appender = ((FileStorageManager)StorageManager.getFileStorageManager(conf)).getAppender(meta, schema, path);
+    FileStorageManager fileStorageManager = (FileStorageManager)StorageManager.getFileStorageManager(conf);
+    assertEquals(fs, fileStorageManager.getFileSystem());
+
+		Appender appender = fileStorageManager.getAppender(meta, schema, path);
     appender.init();
 		for(Tuple t : tuples) {
 		  appender.addTuple(t);
 		}
 		appender.close();
 
-		Scanner scanner = ((FileStorageManager)StorageManager.getFileStorageManager(conf)).getFileScanner(meta, schema, path);
+		Scanner scanner = fileStorageManager.getFileScanner(meta, schema, path);
     scanner.init();
 		int i=0;
 		while(scanner.next() != null) {
@@ -110,6 +111,9 @@ public class TestFileStorageManager {
 
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
         .numDataNodes(1).build();
+    cluster.waitClusterUp();
+    TajoConf tajoConf = new TajoConf(conf);
+    tajoConf.setVar(TajoConf.ConfVars.ROOT_DIR, cluster.getFileSystem().getUri() + "/tajo");
 
     int testCount = 10;
     Path tablePath = new Path("/testGetSplit");
@@ -125,7 +129,8 @@ public class TestFileStorageManager {
       }
 
       assertTrue(fs.exists(tablePath));
-      FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(new TajoConf(conf), tablePath);
+      FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(tajoConf, tablePath);
+      assertEquals(fs, sm.getFileSystem());
 
       Schema schema = new Schema();
       schema.addColumn("id", Type.INT4);
@@ -165,6 +170,10 @@ public class TestFileStorageManager {
 
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
         .numDataNodes(2).build();
+    cluster.waitClusterUp();
+
+    TajoConf tajoConf = new TajoConf(conf);
+    tajoConf.setVar(TajoConf.ConfVars.ROOT_DIR, cluster.getFileSystem().getUri() + "/tajo");
 
     int testCount = 10;
     Path tablePath = new Path("/testGetSplitWithBlockStorageLocationsBatching");
@@ -177,7 +186,8 @@ public class TestFileStorageManager {
         DFSTestUtil.createFile(fs, tmpFile, 10, (short) 2, 0xDEADDEADl);
       }
       assertTrue(fs.exists(tablePath));
-      FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(new TajoConf(conf), tablePath);
+      FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(tajoConf, tablePath);
+      assertEquals(fs, sm.getFileSystem());
 
       Schema schema = new Schema();
       schema.addColumn("id", Type.INT4);
