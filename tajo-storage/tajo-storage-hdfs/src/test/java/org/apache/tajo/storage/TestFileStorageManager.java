@@ -38,7 +38,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
@@ -153,10 +152,7 @@ public class TestFileStorageManager {
       assertEquals(-1, ((FileFragment)splits.get(0)).getDiskIds()[0]);
       fs.close();
     } finally {
-      cluster.shutdown();
-
-      File dir = new File(testDataPath);
-      dir.delete();
+      cluster.shutdown(true);
     }
   }
 
@@ -204,10 +200,36 @@ public class TestFileStorageManager {
       assertNotEquals(-1, ((FileFragment)splits.get(0)).getDiskIds()[0]);
       fs.close();
     } finally {
-      cluster.shutdown();
+      cluster.shutdown(true);
+    }
+  }
 
-      File dir = new File(testDataPath);
-      dir.delete();
+  @Test
+  public void testStoreType() throws Exception {
+    final Configuration hdfsConf = new HdfsConfiguration();
+    String testDataPath = TEST_PATH + "/" + UUID.randomUUID().toString();
+    hdfsConf.set(MiniDFSCluster.HDFS_MINIDFS_BASEDIR, testDataPath);
+    hdfsConf.setLong(DFSConfigKeys.DFS_NAMENODE_MIN_BLOCK_SIZE_KEY, 0);
+    hdfsConf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED, true);
+
+    final MiniDFSCluster cluster = new MiniDFSCluster.Builder(hdfsConf)
+        .numDataNodes(2).build();
+    cluster.waitClusterUp();
+
+    TajoConf tajoConf = new TajoConf(hdfsConf);
+    tajoConf.setVar(TajoConf.ConfVars.ROOT_DIR, cluster.getFileSystem().getUri() + "/tajo");
+
+    try {
+      /* Local FileSystem */
+      FileStorageManager sm = (FileStorageManager)StorageManager.getStorageManager(conf, StoreType.CSV);
+      assertEquals(fs.getUri(), sm.getFileSystem().getUri());
+
+      /* Distributed FileSystem */
+      sm = (FileStorageManager)StorageManager.getStorageManager(tajoConf, StoreType.CSV);
+      assertNotEquals(fs.getUri(), sm.getFileSystem().getUri());
+      assertEquals(cluster.getFileSystem().getUri(), sm.getFileSystem().getUri());
+    } finally {
+      cluster.shutdown(true);
     }
   }
 }
