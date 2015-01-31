@@ -83,7 +83,7 @@ public class TestFileStorageManager {
     Path path = StorageUtil.concatPath(testDir, "testGetScannerAndAppender", "table.csv");
     fs.mkdirs(path.getParent());
     FileStorageManager fileStorageManager = (FileStorageManager)StorageManager.getFileStorageManager(conf);
-    assertEquals(fs, fileStorageManager.getFileSystem());
+    assertEquals(fs.getUri(), fileStorageManager.getFileSystem().getUri());
 
 		Appender appender = fileStorageManager.getAppender(meta, schema, path);
     appender.init();
@@ -130,7 +130,7 @@ public class TestFileStorageManager {
 
       assertTrue(fs.exists(tablePath));
       FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(tajoConf, tablePath);
-      assertEquals(fs, sm.getFileSystem());
+      assertEquals(fs.getUri(), sm.getFileSystem().getUri());
 
       Schema schema = new Schema();
       schema.addColumn("id", Type.INT4);
@@ -187,7 +187,7 @@ public class TestFileStorageManager {
       }
       assertTrue(fs.exists(tablePath));
       FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(tajoConf, tablePath);
-      assertEquals(fs, sm.getFileSystem());
+      assertEquals(fs.getUri(), sm.getFileSystem().getUri());
 
       Schema schema = new Schema();
       schema.addColumn("id", Type.INT4);
