@@ -358,7 +358,7 @@ public class TestTajoCli {
       assertNotNull(tableDesc);
       assertEquals(0L, tableDesc.getStats().getNumRows().longValue());
 
-      InputStream testInput = new ByteArrayInputStream("q".getBytes());
+      InputStream testInput = new ByteArrayInputStream(new byte[]{(byte) DefaultTajoCliOutputFormatter.QUIT_COMMAND});
       cli = new TajoCli(cluster.getConfiguration(), new String[]{}, testInput, out);
       setVar(cli, SessionVars.CLI_PAGE_ROWS, "2");
       setVar(cli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());

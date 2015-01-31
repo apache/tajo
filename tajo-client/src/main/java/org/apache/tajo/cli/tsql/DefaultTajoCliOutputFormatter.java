@@ -37,6 +37,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
   private boolean printPause;
   private boolean printErrorTrace;
   private String nullChar;
+  public static char QUIT_COMMAND = 'q';
 
   @Override
   public void init(TajoCli.TajoCliContext context) {
@@ -123,7 +124,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
         }
         sout.flush();
         if (sin != null) {
-          if (sin.read() == 'q') {
+          if (sin.read() == QUIT_COMMAND) {
             endOfTuple = false;
             sout.println();
             break;
