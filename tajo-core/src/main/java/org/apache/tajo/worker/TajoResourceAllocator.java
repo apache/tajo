@@ -51,6 +51,7 @@ import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcConnectionPool;
+import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.util.ApplicationIdUtils;
 
 import java.net.InetSocketAddress;
@@ -274,31 +275,8 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
       RpcConnectionPool connPool = RpcConnectionPool.getPool();
       NettyClientBase tmClient = null;
       try {
-
-        // In TajoMaster HA mode, if backup master be active status,
-        // worker may fail to connect existing active master. Thus,
-        // if worker can't connect the master, worker should try to connect another master and
-        // update master address in worker context.
-        if (tajoConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
-          try {
-            tmClient = connPool.getConnection(
-              queryTaskContext.getQueryMasterContext().getWorkerContext().getTajoMasterAddress(),
-              QueryCoordinatorProtocol.class, true);
-          } catch (Exception e) {
-            queryTaskContext.getQueryMasterContext().getWorkerContext().
-              setWorkerResourceTrackerAddr(HAServiceUtil.getResourceTrackerAddress(tajoConf));
-            queryTaskContext.getQueryMasterContext().getWorkerContext().
-              setTajoMasterAddress(HAServiceUtil.getMasterUmbilicalAddress(tajoConf));
-            tmClient = connPool.getConnection(
-              queryTaskContext.getQueryMasterContext().getWorkerContext().getTajoMasterAddress(),
-              QueryCoordinatorProtocol.class, true);
-          }
-        } else {
-          tmClient = connPool.getConnection(
-            queryTaskContext.getQueryMasterContext().getWorkerContext().getTajoMasterAddress(),
-            QueryCoordinatorProtocol.class, true);
-        }
-
+        ServiceTracker serviceTracker = queryTaskContext.getQueryMasterContext().getWorkerContext().getServiceTracker();
+        tmClient = connPool.getConnection(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
         QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
         masterClientService.allocateWorkerResources(null, request, callBack);
       } catch (Throwable e) {

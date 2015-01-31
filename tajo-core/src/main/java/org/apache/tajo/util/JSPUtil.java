@@ -23,16 +23,16 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.master.TajoMaster.MasterContext;
-import org.apache.tajo.ha.HAService;
 import org.apache.tajo.master.QueryInProgress;
+import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.querymaster.QueryMasterTask;
-import org.apache.tajo.querymaster.Task;
 import org.apache.tajo.querymaster.Stage;
-import org.apache.tajo.util.history.TaskHistory;
+import org.apache.tajo.querymaster.Task;
+import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.util.history.StageHistory;
-import org.apache.tajo.worker.TaskRunnerHistory;
+import org.apache.tajo.util.history.TaskHistory;
 import org.apache.tajo.worker.TaskRunner;
+import org.apache.tajo.worker.TaskRunnerHistory;
 
 import java.text.DecimalFormat;
 import java.util.*;
@@ -191,7 +191,7 @@ public class JSPUtil {
   }
 
   public static String getMasterActiveLabel(MasterContext context) {
-    HAService haService = context.getHAService();
+    ServiceTracker haService = context.getHAService();
     String activeLabel = "";
     if (haService != null) {
       if (haService.isActiveStatus()) {

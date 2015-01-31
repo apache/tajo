@@ -26,6 +26,8 @@ import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rule.*;
 import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
+import org.apache.tajo.service.ServiceTracker;
+import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.TajoWorker;
 
@@ -45,13 +47,8 @@ public class ConnectivityCheckerRuleForTajoWorker implements SelfDiagnosisRule {
     InetSocketAddress masterAddress = null;
     
     try {
-      if (tajoConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
-        masterAddress = HAServiceUtil.getMasterUmbilicalAddress(tajoConf);
-      } else {
-        masterAddress = NetUtils.createSocketAddr(tajoConf.getVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS));
-      }
-      masterClient = pool.getConnection(masterAddress, QueryCoordinatorProtocol.class, true);
-      
+      ServiceTracker serviceTracker = ServiceTrackerFactory.get(tajoConf);
+      masterClient = pool.getConnection(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
       masterClient.getStub();
     } finally {
       if (masterClient != null) {
