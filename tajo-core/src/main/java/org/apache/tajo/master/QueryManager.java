@@ -320,10 +320,6 @@ public class QueryManager extends CompositeService {
     queryInfo.setQueryState(queryHeartbeat.getState());
     queryInfo.setProgress(queryHeartbeat.getQueryProgress());
 
-    if (queryHeartbeat.hasQueryFinishTime()) {
-      queryInfo.setFinishTime(queryHeartbeat.getQueryFinishTime());
-    }
-
     if (queryHeartbeat.hasResultDesc()) {
       queryInfo.setResultDesc(new TableDesc(queryHeartbeat.getResultDesc()));
     }

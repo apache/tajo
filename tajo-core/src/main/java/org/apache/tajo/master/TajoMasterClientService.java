@@ -393,9 +393,7 @@ public class TajoMasterClientService extends AbstractService {
           infoBuilder.setState(queryInfo.getQueryState());
           infoBuilder.setQuery(queryInfo.getSql());
           infoBuilder.setStartTime(queryInfo.getStartTime());
-          long endTime = (queryInfo.getFinishTime() == 0) ?
-                         System.currentTimeMillis() : queryInfo.getFinishTime();
-          infoBuilder.setFinishTime(endTime);
+          infoBuilder.setFinishTime(System.currentTimeMillis());
           infoBuilder.setProgress(queryInfo.getProgress());
           infoBuilder.setQueryMasterPort(queryInfo.getQueryMasterPort());
           infoBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
@@ -428,9 +426,7 @@ public class TajoMasterClientService extends AbstractService {
           infoBuilder.setState(queryInfo.getQueryState());
           infoBuilder.setQuery(queryInfo.getSql());
           infoBuilder.setStartTime(queryInfo.getStartTime());
-          long endTime = (queryInfo.getFinishTime() == 0) ?
-              System.currentTimeMillis() : queryInfo.getFinishTime();
-          infoBuilder.setFinishTime(endTime);
+          infoBuilder.setFinishTime(System.currentTimeMillis());
           infoBuilder.setProgress(queryInfo.getProgress());
           infoBuilder.setQueryMasterPort(queryInfo.getQueryMasterPort());
           infoBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
@@ -485,11 +481,7 @@ public class TajoMasterClientService extends AbstractService {
               builder.setQueryMasterHost(queryInfo.getQueryMasterHost());
               builder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
             }
-            if (queryInfo.getQueryState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
-              builder.setFinishTime(queryInfo.getFinishTime());
-            } else {
-              builder.setFinishTime(System.currentTimeMillis());
-            }
+            builder.setFinishTime(System.currentTimeMillis());
           } else {
             Session session = context.getSessionManager().getSession(request.getSessionId().getId());
             if (session.getNonForwardQueryResultScanner(queryId) != null) {
