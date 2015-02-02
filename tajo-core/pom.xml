@@ -716,7 +716,7 @@
             </executions>
             <configuration combine.self="override">
               <forkCount>${maven.fork.count}</forkCount>
-              <reuseForks>false</reuseForks>
+              <reuseForks>true</reuseForks>
               <argLine>-Xms512m -Xmx1024m -XX:MaxPermSize=128m -Dfile.encoding=UTF-8</argLine>
               <useSystemClassLoader>false</useSystemClassLoader>
               <useManifestOnlyJar>true</useManifestOnlyJar>
