@@ -27,6 +27,9 @@ Release 0.10.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1320: HBaseStorageManager need to support Zookeeper Client Port.
+    (jaehwa)
+
     TAJO-1309: Add missing break point in physical operator. (jinho)
 
     TAJO-1307: HBaseStorageManager need to support for users to use
@@ -170,6 +173,13 @@ Release 0.10.0 - unreleased
 
 
   BUG FIXES
+
+    TAJO-1319: Tajo can't find HBase configuration file. (jaehwa)
+
+    TAJO-1312: Stage causes Invalid event error: SQ_SHUFFLE_REPORT 
+    at KILLED. (jinho)
+
+    TAJO-1318: Unit test failure after miniDFS cluster restart. (jinho)
 
     TAJO-1289: History reader fails to get the query information after 
     a successful query execution. (jinho)

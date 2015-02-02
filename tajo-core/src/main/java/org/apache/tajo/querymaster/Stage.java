@@ -257,6 +257,8 @@ public class Stage implements EventHandler<StageEvent> {
                   StageEventType.SQ_START,
                   StageEventType.SQ_KILL,
                   StageEventType.SQ_CONTAINER_ALLOCATED,
+                  StageEventType.SQ_SHUFFLE_REPORT,
+                  StageEventType.SQ_STAGE_COMPLETED,
                   StageEventType.SQ_FAILED))
 
           // Transitions from FAILED state
