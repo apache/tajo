@@ -208,7 +208,6 @@ public class QueryInProgress {
 
       this.queryInfo.setQueryState(queryInfo.getQueryState());
       this.queryInfo.setProgress(queryInfo.getProgress());
-      this.queryInfo.setFinishTime(queryInfo.getFinishTime());
 
       // Update diagnosis message
       if (queryInfo.getLastMessage() != null && !queryInfo.getLastMessage().isEmpty()) {

@@ -481,7 +481,11 @@ public class TajoMasterClientService extends AbstractService {
               builder.setQueryMasterHost(queryInfo.getQueryMasterHost());
               builder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
             }
-            builder.setFinishTime(System.currentTimeMillis());
+            if (queryInfo.getQueryState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
+              builder.setFinishTime(queryInfo.getFinishTime());
+            } else {
+              builder.setFinishTime(System.currentTimeMillis());
+            }
           } else {
             Session session = context.getSessionManager().getSession(request.getSessionId().getId());
             if (session.getNonForwardQueryResultScanner(queryId) != null) {
