@@ -635,8 +635,7 @@ public class TajoTestingCluster {
     TajoTestingCluster util = TpchTestBase.getInstance().getTestingCluster();
 
     FileSystem fs = util.getDefaultFileSystem();
-    Path rootDir = util.getMaster().
-        getStorageManager().getWarehouseDir();
+    Path rootDir = TajoConf.getWarehouseDir(util.getConfiguration());
     fs.mkdirs(rootDir);
     for (int i = 0; i < names.length; i++) {
       createTable(names[i], schemas[i], tableOption, tables[i]);
@@ -688,8 +687,7 @@ public class TajoTestingCluster {
     TajoClient client = new TajoClientImpl(conf);
     try {
       FileSystem fs = util.getDefaultFileSystem();
-      Path rootDir = util.getMaster().
-          getStorageManager().getWarehouseDir();
+      Path rootDir = TajoConf.getWarehouseDir(util.getConfiguration());
       if (!fs.exists(rootDir)) {
         fs.mkdirs(rootDir);
       }

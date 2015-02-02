@@ -62,7 +62,6 @@ public class TestHashSemiJoinExec {
   private SQLAnalyzer analyzer;
   private LogicalPlanner planner;
   private LogicalOptimizer optimizer;
-  private StorageManager sm;
   private Path testDir;
 
   private TableDesc employee;
@@ -77,7 +76,6 @@ public class TestHashSemiJoinExec {
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, testDir.toUri().toString());
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     conf = util.getConfiguration();
-    sm = StorageManager.getFileStorageManager(conf, testDir);
 
     Schema employeeSchema = new Schema();
     employeeSchema.addColumn("managerid", Type.INT4);
