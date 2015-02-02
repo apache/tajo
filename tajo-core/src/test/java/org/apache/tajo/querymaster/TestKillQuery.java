@@ -131,9 +131,10 @@ public class TestKillQuery {
       cluster.waitForQueryState(queryMasterTask.getQuery(), TajoProtos.QueryState.QUERY_KILLED, 50);
       assertEquals(TajoProtos.QueryState.QUERY_KILLED, queryMasterTask.getQuery().getSynchronizedState());
     } catch (Exception e) {
+      e.printStackTrace();
       if (stage != null) {
-        System.out.println(String.format("Stage: [%s] (Total: %d, Complete: %d, Success: %d, Killed: %d, Failed: %d)",
-            stage.getId(),
+        System.err.println(String.format("Stage: [%s] (Total: %d, Complete: %d, Success: %d, Killed: %d, Failed: %d)",
+            stage.getId().toString(),
             stage.getTotalScheduledObjectsCount(),
             stage.getCompletedTaskCount(),
             stage.getSucceededObjectCount(),

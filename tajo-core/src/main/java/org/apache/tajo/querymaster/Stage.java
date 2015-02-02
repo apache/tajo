@@ -805,7 +805,14 @@ public class Stage implements EventHandler<StageEvent> {
                                 stage.taskScheduler.start();
                                 allocateContainers(stage);
                               } else {
-                                stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_KILL));
+                                /* all tasks are killed before stage are inited */
+                                if (stage.getTotalScheduledObjectsCount() == stage.getCompletedTaskCount()) {
+                                  stage.eventHandler.handle(
+                                      new StageEvent(stage.getId(), StageEventType.SQ_STAGE_COMPLETED));
+                                } else {
+                                  stage.eventHandler.handle(
+                                      new StageEvent(stage.getId(), StageEventType.SQ_KILL));
+                                }
                               }
                             }
                           } catch (Throwable e) {
