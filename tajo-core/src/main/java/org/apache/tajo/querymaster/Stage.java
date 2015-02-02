@@ -185,7 +185,7 @@ public class Stage implements EventHandler<StageEvent> {
 
           // Transitions from KILL_WAIT state
           .addTransition(StageState.KILL_WAIT, StageState.KILL_WAIT,
-              EnumSet.of(StageEventType.SQ_START, StageEventType.SQ_CONTAINER_ALLOCATED),
+              StageEventType.SQ_CONTAINER_ALLOCATED,
               CONTAINERS_CANCEL_TRANSITION)
           .addTransition(StageState.KILL_WAIT, StageState.KILL_WAIT,
               EnumSet.of(StageEventType.SQ_KILL), new KillTasksTransition())
