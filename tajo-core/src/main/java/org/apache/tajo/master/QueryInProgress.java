@@ -223,6 +223,7 @@ public class QueryInProgress {
 
 
       if (isFinishState(this.queryInfo.getQueryState())) {
+        this.queryInfo.setFinishTime(System.currentTimeMillis());
         masterContext.getQueryJobManager().getEventHandler().handle(
             new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_STOP, this.queryInfo));
       }
