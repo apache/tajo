@@ -54,7 +54,7 @@ import static org.junit.Assert.assertEquals;
 // this is not a physical operator in itself, but it uses the HashLeftOuterJoinExec with switched inputs order
 public class TestRightOuterHashJoinExec {
   private TajoConf conf;
-  private final String TEST_PATH = "target/test-data/TestRightOuterHashJoinExec";
+  private final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestRightOuterHashJoinExec";
   private TajoTestingCluster util;
   private CatalogService catalog;
   private SQLAnalyzer analyzer;
@@ -239,7 +239,7 @@ public class TestRightOuterHashJoinExec {
 
     FileFragment[] merged = TUtil.concat(emp3Frags, dep3Frags);
 
-    Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestRightOuter_HashJoinExec0");
+    Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestRightOuter_HashJoinExec0");
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newTaskAttemptId(), merged, workDir);
     ctx.setEnforcer(new Enforcer());
@@ -280,7 +280,7 @@ public class TestRightOuterHashJoinExec {
 
     FileFragment[] merged = TUtil.concat(emp3Frags, job3Frags);
 
-    Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestRightOuter_HashJoinExec1");
+    Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestRightOuter_HashJoinExec1");
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newTaskAttemptId(), merged, workDir);
     ctx.setEnforcer(new Enforcer());
@@ -321,7 +321,7 @@ public class TestRightOuterHashJoinExec {
 
     FileFragment[] merged = TUtil.concat(job3Frags, emp3Frags);
 
-    Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestRightOuter_HashJoinExec2");
+    Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestRightOuter_HashJoinExec2");
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newTaskAttemptId(), merged, workDir);
     ctx.setEnforcer(new Enforcer());

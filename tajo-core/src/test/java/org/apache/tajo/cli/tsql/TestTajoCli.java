@@ -38,9 +38,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.URL;
 
 import static org.junit.Assert.*;
@@ -77,7 +75,8 @@ public class TestTajoCli {
   }
 
   @After
-  public void tearDown() {
+  public void tearDown() throws IOException {
+    out.close();
     if (tajoCli != null) {
       tajoCli.close();
     }
@@ -350,38 +349,27 @@ public class TestTajoCli {
     assertOutputResult(new String(out.toByteArray()));
   }
 
-  @Test
+  @Test(timeout = 3000)
   public void testNonForwardQueryPause() throws Exception {
     final String sql = "select * from default.lineitem";
+    TajoCli cli = null;
     try {
       TableDesc tableDesc = cluster.getMaster().getCatalog().getTableDesc("default", "lineitem");
       assertNotNull(tableDesc);
       assertEquals(0L, tableDesc.getStats().getNumRows().longValue());
-      setVar(tajoCli, SessionVars.CLI_PAGE_ROWS, "2");
-      setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
-      Thread t = new Thread() {
-        public void run() {
-          try {
-            tajoCli.executeScript(sql);
-          } catch (Exception e) {
-            e.printStackTrace();
-            fail(e.getMessage());
-          }
-        }
-      };
-      t.start();
+
+      InputStream testInput = new ByteArrayInputStream(new byte[]{(byte) DefaultTajoCliOutputFormatter.QUIT_COMMAND});
+      cli = new TajoCli(cluster.getConfiguration(), new String[]{}, testInput, out);
+      setVar(cli, SessionVars.CLI_PAGE_ROWS, "2");
+      setVar(cli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+
+      cli.executeScript(sql);
+
       String consoleResult;
-      while (true) {
-        Thread.sleep(3 * 1000);
-        consoleResult = new String(out.toByteArray());
-        if (consoleResult.indexOf("row") >= 0) {
-          t.interrupt();
-          break;
-        }
-      }
+      consoleResult = new String(out.toByteArray());
       assertOutputResult(consoleResult);
     } finally {
-      setVar(tajoCli, SessionVars.CLI_PAGE_ROWS, "100");
+      cli.close();
     }
   }
 

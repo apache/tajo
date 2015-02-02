@@ -391,7 +391,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
         builder.setResultDesc(queryMasterTask.getQuery().getResultDesc().getProto());
       }
       builder.setQueryProgress(queryMasterTask.getQuery().getProgress());
-      builder.setQueryFinishTime(queryMasterTask.getQuery().getFinishTime());
     }
     return builder.build();
   }

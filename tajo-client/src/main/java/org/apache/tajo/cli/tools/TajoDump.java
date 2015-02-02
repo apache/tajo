@@ -19,11 +19,14 @@
 package org.apache.tajo.cli.tools;
 
 import com.google.protobuf.ServiceException;
+
 import org.apache.commons.cli.*;
 import org.apache.tajo.auth.UserRoleInfo;
+import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.DDLBuilder;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
@@ -116,6 +119,10 @@ public class TajoDump {
 
     System.exit(0);
   }
+  
+  private static boolean isAcceptableDumpingDatabase(String databaseName) {
+    return (databaseName == null || !databaseName.equalsIgnoreCase(CatalogConstants.INFORMATION_SCHEMA_DB_NAME));
+  }
 
   public static void dump(TajoClient client, UserRoleInfo userInfo, String baseDatabaseName,
                    boolean isDumpingAllDatabases, boolean includeUserName, boolean includeDate, PrintWriter out)
@@ -128,7 +135,9 @@ public class TajoDump {
       Collections.sort(sorted);
 
       for (String databaseName : sorted) {
-        dumpDatabase(client, databaseName, out);
+        if (isAcceptableDumpingDatabase(databaseName)) {
+          dumpDatabase(client, databaseName, out);
+        }
       }
     } else {
       dumpDatabase(client, baseDatabaseName, out);
@@ -166,6 +175,11 @@ public class TajoDump {
     for (String tableName : tableNames) {
       try {
         TableDesc table = client.getTableDesc(CatalogUtil.buildFQName(databaseName, tableName));
+        
+        if (table.getMeta().getStoreType() == StoreType.SYSTEM) {
+          continue;
+        }
+        
         if (table.isExternal()) {
           writer.write(DDLBuilder.buildDDLForExternalTable(table));
         } else {

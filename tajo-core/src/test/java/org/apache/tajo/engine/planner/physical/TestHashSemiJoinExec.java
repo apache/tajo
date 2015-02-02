@@ -56,7 +56,7 @@ import static org.junit.Assert.assertTrue;
 
 public class TestHashSemiJoinExec {
   private TajoConf conf;
-  private final String TEST_PATH = "target/test-data/TestHashJoinExec";
+  private final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestHashJoinExec";
   private TajoTestingCluster util;
   private CatalogService catalog;
   private SQLAnalyzer analyzer;
@@ -163,7 +163,7 @@ public class TestHashSemiJoinExec {
 
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
-    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testHashSemiJoin");
+    Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testHashSemiJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newTaskAttemptId(), merged, workDir);
     ctx.setEnforcer(new Enforcer());

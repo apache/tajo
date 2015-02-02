@@ -208,7 +208,6 @@ public class QueryInProgress {
 
       this.queryInfo.setQueryState(queryInfo.getQueryState());
       this.queryInfo.setProgress(queryInfo.getProgress());
-      this.queryInfo.setFinishTime(queryInfo.getFinishTime());
 
       // Update diagnosis message
       if (queryInfo.getLastMessage() != null && !queryInfo.getLastMessage().isEmpty()) {
@@ -223,6 +222,7 @@ public class QueryInProgress {
 
 
       if (isFinishState(this.queryInfo.getQueryState())) {
+        this.queryInfo.setFinishTime(System.currentTimeMillis());
         masterContext.getQueryJobManager().getEventHandler().handle(
             new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_STOP, this.queryInfo));
       }
