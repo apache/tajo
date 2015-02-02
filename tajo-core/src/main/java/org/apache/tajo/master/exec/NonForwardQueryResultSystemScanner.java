@@ -505,9 +505,9 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
         if ("total_cpu".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createInt4(aResource.getCpuCoreSlots()));
         } else if ("used_mem".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt4(aResource.getUsedMemoryMB()));
+          aTuple.put(fieldId, DatumFactory.createInt8(aResource.getUsedMemoryMB()*1048576l));
         } else if ("total_mem".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt4(aResource.getMemoryMB()));
+          aTuple.put(fieldId, DatumFactory.createInt8(aResource.getMemoryMB()*1048576l));
         } else if ("free_heap".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createInt8(aResource.getFreeHeap()));
         } else if ("max_heap".equalsIgnoreCase(column.getSimpleName())) {
