@@ -127,12 +127,23 @@ public class TestKillQuery {
     Query q = queryMasterTask.getQuery();
     q.handle(new QueryEvent(queryId, QueryEventType.KILL));
 
-    try{
+    try {
       cluster.waitForQueryState(queryMasterTask.getQuery(), TajoProtos.QueryState.QUERY_KILLED, 50);
-    } finally {
       assertEquals(TajoProtos.QueryState.QUERY_KILLED, queryMasterTask.getQuery().getSynchronizedState());
+    } catch (Exception e) {
+      if (stage != null) {
+        System.out.println(String.format("Stage: [%s] (Total: %d, Complete: %d, Success: %d, Killed: %d, Failed: %d)",
+            stage.getId(),
+            stage.getTotalScheduledObjectsCount(),
+            stage.getCompletedTaskCount(),
+            stage.getSucceededObjectCount(),
+            stage.getKilledObjectCount(),
+            stage.getFailedObjectCount()));
+      }
+      throw e;
+    } finally {
+      queryMasterTask.stop();
     }
-    queryMasterTask.stop();
   }
 
   @Test
@@ -145,6 +156,8 @@ public class TestKillQuery {
     QueryMasterTask qmt = cluster.getQueryMasterTask(queryId);
     Query query = qmt.getQuery();
 
+    // wait for a stage created
+    cluster.waitForQueryState(query, TajoProtos.QueryState.QUERY_RUNNING, 10);
     query.handle(new QueryEvent(queryId, QueryEventType.KILL));
 
     try{

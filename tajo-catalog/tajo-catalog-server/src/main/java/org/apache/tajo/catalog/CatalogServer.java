@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -59,6 +60,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.*;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListProto;
+import static org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
 
 /**
  * This class provides the catalog service. The catalog service enables clients
@@ -172,8 +174,7 @@ public class CatalogServer extends AbstractService {
     }
   }
 
-  @Override
-  public void serviceStart() throws Exception {
+  public void start() {
     String serverAddr = conf.getVar(ConfVars.CATALOG_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(serverAddr);
     int workerNum = conf.getIntVar(ConfVars.CATALOG_RPC_SERVER_WORKER_THREAD_NUM);
@@ -190,11 +191,10 @@ public class CatalogServer extends AbstractService {
     }
 
     LOG.info("Catalog Server startup (" + bindAddressStr + ")");
-    super.serviceStart();
+    super.start();
   }
 
-  @Override
-  public void serviceStop() throws Exception {
+  public void stop() {
     LOG.info("Catalog Server (" + bindAddressStr + ") shutdown");
 
     // If CatalogServer shutdowns before it started, rpcServer and store may be NULL.
@@ -209,7 +209,7 @@ public class CatalogServer extends AbstractService {
         LOG.error(ioe.getMessage(), ioe);
       }
     }
-    super.serviceStop();
+    super.stop();
   }
 
   public CatalogProtocolHandler getHandler() {

@@ -59,7 +59,7 @@ public class QueryCoordinatorService extends AbstractService {
   }
 
   @Override
-  public void serviceStart() throws Exception {
+  public void start() {
     String confMasterServiceAddr = conf.getVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS);
     InetSocketAddress initIsa = NetUtils.createSocketAddr(confMasterServiceAddr);
     int workerNum = conf.getIntVar(TajoConf.ConfVars.MASTER_RPC_SERVER_WORKER_THREAD_NUM);
@@ -73,16 +73,16 @@ public class QueryCoordinatorService extends AbstractService {
     this.conf.setVar(TajoConf.ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS,
         NetUtils.normalizeInetSocketAddress(bindAddress));
     LOG.info("Instantiated TajoMasterService at " + this.bindAddress);
-    super.serviceStart();
+    super.start();
   }
 
   @Override
-  public void serviceStop() throws Exception {
+  public void stop() {
     if(server != null) {
       server.shutdown();
       server = null;
     }
-    super.serviceStop();
+    super.stop();
   }
 
   public InetSocketAddress getBindAddress() {

@@ -297,7 +297,7 @@ public class TajoTestingCluster {
 
     conf.set(CatalogConstants.STORE_CLASS, "org.apache.tajo.catalog.store.MemStore");
     conf.set(CatalogConstants.CATALOG_URI, "jdbc:derby:" + clusterTestBuildDir.getAbsolutePath() + "/db");
-    LOG.info("Apache Derby repository is set to "+conf.get(CatalogConstants.CATALOG_URI));
+    LOG.info("Apache Derby repository is set to " + conf.get(CatalogConstants.CATALOG_URI));
     conf.setVar(ConfVars.CATALOG_ADDRESS, "localhost:0");
 
     catalogServer = new MiniCatalogServer(conf);
@@ -782,7 +782,8 @@ public class TajoTestingCluster {
       } catch (InterruptedException e) {
       }
       if (++i > 200) {
-        throw new IOException("Timed out waiting");
+        throw new IOException("Timed out waiting. expected: " + expected +
+            ", actual: " + query != null ? String.valueOf(query.getSynchronizedState()) : String.valueOf(query));
       }
     }
   }

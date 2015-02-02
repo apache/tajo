@@ -185,7 +185,7 @@ public class Stage implements EventHandler<StageEvent> {
 
           // Transitions from KILL_WAIT state
           .addTransition(StageState.KILL_WAIT, StageState.KILL_WAIT,
-              StageEventType.SQ_CONTAINER_ALLOCATED,
+              EnumSet.of(StageEventType.SQ_START, StageEventType.SQ_CONTAINER_ALLOCATED),
               CONTAINERS_CANCEL_TRANSITION)
           .addTransition(StageState.KILL_WAIT, StageState.KILL_WAIT,
               EnumSet.of(StageEventType.SQ_KILL), new KillTasksTransition())
@@ -412,6 +412,18 @@ public class Stage implements EventHandler<StageEvent> {
 
   public int getTotalScheduledObjectsCount() {
     return totalScheduledObjectsCount;
+  }
+
+  public int getKilledObjectCount() {
+    return killedObjectCount;
+  }
+
+  public int getFailedObjectCount() {
+    return failedObjectCount;
+  }
+
+  public int getCompletedTaskCount() {
+    return completedTaskCount;
   }
 
   public ExecutionBlock getBlock() {
