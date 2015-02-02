@@ -174,6 +174,11 @@ Release 0.10.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1313: Tajo-dump creates DDLs for information_schema tables.
+    (jihun)
+
+    TAJO-1322: Invalid stored caching on StorageManager. (jinho)
+
     TAJO-1319: Tajo can't find HBase configuration file. (jaehwa)
 
     TAJO-1312: Stage causes Invalid event error: SQ_SHUFFLE_REPORT 
@@ -324,6 +329,8 @@ Release 0.10.0 - unreleased
 
 
   TASKS
+
+    TAJO-1323: Cleanup the unstable test case. (jinho)
 
     TAJO-1295: Remove legacy worker.dataserver package and its unit tests.
     (hyunsik)
