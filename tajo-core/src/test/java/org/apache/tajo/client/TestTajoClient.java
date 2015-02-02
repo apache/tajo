@@ -18,6 +18,7 @@
 
 package org.apache.tajo.client;
 
+import net.jcip.annotations.NotThreadSafe;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -57,6 +58,7 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 @Category(IntegrationTest.class)
+@NotThreadSafe
 public class TestTajoClient {
   private static TajoTestingCluster cluster;
   private static TajoConf conf;

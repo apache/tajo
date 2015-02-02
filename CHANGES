@@ -27,6 +27,8 @@ Release 0.10.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1317: Parallel Test Executions on Tajo Core Project. (jihun)
+
     TAJO-1320: HBaseStorageManager need to support Zookeeper Client Port.
     (jaehwa)
 
