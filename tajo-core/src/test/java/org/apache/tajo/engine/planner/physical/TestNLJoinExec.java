@@ -55,7 +55,7 @@ import static org.junit.Assert.assertTrue;
 
 public class TestNLJoinExec {
   private TajoConf conf;
-  private final String TEST_PATH = "target/test-data/TestNLJoinExec";
+  private final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestNLJoinExec";
   private TajoTestingCluster util;
   private CatalogService catalog;
   private SQLAnalyzer analyzer;
@@ -153,7 +153,7 @@ public class TestNLJoinExec {
     
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
-    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testNLCrossJoin");
+    Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testNLCrossJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newTaskAttemptId(), merged, workDir);
     ctx.setEnforcer(new Enforcer());
@@ -182,7 +182,7 @@ public class TestNLJoinExec {
     
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
-    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testNLInnerJoin");
+    Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testNLInnerJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newTaskAttemptId(masterPlan), merged, workDir);
     ctx.setEnforcer(new Enforcer());
