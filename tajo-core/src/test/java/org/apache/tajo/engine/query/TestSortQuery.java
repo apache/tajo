@@ -102,6 +102,40 @@ public class TestSortQuery extends QueryTestCaseBase {
     cleanupQuery(res);
   }
 
+
+  @Test
+  public final void testSortFirstDesc() throws Exception {
+    try {
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "2");
+      KeyValueSet tableOptions = new KeyValueSet();
+      tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+      tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+      Schema schema = new Schema();
+      schema.addColumn("col1", Type.INT4);
+      schema.addColumn("col2", Type.TEXT);
+      String[] data = new String[]{
+          "1|abc",
+          "3|dfa",
+          "3|das",
+          "1|abb",
+          "1|abc",
+          "3|dfb",
+          "3|dat",
+          "1|abe"
+      };
+      TajoTestingCluster.createTable("sortfirstdesc", schema, tableOptions, data, 2);
+
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      testingCluster.setAllTajoDaemonConfValue(ConfVars.$TEST_MIN_TASK_NUM.varname, "0");
+      executeString("DROP TABLE sortfirstdesc PURGE;").close();
+    }
+  }
+
+
   @Test
   public final void testTopK() throws Exception {
     ResultSet res = executeQuery();

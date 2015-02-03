@@ -94,15 +94,6 @@ public class TupleRange implements Comparable<TupleRange>, Cloneable {
     }
   }
 
-  public static class DescendingTupleRangeComparator
-      implements Comparator<TupleRange> {
-
-    @Override
-    public int compare(TupleRange left, TupleRange right) {
-      return right.compareTo(left);
-    }
-  }
-
   public TupleRange clone() throws CloneNotSupportedException {
     TupleRange newRange = (TupleRange) super.clone();
     newRange.setStart(start.clone());
