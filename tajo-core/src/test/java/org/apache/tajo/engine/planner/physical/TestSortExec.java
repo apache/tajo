@@ -71,7 +71,7 @@ public class TestSortExec {
     util = TpchTestBase.getInstance().getTestingCluster();
     catalog = util.getMaster().getCatalog();
     workDir = CommonTestingUtil.getTestDir(TEST_PATH);
-    sm = (FileStorageManager)StorageManager.getFileStorageManager(conf, workDir);
+    sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
 
     Schema schema = new Schema();
     schema.addColumn("managerid", Type.INT4);

@@ -271,23 +271,7 @@ public abstract class StorageManager {
    * @throws java.io.IOException
    */
   public static StorageManager getFileStorageManager(TajoConf tajoConf) throws IOException {
-    return getFileStorageManager(tajoConf, null);
-  }
-
-  /**
-   * Returns FileStorageManager instance and sets WAREHOUSE_DIR property in tajoConf with warehousePath parameter.
-   *
-   * @param tajoConf Tajo system property.
-   * @param warehousePath The warehouse directory to be set in the tajoConf.
-   * @return
-   * @throws java.io.IOException
-   */
-  public static StorageManager getFileStorageManager(TajoConf tajoConf, Path warehousePath) throws IOException {
-    TajoConf copiedConf = new TajoConf(tajoConf);
-    if (warehousePath != null) {
-      copiedConf.setVar(ConfVars.WAREHOUSE_DIR, warehousePath.toUri().toString());
-    }
-    return getStorageManager(copiedConf, StoreType.CSV);
+    return getStorageManager(tajoConf, StoreType.CSV);
   }
 
   /**

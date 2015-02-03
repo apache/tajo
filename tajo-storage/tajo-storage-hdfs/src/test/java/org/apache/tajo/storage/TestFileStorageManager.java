@@ -128,7 +128,7 @@ public class TestFileStorageManager {
       }
 
       assertTrue(fs.exists(tablePath));
-      FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(tajoConf, tablePath);
+      FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(tajoConf);
       assertEquals(fs.getUri(), sm.getFileSystem().getUri());
 
       Schema schema = new Schema();
@@ -182,7 +182,7 @@ public class TestFileStorageManager {
         DFSTestUtil.createFile(fs, tmpFile, 10, (short) 2, 0xDEADDEADl);
       }
       assertTrue(fs.exists(tablePath));
-      FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(tajoConf, tablePath);
+      FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(tajoConf);
       assertEquals(fs.getUri(), sm.getFileSystem().getUri());
 
       Schema schema = new Schema();

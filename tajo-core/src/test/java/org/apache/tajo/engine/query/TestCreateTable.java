@@ -105,8 +105,8 @@ public class TestCreateTable extends QueryTestCaseBase {
 
 
     // checking the existence of the table directory and validating the path
-    FileSystem fs = testingCluster.getMaster().getStorageManager().getFileSystem();
     Path warehouseDir = TajoConf.getWarehouseDir(testingCluster.getConfiguration());
+    FileSystem fs = warehouseDir.getFileSystem(testingCluster.getConfiguration());
     assertTrue(fs.exists(new Path(oldTableDesc.getPath())));
     assertEquals(StorageUtil.concatPath(warehouseDir, databaseName, originalTableName),
         new Path(oldTableDesc.getPath()));
