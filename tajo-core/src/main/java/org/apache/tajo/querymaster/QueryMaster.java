@@ -33,7 +33,6 @@ import org.apache.tajo.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -504,11 +503,11 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   class FinishedQueryMasterTaskCleanThread extends Thread {
     public void run() {
-      int expireIntervalTime = systemConf.getIntVar(TajoConf.ConfVars.WORKER_HISTORY_EXPIRE_PERIOD);
+      int expireIntervalTime = systemConf.getIntVar(TajoConf.ConfVars.QUERYMASTER_HISTORY_EXPIRE_PERIOD);
       LOG.info("FinishedQueryMasterTaskCleanThread started: expire interval minutes = " + expireIntervalTime);
       while(!queryMasterStop.get()) {
         try {
-          Thread.sleep(60 * 1000 * 60);   // hourly
+          Thread.sleep(60 * 1000);  // minimum interval minutes
         } catch (InterruptedException e) {
           break;
         }
@@ -525,7 +524,13 @@ public class QueryMaster extends CompositeService implements EventHandler {
       synchronized(finishedQueryMasterTasks) {
         List<QueryId> expiredQueryIds = new ArrayList<QueryId>();
         for(Map.Entry<QueryId, QueryMasterTask> entry: finishedQueryMasterTasks.entrySet()) {
-          if(entry.getValue().getStartTime() < expireTime) {
+          long finishedTime = entry.getValue().getStartTime();
+          Query query = entry.getValue().getQuery();
+          if (query != null && query.getFinishTime() > 0) {
+            finishedTime = query.getFinishTime();
+          }
+
+          if(finishedTime < expireTime) {
             expiredQueryIds.add(entry.getKey());
           }
         }
