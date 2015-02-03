@@ -27,6 +27,8 @@ Release 0.10.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1317: Parallel Test Executions on Tajo Core Project. (jihun)
+
     TAJO-1320: HBaseStorageManager need to support Zookeeper Client Port.
     (jaehwa)
 
@@ -173,6 +175,15 @@ Release 0.10.0 - unreleased
 
 
   BUG FIXES
+
+    TAJO-1324: Remove warehouse directory rewriting in Unit Test. (jinho)
+
+    TAJO-1321: Cli prints wrong response time. (jihoon)
+
+    TAJO-1313: Tajo-dump creates DDLs for information_schema tables.
+    (jihun)
+
+    TAJO-1322: Invalid stored caching on StorageManager. (jinho)
 
     TAJO-1319: Tajo can't find HBase configuration file. (jaehwa)
 
@@ -324,6 +335,8 @@ Release 0.10.0 - unreleased
 
 
   TASKS
+
+    TAJO-1323: Cleanup the unstable test case. (jinho)
 
     TAJO-1295: Remove legacy worker.dataserver package and its unit tests.
     (hyunsik)

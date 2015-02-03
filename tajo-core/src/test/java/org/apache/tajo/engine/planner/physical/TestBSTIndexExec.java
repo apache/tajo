@@ -91,7 +91,7 @@ public class TestBSTIndexExec {
     Path workDir = CommonTestingUtil.getTestDir();
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, workDir.toUri().toString());
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-    sm = (FileStorageManager)StorageManager.getFileStorageManager(conf, workDir);
+    sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
 
     idxPath = new Path(workDir, "test.idx");
 
@@ -164,7 +164,7 @@ public class TestBSTIndexExec {
     final String QUERY = "select * from employee where managerId = " + rndKey;
     
     FileFragment[] frags = FileStorageManager.splitNG(conf, "default.employee", meta, tablePath, Integer.MAX_VALUE);
-    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testEqual");
+    Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testEqual");
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newTaskAttemptId(), new FileFragment[] { frags[0] }, workDir);
     Expr expr = analyzer.parse(QUERY);

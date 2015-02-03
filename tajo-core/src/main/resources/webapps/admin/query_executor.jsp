@@ -19,13 +19,14 @@
 %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ page import="org.apache.tajo.master.TajoMaster" %>
-<%@ page import="org.apache.tajo.ha.HAService" %>
+<%@ page import="org.apache.tajo.service.ServiceTracker" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
+<%@ page import="javax.xml.ws.Service" %>
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
 
-  HAService haService = master.getContext().getHAService();
+  ServiceTracker haService = master.getContext().getHAService();
   String activeLabel = "";
   if (haService != null) {
       if (haService.isActiveStatus()) {

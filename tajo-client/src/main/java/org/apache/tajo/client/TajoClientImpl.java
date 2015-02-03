@@ -32,8 +32,6 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.jdbc.TajoResultSet;
@@ -41,7 +39,8 @@ import org.apache.tajo.rule.EvaluationContext;
 import org.apache.tajo.rule.EvaluationFailedException;
 import org.apache.tajo.rule.SelfDiagnosisRuleEngine;
 import org.apache.tajo.rule.SelfDiagnosisRuleSession;
-import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.service.ServiceTracker;
+import org.apache.tajo.service.ServiceTrackerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -56,41 +55,30 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
   QueryClient queryClient;
   CatalogAdminClient catalogClient;
 
-  public TajoClientImpl(TajoConf conf) throws IOException {
-    this(conf, TajoHAClientUtil.getRpcClientAddress(conf), null);
-  }
-
-  public TajoClientImpl(TajoConf conf, @Nullable String baseDatabase) throws IOException {
-    this(conf, TajoHAClientUtil.getRpcClientAddress(conf), baseDatabase);
-  }
-
-  public TajoClientImpl(InetSocketAddress addr) throws IOException {
-    this(new TajoConf(), addr, null);
-  }
-
   /**
    * Connect to TajoMaster
    *
    * @param conf TajoConf
-   * @param addr TajoMaster address
+   * @param tracker ServiceTracker to discovery Tajo Client RPC
    * @param baseDatabase The base database name. It is case sensitive. If it is null,
    *                     the 'default' database will be used.
    * @throws java.io.IOException
    */
-  public TajoClientImpl(TajoConf conf, InetSocketAddress addr, @Nullable String baseDatabase) throws IOException {
-    super(conf, addr, baseDatabase);
+  public TajoClientImpl(TajoConf conf, ServiceTracker tracker, @Nullable String baseDatabase) throws IOException {
+    super(conf, tracker, baseDatabase);
+
     this.queryClient = new QueryClientImpl(this);
     this.catalogClient = new CatalogAdminClientImpl(this);
-    
+
     diagnoseTajoClient();
   }
 
-  public TajoClientImpl(String hostName, int port, @Nullable String baseDatabase) throws IOException {
-    super(hostName, port, baseDatabase);
-    this.queryClient = new QueryClientImpl(this);
-    this.catalogClient = new CatalogAdminClientImpl(this);
-    
-    diagnoseTajoClient();
+  public TajoClientImpl(TajoConf conf) throws IOException {
+    this(conf, ServiceTrackerFactory.get(conf), null);
+  }
+
+  public TajoClientImpl(TajoConf conf, @Nullable String baseDatabase) throws IOException {
+    this(conf, ServiceTrackerFactory.get(conf), baseDatabase);
   }
   
   private void diagnoseTajoClient() throws EvaluationFailedException {

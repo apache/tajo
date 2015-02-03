@@ -69,7 +69,6 @@ message TajoHeartbeat {
   optional TableDescProto resultDesc = 4;
   optional string statusMessage = 5;
   optional float queryProgress = 6;
-  optional int64 queryFinishTime = 7;
 }
 
 message TajoHeartbeatResponse {

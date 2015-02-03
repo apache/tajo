@@ -55,11 +55,10 @@ import static org.junit.Assert.assertTrue;
 public class TestExternalSortExec {
   private TajoConf conf;
   private TajoTestingCluster util;
-  private final String TEST_PATH = "target/test-data/TestExternalSortExec";
+  private final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestExternalSortExec";
   private CatalogService catalog;
   private SQLAnalyzer analyzer;
   private LogicalPlanner planner;
-  private FileStorageManager sm;
   private Path testDir;
 
   private final int numTuple = 100000;
@@ -76,7 +75,6 @@ public class TestExternalSortExec {
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, testDir.toUri().toString());
     catalog.createDatabase(TajoConstants.DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     conf.setVar(TajoConf.ConfVars.WORKER_TEMPORAL_DIR, testDir.toString());
-    sm = (FileStorageManager)StorageManager.getFileStorageManager(conf, testDir);
 
     Schema schema = new Schema();
     schema.addColumn("managerid", Type.INT4);

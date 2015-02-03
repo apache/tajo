@@ -42,7 +42,6 @@ import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.net.URI;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Map;
@@ -272,26 +271,7 @@ public abstract class StorageManager {
    * @throws java.io.IOException
    */
   public static StorageManager getFileStorageManager(TajoConf tajoConf) throws IOException {
-    return getFileStorageManager(tajoConf, null);
-  }
-
-  /**
-   * Returns FileStorageManager instance and sets WAREHOUSE_DIR property in tajoConf with warehousePath parameter.
-   *
-   * @param tajoConf Tajo system property.
-   * @param warehousePath The warehouse directory to be set in the tajoConf.
-   * @return
-   * @throws java.io.IOException
-   */
-  public static StorageManager getFileStorageManager(TajoConf tajoConf, Path warehousePath) throws IOException {
-    URI uri;
-    TajoConf copiedConf = new TajoConf(tajoConf);
-    if (warehousePath != null) {
-      copiedConf.setVar(ConfVars.WAREHOUSE_DIR, warehousePath.toUri().toString());
-    }
-    uri = TajoConf.getWarehouseDir(copiedConf).toUri();
-    String key = "file".equals(uri.getScheme()) ? "file" : uri.toString();
-    return getStorageManager(copiedConf, StoreType.CSV, key);
+    return getStorageManager(tajoConf, StoreType.CSV);
   }
 
   /**
@@ -303,7 +283,7 @@ public abstract class StorageManager {
    * @throws java.io.IOException
    */
   public static StorageManager getStorageManager(TajoConf tajoConf, String storeType) throws IOException {
-    if ("HBASE".equals(storeType)) {
+    if ("HBASE".equalsIgnoreCase(storeType)) {
       return getStorageManager(tajoConf, StoreType.HBASE);
     } else {
       return getStorageManager(tajoConf, StoreType.CSV);
@@ -319,7 +299,12 @@ public abstract class StorageManager {
    * @throws java.io.IOException
    */
   public static StorageManager getStorageManager(TajoConf tajoConf, StoreType storeType) throws IOException {
-    return getStorageManager(tajoConf, storeType, null);
+    FileSystem fileSystem = TajoConf.getWarehouseDir(tajoConf).getFileSystem(tajoConf);
+    if (fileSystem != null) {
+      return getStorageManager(tajoConf, storeType, fileSystem.getUri().toString());
+    } else {
+      return getStorageManager(tajoConf, storeType, null);
+    }
   }
 
   /**
@@ -331,22 +316,23 @@ public abstract class StorageManager {
    * @return
    * @throws java.io.IOException
    */
-  public static synchronized StorageManager getStorageManager (
+  private static synchronized StorageManager getStorageManager (
       TajoConf tajoConf, StoreType storeType, String managerKey) throws IOException {
+
+    String typeName;
+    switch (storeType) {
+      case HBASE:
+        typeName = "hbase";
+        break;
+      default:
+        typeName = "hdfs";
+    }
+
     synchronized (storageManagers) {
-      String storeKey = CatalogUtil.getStoreTypeString(storeType) + managerKey;
+      String storeKey = typeName + "_" + managerKey;
       StorageManager manager = storageManagers.get(storeKey);
+
       if (manager == null) {
-        String typeName = "hdfs";
-
-        switch (storeType) {
-          case HBASE:
-            typeName = "hbase";
-            break;
-          default:
-            typeName = "hdfs";
-        }
-
         Class<? extends StorageManager> storageManagerClass =
             tajoConf.getClass(String.format("tajo.storage.manager.%s.class", typeName), null, StorageManager.class);
 

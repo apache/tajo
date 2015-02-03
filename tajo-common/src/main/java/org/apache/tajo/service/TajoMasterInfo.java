@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.ha;
+package org.apache.tajo.service;
 
 import java.net.InetSocketAddress;
 

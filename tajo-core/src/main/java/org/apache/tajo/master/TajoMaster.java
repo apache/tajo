@@ -40,19 +40,18 @@ import org.apache.tajo.catalog.LocalCatalogWrapper;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.FunctionLoader;
-import org.apache.tajo.ha.HAService;
-import org.apache.tajo.ha.HAServiceHDFSImpl;
-import org.apache.tajo.metrics.CatalogMetricsGaugeSet;
-import org.apache.tajo.metrics.WorkerResourceMetricsGaugeSet;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.master.rm.WorkerResourceManager;
-import org.apache.tajo.session.SessionManager;
+import org.apache.tajo.metrics.CatalogMetricsGaugeSet;
+import org.apache.tajo.metrics.WorkerResourceMetricsGaugeSet;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rule.EvaluationContext;
 import org.apache.tajo.rule.EvaluationFailedException;
 import org.apache.tajo.rule.SelfDiagnosisRuleEngine;
 import org.apache.tajo.rule.SelfDiagnosisRuleSession;
-import org.apache.tajo.storage.FileStorageManager;
+import org.apache.tajo.service.ServiceTracker;
+import org.apache.tajo.service.ServiceTrackerFactory;
+import org.apache.tajo.session.SessionManager;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.util.*;
 import org.apache.tajo.util.history.HistoryReader;
@@ -110,7 +109,7 @@ public class TajoMaster extends CompositeService {
 
   private CatalogServer catalogServer;
   private CatalogService catalog;
-  private FileStorageManager storeManager;
+  private StorageManager storeManager;
   private GlobalEngine globalEngine;
   private AsyncDispatcher dispatcher;
   private TajoMasterClientService tajoMasterClientService;
@@ -127,7 +126,7 @@ public class TajoMaster extends CompositeService {
 
   private TajoSystemMetrics systemMetrics;
 
-  private HAService haService;
+  private ServiceTracker haService;
 
   private JvmPauseMonitor pauseMonitor;
 
@@ -171,7 +170,7 @@ public class TajoMaster extends CompositeService {
       // check the system directory and create if they are not created.
       checkAndInitializeSystemDirectories();
       diagnoseTajoMaster();
-      this.storeManager = (FileStorageManager)StorageManager.getFileStorageManager(systemConf, null);
+      this.storeManager = StorageManager.getFileStorageManager(systemConf);
 
       catalogServer = new CatalogServer(FunctionLoader.load());
       addIfService(catalogServer);
@@ -223,15 +222,6 @@ public class TajoMaster extends CompositeService {
           true, null, context.getConf(), null);
       webServer.addServlet("queryServlet", "/query_exec", QueryExecutorServlet.class);
       webServer.start();
-    }
-  }
-
-
-  private void initHAManger() throws Exception {
-    // If tajo provides haService based on ZooKeeper, following codes need to update.
-    if (systemConf.getBoolVar(ConfVars.TAJO_MASTER_HA_ENABLE)) {
-      haService = new HAServiceHDFSImpl(context);
-      haService.register();
     }
   }
 
@@ -326,11 +316,8 @@ public class TajoMaster extends CompositeService {
 
     initSystemMetrics();
 
-    try {
-      initHAManger();
-    } catch (IOException e) {
-      LOG.error(e.getMessage(), e);
-    }
+    haService = ServiceTrackerFactory.get(systemConf);
+    haService.register();
 
     historyWriter = new HistoryWriter(getMasterName(), true);
     historyWriter.init(getConfig());
@@ -422,10 +409,6 @@ public class TajoMaster extends CompositeService {
     return this.catalogServer;
   }
 
-  public FileStorageManager getStorageManager() {
-    return this.storeManager;
-  }
-
   public class MasterContext {
     private final TajoConf conf;
 
@@ -477,7 +460,7 @@ public class TajoMaster extends CompositeService {
       return systemMetrics;
     }
 
-    public HAService getHAService() {
+    public ServiceTracker getHAService() {
       return haService;
     }
 

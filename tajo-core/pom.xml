@@ -34,6 +34,7 @@
     <antlr4.visitor>true</antlr4.visitor>
     <antlr4.listener>true</antlr4.listener>
     <metrics.version>3.0.1</metrics.version>
+    <maven.fork.count>3</maven.fork.count>
   </properties>
 
   <repositories>
@@ -440,6 +441,11 @@
         </exclusion>
       </exclusions>
     </dependency>
+    <dependency>
+      <groupId>com.github.stephenc.jcip</groupId>
+      <artifactId>jcip-annotations</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <profiles>
@@ -689,6 +695,39 @@
           </exclusions>
         </dependency>
       </dependencies>
+    </profile>
+    <profile>
+      <id>parallel-test</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>test</phase>
+                <goals>
+                  <goal>test</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration combine.self="override">
+              <forkCount>${maven.fork.count}</forkCount>
+              <reuseForks>true</reuseForks>
+              <argLine>-Xms512m -Xmx1024m -XX:MaxPermSize=128m -Dfile.encoding=UTF-8</argLine>
+              <useSystemClassLoader>true</useSystemClassLoader>
+              <useManifestOnlyJar>true</useManifestOnlyJar>
+              <systemProperties>
+                <tajo.test>TRUE</tajo.test>
+                <tajo.test.data.dir>test-data${surefire.forkNumber}</tajo.test.data.dir>
+              </systemProperties>
+            </configuration>
+          </plugin>        
+        </plugins>
+      </build>
     </profile>
   </profiles>
 

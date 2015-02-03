@@ -660,12 +660,11 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
   @Test
   public final void testInsertOverwriteTableWithNonFromQuery2() throws Exception {
-    String tableName = CatalogUtil.normalizeIdentifier("InsertOverwriteWithEvalQuery");
+    String tableName = CatalogUtil.normalizeIdentifier("InsertOverwriteWithEvalQuery2");
     ResultSet res = executeString("create table " + tableName +" (col1 int4, col2 float4, col3 text)");
     res.close();
     CatalogService catalog = testingCluster.getMaster().getCatalog();
     assertTrue(catalog.existsTable(getCurrentDatabase(), tableName));
-
     res = executeString("insert overwrite into " + tableName + " (col1, col3) select 1::INT4, 'test';");
     res.close();
 
