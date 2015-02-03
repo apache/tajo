@@ -39,6 +39,7 @@ public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>,
   @Expose private Long numNulls = null; // optional
   @Expose private Datum minValue = null; // optional
   @Expose private Datum maxValue = null; // optional
+  @Expose private Histogram histogram = null; // optional
 
   public ColumnStats(Column column) {
     this.column = column;
@@ -60,6 +61,9 @@ public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>,
     }
     if (proto.hasMaxValue()) {
       this.maxValue = DatumFactory.createFromBytes(getColumn().getDataType(), proto.getMaxValue().toByteArray());
+    }
+    if (proto.hasHistogram()) {
+      this.histogram = new Histogram(proto.getHistogram());
     }
   }
 
@@ -110,6 +114,14 @@ public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>,
   public boolean hasNullValue() {
     return numNulls > 0;
   }
+  
+  public void setHistogram(Histogram histogram) {
+    this.histogram = histogram;
+  }
+
+  public Histogram getHistogram() {
+    return this.histogram;
+  }
 
   public boolean equals(Object obj) {
     if (obj instanceof ColumnStats) {
@@ -118,7 +130,8 @@ public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>,
           && getNumDistValues().equals(other.getNumDistValues())
           && getNumNulls().equals(other.getNumNulls())
           && TUtil.checkEquals(getMinValue(), other.getMinValue())
-          && TUtil.checkEquals(getMaxValue(), other.getMaxValue());
+          && TUtil.checkEquals(getMaxValue(), other.getMaxValue())
+          && TUtil.checkEquals(getHistogram(), other.getHistogram());
     } else {
       return false;
     }
@@ -135,6 +148,7 @@ public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>,
     stat.numNulls = numNulls;
     stat.minValue = minValue;
     stat.maxValue = maxValue;
+    stat.histogram = this.histogram;
 
     return stat;
   }
@@ -167,6 +181,9 @@ public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>,
     }
     if (this.maxValue != null) {
       builder.setMaxValue(ByteString.copyFrom(this.maxValue.asByteArray()));
+    }
+    if (this.histogram != null) {
+      builder.setHistogram(this.histogram.getProto());
     }
 
     return builder.build();
