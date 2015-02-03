@@ -45,6 +45,7 @@ import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 import org.apache.tajo.master.*;
+import org.apache.tajo.master.exec.prehook.CreateIndexHook;
 import org.apache.tajo.master.exec.prehook.CreateTableHook;
 import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
 import org.apache.tajo.master.exec.prehook.InsertIntoHook;
@@ -82,6 +83,7 @@ public class QueryExecutor {
     this.hookManager = new DistributedQueryHookManager();
     this.hookManager.addHook(new CreateTableHook());
     this.hookManager.addHook(new InsertIntoHook());
+    this.hookManager.addHook(new CreateIndexHook());
   }
 
   public SubmitQueryResponse execute(QueryContext queryContext, Session session, String sql, String jsonExpr,
