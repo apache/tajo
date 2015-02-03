@@ -32,7 +32,6 @@ import org.apache.tajo.catalog.proto.CatalogProtos.TableProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.fragment.FileFragment;
@@ -70,7 +69,7 @@ public class TestRowFile {
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.ROWFILE);
 
     FileStorageManager sm =
-        (FileStorageManager)StorageManager.getFileStorageManager(conf, new Path(conf.getVar(ConfVars.ROOT_DIR)));
+        (FileStorageManager)StorageManager.getFileStorageManager(conf);
 
     Path tablePath = new Path("/test");
     Path metaPath = new Path(tablePath, ".meta");

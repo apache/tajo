@@ -176,6 +176,8 @@ Release 0.10.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1324: Remove warehouse directory rewriting in Unit Test. (jinho)
+
     TAJO-1321: Cli prints wrong response time. (jihoon)
 
     TAJO-1313: Tajo-dump creates DDLs for information_schema tables.
