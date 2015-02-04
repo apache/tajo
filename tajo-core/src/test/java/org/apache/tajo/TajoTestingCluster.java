@@ -158,6 +158,12 @@ public class TajoTestingCluster {
     conf.setIntVar(ConfVars.CATALOG_RPC_SERVER_WORKER_THREAD_NUM, 2);
     conf.setIntVar(ConfVars.SHUFFLE_RPC_SERVER_WORKER_THREAD_NUM, 2);
 
+    // Resource allocator
+    conf.setIntVar(ConfVars.YARN_RM_TASKRUNNER_LAUNCH_PARALLEL_NUM, 2);
+
+    // Memory cache termination
+    conf.setIntVar(ConfVars.WORKER_HISTORY_EXPIRE_PERIOD, 1);
+
     this.standbyWorkerMode = conf.getVar(ConfVars.RESOURCE_MANAGER_CLASS)
         .indexOf(TajoWorkerResourceManager.class.getName()) >= 0;
 
@@ -635,8 +641,7 @@ public class TajoTestingCluster {
     TajoTestingCluster util = TpchTestBase.getInstance().getTestingCluster();
 
     FileSystem fs = util.getDefaultFileSystem();
-    Path rootDir = util.getMaster().
-        getStorageManager().getWarehouseDir();
+    Path rootDir = TajoConf.getWarehouseDir(util.getConfiguration());
     fs.mkdirs(rootDir);
     for (int i = 0; i < names.length; i++) {
       createTable(names[i], schemas[i], tableOption, tables[i]);
@@ -688,8 +693,7 @@ public class TajoTestingCluster {
     TajoClient client = new TajoClientImpl(conf);
     try {
       FileSystem fs = util.getDefaultFileSystem();
-      Path rootDir = util.getMaster().
-          getStorageManager().getWarehouseDir();
+      Path rootDir = TajoConf.getWarehouseDir(util.getConfiguration());
       if (!fs.exists(rootDir)) {
         fs.mkdirs(rootDir);
       }

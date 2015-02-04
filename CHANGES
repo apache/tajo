@@ -27,6 +27,9 @@ Release 0.10.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1328: Fix deprecated property names in the catalog configuration
+    document. (jihun)
+
     TAJO-1317: Parallel Test Executions on Tajo Core Project. (jihun)
 
     TAJO-1320: HBaseStorageManager need to support Zookeeper Client Port.
@@ -175,6 +178,13 @@ Release 0.10.0 - unreleased
 
 
   BUG FIXES
+
+    TAJO-1325: Invalid history cleaner timeout. (jinho)
+
+    TAJO-1283: ORDER BY with the first descending order causes wrong results.
+    (Keuntae Park)
+
+    TAJO-1324: Remove warehouse directory rewriting in Unit Test. (jinho)
 
     TAJO-1321: Cli prints wrong response time. (jihoon)
 

@@ -1007,7 +1007,8 @@ public class Stage implements EventHandler<StageEvent> {
       int mb = (int) Math.ceil((double)volume / 1048576);
       LOG.info(stage.getId() + ", Table's volume is approximately " + mb + " MB");
       // determine the number of task per 64MB
-      int maxTaskNum = Math.max(1, (int) Math.ceil((double)mb / 64));
+      int minTaskNum = Math.max(1, stage.getContext().getQueryMasterContext().getConf().getInt(ConfVars.$TEST_MIN_TASK_NUM.varname, 1));
+      int maxTaskNum = Math.max(minTaskNum, (int) Math.ceil((double)mb / 64));
       LOG.info(stage.getId() + ", The determined number of non-leaf tasks is " + maxTaskNum);
       return maxTaskNum;
     }
