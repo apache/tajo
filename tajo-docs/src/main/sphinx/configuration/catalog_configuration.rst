@@ -99,11 +99,11 @@ Finally, you must add the following configurations to `conf/catalog-site.xml` :
 .. code-block:: xml
 
   <property>
-    <name>tajo.catalog.jdbc.connection.id</name>
+    <name>tajo.catalog.connection.id</name>
     <value><user name></value>
   </property>
   <property>
-    <name>tajo.catalog.jdbc.connection.password</name>
+    <name>tajo.catalog.connection.password</name>
     <value><user password></value>
   </property>
 
@@ -113,7 +113,7 @@ Finally, you must add the following configurations to `conf/catalog-site.xml` :
     <value>org.apache.tajo.catalog.store.MySQLStore</value>
   </property>
   <property>
-    <name>tajo.catalog.jdbc.uri</name>
+    <name>tajo.catalog.uri</name>
     <value>jdbc:mysql://<mysql host name>:<mysql port>/<database name for tajo>?createDatabaseIfNotExist=true</value>
   </property>
 
@@ -123,7 +123,7 @@ Finally, you must add the following configurations to `conf/catalog-site.xml` :
     <value>org.apache.tajo.catalog.store.MariaDBStore</value>
   </property>
   <property>
-    <name>tajo.catalog.jdbc.uri</name>
+    <name>tajo.catalog.uri</name>
     <value>jdbc:mariadb://<mariadb host name>:<mariadb port>/<database name for tajo>?createDatabaseIfNotExist=true</value>
   </property>
 
@@ -133,7 +133,7 @@ Finally, you must add the following configurations to `conf/catalog-site.xml` :
     <value>org.apache.tajo.catalog.store.PostgreSQLStore</value>
   </property>
   <property>
-    <name>tajo.catalog.jdbc.uri</name>
+    <name>tajo.catalog.uri</name>
     <value>jdbc:postgresql://<postgresql host name>:<postgresql port>/<database name for tajo>?createDatabaseIfNotExist=true</value>
   </property>
 
@@ -143,7 +143,7 @@ Finally, you must add the following configurations to `conf/catalog-site.xml` :
     <value>org.apache.tajo.catalog.store.OracleStore</value>
   </property>
   <property>
-    <name>tajo.catalog.jdbc.uri</name>
+    <name>tajo.catalog.uri</name>
     <value>jdbc:oracle:thin:@//<oracle host name>:<oracle port>/<ServiceName for tajo database></value>
   </property>
 
