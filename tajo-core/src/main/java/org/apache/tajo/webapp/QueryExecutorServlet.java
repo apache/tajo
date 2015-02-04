@@ -293,8 +293,6 @@ public class QueryExecutorServlet extends HttpServlet {
     public void run() {
       startTime = System.currentTimeMillis();
       try {
-        tajoClient = TajoHAClientUtil.getTajoClient(tajoConf, tajoClient);
-
         if (!tajoClient.getCurrentDatabase().equals(database))
           tajoClient.selectDatabase(database);
 

@@ -27,6 +27,7 @@ import org.apache.tajo.client.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos.BriefQueryInfo;
 import org.apache.tajo.ipc.ClientProtos.WorkerResourceInfo;
+import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.util.TajoIdUtils;
@@ -69,6 +70,7 @@ public class TajoAdmin {
 
   private TajoConf tajoConf;
   private TajoClient tajoClient;
+  private ServiceTracker serviceTracker;
   private Writer writer;
 
   public TajoAdmin(TajoConf tajoConf, Writer writer) {
@@ -175,7 +177,7 @@ public class TajoAdmin {
 
   private void processDesc(Writer writer) throws ParseException, IOException,
       ServiceException, SQLException {
-    tajoClient = TajoHAClientUtil.getTajoClient(tajoConf, tajoClient);
+
     List<BriefQueryInfo> queryList = tajoClient.getRunningQueryList();
     SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
     int id = 1;
@@ -215,7 +217,7 @@ public class TajoAdmin {
 
   private void processCluster(Writer writer) throws ParseException, IOException,
       ServiceException, SQLException {
-    tajoClient = TajoHAClientUtil.getTajoClient(tajoConf, tajoClient);
+
     List<WorkerResourceInfo> workerList = tajoClient.getClusterInfo();
 
     int runningQueryMasterTasks = 0;
@@ -380,7 +382,7 @@ public class TajoAdmin {
 
   private void processList(Writer writer) throws ParseException, IOException,
       ServiceException, SQLException {
-    tajoClient = TajoHAClientUtil.getTajoClient(tajoConf, tajoClient);
+
     List<BriefQueryInfo> queryList = tajoClient.getRunningQueryList();
     SimpleDateFormat df = new SimpleDateFormat(DATE_FORMAT);
     StringBuilder builder = new StringBuilder();
@@ -421,7 +423,7 @@ public class TajoAdmin {
 
   private void processMasters(Writer writer) throws ParseException, IOException,
       ServiceException, SQLException {
-    tajoClient = TajoHAClientUtil.getTajoClient(tajoConf, tajoClient);
+
     if (tajoConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
 
       List<String> list = HAServiceUtil.getMasters(tajoConf);
