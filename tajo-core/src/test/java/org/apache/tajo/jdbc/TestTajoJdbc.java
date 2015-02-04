@@ -621,7 +621,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
         stmt = conn.createStatement();
         resultSet = stmt.executeQuery("alter table " + tableName + " add partition (key = 0.1)");
       }
-    } catch (SQLFeatureNotSupportedException e) {
+    } catch (SQLException e) {
       errorMessage = e.getMessage();
     } finally {
       assertEquals(errorMessage, "ADD_PARTITION is not supported yet\n");
