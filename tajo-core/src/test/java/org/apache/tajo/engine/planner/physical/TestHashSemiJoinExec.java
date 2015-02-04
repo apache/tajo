@@ -56,13 +56,12 @@ import static org.junit.Assert.assertTrue;
 
 public class TestHashSemiJoinExec {
   private TajoConf conf;
-  private final String TEST_PATH = "target/test-data/TestHashJoinExec";
+  private final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestHashJoinExec";
   private TajoTestingCluster util;
   private CatalogService catalog;
   private SQLAnalyzer analyzer;
   private LogicalPlanner planner;
   private LogicalOptimizer optimizer;
-  private StorageManager sm;
   private Path testDir;
 
   private TableDesc employee;
@@ -77,7 +76,6 @@ public class TestHashSemiJoinExec {
     catalog.createTablespace(DEFAULT_TABLESPACE_NAME, testDir.toUri().toString());
     catalog.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     conf = util.getConfiguration();
-    sm = StorageManager.getFileStorageManager(conf, testDir);
 
     Schema employeeSchema = new Schema();
     employeeSchema.addColumn("managerid", Type.INT4);
@@ -163,7 +161,7 @@ public class TestHashSemiJoinExec {
 
     FileFragment[] merged = TUtil.concat(empFrags, peopleFrags);
 
-    Path workDir = CommonTestingUtil.getTestDir("target/test-data/testHashSemiJoin");
+    Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testHashSemiJoin");
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newTaskAttemptId(), merged, workDir);
     ctx.setEnforcer(new Enforcer());

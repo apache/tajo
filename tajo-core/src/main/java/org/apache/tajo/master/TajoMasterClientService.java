@@ -393,9 +393,7 @@ public class TajoMasterClientService extends AbstractService {
           infoBuilder.setState(queryInfo.getQueryState());
           infoBuilder.setQuery(queryInfo.getSql());
           infoBuilder.setStartTime(queryInfo.getStartTime());
-          long endTime = (queryInfo.getFinishTime() == 0) ?
-                         System.currentTimeMillis() : queryInfo.getFinishTime();
-          infoBuilder.setFinishTime(endTime);
+          infoBuilder.setFinishTime(System.currentTimeMillis());
           infoBuilder.setProgress(queryInfo.getProgress());
           infoBuilder.setQueryMasterPort(queryInfo.getQueryMasterPort());
           infoBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
@@ -428,9 +426,7 @@ public class TajoMasterClientService extends AbstractService {
           infoBuilder.setState(queryInfo.getQueryState());
           infoBuilder.setQuery(queryInfo.getSql());
           infoBuilder.setStartTime(queryInfo.getStartTime());
-          long endTime = (queryInfo.getFinishTime() == 0) ?
-              System.currentTimeMillis() : queryInfo.getFinishTime();
-          infoBuilder.setFinishTime(endTime);
+          infoBuilder.setFinishTime(queryInfo.getFinishTime());
           infoBuilder.setProgress(queryInfo.getProgress());
           infoBuilder.setQueryMasterPort(queryInfo.getQueryMasterPort());
           infoBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());

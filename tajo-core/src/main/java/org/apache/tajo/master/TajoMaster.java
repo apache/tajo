@@ -52,7 +52,6 @@ import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.session.SessionManager;
-import org.apache.tajo.storage.FileStorageManager;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.util.*;
 import org.apache.tajo.util.history.HistoryReader;
@@ -110,7 +109,7 @@ public class TajoMaster extends CompositeService {
 
   private CatalogServer catalogServer;
   private CatalogService catalog;
-  private FileStorageManager storeManager;
+  private StorageManager storeManager;
   private GlobalEngine globalEngine;
   private AsyncDispatcher dispatcher;
   private TajoMasterClientService tajoMasterClientService;
@@ -171,7 +170,7 @@ public class TajoMaster extends CompositeService {
       // check the system directory and create if they are not created.
       checkAndInitializeSystemDirectories();
       diagnoseTajoMaster();
-      this.storeManager = (FileStorageManager)StorageManager.getFileStorageManager(systemConf, null);
+      this.storeManager = StorageManager.getFileStorageManager(systemConf);
 
       catalogServer = new CatalogServer(FunctionLoader.load());
       addIfService(catalogServer);
@@ -408,10 +407,6 @@ public class TajoMaster extends CompositeService {
 
   public CatalogServer getCatalogServer() {
     return this.catalogServer;
-  }
-
-  public FileStorageManager getStorageManager() {
-    return this.storeManager;
   }
 
   public class MasterContext {

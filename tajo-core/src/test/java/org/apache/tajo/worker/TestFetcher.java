@@ -22,6 +22,7 @@ import org.apache.hadoop.fs.*;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoProtos;
+import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.pullserver.TajoPullServerService;
@@ -44,7 +45,7 @@ import java.util.Random;
 import static org.junit.Assert.*;
 
 public class TestFetcher {
-  private String TEST_DATA = "target/test-data/TestFetcher";
+  private String TEST_DATA = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestFetcher";
   private String INPUT_DIR = TEST_DATA+"/in/";
   private String OUTPUT_DIR = TEST_DATA+"/out/";
   private TajoConf conf = new TajoConf();

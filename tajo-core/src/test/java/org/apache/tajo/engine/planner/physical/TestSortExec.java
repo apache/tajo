@@ -51,7 +51,7 @@ import static org.junit.Assert.assertTrue;
 
 public class TestSortExec {
   private static TajoConf conf;
-  private static final String TEST_PATH = "target/test-data/TestPhysicalPlanner";
+  private static final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestPhysicalPlanner";
   private static TajoTestingCluster util;
   private static CatalogService catalog;
   private static SQLAnalyzer analyzer;
@@ -70,7 +70,7 @@ public class TestSortExec {
     util = TpchTestBase.getInstance().getTestingCluster();
     catalog = util.getMaster().getCatalog();
     workDir = CommonTestingUtil.getTestDir(TEST_PATH);
-    sm = (FileStorageManager)StorageManager.getFileStorageManager(conf, workDir);
+    sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
 
     Schema schema = new Schema();
     schema.addColumn("managerid", Type.INT4);
@@ -112,7 +112,7 @@ public class TestSortExec {
   @Test
   public final void testNext() throws IOException, PlanningException {
     FileFragment[] frags = FileStorageManager.splitNG(conf, "default.employee", employeeMeta, tablePath, Integer.MAX_VALUE);
-    Path workDir = CommonTestingUtil.getTestDir("target/test-data/TestSortExec");
+    Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestSortExec");
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility
         .newTaskAttemptId(), new FileFragment[] { frags[0] }, workDir);
