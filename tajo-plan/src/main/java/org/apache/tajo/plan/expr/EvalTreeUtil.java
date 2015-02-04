@@ -486,6 +486,28 @@ public class EvalTreeUtil {
       return this.aggFucntions;
     }
   }
+  
+  public static Set<WindowFunctionEval> findWindowFunction(EvalNode expr) {
+    AllWindowFunctionFinder finder = new AllWindowFunctionFinder();
+    expr.postOrder(finder);
+    return finder.getWindowFunctionSet();
+  }
+  
+  public static class AllWindowFunctionFinder implements EvalNodeVisitor {
+    private Set<WindowFunctionEval> windowFunctions = Sets.newHashSet();
+
+    @Override
+    public void visit(EvalNode node) {
+      if (node.getType() == EvalType.WINDOW_FUNCTION) {
+        WindowFunctionEval field = (WindowFunctionEval) node;
+        windowFunctions.add(field);
+      }
+    }
+    
+    public Set<WindowFunctionEval> getWindowFunctionSet() {
+      return windowFunctions;
+    }
+  }
 
   public static <T extends EvalNode> Collection<T> findEvalsByType(EvalNode evalNode, EvalType type) {
     EvalFinder finder = new EvalFinder(type);
