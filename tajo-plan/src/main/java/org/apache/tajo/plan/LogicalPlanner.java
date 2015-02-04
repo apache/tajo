@@ -22,7 +22,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.commons.lang.math.NumberUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -1221,7 +1220,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       NamedExpr namedExpr = it.next();
       try {
         evalNode = exprAnnotator.createEvalNode(context, namedExpr.getExpr(), NameResolvingMode.LEGACY);
-        if (EvalTreeUtil.findDistinctAggFunction(evalNode).size() == 0) {
+        if (EvalTreeUtil.findDistinctAggFunction(evalNode).size() == 0 
+            && EvalTreeUtil.findWindowFunction(evalNode).size() == 0) {
           block.namedExprsMgr.markAsEvaluated(namedExpr.getAlias(), evalNode);
           newlyEvaluatedExprs.add(namedExpr.getAlias());
         }

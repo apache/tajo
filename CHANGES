@@ -179,6 +179,9 @@ Release 0.10.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1316: NPE occurs when performing window functions after join.
+    (jihun)
+
     TAJO-1325: Invalid history cleaner timeout. (jinho)
 
     TAJO-1283: ORDER BY with the first descending order causes wrong results.
