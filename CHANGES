@@ -5,6 +5,8 @@ Release 0.10.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-919: Implement LAG and LEAD window functions. (Keuntae Park)
+
     TAJO-920: Add FIRST_VALUE and LAST_VALUE window functions. 
     (Keuntae Park via hyunsik)
 
@@ -346,6 +348,8 @@ Release 0.10.0 - unreleased
 
 
   TASKS
+
+    TAJO-1260: Add ALTER TABLE ADD/DROP PARTITION statement to parser. (jaehwa)
 
     TAJO-1323: Cleanup the unstable test case. (jinho)
 
