@@ -29,6 +29,8 @@ Release 0.10.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1269: Separate cli from tajo-client. (hyunsik)
+
     TAJO-1328: Fix deprecated property names in the catalog configuration
     document. (jihun)
 
