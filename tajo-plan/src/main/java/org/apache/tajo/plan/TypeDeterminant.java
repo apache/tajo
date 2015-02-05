@@ -235,6 +235,10 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
       } else {
         paramTypes[0] = givenArgs[0];
       }
+      for (int i = 1; i < params.length; i++) {
+        givenArgs[i] = visit(ctx, stack, params[i]);
+        paramTypes[i] = givenArgs[i];
+      }
     }
     stack.pop(); // <--- Pop
 
