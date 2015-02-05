@@ -383,6 +383,32 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       functionBody = new GeneralSetFunctionExpr("first_value", false, new Expr[]{ visitColumn_reference(functionType.column_reference())});
     } else if (checkIfExist(functionType.LAST_VALUE())) {
       functionBody = new GeneralSetFunctionExpr("last_value", false, new Expr[]{visitColumn_reference(functionType.column_reference())});
+    } else if (checkIfExist(functionType.LAG())) {
+      if (checkIfExist(functionType.numeric_value_expression())) {
+        if (checkIfExist(functionType.common_value_expression())) {
+          functionBody = new GeneralSetFunctionExpr("lag", false, new Expr[]{visitColumn_reference(functionType.column_reference()),
+              visitNumeric_value_expression(functionType.numeric_value_expression()),
+              visitCommon_value_expression(functionType.common_value_expression())});
+        } else {
+          functionBody = new GeneralSetFunctionExpr("lag", false, new Expr[]{visitColumn_reference(functionType.column_reference()),
+              visitNumeric_value_expression(functionType.numeric_value_expression())});
+        }
+      } else {
+        functionBody = new GeneralSetFunctionExpr("lag", false, new Expr[]{visitColumn_reference(functionType.column_reference())});
+      }
+    } else if (checkIfExist(functionType.LEAD())) {
+      if (checkIfExist(functionType.numeric_value_expression())) {
+        if (checkIfExist(functionType.common_value_expression())) {
+          functionBody = new GeneralSetFunctionExpr("lead", false, new Expr[]{visitColumn_reference(functionType.column_reference()),
+              visitNumeric_value_expression(functionType.numeric_value_expression()),
+              visitCommon_value_expression(functionType.common_value_expression())});
+        } else {
+          functionBody = new GeneralSetFunctionExpr("lead", false, new Expr[]{visitColumn_reference(functionType.column_reference()),
+              visitNumeric_value_expression(functionType.numeric_value_expression())});
+        }
+      } else {
+        functionBody = new GeneralSetFunctionExpr("lead", false, new Expr[]{visitColumn_reference(functionType.column_reference())});
+      }
     } else {
       functionBody = visitAggregate_function(functionType.aggregate_function());
     }
