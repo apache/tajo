@@ -349,6 +349,8 @@ Release 0.10.0 - unreleased
 
   TASKS
 
+    TAJO-1260: Add ALTER TABLE ADD/DROP PARTITION statement to parser. (jaehwa)
+
     TAJO-1323: Cleanup the unstable test case. (jinho)
 
     TAJO-1295: Remove legacy worker.dataserver package and its unit tests.
