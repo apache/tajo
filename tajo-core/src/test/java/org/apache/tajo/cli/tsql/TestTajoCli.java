@@ -27,6 +27,7 @@ import org.apache.tajo.ConfigKey;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.conf.TajoConf;
@@ -371,6 +372,28 @@ public class TestTajoCli {
     } finally {
       cli.close();
     }
+  }
+
+  @Test
+     public void testAlterTableAddPartition() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testAlterTableAddPartition");
+
+    tajoCli.executeScript("create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8)");
+    tajoCli.executeScript("alter table " + tableName + " add partition (key = 0.1)");
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
+  @Test
+  public void testAlterTableDropPartition() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testAlterTableDropPartition");
+
+    tajoCli.executeScript("create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8)");
+    tajoCli.executeScript("alter table " + tableName + " drop partition (key = 0.1)");
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
   }
 
   public static class TajoCliOutputTestFormatter extends DefaultTajoCliOutputFormatter {

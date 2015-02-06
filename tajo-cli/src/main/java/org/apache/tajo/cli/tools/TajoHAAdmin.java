@@ -22,7 +22,6 @@ import com.google.protobuf.ServiceException;
 import org.apache.commons.cli.*;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
-import org.apache.tajo.client.TajoHAClientUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ha.HAServiceUtil;
 
@@ -159,7 +158,7 @@ public class TajoHAAdmin {
 
   private void getState(Writer writer, String param) throws ParseException, IOException,
       ServiceException {
-    tajoClient = TajoHAClientUtil.getTajoClient(tajoConf, tajoClient);
+
     int retValue = HAServiceUtil.getState(param, tajoConf);
 
     switch (retValue) {

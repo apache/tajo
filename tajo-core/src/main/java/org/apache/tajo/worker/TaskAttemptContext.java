@@ -57,7 +57,7 @@ public class TaskAttemptContext {
   private static final Log LOG = LogFactory.getLog(TaskAttemptContext.class);
   private final Map<String, List<FragmentProto>> fragmentMap = Maps.newHashMap();
 
-  private TaskAttemptState state;
+  private volatile TaskAttemptState state;
   private TableStats resultStats;
   private TaskAttemptId queryId;
   private final Path workDir;

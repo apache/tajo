@@ -679,7 +679,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   public static final Set<String> WINDOW_FUNCTIONS =
-      Sets.newHashSet("row_number", "rank", "dense_rank", "percent_rank", "cume_dist", "first_value");
+      Sets.newHashSet("row_number", "rank", "dense_rank", "percent_rank", "cume_dist", "first_value", "lag");
 
   public EvalNode visitWindowFunction(Context ctx, Stack<Expr> stack, WindowFunctionExpr windowFunc)
       throws PlanningException {
@@ -720,6 +720,10 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
         paramTypes[0] = CatalogUtil.newSimpleDataType(Type.INT8);
       } else {
         paramTypes[0] = givenArgs[0].getValueType();
+      }
+      for (int i = 1; i < params.length; i++) {
+        givenArgs[i] = visit(ctx, stack, params[i]);
+        paramTypes[i] = givenArgs[i].getValueType();
       }
     } else {
       if (windowFunc.getSignature().equalsIgnoreCase("rank")) {

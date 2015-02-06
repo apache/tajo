@@ -25,13 +25,15 @@ import jline.UnsupportedTerminal;
 import jline.console.ConsoleReader;
 import org.apache.commons.cli.*;
 import org.apache.tajo.*;
-import org.apache.tajo.ipc.*;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.cli.tsql.ParsedResult.StatementType;
+import org.apache.tajo.cli.tsql.SimpleParser.ParsingState;
 import org.apache.tajo.cli.tsql.commands.*;
 import org.apache.tajo.client.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.util.FileUtil;
 
 import java.io.*;
@@ -42,10 +44,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
-import static org.apache.tajo.cli.tsql.ParsedResult.StatementType.META;
-import static org.apache.tajo.cli.tsql.ParsedResult.StatementType.STATEMENT;
-import static org.apache.tajo.cli.tsql.SimpleParser.ParsingState;
 
 public class TajoCli {
   public static final String ERROR_PREFIX = "ERROR: ";
@@ -236,7 +234,6 @@ public class TajoCli {
     }
 
     try {
-      checkMasterStatus();
       context.setCurrentDatabase(client.getCurrentDatabase());
       initHistory();
       initCommands();
@@ -413,7 +410,7 @@ public class TajoCli {
           if (latestState != ParsingState.TOK_START && parsedResults.size() > 0) {
             // Add multi-line statements to history in addition to individual lines.
             ParsedResult parsed = parsedResults.get(0);
-            history.add(parsed.getHistoryStatement() + (parsed.getType() == STATEMENT ? ";" : ""));
+            history.add(parsed.getHistoryStatement() + (parsed.getType() == StatementType.STATEMENT ? ";" : ""));
           }
 
           exitCode = executeParsedResults(parsedResults);
@@ -441,7 +438,7 @@ public class TajoCli {
   private int executeParsedResults(Collection<ParsedResult> parsedResults) throws Exception {
     int exitCode;
     for (ParsedResult parsedResult : parsedResults) {
-      if (parsedResult.getType() == META) {
+      if (parsedResult.getType() == StatementType.META) {
         exitCode = executeMetaCommand(parsedResult.getStatement());
       } else {
         exitCode = executeQuery(parsedResult.getStatement());
@@ -456,7 +453,6 @@ public class TajoCli {
   }
 
   public int executeMetaCommand(String line) throws Exception {
-    checkMasterStatus();
     String [] metaCommands = line.split(";");
     for (String metaCommand : metaCommands) {
       String arguments [] = metaCommand.split(" ");
@@ -491,7 +487,7 @@ public class TajoCli {
   }
 
   private void executeJsonQuery(String json) throws ServiceException, IOException {
-    checkMasterStatus();
+
     long startTime = System.currentTimeMillis();
     ClientProtos.SubmitQueryResponse response = client.executeQueryWithJson(json);
     if (response == null) {
@@ -518,7 +514,7 @@ public class TajoCli {
   }
 
   private int executeQuery(String statement) throws ServiceException, IOException {
-    checkMasterStatus();
+
     long startTime = System.currentTimeMillis();
     ClientProtos.SubmitQueryResponse response = null;
     try{
@@ -678,17 +674,6 @@ public class TajoCli {
 
     if (reader != null) {
       reader.shutdown();
-    }
-  }
-
-  private void checkMasterStatus() throws IOException, ServiceException {
-    String sessionId = client.getSessionId() != null ? client.getSessionId().getId() : null;
-    client = TajoHAClientUtil.getTajoClient(conf, client, context);
-    if(sessionId != null && (client.getSessionId() == null ||
-        !sessionId.equals(client.getSessionId().getId()))) {
-      commands.clear();
-      initHistory();
-      initCommands();
     }
   }
 
