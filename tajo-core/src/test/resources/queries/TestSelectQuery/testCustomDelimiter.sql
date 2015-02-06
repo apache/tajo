@@ -1,0 +1,1 @@
+select name, score from tabledelimiter;

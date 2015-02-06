@@ -149,6 +149,20 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testJoinWithDifferentDelimiter() throws Exception {
+    executeDDL("table1_with_different_delimiter_dll.sql", "table1");
+    executeDDL("table2_with_different_delimiter_dll.sql", "tableWithDiffDelimiter");
+    try {
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE table1");
+      executeString("DROP TABLE table2");
+    }
+  }
+
+  @Test
   public final void testWhereClauseJoin1() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);

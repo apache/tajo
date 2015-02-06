@@ -636,4 +636,16 @@ public class TestSelectQuery extends QueryTestCaseBase {
       testingCluster.getConfiguration().setSystemTimezone(TimeZone.getTimeZone("GMT"));
     }
   }
+
+  @Test
+  public void testCustomDelimiter() throws Exception {
+    try {
+      executeDDL("table_with_delimiter_ddl.sql", "tableWithDelimiter");
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE IF EXISTS tabledelimiter");
+    }
+  }
 }

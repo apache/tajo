@@ -185,6 +185,7 @@ message DataChannelProto {
   required ShuffleType shuffleType = 4;
 
   optional SchemaProto schema = 5;
+  optional KeyValueSetProto options = 6;
 
   repeated ColumnProto shuffleKeys = 7;
   optional int32 numOutputs = 9 [default = 1];

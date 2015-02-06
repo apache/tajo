@@ -1,0 +1,1 @@
+select * from table2 b join table1 a on a.id = b.id;
