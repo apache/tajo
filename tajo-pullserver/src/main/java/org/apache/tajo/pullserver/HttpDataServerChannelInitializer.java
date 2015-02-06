@@ -53,7 +53,6 @@ public class HttpDataServerChannelInitializer extends ChannelInitializer<Channel
     pipeline.addLast("encoder", new HttpResponseEncoder());
     pipeline.addLast("chunkedWriter", new ChunkedWriteHandler());
     pipeline.addLast("deflater", new HttpContentCompressor());
-    pipeline.addLast("idleStateHandler", new IdleStateHandler(10, 10, 20, TimeUnit.SECONDS));
     pipeline.addLast("handler", new HttpDataServerHandler(userName, appId));
   }
 }
