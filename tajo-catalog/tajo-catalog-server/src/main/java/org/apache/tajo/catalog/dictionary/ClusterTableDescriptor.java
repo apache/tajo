@@ -20,9 +20,9 @@ package org.apache.tajo.catalog.dictionary;
 
 import org.apache.tajo.common.TajoDataTypes.Type;
 
-class WorkersTableDescriptor extends AbstractTableDescriptor {
+class ClusterTableDescriptor extends AbstractTableDescriptor {
   
-  private static final String TABLENAME = "workers";
+  private static final String TABLENAME = "cluster";
   private final ColumnDescriptor[] columns = new ColumnDescriptor[] {
       new ColumnDescriptor("host", Type.TEXT, 0),
       new ColumnDescriptor("port", Type.INT4, 0),
@@ -39,7 +39,7 @@ class WorkersTableDescriptor extends AbstractTableDescriptor {
       new ColumnDescriptor("heartbeat", Type.TIMESTAMP, 0)
   };
 
-  public WorkersTableDescriptor(InfoSchemaMetadataDictionary metadataDictionary) {
+  public ClusterTableDescriptor(InfoSchemaMetadataDictionary metadataDictionary) {
     super(metadataDictionary);
   }
 

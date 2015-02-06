@@ -534,7 +534,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     return aTuple;
   }
   
-  private List<Tuple> getWorkers(Schema outSchema) {
+  private List<Tuple> getClusterInfo(Schema outSchema) {
     Map<Integer, Worker> workerMap = masterContext.getResourceManager().getWorkers();
     Set<Integer> keySet = workerMap.keySet();
     List<Tuple> tuples = Collections.emptyList();
@@ -586,8 +586,8 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
       tuples = getAllTableStats(inSchema);
     } else if ("partitions".equalsIgnoreCase(tableName)) {
       tuples = getAllPartitions(inSchema);
-    } else if ("workers".equalsIgnoreCase(tableName)) {
-      tuples = getWorkers(inSchema);
+    } else if ("cluster".equalsIgnoreCase(tableName)) {
+      tuples = getClusterInfo(inSchema);
     }
     
     return tuples;    
