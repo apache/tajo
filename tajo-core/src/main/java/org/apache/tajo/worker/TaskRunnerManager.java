@@ -169,7 +169,9 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
 
       if(context == null){
         try {
-          context = new ExecutionBlockContext(this, startEvent, startEvent.getQueryMaster());
+          context = new ExecutionBlockContext(getTajoConf(), getWorkerContext(), this, startEvent.getQueryContext(),
+              startEvent.getPlan(), startEvent.getExecutionBlockId(), startEvent.getQueryMaster());
+          context.init();
         } catch (Throwable e) {
           LOG.fatal(e.getMessage(), e);
           throw new RuntimeException(e);

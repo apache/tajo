@@ -106,11 +106,20 @@ public class Task {
               TaskAttemptId taskId,
               final ExecutionBlockContext executionBlockContext,
               final TaskRequest request) throws IOException {
+    this(taskRunnerId, baseDir, taskId, executionBlockContext.getConf(), executionBlockContext, request);
+  }
+
+  public Task(String taskRunnerId,
+              Path baseDir,
+              TaskAttemptId taskId,
+              TajoConf conf,
+              final ExecutionBlockContext executionBlockContext,
+              final TaskRequest request) throws IOException {
     this.taskRunnerId = taskRunnerId;
     this.request = request;
     this.taskId = taskId;
 
-    this.systemConf = executionBlockContext.getConf();
+    this.systemConf = conf;
     this.queryContext = request.getQueryContext(systemConf);
     this.executionBlockContext = executionBlockContext;
     this.taskDir = StorageUtil.concatPath(baseDir,
@@ -120,8 +129,11 @@ public class Task {
         request.getFragments().toArray(new FragmentProto[request.getFragments().size()]), taskDir);
     this.context.setDataChannel(request.getDataChannel());
     this.context.setEnforcer(request.getEnforcer());
+    this.context.setState(TaskAttemptState.TA_PENDING);
     this.inputStats = new TableStats();
+  }
 
+  public void initPlan() throws IOException {
     plan = LogicalNodeDeserializer.deserialize(queryContext, request.getPlan());
     LogicalNode [] scanNode = PlannerUtil.findAllNodes(plan, NodeType.SCAN);
     if (scanNode != null) {
@@ -157,8 +169,6 @@ public class Task {
     }
 
     this.localChunks = Collections.synchronizedList(new ArrayList<FileChunk>());
-    
-    context.setState(TaskAttemptState.TA_PENDING);
     LOG.info("==================================");
     LOG.info("* Stage " + request.getId() + " is initialized");
     LOG.info("* InterQuery: " + interQuery
@@ -180,6 +190,8 @@ public class Task {
   }
 
   public void init() throws IOException {
+    initPlan();
+
     if (context.getState() == TaskAttemptState.TA_PENDING) {
       // initialize a task temporal dir
       FileSystem localFS = executionBlockContext.getLocalFS();
@@ -384,22 +396,23 @@ public class Task {
     startTime = System.currentTimeMillis();
     Throwable error = null;
     try {
-      context.setState(TaskAttemptState.TA_RUNNING);
+      if(!context.isStopped()) {
+        context.setState(TaskAttemptState.TA_RUNNING);
+        if (context.hasFetchPhase()) {
+          // If the fetch is still in progress, the query unit must wait for
+          // complete.
+          waitForFetch();
+          context.setFetcherProgress(FETCHER_PROGRESS);
+          context.setProgressChanged(true);
+          updateProgress();
+        }
 
-      if (context.hasFetchPhase()) {
-        // If the fetch is still in progress, the query unit must wait for
-        // complete.
-        waitForFetch();
-        context.setFetcherProgress(FETCHER_PROGRESS);
-        context.setProgressChanged(true);
-        updateProgress();
-      }
+        this.executor = executionBlockContext.getTQueryEngine().
+            createPlan(context, plan);
+        this.executor.init();
 
-      this.executor = executionBlockContext.getTQueryEngine().
-          createPlan(context, plan);
-      this.executor.init();
-
-      while(!context.isStopped() && executor.next() != null) {
+        while(!context.isStopped() && executor.next() != null) {
+        }
       }
     } catch (Throwable e) {
       error = e ;
