@@ -136,15 +136,6 @@ public class BlockingRpcServer extends NettyServerBase {
       }
       ctx.close();
     }
-
-    @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-      super.userEventTriggered(ctx, evt);
-      
-      if (evt instanceof IdleStateEvent) {
-        ctx.close();
-      }
-    }
     
   }
 }

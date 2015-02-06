@@ -255,15 +255,6 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
     ctx.channel().writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
   }
 
-  @Override
-  public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-    super.userEventTriggered(ctx, evt);
-    
-    if (evt instanceof IdleStateEvent) {
-      ctx.close();
-    }
-  }
-
   private List<String> splitMaps(List<String> qids) {
     if (null == qids) {
       LOG.error("QueryId is EMPTY");
