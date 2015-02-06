@@ -5,6 +5,8 @@ Release 0.10.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-919: Implement LAG and LEAD window functions. (Keuntae Park)
+
     TAJO-920: Add FIRST_VALUE and LAST_VALUE window functions. 
     (Keuntae Park via hyunsik)
 
@@ -26,6 +28,8 @@ Release 0.10.0 - unreleased
     TAJO-1095: Implement Json file scanner. (hyunsik)
 
   IMPROVEMENT
+
+    TAJO-1269: Separate cli from tajo-client. (hyunsik)
 
     TAJO-1328: Fix deprecated property names in the catalog configuration
     document. (jihun)
@@ -178,6 +182,8 @@ Release 0.10.0 - unreleased
 
 
   BUG FIXES
+
+    TAJO-1336: Fix task failure of stopped task. (jinho)
 
     TAJO-1316: NPE occurs when performing window functions after join.
     (jihun)
@@ -346,6 +352,8 @@ Release 0.10.0 - unreleased
 
 
   TASKS
+
+    TAJO-1260: Add ALTER TABLE ADD/DROP PARTITION statement to parser. (jaehwa)
 
     TAJO-1323: Cleanup the unstable test case. (jinho)
 

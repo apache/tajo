@@ -383,6 +383,32 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       functionBody = new GeneralSetFunctionExpr("first_value", false, new Expr[]{ visitColumn_reference(functionType.column_reference())});
     } else if (checkIfExist(functionType.LAST_VALUE())) {
       functionBody = new GeneralSetFunctionExpr("last_value", false, new Expr[]{visitColumn_reference(functionType.column_reference())});
+    } else if (checkIfExist(functionType.LAG())) {
+      if (checkIfExist(functionType.numeric_value_expression())) {
+        if (checkIfExist(functionType.common_value_expression())) {
+          functionBody = new GeneralSetFunctionExpr("lag", false, new Expr[]{visitColumn_reference(functionType.column_reference()),
+              visitNumeric_value_expression(functionType.numeric_value_expression()),
+              visitCommon_value_expression(functionType.common_value_expression())});
+        } else {
+          functionBody = new GeneralSetFunctionExpr("lag", false, new Expr[]{visitColumn_reference(functionType.column_reference()),
+              visitNumeric_value_expression(functionType.numeric_value_expression())});
+        }
+      } else {
+        functionBody = new GeneralSetFunctionExpr("lag", false, new Expr[]{visitColumn_reference(functionType.column_reference())});
+      }
+    } else if (checkIfExist(functionType.LEAD())) {
+      if (checkIfExist(functionType.numeric_value_expression())) {
+        if (checkIfExist(functionType.common_value_expression())) {
+          functionBody = new GeneralSetFunctionExpr("lead", false, new Expr[]{visitColumn_reference(functionType.column_reference()),
+              visitNumeric_value_expression(functionType.numeric_value_expression()),
+              visitCommon_value_expression(functionType.common_value_expression())});
+        } else {
+          functionBody = new GeneralSetFunctionExpr("lead", false, new Expr[]{visitColumn_reference(functionType.column_reference()),
+              visitNumeric_value_expression(functionType.numeric_value_expression())});
+        }
+      } else {
+        functionBody = new GeneralSetFunctionExpr("lead", false, new Expr[]{visitColumn_reference(functionType.column_reference())});
+      }
     } else {
       functionBody = visitAggregate_function(functionType.aggregate_function());
     }
@@ -1734,6 +1760,24 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       alterTable.setAddNewColumn(columnDefinition);
     }
 
+    if (checkIfExist(ctx.partition_column_value_list())) {
+      List<Partition_column_valueContext> columnValueList = ctx.partition_column_value_list().partition_column_value();
+      int size = columnValueList.size();
+      ColumnReferenceExpr[] columns = new ColumnReferenceExpr[size];
+      Expr[] values = new Expr[size];
+      for (int i = 0; i < size; i++) {
+        Partition_column_valueContext columnValue = columnValueList.get(i);
+        columns[i] = new ColumnReferenceExpr(columnValue.identifier().getText());
+        values[i] = visitRow_value_predicand(columnValue.row_value_predicand());
+      }
+      alterTable.setColumns(columns);
+      alterTable.setValues(values);
+      if (ctx.LOCATION() != null) {
+        String path = stripQuote(ctx.path.getText());
+        alterTable.setLocation(path);
+      }
+    }
+
     alterTable.setAlterTableOpType(determineAlterTableType(ctx));
 
     return alterTable;
@@ -1745,23 +1789,35 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     final int COLUMN_MASK = 00000010;
     final int TO_MASK = 00000100;
     final int ADD_MASK = 00001000;
+    final int DROP_MASK = 00001001;
+    final int PARTITION_MASK = 00000020;
 
     int val = 00000000;
 
     for (int idx = 1; idx < ctx.getChildCount(); idx++) {
 
       if (ctx.getChild(idx) instanceof TerminalNode) {
-        if (((TerminalNode) ctx.getChild(idx)).getSymbol().getType() == RENAME) {
-          val = val | RENAME_MASK;
-        }
-        if (((TerminalNode) ctx.getChild(idx)).getSymbol().getType() == COLUMN) {
-          val = val | COLUMN_MASK;
-        }
-        if (((TerminalNode) ctx.getChild(idx)).getSymbol().getType() == TO) {
-          val = val | TO_MASK;
-        }
-        if (((TerminalNode) ctx.getChild(idx)).getSymbol().getType() == ADD) {
-          val = val | ADD_MASK;
+        switch (((TerminalNode) ctx.getChild(idx)).getSymbol().getType()) {
+          case RENAME:
+            val = val | RENAME_MASK;
+            break;
+          case COLUMN:
+            val = val | COLUMN_MASK;
+            break;
+          case TO:
+            val = val | TO_MASK;
+            break;
+          case ADD:
+            val = val | ADD_MASK;
+            break;
+          case DROP:
+            val = val | DROP_MASK;
+            break;
+          case PARTITION:
+            val = val | PARTITION_MASK;
+            break;
+          default:
+            break;
         }
       }
     }
@@ -1777,6 +1833,10 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         return AlterTableOpType.RENAME_COLUMN;
       case 520:
         return AlterTableOpType.ADD_COLUMN;
+      case 528:
+        return AlterTableOpType.ADD_PARTITION;
+      case 529:
+        return AlterTableOpType.DROP_PARTITION;
       default:
         return null;
     }

@@ -631,6 +631,8 @@ window_function_type
   | aggregate_function
   | FIRST_VALUE LEFT_PAREN column_reference RIGHT_PAREN
   | LAST_VALUE LEFT_PAREN column_reference RIGHT_PAREN
+  | LAG LEFT_PAREN column_reference ( COMMA numeric_value_expression ( COMMA common_value_expression )? )? RIGHT_PAREN
+  | LEAD LEFT_PAREN column_reference ( COMMA numeric_value_expression ( COMMA common_value_expression )? )? RIGHT_PAREN
   ;
 
 rank_function_type
@@ -1593,4 +1595,14 @@ alter_table_statement
   : ALTER TABLE table_name RENAME TO table_name
   | ALTER TABLE table_name RENAME COLUMN column_name TO column_name
   | ALTER TABLE table_name ADD COLUMN field_element
+  | ALTER TABLE table_name (if_not_exists)? ADD PARTITION LEFT_PAREN partition_column_value_list RIGHT_PAREN (LOCATION path=Character_String_Literal)?
+  | ALTER TABLE table_name (if_exists)? DROP PARTITION LEFT_PAREN partition_column_value_list RIGHT_PAREN
+  ;
+
+partition_column_value_list
+  : partition_column_value (COMMA partition_column_value)*
+  ;
+
+partition_column_value
+  : identifier EQUAL row_value_predicand
   ;

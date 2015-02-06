@@ -133,6 +133,7 @@
                       run cp -r $ROOT/tajo-algebra/target/tajo-algebra-${project.version}/* .
                       run cp -r $ROOT/tajo-plan/target/tajo-plan-${project.version}/* .
                       run cp -r $ROOT/tajo-client/target/tajo-client-${project.version}/* .
+                      run cp -r $ROOT/tajo-cli/target/tajo-cli-${project.version}/* .
                       run cp -r $ROOT/tajo-catalog/target/tajo-catalog-${project.version}/* .
                       run cp -r $ROOT/tajo-storage/target/tajo-storage-${project.version}/* .
                       run cp -r $ROOT/tajo-pullserver/target/tajo-pullserver-${project.version}.jar .

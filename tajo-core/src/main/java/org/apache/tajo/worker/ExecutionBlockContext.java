@@ -20,7 +20,6 @@ package org.apache.tajo.worker;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
@@ -29,8 +28,8 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.ReflectionUtils;
 import org.apache.tajo.ExecutionBlockId;
-import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TajoProtos;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryMasterProtocol;
@@ -76,6 +75,7 @@ public class ExecutionBlockContext {
   private FileSystem defaultFS;
   private ExecutionBlockId executionBlockId;
   private QueryContext queryContext;
+  private TajoWorker.WorkerContext workerContext;
   private String plan;
 
   private ExecutionBlockSharedResource resource;
@@ -97,13 +97,14 @@ public class ExecutionBlockContext {
 
   private final ConcurrentMap<String, TaskRunnerHistory> histories = Maps.newConcurrentMap();
 
-  public ExecutionBlockContext(TaskRunnerManager manager, TaskRunnerStartEvent event, WorkerConnectionInfo queryMaster)
-      throws Throwable {
+  public ExecutionBlockContext(TajoConf conf, TajoWorker.WorkerContext workerContext,
+                               TaskRunnerManager manager, QueryContext queryContext, String plan,
+                               ExecutionBlockId executionBlockId, WorkerConnectionInfo queryMaster) throws Throwable {
     this.manager = manager;
-    this.executionBlockId = event.getExecutionBlockId();
+    this.executionBlockId = executionBlockId;
     this.connPool = RpcConnectionPool.getPool();
     this.queryMaster = queryMaster;
-    this.systemConf = manager.getTajoConf();
+    this.systemConf = conf;
     this.reporter = new Reporter();
     this.defaultFS = TajoConf.getTajoRootDir(systemConf).getFileSystem(systemConf);
     this.localFS = FileSystem.getLocal(systemConf);
@@ -111,11 +112,10 @@ public class ExecutionBlockContext {
     // Setup QueryEngine according to the query plan
     // Here, we can setup row-based query engine or columnar query engine.
     this.queryEngine = new TajoQueryEngine(systemConf);
-    this.queryContext = event.getQueryContext();
-    this.plan = event.getPlan();
+    this.queryContext = queryContext;
+    this.plan = plan;
     this.resource = new ExecutionBlockSharedResource();
-
-    init();
+    this.workerContext = workerContext;
   }
 
   public void init() throws Throwable {
@@ -188,7 +188,7 @@ public class ExecutionBlockContext {
   }
 
   public TajoConf getConf() {
-    return manager.getTajoConf();
+    return systemConf;
   }
 
   public FileSystem getLocalFS() {
@@ -200,7 +200,7 @@ public class ExecutionBlockContext {
   }
 
   public LocalDirAllocator getLocalDirAllocator() {
-    return manager.getWorkerContext().getLocalDirAllocator();
+    return workerContext.getLocalDirAllocator();
   }
 
   public TajoQueryEngine getTQueryEngine() {
@@ -263,7 +263,7 @@ public class ExecutionBlockContext {
   }
 
   public TajoWorker.WorkerContext getWorkerContext(){
-    return manager.getWorkerContext();
+    return workerContext;
   }
 
   private void sendExecutionBlockReport(ExecutionBlockReport reporter) throws Exception {
