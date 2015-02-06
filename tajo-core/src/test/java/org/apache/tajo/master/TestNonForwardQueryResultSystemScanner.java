@@ -297,9 +297,9 @@ public class TestNonForwardQueryResultSystemScanner {
   }
   
   @Test
-  public void testGetWorkerDetails() throws Exception {
+  public void testGetClusterDetails() throws Exception {
     NonForwardQueryResultScanner queryResultScanner =
-        getScanner("SELECT TYPE FROM INFORMATION_SCHEMA.WORKERS");
+        getScanner("SELECT TYPE FROM INFORMATION_SCHEMA.CLUSTER");
     
     queryResultScanner.init();
     
