@@ -183,6 +183,8 @@ Release 0.10.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1336: Fix task failure of stopped task. (jinho)
+
     TAJO-1316: NPE occurs when performing window functions after join.
     (jihun)
 
