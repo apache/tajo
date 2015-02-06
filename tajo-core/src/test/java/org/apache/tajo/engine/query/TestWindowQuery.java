@@ -323,6 +323,104 @@ public class TestWindowQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testLag1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testLagTime() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("time", TajoDataTypes.Type.TIME);
+    String[] data = new String[]{ "1|12:11:12", "2|10:11:13", "2|05:42:41" };
+    TajoTestingCluster.createTable("lagtime", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString(
+          "select id, lag(time, 1) over ( partition by id order by time ) as time_lag from lagtime");
+      String ascExpected = "id,time_lag\n" +
+          "-------------------------------\n" +
+          "1,null\n" +
+          "2,null\n" +
+          "2,05:42:41\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE lagtime PURGE");
+    }
+  }
+
+  @Test
+  public final void testLagWithNoArgs() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testLagWithDefault() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testLead1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testLeadTime() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("time", TajoDataTypes.Type.TIME);
+    String[] data = new String[]{ "1|12:11:12", "2|10:11:13", "2|05:42:41" };
+    TajoTestingCluster.createTable("leadtime", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString(
+          "select id, lead(time, 1) over ( partition by id order by time ) as time_lead from leadtime");
+      String ascExpected = "id,time_lead\n" +
+          "-------------------------------\n" +
+          "1,null\n" +
+          "2,10:11:13\n" +
+          "2,null\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE leadtime PURGE");
+    }
+  }
+
+  @Test
+  public final void testLeadWithNoArgs() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testLeadWithDefault() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testMultipleWindow() throws Exception {
     KeyValueSet tableOptions = new KeyValueSet();
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);

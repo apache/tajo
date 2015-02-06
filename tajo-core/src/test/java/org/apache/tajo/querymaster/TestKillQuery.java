@@ -23,6 +23,7 @@ import org.apache.tajo.*;
 import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
@@ -30,6 +31,7 @@ import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.engine.query.TaskRequestImpl;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.master.event.QueryEvent;
 import org.apache.tajo.master.event.QueryEventType;
@@ -38,13 +40,18 @@ import org.apache.tajo.master.event.StageEventType;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
+import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.session.Session;
+import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.worker.ExecutionBlockContext;
+import org.apache.tajo.worker.Task;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -127,12 +134,24 @@ public class TestKillQuery {
     Query q = queryMasterTask.getQuery();
     q.handle(new QueryEvent(queryId, QueryEventType.KILL));
 
-    try{
+    try {
       cluster.waitForQueryState(queryMasterTask.getQuery(), TajoProtos.QueryState.QUERY_KILLED, 50);
-    } finally {
       assertEquals(TajoProtos.QueryState.QUERY_KILLED, queryMasterTask.getQuery().getSynchronizedState());
+    } catch (Exception e) {
+      e.printStackTrace();
+      if (stage != null) {
+        System.err.println(String.format("Stage: [%s] (Total: %d, Complete: %d, Success: %d, Killed: %d, Failed: %d)",
+            stage.getId().toString(),
+            stage.getTotalScheduledObjectsCount(),
+            stage.getCompletedTaskCount(),
+            stage.getSucceededObjectCount(),
+            stage.getKilledObjectCount(),
+            stage.getFailedObjectCount()));
+      }
+      throw e;
+    } finally {
+      queryMasterTask.stop();
     }
-    queryMasterTask.stop();
   }
 
   @Test
@@ -145,6 +164,8 @@ public class TestKillQuery {
     QueryMasterTask qmt = cluster.getQueryMasterTask(queryId);
     Query query = qmt.getQuery();
 
+    // wait for a stage created
+    cluster.waitForQueryState(query, TajoProtos.QueryState.QUERY_RUNNING, 10);
     query.handle(new QueryEvent(queryId, QueryEventType.KILL));
 
     try{
@@ -175,5 +196,32 @@ public class TestKillQuery {
 
     lastStage.getStateMachine().doTransition(StageEventType.SQ_FAILED,
         new StageEvent(lastStage.getId(), StageEventType.SQ_FAILED));
+  }
+
+  @Test
+  public void testKillTask() throws Throwable {
+    QueryId qid = LocalTajoTestingUtility.newQueryId();
+    ExecutionBlockId eid = QueryIdFactory.newExecutionBlockId(qid, 1);
+    TaskId tid = QueryIdFactory.newTaskId(eid);
+    TajoConf conf = new TajoConf();
+    TaskRequestImpl taskRequest = new TaskRequestImpl();
+
+    taskRequest.set(null, new ArrayList<CatalogProtos.FragmentProto>(),
+        null, false, PlanProto.LogicalNodeTree.newBuilder().build(), new QueryContext(conf), null, null);
+    taskRequest.setInterQuery();
+    TaskAttemptId attemptId = new TaskAttemptId(tid, 1);
+
+    ExecutionBlockContext context = new ExecutionBlockContext(conf, null, null, new QueryContext(conf), null, eid, null);
+
+    org.apache.tajo.worker.Task task = new Task("test", CommonTestingUtil.getTestDir(), attemptId,
+        conf, context, taskRequest);
+    task.kill();
+    assertEquals(TajoProtos.TaskAttemptState.TA_KILLED, task.getStatus());
+    try {
+      task.run();
+      assertEquals(TajoProtos.TaskAttemptState.TA_KILLED, task.getStatus());
+    } catch (Exception e) {
+      assertEquals(TajoProtos.TaskAttemptState.TA_KILLED, task.getStatus());
+    }
   }
 }

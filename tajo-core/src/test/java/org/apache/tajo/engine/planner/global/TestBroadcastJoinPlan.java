@@ -59,7 +59,7 @@ import static org.junit.Assert.assertTrue;
 
 public class TestBroadcastJoinPlan {
   private TajoConf conf;
-  private final String TEST_PATH = "target/test-data/TestBroadcastJoinPlan";
+  private final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestBroadcastJoinPlan";
   private TajoTestingCluster util;
   private CatalogService catalog;
   private SQLAnalyzer analyzer;

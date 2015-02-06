@@ -19,8 +19,8 @@
 package org.apache.tajo.cli.tsql.commands;
 
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.cli.tsql.TajoCli;
 import org.apache.tajo.function.FunctionUtil;
+import org.apache.tajo.cli.tsql.TajoCli;
 
 import java.util.*;
 

@@ -106,7 +106,7 @@ public class LocalTajoTestingUtility {
     client = new TajoClientImpl(conf);
 
     FileSystem fs = util.getDefaultFileSystem();
-    Path rootDir = util.getMaster().getStorageManager().getWarehouseDir();
+    Path rootDir = TajoConf.getWarehouseDir(conf);
     fs.mkdirs(rootDir);
     for (int i = 0; i < tablepaths.length; i++) {
       Path localPath = new Path(tablepaths[i]);

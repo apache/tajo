@@ -27,6 +27,7 @@ import org.apache.tajo.ConfigKey;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.conf.TajoConf;
@@ -38,9 +39,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.URL;
 
 import static org.junit.Assert.*;
@@ -77,7 +76,8 @@ public class TestTajoCli {
   }
 
   @After
-  public void tearDown() {
+  public void tearDown() throws IOException {
+    out.close();
     if (tajoCli != null) {
       tajoCli.close();
     }
@@ -350,39 +350,50 @@ public class TestTajoCli {
     assertOutputResult(new String(out.toByteArray()));
   }
 
-  @Test
+  @Test(timeout = 3000)
   public void testNonForwardQueryPause() throws Exception {
     final String sql = "select * from default.lineitem";
+    TajoCli cli = null;
     try {
       TableDesc tableDesc = cluster.getMaster().getCatalog().getTableDesc("default", "lineitem");
       assertNotNull(tableDesc);
       assertEquals(0L, tableDesc.getStats().getNumRows().longValue());
-      setVar(tajoCli, SessionVars.CLI_PAGE_ROWS, "2");
-      setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
-      Thread t = new Thread() {
-        public void run() {
-          try {
-            tajoCli.executeScript(sql);
-          } catch (Exception e) {
-            e.printStackTrace();
-            fail(e.getMessage());
-          }
-        }
-      };
-      t.start();
+
+      InputStream testInput = new ByteArrayInputStream(new byte[]{(byte) DefaultTajoCliOutputFormatter.QUIT_COMMAND});
+      cli = new TajoCli(cluster.getConfiguration(), new String[]{}, testInput, out);
+      setVar(cli, SessionVars.CLI_PAGE_ROWS, "2");
+      setVar(cli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+
+      cli.executeScript(sql);
+
       String consoleResult;
-      while (true) {
-        Thread.sleep(3 * 1000);
-        consoleResult = new String(out.toByteArray());
-        if (consoleResult.indexOf("row") >= 0) {
-          t.interrupt();
-          break;
-        }
-      }
+      consoleResult = new String(out.toByteArray());
       assertOutputResult(consoleResult);
     } finally {
-      setVar(tajoCli, SessionVars.CLI_PAGE_ROWS, "100");
+      cli.close();
     }
+  }
+
+  @Test
+     public void testAlterTableAddPartition() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testAlterTableAddPartition");
+
+    tajoCli.executeScript("create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8)");
+    tajoCli.executeScript("alter table " + tableName + " add partition (key = 0.1)");
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
+  @Test
+  public void testAlterTableDropPartition() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testAlterTableDropPartition");
+
+    tajoCli.executeScript("create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8)");
+    tajoCli.executeScript("alter table " + tableName + " drop partition (key = 0.1)");
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
   }
 
   public static class TajoCliOutputTestFormatter extends DefaultTajoCliOutputFormatter {

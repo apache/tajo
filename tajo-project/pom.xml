@@ -773,6 +773,11 @@
       </dependency>
       <dependency>
         <groupId>org.apache.tajo</groupId>
+        <artifactId>tajo-cli</artifactId>
+        <version>${tajo.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-jdbc</artifactId>
         <version>${tajo.version}</version>
       </dependency>
@@ -1036,6 +1041,11 @@
         <groupId>jline</groupId>
         <artifactId>jline</artifactId>
         <version>2.11</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.stephenc.jcip</groupId>
+        <artifactId>jcip-annotations</artifactId>
+        <version>1.0-1</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

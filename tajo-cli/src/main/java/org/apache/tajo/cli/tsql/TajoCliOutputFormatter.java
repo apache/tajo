@@ -20,7 +20,6 @@ package org.apache.tajo.cli.tsql;
 
 import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.cli.tsql.TajoCli;
 import org.apache.tajo.client.QueryStatus;
 
 import java.io.InputStream;

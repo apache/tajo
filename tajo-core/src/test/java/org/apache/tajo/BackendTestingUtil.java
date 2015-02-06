@@ -47,12 +47,11 @@ public class BackendTestingUtil {
 
   public static void writeTmpTable(TajoConf conf, Path tablePath)
       throws IOException {
-    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf, tablePath);
-    FileSystem fs = sm.getFileSystem();
-
+    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(conf);
     Appender appender;
 
     Path filePath = new Path(tablePath, "table.csv");
+    FileSystem fs = filePath.getFileSystem(conf);
     if (fs.exists(tablePath)) {
       fs.delete(tablePath, true);
     }
