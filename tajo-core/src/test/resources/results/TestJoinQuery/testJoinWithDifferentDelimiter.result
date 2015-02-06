@@ -1,5 +1,5 @@
-id,name,value,id,name,score,type
+id,name
 -------------------------------
-1,a|b|c,1.1,1,ooo,1.1,a
-2,d|e|f,2.2,2,ppp,2.3,b
-3,g|h|i,3.3,3,qqq,3.4,c
+1,a|b|c
+2,d|e|f
+3,g|h|i
