@@ -352,4 +352,42 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
   }
+  
+  @Test
+  public void testRankWithTwoTables() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+    
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    String[] data = new String[] {"1", "3", "2", "4"};
+    TajoTestingCluster.createTable("rank_table1", schema, tableOptions, data, 1);
+    schema = new Schema();
+    schema.addColumn("refid", TajoDataTypes.Type.INT4);
+    schema.addColumn("value", TajoDataTypes.Type.TEXT);
+    data = new String[] {"1|efgh", "2|abcd", "4|erjk", "8|dfef"};
+    TajoTestingCluster.createTable("rank_table2", schema, tableOptions, data, 1);
+    ResultSet res = null;
+    
+    try {
+      res = executeString("select rank() over (order by id) from rank_table1 a, rank_table2 b "
+          + " where a.id = b.refid");
+      String expectedString = "?windowfunction\n" +
+          "-------------------------------\n" +
+          "1\n" +
+          "2\n" +
+          "3\n";
+      
+      assertEquals(expectedString, resultSetToString(res));
+    } finally {
+      if (res != null) {
+        try {
+        res.close();
+        } catch(Throwable ignored) {}
+      }
+      executeString("DROP TABLE rank_table1 PURGE");
+      executeString("DROP TABLE rank_table2 PURGE");
+    }
+  }
 }

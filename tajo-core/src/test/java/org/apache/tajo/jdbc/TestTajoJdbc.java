@@ -593,4 +593,46 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       }
     }
   }
+
+
+  @Test
+  public void testAlterTableAddPartition() throws Exception {
+    Statement stmt = null;
+    ResultSet resultSet = null;
+    int retCode = 0;
+    Connection conn = null;
+    int result;
+    String errorMessage = null;
+
+    // skip this test if catalog uses HCatalogStore.
+    // It is because HCatalogStore does not support Time data type.
+    try {
+      if (!testingCluster.isHCatalogStoreRunning()) {
+        String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+          DEFAULT_DATABASE_NAME);
+        conn = DriverManager.getConnection(connUri);
+        assertTrue(conn.isValid(100));
+
+        String tableName = CatalogUtil.normalizeIdentifier("testAlterTablePartition");
+        resultSet = executeString(
+          "create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8) ");
+        resultSet.close();
+
+        stmt = conn.createStatement();
+        resultSet = stmt.executeQuery("alter table " + tableName + " add partition (key = 0.1)");
+      }
+    } catch (SQLException e) {
+      errorMessage = e.getMessage();
+    } finally {
+      assertEquals(errorMessage, "ADD_PARTITION is not supported yet\n");
+      cleanupQuery(resultSet);
+      if (stmt != null) {
+        stmt.close();
+      }
+
+      if(conn != null) {
+        conn.close();
+      }
+    }
+  }
 }

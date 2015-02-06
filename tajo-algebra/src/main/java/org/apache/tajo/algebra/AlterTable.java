@@ -39,6 +39,13 @@ public class AlterTable extends Expr {
   @Expose @SerializedName("AlterTableType")
   private AlterTableOpType alterTableOpType;
 
+  @Expose @SerializedName("Columns")
+  ColumnReferenceExpr [] columns;
+  @Expose @SerializedName("Values")
+  private Expr[] values;
+  @Expose @SerializedName("location")
+  private String location;
+
   public AlterTable(final String tableName) {
     super(OpType.AlterTable);
     this.tableName = tableName;
@@ -93,6 +100,18 @@ public class AlterTable extends Expr {
     this.alterTableOpType = alterTableOpType;
   }
 
+  public ColumnReferenceExpr[] getColumns() { return columns; }
+
+  public void setColumns(ColumnReferenceExpr[] columns) { this.columns = columns; }
+
+  public Expr[] getValues() { return values; }
+
+  public void setValues(Expr[] values) { this.values = values; }
+
+  public String getLocation() { return location; }
+
+  public void setLocation(String location) { this.location = location; }
+
   @Override
   public int hashCode() {
     return Objects.hashCode(tableName,
@@ -100,7 +119,11 @@ public class AlterTable extends Expr {
         null != columnName ? Objects.hashCode(columnName) : columnName,
         null != newColumnName ? Objects.hashCode(newColumnName) : newColumnName,
         null != addNewColumn ? Objects.hashCode(addNewColumn) : addNewColumn,
-        null != alterTableOpType ? Objects.hashCode(alterTableOpType) : alterTableOpType);
+        null != alterTableOpType ? Objects.hashCode(alterTableOpType) : alterTableOpType,
+        null != columns ? Objects.hashCode(columns) : columns,
+        null != values ? Objects.hashCode(values) : values,
+        null != location ? Objects.hashCode(location) : location
+    );
 
   }
 
@@ -112,7 +135,11 @@ public class AlterTable extends Expr {
         TUtil.checkEquals(columnName, another.columnName) &&
         TUtil.checkEquals(newColumnName, another.newColumnName) &&
         TUtil.checkEquals(addNewColumn, another.addNewColumn) &&
-        TUtil.checkEquals(alterTableOpType, another.alterTableOpType);
+        TUtil.checkEquals(alterTableOpType, another.alterTableOpType) &&
+        TUtil.checkEquals(columns, another.columns) &&
+        TUtil.checkEquals(values, another.values) &&
+        TUtil.checkEquals(location, another.location)
+    ;
   }
 
   @Override
@@ -124,6 +151,9 @@ public class AlterTable extends Expr {
     alter.newColumnName = newColumnName;
     alter.addNewColumn = (ColumnDefinition) addNewColumn.clone();
     alter.alterTableOpType = alterTableOpType;
+    alter.columns = columns;
+    alter.values = values;
+    alter.location = location;
     return alter;
   }
 }

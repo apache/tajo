@@ -18,11 +18,10 @@
 
 package org.apache.tajo.cli.tsql;
 
+import org.apache.tajo.cli.tsql.ParsedResult.StatementType;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.apache.tajo.cli.tsql.ParsedResult.StatementType.META;
-import static org.apache.tajo.cli.tsql.ParsedResult.StatementType.STATEMENT;
 
 /**
  * This is a parser used in tsql to parse multiple SQL lines into SQL statements.
@@ -347,10 +346,10 @@ public class SimpleParser {
       String historyStatement = historyAppender.toString();
       String rawStatement = rawAppender.toString();
       if (state == ParsingState.META_EOS) {
-        parsedResults.add(new ParsedResult(META, rawStatement, historyStatement));
+        parsedResults.add(new ParsedResult(StatementType.META, rawStatement, historyStatement));
         state = ParsingState.TOK_START;
       } else if (state == ParsingState.STATEMENT_EOS) {
-        parsedResults.add(new ParsedResult(STATEMENT, rawStatement, historyStatement));
+        parsedResults.add(new ParsedResult(StatementType.STATEMENT, rawStatement, historyStatement));
       } else {
         throw new InvalidStatementException("ERROR: " + errorMessage);
       }
