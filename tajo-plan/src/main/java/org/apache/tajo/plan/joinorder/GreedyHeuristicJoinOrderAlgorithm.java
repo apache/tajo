@@ -28,10 +28,7 @@ import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.util.TUtil;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 
 /**
  * This is a greedy heuristic algorithm to find a bushy join tree. This algorithm finds
@@ -57,17 +54,69 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     JoinEdge bestPair;
 
     while (remainRelations.size() > 1) {
+      Set<LogicalNode> checkingRelations = new LinkedHashSet<LogicalNode>();
+
+      for (LogicalNode relation : remainRelations) {
+        Collection <String> relationStrings = PlannerUtil.getRelationLineageWithinQueryBlock(plan, relation);
+        List<JoinEdge> joinEdges = new ArrayList<JoinEdge>();
+        String relationCollection = TUtil.collectionToString(relationStrings, ",");
+        List<JoinEdge> joinEdgesForGiven = joinGraph.getIncomingEdges(relationCollection);
+        if (joinEdgesForGiven != null) {
+          joinEdges.addAll(joinEdgesForGiven);
+        }
+        for (String relationString: relationStrings) {
+          joinEdgesForGiven = joinGraph.getIncomingEdges(relationString);
+          if (joinEdgesForGiven != null) {
+            joinEdges.addAll(joinEdgesForGiven);
+          }
+        }
+
+        // check if the relation is the last piece of outer join
+        boolean endInnerRelation = false;
+        for (JoinEdge joinEdge: joinEdges) {
+          switch(joinEdge.getJoinType()) {
+            case LEFT_OUTER:
+            case RIGHT_OUTER:
+            case FULL_OUTER:
+              endInnerRelation = true;
+              if (checkingRelations.size() <= 1) {
+                checkingRelations.add(relation);
+              }
+              break;
+          }
+        }
+
+        if (endInnerRelation) {
+          break;
+        }
+
+        checkingRelations.add(relation);
+      }
+
+      remainRelations.removeAll(checkingRelations);
+
       // Find the best join pair among all joinable operators in candidate set.
-      bestPair = getBestPair(plan, joinGraph, remainRelations);
+      while (checkingRelations.size() > 1) {
+        LinkedHashSet<String[]> removingJoinEdges = new LinkedHashSet<String[]>();
+        bestPair = getBestPair(plan, joinGraph, checkingRelations, removingJoinEdges);
 
-      remainRelations.remove(bestPair.getLeftRelation()); // remainRels = remainRels \ Ti
-      remainRelations.remove(bestPair.getRightRelation()); // remainRels = remainRels \ Tj
+        checkingRelations.remove(bestPair.getLeftRelation());
+        checkingRelations.remove(bestPair.getRightRelation());
+        for (String[] joinEdge: removingJoinEdges) {
+          // remove the edge of the best pair from join graph
+          joinGraph.removeEdge(joinEdge[0], joinEdge[1]);
+        }
 
-      latestJoin = createJoinNode(plan, bestPair);
-      remainRelations.add(latestJoin);
+        latestJoin = createJoinNode(plan, bestPair);
+        checkingRelations.add(latestJoin);
 
-      // all logical nodes should be registered to corresponding blocks
-      block.registerNode(latestJoin);
+        // all logical nodes should be registered to corresponding blocks
+        block.registerNode(latestJoin);
+      }
+
+      // new Logical block should be the first entry of new Set
+      checkingRelations.addAll(remainRelations);
+      remainRelations = checkingRelations;
     }
 
     JoinNode joinTree = (JoinNode) remainRelations.iterator().next();
@@ -116,10 +165,12 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
    * @return The best join pair among them
    * @throws PlanningException
    */
-  private JoinEdge getBestPair(LogicalPlan plan, JoinGraph graph, Set<LogicalNode> candidateSet)
+  private JoinEdge getBestPair(LogicalPlan plan, JoinGraph graph, Set<LogicalNode> candidateSet, Set<String[]> bestJoinEdges)
       throws PlanningException {
     double minCost = Double.MAX_VALUE;
     JoinEdge bestJoin = null;
+    LinkedHashSet<String[]> relatedJoinEdges = null;
+    LinkedHashSet<String[]> relatedNonCrossJoinEdges = null;
 
     double minNonCrossJoinCost = Double.MAX_VALUE;
     JoinEdge bestNonCrossJoin = null;
@@ -130,7 +181,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
           continue;
         }
 
-        JoinEdge foundJoin = findJoin(plan, graph, outer, inner);
+        LinkedHashSet<String[]> joinEdgePairs = new LinkedHashSet<String[]>();
+        JoinEdge foundJoin = findJoin(plan, graph, outer, inner, joinEdgePairs);
         if (foundJoin == null) {
           continue;
         }
@@ -139,6 +191,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         if (cost < minCost) {
           minCost = cost;
           bestJoin = foundJoin;
+          relatedJoinEdges = joinEdgePairs;
         }
 
         // Keep the min cost join
@@ -148,14 +201,17 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
           if (cost < minNonCrossJoinCost) {
             minNonCrossJoinCost = cost;
             bestNonCrossJoin = foundJoin;
+            relatedNonCrossJoinEdges = joinEdgePairs;
           }
         }
       }
     }
 
     if (bestNonCrossJoin != null) {
+      bestJoinEdges.addAll(relatedNonCrossJoinEdges);
       return bestNonCrossJoin;
     } else {
+      bestJoinEdges.addAll(relatedJoinEdges);
       return bestJoin;
     }
   }
@@ -165,7 +221,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
    *
    * @return If there is no join condition between two relation, it returns NULL value.
    */
-  private static JoinEdge findJoin(LogicalPlan plan, JoinGraph graph, LogicalNode outer, LogicalNode inner)
+  private static JoinEdge findJoin(LogicalPlan plan, JoinGraph graph, LogicalNode outer, LogicalNode inner, Set<String[]> joinEdgePairs)
       throws PlanningException {
     JoinEdge foundJoinEdge = null;
 
@@ -176,6 +232,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     for (String innerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, inner)) {
       if (graph.hasEdge(outerEdgeKey, innerName)) {
         JoinEdge existJoinEdge = graph.getEdge(outerEdgeKey, innerName);
+        String[] joinEdgePair = {outerEdgeKey, innerName};
+        joinEdgePairs.add(joinEdgePair);
         if (foundJoinEdge == null) {
           foundJoinEdge = new JoinEdge(existJoinEdge.getJoinType(), outer, inner,
               existJoinEdge.getJoinQual());
@@ -195,6 +253,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     for (String outerName : PlannerUtil.getRelationLineageWithinQueryBlock(plan, outer)) {
       if (graph.hasEdge(outerEdgeKey, outerName)) {
         JoinEdge existJoinEdge = graph.getEdge(outerEdgeKey, outerName);
+        String[] joinEdgePair = {outerEdgeKey, outerName};
+        joinEdgePairs.add(joinEdgePair);
         if (foundJoinEdge == null) {
           foundJoinEdge = new JoinEdge(existJoinEdge.getJoinType(), inner, outer,
               existJoinEdge.getJoinQual());
@@ -214,6 +274,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         // Find all joins between two relations and merge them into one join if possible
         if (graph.hasEdge(outerName, innerName)) {
           JoinEdge existJoinEdge = graph.getEdge(outerName, innerName);
+          String[] joinEdgePair = {outerName, innerName};
+          joinEdgePairs.add(joinEdgePair);
           if (foundJoinEdge == null) {
             foundJoinEdge = new JoinEdge(existJoinEdge.getJoinType(), outer, inner,
                 existJoinEdge.getJoinQual());
