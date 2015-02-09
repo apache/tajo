@@ -43,6 +43,7 @@ import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedFile;
 import io.netty.util.CharsetUtil;
+import io.netty.util.ReferenceCountUtil;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -53,83 +54,86 @@ import java.net.URLDecoder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-/**
- * this is an implementation copied from HttpStaticFileServerHandler.java of netty 3.6
- */
 public class HttpFileServerHandler extends ChannelInboundHandlerAdapter {
   
   private final Log LOG = LogFactory.getLog(HttpFileServerHandler.class);
 
   @Override
   public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-    if (msg instanceof HttpRequest) {
-      HttpRequest request = (HttpRequest) msg;
-      if (request.getMethod() != HttpMethod.GET) {
-        sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED);
-        return;
+    
+    try {
+      if (msg instanceof HttpRequest) {
+        HttpRequest request = (HttpRequest) msg;
+        if (request.getMethod() != HttpMethod.GET) {
+          sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED);
+          return;
+        }
+
+        final String path = sanitizeUri(request.getUri());
+        if (path == null) {
+          sendError(ctx, HttpResponseStatus.FORBIDDEN);
+          return;
+        }
+
+        File file = new File(path);
+        if (file.isHidden() || !file.exists()) {
+          sendError(ctx, HttpResponseStatus.NOT_FOUND);
+          return;
+        }
+        if (!file.isFile()) {
+          sendError(ctx, HttpResponseStatus.FORBIDDEN);
+          return;
+        }
+
+        RandomAccessFile raf;
+        try {
+          raf = new RandomAccessFile(file, "r");
+        } catch (FileNotFoundException fnfe) {
+          sendError(ctx, HttpResponseStatus.NOT_FOUND);
+          return;
+        }
+        long fileLength = raf.length();
+
+        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+        HttpHeaders.setContentLength(response, fileLength);
+        setContentTypeHeader(response);
+
+        // Write the initial line and the header.
+        ctx.write(response);
+
+        // Write the content.
+        ChannelFuture writeFuture;
+        ChannelFuture lastContentFuture;
+        if (ctx.pipeline().get(SslHandler.class) != null) {
+          // Cannot use zero-copy with HTTPS.
+          lastContentFuture = ctx.write(new HttpChunkedInput(new ChunkedFile(raf, 0, fileLength, 8192)));
+        } else {
+          // No encryption - use zero-copy.
+          final FileRegion region = new DefaultFileRegion(raf.getChannel(), 0, fileLength);
+          writeFuture = ctx.write(region);
+          lastContentFuture = ctx.write(LastHttpContent.EMPTY_LAST_CONTENT);
+          writeFuture.addListener(new ChannelProgressiveFutureListener() {
+            @Override
+            public void operationProgressed(ChannelProgressiveFuture future, long progress, long total)
+                throws Exception {
+              LOG.trace(String.format("%s: %d / %d", path, progress, total));
+            }
+
+            @Override
+            public void operationComplete(ChannelProgressiveFuture future) throws Exception {
+              region.release();
+            }
+          });
+        }
+
+        // Decide whether to close the connection or not.
+        if (!HttpHeaders.isKeepAlive(request)) {
+          // Close the connection when the whole content is written out.
+          lastContentFuture.addListener(ChannelFutureListener.CLOSE);
+        }
       }
-
-      final String path = sanitizeUri(request.getUri());
-      if (path == null) {
-        sendError(ctx, HttpResponseStatus.FORBIDDEN);
-        return;
-      }
-
-      File file = new File(path);
-      if (file.isHidden() || !file.exists()) {
-        sendError(ctx, HttpResponseStatus.NOT_FOUND);
-        return;
-      }
-      if (!file.isFile()) {
-        sendError(ctx, HttpResponseStatus.FORBIDDEN);
-        return;
-      }
-
-      RandomAccessFile raf;
-      try {
-        raf = new RandomAccessFile(file, "r");
-      } catch (FileNotFoundException fnfe) {
-        sendError(ctx, HttpResponseStatus.NOT_FOUND);
-        return;
-      }
-      long fileLength = raf.length();
-
-      HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-      HttpHeaders.setContentLength(response, fileLength);
-      setContentTypeHeader(response);
-
-      // Write the initial line and the header.
-      ctx.write(response);
-
-      // Write the content.
-      ChannelFuture writeFuture;
-      ChannelFuture lastContentFuture;
-      if (ctx.pipeline().get(SslHandler.class) != null) {
-        // Cannot use zero-copy with HTTPS.
-        lastContentFuture = ctx.write(new HttpChunkedInput(new ChunkedFile(raf, 0, fileLength, 8192)));
-      } else {
-        // No encryption - use zero-copy.
-        final FileRegion region = new DefaultFileRegion(raf.getChannel(), 0, fileLength);
-        writeFuture = ctx.write(region);
-        lastContentFuture = ctx.write(LastHttpContent.EMPTY_LAST_CONTENT);
-        writeFuture.addListener(new ChannelProgressiveFutureListener() {
-          @Override
-          public void operationProgressed(ChannelProgressiveFuture future, long progress, long total) throws Exception {
-            LOG.trace(String.format("%s: %d / %d", path, progress, total));
-          }
-
-          @Override
-          public void operationComplete(ChannelProgressiveFuture future) throws Exception {
-            region.release();
-          }
-        });
-      }
-
-      // Decide whether to close the connection or not.
-      if (!HttpHeaders.isKeepAlive(request)) {
-        // Close the connection when the whole content is written out.
-        lastContentFuture.addListener(ChannelFutureListener.CLOSE);
-      }
+    } finally {
+      ReferenceCountUtil.release(msg);
     }
   }
   

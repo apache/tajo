@@ -35,6 +35,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.util.ReferenceCountUtil;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
@@ -78,50 +79,62 @@ public class AsyncRpcServer extends NettyServerBase {
     }
 
     @Override
+    public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+      accepted.remove(ctx.channel());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(serviceName + " closes a connection. The number of current connections are " + accepted.size());
+      }
+      super.channelUnregistered(ctx);
+    }
+
+    @Override
     public void channelRead(final ChannelHandlerContext ctx, Object msg)
         throws Exception {
+      try {
+        if (msg instanceof RpcRequest) {
+          final RpcRequest request = (RpcRequest) msg;
 
-      if (msg instanceof RpcRequest) {
-        final RpcRequest request = (RpcRequest) msg;
+          String methodName = request.getMethodName();
+          MethodDescriptor methodDescriptor = service.getDescriptorForType().findMethodByName(methodName);
 
-        String methodName = request.getMethodName();
-        MethodDescriptor methodDescriptor = service.getDescriptorForType().findMethodByName(methodName);
-
-        if (methodDescriptor == null) {
-          throw new RemoteCallException(request.getId(), new NoSuchMethodException(methodName));
-        }
-
-        Message paramProto = null;
-        if (request.hasRequestMessage()) {
-          try {
-            paramProto = service.getRequestPrototype(methodDescriptor).newBuilderForType()
-                .mergeFrom(request.getRequestMessage()).build();
-          } catch (Throwable t) {
-            throw new RemoteCallException(request.getId(), methodDescriptor, t);
+          if (methodDescriptor == null) {
+            throw new RemoteCallException(request.getId(), new NoSuchMethodException(methodName));
           }
-        }
 
-        final RpcController controller = new NettyRpcController();
-
-        RpcCallback<Message> callback = !request.hasId() ? null : new RpcCallback<Message>() {
-
-          public void run(Message returnValue) {
-
-            RpcResponse.Builder builder = RpcResponse.newBuilder().setId(request.getId());
-
-            if (returnValue != null) {
-              builder.setResponseMessage(returnValue.toByteString());
+          Message paramProto = null;
+          if (request.hasRequestMessage()) {
+            try {
+              paramProto = service.getRequestPrototype(methodDescriptor).newBuilderForType()
+                  .mergeFrom(request.getRequestMessage()).build();
+            } catch (Throwable t) {
+              throw new RemoteCallException(request.getId(), methodDescriptor, t);
             }
-
-            if (controller.failed()) {
-              builder.setErrorMessage(controller.errorText());
-            }
-
-            ctx.write(builder.build());
           }
-        };
 
-        service.callMethod(methodDescriptor, controller, paramProto, callback);
+          final RpcController controller = new NettyRpcController();
+
+          RpcCallback<Message> callback = !request.hasId() ? null : new RpcCallback<Message>() {
+
+            public void run(Message returnValue) {
+
+              RpcResponse.Builder builder = RpcResponse.newBuilder().setId(request.getId());
+
+              if (returnValue != null) {
+                builder.setResponseMessage(returnValue.toByteString());
+              }
+
+              if (controller.failed()) {
+                builder.setErrorMessage(controller.errorText());
+              }
+
+              ctx.write(builder.build());
+            }
+          };
+
+          service.callMethod(methodDescriptor, controller, paramProto, callback);
+        }
+      } finally {
+        ReferenceCountUtil.release(msg);
       }
     }
 

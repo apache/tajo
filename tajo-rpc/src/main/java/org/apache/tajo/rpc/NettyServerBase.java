@@ -36,7 +36,6 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class NettyServerBase {
@@ -117,7 +116,7 @@ public class NettyServerBase {
 
   public void shutdown(boolean waitUntilThreadsStop) {
     try {
-      accepted.close().awaitUninterruptibly(10, TimeUnit.SECONDS);
+      accepted.close();
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
     }

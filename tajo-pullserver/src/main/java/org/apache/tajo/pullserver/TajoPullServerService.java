@@ -335,7 +335,7 @@ public class TajoPullServerService extends AbstractService {
   @Override
   public synchronized void stop() {
     try {
-      accepted.close().awaitUninterruptibly(10, TimeUnit.SECONDS);
+      accepted.close();
       if (selector != null) {
         if (selector.group() != null) {
           selector.group().shutdownGracefully();

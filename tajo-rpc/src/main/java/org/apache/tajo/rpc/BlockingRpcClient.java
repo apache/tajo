@@ -23,18 +23,21 @@ import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.ConnectTimeoutException;
 import io.netty.channel.ChannelHandler.Sharable;
+import io.netty.util.ReferenceCountUtil;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
@@ -181,36 +184,46 @@ public class BlockingRpcClient extends NettyClientBase {
   }
 
   @Sharable
-  private class ClientChannelInboundHandler extends ChannelInboundHandlerAdapter {
+  private class ClientChannelInboundHandler extends ChannelDuplexHandler {
+
+    @Override
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+      super.write(ctx, msg, promise);
+    }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg)
         throws Exception {
 
-      if (msg instanceof RpcResponse) {
-        RpcResponse rpcResponse = (RpcResponse) msg;
-        ProtoCallFuture callback = requests.remove(rpcResponse.getId());
+      try {
+        if (msg instanceof RpcResponse) {
+          RpcResponse rpcResponse = (RpcResponse) msg;
+          ProtoCallFuture callback = requests.remove(rpcResponse.getId());
 
-        if (callback == null) {
-          LOG.warn("Dangling rpc call");
-        } else {
-          if (rpcResponse.hasErrorMessage()) {
-            callback.setFailed(rpcResponse.getErrorMessage(),
-                makeTajoServiceException(rpcResponse, new ServiceException(rpcResponse.getErrorTrace())));
-            throw new RemoteException(getErrorMessage(rpcResponse.getErrorMessage()));
+          if (callback == null) {
+            LOG.warn("Dangling rpc call");
           } else {
-            Message responseMessage;
-
-            if (!rpcResponse.hasResponseMessage()) {
-              responseMessage = null;
+            if (rpcResponse.hasErrorMessage()) {
+              callback.setFailed(rpcResponse.getErrorMessage(),
+                  makeTajoServiceException(rpcResponse, new ServiceException(rpcResponse.getErrorTrace())));
+              throw new RemoteException(getErrorMessage(rpcResponse.getErrorMessage()));
             } else {
-              responseMessage = callback.returnType.newBuilderForType().mergeFrom(rpcResponse.getResponseMessage())
-                  .build();
-            }
+              Message responseMessage;
 
-            callback.setResponse(responseMessage);
+              if (!rpcResponse.hasResponseMessage()) {
+                responseMessage = null;
+              } else {
+                responseMessage = callback.returnType.newBuilderForType().mergeFrom(rpcResponse.getResponseMessage())
+                    .build();
+              }
+
+              callback.setResponse(responseMessage);
+            }
           }
         }
+      } finally {
+        ctx.fireChannelRead(msg);
+        ReferenceCountUtil.release(msg);
       }
     }
 
@@ -220,6 +233,7 @@ public class BlockingRpcClient extends NettyClientBase {
       for(ProtoCallFuture callback: requests.values()) {
         callback.setFailed(cause.getMessage(), cause);
       }
+      
       if(LOG.isDebugEnabled()) {
         LOG.error("" + cause.getMessage(), cause);
       } else {

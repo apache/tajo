@@ -20,6 +20,7 @@ package org.apache.tajo.rpc;
 
 import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.*;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
@@ -34,6 +35,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.ConnectTimeoutException;
 import io.netty.channel.ChannelHandler.Sharable;
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import java.lang.reflect.Method;
@@ -218,15 +220,19 @@ public class AsyncRpcClient extends NettyClientBase {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg)
         throws Exception {
-      if (msg instanceof RpcResponse) {
-        RpcResponse response = (RpcResponse) msg;
-        ResponseCallback callback = requests.remove(response.getId());
+      try {
+        if (msg instanceof RpcResponse) {
+          RpcResponse response = (RpcResponse) msg;
+          ResponseCallback callback = requests.remove(response.getId());
 
-        if (callback == null) {
-          LOG.warn("Dangling rpc call");
-        } else {
-          callback.run(response);
+          if (callback == null) {
+            LOG.warn("Dangling rpc call");
+          } else {
+            callback.run(response);
+          }
         }
+      } finally {
+        ReferenceCountUtil.release(msg);
       }
     }
 

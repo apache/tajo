@@ -76,8 +76,7 @@ public class HttpFileServer {
   }
 
   public void stop() {
-    ChannelGroupFuture future = channelGroup.close();
-    future.awaitUninterruptibly();
+    channelGroup.close();
     eventloopGroup.shutdownGracefully();
 
     LOG.info("HttpFileServer shutdown ("

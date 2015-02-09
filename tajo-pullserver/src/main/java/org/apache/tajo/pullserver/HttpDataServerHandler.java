@@ -50,9 +50,8 @@ import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedFile;
-import io.netty.handler.timeout.IdleState;
-import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
+import io.netty.util.ReferenceCountUtil;
 
 import java.io.*;
 import java.net.URLDecoder;
@@ -78,89 +77,74 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
   @Override
   public void channelRead(ChannelHandlerContext ctx, Object msg)
       throws Exception {
-    if (msg instanceof HttpRequest) {
-      HttpRequest request = (HttpRequest) msg;
-      if (request.getMethod() != HttpMethod.GET) {
-        sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED);
-        return;
-      }
+    try {
+      if (msg instanceof HttpRequest) {
+        HttpRequest request = (HttpRequest) msg;
+        if (request.getMethod() != HttpMethod.GET) {
+          sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED);
+          return;
+        }
 
-      String base = ContainerLocalizer.USERCACHE + "/" + userName + "/" + ContainerLocalizer.APPCACHE + "/" + appId
-          + "/output" + "/";
+        String base = ContainerLocalizer.USERCACHE + "/" + userName + "/" + ContainerLocalizer.APPCACHE + "/" + appId
+            + "/output" + "/";
 
-      final Map<String, List<String>> params = new QueryStringDecoder(request.getUri()).parameters();
+        final Map<String, List<String>> params = new QueryStringDecoder(request.getUri()).parameters();
 
-      List<FileChunk> chunks = Lists.newArrayList();
-      List<String> taskIds = splitMaps(params.get("ta"));
-      int sid = Integer.valueOf(params.get("sid").get(0));
-      int partitionId = Integer.valueOf(params.get("p").get(0));
-      for (String ta : taskIds) {
+        List<FileChunk> chunks = Lists.newArrayList();
+        List<String> taskIds = splitMaps(params.get("ta"));
+        int sid = Integer.valueOf(params.get("sid").get(0));
+        int partitionId = Integer.valueOf(params.get("p").get(0));
+        for (String ta : taskIds) {
 
-        File file = new File(base + "/" + sid + "/" + ta + "/output/" + partitionId);
-        FileChunk chunk = new FileChunk(file, 0, file.length());
-        chunks.add(chunk);
-      }
+          File file = new File(base + "/" + sid + "/" + ta + "/output/" + partitionId);
+          FileChunk chunk = new FileChunk(file, 0, file.length());
+          chunks.add(chunk);
+        }
 
-      FileChunk[] file = chunks.toArray(new FileChunk[chunks.size()]);
-      // try {
-      // file = retriever.handle(ctx, request);
-      // } catch (FileNotFoundException fnf) {
-      // LOG.error(fnf);
-      // sendError(ctx, NOT_FOUND);
-      // return;
-      // } catch (IllegalArgumentException iae) {
-      // LOG.error(iae);
-      // sendError(ctx, BAD_REQUEST);
-      // return;
-      // } catch (FileAccessForbiddenException fafe) {
-      // LOG.error(fafe);
-      // sendError(ctx, FORBIDDEN);
-      // return;
-      // } catch (IOException ioe) {
-      // LOG.error(ioe);
-      // sendError(ctx, INTERNAL_SERVER_ERROR);
-      // return;
-      // }
+        FileChunk[] file = chunks.toArray(new FileChunk[chunks.size()]);
 
-      // Write the content.
-      if (file == null) {
-        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
-        if (!HttpHeaders.isKeepAlive(request)) {
-          ctx.write(response).addListener(ChannelFutureListener.CLOSE);
+        // Write the content.
+        if (file == null) {
+          HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
+          if (!HttpHeaders.isKeepAlive(request)) {
+            ctx.write(response).addListener(ChannelFutureListener.CLOSE);
+          } else {
+            response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+            ctx.write(response);
+          }
         } else {
-          response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+          HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+          long totalSize = 0;
+          for (FileChunk chunk : file) {
+            totalSize += chunk.length();
+          }
+          HttpHeaders.setContentLength(response, totalSize);
+
+          if (HttpHeaders.isKeepAlive(request)) {
+            response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+          }
+          // Write the initial line and the header.
           ctx.write(response);
-        }
-      } else {
-        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-        long totalSize = 0;
-        for (FileChunk chunk : file) {
-          totalSize += chunk.length();
-        }
-        HttpHeaders.setContentLength(response, totalSize);
-        
-        if (HttpHeaders.isKeepAlive(request)) {
-          response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
-        }
-        // Write the initial line and the header.
-        ctx.write(response);
 
-        ChannelFuture writeFuture = null;
+          ChannelFuture writeFuture = null;
 
-        for (FileChunk chunk : file) {
-          writeFuture = sendFile(ctx, chunk);
-          if (writeFuture == null) {
-            sendError(ctx, HttpResponseStatus.NOT_FOUND);
-            return;
+          for (FileChunk chunk : file) {
+            writeFuture = sendFile(ctx, chunk);
+            if (writeFuture == null) {
+              sendError(ctx, HttpResponseStatus.NOT_FOUND);
+              return;
+            }
+          }
+
+          // Decide whether to close the connection or not.
+          if (!HttpHeaders.isKeepAlive(request)) {
+            // Close the connection when the whole content is written out.
+            writeFuture.addListener(ChannelFutureListener.CLOSE);
           }
         }
-
-        // Decide whether to close the connection or not.
-        if (!HttpHeaders.isKeepAlive(request)) {
-          // Close the connection when the whole content is written out.
-          writeFuture.addListener(ChannelFutureListener.CLOSE);
-        }
       }
+    } finally {
+      ReferenceCountUtil.release(msg);
     }
   }
 
