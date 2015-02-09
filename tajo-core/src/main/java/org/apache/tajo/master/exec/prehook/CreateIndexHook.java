@@ -36,7 +36,9 @@ public class CreateIndexHook implements DistributedQueryHook {
   @Override
   public void hook(QueryContext queryContext, LogicalPlan plan) throws Exception {
     CreateIndexNode createIndexNode = (CreateIndexNode) plan.getRootBlock().getRoot().getChild(0);
-    String indexName = CatalogUtil.splitFQTableName(createIndexNode.getIndexName())[1];
+    String [] splits = CatalogUtil.splitFQTableName(createIndexNode.getIndexName());
+    String databaseName = splits[0];
+    String indexName = splits[1];
     queryContext.setOutputTable(indexName);
     queryContext.setOutputPath(new Path(createIndexNode.getIndexPath()));
     queryContext.setCreateIndex();

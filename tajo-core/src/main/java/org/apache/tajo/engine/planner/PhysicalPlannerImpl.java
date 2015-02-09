@@ -91,7 +91,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       if (execPlan instanceof StoreTableExec
           || execPlan instanceof RangeShuffleFileWriteExec
           || execPlan instanceof HashShuffleFileWriteExec
-          || execPlan instanceof ColPartitionStoreExec) {
+          || execPlan instanceof ColPartitionStoreExec
+          || execPlan instanceof StoreIndexExec) {
         return execPlan;
       } else if (context.getDataChannel() != null) {
         return buildOutputOperator(context, logicalPlan, execPlan);

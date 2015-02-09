@@ -30,6 +30,7 @@ import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
@@ -150,8 +151,13 @@ public class Task {
         this.sortComp = new BaseTupleComparator(finalSchema, sortNode.getSortKeys());
       }
     } else {
-      Path outFilePath = ((FileStorageManager)StorageManager.getFileStorageManager(systemConf))
-          .getAppenderFilePath(taskId, queryContext.getStagingDir());
+      Path outFilePath;
+      if (queryContext.isCreateIndex()) {
+        outFilePath = getIndexStagingPath(queryContext, context);
+      } else {
+        outFilePath = ((FileStorageManager) StorageManager.getFileStorageManager(systemConf))
+            .getAppenderFilePath(taskId, queryContext.getStagingDir());
+      }
       LOG.info("Output File Path: " + outFilePath);
       context.setOutputPath(outFilePath);
     }
@@ -843,5 +849,10 @@ public class Task {
             String.valueOf(quid.getTaskId().getId()),
             String.valueOf(quid.getId()));
     return workDir;
+  }
+
+  private static Path getIndexStagingPath(QueryContext queryContext, TaskAttemptContext context) {
+    return StorageUtil.concatPath(queryContext.getStagingDir(), TajoConstants.RESULT_DIR_NAME,
+        context.getUniqueKeyFromFragments());
   }
 }
