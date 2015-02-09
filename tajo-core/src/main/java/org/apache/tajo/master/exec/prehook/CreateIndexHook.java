@@ -18,8 +18,11 @@
 
 package org.apache.tajo.master.exec.prehook;
 
+import org.apache.hadoop.fs.Path;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.logical.CreateIndexNode;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.plan.logical.NodeType;
 
@@ -32,6 +35,10 @@ public class CreateIndexHook implements DistributedQueryHook {
 
   @Override
   public void hook(QueryContext queryContext, LogicalPlan plan) throws Exception {
+    CreateIndexNode createIndexNode = (CreateIndexNode) plan.getRootBlock().getRoot().getChild(0);
+    String indexName = CatalogUtil.splitFQTableName(createIndexNode.getIndexName())[1];
+    queryContext.setOutputTable(indexName);
+    queryContext.setOutputPath(new Path(createIndexNode.getIndexPath()));
     queryContext.setCreateIndex();
   }
 }
