@@ -29,13 +29,10 @@ import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 
 import com.google.protobuf.MessageLite;
 
-public class ProtoChannelInitializer extends ChannelInitializer<Channel> {
-  private final ChannelHandler handler;
+abstract class ProtoChannelInitializer extends ChannelInitializer<Channel> {
   private final MessageLite defaultInstance;
 
-  public ProtoChannelInitializer(ChannelHandler handler,
-      MessageLite defaultInstance) {
-    this.handler = handler;
+  public ProtoChannelInitializer(MessageLite defaultInstance) {
     this.defaultInstance = defaultInstance;
   }
 
@@ -46,6 +43,5 @@ public class ProtoChannelInitializer extends ChannelInitializer<Channel> {
     pipeline.addLast("protobufDecoder", new ProtobufDecoder(defaultInstance));
     pipeline.addLast("frameEncoder", new ProtobufVarint32LengthFieldPrepender());
     pipeline.addLast("protobufEncoder", new ProtobufEncoder());
-    pipeline.addLast("handler", handler);
   }
 }

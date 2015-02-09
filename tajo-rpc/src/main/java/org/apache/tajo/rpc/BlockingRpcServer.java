@@ -21,18 +21,15 @@ package org.apache.tajo.rpc;
 import com.google.protobuf.BlockingService;
 import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.Message;
+import com.google.protobuf.MessageLite;
 import com.google.protobuf.RpcController;
 
+import io.netty.channel.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.util.ReferenceCountUtil;
 
 import java.lang.reflect.Method;
@@ -60,13 +57,24 @@ public class BlockingRpcServer extends NettyServerBase {
         "newReflectiveBlockingService", interfaceClass);
 
     this.service = (BlockingService) method.invoke(null, instance);
-    this.initializer = new ProtoChannelInitializer(new ServerHandler(),
-        RpcRequest.getDefaultInstance());
+    this.initializer = new BlockingRpcServerInitializer(RpcRequest.getDefaultInstance());
 
     super.init(this.initializer, workerNum);
   }
 
-  @Sharable
+  class BlockingRpcServerInitializer extends ProtoChannelInitializer {
+    public BlockingRpcServerInitializer(MessageLite defaultInstance) {
+      super(defaultInstance);
+    }
+
+    @Override
+    protected void initChannel(Channel channel) throws Exception {
+      super.initChannel(channel);
+      ChannelPipeline pipeline = channel.pipeline();
+      pipeline.addLast("handler", new ServerHandler());
+    }
+  }
+
   private class ServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override

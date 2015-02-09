@@ -18,23 +18,15 @@
 
 package org.apache.tajo.rpc;
 
+import com.google.protobuf.*;
 import com.google.protobuf.Descriptors.MethodDescriptor;
-import com.google.protobuf.Message;
-import com.google.protobuf.RpcCallback;
-import com.google.protobuf.RpcController;
-import com.google.protobuf.Service;
 
+import io.netty.channel.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelHandler.Sharable;
-import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.ReferenceCountUtil;
 
 import java.lang.reflect.Method;
@@ -60,13 +52,23 @@ public class AsyncRpcServer extends NettyServerBase {
     Method method = serviceClass.getMethod("newReflectiveService", interfaceClass);
     this.service = (Service) method.invoke(null, instance);
 
-    ServerHandler handler = new ServerHandler();
-    this.initializer = new ProtoChannelInitializer(handler,
-        RpcRequest.getDefaultInstance());
+    this.initializer = new AsyncRpcServerInitializer(RpcRequest.getDefaultInstance());
     super.init(this.initializer, workerNum);
   }
 
-  @Sharable
+  class AsyncRpcServerInitializer extends ProtoChannelInitializer {
+    public AsyncRpcServerInitializer(MessageLite defaultInstance) {
+      super(defaultInstance);
+    }
+
+    @Override
+    protected void initChannel(Channel channel) throws Exception {
+      super.initChannel(channel);
+      ChannelPipeline pipeline = channel.pipeline();
+      pipeline.addLast("handler", new ServerHandler());
+    }
+  }
+
   private class ServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override

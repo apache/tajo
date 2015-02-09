@@ -18,25 +18,15 @@
 
 package org.apache.tajo.rpc;
 
-import com.google.protobuf.BlockingRpcChannel;
+import com.google.protobuf.*;
 import com.google.protobuf.Descriptors.MethodDescriptor;
-import com.google.protobuf.Message;
-import com.google.protobuf.RpcController;
-import com.google.protobuf.ServiceException;
 
+import io.netty.channel.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandler;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPromise;
-import io.netty.channel.ConnectTimeoutException;
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.util.ReferenceCountUtil;
 
 import java.lang.reflect.Method;
@@ -50,7 +40,6 @@ import static org.apache.tajo.rpc.RpcConnectionPool.RpcConnectionKey;
 public class BlockingRpcClient extends NettyClientBase {
   private static final Log LOG = LogFactory.getLog(RpcProtos.class);
 
-  private final ChannelInboundHandler handler;
   private final ChannelInitializer<Channel> initializer;
   private final ProxyRpcChannel rpcChannel;
 
@@ -78,9 +67,7 @@ public class BlockingRpcClient extends NettyClientBase {
     stubMethod = serviceClass.getMethod("newBlockingStub",
         BlockingRpcChannel.class);
 
-    this.handler = new ClientChannelInboundHandler();
-    initializer = new ProtoChannelInitializer(handler,
-        RpcResponse.getDefaultInstance());
+    initializer = new BlockingRpcClientInitializer(RpcResponse.getDefaultInstance());
     super.init(addr, initializer, retries);
     rpcChannel = new ProxyRpcChannel();
 
@@ -183,7 +170,20 @@ public class BlockingRpcClient extends NettyClientBase {
     }
   }
 
-  @Sharable
+  class BlockingRpcClientInitializer extends ProtoChannelInitializer {
+    public BlockingRpcClientInitializer(MessageLite defaultInstance) {
+      super(defaultInstance);
+    }
+
+    @Override
+    protected void initChannel(Channel channel) throws Exception {
+      super.initChannel(channel);
+      ChannelPipeline pipeline = channel.pipeline();
+      pipeline.addLast("handler", new ClientChannelInboundHandler());
+    }
+  }
+
+
   private class ClientChannelInboundHandler extends ChannelDuplexHandler {
 
     @Override

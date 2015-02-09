@@ -21,20 +21,12 @@ package org.apache.tajo.rpc;
 import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.*;
 
+import io.netty.channel.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandler;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPromise;
-import io.netty.channel.ConnectTimeoutException;
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.GenericFutureListener;
 
@@ -49,7 +41,6 @@ import static org.apache.tajo.rpc.RpcConnectionPool.RpcConnectionKey;
 public class AsyncRpcClient extends NettyClientBase {
   private static final Log LOG = LogFactory.getLog(AsyncRpcClient.class);
 
-  private final ChannelInboundHandler handler;
   private final ChannelInitializer<Channel> initializer;
   private final ProxyRpcChannel rpcChannel;
 
@@ -76,9 +67,7 @@ public class AsyncRpcClient extends NettyClientBase {
     Class<?> serviceClass = Class.forName(serviceClassName);
     stubMethod = serviceClass.getMethod("newStub", RpcChannel.class);
 
-    this.handler = new ClientChannelInboundHandler();
-    initializer = new ProtoChannelInitializer(handler,
-        RpcResponse.getDefaultInstance());
+    initializer = new AsyncRpcClientInitializer(RpcResponse.getDefaultInstance());
     super.init(addr, initializer, retries);
     rpcChannel = new ProxyRpcChannel();
     this.key = new RpcConnectionKey(addr, protocol, true);
@@ -204,7 +193,19 @@ public class AsyncRpcClient extends NettyClientBase {
         getChannel().remoteAddress()) + ")]: " + message;
   }
 
-  @Sharable
+  class AsyncRpcClientInitializer extends ProtoChannelInitializer {
+    public AsyncRpcClientInitializer(MessageLite defaultInstance) {
+      super(defaultInstance);
+    }
+
+    @Override
+    protected void initChannel(Channel channel) throws Exception {
+      super.initChannel(channel);
+      ChannelPipeline pipeline = channel.pipeline();
+      pipeline.addLast("handler", new ClientChannelInboundHandler());
+    }
+  }
+
   private class ClientChannelInboundHandler extends ChannelInboundHandlerAdapter {
 
     synchronized void registerCallback(int seqId, ResponseCallback callback) {
