@@ -95,7 +95,7 @@ public final class RpcChannelFactory {
     ThreadFactory workerFactory = builder.setNameFormat(name + " Server Worker #%d").build();
     
     EventLoopGroup bossGroup =
-        new NioEventLoopGroup(1, bossFactory);
+        new NioEventLoopGroup(0, bossFactory);
     EventLoopGroup workerGroup = 
         new NioEventLoopGroup(workerNum, workerFactory);
     
