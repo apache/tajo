@@ -274,6 +274,7 @@ public class TestAsyncRpc {
     ServerSocket serverSocket = new ServerSocket(0);
     final InetSocketAddress address = new InetSocketAddress("127.0.0.1", serverSocket.getLocalPort());
     serverSocket.close();
+    service = new DummyProtocolAsyncImpl();
 
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
