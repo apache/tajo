@@ -172,7 +172,7 @@ public class Fetcher {
       ChannelFuture channelFuture = channel.writeAndFlush(request);
 
       // Wait for the server to close the connection.
-      channel.closeFuture();
+      channel.closeFuture().awaitUninterruptibly();
 
       channelFuture.addListener(ChannelFutureListener.CLOSE);
 
