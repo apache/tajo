@@ -37,8 +37,9 @@ import java.util.List;
 
 public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
   // from logical plan
-  private JoinNode joinNode;
-  private EvalNode joinQual;
+//  private JoinNode joinNode;
+//  private EvalNode joinQual;
+  private JoinExecContext joinContext;
 
   // temporal tuples and states for nested loop join
   private FrameTuple frameTuple;
@@ -72,8 +73,9 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
     super(context, plan.getInSchema(), plan.getOutSchema(), outer, inner);
     Preconditions.checkArgument(plan.hasJoinQual(), "Sort-merge join is only used for the equi-join, " +
         "but there is no join condition");
-    this.joinNode = plan;
-    this.joinQual = plan.getJoinQual();
+//    this.joinNode = plan;
+//    this.joinQual = plan.getJoinQual();
+    this.joinContext = new JoinExecContext(plan);
 
     this.leftTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
     this.innerTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
@@ -97,11 +99,12 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
 
   @Override
   protected void compile() {
-    joinQual = context.getPrecompiledEval(inSchema, joinQual);
+//    joinQual = context.getPrecompiledEval(inSchema, joinQual);
+    joinContext.setPrecompiledJoinQual(context, inSchema);
   }
 
   public JoinNode getPlan() {
-    return this.joinNode;
+    return this.joinContext.getPlan();
   }
 
   /**
@@ -303,7 +306,8 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
           posRightTupleSlots = posRightTupleSlots + 1;
 
           frameTuple.set(nextLeft, aTuple);
-          if (joinQual.eval(inSchema, frameTuple).asBool()) {
+//          if (joinQual.eval(inSchema, frameTuple).asBool()) {
+          if (joinContext.getJoinQual().eval(inSchema, frameTuple).isTrue()) {
             projector.eval(frameTuple, outTuple);
             return outTuple;
           } else {
@@ -325,7 +329,8 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
 
             frameTuple.set(nextLeft, aTuple);
 
-            if (joinQual.eval(inSchema, frameTuple).asBool()) {
+//            if (joinQual.eval(inSchema, frameTuple).asBool()) {
+            if (joinContext.getJoinQual().eval(inSchema, frameTuple).isTrue()) {
               projector.eval(frameTuple, outTuple);
               return outTuple;
             } else {
@@ -358,8 +363,9 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
     innerTupleSlots.clear();
     leftTupleSlots = null;
     innerTupleSlots = null;
-    joinNode = null;
-    joinQual = null;
+//    joinNode = null;
+//    joinQual = null;
+    joinContext = null;
     projector = null;
   }
 }

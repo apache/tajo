@@ -30,9 +30,9 @@ import java.io.IOException;
 
 public class NLJoinExec extends BinaryPhysicalExec {
   // from logical plan
-  private JoinNode plan;
-  private EvalNode joinQual;
-
+//  private JoinNode plan;
+//  private EvalNode joinQual;
+  private JoinExecContext joinContext;
 
   // temporal tuples and states for nested loop join
   private boolean needNewOuter;
@@ -47,11 +47,12 @@ public class NLJoinExec extends BinaryPhysicalExec {
   public NLJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer,
       PhysicalExec inner) {
     super(context, plan.getInSchema(), plan.getOutSchema(), outer, inner);
-    this.plan = plan;
+//    this.plan = plan;
 
-    if (plan.hasJoinQual()) {
-      this.joinQual = plan.getJoinQual();
-    }
+//    if (plan.hasJoinQual()) {
+//      this.joinQual = plan.getJoinQual();
+//    }
+    this.joinContext = new JoinExecContext(plan);
 
     // for projection
     projector = new Projector(context, inSchema, outSchema, plan.getTargets());
@@ -63,7 +64,7 @@ public class NLJoinExec extends BinaryPhysicalExec {
   }
 
   public JoinNode getPlan() {
-    return this.plan;
+    return this.joinContext.getPlan();
   }
 
   public Tuple next() throws IOException {
@@ -84,8 +85,10 @@ public class NLJoinExec extends BinaryPhysicalExec {
       }
 
       frameTuple.set(outerTuple, innerTuple);
-      if (joinQual != null) {
-        if (joinQual.eval(inSchema, frameTuple).isTrue()) {
+//      if (joinQual != null) {
+      if (joinContext.hasJoinQual()) {
+//        if (joinQual.eval(inSchema, frameTuple).isTrue()) {
+        if (joinContext.getJoinQual().eval(inSchema, frameTuple).isTrue()) {
           projector.eval(frameTuple, outTuple);
           return outTuple;
         }

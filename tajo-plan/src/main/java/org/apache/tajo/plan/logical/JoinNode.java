@@ -37,6 +37,7 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   @Expose private JoinType joinType;
   @Expose private EvalNode joinQual;
   @Expose private Target[] targets;
+  @Expose private EvalNode joinFilter;
 
   // transition states
   private boolean candidateBroadcast = false;
@@ -84,6 +85,18 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
     return this.joinQual;
   }
 
+  public void setJoinFilter(EvalNode joinFilter) {
+    this.joinFilter = joinFilter;
+  }
+
+  public boolean hasJoinFilter() {
+    return this.joinFilter != null;
+  }
+
+  public EvalNode getJoinFilter() {
+    return this.joinFilter;
+  }
+
   @Override
   public boolean hasTargets() {
     return this.targets != null;
@@ -105,6 +118,10 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
     PlanString planStr = new PlanString(this).appendTitle("(").appendTitle(joinType.name()).appendTitle(")");
     if (hasJoinQual()) {
       planStr.addExplan("Join Cond: " + joinQual.toString());
+    }
+
+    if (hasJoinFilter()) {
+      planStr.addExplan("Join Filter: " + joinFilter.toString());
     }
 
     if (hasTargets()) {
@@ -132,6 +149,7 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
       boolean eq = this.joinType.equals(other.joinType);
       eq &= TUtil.checkEquals(this.targets, other.targets);
       eq &= TUtil.checkEquals(joinQual, other.joinQual);
+      eq &= TUtil.checkEquals(joinFilter, other.joinFilter);
       return eq && leftChild.equals(other.leftChild) && rightChild.equals(other.rightChild);
     } else {
       return false;
@@ -143,6 +161,7 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
     JoinNode join = (JoinNode) super.clone();
     join.joinType = this.joinType;
     join.joinQual = this.joinQual == null ? null : (BinaryEval) this.joinQual.clone();
+    join.joinFilter = hasJoinFilter() ? (EvalNode) this.joinFilter.clone() : null;
     if (hasTargets()) {
       join.targets = new Target[targets.length];
       for (int i = 0; i < targets.length; i++) {
@@ -155,7 +174,10 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   public String toString() {
     StringBuilder sb = new StringBuilder("Join (type").append(joinType);
     if (hasJoinQual()) {
-      sb.append(",filter=").append(joinQual);
+      sb.append(",cond=").append(joinQual);
+    }
+    if (hasJoinFilter()) {
+      sb.append(",filter=").append(joinFilter);
     }
     sb.append(")");
     return sb.toString();

@@ -36,8 +36,9 @@ import java.util.List;
 
 public class MergeJoinExec extends BinaryPhysicalExec {
   // from logical plan
-  private JoinNode joinNode;
-  private EvalNode joinQual;
+//  private JoinNode joinNode;
+//  private EvalNode joinQual;
+  private JoinExecContext joinContext;
 
   // temporal tuples and states for nested loop join
   private FrameTuple frameTuple;
@@ -66,8 +67,9 @@ public class MergeJoinExec extends BinaryPhysicalExec {
     super(context, plan.getInSchema(), plan.getOutSchema(), outer, inner);
     Preconditions.checkArgument(plan.hasJoinQual(), "Sort-merge join is only used for the equi-join, " +
         "but there is no join condition");
-    this.joinNode = plan;
-    this.joinQual = plan.getJoinQual();
+//    this.joinNode = plan;
+//    this.joinQual = plan.getJoinQual();
+    this.joinContext = new JoinExecContext(plan);
 
     this.outerTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
     this.innerTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
@@ -92,11 +94,12 @@ public class MergeJoinExec extends BinaryPhysicalExec {
 
   @Override
   protected void compile() {
-    joinQual = context.getPrecompiledEval(inSchema, joinQual);
+//    joinQual = context.getPrecompiledEval(inSchema, joinQual);
+    joinContext.setPrecompiledJoinQual(context, inSchema);
   }
 
   public JoinNode getPlan(){
-    return this.joinNode;
+    return this.joinContext.getPlan();
   }
 
   public Tuple next() throws IOException {
@@ -165,7 +168,8 @@ public class MergeJoinExec extends BinaryPhysicalExec {
 
       frameTuple.set(outerNext, innerIterator.next());
 
-      if (joinQual.eval(inSchema, frameTuple).isTrue()) {
+//      if (joinQual.eval(inSchema, frameTuple).isTrue()) {
+      if (joinContext.getJoinQual().eval(inSchema, frameTuple).isTrue()) {
         projector.eval(frameTuple, outTuple);
         return outTuple;
       }
@@ -192,7 +196,8 @@ public class MergeJoinExec extends BinaryPhysicalExec {
     innerTupleSlots = null;
     outerIterator = null;
     innerIterator = null;
-    joinQual = null;
+//    joinQual = null;
+    joinContext = null;
     projector = null;
   }
 }

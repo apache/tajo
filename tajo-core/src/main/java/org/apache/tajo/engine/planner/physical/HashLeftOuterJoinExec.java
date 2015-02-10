@@ -41,9 +41,10 @@ import java.util.*;
 
 public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
   // from logical plan
-  protected JoinNode plan;
-  protected EvalNode joinQual;   // ex) a.id = b.id
-  protected EvalNode joinFilter; // ex) a > 10
+//  protected JoinNode plan;
+//  protected EvalNode joinQual;   // ex) a.id = b.id
+//  protected EvalNode joinFilter; // ex) a > 10
+  protected JoinExecContext joinContext;
 
   protected List<Column[]> joinKeyPairs;
 
@@ -72,8 +73,10 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
                                PhysicalExec rightChild) {
     super(context, SchemaUtil.merge(leftChild.getSchema(), rightChild.getSchema()),
         plan.getOutSchema(), leftChild, rightChild);
-    this.plan = plan;
+//    this.plan = plan;
+    this.joinContext = new JoinExecContext(plan);
 
+    // TODO: code analyze - FilterPushDownRule
     List<EvalNode> joinQuals = Lists.newArrayList();
     List<EvalNode> joinFilters = Lists.newArrayList();
     for (EvalNode eachQual : AlgebraicUtil.toConjunctiveNormalFormArray(plan.getJoinQual())) {
@@ -84,17 +87,23 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
       }
     }
 
-    this.joinQual = AlgebraicUtil.createSingletonExprFromCNF(joinQuals.toArray(new EvalNode[joinQuals.size()]));
+//    this.joinQual = AlgebraicUtil.createSingletonExprFromCNF(joinQuals.toArray(new EvalNode[joinQuals.size()]));
+    joinContext.setJoinQual(AlgebraicUtil.createSingletonExprFromCNF(joinQuals.toArray(new EvalNode[joinQuals.size()])));
     if (joinFilters.size() > 0) {
-      this.joinFilter = AlgebraicUtil.createSingletonExprFromCNF(joinFilters.toArray(new EvalNode[joinFilters.size()]));
-    } else {
-      this.joinFilter = null;
+//      this.joinFilter = AlgebraicUtil.createSingletonExprFromCNF(joinFilters.toArray(new EvalNode[joinFilters.size()]));
+      joinContext.setJoinFilter(AlgebraicUtil.createSingletonExprFromCNF(
+          joinFilters.toArray(new EvalNode[joinFilters.size()])));
+//    } else {
+//      this.joinFilter = null;
     }
 
     this.tupleSlots = new HashMap<Tuple, List<Tuple>>(10000);
 
     // HashJoin only can manage equi join key pairs.
-    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, leftChild.getSchema(),
+//    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, leftChild.getSchema(),
+//        rightChild.getSchema(), false);
+
+    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinContext.getJoinQual(), leftChild.getSchema(),
         rightChild.getSchema(), false);
 
     leftKeyList = new int[joinKeyPairs.size()];
@@ -121,7 +130,8 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
 
   @Override
   protected void compile() {
-    joinQual = context.getPrecompiledEval(inSchema, joinQual);
+//    joinQual = context.getPrecompiledEval(inSchema, joinQual);
+    joinContext.setPrecompiledJoinQual(context, inSchema);
   }
 
   protected void getKeyLeftTuple(final Tuple outerTuple, Tuple keyTuple) {
@@ -174,8 +184,11 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
       frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
 
       // if there is no join filter, it is always true.
-      boolean satisfiedWithFilter = joinFilter == null ? true : joinFilter.eval(inSchema, frameTuple).isTrue();
-      boolean satisfiedWithJoinCondition = joinQual.eval(inSchema, frameTuple).isTrue();
+//      boolean satisfiedWithFilter = joinFilter == null ? true : joinFilter.eval(inSchema, frameTuple).isTrue();
+      boolean satisfiedWithFilter = joinContext.hasJoinFilter() ?
+          joinContext.getJoinFilter().eval(inSchema, frameTuple).isTrue() : true;
+//      boolean satisfiedWithJoinCondition = joinQual.eval(inSchema, frameTuple).isTrue();
+      boolean satisfiedWithJoinCondition = joinContext.getJoinQual().eval(inSchema, frameTuple).isTrue();
 
       // if a composited tuple satisfies with both join filter and join condition
       if (satisfiedWithFilter && satisfiedWithJoinCondition) {
@@ -241,14 +254,15 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
     tupleSlots.clear();
     tupleSlots = null;
     iterator = null;
-    plan = null;
-    joinQual = null;
-    joinFilter = null;
+//    plan = null;
+//    joinQual = null;
+//    joinFilter = null;
+    joinContext = null;
     projector = null;
   }
 
   public JoinNode getPlan() {
-    return this.plan;
+    return this.joinContext.getPlan();
   }
 }
 

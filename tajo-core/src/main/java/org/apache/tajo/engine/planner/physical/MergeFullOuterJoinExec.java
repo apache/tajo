@@ -37,8 +37,9 @@ import java.util.List;
 
 public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
   // from logical plan
-  private JoinNode joinNode;
-  private EvalNode joinQual;
+//  private JoinNode joinNode;
+//  private EvalNode joinQual;
+  private JoinExecContext joinContext;
 
   // temporal tuples and states for nested loop join
   private FrameTuple frameTuple;
@@ -72,8 +73,9 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
     super(context, plan.getInSchema(), plan.getOutSchema(), leftChild, rightChild);
     Preconditions.checkArgument(plan.hasJoinQual(), "Sort-merge join is only used for the equi-join, " +
         "but there is no join condition");
-    this.joinNode = plan;
-    this.joinQual = plan.getJoinQual();
+//    this.joinNode = plan;
+//    this.joinQual = plan.getJoinQual();
+    this.joinContext = new JoinExecContext(plan);
 
     this.leftTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
     this.rightTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
@@ -99,11 +101,12 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
 
   @Override
   protected void compile() {
-    joinQual = context.getPrecompiledEval(inSchema, joinQual);
+//    joinQual = context.getPrecompiledEval(inSchema, joinQual);
+    joinContext.setPrecompiledJoinQual(context, inSchema);
   }
 
   public JoinNode getPlan(){
-    return this.joinNode;
+    return this.joinContext.getPlan();
   }
 
   public Tuple next() throws IOException {
@@ -292,7 +295,8 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
           Tuple aTuple = new VTuple(rightTupleSlots.get(posRightTupleSlots));
           posRightTupleSlots = posRightTupleSlots + 1;
           frameTuple.set(leftNext, aTuple);
-          joinQual.eval(inSchema, frameTuple);
+//          joinQual.eval(inSchema, frameTuple);
+          joinContext.getJoinQual().eval(inSchema, frameTuple);
           projector.eval(frameTuple, outTuple);
           return outTuple;
         } else {
@@ -306,7 +310,8 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
             posLeftTupleSlots = posLeftTupleSlots + 1;
 
             frameTuple.set(leftNext, aTuple);
-            joinQual.eval(inSchema, frameTuple);
+//            joinQual.eval(inSchema, frameTuple);
+            joinContext.getJoinQual().eval(inSchema, frameTuple);
             projector.eval(frameTuple, outTuple);
             return outTuple;
           }
@@ -333,8 +338,9 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
     rightTupleSlots.clear();
     leftTupleSlots = null;
     rightTupleSlots = null;
-    joinNode = null;
-    joinQual = null;
+//    joinNode = null;
+//    joinQual = null;
+    joinContext = null;
     projector = null;
   }
 }

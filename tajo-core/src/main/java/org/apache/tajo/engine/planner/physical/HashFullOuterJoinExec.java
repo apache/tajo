@@ -37,8 +37,9 @@ import java.util.*;
 
 public class HashFullOuterJoinExec extends BinaryPhysicalExec {
   // from logical plan
-  protected JoinNode plan;
-  protected EvalNode joinQual;
+//  protected JoinNode plan;
+//  protected EvalNode joinQual;
+  protected JoinExecContext joinContext;
 
   protected List<Column[]> joinKeyPairs;
 
@@ -68,8 +69,9 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
                                PhysicalExec inner) {
     super(context, SchemaUtil.merge(outer.getSchema(), inner.getSchema()),
         plan.getOutSchema(), outer, inner);
-    this.plan = plan;
-    this.joinQual = plan.getJoinQual();
+//    this.plan = plan;
+//    this.joinQual = plan.getJoinQual();
+    this.joinContext = new JoinExecContext(plan);
     this.tupleSlots = new HashMap<Tuple, List<Tuple>>(10000);
 
     // this hashmap mirrors the evolution of the tupleSlots, with the same keys. For each join key,
@@ -77,7 +79,10 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
     this.matched = new HashMap<Tuple, Boolean>(10000);
 
     // HashJoin only can manage equi join key pairs.
-    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, outer.getSchema(), inner.getSchema(),
+//    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, outer.getSchema(), inner.getSchema(),
+//        false);
+
+    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinContext.getJoinQual(), outer.getSchema(), inner.getSchema(),
         false);
 
     leftKeyList = new int[joinKeyPairs.size()];
@@ -105,7 +110,8 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
 
   @Override
   protected void compile() throws CompilationError {
-    joinQual = context.getPrecompiledEval(inSchema, joinQual);
+//    joinQual = context.getPrecompiledEval(inSchema, joinQual);
+    joinContext.setPrecompiledJoinQual(context, inSchema);
   }
 
   protected void getKeyLeftTuple(final Tuple outerTuple, Tuple keyTuple) {
@@ -186,7 +192,8 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
       rightTuple = iterator.next();
       frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
 
-      if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if both tuples are joinable
+//      if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if both tuples are joinable
+      if (joinContext.getJoinQual().eval(inSchema, frameTuple).isTrue()) {
         projector.eval(frameTuple, outTuple);
         found = true;
         getKeyLeftTuple(leftTuple, leftKeyTuple);
@@ -247,12 +254,14 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
     tupleSlots = null;
     matched = null;
     iterator = null;
-    plan = null;
-    joinQual = null;
+//    plan = null;
+//    joinQual = null;
+    joinContext = null;
   }
 
   public JoinNode getPlan() {
-    return this.plan;
+//    return this.plan;
+    return this.joinContext.getPlan();
   }
 }
 

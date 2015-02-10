@@ -46,7 +46,8 @@ public class HashLeftSemiJoinExec extends HashJoinExec {
   }
 
   protected void compile() {
-    joinQual = context.getPrecompiledEval(inSchema, joinQual);
+//    joinQual = context.getPrecompiledEval(inSchema, joinQual);
+    joinContext.setPrecompiledJoinQual(context, inSchema);
   }
 
   /**
@@ -95,7 +96,8 @@ public class HashLeftSemiJoinExec extends HashJoinExec {
       while (notFound && iterator.hasNext()) {
         rightTuple = iterator.next();
         frameTuple.set(leftTuple, rightTuple);
-        if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if the matched one is found
+//        if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if the matched one is found
+        if (joinContext.getJoinQual().eval(inSchema, frameTuple).isTrue()) {
           notFound = false;
           projector.eval(frameTuple, outTuple);
         }

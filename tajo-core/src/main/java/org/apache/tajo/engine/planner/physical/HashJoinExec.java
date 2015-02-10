@@ -35,8 +35,9 @@ import java.util.*;
 
 public class HashJoinExec extends BinaryPhysicalExec {
   // from logical plan
-  protected JoinNode plan;
-  protected EvalNode joinQual;
+//  protected JoinNode plan;
+//  protected EvalNode joinQual;
+  protected JoinExecContext joinContext;
 
   protected List<Column[]> joinKeyPairs;
 
@@ -62,12 +63,15 @@ public class HashJoinExec extends BinaryPhysicalExec {
       PhysicalExec rightExec) {
     super(context, SchemaUtil.merge(leftExec.getSchema(), rightExec.getSchema()), plan.getOutSchema(),
         leftExec, rightExec);
-    this.plan = plan;
-    this.joinQual = plan.getJoinQual();
+//    this.plan = plan;
+//    this.joinQual = plan.getJoinQual();
+    this.joinContext = new JoinExecContext(plan);
     this.tupleSlots = new HashMap<Tuple, List<Tuple>>(100000);
 
     // HashJoin only can manage equi join key pairs.
-    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, leftExec.getSchema(),
+//    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, leftExec.getSchema(),
+//        rightExec.getSchema(), false);
+    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinContext.getJoinQual(), leftExec.getSchema(),
         rightExec.getSchema(), false);
 
     leftKeyList = new int[joinKeyPairs.size()];
@@ -92,7 +96,8 @@ public class HashJoinExec extends BinaryPhysicalExec {
 
   @Override
   protected void compile() {
-    joinQual = context.getPrecompiledEval(inSchema, joinQual);
+//    joinQual = context.getPrecompiledEval(inSchema, joinQual);
+    joinContext.setPrecompiledJoinQual(context, inSchema);
   }
 
   protected void getKeyLeftTuple(final Tuple outerTuple, Tuple keyTuple) {
@@ -135,7 +140,8 @@ public class HashJoinExec extends BinaryPhysicalExec {
       // getting a next right tuple on in-memory hash table.
       rightTuple = iterator.next();
       frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
-      if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if both tuples are joinable
+//      if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if both tuples are joinable
+      if (joinContext.getJoinQual().eval(inSchema, frameTuple).isTrue()) {
         projector.eval(frameTuple, outTuple);
         found = true;
       }
@@ -197,12 +203,13 @@ public class HashJoinExec extends BinaryPhysicalExec {
     }
 
     iterator = null;
-    plan = null;
-    joinQual = null;
+//    plan = null;
+//    joinQual = null;
+    joinContext = null;
   }
 
   public JoinNode getPlan() {
-    return this.plan;
+    return this.joinContext.getPlan();
   }
 
   @Override
