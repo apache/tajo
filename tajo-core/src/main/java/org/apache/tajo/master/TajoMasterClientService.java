@@ -522,7 +522,7 @@ public class TajoMasterClientService extends AbstractService {
         QueryId queryId = new QueryId(request.getQueryId());
         NonForwardQueryResultScanner queryResultScanner = session.getNonForwardQueryResultScanner(queryId);
         if (queryResultScanner == null) {
-          QueryInfo queryInfo = context.getHistoryReader().getQueryInfo(queryId.toString());
+          QueryInfo queryInfo = context.getQueryJobManager().getFinishedQuery(queryId);
           Preconditions.checkNotNull(queryInfo, "QueryInfo cannot be NULL.");
 
           TableDesc resultTableDesc = queryInfo.getResultDesc();
@@ -593,7 +593,7 @@ public class TajoMasterClientService extends AbstractService {
 
         QueryInfo queryInfo = null;
         if (queryInProgress == null) {
-          queryInfo = context.getHistoryReader().getQueryInfo(queryId.toString());
+          queryInfo = context.getQueryJobManager().getFinishedQuery(queryId);
         } else {
           queryInfo = queryInProgress.getQueryInfo();
         }
