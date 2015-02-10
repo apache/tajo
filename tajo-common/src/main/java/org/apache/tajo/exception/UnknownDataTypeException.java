@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.exception;
+package org.apache.tajo.exception;
 
 public class UnknownDataTypeException extends Exception {
 

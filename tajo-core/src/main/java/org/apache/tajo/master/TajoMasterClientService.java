@@ -18,6 +18,7 @@
 
 package org.apache.tajo.master;
 
+import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
@@ -44,7 +45,11 @@ import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService;
 import org.apache.tajo.master.TajoMaster.MasterContext;
+import org.apache.tajo.master.exec.NonForwardQueryResultFileScanner;
 import org.apache.tajo.master.exec.NonForwardQueryResultScanner;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.logical.PartitionedTableScanNode;
+import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.querymaster.QueryJobEvent;
 import org.apache.tajo.master.rm.Worker;
 import org.apache.tajo.master.rm.WorkerResource;
@@ -517,7 +522,26 @@ public class TajoMasterClientService extends AbstractService {
         QueryId queryId = new QueryId(request.getQueryId());
         NonForwardQueryResultScanner queryResultScanner = session.getNonForwardQueryResultScanner(queryId);
         if (queryResultScanner == null) {
-          throw new ServiceException("No NonForwardQueryResultScanner for " + queryId);
+          QueryInfo queryInfo = context.getHistoryReader().getQueryInfo(queryId.toString());
+          Preconditions.checkNotNull(queryInfo, "QueryInfo cannot be NULL.");
+
+          TableDesc resultTableDesc = queryInfo.getResultDesc();
+          Preconditions.checkNotNull(resultTableDesc, "QueryInfo::getResultDesc results in NULL.");
+
+          ScanNode scanNode;
+          if (resultTableDesc.hasPartition()) {
+            scanNode = LogicalPlan.createNodeWithoutPID(PartitionedTableScanNode.class);
+            scanNode.init(resultTableDesc);
+          } else {
+            scanNode = LogicalPlan.createNodeWithoutPID(ScanNode.class);
+            scanNode.init(resultTableDesc);
+          }
+
+          queryResultScanner =
+              new NonForwardQueryResultFileScanner(context.getConf(), session.getSessionId(), queryId, scanNode,
+                  resultTableDesc, Integer.MAX_VALUE);
+          queryResultScanner.init();
+          session.addNonForwardQueryResultScanner(queryResultScanner);
         }
 
         List<ByteString> rows = queryResultScanner.getNextRows(request.getFetchRowNum());
