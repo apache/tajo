@@ -75,10 +75,10 @@ public class NettyServerBase {
       .childHandler(initializer)
       .option(ChannelOption.SO_REUSEADDR, true)
       .option(ChannelOption.TCP_NODELAY, true)
+      .childOption(ChannelOption.TCP_NODELAY, true)
       .childOption(ChannelOption.SO_KEEPALIVE, true)
       .childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
-      .childOption(ChannelOption.SO_RCVBUF, 1048576 * 10)
-      .childOption(ChannelOption.SO_SNDBUF, 1048576);
+      .childOption(ChannelOption.SO_RCVBUF, 1048576 * 10);
   }
 
   public InetSocketAddress getListenAddress() {

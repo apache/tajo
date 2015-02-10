@@ -232,9 +232,7 @@ public class TajoPullServerService extends AbstractService {
           Runtime.getRuntime().availableProcessors() * 2);
 
       selector = RpcChannelFactory.createServerChannelFactory("PullServerAuxService", workerNum)
-                   .option(ChannelOption.TCP_NODELAY, true)
-                   .childOption(ChannelOption.SO_RCVBUF, 1048576)
-                   .childOption(ChannelOption.SO_SNDBUF, 1048576);
+                   .option(ChannelOption.TCP_NODELAY, true);
 
       localFS = new LocalFileSystem();
 
