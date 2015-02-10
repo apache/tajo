@@ -85,7 +85,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 
 public class PullServerAuxService extends AuxiliaryService {
 
@@ -94,7 +93,7 @@ public class PullServerAuxService extends AuxiliaryService {
   public static final String SHUFFLE_MANAGE_OS_CACHE = "tajo.pullserver.manage.os.cache";
   public static final boolean DEFAULT_SHUFFLE_MANAGE_OS_CACHE = true;
 
-  public static final String SHUFFLE_READAHEAD_BYTES = "tajo.pullserver.readahead.bytes";
+  public static final String SHUFFLE_READAHEAD_BYTES = "tajo.pullserver.valuereadahead.bytes";
   public static final int DEFAULT_SHUFFLE_READAHEAD_BYTES = 4 * 1024 * 1024;
 
   private int port;
@@ -218,7 +217,8 @@ public class PullServerAuxService extends AuxiliaryService {
 
       selector = new ServerBootstrap()
               .group(new NioEventLoopGroup(0, bossFactory),
-                      new NioEventLoopGroup(0, workerFactory));
+                      new NioEventLoopGroup(0, workerFactory))
+              .option(ChannelOption.TCP_NODELAY, true);
 
       localFS = new LocalFileSystem();
       super.init(new Configuration(conf));
@@ -445,12 +445,12 @@ public class PullServerAuxService extends AuxiliaryService {
           // Write the content.
           if (chunks.size() == 0) {
             HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
-            ctx.write(response);
+            ctx.writeAndFlush(response);
             if (!HttpHeaders.isKeepAlive(request)) {
               ctx.close();
             } else {
               response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
-              ctx.write(response);
+              ctx.writeAndFlush(response);
             }
           } else {
             FileChunk[] file = chunks.toArray(new FileChunk[chunks.size()]);
@@ -465,7 +465,7 @@ public class PullServerAuxService extends AuxiliaryService {
               response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
             }
             // Write the initial line and the header.
-            ctx.write(response);
+            ctx.writeAndFlush(response);
 
             ChannelFuture writeFuture = null;
 
@@ -505,8 +505,8 @@ public class PullServerAuxService extends AuxiliaryService {
         final FadvisedFileRegion partition = new FadvisedFileRegion(spill,
             file.startOffset(), file.length(), manageOsCache, readaheadLength,
             readaheadPool, file.getFile().getAbsolutePath());
-        writeFuture = ctx.write(partition);
-        lastContentFuture = ctx.write(LastHttpContent.EMPTY_LAST_CONTENT);
+        writeFuture = ctx.writeAndFlush(partition);
+        lastContentFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
         writeFuture.addListener(new FileCloseListener(partition, null, 0, null));
       } else {
         // HTTPS cannot be done with zero copy.
@@ -514,19 +514,13 @@ public class PullServerAuxService extends AuxiliaryService {
             file.startOffset(), file.length(), sslFileBufferSize,
             manageOsCache, readaheadLength, readaheadPool,
             file.getFile().getAbsolutePath());
-        lastContentFuture = ctx.write(new HttpChunkedInput(chunk));
+        lastContentFuture = ctx.writeAndFlush(new HttpChunkedInput(chunk));
       }
       metrics.shuffleConnections.incr();
       metrics.shuffleOutputBytes.incr(file.length()); // optimistic
       return lastContentFuture;
     }
     
-    @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-      ctx.flush();
-      super.channelReadComplete(ctx);
-    }
-
     private void sendError(ChannelHandlerContext ctx,
         HttpResponseStatus status) {
       sendError(ctx, "", status);

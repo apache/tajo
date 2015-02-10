@@ -129,7 +129,7 @@ public class AsyncRpcServer extends NettyServerBase {
                 builder.setErrorMessage(controller.errorText());
               }
 
-              ctx.write(builder.build());
+              ctx.writeAndFlush(builder.build());
             }
           };
 
@@ -138,12 +138,6 @@ public class AsyncRpcServer extends NettyServerBase {
       } finally {
         ReferenceCountUtil.release(msg);
       }
-    }
-
-    @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-      ctx.flush();
-      super.channelReadComplete(ctx);
     }
 
     @Override

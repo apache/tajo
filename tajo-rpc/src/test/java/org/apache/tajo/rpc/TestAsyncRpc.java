@@ -28,7 +28,6 @@ import org.apache.tajo.rpc.test.TestProtos.SumRequest;
 import org.apache.tajo.rpc.test.TestProtos.SumResponse;
 import org.apache.tajo.rpc.test.impl.DummyProtocolAsyncImpl;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
@@ -36,7 +35,6 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import io.netty.channel.ConnectTimeoutException;
-import io.netty.channel.EventLoopGroup;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -57,10 +55,10 @@ public class TestAsyncRpc {
   double sum;
   String echo;
 
-  static AsyncRpcServer server;
-  static AsyncRpcClient client;
-  static Interface stub;
-  static DummyProtocolAsyncImpl service;
+  AsyncRpcServer server;
+  AsyncRpcClient client;
+  Interface stub;
+  DummyProtocolAsyncImpl service;
   int retries;
   
   @Retention(RetentionPolicy.RUNTIME)
@@ -199,7 +197,7 @@ public class TestAsyncRpc {
         testNullLatch.countDown();
       }
     });
-    testNullLatch.await(1000, TimeUnit.MILLISECONDS);
+    assertTrue(testNullLatch.await(1000, TimeUnit.MILLISECONDS));
     assertTrue(service.getNullCalled);
   }
 

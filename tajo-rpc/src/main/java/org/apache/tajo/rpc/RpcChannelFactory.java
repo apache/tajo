@@ -48,7 +48,7 @@ public final class RpcChannelFactory {
   * make this factory static thus all clients can share its thread pool.
   * NioClientSocketChannelFactory has only one method newChannel() visible for user, which is thread-safe
   */
-  public static synchronized EventLoopGroup getSharedClientEventloopGroup() {
+  public static EventLoopGroup getSharedClientEventloopGroup() {
     return getSharedClientEventloopGroup(DEFAULT_WORKER_NUM);
   }
   
@@ -58,7 +58,7 @@ public final class RpcChannelFactory {
   *
   * @param workerNum The number of workers
   */
-  public static synchronized EventLoopGroup getSharedClientEventloopGroup(int workerNum){
+  public static EventLoopGroup getSharedClientEventloopGroup(int workerNum){
     //shared woker and boss pool
     if (loopGroup == null) {
       synchronized (lockObjectForLoopGroup) {
@@ -72,7 +72,7 @@ public final class RpcChannelFactory {
   }
 
   // Client must release the external resources
-  protected static synchronized EventLoopGroup createClientEventloopGroup(String name, int workerNum) {
+  protected static EventLoopGroup createClientEventloopGroup(String name, int workerNum) {
     name = name + "-" + clientCount.incrementAndGet();
     if(LOG.isDebugEnabled()){
       LOG.debug("Create " + name + " ClientEventLoopGroup. Worker:" + workerNum);
@@ -85,7 +85,7 @@ public final class RpcChannelFactory {
   }
 
   // Client must release the external resources
-  public static synchronized ServerBootstrap createServerChannelFactory(String name, int workerNum) {
+  public static ServerBootstrap createServerChannelFactory(String name, int workerNum) {
     name = name + "-" + serverCount.incrementAndGet();
     if(LOG.isInfoEnabled()){
       LOG.info("Create " + name + " ServerSocketChannelFactory. Worker:" + workerNum);

@@ -74,10 +74,11 @@ public class NettyServerBase {
       .channel(NioServerSocketChannel.class)
       .childHandler(initializer)
       .option(ChannelOption.SO_REUSEADDR, true)
-      .childOption(ChannelOption.TCP_NODELAY, true)
+      .option(ChannelOption.TCP_NODELAY, true)
       .childOption(ChannelOption.SO_KEEPALIVE, true)
       .childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
-      .childOption(ChannelOption.SO_RCVBUF, 1048576 * 10);
+      .childOption(ChannelOption.SO_RCVBUF, 1048576 * 10)
+      .childOption(ChannelOption.SO_SNDBUF, 1048576);
   }
 
   public InetSocketAddress getListenAddress() {
@@ -153,13 +154,14 @@ public class NettyServerBase {
   // each system has a different starting port number within the given range.
   private static final AtomicInteger nextPortNum =
       new AtomicInteger(startPortRange+ rnd.nextInt(endPortRange - startPortRange));
+  private static final Object lockObject = new Object();
 
 
   private synchronized static int getUnusedPort() throws IOException {
     while (true) {
       int port = nextPortNum.getAndIncrement();
       if (port >= endPortRange) {
-        synchronized (nextPortNum) {
+        synchronized (lockObject) {
           nextPortNum.set(startPortRange);
           port = nextPortNum.getAndIncrement();
         }

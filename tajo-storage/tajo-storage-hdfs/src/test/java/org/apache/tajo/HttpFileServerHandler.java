@@ -99,19 +99,19 @@ public class HttpFileServerHandler extends ChannelInboundHandlerAdapter {
         setContentTypeHeader(response);
 
         // Write the initial line and the header.
-        ctx.write(response);
+        ctx.writeAndFlush(response);
 
         // Write the content.
         ChannelFuture writeFuture;
         ChannelFuture lastContentFuture;
         if (ctx.pipeline().get(SslHandler.class) != null) {
           // Cannot use zero-copy with HTTPS.
-          lastContentFuture = ctx.write(new HttpChunkedInput(new ChunkedFile(raf, 0, fileLength, 8192)));
+          lastContentFuture = ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(raf, 0, fileLength, 8192)));
         } else {
           // No encryption - use zero-copy.
           final FileRegion region = new DefaultFileRegion(raf.getChannel(), 0, fileLength);
-          writeFuture = ctx.write(region);
-          lastContentFuture = ctx.write(LastHttpContent.EMPTY_LAST_CONTENT);
+          writeFuture = ctx.writeAndFlush(region);
+          lastContentFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
           writeFuture.addListener(new ChannelProgressiveFutureListener() {
             @Override
             public void operationProgressed(ChannelProgressiveFuture future, long progress, long total)
@@ -135,12 +135,6 @@ public class HttpFileServerHandler extends ChannelInboundHandlerAdapter {
     } finally {
       ReferenceCountUtil.release(msg);
     }
-  }
-  
-  @Override
-  public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-    ctx.flush();
-    super.channelReadComplete(ctx);
   }
 
   @Override
@@ -191,7 +185,7 @@ public class HttpFileServerHandler extends ChannelInboundHandlerAdapter {
     response.headers().set(HttpHeaders.Names.CONTENT_TYPE, "text/plain; charset=UTF-8");
 
     // Close the connection as soon as the error message is sent.
-    ctx.channel().writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+    ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
   }
 
   /**

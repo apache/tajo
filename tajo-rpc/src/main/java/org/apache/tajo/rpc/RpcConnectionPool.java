@@ -41,6 +41,7 @@ public class RpcConnectionPool {
   private ChannelGroup accepted = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
   private static RpcConnectionPool instance;
+  private final Object lockObject = new Object();
 
   public final static int RPC_RETRIES = 3;
 
@@ -76,15 +77,20 @@ public class RpcConnectionPool {
     NettyClientBase client = connections.get(key);
 
     if (client == null) {
-      boolean added;
-      synchronized (connections){
-        client = makeConnection(key);
-        connections.put(key, client);
-        added = true;
+      boolean added = false;
+      synchronized (lockObject){
+        client = connections.get(key);
+        if (client == null) {
+          client = makeConnection(key);
+          connections.put(key, client);
+          added = true;
+        }
       }
 
       if (!added) {
-        client.close();
+        if (client != null) {
+          client.close();
+        }
         client = connections.get(key);
       }
     }
@@ -136,7 +142,7 @@ public class RpcConnectionPool {
     if(LOG.isDebugEnabled()) {
       LOG.debug("Pool Closed");
     }
-    synchronized(connections) {
+    synchronized(lockObject) {
       for(NettyClientBase eachClient: connections.values()) {
         try {
           eachClient.close();

@@ -312,7 +312,7 @@ public class TestBlockingRpc {
     };
     shutdownThread.start();
 
-    latch.await(5 * 1000, TimeUnit.MILLISECONDS);
+    assertTrue(latch.await(5 * 1000, TimeUnit.MILLISECONDS));
 
     assertTrue(latch.getCount() == 0);
 

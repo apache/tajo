@@ -25,6 +25,7 @@ import org.apache.hadoop.net.NetUtils;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.ChannelGroupFuture;
@@ -53,6 +54,7 @@ public class HttpFileServer {
     this.bootstrap = new ServerBootstrap();
     this.bootstrap.childHandler(new HttpFileServerChannelInitializer())
           .group(eventloopGroup)
+          .option(ChannelOption.TCP_NODELAY, true)
           .channel(NioServerSocketChannel.class);
     this.channelGroup = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
   }
