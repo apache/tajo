@@ -93,7 +93,7 @@ public class PullServerAuxService extends AuxiliaryService {
   public static final String SHUFFLE_MANAGE_OS_CACHE = "tajo.pullserver.manage.os.cache";
   public static final boolean DEFAULT_SHUFFLE_MANAGE_OS_CACHE = true;
 
-  public static final String SHUFFLE_READAHEAD_BYTES = "tajo.pullserver.valuereadahead.bytes";
+  public static final String SHUFFLE_READAHEAD_BYTES = "tajo.pullserver.readahead.bytes";
   public static final int DEFAULT_SHUFFLE_READAHEAD_BYTES = 4 * 1024 * 1024;
 
   private int port;
