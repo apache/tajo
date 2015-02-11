@@ -367,6 +367,9 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     if (join.hasJoinQual()) {
       joinBuilder.setJoinQual(EvalNodeSerializer.serialize(join.getJoinQual()));
     }
+    if (join.hasJoinFilter()) {
+      joinBuilder.setJoinFilter(EvalNodeSerializer.serialize(join.getJoinFilter()));
+    }
 
     if (join.hasTargets()) {
       joinBuilder.setExistsTargets(true);

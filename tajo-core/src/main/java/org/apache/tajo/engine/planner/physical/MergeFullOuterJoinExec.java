@@ -296,7 +296,8 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
           posRightTupleSlots = posRightTupleSlots + 1;
           frameTuple.set(leftNext, aTuple);
 //          joinQual.eval(inSchema, frameTuple);
-          joinContext.getJoinQual().eval(inSchema, frameTuple);
+          joinContext.evalQual(inSchema, frameTuple);
+          joinContext.evalFilter(inSchema, frameTuple);
           projector.eval(frameTuple, outTuple);
           return outTuple;
         } else {
@@ -311,7 +312,8 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
 
             frameTuple.set(leftNext, aTuple);
 //            joinQual.eval(inSchema, frameTuple);
-            joinContext.getJoinQual().eval(inSchema, frameTuple);
+            joinContext.evalQual(inSchema, frameTuple);
+            joinContext.evalQual(inSchema, frameTuple);
             projector.eval(frameTuple, outTuple);
             return outTuple;
           }

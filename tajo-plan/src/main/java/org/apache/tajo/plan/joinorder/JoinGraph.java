@@ -104,6 +104,9 @@ public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
     if (joinNode.getJoinType() == JoinType.LEFT_OUTER || joinNode.getJoinType() == JoinType.RIGHT_OUTER) {
       JoinEdge edge = new JoinEdge(joinNode.getJoinType(),
             joinNode.getLeftChild(), joinNode.getRightChild(), joinNode.getJoinQual());
+      if (joinNode.hasJoinFilter()) {
+        edge.addJoinFilter(joinNode.getJoinFilter());
+      }
 
       SortedSet<String> leftNodeRelationName =
           new TreeSet<String>(PlannerUtil.getRelationLineageWithinQueryBlock(plan, joinNode.getLeftChild()));

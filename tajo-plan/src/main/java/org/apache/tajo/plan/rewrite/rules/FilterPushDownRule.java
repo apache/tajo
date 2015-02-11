@@ -239,17 +239,12 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       // TAJO-853
       // In the case of top most JOIN, all filters except JOIN condition aren't pushed down.
       // That filters are processed by SELECTION NODE.
-      Set<String> nullSupplyingTableNameSet;
+      Set<String> nullSupplyingTableNameSet, preservedTableNameSet;
       if (joinNode.getJoinType() == JoinType.RIGHT_OUTER) {
         nullSupplyingTableNameSet = TUtil.newHashSet(PlannerUtil.getRelationLineage(joinNode.getLeftChild()));
-      } else {
-        nullSupplyingTableNameSet = TUtil.newHashSet(PlannerUtil.getRelationLineage(joinNode.getRightChild()));
-      }
-
-      Set<String> preservedTableNameSet;
-      if (joinNode.getJoinType() == JoinType.RIGHT_OUTER) {
         preservedTableNameSet = TUtil.newHashSet(PlannerUtil.getRelationLineage(joinNode.getRightChild()));
       } else {
+        nullSupplyingTableNameSet = TUtil.newHashSet(PlannerUtil.getRelationLineage(joinNode.getRightChild()));
         preservedTableNameSet = TUtil.newHashSet(PlannerUtil.getRelationLineage(joinNode.getLeftChild()));
       }
 
@@ -284,7 +279,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
           // If join condition, processing in the JoinNode.
           outerJoinPredicationEvals.add(eachOnEval);
         } else {
-          // If Eval has a column which belong to Preserved Row table, not using to push down but using JoinCondition
+          // If Eval has a column which belongs to Preserved Row table, not using to push down but using JoinCondition
           Set<Column> columns = EvalTreeUtil.findUniqueColumns(eachOnEval);
           boolean canPushDown = true;
           for (Column eachColumn: columns) {
@@ -358,7 +353,22 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       context.pushingDownFilters.removeAll(matched);
     }
 
-    context.pushingDownFilters.addAll(outerJoinFilterEvalsExcludePredication);
+    matched.clear();
+    matched.addAll(outerJoinFilterEvalsExcludePredication);
+    EvalNode filter = null;
+    if (matched.size() > 1) {
+      filter = AlgebraicUtil.createSingletonExprFromCNF(
+          matched.toArray(new EvalNode[matched.size()]));
+    } else if (matched.size() == 1) {
+      filter = matched.get(0);
+    }
+
+    if (filter != null) {
+      joinNode.setJoinFilter(filter);
+      context.pushingDownFilters.removeAll(matched);
+    }
+
+//    context.pushingDownFilters.addAll(outerJoinFilterEvalsExcludePredication);
     context.pushingDownFilters.addAll(thetaJoinFilter);
     return joinNode;
   }
@@ -535,7 +545,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     //copy -> origin
     BiMap<EvalNode, EvalNode> transformedMap = findCanPushdownAndTransform(
-        context, block,projectionNode, childNode, notMatched, null, false, 0);
+        context, block, projectionNode, childNode, notMatched, null, false, 0);
 
     context.setFiltersTobePushed(transformedMap.keySet());
 

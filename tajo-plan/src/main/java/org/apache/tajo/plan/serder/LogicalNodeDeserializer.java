@@ -361,6 +361,9 @@ public class LogicalNodeDeserializer {
     if (joinProto.hasJoinQual()) {
       join.setJoinQual(EvalNodeDeserializer.deserialize(context, joinProto.getJoinQual()));
     }
+    if (joinProto.hasJoinFilter()) {
+      join.setJoinFilter(EvalNodeDeserializer.deserialize(context, joinProto.getJoinFilter()));
+    }
     if (joinProto.getExistsTargets()) {
       join.setTargets(convertTargets(context, joinProto.getTargetsList()));
     }

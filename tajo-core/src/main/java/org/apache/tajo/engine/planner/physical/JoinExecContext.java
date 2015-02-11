@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.JoinNode;
+import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 public class JoinExecContext {
@@ -48,7 +49,12 @@ public class JoinExecContext {
   }
 
   public void setPrecompiledJoinQual(TaskAttemptContext context, Schema inSchema) {
-    joinQual = context.getPrecompiledEval(inSchema, joinQual);
+    if (hasJoinQual()) {
+      joinQual = context.getPrecompiledEval(inSchema, joinQual);
+    }
+    if (hasJoinFilter()) {
+      joinFilter = context.getPrecompiledEval(inSchema, joinFilter);
+    }
   }
 
   public EvalNode getJoinQual() {
@@ -65,5 +71,15 @@ public class JoinExecContext {
 
   public EvalNode getJoinFilter() {
     return joinFilter;
+  }
+
+  public boolean evalFilter(Schema inSchema, FrameTuple frameTuple) {
+    return hasJoinFilter() ?
+        joinFilter.eval(inSchema, frameTuple).isTrue() : true;
+  }
+
+  public boolean evalQual(Schema inSchema, FrameTuple frameTuple) {
+    return hasJoinQual() ?
+        joinQual.eval(inSchema, frameTuple).isTrue() : true;
   }
 }

@@ -93,12 +93,16 @@ public class NLLeftOuterJoinExec extends BinaryPhysicalExec {
           //output a tuple with the nulls padded rightTuple
           Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
           frameTuple.set(leftTuple, nullPaddedTuple);
-          projector.eval(frameTuple, outTuple);
           // we simulate we found a match, which is exactly the null padded one
           foundAtLeastOneMatch = true;
           needNextRightTuple = true;
           rightChild.rescan();
-          return outTuple;
+          if (joinContext.evalFilter(inSchema, frameTuple)) {
+            projector.eval(frameTuple, outTuple);
+            return outTuple;
+          } else {
+            continue;
+          }
         } else {
           needNextRightTuple = true;
           rightChild.rescan();
@@ -109,10 +113,12 @@ public class NLLeftOuterJoinExec extends BinaryPhysicalExec {
       frameTuple.set(leftTuple, rightTuple);
 
 //      if (joinQual.eval(inSchema, frameTuple).isTrue()) {
-      if (joinContext.getJoinQual().eval(inSchema, frameTuple).isTrue()) {
-        projector.eval(frameTuple, outTuple);
+      if (joinContext.evalQual(inSchema, frameTuple)) {
         foundAtLeastOneMatch = true;
-        return outTuple;
+        if (joinContext.evalFilter(inSchema, frameTuple)) {
+          projector.eval(frameTuple, outTuple);
+          return outTuple;
+        }
       }
     }
     return null;

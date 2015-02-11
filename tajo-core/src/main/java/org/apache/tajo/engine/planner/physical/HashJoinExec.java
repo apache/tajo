@@ -141,7 +141,8 @@ public class HashJoinExec extends BinaryPhysicalExec {
       rightTuple = iterator.next();
       frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
 //      if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if both tuples are joinable
-      if (joinContext.getJoinQual().eval(inSchema, frameTuple).isTrue()) {
+      if (joinContext.evalQual(inSchema, frameTuple) &&
+          joinContext.evalFilter(inSchema, frameTuple)) {
         projector.eval(frameTuple, outTuple);
         found = true;
       }

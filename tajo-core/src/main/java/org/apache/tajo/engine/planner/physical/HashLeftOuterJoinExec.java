@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -87,15 +88,15 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
       }
     }
 
-//    this.joinQual = AlgebraicUtil.createSingletonExprFromCNF(joinQuals.toArray(new EvalNode[joinQuals.size()]));
-    joinContext.setJoinQual(AlgebraicUtil.createSingletonExprFromCNF(joinQuals.toArray(new EvalNode[joinQuals.size()])));
-    if (joinFilters.size() > 0) {
-//      this.joinFilter = AlgebraicUtil.createSingletonExprFromCNF(joinFilters.toArray(new EvalNode[joinFilters.size()]));
-      joinContext.setJoinFilter(AlgebraicUtil.createSingletonExprFromCNF(
-          joinFilters.toArray(new EvalNode[joinFilters.size()])));
-//    } else {
-//      this.joinFilter = null;
-    }
+////    this.joinQual = AlgebraicUtil.createSingletonExprFromCNF(joinQuals.toArray(new EvalNode[joinQuals.size()]));
+//    joinContext.setJoinQual(AlgebraicUtil.createSingletonExprFromCNF(joinQuals.toArray(new EvalNode[joinQuals.size()])));
+//    if (joinFilters.size() > 0) {
+////      this.joinFilter = AlgebraicUtil.createSingletonExprFromCNF(joinFilters.toArray(new EvalNode[joinFilters.size()]));
+//      joinContext.setJoinFilter(AlgebraicUtil.createSingletonExprFromCNF(
+//          joinFilters.toArray(new EvalNode[joinFilters.size()])));
+////    } else {
+////      this.joinFilter = null;
+//    }
 
     this.tupleSlots = new HashMap<Tuple, List<Tuple>>(10000);
 
@@ -168,10 +169,14 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
           // this left tuple doesn't have a match on the right, and output a tuple with the nulls padded rightTuple
           Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
           frameTuple.set(leftTuple, nullPaddedTuple);
-          projector.eval(frameTuple, outTuple);
           // we simulate we found a match, which is exactly the null padded one
           shouldGetLeftTuple = true;
-          return outTuple;
+          if (joinContext.evalFilter(inSchema, frameTuple)) {
+            projector.eval(frameTuple, outTuple);
+            return outTuple;
+          } else {
+            continue;
+          }
         }
       }
 
@@ -185,29 +190,47 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
 
       // if there is no join filter, it is always true.
 //      boolean satisfiedWithFilter = joinFilter == null ? true : joinFilter.eval(inSchema, frameTuple).isTrue();
-      boolean satisfiedWithFilter = joinContext.hasJoinFilter() ?
-          joinContext.getJoinFilter().eval(inSchema, frameTuple).isTrue() : true;
+      boolean satisfiedWithFilter = joinContext.evalFilter(inSchema, frameTuple);
 //      boolean satisfiedWithJoinCondition = joinQual.eval(inSchema, frameTuple).isTrue();
-      boolean satisfiedWithJoinCondition = joinContext.getJoinQual().eval(inSchema, frameTuple).isTrue();
+      boolean satisfiedWithJoinCondition = joinContext.evalQual(inSchema, frameTuple);
 
       // if a composited tuple satisfies with both join filter and join condition
-      if (satisfiedWithFilter && satisfiedWithJoinCondition) {
-        projector.eval(frameTuple, outTuple);
-        return outTuple;
-      } else {
-
-        // if join filter is satisfied, the left outer join (LOJ) operator should return the null padded tuple
-        // only once. Then, LOJ operator should take the next left tuple.
-        if (!satisfiedWithFilter) {
-          shouldGetLeftTuple = true;
+      if (satisfiedWithJoinCondition) {
+        if (satisfiedWithFilter) {
+          projector.eval(frameTuple, outTuple);
+          return outTuple;
         }
-
-        // null padding
+      } else {
+        // if join condition is not satisfied, the left outer join (LOJ) operator should return the null padded tuple
+        // only once. Then, LOJ operator should take the next left tuple.
+        shouldGetLeftTuple = true;
         Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
         frameTuple.set(leftTuple, nullPaddedTuple);
-        projector.eval(frameTuple, outTuple);
-        return outTuple;
+        if (joinContext.evalFilter(inSchema, frameTuple)) {
+          projector.eval(frameTuple, outTuple);
+          return outTuple;
+        }
       }
+
+
+//      // if a composited tuple satisfies with both join filter and join condition
+//      if (satisfiedWithFilter && satisfiedWithJoinCondition) {
+//        projector.eval(frameTuple, outTuple);
+//        return outTuple;
+//      } else {
+//
+//        // if join condition is not satisfied, the left outer join (LOJ) operator should return the null padded tuple
+//        // only once. Then, LOJ operator should take the next left tuple.
+//        if (!satisfiedWithFilter) {
+//          shouldGetLeftTuple = true;
+//        }
+//
+//        // null padding
+//        Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
+//        frameTuple.set(leftTuple, nullPaddedTuple);
+//        projector.eval(frameTuple, outTuple);
+//        return outTuple;
+//      }
     }
 
     return outTuple;
@@ -263,6 +286,15 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
 
   public JoinNode getPlan() {
     return this.joinContext.getPlan();
+  }
+
+  private static Tuple evalPredicateAndReturn(JoinExecContext joinContext,
+                                              Schema inSchema, FrameTuple frameTuple) {
+    if (joinContext.evalFilter(inSchema, frameTuple) &&
+        joinContext.evalQual(inSchema, frameTuple)) {
+      return frameTuple;
+    }
+    return null;
   }
 }
 

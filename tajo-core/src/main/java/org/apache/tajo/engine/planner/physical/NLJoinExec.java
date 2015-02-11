@@ -85,17 +85,23 @@ public class NLJoinExec extends BinaryPhysicalExec {
       }
 
       frameTuple.set(outerTuple, innerTuple);
-//      if (joinQual != null) {
-      if (joinContext.hasJoinQual()) {
-//        if (joinQual.eval(inSchema, frameTuple).isTrue()) {
-        if (joinContext.getJoinQual().eval(inSchema, frameTuple).isTrue()) {
-          projector.eval(frameTuple, outTuple);
-          return outTuple;
-        }
-      } else {
+
+      if (joinContext.evalQual(inSchema, frameTuple) &&
+          joinContext.evalFilter(inSchema, frameTuple)) {
         projector.eval(frameTuple, outTuple);
         return outTuple;
       }
+//      if (joinQual != null) {
+//      if (joinContext.hasJoinQual()) {
+////        if (joinQual.eval(inSchema, frameTuple).isTrue()) {
+//        if (joinContext.getJoinQual().eval(inSchema, frameTuple).isTrue()) {
+//          projector.eval(frameTuple, outTuple);
+//          return outTuple;
+//        }
+//      } else {
+//        projector.eval(frameTuple, outTuple);
+//        return outTuple;
+//      }
     }
     return null;
   }

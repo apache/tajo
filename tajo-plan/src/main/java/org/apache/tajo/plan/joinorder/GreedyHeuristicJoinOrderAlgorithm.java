@@ -103,6 +103,9 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     if (joinEdge.hasJoinQual()) {
       joinNode.setJoinQual(AlgebraicUtil.createSingletonExprFromCNF(joinEdge.getJoinQual()));
     }
+    if (joinEdge.hasJoinFilter()) {
+      joinNode.setJoinFilter(AlgebraicUtil.createSingletonExprFromCNF(joinEdge.getJoinFilter()));
+    }
     return joinNode;
   }
 
@@ -183,6 +186,9 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
           foundJoinEdge.addJoinQual(AlgebraicUtil.createSingletonExprFromCNF(
               existJoinEdge.getJoinQual()));
         }
+        if (existJoinEdge.hasJoinFilter()) {
+          foundJoinEdge.addJoinFilter(AlgebraicUtil.createSingletonExprFromCNF(existJoinEdge.getJoinFilter()));
+        }
       }
     }
     if (foundJoinEdge != null) {
@@ -202,6 +208,9 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
           foundJoinEdge.addJoinQual(AlgebraicUtil.createSingletonExprFromCNF(
               existJoinEdge.getJoinQual()));
         }
+        if (existJoinEdge.hasJoinFilter()) {
+          foundJoinEdge.addJoinFilter(AlgebraicUtil.createSingletonExprFromCNF(existJoinEdge.getJoinFilter()));
+        }
       }
     }
     if (foundJoinEdge != null) {
@@ -220,6 +229,9 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
           } else {
             foundJoinEdge.addJoinQual(AlgebraicUtil.createSingletonExprFromCNF(
                 existJoinEdge.getJoinQual()));
+          }
+          if (existJoinEdge.hasJoinFilter()) {
+            foundJoinEdge.addJoinFilter(AlgebraicUtil.createSingletonExprFromCNF(existJoinEdge.getJoinFilter()));
           }
         }
       }

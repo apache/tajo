@@ -32,6 +32,7 @@ public class JoinEdge {
   private final LogicalNode leftRelation;
   private final LogicalNode rightRelation;
   private final Set<EvalNode> joinQual = Sets.newHashSet();
+  private final Set<EvalNode> joinFilter = Sets.newHashSet();
 
   public JoinEdge(JoinType joinType, LogicalNode leftRelation, LogicalNode rightRelation) {
     this.joinType = joinType;
@@ -67,6 +68,18 @@ public class JoinEdge {
 
   public EvalNode [] getJoinQual() {
     return joinQual.toArray(new EvalNode[joinQual.size()]);
+  }
+
+  public boolean hasJoinFilter() {
+    return joinFilter.size() > 0;
+  }
+
+  public void addJoinFilter(EvalNode joinFilter) {
+    this.joinFilter.add(joinFilter);
+  }
+
+  public EvalNode[] getJoinFilter() {
+    return joinFilter.toArray(new EvalNode[joinFilter.size()]);
   }
 
   public String toString() {

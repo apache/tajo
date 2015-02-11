@@ -24,7 +24,6 @@ import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.catalog.SchemaUtil;
-import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
@@ -193,7 +192,8 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
       frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
 
 //      if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if both tuples are joinable
-      if (joinContext.getJoinQual().eval(inSchema, frameTuple).isTrue()) {
+      if (joinContext.evalQual(inSchema, frameTuple) &&
+          joinContext.evalFilter(inSchema, frameTuple)) {
         projector.eval(frameTuple, outTuple);
         found = true;
         getKeyLeftTuple(leftTuple, leftKeyTuple);

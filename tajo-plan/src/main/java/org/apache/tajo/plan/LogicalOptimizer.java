@@ -292,9 +292,13 @@ public class LogicalOptimizer {
       super.visitJoin(joinGraphContext, plan, block, joinNode, stack);
 
       double filterFactor = 1;
-      if (joinNode.hasJoinQual()) {
-        EvalNode [] quals = AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual());
-        filterFactor = Math.pow(GreedyHeuristicJoinOrderAlgorithm.DEFAULT_SELECTION_FACTOR, quals.length);
+//      if (joinNode.hasJoinQual()) {
+//        EvalNode [] quals = AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual());
+//        filterFactor = Math.pow(GreedyHeuristicJoinOrderAlgorithm.DEFAULT_SELECTION_FACTOR, quals.length);
+//      }
+      if (joinNode.hasJoinFilter()) {
+        EvalNode [] filters = AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinFilter());
+        filterFactor = Math.pow(GreedyHeuristicJoinOrderAlgorithm.DEFAULT_SELECTION_FACTOR, filters.length);
       }
 
       if (joinNode.getLeftChild() instanceof RelationNode) {

@@ -33,10 +33,6 @@ import java.util.Iterator;
 import java.util.List;
 
 public class BNLJoinExec extends BinaryPhysicalExec {
-  // from logical plan
-//  private JoinNode plan;
-//  private final boolean hasJoinQual;
-//  private EvalNode joinQual;
   private JoinExecContext joinContext;
 
   private List<Tuple> leftTupleSlots;
@@ -61,13 +57,6 @@ public class BNLJoinExec extends BinaryPhysicalExec {
   public BNLJoinExec(final TaskAttemptContext context, final JoinNode plan,
                      final PhysicalExec leftExec, PhysicalExec rightExec) {
     super(context, plan.getInSchema(), plan.getOutSchema(), leftExec, rightExec);
-//    this.plan = plan;
-//    this.joinQual = plan.getJoinQual();
-//    if (joinQual != null) { // if join type is not 'cross join'
-//      hasJoinQual = true;
-//    } else {
-//      hasJoinQual = false;
-//    }
     this.joinContext = new JoinExecContext(plan);
     this.leftTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
     this.rightTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
@@ -90,12 +79,7 @@ public class BNLJoinExec extends BinaryPhysicalExec {
 
   @Override
   protected void compile() {
-//    if (hasJoinQual) {
-//      joinQual = context.getPrecompiledEval(inSchema, joinQual);
-//    }
-    if (joinContext.hasJoinQual()) {
-      joinContext.setPrecompiledJoinQual(context, inSchema);
-    }
+    joinContext.setPrecompiledJoinQual(context, inSchema);
   }
 
   public JoinNode getPlan() {
@@ -196,14 +180,9 @@ public class BNLJoinExec extends BinaryPhysicalExec {
       }
 
       frameTuple.set(leftTuple, rightIterator.next());
-//      if (hasJoinQual) {
-      if (joinContext.hasJoinQual()) {
-//        if (joinQual.eval(inSchema, frameTuple).isTrue()) {
-        if (joinContext.getJoinQual().eval(inSchema, frameTuple).isTrue()) {
-          projector.eval(frameTuple, outputTuple);
-          return outputTuple;
-        }
-      } else {
+
+      if (joinContext.evalQual(inSchema, frameTuple) &&
+          joinContext.evalFilter(inSchema, frameTuple)) {
         projector.eval(frameTuple, outputTuple);
         return outputTuple;
       }
@@ -231,8 +210,6 @@ public class BNLJoinExec extends BinaryPhysicalExec {
     leftTupleSlots = null;
     rightIterator = null;
     leftIterator = null;
-//    plan = null;
-//    joinQual = null;
     joinContext = null;
     projector = null;
   }

@@ -307,7 +307,8 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
 
           frameTuple.set(nextLeft, aTuple);
 //          if (joinQual.eval(inSchema, frameTuple).asBool()) {
-          if (joinContext.getJoinQual().eval(inSchema, frameTuple).isTrue()) {
+          if (joinContext.evalQual(inSchema, frameTuple) &&
+              joinContext.evalFilter(inSchema, frameTuple)) {
             projector.eval(frameTuple, outTuple);
             return outTuple;
           } else {
@@ -330,7 +331,8 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
             frameTuple.set(nextLeft, aTuple);
 
 //            if (joinQual.eval(inSchema, frameTuple).asBool()) {
-            if (joinContext.getJoinQual().eval(inSchema, frameTuple).isTrue()) {
+            if (joinContext.evalQual(inSchema, frameTuple) &&
+                joinContext.evalFilter(inSchema, frameTuple)) {
               projector.eval(frameTuple, outTuple);
               return outTuple;
             } else {

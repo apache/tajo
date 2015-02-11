@@ -850,7 +850,8 @@ public class ProjectionPushDownRule extends
     // So, we should prevent dividing the binary operator into more subexpressions.
     if (term.getType() != EvalType.FIELD &&
         !(term instanceof BinaryEval) &&
-        !(term.getType() == EvalType.ROW_CONSTANT)) {
+        term.getType() != EvalType.ROW_CONSTANT &&
+        term.getType() != EvalType.CONST) {
       String refName = ctx.addExpr(term);
       EvalTreeUtil.replace(cnf, term, new FieldEval(refName, term.getValueType()));
     }
@@ -875,6 +876,22 @@ public class ProjectionPushDownRule extends
 
       joinQualReference = newContext.addExpr(node.getJoinQual());
       newContext.addNecessaryReferences(node.getJoinQual());
+    }
+    String joinFilterReference = null;
+    if (node.hasJoinFilter()) {
+      for (EvalNode eachFilter : AlgebraicUtil.toConjunctiveNormalFormArray(node.getJoinFilter())) {
+        if (eachFilter instanceof BinaryEval) {
+          BinaryEval binaryFilter = (BinaryEval) eachFilter;
+
+          for (int i = 0; i < 2; i++) {
+            EvalNode term = binaryFilter.getChild(i);
+            pushDownIfComplexTermInJoinCondition(newContext, eachFilter, term);
+          }
+        }
+      }
+
+      joinFilterReference = newContext.addExpr(node.getJoinFilter());
+      newContext.addNecessaryReferences(node.getJoinFilter());
     }
 
     String [] referenceNames = null;
@@ -902,6 +919,16 @@ public class ProjectionPushDownRule extends
         throw new PlanningException("Join condition must be evaluated in the proper Join Node: " + joinQualReference);
       } else {
         node.setJoinQual(target.getEvalTree());
+        newContext.targetListMgr.markAsEvaluated(target);
+      }
+    }
+
+    if (node.hasJoinFilter()) {
+      Target target = context.targetListMgr.getTarget(joinFilterReference);
+      if (newContext.targetListMgr.isEvaluated(joinFilterReference)) {
+        throw new PlanningException("Join filter must be evaluated in the proper Join Node: " + joinFilterReference);
+      } else {
+        node.setJoinFilter(target.getEvalTree());
         newContext.targetListMgr.markAsEvaluated(target);
       }
     }
