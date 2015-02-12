@@ -400,8 +400,10 @@ public class TajoMasterClientService extends AbstractService {
           infoBuilder.setStartTime(queryInfo.getStartTime());
           infoBuilder.setFinishTime(System.currentTimeMillis());
           infoBuilder.setProgress(queryInfo.getProgress());
-          infoBuilder.setQueryMasterPort(queryInfo.getQueryMasterPort());
-          infoBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
+          if(queryInfo.getQueryMasterHost() != null){
+            infoBuilder.setQueryMasterPort(queryInfo.getQueryMasterPort());
+            infoBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
+          }
 
           builder.addQueryList(infoBuilder.build());
         }
@@ -433,8 +435,10 @@ public class TajoMasterClientService extends AbstractService {
           infoBuilder.setStartTime(queryInfo.getStartTime());
           infoBuilder.setFinishTime(queryInfo.getFinishTime());
           infoBuilder.setProgress(queryInfo.getProgress());
-          infoBuilder.setQueryMasterPort(queryInfo.getQueryMasterPort());
-          infoBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
+          if(queryInfo.getQueryMasterHost() != null){
+            infoBuilder.setQueryMasterPort(queryInfo.getQueryMasterPort());
+            infoBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
+          }
 
           builder.addQueryList(infoBuilder.build());
         }
