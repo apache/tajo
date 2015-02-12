@@ -184,7 +184,6 @@
 					TID INT NOT NULL,
 					PARTITION_NAME VARCHAR2(128),
 					ORDINAL_POSITION INT NOT NULL,
-					PARTITION_VALUE VARCHAR2(1024),
 					PATH VARCHAR2(4000),
 					FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE,
 					CONSTRAINT C_PARTITION_UNIQUE UNIQUE (TID, PARTITION_NAME)
@@ -194,6 +193,20 @@
   		<tns:Object order="19" type="index" name="PARTITIONS_IDX_TID" dependsOn="PARTITIONS">
   			<tns:sql><![CDATA[CREATE INDEX PARTITIONS_IDX_TID on PARTITIONS (TID)]]></tns:sql>
   		</tns:Object>
+      <tns:Object order="20" type="table" name="PARTITION_KEYS">
+        <tns:sql><![CDATA[
+          CREATE TABLE PARTITION_KEYS (
+            PID INT NOT NULL,
+            IDX INT NOT NULL,
+            PARTITION_VALUE VARCHAR(1024) NULL,
+            CONSTRAINT PARTITION_KEYS_CONST UNIQUE (PID, IDX),
+            FOREIGN KEY (PID) REFERENCES PARTITIONS (PID) ON DELETE CASCADE)
+				)]]>
+        </tns:sql>
+      </tns:Object>
+      <tns:Object order="21" type="index" name="PARTITION_KEYS_IDX" dependsOn="PARTITION_KEYS">
+        <tns:sql><![CDATA[CREATE INDEX PARTITION_KEYS_IDX on PARTITION_KEYS (PARTITION_VALUE)]]></tns:sql>
+      </tns:Object>
     </tns:objects>
   </tns:base>
   <tns:existQueries>

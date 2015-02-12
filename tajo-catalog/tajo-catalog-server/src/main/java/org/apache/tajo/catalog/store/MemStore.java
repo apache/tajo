@@ -498,37 +498,16 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public void addPartitions(CatalogProtos.PartitionsProto partitionDescList) throws CatalogException {
+  public List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName) throws CatalogException {
     throw new RuntimeException("not supported!");
   }
 
   @Override
-  public void addPartition(String databaseName, String tableName, CatalogProtos.PartitionDescProto
-      partitionDescProto) throws CatalogException {
+  public CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
+                                                       String partitionName) throws CatalogException {
     throw new RuntimeException("not supported!");
   }
 
-  @Override
-  public CatalogProtos.PartitionsProto getPartitions(String tableName) throws CatalogException {
-    throw new RuntimeException("not supported!");
-  }
-
-  @Override
-  public CatalogProtos.PartitionDescProto getPartition(String partitionName) throws CatalogException {
-    throw new RuntimeException("not supported!");
-  }
-
-  @Override
-  public void delPartition(String partitionName) throws CatalogException {
-    throw new RuntimeException("not supported!");
-  }
-
-  @Override
-  public void dropPartitions(String tableName) throws CatalogException {
-    throw new RuntimeException("not supported!");
-  }
-  
-  @Override
   public List<TablePartitionProto> getAllPartitions() throws CatalogException {
     throw new UnsupportedOperationException();
   }

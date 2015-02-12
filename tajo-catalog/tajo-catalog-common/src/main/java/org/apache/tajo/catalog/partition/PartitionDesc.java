@@ -19,11 +19,17 @@
 package org.apache.tajo.catalog.partition;
 
 import com.google.common.base.Objects;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.json.GsonObject;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * <code>PartitionDesc</code> presents a table partition.
@@ -31,7 +37,7 @@ import org.apache.tajo.json.GsonObject;
 public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescProto>, Cloneable, GsonObject {
   @Expose protected String partitionName;                      // optional
   @Expose protected int ordinalPosition;                       // required
-  @Expose protected String partitionValue;                     // optional
+  @Expose protected List<PartitionKey> partitionKeys;
   @Expose protected String path;                               // optional
 
   private CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
@@ -42,7 +48,7 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
   public PartitionDesc(PartitionDesc partition) {
     this.partitionName = partition.partitionName;
     this.ordinalPosition = partition.ordinalPosition;
-    this.partitionValue = partition.partitionValue;
+    this.partitionKeys = partition.partitionKeys;
     this.path = partition.path;
   }
 
@@ -50,14 +56,22 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
     if(proto.hasPartitionName()) {
       this.partitionName = proto.getPartitionName();
     }
+
     this.ordinalPosition = proto.getOrdinalPosition();
-    if(proto.hasPartitionValue()) {
-      this.partitionValue = proto.getPartitionValue();
+
+    this.partitionKeys = new ArrayList<PartitionKey>();
+    for(CatalogProtos.PartitionKeyProto keyProto : proto.getPartitionKeysList()) {
+      PartitionKey partitionKey = new PartitionKey(keyProto);
+      this.partitionKeys.add(partitionKey);
     }
+
     if(proto.hasPath()) {
       this.path = proto.getPath();
     }
   }
+
+  public String getPartitionName() { return partitionName; }
+  public void setPartitionName(String partitionName) { this.partitionName = partitionName; }
 
   public void setName(String partitionName) {
     this.partitionName = partitionName;
@@ -74,12 +88,9 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
     return ordinalPosition;
   }
 
-  public void setPartitionValue(String partitionValue) {
-    this.partitionValue = partitionValue;
-  }
-  public String getPartitionValue() {
-    return partitionValue;
-  }
+  public List<PartitionKey> getPartitionKeys() { return partitionKeys; }
+
+  public void setPartitionKeys(List<PartitionKey> partitionKeys) { this.partitionKeys = partitionKeys; }
 
   public void setPath(String path) {
     this.path = path;
@@ -89,7 +100,7 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
   }
 
   public int hashCode() {
-    return Objects.hashCode(partitionName, ordinalPosition, partitionValue, path);
+    return Objects.hashCode(partitionName, ordinalPosition, partitionKeys, path);
   }
 
   public boolean equals(Object o) {
@@ -99,9 +110,9 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
           && partitionName.equals(another.partitionName)) ||
           (partitionName == null && another.partitionName == null));
       eq = eq && (ordinalPosition == another.ordinalPosition);
-      eq = eq && ((partitionValue != null && another.partitionValue != null
-                     && partitionValue.equals(another.partitionValue))
-                 || (partitionValue == null && another.partitionValue == null));
+      eq = eq && ((partitionKeys != null && another.partitionKeys != null
+                     && partitionKeys.equals(another.partitionKeys))
+                 || (partitionKeys == null && another.partitionKeys == null));
       eq = eq && ((path != null && another.path != null && path.equals(another.path)) ||
           (path == null && another.path == null));
       return eq;
@@ -117,13 +128,16 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
     }
 
     if(this.partitionName != null) {
-      builder.setPartitionName(partitionName);
+      builder.setPartitionName(this.partitionName);
     }
 
     builder.setOrdinalPosition(this.ordinalPosition);
 
-    if (this.partitionValue != null) {
-      builder.setPartitionValue(this.partitionValue);
+    builder.clearPartitionKeys();
+    if (this.partitionKeys != null) {
+      for(PartitionKey partitionKey : this.partitionKeys) {
+        builder.addPartitionKeys(partitionKey.getProto());
+      }
     }
 
     if(this.path != null) {
@@ -134,8 +148,9 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
   }
 
   public String toString() {
-    StringBuilder sb = new StringBuilder("name: " + partitionName);
-    return sb.toString();
+    Gson gson = new GsonBuilder().setPrettyPrinting().
+      excludeFieldsWithoutExposeAnnotation().create();
+    return gson.toJson(this);
   }
 
   @Override
@@ -152,7 +167,7 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
     desc.builder = CatalogProtos.PartitionDescProto.newBuilder();
     desc.partitionName = partitionName;
     desc.ordinalPosition = ordinalPosition;
-    desc.partitionValue = partitionValue;
+    desc.partitionKeys = partitionKeys;
     desc.path = path;
 
     return desc;

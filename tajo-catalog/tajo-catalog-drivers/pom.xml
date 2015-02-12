@@ -79,7 +79,7 @@
     <profile>
       <id>hcatalog-0.13.1</id>
       <activation>
-        <activeByDefault>false</activeByDefault>
+        <activeByDefault>true</activeByDefault>
       </activation>
       <modules>
         <module>tajo-hcatalog</module>

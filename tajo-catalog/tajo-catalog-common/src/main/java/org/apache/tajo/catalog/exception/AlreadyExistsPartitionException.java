@@ -15,8 +15,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.tajo.catalog;
 
-public enum AlterTableType {
-    RENAME_TABLE, RENAME_COLUMN, ADD_COLUMN, ADD_PARTITION, DROP_PARTITION
+package org.apache.tajo.catalog.exception;
+
+public class AlreadyExistsPartitionException extends RuntimeException {
+
+  private static final long serialVersionUID = 277182608283894930L;
+
+  public AlreadyExistsPartitionException(String message) {
+    super(message);
+  }
+
+  public AlreadyExistsPartitionException(String databaseName, String tableName, String partitionName) {
+    super(String.format("ERROR: \"%s already exist in \"%s.%s\"", partitionName, databaseName, tableName));
+  }
+
 }

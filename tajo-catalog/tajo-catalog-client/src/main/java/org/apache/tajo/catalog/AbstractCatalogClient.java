@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
@@ -38,6 +39,7 @@ import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.ProtoUtil;
 
+import javax.xml.ws.Response;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -410,7 +412,50 @@ public abstract class AbstractCatalogClient implements CatalogService {
       return false;
     }
   }
-  
+
+  @Override
+  public final PartitionDescProto getPartition(final String databaseName, final String tableName,
+                                               final String partitionName) {
+    try {
+      return new ServerCallable<PartitionDescProto>(this.pool, getCatalogServerAddr(), CatalogProtocol.class, false) {
+        public PartitionDescProto call(NettyClientBase client) throws ServiceException {
+
+          PartitionIdentifierProto.Builder builder = PartitionIdentifierProto.newBuilder();
+          builder.setDatabaseName(databaseName);
+          builder.setTableName(tableName);
+          builder.setPartitionName(partitionName);
+
+          CatalogProtocolService.BlockingInterface stub = getStub(client);
+          return stub.getPartitionByPartitionName(null, builder.build());
+        }
+      }.withRetries();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return null;
+    }
+  }
+
+  @Override
+  public final List<PartitionDescProto> getPartitions(final String databaseName, final String tableName) {
+    try {
+      return new ServerCallable<List<PartitionDescProto>>(this.pool, getCatalogServerAddr(), CatalogProtocol.class,
+        false) {
+        public List<PartitionDescProto> call(NettyClientBase client) throws ServiceException {
+
+          PartitionIdentifierProto.Builder builder = PartitionIdentifierProto.newBuilder();
+          builder.setDatabaseName(databaseName);
+          builder.setTableName(tableName);
+
+          CatalogProtocolService.BlockingInterface stub = getStub(client);
+          PartitionsProto response = stub.getPartitionsByTableName(null, builder.build());
+          return response.getPartitionList();
+        }
+      }.withRetries();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return null;
+    }
+  }
   @Override
   public List<TablePartitionProto> getAllPartitions() {
     try {

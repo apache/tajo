@@ -24,10 +24,9 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.partition.PartitionKey;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
@@ -40,8 +39,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
+import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
 
 /**
@@ -250,17 +252,72 @@ public class TestHCatalogStore {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
     }
 
-
     Schema partitionSchema = table.getPartitionMethod().getExpressionSchema();
     Schema partitionSchema1 = table1.getPartitionMethod().getExpressionSchema();
     assertEquals(partitionSchema.size(), partitionSchema1.size());
+
     for (int i = 0; i < partitionSchema.size(); i++) {
       assertEquals(partitionSchema.getColumn(i).getSimpleName(), partitionSchema1.getColumn(i).getSimpleName());
     }
 
+    testAddPartition(table1.getPath(), NATION, "10");
+    testAddPartition(table1.getPath(), NATION, "20");
+
+    testDropPartition(NATION, "10");
+    testDropPartition(NATION, "20");
+
+    CatalogProtos.PartitionDescProto partition = store.getPartition(DB_NAME, NATION, "n_nationkey=10");
+    assertNull(partition);
+
+    partition = store.getPartition(DB_NAME, NATION, "n_nationkey=20");
+    assertNull(partition);
+
     store.dropTable(DB_NAME, NATION);
   }
 
+
+  private void testAddPartition(URI uri, String tableName, String partitionValue) throws Exception {
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(DB_NAME + "." + tableName);
+    alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
+
+    Path path = new Path(uri.getPath(), "n_nationkey=" + partitionValue);
+
+    PartitionDesc partitionDesc = new PartitionDesc();
+    partitionDesc.setName("n_nationkey=" + partitionValue);
+
+    List<PartitionKey> partitionKeyList = new ArrayList<PartitionKey>();
+    partitionKeyList.add(new PartitionKey(partitionValue, 0));
+    partitionDesc.setPartitionKeys(partitionKeyList);
+    partitionDesc.setPath(path.toString());
+
+    alterTableDesc.setPartitionDesc(partitionDesc);
+
+    store.alterTable(alterTableDesc.getProto());
+
+    CatalogProtos.PartitionDescProto resultDesc = store.getPartition(DB_NAME, NATION, "n_nationkey=" + partitionValue);
+
+    assertNotNull(resultDesc);
+    assertEquals(resultDesc.getPartitionName(), "n_nationkey=" + partitionValue);
+    assertEquals(resultDesc.getPath(), uri.toString() + "/n_nationkey=" + partitionValue);
+    assertEquals(resultDesc.getPartitionKeysCount(), 1);
+    assertEquals(resultDesc.getPartitionKeys(0).getIdx(), 0);
+    assertEquals(resultDesc.getPartitionKeys(0).getPartitionValue(), partitionValue);
+  }
+
+
+  private void testDropPartition(String tableName,  String partitionValue) throws Exception {
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(DB_NAME + "." + tableName);
+    alterTableDesc.setAlterTableType(AlterTableType.DROP_PARTITION);
+
+    PartitionDesc partitionDesc = new PartitionDesc();
+    partitionDesc.setName("n_nationkey=" + partitionValue);
+
+    alterTableDesc.setPartitionDesc(partitionDesc);
+
+    store.alterTable(alterTableDesc.getProto());
+  }
 
   @Test
   public void testGetAllTableNames() throws Exception{
