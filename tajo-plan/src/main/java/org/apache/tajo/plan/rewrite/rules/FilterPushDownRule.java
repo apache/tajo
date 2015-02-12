@@ -292,6 +292,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
             context.pushingDownFilters.add(eachOnEval);
           } else {
             outerJoinPredicationEvals.add(eachOnEval);
+//            outerJoinFilterEvalsExcludePredication.add(eachOnEval);
           }
         }
       }

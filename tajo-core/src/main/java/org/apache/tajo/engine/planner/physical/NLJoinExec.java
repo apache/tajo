@@ -18,53 +18,25 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.engine.planner.Projector;
-import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 
-public class NLJoinExec extends BinaryPhysicalExec {
-  // from logical plan
-//  private JoinNode plan;
-//  private EvalNode joinQual;
-  private JoinExecContext joinContext;
+public class NLJoinExec extends AbstractJoinExec {
 
   // temporal tuples and states for nested loop join
   private boolean needNewOuter;
-  private FrameTuple frameTuple;
   private Tuple outerTuple = null;
   private Tuple innerTuple = null;
-  private Tuple outTuple = null;
-
-  // projection
-  private final Projector projector;
 
   public NLJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer,
       PhysicalExec inner) {
-    super(context, plan.getInSchema(), plan.getOutSchema(), outer, inner);
-//    this.plan = plan;
-
-//    if (plan.hasJoinQual()) {
-//      this.joinQual = plan.getJoinQual();
-//    }
-    this.joinContext = new JoinExecContext(plan);
-
-    // for projection
-    projector = new Projector(context, inSchema, outSchema, plan.getTargets());
+    super(context, plan, outer, inner);
 
     // for join
     needNewOuter = true;
-    frameTuple = new FrameTuple();
-    outTuple = new VTuple(outSchema.size());
-  }
-
-  public JoinNode getPlan() {
-    return this.joinContext.getPlan();
   }
 
   public Tuple next() throws IOException {
@@ -84,24 +56,14 @@ public class NLJoinExec extends BinaryPhysicalExec {
         continue;
       }
 
-      frameTuple.set(outerTuple, innerTuple);
+//      frameTuple.set(outerTuple, innerTuple);
+      updateFrameTuple(outerTuple, innerTuple);
 
-      if (joinContext.evalQual(inSchema, frameTuple) &&
-          joinContext.evalFilter(inSchema, frameTuple)) {
-        projector.eval(frameTuple, outTuple);
-        return outTuple;
+      if (evalQual()) {
+        if (evalFilter()) {
+          return projectAndReturn();
+        }
       }
-//      if (joinQual != null) {
-//      if (joinContext.hasJoinQual()) {
-////        if (joinQual.eval(inSchema, frameTuple).isTrue()) {
-//        if (joinContext.getJoinQual().eval(inSchema, frameTuple).isTrue()) {
-//          projector.eval(frameTuple, outTuple);
-//          return outTuple;
-//        }
-//      } else {
-//        projector.eval(frameTuple, outTuple);
-//        return outTuple;
-//      }
     }
     return null;
   }

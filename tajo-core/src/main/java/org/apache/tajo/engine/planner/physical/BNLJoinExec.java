@@ -18,13 +18,8 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.engine.planner.Projector;
-import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -32,8 +27,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class BNLJoinExec extends BinaryPhysicalExec {
-  private JoinExecContext joinContext;
+public class BNLJoinExec extends AbstractJoinExec {
 
   private List<Tuple> leftTupleSlots;
   private List<Tuple> rightTupleSlots;
@@ -44,46 +38,25 @@ public class BNLJoinExec extends BinaryPhysicalExec {
   private boolean rightEnd;
 
   // temporal tuples and states for nested loop join
-  private FrameTuple frameTuple;
   private Tuple leftTuple = null;
-  private Tuple outputTuple = null;
   private Tuple rightNext = null;
 
   private final int TUPLE_SLOT_SIZE = 10000;
 
-  // projection
-  private Projector projector;
-
   public BNLJoinExec(final TaskAttemptContext context, final JoinNode plan,
                      final PhysicalExec leftExec, PhysicalExec rightExec) {
-    super(context, plan.getInSchema(), plan.getOutSchema(), leftExec, rightExec);
-    this.joinContext = new JoinExecContext(plan);
+    super(context, plan, leftExec, rightExec);
     this.leftTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
     this.rightTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
     this.leftIterator = leftTupleSlots.iterator();
     this.rightIterator = rightTupleSlots.iterator();
     this.rightEnd = false;
     this.leftEnd = false;
-
-    // for projection
-    if (!plan.hasTargets()) {
-      plan.setTargets(PlannerUtil.schemaToTargets(outSchema));
-    }
-
-    projector = new Projector(context, inSchema, outSchema, plan.getTargets());
-
-    // for join
-    frameTuple = new FrameTuple();
-    outputTuple = new VTuple(outSchema.size());
   }
 
   @Override
   protected void compile() {
-    joinContext.setPrecompiledJoinQual(context, inSchema);
-  }
-
-  public JoinNode getPlan() {
-    return joinContext.getPlan();
+    setPrecompiledJoinPredicates();
   }
 
   public Tuple next() throws IOException {
@@ -179,12 +152,13 @@ public class BNLJoinExec extends BinaryPhysicalExec {
         }
       }
 
-      frameTuple.set(leftTuple, rightIterator.next());
+//      frameTuple.set(leftTuple, rightIterator.next());
+      updateFrameTuple(leftTuple, rightIterator.next());
 
-      if (joinContext.evalQual(inSchema, frameTuple) &&
-          joinContext.evalFilter(inSchema, frameTuple)) {
-        projector.eval(frameTuple, outputTuple);
-        return outputTuple;
+      if (evalQual()) {
+        if (evalFilter()) {
+          return projectAndReturn();
+        }
       }
     }
     return null;
@@ -210,7 +184,5 @@ public class BNLJoinExec extends BinaryPhysicalExec {
     leftTupleSlots = null;
     rightIterator = null;
     leftIterator = null;
-    joinContext = null;
-    projector = null;
   }
 }

@@ -20,12 +20,10 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.engine.codegen.CompilationError;
-import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -34,18 +32,12 @@ import java.io.IOException;
 import java.util.*;
 
 
-public class HashFullOuterJoinExec extends BinaryPhysicalExec {
-  // from logical plan
-//  protected JoinNode plan;
-//  protected EvalNode joinQual;
-  protected JoinExecContext joinContext;
+public class HashFullOuterJoinExec extends AbstractJoinExec {
 
   protected List<Column[]> joinKeyPairs;
 
   // temporal tuples and states for nested loop join
   protected boolean first = true;
-  protected FrameTuple frameTuple;
-  protected Tuple outTuple = null;
   protected Map<Tuple, List<Tuple>> tupleSlots;
   protected Iterator<Tuple> iterator = null;
   protected Tuple leftTuple;
@@ -57,20 +49,14 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
   protected boolean finished = false;
   protected boolean shouldGetLeftTuple = true;
 
-  // projection
-  protected final Projector projector;
-
   private int rightNumCols;
   private int leftNumCols;
   private Map<Tuple, Boolean> matched;
 
   public HashFullOuterJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer,
                                PhysicalExec inner) {
-    super(context, SchemaUtil.merge(outer.getSchema(), inner.getSchema()),
+    super(context, plan, SchemaUtil.merge(outer.getSchema(), inner.getSchema()),
         plan.getOutSchema(), outer, inner);
-//    this.plan = plan;
-//    this.joinQual = plan.getJoinQual();
-    this.joinContext = new JoinExecContext(plan);
     this.tupleSlots = new HashMap<Tuple, List<Tuple>>(10000);
 
     // this hashmap mirrors the evolution of the tupleSlots, with the same keys. For each join key,
@@ -78,10 +64,7 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
     this.matched = new HashMap<Tuple, Boolean>(10000);
 
     // HashJoin only can manage equi join key pairs.
-//    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, outer.getSchema(), inner.getSchema(),
-//        false);
-
-    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinContext.getJoinQual(), outer.getSchema(), inner.getSchema(),
+    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(getJoinQual(), outer.getSchema(), inner.getSchema(),
         false);
 
     leftKeyList = new int[joinKeyPairs.size()];
@@ -95,12 +78,7 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
       rightKeyList[i] = inner.getSchema().getColumnId(joinKeyPairs.get(i)[1].getQualifiedName());
     }
 
-    // for projection
-    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
-
     // for join
-    frameTuple = new FrameTuple();
-    outTuple = new VTuple(outSchema.size());
     leftKeyTuple = new VTuple(leftKeyList.length);
 
     leftNumCols = outer.getSchema().size();
@@ -109,8 +87,7 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
 
   @Override
   protected void compile() throws CompilationError {
-//    joinQual = context.getPrecompiledEval(inSchema, joinQual);
-    joinContext.setPrecompiledJoinQual(context, inSchema);
+    setPrecompiledJoinPredicates();
   }
 
   protected void getKeyLeftTuple(final Tuple outerTuple, Tuple keyTuple) {
@@ -142,6 +119,9 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
   }
 
   public Tuple next() throws IOException {
+    if (finished) {
+      return null;
+    }
     if (first) {
       loadRightToHashTable();
     }
@@ -158,14 +138,17 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
           Tuple unmatchedRightTuple = getNextUnmatchedRight();
           if( unmatchedRightTuple == null) {
             finished = true;
-            outTuple = null;
+//            outTuple = null;
             return null;
           } else {
             Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
-            frameTuple.set(nullPaddedTuple, unmatchedRightTuple);
-            projector.eval(frameTuple, outTuple);
+//            frameTuple.set(nullPaddedTuple, unmatchedRightTuple);
+            updateFrameTuple(nullPaddedTuple, unmatchedRightTuple);
 
-            return outTuple;
+//            return outTuple;
+            if (evalFilter()) {
+              return projectAndReturn();
+            }
           }
         }
 
@@ -179,23 +162,27 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
           //this left tuple doesn't have a match on the right.But full outer join => we should keep it anyway
           //output a tuple with the nulls padded rightTuple
           Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
-          frameTuple.set(leftTuple, nullPaddedTuple);
-          projector.eval(frameTuple, outTuple);
+//          frameTuple.set(leftTuple, nullPaddedTuple);
+          updateFrameTuple(leftTuple, nullPaddedTuple);
           // we simulate we found a match, which is exactly the null padded one
           shouldGetLeftTuple = true;
-          return outTuple;
+//          return outTuple;
+          if (evalFilter()) {
+            return projectAndReturn();
+          }
         }
       }
 
       // getting a next right tuple on in-memory hash table.
       rightTuple = iterator.next();
-      frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
+//      frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
+      updateFrameTuple(leftTuple, rightTuple);
 
 //      if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if both tuples are joinable
-      if (joinContext.evalQual(inSchema, frameTuple) &&
-          joinContext.evalFilter(inSchema, frameTuple)) {
-        projector.eval(frameTuple, outTuple);
-        found = true;
+      if (evalQual()) {
+        if (evalFilter()) {
+          found = true;
+        }
         getKeyLeftTuple(leftTuple, leftKeyTuple);
         matched.put(leftKeyTuple, true);
       }
@@ -208,7 +195,8 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
         break;
       }
     }
-    return outTuple;
+//    return outTuple;
+    return projectAndReturn();
   }
 
   protected void loadRightToHashTable() throws IOException {
@@ -254,14 +242,6 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
     tupleSlots = null;
     matched = null;
     iterator = null;
-//    plan = null;
-//    joinQual = null;
-    joinContext = null;
-  }
-
-  public JoinNode getPlan() {
-//    return this.plan;
-    return this.joinContext.getPlan();
   }
 }
 
