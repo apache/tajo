@@ -119,10 +119,8 @@ public class HashJoinExec extends AbstractJoinExec {
 
       // getting a next right tuple on in-memory hash table.
       rightTuple = iterator.next();
-//      frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
-      updateFrameTuple(leftTuple, rightTuple);
-//      if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if both tuples are joinable
-      if (evalQual()) {
+      updateFrameTuple(leftTuple, rightTuple); // evaluate a join condition on both tuples
+      if (evalQual()) { // if both tuples are joinable
         if (evalFilter()) {
           found = true;
         }

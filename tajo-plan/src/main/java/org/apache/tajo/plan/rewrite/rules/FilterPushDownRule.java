@@ -292,7 +292,6 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
             context.pushingDownFilters.add(eachOnEval);
           } else {
             outerJoinPredicationEvals.add(eachOnEval);
-//            outerJoinFilterEvalsExcludePredication.add(eachOnEval);
           }
         }
       }
@@ -369,7 +368,6 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       context.pushingDownFilters.removeAll(matched);
     }
 
-//    context.pushingDownFilters.addAll(outerJoinFilterEvalsExcludePredication);
     context.pushingDownFilters.addAll(thetaJoinFilter);
     return joinNode;
   }

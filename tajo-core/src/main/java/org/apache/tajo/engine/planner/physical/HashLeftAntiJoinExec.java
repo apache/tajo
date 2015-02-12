@@ -84,10 +84,11 @@ public class HashLeftAntiJoinExec extends HashJoinExec {
         iterator = rightTuples.iterator();
       } else {
         // if not found, it returns a tuple.
-//        frameTuple.set(leftTuple, rightNullTuple);
         updateFrameTuple(leftTuple, rightNullTuple);
         if (evalFilter()) {
           return projectAndReturn();
+        } else {
+          continue;
         }
       }
 
@@ -96,10 +97,8 @@ public class HashLeftAntiJoinExec extends HashJoinExec {
       notFound = true;
       while (!context.isStopped() && notFound && iterator.hasNext()) {
         rightTuple = iterator.next();
-//        frameTuple.set(leftTuple, rightTuple);
         updateFrameTuple(leftTuple, rightTuple);
-//        if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if the matched one is found
-        if (evalQual()) {
+        if (evalQual()) { // if the matched one is found
           if (evalFilter()) {
             notFound = false;
           }
@@ -107,7 +106,6 @@ public class HashLeftAntiJoinExec extends HashJoinExec {
       }
 
       if (notFound) { // if there is no matched tuple
-//        frameTuple.set(leftTuple, rightNullTuple);
         updateFrameTuple(leftTuple, rightNullTuple);
         if (evalFilter()) {
           break;

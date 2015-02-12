@@ -138,16 +138,14 @@ public class HashFullOuterJoinExec extends AbstractJoinExec {
           Tuple unmatchedRightTuple = getNextUnmatchedRight();
           if( unmatchedRightTuple == null) {
             finished = true;
-//            outTuple = null;
             return null;
           } else {
             Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
-//            frameTuple.set(nullPaddedTuple, unmatchedRightTuple);
             updateFrameTuple(nullPaddedTuple, unmatchedRightTuple);
-
-//            return outTuple;
             if (evalFilter()) {
               return projectAndReturn();
+            } else {
+              continue;
             }
           }
         }
@@ -162,24 +160,22 @@ public class HashFullOuterJoinExec extends AbstractJoinExec {
           //this left tuple doesn't have a match on the right.But full outer join => we should keep it anyway
           //output a tuple with the nulls padded rightTuple
           Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
-//          frameTuple.set(leftTuple, nullPaddedTuple);
           updateFrameTuple(leftTuple, nullPaddedTuple);
           // we simulate we found a match, which is exactly the null padded one
           shouldGetLeftTuple = true;
-//          return outTuple;
           if (evalFilter()) {
             return projectAndReturn();
+          } else {
+            continue;
           }
         }
       }
 
       // getting a next right tuple on in-memory hash table.
       rightTuple = iterator.next();
-//      frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
-      updateFrameTuple(leftTuple, rightTuple);
+      updateFrameTuple(leftTuple, rightTuple); // evaluate a join condition on both tuples
 
-//      if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if both tuples are joinable
-      if (evalQual()) {
+      if (evalQual()) { // if both tuples are joinable
         if (evalFilter()) {
           found = true;
         }
@@ -195,7 +191,6 @@ public class HashFullOuterJoinExec extends AbstractJoinExec {
         break;
       }
     }
-//    return outTuple;
     return projectAndReturn();
   }
 

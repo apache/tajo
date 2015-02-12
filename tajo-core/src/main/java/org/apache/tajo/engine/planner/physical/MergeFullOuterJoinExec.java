@@ -125,7 +125,6 @@ public class MergeFullOuterJoinExec extends AbstractJoinExec {
           if((leftTuple == null) && (rightTuple != null)){
             // output a tuple with the nulls padded leftTuple
             Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
-//            frameTuple.set(nullPaddedTuple, rightTuple);
             updateFrameTuple(nullPaddedTuple, rightTuple);
             // we simulate we found a match, which is exactly the null padded one
             rightTuple = rightChild.next();
@@ -139,7 +138,6 @@ public class MergeFullOuterJoinExec extends AbstractJoinExec {
           if((leftTuple != null) && (rightTuple == null)){
             // output a tuple with the nulls padded leftTuple
             Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
-//            frameTuple.set(leftTuple, nullPaddedTuple);
             updateFrameTuple(leftTuple, nullPaddedTuple);
             // we simulate we found a match, which is exactly the null padded one
             leftTuple = leftChild.next();
@@ -189,7 +187,6 @@ public class MergeFullOuterJoinExec extends AbstractJoinExec {
             //before getting a new tuple from the right,  a leftnullpadded tuple should be built
             //output a tuple with the nulls padded leftTuple
             Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
-//            frameTuple.set(nullPaddedTuple, rightTuple);
             updateFrameTuple(nullPaddedTuple, rightTuple);
             // BEFORE RETURN, MOVE FORWARD
             rightTuple = rightChild.next();
@@ -197,7 +194,6 @@ public class MergeFullOuterJoinExec extends AbstractJoinExec {
               end = true;
             }
 
-//            return outTuple;
             doProject();
             return returnWithFilterIgnore();
 
@@ -205,7 +201,6 @@ public class MergeFullOuterJoinExec extends AbstractJoinExec {
             // before getting a new tuple from the left,  a rightnullpadded tuple should be built
             // output a tuple with the nulls padded rightTuple
             Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
-//            frameTuple.set(leftTuple, nullPaddedTuple);
             updateFrameTuple(leftTuple, nullPaddedTuple);
             // we simulate we found a match, which is exactly the null padded one
             // BEFORE RETURN, MOVE FORWARD
@@ -214,7 +209,6 @@ public class MergeFullOuterJoinExec extends AbstractJoinExec {
               end = true;
             }
 
-//            return outTuple;
             doProject();
             return returnWithFilterIgnore();
 
@@ -285,9 +279,7 @@ public class MergeFullOuterJoinExec extends AbstractJoinExec {
         if(posRightTupleSlots <= (rightTupleSlots.size() -1)) {
           Tuple aTuple = new VTuple(rightTupleSlots.get(posRightTupleSlots));
           posRightTupleSlots = posRightTupleSlots + 1;
-//          frameTuple.set(leftNext, aTuple);
           updateFrameTuple(leftNext, aTuple);
-//          joinQual.eval(inSchema, frameTuple);
           evalQual();
           evalFilter();
           return projectAndReturn();
@@ -301,9 +293,7 @@ public class MergeFullOuterJoinExec extends AbstractJoinExec {
             leftNext = new VTuple (leftTupleSlots.get(posLeftTupleSlots));
             posLeftTupleSlots = posLeftTupleSlots + 1;
 
-//            frameTuple.set(leftNext, aTuple);
             updateFrameTuple(leftNext, aTuple);
-//            joinQual.eval(inSchema, frameTuple);
             evalQual();
             evalFilter();
             return projectAndReturn();

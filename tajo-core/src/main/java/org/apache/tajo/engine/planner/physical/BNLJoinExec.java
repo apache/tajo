@@ -152,7 +152,6 @@ public class BNLJoinExec extends AbstractJoinExec {
         }
       }
 
-//      frameTuple.set(leftTuple, rightIterator.next());
       updateFrameTuple(leftTuple, rightIterator.next());
 
       if (evalQual()) {

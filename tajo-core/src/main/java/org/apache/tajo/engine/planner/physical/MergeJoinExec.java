@@ -138,7 +138,6 @@ public class MergeJoinExec extends AbstractJoinExec {
         innerIterator = innerTupleSlots.iterator();
       }
 
-//      frameTuple.set(outerNext, innerIterator.next());
       updateFrameTuple(outerNext, innerIterator.next());
 
       if (evalQual()) {

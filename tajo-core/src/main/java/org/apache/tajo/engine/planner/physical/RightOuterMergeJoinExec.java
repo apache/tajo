@@ -134,7 +134,6 @@ public class RightOuterMergeJoinExec extends AbstractJoinExec {
           } else {
             // output a tuple with the nulls padded leftTuple
             Tuple nullPaddedTuple = createNullPaddedTuple(leftNumCols);
-//            frameTuple.set(nullPaddedTuple, rightTuple);
             updateFrameTuple(nullPaddedTuple, rightTuple);
 
             // we simulate we found a match, which is exactly the null padded one
@@ -207,7 +206,6 @@ public class RightOuterMergeJoinExec extends AbstractJoinExec {
             // before getting a new tuple from the right,  a left null padded tuple should be built
             // output a tuple with the nulls padded left tuple
             Tuple nullPaddedTuple = createNullPaddedTuple(leftNumCols);
-//            frameTuple.set(nullPaddedTuple, rightTuple);
             updateFrameTuple(nullPaddedTuple, rightTuple);
 
             // we simulate we found a match, which is exactly the null padded one
@@ -294,9 +292,7 @@ public class RightOuterMergeJoinExec extends AbstractJoinExec {
           Tuple aTuple = new VTuple(innerTupleSlots.get(posRightTupleSlots));
           posRightTupleSlots = posRightTupleSlots + 1;
 
-//          frameTuple.set(nextLeft, aTuple);
           updateFrameTuple(nextLeft, aTuple);
-//          if (joinQual.eval(inSchema, frameTuple).asBool()) {
           if (evalQual()) {
             if (evalFilter()) {
               return projectAndReturn();
@@ -304,7 +300,6 @@ public class RightOuterMergeJoinExec extends AbstractJoinExec {
           } else {
             // padding null
             Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
-//            frameTuple.set(nullPaddedTuple, aTuple);
             updateFrameTuple(nullPaddedTuple, aTuple);
             if (evalFilter()) {
               return projectAndReturn();
@@ -320,10 +315,8 @@ public class RightOuterMergeJoinExec extends AbstractJoinExec {
             nextLeft = new VTuple (leftTupleSlots.get(posLeftTupleSlots));
             posLeftTupleSlots = posLeftTupleSlots + 1;
 
-//            frameTuple.set(nextLeft, aTuple);
             updateFrameTuple(nextLeft, aTuple);
 
-//            if (joinQual.eval(inSchema, frameTuple).asBool()) {
             if (evalQual()) {
               if (evalFilter()) {
                 return projectAndReturn();
@@ -331,7 +324,6 @@ public class RightOuterMergeJoinExec extends AbstractJoinExec {
             } else {
               // padding null
               Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
-//              frameTuple.set(nullPaddedTuple, aTuple);
               updateFrameTuple(nullPaddedTuple, aTuple);
               if (evalFilter()) {
                 return projectAndReturn();

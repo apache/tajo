@@ -118,7 +118,6 @@ public class HashLeftOuterJoinExec extends AbstractJoinExec {
         } else {
           // this left tuple doesn't have a match on the right, and output a tuple with the nulls padded rightTuple
           Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
-//          frameTuple.set(leftTuple, nullPaddedTuple);
           updateFrameTuple(leftTuple, nullPaddedTuple);
           // we simulate we found a match, which is exactly the null padded one
           shouldGetLeftTuple = true;
@@ -136,25 +135,12 @@ public class HashLeftOuterJoinExec extends AbstractJoinExec {
         shouldGetLeftTuple = true;
       }
 
-//      frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
-      updateFrameTuple(leftTuple, rightTuple);
-
-      // if there is no join filter, it is always true.
-//      boolean satisfiedWithFilter = joinFilter == null ? true : joinFilter.eval(inSchema, frameTuple).isTrue();
-//      boolean satisfiedWithJoinCondition = joinQual.eval(inSchema, frameTuple).isTrue();
+      updateFrameTuple(leftTuple, rightTuple); // evaluate a join condition on both tuples
 
       // if a composited tuple satisfies with both join filter and join condition
       if (evalQual()) {
         if (evalFilter()) {
           return projectAndReturn();
-        } else {
-          // if join filter is not satisfied, LOJ operator should take the next left tuple.
-//          shouldGetLeftTuple = true;
-//          Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
-////        frameTuple.set(leftTuple, nullPaddedTuple);
-//          updateFrameTuple(leftTuple, nullPaddedTuple);
-//          doProject();
-//          return returnWithFilterIgnore();
         }
       } else {
         // if join condition is not satisfied, the left outer join (LOJ) operator should return the null padded tuple
@@ -163,34 +149,12 @@ public class HashLeftOuterJoinExec extends AbstractJoinExec {
           shouldGetLeftTuple = true;
         }
         Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
-//        frameTuple.set(leftTuple, nullPaddedTuple);
         updateFrameTuple(leftTuple, nullPaddedTuple);
         doProject();
         return returnWithFilterIgnore();
       }
-
-
-//      // if a composited tuple satisfies with both join filter and join condition
-//      if (satisfiedWithFilter && satisfiedWithJoinCondition) {
-//        projector.eval(frameTuple, outTuple);
-//        return outTuple;
-//      } else {
-//
-//        // if join filter is not satisfied, the left outer join (LOJ) operator should return the null padded tuple
-//        // only once. Then, LOJ operator should take the next left tuple.
-//        if (!satisfiedWithFilter) {
-//          shouldGetLeftTuple = true;
-//        }
-//
-//        // null padding
-//        Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
-//        frameTuple.set(leftTuple, nullPaddedTuple);
-//        projector.eval(frameTuple, outTuple);
-//        return outTuple;
-//      }
     }
 
-//    return outTuple;
     return null;
   }
 

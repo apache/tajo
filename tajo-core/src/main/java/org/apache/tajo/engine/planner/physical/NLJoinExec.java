@@ -56,7 +56,6 @@ public class NLJoinExec extends AbstractJoinExec {
         continue;
       }
 
-//      frameTuple.set(outerTuple, innerTuple);
       updateFrameTuple(outerTuple, innerTuple);
 
       if (evalQual()) {

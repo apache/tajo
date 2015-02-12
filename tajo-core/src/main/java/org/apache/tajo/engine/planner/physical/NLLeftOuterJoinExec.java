@@ -64,7 +64,6 @@ public class NLLeftOuterJoinExec extends AbstractJoinExec {
         if(foundAtLeastOneMatch == false){
           //output a tuple with the nulls padded rightTuple
           Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
-//          frameTuple.set(leftTuple, nullPaddedTuple);
           updateFrameTuple(leftTuple, nullPaddedTuple);
           // we simulate we found a match, which is exactly the null padded one
           foundAtLeastOneMatch = true;
@@ -82,7 +81,6 @@ public class NLLeftOuterJoinExec extends AbstractJoinExec {
         }
       }
 
-//      frameTuple.set(leftTuple, rightTuple);
       updateFrameTuple(leftTuple, rightTuple);
 
       if (evalQual()) {
