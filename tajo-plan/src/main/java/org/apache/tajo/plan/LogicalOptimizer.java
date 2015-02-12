@@ -296,10 +296,11 @@ public class LogicalOptimizer {
         EvalNode [] quals = AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual());
         filterFactor = Math.pow(GreedyHeuristicJoinOrderAlgorithm.DEFAULT_SELECTION_FACTOR, quals.length);
       }
-      if (joinNode.hasJoinFilter()) {
-        EvalNode [] filters = AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinFilter());
-        filterFactor *= Math.pow(GreedyHeuristicJoinOrderAlgorithm.DEFAULT_SELECTION_FACTOR, filters.length);
-      }
+      // TODO: join filters must be considered to improve the accuracy of selectivity estimation
+//      if (joinNode.hasJoinFilter()) {
+//        EvalNode [] filters = AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinFilter());
+//        filterFactor *= Math.pow(GreedyHeuristicJoinOrderAlgorithm.DEFAULT_SELECTION_FACTOR, filters.length);
+//      }
 
       if (joinNode.getLeftChild() instanceof RelationNode) {
         joinGraphContext.accumulatedCost = getCost(joinNode.getLeftChild()) * getCost(joinNode.getRightChild())
