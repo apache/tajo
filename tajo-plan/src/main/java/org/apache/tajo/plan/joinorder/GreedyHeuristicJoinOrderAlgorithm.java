@@ -64,10 +64,12 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         if (joinEdgesForGiven != null) {
           joinEdges.addAll(joinEdgesForGiven);
         }
-        for (String relationString: relationStrings) {
-          joinEdgesForGiven = joinGraph.getIncomingEdges(relationString);
-          if (joinEdgesForGiven != null) {
-            joinEdges.addAll(joinEdgesForGiven);
+        if (relationStrings.size() > 1) {
+          for (String relationString: relationStrings) {
+            joinEdgesForGiven = joinGraph.getIncomingEdges(relationString);
+            if (joinEdgesForGiven != null) {
+              joinEdges.addAll(joinEdgesForGiven);
+            }
           }
         }
 
@@ -75,6 +77,10 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         boolean endInnerRelation = false;
         for (JoinEdge joinEdge: joinEdges) {
           switch(joinEdge.getJoinType()) {
+            case LEFT_ANTI:
+            case RIGHT_ANTI:
+            case LEFT_SEMI:
+            case RIGHT_SEMI:
             case LEFT_OUTER:
             case RIGHT_OUTER:
             case FULL_OUTER:
