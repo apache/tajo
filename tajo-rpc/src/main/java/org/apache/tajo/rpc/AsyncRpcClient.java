@@ -67,7 +67,8 @@ public class AsyncRpcClient extends NettyClientBase {
     Class<?> serviceClass = Class.forName(serviceClassName);
     stubMethod = serviceClass.getMethod("newStub", RpcChannel.class);
 
-    initializer = new AsyncRpcClientInitializer(RpcResponse.getDefaultInstance());
+    initializer = new ProtoChannelInitializer(new ClientChannelInboundHandler(), 
+        RpcResponse.getDefaultInstance());
     super.init(addr, initializer, retries);
     rpcChannel = new ProxyRpcChannel();
     this.key = new RpcConnectionKey(addr, protocol, true);
@@ -193,19 +194,7 @@ public class AsyncRpcClient extends NettyClientBase {
         getChannel().remoteAddress()) + ")]: " + message;
   }
 
-  class AsyncRpcClientInitializer extends ProtoChannelInitializer {
-    public AsyncRpcClientInitializer(MessageLite defaultInstance) {
-      super(defaultInstance);
-    }
-
-    @Override
-    protected void initChannel(Channel channel) throws Exception {
-      super.initChannel(channel);
-      ChannelPipeline pipeline = channel.pipeline();
-      pipeline.addLast("handler", new ClientChannelInboundHandler());
-    }
-  }
-
+  @ChannelHandler.Sharable
   private class ClientChannelInboundHandler extends ChannelInboundHandlerAdapter {
 
     synchronized void registerCallback(int seqId, ResponseCallback callback) {

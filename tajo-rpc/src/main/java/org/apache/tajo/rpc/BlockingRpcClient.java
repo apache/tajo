@@ -67,7 +67,7 @@ public class BlockingRpcClient extends NettyClientBase {
     stubMethod = serviceClass.getMethod("newBlockingStub",
         BlockingRpcChannel.class);
 
-    initializer = new BlockingRpcClientInitializer(RpcResponse.getDefaultInstance());
+    initializer = new ProtoChannelInitializer(new ClientChannelInboundHandler(), RpcResponse.getDefaultInstance());
     super.init(addr, initializer, retries);
     rpcChannel = new ProxyRpcChannel();
 
@@ -170,26 +170,8 @@ public class BlockingRpcClient extends NettyClientBase {
     }
   }
 
-  class BlockingRpcClientInitializer extends ProtoChannelInitializer {
-    public BlockingRpcClientInitializer(MessageLite defaultInstance) {
-      super(defaultInstance);
-    }
-
-    @Override
-    protected void initChannel(Channel channel) throws Exception {
-      super.initChannel(channel);
-      ChannelPipeline pipeline = channel.pipeline();
-      pipeline.addLast("handler", new ClientChannelInboundHandler());
-    }
-  }
-
-
-  private class ClientChannelInboundHandler extends ChannelDuplexHandler {
-
-    @Override
-    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
-      super.write(ctx, msg, promise);
-    }
+  @ChannelHandler.Sharable
+  private class ClientChannelInboundHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg)
@@ -222,7 +204,6 @@ public class BlockingRpcClient extends NettyClientBase {
           }
         }
       } finally {
-        ctx.fireChannelRead(msg);
         ReferenceCountUtil.release(msg);
       }
     }

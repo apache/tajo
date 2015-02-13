@@ -63,8 +63,7 @@ public abstract class NettyClientBase implements Closeable {
       .handler(initializer)
       .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
       .option(ChannelOption.SO_RCVBUF, 1048576 * 10)
-      .option(ChannelOption.TCP_NODELAY, true)
-      .option(ChannelOption.SO_KEEPALIVE, true);
+      .option(ChannelOption.TCP_NODELAY, true);
 
     connect(addr);
   }

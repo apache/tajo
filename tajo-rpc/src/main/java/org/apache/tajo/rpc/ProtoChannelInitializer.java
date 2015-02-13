@@ -19,6 +19,7 @@
 package org.apache.tajo.rpc;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.protobuf.ProtobufDecoder;
@@ -28,10 +29,12 @@ import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 
 import com.google.protobuf.MessageLite;
 
-abstract class ProtoChannelInitializer extends ChannelInitializer<Channel> {
+class ProtoChannelInitializer extends ChannelInitializer<Channel> {
   private final MessageLite defaultInstance;
+  private final ChannelHandler handler;
 
-  public ProtoChannelInitializer(MessageLite defaultInstance) {
+  public ProtoChannelInitializer(ChannelHandler handler, MessageLite defaultInstance) {
+    this.handler = handler;
     this.defaultInstance = defaultInstance;
   }
 
@@ -42,5 +45,6 @@ abstract class ProtoChannelInitializer extends ChannelInitializer<Channel> {
     pipeline.addLast("protobufDecoder", new ProtobufDecoder(defaultInstance));
     pipeline.addLast("frameEncoder", new ProtobufVarint32LengthFieldPrepender());
     pipeline.addLast("protobufEncoder", new ProtobufEncoder());
+    pipeline.addLast("handler", handler);
   }
 }

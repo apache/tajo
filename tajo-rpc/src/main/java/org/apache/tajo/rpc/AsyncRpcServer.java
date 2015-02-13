@@ -52,23 +52,11 @@ public class AsyncRpcServer extends NettyServerBase {
     Method method = serviceClass.getMethod("newReflectiveService", interfaceClass);
     this.service = (Service) method.invoke(null, instance);
 
-    this.initializer = new AsyncRpcServerInitializer(RpcRequest.getDefaultInstance());
+    this.initializer = new ProtoChannelInitializer(new ServerHandler(), RpcRequest.getDefaultInstance());
     super.init(this.initializer, workerNum);
   }
 
-  class AsyncRpcServerInitializer extends ProtoChannelInitializer {
-    public AsyncRpcServerInitializer(MessageLite defaultInstance) {
-      super(defaultInstance);
-    }
-
-    @Override
-    protected void initChannel(Channel channel) throws Exception {
-      super.initChannel(channel);
-      ChannelPipeline pipeline = channel.pipeline();
-      pipeline.addLast("handler", new ServerHandler());
-    }
-  }
-
+  @ChannelHandler.Sharable
   private class ServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override

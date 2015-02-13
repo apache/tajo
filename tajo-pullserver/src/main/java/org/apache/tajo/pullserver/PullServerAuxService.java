@@ -19,14 +19,12 @@
 package org.apache.tajo.pullserver;
 
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.TooLongFrameException;
 import io.netty.handler.codec.http.*;
@@ -65,6 +63,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.pullserver.retriever.FileChunk;
+import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreDecoder;
 import org.apache.tajo.storage.Tuple;
@@ -84,7 +83,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadFactory;
 
 public class PullServerAuxService extends AuxiliaryService {
 
@@ -208,17 +206,9 @@ public class PullServerAuxService extends AuxiliaryService {
       readaheadLength = conf.getInt(SHUFFLE_READAHEAD_BYTES,
           DEFAULT_SHUFFLE_READAHEAD_BYTES);
 
-      ThreadFactory bossFactory = new ThreadFactoryBuilder()
-          .setNameFormat("PullServerAuxService Netty Boss #%d")
-          .build();
-      ThreadFactory workerFactory = new ThreadFactoryBuilder()
-          .setNameFormat("PullServerAuxService Netty Worker #%d")
-          .build();
-
-      selector = new ServerBootstrap()
-              .group(new NioEventLoopGroup(0, bossFactory),
-                      new NioEventLoopGroup(0, workerFactory))
-              .option(ChannelOption.TCP_NODELAY, true);
+      selector = RpcChannelFactory.createServerChannelFactory("PullServerAuxService", 0)
+                  .option(ChannelOption.TCP_NODELAY, true)
+                  .childOption(ChannelOption.TCP_NODELAY, true);
 
       localFS = new LocalFileSystem();
       super.init(new Configuration(conf));
@@ -332,6 +322,7 @@ public class PullServerAuxService extends AuxiliaryService {
     }
   }
 
+  @ChannelHandler.Sharable
   class PullServer extends ChannelInboundHandlerAdapter {
     private final Configuration conf;
     private final LocalDirAllocator lDirAlloc = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);

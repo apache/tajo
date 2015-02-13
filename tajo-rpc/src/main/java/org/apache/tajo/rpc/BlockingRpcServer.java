@@ -21,7 +21,6 @@ package org.apache.tajo.rpc;
 import com.google.protobuf.BlockingService;
 import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.Message;
-import com.google.protobuf.MessageLite;
 import com.google.protobuf.RpcController;
 
 import io.netty.channel.*;
@@ -57,24 +56,12 @@ public class BlockingRpcServer extends NettyServerBase {
         "newReflectiveBlockingService", interfaceClass);
 
     this.service = (BlockingService) method.invoke(null, instance);
-    this.initializer = new BlockingRpcServerInitializer(RpcRequest.getDefaultInstance());
+    this.initializer = new ProtoChannelInitializer(new ServerHandler(), RpcRequest.getDefaultInstance());
 
     super.init(this.initializer, workerNum);
   }
 
-  class BlockingRpcServerInitializer extends ProtoChannelInitializer {
-    public BlockingRpcServerInitializer(MessageLite defaultInstance) {
-      super(defaultInstance);
-    }
-
-    @Override
-    protected void initChannel(Channel channel) throws Exception {
-      super.initChannel(channel);
-      ChannelPipeline pipeline = channel.pipeline();
-      pipeline.addLast("handler", new ServerHandler());
-    }
-  }
-
+  @ChannelHandler.Sharable
   private class ServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
