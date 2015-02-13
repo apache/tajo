@@ -35,7 +35,6 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
@@ -1362,6 +1361,18 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
 
       sql = "DELETE FROM " + TB_STATISTICS + " WHERE " + COL_TABLES_PK + " = ? ";
+
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(sql);
+      }
+
+      pstmt = conn.prepareStatement(sql);
+      pstmt.setInt(1, tableId);
+      pstmt.executeUpdate();
+      pstmt.close();
+
+      sql = "DELETE FROM " + TB_PARTTION_KEYS
+        + " WHERE PID IN (SELECT PID FROM " + TB_PARTTIONS + " WHERE " + COL_TABLES_PK + "= ? )";
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(sql);
