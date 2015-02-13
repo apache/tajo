@@ -811,6 +811,9 @@ public class TestCatalog {
     assertEquals(retrieved.getPartitionMethod().getPartitionType(), CatalogProtos.PartitionType.COLUMN);
     assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(0).getSimpleName(), "id");
 
+    CatalogProtos.PartitionDescProto partition = catalog.getPartition(DEFAULT_DATABASE_NAME, "addedtable", "id=10");
+    assertNull(partition);
+
     testAddPartition(tableName, 0, "10");
     testAddPartition(tableName, 1, "20");
 

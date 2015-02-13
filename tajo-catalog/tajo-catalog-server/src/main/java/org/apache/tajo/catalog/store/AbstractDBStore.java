@@ -965,7 +965,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
     }
     String databaseName = splitted[0];
     String tableName = splitted[1];
-
+    String partitionName = null;
+    CatalogProtos.PartitionDescProto partitionDesc = null;
     try {
 
       int databaseId = getDatabaseId(databaseName);
@@ -991,9 +992,19 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           addNewColumn(tableId, alterTableDescProto.getAddColumn());
           break;
         case ADD_PARTITION:
+          partitionName = alterTableDescProto.getPartitionDesc().getPartitionName();
+          partitionDesc = getPartition(databaseName, tableName, partitionName);
+          if(partitionDesc != null) {
+            throw new AlreadyExistsPartitionException(databaseName, tableName, partitionName);
+          }
           addPartition(tableId, alterTableDescProto.getPartitionDesc());
           break;
         case DROP_PARTITION:
+          partitionName = alterTableDescProto.getPartitionDesc().getPartitionName();
+          partitionDesc = getPartition(databaseName, tableName, partitionName);
+          if(partitionDesc == null) {
+            throw new NoSuchPartitionException(databaseName, tableName, partitionName);
+          }
           dropPartition(tableId, alterTableDescProto.getPartitionDesc().getPartitionName());
           break;
         default:
@@ -1952,6 +1963,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         builder.setPath(res.getString("PATH"));
         builder.setPartitionName(partitionName);
         setPartitionKeys(res.getInt("PID"), builder);
+      } else {
+        return null;
       }
     } catch (SQLException se) {
       throw new CatalogException(se);

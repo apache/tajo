@@ -33,7 +33,7 @@ public class NoSuchPartitionException extends RuntimeException {
   }
 
   public NoSuchPartitionException(String databaseName, String tableName, String partitionName) {
-    super(String.format("ERROR: \"%s does not exist in \"%s.%s\"", partitionName, databaseName, tableName));
+    super(String.format("ERROR: \"%s\" does not exist in \"%s.%s\".", partitionName, databaseName, tableName));
   }
 
 }
