@@ -22,6 +22,7 @@ import com.google.protobuf.*;
 import com.google.protobuf.Descriptors.MethodDescriptor;
 
 import io.netty.channel.*;
+import io.netty.util.concurrent.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
@@ -33,6 +34,7 @@ import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.apache.tajo.rpc.RpcConnectionPool.RpcConnectionKey;
@@ -121,7 +123,17 @@ public class BlockingRpcClient extends NettyClientBase {
       ProtoCallFuture callFuture =
           new ProtoCallFuture(controller, responsePrototype);
       requests.put(nextSeqId, callFuture);
-      getChannel().writeAndFlush(rpcRequest);
+
+      ChannelPromise channelPromise = getChannel().newPromise();
+      channelPromise.addListener(new GenericFutureListener<ChannelFuture>() {
+        @Override
+        public void operationComplete(ChannelFuture future) throws Exception {
+          if (!future.isSuccess()) {
+            handler.exceptionCaught(null, new ServiceException(future.cause()));
+          }
+        }
+      });
+      getChannel().writeAndFlush(rpcRequest, channelPromise);
 
       try {
         return callFuture.get(60, TimeUnit.SECONDS);
@@ -220,7 +232,9 @@ public class BlockingRpcClient extends NettyClientBase {
       } else {
         LOG.error("RPC Exception:" + cause.getMessage());
       }
-      ctx.close();
+      if (ctx != null) {
+        ctx.close();
+      }
     }
   }
 
