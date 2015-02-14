@@ -25,7 +25,6 @@ import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.client.TajoClient;
-import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.engine.planner.global.GlobalPlanner;
@@ -69,7 +68,7 @@ public class TestKillQuery {
     cluster = new TajoTestingCluster();
     cluster.startMiniClusterInLocal(1);
     conf = cluster.getConfiguration();
-    client = new TajoClientImpl(cluster.getConfiguration());
+    client = cluster.newTajoClient();
     File file = TPCH.getDataFile("lineitem");
     client.executeQueryAndGetResult("create external table default.lineitem (l_orderkey int, l_partkey int) "
         + "using text location 'file://" + file.getAbsolutePath() + "'");
