@@ -436,15 +436,16 @@ public class PullServerAuxService extends AuxiliaryService {
           // Write the content.
           if (chunks.size() == 0) {
             HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
-            ctx.writeAndFlush(response);
+
             if (!HttpHeaders.isKeepAlive(request)) {
-              ctx.close();
+              ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
             } else {
               response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
               ctx.writeAndFlush(response);
             }
           } else {
             FileChunk[] file = chunks.toArray(new FileChunk[chunks.size()]);
+            ChannelFuture writeFuture = null;
             HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
             long totalSize = 0;
             for (FileChunk chunk : file) {
@@ -456,9 +457,7 @@ public class PullServerAuxService extends AuxiliaryService {
               response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
             }
             // Write the initial line and the header.
-            ctx.writeAndFlush(response);
-
-            ChannelFuture writeFuture = null;
+            writeFuture = ctx.writeAndFlush(response);
 
             for (FileChunk chunk : file) {
               writeFuture = sendFile(ctx, chunk);
@@ -524,7 +523,7 @@ public class PullServerAuxService extends AuxiliaryService {
       response.headers().set(HttpHeaders.Names.CONTENT_TYPE, "text/plain; charset=UTF-8");
 
       // Close the connection as soon as the error message is sent.
-      ctx.channel().writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+      ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
     }
 
     @Override

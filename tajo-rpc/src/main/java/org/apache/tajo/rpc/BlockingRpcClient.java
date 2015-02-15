@@ -94,6 +94,16 @@ public class BlockingRpcClient extends NettyClientBase {
     return this.rpcChannel;
   }
 
+  @Override
+  public void close() {
+    for(ProtoCallFuture callback: requests.values()) {
+      callback.setFailed("BlockingRpcClient terminates all the connections",
+          new ServiceException("BlockingRpcClient terminates all the connections"));
+    }
+
+    super.close();
+  }
+
   private class ProxyRpcChannel implements BlockingRpcChannel {
 
     private final ClientChannelInboundHandler handler;

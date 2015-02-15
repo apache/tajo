@@ -92,6 +92,26 @@ public class AsyncRpcClient extends NettyClientBase {
     return this.rpcChannel;
   }
 
+  protected void sendExceptions(String message) {
+    for(Map.Entry<Integer, ResponseCallback> callbackEntry: requests.entrySet()) {
+      ResponseCallback callback = callbackEntry.getValue();
+      Integer id = callbackEntry.getKey();
+
+      RpcResponse.Builder responseBuilder = RpcResponse.newBuilder()
+          .setErrorMessage(message)
+          .setId(id);
+
+      callback.run(responseBuilder.build());
+    }
+  }
+
+  @Override
+  public void close() {
+    sendExceptions("AsyncRpcClient terminates all the connections");
+
+    super.close();
+  }
+
   private class ProxyRpcChannel implements RpcChannel {
     private final ClientChannelInboundHandler handler;
 
@@ -230,17 +250,8 @@ public class AsyncRpcClient extends NettyClientBase {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
         throws Exception {
       LOG.error(getRemoteAddress() + "," + protocol + "," + cause.getMessage(), cause);
-      
-      for(Map.Entry<Integer, ResponseCallback> callbackEntry: requests.entrySet()) {
-        ResponseCallback callback = callbackEntry.getValue();
-        Integer id = callbackEntry.getKey();
 
-        RpcResponse.Builder responseBuilder = RpcResponse.newBuilder()
-            .setErrorMessage(cause.getMessage())
-            .setId(id);
-        
-        callback.run(responseBuilder.build());
-      }
+      sendExceptions(cause.getMessage());
       
       if(LOG.isDebugEnabled()) {
         LOG.error(cause.getMessage(), cause);

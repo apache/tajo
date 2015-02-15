@@ -107,13 +107,14 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
         if (file == null) {
           HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
           if (!HttpHeaders.isKeepAlive(request)) {
-            ctx.write(response).addListener(ChannelFutureListener.CLOSE);
+            ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
           } else {
             response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
-            ctx.write(response);
+            ctx.writeAndFlush(response);
           }
         } else {
           HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+          ChannelFuture writeFuture = null;
           long totalSize = 0;
           for (FileChunk chunk : file) {
             totalSize += chunk.length();
@@ -124,9 +125,7 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
             response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
           }
           // Write the initial line and the header.
-          ctx.write(response);
-
-          ChannelFuture writeFuture = null;
+          writeFuture = ctx.writeAndFlush(response);
 
           for (FileChunk chunk : file) {
             writeFuture = sendFile(ctx, chunk);
@@ -148,12 +147,6 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
     }
   }
 
-  @Override
-  public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-    ctx.flush();
-    super.channelReadComplete(ctx);
-  }
-
   private ChannelFuture sendFile(ChannelHandlerContext ctx,
                                  FileChunk file) throws IOException {
     RandomAccessFile raf;
@@ -167,14 +160,14 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
     ChannelFuture lastContentFuture;
     if (ctx.pipeline().get(SslHandler.class) != null) {
       // Cannot use zero-copy with HTTPS.
-      lastContentFuture = ctx.write(new HttpChunkedInput(new ChunkedFile(raf, file.startOffset(),
+      lastContentFuture = ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(raf, file.startOffset(),
           file.length(), 8192)));
     } else {
       // No encryption - use zero-copy.
       final FileRegion region = new DefaultFileRegion(raf.getChannel(),
           file.startOffset(), file.length());
-      writeFuture = ctx.write(region);
-      lastContentFuture = ctx.write(LastHttpContent.EMPTY_LAST_CONTENT);
+      writeFuture = ctx.writeAndFlush(region);
+      lastContentFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
       writeFuture.addListener(new ChannelFutureListener() {
         public void operationComplete(ChannelFuture future) {
           if (region.refCnt() > 0) {
