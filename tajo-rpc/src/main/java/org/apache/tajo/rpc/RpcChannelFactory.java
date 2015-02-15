@@ -51,6 +51,10 @@ public final class RpcChannelFactory {
   public static EventLoopGroup getSharedClientEventloopGroup() {
     return getSharedClientEventloopGroup(DEFAULT_WORKER_NUM);
   }
+
+  protected static boolean isEventLoopGroupTerminated() {
+    return ((loopGroup == null) || (loopGroup.isShuttingDown()));
+  }
   
   /**
   * make this factory static thus all clients can share its thread pool.
@@ -60,9 +64,9 @@ public final class RpcChannelFactory {
   */
   public static EventLoopGroup getSharedClientEventloopGroup(int workerNum){
     //shared woker and boss pool
-    if (loopGroup == null) {
+    if (isEventLoopGroupTerminated()) {
       synchronized (lockObjectForLoopGroup) {
-        if (loopGroup == null) {
+        if (isEventLoopGroupTerminated()) {
           loopGroup = createClientEventloopGroup("Internal-Client", workerNum);
         }
       }

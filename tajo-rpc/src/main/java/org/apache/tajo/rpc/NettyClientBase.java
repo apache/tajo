@@ -61,6 +61,7 @@ public abstract class NettyClientBase implements Closeable {
     this.bootstrap
       .channel(NioSocketChannel.class)
       .handler(initializer)
+      .option(ChannelOption.SO_REUSEADDR, true)
       .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
       .option(ChannelOption.SO_RCVBUF, 1048576 * 10)
       .option(ChannelOption.TCP_NODELAY, true);
@@ -112,6 +113,8 @@ public abstract class NettyClientBase implements Closeable {
     @Override
     public void operationComplete(ChannelFuture channelFuture) throws Exception {
       if (!channelFuture.isSuccess()) {
+        channelFuture.channel().close();
+
         if (numRetries > retryCount.getAndIncrement()) {
           final GenericFutureListener<ChannelFuture> currentListener = this;
 

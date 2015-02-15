@@ -29,15 +29,15 @@ import io.netty.util.internal.logging.CommonsLoggerFactory;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class RpcConnectionPool {
   private static final Log LOG = LogFactory.getLog(RpcConnectionPool.class);
 
-  private ConcurrentMap<RpcConnectionKey, NettyClientBase> connections =
-      new ConcurrentHashMap<RpcConnectionKey, NettyClientBase>();
+  private Map<RpcConnectionKey, NettyClientBase> connections =
+      new HashMap<RpcConnectionKey, NettyClientBase>();
   private ChannelGroup accepted = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
   private static RpcConnectionPool instance;
@@ -150,9 +150,10 @@ public class RpcConnectionPool {
           LOG.error("close client pool error", e);
         }
       }
+
+      connections.clear();
     }
 
-    connections.clear();
     try {
       accepted.close().awaitUninterruptibly(10, TimeUnit.SECONDS);
     } catch (Throwable t) {
