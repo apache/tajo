@@ -223,7 +223,7 @@ public class TPCH extends BenchmarkSet {
     }
     try {
       tajo.createExternalTable(tableName, getSchema(tableName),
-          new Path(dataDir, tableName), meta, partitionMethodDesc);
+          new Path(dataDir, tableName).toUri(), meta, partitionMethodDesc);
     } catch (SQLException s) {
       throw new ServiceException(s);
     }

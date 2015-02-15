@@ -30,8 +30,8 @@ import org.apache.tajo.datum.Int4Datum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.plan.logical.NodeType;
-import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.FileUtil;
@@ -337,11 +337,12 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
   @Test
   public final void testBroadcastBasicJoin() throws Exception {
     ResultSet res = executeQuery();
-    TajoResultSet ts = (TajoResultSet)res;
+    assertEquals(FetchResultSet.class, res.getClass());
+    FetchResultSet resultSet = (FetchResultSet)res;
     assertResultSet(res);
     cleanupQuery(res);
 
-    MasterPlan plan = getQueryPlan(ts.getQueryId());
+    MasterPlan plan = getQueryPlan(resultSet.getQueryId());
     ExecutionBlock rootEB = plan.getRoot();
 
     /*
@@ -361,10 +362,13 @@ public class TestJoinBroadcast extends QueryTestCaseBase {
   @Test
   public final void testBroadcastTwoPartJoin() throws Exception {
     ResultSet res = executeQuery();
+    assertEquals(FetchResultSet.class, res.getClass());
+    FetchResultSet resultSet = (FetchResultSet)res;
+
     assertResultSet(res);
     cleanupQuery(res);
 
-    MasterPlan plan = getQueryPlan(((TajoResultSet)res).getQueryId());
+    MasterPlan plan = getQueryPlan(resultSet.getQueryId());
     ExecutionBlock rootEB = plan.getRoot();
 
     /*

@@ -18,12 +18,11 @@
 
 package org.apache.tajo.client;
 
-import net.jcip.annotations.NotThreadSafe;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.protobuf.ServiceException;
-
+import net.jcip.annotations.NotThreadSafe;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
@@ -40,7 +39,6 @@ import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.QueryHistoryProto;
 import org.apache.tajo.ipc.ClientProtos.QueryInfoProto;
 import org.apache.tajo.ipc.ClientProtos.StageHistoryProto;
-import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -69,7 +67,7 @@ public class TestTajoClient {
   public static void setUp() throws Exception {
     cluster = TpchTestBase.getInstance().getTestingCluster();
     conf = cluster.getConfiguration();
-    client = new TajoClientImpl(conf);
+    client = cluster.newTajoClient();
     testDir = CommonTestingUtil.getTestDir();
   }
 
@@ -248,7 +246,7 @@ public class TestTajoClient {
 
     assertFalse(client.existTable(tableName));
 
-    client.createExternalTable(tableName, BackendTestingUtil.mockupSchema, tablePath, BackendTestingUtil.mockupMeta);
+    client.createExternalTable(tableName, BackendTestingUtil.mockupSchema, tablePath.toUri(), BackendTestingUtil.mockupMeta);
     assertTrue(client.existTable(tableName));
     client.dropTable(tableName);
     assertFalse(client.existTable(tableName));
@@ -266,7 +264,7 @@ public class TestTajoClient {
 
     assertFalse(client.existTable(tableName));
 
-    client.createExternalTable(tableName, BackendTestingUtil.mockupSchema, tablePath, BackendTestingUtil.mockupMeta);
+    client.createExternalTable(tableName, BackendTestingUtil.mockupSchema, tablePath.toUri(), BackendTestingUtil.mockupMeta);
     assertTrue(client.existTable(tableName));
     client.dropTable(tableName, true);
     assertFalse(client.existTable(tableName));
@@ -400,7 +398,7 @@ public class TestTajoClient {
     assertNotNull(tablePath);
     assertFalse(client.existTable(tableName1));
 
-    client.createExternalTable("table3", BackendTestingUtil.mockupSchema, tablePath, BackendTestingUtil.mockupMeta);
+    client.createExternalTable("table3", BackendTestingUtil.mockupSchema, tablePath.toUri(), BackendTestingUtil.mockupMeta);
     assertTrue(client.existTable(tableName1));
 
     TableDesc desc = client.getTableDesc(tableName1);
@@ -663,7 +661,7 @@ public class TestTajoClient {
       assertNotNull(queryStatus);
       assertTrue(TajoClientUtil.isQueryComplete(queryStatus.getState()));
 
-      TajoResultSet resultSet = (TajoResultSet) client.getQueryResult(queryId);
+      ResultSet resultSet = client.getQueryResult(queryId);
       assertNotNull(resultSet);
 
       int count = 0;
@@ -675,27 +673,6 @@ public class TestTajoClient {
     } finally {
       client.closeQuery(queryId);
     }
-  }
-
-  @Test
-  public void testNullCharSession() throws Exception {
-    String sql =
-        "select\n" +
-            "  c_custkey,\n" +
-            "  orders.o_orderkey,\n" +
-            "  orders.o_orderstatus \n" +
-            "from\n" +
-            "  orders full outer join customer on c_custkey = o_orderkey\n" +
-            "order by\n" +
-            "  c_custkey,\n" +
-            "  orders.o_orderkey;\n";
-
-    Map<String, String> variables = new HashMap<String, String>();
-    variables.put(SessionVars.NULL_CHAR.keyname(), "\\\\T");
-    client.updateSessionVariables(variables);
-    TajoResultSet resultDesc = (TajoResultSet)client.executeQueryAndGetResult(sql);
-    resultDesc.close();
-    assertNullCharSessionVar(resultDesc.getTableDesc());
   }
 
   @Test
@@ -714,7 +691,7 @@ public class TestTajoClient {
     Map<String, String> variables = new HashMap<String, String>();
     variables.put(SessionVars.NULL_CHAR.keyname(), "\\\\T");
     client.updateSessionVariables(variables);
-    TajoResultSet res = (TajoResultSet)client.executeQueryAndGetResult(sql);
+    ResultSet res = client.executeQueryAndGetResult(sql);
     res.close();
 
     TableDesc resultDesc = client.getTableDesc("nullcharsession");

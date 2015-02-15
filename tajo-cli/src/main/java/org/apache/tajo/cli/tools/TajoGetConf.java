@@ -23,6 +23,7 @@ import org.apache.commons.cli.*;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.service.ServiceTrackerFactory;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -114,9 +115,9 @@ public class TajoGetConf {
       return;
     } else if (hostName != null && port != null) {
       tajoConf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName + ":" + port);
-      tajoClient = new TajoClientImpl(tajoConf);
+      tajoClient = new TajoClientImpl(ServiceTrackerFactory.get(tajoConf));
     } else if (hostName == null && port == null) {
-      tajoClient = new TajoClientImpl(tajoConf);
+      tajoClient = new TajoClientImpl(ServiceTrackerFactory.get(tajoConf));
     }
 
     processConfKey(writer, param);

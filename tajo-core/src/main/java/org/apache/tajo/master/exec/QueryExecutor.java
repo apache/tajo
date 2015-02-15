@@ -233,15 +233,16 @@ public class QueryExecutor {
       desc.getStats().setNumRows(TajoConstants.UNKNOWN_ROW_NUMBER);
     }
 
-    QueryId queryId = QueryIdFactory.newQueryId(context.getResourceManager().getSeedQueryId());
+    QueryInfo queryInfo = context.getQueryJobManager().createNewSimpleQuery(queryContext, session, query,
+        (LogicalRootNode) plan.getRootBlock().getRoot());
 
-    NonForwardQueryResultScanner queryResultScanner =
-        new NonForwardQueryResultFileScanner(context.getConf(), session.getSessionId(), queryId, scanNode, desc, maxRow);
+    NonForwardQueryResultScanner queryResultScanner = new NonForwardQueryResultFileScanner(
+        context.getConf(), session.getSessionId(), queryInfo.getQueryId(), scanNode, desc, maxRow);
 
     queryResultScanner.init();
     session.addNonForwardQueryResultScanner(queryResultScanner);
 
-    response.setQueryId(queryId.getProto());
+    response.setQueryId(queryInfo.getQueryId().getProto());
     response.setMaxRowNum(maxRow);
     response.setTableDesc(desc.getProto());
     response.setResult(IPCUtil.buildOkRequestResult());

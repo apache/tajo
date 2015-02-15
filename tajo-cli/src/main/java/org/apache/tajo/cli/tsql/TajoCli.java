@@ -34,6 +34,7 @@ import org.apache.tajo.client.*;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.FileUtil;
 
 import java.io.*;
@@ -228,9 +229,9 @@ public class TajoCli {
       throw new RuntimeException("cannot find valid Tajo server address");
     } else if (hostName != null && port != null) {
       conf.setVar(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName+":"+port);
-      client = new TajoClientImpl(conf, baseDatabase);
+      client = new TajoClientImpl(ServiceTrackerFactory.get(conf), baseDatabase);
     } else if (hostName == null && port == null) {
-      client = new TajoClientImpl(conf, baseDatabase);
+      client = new TajoClientImpl(ServiceTrackerFactory.get(conf), baseDatabase);
     }
 
     try {
@@ -563,7 +564,8 @@ public class TajoCli {
       if (response.getMaxRowNum() < 0 && queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
         displayFormatter.printResult(sout, sin, desc, responseTime, res);
       } else {
-        res = TajoClientUtil.createResultSet(conf, client, response);
+        int fetchRows = conf.getIntVar(TajoConf.ConfVars.$RESULT_SET_FETCH_ROWNUM);
+        res = TajoClientUtil.createResultSet(client, response, fetchRows);
         displayFormatter.printResult(sout, sin, desc, responseTime, res);
       }
     } catch (Throwable t) {
@@ -624,7 +626,8 @@ public class TajoCli {
           float responseTime = ((float)(status.getFinishTime() - status.getSubmitTime()) / 1000.0f);
           ClientProtos.GetQueryResultResponse response = client.getResultResponse(queryId);
           if (status.hasResult()) {
-            res = TajoClientUtil.createResultSet(conf, client, queryId, response);
+            int fetchRows = conf.getIntVar(TajoConf.ConfVars.$RESULT_SET_FETCH_ROWNUM);
+            res = TajoClientUtil.createResultSet(client, queryId, response, fetchRows);
             TableDesc desc = new TableDesc(response.getTableDesc());
             displayFormatter.printResult(sout, sin, desc, responseTime, res);
           } else {
