@@ -630,17 +630,20 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     BiMap<EvalNode, EvalNode> matched = HashBiMap.create();
 
     for (EvalNode eval : context.pushingDownFilters) {
-//      if (ignoreJoin && EvalTreeUtil.isJoinQual(block, null, null, eval, true)) {
-      if (ignoreJoin) {
-        if (node instanceof JoinNode) {
-          JoinNode joinNode = (JoinNode) node;
-          if (EvalTreeUtil.isJoinQual(block, null, null, eval, true) &&
-              LogicalPlanner.checkIfBeEvaluatedAtJoin(block, eval, joinNode, topMost)) {
-            notMatched.add(eval);
-            continue;
-          }
-        }
+      if (ignoreJoin && EvalTreeUtil.isJoinQual(block, null, null, eval, true)) {
+        notMatched.add(eval);
+        continue;
       }
+//      if (ignoreJoin) {
+//        if (node instanceof JoinNode) {
+//          JoinNode joinNode = (JoinNode) node;
+//          if (EvalTreeUtil.isJoinQual(block, null, null, eval, true) &&
+//              LogicalPlanner.checkIfBeEvaluatedAtJoin(block, eval, joinNode, topMost)) {
+//            notMatched.add(eval);
+//            continue;
+//          }
+//        }
+//      }
       // If all column is field eval, can push down.
       Set<Column> evalColumns = EvalTreeUtil.findUniqueColumns(eval);
       boolean columnMatched = true;
