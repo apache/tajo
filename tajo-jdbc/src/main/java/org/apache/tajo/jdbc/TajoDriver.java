@@ -16,8 +16,6 @@ package org.apache.tajo.jdbc; /**
  * limitations under the License.
  */
 
-import org.apache.tajo.conf.TajoConf;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.sql.*;
@@ -32,8 +30,6 @@ public class TajoDriver implements Driver, Closeable {
   public static final int JDBC_VERSION_MINOR = 0;
 
   public static final String TAJO_JDBC_URL_PREFIX = "jdbc:tajo:";
-
-  protected static TajoConf jdbcTajoConf = new TajoConf();
 
   static {
     try {
