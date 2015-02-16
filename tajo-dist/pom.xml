@@ -144,8 +144,7 @@
                       run rm -rf lib/tajo-*-${project.version}.jar
 
                       run mkdir -p share/jdbc-dist
-                      run cp -r $ROOT/tajo-jdbc/target/tajo-jdbc-${project.version}.jar ./share/jdbc-dist
-                      run cp -r $ROOT/tajo-jdbc/target/lib/* ./share/jdbc-dist
+                      run cp -r $ROOT/tajo-jdbc/target/tajo-jdbc-${project.version}-jar-with-dependencies.jar ./share/jdbc-dist/tajo-jdbc-${project.version}.jar
 
                       if [ -f $ROOT/tajo-catalog/tajo-catalog-drivers/tajo-hcatalog/target/lib/parquet-hive-bundle-*.jar ]
                       then

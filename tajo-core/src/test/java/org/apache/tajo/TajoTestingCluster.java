@@ -50,6 +50,7 @@ import org.apache.tajo.querymaster.Query;
 import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.querymaster.Stage;
 import org.apache.tajo.querymaster.StageState;
+import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
@@ -619,17 +620,8 @@ public class TajoTestingCluster {
     isTajoClusterRunning = false;
   }
 
-  public static TajoClient newTajoClient() throws Exception {
-    TpchTestBase instance = TpchTestBase.getInstance();
-    TajoTestingCluster util = instance.getTestingCluster();
-    while(true) {
-      if(util.getMaster().isMasterRunning()) {
-        break;
-      }
-      Thread.sleep(1000);
-    }
-    TajoConf conf = util.getConfiguration();
-    return new TajoClientImpl(conf);
+  public TajoClient newTajoClient() throws Exception {
+    return new TajoClientImpl(ServiceTrackerFactory.get(getConfiguration()));
   }
 
   public static ResultSet run(String[] names,
@@ -665,7 +657,7 @@ public class TajoTestingCluster {
       Thread.sleep(1000);
     }
     TajoConf conf = util.getConfiguration();
-    TajoClient client = new TajoClientImpl(conf);
+    TajoClient client = new TajoClientImpl(ServiceTrackerFactory.get(conf));
 
     try {
       return run(names, schemas, tableOption, tables, query, client);
@@ -690,7 +682,7 @@ public class TajoTestingCluster {
       Thread.sleep(1000);
     }
     TajoConf conf = util.getConfiguration();
-    TajoClient client = new TajoClientImpl(conf);
+    TajoClient client = new TajoClientImpl(ServiceTrackerFactory.get(conf));
     try {
       FileSystem fs = util.getDefaultFileSystem();
       Path rootDir = TajoConf.getWarehouseDir(util.getConfiguration());
@@ -720,7 +712,7 @@ public class TajoTestingCluster {
         }
       }
       TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV, tableOption);
-      client.createExternalTable(tableName, schema, tablePath, meta);
+      client.createExternalTable(tableName, schema, tablePath.toUri(), meta);
     } finally {
       client.close();
     }

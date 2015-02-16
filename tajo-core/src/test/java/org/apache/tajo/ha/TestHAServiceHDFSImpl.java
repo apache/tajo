@@ -24,7 +24,6 @@ import org.apache.hadoop.net.NetUtils;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.client.TajoClient;
-import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.TajoMaster;
 import org.apache.tajo.service.ServiceTracker;
@@ -32,9 +31,7 @@ import org.apache.tajo.service.ServiceTrackerFactory;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestHAServiceHDFSImpl  {
   private TajoTestingCluster cluster;
@@ -53,7 +50,7 @@ public class TestHAServiceHDFSImpl  {
 
     cluster.startMiniCluster(1);
     conf = cluster.getConfiguration();
-    client = new TajoClientImpl(conf);
+    client = cluster.newTajoClient();
 
     try {
       FileSystem fs = cluster.getDefaultFileSystem();
@@ -89,7 +86,7 @@ public class TestHAServiceHDFSImpl  {
       assertFalse(cluster.getMaster().isActiveMaster());
       assertTrue(backupMaster.isActiveMaster());
 
-      client = new TajoClientImpl(conf);
+      client = cluster.newTajoClient();
       verifyDataBaseAndTable();
     } finally {
       client.close();

@@ -9,10 +9,14 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.client.*;
+import org.apache.tajo.client.QueryStatus;
+import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoClientImpl;
+import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
-import org.apache.tajo.jdbc.TajoResultSet;
+import org.apache.tajo.jdbc.FetchResultSet;
+import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.JSPUtil;
 import org.apache.tajo.util.TajoIdUtils;
 import org.codehaus.jackson.map.DeserializationConfig;
@@ -29,7 +33,10 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -74,7 +81,7 @@ public class QueryExecutorServlet extends HttpServlet {
 
     try {
       tajoConf = new TajoConf();
-      tajoClient = new TajoClientImpl(tajoConf);
+      tajoClient = new TajoClientImpl(ServiceTrackerFactory.get(tajoConf));
 
       new QueryRunnerCleaner().start();
     } catch (IOException e) {
@@ -355,7 +362,7 @@ public class QueryExecutorServlet extends HttpServlet {
           // non-forwarded INSERT INTO query does not have any query id.
           // In this case, it just returns succeeded query information without printing the query results.
         } else {
-          res = TajoClientUtil.createResultSet(tajoConf, tajoClient, response);
+          res = TajoClientUtil.createResultSet(tajoClient, response, sizeLimit);
           MakeResultText(res, desc);
         }
         progress.set(100);
@@ -436,7 +443,7 @@ public class QueryExecutorServlet extends HttpServlet {
                 ClientProtos.GetQueryResultResponse response = tajoClient.getResultResponse(tajoQueryId);
                 TableDesc desc = CatalogUtil.newTableDesc(response.getTableDesc());
                 tajoConf.setVar(TajoConf.ConfVars.USERNAME, response.getTajoUserName());
-                res = new TajoResultSet(tajoClient, queryId, tajoConf, desc);
+                res = new FetchResultSet(tajoClient, desc.getLogicalSchema(), queryId, sizeLimit);
 
                 MakeResultText(res, desc);
 
