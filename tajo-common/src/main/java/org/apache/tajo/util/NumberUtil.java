@@ -1036,11 +1036,14 @@ public class NumberUtil {
     }
 
     if (Number.class.isAssignableFrom(numberClazz)) {
-      try {
-        Constructor<?> constructor = numberClazz.getConstructor(String.class);
-        returnNumber = (Number) constructor.newInstance(value);
-      } catch (Exception ignored) {
-      }
+        try {
+          Constructor<?> constructor = numberClazz.getConstructor(String.class);
+          returnNumber = (Number) constructor.newInstance(value);
+        } catch (RuntimeException e) {
+          throw e;
+        } catch (Exception ignored) {
+        }
+      
     }
 
     return returnNumber;
