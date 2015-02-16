@@ -154,7 +154,19 @@ public class BNLJoinExec extends AbstractJoinExec {
 
       updateFrameTuple(leftTuple, rightIterator.next());
 
-      if (evalQual()) {
+      if (hasJoinQual()) {
+        if (evalQual()) {
+          if (evalFilter()) {
+            return projectAndReturn();
+          }
+        }
+      } else {
+        /*
+         * BNLJoinExec can be used for the cross join, which involves no join condition.
+         * However, the cross join can involve join filters.
+         * In the following example, the where clause must be evaluated with the join filters instead of the join conditions.
+         * SELECT x, y, z FROM A, B, C WHERE concat (A.x, B.y, C.z) like '%keyword%'
+         */
         if (evalFilter()) {
           return projectAndReturn();
         }

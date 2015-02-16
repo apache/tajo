@@ -162,7 +162,8 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     // get the two operands of the join operation as well as the join type
     JoinType joinType = joinNode.getJoinType();
     EvalNode joinQual = joinNode.getJoinQual();
-    if (joinQual != null && LogicalPlanner.isOuterJoin(joinType)) {
+    boolean isOuterJoin = LogicalPlanner.isOuterJoin(joinType);
+    if (joinQual != null && isOuterJoin) {
       BinaryEval binaryEval = (BinaryEval) joinQual;
       // if both are fields
       if (binaryEval.getLeftExpr().getType() == EvalType.FIELD &&
@@ -235,7 +236,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     List<EvalNode> outerJoinPredicationEvals = new ArrayList<EvalNode>();
     List<EvalNode> outerJoinFilterEvalsExcludePredication = new ArrayList<EvalNode>();
-    if (LogicalPlanner.isOuterJoin(joinNode.getJoinType())) {
+    if (isOuterJoin) {
       // TAJO-853
       // In the case of top most JOIN, all filters except JOIN condition aren't pushed down.
       // That filters are processed by SELECTION NODE.
@@ -305,7 +306,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     List<EvalNode> notMatched = new ArrayList<EvalNode>();
     // Join's input schema = right child output columns + left child output columns
     Map<EvalNode, EvalNode> transformedMap = findCanPushdownAndTransform(context, block, joinNode, left, notMatched,
-        null, true, 0);
+        null, true, 0, isTopMostJoin);
     context.setFiltersTobePushed(transformedMap.keySet());
     visit(context, plan, block, left, stack);
 
@@ -314,7 +315,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     notMatched.clear();
     transformedMap = findCanPushdownAndTransform(context, block, joinNode, right, notMatched, null, true,
-        left.getOutSchema().size());
+        left.getOutSchema().size(), isTopMostJoin);
     context.setFiltersTobePushed(new HashSet<EvalNode>(transformedMap.keySet()));
 
     visit(context, plan, block, right, stack);
@@ -323,12 +324,18 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     context.addFiltersTobePushed(notMatched);
 
     notMatched.clear();
+
+    /*
+     * Join conditions and join filters must be handled separately, especially for outer joins,
+     * because their behaviors can be differ according to that a predicate belongs to join conditions or join filters.
+     */
     List<EvalNode> matched = Lists.newArrayList();
-    if(LogicalPlanner.isOuterJoin(joinNode.getJoinType())) {
+    if(isOuterJoin) {
       matched.addAll(outerJoinPredicationEvals);
     } else {
       for (EvalNode eval : context.pushingDownFilters) {
-        if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, eval, joinNode, isTopMostJoin)) {
+        if (EvalTreeUtil.isJoinQual(block, left.getOutSchema(), right.getOutSchema(), eval, false) &&
+            LogicalPlanner.checkIfBeEvaluatedAtJoin(block, eval, joinNode, isTopMostJoin)) {
           matched.add(eval);
         }
       }
@@ -354,7 +361,16 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     }
 
     matched.clear();
-    matched.addAll(outerJoinFilterEvalsExcludePredication);
+    if (isOuterJoin) {
+      matched.addAll(outerJoinFilterEvalsExcludePredication);
+    } else {
+      for (EvalNode eval : context.pushingDownFilters) {
+        if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, eval, joinNode, isTopMostJoin)) {
+          matched.add(eval);
+        }
+      }
+    }
+
     EvalNode filter = null;
     if (matched.size() > 1) {
       filter = AlgebraicUtil.createSingletonExprFromCNF(
@@ -544,7 +560,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     //copy -> origin
     BiMap<EvalNode, EvalNode> transformedMap = findCanPushdownAndTransform(
-        context, block, projectionNode, childNode, notMatched, null, false, 0);
+        context, block, projectionNode, childNode, notMatched, null, false, 0, false);
 
     context.setFiltersTobePushed(transformedMap.keySet());
 
@@ -603,7 +619,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       FilterPushDownContext context, LogicalPlan.QueryBlock block, Projectable node,
       LogicalNode childNode, List<EvalNode> notMatched,
       Set<String> partitionColumns,
-      boolean ignoreJoin, int columnOffset) throws PlanningException {
+      boolean ignoreJoin, int columnOffset, boolean topMost) throws PlanningException {
     // canonical name -> target
     Map<String, Target> nodeTargetMap = new HashMap<String, Target>();
     for (Target target : node.getTargets()) {
@@ -614,9 +630,16 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     BiMap<EvalNode, EvalNode> matched = HashBiMap.create();
 
     for (EvalNode eval : context.pushingDownFilters) {
-      if (ignoreJoin && EvalTreeUtil.isJoinQual(block, null, null, eval, true)) {
-        notMatched.add(eval);
-        continue;
+//      if (ignoreJoin && EvalTreeUtil.isJoinQual(block, null, null, eval, true)) {
+      if (ignoreJoin) {
+        if (node instanceof JoinNode) {
+          JoinNode joinNode = (JoinNode) node;
+          if (EvalTreeUtil.isJoinQual(block, null, null, eval, true) &&
+              LogicalPlanner.checkIfBeEvaluatedAtJoin(block, eval, joinNode, topMost)) {
+            notMatched.add(eval);
+            continue;
+          }
+        }
       }
       // If all column is field eval, can push down.
       Set<Column> evalColumns = EvalTreeUtil.findUniqueColumns(eval);
@@ -830,7 +853,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     List<EvalNode> notMatched = new ArrayList<EvalNode>();
     // transform
     Map<EvalNode, EvalNode> transformed =
-        findCanPushdownAndTransform(context, block, groupbyNode,groupbyNode.getChild(), notMatched, null, false, 0);
+        findCanPushdownAndTransform(context, block, groupbyNode,groupbyNode.getChild(), notMatched, null, false, 0, false);
 
     context.setFiltersTobePushed(transformed.keySet());
     LogicalNode current = super.visitGroupBy(context, plan, block, groupbyNode, stack);
@@ -895,7 +918,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     // transform
     Map<EvalNode, EvalNode> transformed =
-        findCanPushdownAndTransform(context, block, scanNode, null, notMatched, partitionColumns, true, 0);
+        findCanPushdownAndTransform(context, block, scanNode, null, notMatched, partitionColumns, true, 0, false);
 
     for (EvalNode eval : transformed.keySet()) {
       if (LogicalPlanner.checkIfBeEvaluatedAtRelation(block, eval, scanNode)) {

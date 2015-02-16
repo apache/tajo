@@ -842,6 +842,20 @@ public class ProjectionPushDownRule extends
     return node;
   }
 
+  private static boolean containsColumnsFromMultipleRelations(LogicalPlan plan, EvalNode term) {
+    Set<String> relationNames = TUtil.newHashSet();
+    for (Column eachCol : EvalTreeUtil.findUniqueColumns(term)) {
+      for (QueryBlock eachBlock : plan.getQueryBlocks()) {
+        for (RelationNode eachRel : eachBlock.getRelations()) {
+          if (eachRel.getTableName().equals(eachCol.getQualifier())) {
+            relationNames.add(eachCol.getQualifier());
+          }
+        }
+      }
+    }
+    return relationNames.size() > 1;
+  }
+
   private static void pushDownIfComplexTermInJoinCondition(Context ctx, EvalNode cnf, EvalNode term)
       throws PlanningException {
 
@@ -885,7 +899,9 @@ public class ProjectionPushDownRule extends
 
           for (int i = 0; i < 2; i++) {
             EvalNode term = binaryFilter.getChild(i);
-            pushDownIfComplexTermInJoinCondition(newContext, eachFilter, term);
+            if (!containsColumnsFromMultipleRelations(plan, term)) {
+              pushDownIfComplexTermInJoinCondition(newContext, eachFilter, term);
+            }
           }
         }
       }

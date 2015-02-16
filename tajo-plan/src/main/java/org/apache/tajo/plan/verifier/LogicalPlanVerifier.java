@@ -137,6 +137,10 @@ public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVeri
       ExprsVerifier.verify(context.state, node, node.getJoinQual());
     }
 
+    if (node.hasJoinFilter()) {
+      ExprsVerifier.verify(context.state, node, node.getJoinFilter());
+    }
+
     verifyProjectableOutputSchema(node);
 
     return node;

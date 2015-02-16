@@ -103,7 +103,10 @@ public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
                                       JoinNode joinNode) throws PlanningException {
     if (joinNode.getJoinType() == JoinType.LEFT_OUTER || joinNode.getJoinType() == JoinType.RIGHT_OUTER) {
       JoinEdge edge = new JoinEdge(joinNode.getJoinType(),
-            joinNode.getLeftChild(), joinNode.getRightChild(), joinNode.getJoinQual());
+            joinNode.getLeftChild(), joinNode.getRightChild());
+      if (joinNode.hasJoinQual()) {
+        edge.addJoinQual(joinNode.getJoinQual());
+      }
       if (joinNode.hasJoinFilter()) {
         edge.addJoinFilter(joinNode.getJoinFilter());
       }
@@ -119,42 +122,92 @@ public class JoinGraph extends SimpleUndirectedGraph<String, JoinEdge> {
           edge);
 
       Set<EvalNode> allInOneCnf = new HashSet<EvalNode>();
-      allInOneCnf.add(joinNode.getJoinQual());
+      if (joinNode.hasJoinQual()) {
+        allInOneCnf.add(joinNode.getJoinQual());
+      }
+      if (joinNode.hasJoinFilter()) {
+        allInOneCnf.add(joinNode.getJoinFilter());
+      }
 
       return allInOneCnf;
     } else {
-      Set<EvalNode> cnf = Sets.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual()));
+      String leftRelationName = PlannerUtil.getTopRelationInLineage(plan, joinNode.getLeftChild());
+      String rightRelationName = PlannerUtil.getTopRelationInLineage(plan, joinNode.getRightChild());
 
-      for (EvalNode singleQual : cnf) {
+      JoinEdge edge = getEdge(leftRelationName, rightRelationName);
+      if (edge == null) {
+        edge = new JoinEdge(joinNode.getJoinType(),
+            block.getRelation(leftRelationName), block.getRelation(rightRelationName));
+        addEdge(leftRelationName, rightRelationName, edge);
+      }
+
+      Set<EvalNode> cnf = Sets.newHashSet();
+      if (joinNode.hasJoinQual()) {
+        for (EvalNode qual : AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual())) {
+          cnf.add(qual);
+        }
+      }
+      if (joinNode.hasJoinFilter()) {
+        for (EvalNode filter : AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinFilter())) {
+          cnf.add(filter);
+        }
+      }
+
+      for (EvalNode singleEval : cnf) {
         if (EvalTreeUtil.isJoinQual(block,
             joinNode.getLeftChild().getOutSchema(),
             joinNode.getRightChild().getOutSchema(),
-            singleQual, true)) {
-          String[] relations = guessRelationsFromJoinQual(block, (BinaryEval) singleQual);
-          String leftExprRelName = relations[0];
-          String rightExprRelName = relations[1];
-
-          Collection<String> leftLineage = PlannerUtil.getRelationLineageWithinQueryBlock(plan, joinNode.getLeftChild());
-
-          boolean isLeftExprForLeftTable = leftLineage.contains(leftExprRelName);
-
-          JoinEdge edge = getEdge(leftExprRelName, rightExprRelName);
-          if (edge != null) {
-            edge.addJoinQual(singleQual);
-          } else {
-            if (isLeftExprForLeftTable) {
-              edge = new JoinEdge(joinNode.getJoinType(),
-                  block.getRelation(leftExprRelName), block.getRelation(rightExprRelName), singleQual);
-              addEdge(leftExprRelName, rightExprRelName, edge);
-            } else {
-              edge = new JoinEdge(joinNode.getJoinType(),
-                  block.getRelation(rightExprRelName), block.getRelation(leftExprRelName), singleQual);
-              addEdge(rightExprRelName, leftExprRelName, edge);
-            }
-          }
+            singleEval, true)) {
+          edge.addJoinQual(singleEval);
+        } else {
+          edge.addJoinFilter(singleEval);
         }
       }
+
       return cnf;
+//    } else {
+//      Set<EvalNode> cnf = Sets.newHashSet();
+//      if (joinNode.hasJoinQual()) {
+//        for (EvalNode qual : AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual())) {
+//          cnf.add(qual);
+//        }
+//      }
+//      if (joinNode.hasJoinFilter()) {
+//        for (EvalNode filter : AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinFilter())) {
+//          cnf.add(filter);
+//        }
+//      }
+//
+//      for (EvalNode singleQual : cnf) {
+//        if (EvalTreeUtil.isJoinQual(block,
+//            joinNode.getLeftChild().getOutSchema(),
+//            joinNode.getRightChild().getOutSchema(),
+//            singleQual, true)) {
+//          String[] relations = guessRelationsFromJoinQual(block, (BinaryEval) singleQual);
+//          String leftExprRelName = relations[0];
+//          String rightExprRelName = relations[1];
+//
+//          Collection<String> leftLineage = PlannerUtil.getRelationLineageWithinQueryBlock(plan, joinNode.getLeftChild());
+//
+//          boolean isLeftExprForLeftTable = leftLineage.contains(leftExprRelName);
+//
+//          JoinEdge edge = getEdge(leftExprRelName, rightExprRelName);
+//          if (edge != null) {
+//            edge.addJoinQual(singleQual);
+//          } else {
+//            if (isLeftExprForLeftTable) {
+//              edge = new JoinEdge(joinNode.getJoinType(),
+//                  block.getRelation(leftExprRelName), block.getRelation(rightExprRelName), singleQual);
+//              addEdge(leftExprRelName, rightExprRelName, edge);
+//            } else {
+//              edge = new JoinEdge(joinNode.getJoinType(),
+//                  block.getRelation(rightExprRelName), block.getRelation(leftExprRelName), singleQual);
+//              addEdge(rightExprRelName, leftExprRelName, edge);
+//            }
+//          }
+//        }
+//      }
+//      return cnf;
     }
   }
 }
