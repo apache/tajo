@@ -20,11 +20,8 @@ package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.base.Preconditions;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.utils.TupleUtil;
-import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
@@ -35,16 +32,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
-  // from logical plan
-  private JoinNode joinNode;
-  private EvalNode joinQual;
+public class MergeFullOuterJoinExec extends AbstractJoinExec {
 
   // temporal tuples and states for nested loop join
-  private FrameTuple frameTuple;
   private Tuple leftTuple = null;
   private Tuple rightTuple = null;
-  private Tuple outTuple = null;
   private Tuple leftNext = null;
 
   private List<Tuple> leftTupleSlots;
@@ -57,9 +49,6 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
 
   private boolean end = false;
 
-  // projection
-  private Projector projector;
-
   private int rightNumCols;
   private int leftNumCols;
   private int posRightTupleSlots = -1;
@@ -69,11 +58,9 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
 
   public MergeFullOuterJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftChild,
                                 PhysicalExec rightChild, SortSpec[] leftSortKey, SortSpec[] rightSortKey) {
-    super(context, plan.getInSchema(), plan.getOutSchema(), leftChild, rightChild);
+    super(context, plan, leftChild, rightChild);
     Preconditions.checkArgument(plan.hasJoinQual(), "Sort-merge join is only used for the equi-join, " +
         "but there is no join condition");
-    this.joinNode = plan;
-    this.joinQual = plan.getJoinQual();
 
     this.leftTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
     this.rightTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
@@ -86,30 +73,22 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
     this.tupleComparator = PhysicalPlanUtil.getComparatorsFromJoinQual(
         plan.getJoinQual(), leftChild.getSchema(), rightChild.getSchema());
 
-    // for projection
-    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
-
     // for join
-    frameTuple = new FrameTuple();
-    outTuple = new VTuple(outSchema.size());
-
     leftNumCols = leftChild.getSchema().size();
     rightNumCols = rightChild.getSchema().size();
   }
 
   @Override
   protected void compile() {
-    joinQual = context.getPrecompiledEval(inSchema, joinQual);
-  }
-
-  public JoinNode getPlan(){
-    return this.joinNode;
+    setPrecompiledJoinPredicates();
   }
 
   public Tuple next() throws IOException {
     Tuple previous;
+    boolean gotoBegin = false;
 
     while (!context.isStopped()) {
+      gotoBegin = false;
       boolean newRound = false;
       if((posRightTupleSlots == -1) && (posLeftTupleSlots == -1)) {
         newRound = true;
@@ -146,21 +125,27 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
           if((leftTuple == null) && (rightTuple != null)){
             // output a tuple with the nulls padded leftTuple
             Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
-            frameTuple.set(nullPaddedTuple, rightTuple);
-            projector.eval(frameTuple, outTuple);
+            updateFrameTuple(nullPaddedTuple, rightTuple);
             // we simulate we found a match, which is exactly the null padded one
             rightTuple = rightChild.next();
-            return outTuple;
+            if (evalFilter()) {
+              return projectAndReturn();
+            } else {
+              continue;
+            }
           }
 
           if((leftTuple != null) && (rightTuple == null)){
             // output a tuple with the nulls padded leftTuple
             Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
-            frameTuple.set(leftTuple, nullPaddedTuple);
-            projector.eval(frameTuple, outTuple);
+            updateFrameTuple(leftTuple, nullPaddedTuple);
             // we simulate we found a match, which is exactly the null padded one
             leftTuple = leftChild.next();
-            return outTuple;
+            if (evalFilter()) {
+              return projectAndReturn();
+            } else {
+              continue;
+            }
           }
         } // if end
 
@@ -202,22 +187,21 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
             //before getting a new tuple from the right,  a leftnullpadded tuple should be built
             //output a tuple with the nulls padded leftTuple
             Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(leftNumCols);
-            frameTuple.set(nullPaddedTuple, rightTuple);
-            projector.eval(frameTuple, outTuple);
+            updateFrameTuple(nullPaddedTuple, rightTuple);
             // BEFORE RETURN, MOVE FORWARD
             rightTuple = rightChild.next();
             if(rightTuple == null) {
               end = true;
             }
 
-            return outTuple;
+            doProject();
+            return returnWithFilterIgnore();
 
           } else if (cmp < 0) {
             // before getting a new tuple from the left,  a rightnullpadded tuple should be built
             // output a tuple with the nulls padded rightTuple
             Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
-            frameTuple.set(leftTuple, nullPaddedTuple);
-            projector.eval(frameTuple, outTuple);
+            updateFrameTuple(leftTuple, nullPaddedTuple);
             // we simulate we found a match, which is exactly the null padded one
             // BEFORE RETURN, MOVE FORWARD
             leftTuple = leftChild.next();
@@ -225,10 +209,14 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
               end = true;
             }
 
-            return outTuple;
+            doProject();
+            return returnWithFilterIgnore();
 
           } // if (cmp < 0)
         } //while
+        if (gotoBegin) {
+          continue;
+        }
 
 
         ////////////////////////////////////////////////////////////////////////
@@ -291,10 +279,10 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
         if(posRightTupleSlots <= (rightTupleSlots.size() -1)) {
           Tuple aTuple = new VTuple(rightTupleSlots.get(posRightTupleSlots));
           posRightTupleSlots = posRightTupleSlots + 1;
-          frameTuple.set(leftNext, aTuple);
-          joinQual.eval(inSchema, frameTuple);
-          projector.eval(frameTuple, outTuple);
-          return outTuple;
+          updateFrameTuple(leftNext, aTuple);
+          evalQual();
+          evalFilter();
+          return projectAndReturn();
         } else {
           // right (inner) slots reached end and should be rewind if there are still tuples in the outer slots
           if(posLeftTupleSlots <= (leftTupleSlots.size()-1)) {
@@ -305,10 +293,10 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
             leftNext = new VTuple (leftTupleSlots.get(posLeftTupleSlots));
             posLeftTupleSlots = posLeftTupleSlots + 1;
 
-            frameTuple.set(leftNext, aTuple);
-            joinQual.eval(inSchema, frameTuple);
-            projector.eval(frameTuple, outTuple);
-            return outTuple;
+            updateFrameTuple(leftNext, aTuple);
+            evalQual();
+            evalFilter();
+            return projectAndReturn();
           }
         }
       } // the second if end false
@@ -333,8 +321,5 @@ public class MergeFullOuterJoinExec extends BinaryPhysicalExec {
     rightTupleSlots.clear();
     leftTupleSlots = null;
     rightTupleSlots = null;
-    joinNode = null;
-    joinQual = null;
-    projector = null;
   }
 }

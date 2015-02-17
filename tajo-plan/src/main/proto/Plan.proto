@@ -120,8 +120,9 @@ message JoinNode {
   required int32 rightChilSeq = 2;
   required JoinType joinType = 3;
   optional EvalNodeTree joinQual = 4;
-  required bool existsTargets = 5;
-  repeated Target targets = 6;
+  optional EvalNodeTree joinFilter = 5;
+  required bool existsTargets = 6;
+  repeated Target targets = 7;
 }
 
 message GroupbyNode {

@@ -178,6 +178,10 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
       compileIfAbsent(context, node.getInSchema(), node.getJoinQual());
     }
 
+    if (node.hasJoinFilter()) {
+      compileIfAbsent(context, node.getInSchema(), node.getJoinFilter());
+    }
+
     return node;
   }
 

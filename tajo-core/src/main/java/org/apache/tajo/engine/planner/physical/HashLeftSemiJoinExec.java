@@ -46,7 +46,7 @@ public class HashLeftSemiJoinExec extends HashJoinExec {
   }
 
   protected void compile() {
-    joinQual = context.getPrecompiledEval(inSchema, joinQual);
+    setPrecompiledJoinPredicates();
   }
 
   /**
@@ -63,6 +63,9 @@ public class HashLeftSemiJoinExec extends HashJoinExec {
    * @throws java.io.IOException
    */
   public Tuple next() throws IOException {
+    if (finished) {
+      return null;
+    }
     if (first) {
       loadRightToHashTable();
     }
@@ -94,10 +97,10 @@ public class HashLeftSemiJoinExec extends HashJoinExec {
       notFound = true;
       while (notFound && iterator.hasNext()) {
         rightTuple = iterator.next();
-        frameTuple.set(leftTuple, rightTuple);
-        if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if the matched one is found
+        updateFrameTuple(leftTuple, rightTuple);
+        if (evalQual() &&
+            evalFilter()) { // if the matched one is found
           notFound = false;
-          projector.eval(frameTuple, outTuple);
         }
       }
 
@@ -106,6 +109,6 @@ public class HashLeftSemiJoinExec extends HashJoinExec {
       }
     }
 
-    return outTuple;
+    return projectAndReturn();
   }
 }

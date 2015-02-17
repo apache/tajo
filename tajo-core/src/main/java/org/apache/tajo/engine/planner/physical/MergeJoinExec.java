@@ -20,13 +20,9 @@ package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.base.Preconditions;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.engine.planner.Projector;
-import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
-import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -34,16 +30,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class MergeJoinExec extends BinaryPhysicalExec {
-  // from logical plan
-  private JoinNode joinNode;
-  private EvalNode joinQual;
+public class MergeJoinExec extends AbstractJoinExec {
 
   // temporal tuples and states for nested loop join
-  private FrameTuple frameTuple;
   private Tuple outerTuple = null;
   private Tuple innerTuple = null;
-  private Tuple outTuple = null;
   private Tuple outerNext = null;
 
   private List<Tuple> outerTupleSlots;
@@ -58,16 +49,11 @@ public class MergeJoinExec extends BinaryPhysicalExec {
 
   private boolean end = false;
 
-  // projection
-  private Projector projector;
-
   public MergeJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer,
       PhysicalExec inner, SortSpec[] outerSortKey, SortSpec[] innerSortKey) {
-    super(context, plan.getInSchema(), plan.getOutSchema(), outer, inner);
+    super(context, plan, outer, inner);
     Preconditions.checkArgument(plan.hasJoinQual(), "Sort-merge join is only used for the equi-join, " +
         "but there is no join condition");
-    this.joinNode = plan;
-    this.joinQual = plan.getJoinQual();
 
     this.outerTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
     this.innerTupleSlots = new ArrayList<Tuple>(INITIAL_TUPLE_SLOT);
@@ -81,22 +67,11 @@ public class MergeJoinExec extends BinaryPhysicalExec {
         plan.getJoinQual(), outer.getSchema(), inner.getSchema());
     this.outerIterator = outerTupleSlots.iterator();
     this.innerIterator = innerTupleSlots.iterator();
-    
-    // for projection
-    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
-
-    // for join
-    frameTuple = new FrameTuple();
-    outTuple = new VTuple(outSchema.size());
   }
 
   @Override
   protected void compile() {
-    joinQual = context.getPrecompiledEval(inSchema, joinQual);
-  }
-
-  public JoinNode getPlan(){
-    return this.joinNode;
+    setPrecompiledJoinPredicates();
   }
 
   public Tuple next() throws IOException {
@@ -163,11 +138,12 @@ public class MergeJoinExec extends BinaryPhysicalExec {
         innerIterator = innerTupleSlots.iterator();
       }
 
-      frameTuple.set(outerNext, innerIterator.next());
+      updateFrameTuple(outerNext, innerIterator.next());
 
-      if (joinQual.eval(inSchema, frameTuple).isTrue()) {
-        projector.eval(frameTuple, outTuple);
-        return outTuple;
+      if (evalQual()) {
+        if (evalFilter()) {
+          return projectAndReturn();
+        }
       }
     }
     return null;
@@ -192,7 +168,5 @@ public class MergeJoinExec extends BinaryPhysicalExec {
     innerTupleSlots = null;
     outerIterator = null;
     innerIterator = null;
-    joinQual = null;
-    projector = null;
   }
 }

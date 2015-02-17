@@ -192,7 +192,7 @@ public class LogicalOptimizer {
                                  JoinNode joinNode, Stack<LogicalNode> stack)
         throws PlanningException {
       super.visitJoin(joinGraphContext, plan, block, joinNode, stack);
-      if (joinNode.hasJoinQual()) {
+      if (joinNode.hasJoinQual() || joinNode.hasJoinFilter()) {
         joinGraphContext.joinGraph.addJoin(plan, block, joinNode);
       } else {
         LogicalNode leftChild = joinNode.getLeftChild();
@@ -295,6 +295,11 @@ public class LogicalOptimizer {
       if (joinNode.hasJoinQual()) {
         EvalNode [] quals = AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual());
         filterFactor = Math.pow(GreedyHeuristicJoinOrderAlgorithm.DEFAULT_SELECTION_FACTOR, quals.length);
+      }
+      // TODO: join filters must be considered to improve the accuracy of selectivity estimation
+      if (joinNode.hasJoinFilter()) {
+        EvalNode [] filters = AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinFilter());
+        filterFactor *= Math.pow(GreedyHeuristicJoinOrderAlgorithm.DEFAULT_SELECTION_FACTOR, filters.length);
       }
 
       if (joinNode.getLeftChild() instanceof RelationNode) {

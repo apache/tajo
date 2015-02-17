@@ -18,58 +18,32 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.utils.TupleUtil;
-import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 
-public class NLLeftOuterJoinExec extends BinaryPhysicalExec {
-  // from logical plan
-  private JoinNode plan;
-  private EvalNode joinQual;
+public class NLLeftOuterJoinExec extends AbstractJoinExec {
 
   // temporal tuples and states for nested loop join
   private boolean needNextRightTuple;
-  private FrameTuple frameTuple;
   private Tuple leftTuple = null;
   private Tuple rightTuple = null;
-  private Tuple outTuple = null;
-
-  // projection
-  private final Projector projector;
 
   private boolean foundAtLeastOneMatch;
   private int rightNumCols;
 
   public NLLeftOuterJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftChild,
                              PhysicalExec rightChild) {
-    super(context, plan.getInSchema(), plan.getOutSchema(), leftChild, rightChild);
-    this.plan = plan;
-
-    if (plan.hasJoinQual()) {
-      this.joinQual = plan.getJoinQual();
-    }
-
-    // for projection
-    projector = new Projector(context, inSchema, outSchema, plan.getTargets());
+    super(context, plan, leftChild, rightChild);
 
     // for join
     needNextRightTuple = true;
-    frameTuple = new FrameTuple();
-    outTuple = new VTuple(outSchema.size());
 
     foundAtLeastOneMatch = false;
     rightNumCols = rightChild.getSchema().size();
-  }
-
-  public JoinNode getPlan() {
-    return this.plan;
   }
 
   public Tuple next() throws IOException {
@@ -90,13 +64,16 @@ public class NLLeftOuterJoinExec extends BinaryPhysicalExec {
         if(foundAtLeastOneMatch == false){
           //output a tuple with the nulls padded rightTuple
           Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
-          frameTuple.set(leftTuple, nullPaddedTuple);
-          projector.eval(frameTuple, outTuple);
+          updateFrameTuple(leftTuple, nullPaddedTuple);
           // we simulate we found a match, which is exactly the null padded one
           foundAtLeastOneMatch = true;
           needNextRightTuple = true;
           rightChild.rescan();
-          return outTuple;
+          if (evalFilter()) {
+            return projectAndReturn();
+          } else {
+            continue;
+          }
         } else {
           needNextRightTuple = true;
           rightChild.rescan();
@@ -104,12 +81,13 @@ public class NLLeftOuterJoinExec extends BinaryPhysicalExec {
         }
       }
 
-      frameTuple.set(leftTuple, rightTuple);
-      ;
-      if (joinQual.eval(inSchema, frameTuple).isTrue()) {
-        projector.eval(frameTuple, outTuple);
+      updateFrameTuple(leftTuple, rightTuple);
+
+      if (evalQual()) {
         foundAtLeastOneMatch = true;
-        return outTuple;
+        if (evalFilter()) {
+          return projectAndReturn();
+        }
       }
     }
     return null;

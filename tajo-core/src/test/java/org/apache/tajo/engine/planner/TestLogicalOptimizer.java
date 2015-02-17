@@ -267,5 +267,4 @@ public class TestLogicalOptimizer {
     LogicalPlan newPlan = planner.createPlan(defaultContext, expr);
     optimizer.optimize(newPlan);
   }
-
 }

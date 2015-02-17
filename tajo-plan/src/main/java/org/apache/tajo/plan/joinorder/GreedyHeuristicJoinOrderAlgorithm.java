@@ -158,6 +158,9 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     if (joinEdge.hasJoinQual()) {
       joinNode.setJoinQual(AlgebraicUtil.createSingletonExprFromCNF(joinEdge.getJoinQual()));
     }
+    if (joinEdge.hasJoinFilter()) {
+      joinNode.setJoinFilter(AlgebraicUtil.createSingletonExprFromCNF(joinEdge.getJoinFilter()));
+    }
     return joinNode;
   }
 
@@ -247,6 +250,9 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
           foundJoinEdge.addJoinQual(AlgebraicUtil.createSingletonExprFromCNF(
               existJoinEdge.getJoinQual()));
         }
+        if (existJoinEdge.hasJoinFilter()) {
+          foundJoinEdge.addJoinFilter(AlgebraicUtil.createSingletonExprFromCNF(existJoinEdge.getJoinFilter()));
+        }
       }
     }
     if (foundJoinEdge != null) {
@@ -268,6 +274,9 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
           foundJoinEdge.addJoinQual(AlgebraicUtil.createSingletonExprFromCNF(
               existJoinEdge.getJoinQual()));
         }
+        if (existJoinEdge.hasJoinFilter()) {
+          foundJoinEdge.addJoinFilter(AlgebraicUtil.createSingletonExprFromCNF(existJoinEdge.getJoinFilter()));
+        }
       }
     }
     if (foundJoinEdge != null) {
@@ -288,6 +297,9 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
           } else {
             foundJoinEdge.addJoinQual(AlgebraicUtil.createSingletonExprFromCNF(
                 existJoinEdge.getJoinQual()));
+          }
+          if (existJoinEdge.hasJoinFilter()) {
+            foundJoinEdge.addJoinFilter(AlgebraicUtil.createSingletonExprFromCNF(existJoinEdge.getJoinFilter()));
           }
         }
       }
@@ -332,10 +344,15 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       if (joinNode.hasJoinQual()) {
         filterFactor = Math.pow(DEFAULT_SELECTION_FACTOR,
             AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual()).length);
-        return getCost(joinNode.getLeftChild()) * getCost(joinNode.getRightChild()) * filterFactor;
       } else {
-        return Math.pow(getCost(joinNode.getLeftChild()) * getCost(joinNode.getRightChild()), 2);
+        filterFactor = Math.pow(getCost(joinNode.getLeftChild()) * getCost(joinNode.getRightChild()), 2);
       }
+      // TODO: join filters must be considered to improve the accuracy of selectivity estimation
+      if (joinNode.hasJoinFilter()) {
+        filterFactor *= Math.pow(DEFAULT_SELECTION_FACTOR,
+            AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinFilter()).length);
+      }
+      return filterFactor;
 
     case SELECTION:
       SelectionNode selectionNode = (SelectionNode) node;

@@ -57,6 +57,9 @@ public class HashLeftAntiJoinExec extends HashJoinExec {
    * @throws IOException
    */
   public Tuple next() throws IOException {
+    if (finished) {
+      return null;
+    }
     if (first) {
       loadRightToHashTable();
     }
@@ -81,9 +84,12 @@ public class HashLeftAntiJoinExec extends HashJoinExec {
         iterator = rightTuples.iterator();
       } else {
         // if not found, it returns a tuple.
-        frameTuple.set(leftTuple, rightNullTuple);
-        projector.eval(frameTuple, outTuple);
-        return outTuple;
+        updateFrameTuple(leftTuple, rightNullTuple);
+        if (evalFilter()) {
+          return projectAndReturn();
+        } else {
+          continue;
+        }
       }
 
       // Reach here only when a hash bucket is found. Then, it checks all tuples in the found bucket.
@@ -91,19 +97,22 @@ public class HashLeftAntiJoinExec extends HashJoinExec {
       notFound = true;
       while (!context.isStopped() && notFound && iterator.hasNext()) {
         rightTuple = iterator.next();
-        frameTuple.set(leftTuple, rightTuple);
-        if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if the matched one is found
-          notFound = false;
+        updateFrameTuple(leftTuple, rightTuple);
+        if (evalQual()) { // if the matched one is found
+          if (evalFilter()) {
+            notFound = false;
+          }
         }
       }
 
       if (notFound) { // if there is no matched tuple
-        frameTuple.set(leftTuple, rightNullTuple);
-        projector.eval(frameTuple, outTuple);
-        break;
+        updateFrameTuple(leftTuple, rightNullTuple);
+        if (evalFilter()) {
+          break;
+        }
       }
     }
 
-    return outTuple;
+    return projectAndReturn();
   }
 }

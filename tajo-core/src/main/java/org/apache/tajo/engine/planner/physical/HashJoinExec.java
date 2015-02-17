@@ -20,12 +20,9 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.catalog.SchemaUtil;
-import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -33,17 +30,12 @@ import org.apache.tajo.worker.TaskAttemptContext;
 import java.io.IOException;
 import java.util.*;
 
-public class HashJoinExec extends BinaryPhysicalExec {
-  // from logical plan
-  protected JoinNode plan;
-  protected EvalNode joinQual;
+public class HashJoinExec extends AbstractJoinExec {
 
   protected List<Column[]> joinKeyPairs;
 
   // temporal tuples and states for nested loop join
   protected boolean first = true;
-  protected FrameTuple frameTuple;
-  protected Tuple outTuple = null;
   protected Map<Tuple, List<Tuple>> tupleSlots;
   protected Iterator<Tuple> iterator = null;
   protected Tuple leftTuple;
@@ -55,19 +47,14 @@ public class HashJoinExec extends BinaryPhysicalExec {
   protected boolean finished = false;
   protected boolean shouldGetLeftTuple = true;
 
-  // projection
-  protected final Projector projector;
-
   public HashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftExec,
       PhysicalExec rightExec) {
-    super(context, SchemaUtil.merge(leftExec.getSchema(), rightExec.getSchema()), plan.getOutSchema(),
+    super(context, plan, SchemaUtil.merge(leftExec.getSchema(), rightExec.getSchema()), plan.getOutSchema(),
         leftExec, rightExec);
-    this.plan = plan;
-    this.joinQual = plan.getJoinQual();
     this.tupleSlots = new HashMap<Tuple, List<Tuple>>(100000);
 
     // HashJoin only can manage equi join key pairs.
-    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, leftExec.getSchema(),
+    this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(getJoinQual(), leftExec.getSchema(),
         rightExec.getSchema(), false);
 
     leftKeyList = new int[joinKeyPairs.size()];
@@ -81,18 +68,13 @@ public class HashJoinExec extends BinaryPhysicalExec {
       rightKeyList[i] = rightExec.getSchema().getColumnId(joinKeyPairs.get(i)[1].getQualifiedName());
     }
 
-    // for projection
-    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
-
     // for join
-    frameTuple = new FrameTuple();
-    outTuple = new VTuple(outSchema.size());
     leftKeyTuple = new VTuple(leftKeyList.length);
   }
 
   @Override
   protected void compile() {
-    joinQual = context.getPrecompiledEval(inSchema, joinQual);
+    setPrecompiledJoinPredicates();
   }
 
   protected void getKeyLeftTuple(final Tuple outerTuple, Tuple keyTuple) {
@@ -103,6 +85,9 @@ public class HashJoinExec extends BinaryPhysicalExec {
 
   long scanStartTime = 0;
   public Tuple next() throws IOException {
+    if (finished) {
+      return null;
+    }
     if (first) {
       loadRightToHashTable();
       scanStartTime = System.currentTimeMillis();
@@ -134,10 +119,11 @@ public class HashJoinExec extends BinaryPhysicalExec {
 
       // getting a next right tuple on in-memory hash table.
       rightTuple = iterator.next();
-      frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
-      if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if both tuples are joinable
-        projector.eval(frameTuple, outTuple);
-        found = true;
+      updateFrameTuple(leftTuple, rightTuple); // evaluate a join condition on both tuples
+      if (evalQual()) { // if both tuples are joinable
+        if (evalFilter()) {
+          found = true;
+        }
       }
 
       if (!iterator.hasNext()) { // no more right tuples for this hash key
@@ -149,7 +135,7 @@ public class HashJoinExec extends BinaryPhysicalExec {
       }
     }
 
-    return new VTuple(outTuple);
+    return projectAndReturn();
   }
 
   protected void loadRightToHashTable() throws IOException {
@@ -197,12 +183,6 @@ public class HashJoinExec extends BinaryPhysicalExec {
     }
 
     iterator = null;
-    plan = null;
-    joinQual = null;
-  }
-
-  public JoinNode getPlan() {
-    return this.plan;
   }
 
   @Override

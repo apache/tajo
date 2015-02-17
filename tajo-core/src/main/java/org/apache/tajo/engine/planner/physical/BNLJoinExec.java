@@ -18,13 +18,8 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import org.apache.tajo.engine.planner.Projector;
-import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -32,11 +27,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class BNLJoinExec extends BinaryPhysicalExec {
-  // from logical plan
-  private JoinNode plan;
-  private final boolean hasJoinQual;
-  private EvalNode joinQual;
+public class BNLJoinExec extends AbstractJoinExec {
 
   private List<Tuple> leftTupleSlots;
   private List<Tuple> rightTupleSlots;
@@ -47,54 +38,25 @@ public class BNLJoinExec extends BinaryPhysicalExec {
   private boolean rightEnd;
 
   // temporal tuples and states for nested loop join
-  private FrameTuple frameTuple;
   private Tuple leftTuple = null;
-  private Tuple outputTuple = null;
   private Tuple rightNext = null;
 
   private final int TUPLE_SLOT_SIZE = 10000;
 
-  // projection
-  private Projector projector;
-
   public BNLJoinExec(final TaskAttemptContext context, final JoinNode plan,
                      final PhysicalExec leftExec, PhysicalExec rightExec) {
-    super(context, plan.getInSchema(), plan.getOutSchema(), leftExec, rightExec);
-    this.plan = plan;
-    this.joinQual = plan.getJoinQual();
-    if (joinQual != null) { // if join type is not 'cross join'
-      hasJoinQual = true;
-    } else {
-      hasJoinQual = false;
-    }
+    super(context, plan, leftExec, rightExec);
     this.leftTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
     this.rightTupleSlots = new ArrayList<Tuple>(TUPLE_SLOT_SIZE);
     this.leftIterator = leftTupleSlots.iterator();
     this.rightIterator = rightTupleSlots.iterator();
     this.rightEnd = false;
     this.leftEnd = false;
-
-    // for projection
-    if (!plan.hasTargets()) {
-      plan.setTargets(PlannerUtil.schemaToTargets(outSchema));
-    }
-
-    projector = new Projector(context, inSchema, outSchema, plan.getTargets());
-
-    // for join
-    frameTuple = new FrameTuple();
-    outputTuple = new VTuple(outSchema.size());
   }
 
   @Override
   protected void compile() {
-    if (hasJoinQual) {
-      joinQual = context.getPrecompiledEval(inSchema, joinQual);
-    }
-  }
-
-  public JoinNode getPlan() {
-    return plan;
+    setPrecompiledJoinPredicates();
   }
 
   public Tuple next() throws IOException {
@@ -190,15 +152,24 @@ public class BNLJoinExec extends BinaryPhysicalExec {
         }
       }
 
-      frameTuple.set(leftTuple, rightIterator.next());
-      if (hasJoinQual) {
-        if (joinQual.eval(inSchema, frameTuple).isTrue()) {
-          projector.eval(frameTuple, outputTuple);
-          return outputTuple;
+      updateFrameTuple(leftTuple, rightIterator.next());
+
+      if (hasJoinQual()) {
+        if (evalQual()) {
+          if (evalFilter()) {
+            return projectAndReturn();
+          }
         }
       } else {
-        projector.eval(frameTuple, outputTuple);
-        return outputTuple;
+        /*
+         * BNLJoinExec can be used for the cross join, which involves no join condition.
+         * However, the cross join can involve join filters.
+         * In the following example, the where clause must be evaluated with the join filters instead of the join conditions.
+         * SELECT x, y, z FROM A, B, C WHERE concat (A.x, B.y, C.z) like '%keyword%'
+         */
+        if (evalFilter()) {
+          return projectAndReturn();
+        }
       }
     }
     return null;
@@ -224,8 +195,5 @@ public class BNLJoinExec extends BinaryPhysicalExec {
     leftTupleSlots = null;
     rightIterator = null;
     leftIterator = null;
-    plan = null;
-    joinQual = null;
-    projector = null;
   }
 }

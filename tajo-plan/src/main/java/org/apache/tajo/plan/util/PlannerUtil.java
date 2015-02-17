@@ -194,6 +194,16 @@ public class PlannerUtil {
     return tableNames;
   }
 
+  public static String getTopRelationInLineage(LogicalPlan plan, LogicalNode from) throws PlanningException {
+    RelationFinderVisitor visitor = new RelationFinderVisitor(true);
+    visitor.visit(null, plan, null, from, new Stack<LogicalNode>());
+    if (visitor.foundRelNameSet.size() > 0) {
+      return visitor.foundRelNameSet.iterator().next();
+    } else {
+      return null;
+    }
+  }
+
   /**
    * Get all RelationNodes which are descendant of a given LogicalNode.
    * The finding is restricted within a query block.
@@ -210,6 +220,15 @@ public class PlannerUtil {
 
   public static class RelationFinderVisitor extends BasicLogicalPlanVisitor<Object, LogicalNode> {
     private Set<String> foundRelNameSet = Sets.newHashSet();
+    private boolean findTop = false;
+
+    public RelationFinderVisitor() {
+      this(false);
+    }
+
+    public RelationFinderVisitor(boolean findTop) {
+      this.findTop = findTop;
+    }
 
     public Set<String> getFoundRelations() {
       return foundRelNameSet;
@@ -218,6 +237,10 @@ public class PlannerUtil {
     @Override
     public LogicalNode visit(Object context, LogicalPlan plan, @Nullable LogicalPlan.QueryBlock block, LogicalNode node,
                              Stack<LogicalNode> stack) throws PlanningException {
+      if (findTop && foundRelNameSet.size() > 0) {
+        return node;
+      }
+
       if (node.getType() != NodeType.TABLE_SUBQUERY) {
         super.visit(context, plan, block, node, stack);
       }
