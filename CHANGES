@@ -185,6 +185,9 @@ Release 0.10.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1277: GreedyHeuristicJoinOrderAlgorithm sometimes wrongly assumes 
+    associativity of joins. (Keuntae Park via jihoon)
+
     TAJO-1336: Fix task failure of stopped task. (jinho)
 
     TAJO-1316: NPE occurs when performing window functions after join.
