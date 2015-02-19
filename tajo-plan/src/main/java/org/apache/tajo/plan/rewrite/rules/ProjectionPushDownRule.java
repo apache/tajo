@@ -850,7 +850,8 @@ public class ProjectionPushDownRule extends
     // So, we should prevent dividing the binary operator into more subexpressions.
     if (term.getType() != EvalType.FIELD &&
         !(term instanceof BinaryEval) &&
-        !(term.getType() == EvalType.ROW_CONSTANT)) {
+        term.getType() != EvalType.ROW_CONSTANT &&
+        term.getType() != EvalType.CONST) {
       String refName = ctx.addExpr(term);
       EvalTreeUtil.replace(cnf, term, new FieldEval(refName, term.getValueType()));
     }
@@ -914,12 +915,12 @@ public class ProjectionPushDownRule extends
 
       if (context.targetListMgr.isEvaluated(referenceName)) {
         Target fieldReference = new Target(new FieldEval(target.getNamedColumn()));
-        if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, fieldReference.getEvalTree(), node,
-            stack.peek().getType() != NodeType.JOIN)) {
+        if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, fieldReference.getEvalTree(), node)) {
+//            stack.peek().getType() != NodeType.JOIN)) {
           projectedTargets.add(fieldReference);
         }
-      } else if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, target.getEvalTree(), node,
-          stack.peek().getType() != NodeType.JOIN)) {
+      } else if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, target.getEvalTree(), node)) {
+//          stack.peek().getType() != NodeType.JOIN)) {
         projectedTargets.add(target);
         context.targetListMgr.markAsEvaluated(target);
       }

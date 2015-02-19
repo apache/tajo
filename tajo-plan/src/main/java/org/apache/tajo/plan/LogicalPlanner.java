@@ -1150,7 +1150,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       NamedExpr namedExpr = it.next();
       try {
         evalNode = exprAnnotator.createEvalNode(context, namedExpr.getExpr(), NameResolvingMode.LEGACY);
-        if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, evalNode, joinNode, stack.peek().getType() != OpType.Join)) {
+//        if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, evalNode, joinNode, stack.peek().getType() != OpType.Join)) {
+        if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, evalNode, joinNode)) {
           block.namedExprsMgr.markAsEvaluated(namedExpr.getAlias(), evalNode);
           newlyEvaluatedExprs.add(namedExpr.getAlias());
         }
@@ -1962,8 +1963,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return true;
   }
 
-  public static boolean checkIfBeEvaluatedAtJoin(QueryBlock block, EvalNode evalNode, JoinNode node,
-                                                 boolean isTopMostJoin) {
+  public static boolean checkIfBeEvaluatedAtJoin(QueryBlock block, EvalNode evalNode, JoinNode node) {
     Set<Column> columnRefs = EvalTreeUtil.findUniqueColumns(evalNode);
 
     if (EvalTreeUtil.findDistinctAggFunction(evalNode).size() > 0) {
@@ -1980,22 +1980,18 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     // When a 'case-when' is used with outer join, the case-when expression must be evaluated
     // at the topmost join operator.
-    // TODO - It's also valid that case-when is evalauted at the topmost outer operator.
+    // TODO - It's also valid that case-when is evalauted at the topmost outer join operator.
     //        But, how can we know there is no further outer join operator after this node?
-    if (containsOuterJoin(block)) {
-      if (!isTopMostJoin) {
-        Collection<EvalNode> found = EvalTreeUtil.findOuterJoinSensitiveEvals(evalNode);
-        if (found.size() > 0) {
-          return false;
-        }
-      }
-    }
+//    if (containsOuterJoin(block)) {
+//      if (!isTopMostJoin) {
+//        Collection<EvalNode> found = EvalTreeUtil.findOuterJoinSensitiveEvals(evalNode);
+//        if (found.size() > 0) {
+//          return false;
+//        }
+//      }
+//    }
 
     return true;
-  }
-
-  public static boolean isOuterJoin(JoinType joinType) {
-    return joinType == JoinType.LEFT_OUTER || joinType == JoinType.RIGHT_OUTER || joinType==JoinType.FULL_OUTER;
   }
 
   public static boolean containsOuterJoin(QueryBlock block) {
