@@ -1979,6 +1979,11 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       return false;
     }
 
+    /*
+     * For outer joins, only predicates which are specified at the on clause can be evaluated during processing join.
+     * Other predicates from the where clause must be evaluated after the join.
+     * The below code will be modified after improving join operators to keep join filters by themselves (TAJO-1310).
+     */
     if (PlannerUtil.isOuterJoin(node.getJoinType()) && !isOnPredicate) {
       return false;
     }
