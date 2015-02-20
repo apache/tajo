@@ -916,11 +916,9 @@ public class ProjectionPushDownRule extends
       if (context.targetListMgr.isEvaluated(referenceName)) {
         Target fieldReference = new Target(new FieldEval(target.getNamedColumn()));
         if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, fieldReference.getEvalTree(), node, true)) {
-//            stack.peek().getType() != NodeType.JOIN)) {
           projectedTargets.add(fieldReference);
         }
       } else if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, target.getEvalTree(), node, true)) {
-//          stack.peek().getType() != NodeType.JOIN)) {
         projectedTargets.add(target);
         context.targetListMgr.markAsEvaluated(target);
       }

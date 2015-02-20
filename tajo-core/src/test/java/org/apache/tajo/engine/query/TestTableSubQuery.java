@@ -78,10 +78,4 @@ public class TestTableSubQuery extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
   }
-
-  @Test
-  public final void test() throws Exception {
-    executeString("select * from (select * from nation where n_regionkey = 1) as a where n_nationkey = 2");
-//    executeString("select * from (select count(*) as t from nation where n_regionkey = 1) as a where t = 2");
-  }
 }

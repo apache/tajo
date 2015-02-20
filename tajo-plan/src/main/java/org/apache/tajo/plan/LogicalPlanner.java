@@ -1150,7 +1150,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       NamedExpr namedExpr = it.next();
       try {
         evalNode = exprAnnotator.createEvalNode(context, namedExpr.getExpr(), NameResolvingMode.LEGACY);
-//        if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, evalNode, joinNode, stack.peek().getType() != OpType.Join)) {
         if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, evalNode, joinNode, true)) {
           block.namedExprsMgr.markAsEvaluated(namedExpr.getAlias(), evalNode);
           newlyEvaluatedExprs.add(namedExpr.getAlias());
@@ -1978,19 +1977,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     if (columnRefs.size() > 0 && !node.getInSchema().containsAll(columnRefs)) {
       return false;
     }
-
-    // When a 'case-when' is used with outer join, the case-when expression must be evaluated
-    // at the topmost join operator.
-    // TODO - It's also valid that case-when is evalauted at the topmost outer join operator.
-    //        But, how can we know there is no further outer join operator after this node?
-//    if (containsOuterJoin(block)) {
-//      if (!isTopMostJoin) {
-//        Collection<EvalNode> found = EvalTreeUtil.findOuterJoinSensitiveEvals(evalNode);
-//        if (found.size() > 0) {
-//          return false;
-//        }
-//      }
-//    }
 
     if (PlannerUtil.isOuterJoin(node.getJoinType()) && !isOnPredicate) {
       return false;
