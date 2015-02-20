@@ -178,9 +178,11 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
       boolean satisfiedWithJoinCondition = joinQual.eval(inSchema, frameTuple).isTrue();
 
       // if a composited tuple satisfies with both join filter and join condition
-      if (satisfiedWithFilter && satisfiedWithJoinCondition) {
-        projector.eval(frameTuple, outTuple);
-        return outTuple;
+      if (satisfiedWithJoinCondition && satisfiedWithFilter) {
+//        if (satisfiedWithFilter) {
+          projector.eval(frameTuple, outTuple);
+          return outTuple;
+//        }
       } else {
 
         // if join filter is satisfied, the left outer join (LOJ) operator should return the null padded tuple
@@ -192,8 +194,12 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
         // null padding
         Tuple nullPaddedTuple = TupleUtil.createNullPaddedTuple(rightNumCols);
         frameTuple.set(leftTuple, nullPaddedTuple);
-        projector.eval(frameTuple, outTuple);
-        return outTuple;
+
+//        if ((joinFilter == null) ||
+//            (joinFilter != null && joinFilter.eval(inSchema, frameTuple).isTrue())) {
+          projector.eval(frameTuple, outTuple);
+          return outTuple;
+//        }
       }
     }
 

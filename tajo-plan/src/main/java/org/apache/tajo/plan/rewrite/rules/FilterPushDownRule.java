@@ -253,7 +253,9 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     context.addFiltersTobePushed(nonPushableQuals);
     List<EvalNode> matched = TUtil.newList();
     for (EvalNode evalNode : context.pushingDownFilters) {
-      if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, evalNode, joinNode)) {
+      // TODO: currently, non-equi theta join is not supported yet.
+      if (!isNonEquiThetaJoinQual(block, joinNode, evalNode) &&
+          LogicalPlanner.checkIfBeEvaluatedAtJoin(block, evalNode, joinNode, onPredicates.contains(evalNode))) {
         matched.add(evalNode);
       }
     }
@@ -338,31 +340,24 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
                                                                 final Set<EvalNode> onPredicates,
                                                                 final Set<EvalNode> wherePredicates,
                                                                 final JoinNode joinNode) throws PlanningException {
-//    Set<String> nullSupplyingTableNameSet = TUtil.newHashSet();
-    String nullSypplyingTableName = null;
+    Set<String> nullSupplyingTableNameSet = TUtil.newHashSet();
     Set<String> preservedTableNameSet = TUtil.newHashSet();
+    String leftRelation = PlannerUtil.getTopRelationInLineage(plan, joinNode.getLeftChild());
+    String rightRelation = PlannerUtil.getTopRelationInLineage(plan, joinNode.getRightChild());
+
     if (joinNode.getJoinType() == JoinType.LEFT_OUTER) {
-//      nullSupplyingTableNameSet.addAll(TUtil.newList(PlannerUtil.getRelationLineage(joinNode.getRightChild())));
-      nullSypplyingTableName = PlannerUtil.getTopRelationInLineage(plan, joinNode.getRightChild());
-//      preservedTableNameSet.addAll(TUtil.newList(PlannerUtil.getRelationLineage(joinNode.getLeftChild())));
-      preservedTableNameSet.add(PlannerUtil.getTopRelationInLineage(plan, joinNode.getLeftChild()));
+      nullSupplyingTableNameSet.add(rightRelation);
+      preservedTableNameSet.add(leftRelation);
     } else if (joinNode.getJoinType() == JoinType.RIGHT_OUTER) {
-//      nullSupplyingTableNameSet.addAll(TUtil.newList(PlannerUtil.getRelationLineage(joinNode.getLeftChild())));
-      nullSypplyingTableName = PlannerUtil.getTopRelationInLineage(plan, joinNode.getLeftChild());
-//      preservedTableNameSet.addAll(TUtil.newList(PlannerUtil.getRelationLineage(joinNode.getRightChild())));
-      preservedTableNameSet.add(PlannerUtil.getTopRelationInLineage(plan, joinNode.getRightChild()));
+      nullSupplyingTableNameSet.add(leftRelation);
+      preservedTableNameSet.add(rightRelation);
     } else {
       // full outer join
-//      preservedTableNameSet.addAll(TUtil.newList(PlannerUtil.getRelationLineage(joinNode.getLeftChild())));
-//      preservedTableNameSet.addAll(TUtil.newList(PlannerUtil.getRelationLineage(joinNode.getRightChild())));
-      preservedTableNameSet.add(PlannerUtil.getTopRelationInLineage(plan, joinNode.getLeftChild()));
-      preservedTableNameSet.add(PlannerUtil.getTopRelationInLineage(plan, joinNode.getRightChild()));
+      preservedTableNameSet.add(leftRelation);
+      preservedTableNameSet.add(rightRelation);
+      nullSupplyingTableNameSet.add(leftRelation);
+      nullSupplyingTableNameSet.add(rightRelation);
     }
-
-//    List<EvalNode> predicates = TUtil.newList();
-//    if (joinNode.hasJoinQual()) {
-//      predicates.addAll(TUtil.newList(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual())));
-//    }
 
     Set<EvalNode> nonPushableQuals = TUtil.newHashSet();
     for (EvalNode eachQual : onPredicates) {
@@ -374,8 +369,10 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     }
 
     for (EvalNode eachQual : wherePredicates) {
-      if (isEvalNeedRelation(eachQual, nullSypplyingTableName)) {
-        nonPushableQuals.add(eachQual);
+      for (String relName : nullSupplyingTableNameSet) {
+        if (isEvalNeedRelation(eachQual, relName)) {
+          nonPushableQuals.add(eachQual);
+        }
       }
     }
 
@@ -399,14 +396,24 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     return false;
   }
 
+  private static boolean isNonEquiThetaJoinQual(final LogicalPlan.QueryBlock block,
+                                                final JoinNode joinNode,
+                                                final EvalNode evalNode) {
+    if (EvalTreeUtil.isJoinQual(block, joinNode.getLeftChild().getOutSchema(),
+        joinNode.getRightChild().getOutSchema(), evalNode, true) &&
+        evalNode.getType() != EvalType.EQUAL) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   private static List<EvalNode> extractNonEquiThetaJoinQuals(final Set<EvalNode> predicates,
                                                              final LogicalPlan.QueryBlock block,
                                                              final JoinNode joinNode) {
     List<EvalNode> nonEquiThetaJoinQuals = TUtil.newList();
     for (EvalNode eachEval: predicates) {
-      if (EvalTreeUtil.isJoinQual(block, joinNode.getLeftChild().getOutSchema(),
-          joinNode.getRightChild().getOutSchema(), eachEval, true) &&
-          eachEval.getType() != EvalType.EQUAL) {
+      if (isNonEquiThetaJoinQual(block, joinNode, eachEval)) {
         nonEquiThetaJoinQuals.add(eachEval);
       }
     }

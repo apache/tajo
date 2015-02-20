@@ -230,7 +230,7 @@ public class TestLogicalOptimizer {
     
     // Test for Pushable
 //    assertTrue(LogicalPlanner.checkIfBeEvaluatedAtJoin(newPlan.getRootBlock(), selNode.getQual(), joinNode, false));
-    assertTrue(LogicalPlanner.checkIfBeEvaluatedAtJoin(newPlan.getRootBlock(), selNode.getQual(), joinNode));
+    assertTrue(LogicalPlanner.checkIfBeEvaluatedAtJoin(newPlan.getRootBlock(), selNode.getQual(), joinNode, false));
     
     // Optimized plan
     LogicalNode optimized = optimizer.optimize(newPlan);
