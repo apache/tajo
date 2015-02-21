@@ -37,17 +37,17 @@ public class ConstraintViolationException extends RuntimeException {
   @Override
   public String getMessage() {
     if (violations != null) {
-      String errorMessage = "ConstraintViolationException [";
+      StringBuilder stringBuilder = new StringBuilder("ConstraintViolationException [");
       int elemIdx = 1;
       int elemCount = violations.size();
       for (ConstraintViolation violation: violations) {
-        errorMessage += violation.getMessage();
+        stringBuilder.append(violation.getMessage());
         if (elemIdx++ > elemCount) {
-          errorMessage += ",";
+          stringBuilder.append(',');
         }
       }
-      errorMessage += "]";
-      return errorMessage;
+      stringBuilder.append(']');
+      return stringBuilder.toString();
     } else {
       return super.getMessage();
     }

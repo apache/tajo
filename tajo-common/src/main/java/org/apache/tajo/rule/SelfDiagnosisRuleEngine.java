@@ -29,7 +29,7 @@ import org.apache.tajo.util.TUtil;
 public class SelfDiagnosisRuleEngine {
 
   private final Map<String, Map<String, RuleWrapper>> wrapperMap;
-  private static SelfDiagnosisRuleEngine instance;
+  private static volatile SelfDiagnosisRuleEngine instance;
   
   private SelfDiagnosisRuleEngine() {
     wrapperMap = TUtil.newHashMap();
@@ -90,7 +90,7 @@ public class SelfDiagnosisRuleEngine {
     }
   }
   
-  class RuleWrapper implements Comparable<RuleWrapper> {
+  static class RuleWrapper implements Comparable<RuleWrapper> {
     private final String categoryName;
     private final String ruleName;
     private final int priority;
@@ -147,14 +147,60 @@ public class SelfDiagnosisRuleEngine {
 
     @Override
     public int compareTo(RuleWrapper o) {
-      if (getPriority() == -1 && o.getPriority() == -1) {
+      if (getPriority() < 0 && o.getPriority() < 0) {
         return 0;
-      } else if (getPriority() == -1) {
+      } else if (getPriority() < 0) {
         return 1;
-      } else if (o.getPriority() == -1) {
+      } else if (o.getPriority() < 0) {
         return -1;
       }
       return (int) Math.signum(getPriority() - o.getPriority());
+    }
+
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + Arrays.hashCode(acceptedCallers);
+      result = prime * result + ((categoryName == null) ? 0 : categoryName.hashCode());
+      result = prime * result + (enabled ? 1231 : 1237);
+      result = prime * result + priority;
+      result = prime * result + ((rule == null) ? 0 : rule.hashCode());
+      result = prime * result + ((ruleName == null) ? 0 : ruleName.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj)
+        return true;
+      if (obj == null)
+        return false;
+      if (getClass() != obj.getClass())
+        return false;
+      RuleWrapper other = (RuleWrapper) obj;
+      if (!Arrays.equals(acceptedCallers, other.acceptedCallers))
+        return false;
+      if (categoryName == null) {
+        if (other.categoryName != null)
+          return false;
+      } else if (!categoryName.equals(other.categoryName))
+        return false;
+      if (enabled != other.enabled)
+        return false;
+      if (priority != other.priority)
+        return false;
+      if (rule == null) {
+        if (other.rule != null)
+          return false;
+      } else if (!rule.equals(other.rule))
+        return false;
+      if (ruleName == null) {
+        if (other.ruleName != null)
+          return false;
+      } else if (!ruleName.equals(other.ruleName))
+        return false;
+      return true;
     }
     
   }
