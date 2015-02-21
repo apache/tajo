@@ -102,4 +102,12 @@ message DataType {
   required Type type = 1;
   optional int32 length = 2;
   optional string code = 3;
+
+ /**
+ * Nested fields.  Since Protobuf does not support nested fields,
+ * the nesting is flattened to a single list by a depth-first traversal.
+ * The children count is used to construct the nested relationship.
+ * This field is not set when the element is a primitive type
+ */
+ optional int32 num_children = 4;
 }

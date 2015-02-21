@@ -32,7 +32,18 @@ import org.apache.tajo.json.GsonObject;
  */
 public class Column implements ProtoObject<ColumnProto>, GsonObject {
 	@Expose protected String name;
-	@Expose protected DataType dataType;
+	@Expose protected TypeDesc typeDesc;
+
+  /**
+   * Column Constructor
+   *
+   * @param name field name
+   * @param typeDesc Type description
+   */
+  public Column(String name, TypeDesc typeDesc) {
+    this.name = name;
+    this.typeDesc = typeDesc;
+  }
 
   /**
    *
@@ -40,8 +51,7 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
    * @param dataType Data Type with length
    */
 	public Column(String name, DataType dataType) {
-    this.name = name;
-		this.dataType = dataType;
+    this(name, new TypeDesc(dataType));
 	}
 
   /**
@@ -65,7 +75,7 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
 
 	public Column(ColumnProto proto) {
     name = proto.getName();
-    dataType = proto.getDataType();
+    typeDesc = new TypeDesc(proto.getDataType());
 	}
 
   /**
@@ -105,20 +115,20 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
    * @return DataType which includes domain type and scale.
    */
 	public DataType getDataType() {
-		return this.dataType;
+		return this.typeDesc.dataType;
 	}
 	
 	@Override
 	public boolean equals(Object o) {
 		if (o instanceof Column) {
 			Column another = (Column)o;
-			return name.equals(another.name) && dataType.equals(another.dataType);
+			return name.equals(another.name) && typeDesc.equals(another.typeDesc);
     }
 		return false;
 	}
 	
   public int hashCode() {
-    return Objects.hashCode(name, dataType);
+    return Objects.hashCode(name, typeDesc);
 
   }
 
@@ -128,16 +138,12 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
    */
 	@Override
 	public ColumnProto getProto() {
-    return ColumnProto.newBuilder().setName(this.name).setDataType(this.dataType).build();
+    return ColumnProto.newBuilder().setName(this.name).setDataType(this.typeDesc.getDataType()).build();
 	}
 	
 	public String toString() {
     StringBuilder sb = new StringBuilder(getQualifiedName());
-    sb.append(" (").append(getDataType().getType());
-    if (getDataType().getLength()  > 0) {
-      sb.append("(" + getDataType().getLength() + ")");
-    }
-    sb.append(")");
+    sb.append(" (").append(typeDesc.toString()).append(")");
 	  return sb.toString();
 	}
 
