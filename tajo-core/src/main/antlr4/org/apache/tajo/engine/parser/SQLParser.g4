@@ -309,6 +309,7 @@ nonreserved_keywords
   | SIMILAR
   | STDDEV_POP
   | STDDEV_SAMP
+  | STRUCT
   | SUBPARTITION
   | SUM
   | TABLESPACE
@@ -430,10 +431,7 @@ predefined_type
   | bit_type
   | binary_type
   | network_type
-  ;
-
-network_type
-  : INET4
+  | struct_type
   ;
 
 character_string_type
@@ -523,6 +521,14 @@ binary_type
   : BINARY type_length?
   | BINARY VARYING type_length?
   | VARBINARY type_length?
+  ;
+
+network_type
+  : INET4
+  ;
+
+struct_type
+  : STRUCT table_elements
   ;
 
 /*

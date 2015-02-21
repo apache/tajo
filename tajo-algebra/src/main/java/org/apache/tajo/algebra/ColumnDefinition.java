@@ -31,13 +31,21 @@ public  class ColumnDefinition extends DataTypeExpr {
 
   public ColumnDefinition(String columnName, DataTypeExpr dataType) {
     super(dataType.getTypeName());
+
+    this.columnName = columnName;
+
+    // precision and scale
     if (dataType.hasLengthOrPrecision()) {
       setLengthOrPrecision(dataType.lengthOrPrecision);
       if (dataType.hasScale()) {
         setScale(dataType.scale);
       }
     }
-    this.columnName = columnName;
+
+    // nested records
+    if (dataType.isNestedRecordType()) {
+      this.nestedRecord = dataType.nestedRecord;
+    }
   }
 
   public String getColumnName() {
