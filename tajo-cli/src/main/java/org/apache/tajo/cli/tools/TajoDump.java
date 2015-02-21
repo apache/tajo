@@ -30,6 +30,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
@@ -109,9 +110,9 @@ public class TajoDump {
       System.exit(-1);
     } else if (hostName != null && port != null) {
       conf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName+":"+port);
-      client = new TajoClientImpl(conf);
+      client = new TajoClientImpl(ServiceTrackerFactory.get(conf));
     } else {
-      client = new TajoClientImpl(conf);
+      client = new TajoClientImpl(ServiceTrackerFactory.get(conf));
     }
 
     PrintWriter writer = new PrintWriter(System.out);

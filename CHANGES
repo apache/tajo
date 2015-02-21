@@ -29,6 +29,10 @@ Release 0.10.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1160: Remove Hadoop dependency from tajo-client module. (jinho)
+
+    TAJO-1269: Separate cli from tajo-client. (hyunsik)
+
     TAJO-1328: Fix deprecated property names in the catalog configuration
     document. (jihun)
 
@@ -180,6 +184,11 @@ Release 0.10.0 - unreleased
 
 
   BUG FIXES
+
+    TAJO-1277: GreedyHeuristicJoinOrderAlgorithm sometimes wrongly assumes 
+    associativity of joins. (Keuntae Park via jihoon)
+
+    TAJO-1336: Fix task failure of stopped task. (jinho)
 
     TAJO-1316: NPE occurs when performing window functions after join.
     (jihun)

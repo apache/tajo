@@ -18,7 +18,6 @@
 
 package org.apache.tajo.benchmark;
 
-import com.google.common.base.Preconditions;
 import com.google.protobuf.ServiceException;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.tajo.catalog.CatalogConstants;
@@ -30,6 +29,7 @@ import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.service.ServiceTracker;
+import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.FileUtil;
 
 import java.io.File;
@@ -53,11 +53,11 @@ public abstract class BenchmarkSet {
       String addressStr = System.getProperty(ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS.varname);
       InetSocketAddress addr = NetUtils.createSocketAddr(addressStr);
       ServiceTracker serviceTracker = new DummyServiceTracker(addr);
-      tajo = new TajoClientImpl(conf, serviceTracker, null);
+      tajo = new TajoClientImpl(serviceTracker, null);
 
     } else {
       conf.set(CatalogConstants.STORE_CLASS, MemStore.class.getCanonicalName());
-      tajo = new TajoClientImpl(conf);
+      tajo = new TajoClientImpl(ServiceTrackerFactory.get(conf));
     }
   }
 

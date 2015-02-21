@@ -19,9 +19,6 @@
 %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
-<%@ page import="org.apache.tajo.util.FileUtil" %>
-<%@ page import="org.apache.tajo.util.JSPUtil" %>
-<%@ page import="org.apache.tajo.util.TajoIdUtils" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="java.text.NumberFormat" %>
 <%@ page import="java.text.SimpleDateFormat" %>
@@ -32,6 +29,8 @@
 <%@ page import="org.apache.tajo.master.rm.Worker" %>
 <%@ page import="java.util.*" %>
 <%@ page import="org.apache.tajo.util.history.TaskHistory" %>
+<%@ page import="org.apache.tajo.util.*" %>
+<%@ page import="org.apache.commons.lang.math.NumberUtils" %>
 
 <%
   TajoMaster master = (TajoMaster) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
@@ -41,7 +40,7 @@
   String startTime = request.getParameter("startTime");
   String ebId = request.getParameter("ebid");
 
-  QueryHistory queryHistory = reader.getQueryHistory(queryId);
+  QueryHistory queryHistory = reader.getQueryHistory(queryId, NumberUtils.toLong(startTime, 0));
 
   List<StageHistory> stageHistories =
       queryHistory != null ? JSPUtil.sortStageHistories(queryHistory.getStageHistories()) : null;
