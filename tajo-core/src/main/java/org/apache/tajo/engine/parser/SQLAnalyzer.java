@@ -1540,8 +1540,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       typeDefinition = new DataTypeExpr(Type.INET4.name());
 
 
-    } else if (checkIfExist(predefined_type.struct_type())) {
-      ColumnDefinition [] nestedRecordDefines = getDefinitions(predefined_type.struct_type().table_elements());
+    } else if (checkIfExist(predefined_type.record_type())) {
+      ColumnDefinition [] nestedRecordDefines = getDefinitions(predefined_type.record_type().table_elements());
       typeDefinition = new DataTypeExpr(nestedRecordDefines);
     }
 

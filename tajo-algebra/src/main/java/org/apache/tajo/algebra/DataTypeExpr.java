@@ -32,7 +32,7 @@ public class DataTypeExpr extends Expr {
   Integer lengthOrPrecision;
   @Expose @SerializedName("Scale")
   Integer scale;
-  @Expose @SerializedName("Struct")
+  @Expose @SerializedName("Record")
   DataTypeExpr [] nestedRecord;
 
   public DataTypeExpr(String typeName) {
@@ -44,7 +44,7 @@ public class DataTypeExpr extends Expr {
     super(OpType.DataType);
     // Please refer to DataTypes.proto. 'STRUCT' must be equivalent to Enum type in DataTypes.proto.
     // STRUCT = 51;
-    this.typeName = Type.STRUCT.name();
+    this.typeName = Type.RECORD.name();
     this.nestedRecord = nestedRecordTypes;
   }
 
@@ -53,7 +53,7 @@ public class DataTypeExpr extends Expr {
   }
 
   public boolean isNestedRecordType() {
-    return this.typeName.equals(Type.STRUCT.name());
+    return this.typeName.equals(Type.RECORD.name());
   }
 
   public boolean hasLengthOrPrecision() {

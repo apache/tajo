@@ -59,7 +59,7 @@ enum Type {
   VARBINARY = 44; // variable-width binary strings
   BLOB = 45;
 
-  STRUCT = 51; // nested structure type
+  RECORD = 51; // nested structure type
 
   ANY = 61; // Any type
   UDT = 62; // user-defined function

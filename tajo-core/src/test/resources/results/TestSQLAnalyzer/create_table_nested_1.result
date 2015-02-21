@@ -14,8 +14,8 @@
     },
     {
       "ColumnDefName": "c",
-      "DataTypeName": "STRUCT",
-      "Struct": [
+      "DataTypeName": "RECORD",
+      "Record": [
         {
           "ColumnDefName": "d",
           "DataTypeName": "TEXT",

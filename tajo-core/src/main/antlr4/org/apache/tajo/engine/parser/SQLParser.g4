@@ -295,6 +295,7 @@ nonreserved_keywords
   | QUARTER
   | RANGE
   | RANK
+  | RECORD
   | REGEXP
   | RENAME
   | RESET
@@ -309,7 +310,6 @@ nonreserved_keywords
   | SIMILAR
   | STDDEV_POP
   | STDDEV_SAMP
-  | STRUCT
   | SUBPARTITION
   | SUM
   | TABLESPACE
@@ -431,7 +431,7 @@ predefined_type
   | bit_type
   | binary_type
   | network_type
-  | struct_type
+  | record_type
   ;
 
 character_string_type
@@ -527,8 +527,8 @@ network_type
   : INET4
   ;
 
-struct_type
-  : STRUCT table_elements
+record_type
+  : RECORD table_elements
   ;
 
 /*

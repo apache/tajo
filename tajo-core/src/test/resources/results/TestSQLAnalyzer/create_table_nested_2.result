@@ -14,8 +14,8 @@
     },
     {
       "ColumnDefName": "c",
-      "DataTypeName": "STRUCT",
-      "Struct": [
+      "DataTypeName": "RECORD",
+      "Record": [
         {
           "ColumnDefName": "d",
           "DataTypeName": "TEXT",
@@ -28,8 +28,8 @@
         },
         {
           "ColumnDefName": "f",
-          "DataTypeName": "STRUCT",
-          "Struct": [
+          "DataTypeName": "RECORD",
+          "Record": [
             {
               "ColumnDefName": "g",
               "DataTypeName": "INT1",
