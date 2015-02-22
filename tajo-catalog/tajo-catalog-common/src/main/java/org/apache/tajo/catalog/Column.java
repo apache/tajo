@@ -138,7 +138,11 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
    */
 	@Override
 	public ColumnProto getProto() {
-    return ColumnProto.newBuilder().setName(this.name).setDataType(this.typeDesc.getDataType()).build();
+    ColumnProto.Builder builder = ColumnProto.newBuilder();
+    builder
+        .setName(this.name)
+        .setDataType(this.typeDesc.getDataType());
+    return builder.build();
 	}
 	
 	public String toString() {

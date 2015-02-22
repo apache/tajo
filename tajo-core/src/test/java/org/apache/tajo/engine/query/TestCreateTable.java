@@ -600,4 +600,16 @@ public class TestCreateTable extends QueryTestCaseBase {
     */
     }
   }
+
+  @Test
+  public final void testCreateTableWithNestedRecord() throws Exception {
+    executeString("CREATE DATABASE D9;").close();
+
+    assertTableNotExists("d9.nested_table");
+    executeString("CREATE TABLE D9.nested_table (f1 int, nested_field record (f2 int4, f3 int8), f3 text);").close();
+    assertTableExists("d9.nested_table");
+
+    executeString("DROP TABLE D9.nested_table");
+    executeString("DROP DATABASE D9").close();
+  }
 }

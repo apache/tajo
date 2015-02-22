@@ -18,6 +18,11 @@
 
 package org.apache.tajo.catalog;
 
+import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
+
+import java.util.List;
+
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
@@ -107,5 +112,30 @@ public class SchemaUtil {
       names[i] = schema.getColumn(i).getSimpleName();
     }
     return names;
+  }
+
+  public static interface ColumnVisitor<R> {
+    public R visit(int depth, Column column);
+  }
+
+  public static interface ColumnProtoVisitor<R> {
+    public R visit(int depth, ColumnProto column);
+  }
+
+  public static void visitSchema(Schema schema, ColumnVisitor<Column> function) {
+      for(Column col : schema.getColumns()) {
+        visitInDepthFirstOrder(0, function, col);
+      }
+  }
+
+  private static void visitInDepthFirstOrder(int depth, ColumnVisitor<Column> function, Column column) {
+    if (column.getDataType().getType() == Type.RECORD) {
+      for (Column nestedColumn : column.typeDesc.nestedRecordSchema.getColumns()) {
+        visitInDepthFirstOrder(depth + 1, function, nestedColumn);
+      }
+      function.visit(depth, column);
+    } else {
+      function.visit(depth, column);
+    }
   }
 }

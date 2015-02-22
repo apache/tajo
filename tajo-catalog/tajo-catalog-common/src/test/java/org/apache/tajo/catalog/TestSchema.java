@@ -167,6 +167,64 @@ public class TestSchema {
     assertEquals(schema3.getColumn(0), schema3.getColumn("tb2.col1"));
     assertEquals(schema3.getColumn(1), schema3.getColumn("col2"));
     assertEquals(schema3.getColumn(1), schema3.getColumn("tb2.col2"));
+  }
 
+  @Test
+  public void testNestedRecord1() {
+    Schema s1 = new Schema();
+    s1.addColumn("s1", Type.INT8);
+
+    Schema nestedRecordSchema = new Schema();
+    nestedRecordSchema.addColumn("s2", Type.FLOAT4);
+    nestedRecordSchema.addColumn("s3", Type.TEXT);
+
+    Column nestedField = new Column("nestedField", new TypeDesc(nestedRecordSchema));
+    s1.addColumn(nestedField);
+
+    s1.addColumn("s4", Type.FLOAT8);
+
+    verifySchema(s1);
+  }
+
+  @Test
+  public void testNestedRecord2() {
+    // for two level nested schema and the same column names
+
+    Schema schema = new Schema();
+    schema.addColumn("s1", Type.INT8);
+
+    Schema nestedRecordSchema1 = new Schema();
+    nestedRecordSchema1.addColumn("s2", Type.FLOAT4);
+    nestedRecordSchema1.addColumn("s3", Type.TEXT);
+
+    Schema nestedRecordSchema2 = new Schema();
+    nestedRecordSchema2.addColumn("s2", Type.FLOAT4);
+    nestedRecordSchema2.addColumn("s3", Type.TEXT);
+
+    Column nestedField1 = new Column("nestedField1", new TypeDesc(nestedRecordSchema1));
+    schema.addColumn(nestedField1);
+
+    schema.addColumn("s4", Type.FLOAT8);
+
+    Column nestedField2 = new Column("nestedField2", new TypeDesc(nestedRecordSchema2));
+    schema.addColumn(nestedField2);
+
+    verifySchema(schema);
+  }
+
+  public static void verifySchema(Schema s1) {
+    assertEquals(s1, s1);
+
+    SchemaProto proto = s1.getProto();
+    assertEquals("Proto (de)serialized schema is different from the original: ", s1, new Schema(proto));
+
+    Schema cloned = null;
+    try {
+      cloned = (Schema) s1.clone();
+    } catch (CloneNotSupportedException e) {
+      fail("Clone is failed");
+    }
+
+    assertEquals("Cloned schema is different from the original one:", s1, cloned);
   }
 }

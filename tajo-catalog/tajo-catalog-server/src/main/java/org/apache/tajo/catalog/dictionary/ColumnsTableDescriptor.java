@@ -27,6 +27,7 @@ class ColumnsTableDescriptor extends AbstractTableDescriptor {
       new ColumnDescriptor("tid", Type.INT4, 0),
       new ColumnDescriptor("column_name", Type.TEXT, 0),
       new ColumnDescriptor("ordinal_position", Type.INT4, 0),
+      new ColumnDescriptor("nested_field_num", Type.INT4, 0),
       new ColumnDescriptor("data_type", Type.TEXT, 0),
       new ColumnDescriptor("type_length", Type.INT4, 0)
   };

@@ -354,6 +354,13 @@ public class CatalogUtil {
     return DataType.newBuilder().setType(type).build();
   }
 
+  public static DataType newRecordType(int nestedFieldNum) {
+    DataType.Builder builder = DataType.newBuilder();
+    builder.setType(Type.RECORD);
+    builder.setNumChildren(nestedFieldNum);
+    return builder.build();
+  }
+
   public static DataType [] newSimpleDataTypeArray(Type... types) {
     DataType [] dataTypes = new DataType[types.length];
     for (int i = 0; i < types.length; i++) {

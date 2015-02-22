@@ -431,6 +431,40 @@ public class TestCatalog {
     assertFalse(catalog.existsTable(DEFAULT_DATABASE_NAME, "getTable"));
 	}
 
+  @Test
+  public void testCreateAndGetNestedTable1() throws Exception {
+    // schema creation
+    Schema schema = new Schema();
+    schema.addColumn("s1", Type.INT8);
+    Schema nestedRecordSchema = new Schema();
+    nestedRecordSchema.addColumn("s2", Type.FLOAT4);
+    nestedRecordSchema.addColumn("s3", Type.TEXT);
+    Column nestedField = new Column("nestedField", new TypeDesc(nestedRecordSchema));
+    schema.addColumn(nestedField);
+    schema.addColumn("s4", Type.FLOAT8);
+
+    Path path = new Path(CommonTestingUtil.getTestDir(), "table1");
+    TableDesc meta = new TableDesc(
+        CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "getTable"),
+        schema,
+        StoreType.CSV,
+        new KeyValueSet(),
+        path.toUri());
+
+    // schema creation
+    assertFalse(catalog.existsTable(DEFAULT_DATABASE_NAME, "getTable"));
+    catalog.createTable(meta);
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, "getTable"));
+
+    schema.setQualifier(CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "getTable")); // change it for the equals test.
+    TableDesc restored = catalog.getTableDesc(DEFAULT_DATABASE_NAME, "getTable");
+//    assertEquals(schema, restored.getSchema());
+
+    // drop test
+    catalog.dropTable(CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "getTable"));
+    assertFalse(catalog.existsTable(DEFAULT_DATABASE_NAME, "getTable"));
+  }
+
   static IndexDesc desc1;
   static IndexDesc desc2;
   static IndexDesc desc3;

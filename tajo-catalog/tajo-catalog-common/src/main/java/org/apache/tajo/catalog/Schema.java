@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.gson.annotations.Expose;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.catalog.SchemaUtil.ColumnVisitor;
 import org.apache.tajo.catalog.exception.AlreadyExistsFieldException;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
@@ -47,34 +48,57 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	}
 	
 	public Schema(SchemaProto proto) {
-    this.fields = new ArrayList<Column>();
-    this.fieldsByQualifiedName = new HashMap<String, Integer>();
-    this.fieldsByName = new HashMap<String, List<Integer>>();
-    for(ColumnProto colProto : proto.getFieldsList()) {
-      Column tobeAdded = new Column(colProto);
-      fields.add(tobeAdded);
-      if (tobeAdded.hasQualifier()) {
-        fieldsByQualifiedName.put(tobeAdded.getQualifier() + "." + tobeAdded.getSimpleName(), fields.size() - 1);
-      } else {
-        fieldsByQualifiedName.put(tobeAdded.getSimpleName(), fields.size() - 1);
-      }
-      if (fieldsByName.containsKey(tobeAdded.getSimpleName())) {
-        fieldsByName.get(tobeAdded.getSimpleName()).add(fields.size() - 1);
-      } else {
-        fieldsByName.put(tobeAdded.getSimpleName(), TUtil.newList(fields.size() - 1));
-      }
+    init();
+
+    List<Column> toBeAdded = TUtil.newList();
+    for (int i = 0; i < proto.getFieldsCount(); i++) {
+      deserializeColumn(toBeAdded, proto.getFieldsList(), i);
+    }
+
+    for (Column c : toBeAdded) {
+      addColumn(c);
+    }
+  }
+
+  private static void deserializeColumn(List<Column> fields, List<ColumnProto> protos, int serializedColumnIndex) {
+    ColumnProto columnProto = protos.get(serializedColumnIndex);
+    if (columnProto.getDataType().getType() == Type.RECORD) {
+
+      // Get the number of child fields
+      int childNum = columnProto.getDataType().getNumChildren();
+      // where is start index of nested fields?
+      int childStartIndex = fields.size() - columnProto.getDataType().getNumChildren();
+      // Extract nested fields
+      List<Column> nestedColumns = TUtil.newList(fields.subList(childStartIndex, childStartIndex + childNum));
+      // Remove nested fields from the the current level
+      fields.removeAll(nestedColumns);
+
+      // Add the nested fields to the list as a single record column
+      fields.add(new Column(columnProto.getName(), new TypeDesc(new Schema(nestedColumns))));
+    } else {
+      fields.add(new Column(protos.get(serializedColumnIndex)));
     }
   }
 
 	public Schema(Schema schema) {
 	  this();
+
 		this.fields.addAll(schema.fields);
 		this.fieldsByQualifiedName.putAll(schema.fieldsByQualifiedName);
     this.fieldsByName.putAll(schema.fieldsByName);
 	}
 
-	public Schema(Column [] columns) {
+  public Schema(Column [] columns) {
     init();
+
+    for(Column c : columns) {
+      addColumn(c);
+    }
+  }
+
+	public Schema(Iterable<Column> columns) {
+    init();
+
     for(Column c : columns) {
       addColumn(c);
     }
@@ -93,21 +117,15 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
    * @param qualifier The qualifier
    */
   public void setQualifier(String qualifier) {
-    Schema copy = null;
-    try {
-      copy = (Schema) clone();
-    } catch (CloneNotSupportedException e) {
-      throw new RuntimeException(e);
-    }
+    List<Column> columns = getColumns();
 
     fields.clear();
     fieldsByQualifiedName.clear();
     fieldsByName.clear();
 
     Column newColumn;
-    for (int i = 0; i < copy.size(); i++) {
-      Column column = copy.getColumn(i);
-      newColumn = new Column(qualifier + "." + column.getSimpleName(), column.getDataType());
+    for (Column c : columns) {
+      newColumn = new Column(qualifier + "." + c.getSimpleName(), c.typeDesc);
       addColumn(newColumn);
     }
   }
@@ -275,6 +293,21 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     return fields.containsAll(columns);
   }
 
+  public synchronized Schema addColumn(String name, TypeDesc typeDesc) {
+    String normalized = name;
+    if(fieldsByQualifiedName.containsKey(normalized)) {
+      LOG.error("Already exists column " + normalized);
+      throw new AlreadyExistsFieldException(normalized);
+    }
+
+    Column newCol = new Column(normalized, typeDesc);
+    fields.add(newCol);
+    fieldsByQualifiedName.put(newCol.getQualifiedName(), fields.size() - 1);
+    fieldsByName.put(newCol.getSimpleName(), TUtil.newList(fields.size() - 1));
+
+    return this;
+  }
+
   public synchronized Schema addColumn(String name, Type type) {
     if (type == Type.CHAR) {
       return addColumn(name, CatalogUtil.newDataTypeWithLen(type, 1));
@@ -287,22 +320,13 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
   }
 
   public synchronized Schema addColumn(String name, DataType dataType) {
-		String normalized = name;
-		if(fieldsByQualifiedName.containsKey(normalized)) {
-		  LOG.error("Already exists column " + normalized);
-			throw new AlreadyExistsFieldException(normalized);
-		}
-			
-		Column newCol = new Column(normalized, dataType);
-		fields.add(newCol);
-		fieldsByQualifiedName.put(newCol.getQualifiedName(), fields.size() - 1);
-    fieldsByName.put(newCol.getSimpleName(), TUtil.newList(fields.size() - 1));
-		
+		addColumn(name, new TypeDesc(dataType));
+
 		return this;
 	}
 	
 	public synchronized void addColumn(Column column) {
-		addColumn(column.getQualifiedName(), column.getDataType());
+		addColumn(column.getQualifiedName(), column.typeDesc);
 	}
 	
 	public synchronized void addColumns(Schema schema) {
@@ -327,10 +351,9 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	
   @Override
   public Object clone() throws CloneNotSupportedException {
-    Schema schema = null;
-
-    schema = (Schema) super.clone();
+    Schema schema = (Schema) super.clone();
     schema.init();
+
     for(Column column: this.fields) {
       schema.addColumn(column);
     }
@@ -340,14 +363,35 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	@Override
 	public SchemaProto getProto() {
     SchemaProto.Builder builder = SchemaProto.newBuilder();
-    builder.clearFields();
-    if (this.fields  != null) {
-      for(Column col : fields) {
-        builder.addFields(col.getProto());
-      }
-    }
+    SchemaProtoBuilder recursiveBuilder = new SchemaProtoBuilder(builder);
+    SchemaUtil.visitSchema(this, recursiveBuilder);
     return builder.build();
 	}
+
+  private static class SchemaProtoBuilder implements ColumnVisitor<Column> {
+    private SchemaProto.Builder builder;
+    public SchemaProtoBuilder(SchemaProto.Builder builder) {
+      this.builder = builder;
+    }
+
+    @Override
+    public Column visit(int depth, Column column) {
+
+      if (column.getDataType().getType() == Type.RECORD) {
+        DataType.Builder updatedType = DataType.newBuilder(column.getDataType());
+        updatedType.setNumChildren(column.typeDesc.nestedRecordSchema.size());
+
+        ColumnProto.Builder updatedColumn = ColumnProto.newBuilder(column.getProto());
+        updatedColumn.setDataType(updatedType);
+
+        builder.addFields(updatedColumn.build());
+      } else {
+        builder.addFields(column.getProto());
+      }
+
+      return column;
+    }
+  }
 
 	public String toString() {
 	  StringBuilder sb = new StringBuilder();
@@ -356,7 +400,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	  for(Column col : fields) {
 	    sb.append(col);
 	    if (i < fields.size() - 1) {
-	      sb.append(",");
+	      sb.append(", ");
 	    }
 	    i++;
 	  }
