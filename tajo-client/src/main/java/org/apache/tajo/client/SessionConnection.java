@@ -24,7 +24,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.auth.UserRoleInfo;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.ipc.ClientProtos.SessionUpdateResponse;
@@ -34,7 +33,6 @@ import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.ServerCallable;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
 import org.jboss.netty.channel.ConnectTimeoutException;
 
@@ -55,8 +53,6 @@ public class SessionConnection implements Closeable {
 
   private final Log LOG = LogFactory.getLog(TajoClientImpl.class);
 
-  private final TajoConf conf;
-
   final RpcConnectionPool connPool;
 
   private final String baseDatabase;
@@ -72,21 +68,25 @@ public class SessionConnection implements Closeable {
 
   private ServiceTracker serviceTracker;
 
+  private KeyValueSet properties;
+
   /**
    * Connect to TajoMaster
    *
-   * @param conf TajoConf
    * @param tracker TajoMaster address
    * @param baseDatabase The base database name. It is case sensitive. If it is null,
    *                     the 'default' database will be used.
+   * @param properties configurations
    * @throws java.io.IOException
    */
-  public SessionConnection(TajoConf conf, ServiceTracker tracker, @Nullable String baseDatabase)
-      throws IOException {
+  public SessionConnection(ServiceTracker tracker, @Nullable String baseDatabase,
+                           KeyValueSet properties) throws IOException {
 
-    this.conf = conf;
-    this.conf.set("tajo.disk.scheduler.report.interval", "0");
-    int workerNum = conf.getIntVar(TajoConf.ConfVars.RPC_CLIENT_WORKER_THREAD_NUM);
+    this.properties = properties;
+
+    //TODO separate ConfVars from TajoConf
+    int workerNum = this.properties.getInt("tajo.rpc.client.worker-thread-num", 4);
+
     // Don't share connection pool per client
     connPool = RpcConnectionPool.newPool(getClass().getSimpleName(), workerNum);
     userInfo = UserRoleInfo.getCurrentUser();
@@ -107,6 +107,10 @@ public class SessionConnection implements Closeable {
   public NettyClientBase getConnection(InetSocketAddress addr, Class protocolClass, boolean asyncMode)
       throws NoSuchMethodException, ConnectTimeoutException, ClassNotFoundException {
     return connPool.getConnection(addr, protocolClass, asyncMode);
+  }
+
+  protected KeyValueSet getProperties() {
+    return properties;
   }
 
   @SuppressWarnings("unused")
@@ -132,10 +136,6 @@ public class SessionConnection implements Closeable {
       }
     }
     return false;
-  }
-
-  public TajoConf getConf() {
-    return conf;
   }
 
   public UserRoleInfo getUserInfo() {

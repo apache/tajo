@@ -19,7 +19,6 @@
 package org.apache.tajo.client;
 
 import com.google.protobuf.ServiceException;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -33,6 +32,7 @@ import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.ServerCallable;
 
 import java.io.IOException;
+import java.net.URI;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -123,12 +123,12 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   }
 
   @Override
-  public TableDesc createExternalTable(String tableName, Schema schema, Path path, TableMeta meta)
+  public TableDesc createExternalTable(String tableName, Schema schema, URI path, TableMeta meta)
       throws SQLException, ServiceException {
     return createExternalTable(tableName, schema, path, meta, null);
   }
 
-  public TableDesc createExternalTable(final String tableName, final Schema schema, final Path path,
+  public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
                                        final TableMeta meta, final PartitionMethodDesc partitionMethodDesc)
       throws SQLException, ServiceException {
 
@@ -145,7 +145,7 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
         builder.setName(tableName);
         builder.setSchema(schema.getProto());
         builder.setMeta(meta.getProto());
-        builder.setPath(path.toUri().toString());
+        builder.setPath(path.toString());
         if (partitionMethodDesc != null) {
           builder.setPartition(partitionMethodDesc.getProto());
         }

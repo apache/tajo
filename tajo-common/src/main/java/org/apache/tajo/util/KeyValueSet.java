@@ -205,7 +205,7 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
 
   }
 
-    @Override
+  @Override
 	public boolean equals(Object object) {
 		if(object instanceof KeyValueSet) {
 			KeyValueSet other = (KeyValueSet)object;

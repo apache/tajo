@@ -39,6 +39,24 @@ public class TimeMeta implements Comparable<TimeMeta> {
   }
 
   @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + dayOfMonth;
+    result = prime * result + dayOfWeek;
+    result = prime * result + dayOfYear;
+    result = prime * result + fsecs;
+    result = prime * result + hours;
+    result = prime * result + (isDST ? 1231 : 1237);
+    result = prime * result + minutes;
+    result = prime * result + monthOfYear;
+    result = prime * result + secs;
+    result = prime * result + timeZone;
+    result = prime * result + years;
+    return result;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (!(o instanceof TimeMeta)) {
       return false;

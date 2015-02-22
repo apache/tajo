@@ -42,7 +42,7 @@ public class RangeValidator extends AbstractValidator {
 
   @Override
   protected <T> boolean validateInternal(T object) {
-    return this.minValidator.validateInternal(object) & this.maxValidator.validateInternal(object);
+    return this.minValidator.validateInternal(object) && this.maxValidator.validateInternal(object);
   }
 
   @Override

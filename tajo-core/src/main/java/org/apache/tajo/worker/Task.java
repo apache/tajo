@@ -132,6 +132,7 @@ public class Task {
     this.context.setEnforcer(request.getEnforcer());
     this.context.setState(TaskAttemptState.TA_PENDING);
     this.inputStats = new TableStats();
+    this.fetcherRunners = Lists.newArrayList();
   }
 
   public void initPlan() throws IOException {
@@ -217,20 +218,12 @@ public class Task {
         }
       }
       // for localizing the intermediate data
-      localize(request);
+      fetcherRunners.addAll(getFetchRunners(context, request.getFetches()));
     }
   }
 
   public TaskAttemptId getTaskId() {
     return taskId;
-  }
-
-  public static Log getLog() {
-    return LOG;
-  }
-
-  public void localize(TaskRequest request) throws IOException {
-    fetcherRunners = getFetchRunners(context, request.getFetches());
   }
 
   public TaskAttemptId getId() {

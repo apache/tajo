@@ -107,8 +107,8 @@ message BriefQueryInfo {
   required int64 startTime = 3;
   required int64 finishTime = 4;
   required string query = 5;
-  required string queryMasterHost = 6;
-  required int32 queryMasterPort = 7;
+  optional string queryMasterHost = 6;
+  optional int32 queryMasterPort = 7;
   required float progress = 8;
 }
 

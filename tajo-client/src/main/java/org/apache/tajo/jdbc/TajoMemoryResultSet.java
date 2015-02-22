@@ -19,6 +19,7 @@
 package org.apache.tajo.jdbc;
 
 import com.google.protobuf.ByteString;
+import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.Tuple;
@@ -30,17 +31,19 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TajoMemoryResultSet extends TajoResultSetBase {
+  private QueryId queryId;
   private List<ByteString> serializedTuples;
   private AtomicBoolean closed = new AtomicBoolean(false);
   private RowStoreUtil.RowStoreDecoder decoder;
 
-  public TajoMemoryResultSet(Schema schema, List<ByteString> serializedTuples, int maxRowNum,
+  public TajoMemoryResultSet(QueryId queryId, Schema schema, List<ByteString> serializedTuples, int maxRowNum,
                              Map<String, String> clientSideSessionVars) {
     super(clientSideSessionVars);
+    this.queryId = queryId;
     this.schema = schema;
     this.totalRow = maxRowNum;
     this.serializedTuples = serializedTuples;
-    decoder = RowStoreUtil.createDecoder(schema);
+    this.decoder = RowStoreUtil.createDecoder(schema);
     init();
   }
 
@@ -48,6 +51,10 @@ public class TajoMemoryResultSet extends TajoResultSetBase {
   protected void init() {
     cur = null;
     curRow = 0;
+  }
+
+  public QueryId getQueryId() {
+    return queryId;
   }
 
   @Override

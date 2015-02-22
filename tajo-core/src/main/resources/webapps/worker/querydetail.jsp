@@ -19,23 +19,25 @@
 %>
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 
+<%@ page import="org.apache.commons.lang.math.NumberUtils" %>
 <%@ page import="org.apache.tajo.QueryId" %>
+<%@ page import="org.apache.tajo.SessionVars" %>
 <%@ page import="org.apache.tajo.querymaster.Query" %>
 <%@ page import="org.apache.tajo.querymaster.QueryMasterTask" %>
 <%@ page import="org.apache.tajo.util.JSPUtil" %>
 <%@ page import="org.apache.tajo.util.TajoIdUtils" %>
+<%@ page import="org.apache.tajo.util.history.HistoryReader" %>
+<%@ page import="org.apache.tajo.util.history.QueryHistory" %>
+<%@ page import="org.apache.tajo.util.history.StageHistory" %>
 <%@ page import="org.apache.tajo.webapp.StaticHttpServer" %>
 <%@ page import="org.apache.tajo.worker.TajoWorker" %>
 <%@ page import="java.text.SimpleDateFormat" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
-<%@ page import="org.apache.tajo.SessionVars" %>
-<%@ page import="org.apache.tajo.util.history.QueryHistory" %>
-<%@ page import="org.apache.tajo.util.history.StageHistory" %>
-<%@ page import="org.apache.tajo.util.history.HistoryReader" %>
 
 <%
   QueryId queryId = TajoIdUtils.parseQueryId(request.getParameter("queryId"));
+  String startTime = request.getParameter("startTime");
 
   TajoWorker tajoWorker = (TajoWorker) StaticHttpServer.getInstance().getAttribute("tajo.info.server.object");
   QueryMasterTask queryMasterTask = tajoWorker.getWorkerContext()
@@ -53,7 +55,7 @@
     }
   } else {
     HistoryReader reader = tajoWorker.getWorkerContext().getHistoryReader();
-    queryHistory = reader.getQueryHistory(queryId.toString());
+    queryHistory = reader.getQueryHistory(queryId.toString(), NumberUtils.toLong(startTime, 0));
   }
 
   if (!runningQuery && queryHistory == null) {

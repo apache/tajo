@@ -28,6 +28,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos.BriefQueryInfo;
 import org.apache.tajo.ipc.ClientProtos.WorkerResourceInfo;
 import org.apache.tajo.service.ServiceTracker;
+import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.util.TajoIdUtils;
@@ -146,9 +147,9 @@ public class TajoAdmin {
       return;
     } else if (hostName != null && port != null) {
       tajoConf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName + ":" + port);
-      tajoClient = new TajoClientImpl(tajoConf);
+      tajoClient = new TajoClientImpl(ServiceTrackerFactory.get(tajoConf));
     } else if (hostName == null && port == null) {
-      tajoClient = new TajoClientImpl(tajoConf);
+      tajoClient = new TajoClientImpl(ServiceTrackerFactory.get(tajoConf));
     }
 
     switch (cmdType) {

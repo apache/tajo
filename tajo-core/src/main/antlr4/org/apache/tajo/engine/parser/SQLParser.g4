@@ -304,6 +304,7 @@ nonreserved_keywords
   | QUARTER
   | RANGE
   | RANK
+  | RECORD
   | REGEXP
   | RENAME
   | RESET
@@ -439,10 +440,7 @@ predefined_type
   | bit_type
   | binary_type
   | network_type
-  ;
-
-network_type
-  : INET4
+  | record_type
   ;
 
 character_string_type
@@ -532,6 +530,14 @@ binary_type
   : BINARY type_length?
   | BINARY VARYING type_length?
   | VARBINARY type_length?
+  ;
+
+network_type
+  : INET4
+  ;
+
+record_type
+  : RECORD table_elements
   ;
 
 /*
