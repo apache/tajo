@@ -710,4 +710,14 @@ public class TestSQLAnalyzer {
   public void testSetSession7() throws IOException {
     assertParseResult("setsession7.sql", "setsession7.result");
   }
+
+  @Test
+  public void testCreateTableWithNested1() throws IOException {
+    assertParseResult("create_table_nested_1.sql", "create_table_nested_1.result");
+  }
+
+  @Test
+  public void testCreateTableWithNested2() throws IOException {
+    assertParseResult("create_table_nested_2.sql", "create_table_nested_2.result");
+  }
 }

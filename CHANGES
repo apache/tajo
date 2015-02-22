@@ -1,7 +1,26 @@
 Tajo Change Log 
 
+Release 0.11.0 - unreleased
 
-Release 0.10.0 - unreleased
+  NEW FEATURES
+
+
+  IMPROVEMENT
+
+
+  BUG FIXES
+
+    TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
+  
+  TASKS
+
+
+  SUB TASKS
+
+    TAJO-1353: Nested record support in CREATE TABLE statement. (hyunsik)
+
+
+Release 0.10.0 - Released
 
   NEW FEATURES
 
