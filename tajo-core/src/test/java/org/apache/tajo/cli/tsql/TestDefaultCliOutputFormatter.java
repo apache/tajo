@@ -125,7 +125,7 @@ public class TestDefaultCliOutputFormatter {
     PrintWriter writer = new PrintWriter(stringWriter);
     outputFormatter.printResult(writer, null, tableDesc, responseTime, null);
 
-    String expectedOutput = "(" +  numRows + " rows, " + responseTime + " sec, " + numBytes + " B inserted)\n";
+    String expectedOutput = "(" +  numRows + " rows, " + responseTime + " sec, " + numBytes + " B written)\n";
     assertEquals(expectedOutput, stringWriter.toString());
   }
 
