@@ -87,7 +87,7 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     }
 
     if (res == null) {
-      sout.println(getQuerySuccessMessage(tableDesc, responseTime, 0, "inserted", true));
+      sout.println(getQuerySuccessMessage(tableDesc, responseTime, 0, "written", true));
       return;
     }
     ResultSetMetaData rsmd = res.getMetaData();
