@@ -203,8 +203,7 @@ public class QueryManager extends CompositeService {
       dispatcher.getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_MASTER_START,
           queryInProgress.getQueryInfo()));
     } else {
-      dispatcher.getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_STOP,
-          queryInProgress.getQueryInfo()));
+      masterContext.getQueryJobManager().stopQuery(queryInProgress.getQueryId());
     }
 
     return queryInProgress.getQueryInfo();
@@ -216,18 +215,13 @@ public class QueryManager extends CompositeService {
     public void handle(QueryJobEvent event) {
       QueryInProgress queryInProgress = getQueryInProgress(event.getQueryInfo().getQueryId());
 
-
       if (queryInProgress == null) {
         LOG.warn("No query info in running queries.[" + event.getQueryInfo().getQueryId() + "]");
         return;
       }
 
-
       if (event.getType() == QueryJobEvent.Type.QUERY_MASTER_START) {
         queryInProgress.submmitQueryToMaster();
-
-      } else if (event.getType() == QueryJobEvent.Type.QUERY_JOB_STOP) {
-        stopQuery(event.getQueryInfo().getQueryId());
 
       } else if (event.getType() == QueryJobEvent.Type.QUERY_JOB_KILL) {
         scheduler.removeQuery(queryInProgress.getQueryId());
