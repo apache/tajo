@@ -185,6 +185,8 @@ Release 0.10.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1356: Race conditions in QueryInProgress. (jinho)
+
     TAJO-1277: GreedyHeuristicJoinOrderAlgorithm sometimes wrongly assumes 
     associativity of joins. (Keuntae Park via jihoon)
 
