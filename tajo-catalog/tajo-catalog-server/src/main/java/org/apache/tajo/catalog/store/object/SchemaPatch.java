@@ -74,5 +74,26 @@ public class SchemaPatch implements Comparable<SchemaPatch> {
   public String toString() {
     return "SchemaPatch [priorVersion=" + priorVersion + ", nextVersion=" + nextVersion + ", objects=" + objects + "]";
   }
-  
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    SchemaPatch that = (SchemaPatch) o;
+
+    if (nextVersion != that.nextVersion) return false;
+    if (priorVersion != that.priorVersion) return false;
+    if (objects != null ? !objects.equals(that.objects) : that.objects != null) return false;
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = priorVersion;
+    result = 31 * result + nextVersion;
+    result = 31 * result + (objects != null ? objects.hashCode() : 0);
+    return result;
+  }
 }
