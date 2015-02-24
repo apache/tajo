@@ -72,5 +72,26 @@ public class BaseSchema implements Comparable<BaseSchema> {
   public String toString() {
     return "BaseSchema [version=" + version + ", schemaName=" + schemaName + ", objects=" + objects + "]";
   }
-  
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    BaseSchema that = (BaseSchema) o;
+
+    if (version != that.version) return false;
+    if (objects != null ? !objects.equals(that.objects) : that.objects != null) return false;
+    if (schemaName != null ? !schemaName.equals(that.schemaName) : that.schemaName != null) return false;
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = version;
+    result = 31 * result + (schemaName != null ? schemaName.hashCode() : 0);
+    result = 31 * result + (objects != null ? objects.hashCode() : 0);
+    return result;
+  }
 }

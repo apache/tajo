@@ -10,6 +10,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1357: Resolve findbugs warnings on Tajo Catalog Modules. (jihun)
+
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
