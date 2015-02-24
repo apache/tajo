@@ -30,6 +30,7 @@ import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
+import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
@@ -40,6 +41,7 @@ import org.apache.tajo.querymaster.QueryJobEvent;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.util.history.HistoryReader;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -151,6 +153,24 @@ public class QueryManager extends CompositeService {
     }
   }
 
+  public QueryInfo createNewSimpleQuery(QueryContext queryContext, Session session, String sql, LogicalRootNode plan)
+      throws IOException {
+
+    QueryId queryId = QueryIdFactory.newQueryId(masterContext.getResourceManager().getSeedQueryId());
+    QueryInProgress queryInProgress = new QueryInProgress(masterContext, session, queryContext, queryId, sql,
+        null, plan);
+    QueryInfo queryInfo = queryInProgress.getQueryInfo();
+    queryInfo.setQueryState(TajoProtos.QueryState.QUERY_SUCCEEDED);
+    queryInfo.setFinishTime(System.currentTimeMillis());
+    queryInProgress.stopProgress();
+
+    synchronized (historyCache) {
+      historyCache.put(queryInfo.getQueryId(), queryInfo);
+    }
+
+    return queryInProgress.getQueryInfo();
+  }
+
   public QueryInfo scheduleQuery(Session session, QueryContext queryContext, String sql,
                                  String jsonExpr, LogicalRootNode plan)
       throws Exception {
@@ -183,8 +203,7 @@ public class QueryManager extends CompositeService {
       dispatcher.getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_MASTER_START,
           queryInProgress.getQueryInfo()));
     } else {
-      dispatcher.getEventHandler().handle(new QueryJobEvent(QueryJobEvent.Type.QUERY_JOB_STOP,
-          queryInProgress.getQueryInfo()));
+      masterContext.getQueryJobManager().stopQuery(queryInProgress.getQueryId());
     }
 
     return queryInProgress.getQueryInfo();
@@ -196,18 +215,13 @@ public class QueryManager extends CompositeService {
     public void handle(QueryJobEvent event) {
       QueryInProgress queryInProgress = getQueryInProgress(event.getQueryInfo().getQueryId());
 
-
       if (queryInProgress == null) {
         LOG.warn("No query info in running queries.[" + event.getQueryInfo().getQueryId() + "]");
         return;
       }
 
-
       if (event.getType() == QueryJobEvent.Type.QUERY_MASTER_START) {
         queryInProgress.submmitQueryToMaster();
-
-      } else if (event.getType() == QueryJobEvent.Type.QUERY_JOB_STOP) {
-        stopQuery(event.getQueryInfo().getQueryId());
 
       } else if (event.getType() == QueryJobEvent.Type.QUERY_JOB_KILL) {
         scheduler.removeQuery(queryInProgress.getQueryId());

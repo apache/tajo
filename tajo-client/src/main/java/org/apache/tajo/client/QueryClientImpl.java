@@ -22,10 +22,7 @@ import com.google.protobuf.ServiceException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.QueryIdFactory;
-import org.apache.tajo.TajoIdProtos;
-import org.apache.tajo.TajoProtos;
+import org.apache.tajo.*;
 import org.apache.tajo.auth.UserRoleInfo;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
@@ -33,8 +30,8 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
+import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
-import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.ServerCallable;
@@ -46,7 +43,6 @@ import java.sql.ResultSet;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.tajo.conf.TajoConf.ConfVars;
 import static org.apache.tajo.ipc.ClientProtos.*;
 import static org.apache.tajo.ipc.QueryMasterClientProtocol.QueryMasterClientProtocolService;
 import static org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProtocolService;
@@ -54,9 +50,12 @@ import static org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProto
 public class QueryClientImpl implements QueryClient {
   private static final Log LOG = LogFactory.getLog(QueryClientImpl.class);
   private final SessionConnection connection;
+  private final int defaultFetchRows;
 
   public QueryClientImpl(SessionConnection connection) {
     this.connection = connection;
+    this.defaultFetchRows = this.connection.getProperties().getInt(SessionVars.FETCH_ROWNUM.getConfVars().keyname(),
+        SessionVars.FETCH_ROWNUM.getConfVars().defaultIntVal);
   }
 
   @Override
@@ -96,7 +95,7 @@ public class QueryClientImpl implements QueryClient {
 
   @Override
   public void closeQuery(QueryId queryId) {
-    // nothing to do
+    closeNonForwardQuery(queryId);
   }
 
   @Override
@@ -230,7 +229,7 @@ public class QueryClientImpl implements QueryClient {
         return this.createNullResultSet(queryId);
       } else {
         if (response.hasResultSet() || response.hasTableDesc()) {
-          return TajoClientUtil.createResultSet(connection.getConf() , this, response);
+          return TajoClientUtil.createResultSet(this, response, defaultFetchRows);
         } else {
           return this.createNullResultSet(queryId);
         }
@@ -260,7 +259,7 @@ public class QueryClientImpl implements QueryClient {
     } else {
 
       if (response.hasResultSet() || response.hasTableDesc()) {
-        return TajoClientUtil.createResultSet(connection.getConf(), this, response);
+        return TajoClientUtil.createResultSet(this, response, defaultFetchRows);
       } else {
         return this.createNullResultSet(queryId);
       }
@@ -335,14 +334,12 @@ public class QueryClientImpl implements QueryClient {
 
     GetQueryResultResponse response = getResultResponse(queryId);
     TableDesc tableDesc = CatalogUtil.newTableDesc(response.getTableDesc());
-    connection.getConf().setVar(ConfVars.USERNAME, response.getTajoUserName());
-
-    return new TajoResultSet(this, queryId, connection.getConf(), tableDesc);
+    return new FetchResultSet(this, tableDesc.getLogicalSchema(), queryId, defaultFetchRows);
   }
 
   @Override
   public ResultSet createNullResultSet(QueryId queryId) throws IOException {
-    return new TajoResultSet(this, queryId);
+    return TajoClientUtil.createNullResultSet(queryId);
   }
 
   @Override
@@ -410,7 +407,7 @@ public class QueryClientImpl implements QueryClient {
 
       ClientProtos.SerializedResultSet serializedResultSet = callable.withRetries();
 
-      return new TajoMemoryResultSet(
+      return new TajoMemoryResultSet(queryId,
           new Schema(serializedResultSet.getSchema()),
           serializedResultSet.getSerializedTuplesList(),
           serializedResultSet.getSerializedTuplesCount(),

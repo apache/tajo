@@ -623,7 +623,7 @@ public class DateTimeUtil {
       }
     } else if (cp.charAt(0) == '.') {
 		  /* always assume mm:ss.sss is MINUTE TO SECOND */
-      ParseFractionalSecond(cp, fsec);
+      parseFractionalSecond(cp, fsec);
       tm.secs = tm.minutes;
       tm.minutes = tm.hours;
       tm.hours = 0;
@@ -633,7 +633,7 @@ public class DateTimeUtil {
       if (cp.length() == 0){
         fsec.set(0);
       } else if (cp.charAt(0) == '.') {
-        ParseFractionalSecond(cp, fsec);
+        parseFractionalSecond(cp, fsec);
       } else{
         throw new IllegalArgumentException("BAD Format: " + str);
       }
@@ -889,7 +889,7 @@ public class DateTimeUtil {
    * @param cp
    * @param fsec
    */
-  public static void ParseFractionalSecond(StringBuilder cp, AtomicLong fsec) {
+  public static void parseFractionalSecond(StringBuilder cp, AtomicLong fsec) {
 	  /* Caller should always pass the start of the fraction part */
     double frac = strtod(cp.toString(), 1, cp);
     fsec.set(Math.round(frac * 1000000));
@@ -985,7 +985,7 @@ public class DateTimeUtil {
             fsec, is2digits);
         return;
       }
-      ParseFractionalSecond(cp, fsec);
+      parseFractionalSecond(cp, fsec);
     }
 
   	// Special case for day of year
@@ -1393,7 +1393,7 @@ public class DateTimeUtil {
                 tm.secs = val;
                 tmask.set(DateTimeConstants.DTK_M(TokenField.SECOND));
                 if (sb.charAt(0) == '.') {
-                  ParseFractionalSecond(sb, fsec);
+                  parseFractionalSecond(sb, fsec);
                   tmask.set(DateTimeConstants.DTK_ALL_SECS_M);
                 }
                 break;

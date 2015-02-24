@@ -19,7 +19,6 @@
 package org.apache.tajo.client;
 
 import com.google.protobuf.ServiceException;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
@@ -28,6 +27,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 
 import java.io.Closeable;
+import java.net.URI;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -79,7 +79,7 @@ public interface CatalogAdminClient extends Closeable {
    * @throws java.sql.SQLException
    * @throws ServiceException
    */
-  public TableDesc createExternalTable(final String tableName, final Schema schema, final Path path,
+  public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
                                        final TableMeta meta) throws SQLException, ServiceException;
 
   /**
@@ -95,7 +95,7 @@ public interface CatalogAdminClient extends Closeable {
    * @throws SQLException
    * @throws ServiceException
    */
-  public TableDesc createExternalTable(final String tableName, final Schema schema, final Path path,
+  public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
                                        final TableMeta meta, final PartitionMethodDesc partitionMethodDesc)
       throws SQLException, ServiceException;
 

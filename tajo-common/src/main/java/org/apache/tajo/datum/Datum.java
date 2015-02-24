@@ -19,6 +19,7 @@
 package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.exception.InvalidCastException;
@@ -32,7 +33,13 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
   static boolean abortWhenDivideByZero;
 
   static {
-    initAbortWhenDivideByZero(new TajoConf());
+    try {
+      //TODO separate hadoop configuration from TajoConf
+      initAbortWhenDivideByZero(new TajoConf());
+    } catch (NoClassDefFoundError error) {
+      abortWhenDivideByZero = Boolean.valueOf(System.getProperty(SessionVars.ARITHABORT.getConfVars().keyname()
+          , SessionVars.ARITHABORT.getConfVars().defaultVal));
+    }
   }
 
   @Expose	private final Type type;

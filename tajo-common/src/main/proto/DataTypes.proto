@@ -59,9 +59,11 @@ enum Type {
   VARBINARY = 44; // variable-width binary strings
   BLOB = 45;
 
-  ANY = 51; // Any type
-  UDT = 52; // user-defined function
-  PROTOBUF = 53; // protocol buffer type
+  RECORD = 51; // nested structure type
+
+  ANY = 61; // Any type
+  UDT = 62; // user-defined function
+  PROTOBUF = 63; // protocol buffer type
 
   INET4 = 91;
   INET6 = 92;
