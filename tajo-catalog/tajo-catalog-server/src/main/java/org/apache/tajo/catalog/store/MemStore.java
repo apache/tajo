@@ -653,6 +653,31 @@ public class MemStore implements CatalogStore {
     return false;
   }
 
+//  public List<IndexProto> getAllIndexes() throws CatalogException {
+//    List<IndexProto> indexList = new ArrayList<CatalogProtos.IndexProto>();
+//    Set<String> databases = indexes.keySet();
+//
+//    for (String databaseName: databases) {
+//      Map<String, IndexDescProto> indexMap = indexes.get(databaseName);
+//
+//      for (Map.Entry<String, IndexDescProto> entry: indexMap.entrySet()) {
+//        IndexDescProto indexDesc = entry.getValue();
+//        IndexProto.Builder builder = IndexProto.newBuilder();
+//
+//        builder.setColumnName(indexDesc.getColumn().getName());
+//        builder.setDataType(indexDesc.getColumn().getDataType().getType().toString());
+//        builder.setIndexName(entry.getKey());
+//        builder.setIndexType(indexDesc.getIndexMethod().toString());
+//        builder.setIsAscending(indexDesc.hasIsAscending() && indexDesc.getIsAscending());
+//        builder.setIsClustered(indexDesc.hasIsClustered() && indexDesc.getIsClustered());
+//        builder.setIsUnique(indexDesc.hasIsUnique() && indexDesc.getIsUnique());
+//
+//        indexList.add(builder.build());
+//      }
+//    }
+//    return false;
+//  }
+
   @Override
   public List<IndexDescProto> getAllIndexes() throws CatalogException {
     List<IndexDescProto> indexDescProtos = TUtil.newList();

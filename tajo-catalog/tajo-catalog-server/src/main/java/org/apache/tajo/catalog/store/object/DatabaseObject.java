@@ -76,5 +76,30 @@ public class DatabaseObject implements Comparable<DatabaseObject> {
   public int compareTo(DatabaseObject o) {
     return (int) Math.signum(getOrder() - o.getOrder());
   }
-  
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    DatabaseObject that = (DatabaseObject) o;
+
+    if (order != that.order) return false;
+    if (dependsOn != null ? !dependsOn.equals(that.dependsOn) : that.dependsOn != null) return false;
+    if (name != null ? !name.equals(that.name) : that.name != null) return false;
+    if (sql != null ? !sql.equals(that.sql) : that.sql != null) return false;
+    if (type != that.type) return false;
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = order;
+    result = 31 * result + (type != null ? type.hashCode() : 0);
+    result = 31 * result + (name != null ? name.hashCode() : 0);
+    result = 31 * result + (dependsOn != null ? dependsOn.hashCode() : 0);
+    result = 31 * result + (sql != null ? sql.hashCode() : 0);
+    return result;
+  }
 }
