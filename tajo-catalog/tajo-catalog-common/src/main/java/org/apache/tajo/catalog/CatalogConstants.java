@@ -48,6 +48,7 @@ public class CatalogConstants {
   public static final String TB_STATISTICS = "STATS";
   public static final String TB_PARTITION_METHODS = "PARTITION_METHODS";
   public static final String TB_PARTTIONS = "PARTITIONS";
+  public static final String TB_PARTTION_KEYS = "PARTITION_KEYS";
 
   public static final String COL_TABLESPACE_PK = "SPACE_ID";
   public static final String COL_DATABASES_PK = "DB_ID";
