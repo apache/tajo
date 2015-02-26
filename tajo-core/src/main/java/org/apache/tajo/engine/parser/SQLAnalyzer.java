@@ -1288,7 +1288,10 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     ColumnDefinition[] elements = new ColumnDefinition[size];
     for (int i = 0; i < size; i++) {
       String name = ctx.field_element(i).name.getText();
+
+      String dataTypeName = ctx.field_element(i).field_type().data_type().getText();
       DataTypeExpr typeDef = visitData_type(ctx.field_element(i).field_type().data_type());
+      Preconditions.checkNotNull(typeDef, dataTypeName + " is not handled correctly");
       elements[i] = new ColumnDefinition(name, typeDef);
     }
 
@@ -1359,12 +1362,17 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     SQLParser.Predefined_typeContext predefined_type = ctx.predefined_type();
 
     DataTypeExpr typeDefinition = null;
-    if (predefined_type.character_string_type() != null) {
-      SQLParser.Character_string_typeContext character_string_type =
-          predefined_type.character_string_type();
 
-      if ((character_string_type.CHARACTER() != null || character_string_type.CHAR() != null) &&
-          character_string_type.VARYING() == null) {
+    // CHAR -> FIXED   CHAR
+    //      |- VARYING CHAR
+    // TEXT
+    if (checkIfExist(predefined_type.character_string_type())) {
+
+      SQLParser.Character_string_typeContext character_string_type = predefined_type.character_string_type();
+
+
+      if ((checkIfExist(character_string_type.CHARACTER()) || checkIfExist(character_string_type.CHAR())) &&
+          !checkIfExist(character_string_type.VARYING())) {
 
         typeDefinition = new DataTypeExpr(Type.CHAR.name());
 
@@ -1373,8 +1381,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
               Integer.parseInt(character_string_type.type_length().NUMBER().getText()));
         }
 
-      } else if (character_string_type.VARCHAR() != null
-          || character_string_type.VARYING() != null) {
+      } else if (checkIfExist(character_string_type.VARCHAR()) || checkIfExist(character_string_type.VARYING())) {
 
         typeDefinition = new DataTypeExpr(Type.VARCHAR.name());
 
@@ -1383,115 +1390,159 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
               Integer.parseInt(character_string_type.type_length().NUMBER().getText()));
         }
 
-      } else if (character_string_type.TEXT() != null) {
+      } else if (checkIfExist(character_string_type.TEXT())) {
         typeDefinition = new DataTypeExpr(Type.TEXT.name());
       }
 
-    } else if (predefined_type.national_character_string_type() != null) {
-      SQLParser.National_character_string_typeContext nchar_type =
-          predefined_type.national_character_string_type();
-      if ((nchar_type.CHAR() != null || nchar_type.CHARACTER() != null
-          || nchar_type.NCHAR() != null) && nchar_type.VARYING() == null) {
+    // NCHAR
+    } else if (checkIfExist(predefined_type.national_character_string_type())) {
+
+      National_character_string_typeContext nchar_type = predefined_type.national_character_string_type();
+
+      if ((checkIfExist(nchar_type.CHAR()) || checkIfExist(nchar_type.CHARACTER()) ||
+          checkIfExist(nchar_type.NCHAR()) && !checkIfExist(nchar_type.VARYING()))) {
+
         typeDefinition = new DataTypeExpr(Type.NCHAR.name());
-      } else if (nchar_type.NVARCHAR() != null || nchar_type.VARYING() != null) {
+
+      } else if (checkIfExist(nchar_type.NVARCHAR()) || checkIfExist(nchar_type.VARYING())) {
+
         typeDefinition = new DataTypeExpr(Type.NVARCHAR.name());
       }
 
-      if (nchar_type.type_length() != null) {
-        typeDefinition.setLengthOrPrecision(
-            Integer.parseInt(nchar_type.type_length().NUMBER().getText()));
+      // if a length is given
+      if (checkIfExist(nchar_type.type_length())) {
+        typeDefinition.setLengthOrPrecision(Integer.parseInt(nchar_type.type_length().NUMBER().getText()));
       }
 
-    } else if (predefined_type.binary_large_object_string_type() != null) {
-      SQLParser.Binary_large_object_string_typeContext blob_type =
-          predefined_type.binary_large_object_string_type();
+    // BLOB types
+    } else if (checkIfExist(predefined_type.binary_large_object_string_type())) {
+
+      Binary_large_object_string_typeContext blob_type = predefined_type.binary_large_object_string_type();
+
       typeDefinition = new DataTypeExpr(Type.BLOB.name());
-      if (blob_type.type_length() != null) {
-        typeDefinition.setLengthOrPrecision(
-            Integer.parseInt(blob_type.type_length().NUMBER().getText()));
-      }
-    } else if (predefined_type.numeric_type() != null) {
-      // exact number
-      if (predefined_type.numeric_type().exact_numeric_type() != null) {
-        SQLParser.Exact_numeric_typeContext exactType =
-            predefined_type.numeric_type().exact_numeric_type();
-        if (exactType.TINYINT() != null || exactType.INT1() != null) {
-          typeDefinition = new DataTypeExpr(Type.INT1.name());
-        } else if (exactType.INT2() != null || exactType.SMALLINT() != null) {
-          typeDefinition = new DataTypeExpr(Type.INT2.name());
-        } else if (exactType.INT4() != null || exactType.INTEGER() != null ||
-            exactType.INT() != null) {
-          typeDefinition = new DataTypeExpr(Type.INT4.name());
-        } else if (exactType.INT8() != null || exactType.BIGINT() != null) {
-          typeDefinition = new DataTypeExpr(Type.INT8.name());
-        } else if (exactType.NUMERIC() != null) {
-          typeDefinition = new DataTypeExpr(Type.NUMERIC.name());
-        } else if (exactType.DECIMAL() != null || exactType.DEC() != null) {
-          typeDefinition = new DataTypeExpr(Type.NUMERIC.name());
-        }
 
-        if (typeDefinition.getTypeName().equals(Type.NUMERIC.name())) {
-          if (exactType.precision_param() != null) {
-            if (exactType.precision_param().scale != null) {
-              typeDefinition.setScale(
-                  Integer.parseInt(exactType.precision_param().scale.getText()));
+      if (checkIfExist(blob_type.type_length())) {
+        typeDefinition.setLengthOrPrecision(Integer.parseInt(blob_type.type_length().NUMBER().getText()));
+      }
+
+    // NUMERIC types
+    } else if (checkIfExist(predefined_type.numeric_type())) {
+      // exact number
+      if (checkIfExist(predefined_type.numeric_type().exact_numeric_type())) {
+
+        Exact_numeric_typeContext exactType = predefined_type.numeric_type().exact_numeric_type();
+
+        if (checkIfExist(exactType.TINYINT()) || checkIfExist(exactType.INT1())) {
+          typeDefinition = new DataTypeExpr(Type.INT1.name());
+
+        } else if (checkIfExist(exactType.INT2()) || checkIfExist(exactType.SMALLINT())) {
+          typeDefinition = new DataTypeExpr(Type.INT2.name());
+
+        } else if (checkIfExist(exactType.INT4()) ||
+            checkIfExist(exactType.INTEGER()) ||
+            checkIfExist(exactType.INT())) {
+          typeDefinition = new DataTypeExpr(Type.INT4.name());
+
+        } else if (checkIfExist(exactType.INT8()) || checkIfExist(exactType.BIGINT()) ) {
+          typeDefinition = new DataTypeExpr(Type.INT8.name());
+
+        } else if (checkIfExist(exactType.NUMERIC()) ||
+            checkIfExist(exactType.DECIMAL()) ||
+            checkIfExist(exactType.DEC())) {
+          typeDefinition = new DataTypeExpr(Type.NUMERIC.name());
+
+          if (checkIfExist(exactType.precision_param())) {
+            typeDefinition.setLengthOrPrecision(Integer.parseInt(exactType.precision_param().precision.getText()));
+
+            if (checkIfExist(exactType.precision_param().scale)) {
+              typeDefinition.setScale(Integer.parseInt(exactType.precision_param().scale.getText()));
             }
-            typeDefinition.setLengthOrPrecision(
-                Integer.parseInt(exactType.precision_param().precision.getText()));
           }
         }
+
+
       } else { // approximate number
-        SQLParser.Approximate_numeric_typeContext approximateType =
-            predefined_type.numeric_type().approximate_numeric_type();
-        if (approximateType.FLOAT() != null || approximateType.FLOAT4() != null
-            || approximateType.REAL() != null) {
+        Approximate_numeric_typeContext approximateType = predefined_type.numeric_type().approximate_numeric_type();
+        if (checkIfExist(approximateType.FLOAT()) ||
+            checkIfExist(approximateType.FLOAT4()) ||
+            checkIfExist(approximateType.REAL())) {
           typeDefinition = new DataTypeExpr(Type.FLOAT4.name());
-        } else if (approximateType.FLOAT8() != null || approximateType.DOUBLE() != null) {
+
+        } else if (checkIfExist(approximateType.FLOAT8()) || checkIfExist(approximateType.DOUBLE())) {
           typeDefinition = new DataTypeExpr(Type.FLOAT8.name());
         }
       }
-    } else if (predefined_type.boolean_type() != null) {
+
+    } else if (checkIfExist(predefined_type.boolean_type())) {
       typeDefinition = new DataTypeExpr(Type.BOOLEAN.name());
-    } else if (predefined_type.datetime_type() != null) {
-      SQLParser.Datetime_typeContext dateTimeType = predefined_type.datetime_type();
-      if (dateTimeType.DATE() != null) {
+
+    } else if (checkIfExist(predefined_type.datetime_type())) {
+
+      Datetime_typeContext dateTimeType = predefined_type.datetime_type();
+      if (checkIfExist(dateTimeType.DATE())) {
         typeDefinition = new DataTypeExpr(Type.DATE.name());
-      } else if (dateTimeType.TIME(0) != null && dateTimeType.ZONE() == null) {
-        typeDefinition = new DataTypeExpr(Type.TIME.name());
-      } else if ((dateTimeType.TIME(0) != null && dateTimeType.ZONE() != null) ||
-          dateTimeType.TIMETZ() != null) {
+
+      } else if (checkIfExist(dateTimeType.TIME(0))) {
+        if (checkIfExist(dateTimeType.ZONE())) {
+          typeDefinition = new DataTypeExpr(Type.TIMEZ.name());
+        } else {
+          typeDefinition = new DataTypeExpr(Type.TIME.name());
+        }
+
+      } else if (checkIfExist(dateTimeType.TIMETZ())) {
         typeDefinition = new DataTypeExpr(Type.TIMEZ.name());
-      } else if (dateTimeType.TIMESTAMP() != null && dateTimeType.ZONE() == null) {
-        typeDefinition = new DataTypeExpr(Type.TIMESTAMP.name());
-      } else if ((dateTimeType.TIMESTAMP() != null && dateTimeType.ZONE() != null) ||
-          dateTimeType.TIMESTAMPTZ() != null) {
+
+      } else if (checkIfExist(dateTimeType.TIMESTAMP())) {
+         if (checkIfExist(dateTimeType.ZONE())) {
+           typeDefinition = new DataTypeExpr(Type.TIMESTAMPZ.name());
+         }  else {
+           typeDefinition = new DataTypeExpr(Type.TIMESTAMP.name());
+         }
+
+      } else if (checkIfExist(dateTimeType.TIMESTAMPTZ())) {
         typeDefinition = new DataTypeExpr(Type.TIMESTAMPZ.name());
       }
+
+      // bit data types
     } else if (predefined_type.bit_type() != null) {
-      SQLParser.Bit_typeContext bitType = predefined_type.bit_type();
-      if (bitType.VARBIT() != null || bitType.VARYING() != null) {
+      Bit_typeContext bitType = predefined_type.bit_type();
+
+      if (checkIfExist(bitType.VARBIT()) || checkIfExist(bitType.VARYING())) {
         typeDefinition = new DataTypeExpr(Type.VARBIT.name());
+
       } else {
         typeDefinition = new DataTypeExpr(Type.BIT.name());
       }
-      if (bitType.type_length() != null) {
+
+      if (checkIfExist(bitType.type_length())) {
         typeDefinition.setLengthOrPrecision(
             Integer.parseInt(bitType.type_length().NUMBER().getText()));
       }
-    } else if (predefined_type.binary_type() != null) {
+
+
+      // binary data types
+    } else if (checkIfExist(predefined_type.binary_type())) {
       SQLParser.Binary_typeContext binaryType = predefined_type.binary_type();
-      if (binaryType.VARBINARY() != null || binaryType.VARYING() != null) {
+
+      if (checkIfExist(binaryType.VARBINARY()) || checkIfExist(binaryType.VARYING())) {
         typeDefinition = new DataTypeExpr(Type.VARBINARY.name());
       } else {
         typeDefinition = new DataTypeExpr(Type.BINARY.name());
       }
 
-      if (binaryType.type_length() != null) {
-        typeDefinition.setLengthOrPrecision(
-            Integer.parseInt(binaryType.type_length().NUMBER().getText()));
+
+      if (checkIfExist(binaryType.type_length())) {
+        typeDefinition.setLengthOrPrecision(Integer.parseInt(binaryType.type_length().NUMBER().getText()));
       }
-    } else if (predefined_type.network_type() != null) {
+
+      // inet
+    } else if (checkIfExist(predefined_type.network_type())) {
       typeDefinition = new DataTypeExpr(Type.INET4.name());
+
+
+    } else if (checkIfExist(predefined_type.record_type())) {
+      ColumnDefinition [] nestedRecordDefines = getDefinitions(predefined_type.record_type().table_elements());
+      typeDefinition = new DataTypeExpr(nestedRecordDefines);
     }
 
     return typeDefinition;

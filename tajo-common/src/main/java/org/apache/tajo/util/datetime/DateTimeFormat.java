@@ -482,7 +482,7 @@ public class DateTimeFormat {
       keyword.is_digit = ((Boolean)eachKeywordValue[3]).booleanValue();
       keyword.date_mode = (FromCharDateMode)eachKeywordValue[4];
 
-      Character c = new Character(keyword.name.charAt(0));
+      Character c = Character.valueOf(keyword.name.charAt(0));
       Integer pos = DCH_index.get(c);
       if (pos == null) {
         DCH_index.put(c, index);
@@ -1245,6 +1245,8 @@ public class DateTimeFormat {
           charIdx += from_char_parse_int(value, dateText, charIdx, nodes, nodeIdx);
           out.j = value.get();
           charIdx += SKIP_THth(node.suffix);
+          break;
+        default:
           break;
       }
     }
@@ -2118,6 +2120,8 @@ public class DateTimeFormat {
             str_numth(out, out, S_TH_TYPE(node.suffix));
           }
           break;
+        default:
+          break;
       }
     }
   }
@@ -2141,8 +2145,7 @@ public class DateTimeFormat {
      * All "teens" (<x>1[0-9]) get 'TH/th', while <x>[02-9][123] still get
      * 'ST/st', 'ND/nd', 'RD/rd', respectively
      */
-    char seclast;
-    if ((len > 1) && ((seclast = num.charAt(len - 2)) == '1')) {
+    if ((len > 1) && (num.charAt(len - 2) == '1')) {
       last = 0;
     }
 
