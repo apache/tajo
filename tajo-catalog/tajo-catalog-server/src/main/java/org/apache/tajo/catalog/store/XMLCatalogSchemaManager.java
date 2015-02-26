@@ -123,6 +123,7 @@ public class XMLCatalogSchemaManager {
         failedObjects.add(object);
       }
     }
+    CatalogUtil.closeQuietly(stmt);
     
     if (failedObjects.size() > 0) {
       StringBuffer errorMessage = new StringBuffer(64);
@@ -251,14 +252,19 @@ public class XMLCatalogSchemaManager {
       pstmt.setString(paramIdx, params[paramIdx-1]);
     }
     
-    ResultSet rs = pstmt.executeQuery();
-    while (rs.next()) {
-      if (rs.getString(1).equals(params[params.length-1].toUpperCase())) {
-        result = true;
-        break;
+    ResultSet rs = null;
+    try {
+      rs = pstmt.executeQuery();
+      while (rs.next()) {
+        if (rs.getString(1).equals(params[params.length - 1].toUpperCase())) {
+          result = true;
+          break;
+        }
       }
+    } finally {
+      CatalogUtil.closeQuietly(rs);
     }
-    CatalogUtil.closeQuietly(rs);
+
     return result;
   }
 
@@ -299,6 +305,8 @@ public class XMLCatalogSchemaManager {
         throw new CatalogException(e.getMessage(), e);
       }
     }
+
+    CatalogUtil.closeQuietly(stmt);
   }
   
   public void upgradeBaseSchema(Connection conn, int currentVersion) {
@@ -332,6 +340,8 @@ public class XMLCatalogSchemaManager {
         }
       }
     }
+
+    CatalogUtil.closeQuietly(stmt);
   }
 
   public boolean isInitialized(Connection conn) throws CatalogException {
@@ -362,7 +372,7 @@ public class XMLCatalogSchemaManager {
   
   protected String[] listFileResources(URL dirURL, String schemaPath, FilenameFilter filter) 
       throws URISyntaxException, IOException {
-    String[] files = new String[0];
+    String[] files;
     String[] tempFiles;
     List<String> filesList = new ArrayList<String>();
     File dirFile = new File(dirURL.toURI());

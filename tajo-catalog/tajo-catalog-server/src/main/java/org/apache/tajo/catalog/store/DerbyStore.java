@@ -81,6 +81,8 @@ public class DerbyStore extends AbstractDBStore {
         stmt.executeUpdate("CREATE SCHEMA " + schemaName);
       } catch (SQLException e) {
         throw new CatalogException(e);
+      } finally {
+        CatalogUtil.closeQuietly(stmt);
       }
     }
   }
