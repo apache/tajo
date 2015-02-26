@@ -85,9 +85,9 @@ public class BlockingRpcServer extends NettyServerBase {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg)
         throws Exception {
-      
-      try {
-        if (msg instanceof RpcRequest) {
+
+      if (msg instanceof RpcRequest) {
+        try {
           final RpcRequest request = (RpcRequest) msg;
 
           String methodName = request.getMethodName();
@@ -125,9 +125,9 @@ public class BlockingRpcServer extends NettyServerBase {
             builder.setErrorMessage(controller.errorText());
           }
           ctx.writeAndFlush(builder.build());
+        } finally {
+          ReferenceCountUtil.release(msg);
         }
-      } finally {
-        ReferenceCountUtil.release(msg);
       }
     }
 
@@ -137,7 +137,10 @@ public class BlockingRpcServer extends NettyServerBase {
         RemoteCallException callException = (RemoteCallException) cause;
         ctx.writeAndFlush(callException.getResponse());
       }
-      ctx.close();
+      
+      if (ctx != null && ctx.channel().isActive()) {
+        ctx.channel().close();
+      }
     }
     
   }

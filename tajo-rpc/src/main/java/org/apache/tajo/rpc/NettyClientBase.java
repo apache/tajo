@@ -19,11 +19,13 @@
 package org.apache.tajo.rpc;
 
 import io.netty.channel.*;
+
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.GenericFutureListener;
 
@@ -61,6 +63,7 @@ public abstract class NettyClientBase implements Closeable {
     this.bootstrap
       .channel(NioSocketChannel.class)
       .handler(initializer)
+      .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
       .option(ChannelOption.SO_REUSEADDR, true)
       .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
       .option(ChannelOption.SO_RCVBUF, 1048576 * 10)

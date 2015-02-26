@@ -22,6 +22,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -75,6 +76,7 @@ public class NettyServerBase {
       .childHandler(initializer)
       .option(ChannelOption.SO_REUSEADDR, true)
       .option(ChannelOption.TCP_NODELAY, true)
+      .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
       .childOption(ChannelOption.TCP_NODELAY, true)
       .childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
       .childOption(ChannelOption.SO_RCVBUF, 1048576 * 10);

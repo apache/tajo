@@ -77,8 +77,9 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
   @Override
   public void channelRead(ChannelHandlerContext ctx, Object msg)
       throws Exception {
-    try {
-      if (msg instanceof HttpRequest) {
+
+    if (msg instanceof HttpRequest) {
+      try {
         HttpRequest request = (HttpRequest) msg;
         if (request.getMethod() != HttpMethod.GET) {
           sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED);
@@ -141,10 +142,11 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
             writeFuture.addListener(ChannelFutureListener.CLOSE);
           }
         }
+      } finally {
+        ReferenceCountUtil.release(msg);
       }
-    } finally {
-      ReferenceCountUtil.release(msg);
     }
+
   }
 
   private ChannelFuture sendFile(ChannelHandlerContext ctx,
@@ -193,7 +195,6 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
     if (ch.isActive()) {
       sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR);
     }
-    ctx.close();
   }
 
   public static String sanitizeUri(String uri) {

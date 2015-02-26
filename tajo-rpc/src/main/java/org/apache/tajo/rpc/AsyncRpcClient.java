@@ -230,8 +230,8 @@ public class AsyncRpcClient extends NettyClientBase {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg)
         throws Exception {
-      try {
-        if (msg instanceof RpcResponse) {
+      if (msg instanceof RpcResponse) {
+        try {
           RpcResponse response = (RpcResponse) msg;
           ResponseCallback callback = requests.remove(response.getId());
 
@@ -240,9 +240,9 @@ public class AsyncRpcClient extends NettyClientBase {
           } else {
             callback.run(response);
           }
+        } finally {
+          ReferenceCountUtil.release(msg);
         }
-      } finally {
-        ReferenceCountUtil.release(msg);
       }
     }
 
@@ -259,8 +259,8 @@ public class AsyncRpcClient extends NettyClientBase {
         LOG.error("RPC Exception:" + cause.getMessage());
       }
       
-      if (ctx != null) {
-        ctx.close();
+      if (ctx != null && ctx.channel().isActive()) {
+        ctx.channel().close();
       }
     }
   }

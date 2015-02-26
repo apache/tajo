@@ -80,8 +80,8 @@ public class AsyncRpcServer extends NettyServerBase {
     @Override
     public void channelRead(final ChannelHandlerContext ctx, Object msg)
         throws Exception {
-      try {
-        if (msg instanceof RpcRequest) {
+      if (msg instanceof RpcRequest) {
+        try {
           final RpcRequest request = (RpcRequest) msg;
 
           String methodName = request.getMethodName();
@@ -122,9 +122,10 @@ public class AsyncRpcServer extends NettyServerBase {
           };
 
           service.callMethod(methodDescriptor, controller, paramProto, callback);
+
+        } finally {
+          ReferenceCountUtil.release(msg);
         }
-      } finally {
-        ReferenceCountUtil.release(msg);
       }
     }
 
@@ -138,7 +139,9 @@ public class AsyncRpcServer extends NettyServerBase {
         LOG.error(cause.getMessage());
       }
       
-      ctx.close();
+      if (ctx != null && ctx.channel().isActive()) {
+        ctx.channel().close();
+      }
     }
     
   }

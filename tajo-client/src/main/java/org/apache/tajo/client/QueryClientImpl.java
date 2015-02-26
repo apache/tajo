@@ -85,7 +85,6 @@ public class QueryClientImpl implements QueryClient {
 
   @Override
   public void close() {
-    RpcChannelFactory.shutdownGracefully();
   }
 
   @Override

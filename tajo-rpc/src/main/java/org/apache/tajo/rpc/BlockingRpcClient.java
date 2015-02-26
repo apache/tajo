@@ -199,8 +199,8 @@ public class BlockingRpcClient extends NettyClientBase {
     public void channelRead(ChannelHandlerContext ctx, Object msg)
         throws Exception {
 
-      try {
-        if (msg instanceof RpcResponse) {
+      if (msg instanceof RpcResponse) {
+        try {
           RpcResponse rpcResponse = (RpcResponse) msg;
           ProtoCallFuture callback = requests.remove(rpcResponse.getId());
 
@@ -224,9 +224,9 @@ public class BlockingRpcClient extends NettyClientBase {
               callback.setResponse(responseMessage);
             }
           }
+        } finally {
+          ReferenceCountUtil.release(msg);
         }
-      } finally {
-        ReferenceCountUtil.release(msg);
       }
     }
 
@@ -242,8 +242,8 @@ public class BlockingRpcClient extends NettyClientBase {
       } else {
         LOG.error("RPC Exception:" + cause.getMessage());
       }
-      if (ctx != null) {
-        ctx.close();
+      if (ctx != null && ctx.channel().isActive()) {
+        ctx.channel().close();
       }
     }
   }

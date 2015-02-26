@@ -21,6 +21,7 @@ package org.apache.tajo.pullserver;
 import com.google.common.collect.Lists;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.group.ChannelGroup;
@@ -208,6 +209,7 @@ public class PullServerAuxService extends AuxiliaryService {
 
       selector = RpcChannelFactory.createServerChannelFactory("PullServerAuxService", 0)
                   .option(ChannelOption.TCP_NODELAY, true)
+                  .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                   .childOption(ChannelOption.TCP_NODELAY, true);
 
       localFS = new LocalFileSystem();
@@ -352,8 +354,8 @@ public class PullServerAuxService extends AuxiliaryService {
     public void channelRead(ChannelHandlerContext ctx, Object msg)
         throws Exception {
 
-      try {
-        if (msg instanceof HttpRequest) {
+      if (msg instanceof HttpRequest) {
+        try {
           HttpRequest request = (HttpRequest) msg;
           if (request.getMethod() != HttpMethod.GET) {
             sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED);
@@ -473,10 +475,11 @@ public class PullServerAuxService extends AuxiliaryService {
               writeFuture.addListener(ChannelFutureListener.CLOSE);
             }
           }
+        } finally {
+          ReferenceCountUtil.release(msg);
         }
-      } finally {
-        ReferenceCountUtil.release(msg);
       }
+
     }
 
     private ChannelFuture sendFile(ChannelHandlerContext ctx,

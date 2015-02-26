@@ -28,7 +28,6 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public final class RpcChannelFactory {
@@ -36,12 +35,16 @@ public final class RpcChannelFactory {
   
   private static final int DEFAULT_WORKER_NUM = Runtime.getRuntime().availableProcessors() * 2;
   
-  private static EventLoopGroup loopGroup;
+  private static volatile EventLoopGroup loopGroup;
   private static final Object lockObjectForLoopGroup = new Object();
   private static AtomicInteger clientCount = new AtomicInteger(0);
   private static AtomicInteger serverCount = new AtomicInteger(0);
 
   private RpcChannelFactory(){
+  }
+  
+  static {
+    Runtime.getRuntime().addShutdownHook(new CleanUpHandler());
   }
 
   /**
@@ -99,7 +102,7 @@ public final class RpcChannelFactory {
     ThreadFactory workerFactory = builder.setNameFormat(name + " Server Worker #%d").build();
     
     EventLoopGroup bossGroup =
-        new NioEventLoopGroup(0, bossFactory);
+        new NioEventLoopGroup(1, bossFactory);
     EventLoopGroup workerGroup = 
         new NioEventLoopGroup(workerNum, workerFactory);
     
@@ -115,10 +118,18 @@ public final class RpcChannelFactory {
       synchronized(lockObjectForLoopGroup) {
         if (loopGroup != null) {
           loopGroup.shutdownGracefully();
-          loopGroup.terminationFuture().awaitUninterruptibly(10, TimeUnit.SECONDS);
           loopGroup = null;
         }
       }
     }
+  }
+  
+  static class CleanUpHandler extends Thread {
+
+    @Override
+    public void run() {
+      RpcChannelFactory.shutdownGracefully();
+    }
+    
   }
 }

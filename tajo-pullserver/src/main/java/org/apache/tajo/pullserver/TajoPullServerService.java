@@ -56,6 +56,7 @@ import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.index.bst.BSTIndex;
 
 import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -233,7 +234,9 @@ public class TajoPullServerService extends AbstractService {
           Runtime.getRuntime().availableProcessors() * 2);
 
       selector = RpcChannelFactory.createServerChannelFactory("PullServerAuxService", workerNum)
-                   .option(ChannelOption.TCP_NODELAY, true);
+                   .option(ChannelOption.TCP_NODELAY, true)
+                   .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+                   .childOption(ChannelOption.TCP_NODELAY, true);
 
       localFS = new LocalFileSystem();
 
@@ -508,8 +511,8 @@ public class TajoPullServerService extends AbstractService {
     public void channelRead(ChannelHandlerContext ctx, Object msg)
             throws Exception {
 
-      try {
-        if (msg instanceof HttpRequest) {
+      if (msg instanceof HttpRequest) {
+        try {
           HttpRequest request = (HttpRequest) msg;
           if (request.getMethod() != HttpMethod.GET) {
             sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED);
@@ -665,9 +668,11 @@ public class TajoPullServerService extends AbstractService {
               writeFuture.addListener(ChannelFutureListener.CLOSE);
             }
           }
+        } catch (Exception e) {
+          LOG.error(e.getMessage());
+        } finally {
+          ReferenceCountUtil.release(msg);
         }
-      } finally {
-        ReferenceCountUtil.release(msg);
       }
     }
 
@@ -729,9 +734,7 @@ public class TajoPullServerService extends AbstractService {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
         throws Exception {
       LOG.error(cause.getMessage(), cause);
-      //if channel.close() is not called, never closed files in this request
-      ctx.close();
-      accepted.remove(ctx.channel());
+      sendError(ctx, cause.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR);
     }
   }
 

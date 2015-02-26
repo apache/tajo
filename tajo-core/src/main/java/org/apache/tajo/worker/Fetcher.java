@@ -50,6 +50,7 @@ import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.timeout.ReadTimeoutException;
 import io.netty.handler.timeout.ReadTimeoutHandler;
+import io.netty.util.ReferenceCountUtil;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -210,16 +211,14 @@ public class Fetcher {
         throws Exception {
 
       messageReceiveCount++;
-      try {
-        if (msg instanceof HttpResponse) {
-
+      if (msg instanceof HttpResponse) {
+        try {
           HttpResponse response = (HttpResponse) msg;
 
           StringBuilder sb = new StringBuilder();
           if (LOG.isDebugEnabled()) {
-            sb.append("STATUS: ").append(response.getStatus())
-                .append(", VERSION: ").append(response.getProtocolVersion())
-                .append(", HEADER: ");
+            sb.append("STATUS: ").append(response.getStatus()).append(", VERSION: ")
+                .append(response.getProtocolVersion()).append(", HEADER: ");
           }
           if (!response.headers().names().isEmpty()) {
             for (String name : response.headers().names()) {
@@ -241,34 +240,42 @@ public class Fetcher {
             LOG.warn("There are no data corresponding to the request");
             length = 0;
             return;
-          } else if (response.getStatus().code() != HttpResponseStatus.OK.code()){
+          } else if (response.getStatus().code() != HttpResponseStatus.OK.code()) {
             LOG.error(response.getStatus().reasonPhrase());
             state = TajoProtos.FetcherState.FETCH_FAILED;
             return;
           }
+        } catch (Exception e) {
+          LOG.error(e.getMessage());
+        } finally {
+          ReferenceCountUtil.release(msg);
         }
-        
-        if (msg instanceof HttpContent) {
+      }
+
+      if (msg instanceof HttpContent) {
+        try {
           HttpContent httpContent = (HttpContent) msg;
           ByteBuf content = httpContent.content();
           if (content.isReadable()) {
             fc.write(content.nioBuffer());
           }
-          
+
           if (msg instanceof LastHttpContent) {
-            if(raf != null) {
+            if (raf != null) {
               fileLen = file.length();
             }
-            
+
             IOUtils.cleanup(LOG, fc, raf);
             finishTime = System.currentTimeMillis();
             if (state != TajoProtos.FetcherState.FETCH_FAILED) {
               state = TajoProtos.FetcherState.FETCH_FINISHED;
             }
           }
+        } catch (Exception e) {
+          LOG.error(e.getMessage());
+        } finally {
+          ReferenceCountUtil.release(msg);
         }
-      } catch(Exception e) {
-        LOG.warn(e.getMessage(), e);
       }
     }
 
