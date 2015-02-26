@@ -37,7 +37,7 @@
     <protobuf.version>2.5.0</protobuf.version>
     <tajo.version>0.10.0-SNAPSHOT</tajo.version>
     <hbase.version>0.98.7-hadoop2</hbase.version>
-    <netty.version>4.0.24.Final</netty.version>
+    <netty.version>4.0.25.Final</netty.version>
     <tajo.root>${project.parent.relativePath}/..</tajo.root>
     <extra.source.path>src/main/hadoop-${hadoop.version}</extra.source.path>
   </properties>

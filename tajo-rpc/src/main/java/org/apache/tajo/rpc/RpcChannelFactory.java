@@ -79,7 +79,7 @@ public final class RpcChannelFactory {
   }
 
   // Client must release the external resources
-  protected static EventLoopGroup createClientEventloopGroup(String name, int workerNum) {
+  public static EventLoopGroup createClientEventloopGroup(String name, int workerNum) {
     name = name + "-" + clientCount.incrementAndGet();
     if(LOG.isDebugEnabled()){
       LOG.debug("Create " + name + " ClientEventLoopGroup. Worker:" + workerNum);
@@ -113,13 +113,11 @@ public final class RpcChannelFactory {
     if(LOG.isDebugEnabled()) {
       LOG.debug("Shutdown Shared RPC Pool");
     }
-    
-    if (loopGroup != null) {
-      synchronized(lockObjectForLoopGroup) {
-        if (loopGroup != null) {
-          loopGroup.shutdownGracefully();
-          loopGroup = null;
-        }
+
+    synchronized(lockObjectForLoopGroup) {
+      if (loopGroup != null && !loopGroup.isShuttingDown()) {
+        loopGroup.shutdownGracefully();
+        loopGroup = null;
       }
     }
   }

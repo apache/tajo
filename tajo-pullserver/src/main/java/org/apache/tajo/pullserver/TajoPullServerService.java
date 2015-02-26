@@ -20,6 +20,7 @@ package org.apache.tajo.pullserver;
 
 import com.google.common.collect.Lists;
 
+import io.netty.channel.socket.SocketChannel;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -58,7 +59,6 @@ import org.apache.tajo.storage.index.bst.BSTIndex;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler;
@@ -373,7 +373,7 @@ public class TajoPullServerService extends AbstractService {
     }
   }
 
-  class HttpChannelInitializer extends ChannelInitializer<Channel> {
+  class HttpChannelInitializer extends ChannelInitializer<SocketChannel> {
 
     final PullServer PullServer;
     private SSLFactory sslFactory;
@@ -394,7 +394,7 @@ public class TajoPullServerService extends AbstractService {
     }
 
     @Override
-    protected void initChannel(Channel channel) throws Exception {
+    protected void initChannel(SocketChannel channel) throws Exception {
       ChannelPipeline pipeline = channel.pipeline();
       if (sslFactory != null) {
         pipeline.addLast("ssl", new SslHandler(sslFactory.createSSLEngine()));
@@ -548,11 +548,6 @@ public class TajoPullServerService extends AbstractService {
 
           long offset = (offsetList != null && !offsetList.isEmpty()) ? Long.parseLong(offsetList.get(0)) : -1L;
           long length = (lengthList != null && !lengthList.isEmpty()) ? Long.parseLong(lengthList.get(0)) : -1L;
-
-          if (!shuffleType.equals("r") && !shuffleType.equals("h") && !shuffleType.equals("s") && taskIdList == null) {
-            sendError(ctx, "Required taskIds", HttpResponseStatus.BAD_REQUEST);
-            return;
-          }
 
           List<String> taskIds = splitMaps(taskIdList);
 

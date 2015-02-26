@@ -85,10 +85,6 @@ public class SessionConnection implements Closeable {
 
     this.properties = properties;
 
-    //TODO separate ConfVars from TajoConf
-    int workerNum = this.properties.getInt("tajo.rpc.client.worker-thread-num", 4);
-
-    // Don't share connection pool per client
     connPool = RpcConnectionPool.getPool();
     userInfo = UserRoleInfo.getCurrentUser();
     this.baseDatabase = baseDatabase != null ? baseDatabase : null;
@@ -288,10 +284,6 @@ public class SessionConnection implements Closeable {
       tajoMaster.removeSession(null, sessionId);
 
     } catch (Throwable e) {
-    }
-
-    if(connPool != null) {
-      connPool.shutdown();
     }
   }
 

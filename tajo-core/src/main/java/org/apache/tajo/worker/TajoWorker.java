@@ -413,7 +413,6 @@ public class TajoWorker extends CompositeService {
     if(deletionService != null) deletionService.stop();
 
     if(pauseMonitor != null) pauseMonitor.stop();
-    RpcChannelFactory.shutdownGracefully();
     super.serviceStop();
     LOG.info("TajoWorker main thread exiting");
   }

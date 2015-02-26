@@ -388,7 +388,6 @@ public class TajoMaster extends CompositeService {
     }
 
     if(pauseMonitor != null) pauseMonitor.stop();
-    RpcChannelFactory.shutdownGracefully();
     super.stop();
 
     LOG.info("Tajo Master main thread exiting");

@@ -87,14 +87,11 @@ public class RpcConnectionPool {
       }
 
       if (!added) {
-        if (client != null) {
-          client.close();
-        }
-        client = connections.get(key);
+        client.close();
       }
     }
 
-    if (!client.getChannel().isOpen() || !client.getChannel().isActive()) {
+    if (client.getChannel() == null || !client.getChannel().isOpen() || !client.getChannel().isActive()) {
       LOG.warn("Try to reconnect : " + addr);
       client.connect(addr);
     }
@@ -105,9 +102,11 @@ public class RpcConnectionPool {
     if (client == null) return;
 
     try {
-      if (!client.getChannel().isOpen()) {
-        connections.remove(client.getKey());
-        client.close();
+      synchronized (lockObject) {
+        if (!client.getChannel().isOpen()) {
+          connections.remove(client.getKey());
+          client.close();
+        }
       }
 
       if(LOG.isDebugEnabled()) {
@@ -129,8 +128,10 @@ public class RpcConnectionPool {
         LOG.debug("Close connection [" + client.getKey() + "]");
       }
 
-      connections.remove(client.getKey());
-      client.close();
+      synchronized (lockObject) {
+        connections.remove(client.getKey());
+        client.close();
+      }
 
     } catch (Exception e) {
       LOG.error("Can't close connection:" + client.getKey() + ":" + e.getMessage(), e);

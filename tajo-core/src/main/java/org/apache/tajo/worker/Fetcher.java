@@ -18,6 +18,8 @@
 
 package org.apache.tajo.worker;
 
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.IOUtils;
@@ -28,14 +30,6 @@ import org.apache.tajo.rpc.RpcChannelFactory;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.DefaultHttpRequest;
 import io.netty.handler.codec.http.HttpClientCodec;
@@ -104,12 +98,13 @@ public class Fetcher {
     }
 
     if (!useLocalFile) {
-      bootstrap = new Bootstrap();
-      bootstrap.group(RpcChannelFactory.getSharedClientEventloopGroup());
-      bootstrap.channel(NioSocketChannel.class);
-      bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000); // set 5 sec
-      bootstrap.option(ChannelOption.SO_RCVBUF, 1048576); // set 1M
-      bootstrap.option(ChannelOption.TCP_NODELAY, true);
+      bootstrap = new Bootstrap()
+        .group(RpcChannelFactory.getSharedClientEventloopGroup())
+        .channel(NioSocketChannel.class)
+        .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000) // set 5 sec
+        .option(ChannelOption.SO_RCVBUF, 1048576) // set 1M
+        .option(ChannelOption.TCP_NODELAY, true);
 
       ChannelInitializer<Channel> initializer = new HttpClientChannelInitializer(fileChunk.getFile());
       bootstrap.handler(initializer);
@@ -257,7 +252,7 @@ public class Fetcher {
           HttpContent httpContent = (HttpContent) msg;
           ByteBuf content = httpContent.content();
           if (content.isReadable()) {
-            fc.write(content.nioBuffer());
+            content.readBytes(fc, content.readableBytes());
           }
 
           if (msg instanceof LastHttpContent) {
@@ -266,6 +261,9 @@ public class Fetcher {
             }
 
             IOUtils.cleanup(LOG, fc, raf);
+            if (ctx.channel().isActive()) {
+              ctx.channel().close();
+            }
             finishTime = System.currentTimeMillis();
             if (state != TajoProtos.FetcherState.FETCH_FAILED) {
               state = TajoProtos.FetcherState.FETCH_FINISHED;
