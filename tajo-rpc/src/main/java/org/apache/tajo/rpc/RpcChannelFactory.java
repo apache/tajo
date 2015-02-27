@@ -27,6 +27,10 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -34,17 +38,29 @@ public final class RpcChannelFactory {
   private static final Log LOG = LogFactory.getLog(RpcChannelFactory.class);
   
   private static final int DEFAULT_WORKER_NUM = Runtime.getRuntime().availableProcessors() * 2;
-  
-  private static volatile EventLoopGroup loopGroup;
+
   private static final Object lockObjectForLoopGroup = new Object();
   private static AtomicInteger clientCount = new AtomicInteger(0);
   private static AtomicInteger serverCount = new AtomicInteger(0);
+
+  public enum ClientChannelId {
+    GENERAL_CLIENT,
+    FETCHER
+  }
+
+  private static final Map<ClientChannelId, Integer> defaultMaxKeyPoolCount =
+      new ConcurrentHashMap<ClientChannelId, Integer>();
+  private static final Map<ClientChannelId, Queue<EventLoopGroup>> eventLoopGroupPool =
+      new ConcurrentHashMap<ClientChannelId, Queue<EventLoopGroup>>();
 
   private RpcChannelFactory(){
   }
   
   static {
     Runtime.getRuntime().addShutdownHook(new CleanUpHandler());
+
+    defaultMaxKeyPoolCount.put(ClientChannelId.GENERAL_CLIENT, 1);
+    defaultMaxKeyPoolCount.put(ClientChannelId.FETCHER, 3);
   }
 
   /**
@@ -53,10 +69,6 @@ public final class RpcChannelFactory {
   */
   public static EventLoopGroup getSharedClientEventloopGroup() {
     return getSharedClientEventloopGroup(DEFAULT_WORKER_NUM);
-  }
-
-  protected static boolean isEventLoopGroupTerminated() {
-    return ((loopGroup == null) || (loopGroup.isShuttingDown()));
   }
   
   /**
@@ -67,21 +79,55 @@ public final class RpcChannelFactory {
   */
   public static EventLoopGroup getSharedClientEventloopGroup(int workerNum){
     //shared woker and boss pool
-    if (isEventLoopGroupTerminated()) {
-      synchronized (lockObjectForLoopGroup) {
-        if (isEventLoopGroupTerminated()) {
-          loopGroup = createClientEventloopGroup("Internal-Client", workerNum);
-        }
+    return getSharedClientEventloopGroup(ClientChannelId.GENERAL_CLIENT, workerNum);
+  }
+
+  /**
+   * This function return eventloopgroup by key. Fetcher client will have one or more eventloopgroup for its throughput.
+   *
+   * @param clientId
+   * @param workerNum
+   * @return
+   */
+  public static EventLoopGroup getSharedClientEventloopGroup(ClientChannelId clientId, int workerNum) {
+    Queue<EventLoopGroup> eventLoopGroupQueue;
+    EventLoopGroup returnEventLoopGroup;
+
+    synchronized (lockObjectForLoopGroup) {
+      eventLoopGroupQueue = eventLoopGroupPool.get(clientId);
+      if (eventLoopGroupQueue == null) {
+        eventLoopGroupQueue = createClientEventloopGroups(clientId, workerNum);
       }
+
+      returnEventLoopGroup = eventLoopGroupQueue.poll();
+      if (isEventLoopGroupShuttingDown(returnEventLoopGroup)) {
+        returnEventLoopGroup = createClientEventloopGroup(clientId.name(), workerNum);
+      }
+      eventLoopGroupQueue.add(returnEventLoopGroup);
     }
-    
-    return loopGroup;
+
+    return returnEventLoopGroup;
+  }
+
+  protected static boolean isEventLoopGroupShuttingDown(EventLoopGroup eventLoopGroup) {
+    return ((eventLoopGroup == null) || eventLoopGroup.isShuttingDown());
   }
 
   // Client must release the external resources
-  public static EventLoopGroup createClientEventloopGroup(String name, int workerNum) {
-    name = name + "-" + clientCount.incrementAndGet();
-    if(LOG.isDebugEnabled()){
+  protected static Queue<EventLoopGroup> createClientEventloopGroups(ClientChannelId clientId, int workerNum) {
+    int defaultMaxObjectCount = defaultMaxKeyPoolCount.get(clientId);
+    Queue<EventLoopGroup> loopGroupQueue = new ConcurrentLinkedQueue<EventLoopGroup>();
+    eventLoopGroupPool.put(clientId, loopGroupQueue);
+
+    for (int objectIdx = 0; objectIdx < defaultMaxObjectCount; objectIdx++) {
+      loopGroupQueue.add(createClientEventloopGroup(clientId.name(), workerNum));
+    }
+
+    return loopGroupQueue;
+  }
+
+  protected static EventLoopGroup createClientEventloopGroup(String name, int workerNum) {
+    if (LOG.isDebugEnabled()) {
       LOG.debug("Create " + name + " ClientEventLoopGroup. Worker:" + workerNum);
     }
 
@@ -115,10 +161,14 @@ public final class RpcChannelFactory {
     }
 
     synchronized(lockObjectForLoopGroup) {
-      if (loopGroup != null && !loopGroup.isShuttingDown()) {
-        loopGroup.shutdownGracefully();
-        loopGroup = null;
+      for (Queue<EventLoopGroup> eventLoopGroupQueue: eventLoopGroupPool.values()) {
+        for (EventLoopGroup eventLoopGroup: eventLoopGroupQueue) {
+          eventLoopGroup.shutdownGracefully();
+        }
+
+        eventLoopGroupQueue.clear();
       }
+      eventLoopGroupPool.clear();
     }
   }
   

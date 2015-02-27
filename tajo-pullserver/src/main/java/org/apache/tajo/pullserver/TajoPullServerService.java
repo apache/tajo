@@ -656,6 +656,9 @@ public class TajoPullServerService extends AbstractService {
                 return;
               }
             }
+            if (ctx.pipeline().get(SslHandler.class) == null) {
+              writeFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+            }
 
             // Decide whether to close the connection or not.
             if (!HttpHeaders.isKeepAlive(request)) {
@@ -677,7 +680,6 @@ public class TajoPullServerService extends AbstractService {
       long startTime = System.currentTimeMillis();
       RandomAccessFile spill = null;      
       ChannelFuture writeFuture;
-      ChannelFuture lastContentFuture;
       try {
         spill = new RandomAccessFile(file.getFile(), "r");
         if (ctx.pipeline().get(SslHandler.class) == null) {
@@ -686,14 +688,13 @@ public class TajoPullServerService extends AbstractService {
               readaheadPool, file.getFile().getAbsolutePath());
           writeFuture = ctx.writeAndFlush(filePart);
           writeFuture.addListener(new FileCloseListener(filePart, requestUri, startTime, TajoPullServerService.this));
-          lastContentFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
         } else {
           // HTTPS cannot be done with zero copy.
           final FadvisedChunkedFile chunk = new FadvisedChunkedFile(spill,
               file.startOffset(), file.length(), sslFileBufferSize,
               manageOsCache, readaheadLength, readaheadPool,
               file.getFile().getAbsolutePath());
-          lastContentFuture = ctx.writeAndFlush(new HttpChunkedInput(chunk));
+          writeFuture = ctx.writeAndFlush(new HttpChunkedInput(chunk));
         }
       } catch (FileNotFoundException e) {
         LOG.info(file.getFile() + " not found");
@@ -707,7 +708,7 @@ public class TajoPullServerService extends AbstractService {
       }
       metrics.shuffleConnections.incr();
       metrics.shuffleOutputBytes.incr(file.length()); // optimistic
-      return lastContentFuture;
+      return writeFuture;
     }
 
     private void sendError(ChannelHandlerContext ctx,
@@ -729,7 +730,9 @@ public class TajoPullServerService extends AbstractService {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
         throws Exception {
       LOG.error(cause.getMessage(), cause);
-      sendError(ctx, cause.getMessage(), HttpResponseStatus.INTERNAL_SERVER_ERROR);
+      if (ctx.channel().isOpen()) {
+        ctx.channel().close();
+      }
     }
   }
 
