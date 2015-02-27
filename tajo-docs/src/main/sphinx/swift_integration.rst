@@ -14,17 +14,19 @@ For details, please see the following sections.
 Swift configuration
 ======================
 
-This step is not mandatory, but we strongly recommend to configure the Swift's proxy-server with ``list_endpoints`` for better performance.
+This step is not mandatory, but is strongly recommended to configure the Swift's proxy-server with ``list_endpoints`` for better performance.
 More information is available `here <http://docs.openstack.org/developer/swift/middleware.html#module-swift.common.middleware.list_endpoints>`_.
 
 ======================
 Hadoop configurations
 ======================
 
-You need to configure Hadoop's ``core-site.xml`` to specify how to access Swift objects.
-Here are some configuration highlights.
+You need to configure Hadoop to specify how to access Swift objects.
+Here is an example of ``${HADOOP_HOME}/etc/hadoop/core-site.xml``.
 
+-----------------------
 Common configurations
+-----------------------
 
 .. code-block:: xml
 
@@ -35,11 +37,13 @@ Common configurations
   </property>
   <property>
     <name>fs.swift.blocksize</name>
-    <value>size_in_kb</value>
-    <description>Split size during distributed processing</description>
+    <value>131072</value>
+    <description>Split size in KB</description>
   </property>
 
+----------------------------
 Configurations per provider
+----------------------------
 
 .. code-block:: xml
 
@@ -83,11 +87,11 @@ Configurations per provider
   </property>
 
 ======================
-Tajo configurations
+Tajo configuration
 ======================
 
-Configuring the classpath of Tajo tajo-evn.sh
+Finally, you need to configure the classpath of Tajo by adding the following line to ``${TAJO_HOME}/conf/tajo-evn.sh``.
 
 .. code-block:: sh
 
-  export TAJO_CLASSPATH=$HADOOP_HOME/share/hadoop/tools/lib/hadoop-swift-latest.jar
+  export TAJO_CLASSPATH=$HADOOP_HOME/share/hadoop/tools/lib/hadoop-openstack-x.x.x.jar
