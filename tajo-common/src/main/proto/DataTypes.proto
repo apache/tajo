@@ -111,5 +111,5 @@ message DataType {
    * The children count is used to construct the nested relationship.
    * This field is not set when the element is a primitive type
    */
-  optional int32 num_children = 4;
+  optional int32 num_nested_fields = 4;
 }

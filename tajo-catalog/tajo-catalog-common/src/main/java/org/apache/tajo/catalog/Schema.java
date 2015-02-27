@@ -46,7 +46,14 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	public Schema() {
     init();
 	}
-	
+
+  /**
+   * This Schema constructor restores a serialized schema into in-memory Schema structure.
+   * A serialized schema is an ordered list in depth-first order over a nested schema.
+   * This constructor transforms the list into a tree-like structure.
+   *
+   * @param proto
+   */
 	public Schema(SchemaProto proto) {
     init();
 
@@ -60,23 +67,31 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     }
   }
 
-  private static void deserializeColumn(List<Column> fields, List<ColumnProto> protos, int serializedColumnIndex) {
+  /**
+   * This method transforms a list of ColumnProtos into a schema tree.
+   * It assumes that <code>protos</code> contains a list of ColumnProtos in the depth-first order.
+   *
+   * @param tobeAdded
+   * @param protos
+   * @param serializedColumnIndex
+   */
+  private static void deserializeColumn(List<Column> tobeAdded, List<ColumnProto> protos, int serializedColumnIndex) {
     ColumnProto columnProto = protos.get(serializedColumnIndex);
     if (columnProto.getDataType().getType() == Type.RECORD) {
 
       // Get the number of child fields
-      int childNum = columnProto.getDataType().getNumChildren();
+      int childNum = columnProto.getDataType().getNumNestedFields();
       // where is start index of nested fields?
-      int childStartIndex = fields.size() - childNum;
+      int childStartIndex = tobeAdded.size() - childNum;
       // Extract nested fields
-      List<Column> nestedColumns = TUtil.newList(fields.subList(childStartIndex, childStartIndex + childNum));
+      List<Column> nestedColumns = TUtil.newList(tobeAdded.subList(childStartIndex, childStartIndex + childNum));
       // Remove nested fields from the the current level
-      fields.removeAll(nestedColumns);
+      tobeAdded.removeAll(nestedColumns);
 
       // Add the nested fields to the list as a single record column
-      fields.add(new Column(columnProto.getName(), new TypeDesc(new Schema(nestedColumns))));
+      tobeAdded.add(new Column(columnProto.getName(), new TypeDesc(new Schema(nestedColumns))));
     } else {
-      fields.add(new Column(protos.get(serializedColumnIndex)));
+      tobeAdded.add(new Column(protos.get(serializedColumnIndex)));
     }
   }
 
@@ -379,7 +394,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 
       if (column.getDataType().getType() == Type.RECORD) {
         DataType.Builder updatedType = DataType.newBuilder(column.getDataType());
-        updatedType.setNumChildren(column.typeDesc.nestedRecordSchema.size());
+        updatedType.setNumNestedFields(column.typeDesc.nestedRecordSchema.size());
 
         ColumnProto.Builder updatedColumn = ColumnProto.newBuilder(column.getProto());
         updatedColumn.setDataType(updatedType);

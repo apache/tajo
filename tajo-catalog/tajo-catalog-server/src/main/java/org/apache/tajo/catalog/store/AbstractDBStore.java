@@ -803,7 +803,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       String colSql =
           "INSERT INTO " + TB_COLUMNS +
               // 1    2            3                 4                 5          6
-              " (TID, COLUMN_NAME, ORDINAL_POSITION, NESTED_FIELD_NUM, DATA_TYPE, TYPE_LENGTH) VALUES(?, ?, ?, ?, ?, ?) ";
+              " (TID, COLUMN_NAME, ORDINAL_POSITION, NESTED_FIELD_NUM, DATA_TYPE, TYPE_LENGTH)" +
+              " VALUES(?, ?, ?, ?, ?, ?) ";
 
       if (LOG.isDebugEnabled()) {
         LOG.debug(colSql);
@@ -817,7 +818,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         pstmt.setInt(1, tableId);
         pstmt.setString(2, CatalogUtil.extractSimpleName(col.getName()));
         pstmt.setInt(3, i);
-        pstmt.setInt(4, dataType.hasNumChildren() ? dataType.getNumChildren() : 0);
+        // the default number of nested fields is 0.
+        pstmt.setInt(4, dataType.hasNumNestedFields() ? dataType.getNumNestedFields() : 0);
         pstmt.setString(5, dataType.getType().name());
         pstmt.setInt(6, (col.getDataType().hasLength() ? col.getDataType().getLength() : 0));
         pstmt.addBatch();
@@ -1144,7 +1146,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setInt(1, tableId);
       pstmt.setString(2, CatalogUtil.extractSimpleName(columnProto.getName()));
       pstmt.setInt(3, position + 1);
-      pstmt.setInt(4, dataType.hasNumChildren() ? dataType.getNumChildren() : 0);
+      pstmt.setInt(4, dataType.hasNumNestedFields() ? dataType.getNumNestedFields() : 0);
       pstmt.setString(5, dataType.getType().name());
       pstmt.setInt(6, (columnProto.getDataType().hasLength() ? columnProto.getDataType().getLength() : 0));
       pstmt.executeUpdate();

@@ -18,11 +18,6 @@
 
 package org.apache.tajo.catalog;
 
-import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
-
-import java.util.List;
-
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 
@@ -114,16 +109,31 @@ public class SchemaUtil {
     return names;
   }
 
+  /**
+   * Column visitor interface
+   */
   public static interface ColumnVisitor {
     public void visit(int depth, Column column);
   }
 
+  /**
+   * It allows a column visitor to traverse all columns in a schema in a depth-first order.
+   * @param schema
+   * @param function
+   */
   public static void visitSchema(Schema schema, ColumnVisitor function) {
       for(Column col : schema.getColumns()) {
         visitInDepthFirstOrder(0, function, col);
       }
   }
 
+  /**
+   * A recursive function to traverse all columns in a schema in a depth-first order.
+   *
+   * @param depth Nested depth. 0 is root column.
+   * @param function Visitor
+   * @param column Current visiting column
+   */
   private static void visitInDepthFirstOrder(int depth, ColumnVisitor function, Column column) {
     if (column.getDataType().getType() == Type.RECORD) {
       for (Column nestedColumn : column.typeDesc.nestedRecordSchema.getColumns()) {

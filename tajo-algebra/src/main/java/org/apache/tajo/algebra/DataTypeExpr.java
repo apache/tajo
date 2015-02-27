@@ -32,7 +32,7 @@ public class DataTypeExpr extends Expr {
   @Expose @SerializedName("Scale")
   Integer scale;
   @Expose @SerializedName("Record")
-  ColumnDefinition [] nestedRecordTypes;
+  ColumnDefinition [] nestedRecordTypes; // not null if the type is RECORD
 
   public DataTypeExpr(String typeName) {
     super(OpType.DataType);
@@ -41,8 +41,7 @@ public class DataTypeExpr extends Expr {
 
   public DataTypeExpr(ColumnDefinition [] nestedRecordTypes) {
     super(OpType.DataType);
-    // Please refer to DataTypes.proto. 'STRUCT' must be equivalent to Enum type in DataTypes.proto.
-    // STRUCT = 51;
+    // RECORD = 51 in DataTypes.proto
     this.typeName = Type.RECORD.name();
     this.nestedRecordTypes = nestedRecordTypes;
   }

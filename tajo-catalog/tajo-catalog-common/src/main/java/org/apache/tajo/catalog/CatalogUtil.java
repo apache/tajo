@@ -318,8 +318,7 @@ public class CatalogUtil {
   }
 
   /**
-  * This method transforms the unqualified names of a given schema into
-  * the qualified names.
+  * This method transforms the unqualified names of a schema to the qualified names.
   *
   * @param tableName a table name to be prefixed
   * @param schema a schema to be transformed
@@ -348,10 +347,16 @@ public class CatalogUtil {
     return DataType.newBuilder().setType(type).build();
   }
 
+  /**
+   * Create a record type
+   *
+   * @param nestedFieldNum The number of nested fields
+   * @return RECORD DataType
+   */
   public static DataType newRecordType(int nestedFieldNum) {
     DataType.Builder builder = DataType.newBuilder();
     builder.setType(Type.RECORD);
-    builder.setNumChildren(nestedFieldNum);
+    builder.setNumNestedFields(nestedFieldNum);
     return builder.build();
   }
 

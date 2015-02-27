@@ -24,6 +24,9 @@ import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.util.TUtil;
 
+/**
+ * Type Description for a column
+ */
 public class TypeDesc {
   @Expose protected DataType dataType;
   @Expose protected Schema nestedRecordSchema; // NULL unless type is RECORD.
