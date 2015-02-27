@@ -101,7 +101,7 @@ public class Fetcher {
       bootstrap = new Bootstrap()
         .group(
             RpcChannelFactory.getSharedClientEventloopGroup(RpcChannelFactory.ClientChannelId.FETCHER,
-                Runtime.getRuntime().availableProcessors()))
+                conf.getIntVar(TajoConf.ConfVars.SHUFFLE_RPC_CLIENT_WORKER_THREAD_NUM)))
         .channel(NioSocketChannel.class)
         .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
         .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000) // set 5 sec

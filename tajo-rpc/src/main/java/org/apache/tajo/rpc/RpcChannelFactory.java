@@ -59,7 +59,7 @@ public final class RpcChannelFactory {
     Runtime.getRuntime().addShutdownHook(new CleanUpHandler());
 
     defaultMaxKeyPoolCount.put(ClientChannelId.CLIENT_DEFAULT, 1);
-    defaultMaxKeyPoolCount.put(ClientChannelId.FETCHER, 3);
+    defaultMaxKeyPoolCount.put(ClientChannelId.FETCHER, 1);
   }
 
   /**
