@@ -40,11 +40,10 @@ public final class RpcChannelFactory {
   private static final int DEFAULT_WORKER_NUM = Runtime.getRuntime().availableProcessors() * 2;
 
   private static final Object lockObjectForLoopGroup = new Object();
-  private static AtomicInteger clientCount = new AtomicInteger(0);
   private static AtomicInteger serverCount = new AtomicInteger(0);
 
   public enum ClientChannelId {
-    GENERAL_CLIENT,
+    CLIENT_DEFAULT,
     FETCHER
   }
 
@@ -59,7 +58,7 @@ public final class RpcChannelFactory {
   static {
     Runtime.getRuntime().addShutdownHook(new CleanUpHandler());
 
-    defaultMaxKeyPoolCount.put(ClientChannelId.GENERAL_CLIENT, 1);
+    defaultMaxKeyPoolCount.put(ClientChannelId.CLIENT_DEFAULT, 1);
     defaultMaxKeyPoolCount.put(ClientChannelId.FETCHER, 3);
   }
 
@@ -79,7 +78,7 @@ public final class RpcChannelFactory {
   */
   public static EventLoopGroup getSharedClientEventloopGroup(int workerNum){
     //shared woker and boss pool
-    return getSharedClientEventloopGroup(ClientChannelId.GENERAL_CLIENT, workerNum);
+    return getSharedClientEventloopGroup(ClientChannelId.CLIENT_DEFAULT, workerNum);
   }
 
   /**
