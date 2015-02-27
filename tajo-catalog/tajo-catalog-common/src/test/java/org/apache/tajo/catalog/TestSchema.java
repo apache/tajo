@@ -34,6 +34,87 @@ public class TestSchema {
 	Column col2;
 	Column col3;
 
+  public static final Schema nestedSchema1;
+  public static final Schema nestedSchema2;
+  public static final Schema nestedSchema3;
+
+  static {
+    // simple nested schema
+    nestedSchema1 = new Schema();
+    nestedSchema1.addColumn("s1", Type.INT8);
+
+    Schema nestedRecordSchema = new Schema();
+    nestedRecordSchema.addColumn("s2", Type.FLOAT4);
+    nestedRecordSchema.addColumn("s3", Type.TEXT);
+
+    Column nestedField = new Column("s4", new TypeDesc(nestedRecordSchema));
+    nestedSchema1.addColumn(nestedField);
+
+    nestedSchema1.addColumn("s5", Type.FLOAT8);
+
+    // two level nested schema
+    //
+    // s1
+    //  |- s2
+    //  |- s4
+    //     |- s3
+    //     |- s4
+    //  |- s5
+    //  |- s8
+    //     |- s6
+    //     |- s7
+    nestedSchema2 = new Schema();
+    nestedSchema2.addColumn("s1", Type.INT8);
+
+    Schema nestedRecordSchema1 = new Schema();
+    nestedRecordSchema1.addColumn("s2", Type.FLOAT4);
+    nestedRecordSchema1.addColumn("s3", Type.TEXT);
+
+    Column nestedField1 = new Column("s4", new TypeDesc(nestedRecordSchema1));
+    nestedSchema2.addColumn(nestedField1);
+
+    nestedSchema2.addColumn("s5", Type.FLOAT8);
+
+    Schema nestedRecordSchema2 = new Schema();
+    nestedRecordSchema2.addColumn("s6", Type.FLOAT4);
+    nestedRecordSchema2.addColumn("s7", Type.TEXT);
+
+    Column nestedField2 = new Column("s8", new TypeDesc(nestedRecordSchema2));
+    nestedSchema2.addColumn(nestedField2);
+
+
+    // three level nested schema
+    //
+    // s1
+    //  |- s2
+    //  |- s3
+    //      |- s4
+    //      |- s7
+    //          |- s5
+    //              |- s6
+    //      |- s8
+    //  |- s9
+
+    nestedSchema3 = new Schema();
+    nestedSchema3.addColumn("s1", Type.INT8);
+
+    nestedSchema3.addColumn("s2", Type.INT8);
+
+    Schema s5 = new Schema();
+    s5.addColumn("s6", Type.INT8);
+
+    Schema s7 = new Schema();
+    s7.addColumn("s5", new TypeDesc(s5));
+
+    Schema s3 = new Schema();
+    s3.addColumn("s4", Type.INT8);
+    s3.addColumn("s7", new TypeDesc(s7));
+    s3.addColumn("s8", Type.INT8);
+
+    nestedSchema3.addColumn("s3", new TypeDesc(s3));
+    nestedSchema3.addColumn("s9", Type.INT8);
+  }
+
 	@Before
 	public void setUp() throws Exception {
 		schema = new Schema();
@@ -171,45 +252,12 @@ public class TestSchema {
 
   @Test
   public void testNestedRecord1() {
-    Schema s1 = new Schema();
-    s1.addColumn("s1", Type.INT8);
-
-    Schema nestedRecordSchema = new Schema();
-    nestedRecordSchema.addColumn("s2", Type.FLOAT4);
-    nestedRecordSchema.addColumn("s3", Type.TEXT);
-
-    Column nestedField = new Column("nestedField", new TypeDesc(nestedRecordSchema));
-    s1.addColumn(nestedField);
-
-    s1.addColumn("s4", Type.FLOAT8);
-
-    verifySchema(s1);
+    verifySchema(nestedSchema1);
   }
 
   @Test
   public void testNestedRecord2() {
-    // for two level nested schema and the same column names
-
-    Schema schema = new Schema();
-    schema.addColumn("s1", Type.INT8);
-
-    Schema nestedRecordSchema1 = new Schema();
-    nestedRecordSchema1.addColumn("s2", Type.FLOAT4);
-    nestedRecordSchema1.addColumn("s3", Type.TEXT);
-
-    Schema nestedRecordSchema2 = new Schema();
-    nestedRecordSchema2.addColumn("s2", Type.FLOAT4);
-    nestedRecordSchema2.addColumn("s3", Type.TEXT);
-
-    Column nestedField1 = new Column("nestedField1", new TypeDesc(nestedRecordSchema1));
-    schema.addColumn(nestedField1);
-
-    schema.addColumn("s4", Type.FLOAT8);
-
-    Column nestedField2 = new Column("nestedField2", new TypeDesc(nestedRecordSchema2));
-    schema.addColumn(nestedField2);
-
-    verifySchema(schema);
+    verifySchema(nestedSchema2);
   }
 
   public static void verifySchema(Schema s1) {

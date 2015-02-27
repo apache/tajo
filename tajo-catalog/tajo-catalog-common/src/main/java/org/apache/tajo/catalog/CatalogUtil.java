@@ -327,15 +327,9 @@ public class CatalogUtil {
   * @return
   */
   public static SchemaProto getQualfiedSchema(String tableName, SchemaProto schema) {
-    SchemaProto.Builder revisedSchema = SchemaProto.newBuilder(schema);
-    revisedSchema.clearFields();
-    for (ColumnProto col : schema.getFieldsList()) {
-      ColumnProto.Builder builder = ColumnProto.newBuilder(col);
-      builder.setName(tableName + CatalogConstants.IDENTIFIER_DELIMITER + extractSimpleName(col.getName()));
-      revisedSchema.addFields(builder.build());
-    }
-
-    return revisedSchema.build();
+    Schema restored = new Schema(schema);
+    restored.setQualifier(tableName);
+    return restored.getProto();
   }
 
   public static DataType newDataType(Type type, String code) {

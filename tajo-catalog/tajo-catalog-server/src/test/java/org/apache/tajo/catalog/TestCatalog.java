@@ -434,19 +434,41 @@ public class TestCatalog {
   @Test
   public void testCreateAndGetNestedTable1() throws Exception {
     // schema creation
-    Schema schema = new Schema();
-    schema.addColumn("s1", Type.INT8);
-    Schema nestedRecordSchema = new Schema();
-    nestedRecordSchema.addColumn("s2", Type.FLOAT4);
-    nestedRecordSchema.addColumn("s3", Type.TEXT);
-    Column nestedField = new Column("nestedField", new TypeDesc(nestedRecordSchema));
-    schema.addColumn(nestedField);
-    schema.addColumn("s4", Type.FLOAT8);
+    // three level nested schema
+    //
+    // s1
+    //  |- s2
+    //  |- s3
+    //      |- s4
+    //      |- s7
+    //          |- s5
+    //              |- s6
+    //      |- s8
+    //  |- s9
+
+    Schema nestedSchema = new Schema();
+    nestedSchema.addColumn("s1", Type.INT8);
+
+    nestedSchema.addColumn("s2", Type.INT8);
+
+    Schema s5 = new Schema();
+    s5.addColumn("s6", Type.INT8);
+
+    Schema s7 = new Schema();
+    s7.addColumn("s5", new TypeDesc(s5));
+
+    Schema s3 = new Schema();
+    s3.addColumn("s4", Type.INT8);
+    s3.addColumn("s7", new TypeDesc(s7));
+    s3.addColumn("s8", Type.INT8);
+
+    nestedSchema.addColumn("s3", new TypeDesc(s3));
+    nestedSchema.addColumn("s9", Type.INT8);
 
     Path path = new Path(CommonTestingUtil.getTestDir(), "table1");
     TableDesc meta = new TableDesc(
         CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "getTable"),
-        schema,
+        nestedSchema,
         StoreType.CSV,
         new KeyValueSet(),
         path.toUri());
@@ -456,9 +478,10 @@ public class TestCatalog {
     catalog.createTable(meta);
     assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, "getTable"));
 
-    schema.setQualifier(CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "getTable")); // change it for the equals test.
+    // change it for the equals test.
+    nestedSchema.setQualifier(CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "getTable"));
     TableDesc restored = catalog.getTableDesc(DEFAULT_DATABASE_NAME, "getTable");
-//    assertEquals(schema, restored.getSchema());
+    assertEquals(nestedSchema, restored.getSchema());
 
     // drop test
     catalog.dropTable(CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "getTable"));

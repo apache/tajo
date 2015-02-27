@@ -114,21 +114,17 @@ public class SchemaUtil {
     return names;
   }
 
-  public static interface ColumnVisitor<R> {
-    public R visit(int depth, Column column);
+  public static interface ColumnVisitor {
+    public void visit(int depth, Column column);
   }
 
-  public static interface ColumnProtoVisitor<R> {
-    public R visit(int depth, ColumnProto column);
-  }
-
-  public static void visitSchema(Schema schema, ColumnVisitor<Column> function) {
+  public static void visitSchema(Schema schema, ColumnVisitor function) {
       for(Column col : schema.getColumns()) {
         visitInDepthFirstOrder(0, function, col);
       }
   }
 
-  private static void visitInDepthFirstOrder(int depth, ColumnVisitor<Column> function, Column column) {
+  private static void visitInDepthFirstOrder(int depth, ColumnVisitor function, Column column) {
     if (column.getDataType().getType() == Type.RECORD) {
       for (Column nestedColumn : column.typeDesc.nestedRecordSchema.getColumns()) {
         visitInDepthFirstOrder(depth + 1, function, nestedColumn);

@@ -67,7 +67,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
       // Get the number of child fields
       int childNum = columnProto.getDataType().getNumChildren();
       // where is start index of nested fields?
-      int childStartIndex = fields.size() - columnProto.getDataType().getNumChildren();
+      int childStartIndex = fields.size() - childNum;
       // Extract nested fields
       List<Column> nestedColumns = TUtil.newList(fields.subList(childStartIndex, childStartIndex + childNum));
       // Remove nested fields from the the current level
@@ -368,14 +368,14 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     return builder.build();
 	}
 
-  private static class SchemaProtoBuilder implements ColumnVisitor<Column> {
+  private static class SchemaProtoBuilder implements ColumnVisitor {
     private SchemaProto.Builder builder;
     public SchemaProtoBuilder(SchemaProto.Builder builder) {
       this.builder = builder;
     }
 
     @Override
-    public Column visit(int depth, Column column) {
+    public void visit(int depth, Column column) {
 
       if (column.getDataType().getType() == Type.RECORD) {
         DataType.Builder updatedType = DataType.newBuilder(column.getDataType());
@@ -388,8 +388,6 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
       } else {
         builder.addFields(column.getProto());
       }
-
-      return column;
     }
   }
 
