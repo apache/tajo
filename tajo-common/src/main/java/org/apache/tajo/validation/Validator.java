@@ -18,9 +18,10 @@
 
 package org.apache.tajo.validation;
 
+import java.io.Serializable;
 import java.util.Collection;
 
-public interface Validator {
+public interface Validator extends Serializable {
 
   public <T> Collection<ConstraintViolation> validate(T object);
   

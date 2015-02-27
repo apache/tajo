@@ -37,7 +37,6 @@ public class QueryJobEvent extends AbstractEvent<QueryJobEvent.Type> {
   public enum Type {
     QUERY_MASTER_START,
     QUERY_JOB_HEARTBEAT,
-    QUERY_JOB_STOP,
     QUERY_JOB_KILL
   }
 }
