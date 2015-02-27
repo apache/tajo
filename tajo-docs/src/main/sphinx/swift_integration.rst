@@ -1,0 +1,93 @@
+*************************************
+OpenStack Swift Integration
+*************************************
+
+Tajo supports OpenStack Swift as one of the underlying storage types.
+In Tajo, Swift objects are represented and recognized by the same URI format as in Hadoop.
+
+You don't need to run Hadoop to run Tajo on Swift, but need to configure it.
+You will also need to configure Swift and Tajo.
+
+For details, please see the following sections.
+
+======================
+Swift configuration
+======================
+
+This step is not mandatory, but we strongly recommend to configure the Swift's proxy-server with ``list_endpoints`` for better performance.
+More information is available `here <http://docs.openstack.org/developer/swift/middleware.html#module-swift.common.middleware.list_endpoints>`_.
+
+======================
+Hadoop configurations
+======================
+
+You need to configure Hadoop's ``core-site.xml`` to specify how to access Swift objects.
+Here are some configuration highlights.
+
+Common configurations
+
+.. code-block:: xml
+
+  <property>
+    <name>fs.swift.impl</name>
+    <value>org.apache.hadoop.fs.swift.snative.SwiftNativeFileSystem</value>
+    <description>File system implementation for Swift</description>
+  </property>
+  <property>
+    <name>fs.swift.blocksize</name>
+    <value>size_in_kb</value>
+    <description>Split size during distributed processing</description>
+  </property>
+
+Configurations per provider
+
+.. code-block:: xml
+
+  <property>
+    <name>fs.swift.service.${PROVIDER}.auth.url</name>
+    <value>http://127.0.0.1/v2.0/tokens</value>
+    <description>Keystone authenticaiton URL</description>
+  </property>
+  <property>
+    <name>fs.swift.service.${PROVIDER}.auth.endpoint.prefix</name>
+    <value>/endpoints/AUTH_</value>
+    <description>Keystone endpoints prefix</description>
+  </property>
+  <property>
+    <name>fs.swift.service.${PROVIDER}.http.port</name>
+    <value>8080</value>
+    <description>HTTP port</description>
+  </property>
+  <property>
+    <name>fs.swift.service.${PROVIDER}.region</name>
+    <value>regionOne</value>
+    <description>Region name</description>
+  </property>
+  <property>
+    <name>fs.swift.service.${PROVIDER}.tenant</name>
+    <value>demo</value>
+    <description>Tenant name</description>
+  </property>
+  <property>
+    <name>fs.swift.service.${PROVIDER}.username</name>
+    <value>tajo</value>
+  </property>
+  <property>
+    <name>fs.swift.service.${PROVIDER}.password</name>
+    <value>tajo_password</value>
+  </property>
+  <property>
+    <name>fs.swift.service.${PROVIDER}.location-aware</name>
+    <value>true</value>
+    <description>Flag to enable the location-aware computing</description>
+  </property>
+
+======================
+Tajo configurations
+======================
+
+Configuring the classpath of Tajo tajo-evn.sh
+
+.. code-block:: sh
+
+  export TAJO_CLASSPATH=$HADOOP_HOME/share/hadoop/tools/lib/hadoop-swift-latest.jar
