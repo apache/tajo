@@ -152,7 +152,9 @@ public class TaskRunner extends AbstractService {
     fetchLauncher = null;
 
     LOG.info("Stop TaskRunner: " + getId());
-    notifyAll();
+    synchronized (this) {
+      notifyAll();
+    }
 
     super.stop();
     this.history.setState(getServiceState());
