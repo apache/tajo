@@ -43,7 +43,19 @@ public abstract class RelationNode extends LogicalNode {
 
   public abstract String getTableName();
 
+  /**
+   * Return a full qualified table name (i.e., dbname.table_name)
+   *
+   * @return A full qualified table name
+   */
   public abstract String getCanonicalName();
 
+  /**
+   * Return a logical schema, meaning physically stored columns and virtual columns.
+   * Since partition keys in the column partition are not physically stored to files or tables,
+   * we call the partition keys virtual columns.
+   *
+   * @return A logical schema
+   */
   public abstract Schema getLogicalSchema();
 }

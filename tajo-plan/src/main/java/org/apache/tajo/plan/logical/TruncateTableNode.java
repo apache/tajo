@@ -20,7 +20,7 @@ package org.apache.tajo.plan.logical;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.plan.PlanString;
-import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.StringUtils;
 
 import java.util.List;
 
@@ -52,7 +52,7 @@ public class TruncateTableNode extends LogicalNode {
 
   @Override
   public String toString() {
-    return "TruncateTable (table=" + TUtil.collectionToString(tableNames, ", ") + ")";
+    return "TruncateTable (table=" + StringUtils.join(tableNames, ", ") + ")";
   }
 
   @Override

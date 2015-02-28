@@ -1306,7 +1306,7 @@ set_qualifier
   ;
 
 column_reference
-  : ((db_name = identifier DOT)? (tb_name=identifier DOT))? name=identifier
+  : identifier (DOT identifier)*
   ;
 
 as_clause

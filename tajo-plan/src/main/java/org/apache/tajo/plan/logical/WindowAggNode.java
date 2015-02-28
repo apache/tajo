@@ -26,6 +26,7 @@ import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.WindowFunctionEval;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
 public class WindowAggNode extends UnaryNode implements Projectable, Cloneable {
@@ -114,14 +115,14 @@ public class WindowAggNode extends UnaryNode implements Projectable, Cloneable {
   public String toString() {
     StringBuilder sb = new StringBuilder("WinAgg (");
     if (hasPartitionKeys()) {
-      sb.append("partition keys=").append(TUtil.arrayToString(partitionKeys));
+      sb.append("partition keys=").append(StringUtils.join(partitionKeys));
       sb.append(", ");
     }
     if (hasAggFunctions()) {
-      sb.append("funcs=").append(TUtil.arrayToString(windowFuncs));
+      sb.append("funcs=").append(StringUtils.join(windowFuncs));
     }
     if (hasSortSpecs()) {
-      sb.append("sort=").append(TUtil.arrayToString(sortSpecs));
+      sb.append("sort=").append(StringUtils.join(sortSpecs));
     }
     sb.append(")");
     return sb.toString();

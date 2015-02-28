@@ -367,4 +367,60 @@ public class StringUtils {
     
     return resultArray;
   }
+
+  /**
+   * Concatenate all objects' string with a delimiter string
+   *
+   * @param objects Iterable objects
+   * @param delimiter Delimiter string
+   * @return A joined string
+   */
+  public static String join(Iterable objects, String delimiter) {
+    boolean first = true;
+    StringBuilder sb = new StringBuilder();
+    for(Object object : objects) {
+      if (first) {
+        first = false;
+      } else {
+        sb.append(delimiter);
+      }
+
+      sb.append(object.toString());
+    }
+
+    return sb.toString();
+  }
+
+  /**
+   * Concatenate all objects' string with the delimiter ", "
+   *
+   * @param objects Iterable objects
+   * @return A joined string
+   */
+  public static String join(Object[] objects) {
+    return join(objects, ", ");
+  }
+
+  /**
+   * Concatenate all objects' string with a delimiter string
+   *
+   * @param objects object array
+   * @param delimiter Delimiter string
+   * @return A joined string
+   */
+  public static String join(Object[] objects, String delimiter) {
+    boolean first = true;
+    StringBuilder sb = new StringBuilder();
+    for(Object object : objects) {
+      if (first) {
+        first = false;
+      } else {
+        sb.append(delimiter);
+      }
+
+      sb.append(object.toString());
+    }
+
+    return sb.toString();
+  }
 }

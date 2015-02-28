@@ -1,4 +1,4 @@
-/***
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,30 +16,25 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.function;
+package org.apache.tajo.engine.query;
 
-import com.google.common.collect.Lists;
-import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.util.TUtil;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.util.Collections;
+import java.sql.ResultSet;
 import java.util.List;
 
-import static org.apache.tajo.LocalTajoTestingUtility.getResultText;
 import static org.junit.Assert.assertEquals;
 
-
-public class TestFunctionLoader {
-
+public class TestSelectNestedRecord extends QueryTestCaseBase {
   @Test
-  public void testFindScalarFunctions() throws IOException {
-    List<FunctionDesc> collections = Lists.newArrayList(FunctionLoader.findScalarFunctions());
-    Collections.sort(collections);
-    String functionList = StringUtils.join(collections, "\n");
+  public final void testSelect1() throws Exception {
+    List<String> tables = executeDDL("sample1_ddl.sql", "sample1", "sample1");
+    assertEquals(TUtil.newList("sample1"), tables);
 
-    String result = getResultText(TestFunctionLoader.class, "testFindScalarFunctions.result");
-    assertEquals(result.trim(), functionList.trim());
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
   }
 }

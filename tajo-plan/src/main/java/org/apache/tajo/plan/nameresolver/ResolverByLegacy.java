@@ -101,7 +101,7 @@ public class ResolverByLegacy extends NameResolver {
   static Column resolveColumnWithoutQualifier(LogicalPlan plan, LogicalPlan.QueryBlock block,
                                                      ColumnReferenceExpr columnRef)throws PlanningException {
 
-    Column found = resolveFromAllRelsInBlock(block, columnRef);
+    Column found = lookupColumnFromAllRelsInBlock(block, columnRef.getName());
     if (found != null) {
       return found;
     }

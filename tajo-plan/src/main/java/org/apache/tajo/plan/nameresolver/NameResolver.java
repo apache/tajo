@@ -18,9 +18,11 @@
 
 package org.apache.tajo.plan.nameresolver;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.tajo.algebra.ColumnReferenceExpr;
+import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -31,6 +33,7 @@ import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.plan.logical.RelationNode;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
@@ -54,27 +57,54 @@ public abstract class NameResolver {
   abstract Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
   throws PlanningException;
 
-  /**
-   * Try to find the database name
-   *
-   * @param block the current block
-   * @param tableName The table name
-   * @return The found database name
-   * @throws PlanningException
-   */
-  public static String resolveDatabase(LogicalPlan.QueryBlock block, String tableName) throws PlanningException {
+  public static String lookupDatabase(LogicalPlan.QueryBlock block, String databaseName) throws PlanningException {
     List<String> found = new ArrayList<String>();
     for (RelationNode relation : block.getRelations()) {
       // check alias name or table name
-      if (CatalogUtil.extractSimpleName(relation.getCanonicalName()).equals(tableName) ||
-          CatalogUtil.extractSimpleName(relation.getTableName()).equals(tableName)) {
-        // obtain the database name
-        found.add(CatalogUtil.extractQualifier(relation.getTableName()));
+      if (CatalogUtil.extractQualifier(relation.getCanonicalName()).equals(databaseName) ||
+          CatalogUtil.extractQualifier(relation.getTableName()).equals(databaseName)) {
+        // obtain the a qualified table name
+        found.add(relation.getTableName());
       }
     }
 
     if (found.size() == 0) {
       return null;
+    } else if (found.size() > 1) {
+      throw new PlanningException("Ambiguous database name \"" + databaseName + "\"");
+    }
+
+    return found.get(0);
+  }
+
+  /**
+   * Guess a relation from a table name regardless of whether the given name is qualified or not.
+   *
+   * @param block the current block
+   * @param tableName The table name which can be either qualified or not.
+   * @return A corresponding relation
+   * @throws PlanningException
+   */
+  public static RelationNode lookupTable(LogicalPlan.QueryBlock block, String tableName) throws PlanningException {
+    List<RelationNode> found = TUtil.newList();
+
+    for (RelationNode relation : block.getRelations()) {
+
+      // if a table name is qualified
+      if (relation.getCanonicalName().equals(tableName) || relation.getTableName().equals(tableName)) {
+        found.add(relation);
+
+      // if a table name is not qualified
+      } else if (CatalogUtil.extractSimpleName(relation.getCanonicalName()).equals(tableName) ||
+          CatalogUtil.extractSimpleName(relation.getTableName()).equals(tableName)) {
+        // obtain the a qualified table name
+        found.add(relation);
+      }
+    }
+
+    if (found.size() == 0) {
+      return null;
+
     } else if (found.size() > 1) {
       throw new PlanningException("Ambiguous table name \"" + tableName + "\"");
     }
@@ -121,8 +151,8 @@ public abstract class NameResolver {
       // Please consider a query case:
       // select lineitem.l_orderkey from lineitem a order by lineitem.l_orderkey;
       //
-      // The relation lineitem is already renamed to "a", but lineitem.l_orderkey still can be used.
-      // The below code makes it available. Otherwise, it cannot find any match in the relation schema.
+      // The relation lineitem is already renamed to "a", but lineitem.l_orderkey still should be available.
+      // The below code makes it possible. Otherwise, it cannot find any match in the relation schema.
       if (block.isAlreadyRenamedTableName(CatalogUtil.extractQualifier(canonicalName))) {
         canonicalName =
             CatalogUtil.buildFQName(relationOp.getCanonicalName(), CatalogUtil.extractSimpleName(canonicalName));
@@ -133,7 +163,7 @@ public abstract class NameResolver {
 
       return column;
     } else {
-      return resolveFromAllRelsInBlock(block, columnRef);
+      return lookupColumnFromAllRelsInBlock(block, columnRef.getName());
     }
   }
 
@@ -162,18 +192,22 @@ public abstract class NameResolver {
   }
 
   /**
-   * It tries to find a full qualified column name from all relations in the current block.
+   * Lookup a column among all relations in the current block from a column name.
+   *
+   * It assumes that <code>columnName</code> is not any qualified name.
    *
    * @param block The current query block
-   * @param columnRef The column reference to be found
+   * @param columnName The column reference to be found
    * @return The found column
    */
-  static Column resolveFromAllRelsInBlock(LogicalPlan.QueryBlock block,
-                                          ColumnReferenceExpr columnRef) throws VerifyException {
+  static Column lookupColumnFromAllRelsInBlock(LogicalPlan.QueryBlock block,
+                                               String columnName) throws VerifyException {
+    Preconditions.checkArgument(CatalogUtil.isSimpleIdentifier(columnName));
+
     List<Column> candidates = TUtil.newList();
 
     for (RelationNode rel : block.getRelations()) {
-      Column found = rel.getLogicalSchema().getColumn(columnRef.getName());
+      Column found = rel.getLogicalSchema().getColumn(columnName);
       if (found != null) {
         candidates.add(found);
       }
@@ -251,19 +285,58 @@ public abstract class NameResolver {
   static Pair<String, String> normalizeQualifierAndCanonicalName(LogicalPlan.QueryBlock block,
                                                                  ColumnReferenceExpr columnRef)
       throws PlanningException {
-    String qualifier;
-    String canonicalName;
+    Preconditions.checkArgument(columnRef.hasQualifier(), "ColumnReferenceExpr must be qualified.");
 
-    if (CatalogUtil.isFQTableName(columnRef.getQualifier())) {
-      qualifier = columnRef.getQualifier();
-      canonicalName = columnRef.getCanonicalName();
-    } else {
-      String resolvedDatabaseName = resolveDatabase(block, columnRef.getQualifier());
-      if (resolvedDatabaseName == null) {
-        throw new NoSuchColumnException(columnRef.getQualifier());
+    boolean found = false;
+    String qualifier = null;
+    String canonicalName = null;
+
+    String [] qualifierParts = columnRef.getQualifier().split("\\.");
+
+    // there are three cases as follows:
+    //
+    // - dbname.tbname.column_name.....
+    // - tbname.column_name.nested_field...
+    // - column.nested_field.nested_field...
+
+
+    // check two cases: dbname.tbname.column_name.nested_field or tbname.column_name.nested_field
+    if (qualifierParts.length >= 1) {
+
+      // lookupTable function accepts a qualified as well as unqualified table name.
+
+      RelationNode relation = null;
+      if (qualifierParts.length >= 2) { // dbname.tbname.column_name.nested_field
+        relation = lookupTable(block, CatalogUtil.buildFQName(qualifierParts[0], qualifierParts[1]));
       }
-      qualifier = CatalogUtil.buildFQName(resolvedDatabaseName, columnRef.getQualifier());
-      canonicalName = CatalogUtil.buildFQName(qualifier, columnRef.getName());
+
+      if (relation == null) { // tbname.column_name.nested_field
+        relation = lookupTable(block, qualifierParts[0]);
+      }
+
+
+      if (relation != null) { // if relation is found
+        String resolvedDatabaseName = CatalogUtil.extractQualifier(relation.getCanonicalName());
+
+        if (qualifierParts.length >= 2) { // if a database name is given
+          qualifier = CatalogUtil.buildFQName(resolvedDatabaseName, qualifierParts[1]);
+        } else {
+          qualifier = CatalogUtil.buildFQName(resolvedDatabaseName, qualifierParts[0]);
+        }
+
+        canonicalName = CatalogUtil.buildFQName(qualifier, columnRef.getName());
+
+        found = true;
+      }
+    }
+
+
+    if (!found) { // check column_name.nested_field....
+
+      // Get only database name
+      RelationNode relation = lookupTable(block, qualifierParts[0]);
+
+      throw new NoSuchColumnException(columnRef.getQualifier());
     }
 
     return new Pair<String, String>(qualifier, canonicalName);

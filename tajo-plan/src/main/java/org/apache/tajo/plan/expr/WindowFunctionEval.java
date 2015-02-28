@@ -29,6 +29,7 @@ import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.logical.WindowSpec;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
 public class WindowFunctionEval extends AggregationFunctionCallEval implements Cloneable {
@@ -122,7 +123,7 @@ public class WindowFunctionEval extends AggregationFunctionCallEval implements C
     sb.append(funcDesc.getFunctionName()).append("(").append(isDistinct() ? " distinct" : "").append(sb)
         .append(")");
     if (hasSortSpecs()) {
-      sb.append("ORDER BY ").append(TUtil.arrayToString(sortSpecs));
+      sb.append("ORDER BY ").append(StringUtils.join(sortSpecs));
     }
     return sb.toString();
   }

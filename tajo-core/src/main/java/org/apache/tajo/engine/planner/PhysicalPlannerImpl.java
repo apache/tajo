@@ -54,6 +54,7 @@ import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.IndexUtil;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -274,7 +275,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     LOG.info(String.format("[%s] the volume of %s relations (%s) is %s and is %sfit to main maemory.",
         context.getTaskId().toString(),
         (left ? "Left" : "Right"),
-        TUtil.arrayToString(lineage),
+        StringUtils.join(lineage),
         FileUtil.humanReadableByteCount(volume, false),
         (inMemoryInnerJoinFlag ? "" : "not ")));
     return inMemoryInnerJoinFlag;
@@ -397,18 +398,18 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       larger = right;
       LOG.info(String.format("[%s] Left relations %s (%s) is smaller than Right relations %s (%s).",
           context.getTaskId().toString(),
-          TUtil.arrayToString(leftLineage),
+          StringUtils.join(leftLineage),
           FileUtil.humanReadableByteCount(leftSize, false),
-          TUtil.arrayToString(rightLineage),
+          StringUtils.join(rightLineage),
           FileUtil.humanReadableByteCount(rightSize, false)));
     } else {
       smaller = right;
       larger = left;
       LOG.info(String.format("[%s] Right relations %s (%s) is smaller than Left relations %s (%s).",
           context.getTaskId().toString(),
-          TUtil.arrayToString(rightLineage),
+          StringUtils.join(rightLineage),
           FileUtil.humanReadableByteCount(rightSize, false),
-          TUtil.arrayToString(leftLineage),
+          StringUtils.join(leftLineage),
           FileUtil.humanReadableByteCount(leftSize, false)));
     }
 
@@ -995,7 +996,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     sortNode.setInSchema(subOp.getSchema());
     sortNode.setOutSchema(subOp.getSchema());
     ExternalSortExec sortExec = new ExternalSortExec(ctx, sortNode, subOp);
-    LOG.info("The planner chooses [Sort Aggregation] in (" + TUtil.arrayToString(sortSpecs) + ")");
+    LOG.info("The planner chooses [Sort Aggregation] in (" + StringUtils.join(sortSpecs) + ")");
     return new SortAggregateExec(ctx, groupbyNode, sortExec);
   }
 
@@ -1036,7 +1037,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       sortNode.setInSchema(subOp.getSchema());
       sortNode.setOutSchema(subOp.getSchema());
       child = new ExternalSortExec(context, sortNode, subOp);
-      LOG.info("The planner chooses [Sort Aggregation] in (" + TUtil.arrayToString(sortSpecs) + ")");
+      LOG.info("The planner chooses [Sort Aggregation] in (" + StringUtils.join(sortSpecs) + ")");
     }
 
     return new WindowAggExec(context, windowAggNode, child);

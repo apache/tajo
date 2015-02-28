@@ -52,6 +52,7 @@ import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.Pair;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
@@ -644,7 +645,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           if (block.namedExprsMgr.isEvaluated(sortKeyRefNames[i])) {
             column = block.namedExprsMgr.getTarget(sortKeyRefNames[i]).getNamedColumn();
           } else {
-            throw new IllegalStateException("Unexpected State: " + TUtil.arrayToString(sortSpecs));
+            throw new IllegalStateException("Unexpected State: " + StringUtils.join(sortSpecs));
           }
           annotatedSortSpecs[i] = new SortSpec(column, sortSpecs[i].isAscending(), sortSpecs[i].isNullFirst());
         }
@@ -860,7 +861,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       } else if (block.namedExprsMgr.isEvaluated(refName)) {
         column = block.namedExprsMgr.getTarget(refName).getNamedColumn();
       } else {
-        throw new IllegalStateException("Unexpected State: " + TUtil.arrayToString(sortSpecs));
+        throw new IllegalStateException("Unexpected State: " + StringUtils.join(sortSpecs));
       }
       annotatedSortSpecs.add(new SortSpec(column, sortSpecs[i].isAscending(), sortSpecs[i].isNullFirst()));
     }

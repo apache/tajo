@@ -34,8 +34,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 public class JsonLineSerializer extends TextLineSerializer {
-  private static ProtobufJsonFormat protobufJsonFormat = ProtobufJsonFormat.getInstance();
-
   private Type [] types;
   private String [] simpleNames;
   private int columnNum;

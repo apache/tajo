@@ -27,7 +27,7 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.cli.tsql.TajoCli;
 import org.apache.tajo.util.FileUtil;
-import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -129,7 +129,7 @@ public class DescTableCommand extends TajoShellCommand {
       sb.append("type:").append(partition.getPartitionType().name()).append("\n");
 
       sb.append("columns:").append(":");
-      sb.append(TUtil.arrayToString(partition.getExpressionSchema().toArray()));
+      sb.append(StringUtils.join(partition.getExpressionSchema().toArray()));
     }
 
     return sb.toString();
