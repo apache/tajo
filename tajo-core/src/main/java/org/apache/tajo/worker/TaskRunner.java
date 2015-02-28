@@ -146,13 +146,14 @@ public class TaskRunner extends AbstractService {
     this.finishTime = System.currentTimeMillis();
     this.history.setFinishTime(finishTime);
     // If this flag become true, taskLauncher will be terminated.
-    this.stopped = true;
-
-    fetchLauncher.shutdown();
-    fetchLauncher = null;
 
     LOG.info("Stop TaskRunner: " + getId());
     synchronized (this) {
+      this.stopped = true;
+
+      fetchLauncher.shutdown();
+      fetchLauncher = null;
+
       notifyAll();
     }
 

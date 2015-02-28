@@ -39,7 +39,6 @@ public class MetricsFileScheduledReporter extends MetricsStreamScheduledReporter
       return;
     }
 
-    OutputStream outputStream = null;
     try {
       File file = new File(fileName);
       File parentFile = file.getParentFile();
@@ -48,20 +47,11 @@ public class MetricsFileScheduledReporter extends MetricsStreamScheduledReporter
           LOG.warn("Can't create dir for tajo metrics:" + parentFile.getAbsolutePath());
         }
       }
-      outputStream = new FileOutputStream(fileName, true);
-      this.setOutput(outputStream);
+      this.setOutput(new FileOutputStream(fileName, true));
       this.setDateFormat(null);
     } catch (FileNotFoundException e) {
       LOG.warn("Can't open metrics file:" + fileName);
       this.close();
-    } finally {
-      if (outputStream != null) {
-        try {
-          outputStream.close();
-        } catch (IOException e) {
-          LOG.warn(e.getMessage(), e);
-        }
-      }
     }
   }
 }
