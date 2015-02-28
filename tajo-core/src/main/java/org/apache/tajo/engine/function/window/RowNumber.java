@@ -61,7 +61,7 @@ public class RowNumber extends WindowAggFunc<Datum> {
     return DatumFactory.createInt8(((RowNumberContext) ctx).count);
   }
 
-  protected class RowNumberContext implements FunctionContext {
+  protected static class RowNumberContext implements FunctionContext {
     long count = 0;
   }
 }

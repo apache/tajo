@@ -98,7 +98,7 @@ public class GlobalPlanner {
     return storeType;
   }
 
-  public class GlobalPlanContext {
+  public static class GlobalPlanContext {
     MasterPlan plan;
     Map<Integer, ExecutionBlock> execBlockMap = Maps.newHashMap();
 
@@ -164,7 +164,7 @@ public class GlobalPlanner {
     masterPlan.setTerminal(terminalBlock);
     LOG.info("\n" + masterPlan.toString());
 
-    masterPlan = rewriteEngine.rewrite(masterPlan);
+    rewriteEngine.rewrite(masterPlan);
   }
 
   private static void setFinalOutputChannel(DataChannel outputChannel, Schema outputSchema) {
@@ -1573,7 +1573,7 @@ public class GlobalPlanner {
   }
 
   @SuppressWarnings("unused")
-  private class ConsecutiveUnionFinder extends BasicLogicalPlanVisitor<List<UnionNode>, LogicalNode> {
+  private static class ConsecutiveUnionFinder extends BasicLogicalPlanVisitor<List<UnionNode>, LogicalNode> {
     @Override
     public LogicalNode visitUnion(List<UnionNode> unionNodeList, LogicalPlan plan, LogicalPlan.QueryBlock queryBlock,
                                   UnionNode node, Stack<LogicalNode> stack)

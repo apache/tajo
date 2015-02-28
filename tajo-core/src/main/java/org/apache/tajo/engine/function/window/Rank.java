@@ -77,7 +77,7 @@ public final class Rank extends WindowAggFunc {
     return new RankContext();
   }
 
-  private class RankContext implements FunctionContext {
+  private static class RankContext implements FunctionContext {
     long rank = 0;
     long accumulatedCount = 1;
     Datum [] latest = null;

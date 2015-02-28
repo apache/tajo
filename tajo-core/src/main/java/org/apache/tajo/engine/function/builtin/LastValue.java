@@ -61,7 +61,7 @@ public abstract class LastValue extends AggFunction<Datum> {
     }
   }
 
-  private class LastValueContext implements FunctionContext {
+  private static class LastValueContext implements FunctionContext {
     Datum last = null;
   }
 }
