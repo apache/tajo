@@ -284,6 +284,7 @@ QUARTER : Q U A R T E R;
 
 RANGE : R A N G E;
 RANK : R A N K;
+RECORD : R E C O R D;
 REGEXP : R E G E X P;
 RENAME : R E N A M E;
 RESET : R E S E T;

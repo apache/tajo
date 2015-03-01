@@ -141,8 +141,8 @@ public enum SessionVars implements ConfigKey {
   TEST_MIN_TASK_NUM(ConfVars.$TEST_MIN_TASK_NUM, "(test only) min task num", TEST_VAR),
   ;
 
-  public static Map<String, SessionVars> SESSION_VARS = Maps.newHashMap();
-  public static Map<String, SessionVars> DEPRECATED_SESSION_VARS = Maps.newHashMap();
+  public static final Map<String, SessionVars> SESSION_VARS = Maps.newHashMap();
+  public static final Map<String, SessionVars> DEPRECATED_SESSION_VARS = Maps.newHashMap();
 
   static {
     for (SessionVars var : SessionVars.values()) {

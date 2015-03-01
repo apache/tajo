@@ -1,0 +1,40 @@
+{
+  "IsExternal": false,
+  "TableName": "t1",
+  "Attributes": [
+    {
+      "ColumnDefName": "a",
+      "DataTypeName": "TEXT",
+      "OpType": "DataType"
+    },
+    {
+      "ColumnDefName": "b",
+      "DataTypeName": "INT4",
+      "OpType": "DataType"
+    },
+    {
+      "ColumnDefName": "c",
+      "DataTypeName": "RECORD",
+      "Record": [
+        {
+          "ColumnDefName": "d",
+          "DataTypeName": "TEXT",
+          "OpType": "DataType"
+        },
+        {
+          "ColumnDefName": "e",
+          "DataTypeName": "INT8",
+          "OpType": "DataType"
+        }
+      ],
+      "OpType": "DataType"
+    },
+    {
+      "ColumnDefName": "f",
+      "DataTypeName": "FLOAT8",
+      "OpType": "DataType"
+    }
+  ],
+  "IfNotExists": false,
+  "OpType": "CreateTable"
+}
