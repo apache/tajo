@@ -95,3 +95,16 @@ Finally, you need to configure the classpath of Tajo by adding the following lin
 .. code-block:: sh
 
   export TAJO_CLASSPATH=$HADOOP_HOME/share/hadoop/tools/lib/hadoop-openstack-x.x.x.jar
+
+======================
+Querying on Swift
+======================
+
+Given a provider name *tajo* and a Swift container name *demo*, you can create a Tajo table with data on Swift as follows.
+
+.. code-block:: sql
+
+  default> create external table swift_table (id int32, name text, score float, type text) using text with ('text.delimiter'='|') location 'swift://demo.tajo/test.tbl';
+
+Once a table is created, you can execute any SQL queries on that table as other tables stored on HDFS.
+For query execution details, please refer to :doc:`sql_language`.
