@@ -31,6 +31,7 @@ import org.apache.tajo.cli.tsql.ParsedResult.StatementType;
 import org.apache.tajo.cli.tsql.SimpleParser.ParsingState;
 import org.apache.tajo.cli.tsql.commands.*;
 import org.apache.tajo.client.*;
+import org.apache.tajo.common.PlanTypesProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.ipc.ClientProtos;
@@ -499,10 +500,7 @@ public class TajoCli {
         QueryId queryId = new QueryId(response.getQueryId());
         waitForQueryCompleted(queryId);
       } else {
-        if (!response.hasTableDesc() && !response.hasResultSet()) {
-          displayFormatter.printMessage(sout, "OK");
-          wasError = true;
-        } else {
+        if (response.hasTableDesc() || response.hasResultSet()) {
           localQueryCompleted(response, startTime);
         }
       }
@@ -511,6 +509,10 @@ public class TajoCli {
         displayFormatter.printErrorMessage(sout, response.getResult().getErrorMessage());
         wasError = true;
       }
+    }
+
+    if (!wasError) {
+      displayFormatter.printQueryTypeMessage(sout, response.hasPlanType(), response.getPlanType());
     }
   }
 
@@ -536,9 +538,7 @@ public class TajoCli {
         QueryId queryId = new QueryId(response.getQueryId());
         waitForQueryCompleted(queryId);
       } else {
-        if (!response.hasTableDesc() && !response.hasResultSet()) {
-          displayFormatter.printMessage(sout, "OK");
-        } else {
+        if (response.hasTableDesc() || response.hasResultSet()) {
           localQueryCompleted(response, startTime);
         }
       }
@@ -547,6 +547,10 @@ public class TajoCli {
         displayFormatter.printErrorMessage(sout, response.getResult().getErrorMessage());
         wasError = true;
       }
+    }
+
+    if (!wasError) {
+      displayFormatter.printQueryTypeMessage(sout, response.hasPlanType(), response.getPlanType());
     }
 
     return wasError ? -1 : 0;

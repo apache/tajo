@@ -25,6 +25,8 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.QueryStatus;
+import org.apache.tajo.common.PlanTypesProto;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.util.FileUtil;
 
 import java.io.InputStream;
@@ -192,6 +194,13 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     sout.flush();
   }
 
+  @Override
+  public void printQueryTypeMessage(PrintWriter sout, boolean isDDL, PlanTypesProto.PlanNodeType planNodeType) {
+    if (isDDL) {
+      sout.println(getPlanTypeString(planNodeType) + " OK");
+    }
+  }
+
   public static String parseErrorMessage(String message) {
     if (message == null) {
       return TajoCli.ERROR_PREFIX + "No error message";
@@ -207,5 +216,32 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     }
 
     return message;
+  }
+
+  private static String getPlanTypeString(PlanTypesProto.PlanNodeType type) {
+    switch (type) {
+      case INSERT:
+        return "INSERT";
+      case CREATE_DATABASE:
+        return "CREATE DATABASE";
+      case DROP_DATABASE:
+        return "DROP DATABASE";
+      case CREATE_TABLE:
+        return "CREATE TABLE";
+      case DROP_TABLE:
+        return "DROP TABLE";
+      case ALTER_TABLESPACE:
+        return "ALTER TABLESPACE";
+      case ALTER_TABLE:
+        return "ALTER TABLE";
+      case TRUNCATE_TABLE:
+        return "TRUNCATE TABLE";
+      case CREATE_INDEX:
+        return "CREATE INDEX";
+      case DROP_INDEX:
+        return "DROP INDEX";
+      default:
+        throw new UnsupportedException("Only DDLs are supported, but the plan type is " + type);
+    }
   }
 }

@@ -23,8 +23,7 @@ import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.cli.tsql.DefaultTajoCliOutputFormatter;
-import org.apache.tajo.cli.tsql.TajoCli;
+import org.apache.tajo.common.PlanTypesProto;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Float8Datum;
@@ -124,8 +123,9 @@ public class TestDefaultCliOutputFormatter {
     StringWriter stringWriter = new StringWriter();
     PrintWriter writer = new PrintWriter(stringWriter);
     outputFormatter.printResult(writer, null, tableDesc, responseTime, null);
+    outputFormatter.printQueryTypeMessage(writer, true, PlanTypesProto.PlanNodeType.INSERT);
 
-    String expectedOutput = "(" +  numRows + " rows, " + responseTime + " sec, " + numBytes + " B written)\n";
+    String expectedOutput = "(" +  numRows + " rows, " + responseTime + " sec, " + numBytes + " B written)\nINSERT OK\n";
     assertEquals(expectedOutput, stringWriter.toString());
   }
 
@@ -173,6 +173,7 @@ public class TestDefaultCliOutputFormatter {
     StringWriter stringWriter = new StringWriter();
     PrintWriter writer = new PrintWriter(stringWriter);
     outputFormatter.printResult(writer, null, tableDesc, responseTime, resultSet);
+    outputFormatter.printQueryTypeMessage(writer, false, PlanTypesProto.PlanNodeType.GROUP_BY);
 
     assertEquals(expectedOutput, stringWriter.toString());
   }

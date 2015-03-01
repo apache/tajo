@@ -24,41 +24,7 @@ option java_generate_equals_and_hash = true;
 import "PrimitiveProtos.proto";
 import "CatalogProtos.proto";
 import "DataTypes.proto";
-
-enum NodeType {
-  SET_SESSION = 0;
-
-  ROOT = 1;
-  EXPRS = 2;
-  PROJECTION = 3;
-  LIMIT = 4;
-  WINDOW_AGG = 5;
-  SORT = 6;
-  HAVING = 7;
-  GROUP_BY = 8;
-  DISTINCT_GROUP_BY = 9;
-  SELECTION = 10;
-  JOIN = 11;
-  UNION = 12;
-  INTERSECT = 13;
-  EXCEPT = 14;
-  TABLE_SUBQUERY = 15;
-  SCAN = 16;
-  PARTITIONS_SCAN = 17;
-  INDEX_SCAN = 18;
-  STORE = 19;
-  INSERT = 20;
-
-  CREATE_DATABASE = 21;
-  DROP_DATABASE = 22;
-  CREATE_TABLE = 23;
-  DROP_TABLE = 24;
-  ALTER_TABLESPACE = 25;
-  ALTER_TABLE = 26;
-  TRUNCATE_TABLE = 27;
-  CREATE_INDEX = 28;
-  DROP_INDEX = 29;
-}
+import "PlanTypes.proto";
 
 message LogicalNodeTree {
   repeated LogicalNode nodes = 1;
@@ -67,7 +33,7 @@ message LogicalNodeTree {
 message LogicalNode {
   required int32 visitSeq = 1;
   required int32 nodeId = 2;
-  required NodeType type = 3;
+  required PlanNodeType type = 3;
   optional SchemaProto in_schema = 4;
   optional SchemaProto out_schema = 5;
 

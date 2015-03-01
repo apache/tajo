@@ -1,0 +1,57 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+option java_package = "org.apache.tajo.common";
+option java_outer_classname = "PlanTypesProto";
+option java_generic_services = false;
+option java_generate_equals_and_hash = true;
+
+enum PlanNodeType {
+  SET_SESSION = 0;
+
+  ROOT = 1;
+  EXPRS = 2;
+  PROJECTION = 3;
+  LIMIT = 4;
+  WINDOW_AGG = 5;
+  SORT = 6;
+  HAVING = 7;
+  GROUP_BY = 8;
+  DISTINCT_GROUP_BY = 9;
+  SELECTION = 10;
+  JOIN = 11;
+  UNION = 12;
+  INTERSECT = 13;
+  EXCEPT = 14;
+  TABLE_SUBQUERY = 15;
+  SCAN = 16;
+  PARTITIONS_SCAN = 17;
+  INDEX_SCAN = 18;
+  STORE = 19;
+  INSERT = 20;
+
+  CREATE_DATABASE = 21;
+  DROP_DATABASE = 22;
+  CREATE_TABLE = 23;
+  DROP_TABLE = 24;
+  ALTER_TABLESPACE = 25;
+  ALTER_TABLE = 26;
+  TRUNCATE_TABLE = 27;
+  CREATE_INDEX = 28;
+  DROP_INDEX = 29;
+}

@@ -25,6 +25,7 @@ import "tajo_protos.proto";
 import "TajoIdProtos.proto";
 import "CatalogProtos.proto";
 import "PrimitiveProtos.proto";
+import "PlanTypes.proto";
 
 enum ResultCode {
   OK = 0;
@@ -141,6 +142,8 @@ message SubmitQueryResponse {
   optional int32 maxRowNum = 9;
 
   optional KeyValueSetProto sessionVars = 10;
+
+  optional PlanNodeType planType = 11;
 }
 
 message GetQueryStatusResponse {

@@ -103,7 +103,7 @@ public class QueryExecutor {
       context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
 
       if (PlannerUtil.isDistExecDDL(rootNode)) {
-        if (rootNode.getChild().getType() == NodeType.CREATE_INDEX) {
+        if (PlannerUtil.extractPlanType(rootNode) == NodeType.CREATE_INDEX) {
           checkIndexExistence(queryContext, (CreateIndexNode) rootNode.getChild());
         }
         executeDistributedQuery(queryContext, session, plan, sql, jsonExpr, response);
@@ -111,6 +111,7 @@ public class QueryExecutor {
         response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
         response.setResult(IPCUtil.buildOkRequestResult());
       }
+      response.setPlanType(PlannerUtil.convertType(PlannerUtil.extractPlanType(rootNode)));
 
       ddlExecutor.execute(queryContext, plan);
 
