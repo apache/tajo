@@ -29,8 +29,10 @@ import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.exception.AlreadyExistsIndexException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
@@ -40,6 +42,7 @@ import org.apache.tajo.engine.planner.physical.EvalExprExec;
 import org.apache.tajo.engine.planner.physical.StoreTableExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.ClientProtos;
+import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 import org.apache.tajo.master.*;
 import org.apache.tajo.master.exec.prehook.CreateTableHook;
@@ -55,6 +58,7 @@ import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.storage.*;
+import org.apache.tajo.util.IPCUtil;
 import org.apache.tajo.util.ProtoUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -95,10 +99,17 @@ public class QueryExecutor {
 
     } else if (PlannerUtil.checkIfDDLPlan(rootNode)) {
       context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
-      ddlExecutor.execute(queryContext, plan);
-      response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      response.setResultCode(ClientProtos.ResultCode.OK);
 
+      if (PlannerUtil.isDistExecDDL(rootNode)) {
+        if (rootNode.getChild().getType() == NodeType.CREATE_INDEX) {
+          checkIndexExistence(queryContext, (CreateIndexNode) rootNode.getChild());
+        }
+        executeDistributedQuery(queryContext, session, plan, sql, jsonExpr, response);
+      } else {
+        response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+        response.setResult(IPCUtil.buildOkRequestResult());
+        ddlExecutor.execute(queryContext, plan);
+      }
 
     } else if (plan.isExplain()) { // explain query
       execExplain(plan, response);
@@ -127,7 +138,7 @@ public class QueryExecutor {
 
   public void execSetSession(Session session, LogicalPlan plan,
                              SubmitQueryResponse.Builder response) {
-    SetSessionNode setSessionNode = ((LogicalRootNode)plan.getRootBlock().getRoot()).getChild();
+    SetSessionNode setSessionNode = ((LogicalRootNode) plan.getRootBlock().getRoot()).getChild();
 
     final String varName = setSessionNode.getName();
 
@@ -139,8 +150,8 @@ public class QueryExecutor {
         session.selectDatabase(setSessionNode.getValue());
       } else {
         response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-        response.setResultCode(ClientProtos.ResultCode.ERROR);
-        response.setErrorMessage("database \"" + databaseName + "\" does not exists.");
+        response.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR,
+            "database \"" + databaseName + "\" does not exists.", null));
       }
 
       // others
@@ -154,7 +165,7 @@ public class QueryExecutor {
 
     context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
     response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-    response.setResultCode(ClientProtos.ResultCode.OK);
+    response.setResult(IPCUtil.buildOkRequestResult());
   }
 
   public void execExplain(LogicalPlan plan, SubmitQueryResponse.Builder response) throws IOException {
@@ -180,7 +191,7 @@ public class QueryExecutor {
 
     response.setResultSet(serializedResBuilder.build());
     response.setMaxRowNum(lines.length);
-    response.setResultCode(ClientProtos.ResultCode.OK);
+    response.setResult(IPCUtil.buildOkRequestResult());
     response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
   }
 
@@ -202,7 +213,7 @@ public class QueryExecutor {
     response.setQueryId(queryId.getProto());
     response.setMaxRowNum(maxRow);
     response.setTableDesc(queryResultScanner.getTableDesc().getProto());
-    response.setResultCode(ClientProtos.ResultCode.OK);
+    response.setResult(IPCUtil.buildOkRequestResult());
   }
 
   public void execSimpleQuery(QueryContext queryContext, Session session, String query, LogicalPlan plan,
@@ -233,7 +244,7 @@ public class QueryExecutor {
     response.setQueryId(queryInfo.getQueryId().getProto());
     response.setMaxRowNum(maxRow);
     response.setTableDesc(desc.getProto());
-    response.setResultCode(ClientProtos.ResultCode.OK);
+    response.setResult(IPCUtil.buildOkRequestResult());
   }
 
   public void execNonFromQuery(QueryContext queryContext, Session session, String query,
@@ -265,7 +276,7 @@ public class QueryExecutor {
       responseBuilder.setResultSet(serializedResBuilder);
       responseBuilder.setMaxRowNum(1);
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+      responseBuilder.setResult(IPCUtil.buildOkRequestResult());
     }
   }
 
@@ -367,7 +378,7 @@ public class QueryExecutor {
     // If queryId == NULL_QUERY_ID and MaxRowNum == -1, TajoCli prints only number of inserted rows.
     responseBuilder.setMaxRowNum(-1);
     responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-    responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+    responseBuilder.setResult(IPCUtil.buildOkRequestResult());
   }
 
   public void executeDistributedQuery(QueryContext queryContext, Session session,
@@ -396,19 +407,38 @@ public class QueryExecutor {
 
     if(queryInfo == null) {
       responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      responseBuilder.setResultCode(ClientProtos.ResultCode.ERROR);
-      responseBuilder.setErrorMessage("Fail starting QueryMaster.");
+      responseBuilder.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR,
+          "Fail starting QueryMaster.", null));
       LOG.error("Fail starting QueryMaster: " + sql);
     } else {
       responseBuilder.setIsForwarded(true);
       responseBuilder.setQueryId(queryInfo.getQueryId().getProto());
-      responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+      responseBuilder.setResult(IPCUtil.buildOkRequestResult());
       if(queryInfo.getQueryMasterHost() != null) {
         responseBuilder.setQueryMasterHost(queryInfo.getQueryMasterHost());
       }
       responseBuilder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
       LOG.info("Query " + queryInfo.getQueryId().toString() + "," + queryInfo.getSql() + "," +
           " is forwarded to " + queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
+    }
+  }
+
+  private void checkIndexExistence(final QueryContext queryContext, final CreateIndexNode createIndexNode)
+      throws IOException {
+    String databaseName, simpleIndexName, qualifiedIndexName;
+    if (CatalogUtil.isFQTableName(createIndexNode.getIndexName())) {
+      String [] splits = CatalogUtil.splitFQTableName(createIndexNode.getIndexName());
+      databaseName = splits[0];
+      simpleIndexName = splits[1];
+      qualifiedIndexName = createIndexNode.getIndexName();
+    } else {
+      databaseName = queryContext.getCurrentDatabase();
+      simpleIndexName = createIndexNode.getIndexName();
+      qualifiedIndexName = CatalogUtil.buildFQName(databaseName, simpleIndexName);
+    }
+
+    if (catalog.existIndexByName(databaseName, simpleIndexName)) {
+      throw new AlreadyExistsIndexException(qualifiedIndexName);
     }
   }
 }

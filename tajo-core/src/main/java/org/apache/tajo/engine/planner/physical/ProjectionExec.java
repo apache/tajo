@@ -58,6 +58,7 @@ public class ProjectionExec extends UnaryPhysicalExec {
     }
 
     projector.eval(tuple, outTuple);
+    outTuple.setOffset(tuple.getOffset());
     return outTuple;
   }
 

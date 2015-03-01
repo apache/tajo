@@ -22,8 +22,6 @@ import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -37,8 +35,6 @@ import org.apache.tajo.util.TUtil;
 import java.net.URI;
 
 public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Cloneable {
-  private final Log LOG = LogFactory.getLog(TableDesc.class);
-
 	@Expose protected String tableName;                        // required
   @Expose protected Schema schema;
   @Expose protected TableMeta meta;                          // required

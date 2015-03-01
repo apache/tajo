@@ -41,11 +41,11 @@ public class QueryStatus {
     submitTime = proto.getSubmitTime();
     finishTime = proto.getFinishTime();
     hasResult = proto.getHasResult();
-    if (proto.hasErrorMessage()) {
-      errorText = proto.getErrorMessage();
+    if (proto.getResult().hasErrorMessage()) {
+      errorText = proto.getResult().getErrorMessage();
     }
-    if (proto.hasErrorTrace()) {
-      errorTrace = proto.getErrorTrace();
+    if (proto.getResult().hasErrorTrace()) {
+      errorTrace = proto.getResult().getErrorTrace();
     }
 
     queryMasterHost = proto.getQueryMasterHost();

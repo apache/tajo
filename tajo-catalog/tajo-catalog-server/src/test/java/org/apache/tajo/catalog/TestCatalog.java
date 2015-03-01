@@ -31,10 +31,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
-import org.apache.tajo.catalog.store.DerbyStore;
-import org.apache.tajo.catalog.store.MySQLStore;
-import org.apache.tajo.catalog.store.MariaDBStore;
-import org.apache.tajo.catalog.store.OracleStore;
+import org.apache.tajo.catalog.store.*;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -47,6 +44,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
@@ -434,34 +433,41 @@ public class TestCatalog {
   static IndexDesc desc1;
   static IndexDesc desc2;
   static IndexDesc desc3;
-
-  static {
-    desc1 = new IndexDesc(
-        "idx_test", DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
-        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
-
-    desc2 = new IndexDesc(
-        "idx_test2", DEFAULT_DATABASE_NAME, "indexed", new Column("score", Type.FLOAT8),
-        IndexMethod.TWO_LEVEL_BIN_TREE, false, false, false);
-
-    desc3 = new IndexDesc(
-        "idx_test", DEFAULT_DATABASE_NAME, "indexed", new Column("id", Type.INT4),
-        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, true);
-  }
+  static Schema relationSchema;
 
   public static TableDesc prepareTable() throws IOException {
-    Schema schema = new Schema();
-    schema.addColumn("indexed.id", Type.INT4)
-        .addColumn("indexed.name", Type.TEXT)
-        .addColumn("indexed.age", Type.INT4)
-        .addColumn("indexed.score", Type.FLOAT8);
+    relationSchema = new Schema();
+    relationSchema.addColumn(DEFAULT_DATABASE_NAME + ".indexed.id", Type.INT4)
+        .addColumn(DEFAULT_DATABASE_NAME + ".indexed.name", Type.TEXT)
+        .addColumn(DEFAULT_DATABASE_NAME + ".indexed.age", Type.INT4)
+        .addColumn(DEFAULT_DATABASE_NAME + ".indexed.score", Type.FLOAT8);
 
     String tableName = "indexed";
 
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.CSV);
     return new TableDesc(
-        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, tableName), schema, meta,
+        CatalogUtil.buildFQName(TajoConstants.DEFAULT_DATABASE_NAME, tableName), relationSchema, meta,
         new Path(CommonTestingUtil.getTestDir(), "indexed").toUri());
+  }
+
+  public static void prepareIndexDescs() throws IOException, URISyntaxException {
+    SortSpec[] colSpecs1 = new SortSpec[1];
+    colSpecs1[0] = new SortSpec(new Column("default.indexed.id", Type.INT4), true, true);
+    desc1 = new IndexDesc(DEFAULT_DATABASE_NAME, "indexed",
+        "idx_test", new URI("idx_test"), colSpecs1,
+        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, relationSchema);
+
+    SortSpec[] colSpecs2 = new SortSpec[1];
+    colSpecs2[0] = new SortSpec(new Column("default.indexed.score", Type.FLOAT8), false, false);
+    desc2 = new IndexDesc(DEFAULT_DATABASE_NAME, "indexed",
+        "idx_test2", new URI("idx_test2"), colSpecs2,
+        IndexMethod.TWO_LEVEL_BIN_TREE, false, false, relationSchema);
+
+    SortSpec[] colSpecs3 = new SortSpec[1];
+    colSpecs3[0] = new SortSpec(new Column("default.indexed.id", Type.INT4), true, false);
+    desc3 = new IndexDesc(DEFAULT_DATABASE_NAME, "indexed",
+        "idx_test", new URI("idx_test"), colSpecs3,
+        IndexMethod.TWO_LEVEL_BIN_TREE, true, true, relationSchema);
   }
 
   @Test
@@ -499,25 +505,34 @@ public class TestCatalog {
 	@Test
 	public void testAddAndDelIndex() throws Exception {
 	  TableDesc desc = prepareTable();
+    prepareIndexDescs();
 	  assertTrue(catalog.createTable(desc));
 	  
-	  assertFalse(catalog.existIndexByName("db1", desc1.getIndexName()));
-	  assertFalse(catalog.existIndexByColumn(DEFAULT_DATABASE_NAME, "indexed", "id"));
+	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getName()));
+	  assertFalse(catalog.existIndexByColumnNames(DEFAULT_DATABASE_NAME, "indexed", new String[]{"id"}));
 	  catalog.createIndex(desc1);
-	  assertTrue(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getIndexName()));
-	  assertTrue(catalog.existIndexByColumn(DEFAULT_DATABASE_NAME, "indexed", "id"));
+	  assertTrue(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getName()));
+	  assertTrue(catalog.existIndexByColumnNames(DEFAULT_DATABASE_NAME, "indexed", new String[]{"id"}));
 
 
-	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getIndexName()));
-	  assertFalse(catalog.existIndexByColumn(DEFAULT_DATABASE_NAME, "indexed", "score"));
+	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getName()));
+	  assertFalse(catalog.existIndexByColumnNames(DEFAULT_DATABASE_NAME, "indexed", new String[]{"score"}));
 	  catalog.createIndex(desc2);
-	  assertTrue(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getIndexName()));
-	  assertTrue(catalog.existIndexByColumn(DEFAULT_DATABASE_NAME, "indexed", "score"));
+	  assertTrue(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getName()));
+	  assertTrue(catalog.existIndexByColumnNames(DEFAULT_DATABASE_NAME, "indexed", new String[]{"score"}));
+
+    Set<IndexDesc> indexDescs = TUtil.newHashSet();
+    indexDescs.add(desc1);
+    indexDescs.add(desc2);
+    indexDescs.add(desc3);
+    for (IndexDesc index : catalog.getAllIndexesByTable(DEFAULT_DATABASE_NAME, "indexed")) {
+      assertTrue(indexDescs.contains(index));
+    }
 	  
-	  catalog.dropIndex(DEFAULT_DATABASE_NAME, desc1.getIndexName());
-	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getIndexName()));
-	  catalog.dropIndex(DEFAULT_DATABASE_NAME, desc2.getIndexName());
-	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getIndexName()));
+	  catalog.dropIndex(DEFAULT_DATABASE_NAME, desc1.getName());
+	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc1.getName()));
+	  catalog.dropIndex(DEFAULT_DATABASE_NAME, desc2.getName());
+	  assertFalse(catalog.existIndexByName(DEFAULT_DATABASE_NAME, desc2.getName()));
 	  
 	  catalog.dropTable(desc.getName());
     assertFalse(catalog.existsTable(desc.getName()));

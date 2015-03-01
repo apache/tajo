@@ -97,18 +97,21 @@ xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.
 			<tns:Object name="INDEXES" type="table" order="10">
 				<tns:sql><![CDATA[
 				CREATE TABLE INDEXES (
-  				DB_ID INT NOT NULL,
-  				TID INT NOT NULL,
-  				INDEX_NAME VARCHAR(128) NOT NULL,
-  				COLUMN_NAME VARCHAR(128) NOT NULL,
-  				DATA_TYPE VARCHAR(128) NOT NULL,
-  				INDEX_TYPE CHAR(32) NOT NULL,
-  				IS_UNIQUE BOOLEAN NOT NULL,
-  				IS_CLUSTERED BOOLEAN NOT NULL,
-  				IS_ASCENDING BOOLEAN NOT NULL,
-  				CONSTRAINT INDEXES_PKEY PRIMARY KEY (DB_ID, INDEX_NAME),
-  				FOREIGN KEY (DB_ID) REFERENCES DATABASES_ (DB_ID) ON DELETE CASCADE,
-  				FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
+  					INDEX_ID SERIAL NOT NULL PRIMARY KEY,
+  					DB_ID INT NOT NULL,
+  					TID INT NOT NULL,
+  					INDEX_NAME VARCHAR(128) NOT NULL,
+  					INDEX_TYPE CHAR(32) NOT NULL,
+  					PATH VARCHAR(4096) NOT NULL,
+  					COLUMN_NAMES VARCHAR(256) NOT NULL, -- array of column names
+  					DATA_TYPES VARCHAR(128) NOT NULL, -- array of column types
+  					ORDERS VARCHAR(128) NOT NULL, -- array of column orders
+  					NULL_ORDERS VARCHAR(128) NOT NULL, -- array of null orderings
+  					IS_UNIQUE BOOLEAN NOT NULL,
+  					IS_CLUSTERED BOOLEAN NOT NULL,
+  					CONSTRAINT INDEXES_PKEY PRIMARY KEY (INDEX_ID),
+  					FOREIGN KEY (DB_ID) REFERENCES DATABASES_ (DB_ID) ON DELETE CASCADE,
+  					FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
 				)]]>
 				</tns:sql>
 			</tns:Object>
@@ -116,7 +119,7 @@ xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.
 				<tns:sql><![CDATA[CREATE UNIQUE INDEX INDEXES_IDX_DB_ID_NAME on INDEXES (DB_ID, INDEX_NAME)]]></tns:sql>
 			</tns:Object>
 			<tns:Object name="INDEXES_IDX_TID_COLUMN_NAME" type="index" order="12" dependsOn="INDEXES">
-				<tns:sql><![CDATA[CREATE INDEX INDEXES_IDX_TID_COLUMN_NAME on INDEXES (TID, COLUMN_NAME)]]></tns:sql>
+				<tns:sql><![CDATA[CREATE INDEX INDEXES_IDX_TID_COLUMN_NAME on INDEXES (DB_ID, TID, COLUMN_NAMES)]]></tns:sql>
 			</tns:Object>
 			<tns:Object name="STATS" type="table" order="13">
 				<tns:sql><![CDATA[

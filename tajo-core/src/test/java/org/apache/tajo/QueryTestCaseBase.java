@@ -626,6 +626,9 @@ public class QueryTestCaseBase {
         if (isLocalTable) {
           createdTableGlobalSet.remove(tableName);
         }
+      } else if (expr.getType() == OpType.CreateIndex) {
+        // TODO: index existence check
+        client.executeQuery(compiled);
       } else {
         assertTrue(ddlFilePath + " is not a Create or Drop Table statement", false);
       }

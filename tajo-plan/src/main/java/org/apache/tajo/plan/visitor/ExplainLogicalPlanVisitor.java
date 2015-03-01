@@ -234,6 +234,19 @@ public class ExplainLogicalPlanVisitor extends BasicLogicalPlanVisitor<ExplainLo
     return node;
   }
 
+  @Override
+  public LogicalNode visitCreateIndex(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                     CreateIndexNode node, Stack<LogicalNode> stack) throws PlanningException {
+    return visitUnaryNode(context, plan, block, node, stack);
+  }
+
+  @Override
+  public LogicalNode visitDropIndex(Context context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                    DropIndexNode node, Stack<LogicalNode> stack) {
+    context.add(context.depth, node.getPlanString());
+    return node;
+  }
+
   public static String printDepthString(int maxDepth, DepthString planStr) {
     StringBuilder output = new StringBuilder();
     String pad = new String(new char[planStr.getDepth() * 3]).replace('\0', ' ');

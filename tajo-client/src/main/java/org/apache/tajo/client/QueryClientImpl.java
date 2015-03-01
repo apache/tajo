@@ -169,7 +169,7 @@ public class QueryClientImpl implements QueryClient {
 
 
         SubmitQueryResponse response = tajoMasterService.submitQuery(null, builder.build());
-        if (response.getResultCode() == ResultCode.OK) {
+        if (response.getResult().getResultCode() == ResultCode.OK) {
           connection.updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
         }
         return response;
@@ -204,11 +204,11 @@ public class QueryClientImpl implements QueryClient {
 
     ClientProtos.SubmitQueryResponse response = executeQuery(sql);
 
-    if (response.getResultCode() == ClientProtos.ResultCode.ERROR) {
-      if (response.hasErrorMessage()) {
-        throw new ServiceException(response.getErrorMessage());
-      } else if (response.hasErrorTrace()) {
-        throw new ServiceException(response.getErrorTrace());
+    if (response.getResult().getResultCode() == ClientProtos.ResultCode.ERROR) {
+      if (response.getResult().hasErrorMessage()) {
+        throw new ServiceException(response.getResult().getErrorMessage());
+      } else if (response.getResult().hasErrorTrace()) {
+        throw new ServiceException(response.getResult().getErrorTrace());
       }
     }
 
@@ -240,8 +240,8 @@ public class QueryClientImpl implements QueryClient {
 
     ClientProtos.SubmitQueryResponse response = executeQueryWithJson(json);
 
-    if (response.getResultCode() == ClientProtos.ResultCode.ERROR) {
-      throw new ServiceException(response.getErrorTrace());
+    if (response.getResult().getResultCode() == ClientProtos.ResultCode.ERROR) {
+      throw new ServiceException(response.getResult().getErrorTrace());
     }
 
     QueryId queryId = new QueryId(response.getQueryId());
@@ -388,9 +388,9 @@ public class QueryClientImpl implements QueryClient {
               builder.setFetchRowNum(fetchRowNum);
               try {
                 GetQueryResultDataResponse response = tajoMasterService.getQueryResultData(null, builder.build());
-                if (response.getResultCode() == ClientProtos.ResultCode.ERROR) {
+                if (response.getResult().getResultCode() == ClientProtos.ResultCode.ERROR) {
                   abort();
-                  throw new ServiceException(response.getErrorMessage());
+                  throw new ServiceException(response.getResult().getErrorMessage());
                 }
 
                 return response.getResultSet();
@@ -434,12 +434,12 @@ public class QueryClientImpl implements QueryClient {
         builder.setIsJson(false);
         ClientProtos.UpdateQueryResponse response = tajoMasterService.updateQuery(null, builder.build());
 
-        if (response.getResultCode() == ClientProtos.ResultCode.OK) {
+        if (response.getResult().getResultCode() == ClientProtos.ResultCode.OK) {
           connection.updateSessionVarsCache(ProtoUtil.convertToMap(response.getSessionVars()));
           return true;
         } else {
-          if (response.hasErrorMessage()) {
-            System.err.println("ERROR: " + response.getErrorMessage());
+          if (response.getResult().hasErrorMessage()) {
+            System.err.println("ERROR: " + response.getResult().getErrorMessage());
           }
           return false;
         }
@@ -463,11 +463,11 @@ public class QueryClientImpl implements QueryClient {
         builder.setQuery(json);
         builder.setIsJson(true);
         ClientProtos.UpdateQueryResponse response = tajoMasterService.updateQuery(null, builder.build());
-        if (response.getResultCode() == ClientProtos.ResultCode.OK) {
+        if (response.getResult().getResultCode() == ClientProtos.ResultCode.OK) {
           return true;
         } else {
-          if (response.hasErrorMessage()) {
-            System.err.println("ERROR: " + response.getErrorMessage());
+          if (response.getResult().hasErrorMessage()) {
+            System.err.println("ERROR: " + response.getResult().getErrorMessage());
           }
           return false;
         }
@@ -588,11 +588,11 @@ public class QueryClientImpl implements QueryClient {
 
         TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
         GetQueryInfoResponse res = tajoMasterService.getQueryInfo(null,builder.build());
-        if (res.getResultCode() == ResultCode.OK) {
+        if (res.getResult().getResultCode() == ResultCode.OK) {
           return res.getQueryInfo();
         } else {
           abort();
-          throw new ServiceException(res.getErrorMessage());
+          throw new ServiceException(res.getResult().getErrorMessage());
         }
       }
     }.withRetries();
@@ -618,11 +618,11 @@ public class QueryClientImpl implements QueryClient {
 
         QueryMasterClientProtocolService.BlockingInterface queryMasterService = client.getStub();
         GetQueryHistoryResponse res = queryMasterService.getQueryHistory(null,builder.build());
-        if (res.getResultCode() == ResultCode.OK) {
+        if (res.getResult().getResultCode() == ResultCode.OK) {
           return res.getQueryHistory();
         } else {
           abort();
-          throw new ServiceException(res.getErrorMessage());
+          throw new ServiceException(res.getResult().getErrorMessage());
         }
       }
     }.withRetries();

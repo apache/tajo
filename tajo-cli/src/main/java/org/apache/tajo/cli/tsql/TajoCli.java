@@ -494,7 +494,7 @@ public class TajoCli {
     if (response == null) {
       displayFormatter.printErrorMessage(sout, "response is null");
       wasError = true;
-    } else if (response.getResultCode() == ClientProtos.ResultCode.OK) {
+    } else if (response.getResult().getResultCode() == ClientProtos.ResultCode.OK) {
       if (response.getIsForwarded()) {
         QueryId queryId = new QueryId(response.getQueryId());
         waitForQueryCompleted(queryId);
@@ -507,8 +507,8 @@ public class TajoCli {
         }
       }
     } else {
-      if (response.hasErrorMessage()) {
-        displayFormatter.printErrorMessage(sout, response.getErrorMessage());
+      if (response.getResult().hasErrorMessage()) {
+        displayFormatter.printErrorMessage(sout, response.getResult().getErrorMessage());
         wasError = true;
       }
     }
@@ -531,7 +531,7 @@ public class TajoCli {
     if (response == null) {
       displayFormatter.printErrorMessage(sout, "response is null");
       wasError = true;
-    } else if (response.getResultCode() == ClientProtos.ResultCode.OK) {
+    } else if (response.getResult().getResultCode() == ClientProtos.ResultCode.OK) {
       if (response.getIsForwarded()) {
         QueryId queryId = new QueryId(response.getQueryId());
         waitForQueryCompleted(queryId);
@@ -543,8 +543,8 @@ public class TajoCli {
         }
       }
     } else {
-      if (response.hasErrorMessage()) {
-        displayFormatter.printErrorMessage(sout, response.getErrorMessage());
+      if (response.getResult().hasErrorMessage()) {
+        displayFormatter.printErrorMessage(sout, response.getResult().getErrorMessage());
         wasError = true;
       }
     }

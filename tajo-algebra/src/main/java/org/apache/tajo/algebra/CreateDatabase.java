@@ -32,7 +32,7 @@ public class CreateDatabase extends Expr {
   private String tablespaceName;
   @Expose @SerializedName("IfNotExists")
   private boolean ifNotExists;
-  @Expose @SerializedName("DatabaseProperties")
+  @Expose @SerializedName("Properties")
   private Map<String, String> params;
 
   public CreateDatabase(final String databaseName, final String tablespaceName, final boolean ifNotExists) {

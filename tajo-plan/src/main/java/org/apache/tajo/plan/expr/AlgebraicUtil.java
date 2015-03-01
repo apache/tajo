@@ -18,7 +18,10 @@
 
 package org.apache.tajo.plan.expr;
 
+import org.apache.tajo.algebra.*;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.plan.PlanningException;
+import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -412,6 +415,72 @@ public class AlgebraicUtil {
       toDisjunctiveNormalFormArrayRecursive(((BinaryEval)node).getRightExpr(), found);
     } else {
       found.add(node);
+    }
+  }
+
+  public static class IdentifiableNameBuilder extends SimpleAlgebraVisitor<Object, Object> {
+    private Expr expr;
+    private StringBuilder nameBuilder = new StringBuilder();
+
+    public IdentifiableNameBuilder(Expr expr) {
+      this.expr = expr;
+    }
+
+    public String build() {
+      Stack<Expr> stack = new Stack<Expr>();
+      stack.push(expr);
+      try {
+        this.visit(null, stack, expr);
+      } catch (PlanningException e) {
+
+      }
+      return nameBuilder.deleteCharAt(nameBuilder.length()-1).toString();
+    }
+
+    @Override
+    public Object visitBinaryOperator(Object ctx, Stack<Expr> stack, BinaryOperator expr) throws PlanningException {
+      addIntermExpr(expr);
+      return super.visitBinaryOperator(ctx, stack, expr);
+    }
+
+    private void append(String str) {
+      nameBuilder.append(str).append("_");
+    }
+
+    private void addIntermExpr(Expr expr) {
+      this.append(expr.getType().name());
+    }
+
+    @Override
+    public Object visitColumnReference(Object ctx, Stack<Expr> stack, ColumnReferenceExpr expr)
+        throws PlanningException {
+      this.append(expr.getName());
+      return super.visitColumnReference(ctx, stack, expr);
+    }
+
+    @Override
+    public Object visitLiteral(Object ctx, Stack<Expr> stack, LiteralValue expr) throws PlanningException {
+      this.append(expr.getValue());
+      return super.visitLiteral(ctx, stack, expr);
+    }
+
+    @Override
+    public Object visitNullLiteral(Object ctx, Stack<Expr> stack, NullLiteral expr) throws PlanningException {
+      this.append("null");
+      return super.visitNullLiteral(ctx, stack, expr);
+    }
+
+    @Override
+    public Object visitTimestampLiteral(Object ctx, Stack<Expr> stack, TimestampLiteral expr) throws PlanningException {
+      this.append(expr.getDate().toString());
+      this.append(expr.getTime().toString());
+      return super.visitTimestampLiteral(ctx, stack, expr);
+    }
+
+    @Override
+    public Object visitTimeLiteral(Object ctx, Stack<Expr> stack, TimeLiteral expr) throws PlanningException {
+      this.append(expr.getTime().toString());
+      return super.visitTimeLiteral(ctx, stack, expr);
     }
   }
 }

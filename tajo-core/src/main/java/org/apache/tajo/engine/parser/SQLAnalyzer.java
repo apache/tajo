@@ -27,7 +27,9 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.Aggregation.GroupType;
+import org.apache.tajo.algebra.CreateIndex.IndexMethodSpec;
 import org.apache.tajo.algebra.LiteralValue.LiteralType;
+import org.apache.tajo.algebra.Sort.SortSpec;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.engine.parser.SQLParser.*;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -1208,6 +1210,51 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     }
 
     return new FunctionExpr(functionName, params);
+  }
+
+  @Override
+  public Expr visitCreate_index_statement(SQLParser.Create_index_statementContext ctx) {
+    String indexName = ctx.index_name.getText();
+    String tableName = ctx.table_name().getText();
+    Relation relation = new Relation(tableName);
+    SortSpec[] sortSpecs = buildSortSpecs(ctx.sort_specifier_list());
+    NamedExpr[] targets = new NamedExpr[sortSpecs.length];
+    Projection projection = new Projection();
+    int i = 0;
+    for (SortSpec sortSpec : sortSpecs) {
+      targets[i++] = new NamedExpr(sortSpec.getKey());
+    }
+    projection.setNamedExprs(targets);
+    projection.setChild(relation);
+
+    CreateIndex createIndex = new CreateIndex(indexName, sortSpecs);
+    if (checkIfExist(ctx.UNIQUE())) {
+      createIndex.setUnique(true);
+    }
+    if (checkIfExist(ctx.method_specifier())) {
+      String methodName = ctx.method_specifier().identifier().getText();
+      createIndex.setMethodSpec(new IndexMethodSpec(methodName));
+    }
+    if (checkIfExist(ctx.param_clause())) {
+      Map<String, String> params = getParams(ctx.param_clause());
+      createIndex.setParams(params);
+    }
+    if (checkIfExist(ctx.where_clause())) {
+      Selection selection = visitWhere_clause(ctx.where_clause());
+      selection.setChild(relation);
+      projection.setChild(selection);
+    }
+    if (checkIfExist(ctx.LOCATION())) {
+      createIndex.setIndexPath(stripQuote(ctx.path.getText()));
+    }
+    createIndex.setChild(projection);
+    return createIndex;
+  }
+
+  @Override
+  public Expr visitDrop_index_statement(SQLParser.Drop_index_statementContext ctx) {
+    String indexName = ctx.identifier().getText();
+    return new DropIndex(indexName);
   }
 
   @Override

@@ -33,15 +33,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.DatabaseProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.IndexProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableDescriptorProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableOptionProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
-import org.apache.tajo.catalog.proto.CatalogProtos.TablespaceProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
@@ -297,43 +289,35 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     
     return tuples;
   }
-  
+
   private List<Tuple> getIndexes(Schema outSchema) {
-    List<IndexProto> indexList = masterContext.getCatalog().getAllIndexes();
+    List<IndexDescProto> indexList = masterContext.getCatalog().getAllIndexes();
     List<Tuple> tuples = new ArrayList<Tuple>(indexList.size());
     List<Column> columns = outSchema.getColumns();
     Tuple aTuple;
-    
-    for (IndexProto index: indexList) {
+
+    for (IndexDescProto index: indexList) {
       aTuple = new VTuple(outSchema.size());
-      
+
       for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
         Column column = columns.get(fieldId);
-        
+
         if ("db_id".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt4(index.getDbId()));
+          aTuple.put(fieldId, DatumFactory.createInt4(index.getTableIdentifier().getDbId()));
         } else if ("tid".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt4(index.getTId()));
+          aTuple.put(fieldId, DatumFactory.createInt4(index.getTableIdentifier().getTid()));
         } else if ("index_name".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createText(index.getIndexName()));
-        } else if ("column_name".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createText(index.getColumnName()));
-        } else if ("data_type".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createText(index.getDataType()));
-        } else if ("index_type".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createText(index.getIndexType()));
-        } else if ("is_unique".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createBool(index.getIsUnique()));
-        } else if ("is_clustered".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createBool(index.getIsClustered()));
-        } else if ("is_ascending".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createBool(index.getIsAscending()));
+        } else if ("index_method".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createText(index.getIndexMethod().name()));
+        } else if ("index_path".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createText(index.getIndexPath()));
         }
       }
-      
+
       tuples.add(aTuple);
     }
-    
+
     return tuples;
   }
   

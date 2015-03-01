@@ -116,11 +116,12 @@ message NamespaceProto {
 message IndexDescProto {
   required TableIdentifierProto tableIdentifier = 1;
   required string indexName = 2;
-  required ColumnProto column = 3;
-  required IndexMethod indexMethod = 4;
-  optional bool isUnique = 5 [default = false];
-  optional bool isClustered = 6 [default = false];
-  optional bool isAscending = 7 [default = false];
+  required IndexMethod indexMethod = 3;
+  required string indexPath = 4;
+  repeated SortSpecProto key_sort_specs = 5;
+  required SchemaProto targetRelationSchema = 6;
+  optional bool isUnique = 7 [default = false];
+  optional bool isClustered = 8 [default = false];
 }
 
 enum IndexMethod {
@@ -151,7 +152,7 @@ message GetColumnsProto {
 }
 
 message GetIndexesProto {
-  repeated IndexProto index = 1;
+  repeated IndexDescProto index = 1;
 }
 
 message GetTableOptionsProto {
@@ -164,18 +165,6 @@ message GetTableStatsProto {
 
 message GetTablePartitionsProto {
   repeated TablePartitionProto part = 1;
-}
-
-message IndexProto {
-  required int32 dbId = 1;
-  required int32 tId = 2;
-  required string indexName = 3;
-  required string columnName = 4;
-  required string dataType = 5;
-  required string indexType = 6;
-  optional bool isUnique = 7 [default = false];
-  optional bool isClustered = 8 [default = false];
-  optional bool isAscending = 9 [default = false];
 }
 
 message TableOptionProto {
@@ -191,15 +180,19 @@ message TablePartitionProto {
   optional string path = 5;
 }
 
-message GetIndexByColumnRequest {
+message GetIndexByColumnNamesRequest {
   required TableIdentifierProto tableIdentifier = 1;
-  required string columnName = 2;
+  repeated string columnNames = 2;
 }
 
 message IndexNameProto {
   required string databaseName = 1;
   optional string namespace = 2;
   required string indexName = 3;
+}
+
+message GetAllIndexesResponse {
+  repeated IndexDescProto indexDesc = 1;
 }
 
 message GetFunctionsResponse {

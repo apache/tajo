@@ -30,10 +30,12 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.serder.LogicalNodeDeserializer;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
@@ -47,20 +49,18 @@ import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.MultipleAg
 import org.apache.tajo.ipc.TajoWorkerProtocol.DistinctGroupbyEnforcer.SortSpecArray;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.FileUtil;
-import org.apache.tajo.util.IndexUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionType;
@@ -233,10 +233,17 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         return new LimitExec(ctx, limitNode.getInSchema(),
             limitNode.getOutSchema(), leftExec, limitNode);
 
-      case BST_INDEX_SCAN:
+      case INDEX_SCAN:
         IndexScanNode indexScanNode = (IndexScanNode) logicalNode;
         leftExec = createIndexScanExec(ctx, indexScanNode);
         return leftExec;
+
+      case CREATE_INDEX:
+        CreateIndexNode createIndexNode = (CreateIndexNode) logicalNode;
+        stack.push(createIndexNode);
+        leftExec = createPlanRecursive(ctx, createIndexNode.getChild(), stack);
+        stack.pop();
+        return new StoreIndexExec(ctx, createIndexNode, leftExec);
 
       default:
         return null;
@@ -1180,15 +1187,8 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     List<FileFragment> fragments =
         FragmentConvertor.convert(ctx.getConf(), fragmentProtos);
 
-    String indexName = IndexUtil.getIndexNameOfFrag(fragments.get(0), annotation.getSortKeys());
-    FileStorageManager sm = (FileStorageManager)StorageManager.getFileStorageManager(ctx.getConf());
-    Path indexPath = new Path(sm.getTablePath(annotation.getTableName()), "index");
-
-    TupleComparator comp = new BaseTupleComparator(annotation.getKeySchema(),
-        annotation.getSortKeys());
-    return new BSTIndexScanExec(ctx, annotation, fragments.get(0), new Path(indexPath, indexName),
-        annotation.getKeySchema(), comp, annotation.getDatum());
-
+    return new BSTIndexScanExec(ctx, annotation, fragments.get(0), annotation.getIndexPath(),
+        annotation.getKeySchema(), annotation.getPredicates());
   }
 
   public static EnforceProperty getAlgorithmEnforceProperty(Enforcer enforcer, LogicalNode node) {

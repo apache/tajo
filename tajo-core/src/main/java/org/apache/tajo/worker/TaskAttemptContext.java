@@ -378,7 +378,18 @@ public class TaskAttemptContext {
     }
     return fragmentMap.get(id).toArray(new FragmentProto[fragmentMap.get(id).size()]);
   }
-  
+
+  public String getUniqueKeyFromFragments() {
+    StringBuilder sb = new StringBuilder();
+    for (List<FragmentProto> fragments : fragmentMap.values()) {
+      for (FragmentProto f : fragments) {
+        FileFragment fileFragment = FragmentConvertor.convert(FileFragment.class, f);
+        sb.append(fileFragment.getPath().getName()).append(fileFragment.getStartKey()).append(fileFragment.getLength());
+      }
+    }
+    return sb.toString();
+  }
+
   public int hashCode() {
     return Objects.hashCode(queryId);
   }

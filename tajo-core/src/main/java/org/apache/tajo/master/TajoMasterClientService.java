@@ -37,6 +37,7 @@ import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.NoSuchDatabaseException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.query.QueryContext;
@@ -60,6 +61,7 @@ import org.apache.tajo.rpc.BlockingRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
+import org.apache.tajo.util.IPCUtil;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
@@ -146,19 +148,17 @@ public class TajoMasterClientService extends AbstractService {
         String sessionId =
             context.getSessionManager().createSession(request.getUsername(), databaseName);
         CreateSessionResponse.Builder builder = CreateSessionResponse.newBuilder();
-        builder.setResultCode(ResultCode.OK);
+        builder.setResult(IPCUtil.buildOkRequestResult());
         builder.setSessionId(TajoIdProtos.SessionIdProto.newBuilder().setId(sessionId).build());
         builder.setSessionVars(ProtoUtil.convertFromMap(context.getSessionManager().getAllVariables(sessionId)));
         return builder.build();
       } catch (NoSuchDatabaseException nsde) {
         CreateSessionResponse.Builder builder = CreateSessionResponse.newBuilder();
-        builder.setResultCode(ResultCode.ERROR);
-        builder.setMessage(nsde.getMessage());
+        builder.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR, nsde.getMessage(), null));
         return builder.build();
       } catch (InvalidSessionException e) {
         CreateSessionResponse.Builder builder = CreateSessionResponse.newBuilder();
-        builder.setResultCode(ResultCode.ERROR);
-        builder.setMessage(e.getMessage());
+        builder.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR, e.getMessage(), null));
         return builder.build();
       }
     }
@@ -176,15 +176,14 @@ public class TajoMasterClientService extends AbstractService {
 
     public SessionUpdateResponse buildSessionUpdateOnSuccess(Map<String, String> variables) {
       SessionUpdateResponse.Builder builder = SessionUpdateResponse.newBuilder();
-      builder.setResultCode(ResultCode.OK);
+      builder.setResult(IPCUtil.buildOkRequestResult());
       builder.setSessionVars(new KeyValueSet(variables).getProto());
       return builder.build();
     }
 
     public SessionUpdateResponse buildSessionUpdateOnError(String message) {
       SessionUpdateResponse.Builder builder = SessionUpdateResponse.newBuilder();
-      builder.setResultCode(ResultCode.ERROR);
-      builder.setMessage(message);
+      builder.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR, message, null));
       return builder.build();
     }
 
@@ -291,12 +290,8 @@ public class TajoMasterClientService extends AbstractService {
         responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
         responseBuilder.setIsForwarded(true);
         responseBuilder.setUserName(context.getConf().getVar(ConfVars.USERNAME));
-        responseBuilder.setResultCode(ResultCode.ERROR);
-        if (e.getMessage() != null) {
-          responseBuilder.setErrorMessage(ExceptionUtils.getStackTrace(e));
-        } else {
-          responseBuilder.setErrorMessage("Internal Error");
-        }
+        responseBuilder.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR,
+            e.getMessage() == null ? "Internal Error" : ExceptionUtils.getStackTrace(e), null));
         return responseBuilder.build();
       }
     }
@@ -307,23 +302,15 @@ public class TajoMasterClientService extends AbstractService {
       try {
         Session session = context.getSessionManager().getSession(request.getSessionId().getId());
         QueryContext queryContext = new QueryContext(conf, session);
-        if (queryContext.getCurrentDatabase() == null) {
-          for (Map.Entry<String,String> e : queryContext.getAllKeyValus().entrySet()) {
-            System.out.println(e.getKey() + "=" + e.getValue());
-          }
-        }
 
-        UpdateQueryResponse.Builder builder = UpdateQueryResponse.newBuilder();
+        UpdateQueryResponse.Builder responseBuilder = UpdateQueryResponse.newBuilder();
         try {
           context.getGlobalEngine().updateQuery(queryContext, request.getQuery(), request.getIsJson());
-          builder.setResultCode(ResultCode.OK);
-          return builder.build();
+          return responseBuilder.setResult(IPCUtil.buildOkRequestResult()).build();
         } catch (Exception e) {
-          builder.setResultCode(ResultCode.ERROR);
-          if (e.getMessage() == null) {
-            builder.setErrorMessage(ExceptionUtils.getStackTrace(e));
-          }
-          return builder.build();
+          responseBuilder.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR,
+              e.getMessage() == null ? ExceptionUtils.getStackTrace(e) : null, null));
+          return responseBuilder.build();
         }
       } catch (Throwable t) {
         throw new ServiceException(t);
@@ -463,7 +450,7 @@ public class TajoMasterClientService extends AbstractService {
         builder.setQueryId(request.getQueryId());
 
         if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
-          builder.setResultCode(ResultCode.OK);
+          builder.setResult(IPCUtil.buildOkRequestResult());
           builder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
         } else {
           QueryInProgress queryInProgress = context.getQueryJobManager().getQueryInProgress(queryId);
@@ -477,7 +464,7 @@ public class TajoMasterClientService extends AbstractService {
           }
 
           if (queryInfo != null) {
-            builder.setResultCode(ResultCode.OK);
+            builder.setResult(IPCUtil.buildOkRequestResult());
             builder.setState(queryInfo.getQueryState());
 
             boolean isCreateTable = queryInfo.getQueryContext().isCreateTable();
@@ -498,11 +485,11 @@ public class TajoMasterClientService extends AbstractService {
           } else {
             Session session = context.getSessionManager().getSession(request.getSessionId().getId());
             if (session.getNonForwardQueryResultScanner(queryId) != null) {
-              builder.setResultCode(ResultCode.OK);
+              builder.setResult(IPCUtil.buildOkRequestResult());
               builder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
             } else {
-              builder.setResultCode(ResultCode.ERROR);
-              builder.setErrorMessage("No such query: " + queryId.toString());
+              builder.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR,
+                  "No such query: " + queryId.toString(), null));
             }
           }
         }
@@ -554,7 +541,7 @@ public class TajoMasterClientService extends AbstractService {
         resultSetBuilder.addAllSerializedTuples(rows);
 
         builder.setResultSet(resultSetBuilder.build());
-        builder.setResultCode(ResultCode.OK);
+        builder.setResult(IPCUtil.buildOkRequestResult());
 
         LOG.info("Send result to client for " +
             request.getSessionId().getId() + "," + queryId + ", " + rows.size() + " rows");
@@ -562,10 +549,9 @@ public class TajoMasterClientService extends AbstractService {
       } catch (Throwable t) {
         LOG.error(t.getMessage(), t);
         builder.setResultSet(resultSetBuilder.build()); // required field
-        builder.setResultCode(ResultCode.ERROR);
         String errorMessage = t.getMessage() == null ? t.getClass().getName() : t.getMessage();
-        builder.setErrorMessage(errorMessage);
-        builder.setErrorTrace(org.apache.hadoop.util.StringUtils.stringifyException(t));
+        builder.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR,
+            errorMessage, org.apache.hadoop.util.StringUtils.stringifyException(t)));
       }
       return builder.build();
     }
@@ -605,11 +591,11 @@ public class TajoMasterClientService extends AbstractService {
         if (queryInfo != null) {
           builder.setQueryInfo(queryInfo.getProto());
         }
-        builder.setResultCode(ResultCode.OK);
+        builder.setResult(IPCUtil.buildOkRequestResult());
       } catch (Throwable t) {
         LOG.warn(t.getMessage(), t);
-        builder.setResultCode(ResultCode.ERROR);
-        builder.setErrorMessage(org.apache.hadoop.util.StringUtils.stringifyException(t));
+        builder.setResult(IPCUtil.buildRequestResult(ResultCode.ERROR,
+            org.apache.hadoop.util.StringUtils.stringifyException(t), null));
       }
 
       return builder.build();
@@ -803,13 +789,13 @@ public class TajoMasterClientService extends AbstractService {
 
         if (catalog.existsTable(databaseName, tableName)) {
           return TableResponse.newBuilder()
-              .setResultCode(ResultCode.OK)
+              .setResult(IPCUtil.buildOkRequestResult())
               .setTableDesc(catalog.getTableDesc(databaseName, tableName).getProto())
               .build();
         } else {
           return TableResponse.newBuilder()
-              .setResultCode(ResultCode.ERROR)
-              .setErrorMessage("ERROR: no such a table: " + request.getTableName())
+              .setResult(IPCUtil.buildRequestResult(ResultCode.ERROR,
+                  "ERROR: no such a table: " + request.getTableName(), null))
               .build();
         }
       } catch (Throwable t) {
@@ -845,21 +831,21 @@ public class TajoMasterClientService extends AbstractService {
               meta, path, true, partitionDesc, false);
         } catch (Exception e) {
           return TableResponse.newBuilder()
-              .setResultCode(ResultCode.ERROR)
-              .setErrorMessage(e.getMessage()).build();
+              .setResult(IPCUtil.buildRequestResult(ResultCode.ERROR, e.getMessage(), null))
+              .build();
         }
 
         return TableResponse.newBuilder()
-            .setResultCode(ResultCode.OK)
+            .setResult(IPCUtil.buildOkRequestResult())
             .setTableDesc(desc.getProto()).build();
       } catch (InvalidSessionException ise) {
         return TableResponse.newBuilder()
-            .setResultCode(ResultCode.ERROR)
-            .setErrorMessage(ise.getMessage()).build();
+            .setResult(IPCUtil.buildRequestResult(ResultCode.ERROR, ise.getMessage(), null))
+            .build();
       } catch (IOException ioe) {
         return TableResponse.newBuilder()
-            .setResultCode(ResultCode.ERROR)
-            .setErrorMessage(ioe.getMessage()).build();
+            .setResult(IPCUtil.buildRequestResult(ResultCode.ERROR, ioe.getMessage(), null))
+            .build();
       }
     }
 
@@ -899,9 +885,181 @@ public class TajoMasterClientService extends AbstractService {
           }
         }
         return FunctionResponse.newBuilder()
-            .setResultCode(ResultCode.OK)
+            .setResult(IPCUtil.buildOkRequestResult())
             .addAllFunctions(functionProtos)
             .build();
+      } catch (Throwable t) {
+        throw new ServiceException(t);
+      }
+    }
+
+    @Override
+    public IndexDescProto getIndexWithName(RpcController controller, SessionedStringProto request)
+        throws ServiceException {
+      try {
+        context.getSessionManager().touch(request.getSessionId().getId());
+        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+
+        String indexName, databaseName;
+        if (CatalogUtil.isFQTableName(request.getValue())) {
+          String [] splitted = CatalogUtil.splitFQTableName(request.getValue());
+          databaseName = splitted[0];
+          indexName = splitted[1];
+        } else {
+          databaseName = session.getCurrentDatabase();
+          indexName = request.getValue();
+        }
+        return catalog.getIndexByName(databaseName, indexName).getProto();
+      } catch (Throwable t) {
+        throw new ServiceException(t);
+      }
+    }
+
+    @Override
+    public BoolProto existIndexWithName(RpcController controller, SessionedStringProto request)
+        throws ServiceException {
+      try {
+        context.getSessionManager().touch(request.getSessionId().getId());
+        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+
+        String indexName, databaseName;
+        if (CatalogUtil.isFQTableName(request.getValue())) {
+          String [] splitted = CatalogUtil.splitFQTableName(request.getValue());
+          databaseName = splitted[0];
+          indexName = splitted[1];
+        } else {
+          databaseName = session.getCurrentDatabase();
+          indexName = request.getValue();
+        }
+        return catalog.existIndexByName(databaseName, indexName) ?
+            ProtoUtil.TRUE : ProtoUtil.FALSE;
+      } catch (Throwable t) {
+        throw new ServiceException(t);
+      }
+    }
+
+    @Override
+    public GetIndexesResponse getIndexesForTable(RpcController controller, SessionedStringProto request)
+        throws ServiceException {
+      try {
+        context.getSessionManager().touch(request.getSessionId().getId());
+        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+
+        String tableName, databaseName;
+        if (CatalogUtil.isFQTableName(request.getValue())) {
+          String [] splitted = CatalogUtil.splitFQTableName(request.getValue());
+          databaseName = splitted[0];
+          tableName = splitted[1];
+        } else {
+          databaseName = session.getCurrentDatabase();
+          tableName = request.getValue();
+        }
+
+        GetIndexesResponse.Builder builder = GetIndexesResponse.newBuilder();
+        for (IndexDesc index : catalog.getAllIndexesByTable(databaseName, tableName)) {
+          builder.addIndexes(index.getProto());
+        }
+        builder.setResult(IPCUtil.buildOkRequestResult());
+        return builder.build();
+      } catch (Throwable t) {
+        throw new ServiceException(t);
+      }
+    }
+
+    @Override
+    public BoolProto existIndexesForTable(RpcController controller, SessionedStringProto request)
+        throws ServiceException {
+      try {
+        context.getSessionManager().touch(request.getSessionId().getId());
+        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+
+        String tableName, databaseName;
+        if (CatalogUtil.isFQTableName(request.getValue())) {
+          String [] splitted = CatalogUtil.splitFQTableName(request.getValue());
+          databaseName = splitted[0];
+          tableName = splitted[1];
+        } else {
+          databaseName = session.getCurrentDatabase();
+          tableName = request.getValue();
+        }
+        return catalog.existIndexesByTable(databaseName, tableName) ?
+            ProtoUtil.TRUE : ProtoUtil.FALSE;
+      } catch (Throwable t) {
+        throw new ServiceException(t);
+      }
+    }
+
+    @Override
+    public GetIndexWithColumnsResponse getIndexWithColumns(RpcController controller, GetIndexWithColumnsRequest request)
+        throws ServiceException {
+      try {
+        context.getSessionManager().touch(request.getSessionId().getId());
+        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+
+        String tableName, databaseName;
+        if (CatalogUtil.isFQTableName(request.getTableName())) {
+          String [] splitted = CatalogUtil.splitFQTableName(request.getTableName());
+          databaseName = splitted[0];
+          tableName = splitted[1];
+        } else {
+          databaseName = session.getCurrentDatabase();
+          tableName = request.getTableName();
+        }
+        String[] columnNames = new String[request.getColumnNamesCount()];
+        columnNames = request.getColumnNamesList().toArray(columnNames);
+
+        GetIndexWithColumnsResponse.Builder builder = GetIndexWithColumnsResponse.newBuilder();
+        builder.setResult(IPCUtil.buildOkRequestResult());
+        builder.setIndexDesc(catalog.getIndexByColumnNames(databaseName, tableName, columnNames).getProto());
+        return builder.build();
+      } catch (Throwable t) {
+        throw new ServiceException(t);
+      }
+    }
+
+    @Override
+    public BoolProto existIndexWithColumns(RpcController controller, GetIndexWithColumnsRequest request)
+        throws ServiceException {
+      try {
+        context.getSessionManager().touch(request.getSessionId().getId());
+        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+
+        String tableName, databaseName;
+        if (CatalogUtil.isFQTableName(request.getTableName())) {
+          String [] splitted = CatalogUtil.splitFQTableName(request.getTableName());
+          databaseName = splitted[0];
+          tableName = splitted[1];
+        } else {
+          databaseName = session.getCurrentDatabase();
+          tableName = request.getTableName();
+        }
+        String[] columnNames = new String[request.getColumnNamesCount()];
+        columnNames = request.getColumnNamesList().toArray(columnNames);
+        return catalog.existIndexByColumnNames(databaseName, tableName, columnNames) ?
+            ProtoUtil.TRUE : ProtoUtil.FALSE;
+      } catch (Throwable t) {
+        throw new ServiceException(t);
+      }
+    }
+
+    @Override
+    public BoolProto dropIndex(RpcController controller, SessionedStringProto request)
+        throws ServiceException {
+      try {
+        context.getSessionManager().touch(request.getSessionId().getId());
+        Session session = context.getSessionManager().getSession(request.getSessionId().getId());
+
+        String indexName, databaseName;
+        if (CatalogUtil.isFQTableName(request.getValue())) {
+          String [] splitted = CatalogUtil.splitFQTableName(request.getValue());
+          databaseName = splitted[0];
+          indexName = splitted[1];
+        } else {
+          databaseName = session.getCurrentDatabase();
+          indexName = request.getValue();
+        }
+        return catalog.dropIndex(databaseName, indexName) ?
+            ProtoUtil.TRUE : ProtoUtil.FALSE;
       } catch (Throwable t) {
         throw new ServiceException(t);
       }

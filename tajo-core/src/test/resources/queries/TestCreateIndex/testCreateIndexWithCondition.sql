@@ -1,0 +1,1 @@
+create index l_orderkey_partkey_lt10_idx on lineitem (l_orderkey asc, l_partkey desc) where l_partkey > 10;

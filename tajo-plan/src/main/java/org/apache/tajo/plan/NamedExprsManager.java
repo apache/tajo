@@ -141,6 +141,7 @@ public class NamedExprsManager {
 
   /**
    * Adds an expression and returns a reference name.
+   * @param expr added expression
    */
   public String addExpr(Expr expr) throws PlanningException {
     if (idToExprBiMap.inverse().containsKey(expr)) {
@@ -205,7 +206,8 @@ public class NamedExprsManager {
    * Adds a list of expressions and returns a list of reference names.
    * If some NamedExpr has an alias, NamedExprsManager specifies the alias for the NamedExpr.
    */
-  public String [] addNamedExprArray(@Nullable Collection<NamedExpr> namedExprs) throws PlanningException {
+  public String [] addNamedExprArray(@Nullable Collection<NamedExpr> namedExprs)
+      throws PlanningException {
     if (namedExprs != null && namedExprs.size() > 0) {
       String [] names = new String[namedExprs.size()];
       int i = 0;

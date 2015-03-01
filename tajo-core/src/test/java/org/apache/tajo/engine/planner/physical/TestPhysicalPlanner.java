@@ -163,12 +163,13 @@ public class TestPhysicalPlanner {
     }
     appender.flush();
     appender.close();
+
+    defaultContext = LocalTajoTestingUtility.createDummyContext(conf);
     catalog.createTable(score);
     analyzer = new SQLAnalyzer();
     planner = new LogicalPlanner(catalog);
-    optimizer = new LogicalOptimizer(conf);
+    optimizer = new LogicalOptimizer(conf, catalog);
 
-    defaultContext = LocalTajoTestingUtility.createDummyContext(conf);
     masterPlan = new MasterPlan(LocalTajoTestingUtility.newQueryId(), null, null);
 
     createLargeScoreTable();
@@ -971,17 +972,23 @@ public class TestPhysicalPlanner {
   }
 
   public final String [] createIndexStmt = {
-      "create index idx_employee on employee using bst (name null first, empId desc)"
+      "create index idx_employee on employee using TWO_LEVEL_BIN_TREE (name null first, empId desc)"
   };
 
-  //@Test
+  @Test
   public final void testCreateIndex() throws IOException, PlanningException {
     FileFragment[] frags = FileStorageManager.splitNG(conf, "default.employee", employee.getMeta(),
         new Path(employee.getPath()), Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testCreateIndex");
+    Path indexPath = StorageUtil.concatPath(TajoConf.getWarehouseDir(conf), "default/idx_employee");
+    if (sm.getFileSystem().exists(indexPath)) {
+      sm.getFileSystem().delete(indexPath, true);
+    }
+
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newTaskAttemptId(masterPlan),
         new FileFragment[] {frags[0]}, workDir);
+    ctx.setEnforcer(new Enforcer());
     Expr context = analyzer.parse(createIndexStmt[0]);
     LogicalPlan plan = planner.createPlan(defaultContext, context);
     LogicalNode rootNode = optimizer.optimize(plan);
@@ -993,7 +1000,7 @@ public class TestPhysicalPlanner {
     }
     exec.close();
 
-    FileStatus [] list = sm.getFileSystem().listStatus(StorageUtil.concatPath(workDir, "index"));
+    FileStatus[] list = sm.getFileSystem().listStatus(indexPath);
     assertEquals(2, list.length);
   }
 

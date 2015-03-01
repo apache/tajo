@@ -36,9 +36,12 @@ import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.FieldEval;
 import org.apache.tajo.plan.expr.WindowFunctionEval;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.rewrite.rules.IndexScanInfo.SimplePredicate;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 
 /**
@@ -129,6 +132,9 @@ public class LogicalNodeDeserializer {
       case SCAN:
         current = convertScan(context, protoNode);
         break;
+      case INDEX_SCAN:
+        current = convertIndexScan(context, protoNode);
+        break;
 
       case CREATE_TABLE:
         current = convertCreateTable(nodeMap, protoNode);
@@ -155,6 +161,13 @@ public class LogicalNodeDeserializer {
         break;
       case TRUNCATE_TABLE:
         current = convertTruncateTable(protoNode);
+        break;
+
+      case CREATE_INDEX:
+        current = convertCreateIndex(nodeMap, protoNode);
+        break;
+      case DROP_INDEX:
+        current = convertDropIndex(protoNode);
         break;
 
       default:
@@ -420,7 +433,24 @@ public class LogicalNodeDeserializer {
     scan.setOutSchema(convertSchema(protoNode.getOutSchema()));
   }
 
-  private static PartitionedTableScanNode convertPartitionScan(OverridableConf context, PlanProto.LogicalNode protoNode) {
+  private static IndexScanNode convertIndexScan(OverridableConf context, PlanProto.LogicalNode protoNode) {
+    IndexScanNode indexScan = new IndexScanNode(protoNode.getNodeId());
+    fillScanNode(context, protoNode, indexScan);
+
+    PlanProto.IndexScanSpec indexScanSpec = protoNode.getIndexScan();
+    SimplePredicate[] predicates = new SimplePredicate[indexScanSpec.getPredicatesCount()];
+    for (int i = 0; i < predicates.length; i++) {
+      predicates[i] = new SimplePredicate(indexScanSpec.getPredicates(i));
+    }
+
+    indexScan.set(new Schema(indexScanSpec.getKeySchema()), predicates,
+        TUtil.stringToURI(indexScanSpec.getIndexPath()));
+
+    return indexScan;
+  }
+
+  private static PartitionedTableScanNode convertPartitionScan(OverridableConf context,
+                                                               PlanProto.LogicalNode protoNode) {
     PartitionedTableScanNode partitionedScan = new PartitionedTableScanNode(protoNode.getNodeId());
     fillScanNode(context, protoNode, partitionedScan);
 
@@ -594,6 +624,46 @@ public class LogicalNodeDeserializer {
     truncateTable.setTableNames(truncateTableProto.getTableNamesList());
 
     return truncateTable;
+  }
+
+  private static CreateIndexNode convertCreateIndex(Map<Integer, LogicalNode> nodeMap,
+                                                    PlanProto.LogicalNode protoNode) {
+    CreateIndexNode createIndex = new CreateIndexNode(protoNode.getNodeId());
+
+    PlanProto.CreateIndexNode createIndexProto = protoNode.getCreateIndex();
+    createIndex.setIndexName(createIndexProto.getIndexName());
+    createIndex.setIndexMethod(createIndexProto.getIndexMethod());
+    try {
+      createIndex.setIndexPath(new URI(createIndexProto.getIndexPath()));
+    } catch (URISyntaxException e) {
+      e.printStackTrace();
+    }
+    SortSpec[] keySortSpecs = new SortSpec[createIndexProto.getKeySortSpecsCount()];
+    for (int i = 0; i < keySortSpecs.length; i++) {
+      keySortSpecs[i] = new SortSpec(createIndexProto.getKeySortSpecs(i));
+    }
+    createIndex.setKeySortSpecs(new Schema(createIndexProto.getTargetRelationSchema()),
+        keySortSpecs);
+    createIndex.setUnique(createIndexProto.getIsUnique());
+    createIndex.setClustered(createIndexProto.getIsClustered());
+    if (createIndexProto.hasIndexProperties()) {
+      createIndex.setOptions(new KeyValueSet(createIndexProto.getIndexProperties()));
+    }
+    createIndex.setChild(nodeMap.get(createIndexProto.getChildSeq()));
+    createIndex.setInSchema(convertSchema(protoNode.getInSchema()));
+    createIndex.setOutSchema(convertSchema(protoNode.getOutSchema()));
+    createIndex.setExternal(createIndexProto.getIsExternal());
+
+    return createIndex;
+  }
+
+  private static DropIndexNode convertDropIndex(PlanProto.LogicalNode protoNode) {
+    DropIndexNode dropIndex = new DropIndexNode(protoNode.getNodeId());
+
+    PlanProto.DropIndexNode dropIndexProto = protoNode.getDropIndex();
+    dropIndex.setIndexName(dropIndexProto.getIndexName());
+
+    return dropIndex;
   }
 
   private static AggregationFunctionCallEval [] convertAggFuncCallEvals(OverridableConf context,

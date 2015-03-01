@@ -22,6 +22,7 @@ import org.apache.tajo.OverridableConf;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleContext;
 
 @SuppressWarnings("unused")
 public class ErrorInjectionRewriter implements LogicalPlanRewriteRule {
@@ -31,12 +32,12 @@ public class ErrorInjectionRewriter implements LogicalPlanRewriteRule {
   }
 
   @Override
-  public boolean isEligible(OverridableConf queryContext, LogicalPlan plan) {
+  public boolean isEligible(LogicalPlanRewriteRuleContext context) {
     return true;
   }
 
   @Override
-  public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws PlanningException {
+  public LogicalPlan rewrite(LogicalPlanRewriteRuleContext context) throws PlanningException {
     throw new NullPointerException();
   }
 }

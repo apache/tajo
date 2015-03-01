@@ -75,6 +75,9 @@ public interface LogicalPlanVisitor<CONTEXT, RESULT> {
   RESULT visitScan(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, ScanNode node,
                    Stack<LogicalNode> stack) throws PlanningException;
 
+  RESULT visitIndexScan(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, IndexScanNode node,
+                        Stack<LogicalNode> stack) throws PlanningException;
+
   RESULT visitPartitionedTableScan(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                    PartitionedTableScanNode node, Stack<LogicalNode> stack) throws PlanningException;
 
@@ -101,6 +104,12 @@ public interface LogicalPlanVisitor<CONTEXT, RESULT> {
 
   RESULT visitAlterTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, AlterTableNode node,
                          Stack<LogicalNode> stack) throws PlanningException;
+
+  RESULT visitCreateIndex(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, CreateIndexNode node,
+                               Stack<LogicalNode> stack) throws PlanningException;
+
+  RESULT visitDropIndex(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, DropIndexNode node,
+                        Stack<LogicalNode> stack) throws PlanningException;
 
   RESULT visitTruncateTable(CONTEXT context, LogicalPlan plan, LogicalPlan.QueryBlock block, TruncateTableNode node,
                          Stack<LogicalNode> stack) throws PlanningException;

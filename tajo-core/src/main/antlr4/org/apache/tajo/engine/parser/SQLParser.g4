@@ -77,8 +77,17 @@ schema_statement
   ;
 
 index_statement
-  : CREATE (u=UNIQUE)? INDEX n=identifier ON t=table_name (m=method_specifier)?
-    LEFT_PAREN s=sort_specifier_list RIGHT_PAREN p=param_clause?
+  : create_index_statement
+  | drop_index_statement
+  ;
+
+create_index_statement
+  : CREATE (u=UNIQUE)? INDEX index_name = identifier ON table_name (method_specifier)?
+    LEFT_PAREN sort_specifier_list RIGHT_PAREN param_clause? (where_clause)? (LOCATION path=Character_String_Literal)?
+  ;
+
+drop_index_statement
+  : DROP INDEX index_name = identifier
   ;
 
 database_definition

@@ -143,14 +143,14 @@ public class TestLogicalPlanner {
       "select name, empid, e.deptname, manager from employee as e, dept as dp", // 1
       "select name, empid, e.deptname, manager, score from employee as e, dept, score", // 2
       "select p.deptname, sumtest(score) from dept as p, score group by p.deptName having sumtest(score) > 30", // 3
-      "select p.deptname, score from dept as p, score order by score asc", // 4
+      "select p.deptname, score*200 from dept as p, score order by score*10 asc", // 4
       "select name from employee where empId = 100", // 5
       "select name, score from employee, score", // 6
       "select p.deptName, sumtest(score) from dept as p, score group by p.deptName", // 7
       "create table store1 as select p.deptName, sumtest(score) from dept as p, score group by p.deptName", // 8
       "select deptName, sumtest(score) from score group by deptName having sumtest(score) > 30", // 9
       "select 7 + 8 as res1, 8 * 9 as res2, 10 * 10 as res3", // 10
-      "create index idx_employee on employee using bitmap (name null first, empId desc) with ('fillfactor' = 70)", // 11
+      "create index idx_employee on employee using bitmap_idx (name null first, empId desc) where empid > 100", // 11
       "select name, score from employee, score order by score limit 3", // 12
       "select length(name), length(deptname), *, empid+10 from employee where empId > 500", // 13
   };
@@ -497,7 +497,7 @@ public class TestLogicalPlanner {
     Schema expected = tpch.getOutSchema("q2");
     assertSchema(expected, node.getOutSchema());
 
-    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration());
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
     optimizer.optimize(plan);
 
     LogicalNode[] nodes = PlannerUtil.findAllNodes(node, NodeType.JOIN);
@@ -536,7 +536,7 @@ public class TestLogicalPlanner {
     LogicalNode node = plan.getRootBlock().getRoot();
     testJsonSerDerObject(node);
 
-    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration());
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
     optimizer.optimize(plan);
 
     LogicalNode[] nodes = PlannerUtil.findAllNodes(node, NodeType.SCAN);
@@ -577,7 +577,7 @@ public class TestLogicalPlanner {
     LogicalNode node = plan.getRootBlock().getRoot();
     testJsonSerDerObject(node);
 
-    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration());
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
     optimizer.optimize(plan);
 
     LogicalNode[] nodes = PlannerUtil.findAllNodes(node, NodeType.SCAN);
@@ -624,7 +624,7 @@ public class TestLogicalPlanner {
     LogicalNode node = plan.getRootBlock().getRoot();
     testJsonSerDerObject(node);
 
-    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration());
+    LogicalOptimizer optimizer = new LogicalOptimizer(util.getConfiguration(), catalog);
     optimizer.optimize(plan);
 
     Map<BinaryEval, Boolean> scanMap = TUtil.newHashMap();
@@ -878,6 +878,29 @@ public class TestLogicalPlanner {
     assertEquals("res2", col.getSimpleName());
     col = it.next();
     assertEquals("res3", col.getSimpleName());
+  }
+
+  @Test
+  public final void testCreateIndexNode() throws PlanningException {
+    QueryContext qc = new QueryContext(util.getConfiguration(), session);
+    Expr expr = sqlAnalyzer.parse(QUERIES[11]);
+    LogicalPlan rootNode = planner.createPlan(qc, expr);
+    LogicalNode plan = rootNode.getRootBlock().getRoot();
+    testJsonSerDerObject(plan);
+
+    LogicalRootNode root = (LogicalRootNode) plan;
+    assertEquals(NodeType.CREATE_INDEX, root.getChild().getType());
+    CreateIndexNode createIndexNode = root.getChild();
+
+    assertEquals(NodeType.PROJECTION, createIndexNode.getChild().getType());
+    ProjectionNode projNode = createIndexNode.getChild();
+
+    assertEquals(NodeType.SELECTION, projNode.getChild().getType());
+    SelectionNode selNode = projNode.getChild();
+
+    assertEquals(NodeType.SCAN, selNode.getChild().getType());
+    ScanNode scanNode = selNode.getChild();
+    assertEquals(CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "employee"), scanNode.getTableName());
   }
 
   @Test

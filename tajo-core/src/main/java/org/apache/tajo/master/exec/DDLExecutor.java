@@ -67,43 +67,121 @@ public class DDLExecutor {
 
     switch (root.getType()) {
 
-    case ALTER_TABLESPACE:
-      AlterTablespaceNode alterTablespace = (AlterTablespaceNode) root;
-      alterTablespace(context, queryContext, alterTablespace);
-      return true;
+      case ALTER_TABLESPACE:
+        AlterTablespaceNode alterTablespace = (AlterTablespaceNode) root;
+        alterTablespace(context, queryContext, alterTablespace);
+        return true;
 
 
-    case CREATE_DATABASE:
-      CreateDatabaseNode createDatabase = (CreateDatabaseNode) root;
-      createDatabase(queryContext, createDatabase.getDatabaseName(), null, createDatabase.isIfNotExists());
-      return true;
-    case DROP_DATABASE:
-      DropDatabaseNode dropDatabaseNode = (DropDatabaseNode) root;
-      dropDatabase(queryContext, dropDatabaseNode.getDatabaseName(), dropDatabaseNode.isIfExists());
-      return true;
+      case CREATE_DATABASE:
+        CreateDatabaseNode createDatabase = (CreateDatabaseNode) root;
+        createDatabase(queryContext, createDatabase.getDatabaseName(), null, createDatabase.isIfNotExists());
+        return true;
+      case DROP_DATABASE:
+        DropDatabaseNode dropDatabaseNode = (DropDatabaseNode) root;
+        dropDatabase(queryContext, dropDatabaseNode.getDatabaseName(), dropDatabaseNode.isIfExists());
+        return true;
 
 
-    case CREATE_TABLE:
-      CreateTableNode createTable = (CreateTableNode) root;
-      createTable(queryContext, createTable, createTable.isIfNotExists());
-      return true;
-    case DROP_TABLE:
-      DropTableNode dropTable = (DropTableNode) root;
-      dropTable(queryContext, dropTable.getTableName(), dropTable.isIfExists(), dropTable.isPurge());
-      return true;
-    case TRUNCATE_TABLE:
-      TruncateTableNode truncateTable = (TruncateTableNode) root;
-      truncateTable(queryContext, truncateTable);
-      return true;
+      case CREATE_TABLE:
+        CreateTableNode createTable = (CreateTableNode) root;
+        createTable(queryContext, createTable, createTable.isIfNotExists());
+        return true;
+      case DROP_TABLE:
+        DropTableNode dropTable = (DropTableNode) root;
+        dropTable(queryContext, dropTable.getTableName(), dropTable.isIfExists(), dropTable.isPurge());
+        return true;
+      case TRUNCATE_TABLE:
+        TruncateTableNode truncateTable = (TruncateTableNode) root;
+        truncateTable(queryContext, truncateTable);
+        return true;
 
-    case ALTER_TABLE:
-      AlterTableNode alterTable = (AlterTableNode) root;
-      alterTable(context, queryContext, alterTable);
-      return true;
+      case ALTER_TABLE:
+        AlterTableNode alterTable = (AlterTableNode) root;
+        alterTable(context, queryContext, alterTable);
+        return true;
+
+      case CREATE_INDEX:
+        CreateIndexNode createIndex = (CreateIndexNode) root;
+        createIndex(queryContext, createIndex);
+        return true;
+
+      case DROP_INDEX:
+        DropIndexNode dropIndexNode = (DropIndexNode) root;
+        dropIndex(queryContext, dropIndexNode);
+        return true;
 
     default:
       throw new InternalError("updateQuery cannot handle such query: \n" + root.toJson());
     }
+  }
+
+  public void createIndex(final QueryContext queryContext, final CreateIndexNode createIndexNode) {
+    String databaseName, simpleIndexName, qualifiedIndexName;
+    if (CatalogUtil.isFQTableName(createIndexNode.getIndexName())) {
+      String [] splits = CatalogUtil.splitFQTableName(createIndexNode.getIndexName());
+      databaseName = splits[0];
+      simpleIndexName = splits[1];
+      qualifiedIndexName = createIndexNode.getIndexName();
+    } else {
+      databaseName = queryContext.getCurrentDatabase();
+      simpleIndexName = createIndexNode.getIndexName();
+      qualifiedIndexName = CatalogUtil.buildFQName(databaseName, simpleIndexName);
+    }
+
+    if (catalog.existIndexByName(databaseName, simpleIndexName)) {
+      throw new AlreadyExistsIndexException(simpleIndexName);
+    }
+
+    ScanNode scanNode = PlannerUtil.findTopNode(createIndexNode, NodeType.SCAN);
+    if (scanNode == null) {
+      throw new InternalError("Cannot find the table of the relation");
+    }
+
+    IndexDesc indexDesc = new IndexDesc(databaseName, scanNode.getTableName(),
+        simpleIndexName, createIndexNode.getIndexPath(),
+        createIndexNode.getKeySortSpecs(), createIndexNode.getIndexMethod(),
+        createIndexNode.isUnique(), false, scanNode.getLogicalSchema());
+
+    if (catalog.createIndex(indexDesc)) {
+      LOG.info("Index " + qualifiedIndexName + " is created for the table " + scanNode.getTableName() + ".");
+    } else {
+      LOG.info("Index creation " + qualifiedIndexName + " is failed.");
+      throw new CatalogException("Cannot create index \"" + qualifiedIndexName + "\".");
+    }
+  }
+
+  public void dropIndex(final QueryContext queryContext, final DropIndexNode dropIndexNode) {
+    String databaseName, simpleIndexName;
+    if (CatalogUtil.isFQTableName(dropIndexNode.getIndexName())) {
+      String [] splits = CatalogUtil.splitFQTableName(dropIndexNode.getIndexName());
+      databaseName = splits[0];
+      simpleIndexName = splits[1];
+    } else {
+      databaseName = queryContext.getCurrentDatabase();
+      simpleIndexName = dropIndexNode.getIndexName();
+    }
+
+    if (!catalog.existIndexByName(databaseName, simpleIndexName)) {
+      throw new NoSuchIndexException(simpleIndexName);
+    }
+
+    IndexDesc desc = catalog.getIndexByName(databaseName, simpleIndexName);
+
+    if (!catalog.dropIndex(databaseName, simpleIndexName)) {
+      LOG.info("Cannot drop index \"" + simpleIndexName + "\".");
+      throw new CatalogException("Cannot drop index \"" + simpleIndexName + "\".");
+    }
+
+    Path indexPath = new Path(desc.getIndexPath());
+    try {
+      FileSystem fs = indexPath.getFileSystem(context.getConf());
+      fs.delete(indexPath, true);
+    } catch (IOException e) {
+      throw new InternalError(e.getMessage());
+    }
+
+    LOG.info("Index " + simpleIndexName + " is dropped.");
   }
 
   /**
