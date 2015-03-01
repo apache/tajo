@@ -1245,7 +1245,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       projection.setChild(selection);
     }
     if (checkIfExist(ctx.LOCATION())) {
-      createIndex.setIndexPath(ctx.path.getText());
+      createIndex.setIndexPath(stripQuote(ctx.path.getText()));
     }
     createIndex.setChild(projection);
     return createIndex;
