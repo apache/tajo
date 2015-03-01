@@ -1214,7 +1214,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
 
   @Override
   public Expr visitCreate_index_statement(SQLParser.Create_index_statementContext ctx) {
-    String indexName = ctx.identifier().getText();
+    String indexName = ctx.index_name.getText();
     String tableName = ctx.table_name().getText();
     Relation relation = new Relation(tableName);
     SortSpec[] sortSpecs = buildSortSpecs(ctx.sort_specifier_list());
@@ -1243,6 +1243,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       Selection selection = visitWhere_clause(ctx.where_clause());
       selection.setChild(relation);
       projection.setChild(selection);
+    }
+    if (checkIfExist(ctx.LOCATION())) {
+      createIndex.setIndexPath(ctx.path.getText());
     }
     createIndex.setChild(projection);
     return createIndex;
