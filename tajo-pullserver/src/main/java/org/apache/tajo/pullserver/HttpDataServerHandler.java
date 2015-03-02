@@ -20,6 +20,8 @@ package org.apache.tajo.pullserver;
 
 import com.google.common.collect.Lists;
 
+import io.netty.channel.*;
+import io.netty.handler.codec.http.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.localizer.ContainerLocalizer;
@@ -28,30 +30,10 @@ import org.apache.tajo.pullserver.retriever.DataRetriever;
 import org.apache.tajo.pullserver.retriever.FileChunk;
 
 import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.DefaultFileRegion;
-import io.netty.channel.FileRegion;
 import io.netty.handler.codec.TooLongFrameException;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.DefaultHttpResponse;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpChunkedInput;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.codec.http.LastHttpContent;
-import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedFile;
 import io.netty.util.CharsetUtil;
-import io.netty.util.ReferenceCountUtil;
 
 import java.io.*;
 import java.net.URLDecoder;
@@ -61,7 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
+public class HttpDataServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
   private final static Log LOG = LogFactory.getLog(HttpDataServerHandler.class);
 
   Map<ExecutionBlockId, DataRetriever> retrievers =
@@ -75,75 +57,73 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
   }
 
   @Override
-  public void channelRead(ChannelHandlerContext ctx, Object msg)
+  public void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request)
       throws Exception {
 
-    if (msg instanceof HttpRequest) {
-      try {
-        HttpRequest request = (HttpRequest) msg;
-        if (request.getMethod() != HttpMethod.GET) {
-          sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED);
+    if (request.getMethod() != HttpMethod.GET) {
+      sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED);
+      return;
+    }
+
+    String base = ContainerLocalizer.USERCACHE + "/" + userName + "/" + ContainerLocalizer.APPCACHE + "/" + appId
+        + "/output" + "/";
+
+    final Map<String, List<String>> params = new QueryStringDecoder(request.getUri()).parameters();
+
+    List<FileChunk> chunks = Lists.newArrayList();
+    List<String> taskIds = splitMaps(params.get("ta"));
+    int sid = Integer.valueOf(params.get("sid").get(0));
+    int partitionId = Integer.valueOf(params.get("p").get(0));
+    for (String ta : taskIds) {
+
+      File file = new File(base + "/" + sid + "/" + ta + "/output/" + partitionId);
+      FileChunk chunk = new FileChunk(file, 0, file.length());
+      chunks.add(chunk);
+    }
+
+    FileChunk[] file = chunks.toArray(new FileChunk[chunks.size()]);
+
+    // Write the content.
+    if (file == null) {
+      HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
+      if (!HttpHeaders.isKeepAlive(request)) {
+        ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+      } else {
+        response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+        ctx.writeAndFlush(response);
+      }
+    } else {
+      HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+      ChannelFuture writeFuture = null;
+      long totalSize = 0;
+      for (FileChunk chunk : file) {
+        totalSize += chunk.length();
+      }
+      HttpHeaders.setContentLength(response, totalSize);
+
+      if (HttpHeaders.isKeepAlive(request)) {
+        response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+      }
+      // Write the initial line and the header.
+      writeFuture = ctx.write(response);
+
+      for (FileChunk chunk : file) {
+        writeFuture = sendFile(ctx, chunk);
+        if (writeFuture == null) {
+          sendError(ctx, HttpResponseStatus.NOT_FOUND);
           return;
         }
+      }
+      if (ctx.pipeline().get(SslHandler.class) == null) {
+        writeFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+      } else {
+        ctx.flush();
+      }
 
-        String base = ContainerLocalizer.USERCACHE + "/" + userName + "/" + ContainerLocalizer.APPCACHE + "/" + appId
-            + "/output" + "/";
-
-        final Map<String, List<String>> params = new QueryStringDecoder(request.getUri()).parameters();
-
-        List<FileChunk> chunks = Lists.newArrayList();
-        List<String> taskIds = splitMaps(params.get("ta"));
-        int sid = Integer.valueOf(params.get("sid").get(0));
-        int partitionId = Integer.valueOf(params.get("p").get(0));
-        for (String ta : taskIds) {
-
-          File file = new File(base + "/" + sid + "/" + ta + "/output/" + partitionId);
-          FileChunk chunk = new FileChunk(file, 0, file.length());
-          chunks.add(chunk);
-        }
-
-        FileChunk[] file = chunks.toArray(new FileChunk[chunks.size()]);
-
-        // Write the content.
-        if (file == null) {
-          HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
-          if (!HttpHeaders.isKeepAlive(request)) {
-            ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
-          } else {
-            response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
-            ctx.writeAndFlush(response);
-          }
-        } else {
-          HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-          ChannelFuture writeFuture = null;
-          long totalSize = 0;
-          for (FileChunk chunk : file) {
-            totalSize += chunk.length();
-          }
-          HttpHeaders.setContentLength(response, totalSize);
-
-          if (HttpHeaders.isKeepAlive(request)) {
-            response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
-          }
-          // Write the initial line and the header.
-          writeFuture = ctx.writeAndFlush(response);
-
-          for (FileChunk chunk : file) {
-            writeFuture = sendFile(ctx, chunk);
-            if (writeFuture == null) {
-              sendError(ctx, HttpResponseStatus.NOT_FOUND);
-              return;
-            }
-          }
-
-          // Decide whether to close the connection or not.
-          if (!HttpHeaders.isKeepAlive(request)) {
-            // Close the connection when the whole content is written out.
-            writeFuture.addListener(ChannelFutureListener.CLOSE);
-          }
-        }
-      } finally {
-        ReferenceCountUtil.release(msg);
+      // Decide whether to close the connection or not.
+      if (!HttpHeaders.isKeepAlive(request)) {
+        // Close the connection when the whole content is written out.
+        writeFuture.addListener(ChannelFutureListener.CLOSE);
       }
     }
 
@@ -162,14 +142,14 @@ public class HttpDataServerHandler extends ChannelInboundHandlerAdapter {
     ChannelFuture lastContentFuture;
     if (ctx.pipeline().get(SslHandler.class) != null) {
       // Cannot use zero-copy with HTTPS.
-      lastContentFuture = ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(raf, file.startOffset(),
+      lastContentFuture = ctx.write(new HttpChunkedInput(new ChunkedFile(raf, file.startOffset(),
           file.length(), 8192)));
     } else {
       // No encryption - use zero-copy.
       final FileRegion region = new DefaultFileRegion(raf.getChannel(),
           file.startOffset(), file.length());
-      writeFuture = ctx.writeAndFlush(region);
-      lastContentFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+      writeFuture = ctx.write(region);
+      lastContentFuture = ctx.write(LastHttpContent.EMPTY_LAST_CONTENT);
       writeFuture.addListener(new ChannelFutureListener() {
         public void operationComplete(ChannelFuture future) {
           if (region.refCnt() > 0) {

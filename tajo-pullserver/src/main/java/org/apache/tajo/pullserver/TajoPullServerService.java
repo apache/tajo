@@ -20,7 +20,9 @@ package org.apache.tajo.pullserver;
 
 import com.google.common.collect.Lists;
 
+import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.codec.http.*;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -59,36 +61,12 @@ import org.apache.tajo.storage.index.bst.BSTIndex;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.FileRegion;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.DefaultHttpResponse;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpChunkedInput;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.HttpObjectAggregator;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpServerCodec;
-import io.netty.handler.codec.http.HttpVersion;
-import io.netty.handler.codec.http.LastHttpContent;
-import io.netty.handler.codec.http.QueryStringDecoder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.CharsetUtil;
-import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
 
@@ -467,7 +445,7 @@ public class TajoPullServerService extends AbstractService {
   }
 
   @ChannelHandler.Sharable
-  class PullServer extends ChannelInboundHandlerAdapter {
+  class PullServer extends SimpleChannelInboundHandler<FullHttpRequest> {
 
     private final Configuration conf;
 //    private final IndexCache indexCache;
@@ -508,168 +486,161 @@ public class TajoPullServerService extends AbstractService {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg)
+    public void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request)
             throws Exception {
 
-      if (msg instanceof HttpRequest) {
+      if (request.getMethod() != HttpMethod.GET) {
+        sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED);
+        return;
+      }
+
+      ProcessingStatus processingStatus = new ProcessingStatus(request.getUri().toString());
+      processingStatusMap.put(request.getUri().toString(), processingStatus);
+      // Parsing the URL into key-values
+      final Map<String, List<String>> params = new QueryStringDecoder(request.getUri()).parameters();
+      final List<String> types = params.get("type");
+      final List<String> qids = params.get("qid");
+      final List<String> taskIdList = params.get("ta");
+      final List<String> subQueryIds = params.get("sid");
+      final List<String> partIds = params.get("p");
+      final List<String> offsetList = params.get("offset");
+      final List<String> lengthList = params.get("length");
+
+      if (types == null || subQueryIds == null || qids == null || partIds == null) {
+        sendError(ctx, "Required queryId, type, subquery Id, and part id", HttpResponseStatus.BAD_REQUEST);
+        return;
+      }
+
+      if (qids.size() != 1 && types.size() != 1 || subQueryIds.size() != 1) {
+        sendError(ctx, "Required qids, type, taskIds, subquery Id, and part id", HttpResponseStatus.BAD_REQUEST);
+        return;
+      }
+
+      String partId = partIds.get(0);
+      String queryId = qids.get(0);
+      String shuffleType = types.get(0);
+      String sid = subQueryIds.get(0);
+
+      long offset = (offsetList != null && !offsetList.isEmpty()) ? Long.parseLong(offsetList.get(0)) : -1L;
+      long length = (lengthList != null && !lengthList.isEmpty()) ? Long.parseLong(lengthList.get(0)) : -1L;
+
+      List<String> taskIds = splitMaps(taskIdList);
+
+      String queryBaseDir = queryId.toString() + "/output";
+
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("PullServer request param: shuffleType=" + shuffleType + ", sid=" + sid + ", partId=" + partId
+            + ", taskIds=" + taskIdList);
+
+        // the working dir of tajo worker for each query
+        LOG.debug("PullServer baseDir: " + conf.get(ConfVars.WORKER_TEMPORAL_DIR.varname) + "/" + queryBaseDir);
+      }
+
+      final List<FileChunk> chunks = Lists.newArrayList();
+
+      // if a stage requires a range shuffle
+      if (shuffleType.equals("r")) {
+        String ta = taskIds.get(0);
+        String pathString = queryBaseDir + "/" + sid + "/" + ta + "/output/";
+        if (!lDirAlloc.ifExists(pathString, conf)) {
+          LOG.warn(pathString + "does not exist.");
+          sendError(ctx, HttpResponseStatus.NO_CONTENT);
+          return;
+        }
+        Path path = localFS.makeQualified(lDirAlloc.getLocalPathToRead(queryBaseDir + "/" + sid + "/" + ta
+            + "/output/", conf));
+        String startKey = params.get("start").get(0);
+        String endKey = params.get("end").get(0);
+        boolean last = params.get("final") != null;
+
+        FileChunk chunk;
         try {
-          HttpRequest request = (HttpRequest) msg;
-          if (request.getMethod() != HttpMethod.GET) {
-            sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED);
+          chunk = getFileCunks(path, startKey, endKey, last);
+        } catch (Throwable t) {
+          LOG.error("ERROR Request: " + request.getUri(), t);
+          sendError(ctx, "Cannot get file chunks to be sent", HttpResponseStatus.BAD_REQUEST);
+          return;
+        }
+        if (chunk != null) {
+          chunks.add(chunk);
+        }
+
+        // if a stage requires a hash shuffle or a scattered hash shuffle
+      } else if (shuffleType.equals("h") || shuffleType.equals("s")) {
+        int partParentId = HashShuffleAppenderManager.getPartParentId(Integer.parseInt(partId), (TajoConf) conf);
+        String partPath = queryBaseDir + "/" + sid + "/hash-shuffle/" + partParentId + "/" + partId;
+        if (!lDirAlloc.ifExists(partPath, conf)) {
+          LOG.warn("Partition shuffle file not exists: " + partPath);
+          sendError(ctx, HttpResponseStatus.NO_CONTENT);
+          return;
+        }
+
+        Path path = localFS.makeQualified(lDirAlloc.getLocalPathToRead(partPath, conf));
+
+        File file = new File(path.toUri());
+        long startPos = (offset >= 0 && length >= 0) ? offset : 0;
+        long readLen = (offset >= 0 && length >= 0) ? length : file.length();
+
+        if (startPos >= file.length()) {
+          String errorMessage = "Start pos[" + startPos + "] great than file length [" + file.length() + "]";
+          LOG.error(errorMessage);
+          sendError(ctx, errorMessage, HttpResponseStatus.BAD_REQUEST);
+          return;
+        }
+        LOG.info("RequestURL: " + request.getUri() + ", fileLen=" + file.length());
+        FileChunk chunk = new FileChunk(file, startPos, readLen);
+        chunks.add(chunk);
+      } else {
+        LOG.error("Unknown shuffle type: " + shuffleType);
+        sendError(ctx, "Unknown shuffle type:" + shuffleType, HttpResponseStatus.BAD_REQUEST);
+        return;
+      }
+
+      processingStatus.setNumFiles(chunks.size());
+      processingStatus.makeFileListTime = System.currentTimeMillis() - processingStatus.startTime;
+      // Write the content.
+      if (chunks.size() == 0) {
+        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
+
+        if (!HttpHeaders.isKeepAlive(request)) {
+          ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+        } else {
+          response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+          ctx.writeAndFlush(response);
+        }
+      } else {
+        FileChunk[] file = chunks.toArray(new FileChunk[chunks.size()]);
+        ChannelFuture writeFuture = null;
+        HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+        long totalSize = 0;
+        for (FileChunk chunk : file) {
+          totalSize += chunk.length();
+        }
+        HttpHeaders.setContentLength(response, totalSize);
+
+        if (HttpHeaders.isKeepAlive(request)) {
+          response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+        }
+        // Write the initial line and the header.
+        writeFuture = ctx.write(response);
+
+        for (FileChunk chunk : file) {
+          writeFuture = sendFile(ctx, chunk, request.getUri().toString());
+          if (writeFuture == null) {
+            sendError(ctx, HttpResponseStatus.NOT_FOUND);
             return;
           }
+        }
+        if (ctx.pipeline().get(SslHandler.class) == null) {
+          writeFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+        } else {
+          ctx.flush();
+        }
 
-          ProcessingStatus processingStatus = new ProcessingStatus(request.getUri().toString());
-          processingStatusMap.put(request.getUri().toString(), processingStatus);
-          // Parsing the URL into key-values
-          final Map<String, List<String>> params = new QueryStringDecoder(request.getUri()).parameters();
-          final List<String> types = params.get("type");
-          final List<String> qids = params.get("qid");
-          final List<String> taskIdList = params.get("ta");
-          final List<String> subQueryIds = params.get("sid");
-          final List<String> partIds = params.get("p");
-          final List<String> offsetList = params.get("offset");
-          final List<String> lengthList = params.get("length");
-
-          if (types == null || subQueryIds == null || qids == null || partIds == null) {
-            sendError(ctx, "Required queryId, type, subquery Id, and part id", HttpResponseStatus.BAD_REQUEST);
-            return;
-          }
-
-          if (qids.size() != 1 && types.size() != 1 || subQueryIds.size() != 1) {
-            sendError(ctx, "Required qids, type, taskIds, subquery Id, and part id", HttpResponseStatus.BAD_REQUEST);
-            return;
-          }
-
-          String partId = partIds.get(0);
-          String queryId = qids.get(0);
-          String shuffleType = types.get(0);
-          String sid = subQueryIds.get(0);
-
-          long offset = (offsetList != null && !offsetList.isEmpty()) ? Long.parseLong(offsetList.get(0)) : -1L;
-          long length = (lengthList != null && !lengthList.isEmpty()) ? Long.parseLong(lengthList.get(0)) : -1L;
-
-          List<String> taskIds = splitMaps(taskIdList);
-
-          String queryBaseDir = queryId.toString() + "/output";
-
-          if (LOG.isDebugEnabled()) {
-            LOG.debug("PullServer request param: shuffleType=" + shuffleType + ", sid=" + sid + ", partId=" + partId
-                + ", taskIds=" + taskIdList);
-
-            // the working dir of tajo worker for each query
-            LOG.debug("PullServer baseDir: " + conf.get(ConfVars.WORKER_TEMPORAL_DIR.varname) + "/" + queryBaseDir);
-          }
-
-          final List<FileChunk> chunks = Lists.newArrayList();
-
-          // if a stage requires a range shuffle
-          if (shuffleType.equals("r")) {
-            String ta = taskIds.get(0);
-            String pathString = queryBaseDir + "/" + sid + "/" + ta + "/output/";
-            if (!lDirAlloc.ifExists(pathString, conf)) {
-              LOG.warn(pathString + "does not exist.");
-              sendError(ctx, HttpResponseStatus.NO_CONTENT);
-              return;
-            }
-            Path path = localFS.makeQualified(lDirAlloc.getLocalPathToRead(queryBaseDir + "/" + sid + "/" + ta
-                + "/output/", conf));
-            String startKey = params.get("start").get(0);
-            String endKey = params.get("end").get(0);
-            boolean last = params.get("final") != null;
-
-            FileChunk chunk;
-            try {
-              chunk = getFileCunks(path, startKey, endKey, last);
-            } catch (Throwable t) {
-              LOG.error("ERROR Request: " + request.getUri(), t);
-              sendError(ctx, "Cannot get file chunks to be sent", HttpResponseStatus.BAD_REQUEST);
-              return;
-            }
-            if (chunk != null) {
-              chunks.add(chunk);
-            }
-
-            // if a stage requires a hash shuffle or a scattered hash shuffle
-          } else if (shuffleType.equals("h") || shuffleType.equals("s")) {
-            int partParentId = HashShuffleAppenderManager.getPartParentId(Integer.parseInt(partId), (TajoConf) conf);
-            String partPath = queryBaseDir + "/" + sid + "/hash-shuffle/" + partParentId + "/" + partId;
-            if (!lDirAlloc.ifExists(partPath, conf)) {
-              LOG.warn("Partition shuffle file not exists: " + partPath);
-              sendError(ctx, HttpResponseStatus.NO_CONTENT);
-              return;
-            }
-
-            Path path = localFS.makeQualified(lDirAlloc.getLocalPathToRead(partPath, conf));
-
-            File file = new File(path.toUri());
-            long startPos = (offset >= 0 && length >= 0) ? offset : 0;
-            long readLen = (offset >= 0 && length >= 0) ? length : file.length();
-
-            if (startPos >= file.length()) {
-              String errorMessage = "Start pos[" + startPos + "] great than file length [" + file.length() + "]";
-              LOG.error(errorMessage);
-              sendError(ctx, errorMessage, HttpResponseStatus.BAD_REQUEST);
-              return;
-            }
-            LOG.info("RequestURL: " + request.getUri() + ", fileLen=" + file.length());
-            FileChunk chunk = new FileChunk(file, startPos, readLen);
-            chunks.add(chunk);
-          } else {
-            LOG.error("Unknown shuffle type: " + shuffleType);
-            sendError(ctx, "Unknown shuffle type:" + shuffleType, HttpResponseStatus.BAD_REQUEST);
-            return;
-          }
-
-          processingStatus.setNumFiles(chunks.size());
-          processingStatus.makeFileListTime = System.currentTimeMillis() - processingStatus.startTime;
-          // Write the content.
-          if (chunks.size() == 0) {
-            HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
-
-            if (!HttpHeaders.isKeepAlive(request)) {
-              ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
-            } else {
-              response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
-              ctx.writeAndFlush(response);
-            }
-          } else {
-            FileChunk[] file = chunks.toArray(new FileChunk[chunks.size()]);
-            ChannelFuture writeFuture = null;
-            HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
-            long totalSize = 0;
-            for (FileChunk chunk : file) {
-              totalSize += chunk.length();
-            }
-            HttpHeaders.setContentLength(response, totalSize);
-
-            if (HttpHeaders.isKeepAlive(request)) {
-              response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
-            }
-            // Write the initial line and the header.
-            writeFuture = ctx.writeAndFlush(response);
-
-            for (FileChunk chunk : file) {
-              writeFuture = sendFile(ctx, chunk, request.getUri().toString());
-              if (writeFuture == null) {
-                sendError(ctx, HttpResponseStatus.NOT_FOUND);
-                return;
-              }
-            }
-            if (ctx.pipeline().get(SslHandler.class) == null) {
-              writeFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
-            }
-
-            // Decide whether to close the connection or not.
-            if (!HttpHeaders.isKeepAlive(request)) {
-              // Close the connection when the whole content is written out.
-              writeFuture.addListener(ChannelFutureListener.CLOSE);
-            }
-          }
-        } catch (Exception e) {
-          LOG.error(e.getMessage());
-        } finally {
-          ReferenceCountUtil.release(msg);
+        // Decide whether to close the connection or not.
+        if (!HttpHeaders.isKeepAlive(request)) {
+          // Close the connection when the whole content is written out.
+          writeFuture.addListener(ChannelFutureListener.CLOSE);
         }
       }
     }
@@ -686,7 +657,7 @@ public class TajoPullServerService extends AbstractService {
           final FadvisedFileRegion filePart = new FadvisedFileRegion(spill,
               file.startOffset(), file.length(), manageOsCache, readaheadLength,
               readaheadPool, file.getFile().getAbsolutePath());
-          writeFuture = ctx.writeAndFlush(filePart);
+          writeFuture = ctx.write(filePart);
           writeFuture.addListener(new FileCloseListener(filePart, requestUri, startTime, TajoPullServerService.this));
         } else {
           // HTTPS cannot be done with zero copy.
@@ -694,7 +665,7 @@ public class TajoPullServerService extends AbstractService {
               file.startOffset(), file.length(), sslFileBufferSize,
               manageOsCache, readaheadLength, readaheadPool,
               file.getFile().getAbsolutePath());
-          writeFuture = ctx.writeAndFlush(new HttpChunkedInput(chunk));
+          writeFuture = ctx.write(new HttpChunkedInput(chunk));
         }
       } catch (FileNotFoundException e) {
         LOG.info(file.getFile() + " not found");
