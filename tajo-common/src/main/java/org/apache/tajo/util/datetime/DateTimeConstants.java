@@ -553,7 +553,7 @@ public class DateTimeConstants {
     {"mins", TokenField.UNITS, TokenField.DTK_MINUTE},	/* "minutes" relative */
     {DMINUTE, TokenField.UNITS, TokenField.DTK_MINUTE},		/* "minute" relative */
     {"minutes", TokenField.UNITS, TokenField.DTK_MINUTE},		/* "minutes" relative */
-//    {"mon", TokenField.UNITS, TokenField.DTK_MONTH},	/* "months_short" relative */
+    {"mon", TokenField.UNITS, TokenField.DTK_MONTH},	/* "months_short" relative */
     {"mons", TokenField.UNITS, TokenField.DTK_MONTH}, /* "months_short" relative */
     {DMONTH, TokenField.UNITS, TokenField.DTK_MONTH}, /* "month" relative */
     {"months_short", TokenField.UNITS, TokenField.DTK_MONTH},
