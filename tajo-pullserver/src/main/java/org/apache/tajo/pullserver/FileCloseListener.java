@@ -18,10 +18,10 @@
 
 package org.apache.tajo.pullserver;
 
-import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelFuture;
+import io.netty.util.concurrent.GenericFutureListener;
 
-public class FileCloseListener implements ChannelFutureListener {
+public class FileCloseListener implements GenericFutureListener<ChannelFuture> {
 
   private FadvisedFileRegion filePart;
   private String requestUri;
@@ -45,7 +45,7 @@ public class FileCloseListener implements ChannelFutureListener {
     if(future.isSuccess()){
       filePart.transferSuccessful();
     }
-    filePart.releaseExternalResources();
+    filePart.deallocate();
     if (pullServerService != null) {
       pullServerService.completeFileChunk(filePart, requestUri, startTime);
     }

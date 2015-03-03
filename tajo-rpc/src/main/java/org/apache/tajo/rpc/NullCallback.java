@@ -20,7 +20,7 @@ package org.apache.tajo.rpc;
 
 import com.google.protobuf.RpcCallback;
 
-public class NullCallback implements RpcCallback {
+public class NullCallback implements RpcCallback<Object> {
   private final static NullCallback instance;
 
   static {
