@@ -70,7 +70,7 @@ public abstract class Max extends AggFunction<Datum> {
         }
     }
 
-    private class MaxContext implements FunctionContext {
+    private static class MaxContext implements FunctionContext {
         Datum max = null;
     }
 }

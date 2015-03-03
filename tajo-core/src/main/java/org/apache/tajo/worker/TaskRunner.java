@@ -113,6 +113,9 @@ public class TaskRunner extends AbstractService {
 
   @Override
   public void init(Configuration conf) {
+    if (!(conf instanceof TajoConf)) {
+      throw new IllegalArgumentException("conf should be a TajoConf Type.");
+    }
     this.systemConf = (TajoConf)conf;
 
     try {
@@ -143,15 +146,17 @@ public class TaskRunner extends AbstractService {
     this.finishTime = System.currentTimeMillis();
     this.history.setFinishTime(finishTime);
     // If this flag become true, taskLauncher will be terminated.
-    this.stopped = true;
-
-    fetchLauncher.shutdown();
-    fetchLauncher = null;
 
     LOG.info("Stop TaskRunner: " + getId());
     synchronized (this) {
+      this.stopped = true;
+
+      fetchLauncher.shutdown();
+      fetchLauncher = null;
+
       notifyAll();
     }
+
     super.stop();
     this.history.setState(getServiceState());
   }

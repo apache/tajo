@@ -186,6 +186,9 @@ public class TajoWorker extends CompositeService {
   
   @Override
   public void serviceInit(Configuration conf) throws Exception {
+    if (!(conf instanceof TajoConf)) {
+      throw new IllegalArgumentException("conf should be a TajoConf type.");
+    }
     Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
 
     this.systemConf = (TajoConf)conf;

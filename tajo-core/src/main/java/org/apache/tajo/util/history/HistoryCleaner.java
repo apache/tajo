@@ -127,6 +127,8 @@ public class HistoryCleaner extends Thread {
             }
           }
         }
+      } catch (RuntimeException e) {
+        LOG.error(e.getMessage(), e);
       } catch (Exception e) {
         LOG.error(e.getMessage(), e);
       }

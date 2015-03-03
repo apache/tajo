@@ -87,7 +87,7 @@ public class SumFloatDistinct extends AggFunction<Datum> {
     return DatumFactory.createFloat8(((SumContext) ctx).sum);
   }
 
-  private class SumContext implements FunctionContext {
+  private static class SumContext implements FunctionContext {
     double sum;
     Datum latest;
   }

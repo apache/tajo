@@ -60,7 +60,6 @@ public class RightOuterMergeJoinExec extends BinaryPhysicalExec {
   // projection
   private Projector projector;
 
-  private int rightNumCols;
   private int leftNumCols;
   private int posRightTupleSlots = -1;
   private int posLeftTupleSlots = -1;

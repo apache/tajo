@@ -230,7 +230,7 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
           break;
         }
         try {
-          long expireTime = System.currentTimeMillis() - expireIntervalTime * 60 * 1000;
+          long expireTime = System.currentTimeMillis() - expireIntervalTime * 60 * 1000l;
           cleanExpiredFinishedQueryMasterTask(expireTime);
         } catch (Exception e) {
           LOG.error(e.getMessage(), e);

@@ -143,6 +143,9 @@ public class IndexUtil {
           && binaryEval.getRightExpr().getType() == EvalType.CONST) {
           nodeList.add(binaryEval);
         }
+        break;
+      default:
+        break;
       }
     }
   }
