@@ -553,7 +553,7 @@ public class DateTimeConstants {
     {"mins", TokenField.UNITS, TokenField.DTK_MINUTE},	/* "minutes" relative */
     {DMINUTE, TokenField.UNITS, TokenField.DTK_MINUTE},		/* "minute" relative */
     {"minutes", TokenField.UNITS, TokenField.DTK_MINUTE},		/* "minutes" relative */
-    {"mon", TokenField.UNITS, TokenField.DTK_MONTH},	/* "months_short" relative */
+//    {"mon", TokenField.UNITS, TokenField.DTK_MONTH},	/* "months_short" relative */
     {"mons", TokenField.UNITS, TokenField.DTK_MONTH}, /* "months_short" relative */
     {DMONTH, TokenField.UNITS, TokenField.DTK_MONTH}, /* "month" relative */
     {"months_short", TokenField.UNITS, TokenField.DTK_MONTH},
@@ -627,19 +627,24 @@ public class DateTimeConstants {
       dateTokenMap.put(dateToken.key, dateToken);
     }
 
-    for (Object[] eachToken: deltatktbl) {
-      DateToken dateToken = new DateToken();
-      dateToken.key = eachToken[0].toString();
-      dateToken.type = (TokenField)eachToken[1];
-      if (eachToken[2] instanceof TokenField) {
-        dateToken.valueType = (TokenField)eachToken[2];
-        dateToken.value = dateToken.valueType.getValue();
-      } else {
-        dateToken.valueType = TokenField.DECIMAL;
-        dateToken.value = ((Integer)eachToken[2]).intValue();
-      }
-      dateTokenMap.put(dateToken.key, dateToken);
-    }
+    /*
+     * TODO
+     * Currently, tajo does not support intervals, yet.
+     * The below code must be restored to support intervals.
+     */
+//    for (Object[] eachToken: deltatktbl) {
+//      DateToken dateToken = new DateToken();
+//      dateToken.key = eachToken[0].toString();
+//      dateToken.type = (TokenField)eachToken[1];
+//      if (eachToken[2] instanceof TokenField) {
+//        dateToken.valueType = (TokenField)eachToken[2];
+//        dateToken.value = dateToken.valueType.getValue();
+//      } else {
+//        dateToken.valueType = TokenField.DECIMAL;
+//        dateToken.value = ((Integer)eachToken[2]).intValue();
+//      }
+//      dateTokenMap.put(dateToken.key, dateToken);
+//    }
   }
 
   public static int INTERVAL_MASK(TokenField t) { return (1 << (t.getValue())); }
