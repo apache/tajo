@@ -20,14 +20,12 @@ package org.apache.tajo.ws.rs.netty.gson;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.glassfish.jersey.spi.Contract;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
-import javax.ws.rs.ext.Provider;
 import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -35,7 +33,6 @@ import java.lang.reflect.Type;
 /**
  * Custom message body reader with Gson feature.
  */
-@Contract
 @Consumes(MediaType.APPLICATION_JSON)
 public class GsonReader<T> implements MessageBodyReader<T> {
 
