@@ -31,8 +31,9 @@ import org.apache.tajo.querymaster.Repartitioner;
 import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.FetchImpl;
-import org.jboss.netty.handler.codec.http.QueryStringDecoder;
 import org.junit.Test;
+
+import io.netty.handler.codec.http.QueryStringDecoder;
 
 import java.net.URI;
 import java.util.*;
@@ -89,7 +90,7 @@ public class TestRepartitioner {
 
       URI uri = uris.get(0);
       final Map<String, List<String>> params =
-          new QueryStringDecoder(uri).getParameters();
+          new QueryStringDecoder(uri).parameters();
 
       assertEquals(eachEntry.getKey().toString(), params.get("p").get(0));
       assertEquals("h", params.get("type").get(0));

@@ -21,9 +21,7 @@ package org.apache.tajo.util.metrics.reporter;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
+import java.io.*;
 
 public class MetricsFileScheduledReporter extends MetricsStreamScheduledReporter {
   private static final Log LOG = LogFactory.getLog(MetricsFileScheduledReporter.class);
@@ -40,6 +38,7 @@ public class MetricsFileScheduledReporter extends MetricsStreamScheduledReporter
       LOG.warn("No " + metricsPropertyKey + "filename property in tajo-metrics.properties");
       return;
     }
+
     try {
       File file = new File(fileName);
       File parentFile = file.getParentFile();

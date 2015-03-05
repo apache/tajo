@@ -67,8 +67,6 @@ public class WindowAggExec extends UnaryPhysicalExec {
   private boolean [] endUnboundedFollowingFlags;
   private boolean [] endCurrentRowFlags;
 
-  private boolean endCurrentRow = false;
-
   // operator state
   enum WindowState {
     NEW_WINDOW,

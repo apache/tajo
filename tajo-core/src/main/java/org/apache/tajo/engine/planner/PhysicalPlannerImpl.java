@@ -920,21 +920,19 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           && ((PartitionedTableScanNode)scanNode).getInputPaths() != null &&
           ((PartitionedTableScanNode)scanNode).getInputPaths().length > 0) {
 
-        if (scanNode instanceof PartitionedTableScanNode) {
-          if (broadcastFlag) {
-            PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) scanNode;
-            List<Fragment> fileFragments = TUtil.newList();
-            FileStorageManager fileStorageManager = (FileStorageManager)StorageManager.getFileStorageManager(ctx.getConf());
-            for (Path path : partitionedTableScanNode.getInputPaths()) {
-              fileFragments.addAll(TUtil.newList(fileStorageManager.split(scanNode.getCanonicalName(), path)));
-            }
+        if (broadcastFlag) {
+          PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) scanNode;
+          List<Fragment> fileFragments = TUtil.newList();
+          FileStorageManager fileStorageManager = (FileStorageManager)StorageManager.getFileStorageManager(ctx.getConf());
+          for (Path path : partitionedTableScanNode.getInputPaths()) {
+            fileFragments.addAll(TUtil.newList(fileStorageManager.split(scanNode.getCanonicalName(), path)));
+          }
 
-            FragmentProto[] fragments =
+          FragmentProto[] fragments =
                 FragmentConvertor.toFragmentProtoArray(fileFragments.toArray(new FileFragment[fileFragments.size()]));
 
-            ctx.addFragments(scanNode.getCanonicalName(), fragments);
-            return new PartitionMergeScanExec(ctx, scanNode, fragments);
-          }
+          ctx.addFragments(scanNode.getCanonicalName(), fragments);
+          return new PartitionMergeScanExec(ctx, scanNode, fragments);
         }
       }
 

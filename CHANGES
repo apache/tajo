@@ -7,14 +7,27 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-527: Upgrade to Netty 4. (jihun)
 
   BUG FIXES
+
+    TAJO-1362: Resolve findbug warnings on Tajo Core Module. (jihun)
+
+    TAJO-1366: The timestamp type conversion occasionally leads to wrong 
+    results. (jihoon)
+
+    TAJO-1365: Suppress release audit warnings on Jekins builds. (jihun)
 
     TAJO-1357: Resolve findbugs warnings on Tajo Catalog Modules. (jihun)
 
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1335: Bump up 0.10.0-SNAPSHOT to 0.11.0-SNAPSHOT in master branch. 
+    (hyunsik)
+
+    TAJO-1314: Documentation for the support of the swift. (jihoon)
 
 
   SUB TASKS

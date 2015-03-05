@@ -132,6 +132,9 @@ public class QueryMasterTask extends CompositeService {
 
   @Override
   public void init(Configuration conf) {
+    if (!(conf instanceof TajoConf)) {
+      throw new IllegalArgumentException("conf should be a TajoConf type.");
+    }
     systemConf = (TajoConf)conf;
 
     try {
@@ -389,8 +392,7 @@ public class QueryMasterTask extends CompositeService {
   }
 
   private void initStagingDir() throws IOException {
-    Path stagingDir = null;
-    FileSystem defaultFS = TajoConf.getWarehouseDir(systemConf).getFileSystem(systemConf);
+    Path stagingDir;
 
     try {
 
@@ -400,14 +402,7 @@ public class QueryMasterTask extends CompositeService {
       LOG.info("The staging dir '" + stagingDir + "' is created.");
       queryContext.setStagingDir(stagingDir);
     } catch (IOException ioe) {
-      if (stagingDir != null && defaultFS.exists(stagingDir)) {
-        try {
-          defaultFS.delete(stagingDir, true);
-          LOG.info("The staging directory '" + stagingDir + "' is deleted");
-        } catch (Exception e) {
-          LOG.warn(e.getMessage());
-        }
-      }
+      LOG.warn("Creating staging dir has been failed.", ioe);
 
       throw ioe;
     }

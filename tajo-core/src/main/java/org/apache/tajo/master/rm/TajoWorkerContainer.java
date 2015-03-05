@@ -100,4 +100,26 @@ public class TajoWorkerContainer extends TajoContainer {
   public int compareTo(TajoContainer container) {
     return getId().compareTo(container.getId());
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    TajoWorkerContainer that = (TajoWorkerContainer) o;
+
+    if (id != null ? !id.equals(that.id) : that.id != null) return false;
+    if (nodeId != null ? !nodeId.equals(that.nodeId) : that.nodeId != null) return false;
+    if (worker != null ? !worker.equals(that.worker) : that.worker != null) return false;
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = id != null ? id.hashCode() : 0;
+    result = 31 * result + (nodeId != null ? nodeId.hashCode() : 0);
+    result = 31 * result + (worker != null ? worker.hashCode() : 0);
+    return result;
+  }
 }

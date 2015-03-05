@@ -18,37 +18,30 @@
 
 package org.apache.tajo;
 
-import org.jboss.netty.channel.ChannelPipeline;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.handler.codec.http.HttpChunkAggregator;
-import org.jboss.netty.handler.codec.http.HttpRequestDecoder;
-import org.jboss.netty.handler.codec.http.HttpResponseEncoder;
-import org.jboss.netty.handler.stream.ChunkedWriteHandler;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPipeline;
+import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.HttpRequestDecoder;
+import io.netty.handler.codec.http.HttpResponseEncoder;
+import io.netty.handler.stream.ChunkedWriteHandler;
 
-import static org.jboss.netty.channel.Channels.pipeline;
+public class HttpFileServerChannelInitializer extends ChannelInitializer<Channel> {
 
-// Uncomment the following lines if you want HTTPS
-//import javax.net.ssl.SSLEngine;
-//import org.jboss.netty.example.securechat.SecureChatSslContextFactory;
-//import org.jboss.netty.handler.ssl.SslHandler;
-
-//this class is copied from HttpStaticFileServerPipelineFactory.java of netty 3.6
-public class HttpFileServerPipelineFactory implements ChannelPipelineFactory {
-  public ChannelPipeline getPipeline() throws Exception {
-    // Create a default pipeline implementation.
-    ChannelPipeline pipeline = pipeline();
+  @Override
+  protected void initChannel(Channel channel) throws Exception {
+    ChannelPipeline pipeline = channel.pipeline();
 
     // Uncomment the following lines if you want HTTPS
     //SSLEngine engine = SecureChatSslContextFactory.getServerContext().createSSLEngine();
     //engine.setUseClientMode(false);
     //pipeline.addLast("ssl", new SslHandler(engine));
 
-    pipeline.addLast("decoder", new HttpRequestDecoder());
-    pipeline.addLast("aggregator", new HttpChunkAggregator(65536));
     pipeline.addLast("encoder", new HttpResponseEncoder());
+    pipeline.addLast("decoder", new HttpRequestDecoder());
+    pipeline.addLast("aggregator", new HttpObjectAggregator(65536));
     pipeline.addLast("chunkedWriter", new ChunkedWriteHandler());
 
     pipeline.addLast("handler", new HttpFileServerHandler());
-    return pipeline;
   }
 }

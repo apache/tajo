@@ -78,7 +78,7 @@ public class CountRows extends AggFunction<Datum> {
     return DatumFactory.createInt8(((CountRowContext) ctx).count);
   }
 
-  protected class CountRowContext implements FunctionContext {
+  protected static class CountRowContext implements FunctionContext {
     long count;
   }
 }
