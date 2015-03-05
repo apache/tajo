@@ -216,8 +216,10 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
     synchronized(rmContext) {
       for(int eachWorker: rmContext.getWorkers().keySet()) {
         Worker worker = rmContext.getWorkers().get(eachWorker);
-        WorkerResource resource = worker.getResource();
+
         if(worker != null) {
+          WorkerResource resource = worker.getResource();
+
           totalMemoryMB += resource.getMemoryMB();
           totalAvailableMemoryMB += resource.getAvailableMemoryMB();
 

@@ -20,6 +20,7 @@ package org.apache.tajo.pullserver.retriever;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.ExecutionBlockId;
@@ -27,9 +28,10 @@ import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
 import org.apache.tajo.pullserver.FileAccessForbiddenException;
 import org.apache.tajo.util.TajoIdUtils;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.handler.codec.http.HttpRequest;
-import org.jboss.netty.handler.codec.http.QueryStringDecoder;
+
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.QueryStringDecoder;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -67,7 +69,7 @@ public class AdvancedDataRetriever implements DataRetriever {
       throws IOException {
 
     final Map<String, List<String>> params =
-      new QueryStringDecoder(request.getUri()).getParameters();
+      new QueryStringDecoder(request.getUri()).parameters();
 
     if (!params.containsKey("qid")) {
       throw new FileNotFoundException("No such qid: " + params.containsKey("qid"));

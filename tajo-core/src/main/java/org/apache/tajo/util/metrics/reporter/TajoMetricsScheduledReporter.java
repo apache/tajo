@@ -142,11 +142,7 @@ public abstract class TajoMetricsScheduledReporter extends TajoMetricsReporter i
         try {
           report();
         } catch (Exception e) {
-          if(LOG.isDebugEnabled()) {
-            LOG.warn("Metric report error:" + e.getMessage(), e);
-          } else {
-            LOG.warn("Metric report error:" + e.getMessage(), e);
-          }
+          LOG.warn("Metric report error:" + e.getMessage(), e);
         }
       }
     }, period, period, unit);

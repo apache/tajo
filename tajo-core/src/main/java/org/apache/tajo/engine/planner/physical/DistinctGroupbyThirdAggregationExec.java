@@ -117,9 +117,9 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
       // but groupbyResultTupleIndex's column type is protobuf
 
       int matchedIndex = -1;
-      for (Column eachIndexColumn: groupbyResultTupleIndex.keySet()) {
-        if (eachIndexColumn.getQualifiedName().equals(eachOutputColumn.getQualifiedName())) {
-          matchedIndex = groupbyResultTupleIndex.get(eachIndexColumn);
+      for (Map.Entry<Column, Integer> entry: groupbyResultTupleIndex.entrySet()) {
+        if (entry.getKey().getQualifiedName().equals(eachOutputColumn.getQualifiedName())) {
+          matchedIndex = entry.getValue();
           break;
         }
       }

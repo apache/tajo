@@ -87,6 +87,13 @@ public class TestTimestampDatum {
     assertEquals(d, copy);
 	}
 
+  @Test
+  public void testAsText2() {
+    // TAJO-1366
+    TimestampDatum datum = DatumFactory.createTimestamp("Mon Nov 03 00:03:00 +0000 2014");
+    assertEquals("2014-11-03 00:03:00", datum.asChars());
+  }
+
 	@Test
   public final void testSize() {
     Datum d = DatumFactory.createTimestmpDatumWithUnixTime(unixtime);

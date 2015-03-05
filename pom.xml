@@ -26,7 +26,7 @@
   </parent>
   <groupId>org.apache.tajo</groupId>
   <artifactId>tajo-main</artifactId>
-  <version>0.10.0-SNAPSHOT</version>
+  <version>0.11.0-SNAPSHOT</version>
   <description>Tajo Main</description>
   <name>Tajo Main</name>
   <packaging>pom</packaging>
@@ -183,7 +183,7 @@
         <plugin>
           <groupId>org.apache.rat</groupId>
           <artifactId>apache-rat-plugin</artifactId>
-          <version>0.7</version>
+          <version>0.8</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -339,6 +339,17 @@
       <plugin>
         <groupId>org.apache.rat</groupId>
         <artifactId>apache-rat-plugin</artifactId>
+        <inherited>false</inherited>
+        <configuration>
+          <excludes>
+            <exclude>.git/**</exclude>
+            <exclude>.gitignore</exclude>
+            <exclude>.idea/**</exclude>
+            <exclude>.reviewboardrc</exclude>
+            <exclude>CHANGES</exclude>
+            <exclude>tajo-docs/src/main/sphinx/**</exclude>
+          </excludes>
+        </configuration>
       </plugin>
     </plugins>
   </build>

@@ -97,6 +97,9 @@ public class JSPUtil {
   }
 
   public static String getTajoMasterHttpAddr(Configuration config) {
+    if (!(config instanceof TajoConf)) {
+      throw new IllegalArgumentException("config should be a TajoConf type.");
+    }
     try {
       TajoConf conf = (TajoConf) config;
       String [] masterAddr = conf.getVar(ConfVars.TAJO_MASTER_UMBILICAL_RPC_ADDRESS).split(":");

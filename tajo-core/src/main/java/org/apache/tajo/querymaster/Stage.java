@@ -865,7 +865,6 @@ public class Stage implements EventHandler<StageEvent> {
      * @return
      */
     public static int calculateShuffleOutputNum(Stage stage, DataChannel channel) {
-      TajoConf conf = stage.context.getConf();
       MasterPlan masterPlan = stage.getMasterPlan();
       ExecutionBlock parent = masterPlan.getParent(stage.getBlock());
 
@@ -1156,6 +1155,9 @@ public class Stage implements EventHandler<StageEvent> {
 
     @Override
     public void transition(Stage stage, StageEvent event) {
+      if (!(event instanceof StageContainerAllocationEvent)) {
+        throw new IllegalArgumentException("event should be a StageContainerAllocationEvent type.");
+      }
       try {
         StageContainerAllocationEvent allocationEvent =
             (StageContainerAllocationEvent) event;
@@ -1191,6 +1193,9 @@ public class Stage implements EventHandler<StageEvent> {
   private static class AllocatedContainersCancelTransition implements SingleArcTransition<Stage, StageEvent> {
     @Override
     public void transition(Stage stage, StageEvent event) {
+      if (!(event instanceof StageContainerAllocationEvent)) {
+        throw new IllegalArgumentException("event should be a StageContainerAllocationEvent type.");
+      }
       try {
         StageContainerAllocationEvent allocationEvent =
             (StageContainerAllocationEvent) event;
@@ -1213,6 +1218,9 @@ public class Stage implements EventHandler<StageEvent> {
     @Override
     public void transition(Stage stage,
                            StageEvent event) {
+      if (!(event instanceof StageTaskEvent)) {
+        throw new IllegalArgumentException("event should be a StageTaskEvent type.");
+      }
       StageTaskEvent taskEvent = (StageTaskEvent) event;
       Task task = stage.getTask(taskEvent.getTaskId());
 
@@ -1418,6 +1426,9 @@ public class Stage implements EventHandler<StageEvent> {
   private static class DiagnosticsUpdateTransition implements SingleArcTransition<Stage, StageEvent> {
     @Override
     public void transition(Stage stage, StageEvent event) {
+      if (!(event instanceof StageDiagnosticsUpdateEvent)) {
+        throw new IllegalArgumentException("event should be a StageDiagnosticsUpdateEvent type.");
+      }
       stage.addDiagnostic(((StageDiagnosticsUpdateEvent) event).getDiagnosticUpdate());
     }
   }

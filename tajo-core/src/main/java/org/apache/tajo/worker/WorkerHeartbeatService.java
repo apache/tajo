@@ -111,7 +111,6 @@ public class WorkerHeartbeatService extends AbstractService {
       int workerCpuCoreNum;
 
       boolean dedicatedResource = systemConf.getBoolVar(TajoConf.ConfVars.WORKER_RESOURCE_DEDICATED);
-      int workerCpuCoreSlots = Runtime.getRuntime().availableProcessors();
 
       try {
         diskDeviceInfos = DiskUtil.getDiskDeviceInfos();

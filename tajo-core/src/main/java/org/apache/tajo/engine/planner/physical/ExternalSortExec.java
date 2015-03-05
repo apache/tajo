@@ -633,7 +633,7 @@ public class ExternalSortExec extends SortExec {
   /**
    * Two-way merger scanner that reads two input sources and outputs one output tuples sorted in some order.
    */
-  private class PairWiseMerger implements Scanner {
+  private static class PairWiseMerger implements Scanner {
     private Scanner leftScan;
     private Scanner rightScan;
 

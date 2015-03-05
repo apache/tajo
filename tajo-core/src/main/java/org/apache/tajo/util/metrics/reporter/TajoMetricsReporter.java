@@ -48,10 +48,12 @@ public abstract class TajoMetricsReporter {
         groupName = keyTokens[0] + "." + keyTokens[1];
         itemName = "";
         String prefix = "";
+        StringBuilder itemNameBuilder = new StringBuilder();
         for (int i = 2; i < keyTokens.length; i++) {
-          itemName += prefix + keyTokens[i];
+          itemNameBuilder.append(prefix).append(keyTokens[i]);
           prefix = ".";
         }
+        itemName = itemNameBuilder.toString();
       } else {
         groupName = "";
         itemName = key;
