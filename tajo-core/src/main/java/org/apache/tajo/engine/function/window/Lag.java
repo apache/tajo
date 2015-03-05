@@ -75,7 +75,7 @@ public abstract class Lag extends WindowAggFunc<Datum> {
     }
   }
 
-  protected class LagContext implements FunctionContext {
+  protected static class LagContext implements FunctionContext {
     CircularFifoBuffer lagBuffer = null;
     Datum defaultDatum = null;
   }

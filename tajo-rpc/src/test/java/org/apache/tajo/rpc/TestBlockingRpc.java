@@ -24,13 +24,20 @@ import org.apache.tajo.rpc.test.TestProtos.EchoMessage;
 import org.apache.tajo.rpc.test.TestProtos.SumRequest;
 import org.apache.tajo.rpc.test.TestProtos.SumResponse;
 import org.apache.tajo.rpc.test.impl.DummyProtocolBlockingImpl;
-import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.AfterClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExternalResource;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -44,35 +51,92 @@ public class TestBlockingRpc {
   private BlockingInterface stub;
   private DummyProtocolBlockingImpl service;
   private int retries;
-  private ClientSocketChannelFactory clientChannelFactory;
+  
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target(ElementType.METHOD)
+  @interface SetupRpcConnection {
+    boolean setupRpcServer() default true;
+    boolean setupRpcClient() default true;
+  }
+  
+  @Rule
+  public ExternalResource resource = new ExternalResource() {
+    
+    private Description description;
 
-  @Before
-  public void setUp() throws Exception {
-    retries = 1;
+    @Override
+    public Statement apply(Statement base, Description description) {
+      this.description = description;
+      return super.apply(base, description);
+    }
 
-    clientChannelFactory = RpcChannelFactory.createClientChannelFactory(MESSAGE, 2);
+    @Override
+    protected void before() throws Throwable {
+      SetupRpcConnection setupRpcConnection = description.getAnnotation(SetupRpcConnection.class);
+      
+      if (setupRpcConnection == null || setupRpcConnection.setupRpcServer()) {
+        setUpRpcServer();
+      }
+      
+      if (setupRpcConnection == null || setupRpcConnection.setupRpcClient()) {
+        setUpRpcClient();
+      }
+    }
 
+    @Override
+    protected void after() {
+      SetupRpcConnection setupRpcConnection = description.getAnnotation(SetupRpcConnection.class);
+      
+      if (setupRpcConnection == null || setupRpcConnection.setupRpcClient()) {
+        try {
+          tearDownRpcClient();
+        } catch (Exception e) {
+          fail(e.getMessage());
+        }
+      }
+      
+      if (setupRpcConnection == null || setupRpcConnection.setupRpcServer()) {
+        try {
+          tearDownRpcServer();
+        } catch (Exception e) {
+          fail(e.getMessage());
+        }
+      }
+    }
+    
+  };
+  
+  public void setUpRpcServer() throws Exception {
     service = new DummyProtocolBlockingImpl();
     server = new BlockingRpcServer(DummyProtocol.class, service,
         new InetSocketAddress("127.0.0.1", 0), 2);
     server.start();
+  }
+  
+  public void setUpRpcClient() throws Exception {
+    retries = 1;
+
     client = new BlockingRpcClient(DummyProtocol.class,
-        RpcUtils.getConnectAddress(server.getListenAddress()), clientChannelFactory, retries);
+        RpcUtils.getConnectAddress(server.getListenAddress()), retries);
     stub = client.getStub();
   }
 
-  @After
-  public void tearDown() throws Exception {
-    if(client != null) {
-      client.close();
-    }
-
+  @AfterClass
+  public static void tearDownClass() throws Exception {
+    RpcChannelFactory.shutdownGracefully();
+  }
+  
+  public void tearDownRpcServer() throws Exception {
     if(server != null) {
       server.shutdown();
+      server = null;
     }
-
-    if(clientChannelFactory != null){
-      clientChannelFactory.releaseExternalResources();
+  }
+  
+  public void tearDownRpcClient() throws Exception {
+    if(client != null) {
+      client.close();
+      client = null;
     }
   }
 
@@ -93,8 +157,9 @@ public class TestBlockingRpc {
   }
 
   @Test
+  @SetupRpcConnection(setupRpcClient=false)
   public void testRpcWithServiceCallable() throws Exception {
-    RpcConnectionPool pool = RpcConnectionPool.newPool(getClass().getSimpleName(), 2);
+    RpcConnectionPool pool = RpcConnectionPool.getPool();
     final SumRequest request = SumRequest.newBuilder()
         .setX1(1)
         .setX2(2)
@@ -148,10 +213,12 @@ public class TestBlockingRpc {
   }
 
   @Test
+  @SetupRpcConnection(setupRpcServer=false,setupRpcClient=false)
   public void testConnectionRetry() throws Exception {
     retries = 10;
-    final InetSocketAddress address = server.getListenAddress();
-    tearDown();
+    ServerSocket serverSocket = new ServerSocket(0);
+    final InetSocketAddress address = new InetSocketAddress("127.0.0.1", serverSocket.getLocalPort());
+    serverSocket.close();
 
     EchoMessage message = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
@@ -161,8 +228,8 @@ public class TestBlockingRpc {
       @Override
       public void run() {
         try {
-          Thread.sleep(100);
-          server = new BlockingRpcServer(DummyProtocol.class, service, address, 2);
+          Thread.sleep(1000);
+          server = new BlockingRpcServer(DummyProtocol.class, new DummyProtocolBlockingImpl(), address, 2);
         } catch (Exception e) {
           fail(e.getMessage());
         }
@@ -171,8 +238,7 @@ public class TestBlockingRpc {
     });
     serverThread.start();
 
-    clientChannelFactory = RpcChannelFactory.createClientChannelFactory(MESSAGE, 2);
-    client = new BlockingRpcClient(DummyProtocol.class, address, clientChannelFactory, retries);
+    client = new BlockingRpcClient(DummyProtocol.class, address, retries);
     stub = client.getStub();
 
     EchoMessage response = stub.echo(null, message);
@@ -182,14 +248,20 @@ public class TestBlockingRpc {
   @Test
   public void testConnectionFailed() throws Exception {
     boolean expected = false;
+    NettyClientBase client = null;
+    
     try {
       int port = server.getListenAddress().getPort() + 1;
-      new BlockingRpcClient(DummyProtocol.class,
-          RpcUtils.getConnectAddress(new InetSocketAddress("127.0.0.1", port)), clientChannelFactory, retries);
+      client = new BlockingRpcClient(DummyProtocol.class,
+          RpcUtils.getConnectAddress(new InetSocketAddress("127.0.0.1", port)), retries);
+      client.close();
       fail("Connection should be failed.");
     } catch (ConnectException ce) {
       expected = true;
     } catch (Throwable ce){
+      if (client != null) {
+        client.close();
+      }
       fail();
     }
     assertTrue(expected);
@@ -240,7 +312,7 @@ public class TestBlockingRpc {
     };
     shutdownThread.start();
 
-    latch.await(5 * 1000, TimeUnit.MILLISECONDS);
+    assertTrue(latch.await(5 * 1000, TimeUnit.MILLISECONDS));
 
     assertTrue(latch.getCount() == 0);
 
@@ -254,13 +326,11 @@ public class TestBlockingRpc {
   }
 
   @Test
+  @SetupRpcConnection(setupRpcClient=false)
   public void testUnresolvedAddress() throws Exception {
-    client.close();
-    client = null;
-
     String hostAndPort = RpcUtils.normalizeInetSocketAddress(server.getListenAddress());
     client = new BlockingRpcClient(DummyProtocol.class,
-        RpcUtils.createUnresolved(hostAndPort), clientChannelFactory, retries);
+        RpcUtils.createUnresolved(hostAndPort), retries);
     BlockingInterface stub = client.getStub();
 
     EchoMessage message = EchoMessage.newBuilder()

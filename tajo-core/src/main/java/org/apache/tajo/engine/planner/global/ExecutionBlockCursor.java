@@ -169,6 +169,14 @@ public class ExecutionBlockCursor {
       }
       return eb.equals(((BuildOrderItem) obj).eb);
     }
+
+    @Override
+    public int hashCode() {
+      int result = eb != null ? eb.hashCode() : 0;
+      result = 31 * result + (parentEB != null ? parentEB.hashCode() : 0);
+      result = 31 * result + (siblings != null ? siblings.hashCode() : 0);
+      return result;
+    }
   }
 
   public boolean hasNext() {

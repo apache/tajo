@@ -57,9 +57,7 @@ public class RegexpReplace extends GeneralFunction {
   @Expose protected boolean isPatternConstant;
 
   // transient variables
-  protected String pattern;
   private boolean isAlwaysNull = false;
-  private BooleanDatum result;
   protected Pattern compiled;
 
   public RegexpReplace() {

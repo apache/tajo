@@ -20,6 +20,7 @@ package org.apache.tajo.worker;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -33,8 +34,6 @@ import org.apache.tajo.engine.utils.TupleCache;
 import org.apache.tajo.worker.event.TaskRunnerEvent;
 import org.apache.tajo.worker.event.TaskRunnerStartEvent;
 import org.apache.tajo.worker.event.TaskRunnerStopEvent;
-import org.jboss.netty.util.HashedWheelTimer;
-import org.jboss.netty.util.Timer;
 
 import java.io.IOException;
 import java.util.*;
@@ -52,7 +51,6 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
   private AtomicBoolean stop = new AtomicBoolean(false);
   private FinishedTaskCleanThread finishedTaskCleanThread;
   private Dispatcher dispatcher;
-  private HashedWheelTimer rpcTimer;
 
   public TaskRunnerManager(TajoWorker.WorkerContext workerContext, Dispatcher dispatcher) {
     super(TaskRunnerManager.class.getName());
@@ -77,7 +75,6 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
   public void start() {
     finishedTaskCleanThread = new FinishedTaskCleanThread();
     finishedTaskCleanThread.start();
-    rpcTimer = new HashedWheelTimer();
     super.start();
   }
 
@@ -100,10 +97,6 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
 
     if(finishedTaskCleanThread != null) {
       finishedTaskCleanThread.interrupted();
-    }
-
-    if(rpcTimer != null){
-      rpcTimer.stop();
     }
 
     super.stop();
@@ -214,10 +207,6 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
     return tajoConf;
   }
 
-  public Timer getRPCTimer(){
-    return rpcTimer;
-  }
-
   class FinishedTaskCleanThread extends Thread {
     //TODO if history size is large, the historyMap should remove immediately
     public void run() {
@@ -230,7 +219,7 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
           break;
         }
         try {
-          long expireTime = System.currentTimeMillis() - expireIntervalTime * 60 * 1000;
+          long expireTime = System.currentTimeMillis() - expireIntervalTime * 60 * 1000l;
           cleanExpiredFinishedQueryMasterTask(expireTime);
         } catch (Exception e) {
           LOG.error(e.getMessage(), e);

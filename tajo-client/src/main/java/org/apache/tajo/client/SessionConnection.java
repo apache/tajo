@@ -34,7 +34,8 @@ import org.apache.tajo.rpc.ServerCallable;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.ProtoUtil;
-import org.jboss.netty.channel.ConnectTimeoutException;
+
+import io.netty.channel.ConnectTimeoutException;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -84,11 +85,7 @@ public class SessionConnection implements Closeable {
 
     this.properties = properties;
 
-    //TODO separate ConfVars from TajoConf
-    int workerNum = this.properties.getInt("tajo.rpc.client.worker-thread-num", 4);
-
-    // Don't share connection pool per client
-    connPool = RpcConnectionPool.newPool(getClass().getSimpleName(), workerNum);
+    connPool = RpcConnectionPool.getPool();
     userInfo = UserRoleInfo.getCurrentUser();
     this.baseDatabase = baseDatabase != null ? baseDatabase : null;
 
@@ -130,7 +127,7 @@ public class SessionConnection implements Closeable {
     if(!closed.get()){
       try {
         return connPool.getConnection(serviceTracker.getClientServiceAddress(),
-            TajoMasterClientProtocol.class, false).isConnected();
+            TajoMasterClientProtocol.class, false).isActive();
       } catch (Throwable e) {
         return false;
       }
@@ -287,10 +284,6 @@ public class SessionConnection implements Closeable {
       tajoMaster.removeSession(null, sessionId);
 
     } catch (Throwable e) {
-    }
-
-    if(connPool != null) {
-      connPool.shutdown();
     }
   }
 
