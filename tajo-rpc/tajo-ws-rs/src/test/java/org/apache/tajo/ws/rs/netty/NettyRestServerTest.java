@@ -19,13 +19,10 @@
 package org.apache.tajo.ws.rs.netty;
 
 import org.apache.tajo.ws.rs.netty.gson.GsonFeature;
-import org.apache.tajo.ws.rs.netty.gson.GsonReader;
-import org.apache.tajo.ws.rs.netty.gson.GsonWriter;
 import org.apache.tajo.ws.rs.netty.testapp1.TestApplication1;
 import org.apache.tajo.ws.rs.netty.testapp1.TestResource1;
 import org.apache.tajo.ws.rs.netty.testapp2.Directory;
 import org.apache.tajo.ws.rs.netty.testapp2.FileManagementApplication;
-import org.glassfish.jersey.filter.LoggingFilter;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.junit.Test;
 
@@ -35,8 +32,6 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.MessageBodyReader;
-import javax.ws.rs.ext.MessageBodyWriter;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URI;
