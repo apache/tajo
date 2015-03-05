@@ -16,27 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.ws.rs.netty;
+package org.apache.tajo.ws.rs.netty.gson;
 
-import io.netty.channel.ChannelHandler;
+import javax.ws.rs.core.Feature;
+import javax.ws.rs.core.FeatureContext;
+import javax.ws.rs.ext.MessageBodyReader;
+import javax.ws.rs.ext.MessageBodyWriter;
 
-import javax.ws.rs.ProcessingException;
-
-import org.glassfish.jersey.server.ApplicationHandler;
-import org.glassfish.jersey.server.spi.ContainerProvider;
-
-/**
- * Container Provider for NettyRestHandlerContainer
- */
-public final class NettyRestHandlerContainerProvider implements ContainerProvider {
+public class GsonFeature implements Feature {
 
   @Override
-  public <T> T createContainer(Class<T> type, ApplicationHandler application) throws ProcessingException {
-    if (type != NettyRestHandlerContainer.class && 
-        (type == null || !ChannelHandler.class.isAssignableFrom(type))) {
-      return null;
-    }
-    return type.cast(new NettyRestHandlerContainer(application));
+  public boolean configure(FeatureContext featureContext) {
+    featureContext.register(GsonReader.class, MessageBodyReader.class);
+    featureContext.register(GsonWriter.class, MessageBodyWriter.class);
+    return true;
   }
-
 }

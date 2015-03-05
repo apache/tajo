@@ -28,10 +28,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufInputStream;
-import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.buffer.Unpooled;
+import io.netty.buffer.*;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -51,6 +48,7 @@ import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import javax.ws.rs.core.Application;
+import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.SecurityContext;
 
 import org.apache.commons.logging.Log;
@@ -88,14 +86,9 @@ public class NettyRestHandlerContainer extends ChannelDuplexHandler implements C
     this(new ApplicationHandler(application, null, parentLocator));
   }
 
-  private NettyRestHandlerContainer(ApplicationHandler appHandler) {
+  NettyRestHandlerContainer(ApplicationHandler appHandler) {
     applicationHandler = appHandler;
     lifecycleListener = ConfigHelper.getContainerLifecycleListener(applicationHandler);
-  }
-
-  @Override
-  public ApplicationHandler getApplicationHandler() {
-    return applicationHandler;
   }
 
   @Override
@@ -119,10 +112,6 @@ public class NettyRestHandlerContainer extends ChannelDuplexHandler implements C
     if (LOG.isDebugEnabled()) {
       LOG.debug("NettyRestHandlerContainer reloaded.");
     }
-  }
-
-  public String getRootPath() {
-    return rootPath;
   }
 
   public void setRootPath(String rootPath) {
@@ -164,12 +153,11 @@ public class NettyRestHandlerContainer extends ChannelDuplexHandler implements C
   protected void messageReceived(ChannelHandlerContext ctx, FullHttpRequest request) throws Exception {
     URI baseUri = getBaseUri(ctx, request);
     URI requestUri = baseUri.resolve(request.getUri());
-    boolean keepalive = HttpHeaders.isKeepAlive(request);
     ByteBuf responseContent = PooledByteBufAllocator.DEFAULT.buffer();
     FullHttpResponse response = 
         new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, responseContent);
     
-    NettyRestResponseWriter responseWriter = new NettyRestResponseWriter(ctx, response, keepalive);
+    NettyRestResponseWriter responseWriter = new NettyRestResponseWriter(ctx, response);
     ContainerRequest containerRequest = new ContainerRequest(baseUri, requestUri, 
         request.getMethod().name(), getSecurityContext(), new MapPropertiesDelegate());
     containerRequest.setEntityStream(new ByteBufInputStream(request.content()));
@@ -238,13 +226,11 @@ public class NettyRestHandlerContainer extends ChannelDuplexHandler implements C
     private final ChannelHandlerContext ctx;
     private final FullHttpResponse response;
     private final AtomicBoolean closed;
-    private final boolean keepalive;
 
-    public NettyRestResponseWriter(ChannelHandlerContext ctx, FullHttpResponse response, boolean keepalive) {
+    public NettyRestResponseWriter(ChannelHandlerContext ctx, FullHttpResponse response) {
       this.ctx = ctx;
       this.response = response;
       this.closed = new AtomicBoolean(false);
-      this.keepalive = keepalive;
     }
 
     @Override
@@ -266,8 +252,7 @@ public class NettyRestHandlerContainer extends ChannelDuplexHandler implements C
         sendError(HttpResponseStatus.INTERNAL_SERVER_ERROR, error);
       } finally {
         if (ctx.channel().isActive()) {
-          ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT)
-              .addListener(ChannelFutureListener.CLOSE);
+          ctx.close();
         }
       }
     }
@@ -287,7 +272,6 @@ public class NettyRestHandlerContainer extends ChannelDuplexHandler implements C
         }
       });
 
-      // Close the connection as soon as the error message is sent.
       ctx.writeAndFlush(response, promise);
     }
 
@@ -304,15 +288,22 @@ public class NettyRestHandlerContainer extends ChannelDuplexHandler implements C
     @Override
     public OutputStream writeResponseStatusAndHeaders(long contentLength, ContainerResponse context)
         throws ContainerException {
-      // TODO Auto-generated method stub
-      return null;
+      MultivaluedMap<String, String> responseHeaders = context.getStringHeaders();
+      HttpHeaders nettyHeaders = response.headers();
+
+      for (Entry<String, List<String>> entry: responseHeaders.entrySet()) {
+        nettyHeaders.add(entry.getKey(), entry.getValue());
+      }
+
+      int status = context.getStatus();
+
+      response.setStatus(HttpResponseStatus.valueOf(status));
+      return new ByteBufOutputStream(response.content());
     }
 
     private void sendLastHttpContent() {
-      ChannelFuture writeFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
-      if (!keepalive) {
-        writeFuture.addListener(ChannelFutureListener.CLOSE);
-      }
+      ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT)
+            .addListener(ChannelFutureListener.CLOSE);
     }
     
     private void releaseConnection() {

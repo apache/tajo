@@ -16,27 +16,24 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.ws.rs.netty;
+package org.apache.tajo.ws.rs.netty.testapp2;
 
-import io.netty.channel.ChannelHandler;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-import javax.ws.rs.ProcessingException;
+public class DirectoriesDao {
+  private static DirectoriesDao instance = new DirectoriesDao();
 
-import org.glassfish.jersey.server.ApplicationHandler;
-import org.glassfish.jersey.server.spi.ContainerProvider;
+  private final Map<String, Directory> directoryMap = new ConcurrentHashMap<String, Directory>();
 
-/**
- * Container Provider for NettyRestHandlerContainer
- */
-public final class NettyRestHandlerContainerProvider implements ContainerProvider {
-
-  @Override
-  public <T> T createContainer(Class<T> type, ApplicationHandler application) throws ProcessingException {
-    if (type != NettyRestHandlerContainer.class && 
-        (type == null || !ChannelHandler.class.isAssignableFrom(type))) {
-      return null;
-    }
-    return type.cast(new NettyRestHandlerContainer(application));
+  private DirectoriesDao() {
   }
 
+  public static DirectoriesDao getInstance() {
+    return instance;
+  }
+
+  public Map<String, Directory> getDirectoryMap() {
+    return directoryMap;
+  }
 }

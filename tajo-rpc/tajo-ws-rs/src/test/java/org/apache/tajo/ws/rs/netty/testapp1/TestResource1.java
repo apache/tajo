@@ -16,27 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.ws.rs.netty;
+package org.apache.tajo.ws.rs.netty.testapp1;
 
-import io.netty.channel.ChannelHandler;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 
-import javax.ws.rs.ProcessingException;
+@Path("testapp1")
+public class TestResource1 {
 
-import org.glassfish.jersey.server.ApplicationHandler;
-import org.glassfish.jersey.server.spi.ContainerProvider;
+  public static String outputMessage = "TestApplication1";
 
-/**
- * Container Provider for NettyRestHandlerContainer
- */
-public final class NettyRestHandlerContainerProvider implements ContainerProvider {
-
-  @Override
-  public <T> T createContainer(Class<T> type, ApplicationHandler application) throws ProcessingException {
-    if (type != NettyRestHandlerContainer.class && 
-        (type == null || !ChannelHandler.class.isAssignableFrom(type))) {
-      return null;
-    }
-    return type.cast(new NettyRestHandlerContainer(application));
+  @GET
+  @Produces(MediaType.TEXT_PLAIN)
+  public String getApplicationName() {
+    return outputMessage;
   }
-
 }

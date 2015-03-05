@@ -72,6 +72,8 @@ public final class NettyRestServerFactory {
       throw new IllegalArgumentException("Port number should be provided.");
     }
 
+    handler.setRootPath(uri.getPath());
+
     InetSocketAddress bindAddress = new InetSocketAddress(port);
     NettyRestServer nettyRestServer = new NettyRestServer("Tajo-REST", bindAddress, workerCount);
 

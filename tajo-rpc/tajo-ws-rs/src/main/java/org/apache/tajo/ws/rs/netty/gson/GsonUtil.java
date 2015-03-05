@@ -16,27 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.ws.rs.netty;
+package org.apache.tajo.ws.rs.netty.gson;
 
-import io.netty.channel.ChannelHandler;
+import javax.ws.rs.core.MediaType;
 
-import javax.ws.rs.ProcessingException;
+public class GsonUtil {
 
-import org.glassfish.jersey.server.ApplicationHandler;
-import org.glassfish.jersey.server.spi.ContainerProvider;
-
-/**
- * Container Provider for NettyRestHandlerContainer
- */
-public final class NettyRestHandlerContainerProvider implements ContainerProvider {
-
-  @Override
-  public <T> T createContainer(Class<T> type, ApplicationHandler application) throws ProcessingException {
-    if (type != NettyRestHandlerContainer.class && 
-        (type == null || !ChannelHandler.class.isAssignableFrom(type))) {
-      return null;
+  public static boolean isJsonType(MediaType mediaType) {
+    if (mediaType != null) {
+      String subType = mediaType.getSubtype();
+      return "json".equalsIgnoreCase(subType) || subType.endsWith("+json");
     }
-    return type.cast(new NettyRestHandlerContainer(application));
+    return false;
   }
-
 }

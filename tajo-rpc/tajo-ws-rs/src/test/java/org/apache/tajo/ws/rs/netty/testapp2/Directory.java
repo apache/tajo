@@ -16,27 +16,37 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.ws.rs.netty;
+package org.apache.tajo.ws.rs.netty.testapp2;
 
-import io.netty.channel.ChannelHandler;
+import java.io.Serializable;
 
-import javax.ws.rs.ProcessingException;
+public class Directory implements Serializable {
 
-import org.glassfish.jersey.server.ApplicationHandler;
-import org.glassfish.jersey.server.spi.ContainerProvider;
+  private String name;
+  private String owner;
+  private String group;
 
-/**
- * Container Provider for NettyRestHandlerContainer
- */
-public final class NettyRestHandlerContainerProvider implements ContainerProvider {
-
-  @Override
-  public <T> T createContainer(Class<T> type, ApplicationHandler application) throws ProcessingException {
-    if (type != NettyRestHandlerContainer.class && 
-        (type == null || !ChannelHandler.class.isAssignableFrom(type))) {
-      return null;
-    }
-    return type.cast(new NettyRestHandlerContainer(application));
+  public String getName() {
+    return name;
   }
 
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public String getOwner() {
+    return owner;
+  }
+
+  public void setOwner(String owner) {
+    this.owner = owner;
+  }
+
+  public String getGroup() {
+    return group;
+  }
+
+  public void setGroup(String group) {
+    this.group = group;
+  }
 }

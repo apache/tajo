@@ -16,27 +16,23 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.ws.rs.netty;
+package org.apache.tajo.ws.rs.netty.testapp1;
 
-import io.netty.channel.ChannelHandler;
+import javax.ws.rs.core.Application;
+import java.util.HashSet;
+import java.util.Set;
 
-import javax.ws.rs.ProcessingException;
+public class TestApplication1 extends Application {
 
-import org.glassfish.jersey.server.ApplicationHandler;
-import org.glassfish.jersey.server.spi.ContainerProvider;
+  private final Set<Class<?>> classes;
 
-/**
- * Container Provider for NettyRestHandlerContainer
- */
-public final class NettyRestHandlerContainerProvider implements ContainerProvider {
-
-  @Override
-  public <T> T createContainer(Class<T> type, ApplicationHandler application) throws ProcessingException {
-    if (type != NettyRestHandlerContainer.class && 
-        (type == null || !ChannelHandler.class.isAssignableFrom(type))) {
-      return null;
-    }
-    return type.cast(new NettyRestHandlerContainer(application));
+  public TestApplication1() {
+    classes = new HashSet<Class<?>>();
+    classes.add(TestResource1.class);
   }
 
+  @Override
+  public Set<Class<?>> getClasses() {
+    return classes;
+  }
 }
