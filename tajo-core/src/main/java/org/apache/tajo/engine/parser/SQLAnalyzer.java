@@ -24,6 +24,8 @@ import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.misc.NotNull;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.algebra.Aggregation.GroupType;
@@ -44,6 +46,9 @@ import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.apache.tajo.engine.parser.SQLParser.*;
 
 public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
+  
+  private static final Log LOG = LogFactory.getLog(SQLAnalyzer.class);
+  
   private SQLParser parser;
 
   public SQLAnalyzer() {
@@ -64,7 +69,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     try {
       context = parser.sql();
     } catch (SQLParseError e) {
-      e.printStackTrace();
+      LOG.warn(e, e);
       throw new SQLSyntaxError(e);
     }
     return visitSql(context);
@@ -1228,16 +1233,17 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       createTable.setLikeParentTable(ctx.like_table_name.getText());
       return createTable;
     }
-
+    
+    TableMisc tableMisc = new TableMisc(ctx.table_miscs());
     if (checkIfExist(ctx.EXTERNAL())) {
       createTable.setExternal();
 
       ColumnDefinition[] elements = getDefinitions(ctx.table_elements());
-      String storageType = ctx.storage_type.getText();
       createTable.setTableElements(elements);
-      createTable.setStorageType(storageType);
-
-      if (PlannerUtil.isFileStorageType(storageType)) {
+      if (tableMisc.storage == null) {
+        throw new SQLSyntaxError("storage type should be specified for external table");
+      }
+      if (PlannerUtil.isFileStorageType(tableMisc.storage)) {
         String path = stripQuote(ctx.path.getText());
         createTable.setLocation(path);
       }
@@ -1247,30 +1253,46 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         createTable.setTableElements(elements);
       }
 
-      if (checkIfExist(ctx.USING())) {
-        String fileType = ctx.storage_type.getText();
-        createTable.setStorageType(fileType);
-      }
-
       if (checkIfExist(ctx.query_expression())) {
         Expr subquery = visitQuery_expression(ctx.query_expression());
         createTable.setSubQuery(subquery);
       }
     }
 
-    if (checkIfExist(ctx.param_clause())) {
-      Map<String, String> params = escapeTableMeta(getParams(ctx.param_clause()));
-      createTable.setParams(params);
-    }
-
-    if (checkIfExist(ctx.table_partitioning_clauses())) {
-      PartitionMethodDescExpr partitionMethodDesc =
-          parseTablePartitioningClause(ctx.table_partitioning_clauses());
-      createTable.setPartitionMethod(partitionMethodDesc);
-    }
+    createTable.setStorageType(tableMisc.storage);
+    createTable.setParams(tableMisc.parameters);
+    createTable.setPartitionMethod(tableMisc.partitionDesc);
+    
     return createTable;
   }
+  
+  private class TableMisc {
+    String storage;
+    Map<String, String> parameters;
+    PartitionMethodDescExpr partitionDesc;
 
+    private TableMisc(List<Table_miscsContext> miscs) {
+      for (Table_miscsContext misc : miscs) {
+        if (misc.storage_type != null) {
+          if (storage != null) {
+            throw new SQLSyntaxError("storage type should not be specified twice or more");
+          }
+          storage = misc.storage_type.getText();
+        } else if (misc.param_clause() != null) {
+          if (parameters != null) {
+            throw new SQLSyntaxError("table parameter should not be specified twice or more");
+          }
+          parameters = escapeTableMeta(getParams(misc.param_clause()));
+        } else if (misc.table_partitioning_clauses() != null) {
+          if (partitionDesc != null) {
+            throw new SQLSyntaxError("partition spec should not be specified twice or more");
+          }
+          partitionDesc = parseTablePartitioningClause(misc.table_partitioning_clauses());
+        }
+      }
+    }
+  }
+  
   @Override
   public Expr visitTruncate_table_statement(@NotNull SQLParser.Truncate_table_statementContext ctx) {
     List<Table_nameContext> tableNameContexts = ctx.table_name();
