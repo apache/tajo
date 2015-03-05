@@ -77,7 +77,7 @@ public class BlockingRpcClient extends NettyClientBase {
   }
 
   @Override
-  public RpcConnectionKey getKey() {
+  public Object getKey() {
     return key;
   }
 

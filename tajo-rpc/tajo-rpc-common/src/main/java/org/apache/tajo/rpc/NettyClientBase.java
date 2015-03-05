@@ -48,7 +48,7 @@ public abstract class NettyClientBase implements Closeable {
   }
 
   public abstract <T> T getStub();
-  public abstract RpcConnectionPool.RpcConnectionKey getKey();
+  public abstract Object getKey();
   
   public void init(InetSocketAddress addr, ChannelInitializer<Channel> initializer, 
       int numRetries) throws ConnectTimeoutException {

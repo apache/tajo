@@ -75,7 +75,7 @@ public class AsyncRpcClient extends NettyClientBase {
   }
 
   @Override
-  public RpcConnectionKey getKey() {
+  public Object getKey() {
     return key;
   }
 

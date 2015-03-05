@@ -249,6 +249,8 @@ public class TajoConf extends Configuration {
         Runtime.getRuntime().availableProcessors() * 1),
     WORKER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM("tajo.worker.service.rpc.server.worker-thread-num",
         Runtime.getRuntime().availableProcessors() * 1),
+    REST_SERVICE_RPC_SERVER_WORKER_THREAD_NUM("tajo.rest.service.rpc.server.worker-thread-num",
+        Runtime.getRuntime().availableProcessors() * 1),
 
     // Task Configuration -----------------------------------------------------
     TASK_DEFAULT_MEMORY("tajo.task.memory-slot-mb.default", 512),
