@@ -24,6 +24,9 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1335: Bump up 0.10.0-SNAPSHOT to 0.11.0-SNAPSHOT in master branch. 
+    (hyunsik)
+
     TAJO-1314: Documentation for the support of the swift. (jihoon)
 
 
