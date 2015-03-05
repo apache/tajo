@@ -154,7 +154,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           try {
             dropBaseTable();
           } catch (Throwable t) {
-            LOG.error(t);
+            LOG.error(t, t);
           }
           throw ce;
         }
@@ -299,7 +299,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         try {
           conn.rollback();
         } catch (SQLException e) {
-          LOG.error(e);
+          LOG.error(e, e);
         }
       }
       throw new CatalogException(se);
@@ -363,7 +363,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         try {
           conn.rollback();
         } catch (SQLException e) {
-          LOG.error(e);
+          LOG.error(e, e);
         }
       }
       throw new CatalogException(String.format("Failed to drop tablespace \"%s\"", tableSpaceName), se);
@@ -523,7 +523,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         try {
           conn.rollback();
         } catch (SQLException e) {
-          LOG.error(e);
+          LOG.error(e, e);
         }
       }
       throw new CatalogException(se);
@@ -584,7 +584,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         try {
           conn.rollback();
         } catch (SQLException e) {
-          LOG.error(e);
+          LOG.error(e, e);
         }
       }
       throw new CatalogException(String.format("Failed to drop database \"%s\"", databaseName), se);
@@ -878,7 +878,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         try {
           conn.rollback();
         } catch (SQLException e) {
-          LOG.error(e);
+          LOG.error(e, e);
         }
       }
       throw new CatalogException(se);
@@ -946,7 +946,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         try {
           conn.rollback();
         } catch (SQLException e) {
-          LOG.error(e);
+          LOG.error(e, e);
         }
       }
       throw new CatalogException(se);
@@ -1292,7 +1292,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       try {
         conn.rollback();
       } catch (SQLException e) {
-        LOG.error(e);
+        LOG.error(e, e);
       }
     } finally {
       CatalogUtil.closeQuietly(conn);
@@ -1708,7 +1708,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         try {
           conn.rollback();
         } catch (SQLException e) {
-          LOG.error(e);
+          LOG.error(e, e);
         }
       }
       throw new CatalogException(se);

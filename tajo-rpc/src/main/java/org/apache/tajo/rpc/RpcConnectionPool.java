@@ -151,7 +151,7 @@ public class RpcConnectionPool {
     try {
       accepted.close();
     } catch (Throwable t) {
-      LOG.error(t);
+      LOG.error(t, t);
     }
   }
 

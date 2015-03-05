@@ -178,7 +178,7 @@ public class ExecutionBlockContext {
         try{
           task.abort();
         } catch (Throwable e){
-          LOG.error(e);
+          LOG.error(e, e);
         }
       }
     }

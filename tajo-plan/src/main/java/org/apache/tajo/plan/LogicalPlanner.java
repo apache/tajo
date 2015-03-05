@@ -1328,7 +1328,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
           }
         }
       } catch (Throwable t) {
-        LOG.warn(t);
+        LOG.warn(t, t);
       }
     }
   }
