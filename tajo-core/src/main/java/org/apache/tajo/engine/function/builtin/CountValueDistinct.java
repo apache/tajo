@@ -78,7 +78,7 @@ public final class CountValueDistinct extends CountRows {
     return new CountDistinctValueContext();
   }
 
-  private class CountDistinctValueContext implements FunctionContext {
+  private static class CountDistinctValueContext implements FunctionContext {
     long count = 0;
     Datum latest = null;
   }

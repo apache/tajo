@@ -18,12 +18,16 @@
 
 package org.apache.tajo.rpc;
 
+import io.netty.channel.*;
+
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jboss.netty.bootstrap.ClientBootstrap;
-import org.jboss.netty.channel.*;
-import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
+
+import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.concurrent.GenericFutureListener;
 
 import java.io.Closeable;
 import java.net.InetSocketAddress;
@@ -37,7 +41,7 @@ public abstract class NettyClientBase implements Closeable {
   private static final long PAUSE = 1000; // 1 sec
   private int numRetries;
 
-  protected ClientBootstrap bootstrap;
+  protected Bootstrap bootstrap;
   private ChannelFuture channelFuture;
 
   public NettyClientBase() {
@@ -46,55 +50,39 @@ public abstract class NettyClientBase implements Closeable {
   public abstract <T> T getStub();
   public abstract RpcConnectionPool.RpcConnectionKey getKey();
   
-  public void init(InetSocketAddress addr, ChannelPipelineFactory pipeFactory, ClientSocketChannelFactory factory, 
+  public void init(InetSocketAddress addr, ChannelInitializer<Channel> initializer, 
       int numRetries) throws ConnectTimeoutException {
     this.numRetries = numRetries;
     
-    init(addr, pipeFactory, factory);
+    init(addr, initializer);
   }
 
-  public void init(InetSocketAddress addr, ChannelPipelineFactory pipeFactory, ClientSocketChannelFactory factory)
+  public void init(InetSocketAddress addr, ChannelInitializer<Channel> initializer)
       throws ConnectTimeoutException {
-    this.bootstrap = new ClientBootstrap(factory);
-    this.bootstrap.setPipelineFactory(pipeFactory);
-    // TODO - should be configurable
-    this.bootstrap.setOption("connectTimeoutMillis", 10000);
-    this.bootstrap.setOption("connectResponseTimeoutMillis", 10000);
-    this.bootstrap.setOption("receiveBufferSize", 1048576 * 10);
-    this.bootstrap.setOption("tcpNoDelay", true);
-    this.bootstrap.setOption("keepAlive", true);
+    this.bootstrap = new Bootstrap();
+    this.bootstrap
+      .channel(NioSocketChannel.class)
+      .handler(initializer)
+      .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+      .option(ChannelOption.SO_REUSEADDR, true)
+      .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
+      .option(ChannelOption.SO_RCVBUF, 1048576 * 10)
+      .option(ChannelOption.TCP_NODELAY, true);
 
     connect(addr);
   }
+
+  private void connectUsingNetty(InetSocketAddress address, GenericFutureListener<ChannelFuture> listener) {
+
+    this.channelFuture = bootstrap.clone().group(RpcChannelFactory.getSharedClientEventloopGroup())
+            .connect(address)
+            .addListener(listener);
+  }
   
   private void handleConnectionInternally(final InetSocketAddress addr) throws ConnectTimeoutException {
-    this.channelFuture = bootstrap.connect(addr);
-
     final CountDownLatch latch = new CountDownLatch(1);
-    this.channelFuture.addListener(new ChannelFutureListener() {
-      private final AtomicInteger retryCount = new AtomicInteger();
-      
-      @Override
-      public void operationComplete(ChannelFuture future) throws Exception {
-        if (!future.isSuccess()) {
-          if (numRetries > retryCount.getAndIncrement()) {
-            Thread.sleep(PAUSE);
-            channelFuture = bootstrap.connect(addr);
-            channelFuture.addListener(this);
-            
-            LOG.debug("Connecting to " + addr + " has been failed. Retrying to connect.");
-          }
-          else {
-            latch.countDown();
-
-            LOG.error("Max retry count has been exceeded. attempts=" + numRetries);
-          }
-        }
-        else {
-          latch.countDown();
-        }
-      }
-    });
+    GenericFutureListener<ChannelFuture> listener = new RetryConnectionListener(addr, latch);
+    connectUsingNetty(addr, listener);
 
     try {
       latch.await(CLIENT_CONNECTION_TIMEOUT_SEC, TimeUnit.SECONDS);
@@ -103,7 +91,7 @@ public abstract class NettyClientBase implements Closeable {
 
     if (!channelFuture.isSuccess()) {
       throw new ConnectTimeoutException("Connect error to " + addr +
-          " caused by " + ExceptionUtils.getMessage(channelFuture.getCause()));
+          " caused by " + ExceptionUtils.getMessage(channelFuture.cause()));
     }
   }
 
@@ -115,34 +103,67 @@ public abstract class NettyClientBase implements Closeable {
     handleConnectionInternally(addr);
   }
 
-  public boolean isConnected() {
-    return getChannel().isConnected();
+  class RetryConnectionListener implements GenericFutureListener<ChannelFuture> {
+    private final AtomicInteger retryCount = new AtomicInteger();
+    private final InetSocketAddress address;
+    private final CountDownLatch latch;
+
+    RetryConnectionListener(InetSocketAddress address, CountDownLatch latch) {
+      this.address = address;
+      this.latch = latch;
+    }
+
+    @Override
+    public void operationComplete(ChannelFuture channelFuture) throws Exception {
+      if (!channelFuture.isSuccess()) {
+        channelFuture.channel().close();
+
+        if (numRetries > retryCount.getAndIncrement()) {
+          final GenericFutureListener<ChannelFuture> currentListener = this;
+
+          RpcChannelFactory.getSharedClientEventloopGroup().schedule(new Runnable() {
+            @Override
+            public void run() {
+              connectUsingNetty(address, currentListener);
+            }
+          }, PAUSE, TimeUnit.MILLISECONDS);
+
+          LOG.debug("Connecting to " + address + " has been failed. Retrying to connect.");
+        }
+        else {
+          latch.countDown();
+
+          LOG.error("Max retry count has been exceeded. attempts=" + numRetries);
+        }
+      }
+      else {
+        latch.countDown();
+      }
+    }
+  }
+
+  public boolean isActive() {
+    return getChannel().isActive();
   }
 
   public InetSocketAddress getRemoteAddress() {
-    if (channelFuture == null || channelFuture.getChannel() == null) {
+    if (channelFuture == null || channelFuture.channel() == null) {
       return null;
     }
-    return (InetSocketAddress) channelFuture.getChannel().getRemoteAddress();
+    return (InetSocketAddress) channelFuture.channel().remoteAddress();
   }
 
   public Channel getChannel() {
-    return channelFuture.getChannel();
+    return channelFuture.channel();
   }
 
   @Override
   public void close() {
-    if(this.channelFuture != null && getChannel().isOpen()) {
-      try {
-        getChannel().close().awaitUninterruptibly();
-      } catch (Throwable ce) {
-        LOG.warn(ce);
-      }
+    if (channelFuture != null && getChannel().isActive()) {
+      getChannel().close();
     }
 
-    if(this.bootstrap != null) {
-      // This line will shutdown the factory
-      // this.bootstrap.releaseExternalResources();
+    if (this.bootstrap != null) {
       InetSocketAddress address = getRemoteAddress();
       if (address != null) {
         LOG.debug("Proxy is disconnected from " + address.getHostName() + ":" + address.getPort());

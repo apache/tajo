@@ -82,7 +82,6 @@ public class Repartitioner {
 
   public static void scheduleFragmentsForJoinQuery(TaskSchedulerContext schedulerContext, Stage stage)
       throws IOException {
-    MasterPlan masterPlan = stage.getMasterPlan();
     ExecutionBlock execBlock = stage.getBlock();
     QueryMasterTask.QueryMasterTaskContext masterContext = stage.getContext();
 
@@ -231,12 +230,13 @@ public class Repartitioner {
       String namePrefix = "";
       long maxStats = Long.MIN_VALUE;
       int maxStatsScanIdx = -1;
+      StringBuilder nonLeafScanNamesBuilder = new StringBuilder();
       for (int i = 0; i < scans.length; i++) {
         if (scans[i].getTableDesc().getMeta().getStoreType() == StoreType.RAW) {
           // Intermediate data scan
           hasNonLeafNode = true;
           largeScanIndexList.add(i);
-          nonLeafScanNames += namePrefix + scans[i].getCanonicalName();
+          nonLeafScanNamesBuilder.append(namePrefix).append(scans[i].getCanonicalName());
           namePrefix = ",";
         }
         if (execBlock.isBroadcastTable(scans[i].getCanonicalName())) {
@@ -249,18 +249,19 @@ public class Repartitioner {
           }
         }
       }
+      nonLeafScanNames = nonLeafScanNamesBuilder.toString();
       if (maxStatsScanIdx == -1) {
         maxStatsScanIdx = 0;
       }
 
       if (!hasNonLeafNode) {
         if (largeScanIndexList.size() > 1) {
-          String largeTableNames = "";
+          StringBuilder largeTableNamesBuilder = new StringBuilder();
           for (Integer eachId : largeScanIndexList) {
-            largeTableNames += scans[eachId].getTableName() + ",";
+            largeTableNamesBuilder.append(scans[eachId].getTableName()).append(',');
           }
           throw new IOException("Broadcast join with leaf node should have only one large table, " +
-              "but " + largeScanIndexList.size() + ", tables=" + largeTableNames);
+              "but " + largeScanIndexList.size() + ", tables=" + largeTableNamesBuilder.toString());
         }
         int baseScanIdx = largeScanIndexList.isEmpty() ? maxStatsScanIdx : largeScanIndexList.get(0);
         LOG.info(String.format("[Distributed Join Strategy] : Broadcast Join, base_table=%s, base_volume=%d",
@@ -494,6 +495,9 @@ public class Repartitioner {
   public static List<Fragment> getFragmentsFromPartitionedTable(FileStorageManager sm,
                                                                           ScanNode scan,
                                                                           TableDesc table) throws IOException {
+    if (!(scan instanceof PartitionedTableScanNode)) {
+      throw new IllegalArgumentException("scan should be a PartitionedTableScanNode type.");
+    }
     List<Fragment> fragments = Lists.newArrayList();
     PartitionedTableScanNode partitionsScan = (PartitionedTableScanNode) scan;
     fragments.addAll(sm.getSplits(
@@ -696,9 +700,14 @@ public class Repartitioner {
       LOG.info(stage.getId() + ", Try to divide " + mergedRange + " into " + determinedTaskNum +
           " sub ranges (total units: " + determinedTaskNum + ")");
       ranges = partitioner.partition(determinedTaskNum);
-      if (ranges == null || ranges.length == 0) {
+      if (ranges == null) {
+        throw new NullPointerException("ranges is null on " + stage.getId() + " stage.");
+      }
+
+      if (ranges.length == 0) {
         LOG.warn(stage.getId() + " no range infos.");
       }
+
       TupleUtil.setMaxRangeIfNull(sortSpecs, sortSchema, totalStat.getColumnStats(), ranges);
       if (LOG.isDebugEnabled()) {
         if (ranges != null) {
@@ -985,7 +994,7 @@ public class Repartitioner {
        String tableName) {
     long splitVolume = StorageUnit.MB *
         stage.getMasterPlan().getContext().getLong(SessionVars.TABLE_PARTITION_PER_SHUFFLE_SIZE);
-    long pageSize = StorageUnit.MB * 
+    long pageSize = ((long)StorageUnit.MB) *
         stage.getContext().getConf().getIntVar(ConfVars.SHUFFLE_HASH_APPENDER_PAGE_VOLUME); // in bytes
     if (pageSize >= splitVolume) {
       throw new RuntimeException("tajo.dist-query.table-partition.task-volume-mb should be great than " +

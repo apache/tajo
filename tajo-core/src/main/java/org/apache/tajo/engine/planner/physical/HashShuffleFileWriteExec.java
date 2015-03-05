@@ -138,7 +138,7 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
         entry.getValue().clear();
       }
 
-      TableStats aggregated = (TableStats)child.getInputStats().clone();
+      TableStats aggregated = (TableStats) child.getInputStats().clone();
       aggregated.setNumBytes(writtenBytes);
       aggregated.setNumRows(numRows);
       context.setResultStats(aggregated);
@@ -146,6 +146,9 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
       partitionTuples.clear();
 
       return null;
+    } catch (RuntimeException e) {
+      LOG.error(e.getMessage(), e);
+      throw new IOException(e);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       throw new IOException(e);

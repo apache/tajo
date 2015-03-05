@@ -185,8 +185,6 @@ public class DistinctGroupbyBuilder {
   private DistinctGroupbyNode buildMultiLevelBaseDistinctGroupByNode(GlobalPlanContext context,
                                                                      ExecutionBlock latestExecBlock,
                                                                      GroupbyNode groupbyNode) {
-    LogicalPlan plan = context.getPlan().getLogicalPlan();
-
     /*
      Making DistinctGroupbyNode from GroupByNode
      select col1, count(distinct col2), count(distinct col3), sum(col4) from ... group by col1
@@ -249,8 +247,7 @@ public class DistinctGroupbyBuilder {
     }
 
     //Add child groupby node for each Distinct clause
-    for (String eachKey: distinctNodeBuildInfos.keySet()) {
-      DistinctGroupbyNodeBuildInfo buildInfo = distinctNodeBuildInfos.get(eachKey);
+    for (DistinctGroupbyNodeBuildInfo buildInfo: distinctNodeBuildInfos.values()) {
       GroupbyNode eachGroupbyNode = buildInfo.getGroupbyNode();
       List<AggregationFunctionCallEval> groupbyAggFunctions = buildInfo.getAggFunctions();
       String [] firstPhaseEvalNames = new String[groupbyAggFunctions.size()];
@@ -421,8 +418,7 @@ public class DistinctGroupbyBuilder {
     }
 
     //Add child groupby node for each Distinct clause
-    for (String eachKey: distinctNodeBuildInfos.keySet()) {
-      DistinctGroupbyNodeBuildInfo buildInfo = distinctNodeBuildInfos.get(eachKey);
+    for (DistinctGroupbyNodeBuildInfo buildInfo: distinctNodeBuildInfos.values()) {
       GroupbyNode eachGroupbyNode = buildInfo.getGroupbyNode();
       List<AggregationFunctionCallEval> groupbyAggFunctions = buildInfo.getAggFunctions();
       Target[] targets = new Target[eachGroupbyNode.getGroupingColumns().length + groupbyAggFunctions.size()];

@@ -67,8 +67,14 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
     this.plan = plan;
 
     if (plan.getType() == NodeType.CREATE_TABLE) {
+      if (!(plan instanceof CreateTableNode)) {
+        throw new IllegalArgumentException("plan should be a CreateTableNode type.");
+      }
       this.outSchema = ((CreateTableNode)plan).getTableSchema();
     } else if (plan.getType() == NodeType.INSERT) {
+      if (!(plan instanceof InsertNode)) {
+        throw new IllegalArgumentException("plan should be a InsertNode type.");
+      }
       this.outSchema = ((InsertNode)plan).getTableSchema();
     }
 

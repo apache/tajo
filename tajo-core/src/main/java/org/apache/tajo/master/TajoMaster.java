@@ -152,6 +152,9 @@ public class TajoMaster extends CompositeService {
 
   @Override
   public void serviceInit(Configuration _conf) throws Exception {
+    if (!(_conf instanceof TajoConf)) {
+      throw new IllegalArgumentException("_conf should be a TajoConf type.");
+    }
     this.systemConf = (TajoConf) _conf;
     Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownHook()));
 
@@ -556,7 +559,7 @@ public class TajoMaster extends CompositeService {
         LOG.info("TajoMaster received SIGINT Signal");
         LOG.info("============================================");
         stop();
-        RpcChannelFactory.shutdown();
+        RpcChannelFactory.shutdownGracefully();
       }
     }
   }
