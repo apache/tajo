@@ -87,7 +87,7 @@ public class SumLongDistinct extends AggFunction<Datum> {
     return DatumFactory.createInt8(((SumContext) ctx).sum);
   }
 
-  private class SumContext implements FunctionContext {
+  private static class SumContext implements FunctionContext {
     long sum;
     Datum latest;
   }

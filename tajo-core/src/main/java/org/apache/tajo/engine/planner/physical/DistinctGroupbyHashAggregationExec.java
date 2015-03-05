@@ -36,7 +36,6 @@ import java.util.*;
 import java.util.Map.Entry;
 
 public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
-  private DistinctGroupbyNode plan;
   private boolean finished = false;
 
   private HashAggregator[] hashAggregators;
@@ -286,7 +285,6 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
 
   @Override
   public void close() throws IOException {
-    plan = null;
     if (hashAggregators != null) {
       for (int i = 0; i < hashAggregators.length; i++) {
         hashAggregators[i].close();
@@ -337,17 +335,11 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
     private final int aggFunctionsNum;
     private final AggregationFunctionCallEval aggFunctions[];
 
-    private Schema evalSchema;
-
-    private GroupbyNode groupbyNode;
-
     int tupleSize;
 
     public HashAggregator(GroupbyNode groupbyNode) throws IOException {
-      this.groupbyNode = groupbyNode;
 
       hashTable = new HashMap<Tuple, Map<Tuple, FunctionContext[]>>(10000);
-      evalSchema = groupbyNode.getOutSchema();
 
       List<Integer> distinctGroupingKeyIdSet = new ArrayList<Integer>();
       for (int i = 0; i < distinctGroupingKeyIds.length; i++) {

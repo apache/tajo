@@ -50,14 +50,14 @@ public class CallFuture<T> implements RpcCallback<T>, Future<T> {
 
   @Override
   public boolean cancel(boolean mayInterruptIfRunning) {
-    // TODO - to be implemented
-    throw new UnsupportedOperationException();
+    controller.startCancel();
+    sem.release();
+    return controller.isCanceled();
   }
 
   @Override
   public boolean isCancelled() {
-    // TODO - to be implemented
-    throw new UnsupportedOperationException();
+    return controller.isCanceled();
   }
 
   @Override

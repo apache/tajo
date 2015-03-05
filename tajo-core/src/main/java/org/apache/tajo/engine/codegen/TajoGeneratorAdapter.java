@@ -184,7 +184,7 @@ class TajoGeneratorAdapter {
     } else if (value >= Short.MIN_VALUE && value <= Short.MAX_VALUE) {
       methodvisitor.visitIntInsn(Opcodes.SIPUSH, value);
     } else {
-      methodvisitor.visitLdcInsn(new Integer(value));
+      methodvisitor.visitLdcInsn(Integer.valueOf(value));
     }
   }
 
@@ -192,7 +192,7 @@ class TajoGeneratorAdapter {
     if (value == 0L || value == 1L) {
       methodvisitor.visitInsn(Opcodes.LCONST_0 + (int) value);
     } else {
-      methodvisitor.visitLdcInsn(new Long(value));
+      methodvisitor.visitLdcInsn(Long.valueOf(value));
     }
   }
 
@@ -201,7 +201,7 @@ class TajoGeneratorAdapter {
     if (bits == 0L || bits == 0x3f800000 || bits == 0x40000000) { // 0..2
       methodvisitor.visitInsn(Opcodes.FCONST_0 + (int) value);
     } else {
-      methodvisitor.visitLdcInsn(new Float(value));
+      methodvisitor.visitLdcInsn(Float.valueOf(value));
     }
   }
 
@@ -1008,6 +1008,26 @@ class TajoGeneratorAdapter {
     @Override
     public int compareTo(SwitchCase o) {
       return index - o.index;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+
+      SwitchCase that = (SwitchCase) o;
+
+      if (index != that.index) return false;
+      if (thanResult != null ? !thanResult.equals(that.thanResult) : that.thanResult != null) return false;
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      int result = index;
+      result = 31 * result + (thanResult != null ? thanResult.hashCode() : 0);
+      return result;
     }
   }
 }

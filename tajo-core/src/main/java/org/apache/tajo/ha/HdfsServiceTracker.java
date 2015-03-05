@@ -212,11 +212,16 @@ public class HdfsServiceTracker extends HAServiceTracker {
         break;
       case HAConstants.MASTER_INFO_ADDRESS:
         address = conf.getSocketAddrVar(ConfVars.TAJO_MASTER_INFO_ADDRESS);
+        break;
       default:
         break;
     }
 
-    return NetUtils.createSocketAddr(masterName.split(":")[0] + ":" + address.getPort());
+    if (address != null) {
+      return NetUtils.createSocketAddr(masterName.split(":")[0] + ":" + address.getPort());
+    } else {
+      return null;
+    }
   }
 
   @Override

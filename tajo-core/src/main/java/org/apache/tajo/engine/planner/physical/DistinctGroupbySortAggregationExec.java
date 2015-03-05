@@ -32,7 +32,6 @@ import org.apache.tajo.worker.TaskAttemptContext;
 import java.io.IOException;
 
 public class DistinctGroupbySortAggregationExec extends PhysicalExec {
-  private DistinctGroupbyNode plan;
   private SortAggregateExec[] aggregateExecs;
 
   private boolean finished = false;
@@ -46,7 +45,6 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
   public DistinctGroupbySortAggregationExec(final TaskAttemptContext context, DistinctGroupbyNode plan,
                                             SortAggregateExec[] aggregateExecs) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema());
-    this.plan = plan;
     this.aggregateExecs = aggregateExecs;
     this.groupbyNodeNum = plan.getSubPlans().size();
 
@@ -166,7 +164,6 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
 
   @Override
   public void close() throws IOException {
-    plan = null;
     if (aggregateExecs != null) {
       for (SortAggregateExec eachExec: aggregateExecs) {
         eachExec.close();

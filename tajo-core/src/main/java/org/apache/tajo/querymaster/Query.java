@@ -405,6 +405,9 @@ public class Query implements EventHandler<QueryEvent> {
 
     @Override
     public QueryState transition(Query query, QueryEvent queryEvent) {
+      if (!(queryEvent instanceof QueryCompletedEvent)) {
+        throw new IllegalArgumentException("queryEvent should be a QueryCompletedEvent type.");
+      }
       QueryCompletedEvent stageEvent = (QueryCompletedEvent) queryEvent;
       QueryState finalState;
 
@@ -465,7 +468,7 @@ public class Query implements EventHandler<QueryEvent> {
                    ExecutionBlockId finalExecBlockId, Path finalOutputDir) throws Exception;
     }
 
-    private class QueryHookExecutor {
+    private static class QueryHookExecutor {
       private List<QueryHook> hookList = TUtil.newList();
       private QueryMaster.QueryMasterContext context;
 
@@ -488,7 +491,7 @@ public class Query implements EventHandler<QueryEvent> {
       }
     }
 
-    private class CreateIndexHook implements QueryHook {
+    private static class CreateIndexHook implements QueryHook {
 
       @Override
       public boolean isEligible(QueryContext queryContext, Query query, ExecutionBlockId finalExecBlockId, Path finalOutputDir) {
@@ -530,7 +533,7 @@ public class Query implements EventHandler<QueryEvent> {
       }
     }
 
-    private class MaterializedResultHook implements QueryHook {
+    private static class MaterializedResultHook implements QueryHook {
 
       @Override
       public boolean isEligible(QueryContext queryContext, Query query, ExecutionBlockId finalExecBlockId,
@@ -566,7 +569,7 @@ public class Query implements EventHandler<QueryEvent> {
       }
     }
 
-    private class CreateTableHook implements QueryHook {
+    private static class CreateTableHook implements QueryHook {
 
       @Override
       public boolean isEligible(QueryContext queryContext, Query query, ExecutionBlockId finalExecBlockId,
@@ -605,7 +608,7 @@ public class Query implements EventHandler<QueryEvent> {
       }
     }
 
-    private class InsertTableHook implements QueryHook {
+    private static class InsertTableHook implements QueryHook {
 
       @Override
       public boolean isEligible(QueryContext queryContext, Query query, ExecutionBlockId finalExecBlockId,
@@ -683,6 +686,9 @@ public class Query implements EventHandler<QueryEvent> {
 
     @Override
     public void transition(Query query, QueryEvent event) {
+      if (!(event instanceof StageCompletedEvent)) {
+        throw new IllegalArgumentException("event should be a StageCompletedEvent type.");
+      }
       try {
         query.completedStagesCount++;
         StageCompletedEvent castEvent = (StageCompletedEvent) event;
@@ -719,6 +725,9 @@ public class Query implements EventHandler<QueryEvent> {
   private static class DiagnosticsUpdateTransition implements SingleArcTransition<Query, QueryEvent> {
     @Override
     public void transition(Query query, QueryEvent event) {
+      if (!(event instanceof QueryDiagnosticsUpdateEvent)) {
+        throw new IllegalArgumentException("event should be a QueryDiagnosticsUpdateEvent type.");
+      }
       query.addDiagnostic(((QueryDiagnosticsUpdateEvent) event).getDiagnosticUpdate());
     }
   }

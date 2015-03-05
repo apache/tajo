@@ -60,7 +60,7 @@ public class TajoContainerProxy extends ContainerProxy {
   }
 
   @Override
-  public void launch(ContainerLaunchContext containerLaunchContext) {
+  public synchronized void launch(ContainerLaunchContext containerLaunchContext) {
     context.getResourceAllocator().addContainer(containerID, this);
 
     this.hostName = container.getNodeId().getHost();

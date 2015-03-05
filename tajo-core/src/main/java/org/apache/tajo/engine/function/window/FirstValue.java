@@ -56,7 +56,7 @@ public abstract class FirstValue extends WindowAggFunc<Datum> {
     }
   }
 
-  protected class FirstValueContext implements FunctionContext {
+  protected static class FirstValueContext implements FunctionContext {
     boolean isSet = false;
     Datum first = null;
   }
