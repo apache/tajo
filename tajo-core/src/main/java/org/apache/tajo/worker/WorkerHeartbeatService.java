@@ -204,7 +204,7 @@ public class WorkerHeartbeatService extends AbstractService {
         } catch (InterruptedException e) {
           break;
         } catch (TimeoutException te) {
-          LOG.warn("Heartbeat response is being delayed.");
+          LOG.warn("Heartbeat response is being delayed.", te);
         } catch (Exception e) {
           LOG.error(e.getMessage(), e);
         } finally {

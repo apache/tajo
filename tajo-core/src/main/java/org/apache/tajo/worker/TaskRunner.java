@@ -126,7 +126,7 @@ public class TaskRunner extends AbstractService {
       LOG.info("TaskRunner basedir is created (" + baseDirPath +")");
     } catch (Throwable t) {
       t.printStackTrace();
-      LOG.error(t);
+      LOG.error(t, t);
     }
     super.init(conf);
     this.history.setState(getServiceState());

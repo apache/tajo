@@ -372,7 +372,7 @@ public class TajoMaster extends CompositeService {
       try {
         haService.delete();
       } catch (Exception e) {
-        LOG.error(e);
+        LOG.error(e, e);
       }
     }
 
@@ -380,7 +380,7 @@ public class TajoMaster extends CompositeService {
       try {
         webServer.stop();
       } catch (Exception e) {
-        LOG.error(e);
+        LOG.error(e, e);
       }
     }
 

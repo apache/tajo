@@ -214,7 +214,7 @@ public class PullServerAuxService extends AuxiliaryService {
       localFS = new LocalFileSystem();
       super.init(new Configuration(conf));
     } catch (Throwable t) {
-      LOG.error(t);
+      LOG.error(t, t);
     }
   }
 
@@ -269,7 +269,7 @@ public class PullServerAuxService extends AuxiliaryService {
 
       localFS.close();
     } catch (Throwable t) {
-      LOG.error(t);
+      LOG.error(t, t);
     } finally {
       super.stop();
     }

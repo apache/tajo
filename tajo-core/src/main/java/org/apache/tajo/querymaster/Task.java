@@ -272,7 +272,7 @@ public class Task implements EventHandler<TaskEvent> {
         Fragment fragment = FragmentConvertor.convert(systemConf, eachFragment);
         fragmentList.add(fragment.toString());
       } catch (Exception e) {
-        LOG.error(e.getMessage());
+        LOG.error(e.getMessage(), e);
         fragmentList.add("ERROR: " + eachFragment.getStoreType() + "," + eachFragment.getId() + ": " + e.getMessage());
       }
     }

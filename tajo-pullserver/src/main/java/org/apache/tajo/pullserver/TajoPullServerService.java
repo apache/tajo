@@ -223,7 +223,7 @@ public class TajoPullServerService extends AbstractService {
       super.init(conf);
       LOG.info("Tajo PullServer initialized: readaheadLength=" + readaheadLength);
     } catch (Throwable t) {
-      LOG.error(t);
+      LOG.error(t, t);
     }
   }
 
@@ -335,7 +335,7 @@ public class TajoPullServerService extends AbstractService {
 
       localFS.close();
     } catch (Throwable t) {
-      LOG.error(t);
+      LOG.error(t, t);
     } finally {
       super.stop();
     }
