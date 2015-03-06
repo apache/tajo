@@ -95,7 +95,7 @@ public class SumDouble extends AggFunction<Datum> {
     }
   }
 
-  protected class SumContext implements FunctionContext {
+  protected static class SumContext implements FunctionContext {
     boolean hasNonNull = false;
     double sum = 0.0;
   }

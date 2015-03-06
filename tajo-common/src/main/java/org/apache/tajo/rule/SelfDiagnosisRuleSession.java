@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.tajo.rule.EvaluationResult.EvaluationResultCode;
@@ -75,19 +76,19 @@ public class SelfDiagnosisRuleSession {
     wrapperMap = ruleEngine.getRules();
     Class<?> callerClazz = getCallerClassName();
     
-    for (String categoryName: wrapperMap.keySet()) {
+    for (Entry<String, Map<String, RuleWrapper>> entry: wrapperMap.entrySet()) {
+      String categoryName = entry.getKey();
       if (categoryPredicate.size() > 0 && !categoryPredicate.contains(categoryName)) {
         continue;
       }
       
-      Map<String, RuleWrapper> ruleMap = wrapperMap.get(categoryName);
-      for (String ruleName: ruleMap.keySet()) {
-        if (rulePredicate.size() > 0 && !rulePredicate.contains(ruleName)) {
+      Map<String, RuleWrapper> ruleMap = entry.getValue();
+      for (Entry<String, RuleWrapper> wrapperEntry: ruleMap.entrySet()) {
+        if (rulePredicate.size() > 0 && !rulePredicate.contains(wrapperEntry.getKey())) {
           continue;
         }
         
-        RuleWrapper ruleWrapper = ruleMap.get(ruleName);
-        
+        RuleWrapper ruleWrapper = wrapperEntry.getValue();        
         if (callerClazz != null && ruleWrapper.getAcceptedCallers().length > 0 
             && !hasCallerClazz(callerClazz, ruleWrapper.getAcceptedCallers())) {
           continue;
@@ -119,7 +120,7 @@ public class SelfDiagnosisRuleSession {
     return new RuleSessionSecurityManager().getCallerClassName();
   }
   
-  class RuleSessionSecurityManager extends SecurityManager {
+  static class RuleSessionSecurityManager extends SecurityManager {
     public Class<?> getCallerClassName() {
       Class<?>[] clazzArray = getClassContext();
       int clazzIdx = 2;

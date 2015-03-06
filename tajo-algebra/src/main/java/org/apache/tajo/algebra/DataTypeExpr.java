@@ -21,6 +21,8 @@ package org.apache.tajo.algebra;
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.util.TUtil;
 
 public class DataTypeExpr extends Expr {
@@ -30,14 +32,28 @@ public class DataTypeExpr extends Expr {
   Integer lengthOrPrecision;
   @Expose @SerializedName("Scale")
   Integer scale;
+  @Expose @SerializedName("Record")
+  DataTypeExpr [] nestedRecord;
 
   public DataTypeExpr(String typeName) {
     super(OpType.DataType);
     this.typeName = typeName;
   }
 
+  public DataTypeExpr(DataTypeExpr [] nestedRecordTypes) {
+    super(OpType.DataType);
+    // Please refer to DataTypes.proto. 'STRUCT' must be equivalent to Enum type in DataTypes.proto.
+    // STRUCT = 51;
+    this.typeName = Type.RECORD.name();
+    this.nestedRecord = nestedRecordTypes;
+  }
+
   public String getTypeName() {
     return this.typeName;
+  }
+
+  public boolean isNestedRecordType() {
+    return this.typeName.equals(Type.RECORD.name());
   }
 
   public boolean hasLengthOrPrecision() {
@@ -74,7 +90,8 @@ public class DataTypeExpr extends Expr {
     DataTypeExpr another = (DataTypeExpr) expr;
     return typeName.equals(another.typeName) &&
         TUtil.checkEquals(lengthOrPrecision, another.lengthOrPrecision) &&
-        TUtil.checkEquals(scale, another.scale);
+        TUtil.checkEquals(scale, another.scale) &&
+        TUtil.checkEquals(nestedRecord, another.nestedRecord);
   }
 
   @Override
@@ -83,6 +100,7 @@ public class DataTypeExpr extends Expr {
     dataType.typeName = typeName;
     dataType.lengthOrPrecision = lengthOrPrecision;
     dataType.scale = scale;
+    dataType.nestedRecord = nestedRecord;
     return dataType;
   }
 }

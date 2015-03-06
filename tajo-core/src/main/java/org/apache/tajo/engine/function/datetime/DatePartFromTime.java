@@ -95,12 +95,6 @@ public class DatePartFromTime extends GeneralFunction {
         extractor = new MinuteExtractorFromTime();
       } else if (extractType.equals("second")) {
         extractor = new SecondExtractorFromTime();
-      } else if (extractType.equals("timezone")) {
-        extractor = new NullExtractorFromTime();
-      } else if (extractType.equals("timezone_hour")) {
-        extractor = new NullExtractorFromTime();
-      } else if (extractType.equals("timezone_minute")) {
-        extractor = new NullExtractorFromTime();
       } else {
         extractor = new NullExtractorFromTime();
       }
@@ -115,35 +109,35 @@ public class DatePartFromTime extends GeneralFunction {
     public Datum extract(TimeMeta tm);
   }
 
-  private class HourExtractorFromTime implements DatePartExtractorFromTime {
+  private static class HourExtractorFromTime implements DatePartExtractorFromTime {
     @Override
     public Datum extract(TimeMeta tm) {
       return DatumFactory.createFloat8((double) tm.hours);
     }
   }
 
-  private class MicrosecondsExtractorFromTime implements DatePartExtractorFromTime {
+  private static class MicrosecondsExtractorFromTime implements DatePartExtractorFromTime {
     @Override
     public Datum extract(TimeMeta tm) {
       return DatumFactory.createFloat8((double) (tm.secs * 1000000 + tm.fsecs));
     }
   }
 
-  private class MillisecondsExtractorFromTime implements DatePartExtractorFromTime {
+  private static class MillisecondsExtractorFromTime implements DatePartExtractorFromTime {
     @Override
     public Datum extract(TimeMeta tm) {
       return DatumFactory.createFloat8((double) (tm.secs * 1000 + tm.fsecs / 1000.0));
     }
   }
 
-  private class MinuteExtractorFromTime implements DatePartExtractorFromTime {
+  private static class MinuteExtractorFromTime implements DatePartExtractorFromTime {
     @Override
     public Datum extract(TimeMeta tm) {
       return DatumFactory.createFloat8((double) tm.minutes);
     }
   }
 
-  private class SecondExtractorFromTime implements DatePartExtractorFromTime {
+  private static class SecondExtractorFromTime implements DatePartExtractorFromTime {
     @Override
     public Datum extract(TimeMeta tm) {
       if (tm.fsecs != 0) {
@@ -154,7 +148,7 @@ public class DatePartFromTime extends GeneralFunction {
     }
   }
 
-  private class NullExtractorFromTime implements DatePartExtractorFromTime {
+  private static class NullExtractorFromTime implements DatePartExtractorFromTime {
     @Override
     public Datum extract(TimeMeta tm) {
       return NullDatum.get();

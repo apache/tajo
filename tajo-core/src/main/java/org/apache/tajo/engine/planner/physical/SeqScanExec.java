@@ -81,10 +81,12 @@ public class SeqScanExec extends PhysicalExec {
     if (plan.isBroadcastTable()) {
       String pathNameKey = "";
       if (fragments != null) {
+        StringBuilder stringBuilder = new StringBuilder();
         for (FragmentProto f : fragments) {
           Fragment fragement = FragmentConvertor.convert(context.getConf(), f);
-          pathNameKey += fragement.getKey();
+          stringBuilder.append(fragement.getKey());
         }
+        pathNameKey = stringBuilder.toString();
       }
 
       cacheKey = new TupleCacheKey(

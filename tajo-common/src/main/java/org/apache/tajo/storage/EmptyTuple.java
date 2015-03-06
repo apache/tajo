@@ -166,7 +166,7 @@ public class EmptyTuple implements Tuple, Cloneable {
 
   @Override
   public Tuple clone() throws CloneNotSupportedException {
-    return this.clone();
+    throw new CloneNotSupportedException();
   }
 
   @Override

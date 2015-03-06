@@ -24,11 +24,9 @@ import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
-import org.apache.tajo.jdbc.TajoResultSet;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 
 import java.io.IOException;
@@ -58,20 +56,19 @@ public class TajoClientUtil {
     return !isQueryWaitingForSchedule(state) && !isQueryRunning(state);
   }
 
-  public static ResultSet createResultSet(TajoConf conf, TajoClient client, QueryId queryId,
-                                          ClientProtos.GetQueryResultResponse response)
+  public static ResultSet createResultSet(TajoClient client, QueryId queryId,
+                                          ClientProtos.GetQueryResultResponse response, int fetchRows)
       throws IOException {
     TableDesc desc = CatalogUtil.newTableDesc(response.getTableDesc());
-    conf.setVar(TajoConf.ConfVars.USERNAME, response.getTajoUserName());
-    return new TajoResultSet(client, queryId, conf, desc);
+    return new FetchResultSet(client, desc.getLogicalSchema(), queryId, fetchRows);
   }
 
-  public static ResultSet createResultSet(TajoConf conf, QueryClient client, ClientProtos.SubmitQueryResponse response)
+  public static ResultSet createResultSet(QueryClient client, ClientProtos.SubmitQueryResponse response, int fetchRows)
       throws IOException {
     if (response.hasTableDesc()) {
       // non-forward query
       // select * from table1 [limit 10]
-      int fetchRowNum = conf.getIntVar(TajoConf.ConfVars.$RESULT_SET_FETCH_ROWNUM);
+      int fetchRowNum = fetchRows;
       if (response.hasSessionVars()) {
         for (PrimitiveProtos.KeyValueProto eachKeyValue: response.getSessionVars().getKeyvalList()) {
           if (eachKeyValue.getKey().equals(SessionVars.FETCH_ROWNUM.keyname())) {
@@ -85,11 +82,19 @@ public class TajoClientUtil {
       // simple eval query
       // select substr('abc', 1, 2)
       ClientProtos.SerializedResultSet serializedResultSet = response.getResultSet();
-      return new TajoMemoryResultSet(
+      return new TajoMemoryResultSet(new QueryId(response.getQueryId()),
           new Schema(serializedResultSet.getSchema()),
           serializedResultSet.getSerializedTuplesList(),
           response.getMaxRowNum(),
           client.getClientSideSessionVars());
     }
+  }
+
+  public static ResultSet createNullResultSet() {
+    return new TajoMemoryResultSet(null, new Schema(), null, 0, null);
+  }
+
+  public static ResultSet createNullResultSet(QueryId queryId) {
+    return new TajoMemoryResultSet(queryId, new Schema(), null, 0, null);
   }
 }

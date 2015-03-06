@@ -19,10 +19,8 @@
 package org.apache.tajo.client;
 
 import com.google.protobuf.ServiceException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.annotation.ThreadSafe;
@@ -31,19 +29,14 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ClientProtos.*;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
-import org.apache.tajo.jdbc.TajoResultSet;
-import org.apache.tajo.rule.EvaluationContext;
-import org.apache.tajo.rule.EvaluationFailedException;
-import org.apache.tajo.rule.SelfDiagnosisRuleEngine;
-import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.service.ServiceTracker;
-import org.apache.tajo.service.ServiceTrackerFactory;
+import org.apache.tajo.util.KeyValueSet;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
@@ -58,39 +51,41 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
   /**
    * Connect to TajoMaster
    *
-   * @param conf TajoConf
    * @param tracker ServiceTracker to discovery Tajo Client RPC
    * @param baseDatabase The base database name. It is case sensitive. If it is null,
    *                     the 'default' database will be used.
+   * @param properties configurations
    * @throws java.io.IOException
    */
-  public TajoClientImpl(TajoConf conf, ServiceTracker tracker, @Nullable String baseDatabase) throws IOException {
-    super(conf, tracker, baseDatabase);
+  public TajoClientImpl(ServiceTracker tracker, @Nullable String baseDatabase, KeyValueSet properties)
+      throws IOException {
+    super(tracker, baseDatabase, properties);
 
     this.queryClient = new QueryClientImpl(this);
     this.catalogClient = new CatalogAdminClientImpl(this);
-
-    diagnoseTajoClient();
   }
 
-  public TajoClientImpl(TajoConf conf) throws IOException {
-    this(conf, ServiceTrackerFactory.get(conf), null);
+  /**
+   * Connect to TajoMaster
+   *
+   * @param addr TajoMaster address
+   * @param baseDatabase The base database name. It is case sensitive. If it is null,
+   *                     the 'default' database will be used.
+   * @param properties configurations
+   * @throws java.io.IOException
+   */
+  public TajoClientImpl(InetSocketAddress addr, @Nullable String baseDatabase, KeyValueSet properties)
+      throws IOException {
+    this(new DummyServiceTracker(addr), baseDatabase, properties);
   }
 
-  public TajoClientImpl(TajoConf conf, @Nullable String baseDatabase) throws IOException {
-    this(conf, ServiceTrackerFactory.get(conf), baseDatabase);
-  }
-  
-  private void diagnoseTajoClient() throws EvaluationFailedException {
-    SelfDiagnosisRuleEngine ruleEngine = SelfDiagnosisRuleEngine.getInstance();
-    SelfDiagnosisRuleSession ruleSession = ruleEngine.newRuleSession();
-    EvaluationContext context = new EvaluationContext();
-    
-    context.addParameter(TajoConf.class.getName(), getConf());
-    
-    ruleSession.withRuleNames("TajoConfValidationRule").fireRules(context);
+  public TajoClientImpl(ServiceTracker serviceTracker) throws IOException {
+    this(serviceTracker, null);
   }
 
+  public TajoClientImpl(ServiceTracker serviceTracker, @Nullable String baseDatabase) throws IOException {
+    this(serviceTracker, baseDatabase, new KeyValueSet());
+  }
   /*------------------------------------------------------------------------*/
   // QueryClient wrappers
   /*------------------------------------------------------------------------*/
@@ -128,7 +123,7 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
   }
 
   public ResultSet createNullResultSet(QueryId queryId) throws IOException {
-    return new TajoResultSet(this, queryId);
+    return TajoClientUtil.createNullResultSet(queryId);
   }
 
   public GetQueryResultResponse getResultResponse(QueryId queryId) throws ServiceException {
@@ -195,12 +190,12 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     return catalogClient.existTable(tableName);
   }
 
-  public TableDesc createExternalTable(final String tableName, final Schema schema, final Path path,
+  public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
                                        final TableMeta meta) throws SQLException, ServiceException {
     return catalogClient.createExternalTable(tableName, schema, path, meta);
   }
 
-  public TableDesc createExternalTable(final String tableName, final Schema schema, final Path path,
+  public TableDesc createExternalTable(final String tableName, final Schema schema, final URI path,
                                        final TableMeta meta, final PartitionMethodDesc partitionMethodDesc)
       throws SQLException, ServiceException {
     return catalogClient.createExternalTable(tableName, schema, path, meta, partitionMethodDesc);

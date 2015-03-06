@@ -103,7 +103,7 @@ public class AvgLong extends AggFunction<Datum> {
     return DatumFactory.createFloat8((double) avgCtx.sum / avgCtx.count);
   }
 
-  protected class AvgContext implements FunctionContext {
+  protected static class AvgContext implements FunctionContext {
     long sum = 0;
     long count = 0;
   }

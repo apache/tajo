@@ -27,11 +27,13 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.tajo.benchmark.TPCH;
-import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.TableDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.client.TajoClient;
-import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
@@ -103,7 +105,7 @@ public class LocalTajoTestingUtility {
     util = new TajoTestingCluster();
     util.startMiniCluster(1);
     conf = util.getConfiguration();
-    client = new TajoClientImpl(conf);
+    client = util.newTajoClient();
 
     FileSystem fs = util.getDefaultFileSystem();
     Path rootDir = TajoConf.getWarehouseDir(conf);

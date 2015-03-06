@@ -24,8 +24,8 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
+import org.apache.tajo.exception.UnknownDataTypeException;
 import org.apache.tajo.exception.UnsupportedException;
-import org.apache.tajo.storage.exception.UnknownDataTypeException;
 import org.apache.tajo.tuple.offheap.RowWriter;
 import org.apache.tajo.util.BitArray;
 

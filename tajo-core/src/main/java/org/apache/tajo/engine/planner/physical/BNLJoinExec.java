@@ -52,7 +52,7 @@ public class BNLJoinExec extends BinaryPhysicalExec {
   private Tuple outputTuple = null;
   private Tuple rightNext = null;
 
-  private final int TUPLE_SLOT_SIZE = 10000;
+  private final static int TUPLE_SLOT_SIZE = 10000;
 
   // projection
   private Projector projector;

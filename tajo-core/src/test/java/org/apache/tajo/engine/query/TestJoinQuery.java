@@ -226,6 +226,13 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testJoinWithMultipleJoinTypes() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public final void testLeftOuterJoin1() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);

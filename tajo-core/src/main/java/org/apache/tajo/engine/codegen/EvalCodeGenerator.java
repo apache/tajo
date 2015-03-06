@@ -73,11 +73,15 @@ public class EvalCodeGenerator extends SimpleEvalNodeVisitor<EvalCodeGenContext>
     this.classLoader = classLoader;
   }
 
+  protected synchronized static int getAndIncrementClassSeq() {
+    return classSeq++;
+  }
+
   public EvalNode compile(Schema schema, EvalNode expr) throws CompilationError {
 
     ClassWriter classWriter = new ClassWriter(ClassWriter.COMPUTE_MAXS);
 
-    String className = EvalCodeGenerator.class.getPackage().getName() + ".CompiledEval" + classSeq++;
+    String className = EvalCodeGenerator.class.getPackage().getName() + ".CompiledEval" + getAndIncrementClassSeq();
     EvalCodeGenContext context = new EvalCodeGenContext(TajoGeneratorAdapter.getInternalName(className),
         schema, classWriter, expr);
     visit(context, expr, new Stack<EvalNode>());

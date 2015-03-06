@@ -101,11 +101,9 @@ public class HashJoinExec extends BinaryPhysicalExec {
     }
   }
 
-  long scanStartTime = 0;
   public Tuple next() throws IOException {
     if (first) {
       loadRightToHashTable();
-      scanStartTime = System.currentTimeMillis();
     }
 
     Tuple rightTuple;
