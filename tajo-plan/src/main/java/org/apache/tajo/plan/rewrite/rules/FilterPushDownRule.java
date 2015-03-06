@@ -204,7 +204,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     for (EvalNode evalNode : context.pushingDownFilters) {
       // TODO: currently, non-equi theta join is not supported yet.
       if (!isNonEquiThetaJoinQual(block, joinNode, evalNode) &&
-          LogicalPlanner.checkIfBeEvaluatedAtJoin(block, evalNode, joinNode, onPredicates.contains(evalNode))) {
+          LogicalPlanner.checkIfBeEvaluatedAtJoin(evalNode, joinNode, onPredicates.contains(evalNode))) {
         matched.add(evalNode);
       }
     }

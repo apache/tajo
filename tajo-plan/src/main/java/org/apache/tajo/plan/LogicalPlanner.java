@@ -1122,7 +1122,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       joinCondition = context.evalOptimizer.optimize(context, evalNode);
     }
 
-    List<String> newlyEvaluatedExprs = getNewlyEvaluatedExprsForJoin(context, joinNode, stack);
+    List<String> newlyEvaluatedExprs = getNewlyEvaluatedExprsForJoin(context, joinNode);
     List<Target> targets = TUtil.newList(PlannerUtil.schemaToTargets(merged));
 
     for (String newAddedExpr : newlyEvaluatedExprs) {
@@ -1141,7 +1141,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return joinNode;
   }
 
-  private List<String> getNewlyEvaluatedExprsForJoin(PlanContext context, JoinNode joinNode, Stack<Expr> stack) {
+  private List<String> getNewlyEvaluatedExprsForJoin(PlanContext context, JoinNode joinNode) {
     QueryBlock block = context.queryBlock;
 
     EvalNode evalNode;
@@ -1150,8 +1150,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       NamedExpr namedExpr = it.next();
       try {
         evalNode = exprAnnotator.createEvalNode(context, namedExpr.getExpr(), NameResolvingMode.LEGACY);
-        // here, we assume that every exprs are specified at the on clause
-        if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, evalNode, joinNode, true)) {
+        // the predicates specified in the on clause are already processed in visitJoin()
+        if (LogicalPlanner.checkIfBeEvaluatedAtJoin(evalNode, joinNode, false)) {
           block.namedExprsMgr.markAsEvaluated(namedExpr.getAlias(), evalNode);
           newlyEvaluatedExprs.add(namedExpr.getAlias());
         }
@@ -1963,7 +1963,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return true;
   }
 
-  public static boolean checkIfBeEvaluatedAtJoin(QueryBlock block, EvalNode evalNode, JoinNode node,
+  public static boolean checkIfBeEvaluatedAtJoin(EvalNode evalNode, JoinNode node,
                                                  boolean isOnPredicate) {
     Set<Column> columnRefs = EvalTreeUtil.findUniqueColumns(evalNode);
 
