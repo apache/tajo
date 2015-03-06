@@ -36,7 +36,7 @@ class ClusterTableDescriptor extends AbstractTableDescriptor {
       new ColumnDescriptor("used_diskslots", Type.FLOAT4, 0),
       new ColumnDescriptor("total_diskslots", Type.FLOAT4, 0),
       new ColumnDescriptor("running_tasks", Type.INT4, 0),
-      new ColumnDescriptor("heartbeat", Type.TIMESTAMP, 0)
+      new ColumnDescriptor("last_heartbeat_ts", Type.TIMESTAMP, 0)
   };
 
   public ClusterTableDescriptor(InfoSchemaMetadataDictionary metadataDictionary) {

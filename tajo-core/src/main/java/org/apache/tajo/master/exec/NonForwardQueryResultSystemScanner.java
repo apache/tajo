@@ -59,6 +59,8 @@ import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.master.TajoMaster.MasterContext;
+import org.apache.tajo.master.rm.Worker;
+import org.apache.tajo.master.rm.WorkerResource;
 import org.apache.tajo.plan.InvalidQueryException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
@@ -465,7 +467,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
           aTuple.put(fieldId, DatumFactory.createInt8(aResource.getFreeHeap()));
         } else if ("max_heap".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createInt8(aResource.getMaxHeap()));
-        } else if ("heartbeat".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("last_heartbeat_ts".equalsIgnoreCase(column.getSimpleName())) {
           if (aWorker.getLastHeartbeatTime() > 0) {
             aTuple.put(fieldId, DatumFactory.createTimestmpDatumWithJavaMillis(aWorker.getLastHeartbeatTime()));
           } else {
@@ -521,7 +523,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
           aTuple.put(fieldId, DatumFactory.createFloat4(aResource.getDiskSlots()));
         } else if ("running_tasks".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createInt4(aResource.getNumRunningTasks()));
-        } else if ("heartbeat".equalsIgnoreCase(column.getSimpleName())) {
+        } else if ("last_heartbeat_ts".equalsIgnoreCase(column.getSimpleName())) {
           if (aWorker.getLastHeartbeatTime() > 0) {
             aTuple.put(fieldId, DatumFactory.createTimestmpDatumWithJavaMillis(aWorker.getLastHeartbeatTime()));
           } else {
