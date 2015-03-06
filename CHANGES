@@ -9,6 +9,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1374: Support multi-bytes delimiter for CSV file.
+    (Contributed by navis, Committed by jinho)
+
     TAJO-1395: Remove deprecated sql files for Oracle and PostgreSQL. (jihun)
 
     TAJO-1394: Support reconnect on tsql. 
