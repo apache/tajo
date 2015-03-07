@@ -660,7 +660,7 @@ public class GlobalPlanner {
         throw new PlanningException("Cannot support a mix of other functions");
       }
     } catch (InternalException e) {
-      LOG.error(e);
+      LOG.error(e, e);
     }
 
     return rewritten;

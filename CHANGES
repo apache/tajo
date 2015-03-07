@@ -4,10 +4,15 @@ Release 0.11.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1135: Implement queryable virtual table for cluster information.
+    (jihun)
 
   IMPROVEMENT
 
     TAJO-527: Upgrade to Netty 4. (jihun)
+
+    TAJO-1369: Some stack trace information is missed in error/fail logging. 
+    (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
 
