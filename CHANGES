@@ -16,6 +16,12 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1378: Incorrect version(0.8.0) info in tajo-doc. 
+    (Contributed by Dongjoon Hyun, Committed by jihoon)
+
+    TAJO-1370: TUtils.checkEquals() is not consistent with description 
+    in javadoc. (Contributed by navis, Committed by hyunsik)
+
     TAJO-1362: Resolve findbug warnings on Tajo Core Module. (jihun)
 
     TAJO-1366: The timestamp type conversion occasionally leads to wrong 
