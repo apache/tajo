@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
@@ -47,6 +48,7 @@ import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.function.AggFunction;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
+import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.KeyValueSet;
@@ -1156,6 +1158,7 @@ public class GlobalPlanner {
           ((TableSubQueryNode)child).getSubQuery().getType() == NodeType.UNION) {
         MasterPlan masterPlan = context.plan;
         for (DataChannel dataChannel : masterPlan.getIncomingChannels(execBlock.getId())) {
+          dataChannel.setStoreType(CatalogProtos.StoreType.CSV);
           ExecutionBlock subBlock = masterPlan.getExecBlock(dataChannel.getSrcId());
 
           ProjectionNode copy = PlannerUtil.clone(plan, node);
@@ -1371,32 +1374,57 @@ public class GlobalPlanner {
       LogicalPlan.QueryBlock rightQueryBlock = plan.getBlock(node.getRightChild());
       LogicalNode rightChild = visit(context, plan, rightQueryBlock, rightQueryBlock.getRoot(), stack);
       stack.pop();
+      
+      MasterPlan masterPlan = context.getPlan();
 
       List<ExecutionBlock> unionBlocks = Lists.newArrayList();
       List<ExecutionBlock> queryBlockBlocks = Lists.newArrayList();
 
       ExecutionBlock leftBlock = context.execBlockMap.remove(leftChild.getPID());
       ExecutionBlock rightBlock = context.execBlockMap.remove(rightChild.getPID());
+      
+      boolean leftUnion = (leftChild.getType() == NodeType.TABLE_SUBQUERY) &&
+          (((TableSubQueryNode)leftChild).getSubQuery().getType() == NodeType.UNION);
+      boolean rightUnion = (rightChild.getType() == NodeType.TABLE_SUBQUERY) &&
+          (((TableSubQueryNode)rightChild).getSubQuery().getType() == NodeType.UNION);
       if (leftChild.getType() == NodeType.UNION) {
         unionBlocks.add(leftBlock);
       } else {
-        queryBlockBlocks.add(leftBlock);
+        if (leftUnion) {
+          node.setLeftChild(
+              createScanNodeWithTableSubQuery(masterPlan, 
+                  (TableSubQueryNode)leftChild, leftBlock, leftBlock, 
+                  rightUnion? null: rightBlock, true));
+        } else {
+          queryBlockBlocks.add(leftBlock);
+        }
       }
       if (rightChild.getType() == NodeType.UNION) {
         unionBlocks.add(rightBlock);
       } else {
-        queryBlockBlocks.add(rightBlock);
+        if (rightUnion) {
+          node.setRightChild(
+              createScanNodeWithTableSubQuery(masterPlan, 
+                  (TableSubQueryNode)rightChild, rightBlock, leftUnion? leftBlock: rightBlock, 
+                      leftUnion? null: leftBlock, false));
+        } else {
+          queryBlockBlocks.add(rightBlock);
+        }
       }
 
       ExecutionBlock execBlock;
       if (unionBlocks.size() == 0) {
-        execBlock = context.plan.newExecutionBlock();
+        if (leftUnion || rightUnion) {
+          execBlock = (!leftUnion && rightUnion)? rightBlock: leftBlock;
+        } else {
+          execBlock = context.plan.newExecutionBlock();
+        }
       } else {
         execBlock = unionBlocks.get(0);
       }
 
       for (ExecutionBlock childBlocks : unionBlocks) {
-        for (ExecutionBlock grandChildBlock : context.plan.getChilds(childBlocks)) {
+        for (ExecutionBlock grandChildBlock : masterPlan.getChilds(childBlocks)) {
           queryBlockBlocks.add(grandChildBlock);
         }
       }
@@ -1404,12 +1432,42 @@ public class GlobalPlanner {
       for (ExecutionBlock childBlocks : queryBlockBlocks) {
         DataChannel channel = new DataChannel(childBlocks, execBlock, NONE_SHUFFLE, 1);
         channel.setStoreType(storeType);
-        context.plan.addConnect(channel);
+        masterPlan.addConnect(channel);
       }
 
       context.execBlockMap.put(node.getPID(), execBlock);
 
       return node;
+    }
+    
+    private ScanNode createScanNodeWithTableSubQuery(MasterPlan masterPlan, TableSubQueryNode childNode,
+        ExecutionBlock sourceBlock, ExecutionBlock targetBlock, ExecutionBlock otherSideBlock,
+        boolean isLeft) {
+      ScanNode scanNode = null;
+      String subQueryRelationName = childNode.getCanonicalName();
+      ExecutionBlockId dedicatedScanNodeBlock = null;
+      
+      for (DataChannel dataChannel: masterPlan.getIncomingChannels(sourceBlock.getId())) {
+        if (otherSideBlock == null && !isLeft) {
+          DataChannel oldDataChannel = dataChannel;
+          masterPlan.disconnect(oldDataChannel.getSrcId(), oldDataChannel.getTargetId());
+          dataChannel = new DataChannel(oldDataChannel.getSrcId(), targetBlock.getId(), 
+              oldDataChannel.getShuffleType(), oldDataChannel.getShuffleOutputNum());
+        }
+        dataChannel.setSchema(childNode.getOutSchema());
+        
+        if (dedicatedScanNodeBlock == null) {
+          scanNode = buildInputExecutor(masterPlan.getLogicalPlan(), dataChannel);
+          scanNode.getOutSchema().setQualifier(subQueryRelationName);
+          
+          dedicatedScanNodeBlock = dataChannel.getSrcId();
+        }
+        
+        masterPlan.addConnect(dataChannel);
+        targetBlock.addUnionScan(dataChannel.getSrcId(), dedicatedScanNodeBlock);
+      }
+      
+      return scanNode;
     }
 
     private LogicalNode handleUnaryNode(GlobalPlanContext context, LogicalNode child, LogicalNode node) {

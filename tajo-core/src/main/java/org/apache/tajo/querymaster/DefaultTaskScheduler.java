@@ -868,6 +868,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
       if (masterPlan.isRoot(parent) && parent.hasUnion()) {
         return false;
       }
+      
+      if (block.getUnionScanMap().size() > 0) {
+        return false;
+      }
 
       return true;
     }
