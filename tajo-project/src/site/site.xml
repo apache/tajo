@@ -65,24 +65,28 @@ m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
 ga('create', 'UA-38152529-1', 'auto');
 ga('send', 'pageview');
 
-var dn_src_0_10_0 = document.getElementById('tajo-0.10.0-src');
-var dn_bin_0_10_0 = document.getElementById('tajo-0.10.0-bin');
-var dn_jdbc_0_10_0 = document.getElementById('tajo-jdbc-0.10.0');
-
-addListener(dn_src_0_10_0, 'click', function() {
-  ga('send', 'event', 'download', 'click', 'tajo-0.10.0-src');
-});
-addListener(dn_bin_0_10_0, 'click', function() {
-  ga('send', 'event', 'download', 'click', 'tajo-0.10.0-bin');
-});
-addListener(dn_jdbc_0_10_0, 'click', function() {
-  ga('send', 'event', 'download', 'click', 'tajo-jdbc-0.10.0');
-});
-
 function addListener(element, type, callback) {
  if (element.addEventListener) element.addEventListener(type, callback);
  else if (element.attachEvent) element.attachEvent('on' + type, callback);
 }
+
+function ga_event_load() {
+        var dn_src_0_10_0 = document.getElementById('tajo-0.10.0-src');
+        var dn_bin_0_10_0 = document.getElementById('tajo-0.10.0-bin');
+        var dn_jdbc_0_10_0 = document.getElementById('tajo-jdbc-0.10.0');
+
+        addListener(dn_src_0_10_0, 'click', function() {
+          ga('send', 'event', 'tajo-0.10.0-src', 'click', 'tajo-0.10.0-src');
+        });
+        addListener(dn_bin_0_10_0, 'click', function() {
+          ga('send', 'event', 'tajo-0.10.0-bin', 'click', 'tajo-0.10.0-bin');
+        });
+        addListener(dn_jdbc_0_10_0, 'click', function() {
+          ga('send', 'event', 'tajo-jdbc-0.10.0', 'click', 'tajo-jdbc-0.10.0');
+        });
+}
+
+window.onload = ga_event_load;
       </script>
       <style>
         a.externalLink[href^=http] {
