@@ -48,7 +48,6 @@ import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.function.AggFunction;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.rules.ProjectionPushDownRule;
-import org.apache.tajo.plan.serder.PlanProto.ShuffleType;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.KeyValueSet;
