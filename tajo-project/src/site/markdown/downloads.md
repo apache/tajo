@@ -18,7 +18,17 @@
 
 ## Most Recent Releases
 
-### Latest Release 0.9.0 (Oct 21, 2014)
+### Latest Release 0.10.0 (Mar 8, 2015)
+
+ * [Announcement] (releases/0.10.0/announcement.html)
+ * [Release Notes] (releases/0.10.0/relnotes.html)
+ * [User Documentation] (http://tajo.apache.org/docs/0.10.0/index.html)
+ * Source: [tajo-0.10.0-src.tar.gz](http://apache.org/dyn/closer.cgi/tajo/tajo-0.10.0/tajo-0.10.0-src.tar.gz) ([MD5](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-0.10.0-src.tar.gz.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-0.10.0-src.tar.gz.sha)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-0.10.0-src.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * Binary Tarball: [tajo-0.10.0.tar.gz] (http://apache.org/dyn/closer.cgi/tajo/tajo-0.10.0/tajo-0.10.0.tar.gz) ([MD5](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-0.10.0.tar.gz.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-0.10.0.tar.gz.sha)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-0.10.0.tar.gz.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+ * JDBC Driver: [tajo-jdbc-0.10.0.jar] (http://apache.org/dyn/closer.cgi/tajo/tajo-0.10.0/tajo-jdbc-0.10.0.jar) ([MD5](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-jdbc-0.10.0.jar.md5)) ([SHA](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-jdbc-0.10.0.jar.sha)) ([SIGN](http://www.apache.org/dist/tajo/tajo-0.10.0/tajo-jdbc-0.10.0.jar.asc)) ([KEYS](http://www.apache.org/dist/tajo/KEYS))
+
+## Previous Releases
+### Release 0.9.0 (Oct 21, 2014)
 
  * [Announcement] (releases/0.9.0/announcement.html)
  * [Release Notes] (releases/0.9.0/relnotes.html)
