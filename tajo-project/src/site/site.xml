@@ -57,17 +57,32 @@
     <head>
       <meta name="description" content="Apache Tajo,SQL-on-Hadoop,big data warehouse system on Hadoop,relational and distributed query engine" />
       <script type="text/javascript">
+(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
-        var _gaq = _gaq || [];
-        _gaq.push(['_setAccount', 'UA-38152529-1']);
-        _gaq.push(['_trackPageview']);
+ga('create', 'UA-38152529-1', 'auto');
+ga('send', 'pageview');
 
-        (function() {
-        var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-        })();
+var dn_src_0_10_0 = document.getElementById('tajo-0.10.0-src');
+var dn_bin_0_10_0 = document.getElementById('tajo-0.10.0-bin');
+var dn_jdbc_0_10_0 = document.getElementById('tajo-jdbc-0.10.0');
 
+addListener(dn_src_0_10_0, 'click', function() {
+  ga('send', 'event', 'download', 'click', 'tajo-0.10.0-src');
+});
+addListener(dn_bin_0_10_0, 'click', function() {
+  ga('send', 'event', 'download', 'click', 'tajo-0.10.0-bin');
+});
+addListener(dn_jdbc_0_10_0, 'click', function() {
+  ga('send', 'event', 'download', 'click', 'tajo-jdbc-0.10.0');
+});
+
+function addListener(element, type, callback) {
+ if (element.addEventListener) element.addEventListener(type, callback);
+ else if (element.attachEvent) element.attachEvent('on' + type, callback);
+}
       </script>
       <style>
         a.externalLink[href^=http] {
