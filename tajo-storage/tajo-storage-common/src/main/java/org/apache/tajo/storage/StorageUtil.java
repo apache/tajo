@@ -18,15 +18,10 @@
 
 package org.apache.tajo.storage;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.util.FileUtil;
 import sun.nio.ch.DirectBuffer;
 
 import java.io.DataInput;
@@ -35,6 +30,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class StorageUtil extends StorageConstants {
@@ -139,12 +136,28 @@ public class StorageUtil extends StorageConstants {
     if (fileNamePatternMatchedList.isEmpty()) {
       return maxValue;
     }
+    Collections.sort(fileNamePatternMatchedList, new PathSeqComparator());
     Path lastFile = fileNamePatternMatchedList.get(fileNamePatternMatchedList.size() - 1);
     String pathName = lastFile.getName();
 
     // 0.8: pathName = part-<ExecutionBlockId.seq>-<TaskId.seq>
     // 0.9: pathName = part-<ExecutionBlockId.seq>-<TaskId.seq>-<Sequence>
-    String[] pathTokens = pathName.split("-");
+    return getSequence(pathName);
+  }
+
+  private static class PathSeqComparator implements Comparator<Path> {
+
+    @Override
+    public int compare(Path p1, Path p2) {
+      String name1 = p1.getName();
+      String name2 = p2.getName();
+
+      return getSequence(name1) - getSequence(name2);
+    }
+  }
+
+  private static int getSequence(String name) {
+    String[] pathTokens = name.split("-");
     if (pathTokens.length == 3) {
       return -1;
     } else if(pathTokens.length == 4) {
