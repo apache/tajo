@@ -86,4 +86,9 @@ public class TajoMemoryResultSet extends TajoResultSetBase {
   public boolean hasResult() {
     return serializedTuples.size() > 0;
   }
+
+  public List<ByteString> getSerializedTuples(){
+      return serializedTuples;
+  }
+
 }

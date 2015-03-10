@@ -77,6 +77,8 @@ public abstract class TajoResultSetBase implements ResultSet {
     return cur;
   }
 
+  public Schema getSchema() { return schema; }
+
   @Override
   public void beforeFirst() throws SQLException {
     init();
