@@ -9,11 +9,15 @@ In this section, we explain how to get JDBC driver and an example code.
 How to get JDBC driver
 =======================
 
+From Tajo Homepage
+--------------------------------
+
+You can download JDBC jar file ``tajo-jdbc-x.y.z.jar`` in `Downloads <downloads.html>`_ section.
+
 From Binary Distribution
 --------------------------------
 
-Tajo binary distribution provides JDBC jar file and its dependent JAR files.
-Those files are located in ``${TAJO_HOME}/share/jdbc-dist/``.
+Tajo binary distribution provides JDBC jar file located in ``${TAJO_HOME}/share/jdbc-dist/tajo-jdbc-x.y.z.jar``.
 
 
 From Building Source Code
@@ -25,25 +29,17 @@ You can build Tajo from the source code and then get JAR files as follows:
 
   $ tar xzvf tajo-x.y.z-src.tar.gz
   $ mvn clean package -DskipTests -Pdist -Dtar
-  $ ls -l tajo-dist/target/tajo-x.y.z/share/jdbc-dist
+  $ ls -l tajo-dist/target/tajo-x.y.z/share/jdbc-dist/tajo-jdbc-x.y.z.jar
 
 
 Setting the CLASSPATH
 =======================
 
-In order to use the JDBC driver, you should set the jar files included in 
-``tajo-dist/target/tajo-x.y.z/share/jdbc-dist`` to your ``CLASSPATH``.
-In addition, you should add hadoop clsspath into your ``CLASSPATH``.
-So, ``CLASSPATH`` will be set as follows:
+In order to use the JDBC driver, you should add ``tajo-jdbc-x.y.z.jar`` in your ``CLASSPATH``.
 
 .. code-block:: bash
 
-  CLASSPATH=path/to/tajo-jdbc/*:path/to/tajo-site.xml:path/to/core-site.xml:path/to/hdfs-site.xml
-
-.. note::
-
-  You must add the locations which include Tajo config files (i.e., ``tajo-site.xml``) and
-  Hadoop config files (i.e., ``core-site.xml`` and ``hdfs-site.xml``) to your ``CLASSPATH``.
+  CLASSPATH=path/to/tajo-jdbc-x.y.z.jar:$CLASSPATH
 
 
 An Example JDBC Client
@@ -98,16 +94,4 @@ The following shows an example of JDBC Client.
       }
     }
   }
-
-
-FAQ
-===========================================
-
-java.nio.channels.UnresolvedAddressException
---------------------------------------------
-
-When retriving the final result, Tajo JDBC Driver tries to access HDFS data nodes.
-So, the network access between JDBC client and HDFS data nodes must be available.
-In many cases, a HDFS cluster is built in a private network which use private hostnames.
-So, the host names must be shared with the JDBC client side.
 
