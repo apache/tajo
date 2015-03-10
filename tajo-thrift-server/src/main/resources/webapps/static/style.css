@@ -1,0 +1,80 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+html{
+    font:12px Arial, Helvetica, sans-serif; /* Sets the font size and type for the whole html page */
+    color:#333;} /* Sets the font color for the whole html page */
+
+body {margin:0;padding:0}
+
+.menu{
+    width: 100%; /* The menu should be the entire width of it's surrounding object, in this case the whole page */
+    background-color: #333;} /* dark grey bg */
+
+.menu ul{
+    margin: 0;
+    padding: 0;
+    float: left;}
+
+.menu ul li{
+    display: inline;} /* Makes the link all appear in one line, rather than on top of each other */
+
+.menu ul li a{
+    float: left;
+    text-decoration: none; /* removes the underline from the menu text */
+    color: #fff; /* text color of the menu */
+    padding: 10.5px 11px; /* 10.5px of padding to the right and left of the link and 11px to the top and bottom */
+    margin-right: 20px;
+    background-color: #333;}
+
+.menu ul li a:visited{ /* This bit just makes sure the text color doesn't change once you've visited a link */
+    color: #fff;
+    text-decoration: none;}
+
+.menu ul li a:hover, .menu ul li .current{
+    color: #fff;
+    background-color:#0b75b2;} /* change the background color of the list item when you hover over it */
+
+.page_title {
+    padding: 0px 0px 0px 10px
+}
+
+.contents {
+    padding: 0px 10px 0px 10px;
+    font-size:14px;
+}
+
+.border_table {
+    border-collapse:collapse;
+    border:1px gray solid;
+}
+
+.border_table td {
+    border:1px gray solid;
+    padding: 2px 5px 2px 5px
+}
+
+.border_table th {
+    border:1px gray solid;
+    padding: 2px 5px 2px 5px
+}
+
+.font-light	 {
+    .font-family:"proxima-nova-n3";
+    font-style:normal;
+    font-weight:300;
+}
