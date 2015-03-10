@@ -29,10 +29,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 
 public class StorageUtil extends StorageConstants {
 
@@ -116,46 +112,31 @@ public class StorageUtil extends StorageConstants {
     }
 
     int maxValue = -1;
-    List<Path> fileNamePatternMatchedList = new ArrayList<Path>();
 
     for (FileStatus eachFile: files) {
       // In the case of partition table, return largest value within all partition dirs.
+      int value;
       if (eachFile.isDirectory() && recursive) {
-        int value = getMaxFileSequence(fs, eachFile.getPath(), recursive);
+        value = getMaxFileSequence(fs, eachFile.getPath(), recursive);
         if (value > maxValue) {
           maxValue = value;
         }
       } else {
         if (eachFile.getPath().getName().matches(fileNamePatternV08) ||
             eachFile.getPath().getName().matches(fileNamePatternV09)) {
-          fileNamePatternMatchedList.add(eachFile.getPath());
+          value = getSequence(eachFile.getPath().getName());
+          if (value > maxValue) {
+            maxValue = value;
+          }
         }
       }
     }
 
-    if (fileNamePatternMatchedList.isEmpty()) {
-      return maxValue;
-    }
-    Collections.sort(fileNamePatternMatchedList, new PathSeqComparator());
-    Path lastFile = fileNamePatternMatchedList.get(fileNamePatternMatchedList.size() - 1);
-    String pathName = lastFile.getName();
-
-    // 0.8: pathName = part-<ExecutionBlockId.seq>-<TaskId.seq>
-    // 0.9: pathName = part-<ExecutionBlockId.seq>-<TaskId.seq>-<Sequence>
-    return getSequence(pathName);
+    return maxValue;
   }
 
-  private static class PathSeqComparator implements Comparator<Path> {
-
-    @Override
-    public int compare(Path p1, Path p2) {
-      String name1 = p1.getName();
-      String name2 = p2.getName();
-
-      return getSequence(name1) - getSequence(name2);
-    }
-  }
-
+  // 0.8: pathName = part-<ExecutionBlockId.seq>-<TaskId.seq>
+  // 0.9: pathName = part-<ExecutionBlockId.seq>-<TaskId.seq>-<Sequence>
   private static int getSequence(String name) {
     String[] pathTokens = name.split("-");
     if (pathTokens.length == 3) {
