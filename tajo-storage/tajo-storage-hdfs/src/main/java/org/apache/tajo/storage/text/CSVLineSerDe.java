@@ -34,8 +34,8 @@ public class CSVLineSerDe extends TextLineSerDe {
     return new CSVLineSerializer(schema, meta);
   }
 
-  public static char getFieldDelimiter(TableMeta meta) {
+  public static byte[] getFieldDelimiter(TableMeta meta) {
     return StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.TEXT_DELIMITER,
-        StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
+        StorageConstants.DEFAULT_FIELD_DELIMITER)).getBytes();
   }
 }
