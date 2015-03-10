@@ -119,6 +119,10 @@ public class NumberUtil {
    * @throws NumberFormatException if the argument could not be parsed as a double
    */
   public static double parseDouble(byte[] bytes, int start, int length) {
+    return parseDouble(bytes, start, length, ARRAY_ACCESSOR);
+  }
+
+  private static <T> double parseDouble(T bytes, int start, int length, ByteAccessor<T> accessor) {
     if (bytes == null) {
       throw new NumberFormatException("String is null");
     }
@@ -132,7 +136,7 @@ public class NumberUtil {
     int offset = start;
     int end = start + length;
 
-    while (offset < end && bytes[offset] == ' ') {
+    while (offset < end && accessor.get(bytes, offset) == ' ') {
       offset++;
     }
     if (offset == end) {
@@ -143,10 +147,11 @@ public class NumberUtil {
      * check for a sign.
      */
     boolean sign = false;
-    if (bytes[offset] == '-') {
+    byte value = accessor.get(bytes, offset);
+    if (value == '-') {
       sign = true;
       offset++;
-    } else if (bytes[offset] == '+') {
+    } else if (value == '+') {
       offset++;
     }
     if (offset == end) {
@@ -158,13 +163,14 @@ public class NumberUtil {
      * point), and also locate the decimal point.
      */
     int mantSize = 0;		      /* Number of digits in mantissa. */
-    int decicalOffset = -1;   /* Number of mantissa digits BEFORE decimal point. */
+    int decimalOffset = -1;   /* Number of mantissa digits BEFORE decimal point. */
     for (; offset < end; offset++) {
-      if (!isDigit(bytes[offset])) {
-        if ((bytes[offset] != '.') || (decicalOffset >= 0)) {
+      value = accessor.get(bytes, offset);
+      if (!isDigit(value)) {
+        if (value != '.' || (decimalOffset >= 0)) {
           break;
         }
-        decicalOffset = mantSize;
+        decimalOffset = mantSize;
       }
       mantSize++;
     }
@@ -178,13 +184,13 @@ public class NumberUtil {
      * they can't affect the value anyway.
      */
     offset -= mantSize;
-    if (decicalOffset < 0) {
-      decicalOffset = mantSize;
+    if (decimalOffset < 0) {
+      decimalOffset = mantSize;
     } else {
       mantSize -= 1;			       /* One of the digits was the decimal point. */
     }
     int fracExponent;            /* Exponent that derives from the fractional
-                                  * part.  Under normal circumstatnces, it is
+                                  * part.  Under normal circumstances, it is
 				                          * the negative of the number of digits in F.
 				                          * However, if I is very long, the last digits
 				                          * of I get dropped (otherwise a long I with a
@@ -193,10 +199,10 @@ public class NumberUtil {
 				                          * case, fracExp is incremented one for each
 				                          * dropped digit. */
     if (mantSize > 18) {
-      fracExponent = decicalOffset - 18;
+      fracExponent = decimalOffset - 18;
       mantSize = 18;
     } else {
-      fracExponent = decicalOffset - mantSize;
+      fracExponent = decimalOffset - mantSize;
     }
 
     if (mantSize == 0) {
@@ -205,20 +211,20 @@ public class NumberUtil {
 
     int frac1 = 0;
     for (; mantSize > 9; mantSize--) {
-      int b = bytes[offset];
+      int b = accessor.get(bytes, offset);
       offset++;
       if (b == '.') {
-        b = bytes[offset];
+        b = accessor.get(bytes, offset);
         offset++;
       }
       frac1 = 10 * frac1 + (b - '0');
     }
     int frac2 = 0;
     for (; mantSize > 0; mantSize--) {
-      int b = bytes[offset];
+      int b = accessor.get(bytes, offset);
       offset++;
       if (b == '.') {
-        b = bytes[offset];
+        b = accessor.get(bytes, offset);
         offset++;
       }
       frac2 = 10 * frac2 + (b - '0');
@@ -233,26 +239,28 @@ public class NumberUtil {
     boolean expSign = false;
 
     if (offset < end) {
-      if ((bytes[offset] != 'E') && (bytes[offset] != 'e')) {
-        throw new NumberFormatException(new String(bytes, start,
+      value = accessor.get(bytes, offset);
+      if (value != 'E' && value != 'e') {
+        throw new NumberFormatException(accessor.toString(bytes, start,
             length));
       }
 
-      // (bytes[offset] == 'E') || (bytes[offset] == 'e')
+      // (accessor.get(bytes, offset) == 'E') || (accessor.get(bytes, offset) == 'e')
       offset++;
 
-      if (bytes[offset] == '-') {
+      value = accessor.get(bytes, offset);
+      if (value == '-') {
         expSign = true;
         offset++;
-      } else if (bytes[offset] == '+') {
+      } else if (value == '+') {
         offset++;
       }
 
       for (; offset < end; offset++) {
-        if (isDigit(bytes[offset])) {
-          exponent = exponent * 10 + (bytes[offset] - '0');
+        if (isDigit(accessor.get(bytes, offset))) {
+          exponent = exponent * 10 + (accessor.get(bytes, offset) - '0');
         } else {
-          throw new NumberFormatException(new String(bytes, start,
+          throw new NumberFormatException(accessor.toString(bytes, start,
               length));
         }
       }
@@ -273,7 +281,7 @@ public class NumberUtil {
       expSign = false;
     }
     if (exponent > maxExponent) {
-      throw new NumberFormatException(new String(bytes, start,
+      throw new NumberFormatException(accessor.toString(bytes, start,
           length));
     }
 
@@ -298,7 +306,7 @@ public class NumberUtil {
    * @throws NumberFormatException if the argument could not be parsed as an int quantity.
    */
   public static int parseInt(byte[] bytes, int start, int length) {
-    return parseInt(bytes, start, length, 10);
+    return parseInt(bytes, start, length, 10, ARRAY_ACCESSOR);
   }
 
   /**
@@ -308,10 +316,11 @@ public class NumberUtil {
    * the value.
    *
    * @param radix the base to use for conversion.
+   * @param accessor accessor to get byte value from underlying buffer
    * @return the value represented by the argument
    * @throws NumberFormatException if the argument could not be parsed as an int quantity.
    */
-  public static int parseInt(byte[] bytes, int start, int length, int radix) {
+  private static <T> int parseInt(T bytes, int start, int length, int radix, ByteAccessor<T> accessor) {
     if (bytes == null) {
       throw new NumberFormatException("String is null");
     }
@@ -322,16 +331,17 @@ public class NumberUtil {
       throw new NumberFormatException("Empty byte array!");
     }
     int offset = start;
-    boolean negative = bytes[start] == '-';
-    if (negative || bytes[start] == '+') {
+    byte value = accessor.get(bytes, offset);
+    boolean negative = value == '-';
+    if (negative || value == '+') {
       offset++;
       if (length == 1) {
-        throw new NumberFormatException(new String(bytes, start,
+        throw new NumberFormatException(accessor.toString(bytes, start,
             length));
       }
     }
 
-    return parseIntInternal(bytes, start, length, offset, radix, negative);
+    return parseIntInternal(bytes, start, length, offset, radix, negative, accessor);
   }
 
   /**
@@ -342,33 +352,34 @@ public class NumberUtil {
    * @param offset   the starting position after the sign (if exists)
    * @param radix    the base to use for conversion.
    * @param negative whether the number is negative.
+   * @param accessor accessor to get byte value from underlying buffer
    * @return the value represented by the argument
    * @throws NumberFormatException if the argument could not be parsed as an int quantity.
    */
-  private static int parseIntInternal(byte[] bytes, int start, int length, int offset,
-                                      int radix, boolean negative) {
+  private static <T> int parseIntInternal(T bytes, int start, int length, int offset,
+                                      int radix, boolean negative, ByteAccessor<T> accessor) {
     byte separator = '.';
     int max = Integer.MIN_VALUE / radix;
     int result = 0, end = start + length;
     while (offset < end) {
-      int digit = digit(bytes[offset++], radix);
+      int digit = digit(accessor.get(bytes, offset++), radix);
       if (digit == -1) {
-        if (bytes[offset - 1] == separator) {
+        if (accessor.get(bytes, offset - 1) == separator) {
           // We allow decimals and will return a truncated integer in that case.
           // Therefore we won't throw an exception here (checking the fractional
           // part happens below.)
           break;
         }
-        throw new NumberFormatException(new String(bytes, start,
+        throw new NumberFormatException(accessor.toString(bytes, start,
             length));
       }
       if (max > result) {
-        throw new NumberFormatException(new String(bytes, start,
+        throw new NumberFormatException(accessor.toString(bytes, start,
             length));
       }
       int next = result * radix - digit;
       if (next > result) {
-        throw new NumberFormatException(new String(bytes, start,
+        throw new NumberFormatException(accessor.toString(bytes, start,
             length));
       }
       result = next;
@@ -378,9 +389,9 @@ public class NumberUtil {
     // part will not change the number, but we will verify that the fractional part
     // is well formed.
     while (offset < end) {
-      int digit = digit(bytes[offset++], radix);
+      int digit = digit(accessor.get(bytes, offset++), radix);
       if (digit == -1) {
-        throw new NumberFormatException(new String(bytes, start,
+        throw new NumberFormatException(accessor.toString(bytes, start,
             length));
       }
     }
@@ -388,7 +399,7 @@ public class NumberUtil {
     if (!negative) {
       result = -result;
       if (result < 0) {
-        throw new NumberFormatException(new String(bytes, start,
+        throw new NumberFormatException(accessor.toString(bytes, start,
             length));
       }
     }
@@ -424,6 +435,10 @@ public class NumberUtil {
    * @throws NumberFormatException if the argument could not be parsed as an long quantity.
    */
   public static long parseLong(byte[] bytes, int start, int length, int radix) {
+    return parseLong(bytes, start, length, radix, ARRAY_ACCESSOR);
+  }
+
+  private static <T> long parseLong(T bytes, int start, int length, int radix, ByteAccessor<T> accessor) {
     if (bytes == null) {
       throw new NumberFormatException("String is null");
     }
@@ -434,16 +449,17 @@ public class NumberUtil {
       throw new NumberFormatException("Empty string!");
     }
     int offset = start;
-    boolean negative = bytes[start] == '-';
-    if (negative || bytes[start] == '+') {
+    byte value = accessor.get(bytes, start);
+    boolean negative = value == '-';
+    if (negative || value == '+') {
       offset++;
       if (length == 1) {
-        throw new NumberFormatException(new String(bytes, start,
+        throw new NumberFormatException(accessor.toString(bytes, start,
             length));
       }
     }
 
-    return parseLongInternal(bytes, start, length, offset, radix, negative);
+    return parseLongInternal(bytes, start, length, offset, radix, negative, accessor);
   }
 
   /**
@@ -458,29 +474,30 @@ public class NumberUtil {
    * @param offset   the starting position after the sign (if exists)
    * @param radix    the base to use for conversion.
    * @param negative whether the number is negative.
+   * @param accessor accessor to get byte value from underlying buffer
    * @return the value represented by the argument
    * @throws NumberFormatException if the argument could not be parsed as an long quantity.
    */
-  private static long parseLongInternal(byte[] bytes, int start, int length, int offset,
-                                        int radix, boolean negative) {
+  private static <T> long parseLongInternal(T bytes, int start, int length, int offset,
+                                        int radix, boolean negative, ByteAccessor<T> accessor) {
     byte separator = '.';
     long max = Long.MIN_VALUE / radix;
     long result = 0, end = start + length;
     while (offset < end) {
-      int digit = digit(bytes[offset++], radix);
+      int digit = digit(accessor.get(bytes, offset++), radix);
       if (digit == -1 || max > result) {
-        if (bytes[offset - 1] == separator) {
+        if (accessor.get(bytes, offset - 1) == separator) {
           // We allow decimals and will return a truncated integer in that case.
           // Therefore we won't throw an exception here (checking the fractional
           // part happens below.)
           break;
         }
-        throw new NumberFormatException(new String(bytes, start,
+        throw new NumberFormatException(accessor.toString(bytes, start,
             length));
       }
       long next = result * radix - digit;
       if (next > result) {
-        throw new NumberFormatException(new String(bytes, start,
+        throw new NumberFormatException(accessor.toString(bytes, start,
             length));
       }
       result = next;
@@ -490,9 +507,9 @@ public class NumberUtil {
     // part will not change the number, but we will verify that the fractional part
     // is well formed.
     while (offset < end) {
-      int digit = digit(bytes[offset++], radix);
+      int digit = digit(accessor.get(bytes, offset++), radix);
       if (digit == -1) {
-        throw new NumberFormatException(new String(bytes, start,
+        throw new NumberFormatException(accessor.toString(bytes, start,
             length));
       }
     }
@@ -500,7 +517,7 @@ public class NumberUtil {
     if (!negative) {
       result = -result;
       if (result < 0) {
-        throw new NumberFormatException(new String(bytes, start,
+        throw new NumberFormatException(accessor.toString(bytes, start,
             length));
       }
     }
@@ -604,181 +621,11 @@ public class NumberUtil {
    * @throws NumberFormatException if the argument could not be parsed as a double
    */
   public static double parseDouble(ByteBuf bytes, int start, int length) {
-    if (!PlatformDependent.hasUnsafe()) {
-      return parseDouble(bytes.array(), start, length);
+    if (!bytes.isDirect() || !PlatformDependent.hasUnsafe()) {
+      return parseDouble(bytes.array(), start, length, ARRAY_ACCESSOR);
     }
-
-    if (bytes == null) {
-      throw new NumberFormatException("String is null");
-    }
-
-    if (length == 0 || bytes.writerIndex() < start + length) {
-      throw new NumberFormatException("Empty string or Invalid buffer!");
-    }
-
-
-    long memoryAddress = bytes.memoryAddress();
-    /*
-     * Strip off leading blanks
-     */
-    int offset = start;
-    int end = start + length;
-
-    while (offset < end && PlatformDependent.getByte(memoryAddress + offset) == ' ') {
-      offset++;
-    }
-    if (offset == end) {
-      throw new NumberFormatException("blank byte array!");
-    }
-
-    /*
-     * check for a sign.
-     */
-    boolean sign = false;
-    if (PlatformDependent.getByte(memoryAddress + offset) == '-') {
-      sign = true;
-      offset++;
-    } else if (PlatformDependent.getByte(memoryAddress + offset) == '+') {
-      offset++;
-    }
-    if (offset == end) {
-      throw new NumberFormatException("the byte array only has a sign!");
-    }
-
-    /*
-     * Count the number of digits in the mantissa (including the decimal
-     * point), and also locate the decimal point.
-     */
-    int mantSize = 0;		      /* Number of digits in mantissa. */
-    int decicalOffset = -1;   /* Number of mantissa digits BEFORE decimal point. */
-    for (; offset < end; offset++) {
-      if (!isDigit(PlatformDependent.getByte(memoryAddress + offset))) {
-        if ((PlatformDependent.getByte(memoryAddress + offset) != '.') || (decicalOffset >= 0)) {
-          break;
-        }
-        decicalOffset = mantSize;
-      }
-      mantSize++;
-    }
-
-    int exponentOffset = offset; /* Temporarily holds location of exponent in bytes. */
-
-    /*
-     * Now suck up the digits in the mantissa.  Use two integers to
-     * collect 9 digits each (this is faster than using floating-point).
-     * If the mantissa has more than 18 digits, ignore the extras, since
-     * they can't affect the value anyway.
-     */
-    offset -= mantSize;
-    if (decicalOffset < 0) {
-      decicalOffset = mantSize;
-    } else {
-      mantSize -= 1;			       /* One of the digits was the decimal point. */
-    }
-    int fracExponent;            /* Exponent that derives from the fractional
-                                  * part.  Under normal circumstatnces, it is
-				                          * the negative of the number of digits in F.
-				                          * However, if I is very long, the last digits
-				                          * of I get dropped (otherwise a long I with a
-				                          * large negative exponent could cause an
-				                          * unnecessary overflow on I alone).  In this
-				                          * case, fracExp is incremented one for each
-				                          * dropped digit. */
-    if (mantSize > 18) {
-      fracExponent = decicalOffset - 18;
-      mantSize = 18;
-    } else {
-      fracExponent = decicalOffset - mantSize;
-    }
-
-    if (mantSize == 0) {
-      return 0.0;
-    }
-
-    int frac1 = 0;
-    for (; mantSize > 9; mantSize--) {
-      int b = PlatformDependent.getByte(memoryAddress + offset);
-      offset++;
-      if (b == '.') {
-        b = PlatformDependent.getByte(memoryAddress + offset);
-        offset++;
-      }
-      frac1 = 10 * frac1 + (b - '0');
-    }
-    int frac2 = 0;
-    for (; mantSize > 0; mantSize--) {
-      int b = PlatformDependent.getByte(memoryAddress + offset);
-      offset++;
-      if (b == '.') {
-        b = PlatformDependent.getByte(memoryAddress + offset);
-        offset++;
-      }
-      frac2 = 10 * frac2 + (b - '0');
-    }
-    double fraction = (1.0e9 * frac1) + frac2;
-
-    /*
-     * Skim off the exponent.
-     */
-    int exponent = 0;            /* Exponent read from "EX" field. */
-    offset = exponentOffset;
-    boolean expSign = false;
-
-    if (offset < end) {
-      if ((PlatformDependent.getByte(memoryAddress + offset) != 'E')
-          && (PlatformDependent.getByte(memoryAddress + offset) != 'e')) {
-        throw new NumberFormatException(bytes.toString(start, length, Charset.defaultCharset()));
-      }
-
-      // (bytes[offset] == 'E') || (bytes[offset] == 'e')
-      offset++;
-
-      if (PlatformDependent.getByte(memoryAddress + offset) == '-') {
-        expSign = true;
-        offset++;
-      } else if (PlatformDependent.getByte(memoryAddress + offset) == '+') {
-        offset++;
-      }
-
-      for (; offset < end; offset++) {
-        if (isDigit(PlatformDependent.getByte(memoryAddress + offset))) {
-          exponent = exponent * 10 + (PlatformDependent.getByte(memoryAddress + offset) - '0');
-        } else {
-          throw new NumberFormatException(bytes.toString(start, length, Charset.defaultCharset()));
-        }
-      }
-    }
-
-    exponent = expSign ? (fracExponent - exponent) : (fracExponent + exponent);
-
-    /*
-     * Generate a floating-point number that represents the exponent.
-     * Do this by processing the exponent one bit at a time to combine
-     * many powers of 2 of 10. Then combine the exponent with the
-     * fraction.
-     */
-    if (exponent < 0) {
-      expSign = true;
-      exponent = -exponent;
-    } else {
-      expSign = false;
-    }
-    if (exponent > maxExponent) {
-      throw new NumberFormatException(bytes.toString(start, length, Charset.defaultCharset()));
-    }
-
-    double dblExp = 1.0;
-    for (int i = 0; exponent != 0; exponent >>= 1, i++) {
-      if ((exponent & 01) == 01) {
-        dblExp *= powersOf10[i];
-      }
-    }
-
-    fraction = (expSign) ? (fraction / dblExp) : (fraction * dblExp);
-
-    return sign ? (-fraction) : fraction;
+    return parseDouble(bytes, start, length, new DirectAccessor(bytes));
   }
-
 
   /**
    * Parses the byte buffer argument as if it was an int value and returns the
@@ -815,89 +662,10 @@ public class NumberUtil {
    * @throws NumberFormatException if the argument could not be parsed as an int quantity.
    */
   public static int parseInt(ByteBuf bytes, int start, int length, int radix) {
-    if (!PlatformDependent.hasUnsafe()) {
-      return parseInt(bytes.array(), start, length);
+    if (!bytes.isDirect() || !PlatformDependent.hasUnsafe()) {
+      return parseInt(bytes.array(), start, length, radix, ARRAY_ACCESSOR);
     }
-
-    if (bytes == null) {
-      throw new NumberFormatException("String is null");
-    }
-    if (radix < Character.MIN_RADIX || radix > Character.MAX_RADIX) {
-      throw new NumberFormatException("Invalid radix: " + radix);
-    }
-    if (length == 0 || bytes.writerIndex() < start + length) {
-      throw new NumberFormatException("Empty string or Invalid buffer!");
-    }
-
-    long memoryAddress = bytes.memoryAddress();
-
-    int offset = start;
-    boolean negative = PlatformDependent.getByte(memoryAddress + start) == '-';
-    if (negative || PlatformDependent.getByte(memoryAddress + start) == '+') {
-      offset++;
-      if (length == 1) {
-        throw new NumberFormatException(bytes.toString(start, length, Charset.defaultCharset()));
-      }
-    }
-
-    return parseIntInternal(bytes, memoryAddress, start, length, offset, radix, negative);
-  }
-
-  /**
-   * @param bytes         the string byte buffer
-   * @param memoryAddress the offheap memory address
-   * @param start
-   * @param length
-   * @param radix         the base to use for conversion.
-   * @param offset        the starting position after the sign (if exists)
-   * @param radix         the base to use for conversion.
-   * @param negative      whether the number is negative.
-   * @return the value represented by the argument
-   * @throws NumberFormatException if the argument could not be parsed as an int quantity.
-   */
-  private static int parseIntInternal(ByteBuf bytes, long memoryAddress, int start, int length, int offset,
-                                      int radix, boolean negative) {
-    byte separator = '.';
-    int max = Integer.MIN_VALUE / radix;
-    int result = 0, end = start + length;
-    while (offset < end) {
-      int digit = digit(PlatformDependent.getByte(memoryAddress + offset++), radix);
-      if (digit == -1) {
-        if (PlatformDependent.getByte(memoryAddress + offset - 1) == separator) {
-          // We allow decimals and will return a truncated integer in that case.
-          // Therefore we won't throw an exception here (checking the fractional
-          // part happens below.)
-          break;
-        }
-        throw new NumberFormatException(bytes.toString(start, length, Charset.defaultCharset()));
-      }
-      if (max > result) {
-        throw new NumberFormatException(bytes.toString(start, length, Charset.defaultCharset()));
-      }
-      int next = result * radix - digit;
-      if (next > result) {
-        throw new NumberFormatException(bytes.toString(start, length, Charset.defaultCharset()));
-      }
-      result = next;
-    }
-
-    // This is the case when we've encountered a decimal separator. The fractional
-    // part will not change the number, but we will verify that the fractional part
-    // is well formed.
-    while (offset < end) {
-      int digit = digit(PlatformDependent.getByte(memoryAddress + offset++), radix);
-      if (digit == -1) {
-        throw new NumberFormatException(bytes.toString(start, length, Charset.defaultCharset()));
-      }
-    }
-
-    if (!negative) {
-      result = -result;
-      if (result < 0) {
-        throw new NumberFormatException(bytes.toString(start, length, Charset.defaultCharset()));
-      }
-    }
-    return result;
+    return parseInt(bytes, start, length, radix, new DirectAccessor(bytes));
   }
 
   /**
@@ -942,90 +710,10 @@ public class NumberUtil {
    * @throws NumberFormatException if the argument could not be parsed as an long quantity.
    */
   public static long parseLong(ByteBuf bytes, int start, int length, int radix) {
-    if (!PlatformDependent.hasUnsafe()) {
-      return parseInt(bytes.array(), start, length);
+    if (!bytes.isDirect() || !PlatformDependent.hasUnsafe()) {
+      return parseLong(bytes.array(), start, length, radix, ARRAY_ACCESSOR);
     }
-
-    if (bytes == null) {
-      throw new NumberFormatException("String is null");
-    }
-    if (radix < Character.MIN_RADIX || radix > Character.MAX_RADIX) {
-      throw new NumberFormatException("Invalid radix: " + radix);
-    }
-    if (length == 0 || bytes.writerIndex() < start + length) {
-      throw new NumberFormatException("Empty string or Invalid buffer!");
-    }
-
-    long memoryAddress = bytes.memoryAddress();
-
-    int offset = start;
-    boolean negative = PlatformDependent.getByte(memoryAddress + start) == '-';
-    if (negative || PlatformDependent.getByte(memoryAddress + start) == '+') {
-      offset++;
-      if (length == 1) {
-        throw new NumberFormatException(bytes.toString(start, length, Charset.defaultCharset()));
-      }
-    }
-
-    return parseLongInternal(bytes, memoryAddress, start, length, offset, radix, negative);
-  }
-
-  /**
-   * /** Parses the byte buffer argument as if it was an long value and returns the
-   * result. Throws NumberFormatException if the string does not represent an
-   * long quantity. The second argument specifies the radix to use when parsing
-   * the value.
-   *
-   * @param bytes         the string byte buffer
-   * @param memoryAddress the offheap memory address
-   * @param start
-   * @param length        a UTF-8 encoded string representation of a long quantity.
-   * @param offset        the starting position after the sign (if exists)
-   * @param radix         the base to use for conversion.
-   * @param negative      whether the number is negative.
-   * @return the value represented by the argument
-   * @throws NumberFormatException if the argument could not be parsed as an long quantity.
-   */
-  private static long parseLongInternal(ByteBuf bytes, long memoryAddress, int start, int length, int offset,
-                                        int radix, boolean negative) {
-    byte separator = '.';
-    long max = Long.MIN_VALUE / radix;
-    long result = 0, end = start + length;
-    while (offset < end) {
-      int digit = digit(PlatformDependent.getByte(memoryAddress + offset++), radix);
-      if (digit == -1 || max > result) {
-        if (PlatformDependent.getByte(memoryAddress + offset - 1) == separator) {
-          // We allow decimals and will return a truncated integer in that case.
-          // Therefore we won't throw an exception here (checking the fractional
-          // part happens below.)
-          break;
-        }
-        throw new NumberFormatException(bytes.toString(start, length, Charset.defaultCharset()));
-      }
-      long next = result * radix - digit;
-      if (next > result) {
-        throw new NumberFormatException(bytes.toString(start, length, Charset.defaultCharset()));
-      }
-      result = next;
-    }
-
-    // This is the case when we've encountered a decimal separator. The fractional
-    // part will not change the number, but we will verify that the fractional part
-    // is well formed.
-    while (offset < end) {
-      int digit = digit(PlatformDependent.getByte(memoryAddress + offset++), radix);
-      if (digit == -1) {
-        throw new NumberFormatException(bytes.toString(start, length, Charset.defaultCharset()));
-      }
-    }
-
-    if (!negative) {
-      result = -result;
-      if (result < 0) {
-        throw new NumberFormatException(bytes.toString(start, length, Charset.defaultCharset()));
-      }
-    }
-    return result;
+    return parseLong(bytes, start, length, radix, new DirectAccessor(bytes));
   }
 
   public static Number numberValue(Class<?> numberClazz, String value) {
@@ -1047,5 +735,38 @@ public class NumberUtil {
     }
 
     return returnNumber;
+  }
+
+  private static interface ByteAccessor<T> {
+    byte get(T source, int offset);
+    String toString(T source, int offset, int length);
+  }
+
+  private static final ByteAccessor<byte[]> ARRAY_ACCESSOR = new ByteAccessor<byte[]>() {
+    @Override
+    public final byte get(byte[] source, int offset) {
+      return source[offset];
+    }
+    @Override
+    public final String toString(byte[] source, int offset, int length) {
+      return new String(source, offset, length);
+    }
+  };
+
+  private static final class DirectAccessor implements ByteAccessor<ByteBuf> {
+
+    private final long memoryAddress;
+
+    private DirectAccessor(ByteBuf bytes) {
+      this.memoryAddress = bytes.memoryAddress();
+    }
+    @Override
+    public final byte get(ByteBuf source, int offset) {
+      return PlatformDependent.getByte(memoryAddress + offset);
+    }
+    @Override
+    public final String toString(ByteBuf source, int offset, int length) {
+      return source.toString(offset, length, Charset.defaultCharset());
+    }
   }
 }
