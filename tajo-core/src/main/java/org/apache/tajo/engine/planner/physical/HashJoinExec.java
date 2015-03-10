@@ -19,15 +19,18 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.Projector;
-import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.catalog.SchemaUtil;
+import org.apache.tajo.engine.utils.CacheHolder;
+import org.apache.tajo.engine.utils.TableCacheKey;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.JoinNode;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.worker.ExecutionBlockSharedResource;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -58,13 +61,14 @@ public class HashJoinExec extends BinaryPhysicalExec {
   // projection
   protected final Projector projector;
 
+  private TableStats cachedRightTableStats;
+
   public HashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftExec,
       PhysicalExec rightExec) {
     super(context, SchemaUtil.merge(leftExec.getSchema(), rightExec.getSchema()), plan.getOutSchema(),
         leftExec, rightExec);
     this.plan = plan;
     this.joinQual = plan.getJoinQual();
-    this.tupleSlots = new HashMap<Tuple, List<Tuple>>(100000);
 
     // HashJoin only can manage equi join key pairs.
     this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, leftExec.getSchema(),
@@ -151,8 +155,40 @@ public class HashJoinExec extends BinaryPhysicalExec {
   }
 
   protected void loadRightToHashTable() throws IOException {
+    ScanExec scanExec = PhysicalPlanUtil.findExecutor(rightChild, ScanExec.class);
+    if (scanExec.canBroadcast()) {
+      TableCacheKey key = CacheHolder.BroadcastCacheHolder.getCacheKey(
+          context, scanExec.getCanonicalName(), scanExec.getFragments());
+      loadRightFromCache(key);
+    } else {
+      this.tupleSlots = buildRightToHashTable();
+    }
+
+    first = false;
+  }
+
+  protected void loadRightFromCache(TableCacheKey key) throws IOException {
+    ExecutionBlockSharedResource sharedResource = context.getSharedResource();
+    synchronized (sharedResource.getLock()) {
+      if (sharedResource.hasBroadcastCache(key)) {
+        CacheHolder<Map<Tuple, List<Tuple>>> data = sharedResource.getBroadcastCache(key);
+        this.tupleSlots = data.getData();
+        this.cachedRightTableStats = data.getTableStats();
+      } else {
+        CacheHolder.BroadcastCacheHolder holder =
+            new CacheHolder.BroadcastCacheHolder(buildRightToHashTable(), rightChild.getInputStats(), null);
+        sharedResource.addBroadcastCache(key, holder);
+        CacheHolder<Map<Tuple, List<Tuple>>> data = sharedResource.getBroadcastCache(key);
+        this.tupleSlots = data.getData();
+        this.cachedRightTableStats = data.getTableStats();
+      }
+    }
+  }
+
+  private Map<Tuple, List<Tuple>> buildRightToHashTable() throws IOException {
     Tuple tuple;
     Tuple keyTuple;
+    Map<Tuple, List<Tuple>> map = new HashMap<Tuple, List<Tuple>>(100000);
 
     while (!context.isStopped() && (tuple = rightChild.next()) != null) {
       keyTuple = new VTuple(joinKeyPairs.size());
@@ -160,18 +196,18 @@ public class HashJoinExec extends BinaryPhysicalExec {
         keyTuple.put(i, tuple.get(rightKeyList[i]));
       }
 
-      List<Tuple> newValue = tupleSlots.get(keyTuple);
+      List<Tuple> newValue = map.get(keyTuple);
 
       if (newValue != null) {
         newValue.add(tuple);
       } else {
         newValue = new ArrayList<Tuple>();
         newValue.add(tuple);
-        tupleSlots.put(keyTuple, newValue);
+        map.put(keyTuple, newValue);
       }
     }
 
-    first = false;
+    return map;
   }
 
   @Override
@@ -219,7 +255,7 @@ public class HashJoinExec extends BinaryPhysicalExec {
       inputStats.setNumRows(leftInputStats.getNumRows());
     }
 
-    TableStats rightInputStats = rightChild.getInputStats();
+    TableStats rightInputStats = cachedRightTableStats == null ? rightChild.getInputStats() : cachedRightTableStats;
     if (rightInputStats != null) {
       inputStats.setNumBytes(inputStats.getNumBytes() + rightInputStats.getNumBytes());
       inputStats.setReadBytes(inputStats.getReadBytes() + rightInputStats.getReadBytes());

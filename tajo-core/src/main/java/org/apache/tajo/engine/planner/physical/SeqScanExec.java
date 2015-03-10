@@ -21,17 +21,14 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.codegen.CompilationError;
 import org.apache.tajo.engine.planner.Projector;
-import org.apache.tajo.engine.utils.TupleCache;
-import org.apache.tajo.engine.utils.TupleCacheKey;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.ConstEval;
 import org.apache.tajo.plan.expr.EvalNode;
@@ -42,18 +39,16 @@ import org.apache.tajo.plan.rewrite.rules.PartitionedTableRewriter;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
-import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 
-public class SeqScanExec extends PhysicalExec {
+public class SeqScanExec extends ScanExec {
   private ScanNode plan;
 
   private Scanner scanner = null;
@@ -66,10 +61,6 @@ public class SeqScanExec extends PhysicalExec {
 
   private TableStats inputStats;
 
-  private TupleCacheKey cacheKey;
-
-  private boolean cacheRead = false;
-
   public SeqScanExec(TaskAttemptContext context, ScanNode plan,
                      CatalogProtos.FragmentProto [] fragments) throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema());
@@ -77,21 +68,6 @@ public class SeqScanExec extends PhysicalExec {
     this.plan = plan;
     this.qual = plan.getQual();
     this.fragments = fragments;
-
-    if (plan.isBroadcastTable()) {
-      String pathNameKey = "";
-      if (fragments != null) {
-        StringBuilder stringBuilder = new StringBuilder();
-        for (FragmentProto f : fragments) {
-          Fragment fragement = FragmentConvertor.convert(context.getConf(), f);
-          stringBuilder.append(fragement.getKey());
-        }
-        pathNameKey = stringBuilder.toString();
-      }
-
-      cacheKey = new TupleCacheKey(
-          context.getTaskId().getTaskId().getExecutionBlockId().toString(), plan.getTableName(), pathNameKey);
-    }
 
     if (fragments != null
         && plan.getTableDesc().hasPartition()
@@ -153,6 +129,7 @@ public class SeqScanExec extends PhysicalExec {
     }
   }
 
+  @Override
   public void init() throws IOException {
     Schema projected;
 
@@ -177,33 +154,7 @@ public class SeqScanExec extends PhysicalExec {
       projected = outSchema;
     }
 
-    if (cacheKey != null) {
-      TupleCache tupleCache = TupleCache.getInstance();
-      if (tupleCache.isBroadcastCacheReady(cacheKey)) {
-        openCacheScanner();
-      } else {
-        if (TupleCache.getInstance().lockBroadcastScan(cacheKey)) {
-          scanAndAddCache(projected);
-          openCacheScanner();
-        } else {
-          Object lockMonitor = tupleCache.getLockMonitor();
-          synchronized (lockMonitor) {
-            try {
-              lockMonitor.wait(20 * 1000);
-            } catch (InterruptedException e) {
-            }
-          }
-          if (tupleCache.isBroadcastCacheReady(cacheKey)) {
-            openCacheScanner();
-          } else {
-            initScanner(projected);
-          }
-        }
-      }
-    } else {
-      initScanner(projected);
-    }
-
+    initScanner(projected);
     super.init();
   }
 
@@ -216,7 +167,7 @@ public class SeqScanExec extends PhysicalExec {
 
   private void initScanner(Schema projected) throws IOException {
     this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
-    TableMeta meta = null;
+    TableMeta meta;
     try {
       meta = (TableMeta) plan.getTableDesc().getMeta().clone();
     } catch (CloneNotSupportedException e) {
@@ -241,35 +192,6 @@ public class SeqScanExec extends PhysicalExec {
     }
   }
 
-  private void openCacheScanner() throws IOException {
-    Scanner cacheScanner = TupleCache.getInstance().openCacheScanner(cacheKey, plan.getPhysicalSchema());
-    if (cacheScanner != null) {
-      scanner = cacheScanner;
-      cacheRead = true;
-    }
-  }
-
-  private void scanAndAddCache(Schema projected) throws IOException {
-    initScanner(projected);
-
-    List<Tuple> broadcastTupleCacheList = new ArrayList<Tuple>();
-    while (!context.isStopped()) {
-      Tuple tuple = next();
-      if (tuple != null) {
-        broadcastTupleCacheList.add(tuple);
-      } else {
-        break;
-      }
-    }
-
-    if (scanner != null) {
-      scanner.close();
-      scanner = null;
-    }
-
-    TupleCache.getInstance().addBroadcastCache(cacheKey, broadcastTupleCacheList);
-  }
-
   @Override
   public Tuple next() throws IOException {
     if (fragments == null) {
@@ -281,9 +203,6 @@ public class SeqScanExec extends PhysicalExec {
 
     if (!plan.hasQual()) {
       if ((tuple = scanner.next()) != null) {
-        if (cacheRead) {
-          return tuple;
-        }
         projector.eval(tuple, outTuple);
         outTuple.setOffset(tuple.getOffset());
         return outTuple;
@@ -292,9 +211,6 @@ public class SeqScanExec extends PhysicalExec {
       }
     } else {
       while ((tuple = scanner.next()) != null) {
-        if (cacheRead) {
-          return tuple;
-        }
         if (qual.eval(inSchema, tuple).isTrue()) {
           projector.eval(tuple, outTuple);
           return outTuple;
@@ -328,8 +244,19 @@ public class SeqScanExec extends PhysicalExec {
     projector = null;
   }
 
+  @Override
   public String getTableName() {
     return plan.getTableName();
+  }
+
+  @Override
+  public String getCanonicalName() {
+    return plan.getCanonicalName();
+  }
+
+  @Override
+  public CatalogProtos.FragmentProto[] getFragments() {
+    return fragments;
   }
 
   @Override
