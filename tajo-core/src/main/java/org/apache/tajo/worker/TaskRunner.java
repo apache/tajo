@@ -19,6 +19,7 @@
 package org.apache.tajo.worker;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -35,7 +36,8 @@ import org.apache.tajo.master.container.TajoContainerIdPBImpl;
 import org.apache.tajo.master.container.TajoConverterUtils;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NullCallback;
-import org.jboss.netty.channel.ConnectTimeoutException;
+
+import io.netty.channel.ConnectTimeoutException;
 
 import java.util.concurrent.*;
 
@@ -113,6 +115,9 @@ public class TaskRunner extends AbstractService {
 
   @Override
   public void init(Configuration conf) {
+    if (!(conf instanceof TajoConf)) {
+      throw new IllegalArgumentException("conf should be a TajoConf Type.");
+    }
     this.systemConf = (TajoConf)conf;
 
     try {
@@ -121,7 +126,7 @@ public class TaskRunner extends AbstractService {
       LOG.info("TaskRunner basedir is created (" + baseDirPath +")");
     } catch (Throwable t) {
       t.printStackTrace();
-      LOG.error(t);
+      LOG.error(t, t);
     }
     super.init(conf);
     this.history.setState(getServiceState());
@@ -143,15 +148,17 @@ public class TaskRunner extends AbstractService {
     this.finishTime = System.currentTimeMillis();
     this.history.setFinishTime(finishTime);
     // If this flag become true, taskLauncher will be terminated.
-    this.stopped = true;
-
-    fetchLauncher.shutdown();
-    fetchLauncher = null;
 
     LOG.info("Stop TaskRunner: " + getId());
     synchronized (this) {
+      this.stopped = true;
+
+      fetchLauncher.shutdown();
+      fetchLauncher = null;
+
       notifyAll();
     }
+
     super.stop();
     this.history.setState(getServiceState());
   }

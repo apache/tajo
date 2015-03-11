@@ -459,7 +459,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
             try {
               list.add(new FunctionDesc(response.getFunctionDesc(i)));
             } catch (ClassNotFoundException e) {
-              LOG.error(e);
+              LOG.error(e, e);
               return null;
             }
           }
@@ -753,7 +753,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
     try {
       return new FunctionDesc(descProto);
     } catch (ClassNotFoundException e) {
-      LOG.error(e);
+      LOG.error(e, e);
       throw new NoSuchFunctionException(signature, paramTypes);
     }
   }

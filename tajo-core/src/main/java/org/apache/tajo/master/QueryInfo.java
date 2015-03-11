@@ -237,4 +237,51 @@ public class QueryInfo implements GsonObject, History, Comparable<QueryInfo> {
   public int compareTo(QueryInfo o) {
     return queryId.compareTo(o.queryId);
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    QueryInfo queryInfo = (QueryInfo) o;
+
+    if (finishTime != queryInfo.finishTime) return false;
+    if (Float.compare(queryInfo.progress, progress) != 0) return false;
+    if (queryMasterClientPort != queryInfo.queryMasterClientPort) return false;
+    if (queryMasterInfoPort != queryInfo.queryMasterInfoPort) return false;
+    if (queryMasterPort != queryInfo.queryMasterPort) return false;
+    if (startTime != queryInfo.startTime) return false;
+    if (context != null ? !context.equals(queryInfo.context) : queryInfo.context != null) return false;
+    if (hostNameOfQM != null ? !hostNameOfQM.equals(queryInfo.hostNameOfQM) : queryInfo.hostNameOfQM != null)
+      return false;
+    if (jsonExpr != null ? !jsonExpr.equals(queryInfo.jsonExpr) : queryInfo.jsonExpr != null) return false;
+    if (lastMessage != null ? !lastMessage.equals(queryInfo.lastMessage) : queryInfo.lastMessage != null) return false;
+    if (queryId != null ? !queryId.equals(queryInfo.queryId) : queryInfo.queryId != null) return false;
+    if (queryIdStr != null ? !queryIdStr.equals(queryInfo.queryIdStr) : queryInfo.queryIdStr != null) return false;
+    if (queryState != queryInfo.queryState) return false;
+    if (resultDesc != null ? !resultDesc.equals(queryInfo.resultDesc) : queryInfo.resultDesc != null) return false;
+    if (sql != null ? !sql.equals(queryInfo.sql) : queryInfo.sql != null) return false;
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = queryId != null ? queryId.hashCode() : 0;
+    result = 31 * result + (context != null ? context.hashCode() : 0);
+    result = 31 * result + (sql != null ? sql.hashCode() : 0);
+    result = 31 * result + (queryState != null ? queryState.hashCode() : 0);
+    result = 31 * result + (progress != +0.0f ? Float.floatToIntBits(progress) : 0);
+    result = 31 * result + (int) (startTime ^ (startTime >>> 32));
+    result = 31 * result + (int) (finishTime ^ (finishTime >>> 32));
+    result = 31 * result + (lastMessage != null ? lastMessage.hashCode() : 0);
+    result = 31 * result + (hostNameOfQM != null ? hostNameOfQM.hashCode() : 0);
+    result = 31 * result + queryMasterPort;
+    result = 31 * result + queryMasterClientPort;
+    result = 31 * result + queryMasterInfoPort;
+    result = 31 * result + (queryIdStr != null ? queryIdStr.hashCode() : 0);
+    result = 31 * result + (resultDesc != null ? resultDesc.hashCode() : 0);
+    result = 31 * result + (jsonExpr != null ? jsonExpr.hashCode() : 0);
+    return result;
+  }
 }

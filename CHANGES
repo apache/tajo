@@ -4,17 +4,49 @@ Release 0.11.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1135: Implement queryable virtual table for cluster information.
+    (jihun)
 
   IMPROVEMENT
 
+    TAJO-527: Upgrade to Netty 4. (jihun)
+
+    TAJO-1369: Some stack trace information is missed in error/fail logging. 
+    (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1384: Duplicated output file path problem. (jihoon)
+
+    TAJO-1386: CURRENT_DATE generates parsing errors sometimes.
+    (Contributed by navis, Committed by hyunsik)
+
+    TAJO-1387: Correct error message for EXISTS clause.
+    (Contributed by Dongjoon Hyun, Committed by hyunsik)
+
+    TAJO-1378: Incorrect version(0.8.0) info in tajo-doc. 
+    (Contributed by Dongjoon Hyun, Committed by jihoon)
+
+    TAJO-1370: TUtils.checkEquals() is not consistent with description 
+    in javadoc. (Contributed by navis, Committed by hyunsik)
+
+    TAJO-1362: Resolve findbug warnings on Tajo Core Module. (jihun)
+
+    TAJO-1366: The timestamp type conversion occasionally leads to wrong 
+    results. (jihoon)
+
+    TAJO-1365: Suppress release audit warnings on Jekins builds. (jihun)
 
     TAJO-1357: Resolve findbugs warnings on Tajo Catalog Modules. (jihun)
 
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1335: Bump up 0.10.0-SNAPSHOT to 0.11.0-SNAPSHOT in master branch. 
+    (hyunsik)
+
+    TAJO-1314: Documentation for the support of the swift. (jihoon)
 
 
   SUB TASKS

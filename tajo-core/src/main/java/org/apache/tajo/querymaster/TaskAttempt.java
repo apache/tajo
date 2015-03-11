@@ -307,6 +307,9 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
     @Override
     public void transition(TaskAttempt taskAttempt,
                            TaskAttemptEvent event) {
+      if (!(event instanceof TaskAttemptAssignedEvent)) {
+        throw new IllegalArgumentException("event should be a TaskAttemptAssignedEvent type.");
+      }
       TaskAttemptAssignedEvent castEvent = (TaskAttemptAssignedEvent) event;
       taskAttempt.containerId = castEvent.getContainerId();
       taskAttempt.workerConnectionInfo = castEvent.getWorkerConnectionInfo();
@@ -333,6 +336,9 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
     @Override
     public TaskAttemptState transition(TaskAttempt taskAttempt,
                                        TaskAttemptEvent event) {
+      if (!(event instanceof TaskAttemptStatusUpdateEvent)) {
+        throw new IllegalArgumentException("event should be a TaskAttemptStatusUpdateEvent type.");
+      }
       TaskAttemptStatusUpdateEvent updateEvent = (TaskAttemptStatusUpdateEvent) event;
 
       taskAttempt.progress = updateEvent.getStatus().getProgress();
@@ -371,6 +377,9 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
     @Override
     public void transition(TaskAttempt taskAttempt,
                            TaskAttemptEvent event) {
+      if (!(event instanceof TaskCompletionEvent)) {
+        throw new IllegalArgumentException("event should be a TaskCompletionEvent type.");
+      }
       TaskCompletionReport report = ((TaskCompletionEvent)event).getReport();
 
       try {
@@ -395,6 +404,9 @@ public class TaskAttempt implements EventHandler<TaskAttemptEvent> {
   private static class FailedTransition implements SingleArcTransition<TaskAttempt, TaskAttemptEvent>{
     @Override
     public void transition(TaskAttempt taskAttempt, TaskAttemptEvent event) {
+      if (!(event instanceof TaskFatalErrorEvent)) {
+        throw new IllegalArgumentException("event should be a TaskFatalErrorEvent type.");
+      }
       TaskFatalErrorEvent errorEvent = (TaskFatalErrorEvent) event;
       taskAttempt.eventHandler.handle(new TaskTAttemptEvent(taskAttempt.getId(), TaskEventType.T_ATTEMPT_FAILED));
       taskAttempt.addDiagnosticInfo(errorEvent.errorMessage());

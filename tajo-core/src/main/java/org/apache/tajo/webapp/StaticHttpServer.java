@@ -31,6 +31,8 @@ import java.net.Inet4Address;
 public class StaticHttpServer extends HttpServer {
   private static StaticHttpServer instance = null;
 
+  private static final Object lockObjectForStaticHttpServer = new Object();
+
   private StaticHttpServer(Object containerObject , String name, String bindAddress, int port,
       boolean findPort, Connector connector, Configuration conf,
       String[] pathSpecs) throws IOException {
@@ -52,13 +54,17 @@ public class StaticHttpServer extends HttpServer {
           addr = Inet4Address.getLocalHost().getHostName();
         }
       }
-      
-      instance = new StaticHttpServer(containerObject, name, addr, port,
-          findPort, connector, conf, pathSpecs);
-      instance.setAttribute("tajo.info.server.object", containerObject);
-      instance.setAttribute("tajo.info.server.addr", addr);
-      instance.setAttribute("tajo.info.server.conf", conf);
-      instance.setAttribute("tajo.info.server.starttime", System.currentTimeMillis());
+
+      synchronized (lockObjectForStaticHttpServer) {
+        if (instance == null) {
+          instance = new StaticHttpServer(containerObject, name, addr, port,
+              findPort, connector, conf, pathSpecs);
+          instance.setAttribute("tajo.info.server.object", containerObject);
+          instance.setAttribute("tajo.info.server.addr", addr);
+          instance.setAttribute("tajo.info.server.conf", conf);
+          instance.setAttribute("tajo.info.server.starttime", System.currentTimeMillis());
+        }
+      }
     }
     return instance;
   }

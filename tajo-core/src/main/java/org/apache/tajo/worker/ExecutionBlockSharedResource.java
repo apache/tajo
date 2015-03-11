@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ExecutionBlockSharedResource {
   private static Log LOG = LogFactory.getLog(ExecutionBlockSharedResource.class);
   private AtomicBoolean initializing = new AtomicBoolean(false);
-  private volatile Boolean resourceInitSuccess = new Boolean(false);
+  private volatile Boolean resourceInitSuccess = Boolean.valueOf(false);
 
   // Query
   private QueryContext context;
@@ -99,7 +99,7 @@ public class ExecutionBlockSharedResource {
           LOG.warn(eval.toString() + " does not exists. Immediately compile it: " + eval);
           return compileEval(schema, eval);
         } catch (Throwable t) {
-          LOG.warn(t);
+          LOG.warn(t, t);
           return eval;
         }
       }

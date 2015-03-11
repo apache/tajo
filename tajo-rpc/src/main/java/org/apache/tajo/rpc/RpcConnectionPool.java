@@ -21,79 +21,71 @@ package org.apache.tajo.rpc;
 import com.google.common.base.Objects;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jboss.netty.channel.ConnectTimeoutException;
-import org.jboss.netty.channel.group.ChannelGroup;
-import org.jboss.netty.channel.group.DefaultChannelGroup;
-import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
-import org.jboss.netty.logging.CommonsLoggerFactory;
-import org.jboss.netty.logging.InternalLoggerFactory;
+import io.netty.channel.ConnectTimeoutException;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.util.concurrent.GlobalEventExecutor;
+import io.netty.util.internal.logging.CommonsLoggerFactory;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
+import java.util.HashMap;
+import java.util.Map;
 
 public class RpcConnectionPool {
   private static final Log LOG = LogFactory.getLog(RpcConnectionPool.class);
 
-  private ConcurrentMap<RpcConnectionKey, NettyClientBase> connections =
-      new ConcurrentHashMap<RpcConnectionKey, NettyClientBase>();
-  private ChannelGroup accepted = new DefaultChannelGroup();
+  private Map<RpcConnectionKey, NettyClientBase> connections =
+      new HashMap<RpcConnectionKey, NettyClientBase>();
+  private ChannelGroup accepted = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
   private static RpcConnectionPool instance;
-  private final ClientSocketChannelFactory channelFactory;
+  private final Object lockObject = new Object();
 
   public final static int RPC_RETRIES = 3;
 
-  private RpcConnectionPool(ClientSocketChannelFactory channelFactory) {
-    this.channelFactory =  channelFactory;
+  private RpcConnectionPool() {
   }
 
   public synchronized static RpcConnectionPool getPool() {
     if(instance == null) {
       InternalLoggerFactory.setDefaultFactory(new CommonsLoggerFactory());
-      instance = new RpcConnectionPool(RpcChannelFactory.getSharedClientChannelFactory());
+      instance = new RpcConnectionPool();
     }
     return instance;
-  }
-
-  public synchronized static RpcConnectionPool newPool(String poolName, int workerNum) {
-    return new RpcConnectionPool(RpcChannelFactory.createClientChannelFactory(poolName, workerNum));
   }
 
   private NettyClientBase makeConnection(RpcConnectionKey rpcConnectionKey)
       throws NoSuchMethodException, ClassNotFoundException, ConnectTimeoutException {
     NettyClientBase client;
     if(rpcConnectionKey.asyncMode) {
-      client = new AsyncRpcClient(rpcConnectionKey.protocolClass, rpcConnectionKey.addr, channelFactory, RPC_RETRIES);
+      client = new AsyncRpcClient(rpcConnectionKey.protocolClass, rpcConnectionKey.addr, 
+          RPC_RETRIES);
     } else {
-      client = new BlockingRpcClient(rpcConnectionKey.protocolClass, rpcConnectionKey.addr, channelFactory, RPC_RETRIES);
+      client = new BlockingRpcClient(rpcConnectionKey.protocolClass, rpcConnectionKey.addr, 
+          RPC_RETRIES);
     }
     accepted.add(client.getChannel());
     return client;
   }
 
   public NettyClientBase getConnection(InetSocketAddress addr,
-                                       Class protocolClass, boolean asyncMode)
+                                       Class<?> protocolClass, boolean asyncMode)
       throws NoSuchMethodException, ClassNotFoundException, ConnectTimeoutException {
     RpcConnectionKey key = new RpcConnectionKey(addr, protocolClass, asyncMode);
     NettyClientBase client = connections.get(key);
 
     if (client == null) {
-      boolean added;
-      synchronized (connections){
-        client = makeConnection(key);
-        connections.put(key, client);
-        added = true;
-      }
-
-      if (!added) {
-        client.close();
+      synchronized (lockObject){
         client = connections.get(key);
+        if (client == null) {
+          client = makeConnection(key);
+          connections.put(key, client);
+        }
       }
     }
 
-    if (!client.getChannel().isOpen() || !client.getChannel().isConnected()) {
+    if (client.getChannel() == null || !client.getChannel().isOpen() || !client.getChannel().isActive()) {
       LOG.warn("Try to reconnect : " + addr);
       client.connect(addr);
     }
@@ -104,9 +96,11 @@ public class RpcConnectionPool {
     if (client == null) return;
 
     try {
-      if (!client.getChannel().isOpen()) {
-        connections.remove(client.getKey());
-        client.close();
+      synchronized (lockObject) {
+        if (!client.getChannel().isOpen()) {
+          connections.remove(client.getKey());
+          client.close();
+        }
       }
 
       if(LOG.isDebugEnabled()) {
@@ -128,8 +122,10 @@ public class RpcConnectionPool {
         LOG.debug("Close connection [" + client.getKey() + "]");
       }
 
-      connections.remove(client.getKey());
-      client.close();
+      synchronized (lockObject) {
+        connections.remove(client.getKey());
+        client.close();
+      }
 
     } catch (Exception e) {
       LOG.error("Can't close connection:" + client.getKey() + ":" + e.getMessage(), e);
@@ -140,7 +136,7 @@ public class RpcConnectionPool {
     if(LOG.isDebugEnabled()) {
       LOG.debug("Pool Closed");
     }
-    synchronized(connections) {
+    synchronized(lockObject) {
       for(NettyClientBase eachClient: connections.values()) {
         try {
           eachClient.close();
@@ -148,30 +144,29 @@ public class RpcConnectionPool {
           LOG.error("close client pool error", e);
         }
       }
+
+      connections.clear();
     }
 
-    connections.clear();
     try {
-      accepted.close().awaitUninterruptibly(10, TimeUnit.SECONDS);
+      accepted.close();
     } catch (Throwable t) {
-      LOG.error(t);
+      LOG.error(t, t);
     }
   }
 
   public synchronized void shutdown(){
     close();
-    if(channelFactory != null){
-      channelFactory.releaseExternalResources();
-    }
+    RpcChannelFactory.shutdownGracefully();
   }
 
   static class RpcConnectionKey {
     final InetSocketAddress addr;
-    final Class protocolClass;
+    final Class<?> protocolClass;
     final boolean asyncMode;
 
     public RpcConnectionKey(InetSocketAddress addr,
-                            Class protocolClass, boolean asyncMode) {
+                            Class<?> protocolClass, boolean asyncMode) {
       this.addr = addr;
       this.protocolClass = protocolClass;
       this.asyncMode = asyncMode;

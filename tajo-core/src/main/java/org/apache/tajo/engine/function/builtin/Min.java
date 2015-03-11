@@ -70,7 +70,7 @@ public abstract class Min extends AggFunction<Datum> {
     }
   }
 
-  private class MinContext implements FunctionContext {
+  private static class MinContext implements FunctionContext {
     Datum min = null;
   }
 }

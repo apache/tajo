@@ -84,6 +84,9 @@ public class HistoryWriter extends AbstractService {
 
   @Override
   public void serviceInit(Configuration conf) throws Exception {
+    if (!(conf instanceof TajoConf)) {
+      throw new IllegalArgumentException("conf should be a TajoConf type.");
+    }
     tajoConf = (TajoConf)conf;
     historyParentPath = tajoConf.getQueryHistoryDir(tajoConf);
     taskHistoryParentPath = tajoConf.getTaskHistoryDir(tajoConf);
@@ -433,7 +436,7 @@ public class HistoryWriter extends AbstractService {
           try {
             holder.flush();
           } catch (IOException e) {
-            LOG.warn(e);
+            LOG.warn(e, e);
           }
         }
       }

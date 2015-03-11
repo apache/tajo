@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import io.netty.channel.EventLoopGroup;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -55,9 +56,8 @@ import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.NetUtils;
-import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
-import org.jboss.netty.handler.codec.http.QueryStringDecoder;
-import org.jboss.netty.util.Timer;
+
+import io.netty.handler.codec.http.QueryStringDecoder;
 
 import java.io.File;
 import java.io.IOException;
@@ -417,7 +417,7 @@ public class Task {
           executor.close();
           reloadInputStats();
         } catch (IOException e) {
-          LOG.error(e);
+          LOG.error(e, e);
         }
         this.executor = null;
       }
@@ -664,8 +664,6 @@ public class Task {
                                         List<FetchImpl> fetches) throws IOException {
 
     if (fetches.size() > 0) {
-      ClientSocketChannelFactory channelFactory = executionBlockContext.getShuffleChannelFactory();
-      Timer timer = executionBlockContext.getRPCTimer();
       Path inputDir = executionBlockContext.getLocalDirAllocator().
           getLocalPathToRead(getTaskAttemptDir(ctx.getTaskId()).toString(), systemConf);
 
@@ -716,7 +714,7 @@ public class Task {
           // If we decide that intermediate data should be really fetched from a remote host, storeChunk
           // represents a complete file. Otherwise, storeChunk may represent a complete file or only a part of it
           storeChunk.setEbId(f.getName());
-          Fetcher fetcher = new Fetcher(systemConf, uri, storeChunk, channelFactory, timer);
+          Fetcher fetcher = new Fetcher(systemConf, uri, storeChunk);
           LOG.info("Create a new Fetcher with storeChunk:" + storeChunk.toString());
           runnerList.add(fetcher);
           i++;
@@ -732,7 +730,7 @@ public class Task {
   private FileChunk getLocalStoredFileChunk(URI fetchURI, TajoConf conf) throws IOException {
     // Parse the URI
     LOG.info("getLocalStoredFileChunk starts");
-    final Map<String, List<String>> params = new QueryStringDecoder(fetchURI.toString()).getParameters();
+    final Map<String, List<String>> params = new QueryStringDecoder(fetchURI.toString()).parameters();
     final List<String> types = params.get("type");
     final List<String> qids = params.get("qid");
     final List<String> taskIdList = params.get("ta");

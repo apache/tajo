@@ -1160,7 +1160,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     if (checkIfExist(ctx.extract_expression())) {
       return visitExtract_expression(ctx.extract_expression());
     }
-
+    if (checkIfExist(ctx.datetime_value_function())) {
+      return visitDatetime_value_function(ctx.datetime_value_function());
+    }
     return null;
   }
 

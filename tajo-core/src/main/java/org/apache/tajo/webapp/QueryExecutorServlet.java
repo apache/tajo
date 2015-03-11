@@ -28,6 +28,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.NotSerializableException;
 import java.io.OutputStream;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -62,17 +63,26 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class QueryExecutorServlet extends HttpServlet {
   private static final Log LOG = LogFactory.getLog(QueryExecutorServlet.class);
+  private static final long serialVersionUID = -1517586415463171579L;
 
-  ObjectMapper om = new ObjectMapper();
+  transient ObjectMapper om = new ObjectMapper();
 
   //queryRunnerId -> QueryRunner
   //TODO We must handle the session.
-  private final Map<String, QueryRunner> queryRunners = new HashMap<String, QueryRunner>();
+  private transient final Map<String, QueryRunner> queryRunners = new HashMap<String, QueryRunner>();
 
-  private TajoConf tajoConf;
-  private TajoClient tajoClient;
+  private transient TajoConf tajoConf;
+  private transient TajoClient tajoClient;
 
-  private ExecutorService queryRunnerExecutor = Executors.newFixedThreadPool(5);
+  private transient ExecutorService queryRunnerExecutor = Executors.newFixedThreadPool(5);
+
+  private void writeObject(java.io.ObjectOutputStream stream) throws java.io.IOException {
+    throw new NotSerializableException( getClass().getName() );
+  }
+
+  private void readObject(java.io.ObjectInputStream stream) throws java.io.IOException, ClassNotFoundException {
+    throw new NotSerializableException( getClass().getName() );
+  }
 
   @Override
   public void init(ServletConfig config) throws ServletException {
@@ -85,7 +95,7 @@ public class QueryExecutorServlet extends HttpServlet {
 
       new QueryRunnerCleaner().start();
     } catch (IOException e) {
-      LOG.error(e.getMessage());
+      LOG.error(e.getMessage(), e);
     }
   }
 
@@ -135,10 +145,11 @@ public class QueryExecutorServlet extends HttpServlet {
             if(!queryRunners.containsKey(queryRunnerId)) {
               break;
             }
-            try {
-              Thread.sleep(100);
-            } catch (InterruptedException e) {
-            }
+          }
+
+          try {
+            Thread.sleep(100);
+          } catch (InterruptedException e) {
           }
         }
         String database = request.getParameter("database");
@@ -458,7 +469,7 @@ public class QueryExecutorServlet extends HttpServlet {
               try {
                 tajoClient.closeQuery(queryId);
               } catch (Exception e) {
-                LOG.warn(e);
+                LOG.warn(e, e);
               }
             }
           }

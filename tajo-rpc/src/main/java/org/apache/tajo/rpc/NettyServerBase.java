@@ -20,19 +20,23 @@ package org.apache.tajo.rpc;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelFactory;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.group.ChannelGroup;
-import org.jboss.netty.channel.group.DefaultChannelGroup;
+
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.concurrent.GlobalEventExecutor;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class NettyServerBase {
@@ -43,10 +47,10 @@ public class NettyServerBase {
   protected String serviceName;
   protected InetSocketAddress serverAddr;
   protected InetSocketAddress bindAddress;
-  protected ChannelPipelineFactory pipelineFactory;
+  protected ChannelInitializer<Channel> initializer;
   protected ServerBootstrap bootstrap;
-  protected Channel channel;
-  protected ChannelGroup accepted = new DefaultChannelGroup();
+  protected ChannelFuture channelFuture;
+  protected ChannelGroup accepted = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
   private InetSocketAddress initIsa;
 
@@ -63,19 +67,19 @@ public class NettyServerBase {
     this.serviceName = name;
   }
 
-  public void init(ChannelPipelineFactory pipeline, int workerNum) {
-    ChannelFactory factory = RpcChannelFactory.createServerChannelFactory(serviceName, workerNum);
+  public void init(ChannelInitializer<Channel> initializer, int workerNum) {
+    bootstrap = RpcChannelFactory.createServerChannelFactory(serviceName, workerNum);
 
-    pipelineFactory = pipeline;
-    bootstrap = new ServerBootstrap(factory);
-    bootstrap.setPipelineFactory(pipelineFactory);
-    // TODO - should be configurable
-    bootstrap.setOption("reuseAddress", true);
-    bootstrap.setOption("child.tcpNoDelay", true);
-    bootstrap.setOption("child.keepAlive", true);
-    bootstrap.setOption("child.connectTimeoutMillis", 10000);
-    bootstrap.setOption("child.connectResponseTimeoutMillis", 10000);
-    bootstrap.setOption("child.receiveBufferSize", 1048576 * 10);
+    this.initializer = initializer;
+    bootstrap
+      .channel(NioServerSocketChannel.class)
+      .childHandler(initializer)
+      .option(ChannelOption.SO_REUSEADDR, true)
+      .option(ChannelOption.TCP_NODELAY, true)
+      .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+      .childOption(ChannelOption.TCP_NODELAY, true)
+      .childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
+      .childOption(ChannelOption.SO_RCVBUF, 1048576 * 10);
   }
 
   public InetSocketAddress getListenAddress() {
@@ -92,34 +96,47 @@ public class NettyServerBase {
         int port = getUnusedPort();
         serverAddr = new InetSocketAddress(initIsa.getHostName(), port);
       } catch (IOException e) {
-        LOG.error(e);
+        LOG.error(e, e);
       }
     } else {
       serverAddr = initIsa;
     }
 
-    this.channel = bootstrap.bind(serverAddr);
-    this.bindAddress = (InetSocketAddress) channel.getLocalAddress();
+    this.channelFuture = bootstrap.clone().bind(serverAddr).syncUninterruptibly();
+    this.bindAddress = (InetSocketAddress) channelFuture.channel().localAddress();
 
     LOG.info("Rpc (" + serviceName + ") listens on " + this.bindAddress);
   }
 
   public Channel getChannel() {
-    return this.channel;
+    return this.channelFuture.channel();
   }
 
   public void shutdown() {
-    if(channel != null) {
-      channel.close().awaitUninterruptibly();
-    }
+    shutdown(false);
+  }
 
+  public void shutdown(boolean waitUntilThreadsStop) {
     try {
-      accepted.close().awaitUninterruptibly(10, TimeUnit.SECONDS);
+      accepted.close();
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
     }
+
     if(bootstrap != null) {
-      bootstrap.releaseExternalResources();
+      if (bootstrap.childGroup() != null) {
+        bootstrap.childGroup().shutdownGracefully();
+        if (waitUntilThreadsStop) {
+          bootstrap.childGroup().terminationFuture().awaitUninterruptibly();
+        }
+      }
+
+      if (bootstrap.group() != null) {
+        bootstrap.group().shutdownGracefully();
+        if (waitUntilThreadsStop) {
+          bootstrap.childGroup().terminationFuture().awaitUninterruptibly();
+        }
+      }
     }
 
     if (bindAddress != null) {
@@ -138,13 +155,14 @@ public class NettyServerBase {
   // each system has a different starting port number within the given range.
   private static final AtomicInteger nextPortNum =
       new AtomicInteger(startPortRange+ rnd.nextInt(endPortRange - startPortRange));
+  private static final Object lockObject = new Object();
 
 
   private synchronized static int getUnusedPort() throws IOException {
     while (true) {
       int port = nextPortNum.getAndIncrement();
       if (port >= endPortRange) {
-        synchronized (nextPortNum) {
+        synchronized (lockObject) {
           nextPortNum.set(startPortRange);
           port = nextPortNum.getAndIncrement();
         }
