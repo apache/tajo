@@ -286,7 +286,6 @@
     <dependency>
       <groupId>org.apache.tajo</groupId>
       <artifactId>tajo-thrift-server</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.hadoop</groupId>
