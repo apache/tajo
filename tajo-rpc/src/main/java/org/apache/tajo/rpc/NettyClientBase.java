@@ -20,9 +20,9 @@ package org.apache.tajo.rpc;
 
 import io.netty.channel.*;
 
-import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.rpc.RpcConnectionPool.RpcConnectionKey;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -30,77 +30,125 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.GenericFutureListener;
 
 import java.io.Closeable;
+import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class NettyClientBase implements Closeable {
-  private static Log LOG = LogFactory.getLog(NettyClientBase.class);
-  private static final int CLIENT_CONNECTION_TIMEOUT_SEC = 60;
+  private static final Log LOG = LogFactory.getLog(NettyClientBase.class);
+  private static final int CONNECTION_TIMEOUT = 60000;  // 60 sec
   private static final long PAUSE = 1000; // 1 sec
-  private int numRetries;
 
-  protected Bootstrap bootstrap;
-  private ChannelFuture channelFuture;
+  private final int numRetries;
 
-  public NettyClientBase() {
-  }
+  private Bootstrap bootstrap;
+  private volatile ChannelFuture channelFuture;
 
-  public abstract <T> T getStub();
-  public abstract RpcConnectionPool.RpcConnectionKey getKey();
-  
-  public void init(InetSocketAddress addr, ChannelInitializer<Channel> initializer, 
-      int numRetries) throws ConnectTimeoutException {
+  protected final Class<?> protocol;
+  protected final AtomicInteger sequence = new AtomicInteger(0);
+
+  private final RpcConnectionKey key;
+  private final AtomicInteger counter = new AtomicInteger(0);   // reference counter
+
+  public NettyClientBase(RpcConnectionKey rpcConnectionKey, int numRetries)
+      throws ClassNotFoundException, NoSuchMethodException {
+    this.key = rpcConnectionKey;
+    this.protocol = rpcConnectionKey.protocolClass;
     this.numRetries = numRetries;
-    
-    init(addr, initializer);
   }
 
-  public void init(InetSocketAddress addr, ChannelInitializer<Channel> initializer)
-      throws ConnectTimeoutException {
+  // should be called from sub class
+  protected void init(ChannelInitializer<Channel> initializer) {
     this.bootstrap = new Bootstrap();
     this.bootstrap
       .channel(NioSocketChannel.class)
       .handler(initializer)
       .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
       .option(ChannelOption.SO_REUSEADDR, true)
-      .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
+      .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, CONNECTION_TIMEOUT)
       .option(ChannelOption.SO_RCVBUF, 1048576 * 10)
       .option(ChannelOption.TCP_NODELAY, true);
+  }
 
-    connect(addr);
+  public RpcConnectionPool.RpcConnectionKey getKey() {
+    return key;
+  }
+
+  protected final Class<?> getServiceClass() throws ClassNotFoundException {
+    String serviceClassName = protocol.getName() + "$" + protocol.getSimpleName() + "Service";
+    return Class.forName(serviceClassName);
+  }
+
+  @SuppressWarnings("unchecked")
+  protected final <T> T getStub(Method stubMethod, Object rpcChannel) {
+    try {
+      return (T) stubMethod.invoke(null, rpcChannel);
+    } catch (Exception e) {
+      throw new RemoteException(e.getMessage(), e);
+    }
+  }
+
+  public abstract <T> T getStub();
+
+  public boolean acquire(long timeout) {
+    if (!checkConnection(timeout)) {
+      return false;
+    }
+    counter.incrementAndGet();
+    return true;
+  }
+
+  public boolean release() {
+    return counter.decrementAndGet() == 0;
+  }
+
+  private boolean checkConnection(long timeout) {
+    if (isConnected()) {
+      return true;
+    }
+
+    InetSocketAddress addr = key.addr;
+    if (addr.isUnresolved()) {
+      addr = RpcUtils.createSocketAddr(addr.getHostName(), addr.getPort());
+    }
+
+    return handleConnectionInternally(addr, timeout);
   }
 
   private void connectUsingNetty(InetSocketAddress address, GenericFutureListener<ChannelFuture> listener) {
-
+    LOG.warn("Try to connect : " + address);
     this.channelFuture = bootstrap.clone().group(RpcChannelFactory.getSharedClientEventloopGroup())
             .connect(address)
             .addListener(listener);
   }
-  
-  private void handleConnectionInternally(final InetSocketAddress addr) throws ConnectTimeoutException {
-    final CountDownLatch latch = new CountDownLatch(1);
-    GenericFutureListener<ChannelFuture> listener = new RetryConnectionListener(addr, latch);
-    connectUsingNetty(addr, listener);
+
+  // first attendant kicks connection
+  private final RpcUtils.Scrutineer<CountDownLatch> connect = new RpcUtils.Scrutineer<CountDownLatch>();
+
+  private boolean handleConnectionInternally(final InetSocketAddress addr, long timeout) {
+    final CountDownLatch ticket = new CountDownLatch(1);
+    final CountDownLatch granted = connect.check(ticket);
+
+    if (ticket == granted) {
+      connectUsingNetty(addr, new RetryConnectionListener(addr, granted));
+    }
 
     try {
-      latch.await(CLIENT_CONNECTION_TIMEOUT_SEC, TimeUnit.SECONDS);
+      granted.await(timeout, TimeUnit.MILLISECONDS);
     } catch (InterruptedException e) {
+      // ignore
     }
 
-    if (!channelFuture.isSuccess()) {
-      throw new ConnectTimeoutException("Connect error to " + addr +
-          " caused by " + ExceptionUtils.getMessage(channelFuture.cause()));
-    }
-  }
+    boolean success = channelFuture.isSuccess();
 
-  public void connect(InetSocketAddress addr) throws ConnectTimeoutException {
-    if(addr.isUnresolved()){
-       addr = RpcUtils.createSocketAddr(addr.getHostName(), addr.getPort());
+    if (granted.getCount() == 0) {
+      connect.clear(granted);
     }
 
-    handleConnectionInternally(addr);
+    return success;
   }
 
   class RetryConnectionListener implements GenericFutureListener<ChannelFuture> {
@@ -142,32 +190,26 @@ public abstract class NettyClientBase implements Closeable {
     }
   }
 
-  public boolean isActive() {
-    return getChannel().isActive();
-  }
-
-  public InetSocketAddress getRemoteAddress() {
-    if (channelFuture == null || channelFuture.channel() == null) {
-      return null;
-    }
-    return (InetSocketAddress) channelFuture.channel().remoteAddress();
-  }
-
   public Channel getChannel() {
-    return channelFuture.channel();
+    return channelFuture == null ? null : channelFuture.channel();
+  }
+
+  public boolean isConnected() {
+    Channel channel = getChannel();
+    return channel != null && channel.isOpen() && channel.isActive();
+  }
+
+  public SocketAddress getRemoteAddress() {
+    Channel channel = getChannel();
+    return channel == null ? null : channel.remoteAddress();
   }
 
   @Override
   public void close() {
-    if (channelFuture != null && getChannel().isActive()) {
-      getChannel().close();
-    }
-
-    if (this.bootstrap != null) {
-      InetSocketAddress address = getRemoteAddress();
-      if (address != null) {
-        LOG.debug("Proxy is disconnected from " + address.getHostName() + ":" + address.getPort());
-      }
+    Channel channel = getChannel();
+    if (channel != null && channel.isOpen()) {
+      LOG.debug("Proxy will be disconnected from remote " + channel.remoteAddress());
+      channel.close();
     }
   }
 }
