@@ -24,9 +24,13 @@ import com.google.protobuf.RpcController;
 public class DefaultRpcController implements RpcController {
   private String errorText;
   private boolean error;
+  private boolean canceled;
 
   @Override
   public void reset() {
+    errorText = "";
+    error = false;
+    canceled = false;
   }
 
   @Override
@@ -41,6 +45,7 @@ public class DefaultRpcController implements RpcController {
 
   @Override
   public void startCancel() {
+    this.canceled = true;
   }
 
   @Override
@@ -51,7 +56,7 @@ public class DefaultRpcController implements RpcController {
 
   @Override
   public boolean isCanceled() {
-    return false;
+    return canceled;
   }
 
   @Override

@@ -22,28 +22,25 @@ package org.apache.tajo.engine.parser;
 import org.apache.tajo.plan.InvalidQueryException;
 
 public class SQLSyntaxError extends InvalidQueryException {
-  private static final long serialVersionUID = 5388279335175632066L;
+  private static final long serialVersionUID = 5388279335175632067L;
 
-  private String errorMessage;
-  private String detailedMessage;
-  private SQLParseError parseError;
+  private transient String detailedMessage;
 
   public SQLSyntaxError(String errorMessage) {
-    this.errorMessage = errorMessage;
+    super(errorMessage);
   }
 
   public SQLSyntaxError(SQLParseError e) {
-    this.errorMessage = e.getMessageHeader();
-    this.parseError = e;
+    super(e.getMessageHeader(), e);
   }
 
   @Override
   public String getMessage() {
     if (detailedMessage == null) {
-      if (parseError != null) {
-        detailedMessage = parseError.getMessage();
+      if (getCause() != null) {
+        detailedMessage = getCause().getMessage();
       } else {
-        detailedMessage = String.format("ERROR: %s\n", errorMessage);
+        detailedMessage = String.format("ERROR: %s\n", super.getMessage());
       }
     }
     return detailedMessage;

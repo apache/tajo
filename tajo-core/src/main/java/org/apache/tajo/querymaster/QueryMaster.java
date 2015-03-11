@@ -99,6 +99,9 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   public void init(Configuration conf) {
     LOG.info("QueryMaster init");
+    if (!(conf instanceof TajoConf)) {
+      throw new IllegalArgumentException("conf should be a TajoConf type");
+    }
     try {
       this.systemConf = (TajoConf)conf;
       this.connPool = RpcConnectionPool.getPool();
@@ -192,6 +195,9 @@ public class QueryMaster extends CompositeService implements EventHandler {
         TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
 
         tajoWorkerProtocolService.cleanupExecutionBlocks(null, executionBlockListProto, NullCallback.get());
+      } catch (RuntimeException e) {
+        LOG.warn("Ignoring RuntimeException. " + e.getMessage(), e);
+        continue;
       } catch (Exception e) {
         continue;
       } finally {
@@ -214,7 +220,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
         tajoWorkerProtocolService.cleanup(null, queryId.getProto(), NullCallback.get());
       } catch (Exception e) {
-        LOG.error(e.getMessage());
+        LOG.error(e.getMessage(), e);
       } finally {
         connPool.releaseConnection(rpc);
       }
@@ -369,7 +375,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
             query.context.getQueryMasterContext().getWorkerContext().
                 getTaskHistoryWriter().appendAndFlush(queryHisory);
           } catch (Throwable e) {
-            LOG.warn(e);
+            LOG.warn(e, e);
           }
         }
       }
@@ -512,7 +518,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
           break;
         }
         try {
-          long expireTime = System.currentTimeMillis() - expireIntervalTime * 60 * 1000;
+          long expireTime = System.currentTimeMillis() - expireIntervalTime * 60 * 1000l;
           cleanExpiredFinishedQueryMasterTask(expireTime);
         } catch (Exception e) {
           LOG.error(e.getMessage(), e);

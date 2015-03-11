@@ -42,9 +42,10 @@ import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.Pair;
-import org.jboss.netty.channel.ConnectTimeoutException;
-import org.jboss.netty.channel.socket.ClientSocketChannelFactory;
-import org.jboss.netty.util.Timer;
+import org.apache.tajo.worker.event.TaskRunnerStartEvent;
+
+import io.netty.channel.ConnectTimeoutException;
+import io.netty.channel.EventLoopGroup;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -67,7 +68,7 @@ public class ExecutionBlockContext {
   public AtomicInteger killedTasksNum = new AtomicInteger();
   public AtomicInteger failedTasksNum = new AtomicInteger();
 
-  private ClientSocketChannelFactory channelFactory;
+  private EventLoopGroup loopGroup;
   // for temporal or intermediate files
   private FileSystem localFS;
   // for input files
@@ -177,19 +178,13 @@ public class ExecutionBlockContext {
         try{
           task.abort();
         } catch (Throwable e){
-          LOG.error(e);
+          LOG.error(e, e);
         }
       }
     }
     tasks.clear();
 
     resource.release();
-
-    try {
-      releaseShuffleChannelFactory();
-    } catch (Throwable e) {
-      LOG.error(e.getMessage(), e);
-    }
   }
 
   public TajoConf getConf() {
@@ -267,28 +262,8 @@ public class ExecutionBlockContext {
     return histories.get(runner.getId());
   }
 
-  public TajoWorker.WorkerContext getWorkerContext() {
+  public TajoWorker.WorkerContext getWorkerContext(){
     return workerContext;
-  }
-
-  protected ClientSocketChannelFactory getShuffleChannelFactory(){
-    if(channelFactory == null) {
-      int workerNum = getConf().getIntVar(TajoConf.ConfVars.SHUFFLE_RPC_CLIENT_WORKER_THREAD_NUM);
-      channelFactory = RpcChannelFactory.createClientChannelFactory("Fetcher", workerNum);
-    }
-    return channelFactory;
-  }
-
-  public Timer getRPCTimer() {
-    return manager.getRPCTimer();
-  }
-
-  protected void releaseShuffleChannelFactory(){
-    if(channelFactory != null) {
-      channelFactory.shutdown();
-      channelFactory.releaseExternalResources();
-      channelFactory = null;
-    }
   }
 
   private void sendExecutionBlockReport(ExecutionBlockReport reporter) throws Exception {

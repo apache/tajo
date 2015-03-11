@@ -106,6 +106,9 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
 
   @Override
   public void init(Configuration conf) {
+    if (!(conf instanceof TajoConf)) {
+      throw new IllegalArgumentException("conf should be a TajoConf type.");
+    }
     tajoConf = (TajoConf)conf;
 
     queryTaskContext.getDispatcher().register(TaskRunnerGroupEvent.EventType.class, new TajoTaskRunnerLauncher());
@@ -130,7 +133,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
       try {
         eachProxy.stopContainer();
       } catch (Throwable e) {
-        LOG.warn(e.getMessage());
+        LOG.warn(e.getMessage(), e);
       }
     }
 
@@ -147,6 +150,9 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
     @Override
     public void handle(TaskRunnerGroupEvent event) {
       if (event.getType() == TaskRunnerGroupEvent.EventType.CONTAINER_REMOTE_LAUNCH) {
+        if (!(event instanceof LaunchTaskRunnersEvent)) {
+          throw new IllegalArgumentException("event should be a LaunchTaskRunnersEvent type.");
+        }
         LaunchTaskRunnersEvent launchEvent = (LaunchTaskRunnersEvent) event;
         launchTaskRunners(launchEvent);
       } else if (event.getType() == TaskRunnerGroupEvent.EventType.CONTAINER_REMOTE_CLEANUP) {

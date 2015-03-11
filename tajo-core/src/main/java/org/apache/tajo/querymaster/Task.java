@@ -272,7 +272,7 @@ public class Task implements EventHandler<TaskEvent> {
         Fragment fragment = FragmentConvertor.convert(systemConf, eachFragment);
         fragmentList.add(fragment.toString());
       } catch (Exception e) {
-        LOG.error(e.getMessage());
+        LOG.error(e.getMessage(), e);
         fragmentList.add("ERROR: " + eachFragment.getStoreType() + "," + eachFragment.getId() + ": " + e.getMessage());
       }
     }
@@ -601,6 +601,9 @@ public class Task implements EventHandler<TaskEvent> {
     @Override
     public void transition(Task task,
                            TaskEvent event) {
+      if (!(event instanceof TaskTAttemptEvent)) {
+        throw new IllegalArgumentException("event should be a TaskTAttemptEvent type.");
+      }
       TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) event;
       TaskAttempt attempt = task.attempts.get(attemptEvent.getTaskAttemptId());
 
@@ -618,6 +621,9 @@ public class Task implements EventHandler<TaskEvent> {
     @Override
     public void transition(Task task,
                            TaskEvent event) {
+      if (!(event instanceof TaskTAttemptEvent)) {
+        throw new IllegalArgumentException("event should be a TaskTAttemptEvent type.");
+      }
       TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) event;
       TaskAttempt attempt = task.attempts.get(attemptEvent.getTaskAttemptId());
       task.launchTime = System.currentTimeMillis();
@@ -629,6 +635,9 @@ public class Task implements EventHandler<TaskEvent> {
   private static class AttemptFailedTransition implements SingleArcTransition<Task, TaskEvent> {
     @Override
     public void transition(Task task, TaskEvent event) {
+      if (!(event instanceof TaskTAttemptEvent)) {
+        throw new IllegalArgumentException("event should be a TaskTAttemptEvent type.");
+      }
       TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) event;
       LOG.info("=============================================================");
       LOG.info(">>> Task Failed: " + attemptEvent.getTaskAttemptId() + " <<<");
@@ -646,6 +655,9 @@ public class Task implements EventHandler<TaskEvent> {
 
     @Override
     public TaskState transition(Task task, TaskEvent taskEvent) {
+      if (!(taskEvent instanceof TaskTAttemptEvent)) {
+        throw new IllegalArgumentException("taskEvent should be a TaskTAttemptEvent type.");
+      }
       TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) taskEvent;
       task.failedAttempts++;
       task.finishedAttempts++;

@@ -104,35 +104,35 @@ public class DateTimePartFromUnixTimestamp extends GeneralFunction {
     public Datum extract(TimeMeta dateTime, int week);
   }
 
-  private class DayExtractorFromTime implements DateTimePartExtractorFromUnixTime {
+  private static class DayExtractorFromTime implements DateTimePartExtractorFromUnixTime {
     @Override
     public Datum extract(TimeMeta dateTime) {
       return DatumFactory.createInt8(DateTimeUtil.getDay(dateTime));
     }
   }
 
-  private class HourExtractorFromTime implements DateTimePartExtractorFromUnixTime {
+  private static class HourExtractorFromTime implements DateTimePartExtractorFromUnixTime {
     @Override
     public Datum extract(TimeMeta dateTime) {
       return DatumFactory.createInt8(DateTimeUtil.getHour(dateTime));
     }
   }
 
-  private class MonthExtractorFromTime implements DateTimePartExtractorFromUnixTime {
+  private static class MonthExtractorFromTime implements DateTimePartExtractorFromUnixTime {
     @Override
     public Datum extract(TimeMeta dateTime) {
       return DatumFactory.createInt8(DateTimeUtil.getMonth(dateTime));
     }
   }
 
-  private class YearExtractorFromTime implements DateTimePartExtractorFromUnixTime {
+  private static class YearExtractorFromTime implements DateTimePartExtractorFromUnixTime {
     @Override
     public Datum extract(TimeMeta dateTime) {
       return DatumFactory.createInt8(DateTimeUtil.getYear(dateTime));
     }
   }
 
-  private class WeekExtractorFromTime implements WeekPartExtractorFromUnixTime {
+  private static class WeekExtractorFromTime implements WeekPartExtractorFromUnixTime {
     @Override
     public Datum extract(TimeMeta dateTime , int week) {
       return DatumFactory.createInt8(DateTimeUtil.getDayOfWeek(dateTime,week));

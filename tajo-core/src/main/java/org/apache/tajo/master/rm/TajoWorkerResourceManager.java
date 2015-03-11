@@ -221,7 +221,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
     try {
       response = callFuture.get(3, TimeUnit.SECONDS);
     } catch (Throwable t) {
-      LOG.error(t);
+      LOG.error(t, t);
       return null;
     }
 
@@ -345,7 +345,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
         } catch(InterruptedException ie) {
           LOG.error(ie);
         } catch (Throwable t) {
-          LOG.error(t);
+          LOG.error(t, t);
         }
       }
     }

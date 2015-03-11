@@ -19,11 +19,13 @@
 package org.apache.tajo.pullserver;
 
 import com.google.common.annotations.VisibleForTesting;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.io.ReadaheadPool;
 import org.apache.hadoop.io.nativeio.NativeIO;
-import org.jboss.netty.channel.DefaultFileRegion;
+
+import io.netty.channel.DefaultFileRegion;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
@@ -79,8 +81,8 @@ public class FadvisedFileRegion extends DefaultFileRegion {
       throws IOException {
     if (PullServerUtil.isNativeIOPossible() && manageOsCache && readaheadPool != null) {
       readaheadRequest = readaheadPool.readaheadStream(identifier, fd,
-          getPosition() + position, readaheadLength,
-          getPosition() + getCount(), readaheadRequest);
+          position() + position, readaheadLength,
+          position() + count(), readaheadRequest);
     }
 
     if(this.shuffleTransferToAllowed) {
@@ -146,11 +148,11 @@ public class FadvisedFileRegion extends DefaultFileRegion {
 
 
   @Override
-  public void releaseExternalResources() {
+  protected void deallocate() {
     if (readaheadRequest != null) {
       readaheadRequest.cancel();
     }
-    super.releaseExternalResources();
+    super.deallocate();
   }
 
   /**
@@ -158,9 +160,9 @@ public class FadvisedFileRegion extends DefaultFileRegion {
    * we don't need the region to be cached anymore.
    */
   public void transferSuccessful() {
-    if (PullServerUtil.isNativeIOPossible() && manageOsCache && getCount() > 0) {
+    if (PullServerUtil.isNativeIOPossible() && manageOsCache && count() > 0 && super.isOpen()) {
       try {
-        PullServerUtil.posixFadviseIfPossible(identifier, fd, getPosition(), getCount(),
+        PullServerUtil.posixFadviseIfPossible(identifier, fd, position(), count(),
             NativeIO.POSIX.POSIX_FADV_DONTNEED);
       } catch (Throwable t) {
         LOG.warn("Failed to manage OS cache for " + identifier, t);
