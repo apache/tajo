@@ -135,7 +135,7 @@ public class QueryManager extends CompositeService {
       }
       return result;
     } catch (Throwable e) {
-      LOG.error(e);
+      LOG.error(e, e);
       return Lists.newArrayList();
     }
   }
