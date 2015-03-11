@@ -75,12 +75,12 @@
   				NESTED_FIELD_NUM INTEGER NOT NULL,
   				DATA_TYPE CHAR(16),
   				TYPE_LENGTH INTEGER,
-  				CONSTRAINT COLUMNS_PK PRIMARY KEY (TID, COLUMN_NAME)
+  				CONSTRAINT COLUMNS_PK PRIMARY KEY (TID, ORDINAL_POSITION)
 				)]]>
 				</tns:sql>
 			</tns:Object>
 			<tns:Object order="8" type="index" name="IDX_FK_COLUMNS_TABLE_NAME" dependsOn="COLUMNS">
-				<tns:sql><![CDATA[CREATE UNIQUE INDEX idx_fk_columns_table_name on COLUMNS (TID, COLUMN_NAME)]]></tns:sql>
+				<tns:sql><![CDATA[CREATE UNIQUE INDEX idx_fk_columns_table_name on COLUMNS (TID, ORDINAL_POSITION)]]></tns:sql>
 			</tns:Object>
 			<tns:Object order="9" type="table" name="OPTIONS">
 				<tns:sql><![CDATA[
