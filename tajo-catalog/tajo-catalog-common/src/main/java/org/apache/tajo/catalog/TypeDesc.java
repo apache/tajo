@@ -63,7 +63,7 @@ public class TypeDesc {
     StringBuilder sb = new StringBuilder();
 
     if (dataType.getType() == Type.RECORD) {
-      sb.append("RECORD (").append(nestedRecordSchema.toString()).append(")");
+      sb.append("RECORD").append(SchemaUtil.toDisplayString(nestedRecordSchema)).append("");
     } else {
       sb.append(dataType.getType().name());
       if (dataType.getLength() > 0) {

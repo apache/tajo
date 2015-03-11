@@ -111,6 +111,15 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
   }
 
   /**
+   * Return type description
+   *
+   * @return TypeDesc
+   */
+  public TypeDesc getTypeDesc() {
+    return this.typeDesc;
+  }
+
+  /**
    *
    * @return DataType which includes domain type and scale.
    */

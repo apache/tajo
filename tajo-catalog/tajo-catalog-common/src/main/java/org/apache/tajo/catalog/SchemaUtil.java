@@ -144,4 +144,10 @@ public class SchemaUtil {
       function.visit(depth, column);
     }
   }
+
+  public static String toDisplayString(Schema schema) {
+    StringBuilder sb = new StringBuilder();
+    DDLBuilder.buildSchema(sb, schema);
+    return sb.toString();
+  }
 }
