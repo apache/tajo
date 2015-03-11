@@ -19,20 +19,15 @@
 package org.apache.tajo.thrift;
 
 import com.google.common.collect.Sets;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.*;
 import org.apache.tajo.TajoProtos.QueryState;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.client.TajoClientUtil;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.jdbc.TajoResultSetBase;
-import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.thrift.client.TajoThriftClient;
 import org.apache.tajo.thrift.client.TajoThriftResultSet;
-import org.apache.tajo.thrift.generated.TBriefQueryInfo;
 import org.apache.tajo.thrift.generated.TGetQueryStatusResponse;
 import org.apache.tajo.thrift.generated.TTableDesc;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -42,14 +37,13 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
 
 @Category(IntegrationTest.class)
 public class TestTajoThriftClient {
@@ -417,7 +411,7 @@ public class TestTajoThriftClient {
                 "-------------------------------\n" +
                 "2\n";
 
-        assertEquals(expected, new QueryTestCaseBase().resultSetToString(resultSet));
+        assertEquals(expected, resultSetToString(resultSet));
         resultSet.close();
     }
 
@@ -440,107 +434,7 @@ public class TestTajoThriftClient {
         resultSet.close();
     }
 
-    /**
-     * The main objective of this test is to get the status of a query which is actually finished.
-     * Statuses of queries regardless of its status should be available for a specified time duration.
-     */
-    @Test(timeout = 20 * 1000)
-    public final void testGetQueryStatusAndResultAfterFinish() throws Exception {
-        String sql = "select * from default.lineitem order by l_orderkey";
-        TGetQueryStatusResponse response = client.executeQuery(sql);
 
-        assertNotNull(response);
-        String queryId = response.getQueryId();
-
-        try {
-            long startTime = System.currentTimeMillis();
-            while (true) {
-                Thread.sleep(5 * 1000);
-
-                List<TBriefQueryInfo> finishedQueries = client.getFinishedQueryList();
-                boolean finished = false;
-                if (finishedQueries != null) {
-                    for (TBriefQueryInfo eachQuery: finishedQueries) {
-                        if (eachQuery.getQueryId().equals(queryId)) {
-                            finished = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (finished) {
-                    break;
-                }
-                if(System.currentTimeMillis() - startTime > 20 * 1000) {
-                    fail("Too long time execution query");
-                }
-            }
-
-            response = client.getQueryStatus(queryId);
-            assertNotNull(response);
-            assertTrue(TajoClientUtil.isQueryComplete(TajoProtos.QueryState.valueOf(response.getState())));
-
-            TajoResultSetBase resultSet = (TajoResultSetBase) client.getQueryResult(queryId);
-            assertNotNull(resultSet);
-
-            int count = 0;
-            while(resultSet.next()) {
-                count++;
-            }
-
-            assertEquals(5, count);
-        } finally {
-            client.closeQuery(queryId);
-        }
-    }
-
-    @Test
-    public void testSetCvsNull() throws Exception {
-        String sql =
-                "select\n" +
-                        "  c_custkey,\n" +
-                        "  orders.o_orderkey,\n" +
-                        "  orders.o_orderstatus \n" +
-                        "from\n" +
-                        "  default.orders full outer join default.customer on c_custkey = o_orderkey\n" +
-                        "order by\n" +
-                        "  c_custkey,\n" +
-                        "  orders.o_orderkey;\n";
-
-        TajoConf tajoConf = TpchTestBase.getInstance().getTestingCluster().getConfiguration();
-
-        client.updateSessionVariable(SessionVars.NULL_CHAR.keyname(), "\\\\T");
-        assertEquals("\\\\T", client.getSessionVariable(SessionVars.NULL_CHAR.keyname()));
-
-        TajoThriftResultSet res = (TajoThriftResultSet)client.executeQueryAndGetResult(sql);
-
-        assertEquals("\\\\T", res.getTableDesc().getTableMeta().get(StorageConstants.TEXT_NULL));
-
-        Path path = new Path(res.getTableDesc().getPath());
-        FileSystem fs = path.getFileSystem(tajoConf);
-
-        FileStatus[] files = fs.listStatus(path);
-        assertNotNull(files);
-        assertEquals(1, files.length);
-
-        InputStream in = fs.open(files[0].getPath());
-        byte[] buf = new byte[1024];
-
-
-        int readBytes = in.read(buf);
-        assertTrue(readBytes > 0);
-
-        // text type field's value is replaced with \T
-        String expected = "1|1|O\n" +
-                "2|2|O\n" +
-                "3|3|F\n" +
-                "4||\\T\n" +
-                "5||\\T\n";
-
-        String resultDatas = new String(buf, 0, readBytes);
-
-        assertEquals(expected, resultDatas);
-    }
     /**
      * It transforms a ResultSet instance to rows represented as strings.
      *

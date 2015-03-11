@@ -52,9 +52,10 @@ public class TajoThriftResultSet extends TajoResultSetBase {
     this.queryResult = queryResult;
 
     this.tableDesc = queryResult.getTableDesc();
-    this.schema = TajoThriftUtil.convertSchema(queryResult.getTableDesc().getSchema());
+    this.schema = queryResult.getTableDesc()!=null?TajoThriftUtil.convertSchema(queryResult.getTableDesc().getSchema()):null;
 
-    this.totalRow = queryResult.getRowsSize();//tableDesc.getStats() != null ? tableDesc.getStats().getNumRows() : Integer.MAX_VALUE;
+    this.totalRow = queryResult.getRowsSize();
+    //tableDesc.getStats() != null ? tableDesc.getStats().getNumRows() : Integer.MAX_VALUE;
     if (this.totalRow == TajoConstants.UNKNOWN_ROW_NUMBER) {
       //Case of select * from table
       this.totalRow = Integer.MAX_VALUE;
