@@ -16,6 +16,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1384: Duplicated output file path problem. (jihoon)
+
     TAJO-1386: CURRENT_DATE generates parsing errors sometimes.
     (Contributed by navis, Committed by hyunsik)
 
