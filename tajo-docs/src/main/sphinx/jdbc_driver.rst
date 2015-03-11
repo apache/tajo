@@ -9,7 +9,7 @@ In this section, we explain how to get JDBC driver and an example code.
 How to get JDBC driver
 =======================
 
-From Tajo Homepage
+Direct Download
 --------------------------------
 
 You can download JDBC jar file ``tajo-jdbc-x.y.z.jar`` in `Downloads <downloads.html>`_ section.
