@@ -22,9 +22,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.tajo.algebra.ColumnReferenceExpr;
-import org.apache.tajo.catalog.CatalogConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.NestedPathUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.exception.NoSuchColumnException;
 import org.apache.tajo.plan.algebra.AmbiguousFieldException;
@@ -36,12 +36,25 @@ import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 /**
- * NameResolver utility
+ * Column name resolution utility. A SQL statement can include many kinds of column names,
+ * defined in different ways. Some column name indicates just a column in a relation.
+ * Another column name includes alias table name or alias column name, derived from some expression.
+ *
+ * This utility ensures that each column name is derived from valid and accessible column, and
+ * it also finds the exact data type of the column.
+ *
+ * Terminology:
+ * <ul>
+ *   <li>Qualifier:  database name, table name, or both included in a column name</li>
+ *   <li>Simple name: just column name without any qualifier</li>
+ *   <li>Alias name: another name to shortly specify a certain column</li>
+ *   <li>Fully qualified name: a column name with database name and table name</li>
+ *   <li>Canonical name: a fully qualified name, but its simple name is aliased name.</li>
+ * </ul>
  */
 public abstract class NameResolver {
 
@@ -54,28 +67,16 @@ public abstract class NameResolver {
     resolverMap.put(NameResolvingMode.LEGACY, new ResolverByLegacy());
   }
 
+  public static Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr column,
+                               NameResolvingMode mode) throws PlanningException {
+    if (!resolverMap.containsKey(mode)) {
+      throw new PlanningException("Unsupported name resolving level: " + mode.name());
+    }
+    return resolverMap.get(mode).resolve(plan, block, column);
+  }
+
   abstract Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr columnRef)
   throws PlanningException;
-
-  public static String lookupDatabase(LogicalPlan.QueryBlock block, String databaseName) throws PlanningException {
-    List<String> found = new ArrayList<String>();
-    for (RelationNode relation : block.getRelations()) {
-      // check alias name or table name
-      if (CatalogUtil.extractQualifier(relation.getCanonicalName()).equals(databaseName) ||
-          CatalogUtil.extractQualifier(relation.getTableName()).equals(databaseName)) {
-        // obtain the a qualified table name
-        found.add(relation.getTableName());
-      }
-    }
-
-    if (found.size() == 0) {
-      return null;
-    } else if (found.size() > 1) {
-      throw new PlanningException("Ambiguous database name \"" + databaseName + "\"");
-    }
-
-    return found.get(0);
-  }
 
   /**
    * Guess a relation from a table name regardless of whether the given name is qualified or not.
@@ -112,14 +113,6 @@ public abstract class NameResolver {
     return found.get(0);
   }
 
-  public static Column resolve(LogicalPlan plan, LogicalPlan.QueryBlock block, ColumnReferenceExpr column,
-                        NameResolvingMode mode) throws PlanningException {
-    if (!resolverMap.containsKey(mode)) {
-      throw new PlanningException("Unsupported name resolving level: " + mode.name());
-    }
-    return resolverMap.get(mode).resolve(plan, block, column);
-  }
-
   /**
    * Try to find a column from all relations within a given query block.
    * If a given column reference is qualified, it tries to resolve the name
@@ -137,7 +130,7 @@ public abstract class NameResolver {
     String canonicalName;
 
     if (columnRef.hasQualifier()) {
-      Pair<String, String> normalized = normalizeQualifierAndCanonicalName(block, columnRef);
+      Pair<String, String> normalized = lookupQualifierAndCanonicalName(block, columnRef);
       qualifier = normalized.getFirst();
       canonicalName = normalized.getSecond();
 
@@ -274,16 +267,18 @@ public abstract class NameResolver {
   }
 
   /**
-   * It returns a pair of names, which the first value is ${database}.${table} and the second value
-   * is a simple column name.
+   * Lookup a qualifier and a canonical name of column.
+   *
+   * It returns a pair of names, which the first value is the qualifier ${database}.${table} and
+   * the second value is column's simple name.
    *
    * @param block The current block
    * @param columnRef The column name
    * @return A pair of normalized qualifier and column name
    * @throws PlanningException
    */
-  static Pair<String, String> normalizeQualifierAndCanonicalName(LogicalPlan.QueryBlock block,
-                                                                 ColumnReferenceExpr columnRef)
+  static Pair<String, String> lookupQualifierAndCanonicalName(LogicalPlan.QueryBlock block,
+                                                              ColumnReferenceExpr columnRef)
       throws PlanningException {
     Preconditions.checkArgument(columnRef.hasQualifier(), "ColumnReferenceExpr must be qualified.");
 
@@ -333,13 +328,28 @@ public abstract class NameResolver {
 
     if (!found) { // check column_name.nested_field....
 
-      // Get only database name
-      RelationNode relation = lookupTable(block, qualifierParts[0]);
+      String [] parts = columnRef.getName().split("\\.");
 
-      throw new NoSuchColumnException(columnRef.getQualifier());
+      // Get only database name
+      Column column = lookupColumnFromAllRelsInBlock(block, qualifierParts[0]);
+      String nestedColumnPath = null;
+      if (parts.length > 0) {
+        nestedColumnPath = NestedPathUtil.make(parts);
+        Column leafColumn = NestedPathUtil.lookupPath(column, nestedColumnPath);
+
+        if (leafColumn != null) {
+          qualifier = column.getQualifier();
+          canonicalName = CatalogUtil.buildFQName(qualifier, column.getSimpleName() + nestedColumnPath);
+          found = true;
+        }
+      }
     }
 
-    return new Pair<String, String>(qualifier, canonicalName);
+    if (found) {
+      return new Pair<String, String>(qualifier, canonicalName);
+    } else {
+      throw new NoSuchColumnException(columnRef.getQualifier());
+    }
   }
 
   static Column ensureUniqueColumn(List<Column> candidates) throws VerifyException {

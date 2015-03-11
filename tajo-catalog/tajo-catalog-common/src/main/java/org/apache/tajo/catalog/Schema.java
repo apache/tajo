@@ -171,14 +171,27 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
    * @return The column matched to a given column name.
    */
   public Column getColumn(String name) {
-    String [] parts = name.split("\\.");
-    // Some of the string can includes database name and table name and column name.
-    // For example, it can be 'default.table1.id'.
-    // Therefore, spilt string array length can be 3.
-    if (parts.length >= 2) {
-      return getColumnByQName(name);
+
+    if (NestedPathUtil.isPath(name)) {
+      String [] paths = name.split(NestedPathUtil.PATH_DELIMITER);
+      Column column = getColumn(paths[0]);
+      Column actualColumn = NestedPathUtil.lookupPath(column, paths);
+
+      Column columnPath = new Column(
+          column.getQualifiedName() + NestedPathUtil.make(paths, 1),
+          actualColumn.typeDesc);
+
+      return columnPath;
     } else {
-      return getColumnByName(name);
+      String[] parts = name.split("\\.");
+      // Some of the string can includes database name and table name and column name.
+      // For example, it can be 'default.table1.id'.
+      // Therefore, spilt string array length can be 3.
+      if (parts.length >= 2) {
+        return getColumnByQName(name);
+      } else {
+        return getColumnByName(name);
+      }
     }
   }
 
@@ -305,7 +318,17 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
   }
 
   public boolean containsAll(Collection<Column> columns) {
-    return fields.containsAll(columns);
+    boolean containFlag = true;
+
+    for (Column c :columns) {
+      if (NestedPathUtil.isPath(c.getSimpleName())) {
+        containFlag &= (getColumn(c.getSimpleName()) != null);
+      } else {
+        containFlag &= fields.contains(columns);
+      }
+    }
+
+    return containFlag;
   }
 
   public synchronized Schema addColumn(String name, TypeDesc typeDesc) {

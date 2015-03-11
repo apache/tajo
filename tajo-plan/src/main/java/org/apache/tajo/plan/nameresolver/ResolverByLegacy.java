@@ -51,7 +51,7 @@ public class ResolverByLegacy extends NameResolver {
     String canonicalName;
     final String qualifiedName;
 
-    Pair<String, String> normalized = normalizeQualifierAndCanonicalName(block, columnRef);
+    Pair<String, String> normalized = lookupQualifierAndCanonicalName(block, columnRef);
     qualifier = normalized.getFirst();
     canonicalName = normalized.getSecond();
     qualifiedName = CatalogUtil.buildFQName(qualifier, columnRef.getName());
