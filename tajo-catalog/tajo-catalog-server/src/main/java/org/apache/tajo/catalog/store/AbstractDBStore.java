@@ -1116,8 +1116,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
         "INSERT INTO " + TB_COLUMNS +
             " (TID, COLUMN_NAME, ORDINAL_POSITION, NESTED_FIELD_NUM, DATA_TYPE, TYPE_LENGTH) VALUES(?, ?, ?, ?, ?, ?) ";
     final String columnCountSql =
-        "SELECT COLUMN_NAME, MAX(ORDINAL_POSITION) AS POSITION FROM " + TB_COLUMNS +
-            " WHERE TID = ? GROUP BY COLUMN_NAME";
+        "SELECT MAX(ORDINAL_POSITION) AS POSITION FROM " + TB_COLUMNS + " WHERE TID = ?";
 
     if (LOG.isDebugEnabled()) {
       LOG.debug(insertNewColumnSql);
@@ -1134,6 +1133,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt.setInt(1 , tableId);
       resultSet =  pstmt.executeQuery();
 
+      // get the last the ordinal position.
       int position = resultSet.next() ? resultSet.getInt("POSITION") : 0;
 
       resultSet.close();
