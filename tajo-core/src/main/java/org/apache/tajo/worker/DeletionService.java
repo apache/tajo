@@ -97,7 +97,7 @@ public class DeletionService {
         try {
           lfs.delete(subDir, true);
         } catch (IOException e) {
-          LOG.warn("Failed to delete " + subDir);
+          LOG.warn("Failed to delete " + subDir, e);
         }
         return;
       }
@@ -107,7 +107,7 @@ public class DeletionService {
         try {
           lfs.delete(del, true);
         } catch (IOException e) {
-          LOG.warn("Failed to delete " + subDir);
+          LOG.warn("Failed to delete " + subDir, e);
         }
       }
     }

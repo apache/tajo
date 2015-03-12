@@ -422,7 +422,7 @@ public class Task {
           executor.close();
           reloadInputStats();
         } catch (IOException e) {
-          LOG.error(e);
+          LOG.error(e, e);
         }
         this.executor = null;
       }

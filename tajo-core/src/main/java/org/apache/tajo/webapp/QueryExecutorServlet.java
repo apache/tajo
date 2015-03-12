@@ -95,7 +95,7 @@ public class QueryExecutorServlet extends HttpServlet {
 
       new QueryRunnerCleaner().start();
     } catch (IOException e) {
-      LOG.error(e.getMessage());
+      LOG.error(e.getMessage(), e);
     }
   }
 
@@ -469,7 +469,7 @@ public class QueryExecutorServlet extends HttpServlet {
               try {
                 tajoClient.closeQuery(queryId);
               } catch (Exception e) {
-                LOG.warn(e);
+                LOG.warn(e, e);
               }
             }
           }
