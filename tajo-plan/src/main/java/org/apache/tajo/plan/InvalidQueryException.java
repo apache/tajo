@@ -29,7 +29,7 @@ public class InvalidQueryException extends RuntimeException {
     super(message);
   }
 	
-	public InvalidQueryException(Throwable t) {
-		super(t);
+	public InvalidQueryException(String message, Throwable t) {
+		super(message, t);
 	}
 }
