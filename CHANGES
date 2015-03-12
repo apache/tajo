@@ -21,6 +21,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1396: Unexpected IllegalMonitorStateException can be thrown 
+    in QueryInProgress. (Contributed by navis. Committed by jinho)
+
     TAJO-1384: Duplicated output file path problem. (jihoon)
 
     TAJO-1386: CURRENT_DATE generates parsing errors sometimes.
