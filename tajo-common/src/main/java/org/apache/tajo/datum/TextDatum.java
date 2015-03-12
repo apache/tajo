@@ -31,7 +31,7 @@ import java.nio.charset.Charset;
 import java.util.Comparator;
 
 public class TextDatum extends Datum {
-  public static Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
+  public static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
 
   @Expose private final int size;
   /* encoded in UTF-8 */

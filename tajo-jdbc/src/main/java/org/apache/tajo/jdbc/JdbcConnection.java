@@ -19,22 +19,21 @@
 package org.apache.tajo.jdbc;
 
 import com.google.protobuf.ServiceException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.TajoConstants;
-import org.apache.tajo.client.*;
-import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.client.CatalogAdminClient;
+import org.apache.tajo.client.QueryClient;
+import org.apache.tajo.client.TajoClient;
+import org.apache.tajo.client.TajoClientImpl;
 import org.apache.tajo.jdbc.util.QueryStringDecoder;
-import org.apache.tajo.service.ServiceTracker;
-import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.rpc.RpcUtils;
+import org.apache.tajo.util.KeyValueSet;
 
 import java.io.IOException;
 import java.net.URI;
 import java.sql.*;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -100,16 +99,15 @@ public class JdbcConnection implements Connection {
       throw new SQLException("Invalid JDBC URI: " + rawURI, "TAJO-001");
     }
 
-    TajoConf tajoConf = new TajoConf();
+    KeyValueSet clientProperties = new KeyValueSet();
     if(properties != null) {
       for(Map.Entry<Object, Object> entry: properties.entrySet()) {
-        tajoConf.set(entry.getKey().toString(), entry.getValue().toString());
+        clientProperties.set(entry.getKey().toString(), entry.getValue().toString());
       }
     }
 
     try {
-      ServiceTracker serviceTracker = new DummyServiceTracker(NetUtils.createSocketAddr(hostName, port));
-      tajoClient = new TajoClientImpl(tajoConf, serviceTracker, databaseName);
+      tajoClient = new TajoClientImpl(RpcUtils.createSocketAddr(hostName, port), databaseName, clientProperties);
     } catch (Exception e) {
       throw new SQLException("Cannot create TajoClient instance:" + e.getMessage(), "TAJO-002");
     }
@@ -278,10 +276,10 @@ public class JdbcConnection implements Connection {
         return false;
       }
     } catch (ServiceException e) {
-      LOG.error("TajoMaster is not available.");
+      LOG.error("TajoMaster is not available.", e);
       return false;
     } catch (IOException e) {
-      LOG.error("JDBC connection is not valid.");
+      LOG.error("JDBC connection is not valid.", e);
       return false;
     }
   }

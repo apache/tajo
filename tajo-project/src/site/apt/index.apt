@@ -47,7 +47,7 @@ Features
 
     * JDBC driver support
 
-    * Various file formats support, such as CSV, RCFile, RowFile, SequenceFile and Parquet
+    * Various file formats support, such as CSV, JSON, RCFile, SequenceFile and Parquet
 
   * <<Easy>>
 
@@ -60,6 +60,8 @@ Features
     * Asynchronous/Synchronous Java API
 
 Releases
+
+  * <<[2015-03-08]>> {{{./downloads.html}Tajo 0.10.0}} ({{{./releases/0.10.0/announcement.html}Announcement}}, {{{./releases/0.10.0/relnotes.html}Release Notes}})
 
   * <<[2014-10-21]>> {{{./downloads.html}Tajo 0.9.0}} ({{{./releases/0.9.0/announcement.html}Announcement}}, {{{./releases/0.9.0/relnotes.html}Release Notes}})
 

@@ -37,9 +37,10 @@ import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.ipc.ClientProtos;
-import org.apache.tajo.jdbc.TajoResultSet;
-import org.apache.tajo.querymaster.QueryMasterTask;
+import org.apache.tajo.jdbc.FetchResultSet;
+import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.plan.logical.NodeType;
+import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -867,8 +868,14 @@ public class TestTablePartitions extends QueryTestCaseBase {
   }
 
   private MasterPlan getQueryPlan(ResultSet res) {
-    QueryId queryId = ((TajoResultSet)res).getQueryId();
-    for (TajoWorker eachWorker: testingCluster.getTajoWorkers()) {
+    QueryId queryId;
+    if (res instanceof TajoMemoryResultSet) {
+      queryId = ((TajoMemoryResultSet) res).getQueryId();
+    } else {
+      queryId = ((FetchResultSet) res).getQueryId();
+    }
+
+    for (TajoWorker eachWorker : testingCluster.getTajoWorkers()) {
       QueryMasterTask queryMasterTask = eachWorker.getWorkerContext().getQueryMaster().getQueryMasterTask(queryId, true);
       if (queryMasterTask != null) {
         return queryMasterTask.getQuery().getPlan();

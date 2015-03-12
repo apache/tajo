@@ -36,7 +36,6 @@ public abstract class MetricsStreamScheduledReporter extends TajoMetricsSchedule
   protected Locale locale;
   protected Clock clock;
   protected TimeZone timeZone;
-  protected MetricFilter filter;
   protected DateFormat dateFormat;
 
   private final byte[] NEW_LINE = "\n".getBytes();

@@ -50,10 +50,10 @@ public class TUtil {
    * @return true if they are equal or all null
    */
   public static boolean checkEquals(Collection<?> s1, Collection<?> s2) {
-    if (s1 == null ^ s2 == null) {
-      return false;
-    } else if (s1 == null && s2 == null) {
+    if (s1 == null && s2 == null) {
       return true;
+    } else if (s1 == null || s2 == null) {
+      return false;
     } else {
       if (s1.size() == 0 && s2.size() == 0) {
         return true;

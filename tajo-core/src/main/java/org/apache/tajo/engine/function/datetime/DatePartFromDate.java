@@ -100,91 +100,91 @@ public class DatePartFromDate extends GeneralFunction {
     public Datum extract(DateDatum date);
   }
 
-  private class CenturyExtractorFromDate implements DatePartExtractorFromDate {
+  private static class CenturyExtractorFromDate implements DatePartExtractorFromDate {
     @Override
     public Datum extract(DateDatum date) {
       return DatumFactory.createFloat8((double) date.getCenturyOfEra());
     }
   }
 
-  private class DayExtractorFromDate implements DatePartExtractorFromDate {
+  private static class DayExtractorFromDate implements DatePartExtractorFromDate {
     @Override
     public Datum extract(DateDatum date) {
       return DatumFactory.createFloat8((double) date.getDayOfMonth());
     }
   }
 
-  private class DecadeExtractorFromDate implements DatePartExtractorFromDate {
+  private static class DecadeExtractorFromDate implements DatePartExtractorFromDate {
     @Override
     public Datum extract(DateDatum date) {
-      return DatumFactory.createFloat8((double) (date.getYear() / 10));
+      return DatumFactory.createFloat8((date.getYear() / 10.0d));
     }
   }
 
-  private class DowExtractorFromDate implements DatePartExtractorFromDate {
+  private static class DowExtractorFromDate implements DatePartExtractorFromDate {
     @Override
     public Datum extract(DateDatum date) {
       return DatumFactory.createFloat8((double) date.getDayOfWeek());
     }
   }
 
-  private class DoyExtractorFromDate implements DatePartExtractorFromDate {
+  private static class DoyExtractorFromDate implements DatePartExtractorFromDate {
     @Override
     public Datum extract(DateDatum date) {
       return DatumFactory.createFloat8((double) date.getDayOfYear());
     }
   }
 
-  private class ISODowExtractorFromDate implements DatePartExtractorFromDate {
+  private static class ISODowExtractorFromDate implements DatePartExtractorFromDate {
     @Override
     public Datum extract(DateDatum date) {
       return DatumFactory.createFloat8((double) date.getISODayOfWeek());
     }
   }
 
-  private class ISOYearExtractorFromDate implements DatePartExtractorFromDate {
+  private static class ISOYearExtractorFromDate implements DatePartExtractorFromDate {
     @Override
     public Datum extract(DateDatum date) {
       return DatumFactory.createFloat8((double) date.getWeekyear());
     }
   }
 
-  private class MillenniumExtractorFromDate implements DatePartExtractorFromDate {
+  private static class MillenniumExtractorFromDate implements DatePartExtractorFromDate {
     @Override
     public Datum extract(DateDatum date) {
       return DatumFactory.createFloat8((double) (((date.getYear() - 1) / 1000) + 1));
     }
   }
 
-  private class MonthExtractorFromDate implements DatePartExtractorFromDate {
+  private static class MonthExtractorFromDate implements DatePartExtractorFromDate {
     @Override
     public Datum extract(DateDatum date) {
       return DatumFactory.createFloat8((double) date.getMonthOfYear());
     }
   }
 
-  private class QuarterExtractorFromDate implements DatePartExtractorFromDate {
+  private static class QuarterExtractorFromDate implements DatePartExtractorFromDate {
     @Override
     public Datum extract(DateDatum date) {
       return DatumFactory.createFloat8((double) (((date.getMonthOfYear() - 1) / 3) + 1));
     }
   }
 
-  private class WeekExtractorFromDate implements DatePartExtractorFromDate {
+  private static class WeekExtractorFromDate implements DatePartExtractorFromDate {
     @Override
     public Datum extract(DateDatum date) {
       return DatumFactory.createFloat8((double) date.getWeekOfYear());
     }
   }
 
-  private class YearExtractorFromDate implements DatePartExtractorFromDate {
+  private static class YearExtractorFromDate implements DatePartExtractorFromDate {
     @Override
     public Datum extract(DateDatum date) {
       return DatumFactory.createFloat8((double) date.getYear());
     }
   }
 
-  private class NullExtractorFromDate implements DatePartExtractorFromDate {
+  private static class NullExtractorFromDate implements DatePartExtractorFromDate {
     @Override
     public Datum extract(DateDatum date) {
       return NullDatum.get();

@@ -233,7 +233,6 @@ public class DistinctGroupbyFirstAggregationExec extends PhysicalExec {
   }
 
   class NonDistinctHashAggregator {
-    private GroupbyNode groupbyNode;
     private int aggFunctionsNum;
     private final AggregationFunctionCallEval aggFunctions[];
 
@@ -243,7 +242,6 @@ public class DistinctGroupbyFirstAggregationExec extends PhysicalExec {
 
     private Tuple dummyTuple;
     private NonDistinctHashAggregator(GroupbyNode groupbyNode) throws IOException {
-      this.groupbyNode = groupbyNode;
 
       nonDistinctAggrDatas = new HashMap<Tuple, FunctionContext[]>();
 
@@ -305,7 +303,6 @@ public class DistinctGroupbyFirstAggregationExec extends PhysicalExec {
   }
 
   class DistinctHashAggregator {
-    private GroupbyNode groupbyNode;
 
     // GroupingKey -> DistinctKey
     private Map<Tuple, Set<Tuple>> distinctAggrDatas;
@@ -321,7 +318,6 @@ public class DistinctGroupbyFirstAggregationExec extends PhysicalExec {
     private boolean aggregatorFinished = false;
 
     public DistinctHashAggregator(GroupbyNode groupbyNode) throws IOException {
-      this.groupbyNode = groupbyNode;
 
       Set<Integer> groupingKeyIndexSet = new HashSet<Integer>();
       for (Integer eachIndex: groupingKeyIndexes) {

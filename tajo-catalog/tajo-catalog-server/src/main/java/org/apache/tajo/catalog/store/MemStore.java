@@ -626,13 +626,13 @@ public class MemStore implements CatalogStore {
     for (String databaseName: databases) {
       Map<String, IndexDescProto> indexMap = indexes.get(databaseName);
       
-      for (String indexName: indexMap.keySet()) {
-        IndexDescProto indexDesc = indexMap.get(indexName);
+      for (Map.Entry<String, IndexDescProto> entry: indexMap.entrySet()) {
+        IndexDescProto indexDesc = entry.getValue();
         IndexProto.Builder builder = IndexProto.newBuilder();
         
         builder.setColumnName(indexDesc.getColumn().getName());
         builder.setDataType(indexDesc.getColumn().getDataType().getType().toString());
-        builder.setIndexName(indexName);
+        builder.setIndexName(entry.getKey());
         builder.setIndexType(indexDesc.getIndexMethod().toString());
         builder.setIsAscending(indexDesc.hasIsAscending() && indexDesc.getIsAscending());
         builder.setIsClustered(indexDesc.hasIsClustered() && indexDesc.getIsClustered());

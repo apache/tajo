@@ -43,7 +43,7 @@ public class WorkerRuleProvider implements SelfDiagnosisRuleProvider {
       try {
         ruleList.add(ruleClazz.newInstance());
       } catch (Exception e) {
-        LOG.warn("Cannot instantiate " + ruleClazz.getName() + " class.");
+        LOG.warn("Cannot instantiate " + ruleClazz.getName() + " class.", e);
         continue;
       }
     }

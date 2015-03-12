@@ -85,7 +85,7 @@ public class ExecutorPreCompiler extends BasicLogicalPlanVisitor<ExecutorPreComp
         // If any compilation error occurs, it works in a fallback mode. This mode just uses EvalNode objects
         // instead of a compiled EvalNode.
         context.compiledEval.put(key, eval);
-        LOG.warn(t);
+        LOG.warn(t, t);
       }
     }
   }

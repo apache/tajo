@@ -111,7 +111,6 @@ public class WorkerHeartbeatService extends AbstractService {
       int workerCpuCoreNum;
 
       boolean dedicatedResource = systemConf.getBoolVar(TajoConf.ConfVars.WORKER_RESOURCE_DEDICATED);
-      int workerCpuCoreSlots = Runtime.getRuntime().availableProcessors();
 
       try {
         diskDeviceInfos = DiskUtil.getDiskDeviceInfos();
@@ -205,7 +204,7 @@ public class WorkerHeartbeatService extends AbstractService {
         } catch (InterruptedException e) {
           break;
         } catch (TimeoutException te) {
-          LOG.warn("Heartbeat response is being delayed.");
+          LOG.warn("Heartbeat response is being delayed.", te);
         } catch (Exception e) {
           LOG.error(e.getMessage(), e);
         } finally {

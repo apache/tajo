@@ -21,6 +21,8 @@
  */
 package org.apache.tajo.jdbc;
 
+import com.google.common.collect.Lists;
+import com.google.protobuf.ByteString;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TajoConstants;
@@ -32,7 +34,6 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.client.QueryClientImpl;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
@@ -47,6 +48,7 @@ import org.junit.experimental.categories.Category;
 import java.io.IOException;
 import java.sql.*;
 import java.util.Calendar;
+import java.util.List;
 import java.util.TimeZone;
 
 import static org.junit.Assert.*;
@@ -59,6 +61,7 @@ public class TestResultSet {
   private static FileStorageManager sm;
   private static TableMeta scoreMeta;
   private static Schema scoreSchema;
+  private static List<ByteString> serializedData;
 
   @BeforeClass
   public static void setup() throws Exception {
@@ -75,7 +78,10 @@ public class TestResultSet {
     Path p = sm.getTablePath("score");
     sm.getFileSystem().mkdirs(p);
     Appender appender = sm.getAppender(scoreMeta, scoreSchema, new Path(p, "score"));
+    RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(scoreSchema);
+    serializedData = Lists.newArrayList();
     appender.init();
+
     int deptSize = 100;
     int tupleNum = 10000;
     Tuple tuple;
@@ -87,6 +93,7 @@ public class TestResultSet {
       tuple.put(1, DatumFactory.createInt4(i + 1));
       written += key.length() + Integer.SIZE;
       appender.addTuple(tuple);
+      serializedData.add(ByteString.copyFrom(encoder.toBytes(tuple)));
     }
     appender.close();
     stats.setNumRows(tupleNum);
@@ -105,8 +112,10 @@ public class TestResultSet {
   }
 
   @Test
-  public void test() throws Exception {
-    TajoResultSet rs = new TajoResultSet(TajoTestingCluster.newTajoClient(), null, conf, desc);
+  public void testMemoryResultSet() throws Exception {
+    TajoMemoryResultSet rs = new TajoMemoryResultSet(null, desc.getSchema(),
+        serializedData, desc.getStats().getNumRows().intValue(), null);
+
     ResultSetMetaData meta = rs.getMetaData();
     assertNotNull(meta);
     Schema schema = scoreSchema;
@@ -134,7 +143,7 @@ public class TestResultSet {
     if(util.isHCatalogStoreRunning()) return;
 
     ResultSet res = null;
-    TajoClient client = TajoTestingCluster.newTajoClient();
+    TajoClient client = util.newTajoClient();
     try {
       String tableName = "datetimetable";
       String query = "select col1, col2, col3 from " + tableName;

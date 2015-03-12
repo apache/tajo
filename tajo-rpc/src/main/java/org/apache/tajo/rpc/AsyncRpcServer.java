@@ -18,16 +18,16 @@
 
 package org.apache.tajo.rpc;
 
+import com.google.protobuf.*;
 import com.google.protobuf.Descriptors.MethodDescriptor;
-import com.google.protobuf.Message;
-import com.google.protobuf.RpcCallback;
-import com.google.protobuf.RpcController;
-import com.google.protobuf.Service;
+
+import io.netty.channel.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
-import org.jboss.netty.channel.*;
+
+import io.netty.util.ReferenceCountUtil;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
@@ -36,7 +36,7 @@ public class AsyncRpcServer extends NettyServerBase {
   private static final Log LOG = LogFactory.getLog(AsyncRpcServer.class);
 
   private final Service service;
-  private final ChannelPipelineFactory pipeline;
+  private final ChannelInitializer<Channel> initializer;
 
   public AsyncRpcServer(final Class<?> protocol,
                         final Object instance,
@@ -52,87 +52,97 @@ public class AsyncRpcServer extends NettyServerBase {
     Method method = serviceClass.getMethod("newReflectiveService", interfaceClass);
     this.service = (Service) method.invoke(null, instance);
 
-    ServerHandler handler = new ServerHandler();
-    this.pipeline = new ProtoPipelineFactory(handler,
-        RpcRequest.getDefaultInstance());
-    super.init(this.pipeline, workerNum);
+    this.initializer = new ProtoChannelInitializer(new ServerHandler(), RpcRequest.getDefaultInstance());
+    super.init(this.initializer, workerNum);
   }
 
-  private class ServerHandler extends SimpleChannelUpstreamHandler {
+  @ChannelHandler.Sharable
+  private class ServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
-    public void channelOpen(ChannelHandlerContext ctx, ChannelStateEvent evt)
-        throws Exception {
-
-      accepted.add(evt.getChannel());
+    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+      accepted.add(ctx.channel());
       if(LOG.isDebugEnabled()){
         LOG.debug(String.format(serviceName + " accepted number of connections (%d)", accepted.size()));
       }
-      super.channelOpen(ctx, evt);
+      super.channelRegistered(ctx);
     }
 
     @Override
-    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
+    public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+      accepted.remove(ctx.channel());
+      if (LOG.isDebugEnabled()) {
+        LOG.debug(serviceName + " closes a connection. The number of current connections are " + accepted.size());
+      }
+      super.channelUnregistered(ctx);
+    }
+
+    @Override
+    public void channelRead(final ChannelHandlerContext ctx, Object msg)
         throws Exception {
-
-      final RpcRequest request = (RpcRequest) e.getMessage();
-
-      String methodName = request.getMethodName();
-      MethodDescriptor methodDescriptor = service.getDescriptorForType().
-          findMethodByName(methodName);
-
-      if (methodDescriptor == null) {
-        throw new RemoteCallException(request.getId(),
-            new NoSuchMethodException(methodName));
-      }
-
-      Message paramProto = null;
-      if (request.hasRequestMessage()) {
+      if (msg instanceof RpcRequest) {
         try {
-          paramProto = service.getRequestPrototype(methodDescriptor)
-                  .newBuilderForType().mergeFrom(request.getRequestMessage()).
-                  build();
-        } catch (Throwable t) {
-          throw new RemoteCallException(request.getId(), methodDescriptor, t);
+          final RpcRequest request = (RpcRequest) msg;
+
+          String methodName = request.getMethodName();
+          MethodDescriptor methodDescriptor = service.getDescriptorForType().findMethodByName(methodName);
+
+          if (methodDescriptor == null) {
+            throw new RemoteCallException(request.getId(), new NoSuchMethodException(methodName));
+          }
+
+          Message paramProto = null;
+          if (request.hasRequestMessage()) {
+            try {
+              paramProto = service.getRequestPrototype(methodDescriptor).newBuilderForType()
+                  .mergeFrom(request.getRequestMessage()).build();
+            } catch (Throwable t) {
+              throw new RemoteCallException(request.getId(), methodDescriptor, t);
+            }
+          }
+
+          final RpcController controller = new NettyRpcController();
+
+          RpcCallback<Message> callback = !request.hasId() ? null : new RpcCallback<Message>() {
+
+            public void run(Message returnValue) {
+
+              RpcResponse.Builder builder = RpcResponse.newBuilder().setId(request.getId());
+
+              if (returnValue != null) {
+                builder.setResponseMessage(returnValue.toByteString());
+              }
+
+              if (controller.failed()) {
+                builder.setErrorMessage(controller.errorText());
+              }
+
+              ctx.writeAndFlush(builder.build());
+            }
+          };
+
+          service.callMethod(methodDescriptor, controller, paramProto, callback);
+
+        } finally {
+          ReferenceCountUtil.release(msg);
         }
       }
-
-      final Channel channel = e.getChannel();
-      final RpcController controller = new NettyRpcController();
-
-      RpcCallback<Message> callback =
-          !request.hasId() ? null : new RpcCallback<Message>() {
-
-        public void run(Message returnValue) {
-
-          RpcResponse.Builder builder = RpcResponse.newBuilder()
-              .setId(request.getId());
-
-          if (returnValue != null) {
-            builder.setResponseMessage(returnValue.toByteString());
-          }
-
-          if (controller.failed()) {
-            builder.setErrorMessage(controller.errorText());
-          }
-
-          channel.write(builder.build());
-        }
-      };
-
-      service.callMethod(methodDescriptor, controller, paramProto, callback);
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
         throws Exception{
-
-      if (e.getCause() instanceof RemoteCallException) {
-        RemoteCallException callException = (RemoteCallException) e.getCause();
-        e.getChannel().write(callException.getResponse());
+      if (cause instanceof RemoteCallException) {
+        RemoteCallException callException = (RemoteCallException) cause;
+        ctx.writeAndFlush(callException.getResponse());
       } else {
-        LOG.error(e.getCause());
+        LOG.error(cause.getMessage());
+      }
+      
+      if (ctx != null && ctx.channel().isActive()) {
+        ctx.channel().close();
       }
     }
+    
   }
 }

@@ -201,8 +201,10 @@ public class MurmurHash {
       case 1:
         h ^= (long) (data[length & ~7] & 0xff);
         h *= m;
+        break;
+      default:
+        break;
     }
-    ;
 
     h ^= h >>> r;
     h *= m;

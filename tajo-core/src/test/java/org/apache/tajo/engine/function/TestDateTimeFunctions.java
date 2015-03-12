@@ -443,6 +443,11 @@ public class TestDateTimeFunctions extends ExprTestBase {
           new String[]{dateFormat(expectedDate, "yyyy-MM-dd")});
       testSimpleEval(context, "select cast(extract(hour from current_time()) as INT4);",
           new String[]{String.valueOf(Integer.parseInt(dateFormat(expectedDate, "HH")))});
+
+      expectedDate.setDate(expectedDate.getDate() + 1);
+
+      testSimpleEval(context, "select current_date() + 1;",
+          new String[]{dateFormat(expectedDate, "yyyy-MM-dd")});
     } finally {
       TimeZone.setDefault(originalTimezone);
     }

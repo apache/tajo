@@ -177,7 +177,7 @@ public class FunctionLoader {
       try {
         function = (Function)eachClass.newInstance();
       } catch (Exception e) {
-        LOG.warn(eachClass + " cannot instantiate Function class because of " + e.getMessage());
+        LOG.warn(eachClass + " cannot instantiate Function class because of " + e.getMessage(), e);
         continue;
       }
       String functionName = function.getClass().getAnnotation(Description.class).functionName();

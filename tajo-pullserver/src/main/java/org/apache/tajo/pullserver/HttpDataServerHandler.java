@@ -19,19 +19,21 @@
 package org.apache.tajo.pullserver;
 
 import com.google.common.collect.Lists;
+
+import io.netty.channel.*;
+import io.netty.handler.codec.http.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.server.nodemanager.containermanager.localizer.ContainerLocalizer;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.pullserver.retriever.DataRetriever;
 import org.apache.tajo.pullserver.retriever.FileChunk;
-import org.jboss.netty.buffer.ChannelBuffers;
-import org.jboss.netty.channel.*;
-import org.jboss.netty.handler.codec.frame.TooLongFrameException;
-import org.jboss.netty.handler.codec.http.*;
-import org.jboss.netty.handler.ssl.SslHandler;
-import org.jboss.netty.handler.stream.ChunkedFile;
-import org.jboss.netty.util.CharsetUtil;
+
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.TooLongFrameException;
+import io.netty.handler.ssl.SslHandler;
+import io.netty.handler.stream.ChunkedFile;
+import io.netty.util.CharsetUtil;
 
 import java.io.*;
 import java.net.URLDecoder;
@@ -41,14 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static org.jboss.netty.handler.codec.http.HttpHeaders.Names.CONTENT_TYPE;
-import static org.jboss.netty.handler.codec.http.HttpHeaders.isKeepAlive;
-import static org.jboss.netty.handler.codec.http.HttpHeaders.setContentLength;
-import static org.jboss.netty.handler.codec.http.HttpMethod.GET;
-import static org.jboss.netty.handler.codec.http.HttpResponseStatus.*;
-import static org.jboss.netty.handler.codec.http.HttpVersion.HTTP_1_1;
-
-public class HttpDataServerHandler extends SimpleChannelUpstreamHandler {
+public class HttpDataServerHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
   private final static Log LOG = LogFactory.getLog(HttpDataServerHandler.class);
 
   Map<ExecutionBlockId, DataRetriever> retrievers =
@@ -62,21 +57,18 @@ public class HttpDataServerHandler extends SimpleChannelUpstreamHandler {
   }
 
   @Override
-  public void messageReceived(ChannelHandlerContext ctx, MessageEvent e)
+  public void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request)
       throws Exception {
-    HttpRequest request = (HttpRequest) e.getMessage();
-    if (request.getMethod() != GET) {
-      sendError(ctx, METHOD_NOT_ALLOWED);
+
+    if (request.getMethod() != HttpMethod.GET) {
+      sendError(ctx, HttpResponseStatus.METHOD_NOT_ALLOWED);
       return;
     }
 
-    String base =
-        ContainerLocalizer.USERCACHE + "/" + userName + "/"
-            + ContainerLocalizer.APPCACHE + "/"
-            + appId + "/output" + "/";
+    String base = ContainerLocalizer.USERCACHE + "/" + userName + "/" + ContainerLocalizer.APPCACHE + "/" + appId
+        + "/output" + "/";
 
-    final Map<String, List<String>> params =
-        new QueryStringDecoder(request.getUri()).getParameters();
+    final Map<String, List<String>> params = new QueryStringDecoder(request.getUri()).parameters();
 
     List<FileChunk> chunks = Lists.newArrayList();
     List<String> taskIds = splitMaps(params.get("ta"));
@@ -90,65 +82,54 @@ public class HttpDataServerHandler extends SimpleChannelUpstreamHandler {
     }
 
     FileChunk[] file = chunks.toArray(new FileChunk[chunks.size()]);
-//    try {
-//      file = retriever.handle(ctx, request);
-//    } catch (FileNotFoundException fnf) {
-//      LOG.error(fnf);
-//      sendError(ctx, NOT_FOUND);
-//      return;
-//    } catch (IllegalArgumentException iae) {
-//      LOG.error(iae);
-//      sendError(ctx, BAD_REQUEST);
-//      return;
-//    } catch (FileAccessForbiddenException fafe) {
-//      LOG.error(fafe);
-//      sendError(ctx, FORBIDDEN);
-//      return;
-//    } catch (IOException ioe) {
-//      LOG.error(ioe);
-//      sendError(ctx, INTERNAL_SERVER_ERROR);
-//      return;
-//    }
 
     // Write the content.
-    Channel ch = e.getChannel();
     if (file == null) {
-      HttpResponse response = new DefaultHttpResponse(HTTP_1_1, NO_CONTENT);
-      ch.write(response);
-      if (!isKeepAlive(request)) {
-        ch.close();
+      HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NO_CONTENT);
+      if (!HttpHeaders.isKeepAlive(request)) {
+        ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+      } else {
+        response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+        ctx.writeAndFlush(response);
       }
-    }  else {
-      HttpResponse response = new DefaultHttpResponse(HTTP_1_1, OK);
+    } else {
+      HttpResponse response = new DefaultHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK);
+      ChannelFuture writeFuture = null;
       long totalSize = 0;
       for (FileChunk chunk : file) {
         totalSize += chunk.length();
       }
-      setContentLength(response, totalSize);
+      HttpHeaders.setContentLength(response, totalSize);
 
+      if (HttpHeaders.isKeepAlive(request)) {
+        response.headers().set(HttpHeaders.Names.CONNECTION, HttpHeaders.Values.KEEP_ALIVE);
+      }
       // Write the initial line and the header.
-      ch.write(response);
-
-      ChannelFuture writeFuture = null;
+      writeFuture = ctx.write(response);
 
       for (FileChunk chunk : file) {
-        writeFuture = sendFile(ctx, ch, chunk);
+        writeFuture = sendFile(ctx, chunk);
         if (writeFuture == null) {
-          sendError(ctx, NOT_FOUND);
+          sendError(ctx, HttpResponseStatus.NOT_FOUND);
           return;
         }
       }
+      if (ctx.pipeline().get(SslHandler.class) == null) {
+        writeFuture = ctx.writeAndFlush(LastHttpContent.EMPTY_LAST_CONTENT);
+      } else {
+        ctx.flush();
+      }
 
       // Decide whether to close the connection or not.
-      if (!isKeepAlive(request)) {
+      if (!HttpHeaders.isKeepAlive(request)) {
         // Close the connection when the whole content is written out.
         writeFuture.addListener(ChannelFutureListener.CLOSE);
       }
     }
+
   }
 
   private ChannelFuture sendFile(ChannelHandlerContext ctx,
-                                 Channel ch,
                                  FileChunk file) throws IOException {
     RandomAccessFile raf;
     try {
@@ -158,38 +139,41 @@ public class HttpDataServerHandler extends SimpleChannelUpstreamHandler {
     }
 
     ChannelFuture writeFuture;
-    if (ch.getPipeline().get(SslHandler.class) != null) {
+    ChannelFuture lastContentFuture;
+    if (ctx.pipeline().get(SslHandler.class) != null) {
       // Cannot use zero-copy with HTTPS.
-      writeFuture = ch.write(new ChunkedFile(raf, file.startOffset(),
-          file.length(), 8192));
+      lastContentFuture = ctx.write(new HttpChunkedInput(new ChunkedFile(raf, file.startOffset(),
+          file.length(), 8192)));
     } else {
       // No encryption - use zero-copy.
       final FileRegion region = new DefaultFileRegion(raf.getChannel(),
           file.startOffset(), file.length());
-      writeFuture = ch.write(region);
+      writeFuture = ctx.write(region);
+      lastContentFuture = ctx.write(LastHttpContent.EMPTY_LAST_CONTENT);
       writeFuture.addListener(new ChannelFutureListener() {
         public void operationComplete(ChannelFuture future) {
-          region.releaseExternalResources();
+          if (region.refCnt() > 0) {
+            region.release();
+          }
         }
       });
     }
 
-    return writeFuture;
+    return lastContentFuture;
   }
 
   @Override
-  public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e)
+  public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
       throws Exception {
-    Channel ch = e.getChannel();
-    Throwable cause = e.getCause();
+    Channel ch = ctx.channel();
     if (cause instanceof TooLongFrameException) {
-      sendError(ctx, BAD_REQUEST);
+      sendError(ctx, HttpResponseStatus.BAD_REQUEST);
       return;
     }
 
-    cause.printStackTrace();
-    if (ch.isConnected()) {
-      sendError(ctx, INTERNAL_SERVER_ERROR);
+    LOG.error(cause.getMessage(), cause);
+    if (ch.isActive()) {
+      sendError(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -221,13 +205,12 @@ public class HttpDataServerHandler extends SimpleChannelUpstreamHandler {
   }
 
   private void sendError(ChannelHandlerContext ctx, HttpResponseStatus status) {
-    HttpResponse response = new DefaultHttpResponse(HTTP_1_1, status);
-    response.setHeader(CONTENT_TYPE, "text/plain; charset=UTF-8");
-    response.setContent(ChannelBuffers.copiedBuffer(
-        "Failure: " + status.toString() + "\r\n", CharsetUtil.UTF_8));
+    FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status,
+        Unpooled.copiedBuffer("Failure: " + status.toString() + "\r\n", CharsetUtil.UTF_8));
+    response.headers().set(HttpHeaders.Names.CONTENT_TYPE, "text/plain; charset=UTF-8");
 
     // Close the connection as soon as the error message is sent.
-    ctx.getChannel().write(response).addListener(ChannelFutureListener.CLOSE);
+    ctx.channel().writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
   }
 
   private List<String> splitMaps(List<String> qids) {

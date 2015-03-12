@@ -28,7 +28,7 @@ import org.apache.tajo.client.QueryStatus;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.jdbc.TajoResultSet;
+import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.plan.rewrite.BaseLogicalPlanRewriteRuleProvider;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.storage.StorageConstants;
@@ -439,11 +439,10 @@ public class TestSelectQuery extends QueryTestCaseBase {
       Thread t = new Thread() {
         public void run() {
           try {
-            TajoResultSet res = (TajoResultSet) client.executeQueryAndGetResult("select l_orderkey from lineitem");
-            QueryStatus status = client.getQueryStatus(res.getQueryId());
+            ClientProtos.SubmitQueryResponse response = client.executeQuery("select l_orderkey from lineitem");
+            QueryStatus status = client.getQueryStatus(new QueryId(response.getQueryId()));
             assertEquals(QueryState.QUERY_ERROR, status.getState());
             assertEquals(NullPointerException.class.getName(), status.getErrorMessage());
-            cleanupQuery(res);
           } catch (Exception e) {
             fail(e.getMessage());
           }
