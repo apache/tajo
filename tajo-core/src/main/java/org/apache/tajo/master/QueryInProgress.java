@@ -118,7 +118,7 @@ public class QueryInProgress {
     try {
       masterContext.getHistoryWriter().appendAndFlush(queryInfo);
     } catch (Throwable e) {
-      LOG.warn(e);
+      LOG.warn(e, e);
     }
   }
 

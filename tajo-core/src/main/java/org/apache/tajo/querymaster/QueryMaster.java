@@ -220,7 +220,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
         tajoWorkerProtocolService.cleanup(null, queryId.getProto(), NullCallback.get());
       } catch (Exception e) {
-        LOG.error(e.getMessage());
+        LOG.error(e.getMessage(), e);
       } finally {
         connPool.releaseConnection(rpc);
       }
@@ -375,7 +375,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
             query.context.getQueryMasterContext().getWorkerContext().
                 getTaskHistoryWriter().appendAndFlush(queryHisory);
           } catch (Throwable e) {
-            LOG.warn(e);
+            LOG.warn(e, e);
           }
         }
       }

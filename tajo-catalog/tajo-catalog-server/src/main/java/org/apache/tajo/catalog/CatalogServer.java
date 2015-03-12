@@ -895,7 +895,7 @@ public class CatalogServer extends AbstractService {
       try {
         return store.existIndexByName(databaseName, indexName) ? ProtoUtil.TRUE : ProtoUtil.FALSE;
       } catch (Exception e) {
-        LOG.error(e);
+        LOG.error(e, e);
         return BoolProto.newBuilder().setValue(false).build();
       } finally {
         rlock.unlock();
@@ -916,7 +916,7 @@ public class CatalogServer extends AbstractService {
         return store.existIndexByColumn(databaseName, tableName, columnName) ?
             ProtoUtil.TRUE : ProtoUtil.FALSE;
       } catch (Exception e) {
-        LOG.error(e);
+        LOG.error(e, e);
         return BoolProto.newBuilder().setValue(false).build();
       } finally {
         rlock.unlock();
@@ -981,7 +981,7 @@ public class CatalogServer extends AbstractService {
         }
         store.dropIndex(databaseName, indexName);
       } catch (Exception e) {
-        LOG.error(e);
+        LOG.error(e, e);
       } finally {
         wlock.unlock();
       }

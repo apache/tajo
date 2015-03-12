@@ -131,7 +131,7 @@ public class SessionManager extends CompositeService implements EventHandler<Ses
       assertSessionExistence(event.getSessionId());
       touch(event.getSessionId());
     } catch (InvalidSessionException e) {
-      LOG.error(e);
+      LOG.error(e, e);
     }
 
     if (event.getType() == SessionEventType.EXPIRE) {
