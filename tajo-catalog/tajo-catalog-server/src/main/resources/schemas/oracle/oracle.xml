@@ -17,7 +17,12 @@
   limitations under the License.
   -->
 <tns:store xmlns:tns="http://tajo.apache.org/catalogstore" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.xsd ">
-  <tns:base version="2">
+
+  <!-- Version History -->
+  <!-- 3 - 2015-03-12: Nested Schema (TAJO-1329) -->
+  <!-- 2 - First versioning -->
+
+  <tns:base version="3">
     <tns:objects>
   		<tns:Object order="0" type="table" name="meta">
   			<tns:sql><![CDATA[
