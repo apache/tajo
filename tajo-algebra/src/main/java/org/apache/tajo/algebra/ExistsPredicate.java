@@ -27,7 +27,7 @@ public class ExistsPredicate extends UnaryOperator {
   private boolean not;
 
   public ExistsPredicate(SimpleTableSubQuery simpleTableSubQuery, boolean not) {
-    super(OpType.InPredicate);
+    super(OpType.ExistsPredicate);
     this.not = not;
     setChild(simpleTableSubQuery);
   }

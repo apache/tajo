@@ -16,6 +16,14 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1384: Duplicated output file path problem. (jihoon)
+
+    TAJO-1386: CURRENT_DATE generates parsing errors sometimes.
+    (Contributed by navis, Committed by hyunsik)
+
+    TAJO-1387: Correct error message for EXISTS clause.
+    (Contributed by Dongjoon Hyun, Committed by hyunsik)
+
     TAJO-1378: Incorrect version(0.8.0) info in tajo-doc. 
     (Contributed by Dongjoon Hyun, Committed by jihoon)
 
@@ -34,6 +42,9 @@ Release 0.11.0 - unreleased
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1380: Update JDBC documentation for new JDBC driver.
+    (Contributed by Dongjoon Hyun, Committed by hyunsik)
 
     TAJO-1335: Bump up 0.10.0-SNAPSHOT to 0.11.0-SNAPSHOT in master branch. 
     (hyunsik)
