@@ -295,4 +295,22 @@ public class TestNonForwardQueryResultSystemScanner {
     assertThat(tuples.size(), is(9));
     assertThat(tuples, hasItem(getTupleMatcher(0, is("lineitem"))));
   }
+  
+  @Test
+  public void testGetClusterDetails() throws Exception {
+    NonForwardQueryResultScanner queryResultScanner =
+        getScanner("SELECT TYPE FROM INFORMATION_SCHEMA.CLUSTER");
+    
+    queryResultScanner.init();
+    
+    List<ByteString> rowBytes = queryResultScanner.getNextRows(100);
+    
+    assertThat(rowBytes.size(), is(2));
+    
+    RowStoreDecoder decoder = RowStoreUtil.createDecoder(queryResultScanner.getLogicalSchema());
+    List<Tuple> tuples = getTupleList(decoder, rowBytes);
+    
+    assertThat(tuples.size(), is(2));
+    assertThat(tuples, hasItem(getTupleMatcher(0, is("QueryMaster"))));
+  }
 }

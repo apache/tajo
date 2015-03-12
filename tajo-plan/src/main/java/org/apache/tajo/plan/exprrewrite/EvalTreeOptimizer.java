@@ -50,7 +50,7 @@ public class EvalTreeOptimizer {
       try {
         rule = (EvalTreeOptimizationRule)eachRule.newInstance();
       } catch (Exception e) {
-        LOG.warn(eachRule + " cannot instantiate EvalTreeOptimizerRule class because of " + e.getMessage());
+        LOG.warn(eachRule + " cannot instantiate EvalTreeOptimizerRule class because of " + e.getMessage(), e);
         continue;
       }
       rules.add(rule);

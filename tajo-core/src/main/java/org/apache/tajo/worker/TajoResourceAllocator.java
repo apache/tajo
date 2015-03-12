@@ -133,7 +133,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
       try {
         eachProxy.stopContainer();
       } catch (Throwable e) {
-        LOG.warn(e.getMessage());
+        LOG.warn(e.getMessage(), e);
       }
     }
 

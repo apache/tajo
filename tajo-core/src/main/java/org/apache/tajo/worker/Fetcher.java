@@ -243,7 +243,7 @@ public class Fetcher {
             return;
           }
         } catch (Exception e) {
-          LOG.error(e.getMessage());
+          LOG.error(e.getMessage(), e);
         } finally {
           ReferenceCountUtil.release(msg);
         }
@@ -272,7 +272,7 @@ public class Fetcher {
             }
           }
         } catch (Exception e) {
-          LOG.error(e.getMessage());
+          LOG.error(e.getMessage(), e);
         } finally {
           ReferenceCountUtil.release(msg);
         }
@@ -283,7 +283,7 @@ public class Fetcher {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
         throws Exception {
       if (cause instanceof ReadTimeoutException) {
-        LOG.warn(cause);
+        LOG.warn(cause, cause);
       } else {
         LOG.error("Fetch failed :", cause);
       }

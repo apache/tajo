@@ -779,6 +779,7 @@ sign
 
 numeric_value_function
   : extract_expression
+  | datetime_value_function
   ;
 
 extract_expression
