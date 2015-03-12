@@ -276,10 +276,10 @@ public class JdbcConnection implements Connection {
         return false;
       }
     } catch (ServiceException e) {
-      LOG.error("TajoMaster is not available.");
+      LOG.error("TajoMaster is not available.", e);
       return false;
     } catch (IOException e) {
-      LOG.error("JDBC connection is not valid.");
+      LOG.error("JDBC connection is not valid.", e);
       return false;
     }
   }

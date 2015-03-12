@@ -79,7 +79,7 @@ public class PullServerUtil {
       posixFadviseIfPossible = MethodUtils.getAccessibleMethod(posixClass, "posixFadviseIfPossible", parameters);
     } catch (Throwable e) {
       loaded = false;
-      LOG.warn("Failed to access posixFadviseIfPossible :" + e.getMessage());
+      LOG.warn("Failed to access posixFadviseIfPossible :" + e.getMessage(), e);
     }
 
     if (posixFadviseIfPossible == null) {

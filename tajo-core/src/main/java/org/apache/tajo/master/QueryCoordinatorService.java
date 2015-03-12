@@ -66,7 +66,7 @@ public class QueryCoordinatorService extends AbstractService {
     try {
       server = new AsyncRpcServer(QueryCoordinatorProtocol.class, masterHandler, initIsa, workerNum);
     } catch (Exception e) {
-      LOG.error(e);
+      LOG.error(e, e);
     }
     server.start();
     bindAddress = NetUtils.getConnectAddress(server.getListenAddress());

@@ -436,7 +436,7 @@ public class HistoryWriter extends AbstractService {
           try {
             holder.flush();
           } catch (IOException e) {
-            LOG.warn(e);
+            LOG.warn(e, e);
           }
         }
       }

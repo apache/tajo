@@ -96,7 +96,7 @@ public class NettyServerBase {
         int port = getUnusedPort();
         serverAddr = new InetSocketAddress(initIsa.getHostName(), port);
       } catch (IOException e) {
-        LOG.error(e);
+        LOG.error(e, e);
       }
     } else {
       serverAddr = initIsa;
