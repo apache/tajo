@@ -437,6 +437,26 @@ public class PlannerUtil {
   }
 
   /**
+   * Find the all options of scan node from the given node
+   *
+   * @param plan start node
+   * @return a KeyValueSet that contains all options
+   */
+  public static KeyValueSet getScanOptions(LogicalNode plan) {
+    KeyValueSet metaOptions = new KeyValueSet();
+
+    if (plan != null) {
+      LogicalNode[] scanNodes = PlannerUtil.findAllNodes(plan, NodeType.SCAN);
+      for (LogicalNode scanNode: scanNodes) {
+        KeyValueSet options = ((ScanNode)scanNode).getTableDesc().getMeta().getOptions();
+        metaOptions.putAll(options);
+      }
+    }
+
+    return metaOptions;
+  }
+
+  /**
    * Find a parent node of a given-typed operator.
    *
    * @param node start node

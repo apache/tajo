@@ -1,0 +1,1 @@
+create external table table1 (id int, name text, score float, type text) using csv location ${table.path};

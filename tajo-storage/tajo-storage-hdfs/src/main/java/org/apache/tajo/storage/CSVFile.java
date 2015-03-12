@@ -83,7 +83,7 @@ public class CSVFile {
       this.meta = meta;
       this.schema = schema;
       this.delimiter = StringEscapeUtils.unescapeJava(
-          this.meta.getOption(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
+          meta.getOption(StorageConstants.CSVFILE_DELIMITER, meta.getOption(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER))).charAt(0);
 
       this.columnNum = schema.size();
 
@@ -264,8 +264,8 @@ public class CSVFile {
 
       //Delimiter
       this.delimiter = StringEscapeUtils.unescapeJava(
-          meta.getOption(StorageConstants.TEXT_DELIMITER,
-          meta.getOption(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER))).charAt(0);
+          meta.getOption(StorageConstants.CSVFILE_DELIMITER,
+          meta.getOption(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER))).charAt(0);
 
       String nullCharacters = StringEscapeUtils.unescapeJava(
           meta.getOption(StorageConstants.TEXT_NULL,

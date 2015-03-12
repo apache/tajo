@@ -151,7 +151,7 @@ public class GlobalPlanner {
     // TODO - consider two terminal types: specified output or not
     if (childExecBlock.getPlan() != null) {
       terminalBlock = masterPlan.createTerminalBlock();
-      DataChannel finalChannel = new DataChannel(childExecBlock.getId(), terminalBlock.getId());
+      DataChannel finalChannel = new DataChannel(childExecBlock, terminalBlock);
       setFinalOutputChannel(finalChannel, lastNode.getOutSchema());
       masterPlan.addConnect(finalChannel);
     } else { // if one or more unions is terminal
@@ -178,7 +178,7 @@ public class GlobalPlanner {
     Preconditions.checkArgument(channel.getSchema() != null,
         "Channel schema (" + channel.getSrcId().getId() + " -> " + channel.getTargetId().getId() +
             ") is not initialized");
-    TableMeta meta = new TableMeta(channel.getStoreType(), new KeyValueSet());
+    TableMeta meta = new TableMeta(channel.getStoreType(), new KeyValueSet(channel.getOptions()));
     TableDesc desc = new TableDesc(channel.getSrcId().toString(), channel.getSchema(), meta, new Path("/").toUri());
     ScanNode scanNode = plan.createNode(ScanNode.class);
     scanNode.init(desc);
@@ -487,7 +487,7 @@ public class GlobalPlanner {
       if (otherSideBlock == null && !left) {
         DataChannel oldChannel = channel;
         masterPlan.disconnect(oldChannel.getSrcId(), oldChannel.getTargetId());
-        channel = new DataChannel(oldChannel.getSrcId(), targetBlock.getId());
+        channel = new DataChannel(masterPlan.getExecBlock(oldChannel.getSrcId()), targetBlock);
       }
       channel.setSchema(childNode.getOutSchema());
       channel.setShuffleType(HASH_SHUFFLE);

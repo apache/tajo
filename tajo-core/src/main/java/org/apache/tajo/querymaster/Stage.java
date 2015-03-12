@@ -723,7 +723,7 @@ public class Stage implements EventHandler<StageEvent> {
     }
 
     schema = channel.getSchema();
-    meta = CatalogUtil.newTableMeta(storeType, new KeyValueSet());
+    meta = CatalogUtil.newTableMeta(storeType, channel.getOptions());
     inputStatistics = statsArray[0];
     resultStatistics = statsArray[1];
   }

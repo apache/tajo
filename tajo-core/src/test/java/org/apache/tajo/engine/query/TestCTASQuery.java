@@ -225,7 +225,7 @@ public class TestCTASQuery extends QueryTestCaseBase {
 
     KeyValueSet options = desc.getMeta().getOptions();
     assertNotNull(options);
-    assertEquals(StringEscapeUtils.escapeJava("\u0001"), options.get(StorageConstants.TEXT_DELIMITER));
+    assertEquals(StringEscapeUtils.escapeJava("\u0001"), options.get(StorageConstants.CSVFILE_DELIMITER));
   }
 
   @Test

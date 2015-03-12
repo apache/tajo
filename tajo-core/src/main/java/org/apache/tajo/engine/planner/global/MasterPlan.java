@@ -113,10 +113,6 @@ public class MasterPlan {
   }
 
   public void addConnect(ExecutionBlock src, ExecutionBlock target, ShuffleType type) {
-    addConnect(src.getId(), target.getId(), type);
-  }
-
-  public void addConnect(ExecutionBlockId src, ExecutionBlockId target, ShuffleType type) {
     addConnect(new DataChannel(src, target, type));
   }
 
