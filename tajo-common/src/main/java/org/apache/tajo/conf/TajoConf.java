@@ -287,6 +287,8 @@ public class TajoConf extends Configuration {
     // Geo IP
     GEOIP_DATA("tajo.function.geoip-database-location", ""),
 
+    PYTHON_CMD_ARGS_REMAINDERS("tajo.function.python.args-reminders", ""),
+
     /////////////////////////////////////////////////////////////////////////////////
     // User Session Configuration
     //
