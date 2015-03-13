@@ -9,6 +9,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1383: Improve broadcast table cache. (jinho)
+
     TAJO-1374: Support multi-bytes delimiter for CSV file.
     (Contributed by navis, Committed by jinho)
 

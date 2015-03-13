@@ -18,12 +18,12 @@
 
 package org.apache.tajo.engine.utils;
 
-public class TupleCacheKey {
+public class TableCacheKey {
   String ebId;
   String tableName;
   String pathName;
 
-  public TupleCacheKey(String ebId, String tableName, String pathName) {
+  public TableCacheKey(String ebId, String tableName, String pathName) {
     this.ebId = ebId;
     this.tableName = tableName;
     this.pathName = pathName;
