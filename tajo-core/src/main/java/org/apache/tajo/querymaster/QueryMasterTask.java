@@ -29,6 +29,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
+import org.apache.hadoop.yarn.event.Event;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.Clock;
 import org.apache.tajo.*;
@@ -561,7 +562,8 @@ public class QueryMasterTask extends CompositeService {
       return queryContext.getStagingDir();
     }
 
-    public synchronized EventHandler getEventHandler() {
+    @SuppressWarnings("unchecked")
+    public synchronized <T extends Event> EventHandler<T> getEventHandler() {
       if(eventHandler == null) {
         eventHandler = dispatcher.getEventHandler();
       }

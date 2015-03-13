@@ -71,4 +71,8 @@ public class CancelableRpcCallback<T> implements RpcCallback<T> {
 
   protected void cancel(T canceled) {
   }
+
+  public boolean isCancelled() {
+    return state.get() == CANCELED;
+  }
 }

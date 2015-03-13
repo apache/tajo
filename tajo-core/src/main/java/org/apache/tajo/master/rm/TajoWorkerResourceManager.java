@@ -44,7 +44,10 @@ import org.apache.tajo.util.BasicFuture;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -298,7 +301,8 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
         try {
           WorkerResourceRequest resourceRequest = requestQueue.poll(
               QUEUE_POLLING_TIME, TimeUnit.MILLISECONDS);
-          if (resourceRequest == null) {
+          if (resourceRequest == null || (resourceRequest.callBack instanceof CancelableRpcCallback &&
+              ((CancelableRpcCallback)resourceRequest.callBack).isCancelled())) {
             continue;
           }
 
