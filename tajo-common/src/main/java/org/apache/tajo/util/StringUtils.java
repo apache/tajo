@@ -186,7 +186,11 @@ public class StringUtils {
   public static String unicodeEscapedDelimiter(String value) {
     try {
       String delimiter = StringEscapeUtils.unescapeJava(value);
-      return unicodeEscapedDelimiter(delimiter.charAt(0));
+      StringBuilder builder = new StringBuilder();
+      for (char achar : delimiter.toCharArray()) {
+        builder.append(unicodeEscapedDelimiter(achar));
+      }
+      return builder.toString();
     } catch (Throwable e) {
     }
     return value;

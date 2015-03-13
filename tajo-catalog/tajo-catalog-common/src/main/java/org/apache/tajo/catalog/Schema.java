@@ -349,6 +349,21 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     return this;
   }
 
+  public synchronized Schema addColumn(String name, TypeDesc typeDesc) {
+    String normalized = name;
+    if(fieldsByQualifiedName.containsKey(normalized)) {
+      LOG.error("Already exists column " + normalized);
+      throw new AlreadyExistsFieldException(normalized);
+    }
+
+    Column newCol = new Column(normalized, typeDesc);
+    fields.add(newCol);
+    fieldsByQualifiedName.put(newCol.getQualifiedName(), fields.size() - 1);
+    fieldsByName.put(newCol.getSimpleName(), TUtil.newList(fields.size() - 1));
+
+    return this;
+  }
+
   public synchronized Schema addColumn(String name, Type type) {
     if (type == Type.CHAR) {
       return addColumn(name, CatalogUtil.newDataTypeWithLen(type, 1));

@@ -9,6 +9,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1374: Support multi-bytes delimiter for CSV file.
+    (Contributed by navis, Committed by jinho)
+
     TAJO-1395: Remove deprecated sql files for Oracle and PostgreSQL. (jihun)
 
     TAJO-1394: Support reconnect on tsql. 
@@ -48,6 +51,9 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1398: Fix 'Getting Started' link error from 0.9.0 into 0.10.0. 
+    (Contributed by Dongjoon Hyun, Committed by jihoon)
+
     TAJO-1380: Update JDBC documentation for new JDBC driver.
     (Contributed by Dongjoon Hyun, Committed by hyunsik)
 
@@ -58,6 +64,9 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1329: Improve Schema class to support nested struct support.
+    (hyunsik)
 
     TAJO-1353: Nested record support in CREATE TABLE statement. (hyunsik)
 
