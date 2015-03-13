@@ -9,6 +9,11 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1395: Remove deprecated sql files for Oracle and PostgreSQL. (jihun)
+
+    TAJO-1394: Support reconnect on tsql. 
+    (Contributed by navis, Committed by hyunsik)
+
     TAJO-527: Upgrade to Netty 4. (jihun)
 
     TAJO-1369: Some stack trace information is missed in error/fail logging. 
@@ -53,6 +58,9 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1329: Improve Schema class to support nested struct support.
+    (hyunsik)
 
     TAJO-1353: Nested record support in CREATE TABLE statement. (hyunsik)
 

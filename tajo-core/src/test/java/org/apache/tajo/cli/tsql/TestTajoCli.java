@@ -205,17 +205,7 @@ public class TestTajoCli {
     assertEquals(databaseName, tajoCli.getContext().getCurrentDatabase());
   }
 
-  @Test
-  public void testDescTable() throws Exception {
-    String tableName;
-    if (cluster.isHCatalogStoreRunning()) {
-      tableName = "TEST_DESC_TABLE".toLowerCase();
-    } else {
-      tableName = "TEST_DESC_TABLE";
-    }
-
-    String sql = "create table \"" + tableName + "\" (col1 int4, col2 int4);";
-
+  private void verifyDescTable(String sql, String tableName, String resultFileName) throws Exception {
     setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
     tajoCli.executeScript(sql);
 
@@ -226,9 +216,35 @@ public class TestTajoCli {
 
     FileSystem fs = FileSystem.get(testBase.getTestingCluster().getConfiguration());
     if (!cluster.isHCatalogStoreRunning()) {
-      assertOutputResult("testDescTable.result", consoleResult, new String[]{"${table.path}"},
+      assertOutputResult(resultFileName, consoleResult, new String[]{"${table.path}"},
           new String[]{fs.getUri() + "/tajo/warehouse/default/" + tableName});
     }
+  }
+
+  @Test
+  public void testDescTable() throws Exception {
+    String tableName;
+    if (cluster.isHCatalogStoreRunning()) {
+      tableName = "TEST_DESC_TABLE".toLowerCase();
+    } else {
+      tableName = "TEST_DESC_TABLE";
+    }
+
+    String sql = "create table \"" + tableName + "\" (col1 int4, col2 int4);";
+    verifyDescTable(sql, tableName, "testDescTable.result");
+  }
+
+  @Test
+  public void testDescTableForNestedSchema() throws Exception {
+    String tableName;
+    if (cluster.isHCatalogStoreRunning()) {
+      tableName = "TEST_DESC_TABLE_NESTED".toLowerCase();
+    } else {
+      tableName = "TEST_DESC_TABLE_NESTED";
+    }
+
+    String sql = "create table \"" + tableName + "\" (col1 int4, col2 int4, col3 record (col4 record (col5 text)));";
+    verifyDescTable(sql, tableName, "testDescTableForNestedSchema.result");
   }
 
   @Test

@@ -21,7 +21,6 @@ package org.apache.tajo.algebra;
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
-import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.util.TUtil;
 
@@ -33,19 +32,18 @@ public class DataTypeExpr extends Expr {
   @Expose @SerializedName("Scale")
   Integer scale;
   @Expose @SerializedName("Record")
-  DataTypeExpr [] nestedRecord;
+  ColumnDefinition [] nestedRecordTypes; // not null if the type is RECORD
 
   public DataTypeExpr(String typeName) {
     super(OpType.DataType);
     this.typeName = typeName;
   }
 
-  public DataTypeExpr(DataTypeExpr [] nestedRecordTypes) {
+  public DataTypeExpr(ColumnDefinition [] nestedRecordTypes) {
     super(OpType.DataType);
-    // Please refer to DataTypes.proto. 'STRUCT' must be equivalent to Enum type in DataTypes.proto.
-    // STRUCT = 51;
+    // RECORD = 51 in DataTypes.proto
     this.typeName = Type.RECORD.name();
-    this.nestedRecord = nestedRecordTypes;
+    this.nestedRecordTypes = nestedRecordTypes;
   }
 
   public String getTypeName() {
@@ -54,6 +52,10 @@ public class DataTypeExpr extends Expr {
 
   public boolean isNestedRecordType() {
     return this.typeName.equals(Type.RECORD.name());
+  }
+
+  public ColumnDefinition [] getNestedRecordTypes() {
+    return nestedRecordTypes;
   }
 
   public boolean hasLengthOrPrecision() {
@@ -91,7 +93,7 @@ public class DataTypeExpr extends Expr {
     return typeName.equals(another.typeName) &&
         TUtil.checkEquals(lengthOrPrecision, another.lengthOrPrecision) &&
         TUtil.checkEquals(scale, another.scale) &&
-        TUtil.checkEquals(nestedRecord, another.nestedRecord);
+        TUtil.checkEquals(nestedRecordTypes, another.nestedRecordTypes);
   }
 
   @Override
@@ -100,7 +102,7 @@ public class DataTypeExpr extends Expr {
     dataType.typeName = typeName;
     dataType.lengthOrPrecision = lengthOrPrecision;
     dataType.scale = scale;
-    dataType.nestedRecord = nestedRecord;
+    dataType.nestedRecordTypes = nestedRecordTypes;
     return dataType;
   }
 }

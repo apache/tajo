@@ -69,7 +69,7 @@ public class DDLBuilder {
     return sb.toString();
   }
 
-  private static void buildSchema(StringBuilder sb, Schema schema) {
+  public static void buildSchema(StringBuilder sb, Schema schema) {
     boolean first = true;
 
     sb.append(" (");
@@ -81,11 +81,8 @@ public class DDLBuilder {
       }
 
       sb.append(CatalogUtil.denormalizeIdentifier(column.getSimpleName())).append(" ");
-      TajoDataTypes.DataType dataType = column.getDataType();
-      sb.append(dataType.getType().name());
-      if (column.getDataType().hasLength() && column.getDataType().getLength() > 0) {
-        sb.append(" (").append(column.getDataType().getLength()).append(")");
-      }
+      TypeDesc typeDesc = column.getTypeDesc();
+      sb.append(typeDesc);
     }
     sb.append(")");
   }
