@@ -324,7 +324,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
       if (NestedPathUtil.isPath(c.getSimpleName())) {
         containFlag &= (getColumn(c.getSimpleName()) != null);
       } else {
-        containFlag &= fields.contains(columns);
+        containFlag &= fields.contains(c);
       }
     }
 
