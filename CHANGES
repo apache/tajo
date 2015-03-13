@@ -48,6 +48,9 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1398: Fix 'Getting Started' link error from 0.9.0 into 0.10.0. 
+    (Contributed by Dongjoon Hyun, Committed by jihoon)
+
     TAJO-1380: Update JDBC documentation for new JDBC driver.
     (Contributed by Dongjoon Hyun, Committed by hyunsik)
 
