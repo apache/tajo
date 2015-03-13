@@ -85,8 +85,11 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
       int childStartIndex = tobeAdded.size() - childNum;
       // Extract nested fields
       List<Column> nestedColumns = TUtil.newList(tobeAdded.subList(childStartIndex, childStartIndex + childNum));
+
       // Remove nested fields from the the current level
-      tobeAdded.removeAll(nestedColumns);
+      for (int i = 0; i < childNum; i++) {
+        tobeAdded.remove(tobeAdded.size() - 1);
+      }
 
       // Add the nested fields to the list as a single record column
       tobeAdded.add(new Column(columnProto.getName(), new TypeDesc(new Schema(nestedColumns))));
