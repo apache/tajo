@@ -431,6 +431,107 @@ public class TestCatalog {
     assertFalse(catalog.existsTable(DEFAULT_DATABASE_NAME, "getTable"));
 	}
 
+  /**
+   * It asserts the equality between an original table desc and a restored table desc.
+   */
+  private static void assertSchemaEquality(String tableName, Schema schema) throws IOException {
+    Path path = new Path(CommonTestingUtil.getTestDir(), tableName);
+    TableDesc tableDesc = new TableDesc(
+        CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName),
+        schema,
+        StoreType.CSV,
+        new KeyValueSet(),
+        path.toUri());
+
+    // schema creation
+    assertFalse(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+    catalog.createTable(tableDesc);
+    assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+
+    // change it for the equals test.
+    schema.setQualifier(CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName));
+    TableDesc restored = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
+    assertEquals(schema, restored.getSchema());
+
+    // drop test
+    catalog.dropTable(CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName));
+    assertFalse(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
+  }
+
+  @Test
+  public void testCreateAndGetNestedTable1() throws Exception {
+    // schema creation
+    // three level nested schema
+    //
+    // s1
+    //  |- s2
+    //  |- s3
+    //      |- s4
+    //      |- s7
+    //          |- s5
+    //              |- s6
+    //      |- s8
+    //  |- s9
+
+    Schema nestedSchema = new Schema();
+    nestedSchema.addColumn("s1", Type.INT8);
+
+    nestedSchema.addColumn("s2", Type.INT8);
+
+    Schema s5 = new Schema();
+    s5.addColumn("s6", Type.INT8);
+
+    Schema s7 = new Schema();
+    s7.addColumn("s5", new TypeDesc(s5));
+
+    Schema s3 = new Schema();
+    s3.addColumn("s4", Type.INT8);
+    s3.addColumn("s7", new TypeDesc(s7));
+    s3.addColumn("s8", Type.INT8);
+
+    nestedSchema.addColumn("s3", new TypeDesc(s3));
+    nestedSchema.addColumn("s9", Type.INT8);
+
+    assertSchemaEquality("nested_schema1", nestedSchema);
+  }
+
+  @Test
+  public void testCreateAndGetNestedTable2() throws Exception {
+    // schema creation
+    // three level nested schema
+    //
+    // s1
+    //  |- s2
+    //  |- s3
+    //      |- s1
+    //      |- s2
+    //          |- s3
+    //              |- s1
+    //      |- s3
+    //  |- s4
+
+    Schema nestedSchema = new Schema();
+    nestedSchema.addColumn("s1", Type.INT8);
+
+    nestedSchema.addColumn("s2", Type.INT8);
+
+    Schema s5 = new Schema();
+    s5.addColumn("s6", Type.INT8);
+
+    Schema s7 = new Schema();
+    s7.addColumn("s5", new TypeDesc(s5));
+
+    Schema s3 = new Schema();
+    s3.addColumn("s4", Type.INT8);
+    s3.addColumn("s7", new TypeDesc(s7));
+    s3.addColumn("s8", Type.INT8);
+
+    nestedSchema.addColumn("s3", new TypeDesc(s3));
+    nestedSchema.addColumn("s9", Type.INT8);
+
+    assertSchemaEquality("nested_schema2", nestedSchema);
+  }
+
   static IndexDesc desc1;
   static IndexDesc desc2;
   static IndexDesc desc3;

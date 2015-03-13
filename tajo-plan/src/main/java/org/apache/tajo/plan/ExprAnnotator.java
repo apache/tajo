@@ -793,10 +793,11 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       }
 
       return new ConstEval(
-          DatumFactory.cast(constEval.getValue(), LogicalPlanner.convertDataType(expr.getTarget()), tz));
+          DatumFactory.cast(constEval.getValue(),
+              LogicalPlanner.convertDataType(expr.getTarget()).getDataType(), tz));
 
     } else {
-      return new CastEval(ctx.queryContext, child, LogicalPlanner.convertDataType(expr.getTarget()));
+      return new CastEval(ctx.queryContext, child, LogicalPlanner.convertDataType(expr.getTarget()).getDataType());
     }
   }
 

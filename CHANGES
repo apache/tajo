@@ -59,6 +59,9 @@ Release 0.11.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1329: Improve Schema class to support nested struct support.
+    (hyunsik)
+
     TAJO-1353: Nested record support in CREATE TABLE statement. (hyunsik)
 
 
