@@ -119,6 +119,9 @@ public class TajoGetConf {
     } else if (hostName == null && port == null) {
       tajoClient = new TajoClientImpl(ServiceTrackerFactory.get(tajoConf));
     }
+    if (!tajoClient.isConnected()) {
+      System.out.println("ERROR: cannot connect Tajo server");
+    }
 
     processConfKey(writer, param);
     writer.flush();

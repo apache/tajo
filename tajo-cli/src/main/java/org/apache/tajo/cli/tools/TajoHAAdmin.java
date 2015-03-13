@@ -131,6 +131,9 @@ public class TajoHAAdmin {
     } else if (hostName == null && port == null) {
       tajoClient = new TajoClientImpl(ServiceTrackerFactory.get(tajoConf));
     }
+    if (!tajoClient.isConnected()) {
+      System.err.println("ERROR: cannot connect Tajo server");
+    }
 
     if (!tajoConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
       writer.write("HA is not enabled for this tajo cluster.");
