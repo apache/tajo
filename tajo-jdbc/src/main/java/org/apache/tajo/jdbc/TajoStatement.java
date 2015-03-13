@@ -244,7 +244,7 @@ public class TajoStatement implements Statement {
 
   @Override
   public int getMaxRows() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getMaxRows not supported");
+    return tajoClient.getMaxRows() ;
   }
 
   @Override
@@ -335,7 +335,10 @@ public class TajoStatement implements Statement {
 
   @Override
   public void setMaxRows(int max) throws SQLException {
-    throw new SQLFeatureNotSupportedException("setMaxRows not supported");
+	  if (max < 0) {
+	     throw new SQLException("max must be >= 0");
+	  }
+	  tajoClient.setMaxRows(max);
   }
 
   @Override
