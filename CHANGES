@@ -79,6 +79,9 @@ Release 0.11.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1393: Resolve findbug warnings on Tajo Cli Module.
+    (Contributed by Dongjoon Hyun, Committed by hyunsik)
+
     TAJO-1337: Implements common modules to handle RESTful API. (jihun)
 
     TAJO-1329: Improve Schema class to support nested struct support.

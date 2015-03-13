@@ -71,7 +71,6 @@ public class TajoAdmin {
 
   private TajoConf tajoConf;
   private TajoClient tajoClient;
-  private ServiceTracker serviceTracker;
   private Writer writer;
 
   public TajoAdmin(TajoConf tajoConf, Writer writer) {
