@@ -1976,13 +1976,18 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs);
     }
 
+    createIndexNode.setExternal(createIndex.isExternal());
     Collection<RelationNode> relations = block.getRelations();
     assert relations.size() == 1;
     createIndexNode.setKeySortSpecs(relations.iterator().next().getLogicalSchema(),
         annotateSortSpecs(block, referNames, sortSpecs));
     createIndexNode.setIndexMethod(IndexMethod.valueOf(createIndex.getMethodSpec().getName().toUpperCase()));
-    createIndexNode.setIndexPath(
-        getIndexPath(context, context.queryContext.get(SessionVars.CURRENT_DATABASE), createIndex.getIndexName()));
+    if (createIndex.isExternal()) {
+      createIndexNode.setIndexPath(new Path(createIndex.getIndexPath()).toUri());
+    } else {
+      createIndexNode.setIndexPath(
+          getIndexPath(context, context.queryContext.get(SessionVars.CURRENT_DATABASE), createIndex.getIndexName()));
+    }
 
     if (createIndex.getParams() != null) {
       KeyValueSet keyValueSet = new KeyValueSet();

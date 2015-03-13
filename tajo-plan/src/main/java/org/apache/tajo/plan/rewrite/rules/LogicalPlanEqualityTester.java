@@ -18,7 +18,6 @@
 
 package org.apache.tajo.plan.rewrite.rules;
 
-import org.apache.tajo.OverridableConf;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.LogicalNode;
