@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.util.List;
 
 public abstract class ScanExec extends PhysicalExec {
+
+  /* if this is a broadcasted table or not  */
   private boolean canBroadcast;
 
   public ScanExec(TaskAttemptContext context, Schema inSchema, Schema outSchema) {
@@ -51,7 +53,7 @@ public abstract class ScanExec extends PhysicalExec {
     return canBroadcast;
   }
 
-  /* check if this is broadcast table or not */
+  /* check if this scan is broadcasted */
   private boolean checkIfBroadcast() {
     Enforcer enforcer = context.getEnforcer();
 

@@ -27,7 +27,10 @@ import org.apache.tajo.ExecutionBlockId;
 import java.util.List;
 import java.util.Map;
 
-public class TableCache {
+/**
+ * This is a simple TableCache which just added CacheHolder as needed.
+ */
+ public class TableCache {
   public static final Log LOG = LogFactory.getLog(TableCache.class);
 
   private static TableCache instance;

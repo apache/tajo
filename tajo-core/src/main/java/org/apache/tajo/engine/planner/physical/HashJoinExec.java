@@ -157,6 +157,7 @@ public class HashJoinExec extends BinaryPhysicalExec {
   protected void loadRightToHashTable() throws IOException {
     ScanExec scanExec = PhysicalPlanUtil.findExecutor(rightChild, ScanExec.class);
     if (scanExec.canBroadcast()) {
+      /* If this table can broadcast, all tasks in a node will share the same cache */
       TableCacheKey key = CacheHolder.BroadcastCacheHolder.getCacheKey(
           context, scanExec.getCanonicalName(), scanExec.getFragments());
       loadRightFromCache(key);

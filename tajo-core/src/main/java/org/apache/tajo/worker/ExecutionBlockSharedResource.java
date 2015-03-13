@@ -113,6 +113,7 @@ public class ExecutionBlockSharedResource {
     }
   }
 
+  /* This is guarantee a lock for a ExecutionBlock */
   public synchronized Object getLock() {
     return lock;
   }

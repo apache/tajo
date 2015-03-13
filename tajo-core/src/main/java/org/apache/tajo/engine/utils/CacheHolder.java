@@ -33,10 +33,26 @@ import java.util.Map;
 
 public interface CacheHolder<T> {
 
+  /**
+   * Get a shared data from the TableCache.
+   */
   T getData();
+
+  /**
+   * Get a shared table stats from the TableCache.
+   */
   TableStats getTableStats();
+
+  /**
+   * Release a cache to the memory.
+   *
+   */
   void release();
 
+  /**
+   * This is a cache-holder for a join table
+   * It will release when execution block is finished
+   */
   public static class BroadcastCacheHolder implements CacheHolder<Map<Tuple, List<Tuple>>> {
     private Map<Tuple, List<Tuple>> data;
     private Deallocatable rowBlock;
