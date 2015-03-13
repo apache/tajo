@@ -59,7 +59,7 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
       dataType = BOOL_TYPE;
       break;
     case Cast:
-      dataType = LogicalPlanner.convertDataType(((CastExpr)expr).getTarget());
+      dataType = LogicalPlanner.convertDataType(((CastExpr)expr).getTarget()).getDataType();
       break;
     default:
       dataType = visit(ctx, stack, expr.getChild());
@@ -270,7 +270,7 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
   @Override
   public DataType visitDataType(LogicalPlanner.PlanContext ctx, Stack<Expr> stack, DataTypeExpr expr)
       throws PlanningException {
-    return LogicalPlanner.convertDataType(expr);
+    return LogicalPlanner.convertDataType(expr).getDataType();
   }
 
   @Override

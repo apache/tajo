@@ -1,0 +1,1 @@
+CREATE TABLE D9.nested_table (f1 int, nested_field record (f2 int4, f3 int8), f3 text);

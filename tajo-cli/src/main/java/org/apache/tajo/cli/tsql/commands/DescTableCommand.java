@@ -132,10 +132,7 @@ public class DescTableCommand extends TajoShellCommand {
 
     for(int i = 0; i < desc.getSchema().size(); i++) {
       Column col = desc.getSchema().getColumn(i);
-      sb.append(col.getSimpleName()).append("\t").append(col.getDataType().getType());
-      if (col.getDataType().hasLength()) {
-        sb.append("(").append(col.getDataType().getLength()).append(")");
-      }
+      sb.append(col.getSimpleName()).append("\t").append(col.getTypeDesc());
       sb.append("\n");
     }
 
