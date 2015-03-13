@@ -260,6 +260,37 @@ public class TestSchema {
     verifySchema(nestedSchema2);
   }
 
+  @Test
+  public void testNestedRecord3() {
+    verifySchema(nestedSchema3);
+  }
+
+  @Test
+  public void testNestedRecord4() {
+    Schema root = new Schema();
+
+    Schema nf2DotNf1 = new Schema();
+    nf2DotNf1.addColumn("f1", Type.INT8);
+    nf2DotNf1.addColumn("f2", Type.INT8);
+
+    Schema nf2DotNf2 = new Schema();
+    nf2DotNf2.addColumn("f1", Type.INT8);
+    nf2DotNf2.addColumn("f2", Type.INT8);
+
+    Schema nf2 = new Schema();
+    nf2.addColumn("f1", Type.INT8);
+    nf2.addColumn("nf1", new TypeDesc(nf2DotNf1));
+    nf2.addColumn("nf2", new TypeDesc(nf2DotNf2));
+    nf2.addColumn("f2", Type.INT8);
+
+    root.addColumn("f1", Type.INT8);
+    root.addColumn("nf1", Type.INT8);
+    root.addColumn("nf2", new TypeDesc(nf2));
+    root.addColumn("f2", Type.INT8);
+
+    verifySchema(root);
+  }
+
   public static void verifySchema(Schema s1) {
     assertEquals(s1, s1);
 
