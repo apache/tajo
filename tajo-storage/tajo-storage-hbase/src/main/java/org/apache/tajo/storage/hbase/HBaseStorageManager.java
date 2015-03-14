@@ -355,7 +355,7 @@ public class HBaseStorageManager extends StorageManager {
     Collection<String> columnFamilies = columnMapping.getColumnFamilyNames();
     //If 'columns' attribute is empty, Tajo table columns are mapped to all HBase table column.
     if (columnFamilies.isEmpty()) {
-      for (Column eachColumn: schema.getColumns()) {
+      for (Column eachColumn: schema.getRootColumns()) {
         columnFamilies.add(eachColumn.getSimpleName());
       }
     }

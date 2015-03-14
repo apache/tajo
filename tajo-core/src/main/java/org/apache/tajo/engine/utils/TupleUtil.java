@@ -24,7 +24,6 @@ import com.google.common.collect.Maps;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
@@ -37,7 +36,6 @@ import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.util.StringUtils;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -91,7 +89,7 @@ public class TupleUtil {
     }
 
     int i = 0;
-    for (Column col : sortSchema.getColumns()) {
+    for (Column col : sortSchema.getRootColumns()) {
       ColumnStats columnStat = statMap.get(col);
       if (columnStat == null) {
         continue;
@@ -123,7 +121,7 @@ public class TupleUtil {
       statSet.put(stat.getColumn(), stat);
     }
 
-    for (Column col : target.getColumns()) {
+    for (Column col : target.getRootColumns()) {
       Preconditions.checkState(statSet.containsKey(col),
           "ERROR: Invalid Column Stats (column stats: " + colStats + ", there exists not target " + col);
     }
@@ -136,7 +134,7 @@ public class TupleUtil {
     // In outer join, empty table could be searched.
     // As a result, min value and max value would be null.
     // So, we should put NullDatum for this case.
-    for (Column col : target.getColumns()) {
+    for (Column col : target.getRootColumns()) {
       if (sortSpecs[sortSpecIndex].isAscending()) {
         if (statSet.get(col).getMinValue() != null)
           startTuple.put(i, statSet.get(col).getMinValue());
@@ -171,7 +169,7 @@ public class TupleUtil {
         else
           endTuple.put(i, DatumFactory.createNullDatum());
       }
-      if (target.getColumns().size() == sortSpecs.length) {
+      if (target.getRootColumns().size() == sortSpecs.length) {
         // Not composite column sort
         sortSpecIndex++;
       }

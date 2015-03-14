@@ -1166,13 +1166,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     Schema joinSchema = new Schema();
     Schema commons = SchemaUtil.getNaturalJoinColumns(left.getOutSchema(), right.getOutSchema());
     joinSchema.addColumns(commons);
-    for (Column c : left.getOutSchema().getColumns()) {
+    for (Column c : left.getOutSchema().getRootColumns()) {
       if (!joinSchema.contains(c.getQualifiedName())) {
         joinSchema.addColumn(c);
       }
     }
 
-    for (Column c : right.getOutSchema().getColumns()) {
+    for (Column c : right.getOutSchema().getRootColumns()) {
       if (!joinSchema.contains(c.getQualifiedName())) {
         joinSchema.addColumn(c);
       }
@@ -1190,7 +1190,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     Column leftJoinKey;
     Column rightJoinKey;
 
-    for (Column common : commons.getColumns()) {
+    for (Column common : commons.getRootColumns()) {
       leftJoinKey = leftSchema.getColumn(common.getQualifiedName());
       rightJoinKey = rightSchema.getColumn(common.getQualifiedName());
       equiQual = new BinaryEval(EvalType.EQUAL,
@@ -1303,7 +1303,13 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   private static LinkedHashSet<Target> createFieldTargetsFromRelation(QueryBlock block, RelationNode relationNode,
                                                       Set<String> newlyEvaluatedRefNames) {
     LinkedHashSet<Target> targets = Sets.newLinkedHashSet();
-    for (Column column : relationNode.getLogicalSchema().getColumns()) {
+    for (Column column : relationNode.getLogicalSchema().getAllColumns()) {
+
+      // TODO - to be fixed
+      if (column.getTypeDesc().getDataType().getType() == TajoDataTypes.Type.RECORD) {
+        continue;
+      }
+
       String aliasName = block.namedExprsMgr.checkAndGetIfAliasedColumn(column.getQualifiedName());
       if (aliasName != null) {
         targets.add(new Target(new FieldEval(column), aliasName));

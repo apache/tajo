@@ -262,7 +262,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       TableDesc tableDesc = client.getTableDesc(CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, tableName));
       assertNotNull(tableDesc);
 
-      List<Column> columns = tableDesc.getSchema().getColumns();
+      List<Column> columns = tableDesc.getSchema().getRootColumns();
 
       while (rs.next()) {
         assertEquals(tableName, rs.getString("TABLE_NAME"));

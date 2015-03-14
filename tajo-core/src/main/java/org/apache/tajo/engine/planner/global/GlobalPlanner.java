@@ -1124,7 +1124,7 @@ public class GlobalPlanner {
       channel.setSchema(((InsertNode)node).getProjectedSchema());
       Column [] shuffleKeys = new Column[partitionMethod.getExpressionSchema().size()];
       int i = 0;
-      for (Column column : partitionMethod.getExpressionSchema().getColumns()) {
+      for (Column column : partitionMethod.getExpressionSchema().getRootColumns()) {
         int id = insertNode.getTableSchema().getColumnId(column.getQualifiedName());
         shuffleKeys[i++] = insertNode.getProjectedSchema().getColumn(id);
       }
@@ -1453,7 +1453,7 @@ public class GlobalPlanner {
           addedTableSubQueries.add(copy);
 
           //Find a SubQueryNode which contains all columns in InputSchema matched with Target and OutputSchema's column
-          if (copy.getInSchema().containsAll(copy.getOutSchema().getColumns())) {
+          if (copy.getInSchema().containsAll(copy.getOutSchema().getRootColumns())) {
             for (Target eachTarget : copy.getTargets()) {
               Set<Column> columns = EvalTreeUtil.findUniqueColumns(eachTarget.getEvalTree());
               if (copy.getInSchema().containsAll(columns)) {

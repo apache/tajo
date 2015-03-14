@@ -319,8 +319,8 @@ public class PreLogicalPlanVerifier extends BaseAlgebraVisitor<PreLogicalPlanVer
               return null;
             }
             if (table.hasPartition()) {
-              int columnSize = table.getSchema().getColumns().size();
-              columnSize += table.getPartitionMethod().getExpressionSchema().getColumns().size();
+              int columnSize = table.getSchema().getRootColumns().size();
+              columnSize += table.getPartitionMethod().getExpressionSchema().getRootColumns().size();
               if (projectColumnNum < columnSize) {
                 context.state.addVerification("INSERT has smaller expressions than target columns");
               } else if (projectColumnNum > columnSize) {

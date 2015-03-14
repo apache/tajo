@@ -297,6 +297,19 @@ public class TestStorages {
     int tupleCnt = 0;
     Tuple tuple;
     while ((tuple = scanner.next()) != null) {
+      verifyProjectedFields(scanner.isProjectable(), tuple, tupleCnt);
+      tupleCnt++;
+    }
+    scanner.close();
+
+    assertEquals(tupleNum, tupleCnt);
+  }
+
+  private void verifyProjectedFields(boolean projectable, Tuple tuple, int tupleCnt) {
+    if (projectable) {
+      assertTrue(tupleCnt + 2 == tuple.get(0).asInt8());
+      assertTrue(tupleCnt + 3 == tuple.get(1).asFloat4());
+    } else {
       if (storeType == StoreType.RCFILE
           || storeType == StoreType.CSV
           || storeType == StoreType.PARQUET
@@ -306,11 +319,7 @@ public class TestStorages {
       }
       assertTrue(tupleCnt + 2 == tuple.get(1).asInt8());
       assertTrue(tupleCnt + 3 == tuple.get(2).asFloat4());
-      tupleCnt++;
     }
-    scanner.close();
-
-    assertEquals(tupleNum, tupleCnt);
   }
 
   @Test

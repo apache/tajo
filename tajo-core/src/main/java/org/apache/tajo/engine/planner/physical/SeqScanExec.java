@@ -156,6 +156,8 @@ public class SeqScanExec extends PhysicalExec {
   public void init() throws IOException {
     Schema projected;
 
+    // in the case where projected column or expression are given
+    // the target can be an empty list.
     if (plan.hasTargets()) {
       projected = new Schema();
       Set<Column> columnSet = new HashSet<Column>();
@@ -168,12 +170,16 @@ public class SeqScanExec extends PhysicalExec {
         columnSet.addAll(EvalTreeUtil.findUniqueColumns(t.getEvalTree()));
       }
 
-      for (Column column : inSchema.getColumns()) {
+      for (Column column : inSchema.getAllColumns()) {
         if (columnSet.contains(column)) {
           projected.addColumn(column);
         }
       }
+
     } else {
+
+      // no any projected columns, meaning that all columns should be projected.
+      // TODO - this implicit rule should be improved because all SQL statements have projected columns.
       projected = outSchema;
     }
 
@@ -215,8 +221,8 @@ public class SeqScanExec extends PhysicalExec {
   }
 
   private void initScanner(Schema projected) throws IOException {
-    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
-    TableMeta meta = null;
+
+    TableMeta meta;
     try {
       meta = (TableMeta) plan.getTableDesc().getMeta().clone();
     } catch (CloneNotSupportedException e) {
@@ -238,6 +244,13 @@ public class SeqScanExec extends PhysicalExec {
             plan.getPhysicalSchema(), fragments[0], projected);
       }
       scanner.init();
+
+      // TODO - Must check why scanner can be null
+      if (scanner.isProjectable()) {
+        this.projector = new Projector(context, projected, outSchema, plan.getTargets());
+      } else {
+        this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
+      }
     }
   }
 

@@ -466,7 +466,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       }
 
       // set column information
-      List<Column> columns = tableDesc.getSchema().getColumns();
+      List<Column> columns = tableDesc.getSchema().getRootColumns();
       ArrayList<FieldSchema> cols = new ArrayList<FieldSchema>(columns.size());
 
       for (Column eachField : columns) {
@@ -478,7 +478,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       // set partition keys
       if (tableDesc.hasPartition() && tableDesc.getPartitionMethod().getPartitionType().equals(PartitionType.COLUMN)) {
         List<FieldSchema> partitionKeys = new ArrayList<FieldSchema>();
-        for (Column eachPartitionKey : tableDesc.getPartitionMethod().getExpressionSchema().getColumns()) {
+        for (Column eachPartitionKey : tableDesc.getPartitionMethod().getExpressionSchema().getRootColumns()) {
           partitionKeys.add(new FieldSchema(eachPartitionKey.getSimpleName(),
               HCatalogUtil.getHiveFieldType(eachPartitionKey.getDataType()), ""));
         }

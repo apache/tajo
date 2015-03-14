@@ -84,7 +84,7 @@ public class MergeScanner implements Scanner {
     tableStats.setNumBytes(numBytes);
     tableStats.setNumBlocks(fragments.size());
 
-    for(Column eachColumn: schema.getColumns()) {
+    for(Column eachColumn: schema.getRootColumns()) {
       ColumnStats columnStats = new ColumnStats(eachColumn);
       tableStats.addColumnStat(columnStats);
     }

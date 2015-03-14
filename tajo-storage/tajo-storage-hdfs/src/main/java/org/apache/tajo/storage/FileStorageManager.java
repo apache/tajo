@@ -717,7 +717,7 @@ public class FileStorageManager extends StorageManager {
     //In the case of partitioned table, we should return same partition key data files.
     int partitionDepth = 0;
     if (tableDesc.hasPartition()) {
-      partitionDepth = tableDesc.getPartitionMethod().getExpressionSchema().getColumns().size();
+      partitionDepth = tableDesc.getPartitionMethod().getExpressionSchema().getRootColumns().size();
     }
 
     List<FileStatus> nonZeroLengthFiles = new ArrayList<FileStatus>();

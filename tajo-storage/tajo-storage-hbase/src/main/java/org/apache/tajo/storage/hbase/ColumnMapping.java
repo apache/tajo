@@ -77,7 +77,7 @@ public class ColumnMapping {
 
     String[] columnMappingTokens = columnMapping.split(",");
 
-    if (columnMappingTokens.length != schema.getColumns().size()) {
+    if (columnMappingTokens.length != schema.getRootColumns().size()) {
       throw new IOException("The number of mapped HBase columns is great than the number of Tajo table columns");
     }
 

@@ -1,1 +1,5 @@
-SELECT role, name.first_name, name.last_name FROM sample1;
+role,name/first_name,name/last_name
+-------------------------------
+PMC Chair,Hyunsik,Choi
+PMC,Jinho,Kim
+PMC,Jihoon,Son

@@ -32,6 +32,7 @@ import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
@@ -135,7 +136,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
    * @param qualifier The qualifier
    */
   public void setQualifier(String qualifier) {
-    List<Column> columns = getColumns();
+    List<Column> columns = getRootColumns();
 
     fields.clear();
     fieldsByQualifiedName.clear();
@@ -176,6 +177,15 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
   public Column getColumn(String name) {
 
     if (NestedPathUtil.isPath(name)) {
+
+      // TODO - to be refactored
+      if (fieldsByQualifiedName.containsKey(name)) {
+        Column flattenColumn = fields.get(fieldsByQualifiedName.get(name));
+        if (flattenColumn != null) {
+          return flattenColumn;
+        }
+      }
+
       String [] paths = name.split(NestedPathUtil.PATH_DELIMITER);
       Column column = getColumn(paths[0]);
       Column actualColumn = NestedPathUtil.lookupPath(column, paths);
@@ -275,12 +285,40 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     }
     return -1;
   }
-	
-	public List<Column> getColumns() {
+
+  /**
+   *
+   * @return
+   */
+	public List<Column> getRootColumns() {
 		return ImmutableList.copyOf(fields);
 	}
 
+  public List<Column> getAllColumns() {
+    final List<Column> columnList = TUtil.newList();
+
+    SchemaUtil.visitSchema(this, new ColumnVisitor() {
+      @Override
+      public void visit(int depth, List<String> path, Column column) {
+        if (path.size() > 0) {
+          String parentPath = StringUtils.join(path, NestedPathUtil.PATH_DELIMITER);
+          String currentPath = parentPath + NestedPathUtil.PATH_DELIMITER + column.getSimpleName();
+          columnList.add(new Column(currentPath, column.getTypeDesc()));
+        } else {
+          columnList.add(column);
+        }
+      }
+    });
+
+    return columnList;
+  }
+
   public boolean contains(String name) {
+    // TODO - It's a hack
+    if (NestedPathUtil.isPath(name)) {
+      return (getColumn(name) != null);
+    }
+
     if (fieldsByQualifiedName.containsKey(name)) {
       return true;
     }
@@ -295,6 +333,11 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
   }
 
   public boolean contains(Column column) {
+    // TODO - It's a hack
+    if (NestedPathUtil.isPath(column.getQualifiedName())) {
+      return (getColumn(column.getQualifiedName()) != null);
+    }
+
     if (column.hasQualifier()) {
       return fieldsByQualifiedName.containsKey(column.getQualifiedName());
     } else {
@@ -349,21 +392,6 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     return this;
   }
 
-  public synchronized Schema addColumn(String name, TypeDesc typeDesc) {
-    String normalized = name;
-    if(fieldsByQualifiedName.containsKey(normalized)) {
-      LOG.error("Already exists column " + normalized);
-      throw new AlreadyExistsFieldException(normalized);
-    }
-
-    Column newCol = new Column(normalized, typeDesc);
-    fields.add(newCol);
-    fieldsByQualifiedName.put(newCol.getQualifiedName(), fields.size() - 1);
-    fieldsByName.put(newCol.getSimpleName(), TUtil.newList(fields.size() - 1));
-
-    return this;
-  }
-
   public synchronized Schema addColumn(String name, Type type) {
     if (type == Type.CHAR) {
       return addColumn(name, CatalogUtil.newDataTypeWithLen(type, 1));
@@ -386,7 +414,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	}
 	
 	public synchronized void addColumns(Schema schema) {
-    for(Column column : schema.getColumns()) {
+    for(Column column : schema.getRootColumns()) {
       addColumn(column);
     }
   }
@@ -431,7 +459,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
     }
 
     @Override
-    public void visit(int depth, Column column) {
+    public void visit(int depth, List<String> path, Column column) {
 
       if (column.getDataType().getType() == Type.RECORD) {
         DataType.Builder updatedType = DataType.newBuilder(column.getDataType());

@@ -103,7 +103,7 @@ public class HBaseScanner implements Scanner {
       tableStats.setNumBlocks(1);
     }
     if (schema != null) {
-      for(Column eachColumn: schema.getColumns()) {
+      for(Column eachColumn: schema.getRootColumns()) {
         ColumnStats columnStats = new ColumnStats(eachColumn);
         tableStats.addColumnStat(columnStats);
       }
@@ -406,7 +406,7 @@ public class HBaseScanner implements Scanner {
 
   @Override
   public boolean isProjectable() {
-    return true;
+    return false;
   }
 
   @Override

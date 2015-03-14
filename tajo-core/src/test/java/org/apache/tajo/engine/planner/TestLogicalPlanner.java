@@ -871,7 +871,7 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.EXPRS, root.getChild().getType());
     Schema out = root.getOutSchema();
 
-    Iterator<Column> it = out.getColumns().iterator();
+    Iterator<Column> it = out.getRootColumns().iterator();
     Column col = it.next();
     assertEquals("res1", col.getSimpleName());
     col = it.next();
@@ -920,7 +920,7 @@ public class TestLogicalPlanner {
     testJsonSerDerObject(root);
 
     Schema finalSchema = root.getOutSchema();
-    Iterator<Column> it = finalSchema.getColumns().iterator();
+    Iterator<Column> it = finalSchema.getRootColumns().iterator();
     Column col = it.next();
     assertEquals("deptname", col.getSimpleName());
     col = it.next();
@@ -931,7 +931,7 @@ public class TestLogicalPlanner {
     root = (LogicalRootNode) plan;
 
     finalSchema = root.getOutSchema();
-    it = finalSchema.getColumns().iterator();
+    it = finalSchema.getRootColumns().iterator();
     col = it.next();
     assertEquals("id", col.getSimpleName());
     col = it.next();
@@ -948,7 +948,7 @@ public class TestLogicalPlanner {
     testJsonSerDerObject(root);
 
     Schema finalSchema = root.getOutSchema();
-    Iterator<Column> it = finalSchema.getColumns().iterator();
+    Iterator<Column> it = finalSchema.getRootColumns().iterator();
     Column col = it.next();
     assertEquals("id", col.getSimpleName());
     col = it.next();

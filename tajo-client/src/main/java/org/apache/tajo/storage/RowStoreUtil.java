@@ -36,7 +36,7 @@ public class RowStoreUtil {
   public static int[] getTargetIds(Schema inSchema, Schema outSchema) {
     int[] targetIds = new int[outSchema.size()];
     int i = 0;
-    for (Column target : outSchema.getColumns()) {
+    for (Column target : outSchema.getRootColumns()) {
       targetIds[i] = inSchema.getColumnId(target.getQualifiedName());
       i++;
     }

@@ -114,7 +114,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
 
       Schema schema = relationOp.getLogicalSchema();
       Column[] resolvedColumns = new Column[schema.size()];
-      return schema.getColumns().toArray(resolvedColumns);
+      return schema.getRootColumns().toArray(resolvedColumns);
     } else { // if a column reference is not qualified
       // columns of every relation should be resolved.
       Iterator<RelationNode> iterator = block.getRelations().iterator();
@@ -124,7 +124,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
       while (iterator.hasNext()) {
         relationOp = iterator.next();
         schema = relationOp.getLogicalSchema();
-        resolvedColumns.addAll(schema.getColumns());
+        resolvedColumns.addAll(schema.getRootColumns());
       }
 
       if (resolvedColumns.size() == 0) {

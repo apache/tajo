@@ -261,7 +261,7 @@ public class AvroScanner extends FileScanner {
    */
   @Override
   public boolean isProjectable() {
-    return true;
+    return false;
   }
 
   /**

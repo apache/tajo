@@ -69,7 +69,7 @@ public abstract class FileScanner implements Scanner {
     }
 
     if (schema != null) {
-      for(Column eachColumn: schema.getColumns()) {
+      for(Column eachColumn: schema.getRootColumns()) {
         ColumnStats columnStats = new ColumnStats(eachColumn);
         tableStats.addColumnStat(columnStats);
       }

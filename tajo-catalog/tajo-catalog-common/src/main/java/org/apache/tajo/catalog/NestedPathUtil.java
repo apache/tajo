@@ -21,11 +21,17 @@ package org.apache.tajo.catalog;
 import com.google.common.base.Preconditions;
 import org.apache.tajo.common.TajoDataTypes.Type;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Utility methods for nested field
  */
 public class NestedPathUtil {
   public static final String PATH_DELIMITER = "/";
+
+  public static final List<String> ROOT_PATH = Collections.unmodifiableList(new ArrayList<String>());
 
   public static boolean isPath(String name) {
     return name.indexOf(PATH_DELIMITER.charAt(0)) >= 0;
@@ -35,18 +41,23 @@ public class NestedPathUtil {
     return make(parts, 0);
   }
 
+  public static String make(String [] parts, int startIndex) {
+    return make(parts, startIndex, parts.length);
+  }
+
   /**
    * Make a nested field path
    *
    * @param parts path parts
-   * @param startIndex
+   * @param startIndex startIndex
+   * @param depth Depth
    * @return Path
    */
-  public static String make(String [] parts, int startIndex) {
+  public static String make(String [] parts, int startIndex, int depth) {
     Preconditions.checkArgument(startIndex <= (parts.length - 1));
 
     StringBuilder sb = new StringBuilder();
-    for (int i = startIndex; i < parts.length; i++) {
+    for (int i = startIndex; i < depth; i++) {
       sb.append(PATH_DELIMITER);
       sb.append(parts[i].toString());
     }

@@ -19,6 +19,7 @@
 package org.apache.tajo.storage.text;
 
 import io.netty.buffer.ByteBuf;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.datum.Datum;
@@ -26,14 +27,25 @@ import org.apache.tajo.storage.FieldSerializerDeserializer;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 public class CSVLineDeserializer extends TextLineDeserializer {
   private FieldSplitProcessor processor;
   private FieldSerializerDeserializer fieldSerDer;
   private ByteBuf nullChars;
 
-  public CSVLineDeserializer(Schema schema, TableMeta meta, int[] targetColumnIndexes) {
-    super(schema, meta, targetColumnIndexes);
+  private int [] targetColumnIndexes;
+  private Column [] projected;
+
+  public CSVLineDeserializer(Schema schema, TableMeta meta, Column [] projected) {
+    super(schema, meta);
+
+    this.projected = projected;
+    targetColumnIndexes = new int[projected.length];
+    for (int i = 0; i < projected.length; i++) {
+      targetColumnIndexes[i] = schema.getColumnId(projected[i].getQualifiedName());
+    }
+    Arrays.sort(targetColumnIndexes);
   }
 
   @Override
@@ -72,8 +84,8 @@ public class CSVLineDeserializer extends TextLineDeserializer {
 
       if (projection.length > currentTarget && currentIndex == projection[currentTarget]) {
         lineBuf.setIndex(start, start + fieldLength);
-        Datum datum = fieldSerDer.deserialize(lineBuf, schema.getColumn(currentIndex), currentIndex, nullChars);
-        output.put(currentIndex, datum);
+        Datum datum = fieldSerDer.deserialize(lineBuf, projected[currentTarget], currentIndex, nullChars);
+        output.put(currentTarget, datum);
         currentTarget++;
       }
 

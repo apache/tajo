@@ -317,13 +317,7 @@ public class DelimitedTextFile {
         targets = schema.toArray();
       }
 
-      targetColumnIndexes = new int[targets.length];
-      for (int i = 0; i < targets.length; i++) {
-        targetColumnIndexes[i] = schema.getColumnId(targets[i].getQualifiedName());
-      }
-
       super.init();
-      Arrays.sort(targetColumnIndexes);
       if (LOG.isDebugEnabled()) {
         LOG.debug("DelimitedTextFileScanner open:" + fragment.getPath() + "," + startOffset + "," + endOffset);
       }
@@ -332,7 +326,7 @@ public class DelimitedTextFile {
         reader.readLine();  // skip first line;
       }
 
-      deserializer = getLineSerde().createDeserializer(schema, meta, targetColumnIndexes);
+      deserializer = getLineSerde().createDeserializer(schema, meta, targets);
       deserializer.init();
     }
 
@@ -387,7 +381,7 @@ public class DelimitedTextFile {
             return EmptyTuple.get();
           }
 
-          tuple = new VTuple(schema.size());
+          tuple = new VTuple(targets.length);
 
           try {
             deserializer.deserialize(buf, tuple);
