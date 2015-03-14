@@ -1,5 +1,5 @@
 CREATE EXTERNAL TABLE ${0} (
-  role TEXT,
+  title TEXT,
   name RECORD (
     first_name TEXT,
     last_name TEXT

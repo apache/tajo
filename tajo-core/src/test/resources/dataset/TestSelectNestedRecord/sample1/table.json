@@ -1,3 +1,3 @@
-{ "role" : "PMC Chair", "name" : { "first_name": "Hyunsik", "last_name": "Choi"}}
-{ "role" : "PMC", "name" : { "first_name": "Jinho", "last_name": "Kim"}}
-{ "role" : "PMC", "name" : { "first_name": "Jihoon", "last_name": "Son"}}
+{ "title" : "Hand of the King", "name" : { "first_name": "Eddard", "last_name": "Stark"}}
+{ "title" : "Assassin", "name" : { "first_name": "Arya", "last_name": "Stark"}}
+{ "title" : "Dancing Master", "name" : { "first_name": "Syrio", "last_name": "Forel"}}

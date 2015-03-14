@@ -1,1 +1,1 @@
-SELECT role, name.first_name, name.last_name FROM sample1;
+SELECT title, (name.first_name || ' ' || name.last_name) as full_name FROM sample1;

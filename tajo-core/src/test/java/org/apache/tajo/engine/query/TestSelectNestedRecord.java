@@ -28,10 +28,21 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 
 public class TestSelectNestedRecord extends QueryTestCaseBase {
+
   @Test
   public final void testSelect1() throws Exception {
     List<String> tables = executeDDL("sample1_ddl.sql", "sample1", "sample1");
     assertEquals(TUtil.newList("sample1"), tables);
+
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testSelect2() throws Exception {
+    List<String> tables = executeDDL("tweets_ddl.sql", "tweets", "tweets");
+    assertEquals(TUtil.newList("tweets"), tables);
 
     ResultSet res = executeQuery();
     assertResultSet(res);
