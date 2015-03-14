@@ -19,8 +19,7 @@
 package org.apache.tajo.plan;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceStability;
@@ -30,18 +29,18 @@ import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.util.ReflectionUtil;
-import org.apache.tajo.util.graph.DirectedGraphCursor;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.joinorder.FoundJoinOrder;
-import org.apache.tajo.plan.joinorder.GreedyHeuristicJoinOrderAlgorithm;
-import org.apache.tajo.plan.joinorder.JoinGraph;
-import org.apache.tajo.plan.joinorder.JoinOrderAlgorithm;
+import org.apache.tajo.plan.joinorder.*;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.plan.rewrite.*;
+import org.apache.tajo.plan.rewrite.BaseLogicalPlanRewriteEngine;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRuleProvider;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
+import org.apache.tajo.util.ReflectionUtil;
+import org.apache.tajo.util.TUtil;
+import org.apache.tajo.util.graph.DirectedGraphCursor;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -115,7 +114,7 @@ public class LogicalOptimizer {
 
       // finding join order and restore remain filter order
       FoundJoinOrder order = joinOrderAlgorithm.findBestOrder(plan, block,
-          joinGraphContext.joinGraph, joinGraphContext.relationsForProduct);
+          joinGraphContext.joinGraph);
 
       // replace join node with FoundJoinOrder.
       JoinNode newJoinNode = order.getOrderedJoin();
@@ -157,8 +156,7 @@ public class LogicalOptimizer {
 
   private static class JoinGraphContext {
     JoinGraph joinGraph = new JoinGraph();
-    Set<EvalNode> quals = Sets.newHashSet();
-    Set<String> relationsForProduct = Sets.newHashSet();
+    Set<EvalNode> joinPredicateCandidates = TUtil.newHashSet();
   }
 
   private static class JoinGraphBuilder extends BasicLogicalPlanVisitor<JoinGraphContext, LogicalNode> {
@@ -180,32 +178,38 @@ public class LogicalOptimizer {
       return joinGraphContext;
     }
 
+    @Override
     public LogicalNode visitFilter(JoinGraphContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                    SelectionNode node, Stack<LogicalNode> stack) throws PlanningException {
+      // all join predicate candidates must be collected before building the join tree
+      context.joinPredicateCandidates.addAll(
+          TUtil.newList(AlgebraicUtil.toConjunctiveNormalFormArray(node.getQual())));
       super.visitFilter(context, plan, block, node, stack);
-      context.quals.addAll(Lists.newArrayList(AlgebraicUtil.toConjunctiveNormalFormArray(node.getQual())));
       return node;
     }
 
     @Override
-    public LogicalNode visitJoin(JoinGraphContext joinGraphContext, LogicalPlan plan, LogicalPlan.QueryBlock block,
+    public LogicalNode visitJoin(JoinGraphContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                  JoinNode joinNode, Stack<LogicalNode> stack)
         throws PlanningException {
-      super.visitJoin(joinGraphContext, plan, block, joinNode, stack);
+      super.visitJoin(context, plan, block, joinNode, stack);
+
+      Set<EvalNode> joinConditions = TUtil.newHashSet();
       if (joinNode.hasJoinQual()) {
-        joinGraphContext.joinGraph.addJoin(plan, block, joinNode);
-      } else {
-        LogicalNode leftChild = joinNode.getLeftChild();
-        LogicalNode rightChild = joinNode.getRightChild();
-        if (leftChild instanceof RelationNode) {
-          RelationNode rel = (RelationNode) leftChild;
-          joinGraphContext.relationsForProduct.add(rel.getCanonicalName());
-        }
-        if (rightChild instanceof RelationNode) {
-          RelationNode rel = (RelationNode) rightChild;
-          joinGraphContext.relationsForProduct.add(rel.getCanonicalName());
-        }
+        joinConditions.addAll(
+            TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual())));
       }
+
+      RelationNode leftChild = JoinOrderingUtil.findMostRightRelation(plan, block, joinNode.getLeftChild());
+      RelationNode rightChild = JoinOrderingUtil.findMostLeftRelation(plan, block, joinNode.getRightChild());
+      JoinEdge edge = context.joinGraph.addJoin(joinNode.getJoinSpec(),
+          new RelationVertex(leftChild), new RelationVertex(rightChild));
+      if (joinNode.getJoinType() == JoinType.INNER || joinNode.getJoinType() == JoinType.CROSS) {
+        // find all possible predicates for this join
+        joinConditions.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(context.joinPredicateCandidates, edge));
+      }
+      edge.addJoinPredicates(joinConditions);
+
       return joinNode;
     }
   }
