@@ -121,11 +121,21 @@ public class LogicalOptimizer {
       LogicalNode newNode = newJoinNode;
       if (!joinGraphContext.getJoinPredicateCandidates().isEmpty()) {
         Set<EvalNode> remainings = joinGraphContext.getJoinPredicateCandidates();
-        SelectionNode newSelection = plan.createNode(SelectionNode.class);
-        newSelection.setQual(AlgebraicUtil.createSingletonExprFromCNF(
-            remainings.toArray(new EvalNode[remainings.size()])));
-        newSelection.setChild(newJoinNode);
-        newNode = newSelection;
+        LogicalNode topParent = PlannerUtil.findTopParentNode(block.getRoot(), NodeType.JOIN);
+        if (topParent.getType() == NodeType.SELECTION) {
+          SelectionNode topParentSelect = (SelectionNode) topParent;
+          Set<EvalNode> filters = TUtil.newHashSet();
+          filters.addAll(TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(topParentSelect.getQual())));
+          filters.addAll(remainings);
+          topParentSelect.setQual(AlgebraicUtil.createSingletonExprFromCNF(
+              filters.toArray(new EvalNode[filters.size()])));
+        } else {
+          SelectionNode newSelection = plan.createNode(SelectionNode.class);
+          newSelection.setQual(AlgebraicUtil.createSingletonExprFromCNF(
+              remainings.toArray(new EvalNode[remainings.size()])));
+          newSelection.setChild(newJoinNode);
+          newNode = newSelection;
+        }
       }
       JoinNode old = PlannerUtil.findTopNode(block.getRoot(), NodeType.JOIN);
 
@@ -140,8 +150,8 @@ public class LogicalOptimizer {
       } else {
         newJoinNode.setTargets(targets.toArray(new Target[targets.size()]));
       }
-//      PlannerUtil.replaceNode(plan, block.getRoot(), old, newNode);
-      PlannerUtil.replaceNode(plan, block.getRoot(), old, newJoinNode);
+      PlannerUtil.replaceNode(plan, block.getRoot(), old, newNode);
+//      PlannerUtil.replaceNode(plan, block.getRoot(), old, newJoinNode);
       // End of replacement logic
 
       String optimizedOrder = JoinOrderStringBuilder.buildJoinOrderString(plan, block);
