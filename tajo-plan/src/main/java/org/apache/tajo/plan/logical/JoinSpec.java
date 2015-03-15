@@ -51,11 +51,12 @@ public class JoinSpec implements Cloneable {
   }
 
   public void setPredicates(Set<EvalNode> predicates) {
+    this.predicates.clear();
     this.predicates.addAll(predicates);
   }
 
   public void setSingletonPredicate(EvalNode predicates) {
-    this.predicates.addAll(TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(predicates)));
+    this.setPredicates(TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(predicates)));
   }
 
   public EvalNode getSingletonPredicate() {

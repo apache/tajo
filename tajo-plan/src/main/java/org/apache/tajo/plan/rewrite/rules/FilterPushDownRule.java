@@ -235,6 +235,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     List<EvalNode> outerJoinPredicationEvals = new ArrayList<EvalNode>();
     List<EvalNode> outerJoinFilterEvalsExcludePredication = new ArrayList<EvalNode>();
+    List<EvalNode> innerJoinPredicates = TUtil.newList();
     if (LogicalPlanner.isOuterJoin(joinNode.getJoinType())) {
       // TAJO-853
       // In the case of top most JOIN, all filters except JOIN condition aren't pushed down.
@@ -301,7 +302,13 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         }
       }
     } else {
-      context.pushingDownFilters.addAll(onConditions);
+      for (EvalNode eachOnEval: onConditions) {
+        if (EvalTreeUtil.isJoinQual(eachOnEval, false)) {
+          innerJoinPredicates.add(eachOnEval);
+        } else {
+          context.pushingDownFilters.add(eachOnEval);
+        }
+      }
     }
 
     LogicalNode left = joinNode.getLeftChild();
@@ -337,6 +344,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
           matched.add(eval);
         }
       }
+      matched.addAll(innerJoinPredicates);
     }
 
     EvalNode qual = null;

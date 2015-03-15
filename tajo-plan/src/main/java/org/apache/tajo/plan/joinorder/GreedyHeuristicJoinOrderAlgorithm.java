@@ -18,9 +18,6 @@
 
 package org.apache.tajo.plan.joinorder;
 
-import org.apache.tajo.algebra.JoinType;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -53,19 +50,23 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       JoinEdge bestPair = getBestPair(context, graphContext, vertexes);
       JoinedRelationsVertex newVertex = new JoinedRelationsVertex(bestPair);
 
+      if (bestPair.getLeftVertex().equals(graphContext.getMostLeftVertex())) {
+        graphContext.setMostLeftVertex(newVertex);
+      }
+
       Set<JoinEdge> willBeRemoved = TUtil.newHashSet();
       Set<JoinEdge> willBeAdded = TUtil.newHashSet();
 
-      prepareUpdate(plan, block, joinGraph.getOutgoingEdges(bestPair.getLeftVertex()), newVertex, true,
+      prepareGraphUpdate(plan, block, joinGraph.getOutgoingEdges(bestPair.getLeftVertex()), newVertex, true,
           willBeAdded, willBeRemoved);
 
-      prepareUpdate(plan, block, joinGraph.getIncomingEdges(bestPair.getLeftVertex()), newVertex, false,
+      prepareGraphUpdate(plan, block, joinGraph.getIncomingEdges(bestPair.getLeftVertex()), newVertex, false,
           willBeAdded, willBeRemoved);
 
-      prepareUpdate(plan, block, joinGraph.getOutgoingEdges(bestPair.getRightVertex()), newVertex, true,
+      prepareGraphUpdate(plan, block, joinGraph.getOutgoingEdges(bestPair.getRightVertex()), newVertex, true,
           willBeAdded, willBeRemoved);
 
-      prepareUpdate(plan, block, joinGraph.getIncomingEdges(bestPair.getRightVertex()), newVertex, false,
+      prepareGraphUpdate(plan, block, joinGraph.getIncomingEdges(bestPair.getRightVertex()), newVertex, false,
           willBeAdded, willBeRemoved);
 
       for (JoinEdge edge : willBeRemoved) {
@@ -175,9 +176,9 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
 //    return new FoundJoinOrder(joinTree, getCost(joinTree));
   }
 
-  private void prepareUpdate(LogicalPlan plan, LogicalPlan.QueryBlock block, List<JoinEdge> edges,
-                             JoinedRelationsVertex vertex, boolean isLeftVertex,
-                             Set<JoinEdge> willBeAdded, Set<JoinEdge> willBeRemoved) {
+  private void prepareGraphUpdate(LogicalPlan plan, LogicalPlan.QueryBlock block, List<JoinEdge> edges,
+                                  JoinedRelationsVertex vertex, boolean isLeftVertex,
+                                  Set<JoinEdge> willBeAdded, Set<JoinEdge> willBeRemoved) {
     if (edges != null) {
       for (JoinEdge edge : edges) {
         if (!isEqualsOrCommutative(vertex.getJoinEdge(), edge)) {
@@ -223,7 +224,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         }
 
         context.reset();
-        JoinEdge foundJoin = findJoin(context, graphContext.getJoinGraph(), outer, outer, inner);
+        JoinEdge foundJoin = findJoin(context, graphContext.getJoinGraph(), graphContext.getMostLeftVertex(),
+            outer, inner);
         if (foundJoin == null) {
           continue;
         }
@@ -277,11 +279,13 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     context.visited.add(begin);
 
     // Find the matching edge from begin
-    if (isEqualsOrExchangeable(joinGraph, begin, leftTarget)) {
+    if (begin.equals(leftTarget)) {
+//    if (isEqualsOrExchangeable(joinGraph, begin, leftTarget)) {
       List<JoinEdge> edgesFromLeftTarget = joinGraph.getOutgoingEdges(leftTarget);
       if (edgesFromLeftTarget != null) {
         for (JoinEdge edgeFromLeftTarget : edgesFromLeftTarget) {
-          if (isEqualsOrExchangeable(joinGraph, edgeFromLeftTarget.getRightVertex(), rightTarget)) {
+//          if (isEqualsOrExchangeable(joinGraph, edgeFromLeftTarget.getRightVertex(), rightTarget)) {
+          if (edgeFromLeftTarget.getRightVertex().equals(rightTarget)) {
             return edgeFromLeftTarget;
           }
         }
@@ -291,6 +295,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     } else {
       // move to right if associative
       for (JoinVertex reacheableVertex : getAllReacheableVertexesByCommutativity(joinGraph, begin)) {
+        if (begin.equals(reacheableVertex)) continue;
         List<JoinEdge> edges = joinGraph.getOutgoingEdges(reacheableVertex);
         if (edges != null) {
           for (JoinEdge edge : edges) {
@@ -318,7 +323,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     List<JoinEdge> candidateEdges = graph.getOutgoingEdges(start);
     if (candidateEdges != null) {
       for (JoinEdge candidateEdge : candidateEdges) {
-        if (JoinOrderingUtil.isAssociativeJoin(edge.getJoinType(), candidateEdge.getJoinType())) {
+        if (!isEqualsOrCommutative(edge, candidateEdge) &&
+            JoinOrderingUtil.isAssociativeJoin(edge.getJoinType(), candidateEdge.getJoinType())) {
           associativeEdges.add(candidateEdge);
         }
       }
@@ -369,9 +375,9 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
                                                               JoinVertex vertex) {
     founds.add(vertex);
     Set<JoinVertex> foundAtThis = TUtil.newHashSet();
-    List<JoinEdge> candidatedEdges = graph.getOutgoingEdges(vertex);
-    if (candidatedEdges != null) {
-      for (JoinEdge candidateEdge : candidatedEdges) {
+    List<JoinEdge> candidateEdges = graph.getOutgoingEdges(vertex);
+    if (candidateEdges != null) {
+      for (JoinEdge candidateEdge : candidateEdges) {
         if (PlannerUtil.isCommutativeJoin(candidateEdge.getJoinType())
             && !founds.contains(candidateEdge.getRightVertex())) {
           foundAtThis.add(candidateEdge.getRightVertex());

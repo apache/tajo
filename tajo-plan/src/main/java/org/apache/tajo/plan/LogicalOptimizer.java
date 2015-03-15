@@ -140,8 +140,8 @@ public class LogicalOptimizer {
       } else {
         newJoinNode.setTargets(targets.toArray(new Target[targets.size()]));
       }
-      PlannerUtil.replaceNode(plan, block.getRoot(), old, newNode);
-//      PlannerUtil.replaceNode(plan, block.getRoot(), old, newJoinNode);
+//      PlannerUtil.replaceNode(plan, block.getRoot(), old, newNode);
+      PlannerUtil.replaceNode(plan, block.getRoot(), old, newJoinNode);
       // End of replacement logic
 
       String optimizedOrder = JoinOrderStringBuilder.buildJoinOrderString(plan, block);
@@ -207,6 +207,9 @@ public class LogicalOptimizer {
       RelationVertex rightVertex = new RelationVertex(rightChild);
       JoinNode newNode = JoinOrderingUtil.createJoinNode(plan, joinNode.getJoinType(), leftVertex, rightVertex, null);
       JoinEdge edge = context.getJoinGraph().addJoin(newNode, leftVertex, rightVertex);
+      if (context.getMostLeftVertex() == null) {
+        context.setMostLeftVertex(leftVertex);
+      }
 
       // find all possible predicates for this join edge
       Set<EvalNode> joinConditions = TUtil.newHashSet();

@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Set;
 
 public class JoinGraphContext {
+  private JoinVertex mostLeftVertex;
   private JoinGraph joinGraph = new JoinGraph();
   private Set<EvalNode> joinPredicateCandidates = TUtil.newHashSet();
 
@@ -46,5 +47,13 @@ public class JoinGraphContext {
 
   public Set<EvalNode> getJoinPredicateCandidates() {
     return joinPredicateCandidates;
+  }
+
+  public JoinVertex getMostLeftVertex() {
+    return mostLeftVertex;
+  }
+
+  public void setMostLeftVertex(JoinVertex mostLeftVertex) {
+    this.mostLeftVertex = mostLeftVertex;
   }
 }
