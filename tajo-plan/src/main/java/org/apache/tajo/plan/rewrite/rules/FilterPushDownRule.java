@@ -201,10 +201,15 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     notMatched.clear();
     context.addFiltersTobePushed(nonPushableQuals);
     List<EvalNode> matched = TUtil.newList();
+
+    // If the query involves a subquery, the stack can be empty.
+    // In this case, this join is the top most one within a query block.
+    boolean isTopMostJoin = stack.isEmpty() ? true : stack.peek().getType() != NodeType.JOIN;
+
     for (EvalNode evalNode : context.pushingDownFilters) {
       // TODO: currently, non-equi theta join is not supported yet.
-      if (!isNonEquiThetaJoinQual(block, joinNode, evalNode) &&
-          LogicalPlanner.checkIfBeEvaluatedAtJoin(evalNode, joinNode, onPredicates.contains(evalNode))) {
+      if (LogicalPlanner.isEvaluatableJoinQual(block, evalNode, joinNode, onPredicates.contains(evalNode),
+          isTopMostJoin)) {
         matched.add(evalNode);
       }
     }

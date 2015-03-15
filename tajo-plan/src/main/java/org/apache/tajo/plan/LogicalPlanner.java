@@ -1122,7 +1122,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       joinCondition = context.evalOptimizer.optimize(context, evalNode);
     }
 
-    List<String> newlyEvaluatedExprs = getNewlyEvaluatedExprsForJoin(context, joinNode);
+    // If the query involves a subquery, the stack can be empty.
+    // In this case, this join is the top most one within a query block.
+    boolean isTopMostJoin = stack.isEmpty() ? true : stack.peek().getType() != OpType.Join;
+    List<String> newlyEvaluatedExprs = getNewlyEvaluatedExprsForJoin(context, joinNode, isTopMostJoin);
     List<Target> targets = TUtil.newList(PlannerUtil.schemaToTargets(merged));
 
     for (String newAddedExpr : newlyEvaluatedExprs) {
@@ -1141,7 +1144,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return joinNode;
   }
 
-  private List<String> getNewlyEvaluatedExprsForJoin(PlanContext context, JoinNode joinNode) {
+  private List<String> getNewlyEvaluatedExprsForJoin(PlanContext context, JoinNode joinNode, boolean isTopMostJoin) {
     QueryBlock block = context.queryBlock;
 
     EvalNode evalNode;
@@ -1151,7 +1154,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       try {
         evalNode = exprAnnotator.createEvalNode(context, namedExpr.getExpr(), NameResolvingMode.LEGACY);
         // the predicates specified in the on clause are already processed in visitJoin()
-        if (LogicalPlanner.checkIfBeEvaluatedAtJoin(evalNode, joinNode, false)) {
+        if (LogicalPlanner.checkIfBeEvaluatedAtJoin(context.queryBlock, evalNode, joinNode, isTopMostJoin)) {
           block.namedExprsMgr.markAsEvaluated(namedExpr.getAlias(), evalNode);
           newlyEvaluatedExprs.add(namedExpr.getAlias());
         }
@@ -1973,8 +1976,39 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return true;
   }
 
-  public static boolean checkIfBeEvaluatedAtJoin(EvalNode evalNode, JoinNode node,
-                                                 boolean isOnPredicate) {
+  public static boolean isEvaluatableJoinQual(QueryBlock block, EvalNode evalNode, JoinNode node,
+                                              boolean isOnPredicate, boolean isTopMostJoin) {
+    if (checkIfBeEvaluatedAtJoin(block, evalNode, node, isTopMostJoin)) {
+
+    /*
+     * For outer joins, only predicates which are specified at the on clause can be evaluated during processing join.
+     * Other predicates from the where clause must be evaluated after the join.
+     * The below code will be modified after improving join operators to keep join filters by themselves (TAJO-1310).
+     */
+      if (PlannerUtil.isOuterJoin(node.getJoinType()) && !isOnPredicate
+          && !isNonEquiThetaJoinQual(block, node, evalNode)) {
+        return false;
+      }
+
+      return true;
+    }
+    return false;
+  }
+
+  public static boolean isNonEquiThetaJoinQual(final LogicalPlan.QueryBlock block,
+                                               final JoinNode joinNode,
+                                               final EvalNode evalNode) {
+    if (EvalTreeUtil.isJoinQual(block, joinNode.getLeftChild().getOutSchema(),
+        joinNode.getRightChild().getOutSchema(), evalNode, true) &&
+        evalNode.getType() != EvalType.EQUAL) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  public static boolean checkIfBeEvaluatedAtJoin(QueryBlock block, EvalNode evalNode, JoinNode node,
+                                                 boolean isTopMostJoin) {
     Set<Column> columnRefs = EvalTreeUtil.findUniqueColumns(evalNode);
 
     if (EvalTreeUtil.findDistinctAggFunction(evalNode).size() > 0) {
@@ -1989,13 +2023,17 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       return false;
     }
 
-    /*
-     * For outer joins, only predicates which are specified at the on clause can be evaluated during processing join.
-     * Other predicates from the where clause must be evaluated after the join.
-     * The below code will be modified after improving join operators to keep join filters by themselves (TAJO-1310).
-     */
-    if (PlannerUtil.isOuterJoin(node.getJoinType()) && !isOnPredicate) {
-      return false;
+    // When a 'case-when' is used with outer join, the case-when expression must be evaluated
+    // at the topmost join operator.
+    // TODO - It's also valid that case-when is evalauted at the topmost outer operator.
+    //        But, how can we know there is no further outer join operator after this node?
+    if (containsOuterJoin(block)) {
+      if (!isTopMostJoin) {
+        Collection<EvalNode> found = EvalTreeUtil.findOuterJoinSensitiveEvals(evalNode);
+        if (found.size() > 0) {
+          return false;
+        }
+      }
     }
 
     return true;

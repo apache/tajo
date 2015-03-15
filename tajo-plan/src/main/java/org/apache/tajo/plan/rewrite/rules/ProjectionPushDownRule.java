@@ -917,10 +917,12 @@ public class ProjectionPushDownRule extends
         Target fieldReference = new Target(new FieldEval(target.getNamedColumn()));
         // here, we assume that every exprs are specified at the on clause
         // because all filters have been moved to appropriate logical nodes during the filter push down phase
-        if (LogicalPlanner.checkIfBeEvaluatedAtJoin(fieldReference.getEvalTree(), node, true)) {
+        if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, fieldReference.getEvalTree(), node,
+            stack.peek().getType() != NodeType.JOIN)) {
           projectedTargets.add(fieldReference);
         }
-      } else if (LogicalPlanner.checkIfBeEvaluatedAtJoin(target.getEvalTree(), node, true)) {
+      } else if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, target.getEvalTree(), node,
+          stack.peek().getType() != NodeType.JOIN)) {
         projectedTargets.add(target);
         context.targetListMgr.markAsEvaluated(target);
       }
