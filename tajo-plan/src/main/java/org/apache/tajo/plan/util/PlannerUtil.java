@@ -448,7 +448,7 @@ public class PlannerUtil {
     Preconditions.checkNotNull(type);
 
     ParentNodeFinder finder = new ParentNodeFinder(type);
-    node.postOrder(finder);
+    node.preOrder(finder);
 
     if (finder.getFoundNodes().size() == 0) {
       return null;

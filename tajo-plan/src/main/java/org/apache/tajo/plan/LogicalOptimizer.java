@@ -31,6 +31,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.joinorder.*;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.rewrite.BaseLogicalPlanRewriteEngine;
@@ -196,6 +197,16 @@ public class LogicalOptimizer {
     }
 
     @Override
+    public LogicalNode visit(JoinGraphContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                             LogicalNode node, Stack<LogicalNode> stack) throws PlanningException {
+      if (node.getType() != NodeType.TABLE_SUBQUERY) {
+        super.visit(context, plan, block, node, stack);
+      }
+
+      return node;
+    }
+
+    @Override
     public LogicalNode visitFilter(JoinGraphContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                    SelectionNode node, Stack<LogicalNode> stack) throws PlanningException {
       // all join predicate candidates must be collected before building the join tree
@@ -225,7 +236,15 @@ public class LogicalOptimizer {
       Set<EvalNode> joinConditions = TUtil.newHashSet();
       if (joinNode.hasJoinQual()) {
         Set<EvalNode> originPredicates = joinNode.getJoinSpec().getPredicates();
-        joinConditions.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(originPredicates, edge));
+        for (EvalNode predicate : joinNode.getJoinSpec().getPredicates()) {
+          if (EvalTreeUtil.isJoinQual(block, leftVertex.getSchema(), rightVertex.getSchema(), predicate, false)) {
+            if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, predicate, newNode, false)) {
+              joinConditions.add(predicate);
+            }
+          } else {
+            joinConditions.add(predicate);
+          }
+        }
         // find impossible predicates
         originPredicates.removeAll(joinConditions);
         context.addPredicateCandidates(originPredicates);
