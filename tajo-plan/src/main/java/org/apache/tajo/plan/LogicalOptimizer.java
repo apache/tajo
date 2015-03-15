@@ -118,6 +118,15 @@ public class LogicalOptimizer {
 
       // replace join node with FoundJoinOrder.
       JoinNode newJoinNode = order.getOrderedJoin();
+      LogicalNode newNode = newJoinNode;
+      if (!joinGraphContext.getJoinPredicateCandidates().isEmpty()) {
+        Set<EvalNode> remainings = joinGraphContext.getJoinPredicateCandidates();
+        SelectionNode newSelection = plan.createNode(SelectionNode.class);
+        newSelection.setQual(AlgebraicUtil.createSingletonExprFromCNF(
+            remainings.toArray(new EvalNode[remainings.size()])));
+        newSelection.setChild(newJoinNode);
+        newNode = newSelection;
+      }
       JoinNode old = PlannerUtil.findTopNode(block.getRoot(), NodeType.JOIN);
 
       // TODO: collect all join predicates and set them at the top join node (?)
@@ -131,7 +140,8 @@ public class LogicalOptimizer {
       } else {
         newJoinNode.setTargets(targets.toArray(new Target[targets.size()]));
       }
-      PlannerUtil.replaceNode(plan, block.getRoot(), old, newJoinNode);
+      PlannerUtil.replaceNode(plan, block.getRoot(), old, newNode);
+//      PlannerUtil.replaceNode(plan, block.getRoot(), old, newJoinNode);
       // End of replacement logic
 
       String optimizedOrder = JoinOrderStringBuilder.buildJoinOrderString(plan, block);
@@ -193,8 +203,10 @@ public class LogicalOptimizer {
 
       RelationNode leftChild = JoinOrderingUtil.findMostRightRelation(plan, block, joinNode.getLeftChild());
       RelationNode rightChild = JoinOrderingUtil.findMostLeftRelation(plan, block, joinNode.getRightChild());
-      JoinEdge edge = context.getJoinGraph().addJoin(joinNode,
-          new RelationVertex(leftChild), new RelationVertex(rightChild));
+      RelationVertex leftVertex = new RelationVertex(leftChild);
+      RelationVertex rightVertex = new RelationVertex(rightChild);
+      JoinNode newNode = JoinOrderingUtil.createJoinNode(plan, joinNode.getJoinType(), leftVertex, rightVertex, null);
+      JoinEdge edge = context.getJoinGraph().addJoin(newNode, leftVertex, rightVertex);
 
       // find all possible predicates for this join edge
       Set<EvalNode> joinConditions = TUtil.newHashSet();
@@ -209,15 +221,14 @@ public class LogicalOptimizer {
       }
 
       joinConditions.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(context.getJoinPredicateCandidates(), edge));
-      if (!joinConditions.isEmpty()) {
-        if (edge.getJoinType() == JoinType.CROSS) {
-          edge.getJoinSpec().setType(JoinType.INNER);
-        }
-        edge.addJoinPredicates(joinConditions);
+      context.removePredicateCandidates(joinConditions);
+      edge = JoinOrderingUtil.addPredicates(edge, joinConditions);
+      if (edge.hasJoinQual()) {
+        newNode.setJoinQual(edge.getSingletonJoinQual());
       }
 
       if (PlannerUtil.isCommutativeJoin(joinNode.getJoinType())) {
-        JoinEdge commutativeEdge = new JoinEdge(joinNode,
+        JoinEdge commutativeEdge = new JoinEdge(newNode,
             new RelationVertex(rightChild), new RelationVertex(leftChild));
         commutativeEdge.addJoinPredicates(joinConditions);
         context.getJoinGraph().addEdge(commutativeEdge.getLeftVertex(), commutativeEdge.getRightVertex(),

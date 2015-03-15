@@ -40,6 +40,10 @@ public class JoinGraphContext {
     joinPredicateCandidates.addAll(candidates);
   }
 
+  public void removePredicateCandidates(Collection<EvalNode> willBeRemoved) {
+    joinPredicateCandidates.removeAll(willBeRemoved);
+  }
+
   public Set<EvalNode> getJoinPredicateCandidates() {
     return joinPredicateCandidates;
   }

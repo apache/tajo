@@ -183,11 +183,11 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         if (!isEqualsOrCommutative(vertex.getJoinEdge(), edge)) {
           JoinNode newNode;
           if (isLeftVertex) {
-            newNode = createJoinNode(plan, edge.getJoinType(), vertex, edge.getRightVertex(),
+            newNode = JoinOrderingUtil.createJoinNode(plan, edge.getJoinType(), vertex, edge.getRightVertex(),
                 edge.getSingletonJoinQual());
             willBeAdded.add(new JoinEdge(newNode, vertex, edge.getRightVertex()));
           } else {
-            newNode = createJoinNode(plan, edge.getJoinType(), edge.getLeftVertex(), vertex,
+            newNode = JoinOrderingUtil.createJoinNode(plan, edge.getJoinType(), edge.getLeftVertex(), vertex,
                 edge.getSingletonJoinQual());
             willBeAdded.add(new JoinEdge(newNode, edge.getLeftVertex(), vertex));
           }
@@ -196,24 +196,6 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         willBeRemoved.add(edge);
       }
     }
-  }
-
-  private static JoinNode createJoinNode(LogicalPlan plan, JoinType joinType, JoinVertex left, JoinVertex right,
-                                         EvalNode predicates) {
-    LogicalNode leftChild = left.getCorrespondingNode();
-    LogicalNode rightChild = right.getCorrespondingNode();
-
-    JoinNode joinNode = plan.createNode(JoinNode.class);
-    joinNode.init(joinType, leftChild, rightChild);
-
-    Schema mergedSchema = SchemaUtil.merge(joinNode.getLeftChild().getOutSchema(),
-        joinNode.getRightChild().getOutSchema());
-    joinNode.setInSchema(mergedSchema);
-    joinNode.setOutSchema(mergedSchema);
-    if (predicates != null) {
-      joinNode.setJoinQual(predicates);
-    }
-    return joinNode;
   }
 
   /**
@@ -247,9 +229,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         }
         Set<EvalNode> additionalPredicates = JoinOrderingUtil.findJoinConditionForJoinVertex(
             graphContext.getJoinPredicateCandidates(), foundJoin);
-        if (!additionalPredicates.isEmpty()) {
-          foundJoin.addJoinPredicates(additionalPredicates);
-        }
+        graphContext.removePredicateCandidates(additionalPredicates);
+        foundJoin = JoinOrderingUtil.addPredicates(foundJoin, additionalPredicates);
         double cost = getCost(foundJoin);
 
         if (cost < minCost) {

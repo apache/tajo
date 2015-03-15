@@ -20,6 +20,8 @@ package org.apache.tajo.plan.joinorder;
 
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.EvalNode;
@@ -27,6 +29,7 @@ import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.expr.EvalType;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.RelationNode;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
@@ -59,6 +62,34 @@ public class JoinOrderingUtil {
       return false;
     }
     return true;
+  }
+
+  public static JoinNode createJoinNode(LogicalPlan plan, JoinType joinType, JoinVertex left, JoinVertex right,
+                                         EvalNode predicates) {
+    LogicalNode leftChild = left.getCorrespondingNode();
+    LogicalNode rightChild = right.getCorrespondingNode();
+
+    JoinNode joinNode = plan.createNode(JoinNode.class);
+    joinNode.init(joinType, leftChild, rightChild);
+
+    Schema mergedSchema = SchemaUtil.merge(joinNode.getLeftChild().getOutSchema(),
+        joinNode.getRightChild().getOutSchema());
+    joinNode.setInSchema(mergedSchema);
+    joinNode.setOutSchema(mergedSchema);
+    if (predicates != null) {
+      joinNode.setJoinQual(predicates);
+    }
+    return joinNode;
+  }
+
+  public static JoinEdge addPredicates(JoinEdge edge, Set<EvalNode> predicates) {
+    if (!predicates.isEmpty()) {
+      if (edge.getJoinType() == JoinType.CROSS) {
+        edge.getJoinSpec().setType(JoinType.INNER);
+      }
+      edge.addJoinPredicates(predicates);
+    }
+    return edge;
   }
 
   /**
@@ -158,11 +189,17 @@ public class JoinOrderingUtil {
   private static class RelationNodeFinder extends BasicLogicalPlanVisitor<RelationNodeFinderContext,LogicalNode> {
 
     @Override
-    public void postHook(LogicalPlan plan, LogicalNode node, Stack<LogicalNode> stack, RelationNodeFinderContext context)
-        throws PlanningException {
+    public LogicalNode visit(RelationNodeFinderContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                             LogicalNode node, Stack<LogicalNode> stack) throws PlanningException {
+      if (node.getType() != NodeType.TABLE_SUBQUERY) {
+        super.visit(context, plan, block, node, stack);
+      }
+
       if (node instanceof RelationNode) {
         context.founds.add((RelationNode) node);
       }
+
+      return node;
     }
 
     @Override
