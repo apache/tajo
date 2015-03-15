@@ -41,6 +41,6 @@ public interface JoinOrderAlgorithm {
    * @return
    * @throws org.apache.tajo.plan.PlanningException
    */
-  FoundJoinOrder findBestOrder(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraph joinGraph)
+  FoundJoinOrder findBestOrder(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraphContext joinGraphContext)
       throws PlanningException;
 }

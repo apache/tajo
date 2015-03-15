@@ -98,6 +98,7 @@ public class LogicalOptimizer {
     } else {
       LOG.info("Skip Join Optimized.");
     }
+    // TODO: filter push down
     rulesAfterToJoinOpt.rewrite(context, plan);
     return plan.getRootBlock().getRoot();
   }
@@ -113,12 +114,13 @@ public class LogicalOptimizer {
       JoinGraphContext joinGraphContext = JoinGraphBuilder.buildJoinGraph(plan, block);
 
       // finding join order and restore remain filter order
-      FoundJoinOrder order = joinOrderAlgorithm.findBestOrder(plan, block,
-          joinGraphContext.joinGraph);
+      FoundJoinOrder order = joinOrderAlgorithm.findBestOrder(plan, block, joinGraphContext);
 
       // replace join node with FoundJoinOrder.
       JoinNode newJoinNode = order.getOrderedJoin();
       JoinNode old = PlannerUtil.findTopNode(block.getRoot(), NodeType.JOIN);
+
+      // TODO: collect all join predicates and set them at the top join node (?)
 
       JoinTargetCollector collector = new JoinTargetCollector();
       Set<Target> targets = new LinkedHashSet<Target>();
@@ -154,11 +156,6 @@ public class LogicalOptimizer {
     }
   }
 
-  private static class JoinGraphContext {
-    JoinGraph joinGraph = new JoinGraph();
-    Set<EvalNode> joinPredicateCandidates = TUtil.newHashSet();
-  }
-
   private static class JoinGraphBuilder extends BasicLogicalPlanVisitor<JoinGraphContext, LogicalNode> {
     private final static JoinGraphBuilder instance;
 
@@ -182,7 +179,7 @@ public class LogicalOptimizer {
     public LogicalNode visitFilter(JoinGraphContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                    SelectionNode node, Stack<LogicalNode> stack) throws PlanningException {
       // all join predicate candidates must be collected before building the join tree
-      context.joinPredicateCandidates.addAll(
+      context.addPredicateCandidates(
           TUtil.newList(AlgebraicUtil.toConjunctiveNormalFormArray(node.getQual())));
       super.visitFilter(context, plan, block, node, stack);
       return node;
@@ -194,21 +191,38 @@ public class LogicalOptimizer {
         throws PlanningException {
       super.visitJoin(context, plan, block, joinNode, stack);
 
-      Set<EvalNode> joinConditions = TUtil.newHashSet();
-      if (joinNode.hasJoinQual()) {
-        joinConditions.addAll(
-            TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual())));
-      }
-
       RelationNode leftChild = JoinOrderingUtil.findMostRightRelation(plan, block, joinNode.getLeftChild());
       RelationNode rightChild = JoinOrderingUtil.findMostLeftRelation(plan, block, joinNode.getRightChild());
-      JoinEdge edge = context.joinGraph.addJoin(joinNode.getJoinSpec(),
+      JoinEdge edge = context.getJoinGraph().addJoin(joinNode,
           new RelationVertex(leftChild), new RelationVertex(rightChild));
-      if (joinNode.getJoinType() == JoinType.INNER || joinNode.getJoinType() == JoinType.CROSS) {
-        // find all possible predicates for this join
-        joinConditions.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(context.joinPredicateCandidates, edge));
+
+      // find all possible predicates for this join edge
+      Set<EvalNode> joinConditions = TUtil.newHashSet();
+      if (joinNode.hasJoinQual()) {
+        Set<EvalNode> originPredicates = joinNode.getJoinSpec().getPredicates();
+        joinConditions.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(originPredicates, edge));
+        // find impossible predicates
+        originPredicates.removeAll(joinConditions);
+        context.addPredicateCandidates(originPredicates);
+        originPredicates.clear();
+        originPredicates.addAll(joinConditions);
       }
-      edge.addJoinPredicates(joinConditions);
+
+      joinConditions.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(context.getJoinPredicateCandidates(), edge));
+      if (!joinConditions.isEmpty()) {
+        if (edge.getJoinType() == JoinType.CROSS) {
+          edge.getJoinSpec().setType(JoinType.INNER);
+        }
+        edge.addJoinPredicates(joinConditions);
+      }
+
+      if (PlannerUtil.isCommutativeJoin(joinNode.getJoinType())) {
+        JoinEdge commutativeEdge = new JoinEdge(joinNode,
+            new RelationVertex(rightChild), new RelationVertex(leftChild));
+        commutativeEdge.addJoinPredicates(joinConditions);
+        context.getJoinGraph().addEdge(commutativeEdge.getLeftVertex(), commutativeEdge.getRightVertex(),
+            commutativeEdge);
+      }
 
       return joinNode;
     }

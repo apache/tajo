@@ -1,31 +1,46 @@
 package org.apache.tajo.plan.joinorder;
 
-import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaUtil;
-import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.util.TUtil;
 
+import java.util.Set;
+
+/**
+ * The join order is fixed in this vertex.
+ */
 public class JoinedRelationsVertex implements JoinVertex {
 
+  private final Set<RelationVertex> relations = TUtil.newHashSet();
   private final JoinEdge joinEdge;
-  private final Schema schema;
-  private final JoinNode joinNode; // corresponding join node
 
-  public JoinedRelationsVertex(JoinEdge joinEdge, JoinNode joinNode) {
+  public JoinedRelationsVertex(JoinEdge joinEdge) {
     this.joinEdge = joinEdge;
-    this.schema = SchemaUtil.merge(joinEdge.getLeftVertex().getSchema(),
-        joinEdge.getRightVertex().getSchema());
-    this.joinNode = joinNode;
+    findRelationVertexes(this.joinEdge);
+  }
+
+  private void findRelationVertexes(JoinEdge edge) {
+    if (edge.getLeftVertex() instanceof JoinedRelationsVertex) {
+      JoinedRelationsVertex leftChild = (JoinedRelationsVertex) edge.getLeftVertex();
+      findRelationVertexes(leftChild.getJoinEdge());
+    } else {
+      relations.add((RelationVertex) edge.getLeftVertex());
+    }
+    if (edge.getRightVertex() instanceof JoinedRelationsVertex) {
+      JoinedRelationsVertex rightChild = (JoinedRelationsVertex) edge.getRightVertex();
+      findRelationVertexes(rightChild.getJoinEdge());
+    } else {
+      relations.add((RelationVertex) edge.getRightVertex());
+    }
   }
 
   public JoinEdge getJoinEdge() {
-    return this.joinEdge;
+    return joinEdge;
   }
 
   @Override
   public Schema getSchema() {
-    return schema;
+    return joinEdge.getSchema();
   }
 
   @Override
@@ -34,11 +49,12 @@ public class JoinedRelationsVertex implements JoinVertex {
   }
 
   public LogicalNode getCorrespondingNode() {
-    return joinNode;
+    return joinEdge.getCorrespondingJoinNode();
   }
 
-  public JoinType getJoinType() {
-    return joinEdge.getJoinType();
+  @Override
+  public Set<RelationVertex> getRelations() {
+    return relations;
   }
 
   @Override

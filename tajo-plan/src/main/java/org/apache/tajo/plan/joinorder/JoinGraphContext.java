@@ -18,24 +18,29 @@
 
 package org.apache.tajo.plan.joinorder;
 
-import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.plan.logical.JoinSpec;
 import org.apache.tajo.util.TUtil;
-import org.apache.tajo.util.graph.SimpleUndirectedGraph;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Set;
 
-/**
- * Left-deep graph
- */
-public class JoinGraph extends SimpleUndirectedGraph<JoinVertex, JoinEdge> {
+public class JoinGraphContext {
+  private JoinGraph joinGraph = new JoinGraph();
+  private Set<EvalNode> joinPredicateCandidates = TUtil.newHashSet();
 
-  public JoinEdge addJoin(JoinNode joinNode, JoinVertex left, JoinVertex right) throws PlanningException {
-    JoinEdge edge = new JoinEdge(joinNode, left, right);
-    this.addEdge(left, right, edge);
-    return edge;
+  public void setJoinGraph(JoinGraph joinGraph) {
+    this.joinGraph = joinGraph;
+  }
+
+  public JoinGraph getJoinGraph() {
+    return joinGraph;
+  }
+
+  public void addPredicateCandidates(Collection<EvalNode> candidates) {
+    joinPredicateCandidates.addAll(candidates);
+  }
+
+  public Set<EvalNode> getJoinPredicateCandidates() {
+    return joinPredicateCandidates;
   }
 }

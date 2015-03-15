@@ -22,6 +22,7 @@ import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.logical.JoinSpec;
 import org.apache.tajo.util.TUtil;
 
@@ -32,12 +33,14 @@ public class JoinEdge {
   private final JoinVertex leftVertex;
   private final JoinVertex rightVertex;
   private final Schema schema;
+  private final JoinNode correspondingJoinNode;
 
-  public JoinEdge(JoinSpec joinSpec, JoinVertex leftVertex, JoinVertex rightVertex) {
-    this.joinSpec = joinSpec;
+  public JoinEdge(JoinNode joinNode, JoinVertex leftVertex, JoinVertex rightVertex) {
+    this.joinSpec = joinNode.getJoinSpec();
     this.leftVertex = leftVertex;
     this.rightVertex = rightVertex;
-    schema = SchemaUtil.merge(leftVertex.getSchema(), rightVertex.getSchema());
+    this.schema = SchemaUtil.merge(leftVertex.getSchema(), rightVertex.getSchema());
+    this.correspondingJoinNode = joinNode;
   }
 
   public JoinType getJoinType() {
@@ -60,6 +63,10 @@ public class JoinEdge {
     return joinSpec.getPredicates();
   }
 
+  public JoinSpec getJoinSpec() {
+    return this.joinSpec;
+  }
+
   public EvalNode getSingletonJoinQual() {
     return joinSpec.getSingletonPredicate();
   }
@@ -79,5 +86,9 @@ public class JoinEdge {
 
   public Schema getSchema() {
     return schema;
+  }
+
+  public JoinNode getCorrespondingJoinNode() {
+    return correspondingJoinNode;
   }
 }

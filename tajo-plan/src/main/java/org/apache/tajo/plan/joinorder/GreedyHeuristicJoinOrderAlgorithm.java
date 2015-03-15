@@ -20,13 +20,13 @@ package org.apache.tajo.plan.joinorder;
 
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.PlanningException;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
 import java.util.*;
@@ -40,7 +40,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
   public static double DEFAULT_SELECTION_FACTOR = 0.1;
 
   @Override
-  public FoundJoinOrder findBestOrder(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraph joinGraph)
+  public FoundJoinOrder findBestOrder(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraphContext graphContext)
       throws PlanningException {
 
     Set<JoinVertex> vertexes = TUtil.newHashSet();
@@ -48,11 +48,43 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       vertexes.add(new RelationVertex(relationNode));
     }
     JoinEdgeFinderContext context = new JoinEdgeFinderContext();
+    JoinGraph joinGraph = graphContext.getJoinGraph();
     while (vertexes.size() > 1) {
-      JoinEdge bestPair = getBestPair(context,  )
+      JoinEdge bestPair = getBestPair(context, graphContext, vertexes);
+      JoinedRelationsVertex newVertex = new JoinedRelationsVertex(bestPair);
+
+      Set<JoinEdge> willBeRemoved = TUtil.newHashSet();
+      Set<JoinEdge> willBeAdded = TUtil.newHashSet();
+
+      prepareUpdate(plan, block, joinGraph.getOutgoingEdges(bestPair.getLeftVertex()), newVertex, true,
+          willBeAdded, willBeRemoved);
+
+      prepareUpdate(plan, block, joinGraph.getIncomingEdges(bestPair.getLeftVertex()), newVertex, false,
+          willBeAdded, willBeRemoved);
+
+      prepareUpdate(plan, block, joinGraph.getOutgoingEdges(bestPair.getRightVertex()), newVertex, true,
+          willBeAdded, willBeRemoved);
+
+      prepareUpdate(plan, block, joinGraph.getIncomingEdges(bestPair.getRightVertex()), newVertex, false,
+          willBeAdded, willBeRemoved);
+
+      for (JoinEdge edge : willBeRemoved) {
+        joinGraph.removeEdge(edge.getLeftVertex(), edge.getRightVertex());
+      }
+
+      for (JoinEdge edge : willBeAdded) {
+        joinGraph.addEdge(edge.getLeftVertex(), edge.getRightVertex(), edge);
+      }
+
+      vertexes.remove(bestPair.getLeftVertex());
+      vertexes.remove(bestPair.getRightVertex());
+      vertexes.add(newVertex);
     }
 
-
+    JoinNode joinTree = (JoinNode) vertexes.iterator().next().getCorrespondingNode();
+//    // all generated nodes should be registered to corresponding blocks
+    block.registerNode(joinTree);
+    return new FoundJoinOrder(joinTree, getCost(joinTree));
 
 //    // Setup a remain relation set to be joined
 //    // Why we should use LinkedHashSet? - it should keep the deterministic for the order of joins.
@@ -141,38 +173,48 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
 //    // all generated nodes should be registered to corresponding blocks
 //    block.registerNode(joinTree);
 //    return new FoundJoinOrder(joinTree, getCost(joinTree));
-    return null;
   }
 
-//  private static JoinNode createJoinNode(LogicalPlan plan, JoinEdge joinEdge) {
-//    LogicalNode left = joinEdge.getLeftRelation();
-//    LogicalNode right = joinEdge.getRightRelation();
-//
-//    JoinNode joinNode = plan.createNode(JoinNode.class);
-//
-//    if (PlannerUtil.isCommutativeJoin(joinEdge.getJoinType())) {
-//      // if only one operator is relation
-//      if ((left instanceof RelationNode) && !(right instanceof RelationNode)) {
-//        // for left deep
-//        joinNode.init(joinEdge.getJoinType(), right, left);
-//      } else {
-//        // if both operators are relation or if both are relations
-//        // we don't need to concern the left-right position.
-//        joinNode.init(joinEdge.getJoinType(), left, right);
-//      }
-//    } else {
-//      joinNode.init(joinEdge.getJoinType(), left, right);
-//    }
-//
-//    Schema mergedSchema = SchemaUtil.merge(joinNode.getLeftChild().getOutSchema(),
-//        joinNode.getRightChild().getOutSchema());
-//    joinNode.setInSchema(mergedSchema);
-//    joinNode.setOutSchema(mergedSchema);
-//    if (joinEdge.hasJoinQual()) {
-//      joinNode.setJoinQual(AlgebraicUtil.createSingletonExprFromCNF(joinEdge.getJoinQual()));
-//    }
-//    return joinNode;
-//  }
+  private void prepareUpdate(LogicalPlan plan, LogicalPlan.QueryBlock block, List<JoinEdge> edges,
+                             JoinedRelationsVertex vertex, boolean isLeftVertex,
+                             Set<JoinEdge> willBeAdded, Set<JoinEdge> willBeRemoved) {
+    if (edges != null) {
+      for (JoinEdge edge : edges) {
+        if (!isEqualsOrCommutative(vertex.getJoinEdge(), edge)) {
+          JoinNode newNode;
+          if (isLeftVertex) {
+            newNode = createJoinNode(plan, edge.getJoinType(), vertex, edge.getRightVertex(),
+                edge.getSingletonJoinQual());
+            willBeAdded.add(new JoinEdge(newNode, vertex, edge.getRightVertex()));
+          } else {
+            newNode = createJoinNode(plan, edge.getJoinType(), edge.getLeftVertex(), vertex,
+                edge.getSingletonJoinQual());
+            willBeAdded.add(new JoinEdge(newNode, edge.getLeftVertex(), vertex));
+          }
+          block.registerNode(newNode);
+        }
+        willBeRemoved.add(edge);
+      }
+    }
+  }
+
+  private static JoinNode createJoinNode(LogicalPlan plan, JoinType joinType, JoinVertex left, JoinVertex right,
+                                         EvalNode predicates) {
+    LogicalNode leftChild = left.getCorrespondingNode();
+    LogicalNode rightChild = right.getCorrespondingNode();
+
+    JoinNode joinNode = plan.createNode(JoinNode.class);
+    joinNode.init(joinType, leftChild, rightChild);
+
+    Schema mergedSchema = SchemaUtil.merge(joinNode.getLeftChild().getOutSchema(),
+        joinNode.getRightChild().getOutSchema());
+    joinNode.setInSchema(mergedSchema);
+    joinNode.setOutSchema(mergedSchema);
+    if (predicates != null) {
+      joinNode.setJoinQual(predicates);
+    }
+    return joinNode;
+  }
 
   /**
    * Find the best join pair among all joinable operators in candidate set.
@@ -184,7 +226,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
    * @return The best join pair among them
    * @throws PlanningException
    */
-  private JoinEdge getBestPair(JoinEdgeFinderContext context, JoinGraph joinGraph, Set<JoinVertex> vertexes)
+  private JoinEdge getBestPair(JoinEdgeFinderContext context, JoinGraphContext graphContext, Set<JoinVertex> vertexes)
       throws PlanningException {
     double minCost = Double.MAX_VALUE;
     JoinEdge bestJoin = null;
@@ -199,9 +241,14 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         }
 
         context.reset();
-        JoinEdge foundJoin = findJoin(context, joinGraph, outer, outer, inner);
+        JoinEdge foundJoin = findJoin(context, graphContext.getJoinGraph(), outer, outer, inner);
         if (foundJoin == null) {
           continue;
+        }
+        Set<EvalNode> additionalPredicates = JoinOrderingUtil.findJoinConditionForJoinVertex(
+            graphContext.getJoinPredicateCandidates(), foundJoin);
+        if (!additionalPredicates.isEmpty()) {
+          foundJoin.addJoinPredicates(additionalPredicates);
         }
         double cost = getCost(foundJoin);
 
@@ -246,27 +293,35 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
                                    final JoinVertex leftTarget, final JoinVertex rightTarget)
       throws PlanningException {
 
+    context.visited.add(begin);
 
-  }
-
-  private static JoinEdge findJoin(final JoinEdgeFinderContext context, final JoinGraph joinGraph, RelationVertex begin,
-                                   final RelationVertex leftTarget, final RelationVertex rightTarget) {
-    if (isEqualsOrCommutative(joinGraph, begin, leftTarget)) {
-      for (JoinEdge eachEdge : joinGraph.getOutgoingEdges(leftTarget)) {
-        if (isEqualsOrCommutative(joinGraph, eachEdge.getRightVertex(), rightTarget)) {
-          return eachEdge;
+    // Find the matching edge from begin
+    if (isEqualsOrExchangeable(joinGraph, begin, leftTarget)) {
+      List<JoinEdge> edgesFromLeftTarget = joinGraph.getOutgoingEdges(leftTarget);
+      if (edgesFromLeftTarget != null) {
+        for (JoinEdge edgeFromLeftTarget : edgesFromLeftTarget) {
+          if (isEqualsOrExchangeable(joinGraph, edgeFromLeftTarget.getRightVertex(), rightTarget)) {
+            return edgeFromLeftTarget;
+          }
         }
       }
       // not found
       return null;
     } else {
-      for (JoinVertex commutativeVertex : getAllCommutativeVertexes(joinGraph, begin)) {
-        for (Pair<JoinEdge,JoinEdge> associativePair : getAssociativeEdges(context, joinGraph, commutativeVertex)) {
-          // every left edge is already checked above
-          JoinEdge rightEdge = associativePair.getSecond();
-          JoinEdge found = findJoin(context, joinGraph, rightEdge.getLeftVertex(), leftTarget, rightTarget);
-          if (found != null) {
-            return found;
+      // move to right if associative
+      for (JoinVertex reacheableVertex : getAllReacheableVertexesByCommutativity(joinGraph, begin)) {
+        List<JoinEdge> edges = joinGraph.getOutgoingEdges(reacheableVertex);
+        if (edges != null) {
+          for (JoinEdge edge : edges) {
+            for (JoinEdge associativeEdge : getAllAssociativeEdges(joinGraph, edge)) {
+              JoinVertex willBeVisited = associativeEdge.getLeftVertex();
+              if (!context.visited.contains(willBeVisited)) {
+                JoinEdge found = findJoin(context, joinGraph, associativeEdge.getLeftVertex(), leftTarget, rightTarget);
+                if (found != null) {
+                  return found;
+                }
+              }
+            }
           }
         }
       }
@@ -275,54 +330,79 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     }
   }
 
-  public static boolean isEqualsOrCommutative(JoinGraph graph, RelationVertex v1, RelationVertex v2) {
-    if (v1.equals(v2) || isCommutative(graph, v1, v2)) {
-      return true;
-    } else {
-      return false;
+  private static Set<JoinEdge> getAllAssociativeEdges(JoinGraph graph, JoinEdge edge) {
+    Set<JoinEdge> associativeEdges = TUtil.newHashSet();
+    // find all associative edge pairs which begin at the start vertex
+    JoinVertex start = edge.getRightVertex();
+    List<JoinEdge> candidateEdges = graph.getOutgoingEdges(start);
+    if (candidateEdges != null) {
+      for (JoinEdge candidateEdge : candidateEdges) {
+        if (JoinOrderingUtil.isAssociativeJoin(edge.getJoinType(), candidateEdge.getJoinType())) {
+          associativeEdges.add(candidateEdge);
+        }
+      }
     }
+    return associativeEdges;
   }
 
-  public static boolean isCommutative(JoinGraph graph, RelationVertex v1, RelationVertex v2) {
-    JoinEdge edge = graph.getEdge(v1, v2);
-    if (edge != null && PlannerUtil.isCommutativeJoin(edge.getJoinType())) {
+  /**
+   *
+   * @param graph
+   * @param v1
+   * @param v2
+   * @return
+   */
+  private static boolean isEqualsOrExchangeable(JoinGraph graph, JoinVertex v1, JoinVertex v2) {
+    for (JoinVertex commutative : getAllReacheableVertexesByCommutativity(graph, v1)) {
+      if (v2.equals(commutative)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static boolean isEqualsOrCommutative(JoinEdge edge1, JoinEdge edge2) {
+    if (edge1.equals(edge2) || isCommutative(edge1, edge2)) {
       return true;
     }
     return false;
   }
 
-  public static Set<JoinVertex> getAllCommutativeVertexes(JoinGraph graph, RelationVertex from) {
+  private static boolean isCommutative(JoinEdge edge1, JoinEdge edge2) {
+    if (edge1.getLeftVertex().equals(edge2.getRightVertex()) &&
+        edge1.getRightVertex().equals(edge2.getLeftVertex()) &&
+        edge1.getJoinSpec().equals(edge2.getJoinSpec()) &&
+        PlannerUtil.isCommutativeJoin(edge1.getJoinType())) {
+      return true;
+    }
+    return false;
+  }
+
+  private static Set<JoinVertex> getAllReacheableVertexesByCommutativity(JoinGraph graph, JoinVertex from) {
     Set<JoinVertex> founds = TUtil.newHashSet();
-    founds.add(from);
-    getAllCommutativeVertexes(founds, graph, from);
+    getAllReacheableVertexesByCommutativity(founds, graph, from);
     return founds;
   }
 
-  private static void getAllCommutativeVertexes(Set<JoinVertex> founds, JoinGraph graph,
-                                                JoinVertex vertex) {
-    for (JoinEdge candidateEdge : graph.getOutgoingEdges(vertex)) {
-      if (PlannerUtil.isCommutativeJoin(candidateEdge.getJoinType())) {
-        founds.add(candidateEdge.getRightVertex());
-        getAllCommutativeVertexes(founds, tree, candidateEdge.getRightVertex());
+  private static void getAllReacheableVertexesByCommutativity(Set<JoinVertex> founds, JoinGraph graph,
+                                                              JoinVertex vertex) {
+    founds.add(vertex);
+    Set<JoinVertex> foundAtThis = TUtil.newHashSet();
+    List<JoinEdge> candidatedEdges = graph.getOutgoingEdges(vertex);
+    if (candidatedEdges != null) {
+      for (JoinEdge candidateEdge : candidatedEdges) {
+        if (PlannerUtil.isCommutativeJoin(candidateEdge.getJoinType())
+            && !founds.contains(candidateEdge.getRightVertex())) {
+          foundAtThis.add(candidateEdge.getRightVertex());
+        }
       }
-    }
-  }
-
-  public static Set<Pair<JoinEdge,JoinEdge>> getAssociativeEdges(JoinEdgeFinderContext context, JoinTree tree,
-                                                          JoinVertex start) {
-    Set<Pair<JoinEdge, JoinEdge>> associativeEdges = TUtil.newHashSet();
-    // find all associative edge pairs which begin at the start vertex
-    for (JoinEdge leftEdge : tree.getOutgoingEdges(start)) {
-      JoinVertex willBeVisited = leftEdge.getRightVertex();
-      if (!context.visited.contains(willBeVisited)) {
-        for (JoinEdge rightEdge : tree.getOutgoingEdges(willBeVisited)) {
-          if (JoinOrderingUtil.isAssociativeJoin(leftEdge.getJoinType(), rightEdge.getJoinType())) {
-            associativeEdges.add(new Pair<JoinEdge, JoinEdge>(leftEdge, rightEdge));
-          }
+      if (foundAtThis.size() > 0) {
+        founds.addAll(foundAtThis);
+        for (JoinVertex v : foundAtThis) {
+          getAllReacheableVertexesByCommutativity(founds, graph, v);
         }
       }
     }
-    return associativeEdges;
   }
 
   /**
