@@ -27,7 +27,7 @@ import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.exception.InternalException;
 
 public class OracleStore extends AbstractDBStore {
-  
+
   private static final String CATALOG_DRIVER = "oracle.jdbc.OracleDriver";
 
   public OracleStore(Configuration conf) throws InternalException {

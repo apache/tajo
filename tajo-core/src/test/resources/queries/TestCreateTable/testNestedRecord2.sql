@@ -1,0 +1,1 @@
+CREATE TABLE D9.nested_table2 (f1 int, nf1 record (f1 int4, f3 double), nf2 record (f1 int4, nf1 record (f1 int4, f2 text), nf2 record (f1 int4, f2 text), f2 double), f2 text);
