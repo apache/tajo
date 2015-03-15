@@ -176,14 +176,14 @@ public class HashShuffleAppenderManager {
     private long volume;
 
     //[<page start offset,<task start, task end>>]
-    private Collection<Pair<Long, Pair<Integer, Integer>>> failureTskTupleIndexes;
+    private Iterable<Long> failureTskTupleIndexes;
 
     //[<page start offset, length>]
-    private List<Pair<Long, Integer>> pages = new ArrayList<Pair<Long, Integer>>();
+    private Iterable<Long> pages;
 
     public HashShuffleIntermediate(int partId, long volume,
-                                   List<Pair<Long, Integer>> pages,
-                                   Collection<Pair<Long, Pair<Integer, Integer>>> failureTskTupleIndexes) {
+                                   Iterable<Long> pages,
+                                   Iterable<Long> failureTskTupleIndexes) {
       this.partId = partId;
       this.volume = volume;
       this.failureTskTupleIndexes = failureTskTupleIndexes;
@@ -198,11 +198,11 @@ public class HashShuffleAppenderManager {
       return volume;
     }
 
-    public Collection<Pair<Long, Pair<Integer, Integer>>> getFailureTskTupleIndexes() {
+    public Iterable<Long> getFailureTskTupleIndexes() {
       return failureTskTupleIndexes;
     }
 
-    public List<Pair<Long, Integer>> getPages() {
+    public Iterable<Long> getPages() {
       return pages;
     }
   }
