@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
+
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -142,6 +143,19 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
     this.intermediatePhase = true;
   }
 
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = super.hashCode();
+    result = prime * result + ((alias == null) ? 0 : alias.hashCode());
+    result = prime * result + (finalPhase ? 1231 : 1237);
+    result = prime * result + ((instance == null) ? 0 : instance.hashCode());
+    result = prime * result + (intermediatePhase ? 1231 : 1237);
+    result = prime * result + ((params == null) ? 0 : params.hashCode());
+    return result;
+  }
+
+  @Override
   public boolean equals(Object obj) {
     if (obj instanceof AggregationFunctionCallEval) {
       AggregationFunctionCallEval other = (AggregationFunctionCallEval) obj;
