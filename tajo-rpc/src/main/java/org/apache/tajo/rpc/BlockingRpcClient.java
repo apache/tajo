@@ -25,6 +25,7 @@ import io.netty.channel.*;
 import io.netty.util.concurrent.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.rpc.RpcConnectionPool.RpcConnectionKey;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
@@ -35,63 +36,33 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.apache.tajo.rpc.RpcConnectionPool.RpcConnectionKey;
 
 public class BlockingRpcClient extends NettyClientBase {
   private static final Log LOG = LogFactory.getLog(RpcProtos.class);
 
-  private final ChannelInitializer<Channel> initializer;
-  private final ProxyRpcChannel rpcChannel;
-
-  private final AtomicInteger sequence = new AtomicInteger(0);
   private final Map<Integer, ProtoCallFuture> requests =
       new ConcurrentHashMap<Integer, ProtoCallFuture>();
 
-  private final Class<?> protocol;
   private final Method stubMethod;
-
-  private RpcConnectionKey key;
+  private final ProxyRpcChannel rpcChannel;
+  private final ChannelInboundHandlerAdapter inboundHandler;
 
   /**
    * Intentionally make this method package-private, avoiding user directly
    * new an instance through this constructor.
    */
-  BlockingRpcClient(final Class<?> protocol,
-                           final InetSocketAddress addr, int retries)
-      throws ClassNotFoundException, NoSuchMethodException, ConnectTimeoutException {
-
-    this.protocol = protocol;
-    String serviceClassName = protocol.getName() + "$"
-        + protocol.getSimpleName() + "Service";
-    Class<?> serviceClass = Class.forName(serviceClassName);
-    stubMethod = serviceClass.getMethod("newBlockingStub",
-        BlockingRpcChannel.class);
-
-    initializer = new ProtoChannelInitializer(new ClientChannelInboundHandler(), RpcResponse.getDefaultInstance());
-    super.init(addr, initializer, retries);
+  BlockingRpcClient(RpcConnectionKey rpcConnectionKey, int retries)
+      throws ClassNotFoundException, NoSuchMethodException {
+    super(rpcConnectionKey, retries);
+    stubMethod = getServiceClass().getMethod("newBlockingStub", BlockingRpcChannel.class);
     rpcChannel = new ProxyRpcChannel();
-
-    this.key = new RpcConnectionKey(addr, protocol, false);
-  }
-
-  @Override
-  public RpcConnectionKey getKey() {
-    return key;
+    inboundHandler = new ClientChannelInboundHandler();
+    init(new ProtoChannelInitializer(inboundHandler, RpcResponse.getDefaultInstance()));
   }
 
   @Override
   public <T> T getStub() {
-    try {
-      return (T) stubMethod.invoke(null, rpcChannel);
-    } catch (Exception e) {
-      throw new RuntimeException(e.getMessage(), e);
-    }
-  }
-
-  public BlockingRpcChannel getBlockingRpcChannel() {
-    return this.rpcChannel;
+    return getStub(stubMethod, rpcChannel);
   }
 
   @Override
@@ -105,19 +76,6 @@ public class BlockingRpcClient extends NettyClientBase {
   }
 
   private class ProxyRpcChannel implements BlockingRpcChannel {
-
-    private final ClientChannelInboundHandler handler;
-
-    public ProxyRpcChannel() {
-
-      this.handler = getChannel().pipeline().
-          get(ClientChannelInboundHandler.class);
-
-      if (handler == null) {
-        throw new IllegalArgumentException("Channel does not have " +
-            "proper handler");
-      }
-    }
 
     @Override
     public Message callBlockingMethod(final MethodDescriptor method,
@@ -139,7 +97,7 @@ public class BlockingRpcClient extends NettyClientBase {
         @Override
         public void operationComplete(ChannelFuture future) throws Exception {
           if (!future.isSuccess()) {
-            handler.exceptionCaught(null, new ServiceException(future.cause()));
+            inboundHandler.exceptionCaught(null, new ServiceException(future.cause()));
           }
         }
       });
@@ -174,7 +132,7 @@ public class BlockingRpcClient extends NettyClientBase {
   }
 
   private String getErrorMessage(String message) {
-    if(protocol != null && getChannel() != null) {
+    if(getChannel() != null) {
       return protocol.getName() +
           "(" + RpcUtils.normalizeInetSocketAddress((InetSocketAddress)
           getChannel().remoteAddress()) + "): " + message;
@@ -184,7 +142,7 @@ public class BlockingRpcClient extends NettyClientBase {
   }
 
   private TajoServiceException makeTajoServiceException(RpcResponse response, Throwable cause) {
-    if(protocol != null && getChannel() != null) {
+    if(getChannel() != null) {
       return new TajoServiceException(response.getErrorMessage(), cause, protocol.getName(),
           RpcUtils.normalizeInetSocketAddress((InetSocketAddress)getChannel().remoteAddress()));
     } else {

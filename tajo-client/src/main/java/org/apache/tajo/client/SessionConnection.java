@@ -128,7 +128,7 @@ public class SessionConnection implements Closeable {
     if(!closed.get()){
       try {
         return connPool.getConnection(serviceTracker.getClientServiceAddress(),
-            TajoMasterClientProtocol.class, false).isActive();
+            TajoMasterClientProtocol.class, false).isConnected();
       } catch (Throwable e) {
         return false;
       }
