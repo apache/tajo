@@ -26,6 +26,9 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.stream.ChunkedWriteHandler;
 
+/**
+ * Default Channel Initializer for Netty Rest server.
+ */
 public class NettyRestChannelInitializer extends ChannelInitializer<Channel> {
   
   private ChannelHandler handler;
