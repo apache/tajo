@@ -35,11 +35,12 @@ import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class AsyncRpcClient extends NettyClientBase {
   private static final Log LOG = LogFactory.getLog(AsyncRpcClient.class);
 
-  private final Map<Integer, ResponseCallback> requests =
+  private final ConcurrentMap<Integer, ResponseCallback> requests =
       new ConcurrentHashMap<Integer, ResponseCallback>();
 
   private final Method stubMethod;
@@ -178,14 +179,12 @@ public class AsyncRpcClient extends NettyClientBase {
   @ChannelHandler.Sharable
   private class ClientChannelInboundHandler extends ChannelInboundHandlerAdapter {
 
-    synchronized void registerCallback(int seqId, ResponseCallback callback) {
+    void registerCallback(int seqId, ResponseCallback callback) {
 
-      if (requests.containsKey(seqId)) {
+      if (requests.putIfAbsent(seqId, callback) != null) {
         throw new RemoteException(
             getErrorMessage("Duplicate Sequence Id "+ seqId));
       }
-
-      requests.put(seqId, callback);
     }
 
     @Override
