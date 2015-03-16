@@ -18,15 +18,10 @@
 
 package org.apache.tajo.storage;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableMeta;
-import org.apache.tajo.util.FileUtil;
 import sun.nio.ch.DirectBuffer;
 
 import java.io.DataInput;
@@ -34,8 +29,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 public class StorageUtil extends StorageConstants {
 
@@ -119,32 +112,33 @@ public class StorageUtil extends StorageConstants {
     }
 
     int maxValue = -1;
-    List<Path> fileNamePatternMatchedList = new ArrayList<Path>();
 
     for (FileStatus eachFile: files) {
       // In the case of partition table, return largest value within all partition dirs.
+      int value;
       if (eachFile.isDirectory() && recursive) {
-        int value = getMaxFileSequence(fs, eachFile.getPath(), recursive);
+        value = getMaxFileSequence(fs, eachFile.getPath(), recursive);
         if (value > maxValue) {
           maxValue = value;
         }
       } else {
         if (eachFile.getPath().getName().matches(fileNamePatternV08) ||
             eachFile.getPath().getName().matches(fileNamePatternV09)) {
-          fileNamePatternMatchedList.add(eachFile.getPath());
+          value = getSequence(eachFile.getPath().getName());
+          if (value > maxValue) {
+            maxValue = value;
+          }
         }
       }
     }
 
-    if (fileNamePatternMatchedList.isEmpty()) {
-      return maxValue;
-    }
-    Path lastFile = fileNamePatternMatchedList.get(fileNamePatternMatchedList.size() - 1);
-    String pathName = lastFile.getName();
+    return maxValue;
+  }
 
-    // 0.8: pathName = part-<ExecutionBlockId.seq>-<TaskId.seq>
-    // 0.9: pathName = part-<ExecutionBlockId.seq>-<TaskId.seq>-<Sequence>
-    String[] pathTokens = pathName.split("-");
+  // 0.8: pathName = part-<ExecutionBlockId.seq>-<TaskId.seq>
+  // 0.9: pathName = part-<ExecutionBlockId.seq>-<TaskId.seq>-<Sequence>
+  private static int getSequence(String name) {
+    String[] pathTokens = name.split("-");
     if (pathTokens.length == 3) {
       return -1;
     } else if(pathTokens.length == 4) {

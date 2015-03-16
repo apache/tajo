@@ -1,0 +1,29 @@
+OK
+
+table name: default.TEST_DESC_TABLE_NESTED
+table path: ${table.path}
+store type: CSV
+number of rows: 0
+volume: 0 B
+Options: 
+	'text.delimiter'='|'
+
+schema: 
+col1	INT4
+col2	INT4
+col3	RECORD (col4 RECORD (col5 TEXT))
+
+
+
+table name: default.TEST_DESC_TABLE_NESTED
+table path: ${table.path}
+store type: CSV
+number of rows: 0
+volume: 0 B
+Options: 
+	'text.delimiter'='|'
+
+schema: 
+col1	INT4
+col2	INT4
+col3	RECORD (col4 RECORD (col5 TEXT))

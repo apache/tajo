@@ -21,6 +21,7 @@ package org.apache.tajo.client;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.auth.UserRoleInfo;
@@ -127,7 +128,7 @@ public class SessionConnection implements Closeable {
     if(!closed.get()){
       try {
         return connPool.getConnection(serviceTracker.getClientServiceAddress(),
-            TajoMasterClientProtocol.class, false).isActive();
+            TajoMasterClientProtocol.class, false).isConnected();
       } catch (Throwable e) {
         return false;
       }
@@ -318,6 +319,65 @@ public class SessionConnection implements Closeable {
       }
     }
   }
+
+  public boolean reconnect() throws Exception {
+    return new ServerCallable<Boolean>(connPool, getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
+
+      public Boolean call(NettyClientBase client) throws ServiceException {
+        CreateSessionRequest.Builder builder = CreateSessionRequest.newBuilder();
+        builder.setUsername(userInfo.getUserName()).build();
+        if (baseDatabase != null) {
+          builder.setBaseDatabaseName(baseDatabase);
+        }
+
+
+        // create new session
+        TajoMasterClientProtocolService.BlockingInterface tajoMasterService = client.getStub();
+        CreateSessionResponse response = tajoMasterService.createSession(null, builder.build());
+        if (response.getResultCode() != ResultCode.OK) {
+          return false;
+        }
+
+        // Invalidate some session variables in client cache
+        sessionId = response.getSessionId();
+        Map<String, String> sessionVars = ProtoUtil.convertToMap(response.getSessionVars());
+        synchronized (sessionVarsCache) {
+          for (SessionVars var : UPDATE_ON_RECONNECT) {
+            String value = sessionVars.get(var.keyname());
+            if (value != null) {
+              sessionVarsCache.put(var.keyname(), value);
+            }
+          }
+        }
+
+        // Update the session variables in server side
+        try {
+          KeyValueSet keyValueSet = new KeyValueSet();
+          keyValueSet.putAll(sessionVarsCache);
+          ClientProtos.UpdateSessionVariableRequest request = ClientProtos.UpdateSessionVariableRequest.newBuilder()
+              .setSessionId(sessionId)
+              .setSessionVars(keyValueSet.getProto()).build();
+
+          if (tajoMasterService.updateSessionVariables(null, request).getResultCode() != ResultCode.OK) {
+            tajoMasterService.removeSession(null, sessionId);
+            return false;
+          }
+          LOG.info(String.format("Reconnected to session %s as a user '%s'.", sessionId.getId(), userInfo.getUserName()));
+          return true;
+        } catch (ServiceException e) {
+          tajoMasterService.removeSession(null, sessionId);
+          return false;
+        }
+      }
+    }.withRetries();
+  }
+
+  /**
+   * Session variables which should be updated upon reconnecting
+   */
+  private static final SessionVars[] UPDATE_ON_RECONNECT = new SessionVars[] {
+    SessionVars.SESSION_ID, SessionVars.SESSION_LAST_ACCESS_TIME, SessionVars.CLIENT_HOST
+  };
 
   ClientProtos.SessionedStringProto convertSessionedString(String str) {
     ClientProtos.SessionedStringProto.Builder builder = ClientProtos.SessionedStringProto.newBuilder();

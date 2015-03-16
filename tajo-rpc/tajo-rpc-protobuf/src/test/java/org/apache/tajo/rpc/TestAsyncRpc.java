@@ -34,8 +34,6 @@ import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import io.netty.channel.ConnectTimeoutException;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -125,8 +123,12 @@ public class TestAsyncRpc {
   public void setUpRpcClient() throws Exception {
     retries = 1;
 
-    client = new AsyncRpcClient(DummyProtocol.class,
-        RpcUtils.getConnectAddress(server.getListenAddress()), retries);
+    RpcConnectionPool.RpcConnectionKey rpcConnectionKey =
+          new RpcConnectionPool.RpcConnectionKey(
+              RpcUtils.getConnectAddress(server.getListenAddress()),
+              DummyProtocol.class, true);
+    client = new AsyncRpcClient(rpcConnectionKey, retries);
+    client.acquire(RpcConnectionPool.DEFAULT_TIMEOUT);
     stub = client.getStub();
   }
 
@@ -296,7 +298,10 @@ public class TestAsyncRpc {
     });
     serverThread.start();
 
-    client = new AsyncRpcClient(DummyProtocol.class, address, retries);
+    RpcConnectionPool.RpcConnectionKey rpcConnectionKey =
+          new RpcConnectionPool.RpcConnectionKey(address, DummyProtocol.class, true);
+    client = new AsyncRpcClient(rpcConnectionKey, retries);
+    assertTrue(client.acquire(RpcConnectionPool.DEFAULT_TIMEOUT));
     stub = client.getStub();
     stub.echo(future.getController(), echoMessage, future);
 
@@ -308,24 +313,25 @@ public class TestAsyncRpc {
   @Test
   public void testConnectionFailure() throws Exception {
     InetSocketAddress address = new InetSocketAddress("test", 0);
-    boolean expected = false;
     try {
-      new AsyncRpcClient(DummyProtocol.class, address, retries);
-      fail();
-    } catch (ConnectTimeoutException e) {
-      expected = true;
+      RpcConnectionPool.RpcConnectionKey rpcConnectionKey =
+          new RpcConnectionPool.RpcConnectionKey(address, DummyProtocol.class, true);
+      NettyClientBase client = new AsyncRpcClient(rpcConnectionKey, retries);
+      assertFalse(client.acquire(RpcConnectionPool.DEFAULT_TIMEOUT));
     } catch (Throwable throwable) {
       fail();
     }
-    assertTrue(expected);
   }
 
   @Test
   @SetupRpcConnection(setupRpcClient=false)
   public void testUnresolvedAddress() throws Exception {
     String hostAndPort = RpcUtils.normalizeInetSocketAddress(server.getListenAddress());
-    client = new AsyncRpcClient(DummyProtocol.class,
-        RpcUtils.createUnresolved(hostAndPort), retries);
+    RpcConnectionPool.RpcConnectionKey rpcConnectionKey =
+          new RpcConnectionPool.RpcConnectionKey(
+              RpcUtils.createUnresolved(hostAndPort), DummyProtocol.class, true);
+    client = new AsyncRpcClient(rpcConnectionKey, retries);
+    assertTrue(client.acquire(RpcConnectionPool.DEFAULT_TIMEOUT));
     Interface stub = client.getStub();
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();

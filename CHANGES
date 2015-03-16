@@ -9,12 +9,33 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1391: RpcConnectionPool should check reference counter of connection 
+    before close. (Contributed by navis, Committed by jihun)
+
+    TAJO-1383: Improve broadcast table cache. (jinho)
+
+    TAJO-1374: Support multi-bytes delimiter for CSV file.
+    (Contributed by navis, Committed by jinho)
+
+    TAJO-1395: Remove deprecated sql files for Oracle and PostgreSQL. (jihun)
+
+    TAJO-1394: Support reconnect on tsql. 
+    (Contributed by navis, Committed by hyunsik)
+
     TAJO-527: Upgrade to Netty 4. (jihun)
 
     TAJO-1369: Some stack trace information is missed in error/fail logging. 
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1384: Duplicated output file path problem. (jihoon)
+
+    TAJO-1386: CURRENT_DATE generates parsing errors sometimes.
+    (Contributed by navis, Committed by hyunsik)
+
+    TAJO-1387: Correct error message for EXISTS clause.
+    (Contributed by Dongjoon Hyun, Committed by hyunsik)
 
     TAJO-1378: Incorrect version(0.8.0) info in tajo-doc. 
     (Contributed by Dongjoon Hyun, Committed by jihoon)
@@ -35,6 +56,12 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1398: Fix 'Getting Started' link error from 0.9.0 into 0.10.0. 
+    (Contributed by Dongjoon Hyun, Committed by jihoon)
+
+    TAJO-1380: Update JDBC documentation for new JDBC driver.
+    (Contributed by Dongjoon Hyun, Committed by hyunsik)
+
     TAJO-1335: Bump up 0.10.0-SNAPSHOT to 0.11.0-SNAPSHOT in master branch. 
     (hyunsik)
 
@@ -42,6 +69,9 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1329: Improve Schema class to support nested struct support.
+    (hyunsik)
 
     TAJO-1353: Nested record support in CREATE TABLE statement. (hyunsik)
 

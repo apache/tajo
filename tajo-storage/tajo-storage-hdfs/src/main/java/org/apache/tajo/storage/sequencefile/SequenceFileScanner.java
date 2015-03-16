@@ -171,7 +171,8 @@ public class SequenceFileScanner extends FileScanner {
       } else {
         Text text = new Text();
         reader.getCurrentValue(text);
-        cells = BytesUtils.splitPreserveAllTokens(text.getBytes(), delimiter, projectionMap);
+        cells = BytesUtils.splitPreserveAllTokens(text.getBytes(), 
+            delimiter, projectionMap, schema.getColumns().size());
         totalBytes += (long)text.getBytes().length;
         tuple = new LazyTuple(schema, cells, 0, nullChars, serde);
       }

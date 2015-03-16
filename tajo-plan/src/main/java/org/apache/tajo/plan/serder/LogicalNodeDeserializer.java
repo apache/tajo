@@ -416,6 +416,9 @@ public class LogicalNodeDeserializer {
       scan.setQual(EvalNodeDeserializer.deserialize(context, scanProto.getQual()));
     }
 
+    if(scanProto.hasBroadcast()){
+      scan.setBroadcastTable(scanProto.getBroadcast());
+    }
     scan.setInSchema(convertSchema(protoNode.getInSchema()));
     scan.setOutSchema(convertSchema(protoNode.getOutSchema()));
   }

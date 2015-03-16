@@ -41,6 +41,27 @@ public class TestTajoDump extends QueryTestCaseBase {
       printWriter.close();
       assertStrings(new String(bos.toByteArray()));
       bos.close();
+
+      executeString("DROP TABLE \"" + getCurrentDatabase() + "\".\"TableName1\"");
+    }
+  }
+
+  @Test
+  public void testDump2() throws Exception {
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      executeString("CREATE TABLE \"" + getCurrentDatabase() +
+          "\".\"TableName2\" (\"Age\" int, \"Name\" Record (\"FirstName\" TEXT, lastname TEXT))");
+
+      UserRoleInfo userInfo = UserRoleInfo.getCurrentUser();
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      PrintWriter printWriter = new PrintWriter(bos);
+      TajoDump.dump(client, userInfo, getCurrentDatabase(), false, false, false, printWriter);
+      printWriter.flush();
+      printWriter.close();
+      assertStrings(new String(bos.toByteArray()));
+      bos.close();
+
+      executeString("DROP TABLE \"" + getCurrentDatabase() + "\".\"TableName2\"");
     }
   }
 }
