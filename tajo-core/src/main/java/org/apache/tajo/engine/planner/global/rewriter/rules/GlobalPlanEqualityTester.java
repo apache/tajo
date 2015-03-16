@@ -46,8 +46,7 @@ public class GlobalPlanEqualityTester implements GlobalPlanRewriteRule {
   public MasterPlan rewrite(MasterPlan plan) {
     try {
       ExecutionBlockCursor cursor = new ExecutionBlockCursor(plan);
-      while (cursor.hasNext()) {
-        ExecutionBlock eb = cursor.nextBlock();
+      for (ExecutionBlock eb : cursor) {
         LogicalNode node = eb.getPlan();
         if (node != null) {
           PlanProto.LogicalNodeTree tree = LogicalNodeSerializer.serialize(node);

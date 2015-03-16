@@ -218,15 +218,13 @@ public class MasterPlan {
     sb.append("Order of Execution\n");
     sb.append("-------------------------------------------------------------------------------");
     int order = 1;
-    while (executionOrderCursor.hasNext()) {
-      ExecutionBlock currentEB = executionOrderCursor.nextBlock();
+    for (ExecutionBlock currentEB : cursor) {
       sb.append("\n").append(order).append(": ").append(currentEB.getId());
       order++;
     }
     sb.append("\n-------------------------------------------------------------------------------\n");
 
-    while(cursor.hasNext()) {
-      ExecutionBlock block = cursor.nextBlock();
+    for (ExecutionBlock block : cursor) {
 
       boolean terminal = false;
       sb.append("\n");

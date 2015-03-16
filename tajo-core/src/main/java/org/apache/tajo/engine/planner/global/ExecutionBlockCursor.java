@@ -15,6 +15,7 @@
 package org.apache.tajo.engine.planner.global;
 
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.SessionVars;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -23,10 +24,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * A distributed execution plan (DEP) is a direct acyclic graph (DAG) of ExecutionBlocks.
  * This class is a pointer to an ExecutionBlock that the query engine should execute.
  */
-public class ExecutionBlockCursor {
+public class ExecutionBlockCursor implements Iterable<ExecutionBlock> {
   private MasterPlan masterPlan;
   private ArrayList<ExecutionBlock> orderedBlocks = new ArrayList<ExecutionBlock>();
-  private int cursor = 0;
 
   private List<BuildOrderItem> executionOrderedBlocks = new ArrayList<BuildOrderItem>();
   private List<BuildOrderItem> notOrderedSiblingBlocks = new ArrayList<BuildOrderItem>();
@@ -45,28 +45,70 @@ public class ExecutionBlockCursor {
     }
   }
 
+  @Override
+  public Iterator<ExecutionBlock> iterator() {
+    return orderedBlocks.iterator();
+  }
+
   public int size() {
     return orderedBlocks.size();
   }
 
-  // Add all execution blocks in a depth first and postfix order
-  private void buildDepthFirstOrder(ExecutionBlock current) {
-    Stack<ExecutionBlock> stack = new Stack<ExecutionBlock>();
-    if (!masterPlan.isLeaf(current.getId())) {
-      for (ExecutionBlock execBlock : masterPlan.getChilds(current)) {
-        if (!masterPlan.isLeaf(execBlock)) {
-          buildDepthFirstOrder(execBlock);
-        } else {
-          stack.push(execBlock);
+  public ExecutionQueue newCursor() {
+    int parallel = masterPlan.getContext().getInt(SessionVars.QUERY_EXECUTE_PARALLEL);
+    if (parallel > 1) {
+      return new ParallelExecutionQueue(masterPlan, parallel);
+    }
+    return new SimpleExecutionQueue();
+  }
+
+  public class SimpleExecutionQueue implements ExecutionQueue {
+
+    private final Iterator<ExecutionBlock> iterator = iterator();
+    private ExecutionBlock last;
+
+    @Override
+    public int size() {
+      return ExecutionBlockCursor.this.size();
+    }
+
+    @Override
+    public ExecutionBlock[] first() {
+      return iterator.hasNext() ? next(null) : null;
+    }
+
+    @Override
+    public ExecutionBlock[] next(ExecutionBlockId blockId) {
+      return iterator.hasNext() ? new ExecutionBlock[]{last = iterator.next()} : null;
+    }
+
+    public String toString() {
+      StringBuilder sb = new StringBuilder();
+      for (ExecutionBlock block : ExecutionBlockCursor.this) {
+        if (sb.length() > 0) {
+          sb.append(',');
+        }
+        if (block == last) {
+          sb.append('(');
+        }
+        sb.append(block.getId().getId());
+        if (block == last) {
+          sb.append(')');
         }
       }
-      for (ExecutionBlock execBlock : stack) {
+      return sb.toString();
+    }
+  }
+
+  // Add all execution blocks in a depth first and postfix order
+  private void buildDepthFirstOrder(ExecutionBlock current) {
+    if (!masterPlan.isLeaf(current.getId())) {
+      for (ExecutionBlock execBlock : masterPlan.getChilds(current)) {
         buildDepthFirstOrder(execBlock);
       }
     }
     orderedBlocks.add(current);
   }
-
 
   private void buildSiblingFirstOrder(ExecutionBlock current) {
     /*
@@ -177,42 +219,5 @@ public class ExecutionBlockCursor {
       result = 31 * result + (siblings != null ? siblings.hashCode() : 0);
       return result;
     }
-  }
-
-  public boolean hasNext() {
-    return cursor < orderedBlocks.size();
-  }
-
-  public ExecutionBlock nextBlock() {
-    return orderedBlocks.get(cursor++);
-  }
-
-  public ExecutionBlock peek() {
-    return orderedBlocks.get(cursor);
-  }
-
-  public ExecutionBlock peek(int skip) {
-    return  orderedBlocks.get(cursor + skip);
-  }
-
-  public void reset() {
-    cursor = 0;
-  }
-
-  public String toString() {
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < orderedBlocks.size(); i++) {
-      if (i == (cursor == 0 ? 0 : cursor - 1)) {
-        sb.append("(").append(orderedBlocks.get(i).getId().getId()).append(")");
-      } else {
-        sb.append(orderedBlocks.get(i).getId().getId());
-      }
-
-      if (i < orderedBlocks.size() - 1) {
-        sb.append(",");
-      }
-    }
-
-    return sb.toString();
   }
 }
