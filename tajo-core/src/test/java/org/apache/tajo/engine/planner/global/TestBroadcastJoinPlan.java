@@ -175,9 +175,9 @@ public class TestBroadcastJoinPlan {
 
   @Test
   public final void testBroadcastJoin() throws IOException, PlanningException {
-    String query = "select count(*) from large1 " +
-        "join small1 on large1_id = small1_id " +
-        "join small2 on small1_id = small2_id";
+    String query = "select count(*) from small1 " +
+        "join small2 on small1_id = small2_id " +
+        "join large1 on large1_id = small1_id";
 
     LogicalPlanner planner = new LogicalPlanner(catalog);
     LogicalOptimizer optimizer = new LogicalOptimizer(conf);
