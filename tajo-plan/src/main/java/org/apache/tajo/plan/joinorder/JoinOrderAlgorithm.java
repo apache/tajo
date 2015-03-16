@@ -36,13 +36,11 @@ public interface JoinOrderAlgorithm {
    *
    * @param plan
    * @param block
-   * @param joinGraph A join graph represents join conditions and their connections among relations.
-   *                  Given a graph, each vertex represents a relation, and each edge contains a join condition.
-   *                  A join graph does not contain relations that do not have any corresponding join condition.
-   * @param relationsWithoutQual The names of relations that do not have any corresponding join condition.
+   * @param joinGraph A left-deep join tree represents join conditions and their join relationships among relations.
+   *                 Each vertex represents a relation, and each edge contains a join condition.
    * @return
    * @throws org.apache.tajo.plan.PlanningException
    */
-  FoundJoinOrder findBestOrder(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraph joinGraph,
-                               Set<String> relationsWithoutQual) throws PlanningException;
+  FoundJoinOrder findBestOrder(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraphContext joinGraphContext)
+      throws PlanningException;
 }

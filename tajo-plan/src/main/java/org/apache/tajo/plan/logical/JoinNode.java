@@ -26,7 +26,6 @@ import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.Target;
-import org.apache.tajo.plan.expr.BinaryEval;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.util.TUtil;
 
@@ -34,8 +33,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class JoinNode extends BinaryNode implements Projectable, Cloneable {
-  @Expose private JoinType joinType;
-  @Expose private EvalNode joinQual;
+//  @Expose private JoinType joinType;
+//  @Expose private EvalNode joinQual;
+  @Expose private JoinSpec joinSpec = new JoinSpec();
   @Expose private Target[] targets;
 
   // transition states
@@ -47,7 +47,7 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   }
 
   public void init(JoinType joinType, LogicalNode left, LogicalNode right) {
-    this.joinType = joinType;
+    this.joinSpec.setType(joinType);
     setLeftChild(left);
     setRightChild(right);
   }
@@ -65,23 +65,27 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   }
 
   public JoinType getJoinType() {
-    return this.joinType;
+    return this.joinSpec.getType();
+  }
+
+  public JoinSpec getJoinSpec() {
+    return joinSpec;
   }
 
   public void setJoinType(JoinType joinType) {
-    this.joinType = joinType;
+    this.joinSpec.setType(joinType);
   }
 
   public void setJoinQual(EvalNode joinQual) {
-    this.joinQual = joinQual;
+    this.joinSpec.setSingletonPredicate(joinQual);
   }
 
   public boolean hasJoinQual() {
-    return this.joinQual != null;
+    return this.joinSpec.hasPredicates();
   }
 
   public EvalNode getJoinQual() {
-    return this.joinQual;
+    return this.joinSpec.getSingletonPredicate();
   }
 
   @Override
@@ -102,9 +106,9 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
 
   @Override
   public PlanString getPlanString() {
-    PlanString planStr = new PlanString(this).appendTitle("(").appendTitle(joinType.name()).appendTitle(")");
+    PlanString planStr = new PlanString(this).appendTitle("(").appendTitle(joinSpec.getType().name()).appendTitle(")");
     if (hasJoinQual()) {
-      planStr.addExplan("Join Cond: " + joinQual.toString());
+      planStr.addExplan("Join Cond: " + joinSpec.getSingletonPredicate().toString());
     }
 
     if (hasTargets()) {
@@ -129,9 +133,8 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   public boolean equals(Object obj) {
     if (obj instanceof JoinNode) {
       JoinNode other = (JoinNode) obj;
-      boolean eq = this.joinType.equals(other.joinType);
+      boolean eq = this.joinSpec.equals(other.joinSpec);
       eq &= TUtil.checkEquals(this.targets, other.targets);
-      eq &= TUtil.checkEquals(joinQual, other.joinQual);
       return eq && leftChild.equals(other.leftChild) && rightChild.equals(other.rightChild);
     } else {
       return false;
@@ -141,8 +144,9 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   @Override
   public Object clone() throws CloneNotSupportedException {
     JoinNode join = (JoinNode) super.clone();
-    join.joinType = this.joinType;
-    join.joinQual = this.joinQual == null ? null : (BinaryEval) this.joinQual.clone();
+//    join.joinType = this.joinType;
+//    join.joinQual = this.joinQual == null ? null : (BinaryEval) this.joinQual.clone();
+    join.joinSpec = (JoinSpec) this.joinSpec.clone();
     if (hasTargets()) {
       join.targets = new Target[targets.length];
       for (int i = 0; i < targets.length; i++) {
@@ -153,9 +157,9 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   }
 
   public String toString() {
-    StringBuilder sb = new StringBuilder("Join (type").append(joinType);
+    StringBuilder sb = new StringBuilder("Join (type").append(joinSpec.getType());
     if (hasJoinQual()) {
-      sb.append(",filter=").append(joinQual);
+      sb.append(",filter=").append(joinSpec.getSingletonPredicate());
     }
     sb.append(")");
     return sb.toString();

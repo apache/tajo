@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.expr;
 
+import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
@@ -73,6 +74,11 @@ public class RowConstantEval extends EvalNode {
     }
 
     return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(values);
   }
 
   public String toString() {

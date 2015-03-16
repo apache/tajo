@@ -18,58 +18,77 @@
 
 package org.apache.tajo.plan.joinorder;
 
-import com.google.common.collect.Sets;
 import org.apache.tajo.algebra.JoinType;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.plan.logical.JoinNode;
+import org.apache.tajo.plan.logical.JoinSpec;
 import org.apache.tajo.util.TUtil;
 
-import java.util.Collections;
 import java.util.Set;
 
 public class JoinEdge {
-  private final JoinType joinType;
-  private final LogicalNode leftRelation;
-  private final LogicalNode rightRelation;
-  private final Set<EvalNode> joinQual = Sets.newHashSet();
+  private final JoinSpec joinSpec;
+  private final JoinVertex leftVertex;
+  private final JoinVertex rightVertex;
+  private final Schema schema;
+  private final JoinNode correspondingJoinNode;
 
-  public JoinEdge(JoinType joinType, LogicalNode leftRelation, LogicalNode rightRelation) {
-    this.joinType = joinType;
-    this.leftRelation = leftRelation;
-    this.rightRelation = rightRelation;
-  }
-
-  public JoinEdge(JoinType joinType, LogicalNode leftRelation, LogicalNode rightRelation,
-                  EvalNode ... condition) {
-    this(joinType, leftRelation, rightRelation);
-    Collections.addAll(joinQual, condition);
+  public JoinEdge(JoinNode joinNode, JoinVertex leftVertex, JoinVertex rightVertex) {
+    this.joinSpec = joinNode.getJoinSpec();
+    this.leftVertex = leftVertex;
+    this.rightVertex = rightVertex;
+    this.schema = SchemaUtil.merge(leftVertex.getSchema(), rightVertex.getSchema());
+    this.correspondingJoinNode = joinNode;
   }
 
   public JoinType getJoinType() {
-    return joinType;
-  }
-
-  public LogicalNode getLeftRelation() {
-    return leftRelation;
-  }
-
-  public LogicalNode getRightRelation() {
-    return rightRelation;
+    return joinSpec.getType();
   }
 
   public boolean hasJoinQual() {
-    return joinQual.size() > 0;
+    return joinSpec.hasPredicates();
   }
 
   public void addJoinQual(EvalNode joinQual) {
-    this.joinQual.add(joinQual);
+    this.joinSpec.addPredicate(joinQual);
   }
 
-  public EvalNode [] getJoinQual() {
-    return joinQual.toArray(new EvalNode[joinQual.size()]);
+  public void addJoinPredicates(Set<EvalNode> predicates) {
+    this.joinSpec.addPredicates(predicates);
+  }
+
+  public Set<EvalNode> getJoinQual() {
+    return joinSpec.getPredicates();
+  }
+
+  public JoinSpec getJoinSpec() {
+    return this.joinSpec;
+  }
+
+  public EvalNode getSingletonJoinQual() {
+    return joinSpec.getSingletonPredicate();
   }
 
   public String toString() {
-    return leftRelation + " " + joinType + " " + rightRelation + " ON " + TUtil.collectionToString(joinQual, ", ");
+    return leftVertex + " " + joinSpec.getType() + " " + rightVertex + " ON " +
+        TUtil.collectionToString(joinSpec.getPredicates(), ", ");
+  }
+
+  public JoinVertex getLeftVertex() {
+    return leftVertex;
+  }
+
+  public JoinVertex getRightVertex() {
+    return rightVertex;
+  }
+
+  public Schema getSchema() {
+    return schema;
+  }
+
+  public JoinNode getCorrespondingJoinNode() {
+    return correspondingJoinNode;
   }
 }

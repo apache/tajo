@@ -984,7 +984,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     }
   }
 
-  private void createOuterJoinTestTable() throws Exception {
+  private void  createOuterJoinTestTable() throws Exception {
     KeyValueSet tableOptions = new KeyValueSet();
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");

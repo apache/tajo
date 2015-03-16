@@ -18,24 +18,14 @@
 
 package org.apache.tajo.plan.joinorder;
 
-import org.apache.tajo.plan.PlanningException;
-import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.plan.logical.JoinSpec;
-import org.apache.tajo.util.TUtil;
-import org.apache.tajo.util.graph.SimpleUndirectedGraph;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.plan.logical.LogicalNode;
 
-import java.util.List;
 import java.util.Set;
 
-/**
- * Left-deep graph
- */
-public class JoinGraph extends SimpleUndirectedGraph<JoinVertex, JoinEdge> {
+public interface JoinVertex {
 
-  public JoinEdge addJoin(JoinNode joinNode, JoinVertex left, JoinVertex right) throws PlanningException {
-    JoinEdge edge = new JoinEdge(joinNode, left, right);
-    this.addEdge(left, right, edge);
-    return edge;
-  }
+  Schema getSchema();
+  LogicalNode getCorrespondingNode();
+  Set<RelationVertex> getRelations();
 }

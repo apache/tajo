@@ -29,6 +29,7 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
 
+import java.util.Objects;
 import java.util.Set;
 
 public class InEval extends BinaryEval {
@@ -78,6 +79,11 @@ public class InEval extends BinaryEval {
       return super.equals(obj) && not == other.not;
     }
     return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(not);
   }
 
   public String toString() {
