@@ -109,7 +109,7 @@ public class TestBroadcastJoinPlan {
     Schema largeTable2Schema = new Schema();
     largeTable2Schema.addColumn("large2_id", TajoDataTypes.Type.INT4);
     largeTable2Schema.addColumn("large2_contents", TajoDataTypes.Type.TEXT);
-    largeTable2 = makeTestData("default.large2", largeTable2Schema, 1024 * 1024);  //1M
+    largeTable2 = makeTestData("default.large2", largeTable2Schema, 2048 * 1024);  //2M
 
     Schema largeTable3Schema = new Schema();
     largeTable3Schema.addColumn("large3_id", TajoDataTypes.Type.INT4);
@@ -361,13 +361,13 @@ public class TestBroadcastJoinPlan {
         Collection<String> broadcastTables = eb.getBroadcastTables();
         assertEquals(1, broadcastTables.size());
 
-        assertTrue(!broadcastTables.contains("default.large1"));
-        assertTrue(broadcastTables.contains("default.small1"));
+        assertTrue(!broadcastTables.contains("default.large2"));
+        assertTrue(broadcastTables.contains("default.small2"));
       } else if(index == 1) {
         Collection<String> broadcastTables = eb.getBroadcastTables();
         assertEquals(1, broadcastTables.size());
-        assertTrue(!broadcastTables.contains("default.large2"));
-        assertTrue(broadcastTables.contains("default.small2"));
+        assertTrue(!broadcastTables.contains("default.large1"));
+        assertTrue(broadcastTables.contains("default.small1"));
       }
       index++;
     }
