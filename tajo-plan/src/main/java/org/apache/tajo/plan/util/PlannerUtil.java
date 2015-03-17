@@ -732,7 +732,7 @@ public class PlannerUtil {
   }
 
   public static boolean isCommutativeJoin(JoinType joinType) {
-    return joinType == JoinType.INNER;
+    return joinType == JoinType.INNER || joinType == JoinType.CROSS;
   }
 
   public static boolean existsAggregationFunction(Expr expr) throws PlanningException {
