@@ -31,6 +31,7 @@ import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
 import org.apache.tajo.plan.logical.RelationNode;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
 
@@ -70,7 +71,20 @@ public class JoinOrderingUtil {
     LogicalNode rightChild = right.getCorrespondingNode();
 
     JoinNode joinNode = plan.createNode(JoinNode.class);
-    joinNode.init(joinType, leftChild, rightChild);
+
+    if (PlannerUtil.isCommutativeJoin(joinType)) {
+      // if only one operator is relation
+      if ((leftChild instanceof RelationNode) && !(rightChild instanceof RelationNode)) {
+        // for left deep
+        joinNode.init(joinType, rightChild, leftChild);
+      } else {
+        // if both operators are relation or if both are relations
+        // we don't need to concern the left-right position.
+        joinNode.init(joinType, leftChild, rightChild);
+      }
+    } else {
+      joinNode.init(joinType, leftChild, rightChild);
+    }
 
     Schema mergedSchema = SchemaUtil.merge(joinNode.getLeftChild().getOutSchema(),
         joinNode.getRightChild().getOutSchema());

@@ -317,7 +317,9 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
           boolean reacheable = true;
           if (rightEdgesOfCandidate != null) {
             for (JoinEdge rightEdgeOfCandidate : rightEdgesOfCandidate) {
-              if (!PlannerUtil.isCommutativeJoin(rightEdgeOfCandidate.getJoinType())) {
+//              if (!PlannerUtil.isCommutativeJoin(rightEdgeOfCandidate.getJoinType())) {
+              if (!JoinOrderingUtil.isAssociativeJoin(candidateEdge.getJoinType(),
+                  rightEdgeOfCandidate.getJoinType())) {
                 reacheable = false;
                 break;
               }
