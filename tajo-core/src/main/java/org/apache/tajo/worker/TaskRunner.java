@@ -35,6 +35,7 @@ import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.master.container.TajoContainerIdPBImpl;
 import org.apache.tajo.master.container.TajoConverterUtils;
 import org.apache.tajo.rpc.CallFuture;
+import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
 
 import io.netty.channel.ConnectTimeoutException;
@@ -196,9 +197,9 @@ public class TaskRunner extends AbstractService {
           TaskRequestProto taskRequest = null;
 
           while(!stopped) {
-            QueryMasterProtocolService.Interface qmClientService;
+            NettyClientBase client;
             try {
-              qmClientService = getContext().getQueryMasterStub();
+              client = executionBlockContext.getQueryMasterConnection();
             } catch (ConnectTimeoutException ce) {
               // NettyClientBase throws ConnectTimeoutException if connection was failed
               stop();
@@ -211,6 +212,8 @@ public class TaskRunner extends AbstractService {
               getContext().stopTaskRunner(getId());
               break;
             }
+
+            QueryMasterProtocolService.Interface qmClientService = client.getStub();
 
             try {
               if (callFuture == null) {
@@ -296,6 +299,8 @@ public class TaskRunner extends AbstractService {
               }
             } catch (Throwable t) {
               LOG.fatal(t.getMessage(), t);
+            } finally {
+              executionBlockContext.releaseConnection(client);
             }
           }
         }

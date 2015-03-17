@@ -431,6 +431,8 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     if (scan.hasQual()) {
       scanBuilder.setQual(EvalNodeSerializer.serialize(scan.getQual()));
     }
+
+    scanBuilder.setBroadcast(scan.isBroadcastTable());
     return scanBuilder;
   }
 

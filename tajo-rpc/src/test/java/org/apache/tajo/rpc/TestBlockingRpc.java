@@ -35,7 +35,6 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.concurrent.CountDownLatch;
@@ -116,8 +115,12 @@ public class TestBlockingRpc {
   public void setUpRpcClient() throws Exception {
     retries = 1;
 
-    client = new BlockingRpcClient(DummyProtocol.class,
-        RpcUtils.getConnectAddress(server.getListenAddress()), retries);
+    RpcConnectionPool.RpcConnectionKey rpcConnectionKey =
+          new RpcConnectionPool.RpcConnectionKey(
+              RpcUtils.getConnectAddress(server.getListenAddress()),
+              DummyProtocol.class, false);
+    client = new BlockingRpcClient(rpcConnectionKey, retries);
+    assertTrue(client.acquire(RpcConnectionPool.DEFAULT_TIMEOUT));
     stub = client.getStub();
   }
 
@@ -238,7 +241,10 @@ public class TestBlockingRpc {
     });
     serverThread.start();
 
-    client = new BlockingRpcClient(DummyProtocol.class, address, retries);
+    RpcConnectionPool.RpcConnectionKey rpcConnectionKey =
+          new RpcConnectionPool.RpcConnectionKey(address, DummyProtocol.class, false);
+    client = new BlockingRpcClient(rpcConnectionKey, retries);
+    assertTrue(client.acquire(RpcConnectionPool.DEFAULT_TIMEOUT));
     stub = client.getStub();
 
     EchoMessage response = stub.echo(null, message);
@@ -247,24 +253,23 @@ public class TestBlockingRpc {
 
   @Test
   public void testConnectionFailed() throws Exception {
-    boolean expected = false;
     NettyClientBase client = null;
     
     try {
       int port = server.getListenAddress().getPort() + 1;
-      client = new BlockingRpcClient(DummyProtocol.class,
-          RpcUtils.getConnectAddress(new InetSocketAddress("127.0.0.1", port)), retries);
+      RpcConnectionPool.RpcConnectionKey rpcConnectionKey =
+          new RpcConnectionPool.RpcConnectionKey(
+              RpcUtils.getConnectAddress(new InetSocketAddress("127.0.0.1", port)),
+              DummyProtocol.class, false);
+      client = new BlockingRpcClient(rpcConnectionKey, retries);
+      assertFalse(client.acquire(RpcConnectionPool.DEFAULT_TIMEOUT));
       client.close();
-      fail("Connection should be failed.");
-    } catch (ConnectException ce) {
-      expected = true;
     } catch (Throwable ce){
       if (client != null) {
         client.close();
       }
       fail();
     }
-    assertTrue(expected);
   }
 
   @Test
@@ -329,8 +334,11 @@ public class TestBlockingRpc {
   @SetupRpcConnection(setupRpcClient=false)
   public void testUnresolvedAddress() throws Exception {
     String hostAndPort = RpcUtils.normalizeInetSocketAddress(server.getListenAddress());
-    client = new BlockingRpcClient(DummyProtocol.class,
-        RpcUtils.createUnresolved(hostAndPort), retries);
+    RpcConnectionPool.RpcConnectionKey rpcConnectionKey =
+          new RpcConnectionPool.RpcConnectionKey(
+              RpcUtils.createUnresolved(hostAndPort), DummyProtocol.class, false);
+    client = new BlockingRpcClient(rpcConnectionKey, retries);
+    assertTrue(client.acquire(RpcConnectionPool.DEFAULT_TIMEOUT));
     BlockingInterface stub = client.getStub();
 
     EchoMessage message = EchoMessage.newBuilder()

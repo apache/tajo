@@ -21,6 +21,7 @@ package org.apache.tajo.rpc;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class RpcUtils {
 
@@ -64,5 +65,58 @@ public class RpcUtils {
   public static InetSocketAddress createUnresolved(String addr) {
     String [] splitted = addr.split(":");
     return InetSocketAddress.createUnresolved(splitted[0], Integer.parseInt(splitted[1]));
+  }
+
+  public static class Timer {
+    private long remaining;
+    private long prev;
+    public Timer(long timeout) {
+      this.remaining = timeout;
+      this.prev = System.currentTimeMillis();
+    }
+
+    public boolean isTimedOut() {
+      return remaining <= 0;
+    }
+
+    public void elapsed() {
+      long current = System.currentTimeMillis();
+      remaining -= (prev - current);
+      prev = current;
+    }
+
+    public void interval(long wait) {
+      if (wait <= 0 || isTimedOut()) {
+        return;
+      }
+      try {
+        Thread.sleep(Math.min(remaining, wait));
+      } catch (Exception ex) {
+        // ignore
+      }
+    }
+
+    public long remaining() {
+      return remaining;
+    }
+  }
+
+  public static class Scrutineer<T> {
+
+    private final AtomicReference<T> reference = new AtomicReference<T>();
+
+    T check(T ticket) {
+      T granted = reference.get();
+      for (;granted == null; granted = reference.get()) {
+        if (reference.compareAndSet(null, ticket)) {
+          return ticket;
+        }
+      }
+      return granted;
+    }
+
+    boolean clear(T granted) {
+      return reference.compareAndSet(granted, null);
+    }
   }
 }

@@ -36,13 +36,11 @@ import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.Pair;
-import org.apache.tajo.worker.event.TaskRunnerStartEvent;
 
 import io.netty.channel.ConnectTimeoutException;
 import io.netty.channel.EventLoopGroup;
@@ -139,7 +137,17 @@ public class ExecutionBlockContext {
     try{
       this.resource.initialize(queryContext, plan);
     } catch (Throwable e) {
-      getQueryMasterStub().killQuery(null, executionBlockId.getQueryId().getProto(), NullCallback.get());
+      try {
+        NettyClientBase client = getQueryMasterConnection();
+        try {
+          QueryMasterProtocol.QueryMasterProtocolService.Interface stub = client.getStub();
+          stub.killQuery(null, executionBlockId.getQueryId().getProto(), NullCallback.get());
+        } finally {
+          connPool.releaseConnection(client);
+        }
+      } catch (Throwable t) {
+        //ignore
+      }
       throw e;
     }
   }
@@ -148,15 +156,13 @@ public class ExecutionBlockContext {
     return resource;
   }
 
-  public QueryMasterProtocol.QueryMasterProtocolService.Interface getQueryMasterStub()
+  public NettyClientBase getQueryMasterConnection()
       throws NoSuchMethodException, ConnectTimeoutException, ClassNotFoundException {
-    NettyClientBase clientBase = null;
-    try {
-      clientBase = connPool.getConnection(qmMasterAddr, QueryMasterProtocol.class, true);
-      return clientBase.getStub();
-    } finally {
-      connPool.releaseConnection(clientBase);
-    }
+    return connPool.getConnection(qmMasterAddr, QueryMasterProtocol.class, true);
+  }
+
+  public void releaseConnection(NettyClientBase connection) {
+    connPool.releaseConnection(connection);
   }
 
   public void stop(){
@@ -267,7 +273,13 @@ public class ExecutionBlockContext {
   }
 
   private void sendExecutionBlockReport(ExecutionBlockReport reporter) throws Exception {
-    getQueryMasterStub().doneExecutionBlock(null, reporter, NullCallback.get());
+    NettyClientBase client = getQueryMasterConnection();
+    try {
+      QueryMasterProtocol.QueryMasterProtocolService.Interface stub = client.getStub();
+      stub.doneExecutionBlock(null, reporter, NullCallback.get());
+    } finally {
+      connPool.releaseConnection(client);
+    }
   }
 
   protected void reportExecutionBlock(ExecutionBlockId ebId) {
@@ -361,12 +373,14 @@ public class ExecutionBlockContext {
 
       return new Runnable() {
         int remainingRetries = MAX_RETRIES;
-        QueryMasterProtocol.QueryMasterProtocolService.Interface masterStub;
         @Override
         public void run() {
           while (!reporterStop.get() && !Thread.interrupted()) {
+
+            NettyClientBase client = null;
             try {
-              masterStub = getQueryMasterStub();
+              client = getQueryMasterConnection();
+              QueryMasterProtocol.QueryMasterProtocolService.Interface masterStub = client.getStub();
 
               if(tasks.size() == 0){
                 masterStub.ping(null, getExecutionBlockId().getProto(), NullCallback.get());
@@ -391,6 +405,7 @@ public class ExecutionBlockContext {
                 throw new RuntimeException(t);
               }
             } finally {
+              releaseConnection(client);
               if (remainingRetries > 0 && !reporterStop.get()) {
                 synchronized (reporterThread) {
                   try {
