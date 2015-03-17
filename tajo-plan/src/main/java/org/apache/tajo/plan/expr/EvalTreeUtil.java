@@ -320,6 +320,8 @@ public class EvalTreeUtil {
           ensureColumnsOfDifferentTables = isJoinQualWithOnlyColumns(block, leftColumn, rightColumn);
         } else if (leftSchema != null && rightSchema != null) {
           ensureColumnsOfDifferentTables = isJoinQualwithSchemas(leftSchema, rightSchema, leftColumn, rightColumn);
+        } else {
+          ensureColumnsOfDifferentTables = isJoinQualWithOnlyColumns(null, leftColumn, rightColumn);
         }
       }
 

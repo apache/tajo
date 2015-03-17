@@ -131,7 +131,6 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + ((broadcastCandidateTargets == null) ? 0 : broadcastCandidateTargets.hashCode());
     result = prime * result + (candidateBroadcast ? 1231 : 1237);
     result = prime * result + ((joinQual == null) ? 0 : joinQual.hashCode());
     result = prime * result + ((joinType == null) ? 0 : joinType.hashCode());
