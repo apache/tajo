@@ -132,6 +132,12 @@ public abstract class NettyClientBase implements Closeable {
     final CountDownLatch ticket = new CountDownLatch(1);
     final CountDownLatch granted = connect.check(ticket);
 
+    // basically, it's double checked lock
+    if (ticket == granted && isConnected()) {
+      granted.countDown();
+      return true;
+    }
+
     if (ticket == granted) {
       connectUsingNetty(addr, new RetryConnectionListener(addr, granted));
     }
