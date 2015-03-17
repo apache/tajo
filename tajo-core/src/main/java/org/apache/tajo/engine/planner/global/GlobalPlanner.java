@@ -822,7 +822,7 @@ public class GlobalPlanner {
 
   public static boolean hasUnionChild(UnaryNode node) {
 
-    // there are two cases:
+    // there are three cases:
     //
     // The first case is:
     //
@@ -836,9 +836,15 @@ public class GlobalPlanner {
     // select avg(..) from (select ... UNION select ) T
     //
     // We can generalize this case as 'a shuffle required operator on the top of union'.
+    //
+    // The third case is:
+    //
+    // create table select * from ( select ... ) a union all select * from ( select ... ) b
 
-    if (node.getChild() instanceof UnaryNode) { // first case
-      UnaryNode child = node.getChild();
+    LogicalNode childNode = node.getChild();
+
+    if (childNode instanceof UnaryNode) { // first case
+      UnaryNode child = (UnaryNode) childNode;
 
       if (child.getChild().getType() == NodeType.PROJECTION) {
         child = child.getChild();
@@ -849,9 +855,11 @@ public class GlobalPlanner {
         return tableSubQuery.getSubQuery().getType() == NodeType.UNION;
       }
 
-    } else if (node.getChild().getType() == NodeType.TABLE_SUBQUERY) { // second case
+    } else if (childNode.getType() == NodeType.TABLE_SUBQUERY) { // second case
       TableSubQueryNode tableSubQuery = node.getChild();
       return tableSubQuery.getSubQuery().getType() == NodeType.UNION;
+    } else if (childNode.getType() == NodeType.UNION) { // third case
+      return true;
     }
 
     return false;
