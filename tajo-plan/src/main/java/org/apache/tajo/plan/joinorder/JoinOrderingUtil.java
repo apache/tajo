@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.joinorder;
 
 import org.apache.tajo.algebra.JoinType;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
@@ -66,7 +67,7 @@ public class JoinOrderingUtil {
   }
 
   public static JoinNode createJoinNode(LogicalPlan plan, JoinType joinType, JoinVertex left, JoinVertex right,
-                                         EvalNode predicates) {
+                                        @Nullable EvalNode predicates) {
     LogicalNode leftChild = left.getCorrespondingNode();
     LogicalNode rightChild = right.getCorrespondingNode();
 
@@ -102,6 +103,7 @@ public class JoinOrderingUtil {
         edge.getJoinSpec().setType(JoinType.INNER);
       }
       edge.addJoinPredicates(predicates);
+      edge.getCorrespondingJoinNode().setJoinQual(edge.getSingletonJoinQual());
     }
     return edge;
   }
