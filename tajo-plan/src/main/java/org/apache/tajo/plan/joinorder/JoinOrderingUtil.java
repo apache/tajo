@@ -34,6 +34,7 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
 
+import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
@@ -248,15 +249,97 @@ public class JoinOrderingUtil {
     }
   }
 
-//  public static JoinNode createJoinNodeFromEdge(LogicalPlan plan, JoinEdge edge) {
-//    JoinNode node = plan.createNode(JoinNode.class);
-//
-//    node.init(edge.getJoinType(),
-//        edge.getLeftVertex().getCorrespondingNode(),
-//        edge.getRightVertex().getCorrespondingNode());
-//    if (edge.hasJoinQual()) {
-//      node.setJoinQual(edge.getSingletonJoinQual());
-//    }
-//    return node;
-//  }
+  public static Set<JoinVertex> getAllInterchangeableVertexes(JoinGraphContext context, JoinVertex from) {
+    Set<JoinVertex> founds = TUtil.newHashSet();
+    getAllInterchangeableVertexes(founds, context, from);
+    return founds;
+  }
+
+  public static void getAllInterchangeableVertexes(Set<JoinVertex> founds, JoinGraphContext context,
+                                                    JoinVertex vertex) {
+    founds.add(vertex);
+    Set<JoinVertex> foundAtThis = TUtil.newHashSet();
+    List<JoinEdge> candidateEdges = context.getJoinGraph().getOutgoingEdges(vertex);
+    if (candidateEdges != null) {
+      for (JoinEdge candidateEdge : candidateEdges) {
+        candidateEdge = updateQualIfNecessary(context, candidateEdge);
+        if (PlannerUtil.isCommutativeJoin(candidateEdge.getJoinType())
+            && !founds.contains(candidateEdge.getRightVertex())) {
+          List<JoinEdge> rightEdgesOfCandidate = context.getJoinGraph().getOutgoingEdges(candidateEdge.getRightVertex());
+          boolean reacheable = true;
+          if (rightEdgesOfCandidate != null) {
+            for (JoinEdge rightEdgeOfCandidate : rightEdgesOfCandidate) {
+              rightEdgeOfCandidate = updateQualIfNecessary(context, rightEdgeOfCandidate);
+//              if (!PlannerUtil.isCommutativeJoin(rightEdgeOfCandidate.getJoinType())) {
+              if (!isCommutative(candidateEdge, rightEdgeOfCandidate) &&
+                  !JoinOrderingUtil.isAssociativeJoin(context, candidateEdge, rightEdgeOfCandidate)) {
+                reacheable = false;
+                break;
+              }
+            }
+          }
+          if (reacheable) {
+            foundAtThis.add(candidateEdge.getRightVertex());
+          }
+        }
+      }
+      if (foundAtThis.size() > 0) {
+//        founds.addAll(foundAtThis);
+        for (JoinVertex v : foundAtThis) {
+          getAllInterchangeableVertexes(founds, context, v);
+        }
+      }
+    }
+  }
+
+  public static boolean isEqualsOrSymmetric(JoinEdge edge1, JoinEdge edge2) {
+    if (edge1.equals(edge2) || isCommutative(edge1, edge2)) {
+      return true;
+    }
+    return false;
+  }
+
+  public static boolean isCommutative(JoinEdge edge1, JoinEdge edge2) {
+    if (edge1.getLeftVertex().equals(edge2.getRightVertex()) &&
+        edge1.getRightVertex().equals(edge2.getLeftVertex()) &&
+        edge1.getJoinSpec().equals(edge2.getJoinSpec()) &&
+        PlannerUtil.isCommutativeJoin(edge1.getJoinType())) {
+      return true;
+    }
+    return false;
+  }
+
+  public static JoinEdge updateQualIfNecessary(JoinGraphContext context, JoinEdge edge) {
+    Set<EvalNode> additionalPredicates = JoinOrderingUtil.findJoinConditionForJoinVertex(
+        context.getCandidateJoinConditions(), edge, true);
+    additionalPredicates.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(
+        context.getCandidateJoinFilters(), edge, false));
+//    context.getCandidateJoinConditions().removeAll(additionalPredicates);
+//    context.getCandidateJoinFilters().removeAll(additionalPredicates);
+    edge.addJoinPredicates(additionalPredicates);
+    return edge;
+  }
+
+  /**
+   * Find all edges that are associative with the given edge.
+   *
+   * @param context
+   * @param edge
+   * @return
+   */
+  public static Set<JoinEdge> getAllAssociativeEdges(JoinGraphContext context, JoinEdge edge) {
+    Set<JoinEdge> associativeEdges = TUtil.newHashSet();
+    JoinVertex start = edge.getRightVertex();
+    List<JoinEdge> candidateEdges = context.getJoinGraph().getOutgoingEdges(start);
+    if (candidateEdges != null) {
+      for (JoinEdge candidateEdge : candidateEdges) {
+        candidateEdge = updateQualIfNecessary(context, candidateEdge);
+        if (!isEqualsOrSymmetric(edge, candidateEdge) &&
+            JoinOrderingUtil.isAssociativeJoin(context, edge, candidateEdge)) {
+          associativeEdges.add(candidateEdge);
+        }
+      }
+    }
+    return associativeEdges;
+  }
 }

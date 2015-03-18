@@ -113,7 +113,7 @@ public class LogicalOptimizer {
 
       // finding relations and filter expressions
       JoinGraphContext joinGraphContext = JoinGraphBuilder.buildJoinGraph(plan, block);
-      addJoinEdgesFromQuals(plan, block, joinGraphContext);
+      addJoinEdgesFromQuals(block, joinGraphContext);
 
       // finding join order and restore remain filter order
       FoundJoinOrder order = joinOrderAlgorithm.findBestOrder(plan, block, joinGraphContext);
@@ -163,7 +163,7 @@ public class LogicalOptimizer {
     }
   }
 
-  private void addJoinEdgesFromQuals(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraphContext context)
+  private void addJoinEdgesFromQuals(LogicalPlan.QueryBlock block, JoinGraphContext context)
       throws PlanningException {
     Map<String, RelationNode> relationNodeMap = TUtil.newHashMap();
     for (RelationNode relationNode : block.getRelations()) {
@@ -193,17 +193,26 @@ public class LogicalOptimizer {
         if (left != null && right != null) {
           JoinEdge edge = graph.getEdge(left, right);
           if (edge == null) {
-            // If a join is an implicit join, its type is assumed as the INNER join
-            edge = graph.addJoin(context, new JoinSpec(JoinType.INNER), left, right);
-            edge.addJoinQual(condition);
+            // check if they are connectable
+            Set<JoinVertex> leftInterchangeables = JoinOrderingUtil.getAllInterchangeableVertexes(context, left);
+            Set<JoinVertex> rightInterchangeables = JoinOrderingUtil.getAllInterchangeableVertexes(context, right);
+            for (JoinVertex leftInterchangeable : leftInterchangeables) {
+              for (JoinVertex rightInterchangeable : rightInterchangeables) {
+                if (graph.getEdge(leftInterchangeable, rightInterchangeable) != null) {
+                  // If a join is an implicit join, its type is assumed as the INNER join
+                  edge = graph.addJoin(context, new JoinSpec(JoinType.INNER), left, right);
+                  edge.addJoinQual(condition);
+                }
+              }
+            }
           } else {
             if (edge.getJoinType() == JoinType.CROSS) {
               edge.getJoinSpec().setType(JoinType.INNER);
             }
+            edge.addJoinQual(condition);
           }
-          edge.addJoinQual(condition);
 
-          if (PlannerUtil.isCommutativeJoin(edge.getJoinType())) {
+          if (edge != null && PlannerUtil.isCommutativeJoin(edge.getJoinType())) {
             graph.addJoin(context, edge.getJoinSpec(), edge.getRightVertex(), edge.getLeftVertex());
           }
         }
