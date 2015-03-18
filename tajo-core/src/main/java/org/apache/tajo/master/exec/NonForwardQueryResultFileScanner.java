@@ -84,7 +84,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
    * @param storageManager target storage manager to be set with partition info
    */
   private void setPartition(StorageManager storageManager) {
-    if (tableDesc.isExternal() && tableDesc.hasPartition() && scanNode.getQual() != null && 
+    if (tableDesc.isExternal() && tableDesc.hasPartition() && scanNode.getQual() != null &&
         storageManager instanceof FileStorageManager) {
       StringBuffer path = new StringBuffer();
       int depth = 0;
