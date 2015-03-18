@@ -24,6 +24,7 @@ import com.google.protobuf.*;
 import io.netty.channel.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.rpc.RpcConnectionPool.RpcConnectionKey;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
@@ -34,62 +35,34 @@ import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.apache.tajo.rpc.RpcConnectionPool.RpcConnectionKey;
+import java.util.concurrent.ConcurrentMap;
 
 public class AsyncRpcClient extends NettyClientBase {
   private static final Log LOG = LogFactory.getLog(AsyncRpcClient.class);
 
-  private final ChannelInitializer<Channel> initializer;
-  private final ProxyRpcChannel rpcChannel;
-
-  private final AtomicInteger sequence = new AtomicInteger(0);
-  private final Map<Integer, ResponseCallback> requests =
+  private final ConcurrentMap<Integer, ResponseCallback> requests =
       new ConcurrentHashMap<Integer, ResponseCallback>();
 
-  private final Class<?> protocol;
   private final Method stubMethod;
-
-  private RpcConnectionKey key;
+  private final ProxyRpcChannel rpcChannel;
+  private final ClientChannelInboundHandler inboundHandler;
 
   /**
    * Intentionally make this method package-private, avoiding user directly
    * new an instance through this constructor.
    */
-  AsyncRpcClient(final Class<?> protocol,
-                        final InetSocketAddress addr, int retries)
-      throws ClassNotFoundException, NoSuchMethodException, ConnectTimeoutException {
-
-    this.protocol = protocol;
-    String serviceClassName = protocol.getName() + "$"
-        + protocol.getSimpleName() + "Service";
-    Class<?> serviceClass = Class.forName(serviceClassName);
-    stubMethod = serviceClass.getMethod("newStub", RpcChannel.class);
-
-    initializer = new ProtoChannelInitializer(new ClientChannelInboundHandler(), 
-        RpcResponse.getDefaultInstance());
-    super.init(addr, initializer, retries);
+  AsyncRpcClient(RpcConnectionKey rpcConnectionKey, int retries)
+      throws ClassNotFoundException, NoSuchMethodException {
+    super(rpcConnectionKey, retries);
+    stubMethod = getServiceClass().getMethod("newStub", RpcChannel.class);
     rpcChannel = new ProxyRpcChannel();
-    this.key = new RpcConnectionKey(addr, protocol, true);
-  }
-
-  @Override
-  public RpcConnectionKey getKey() {
-    return key;
+    inboundHandler = new ClientChannelInboundHandler();
+    init(new ProtoChannelInitializer(inboundHandler, RpcResponse.getDefaultInstance()));
   }
 
   @Override
   public <T> T getStub() {
-    try {
-      return (T) stubMethod.invoke(null, rpcChannel);
-    } catch (Exception e) {
-      throw new RemoteException(e.getMessage(), e);
-    }
-  }
-
-  public RpcChannel getRpcChannel() {
-    return this.rpcChannel;
+    return getStub(stubMethod, rpcChannel);
   }
 
   protected void sendExceptions(String message) {
@@ -113,17 +86,6 @@ public class AsyncRpcClient extends NettyClientBase {
   }
 
   private class ProxyRpcChannel implements RpcChannel {
-    private final ClientChannelInboundHandler handler;
-
-    public ProxyRpcChannel() {
-      this.handler = getChannel().pipeline()
-          .get(ClientChannelInboundHandler.class);
-
-      if (handler == null) {
-        throw new IllegalArgumentException("Channel does not have " +
-            "proper handler");
-      }
-    }
 
     public void callMethod(final MethodDescriptor method,
                            final RpcController controller,
@@ -135,7 +97,7 @@ public class AsyncRpcClient extends NettyClientBase {
 
       Message rpcRequest = buildRequest(nextSeqId, method, param);
 
-      handler.registerCallback(nextSeqId,
+      inboundHandler.registerCallback(nextSeqId,
           new ResponseCallback(controller, responseType, done));
 
       ChannelPromise channelPromise = getChannel().newPromise();
@@ -144,7 +106,7 @@ public class AsyncRpcClient extends NettyClientBase {
         @Override
         public void operationComplete(ChannelFuture future) throws Exception {
           if (!future.isSuccess()) {
-            handler.exceptionCaught(null, new ServiceException(future.cause()));
+            inboundHandler.exceptionCaught(null, new ServiceException(future.cause()));
           }
         }
       });
@@ -217,14 +179,12 @@ public class AsyncRpcClient extends NettyClientBase {
   @ChannelHandler.Sharable
   private class ClientChannelInboundHandler extends ChannelInboundHandlerAdapter {
 
-    synchronized void registerCallback(int seqId, ResponseCallback callback) {
+    void registerCallback(int seqId, ResponseCallback callback) {
 
-      if (requests.containsKey(seqId)) {
+      if (requests.putIfAbsent(seqId, callback) != null) {
         throw new RemoteException(
             getErrorMessage("Duplicate Sequence Id "+ seqId));
       }
-
-      requests.put(seqId, callback);
     }
 
     @Override

@@ -9,6 +9,12 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1381: Support multi-bytes delimiter for Text file.
+    (Contributed by navis, Committed by jinho)
+
+    TAJO-1391: RpcConnectionPool should check reference counter of connection 
+    before close. (Contributed by navis, Committed by jihun)
+
     TAJO-1383: Improve broadcast table cache. (jinho)
 
     TAJO-1374: Support multi-bytes delimiter for CSV file.
@@ -25,6 +31,9 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1405: Fix some illegal way of usages on connection pool. 
+    (Contributed by navis, Committed by Keuntae Park)
 
     TAJO-1384: Duplicated output file path problem. (jihoon)
 
