@@ -110,10 +110,9 @@ public class QueryExecutor {
       } else {
         response.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
         response.setResult(IPCUtil.buildOkRequestResult());
+        ddlExecutor.execute(queryContext, plan);
       }
       response.setPlanType(PlannerUtil.convertType(PlannerUtil.extractPlanType(rootNode)));
-
-      ddlExecutor.execute(queryContext, plan);
 
     } else if (plan.isExplain()) { // explain query
       execExplain(plan, response);
@@ -142,7 +141,7 @@ public class QueryExecutor {
 
   public void execSetSession(Session session, LogicalPlan plan,
                              SubmitQueryResponse.Builder response) {
-    SetSessionNode setSessionNode = ((LogicalRootNode)plan.getRootBlock().getRoot()).getChild();
+    SetSessionNode setSessionNode = ((LogicalRootNode) plan.getRootBlock().getRoot()).getChild();
 
     final String varName = setSessionNode.getName();
 

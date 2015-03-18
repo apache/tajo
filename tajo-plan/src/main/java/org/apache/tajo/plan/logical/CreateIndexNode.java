@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.logical;
 
+import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.IndexMeta;
 import org.apache.tajo.catalog.Schema;
@@ -31,6 +32,7 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 
 public class CreateIndexNode extends UnaryNode implements Cloneable {
   @Expose private IndexMeta indexMeta;
+  @Expose private boolean external;
 
   public CreateIndexNode(int pid) {
     super(pid, NodeType.CREATE_INDEX);
@@ -101,16 +103,24 @@ public class CreateIndexNode extends UnaryNode implements Cloneable {
     return indexMeta.isClustered();
   }
 
+  public void setExternal(boolean external) {
+    this.external = external;
+  }
+
+  public boolean isExternal() {
+    return this.external;
+  }
+
   @Override
   public int hashCode() {
-    return indexMeta.hashCode();
+    return Objects.hashCode(indexMeta, external);
   }
 
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof CreateIndexNode) {
       CreateIndexNode other = (CreateIndexNode) obj;
-      return this.indexMeta.equals(other.indexMeta);
+      return this.indexMeta.equals(other.indexMeta) && this.external == other.external;
     }
     return false;
   }
@@ -119,6 +129,7 @@ public class CreateIndexNode extends UnaryNode implements Cloneable {
   public Object clone() throws CloneNotSupportedException {
     CreateIndexNode createIndexNode = (CreateIndexNode) super.clone();
     createIndexNode.indexMeta = (IndexMeta) this.indexMeta.clone();
+    createIndexNode.external = this.external;
     return createIndexNode;
   }
 
@@ -140,7 +151,7 @@ public class CreateIndexNode extends UnaryNode implements Cloneable {
   public String toString() {
     return "CreateIndex (indexName=" + indexMeta.getIndexName() + ", indexPath=" + indexMeta.getIndexPath() +
         ", type=" + indexMeta.getIndexMethod().name() +
-        ", isUnique=" + indexMeta.isUnique() + ", " + getSortSpecString() + ")";
+        ", isUnique=" + indexMeta.isUnique() + ", " + getSortSpecString() + ", isExternal=" + isExternal() + ")";
   }
 
   @Override

@@ -1867,7 +1867,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @param elements to be transformed
    * @return schema transformed from table definition elements
    */
-  private Schema convertTableElementsSchema(ColumnDefinition[] elements) {
+  private static Schema convertTableElementsSchema(ColumnDefinition[] elements) {
     Schema schema = new Schema();
 
     for (ColumnDefinition columnDefinition: elements) {
@@ -1877,19 +1877,29 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     return schema;
   }
 
-  private Column convertColumn(ColumnDefinition columnDefinition) {
+  private static Column convertColumn(ColumnDefinition columnDefinition) {
     return new Column(columnDefinition.getColumnName(), convertDataType(columnDefinition));
   }
 
-  public static TajoDataTypes.DataType convertDataType(DataTypeExpr dataType) {
+  public static TypeDesc convertDataType(DataTypeExpr dataType) {
     TajoDataTypes.Type type = TajoDataTypes.Type.valueOf(dataType.getTypeName());
 
     TajoDataTypes.DataType.Builder builder = TajoDataTypes.DataType.newBuilder();
     builder.setType(type);
+
     if (dataType.hasLengthOrPrecision()) {
       builder.setLength(dataType.getLengthOrPrecision());
     }
-    return builder.build();
+
+    TypeDesc typeDesc;
+    if (type == TajoDataTypes.Type.RECORD) {
+      Schema nestedRecordSchema = convertTableElementsSchema(dataType.getNestedRecordTypes());
+      typeDesc = new TypeDesc(nestedRecordSchema);
+    } else {
+      typeDesc = new TypeDesc(builder.build());
+    }
+
+    return typeDesc;
   }
 
 
@@ -1966,13 +1976,18 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       block.namedExprsMgr.addNamedExprArray(normalizedExprList[i].scalarExprs);
     }
 
+    createIndexNode.setExternal(createIndex.isExternal());
     Collection<RelationNode> relations = block.getRelations();
     assert relations.size() == 1;
     createIndexNode.setKeySortSpecs(relations.iterator().next().getLogicalSchema(),
         annotateSortSpecs(block, referNames, sortSpecs));
     createIndexNode.setIndexMethod(IndexMethod.valueOf(createIndex.getMethodSpec().getName().toUpperCase()));
-    createIndexNode.setIndexPath(
-        getIndexPath(context, context.queryContext.get(SessionVars.CURRENT_DATABASE), createIndex.getIndexName()));
+    if (createIndex.isExternal()) {
+      createIndexNode.setIndexPath(new Path(createIndex.getIndexPath()).toUri());
+    } else {
+      createIndexNode.setIndexPath(
+          getIndexPath(context, context.queryContext.get(SessionVars.CURRENT_DATABASE), createIndex.getIndexName()));
+    }
 
     if (createIndex.getParams() != null) {
       KeyValueSet keyValueSet = new KeyValueSet();

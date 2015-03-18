@@ -108,7 +108,7 @@ public class PlannerUtil {
 
     NodeType type = baseNode.getType();
 
-    return type == NodeType.CREATE_INDEX ||
+    return type == NodeType.CREATE_INDEX && !((CreateIndexNode)baseNode).isExternal() ||
         type == NodeType.CREATE_TABLE && ((CreateTableNode)baseNode).hasSubQuery();
   }
 

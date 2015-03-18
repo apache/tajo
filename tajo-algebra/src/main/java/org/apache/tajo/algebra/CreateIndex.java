@@ -37,6 +37,9 @@ public class CreateIndex extends UnaryOperator {
   private Map<String, String> params;
   @Expose @SerializedName("IndexMethodSpec")
   private IndexMethodSpec methodSpec;
+  private boolean external = false;
+  @Expose @SerializedName("IndexPath")
+  private String indexPath;
 
   public CreateIndex(final String indexName, final SortSpec[] sortSpecs) {
     super(OpType.CreateIndex);
@@ -85,9 +88,22 @@ public class CreateIndex extends UnaryOperator {
     return this.methodSpec;
   }
 
+  public void setIndexPath(String indexPath) {
+    this.external = true;
+    this.indexPath = indexPath;
+  }
+
+  public boolean isExternal() {
+    return this.external;
+  }
+
+  public String getIndexPath() {
+    return this.indexPath;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hashCode(unique, indexName,  sortSpecs, params, methodSpec);
+    return Objects.hashCode(unique, indexName,  sortSpecs, params, methodSpec, external);
   }
 
   @Override
@@ -97,7 +113,8 @@ public class CreateIndex extends UnaryOperator {
         this.indexName.equals(other.indexName) &&
         TUtil.checkEquals(this.sortSpecs, other.sortSpecs) &&
         TUtil.checkEquals(this.params, other.params) &&
-        this.methodSpec.equals(other.methodSpec);
+        this.methodSpec.equals(other.methodSpec) &&
+        this.external == other.external;
   }
 
   public static class IndexMethodSpec {

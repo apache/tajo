@@ -44,7 +44,7 @@ public  class ColumnDefinition extends DataTypeExpr {
 
     // nested records
     if (dataType.isNestedRecordType()) {
-      this.nestedRecord = dataType.nestedRecord;
+      this.nestedRecordTypes = dataType.nestedRecordTypes;
     }
   }
 

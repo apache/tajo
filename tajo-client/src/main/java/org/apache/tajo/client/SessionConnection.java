@@ -57,7 +57,7 @@ public class SessionConnection implements Closeable {
 
   final RpcConnectionPool connPool;
 
-  private final String baseDatabase;
+  private String baseDatabase;
 
   private final UserRoleInfo userInfo;
 
@@ -128,7 +128,7 @@ public class SessionConnection implements Closeable {
     if(!closed.get()){
       try {
         return connPool.getConnection(serviceTracker.getClientServiceAddress(),
-            TajoMasterClientProtocol.class, false).isActive();
+            TajoMasterClientProtocol.class, false).isConnected();
       } catch (Throwable e) {
         return false;
       }
@@ -260,7 +260,8 @@ public class SessionConnection implements Closeable {
   }
 
   public Boolean selectDatabase(final String databaseName) throws ServiceException {
-    return new ServerCallable<Boolean>(connPool, getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
+    Boolean selected = new ServerCallable<Boolean>(connPool, getTajoMasterAddr(),
+        TajoMasterClientProtocol.class, false, true) {
 
       public Boolean call(NettyClientBase client) throws ServiceException {
         checkSessionAndGet(client);
@@ -269,6 +270,11 @@ public class SessionConnection implements Closeable {
         return tajoMasterService.selectDatabase(null, convertSessionedString(databaseName)).getValue();
       }
     }.withRetries();
+
+    if (selected == Boolean.TRUE) {
+      this.baseDatabase = databaseName;
+    }
+    return selected;
   }
 
   @Override
@@ -278,13 +284,15 @@ public class SessionConnection implements Closeable {
     }
 
     // remove session
+    NettyClientBase client = null;
     try {
-
-      NettyClientBase client = connPool.getConnection(getTajoMasterAddr(), TajoMasterClientProtocol.class, false);
+      client = connPool.getConnection(getTajoMasterAddr(), TajoMasterClientProtocol.class, false);
       TajoMasterClientProtocolService.BlockingInterface tajoMaster = client.getStub();
       tajoMaster.removeSession(null, sessionId);
-
     } catch (Throwable e) {
+      // ignore
+    } finally {
+      connPool.releaseConnection(client);
     }
   }
 

@@ -442,6 +442,8 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     if (scan.hasQual()) {
       scanBuilder.setQual(EvalNodeSerializer.serialize(scan.getQual()));
     }
+
+    scanBuilder.setBroadcast(scan.isBroadcastTable());
     return scanBuilder;
   }
 
@@ -724,6 +726,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     if (node.hasOptions()) {
       createIndexBuilder.setIndexProperties(node.getOptions().getProto());
     }
+    createIndexBuilder.setIsExternal(node.isExternal());
 
     PlanProto.LogicalNode.Builder nodeBuilder = createNodeBuilder(context, node);
     nodeBuilder.setCreateIndex(createIndexBuilder);

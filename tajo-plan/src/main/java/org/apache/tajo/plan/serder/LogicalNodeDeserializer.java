@@ -429,6 +429,9 @@ public class LogicalNodeDeserializer {
       scan.setQual(EvalNodeDeserializer.deserialize(context, scanProto.getQual()));
     }
 
+    if(scanProto.hasBroadcast()){
+      scan.setBroadcastTable(scanProto.getBroadcast());
+    }
     scan.setInSchema(convertSchema(protoNode.getInSchema()));
     scan.setOutSchema(convertSchema(protoNode.getOutSchema()));
   }
@@ -652,6 +655,7 @@ public class LogicalNodeDeserializer {
     createIndex.setChild(nodeMap.get(createIndexProto.getChildSeq()));
     createIndex.setInSchema(convertSchema(protoNode.getInSchema()));
     createIndex.setOutSchema(convertSchema(protoNode.getOutSchema()));
+    createIndex.setExternal(createIndexProto.getIsExternal());
 
     return createIndex;
   }

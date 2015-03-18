@@ -238,8 +238,9 @@ public class ExprTestBase {
         targetIdx[i] = i;
       }
 
-      lazyTuple =
-          new LazyTuple(inputSchema, BytesUtils.splitPreserveAllTokens(csvTuple.getBytes(), delimiter, targetIdx),0);
+      byte[][] tokens = BytesUtils.splitPreserveAllTokens(
+          csvTuple.getBytes(), delimiter, targetIdx, inputSchema.size());
+      lazyTuple = new LazyTuple(inputSchema, tokens,0);
       vtuple = new VTuple(inputSchema.size());
       for (int i = 0; i < inputSchema.size(); i++) {
 

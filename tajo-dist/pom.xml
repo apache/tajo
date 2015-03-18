@@ -60,7 +60,12 @@
     </dependency>
     <dependency>
       <groupId>org.apache.tajo</groupId>
-      <artifactId>tajo-rpc</artifactId>
+      <artifactId>tajo-rpc-protobuf</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tajo</groupId>
+      <artifactId>tajo-ws-rs</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>

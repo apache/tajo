@@ -21,12 +21,16 @@ package org.apache.tajo.worker;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.engine.codegen.ExecutorPreCompiler;
 import org.apache.tajo.engine.codegen.TajoClassLoader;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.engine.utils.CacheHolder;
+import org.apache.tajo.engine.utils.TableCache;
+import org.apache.tajo.engine.utils.TableCacheKey;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.LogicalNode;
@@ -38,6 +42,7 @@ public class ExecutionBlockSharedResource {
   private static Log LOG = LogFactory.getLog(ExecutionBlockSharedResource.class);
   private AtomicBoolean initializing = new AtomicBoolean(false);
   private volatile Boolean resourceInitSuccess = Boolean.valueOf(false);
+  private final Object lock = new Object();
 
   // Query
   private QueryContext context;
@@ -106,6 +111,27 @@ public class ExecutionBlockSharedResource {
     } else {
       throw new IllegalStateException("CodeGen is disabled");
     }
+  }
+
+  /* This is guarantee a lock for a ExecutionBlock */
+  public synchronized Object getLock() {
+    return lock;
+  }
+
+  public boolean hasBroadcastCache(TableCacheKey key) {
+    return TableCache.getInstance().hasCache(key);
+  }
+
+  public <T extends Object> CacheHolder<T> getBroadcastCache(TableCacheKey key) {
+    return (CacheHolder<T>) TableCache.getInstance().getCache(key);
+  }
+
+  public void addBroadcastCache(TableCacheKey cacheKey,  CacheHolder<?> cacheData) {
+    TableCache.getInstance().addCache(cacheKey, cacheData);
+  }
+
+  public void releaseBroadcastCache(ExecutionBlockId id) {
+    TableCache.getInstance().releaseCache(id);
   }
 
   public void release() {

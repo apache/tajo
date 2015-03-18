@@ -76,6 +76,7 @@ message ScanNode {
   required bool existTargets = 3;
   repeated Target targets = 4;
   optional EvalNodeTree qual = 5;
+  optional bool broadcast = 6;
 }
 
 message PartitionScanSpec {
@@ -294,6 +295,7 @@ message CreateIndexNode {
   optional bool isUnique = 7 [default = false];
   optional bool isClustered = 8 [default = false];
   optional KeyValueSetProto indexProperties = 9;
+  optional bool isExternal = 10;
 }
 
 message DropIndexNode {
