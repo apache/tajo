@@ -667,11 +667,11 @@ public class TestJoinQuery extends QueryTestCaseBase {
     try {
       ResultSet res = executeString(
           "select t1.id, t1.name, t2.id, t3.id, t4.id\n" +
-              "from table11 t1\n" +
-              "left outer join table12 t2\n" +
-              "on t1.id = t2.id\n" +
+              "from table12 t2\n" +
               "left outer join table13 t3\n" +
               "on t2.id = t3.id\n" +
+              "left outer join table11 t1\n" +
+              "on t3.id = t1.id\n" +
               "inner join table14 t4\n" +
               "on t2.id = t4.id"
       );
@@ -679,7 +679,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
       String expected =
           "id,name,id,id,id\n" +
               "-------------------------------\n" +
-              "1,table11-1,1,null,1\n";
+              "null,null,1,null,1\n";
 
       String result = resultSetToString(res);
 

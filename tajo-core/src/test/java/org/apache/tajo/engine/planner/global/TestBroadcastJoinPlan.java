@@ -94,12 +94,12 @@ public class TestBroadcastJoinPlan {
     Schema smallTable2Schema = new Schema();
     smallTable2Schema.addColumn("small2_id", TajoDataTypes.Type.INT4);
     smallTable2Schema.addColumn("small2_contents", TajoDataTypes.Type.TEXT);
-    smallTable2 = makeTestData("default.small2", smallTable2Schema, 10 * 1024);
+    smallTable2 = makeTestData("default.small2", smallTable2Schema, 10 * 1024 + 128);
 
     Schema smallTable3Schema = new Schema();
     smallTable3Schema.addColumn("small3_id", TajoDataTypes.Type.INT4);
     smallTable3Schema.addColumn("small3_contents", TajoDataTypes.Type.TEXT);
-    smallTable3 = makeTestData("default.small3", smallTable3Schema, 10 * 1024);
+    smallTable3 = makeTestData("default.small3", smallTable3Schema, 10 * 1024 + 256);
 
     Schema largeTable1Schema = new Schema();
     largeTable1Schema.addColumn("large1_id", TajoDataTypes.Type.INT4);
@@ -109,12 +109,12 @@ public class TestBroadcastJoinPlan {
     Schema largeTable2Schema = new Schema();
     largeTable2Schema.addColumn("large2_id", TajoDataTypes.Type.INT4);
     largeTable2Schema.addColumn("large2_contents", TajoDataTypes.Type.TEXT);
-    largeTable2 = makeTestData("default.large2", largeTable2Schema, 2048 * 1024);  //2M
+    largeTable2 = makeTestData("default.large2", largeTable2Schema, 1024 * 1024 + 1024);  //1M + 1K
 
     Schema largeTable3Schema = new Schema();
     largeTable3Schema.addColumn("large3_id", TajoDataTypes.Type.INT4);
     largeTable3Schema.addColumn("large3_contents", TajoDataTypes.Type.TEXT);
-    largeTable3 = makeTestData("default.large3", largeTable3Schema, 1024 * 1024);  //1M
+    largeTable3 = makeTestData("default.large3", largeTable3Schema, 1024 * 1024 + 2048);  //1M + 2K
 
     catalog.createTable(smallTable1);
     catalog.createTable(smallTable2);

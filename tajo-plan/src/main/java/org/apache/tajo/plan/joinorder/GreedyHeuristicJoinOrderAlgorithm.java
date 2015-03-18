@@ -18,6 +18,8 @@
 
 package org.apache.tajo.plan.joinorder;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -35,6 +37,7 @@ import java.util.*;
  */
 public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
   public static double DEFAULT_SELECTION_FACTOR = 0.1;
+  private static final Log LOG = LogFactory.getLog(GreedyHeuristicJoinOrderAlgorithm.class);
 
   @Override
   public FoundJoinOrder findBestOrder(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraphContext graphContext)
@@ -47,7 +50,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     JoinEdgeFinderContext context = new JoinEdgeFinderContext();
     JoinGraph joinGraph = graphContext.getJoinGraph();
     while (vertexes.size() > 1) {
-      JoinEdge bestPair = getBestPair(plan, context, graphContext, vertexes);
+      JoinEdge bestPair = getBestPair(context, graphContext, vertexes);
       JoinedRelationsVertex newVertex = new JoinedRelationsVertex(bestPair);
 
       if (bestPair.getLeftVertex().equals(graphContext.getMostLeftVertex())
@@ -128,7 +131,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
    * @return The best join pair among them
    * @throws PlanningException
    */
-  private JoinEdge getBestPair(LogicalPlan plan, JoinEdgeFinderContext context, JoinGraphContext graphContext,
+  private JoinEdge getBestPair(JoinEdgeFinderContext context, JoinGraphContext graphContext,
                                Set<JoinVertex> vertexes)
       throws PlanningException {
     double minCost = Double.MAX_VALUE;
@@ -146,6 +149,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         context.reset();
         JoinEdge foundJoin = findJoin(context, graphContext, graphContext.getMostLeftVertex(), outer, inner);
         if (foundJoin == null) {
+          LOG.error("Join between (" + outer + ", " + inner + ") is not found.");
           continue;
         }
 //        Set<EvalNode> additionalPredicates = JoinOrderingUtil.findJoinConditionForJoinVertex(
@@ -237,22 +241,6 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         }
       }
     }
-
-//    if (begin.equals(leftTarget)) {
-//      List<JoinEdge> edgesFromLeftTarget = joinGraph.getOutgoingEdges(leftTarget);
-//      if (edgesFromLeftTarget != null) {
-//        for (JoinEdge edgeFromLeftTarget : edgesFromLeftTarget) {
-//          if (edgeFromLeftTarget.getRightVertex().equals(rightTarget)) {
-//            return edgeFromLeftTarget;
-//          }
-//        }
-//      }
-//      // not found
-//      return null;
-//    } else {
-      // move to right if associative
-//      for (JoinVertex reacheableVertex : getAllInterchangeableVertexes(joinGraph, begin)) {
-
 
     for (JoinVertex interchangeableVertex : interchangeableWithBegin) {
         List<JoinEdge> edges = joinGraph.getOutgoingEdges(interchangeableVertex);
