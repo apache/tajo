@@ -36,9 +36,15 @@ import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Base class for netty implementation.
+ */
 public class NettyServerBase {
   private static final Log LOG = LogFactory.getLog(NettyServerBase.class);
   private static final String DEFAULT_PREFIX = "RpcServer_";
@@ -53,6 +59,7 @@ public class NettyServerBase {
   protected ChannelGroup accepted = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
 
   private InetSocketAddress initIsa;
+  private Set<RpcEventListener> listeners = Collections.synchronizedSet(new HashSet<RpcEventListener>());
 
   public NettyServerBase(InetSocketAddress address) {
     this.initIsa = address;
@@ -68,6 +75,10 @@ public class NettyServerBase {
   }
 
   public void init(ChannelInitializer<Channel> initializer, int workerNum) {
+    for (RpcEventListener listener: listeners) {
+      listener.onBeforeInit(this);
+    }
+    
     bootstrap = RpcChannelFactory.createServerChannelFactory(serviceName, workerNum);
 
     this.initializer = initializer;
@@ -80,6 +91,10 @@ public class NettyServerBase {
       .childOption(ChannelOption.TCP_NODELAY, true)
       .childOption(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
       .childOption(ChannelOption.SO_RCVBUF, 1048576 * 10);
+    
+    for (RpcEventListener listener: listeners) {
+      listener.onAfterInit(this);
+    }
   }
 
   public InetSocketAddress getListenAddress() {
@@ -87,6 +102,10 @@ public class NettyServerBase {
   }
 
   public void start() {
+    for (RpcEventListener listener: listeners) {
+      listener.onBeforeStart(this);
+    }
+    
     if (serviceName == null) {
       this.serviceName = getNextDefaultServiceName();
     }
@@ -105,6 +124,9 @@ public class NettyServerBase {
     this.channelFuture = bootstrap.clone().bind(serverAddr).syncUninterruptibly();
     this.bindAddress = (InetSocketAddress) channelFuture.channel().localAddress();
 
+    for (RpcEventListener listener: listeners) {
+      listener.onAfterStart(this);
+    }
     LOG.info("Rpc (" + serviceName + ") listens on " + this.bindAddress);
   }
 
@@ -117,6 +139,10 @@ public class NettyServerBase {
   }
 
   public void shutdown(boolean waitUntilThreadsStop) {
+    for (RpcEventListener listener: listeners) {
+      listener.onBeforeShutdown(this);
+    }
+    
     try {
       accepted.close();
     } catch (Throwable t) {
@@ -137,6 +163,10 @@ public class NettyServerBase {
           bootstrap.childGroup().terminationFuture().awaitUninterruptibly();
         }
       }
+    }
+    
+    for (RpcEventListener listener: listeners) {
+      listener.onAfterShutdown(this);
     }
 
     if (bindAddress != null) {
@@ -201,5 +231,13 @@ public class NettyServerBase {
         ds.close();
       }
     }
+  }
+  
+  public void addListener(RpcEventListener listener) {
+    listeners.add(listener);
+  }
+  
+  public void removeListener(RpcEventListener listener) {
+    listeners.remove(listener);
   }
 }
