@@ -470,7 +470,16 @@ public class TajoCli {
       try {
         invoked.invoke(arguments);
       } catch (Exception e) {
-        onError(null, e);
+        if (e instanceof IllegalArgumentException) {
+          onError(e.getMessage() == null ? "ERROR: Illegal Argument" : e.getMessage(), null);
+        } else if (e instanceof IOException && invoked instanceof ExecExternalShellCommand) {
+          onError(e.getMessage(), null);
+        } else if (e.getCause() instanceof SQLException) {
+          SQLException se = (SQLException) e.getCause();
+          onError(se.getMessage(), null);
+        } else {
+          onError(null, e);
+        }
         return -1;
       } finally {
         context.getOutput().flush();
