@@ -82,8 +82,8 @@ index_statement
   ;
 
 create_index_statement
-  : CREATE (u=UNIQUE)? INDEX identifier ON table_name (method_specifier)?
-    LEFT_PAREN sort_specifier_list RIGHT_PAREN param_clause? (where_clause)?
+  : CREATE (u=UNIQUE)? INDEX index_name = identifier ON table_name (method_specifier)?
+    LEFT_PAREN sort_specifier_list RIGHT_PAREN param_clause? (where_clause)? (LOCATION path=Character_String_Literal)?
   ;
 
 drop_index_statement

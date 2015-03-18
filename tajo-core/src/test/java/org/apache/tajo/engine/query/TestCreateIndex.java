@@ -95,4 +95,19 @@ public class TestCreateIndex extends QueryTestCaseBase {
     assertFalse(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_100_l_linenumber_10_lt10_idx"));
     assertIndexNotExist(getCurrentDatabase(), "l_orderkey_100_l_linenumber_10_lt10_idx");
   }
+
+  @Test
+  public final void testCreateIndexOnLocation() throws Exception {
+    executeQuery();
+    assertTrue(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_idx"));
+    assertTrue(catalog.existIndexByColumnNames(getCurrentDatabase(), "lineitem", new String[]{"l_orderkey"}));
+    catalog.dropIndex(getCurrentDatabase(), "l_orderkey_idx");
+    assertFalse(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_idx"));
+    executeString("create index l_orderkey_idx on lineitem (l_orderkey asc null first) location '/tajo/warehouse/default/l_orderkey_idx';");
+    assertTrue(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_idx"));
+    assertTrue(catalog.existIndexByColumnNames(getCurrentDatabase(), "lineitem", new String[]{"l_orderkey"}));
+    executeString("drop index l_orderkey_idx");
+    assertFalse(catalog.existIndexByName(getCurrentDatabase(), "l_orderkey_idx"));
+    assertIndexNotExist(getCurrentDatabase(), "l_orderkey_idx");
+  }
 }

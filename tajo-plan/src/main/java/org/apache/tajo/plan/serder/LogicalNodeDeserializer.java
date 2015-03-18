@@ -655,6 +655,7 @@ public class LogicalNodeDeserializer {
     createIndex.setChild(nodeMap.get(createIndexProto.getChildSeq()));
     createIndex.setInSchema(convertSchema(protoNode.getInSchema()));
     createIndex.setOutSchema(convertSchema(protoNode.getOutSchema()));
+    createIndex.setExternal(createIndexProto.getIsExternal());
 
     return createIndex;
   }
