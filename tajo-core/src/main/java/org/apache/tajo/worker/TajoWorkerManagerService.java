@@ -34,6 +34,7 @@ import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.rpc.AsyncRpcServer;
+import org.apache.tajo.rpc.InvocationFailure;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.event.TaskRunnerStartEvent;
@@ -126,7 +127,7 @@ public class TajoWorkerManagerService extends CompositeService
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Throwable t) {
       LOG.error(t.getMessage(), t);
-      done.run(TajoWorker.FALSE_PROTO);
+      throw new InvocationFailure(t);
     }
   }
 
@@ -141,7 +142,7 @@ public class TajoWorkerManagerService extends CompositeService
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
-      done.run(TajoWorker.FALSE_PROTO);
+      throw new InvocationFailure(e);
     }
   }
 

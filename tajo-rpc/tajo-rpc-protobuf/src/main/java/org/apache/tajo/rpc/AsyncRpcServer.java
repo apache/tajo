@@ -57,7 +57,7 @@ public class AsyncRpcServer extends NettyServerBase {
   }
 
   @ChannelHandler.Sharable
-  private class ServerHandler extends ChannelInboundHandlerAdapter {
+  private class ServerHandler extends ChannelExceptionHandler {
 
     @Override
     public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
@@ -88,7 +88,7 @@ public class AsyncRpcServer extends NettyServerBase {
           MethodDescriptor methodDescriptor = service.getDescriptorForType().findMethodByName(methodName);
 
           if (methodDescriptor == null) {
-            throw new RemoteCallException(request.getId(), new NoSuchMethodException(methodName));
+            throw new RemoteCallException(request.getId(), new NoSuchMethodException(methodName), true);
           }
 
           Message paramProto = null;
@@ -97,7 +97,7 @@ public class AsyncRpcServer extends NettyServerBase {
               paramProto = service.getRequestPrototype(methodDescriptor).newBuilderForType()
                   .mergeFrom(request.getRequestMessage()).build();
             } catch (Throwable t) {
-              throw new RemoteCallException(request.getId(), methodDescriptor, t);
+              throw new RemoteCallException(request.getId(), methodDescriptor, t, true);
             }
           }
 
@@ -121,28 +121,19 @@ public class AsyncRpcServer extends NettyServerBase {
             }
           };
 
-          service.callMethod(methodDescriptor, controller, paramProto, callback);
+          try {
+            service.callMethod(methodDescriptor, controller, paramProto, callback);
+          } catch (RuntimeException t) {
+            if (t instanceof InvocationFailure) {
+              throw new RemoteCallException(request.getId(), methodDescriptor, t.getCause(), false);
+            }
+            throw t;
+          }
 
         } finally {
           ReferenceCountUtil.release(msg);
         }
       }
     }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
-        throws Exception{
-      if (cause instanceof RemoteCallException) {
-        RemoteCallException callException = (RemoteCallException) cause;
-        ctx.writeAndFlush(callException.getResponse());
-      } else {
-        LOG.error(cause.getMessage());
-      }
-      
-      if (ctx != null && ctx.channel().isActive()) {
-        ctx.channel().close();
-      }
-    }
-    
   }
 }
