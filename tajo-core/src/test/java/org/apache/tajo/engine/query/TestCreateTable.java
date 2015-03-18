@@ -600,4 +600,28 @@ public class TestCreateTable extends QueryTestCaseBase {
     */
     }
   }
+
+  @Test
+  public final void testNestedRecord1() throws Exception {
+    executeString("CREATE DATABASE D9;").close();
+
+    assertTableNotExists("d9.nested_table");
+    executeQuery().close();
+    assertTableExists("d9.nested_table");
+
+    executeString("DROP TABLE D9.nested_table");
+    executeString("DROP DATABASE D9").close();
+  }
+
+  @Test
+  public final void testNestedRecord2() throws Exception {
+    executeString("CREATE DATABASE D9;").close();
+
+    assertTableNotExists("d9.nested_table2");
+    executeQuery();
+    assertTableExists("d9.nested_table2");
+
+    executeString("DROP TABLE D9.nested_table2");
+    executeString("DROP DATABASE D9").close();
+  }
 }

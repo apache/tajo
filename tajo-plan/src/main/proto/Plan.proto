@@ -110,6 +110,7 @@ message ScanNode {
   required bool existTargets = 3;
   repeated Target targets = 4;
   optional EvalNodeTree qual = 5;
+  optional bool broadcast = 6;
 }
 
 message PartitionScanSpec {

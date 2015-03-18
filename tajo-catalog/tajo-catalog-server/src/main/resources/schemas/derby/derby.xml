@@ -17,7 +17,12 @@
   limitations under the License.
   -->
 <tns:store xmlns:tns="http://tajo.apache.org/catalogstore" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.xsd ">
-	<tns:base version="2">
+
+  <!-- Version History -->
+  <!-- 3 - 2015-03-12: Nested Schema (TAJO-1329) -->
+  <!-- 2 - First versioning -->
+
+	<tns:base version="3">
 		<tns:objects>
 			<tns:Object order="0" type="table" name="META">
 				<tns:sql><![CDATA[CREATE TABLE META (VERSION INT NOT NULL)]]></tns:sql>
@@ -72,14 +77,15 @@
   				TID INT NOT NULL REFERENCES TABLES (TID) ON DELETE CASCADE,
   				COLUMN_NAME VARCHAR(128) NOT NULL,
   				ORDINAL_POSITION INTEGER NOT NULL,
+  				NESTED_FIELD_NUM INTEGER NOT NULL,
   				DATA_TYPE CHAR(16),
   				TYPE_LENGTH INTEGER,
-  				CONSTRAINT COLUMNS_PK PRIMARY KEY (TID, COLUMN_NAME)
+  				CONSTRAINT COLUMNS_PK PRIMARY KEY (TID, ORDINAL_POSITION)
 				)]]>
 				</tns:sql>
 			</tns:Object>
 			<tns:Object order="8" type="index" name="IDX_FK_COLUMNS_TABLE_NAME" dependsOn="COLUMNS">
-				<tns:sql><![CDATA[CREATE UNIQUE INDEX idx_fk_columns_table_name on COLUMNS (TID, COLUMN_NAME)]]></tns:sql>
+				<tns:sql><![CDATA[CREATE UNIQUE INDEX idx_fk_columns_table_name on COLUMNS (TID, ORDINAL_POSITION)]]></tns:sql>
 			</tns:Object>
 			<tns:Object order="9" type="table" name="OPTIONS">
 				<tns:sql><![CDATA[

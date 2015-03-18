@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.BufferPool;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.util.Bytes;
 
 /**
  * Pluggable Text Line SerDe class
@@ -56,7 +57,7 @@ public abstract class TextLineSerDe {
     if (StringUtils.isEmpty(nullCharacters)) {
       nullChars = NullDatum.get().asTextBytes();
     } else {
-      nullChars = nullCharacters.getBytes();
+      nullChars = nullCharacters.getBytes(Bytes.UTF8_CHARSET);
     }
 
     return nullChars;
