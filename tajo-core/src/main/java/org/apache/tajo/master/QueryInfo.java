@@ -119,14 +119,37 @@ public class QueryInfo implements GsonObject, History, Comparable<QueryInfo> {
     return queryMasterClientPort;
   }
 
-  public TajoProtos.QueryState getQueryState() {
+  public synchronized TajoProtos.QueryState getQueryState() {
     return queryState;
   }
 
-  public void setQueryState(TajoProtos.QueryState queryState) {
-    this.queryState = queryState;
+  public synchronized boolean isTerminalState() {
+    return isTerminalState(queryState);
   }
 
+  public static boolean isTerminalState(TajoProtos.QueryState state) {
+    return state == TajoProtos.QueryState.QUERY_FAILED ||
+        state == TajoProtos.QueryState.QUERY_ERROR ||
+        state == TajoProtos.QueryState.QUERY_KILLED ||
+        state == TajoProtos.QueryState.QUERY_SUCCEEDED;
+  }
+
+  public synchronized void setQueryState(TajoProtos.QueryState queryState) {
+    this.queryState = queryState;
+    notifyAll();
+  }
+
+  public synchronized boolean waitState(TajoProtos.QueryState expect, long timeout)
+      throws InterruptedException {
+    long prev = System.currentTimeMillis();
+    while (timeout > 0 && expect != queryState && !isTerminalState()) {
+      wait(timeout);
+      long current = System.currentTimeMillis();
+      timeout -= (current - prev);
+      prev = current;
+    }
+    return expect == queryState;
+  }
   public long getStartTime() {
     return startTime;
   }

@@ -53,7 +53,7 @@ import static org.apache.tajo.ipc.TajoMasterClientProtocol.TajoMasterClientProto
 
 public class SessionConnection implements Closeable {
 
-  private final Log LOG = LogFactory.getLog(TajoClientImpl.class);
+  final Log LOG = LogFactory.getLog(TajoClientImpl.class);
 
   final RpcConnectionPool connPool;
 

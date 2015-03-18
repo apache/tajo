@@ -18,6 +18,7 @@
 
 package org.apache.tajo.client;
 
+import com.google.protobuf.ServiceException;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoProtos;
@@ -96,5 +97,25 @@ public class TajoClientUtil {
 
   public static ResultSet createNullResultSet(QueryId queryId) {
     return new TajoMemoryResultSet(queryId, new Schema(), null, 0, null);
+  }
+
+  private static final long INITIAL_INTERVAL = 500;
+  private static final long MAX_INTERVAL = 10000;
+
+  private static final long POLLING_TIMEOUT = 1000;
+
+  public static QueryStatus pollQueryStatus(QueryClient client, QueryId queryId)
+      throws ServiceException {
+    long interval = INITIAL_INTERVAL;
+    QueryStatus status = client.getQueryStatus(queryId);
+    try {
+      for (;!TajoClientUtil.isQueryComplete(status.getState()); Thread.sleep(interval)) {
+        status = client.pollQueryStatus(queryId, POLLING_TIMEOUT);
+        interval = Math.min(MAX_INTERVAL, interval * 2);
+      }
+    } catch (InterruptedException e) {
+      // ignore
+    }
+    return status;
   }
 }

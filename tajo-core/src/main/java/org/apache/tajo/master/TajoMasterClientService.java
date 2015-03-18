@@ -336,16 +336,8 @@ public class TajoMasterClientService extends AbstractService {
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
         QueryId queryId = new QueryId(request.getQueryId());
-        QueryInProgress queryInProgress = context.getQueryJobManager().getQueryInProgress(queryId);
 
-        // if we cannot get a QueryInProgress instance from QueryJobManager,
-        // the instance can be in the finished query list.
-        QueryInfo queryInfo = null;
-        if (queryInProgress == null) {
-          queryInfo = context.getQueryJobManager().getFinishedQuery(queryId);
-        } else {
-          queryInfo = queryInProgress.getQueryInfo();
-        }
+        QueryInfo queryInfo = getQueryInfo(queryId);
 
         GetQueryResultResponse.Builder builder = GetQueryResultResponse.newBuilder();
         builder.setTajoUserName(UserGroupInformation.getCurrentUser().getUserName());
@@ -458,55 +450,88 @@ public class TajoMasterClientService extends AbstractService {
       try {
         context.getSessionManager().touch(request.getSessionId().getId());
 
-        GetQueryStatusResponse.Builder builder = GetQueryStatusResponse.newBuilder();
-        QueryId queryId = new QueryId(request.getQueryId());
-        builder.setQueryId(request.getQueryId());
+        return createQueryStatus(request.getSessionId(), request.getQueryId());
 
-        if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
+      } catch (Throwable t) {
+        throw new ServiceException(t);
+      }
+    }
+
+    private GetQueryStatusResponse createQueryStatus(TajoIdProtos.SessionIdProto sid,
+        TajoIdProtos.QueryIdProto qid) throws InvalidSessionException {
+      GetQueryStatusResponse.Builder builder = GetQueryStatusResponse.newBuilder();
+      QueryId queryId = new QueryId(qid);
+      builder.setQueryId(qid);
+
+      if (queryId.equals(QueryIdFactory.NULL_QUERY_ID)) {
+        builder.setResultCode(ResultCode.OK);
+        builder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
+      } else {
+        QueryInfo queryInfo = getQueryInfo(queryId);
+
+        if (queryInfo != null) {
           builder.setResultCode(ResultCode.OK);
-          builder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
-        } else {
-          QueryInProgress queryInProgress = context.getQueryJobManager().getQueryInProgress(queryId);
+          builder.setState(queryInfo.getQueryState());
 
-          // It will try to find a query status from a finished query list.
-          QueryInfo queryInfo = null;
-          if (queryInProgress == null) {
-            queryInfo = context.getQueryJobManager().getFinishedQuery(queryId);
-          } else {
-            queryInfo = queryInProgress.getQueryInfo();
+          boolean isCreateTable = queryInfo.getQueryContext().isCreateTable();
+          boolean isInsert = queryInfo.getQueryContext().isInsert();
+          builder.setHasResult(!(isCreateTable || isInsert));
+
+          builder.setProgress(queryInfo.getProgress());
+          builder.setSubmitTime(queryInfo.getStartTime());
+          if(queryInfo.getQueryMasterHost() != null) {
+            builder.setQueryMasterHost(queryInfo.getQueryMasterHost());
+            builder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
           }
-
-          if (queryInfo != null) {
-            builder.setResultCode(ResultCode.OK);
-            builder.setState(queryInfo.getQueryState());
-
-            boolean isCreateTable = queryInfo.getQueryContext().isCreateTable();
-            boolean isInsert = queryInfo.getQueryContext().isInsert();
-            builder.setHasResult(!(isCreateTable || isInsert));
-
-            builder.setProgress(queryInfo.getProgress());
-            builder.setSubmitTime(queryInfo.getStartTime());
-            if(queryInfo.getQueryMasterHost() != null) {
-              builder.setQueryMasterHost(queryInfo.getQueryMasterHost());
-              builder.setQueryMasterPort(queryInfo.getQueryMasterClientPort());
-            }
-            if (queryInfo.getQueryState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
-              builder.setFinishTime(queryInfo.getFinishTime());
-            } else {
-              builder.setFinishTime(System.currentTimeMillis());
-            }
+          if (queryInfo.getQueryState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
+            builder.setFinishTime(queryInfo.getFinishTime());
           } else {
-            Session session = context.getSessionManager().getSession(request.getSessionId().getId());
-            if (session.getNonForwardQueryResultScanner(queryId) != null) {
-              builder.setResultCode(ResultCode.OK);
-              builder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
-            } else {
-              builder.setResultCode(ResultCode.ERROR);
-              builder.setErrorMessage("No such query: " + queryId.toString());
-            }
+            builder.setFinishTime(System.currentTimeMillis());
+          }
+        } else {
+          Session session = context.getSessionManager().getSession(sid.getId());
+          if (session.getNonForwardQueryResultScanner(queryId) != null) {
+            builder.setResultCode(ResultCode.OK);
+            builder.setState(TajoProtos.QueryState.QUERY_SUCCEEDED);
+          } else {
+            builder.setResultCode(ResultCode.ERROR);
+            builder.setErrorMessage("No such query: " + queryId.toString());
           }
         }
-        return builder.build();
+      }
+      return builder.build();
+    }
+
+    private QueryInfo getQueryInfo(QueryId queryId) {
+      QueryInProgress queryInProgress = context.getQueryJobManager().getQueryInProgress(queryId);
+      if (queryInProgress != null) {
+        return queryInProgress.getQueryInfo();
+      }
+      // It will try to find a query status from a finished query list.
+      return context.getQueryJobManager().getFinishedQuery(queryId);
+    }
+
+    private static final long MAX_POLLING = 3000;
+
+    @Override
+    public GetQueryStatusResponse pollQueryStatus(RpcController controller, PollQueryStatusRequest request) throws ServiceException {
+      try {
+        context.getSessionManager().touch(request.getSessionId().getId());
+
+        GetQueryStatusResponse status = createQueryStatus(request.getSessionId(), request.getQueryId());
+        if (QueryInfo.isTerminalState(status.getState()) || request.getTimeout() <= 0) {
+          return status;
+        }
+        QueryId queryId = new QueryId(request.getQueryId());
+        QueryInfo queryInfo = getQueryInfo(queryId);
+
+        long timeout = Math.min(request.getTimeout(), MAX_POLLING);
+        try {
+          queryInfo.waitState(TajoProtos.QueryState.QUERY_SUCCEEDED, timeout);
+        } catch (InterruptedException e) {
+          // ignore
+        }
+        return createQueryStatus(request.getSessionId(), request.getQueryId());
 
       } catch (Throwable t) {
         throw new ServiceException(t);
