@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.joinorder;
 
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.LogicalNode;
 
 import java.util.Set;
@@ -26,6 +27,7 @@ import java.util.Set;
 public interface JoinVertex {
 
   Schema getSchema();
-  LogicalNode getCorrespondingNode();
+//  LogicalNode getCorrespondingNode();
   Set<RelationVertex> getRelations();
+  LogicalNode buildPlan(LogicalPlan plan, LogicalPlan.QueryBlock block);
 }

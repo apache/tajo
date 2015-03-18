@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.joinorder;
 
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.RelationNode;
 import org.apache.tajo.util.TUtil;
@@ -28,9 +29,13 @@ import java.util.Set;
 public class RelationVertex implements JoinVertex{
 
   private RelationNode relationNode;
+  private LogicalNode topLogicalNode;
 
-  public RelationVertex(RelationNode relationNode) {
+//  public RelationVertex(LogicalNode topLogicalNode, RelationNode relationNode) {
+public RelationVertex(RelationNode relationNode) {
     this.relationNode = relationNode;
+//    this.topLogicalNode = topLogicalNode;
+    this.topLogicalNode = relationNode;
   }
 
   @Override
@@ -42,7 +47,7 @@ public class RelationVertex implements JoinVertex{
   public boolean equals(Object o) {
     if (o instanceof RelationVertex) {
       RelationVertex other = (RelationVertex) o;
-      return this.relationNode.equals(other.relationNode);
+      return this.relationNode.equals(other.relationNode) && this.topLogicalNode.equals(other.topLogicalNode);
     }
     return false;
   }
@@ -58,12 +63,16 @@ public class RelationVertex implements JoinVertex{
   }
 
   @Override
-  public LogicalNode getCorrespondingNode() {
-    return relationNode;
+  public Set<RelationVertex> getRelations() {
+    return TUtil.newHashSet(this);
   }
 
   @Override
-  public Set<RelationVertex> getRelations() {
-    return TUtil.newHashSet(this);
+  public LogicalNode buildPlan(LogicalPlan plan, LogicalPlan.QueryBlock block) {
+    return topLogicalNode;
+  }
+
+  public LogicalNode getRelationNode() {
+    return relationNode;
   }
 }

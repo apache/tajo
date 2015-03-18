@@ -19,7 +19,12 @@
 package org.apache.tajo.plan.joinorder;
 
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaUtil;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.plan.logical.RelationNode;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.TUtil;
 
 import java.util.Set;
@@ -66,13 +71,41 @@ public class JoinedRelationsVertex implements JoinVertex {
     return joinEdge.toString();
   }
 
-  public LogicalNode getCorrespondingNode() {
-    return joinEdge.getCorrespondingJoinNode();
-  }
-
   @Override
   public Set<RelationVertex> getRelations() {
     return relations;
+  }
+
+  @Override
+  public LogicalNode buildPlan(LogicalPlan plan, LogicalPlan.QueryBlock block) {
+    // TODO
+    LogicalNode leftChild = joinEdge.getLeftVertex().buildPlan(plan, block);
+    LogicalNode rightChild = joinEdge.getRightVertex().buildPlan(plan, block);
+
+    JoinNode joinNode = plan.createNode(JoinNode.class);
+
+    if (PlannerUtil.isCommutativeJoin(joinEdge.getJoinType())) {
+      // if only one operator is relation
+      if ((leftChild instanceof RelationNode) && !(rightChild instanceof RelationNode)) {
+        // for left deep
+        joinNode.init(joinEdge.getJoinType(), rightChild, leftChild);
+      } else {
+        // if both operators are relation or if both are relations
+        // we don't need to concern the left-right position.
+        joinNode.init(joinEdge.getJoinType(), leftChild, rightChild);
+      }
+    } else {
+      joinNode.init(joinEdge.getJoinType(), leftChild, rightChild);
+    }
+
+    Schema mergedSchema = SchemaUtil.merge(joinNode.getLeftChild().getOutSchema(),
+        joinNode.getRightChild().getOutSchema());
+    joinNode.setInSchema(mergedSchema);
+    joinNode.setOutSchema(mergedSchema);
+    if (joinEdge.hasJoinQual()) {
+      joinNode.setJoinQual(joinEdge.getSingletonJoinQual());
+    }
+    return joinNode;
   }
 
   @Override

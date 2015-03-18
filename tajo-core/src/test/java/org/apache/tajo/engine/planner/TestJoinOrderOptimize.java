@@ -35,4 +35,22 @@ public class TestJoinOrderOptimize extends QueryPlanTestCaseBase {
     System.out.println(plan);
     assertPlan(plan);
   }
+
+  @Test
+  public final void testJoinWithMultipleJoinTypes() throws Exception {
+    String plan = executeQuery();
+    System.out.println(plan);
+  }
+
+  @Test
+  public final void testWhereClauseJoin5() throws Exception {
+    String plan = executeQuery();
+    System.out.println(plan);
+  }
+
+  @Test
+  public final void testWhereClauseJoin6() throws Exception {
+    String plan = executeQuery();
+    System.out.println(plan);
+  }
 }

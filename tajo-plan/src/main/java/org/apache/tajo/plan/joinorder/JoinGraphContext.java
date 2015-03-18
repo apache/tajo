@@ -19,34 +19,48 @@
 package org.apache.tajo.plan.joinorder;
 
 import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.logical.JoinSpec;
+import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.TUtil;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 
 public class JoinGraphContext {
   private JoinVertex mostLeftVertex;
   private JoinGraph joinGraph = new JoinGraph();
-  private Set<EvalNode> joinPredicateCandidates = TUtil.newHashSet();
-
-  public void setJoinGraph(JoinGraph joinGraph) {
-    this.joinGraph = joinGraph;
-  }
+  private Map<Pair<JoinVertex,JoinVertex>, JoinEdge> edgeCache = TUtil.newHashMap();
+  private Pair<JoinVertex,JoinVertex> cacheKey = new Pair<JoinVertex, JoinVertex>();
+  private Set<EvalNode> candidateJoinConditions = TUtil.newHashSet(); // predicates from the on clause
+  private Set<EvalNode> candidateJoinFilters = TUtil.newHashSet();    // predicates from the where clause
 
   public JoinGraph getJoinGraph() {
     return joinGraph;
   }
 
-  public void addPredicateCandidates(Collection<EvalNode> candidates) {
-    joinPredicateCandidates.addAll(candidates);
+  public void addCandidateJoinConditions(Collection<EvalNode> candidates) {
+    candidateJoinConditions.addAll(candidates);
   }
 
-  public void removePredicateCandidates(Collection<EvalNode> willBeRemoved) {
-    joinPredicateCandidates.removeAll(willBeRemoved);
+  public void addCandidateJoinFilters(Collection<EvalNode> candidates) {
+    candidateJoinFilters.addAll(candidates);
   }
 
-  public Set<EvalNode> getJoinPredicateCandidates() {
-    return joinPredicateCandidates;
+  public void removeCandidateJoinConditions(Collection<EvalNode> willBeRemoved) {
+    candidateJoinConditions.removeAll(willBeRemoved);
+  }
+
+  public void removeCandidateJoinFilters(Collection<EvalNode> willBeRemoved) {
+    candidateJoinFilters.removeAll(willBeRemoved);
+  }
+
+  public Set<EvalNode> getCandidateJoinConditions() {
+    return candidateJoinConditions;
+  }
+
+  public Set<EvalNode> getCandidateJoinFilters() {
+    return candidateJoinFilters;
   }
 
   public JoinVertex getMostLeftVertex() {
@@ -55,5 +69,19 @@ public class JoinGraphContext {
 
   public void setMostLeftVertex(JoinVertex mostLeftVertex) {
     this.mostLeftVertex = mostLeftVertex;
+  }
+
+  public JoinEdge cacheEdge(JoinEdge edge) {
+    edgeCache.put(new Pair<JoinVertex, JoinVertex>(edge.getLeftVertex(), edge.getRightVertex()), edge);
+    return edge;
+  }
+
+  public JoinEdge getCachedOrNewJoinEdge(JoinSpec joinSpec, JoinVertex left, JoinVertex right) {
+    cacheKey.set(left, right);
+    if (edgeCache.containsKey(cacheKey)) {
+      return edgeCache.get(edgeCache);
+    } else {
+      return cacheEdge(new JoinEdge(joinSpec, left, right));
+    }
   }
 }

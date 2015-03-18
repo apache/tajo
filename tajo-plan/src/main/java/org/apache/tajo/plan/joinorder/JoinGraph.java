@@ -19,23 +19,84 @@
 package org.apache.tajo.plan.joinorder;
 
 import org.apache.tajo.plan.PlanningException;
-import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.logical.JoinSpec;
-import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.graph.SimpleUndirectedGraph;
 
-import java.util.List;
-import java.util.Set;
-
 /**
- * Left-deep graph
+ * A join graph must be the connected graph
  */
 public class JoinGraph extends SimpleUndirectedGraph<JoinVertex, JoinEdge> {
+//
+//  private final JoinGraphContext context;
+//
+//  public JoinGraph(JoinGraphContext context) {
+//    this.context = context;
+//    this.context.setJoinGraph(this);
+//  }
 
-  public JoinEdge addJoin(JoinNode joinNode, JoinVertex left, JoinVertex right) throws PlanningException {
-    JoinEdge edge = new JoinEdge(joinNode, left, right);
+  public JoinEdge addJoin(JoinGraphContext context, JoinSpec joinSpec, JoinVertex left, JoinVertex right) throws PlanningException {
+    JoinEdge edge = context.getCachedOrNewJoinEdge(joinSpec, left, right);
     this.addEdge(left, right, edge);
     return edge;
   }
+
+//  private JoinEdge updateJoinPredicates(JoinEdge edge) {
+//    if (edge != null) {
+//      Set<EvalNode> additionalPredicates = JoinOrderingUtil.findJoinConditionForJoinVertex(
+//          context.getCandidateJoinConditions(), edge, true);
+//      additionalPredicates.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(
+//          context.getCandidateJoinFilters(), edge, false));
+//      context.removeCandidateJoinConditions(additionalPredicates);
+//      context.removeCandidateJoinFilters(additionalPredicates);
+//      return JoinOrderingUtil.addPredicates(edge, additionalPredicates);
+//    }
+//    return null;
+//  }
+//
+//  @Override
+//  public JoinEdge getEdge(JoinVertex tail, JoinVertex head) {
+//    return updateJoinPredicates(super.getEdge(tail, head));
+//  }
+//
+//  @Override
+//  public List<JoinEdge> getIncomingEdges(JoinVertex vertex) {
+//    List<JoinEdge> edges = super.getIncomingEdges(vertex);
+//    if (edges != null) {
+//      for (JoinEdge edge : edges) {
+//        updateJoinPredicates(edge);
+//      }
+//    }
+//    return edges;
+//  }
+//
+//  @Override
+//  public List<JoinEdge> getOutgoingEdges(JoinVertex vertex) {
+//    List<JoinEdge> edges = super.getOutgoingEdges(vertex);
+//    if (edges != null) {
+//      for (JoinEdge edge : edges) {
+//        updateJoinPredicates(edge);
+//      }
+//    }
+//    return edges;
+//  }
+//
+//  @Override
+//  public Collection<JoinEdge> getEdgesAll() {
+//    Collection<JoinEdge> edges = super.getEdgesAll();
+//    if (edges != null) {
+//      for (JoinEdge edge : edges) {
+//        updateJoinPredicates(edge);
+//      }
+//    }
+//    return edges;
+//  }
+//
+//  @Override
+//  public JoinEdge getReverseEdge(JoinVertex head, JoinVertex tail) {
+//    return updateJoinPredicates(super.getReverseEdge(head, tail));
+//  }
+//
+//  public JoinGraphContext getContext() {
+//    return context;
+//  }
 }

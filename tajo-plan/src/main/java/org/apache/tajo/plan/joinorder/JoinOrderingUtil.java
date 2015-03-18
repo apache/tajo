@@ -24,14 +24,12 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.expr.EvalType;
-import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.plan.logical.NodeType;
-import org.apache.tajo.plan.logical.RelationNode;
+import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
@@ -41,18 +39,19 @@ import java.util.Stack;
 
 public class JoinOrderingUtil {
 
-  public static Set<EvalNode> findJoinConditionForJoinVertex(Set<EvalNode> candidates, JoinEdge edge) {
+  public static Set<EvalNode> findJoinConditionForJoinVertex(Set<EvalNode> candidates, JoinEdge edge,
+                                                             boolean isOnPredicates) {
     Set<EvalNode> conditionsForThisJoin = TUtil.newHashSet();
     for (EvalNode predicate : candidates) {
       if (EvalTreeUtil.isJoinQual(predicate, false)
-          && checkIfEvaluatedAtVertex(predicate, edge)) {
+          && checkIfEvaluatedAtEdge(predicate, edge, isOnPredicates)) {
         conditionsForThisJoin.add(predicate);
       }
     }
     return conditionsForThisJoin;
   }
 
-  public static boolean checkIfEvaluatedAtVertex(EvalNode evalNode, JoinEdge edge) {
+  public static boolean checkIfEvaluatedAtEdge(EvalNode evalNode, JoinEdge edge, boolean isOnPredicate) {
     Set<Column> columnRefs = EvalTreeUtil.findUniqueColumns(evalNode);
     if (EvalTreeUtil.findDistinctAggFunction(evalNode).size() > 0) {
       return false;
@@ -63,49 +62,60 @@ public class JoinOrderingUtil {
     if (columnRefs.size() > 0 && !edge.getSchema().containsAll(columnRefs)) {
       return false;
     }
+    // Currently, join filters cannot be evaluated at joins
+    if (LogicalPlanner.isOuterJoin(edge.getJoinType()) && !isOnPredicate) {
+      return false;
+    }
     return true;
   }
 
-  public static JoinNode createJoinNode(LogicalPlan plan, JoinType joinType, JoinVertex left, JoinVertex right,
-                                        @Nullable EvalNode predicates) {
-    LogicalNode leftChild = left.getCorrespondingNode();
-    LogicalNode rightChild = right.getCorrespondingNode();
+//  public static JoinNode createJoinNode(LogicalPlan plan, JoinType joinType, JoinVertex left, JoinVertex right,
+//                                        @Nullable EvalNode predicates) {
+//    LogicalNode leftChild = left.getCorrespondingNode();
+//    LogicalNode rightChild = right.getCorrespondingNode();
+//
+//    JoinNode joinNode = plan.createNode(JoinNode.class);
+//
+//    if (PlannerUtil.isCommutativeJoin(joinType)) {
+//      // if only one operator is relation
+//      if ((leftChild instanceof RelationNode) && !(rightChild instanceof RelationNode)) {
+//        // for left deep
+//        joinNode.init(joinType, rightChild, leftChild);
+//      } else {
+//        // if both operators are relation or if both are relations
+//        // we don't need to concern the left-right position.
+//        joinNode.init(joinType, leftChild, rightChild);
+//      }
+//    } else {
+//      joinNode.init(joinType, leftChild, rightChild);
+//    }
+//
+//    Schema mergedSchema = SchemaUtil.merge(joinNode.getLeftChild().getOutSchema(),
+//        joinNode.getRightChild().getOutSchema());
+//    joinNode.setInSchema(mergedSchema);
+//    joinNode.setOutSchema(mergedSchema);
+//    if (predicates != null) {
+//      joinNode.setJoinQual(predicates);
+//    }
+//    return joinNode;
+//  }
 
-    JoinNode joinNode = plan.createNode(JoinNode.class);
-
-    if (PlannerUtil.isCommutativeJoin(joinType)) {
-      // if only one operator is relation
-      if ((leftChild instanceof RelationNode) && !(rightChild instanceof RelationNode)) {
-        // for left deep
-        joinNode.init(joinType, rightChild, leftChild);
-      } else {
-        // if both operators are relation or if both are relations
-        // we don't need to concern the left-right position.
-        joinNode.init(joinType, leftChild, rightChild);
+  public static boolean isAssociativeJoin(JoinGraphContext context, JoinEdge leftEdge, JoinEdge rightEdge) {
+    if (isAssociativeJoinType(leftEdge.getJoinType(), rightEdge.getJoinType())) {
+      // TODO: consider when a join qual involves columns from two or more tables
+      // create a temporal left-deep join node
+      JoinedRelationsVertex tempLeftChild = new JoinedRelationsVertex(leftEdge);
+      JoinEdge tempEdge = context.getCachedOrNewJoinEdge(rightEdge.getJoinSpec(), tempLeftChild,
+          rightEdge.getRightVertex());
+      if (!findJoinConditionForJoinVertex(context.getCandidateJoinConditions(), tempEdge, true).isEmpty()) {
+        return false;
       }
-    } else {
-      joinNode.init(joinType, leftChild, rightChild);
-    }
-
-    Schema mergedSchema = SchemaUtil.merge(joinNode.getLeftChild().getOutSchema(),
-        joinNode.getRightChild().getOutSchema());
-    joinNode.setInSchema(mergedSchema);
-    joinNode.setOutSchema(mergedSchema);
-    if (predicates != null) {
-      joinNode.setJoinQual(predicates);
-    }
-    return joinNode;
-  }
-
-  public static JoinEdge addPredicates(JoinEdge edge, Set<EvalNode> predicates) {
-    if (!predicates.isEmpty()) {
-      if (edge.getJoinType() == JoinType.CROSS) {
-        edge.getJoinSpec().setType(JoinType.INNER);
+      if (!findJoinConditionForJoinVertex(context.getCandidateJoinFilters(), tempEdge, true).isEmpty()) {
+        return false;
       }
-      edge.addJoinPredicates(predicates);
-      edge.getCorrespondingJoinNode().setJoinQual(edge.getSingletonJoinQual());
+      return true;
     }
-    return edge;
+    return false;
   }
 
   /**
@@ -132,7 +142,7 @@ public class JoinOrderingUtil {
    * (A full B) full C    | A full (B full C)     | Equivalent
    * ==============================================================
    */
-  public static boolean isAssociativeJoin(JoinType leftType, JoinType rightType) {
+  public static boolean isAssociativeJoinType(JoinType leftType, JoinType rightType) {
     if (leftType == rightType) {
       return true;
     }
@@ -169,7 +179,6 @@ public class JoinOrderingUtil {
       }
     }
 
-    // TODO: consider when a join qual involves columns from two or more tables
     return false;
   }
 
@@ -239,15 +248,15 @@ public class JoinOrderingUtil {
     }
   }
 
-  public static JoinNode createJoinNodeFromEdge(LogicalPlan plan, JoinEdge edge) {
-    JoinNode node = plan.createNode(JoinNode.class);
-
-    node.init(edge.getJoinType(),
-        edge.getLeftVertex().getCorrespondingNode(),
-        edge.getRightVertex().getCorrespondingNode());
-    if (edge.hasJoinQual()) {
-      node.setJoinQual(edge.getSingletonJoinQual());
-    }
-    return node;
-  }
+//  public static JoinNode createJoinNodeFromEdge(LogicalPlan plan, JoinEdge edge) {
+//    JoinNode node = plan.createNode(JoinNode.class);
+//
+//    node.init(edge.getJoinType(),
+//        edge.getLeftVertex().getCorrespondingNode(),
+//        edge.getRightVertex().getCorrespondingNode());
+//    if (edge.hasJoinQual()) {
+//      node.setJoinQual(edge.getSingletonJoinQual());
+//    }
+//    return node;
+//  }
 }

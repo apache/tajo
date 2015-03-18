@@ -39,10 +39,21 @@ public class JoinSpec implements Cloneable {
   }
 
   public void addPredicate(EvalNode predicate) {
+
+    if (!predicates.isEmpty()) {
+      if (type == JoinType.CROSS) {
+        type = JoinType.INNER;
+      }
+    }
     this.predicates.add(predicate);
   }
 
   public void addPredicates(Set<EvalNode> predicates) {
+    if (!predicates.isEmpty()) {
+      if (type == JoinType.CROSS) {
+        type = JoinType.INNER;
+      }
+    }
     this.predicates.addAll(predicates);
   }
 
@@ -52,7 +63,13 @@ public class JoinSpec implements Cloneable {
 
   public void setPredicates(Set<EvalNode> predicates) {
     this.predicates.clear();
-    this.predicates.addAll(predicates);
+    if (predicates == null || predicates.isEmpty()) {
+      if (type == JoinType.INNER) {
+        type = JoinType.CROSS;
+      }
+    } else {
+      this.predicates.addAll(predicates);
+    }
   }
 
   public void setSingletonPredicate(EvalNode predicates) {

@@ -33,14 +33,16 @@ public class JoinEdge {
   private final JoinVertex leftVertex;
   private final JoinVertex rightVertex;
   private final Schema schema;
-  private final JoinNode correspondingJoinNode;
+//  private final JoinNode correspondingJoinNode;
 
-  public JoinEdge(JoinNode joinNode, JoinVertex leftVertex, JoinVertex rightVertex) {
-    this.joinSpec = joinNode.getJoinSpec();
+//  public JoinEdge(JoinNode joinNode, JoinVertex leftVertex, JoinVertex rightVertex) {
+  public JoinEdge(JoinSpec joinSpec, JoinVertex leftVertex, JoinVertex rightVertex) {
+//    this.joinSpec = joinNode.getJoinSpec();
+    this.joinSpec = joinSpec;
     this.leftVertex = leftVertex;
     this.rightVertex = rightVertex;
     this.schema = SchemaUtil.merge(leftVertex.getSchema(), rightVertex.getSchema());
-    this.correspondingJoinNode = joinNode;
+//    this.correspondingJoinNode = joinNode;
   }
 
   public JoinType getJoinType() {
@@ -88,7 +90,7 @@ public class JoinEdge {
     return schema;
   }
 
-  public JoinNode getCorrespondingJoinNode() {
-    return correspondingJoinNode;
-  }
+//  public JoinNode getCorrespondingJoinNode() {
+//    return correspondingJoinNode;
+//  }
 }
