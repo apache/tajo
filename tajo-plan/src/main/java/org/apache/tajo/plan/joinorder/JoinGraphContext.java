@@ -79,7 +79,7 @@ public class JoinGraphContext {
   public JoinEdge getCachedOrNewJoinEdge(JoinSpec joinSpec, JoinVertex left, JoinVertex right) {
     cacheKey.set(left, right);
     if (edgeCache.containsKey(cacheKey)) {
-      return edgeCache.get(edgeCache);
+      return edgeCache.get(cacheKey);
     } else {
       return cacheEdge(new JoinEdge(joinSpec, left, right));
     }
