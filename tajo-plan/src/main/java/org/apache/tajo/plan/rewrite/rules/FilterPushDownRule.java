@@ -254,16 +254,22 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   }
 
   /**
-   * For outer joins, pushable predicates can be decided based on their locations in the SQL and types of referencing relations.
+   * For outer joins, pushable predicates can be decided based on their locations in the SQL and types of referencing
+   * relations.
    *
    * <h3>Table types</h3>
    * <ul>
-   *   <li>Preserved Row table : The table in an Outer Join that must return all rows.
-   *   For left outer joins this is the Left table, for right outer joins it is the Right table.
-   *   For full outer joins both tables are Preserved Row tables.</li>
-   *   <li>Null Supplying table : This is the table that has nulls filled in for its columns in unmatched rows.
-   *   In the non-full outer join case, this is the other table in the Join.
-   *   For full outer joins both tables are also Null Supplying tables.</li>
+   *   <li>Preserved Row table : The preserved row table refers to the table that preserves rows when there is no match
+   *   in the join operation. Therefore, all rows from the preserved row table that qualify against the WHERE clause
+   *   will be returned, regardless of whether there is a matched row in the join. For a left/right table, the preserved
+   *   row table is the left/right table. For a full outer join, both tables are preserved row tables.</li>
+   *   <li>Null Supplying table : The NULL-supplying table supplies NULLs when there is an unmatched row. Any column
+   *   from the NULL-supplying table referred to in the SELECT list or subsequent WHERE or ON clause will contain NULL
+   *   if there was no match in the join operation. For a left/right outer join, the NULL-supplying
+   *   table is the right/left table. For a full outer join, both tables are NULL-supplying
+   *   table. In a full outer join, both tables can preserve rows, and also can supply NULLs. This is significant,
+   *   because there are rules that apply to purely preserved row tables that do not apply if the table can also supply
+   *   NULLs.</li>
    * </ul>
    *
    * <h3>Predicate types</h3>
