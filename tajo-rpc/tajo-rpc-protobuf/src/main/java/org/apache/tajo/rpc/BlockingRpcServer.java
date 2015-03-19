@@ -34,7 +34,7 @@ import io.netty.util.ReferenceCountUtil;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 
-public class BlockingRpcServer extends NettyServerBase {
+public class BlockingRpcServer extends NettyServerBase implements PublicServiceProvider {
   private static Log LOG = LogFactory.getLog(BlockingRpcServer.class);
   private final BlockingService service;
   private final ChannelInitializer<Channel> initializer;

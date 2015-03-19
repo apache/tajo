@@ -40,10 +40,12 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.rpc.BlockingRpcServer;
+import org.apache.tajo.rpc.PublicServiceFactory;
+import org.apache.tajo.rpc.PublicServiceProvider;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.BoolProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringProto;
+import org.apache.tajo.util.DefaultAccessFactory;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
 import org.apache.tajo.util.TUtil;
@@ -60,7 +62,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.AlterTablespaceCommand;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.*;
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.StringListProto;
-import static org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
 
 /**
  * This class provides the catalog service. The catalog service enables clients
@@ -84,7 +85,7 @@ public class CatalogServer extends AbstractService {
   private final InfoSchemaMetadataDictionary metaDictionary = new InfoSchemaMetadataDictionary();
 
   // RPC variables
-  private BlockingRpcServer rpcServer;
+  private PublicServiceProvider rpcServer;
   private InetSocketAddress bindAddress;
   private String bindAddressStr;
   final CatalogProtocolHandler handler;
@@ -99,22 +100,22 @@ public class CatalogServer extends AbstractService {
   private static BoolProto BOOL_FALSE = BoolProto.newBuilder().
       setValue(false).build();
 
-  private Collection<FunctionDesc> builtingFuncs;
+  private Collection<FunctionDesc> builtinFuncs;
 
   public CatalogServer() throws IOException {
     super(CatalogServer.class.getName());
     this.handler = new CatalogProtocolHandler();
-    this.builtingFuncs = new ArrayList<FunctionDesc>();
+    this.builtinFuncs = new ArrayList<FunctionDesc>();
   }
 
   public CatalogServer(Collection<FunctionDesc> sqlFuncs) throws IOException {
     this();
-    this.builtingFuncs = sqlFuncs;
+    this.builtinFuncs = sqlFuncs;
   }
 
-  public void reloadBuiltinFunctions(List<FunctionDesc> builtingFuncs) throws ServiceException {
-    this.builtingFuncs = builtingFuncs;
-    initBuiltinFunctions(builtingFuncs);
+  public void reloadBuiltinFunctions(List<FunctionDesc> builtinFuncs) throws ServiceException {
+    this.builtinFuncs = builtinFuncs;
+    initBuiltinFunctions(builtinFuncs);
   }
 
   @Override
@@ -136,7 +137,7 @@ public class CatalogServer extends AbstractService {
 
       this.store = (CatalogStore) cons.newInstance(this.conf);
 
-      initBuiltinFunctions(builtingFuncs);
+      initBuiltinFunctions(builtinFuncs);
     } catch (Throwable t) {
       LOG.error("CatalogServer initialization failed", t);
       throw new CatalogException(t);
@@ -176,10 +177,11 @@ public class CatalogServer extends AbstractService {
 
   public void start() {
     String serverAddr = conf.getVar(ConfVars.CATALOG_ADDRESS);
-    InetSocketAddress initIsa = NetUtils.createSocketAddr(serverAddr);
     int workerNum = conf.getIntVar(ConfVars.CATALOG_RPC_SERVER_WORKER_THREAD_NUM);
     try {
-      this.rpcServer = new BlockingRpcServer(CatalogProtocol.class, handler, initIsa, workerNum);
+      String factoryName = conf.getVar(TajoConf.ConfVars.CATALOG_SERVER_FACTORY);
+      PublicServiceFactory factory = DefaultAccessFactory.newFactory(factoryName);
+      this.rpcServer = factory.create(serverAddr, CatalogProtocol.class, handler, workerNum);
       this.rpcServer.start();
 
       this.bindAddress = NetUtils.getConnectAddress(this.rpcServer.getListenAddress());
@@ -200,7 +202,11 @@ public class CatalogServer extends AbstractService {
     // If CatalogServer shutdowns before it started, rpcServer and store may be NULL.
     // So, we should check Nullity of them.
     if (rpcServer != null) {
-      this.rpcServer.shutdown();
+      try {
+        rpcServer.shutdown();
+      } catch (Exception e) {
+        LOG.warn("Failed to shutdown server", e);
+      }
     }
     if (store != null) {
       try {

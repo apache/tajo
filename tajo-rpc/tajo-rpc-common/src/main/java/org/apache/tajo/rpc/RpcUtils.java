@@ -29,6 +29,11 @@ public class RpcUtils {
     return addr.getAddress().getHostAddress() + ":" + addr.getPort();
   }
 
+  public static InetSocketAddress createSocketAddr(String addr) {
+    String [] split = addr.split(":");
+    return new InetSocketAddress(split[0], Integer.parseInt(split[1]));
+  }
+
   /**
    * Util method to build socket addr from either:
    *   <host>

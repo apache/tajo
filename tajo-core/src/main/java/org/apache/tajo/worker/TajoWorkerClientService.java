@@ -32,8 +32,10 @@ import org.apache.tajo.ipc.ClientProtos.QueryIdRequest;
 import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.ipc.QueryMasterClientProtocol;
 import org.apache.tajo.querymaster.QueryMasterTask;
-import org.apache.tajo.rpc.BlockingRpcServer;
+import org.apache.tajo.rpc.PublicServiceFactory;
+import org.apache.tajo.rpc.PublicServiceProvider;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.util.DefaultAccessFactory;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.history.QueryHistory;
 
@@ -46,7 +48,7 @@ public class TajoWorkerClientService extends AbstractService {
   private final PrimitiveProtos.BoolProto BOOL_FALSE =
           PrimitiveProtos.BoolProto.newBuilder().setValue(false).build();
 
-  private BlockingRpcServer rpcServer;
+  private PublicServiceProvider rpcServer;
   private InetSocketAddress bindAddr;
 
   private int port;
@@ -63,28 +65,31 @@ public class TajoWorkerClientService extends AbstractService {
 
   @Override
   public void init(Configuration conf) {
+    LOG.info("Starting TajoWorkerClientService");
+
     Preconditions.checkArgument(conf instanceof TajoConf);
     this.conf = (TajoConf) conf;
     this.serviceHandler = new TajoWorkerClientProtocolServiceHandler();
 
     // init RPC Server in constructor cause Heartbeat Thread use bindAddr
     try {
-      InetSocketAddress initIsa = new InetSocketAddress("0.0.0.0", port);
-      if (initIsa.getAddress() == null) {
-        throw new IllegalArgumentException("Failed resolve of " + initIsa);
-      }
-
+      String serviceURL = "0.0.0.0:" + port;
       int workerNum = this.conf.getIntVar(TajoConf.ConfVars.WORKER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM);
-      this.rpcServer = new BlockingRpcServer(QueryMasterClientProtocol.class, serviceHandler, initIsa, workerNum);
+
+      String factoryName = this.conf.getVar(TajoConf.ConfVars.MASTER_SERVICE_RPC_SERVER_FACTORY);
+      PublicServiceFactory factory = DefaultAccessFactory.newFactory(factoryName);
+
+      this.rpcServer = factory.create(serviceURL, QueryMasterClientProtocol.class, serviceHandler, workerNum);
       this.rpcServer.start();
 
       this.bindAddr = NetUtils.getConnectAddress(rpcServer.getListenAddress());
       this.port = bindAddr.getPort();
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
+      throw new RuntimeException("Failed to start TajoWorkerClientService", e);
     }
     // Get the master address
-    LOG.info(TajoWorkerClientService.class.getSimpleName() + " is bind to " + bindAddr);
+    LOG.info(rpcServer.getServiceName() + " in TajoWorkerClientService is bind to " + bindAddr);
 
     super.init(conf);
   }
@@ -98,7 +103,11 @@ public class TajoWorkerClientService extends AbstractService {
   public void stop() {
     LOG.info("TajoWorkerClientService stopping");
     if(rpcServer != null) {
-      rpcServer.shutdown();
+      try {
+        rpcServer.shutdown();
+      } catch (Exception e) {
+        LOG.warn("Failed to shutdown server", e);
+      }
     }
     LOG.info("TajoWorkerClientService stopped");
     super.stop();

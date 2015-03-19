@@ -131,6 +131,7 @@ public class TajoConf extends Configuration {
     // Tajo Master Service Addresses
     TAJO_MASTER_UMBILICAL_RPC_ADDRESS("tajo.master.umbilical-rpc.address", "localhost:26001",
         Validators.networkAddr()),
+    TAJO_MASTER_CLIENT_RPC_FACTORY("tajo.master.client-rpc.factory", ""),
     TAJO_MASTER_CLIENT_RPC_ADDRESS("tajo.master.client-rpc.address", "localhost:26002",
         Validators.networkAddr()),
     TAJO_MASTER_INFO_ADDRESS("tajo.master.info-http.address", "0.0.0.0:26080", Validators.networkAddr()),
@@ -186,6 +187,7 @@ public class TajoConf extends Configuration {
         Validators.groups(Validators.notNull(), Validators.clazz())),
 
     // Catalog
+    CATALOG_SERVER_FACTORY("tajo.catalog.client-rpc.factory", ""),
     CATALOG_ADDRESS("tajo.catalog.client-rpc.address", "localhost:26005", Validators.networkAddr()),
 
 
@@ -245,6 +247,7 @@ public class TajoConf extends Configuration {
         Runtime.getRuntime().availableProcessors()),
 
     //Client service RPC Server
+    MASTER_SERVICE_RPC_SERVER_FACTORY("tajo.master.service.rpc.server.factory", ""),
     MASTER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM("tajo.master.service.rpc.server.worker-thread-num",
         Runtime.getRuntime().availableProcessors() * 1),
     WORKER_SERVICE_RPC_SERVER_WORKER_THREAD_NUM("tajo.worker.service.rpc.server.worker-thread-num",

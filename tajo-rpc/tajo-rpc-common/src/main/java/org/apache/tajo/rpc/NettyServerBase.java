@@ -70,11 +70,11 @@ public class NettyServerBase {
     this.initIsa = addr;
   }
 
-  public void setName(String name) {
-    this.serviceName = name;
+  public String getServiceName() {
+    return serviceName;
   }
 
-  public void init(ChannelInitializer<Channel> initializer, int workerNum) {
+  protected void init(ChannelInitializer<Channel> initializer, int workerNum) {
     for (RpcEventListener listener: listeners) {
       listener.onBeforeInit(this);
     }
