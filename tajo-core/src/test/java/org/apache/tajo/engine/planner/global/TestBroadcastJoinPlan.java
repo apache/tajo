@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.global;
 
 import junit.framework.TestCase;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
@@ -95,12 +96,12 @@ public class TestBroadcastJoinPlan {
     Schema smallTable2Schema = new Schema();
     smallTable2Schema.addColumn("small2_id", TajoDataTypes.Type.INT4);
     smallTable2Schema.addColumn("small2_contents", TajoDataTypes.Type.TEXT);
-    smallTable2 = makeTestData("default.small2", smallTable2Schema, 10 * 1024 + 128);
+    smallTable2 = makeTestData("default.small2", smallTable2Schema, 20 * 1024);
 
     Schema smallTable3Schema = new Schema();
     smallTable3Schema.addColumn("small3_id", TajoDataTypes.Type.INT4);
     smallTable3Schema.addColumn("small3_contents", TajoDataTypes.Type.TEXT);
-    smallTable3 = makeTestData("default.small3", smallTable3Schema, 10 * 1024 + 256);
+    smallTable3 = makeTestData("default.small3", smallTable3Schema, 30 * 1024);
 
     Schema largeTable1Schema = new Schema();
     largeTable1Schema.addColumn("large1_id", TajoDataTypes.Type.INT4);
@@ -110,12 +111,12 @@ public class TestBroadcastJoinPlan {
     Schema largeTable2Schema = new Schema();
     largeTable2Schema.addColumn("large2_id", TajoDataTypes.Type.INT4);
     largeTable2Schema.addColumn("large2_contents", TajoDataTypes.Type.TEXT);
-    largeTable2 = makeTestData("default.large2", largeTable2Schema, 1024 * 1024 + 1024);  //1M + 1K
+    largeTable2 = makeTestData("default.large2", largeTable2Schema, 1024 * 1024 + 20* 1024);  //1M + 1K
 
     Schema largeTable3Schema = new Schema();
     largeTable3Schema.addColumn("large3_id", TajoDataTypes.Type.INT4);
     largeTable3Schema.addColumn("large3_contents", TajoDataTypes.Type.TEXT);
-    largeTable3 = makeTestData("default.large3", largeTable3Schema, 1024 * 1024 + 2048);  //1M + 2K
+    largeTable3 = makeTestData("default.large3", largeTable3Schema, 1024 * 1024 + 30 * 1024);  //1M + 2K
 
     catalog.createTable(smallTable1);
     catalog.createTable(smallTable2);
@@ -162,6 +163,7 @@ public class TestBroadcastJoinPlan {
     TableDesc tableDesc = CatalogUtil.newTableDesc(tableName, schema, tableMeta, dataPath);
     TableStats tableStats = new TableStats();
     FileSystem fs = dataPath.getFileSystem(conf);
+    FileStatus fileStatus = fs.getFileStatus(dataPath);
     tableStats.setNumBytes(fs.getFileStatus(dataPath).getLen());
 
     tableDesc.setStats(tableStats);
@@ -295,8 +297,14 @@ public class TestBroadcastJoinPlan {
 
     assertEquals(NodeType.SCAN, lastLeftNode.getType());
     assertEquals(NodeType.SCAN, lastRightNode.getType());
-    assertEquals("default.small1", ((ScanNode)lastLeftNode).getCanonicalName());
-    assertEquals("default.small2", ((ScanNode)lastRightNode).getCanonicalName());
+
+    if (((ScanNode)lastLeftNode).getCanonicalName().equals("default.small1")) {
+      assertEquals("default.small2", ((ScanNode)lastRightNode).getCanonicalName());
+    } else if (((ScanNode)lastRightNode).getCanonicalName().equals("default.small1")) {
+      assertEquals("default.small2", ((ScanNode)lastLeftNode).getCanonicalName());
+    } else {
+      assertTrue("'default.small1' must be processed at the first execution block", false);
+    }
   }
 
   @Test
@@ -432,9 +440,9 @@ public class TestBroadcastJoinPlan {
 
   @Test
   public final void testBroadcastJoinSubquery() throws IOException, PlanningException {
-    String query = "select count(*) from large1 " +
-        "join small2 on large1_id = small2_id " +
-        "join (select * from small1) a on large1_id = a.small1_id";
+    String query = "select count(*) from (select * from small2) a " +
+        "join large1 on large1_id = a.small2_id " +
+        "join small1 on large1_id = small1_id";
 
     LogicalPlanner planner = new LogicalPlanner(catalog);
     LogicalOptimizer optimizer = new LogicalOptimizer(conf);
@@ -467,7 +475,7 @@ public class TestBroadcastJoinPlan {
         assertEquals(1, broadcastTables.size());
 
         assertTrue(!broadcastTables.contains("default.large1"));
-        assertTrue(broadcastTables.contains("default.small2"));
+        assertTrue(broadcastTables.contains("default.small1"));
       } else if(index == 1) {
         //LEAF, SUBQUERY
         Collection<String> broadcastTables = eb.getBroadcastTables();
@@ -624,9 +632,9 @@ public class TestBroadcastJoinPlan {
     // large1, large2, small1, large3, small2, small3
     String query = "select count(*) from small1 " +
         "left outer join large2 on large2_id = small1_id " +
-        "left outer join large1 on large1_id = large2_id " +
+        "right outer join large1 on large1_id = large2_id " +
         "left outer join large3 on large1_id = large3_id " +
-        "left outer join small2 on large3_id = small2_id " +
+        "right outer join small2 on large3_id = small2_id " +
         "left outer join small3 on large3_id = small3_id ";
 
     LogicalPlanner planner = new LogicalPlanner(catalog);

@@ -366,34 +366,50 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
    */
   public static double getCost(JoinEdge joinEdge) {
     double filterFactor = 1;
+    double cost;
     if (joinEdge.getJoinType() != JoinType.CROSS) {
       // TODO - should consider join type
       // TODO - should statistic information obtained from query history
       filterFactor = filterFactor * Math.pow(DEFAULT_SELECTION_FACTOR, joinEdge.getJoinQual().size());
-      return getCost(joinEdge.getLeftVertex()) *
+//      return getCost(joinEdge.getLeftVertex()) *
+//          getCost(joinEdge.getRightVertex()) * filterFactor;
+      cost = getCost(joinEdge.getLeftVertex()) *
           getCost(joinEdge.getRightVertex()) * filterFactor;
     } else {
       // make cost bigger if cross join
-      return Math.pow(getCost(joinEdge.getLeftVertex()) *
+//      return Math.pow(getCost(joinEdge.getLeftVertex()) *
+//          getCost(joinEdge.getRightVertex()), 2);
+      cost = Math.pow(getCost(joinEdge.getLeftVertex()) *
           getCost(joinEdge.getRightVertex()), 2);
     }
+
+    LOG.info("cost of " + joinEdge + " : " + cost);
+    return cost;
   }
 
   public static double getCost(JoinVertex joinVertex) {
+    double cost;
     if (joinVertex instanceof RelationVertex) {
-      return getCost(((RelationVertex) joinVertex).getRelationNode());
+//      return getCost(((RelationVertex) joinVertex).getRelationNode());
+      cost = getCost(((RelationVertex) joinVertex).getRelationNode());
     } else {
-      return getCost(((JoinedRelationsVertex)joinVertex).getJoinEdge());
+//      return getCost(((JoinedRelationsVertex)joinVertex).getJoinEdge());
+      cost = getCost(((JoinedRelationsVertex)joinVertex).getJoinEdge());
     }
+    LOG.info("cost of " + joinVertex + " : " + cost);
+    return cost;
   }
 
   // TODO - costs of other operator operators (e.g., group-by and sort) should be computed in proper manners.
   public static double getCost(LogicalNode node) {
+    double cost;
     switch (node.getType()) {
 
     case PROJECTION:
       ProjectionNode projectionNode = (ProjectionNode) node;
-      return getCost(projectionNode.getChild());
+//      return getCost(projectionNode.getChild());
+      cost = getCost(projectionNode.getChild());
+      break;
 
     case JOIN:
       JoinNode joinNode = (JoinNode) node;
@@ -401,32 +417,44 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       if (joinNode.hasJoinQual()) {
         filterFactor = Math.pow(DEFAULT_SELECTION_FACTOR,
             AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual()).length);
-        return getCost(joinNode.getLeftChild()) * getCost(joinNode.getRightChild()) * filterFactor;
+//        return getCost(joinNode.getLeftChild()) * getCost(joinNode.getRightChild()) * filterFactor;
+        cost = getCost(joinNode.getLeftChild()) * getCost(joinNode.getRightChild()) * filterFactor;
       } else {
-        return Math.pow(getCost(joinNode.getLeftChild()) * getCost(joinNode.getRightChild()), 2);
+//        return Math.pow(getCost(joinNode.getLeftChild()) * getCost(joinNode.getRightChild()), 2);
+        cost = Math.pow(getCost(joinNode.getLeftChild()) * getCost(joinNode.getRightChild()), 2);
       }
+      break;
 
     case SELECTION:
       SelectionNode selectionNode = (SelectionNode) node;
-      return getCost(selectionNode.getChild()) *
+//      return getCost(selectionNode.getChild()) *
+//          Math.pow(DEFAULT_SELECTION_FACTOR, AlgebraicUtil.toConjunctiveNormalFormArray(selectionNode.getQual()).length);
+      cost = getCost(selectionNode.getChild()) *
           Math.pow(DEFAULT_SELECTION_FACTOR, AlgebraicUtil.toConjunctiveNormalFormArray(selectionNode.getQual()).length);
+      break;
 
     case TABLE_SUBQUERY:
       TableSubQueryNode subQueryNode = (TableSubQueryNode) node;
-      return getCost(subQueryNode.getSubQuery());
+//      return getCost(subQueryNode.getSubQuery());
+      cost = getCost(subQueryNode.getSubQuery());
+      break;
 
     case SCAN:
       ScanNode scanNode = (ScanNode) node;
       if (scanNode.getTableDesc().getStats() != null) {
-        double cost = ((ScanNode)node).getTableDesc().getStats().getNumBytes();
-        return cost;
+        cost = ((ScanNode)node).getTableDesc().getStats().getNumBytes();
+//        return cost;
       } else {
-        return Long.MAX_VALUE;
+//        return Long.MAX_VALUE;
+        cost = Long.MAX_VALUE;
       }
+      break;
 
     case UNION:
       UnionNode unionNode = (UnionNode) node;
-      return getCost(unionNode.getLeftChild()) + getCost(unionNode.getRightChild());
+//      return getCost(unionNode.getLeftChild()) + getCost(unionNode.getRightChild());
+      cost = getCost(unionNode.getLeftChild()) + getCost(unionNode.getRightChild());
+      break;
 
     case EXCEPT:
     case INTERSECT:
@@ -435,7 +463,12 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     default:
       // all binary operators (join, union, except, and intersect) are handled in the above cases.
       // So, we need to handle only unary nodes in default.
-      return getCost(((UnaryNode) node).getChild());
+//      return getCost(((UnaryNode) node).getChild());
+      cost = getCost(((UnaryNode) node).getChild());
+      break;
     }
+
+    LOG.info("cost of " + node + " : " + cost);
+    return cost;
   }
 }
