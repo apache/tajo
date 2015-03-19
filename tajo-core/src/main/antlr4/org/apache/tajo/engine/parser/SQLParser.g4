@@ -1106,7 +1106,8 @@ grouping_element_list
 grouping_element
   : rollup_list
   | cube_list
-  | empty_grouping_set
+  | grouping_set_list
+  | empty_set
   | ordinary_grouping_set
   ;
 
@@ -1127,7 +1128,11 @@ cube_list
   : CUBE LEFT_PAREN c=ordinary_grouping_set_list RIGHT_PAREN
   ;
 
-empty_grouping_set
+grouping_set_list
+  : GROUPING SET LEFT_PAREN c=ordinary_grouping_set_list RIGHT_PAREN
+  ;
+
+empty_set
   : LEFT_PAREN RIGHT_PAREN
   ;
 

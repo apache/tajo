@@ -334,7 +334,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     Aggregation clause = new Aggregation();
 
     // If grouping group is not empty
-    if (ctx.grouping_element_list().grouping_element().get(0).empty_grouping_set() == null) {
+    if (ctx.grouping_element_list().grouping_element().get(0).empty_set() == null) {
       int elementSize = ctx.grouping_element_list().grouping_element().size();
       ArrayList<GroupElement> groups = new ArrayList<GroupElement>(elementSize + 1);
       ArrayList<Expr> ordinaryExprs = null;
@@ -357,6 +357,10 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
           groupSize++;
           groups.add(new GroupElement(GroupType.Cube,
               getRowValuePredicandsFromOrdinaryGroupingSetList(element.cube_list().c)));
+        } else if (element.grouping_set_list() != null) {
+          groupSize++;
+          groups.add(new GroupElement(GroupType.GroupingSet,
+              getRowValuePredicandsFromOrdinaryGroupingSetList(element.grouping_set_list().c)));
         }
       }
 
