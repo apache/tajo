@@ -182,6 +182,34 @@ public class TestCTASQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public final void testCtasWithMultipleUnions() throws Exception {
+    ResultSet res = executeFile("CtasWithMultipleUnions.sql");
+    res.close();
+
+    ResultSet res2 = executeQuery();
+    String actual = resultSetToString(res2);
+    res2.close();
+
+    String expected = "c_custkey,c_nationkey\n" +
+        "-------------------------------\n" +
+        "1,15\n" +
+        "2,13\n" +
+        "3,1\n" +
+        "4,4\n" +
+        "5,3\n" +
+        "1,15\n" +
+        "2,13\n" +
+        "3,1\n" +
+        "4,4\n" +
+        "5,3\n";
+
+    assertEquals(expected, actual);
+
+    TableDesc desc = client.getTableDesc(CatalogUtil.normalizeIdentifier(res2.getMetaData().getTableName(1)));
+    assertNotNull(desc);
+  }
+
+  @Test
   public final void testCtasWithStoreType() throws Exception {
     ResultSet res = executeFile("CtasWithStoreType.sql");
     res.close();

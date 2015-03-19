@@ -32,6 +32,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1368: Exceptions during processing nested union queries.
+    (jihun)
+
     TAJO-1405: Fix some illegal way of usages on connection pool. 
     (Contributed by navis, Committed by Keuntae Park)
 
