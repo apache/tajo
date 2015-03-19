@@ -1305,7 +1305,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     LinkedHashSet<Target> targets = Sets.newLinkedHashSet();
     for (Column column : relationNode.getLogicalSchema().getAllColumns()) {
 
-      // TODO - to be fixed
+      // TODO - Currently, EvalNode has DataType as a return type. So, RECORD cannot be used for any target.
+      // The following line is a kind of hack, preventing RECORD to be used for target in the logical planning phase.
+      // This problem should be resolved after TAJO-1402.
       if (column.getTypeDesc().getDataType().getType() == TajoDataTypes.Type.RECORD) {
         continue;
       }

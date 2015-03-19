@@ -4,7 +4,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS ${0} (
   truncated BOOL,
   created_at TIMESTAMP,
   id_str TEXT,
-  /*entrities RECORD (
+  /*entrities RECORD ( -- when we support array, we should remove this comment.
     urls ARRAY<TEXT>
   )*/
   in_reply_to_user_id_str TEXT,
@@ -33,7 +33,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS ${0} (
     profile_link_color TEXT,
     is_translator BOOL,
     id_str TEXT,
-    /*
+    /* -- when we support array, we should fill the following comments.
     entities RECORD (
       url RECORD (
       ),

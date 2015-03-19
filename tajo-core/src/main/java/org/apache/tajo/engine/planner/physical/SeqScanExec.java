@@ -154,9 +154,8 @@ public class SeqScanExec extends ScanExec {
       }
 
     } else {
-
       // no any projected columns, meaning that all columns should be projected.
-      // TODO - this implicit rule should be improved because all SQL statements have projected columns.
+      // TODO - this implicit rule makes code readability bad. So, we should remove it later
       projected = outSchema;
     }
 
@@ -183,6 +182,7 @@ public class SeqScanExec extends ScanExec {
     // set system default properties
     PlannerUtil.applySystemDefaultToTableProperties(context.getQueryContext(), meta);
 
+    // TODO - If fragments is null, we don't need to make any task. We should investigate it later
     if (fragments != null) {
       if (fragments.length > 1) {
         this.scanner = new MergeScanner(context.getConf(), plan.getPhysicalSchema(), meta,
@@ -196,7 +196,6 @@ public class SeqScanExec extends ScanExec {
       }
       scanner.init();
 
-      // TODO - Must check why scanner can be null
       if (scanner.isProjectable()) {
         this.projector = new Projector(context, projected, outSchema, plan.getTargets());
       } else {

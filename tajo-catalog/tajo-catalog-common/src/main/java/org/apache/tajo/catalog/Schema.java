@@ -136,6 +136,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
    * @param qualifier The qualifier
    */
   public void setQualifier(String qualifier) {
+    // only change root fields, and must keep each nested field simple name
     List<Column> columns = getRootColumns();
 
     fields.clear();
@@ -290,13 +291,19 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
   }
 
   /**
+   * Get root columns, meaning all columns except for nested fields.
    *
-   * @return
+   * @return A list of root columns
    */
 	public List<Column> getRootColumns() {
 		return ImmutableList.copyOf(fields);
 	}
 
+  /**
+   * Get all columns, including all nested fields
+   *
+   * @return A list of all columns
+   */
   public List<Column> getAllColumns() {
     final List<Column> columnList = TUtil.newList();
 

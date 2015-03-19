@@ -423,7 +423,7 @@ public class StringUtils {
    * @param objects object array
    * @param delimiter Delimiter string
    * @param startIndex the begin index to join
-   * @param length how many objects are joined
+   * @param length the number of columns to be joined
    * @return A joined string
    */
   public static String join(Object[] objects, String delimiter, int startIndex, int length) {

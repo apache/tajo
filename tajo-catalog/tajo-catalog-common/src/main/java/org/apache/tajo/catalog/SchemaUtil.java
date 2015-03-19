@@ -147,6 +147,7 @@ public class SchemaUtil {
       for (Column nestedColumn : column.typeDesc.nestedRecordSchema.getRootColumns()) {
         List<String> newPath = TUtil.newList(path);
         newPath.add(column.getQualifiedName());
+
         visitInDepthFirstOrder(depth + 1, newPath, function, nestedColumn);
       }
       function.visit(depth, path, column);
