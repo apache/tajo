@@ -285,6 +285,7 @@ public abstract class NameResolver {
     boolean found = false;
     String qualifier = null;
     String canonicalName = null;
+    boolean dbNameIsGiven = false;
 
     String [] qualifierParts = columnRef.getQualifier().split("\\.");
 
@@ -303,6 +304,7 @@ public abstract class NameResolver {
       RelationNode relation = null;
       if (qualifierParts.length >= 2) { // dbname.tbname.column_name.nested_field
         relation = lookupTable(block, CatalogUtil.buildFQName(qualifierParts[0], qualifierParts[1]));
+        dbNameIsGiven = relation != null;
       }
 
       if (relation == null) { // tbname.column_name.nested_field
@@ -313,12 +315,8 @@ public abstract class NameResolver {
       if (relation != null) { // if relation is found
         String resolvedDatabaseName = CatalogUtil.extractQualifier(relation.getCanonicalName());
 
-        if (qualifierParts.length >= 2) { // if a database name is given
-          qualifier = CatalogUtil.buildFQName(resolvedDatabaseName, qualifierParts[1]);
-        } else {
-          qualifier = CatalogUtil.buildFQName(resolvedDatabaseName, qualifierParts[0]);
-        }
-
+        String subQualifier = StringUtils.join(qualifierParts, ".", dbNameIsGiven ? 1 : 0);
+        qualifier = CatalogUtil.buildFQName(resolvedDatabaseName, subQualifier);
         canonicalName = CatalogUtil.buildFQName(qualifier, columnRef.getName());
 
         found = true;

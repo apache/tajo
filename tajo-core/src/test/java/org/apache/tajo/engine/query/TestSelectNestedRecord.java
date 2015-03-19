@@ -48,4 +48,24 @@ public class TestSelectNestedRecord extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
   }
+
+  @Test
+  public final void testNestedFieldAsGroupbyKey1() throws Exception {
+    List<String> tables = executeDDL("tweets_ddl.sql", "tweets", "tweets");
+    assertEquals(TUtil.newList("tweets"), tables);
+
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testNestedFieldAsJoinKey1() throws Exception {
+    List<String> tables = executeDDL("tweets_ddl.sql", "tweets", "tweets");
+    assertEquals(TUtil.newList("tweets"), tables);
+
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
 }

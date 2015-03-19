@@ -1,4 +1,4 @@
-CREATE EXTERNAL TABLE ${0} (
+CREATE EXTERNAL TABLE IF NOT EXISTS ${0} (
   coordinates TEXT,
   favorited BOOL,
   truncated BOOL,
