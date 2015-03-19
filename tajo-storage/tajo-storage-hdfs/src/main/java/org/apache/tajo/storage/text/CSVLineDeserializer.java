@@ -20,6 +20,7 @@ package org.apache.tajo.storage.text;
 
 import io.netty.buffer.ByteBuf;
 import org.apache.tajo.catalog.Column;
+import io.netty.buffer.ByteBufProcessor;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.datum.Datum;
@@ -30,9 +31,10 @@ import java.io.IOException;
 import java.util.Arrays;
 
 public class CSVLineDeserializer extends TextLineDeserializer {
-  private FieldSplitProcessor processor;
+  private ByteBufProcessor processor;
   private FieldSerializerDeserializer fieldSerDer;
   private ByteBuf nullChars;
+  private int delimiterCompensation;
 
   private int [] targetColumnIndexes;
   private Column [] projected;
@@ -50,7 +52,13 @@ public class CSVLineDeserializer extends TextLineDeserializer {
 
   @Override
   public void init() {
-    this.processor = new FieldSplitProcessor(CSVLineSerDe.getFieldDelimiter(meta));
+    byte[] delimiter = CSVLineSerDe.getFieldDelimiter(meta);
+    if (delimiter.length == 1) {
+      this.processor = new FieldSplitProcessor(delimiter[0]);
+    } else {
+      this.processor = new MultiBytesFieldSplitProcessor(delimiter);
+    }
+    this.delimiterCompensation = delimiter.length - 1;
 
     if (nullChars != null) {
       nullChars.release();
@@ -79,7 +87,7 @@ public class CSVLineDeserializer extends TextLineDeserializer {
       if (end < 0) {
         fieldLength = rowLength - start;
       } else {
-        fieldLength = end - start;
+        fieldLength = end - start - delimiterCompensation;
       }
 
       if (projection.length > currentTarget && currentIndex == projection[currentTarget]) {

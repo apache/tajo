@@ -29,8 +29,8 @@ import java.io.IOException;
  * Reads a text line and fills a Tuple with values
  */
 public abstract class TextLineDeserializer {
-  protected Schema schema;
-  protected TableMeta meta;
+  protected final Schema schema;
+  protected final TableMeta meta;
 
   public TextLineDeserializer(Schema schema, TableMeta meta) {
     this.schema = schema;

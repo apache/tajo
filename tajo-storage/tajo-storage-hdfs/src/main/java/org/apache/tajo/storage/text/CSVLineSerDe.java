@@ -23,6 +23,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.storage.StorageConstants;
+import org.apache.tajo.util.Bytes;
 
 public class CSVLineSerDe extends TextLineSerDe {
   @Override
@@ -35,8 +36,8 @@ public class CSVLineSerDe extends TextLineSerDe {
     return new CSVLineSerializer(schema, meta);
   }
 
-  public static char getFieldDelimiter(TableMeta meta) {
+  public static byte[] getFieldDelimiter(TableMeta meta) {
     return StringEscapeUtils.unescapeJava(meta.getOption(StorageConstants.TEXT_DELIMITER,
-        StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
+        StorageConstants.DEFAULT_FIELD_DELIMITER)).getBytes(Bytes.UTF8_CHARSET);
   }
 }

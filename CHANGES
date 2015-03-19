@@ -9,6 +9,12 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1381: Support multi-bytes delimiter for Text file.
+    (Contributed by navis, Committed by jinho)
+
+    TAJO-1391: RpcConnectionPool should check reference counter of connection 
+    before close. (Contributed by navis, Committed by jihun)
+
     TAJO-1383: Improve broadcast table cache. (jinho)
 
     TAJO-1374: Support multi-bytes delimiter for CSV file.
@@ -25,6 +31,12 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1368: Exceptions during processing nested union queries.
+    (jihun)
+
+    TAJO-1405: Fix some illegal way of usages on connection pool. 
+    (Contributed by navis, Committed by Keuntae Park)
 
     TAJO-1384: Duplicated output file path problem. (jihoon)
 
@@ -66,6 +78,8 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1337: Implements common modules to handle RESTful API. (jihun)
 
     TAJO-1329: Improve Schema class to support nested struct support.
     (hyunsik)
