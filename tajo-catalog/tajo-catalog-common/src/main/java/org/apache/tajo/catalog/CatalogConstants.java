@@ -38,6 +38,8 @@ public class CatalogConstants {
   public static final String DEPRECATED_CONNECTION_PASSWORD = "tajo.catalog.jdbc.connection.password";
   public static final String DEPRECATED_CATALOG_URI="tajo.catalog.jdbc.uri";
 
+  public static final String DEFAULT_DATABASE_NAME = "default";
+
   public static final String TB_META = "META";
   public static final String TB_SPACES = "TABLESPACES";
   public static final String TB_DATABASES = "DATABASES_";
