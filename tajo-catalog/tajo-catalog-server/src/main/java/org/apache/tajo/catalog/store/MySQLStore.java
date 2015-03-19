@@ -26,10 +26,11 @@ import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.exception.InternalException;
 
 public class MySQLStore extends AbstractMySQLMariaDBStore  {
-  /** 2014-03-20: First versioning */
-  private static final int MYSQL_CATALOG_STORE_VERSION_2 = 2;
-  /** Before 2013-03-20 */
-  private static final int MYSQL_CATALOG_STORE_VERSION_1 = 1;
+
+  /** 3 - 2015-03-12: Nested Schema (TAJO-1329) */
+  /** 2 - 2014-06-09: First versioning */
+  /** 1-  Before 2013-03-20 */
+  private static final int MYSQL_CATALOG_STORE_VERSION = 3;
 
   private static final String CATALOG_DRIVER = "com.mysql.jdbc.Driver";
   @Override
@@ -43,7 +44,7 @@ public class MySQLStore extends AbstractMySQLMariaDBStore  {
 
   @Override
   public int getDriverVersion() {
-    return MYSQL_CATALOG_STORE_VERSION_2;
+    return MYSQL_CATALOG_STORE_VERSION;
   }
 
   @Override

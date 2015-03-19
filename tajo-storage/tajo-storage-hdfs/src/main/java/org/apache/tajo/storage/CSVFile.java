@@ -40,6 +40,7 @@ import org.apache.tajo.storage.compress.CodecPool;
 import org.apache.tajo.storage.exception.AlreadyExistsStorageException;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.rcfile.NonSyncByteArrayOutputStream;
+import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.BytesUtils;
 
 import java.io.*;
@@ -61,7 +62,7 @@ public class CSVFile {
     private FSDataOutputStream fos;
     private DataOutputStream outputStream;
     private CompressionOutputStream deflateFilter;
-    private char delimiter;
+    private byte[] delimiter;
     private TableStatistics stats = null;
     private Compressor compressor;
     private CompressionCodecFactory codecFactory;
@@ -83,7 +84,8 @@ public class CSVFile {
       this.meta = meta;
       this.schema = schema;
       this.delimiter = StringEscapeUtils.unescapeJava(
-          this.meta.getOption(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER)).charAt(0);
+          this.meta.getOption(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER))
+          .getBytes(Bytes.UTF8_CHARSET);
 
       this.columnNum = schema.size();
 
@@ -93,7 +95,7 @@ public class CSVFile {
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {
-        nullChars = nullCharacters.getBytes();
+        nullChars = nullCharacters.getBytes(Bytes.UTF8_CHARSET);
       }
     }
 
@@ -169,8 +171,8 @@ public class CSVFile {
         rowBytes += serde.serialize(schema.getColumn(i), datum, os, nullChars);
 
         if(columnNum - 1 > i){
-          os.write((byte) delimiter);
-          rowBytes += 1;
+          os.write(delimiter);
+          rowBytes += delimiter.length;
         }
         if (isShuffle) {
           // it is to calculate min/max values, and it is only used for the intermediate file.
@@ -265,7 +267,8 @@ public class CSVFile {
       //Delimiter
       this.delimiter = StringEscapeUtils.unescapeJava(
           meta.getOption(StorageConstants.TEXT_DELIMITER,
-          meta.getOption(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER))).charAt(0);
+          meta.getOption(StorageConstants.CSVFILE_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER)))
+          .getBytes(Bytes.UTF8_CHARSET);
 
       String nullCharacters = StringEscapeUtils.unescapeJava(
           meta.getOption(StorageConstants.TEXT_NULL,
@@ -274,12 +277,12 @@ public class CSVFile {
       if (StringUtils.isEmpty(nullCharacters)) {
         nullChars = NullDatum.get().asTextBytes();
       } else {
-        nullChars = nullCharacters.getBytes();
+        nullChars = nullCharacters.getBytes(Bytes.UTF8_CHARSET);
       }
     }
 
     private final static int DEFAULT_PAGE_SIZE = 256 * 1024;
-    private char delimiter;
+    private byte[] delimiter;
     private FileSystem fs;
     private FSDataInputStream fis;
     private InputStream is; //decompressd stream
@@ -476,7 +479,7 @@ public class CSVFile {
         }
 
         byte[][] cells = BytesUtils.splitPreserveAllTokens(buffer.getData(), startOffsets.get(currentIdx),
-            rowLengthList.get(currentIdx), delimiter, targetColumnIndexes);
+            rowLengthList.get(currentIdx), delimiter, targetColumnIndexes, schema.size());
         currentIdx++;
         return new LazyTuple(schema, cells, offset, nullChars, serde);
       } catch (Throwable t) {

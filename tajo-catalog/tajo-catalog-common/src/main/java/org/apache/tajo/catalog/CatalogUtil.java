@@ -318,8 +318,7 @@ public class CatalogUtil {
   }
 
   /**
-  * This method transforms the unqualified names of a given schema into
-  * the qualified names.
+  * This method transforms the unqualified names of a schema to the qualified names.
   *
   * @param tableName a table name to be prefixed
   * @param schema a schema to be transformed
@@ -327,15 +326,9 @@ public class CatalogUtil {
   * @return
   */
   public static SchemaProto getQualfiedSchema(String tableName, SchemaProto schema) {
-    SchemaProto.Builder revisedSchema = SchemaProto.newBuilder(schema);
-    revisedSchema.clearFields();
-    for (ColumnProto col : schema.getFieldsList()) {
-      ColumnProto.Builder builder = ColumnProto.newBuilder(col);
-      builder.setName(tableName + CatalogConstants.IDENTIFIER_DELIMITER + extractSimpleName(col.getName()));
-      revisedSchema.addFields(builder.build());
-    }
-
-    return revisedSchema.build();
+    Schema restored = new Schema(schema);
+    restored.setQualifier(tableName);
+    return restored.getProto();
   }
 
   public static DataType newDataType(Type type, String code) {
@@ -352,6 +345,19 @@ public class CatalogUtil {
 
   public static DataType newSimpleDataType(Type type) {
     return DataType.newBuilder().setType(type).build();
+  }
+
+  /**
+   * Create a record type
+   *
+   * @param nestedFieldNum The number of nested fields
+   * @return RECORD DataType
+   */
+  public static DataType newRecordType(int nestedFieldNum) {
+    DataType.Builder builder = DataType.newBuilder();
+    builder.setType(Type.RECORD);
+    builder.setNumNestedFields(nestedFieldNum);
+    return builder.build();
   }
 
   public static DataType [] newSimpleDataTypeArray(Type... types) {

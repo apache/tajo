@@ -20,7 +20,6 @@ package org.apache.tajo.worker;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -30,7 +29,6 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.utils.TupleCache;
 import org.apache.tajo.worker.event.TaskRunnerEvent;
 import org.apache.tajo.worker.event.TaskRunnerStartEvent;
 import org.apache.tajo.worker.event.TaskRunnerStopEvent;
@@ -184,7 +182,7 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
       ExecutionBlockContext executionBlockContext =  executionBlockContextMap.remove(event.getExecutionBlockId());
       if(executionBlockContext != null){
         try {
-          TupleCache.getInstance().removeBroadcastCache(event.getExecutionBlockId());
+          executionBlockContext.getSharedResource().releaseBroadcastCache(event.getExecutionBlockId());
           executionBlockContext.reportExecutionBlock(event.getExecutionBlockId());
           workerContext.getHashShuffleAppenderManager().close(event.getExecutionBlockId());
           workerContext.getTaskHistoryWriter().flushTaskHistories();

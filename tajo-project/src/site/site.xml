@@ -109,7 +109,7 @@ window.onload = ga_event_load;
       <item name="Overview" href="index.html" />
       <item name="License" href="license.html" />
       <item name="Downloads" href="downloads.html" />
-      <item name="Getting Started" href="docs/0.9.0/getting_started.html" />
+      <item name="Getting Started" href="docs/current/getting_started.html" />
     </menu>
 
     <menu name="Community">

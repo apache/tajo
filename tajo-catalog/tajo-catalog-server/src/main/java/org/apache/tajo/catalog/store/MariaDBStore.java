@@ -26,8 +26,9 @@ import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.exception.InternalException;
 
 public class MariaDBStore extends AbstractMySQLMariaDBStore {
-  /** 2014-06-09: First versioning */
-  private static final int MARIADB_CATALOG_STORE_VERSION = 2;
+  /** 3 - 2015-03-12: Nested Schema (TAJO-1329) */
+  /** 2 - First versioning */
+  private static final int MARIADB_CATALOG_STORE_VERSION = 3;
 
   private static final String CATALOG_DRIVER = "org.mariadb.jdbc.Driver";
 

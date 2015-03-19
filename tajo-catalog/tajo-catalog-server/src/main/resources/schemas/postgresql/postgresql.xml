@@ -19,7 +19,12 @@
 <tns:store xmlns:tns="http://tajo.apache.org/catalogstore" 
 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
 xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.xsd ">
-	<tns:base version="2">
+
+  <!-- Version History -->
+  <!-- 3 - 2015-03-12: Nested Schema (TAJO-1329) -->
+  <!-- 2 - First versioning -->
+
+	<tns:base version="3">
 		<tns:objects>
 			<tns:Object name="META" type="table" order="0">
 				<tns:sql><![CDATA[CREATE TABLE META (VERSION INT NOT NULL)]]></tns:sql>
@@ -76,9 +81,10 @@ xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.
   				TID INT NOT NULL,
   				COLUMN_NAME VARCHAR(255) NOT NULL,
   				ORDINAL_POSITION INT NOT NULL,
+  				NESTED_FIELD_NUM INT NOT NULL,
   				DATA_TYPE CHAR(16),
   				TYPE_LENGTH INTEGER,
-  				CONSTRAINT COLUMNS_PKEY PRIMARY KEY (TID, COLUMN_NAME),
+  				CONSTRAINT COLUMNS_PKEY PRIMARY KEY (TID, ORDINAL_POSITION),
   				FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
 				)]]>
 				</tns:sql>
@@ -88,7 +94,7 @@ xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.
 				CREATE TABLE OPTIONS (
   				TID INT NOT NULL,
   				KEY_ VARCHAR(255) NOT NULL,
-  				VALUE_ VARCHAR(255) NOT NULL,
+  				VALUE_ VARCHAR(4000) NOT NULL,
   				CONSTRAINT OPTIONS_PKEY PRIMARY KEY (TID, KEY_),
   				FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
 				)]]>

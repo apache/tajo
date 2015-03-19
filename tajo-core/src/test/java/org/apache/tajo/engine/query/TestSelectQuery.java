@@ -635,4 +635,52 @@ public class TestSelectQuery extends QueryTestCaseBase {
       testingCluster.getConfiguration().setSystemTimezone(TimeZone.getTimeZone("GMT"));
     }
   }
+  
+  @Test
+  public void testMultiBytesDelimiter1() throws Exception {
+    executeDDL("multibytes_delimiter_table1_ddl.sql", "multibytes_delimiter1");
+    try {
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE table1");
+    }
+  }
+  
+  @Test
+  public void testMultiBytesDelimiter2() throws Exception {
+    executeDDL("multibytes_delimiter_table2_ddl.sql", "multibytes_delimiter2");
+    try {
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE table2");
+    }
+  }
+
+  @Test
+  public void testMultiBytesDelimiter3() throws Exception {
+    executeDDL("multibytes_delimiter_table3_ddl.sql", "multibytes_delimiter1");
+    try {
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE table1");
+    }
+  }
+
+  @Test
+  public void testMultiBytesDelimiter4() throws Exception {
+    executeDDL("multibytes_delimiter_table4_ddl.sql", "multibytes_delimiter2");
+    try {
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      executeString("DROP TABLE table2");
+    }
+  }
 }

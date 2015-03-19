@@ -1,0 +1,16 @@
+--
+-- Tajo database dump
+--
+
+
+--
+-- Database name: "TestTajoDump"
+--
+
+CREATE DATABASE IF NOT EXISTS "TestTajoDump";
+
+--
+-- Name: "TestTajoDump"."TableName2"; Type: TABLE; Storage: CSV
+--
+CREATE TABLE "TestTajoDump"."TableName2" ("Age" INT4, "Name" RECORD ("FirstName" TEXT, lastname TEXT)) USING CSV WITH ('text.delimiter'='|');
+
