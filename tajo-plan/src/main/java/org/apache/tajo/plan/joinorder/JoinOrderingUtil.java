@@ -108,11 +108,14 @@ public class JoinOrderingUtil {
       JoinedRelationsVertex tempLeftChild = new JoinedRelationsVertex(leftEdge);
       JoinEdge tempEdge = context.getCachedOrNewJoinEdge(rightEdge.getJoinSpec(), tempLeftChild,
           rightEdge.getRightVertex());
-      if (!findJoinConditionForJoinVertex(context.getCandidateJoinConditions(), tempEdge, true).isEmpty()) {
-        return false;
-      }
-      if (!findJoinConditionForJoinVertex(context.getCandidateJoinFilters(), tempEdge, true).isEmpty()) {
-        return false;
+      if ((rightEdge.getJoinType() != JoinType.INNER && rightEdge.getJoinType() != JoinType.CROSS)
+          || (leftEdge.getJoinType() != JoinType.INNER && leftEdge.getJoinType() != JoinType.CROSS)) {
+        if (!findJoinConditionForJoinVertex(context.getCandidateJoinConditions(), tempEdge, true).isEmpty()) {
+          return false;
+        }
+        if (!findJoinConditionForJoinVertex(context.getCandidateJoinFilters(), tempEdge, true).isEmpty()) {
+          return false;
+        }
       }
       return true;
     }

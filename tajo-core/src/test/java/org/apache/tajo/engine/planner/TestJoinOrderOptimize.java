@@ -97,6 +97,11 @@ public class TestJoinOrderOptimize extends QueryPlanTestCaseBase {
   }
 
   @Test
+  public final void testJoinWithMultipleJoinQual1() throws Exception {
+    String plan = executeQuery();
+  }
+
+  @Test
   public final void testJoinWithMultipleJoinQual4() throws Exception {
     String plan = executeQuery();
   }

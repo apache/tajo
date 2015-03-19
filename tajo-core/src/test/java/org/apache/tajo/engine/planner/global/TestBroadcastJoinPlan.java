@@ -36,11 +36,11 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.plan.LogicalOptimizer;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.PlanningException;
-import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -51,6 +51,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Collection;
 
+import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotNull;
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
@@ -355,22 +356,34 @@ public class TestBroadcastJoinPlan {
 
     ExecutionBlockCursor ebCursor = new ExecutionBlockCursor(masterPlan);
     int index = 0;
+    boolean broadcastLarge1 = false, broadcastLarge2 = false, broadcastSmall1 = false, broadcastSmall2 = false;
     while (ebCursor.hasNext()) {
       ExecutionBlock eb = ebCursor.nextBlock();
-      if(index == 0) {
-        Collection<String> broadcastTables = eb.getBroadcastTables();
+      Collection<String> broadcastTables = eb.getBroadcastTables();
+      if (index < 2) {
         assertEquals(1, broadcastTables.size());
+      }
 
-        assertTrue(!broadcastTables.contains("default.large2"));
-        assertTrue(broadcastTables.contains("default.small2"));
-      } else if(index == 1) {
-        Collection<String> broadcastTables = eb.getBroadcastTables();
-        assertEquals(1, broadcastTables.size());
-        assertTrue(!broadcastTables.contains("default.large1"));
-        assertTrue(broadcastTables.contains("default.small1"));
+      broadcastLarge1 |= broadcastTables.contains("default.large1");
+      broadcastLarge2 |= broadcastTables.contains("default.large2");
+
+      if (!broadcastSmall1) {
+        broadcastSmall1 = broadcastTables.contains("default.small1");
+      } else {
+        assertFalse("'default.small1' must be broadcasted only one time.", broadcastTables.contains("default.small1"));
+      }
+      if (!broadcastSmall2) {
+        broadcastSmall2 = broadcastTables.contains("default.small2");
+      } else {
+        assertFalse("'default.small2' must be broadcasted only one time.", broadcastTables.contains("default.small2"));
       }
       index++;
     }
+
+    assertFalse("'default.large1' must not be broadcasted", broadcastLarge1);
+    assertFalse("'default.large2' must not be broadcasted", broadcastLarge2);
+    assertTrue("'default.small1' must be broadcasted", true);
+    assertTrue("'default.small2' must be broadcasted", true);
 
     assertEquals(5, index);
   }
@@ -609,9 +622,9 @@ public class TestBroadcastJoinPlan {
   @Test
   public final void testLeftOuterJoinCase3() throws IOException, PlanningException {
     // large1, large2, small1, large3, small2, small3
-    String query = "select count(*) from large1 " +
-        "left outer join large2 on large1_id = large2_id " +
-        "left outer join small1 on large2_id = small1_id " +
+    String query = "select count(*) from small1 " +
+        "left outer join large2 on large2_id = small1_id " +
+        "left outer join large1 on large1_id = large2_id " +
         "left outer join large3 on large1_id = large3_id " +
         "left outer join small2 on large3_id = small2_id " +
         "left outer join small3 on large3_id = small3_id ";
