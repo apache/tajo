@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.tajo.algebra.ColumnReferenceExpr;
+import org.apache.tajo.algebra.Relation;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.NestedPathUtil;
@@ -36,8 +37,10 @@ import org.apache.tajo.util.Pair;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Column name resolution utility. A SQL statement can include many kinds of column names,
@@ -111,6 +114,28 @@ public abstract class NameResolver {
     }
 
     return found.get(0);
+  }
+
+  /**
+   * Find relations such that its schema contains a given column
+   *
+   * @param block the current block
+   * @param columnName The column name to find relation
+   * @return relations including a given column
+   * @throws PlanningException
+   */
+  public static Collection<RelationNode> lookupTableByColumns(LogicalPlan.QueryBlock block, String columnName)
+      throws PlanningException {
+
+    Set<RelationNode> found = TUtil.newHashSet();
+
+    for (RelationNode rel : block.getRelations()) {
+      if (rel.getLogicalSchema().contains(columnName)) {
+        found.add(rel);
+      }
+    }
+
+    return found;
   }
 
   /**
@@ -282,72 +307,71 @@ public abstract class NameResolver {
       throws PlanningException {
     Preconditions.checkArgument(columnRef.hasQualifier(), "ColumnReferenceExpr must be qualified.");
 
-    boolean found = false;
-    String qualifier = null;
-    String canonicalName = null;
-    boolean dbNameIsGiven = false;
-
     String [] qualifierParts = columnRef.getQualifier().split("\\.");
 
-    // there are three cases as follows:
+    // This method assumes that column name consists of two or more dot chained names.
+    // In this case, there must be three cases as follows:
     //
-    // - dbname.tbname.column_name.....
+    // - dbname.tbname.column_name.nested_field...
     // - tbname.column_name.nested_field...
-    // - column.nested_field.nested_field...
+    // - column.nested_fieldX...
 
+    List<RelationNode> guessedRelations = TUtil.newList();
 
-    // check two cases: dbname.tbname.column_name.nested_field or tbname.column_name.nested_field
-    if (qualifierParts.length >= 1) {
+    // this position indicates the index of column name in qualifierParts;
+    // It must be 0 or more because a qualified column is always passed to lookupQualifierAndCanonicalName().
+    int columnNamePosition = -1;
 
-      // lookupTable function accepts a qualified as well as unqualified table name.
-
-      RelationNode relation = null;
-      if (qualifierParts.length >= 2) { // dbname.tbname.column_name.nested_field
-        relation = lookupTable(block, CatalogUtil.buildFQName(qualifierParts[0], qualifierParts[1]));
-        dbNameIsGiven = relation != null;
-      }
-
-      if (relation == null) { // tbname.column_name.nested_field
-        relation = lookupTable(block, qualifierParts[0]);
-      }
-
-
-      if (relation != null) { // if relation is found
-        String resolvedDatabaseName = CatalogUtil.extractQualifier(relation.getCanonicalName());
-
-        String subQualifier = StringUtils.join(qualifierParts, ".", dbNameIsGiven ? 1 : 0);
-        qualifier = CatalogUtil.buildFQName(resolvedDatabaseName, subQualifier);
-        canonicalName = CatalogUtil.buildFQName(qualifier, columnRef.getName());
-
-        found = true;
+    // check for dbname.tbname.column_name.nested_field
+    if (qualifierParts.length >= 2) {
+      RelationNode rel = lookupTable(block, CatalogUtil.buildFQName(qualifierParts[0], qualifierParts[1]));
+      if (rel != null) {
+        guessedRelations.add(rel);
+        columnNamePosition = 2;
       }
     }
 
-
-    if (!found) { // check column_name.nested_field....
-
-      String [] parts = columnRef.getName().split("\\.");
-
-      // Get only database name
-      Column column = lookupColumnFromAllRelsInBlock(block, qualifierParts[0]);
-      String nestedColumnPath = null;
-      if (parts.length > 0) {
-        nestedColumnPath = NestedPathUtil.make(parts);
-        Column leafColumn = NestedPathUtil.lookupPath(column, nestedColumnPath);
-
-        if (leafColumn != null) {
-          qualifier = column.getQualifier();
-          canonicalName = CatalogUtil.buildFQName(qualifier, column.getSimpleName() + nestedColumnPath);
-          found = true;
-        }
+    // check for tbname.column_name.nested_field
+    if (guessedRelations.size() == 0 && qualifierParts.length >= 1) {
+      RelationNode rel = lookupTable(block, qualifierParts[0]);
+      if (rel != null) {
+        guessedRelations.add(rel);
+        columnNamePosition = 1;
       }
     }
 
-    if (found) {
-      return new Pair<String, String>(qualifier, canonicalName);
-    } else {
+    // column.nested_fieldX...
+    if (guessedRelations.size() == 0 && qualifierParts.length == 1) {
+      guessedRelations.addAll(lookupTableByColumns(block, qualifierParts[0]));
+      columnNamePosition = 0;
+    }
+
+    // throw exception if no column cannot be founded or two or more than columns are founded
+    if (guessedRelations.size() == 0) {
       throw new NoSuchColumnException(columnRef.getQualifier());
+    } else if (guessedRelations.size() > 1) {
+      throw new AmbiguousFieldException(columnRef.getCanonicalName());
     }
+
+    String qualifier = guessedRelations.get(0).getCanonicalName();
+    String columnName = "";
+
+    if (columnNamePosition >= qualifierParts.length) { // if there is no column in qualifierParts
+      columnName = columnRef.getName();
+    } else {
+      // join a column name and its nested field names
+      columnName = qualifierParts[columnNamePosition];
+
+      // if qualifierParts include nested field names
+      if (qualifierParts.length > columnNamePosition) {
+        columnName += StringUtils.join(qualifierParts, "/", columnNamePosition + 1, qualifierParts.length);
+      }
+
+      // columnRef always has a leaf field name.
+      columnName += "/" + columnRef.getName();
+    }
+
+    return new Pair<String, String>(qualifier, columnName);
   }
 
   static Column ensureUniqueColumn(List<Column> candidates) throws VerifyException {

@@ -188,6 +188,9 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 
       String [] paths = name.split(NestedPathUtil.PATH_DELIMITER);
       Column column = getColumn(paths[0]);
+      if (column == null) {
+        return null;
+      }
       Column actualColumn = NestedPathUtil.lookupPath(column, paths);
 
       Column columnPath = new Column(
@@ -368,7 +371,14 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 
     for (Column c :columns) {
       if (NestedPathUtil.isPath(c.getSimpleName())) {
-        containFlag &= (getColumn(c.getSimpleName()) != null);
+        if (contains(c.getQualifiedName())) {
+          containFlag &= true;
+        } else {
+          String[] paths = c.getQualifiedName().split("/");
+          boolean existRootPath = contains(paths[0]);
+          boolean existLeafPath = getColumn(c.getSimpleName()) != null;
+          containFlag &= existRootPath && existLeafPath;
+        }
       } else {
         containFlag &= fields.contains(c);
       }
