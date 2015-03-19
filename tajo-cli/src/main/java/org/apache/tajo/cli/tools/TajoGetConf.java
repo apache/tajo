@@ -40,7 +40,6 @@ public class TajoGetConf {
   }
 
   private TajoConf tajoConf;
-  private TajoClient tajoClient;
   private Writer writer;
 
   public final static String defaultLeftPad = " ";
@@ -53,7 +52,6 @@ public class TajoGetConf {
   public TajoGetConf(TajoConf tajoConf, Writer writer, TajoClient tajoClient) {
     this.tajoConf = tajoConf;
     this.writer = writer;
-    this.tajoClient = tajoClient;
   }
 
   private void printUsage(boolean tsqlMode) {
@@ -115,12 +113,6 @@ public class TajoGetConf {
       return;
     } else if (hostName != null && port != null) {
       tajoConf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName + ":" + port);
-      tajoClient = new TajoClientImpl(ServiceTrackerFactory.get(tajoConf));
-    } else if (hostName == null && port == null) {
-      tajoClient = new TajoClientImpl(ServiceTrackerFactory.get(tajoConf));
-    }
-    if (!tajoClient.isConnected()) {
-      System.out.println("ERROR: cannot connect Tajo server");
     }
 
     processConfKey(writer, param);
