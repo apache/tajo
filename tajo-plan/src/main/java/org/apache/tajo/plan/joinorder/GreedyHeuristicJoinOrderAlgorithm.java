@@ -36,7 +36,8 @@ import java.util.*;
  * all join operators.
  */
 public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
-  public static double DEFAULT_SELECTION_FACTOR = 0.1;
+
+  public static final double DEFAULT_SELECTION_FACTOR = 0.1;
   private static final Log LOG = LogFactory.getLog(GreedyHeuristicJoinOrderAlgorithm.class);
 
   @Override

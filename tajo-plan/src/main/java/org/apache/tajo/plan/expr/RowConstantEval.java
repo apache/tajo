@@ -18,8 +18,10 @@
 
 package org.apache.tajo.plan.expr;
 
-import com.google.common.base.Objects;
+import java.util.Arrays;
+
 import com.google.gson.annotations.Expose;
+
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
@@ -67,6 +69,14 @@ public class RowConstantEval extends EvalNode {
   }
 
   @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + Arrays.hashCode(values);
+    return result;
+  }
+
+  @Override
   public boolean equals(Object obj) {
     if (obj instanceof RowConstantEval) {
       RowConstantEval other = (RowConstantEval) obj;
@@ -74,11 +84,6 @@ public class RowConstantEval extends EvalNode {
     }
 
     return false;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hashCode(values);
   }
 
   public String toString() {

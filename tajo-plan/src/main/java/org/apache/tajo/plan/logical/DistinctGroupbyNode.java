@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.logical;
 
 import com.google.gson.annotations.Expose;
+
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -27,6 +28,7 @@ import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class DistinctGroupbyNode extends UnaryNode implements Projectable, Cloneable {
@@ -147,7 +149,7 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
 
   public String toString() {
     StringBuilder sb = new StringBuilder("Distinct GroupBy (");
-    if (groupingColumns != null || groupingColumns.length > 0) {
+    if (groupingColumns != null && groupingColumns.length > 0) {
       sb.append("grouping set=").append(TUtil.arrayToString(groupingColumns));
       sb.append(", ");
     }
@@ -156,6 +158,19 @@ public class DistinctGroupbyNode extends UnaryNode implements Projectable, Clone
     }
     sb.append(")");
     return sb.toString();
+  }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + Arrays.hashCode(aggrFunctions);
+    result = prime * result + ((groupbyPlan == null) ? 0 : groupbyPlan.hashCode());
+    result = prime * result + Arrays.hashCode(groupingColumns);
+    result = prime * result + Arrays.hashCode(resultColumnIds);
+    result = prime * result + ((subGroupbyPlan == null) ? 0 : subGroupbyPlan.hashCode());
+    result = prime * result + Arrays.hashCode(targets);
+    return result;
   }
 
   @Override

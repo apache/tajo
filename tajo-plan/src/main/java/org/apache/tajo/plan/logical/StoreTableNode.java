@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.logical;
 
 import com.google.gson.annotations.Expose;
+
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.util.TUtil;
@@ -77,6 +78,15 @@ public class StoreTableNode extends PersistentStoreNode implements Cloneable {
     return planStr;
   }
   
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((partitionDesc == null) ? 0 : partitionDesc.hashCode());
+    result = prime * result + ((tableName == null) ? 0 : tableName.hashCode());
+    return result;
+  }
+
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof StoreTableNode) {

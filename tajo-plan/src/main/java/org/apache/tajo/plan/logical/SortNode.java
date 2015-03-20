@@ -18,8 +18,11 @@
 
 package org.apache.tajo.plan.logical;
 
+import java.util.Arrays;
+
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
+
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.util.TUtil;
@@ -46,7 +49,16 @@ public final class SortNode extends UnaryNode implements Cloneable {
     return this.sortKeys;
   }
   
-  @Override 
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + Arrays.hashCode(sortKeys);
+    result = prime * result + ((sortPurpose == null) ? 0 : sortPurpose.hashCode());
+    return result;
+  }
+
+  @Override
   public boolean equals(Object obj) {
     if (obj instanceof SortNode) {
       SortNode other = (SortNode) obj;

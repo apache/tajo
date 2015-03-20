@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
@@ -821,7 +822,7 @@ public class GlobalPlanner {
 
   public static boolean hasUnionChild(UnaryNode node) {
 
-    // there are two cases:
+    // there are three cases:
     //
     // The first case is:
     //
@@ -835,9 +836,15 @@ public class GlobalPlanner {
     // select avg(..) from (select ... UNION select ) T
     //
     // We can generalize this case as 'a shuffle required operator on the top of union'.
+    //
+    // The third case is:
+    //
+    // create table select * from ( select ... ) a union all select * from ( select ... ) b
 
-    if (node.getChild() instanceof UnaryNode) { // first case
-      UnaryNode child = node.getChild();
+    LogicalNode childNode = node.getChild();
+
+    if (childNode instanceof UnaryNode) { // first case
+      UnaryNode child = (UnaryNode) childNode;
 
       if (child.getChild().getType() == NodeType.PROJECTION) {
         child = child.getChild();
@@ -848,9 +855,11 @@ public class GlobalPlanner {
         return tableSubQuery.getSubQuery().getType() == NodeType.UNION;
       }
 
-    } else if (node.getChild().getType() == NodeType.TABLE_SUBQUERY) { // second case
+    } else if (childNode.getType() == NodeType.TABLE_SUBQUERY) { // second case
       TableSubQueryNode tableSubQuery = node.getChild();
       return tableSubQuery.getSubQuery().getType() == NodeType.UNION;
+    } else if (childNode.getType() == NodeType.UNION) { // third case
+      return true;
     }
 
     return false;
@@ -1156,6 +1165,9 @@ public class GlobalPlanner {
           ((TableSubQueryNode)child).getSubQuery().getType() == NodeType.UNION) {
         MasterPlan masterPlan = context.plan;
         for (DataChannel dataChannel : masterPlan.getIncomingChannels(execBlock.getId())) {
+          // This data channel will be stored in staging directory, but RawFile, default file type, does not support
+          // distributed file system. It needs to change the file format for distributed file system.
+          dataChannel.setStoreType(CatalogProtos.StoreType.CSV);
           ExecutionBlock subBlock = masterPlan.getExecBlock(dataChannel.getSrcId());
 
           ProjectionNode copy = PlannerUtil.clone(plan, node);
@@ -1371,18 +1383,28 @@ public class GlobalPlanner {
       LogicalPlan.QueryBlock rightQueryBlock = plan.getBlock(node.getRightChild());
       LogicalNode rightChild = visit(context, plan, rightQueryBlock, rightQueryBlock.getRoot(), stack);
       stack.pop();
+      
+      MasterPlan masterPlan = context.getPlan();
 
       List<ExecutionBlock> unionBlocks = Lists.newArrayList();
       List<ExecutionBlock> queryBlockBlocks = Lists.newArrayList();
 
       ExecutionBlock leftBlock = context.execBlockMap.remove(leftChild.getPID());
       ExecutionBlock rightBlock = context.execBlockMap.remove(rightChild.getPID());
-      if (leftChild.getType() == NodeType.UNION) {
+
+      // These union types need to eliminate unnecessary nodes between parent and child node of query tree.
+      boolean leftUnion = (leftChild.getType() == NodeType.UNION) ||
+          ((leftChild.getType() == NodeType.TABLE_SUBQUERY) &&
+          (((TableSubQueryNode)leftChild).getSubQuery().getType() == NodeType.UNION));
+      boolean rightUnion = (rightChild.getType() == NodeType.UNION) ||
+          (rightChild.getType() == NodeType.TABLE_SUBQUERY) &&
+          (((TableSubQueryNode)rightChild).getSubQuery().getType() == NodeType.UNION);
+      if (leftUnion) {
         unionBlocks.add(leftBlock);
       } else {
         queryBlockBlocks.add(leftBlock);
       }
-      if (rightChild.getType() == NodeType.UNION) {
+      if (rightUnion) {
         unionBlocks.add(rightBlock);
       } else {
         queryBlockBlocks.add(rightBlock);
@@ -1396,7 +1418,8 @@ public class GlobalPlanner {
       }
 
       for (ExecutionBlock childBlocks : unionBlocks) {
-        for (ExecutionBlock grandChildBlock : context.plan.getChilds(childBlocks)) {
+        for (ExecutionBlock grandChildBlock : masterPlan.getChilds(childBlocks)) {
+          masterPlan.disconnect(grandChildBlock, childBlocks);
           queryBlockBlocks.add(grandChildBlock);
         }
       }
@@ -1404,7 +1427,7 @@ public class GlobalPlanner {
       for (ExecutionBlock childBlocks : queryBlockBlocks) {
         DataChannel channel = new DataChannel(childBlocks, execBlock, NONE_SHUFFLE, 1);
         channel.setStoreType(storeType);
-        context.plan.addConnect(channel);
+        masterPlan.addConnect(channel);
       }
 
       context.execBlockMap.put(node.getPID(), execBlock);

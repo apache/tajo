@@ -233,6 +233,9 @@ public class EvalTreeUtil {
       if (containColumnRef(expr, target)) {          
         exprSet.add(expr);
       }
+      break;
+    default:
+      break;
     }    
   }
   
@@ -318,7 +321,7 @@ public class EvalTreeUtil {
         } else if (leftSchema != null && rightSchema != null) {
           ensureColumnsOfDifferentTables = isJoinQualwithSchemas(leftSchema, rightSchema, leftColumn, rightColumn);
         } else {
-          ensureColumnsOfDifferentTables = isJoinQualWithOnlyColumns(block, leftColumn, rightColumn);
+          ensureColumnsOfDifferentTables = isJoinQualWithOnlyColumns(null, leftColumn, rightColumn);
         }
       }
 

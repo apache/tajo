@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
+
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
@@ -227,6 +228,19 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
     }
 
     return checker.eval(schema, tuple);
+  }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((begin == null) ? 0 : begin.hashCode());
+    result = prime * result + ((checker == null) ? 0 : checker.hashCode());
+    result = prime * result + ((end == null) ? 0 : end.hashCode());
+    result = prime * result + (not ? 1231 : 1237);
+    result = prime * result + ((predicand == null) ? 0 : predicand.hashCode());
+    result = prime * result + (symmetric ? 1231 : 1237);
+    return result;
   }
 
   @Override

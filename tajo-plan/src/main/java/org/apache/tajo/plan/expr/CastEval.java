@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
+
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
@@ -78,6 +79,15 @@ public class CastEval extends UnaryEval {
 
   public String toString() {
     return "CAST (" + child + " AS " + target.getType() + ")";
+  }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = super.hashCode();
+    result = prime * result + ((target == null) ? 0 : target.hashCode());
+    result = prime * result + ((timezone == null) ? 0 : timezone.hashCode());
+    return result;
   }
 
   @Override
