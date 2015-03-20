@@ -68,7 +68,7 @@ public class LogicalPlan {
   /** planning and optimization log */
   private List<String> planingHistory = Lists.newArrayList();
 
-  private boolean isExplain;
+  private int explain;  // 0 for no, 1 for logical explain, 2 for physical explain
 
   public LogicalPlan(LogicalPlanner planner) {
   }
@@ -104,12 +104,16 @@ public class LogicalPlan {
     }
   }
 
-  public void setExplain() {
-    isExplain = true;
+  public void setExplain(boolean physical) {
+    explain = physical ? 2 : 1;
   }
 
   public boolean isExplain() {
-    return isExplain;
+    return explain > 0;
+  }
+
+  public boolean isExplainPhysical() {
+    return explain == 2;
   }
 
   /**

@@ -22,9 +22,16 @@ import com.google.common.base.Objects;
 
 public class Explain extends UnaryOperator {
 
-  public Explain(Expr operand) {
+  private boolean physical;
+
+  public Explain(Expr operand, boolean physical) {
     super(OpType.Explain);
+    this.physical = physical;
     setChild(operand);
+  }
+
+  public boolean isPhysical() {
+    return physical;
   }
 
   public int hashCode() {
