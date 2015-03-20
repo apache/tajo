@@ -18,8 +18,11 @@
 
 package org.apache.tajo.plan.logical;
 
+import java.util.Arrays;
+
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
+
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.util.TUtil;
 
@@ -66,6 +69,16 @@ public class ShuffleFileWriteNode extends PersistentStoreNode implements Cloneab
     return this.shuffleType;
   }
   
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + numOutputs;
+    result = prime * result + Arrays.hashCode(shuffleKeys);
+    result = prime * result + ((shuffleType == null) ? 0 : shuffleType.hashCode());
+    return result;
+  }
+
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof ShuffleFileWriteNode) {

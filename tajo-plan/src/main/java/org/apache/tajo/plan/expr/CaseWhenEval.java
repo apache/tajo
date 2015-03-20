@@ -20,6 +20,7 @@ package org.apache.tajo.plan.expr;
 
 import com.google.common.collect.Lists;
 import com.google.gson.annotations.Expose;
+
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
@@ -164,6 +165,15 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
   }
 
   @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((elseResult == null) ? 0 : elseResult.hashCode());
+    result = prime * result + ((whens == null) ? 0 : whens.hashCode());
+    return result;
+  }
+
+  @Override
   public boolean equals(Object obj) {
     if (obj instanceof CaseWhenEval) {
       CaseWhenEval other = (CaseWhenEval) obj;
@@ -240,9 +250,18 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
     }
 
     @Override
-    public boolean equals(Object object) {
-      if (object instanceof IfThenEval) {
-        IfThenEval other = (IfThenEval) object;
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + ((condition == null) ? 0 : condition.hashCode());
+      result = prime * result + ((this.result == null) ? 0 : this.result.hashCode());
+      return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof IfThenEval) {
+        IfThenEval other = (IfThenEval) obj;
         return condition.equals(other.condition) && result.equals(other.result);
       } else {
         return false;

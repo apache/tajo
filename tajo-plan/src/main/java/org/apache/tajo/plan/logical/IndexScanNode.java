@@ -18,8 +18,11 @@
 
 package org.apache.tajo.plan.logical;
 
+import java.util.Arrays;
+
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
+
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.Datum;
@@ -77,6 +80,16 @@ public class IndexScanNode extends ScanNode {
     return builder.toString();
   }
   
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = super.hashCode();
+    result = prime * result + Arrays.hashCode(datum);
+    result = prime * result + ((keySchema == null) ? 0 : keySchema.hashCode());
+    result = prime * result + Arrays.hashCode(sortKeys);
+    return result;
+  }
+
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof IndexScanNode) {

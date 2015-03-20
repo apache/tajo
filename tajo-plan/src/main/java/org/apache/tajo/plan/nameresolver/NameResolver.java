@@ -42,7 +42,7 @@ import java.util.Map;
  */
 public abstract class NameResolver {
 
-  public static Map<NameResolvingMode, NameResolver> resolverMap = Maps.newHashMap();
+  public static final Map<NameResolvingMode, NameResolver> resolverMap = Maps.newHashMap();
 
   static {
     resolverMap.put(NameResolvingMode.RELS_ONLY, new ResolverByRels());
@@ -115,7 +115,7 @@ public abstract class NameResolver {
 
       // If we cannot find any relation against a qualified column name
       if (relationOp == null) {
-        throw null;
+        throw new PlanningException("Cannot find any relation for " + qualifier);
       }
 
       // Please consider a query case:
