@@ -310,11 +310,8 @@ public class TestStorages {
       assertTrue(tupleCnt + 2 == tuple.get(0).asInt8());
       assertTrue(tupleCnt + 3 == tuple.get(1).asFloat4());
     } else {
-      if (storeType == StoreType.RCFILE
-          || storeType == StoreType.CSV
-          || storeType == StoreType.PARQUET
-          || storeType == StoreType.SEQUENCEFILE
-          || storeType == StoreType.AVRO) {
+      // RAW and ROW always project all fields.
+      if (storeType != StoreType.RAW && storeType != StoreType.ROWFILE) {
         assertTrue(tuple.get(0) == null);
       }
       assertTrue(tupleCnt + 2 == tuple.get(1).asInt8());

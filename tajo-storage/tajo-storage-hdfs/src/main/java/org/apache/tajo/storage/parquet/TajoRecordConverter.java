@@ -77,10 +77,11 @@ public class TajoRecordConverter extends GroupConverter {
         continue;
       }
       Type type = parquetSchema.getType(index);
+      final int writeIndex = i;
       converters[index] = newConverter(column, type, new ParentValueContainer() {
         @Override
         void add(Object value) {
-          TajoRecordConverter.this.set(projectionIndex, value);
+          TajoRecordConverter.this.set(writeIndex, value);
         }
       });
       ++index;
@@ -145,7 +146,7 @@ public class TajoRecordConverter extends GroupConverter {
    */
   @Override
   public void start() {
-    currentTuple = new VTuple(tupleSize);
+    currentTuple = new VTuple(projectionMap.length);
   }
 
   /**
@@ -157,7 +158,7 @@ public class TajoRecordConverter extends GroupConverter {
       final int projectionIndex = projectionMap[i];
       Column column = tajoReadSchema.getColumn(projectionIndex);
       if (column.getDataType().getType() == TajoDataTypes.Type.NULL_TYPE
-          || currentTuple.get(projectionIndex) == null) {
+          || currentTuple.get(i) == null) {
         set(projectionIndex, NullDatum.get());
       }
     }

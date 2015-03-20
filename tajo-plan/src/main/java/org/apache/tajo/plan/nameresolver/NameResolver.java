@@ -316,7 +316,7 @@ public abstract class NameResolver {
     // - tbname.column_name.nested_field...
     // - column.nested_fieldX...
 
-    List<RelationNode> guessedRelations = TUtil.newList();
+    Set<RelationNode> guessedRelations = TUtil.newHashSet();
 
     // this position indicates the index of column name in qualifierParts;
     // It must be 0 or more because a qualified column is always passed to lookupQualifierAndCanonicalName().
@@ -332,7 +332,7 @@ public abstract class NameResolver {
     }
 
     // check for tbname.column_name.nested_field
-    if (guessedRelations.size() == 0 && qualifierParts.length >= 1) {
+    if (qualifierParts.length >= 1) {
       RelationNode rel = lookupTable(block, qualifierParts[0]);
       if (rel != null) {
         guessedRelations.add(rel);
@@ -342,8 +342,16 @@ public abstract class NameResolver {
 
     // column.nested_fieldX...
     if (guessedRelations.size() == 0 && qualifierParts.length == 1) {
-      guessedRelations.addAll(lookupTableByColumns(block, qualifierParts[0]));
-      columnNamePosition = 0;
+      Collection<RelationNode> rels = lookupTableByColumns(block, qualifierParts[0]);
+
+      if (rels.size() > 1) {
+        throw new AmbiguousFieldException(columnRef.getCanonicalName());
+      }
+
+      if (rels.size() == 1) {
+        guessedRelations.addAll(rels);
+        columnNamePosition = 0;
+      }
     }
 
     // throw exception if no column cannot be founded or two or more than columns are founded
@@ -353,7 +361,7 @@ public abstract class NameResolver {
       throw new AmbiguousFieldException(columnRef.getCanonicalName());
     }
 
-    String qualifier = guessedRelations.get(0).getCanonicalName();
+    String qualifier = guessedRelations.iterator().next().getCanonicalName();
     String columnName = "";
 
     if (columnNamePosition >= qualifierParts.length) { // if there is no column in qualifierParts

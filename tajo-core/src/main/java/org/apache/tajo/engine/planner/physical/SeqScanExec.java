@@ -196,6 +196,11 @@ public class SeqScanExec extends ScanExec {
       }
       scanner.init();
 
+      // See Scanner.isProjectable() method Depending on the result of isProjectable(),
+      // the width of retrieved tuple is changed.
+      //
+      // If TRUE, the retrieved tuple will contain only projected fields.
+      // If FALSE, the retrieved tuple will contain projected fields and NullDatum for non-projected fields.
       if (scanner.isProjectable()) {
         this.projector = new Projector(context, projected, outSchema, plan.getTargets());
       } else {

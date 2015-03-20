@@ -203,9 +203,9 @@ public class HBaseScanner implements Scanner {
     }
 
     Result result = scanResults[scanResultIndex++];
-    Tuple resultTuple = new VTuple(schema.size());
+    Tuple resultTuple = new VTuple(targetIndexes.length);
     for (int i = 0; i < targetIndexes.length; i++) {
-      resultTuple.put(targetIndexes[i], getDatum(result, targetIndexes[i]));
+      resultTuple.put(i, getDatum(result, targetIndexes[i]));
     }
     numRows++;
     return resultTuple;
@@ -406,7 +406,7 @@ public class HBaseScanner implements Scanner {
 
   @Override
   public boolean isProjectable() {
-    return false;
+    return true;
   }
 
   @Override

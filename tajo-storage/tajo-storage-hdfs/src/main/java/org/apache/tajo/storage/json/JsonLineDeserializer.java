@@ -33,14 +33,17 @@ import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.text.TextLineDeserializer;
 import org.apache.tajo.storage.text.TextLineParsingError;
+import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Map;
 
 public class JsonLineDeserializer extends TextLineDeserializer {
   private JSONParser parser;
-  private Type[] types;
-  private String [] columnNames;
+  // Full Path -> Type
+  private Map<String, Type> types;
   private String [] projectedPaths;
 
   public JsonLineDeserializer(Schema schema, TableMeta meta, Column [] projected) {
@@ -54,9 +57,20 @@ public class JsonLineDeserializer extends TextLineDeserializer {
 
   @Override
   public void init() {
-    types = SchemaUtil.toTypes(schema);
-    columnNames = SchemaUtil.toSimpleNames(schema);
+    types = TUtil.newHashMap();
+    for (Column column : schema.getAllColumns()) {
 
+      // Keep types which only belong to projected paths
+      // For example, assume that a projected path is 'name/first_name', where name is RECORD and first_name is TEXT.
+      // In this case, we should keep two types:
+      // * name - RECORD
+      // * name/first_name TEXT
+      for (String p :projectedPaths) {
+        if (p.startsWith(column.getSimpleName())) {
+          types.put(column.getSimpleName(), column.getDataType().getType());
+        }
+      }
+    }
     parser = new JSONParser(JSONParser.MODE_JSON_SIMPLE | JSONParser.IGNORE_CONTROL_CHAR);
   }
 
@@ -72,108 +86,116 @@ public class JsonLineDeserializer extends TextLineDeserializer {
     return sb.toString();
   }
 
-  private void getValue(JSONObject object, String fullPath, String [] path, int depth, int actualIdx, Tuple output) throws IOException {
-    String fieldName = path[depth];
+  /**
+   *
+   *
+   * @param object
+   * @param pathElements
+   * @param depth
+   * @param fieldIndex
+   * @param output
+   * @throws IOException
+   */
+  private void getValue(JSONObject object,
+                        String fullPath,
+                        String [] pathElements,
+                        int depth,
+                        int fieldIndex,
+                        Tuple output) throws IOException {
+    String fieldName = pathElements[depth];
 
     if (!object.containsKey(fieldName)) {
-      output.put(actualIdx, NullDatum.get());
+      output.put(fieldIndex, NullDatum.get());
     }
 
-    String name;
-    if (depth > 0) {
-      name = makePath(path, depth);
-    } else {
-      name = path[0];
-    }
-
-    switch (schema.getColumn(name).getDataType().getType()) {
+    switch (types.get(fullPath)) {
     case BOOLEAN:
       String boolStr = object.getAsString(fieldName);
       if (boolStr != null) {
-        output.put(actualIdx, DatumFactory.createBool(boolStr.equals("true")));
+        output.put(fieldIndex, DatumFactory.createBool(boolStr.equals("true")));
       } else {
-        output.put(actualIdx, NullDatum.get());
+        output.put(fieldIndex, NullDatum.get());
       }
       break;
     case CHAR:
       String charStr = object.getAsString(fieldName);
       if (charStr != null) {
-        output.put(actualIdx, DatumFactory.createChar(charStr));
+        output.put(fieldIndex, DatumFactory.createChar(charStr));
       } else {
-        output.put(actualIdx, NullDatum.get());
+        output.put(fieldIndex, NullDatum.get());
       }
       break;
     case INT1:
     case INT2:
       Number int2Num = object.getAsNumber(fieldName);
       if (int2Num != null) {
-        output.put(actualIdx, DatumFactory.createInt2(int2Num.shortValue()));
+        output.put(fieldIndex, DatumFactory.createInt2(int2Num.shortValue()));
       } else {
-        output.put(actualIdx, NullDatum.get());
+        output.put(fieldIndex, NullDatum.get());
       }
       break;
     case INT4:
       Number int4Num = object.getAsNumber(fieldName);
       if (int4Num != null) {
-        output.put(actualIdx, DatumFactory.createInt4(int4Num.intValue()));
+        output.put(fieldIndex, DatumFactory.createInt4(int4Num.intValue()));
       } else {
-        output.put(actualIdx, NullDatum.get());
+        output.put(fieldIndex, NullDatum.get());
       }
       break;
     case INT8:
       Number int8Num = object.getAsNumber(fieldName);
       if (int8Num != null) {
-        output.put(actualIdx, DatumFactory.createInt8(int8Num.longValue()));
+        output.put(fieldIndex, DatumFactory.createInt8(int8Num.longValue()));
       } else {
-        output.put(actualIdx, NullDatum.get());
+        output.put(fieldIndex, NullDatum.get());
       }
       break;
     case FLOAT4:
       Number float4Num = object.getAsNumber(fieldName);
       if (float4Num != null) {
-        output.put(actualIdx, DatumFactory.createFloat4(float4Num.floatValue()));
+        output.put(fieldIndex, DatumFactory.createFloat4(float4Num.floatValue()));
       } else {
-        output.put(actualIdx, NullDatum.get());
+        output.put(fieldIndex, NullDatum.get());
       }
       break;
     case FLOAT8:
       Number float8Num = object.getAsNumber(fieldName);
       if (float8Num != null) {
-        output.put(actualIdx, DatumFactory.createFloat8(float8Num.doubleValue()));
+        output.put(fieldIndex, DatumFactory.createFloat8(float8Num.doubleValue()));
       } else {
-        output.put(actualIdx, NullDatum.get());
+        output.put(fieldIndex, NullDatum.get());
       }
       break;
     case TEXT:
       String textStr = object.getAsString(fieldName);
       if (textStr != null) {
-        output.put(actualIdx, DatumFactory.createText(textStr));
+        output.put(fieldIndex, DatumFactory.createText(textStr));
       } else {
-        output.put(actualIdx, NullDatum.get());
+        output.put(fieldIndex, NullDatum.get());
       }
       break;
     case TIMESTAMP:
       String timestampStr = object.getAsString(fieldName);
       if (timestampStr != null) {
-        output.put(actualIdx, DatumFactory.createTimestamp(timestampStr));
+        output.put(fieldIndex, DatumFactory.createTimestamp(timestampStr));
       } else {
-        output.put(actualIdx, NullDatum.get());
+        output.put(fieldIndex, NullDatum.get());
       }
       break;
     case TIME:
       String timeStr = object.getAsString(fieldName);
       if (timeStr != null) {
-        output.put(actualIdx, DatumFactory.createTime(timeStr));
+        output.put(fieldIndex, DatumFactory.createTime(timeStr));
       } else {
-        output.put(actualIdx, NullDatum.get());
+        output.put(fieldIndex, NullDatum.get());
       }
       break;
     case DATE:
       String dateStr = object.getAsString(fieldName);
       if (dateStr != null) {
-        output.put(actualIdx, DatumFactory.createDate(dateStr));
+        output.put(fieldIndex, DatumFactory.createDate(dateStr));
       } else {
-        output.put(actualIdx, NullDatum.get());
+        output.put(fieldIndex, NullDatum.get());
       }
       break;
     case BIT:
@@ -183,11 +205,11 @@ public class JsonLineDeserializer extends TextLineDeserializer {
       Object jsonObject = object.get(fieldName);
 
       if (jsonObject == null) {
-        output.put(actualIdx, NullDatum.get());
+        output.put(fieldIndex, NullDatum.get());
         break;
       }
       if (jsonObject instanceof String) {
-        output.put(actualIdx, DatumFactory.createBlob((String) jsonObject));
+        output.put(fieldIndex, DatumFactory.createBlob((String) jsonObject));
       } else if (jsonObject instanceof JSONArray) {
         JSONArray jsonArray = (JSONArray) jsonObject;
         byte[] bytes = new byte[jsonArray.size()];
@@ -197,9 +219,9 @@ public class JsonLineDeserializer extends TextLineDeserializer {
           bytes[arrayIdx++] = ((Long) it.next()).byteValue();
         }
         if (bytes.length > 0) {
-          output.put(actualIdx, DatumFactory.createBlob(bytes));
+          output.put(fieldIndex, DatumFactory.createBlob(bytes));
         } else {
-          output.put(actualIdx, NullDatum.get());
+          output.put(fieldIndex, NullDatum.get());
         }
         break;
       } else {
@@ -210,27 +232,27 @@ public class JsonLineDeserializer extends TextLineDeserializer {
     case INET4:
       String inetStr = object.getAsString(fieldName);
       if (inetStr != null) {
-        output.put(actualIdx, DatumFactory.createInet4(inetStr));
+        output.put(fieldIndex, DatumFactory.createInet4(inetStr));
       } else {
-        output.put(actualIdx, NullDatum.get());
+        output.put(fieldIndex, NullDatum.get());
       }
       break;
 
     case RECORD:
       JSONObject nestedObject = (JSONObject) object.get(fieldName);
       if (nestedObject != null) {
-        getValue(nestedObject, fullPath, path, depth + 1, actualIdx, output);
+        getValue(nestedObject, fullPath + "/" + pathElements[depth+1], pathElements, depth + 1, fieldIndex, output);
       } else {
-        output.put(actualIdx, NullDatum.get());
+        output.put(fieldIndex, NullDatum.get());
       }
       break;
 
     case NULL_TYPE:
-      output.put(actualIdx, NullDatum.get());
+      output.put(fieldIndex, NullDatum.get());
       break;
 
     default:
-      throw new NotImplementedException(types[actualIdx].name() + " is not supported.");
+      throw new NotImplementedException(types.get(fullPath).name() + " is not supported.");
     }
   }
 
@@ -250,12 +272,8 @@ public class JsonLineDeserializer extends TextLineDeserializer {
     }
 
     for (int i = 0; i < projectedPaths.length; i++) {
-      int actualIdx = i;
-      String fieldName = projectedPaths[i];
-
-      String [] paths = fieldName.split(NestedPathUtil.PATH_DELIMITER);
-
-      getValue(object, fieldName, paths, 0, actualIdx, output);
+      String [] paths = projectedPaths[i].split(NestedPathUtil.PATH_DELIMITER);
+      getValue(object, paths[0], paths, 0, i, output);
     }
   }
 

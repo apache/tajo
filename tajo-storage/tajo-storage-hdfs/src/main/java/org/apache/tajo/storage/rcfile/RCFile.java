@@ -1637,7 +1637,7 @@ public class RCFile {
         return null;
       }
 
-      Tuple tuple = new VTuple(schema.size());
+      Tuple tuple = new VTuple(targets.length);
       getCurrentRow(tuple);
       return tuple;
     }
@@ -1707,16 +1707,16 @@ public class RCFile {
 
       for (int j = 0; j < selectedColumns.length; ++j) {
         SelectedColumn col = selectedColumns[j];
-        int i = col.colIndex;
+        int actualColumnIdx = col.colIndex;
 
         if (col.isNulled) {
-          tuple.put(i, NullDatum.get());
+          tuple.put(j, NullDatum.get());
         } else {
           colAdvanceRow(j, col);
 
-          Datum datum = serde.deserialize(schema.getColumn(i),
+          Datum datum = serde.deserialize(schema.getColumn(actualColumnIdx),
               currentValue.loadedColumnsValueBuffer[j].getData(), col.rowReadIndex, col.prvLength, nullChars);
-          tuple.put(i, datum);
+          tuple.put(j, datum);
           col.rowReadIndex += col.prvLength;
         }
       }
@@ -1776,7 +1776,7 @@ public class RCFile {
 
     @Override
     public boolean isProjectable() {
-      return false;
+      return true;
     }
 
     @Override

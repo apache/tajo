@@ -201,11 +201,13 @@ public class TestMergeScanner {
 
   private static boolean isProjectableStorage(StoreType type) {
     switch (type) {
-      case TEXTFILE:
-      case JSON:
-        return true;
-      default:
-        return false;
+    case CSV:
+    case SEQUENCEFILE:
+    case RAW:
+    case ROWFILE:
+      return false;
+    default:
+      return true;
     }
   }
 }

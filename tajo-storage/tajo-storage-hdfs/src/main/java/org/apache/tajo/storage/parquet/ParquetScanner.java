@@ -94,7 +94,7 @@ public class ParquetScanner extends FileScanner {
    */
   @Override
   public boolean isProjectable() {
-    return false;
+    return true;
   }
 
   /**

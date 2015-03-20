@@ -73,7 +73,7 @@ public class TupleCacheScanner implements Scanner {
 
   @Override
   public boolean isProjectable() {
-    return true;
+    return false;
   }
 
   @Override
