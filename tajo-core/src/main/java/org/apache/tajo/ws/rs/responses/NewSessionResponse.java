@@ -64,4 +64,11 @@ public class NewSessionResponse {
   public void setVariables(Map<String, String> variables) {
     getVariables().putAll(variables);
   }
+
+  @Override
+  public String toString() {
+    return "NewSessionResponse [id=" + id + ", message=" + message + ", resultCode=" + resultCode + ", variables="
+        + variables + "]";
+  }
+  
 }

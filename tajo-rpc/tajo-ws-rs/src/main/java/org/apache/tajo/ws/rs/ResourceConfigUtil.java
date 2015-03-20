@@ -18,35 +18,20 @@
 
 package org.apache.tajo.ws.rs;
 
-import org.apache.tajo.master.TajoMaster.MasterContext;
-import org.apache.tajo.ws.rs.resources.SessionsResource;
-
 import javax.ws.rs.core.Application;
 
-import java.util.HashSet;
-import java.util.Set;
+import org.glassfish.jersey.server.ResourceConfig;
 
-/**
- * It loads client classes for Tajo protocol.
- */
-public class ClientApplication extends Application {
+public class ResourceConfigUtil {
 
-  private final MasterContext masterContext;
-
-  public ClientApplication(MasterContext masterContext) {
-    this.masterContext = masterContext;
-  }
-
-  @Override
-  public Set<Class<?>> getClasses() {
-    Set<Class<?>> classes = new HashSet<Class<?>>();
+  public static Application getJAXRSApplication(Application application) {
+    Application result = application;
     
-    classes.add(SessionsResource.class);
+    if (application instanceof ResourceConfig) {
+      ResourceConfig resourceConfig = (ResourceConfig) application;
+      result = resourceConfig.getApplication();
+    }
     
-    return classes;
-  }
-
-  public MasterContext getMasterContext() {
-    return masterContext;
+    return result;
   }
 }

@@ -38,4 +38,10 @@ public class NewSessionRequest {
   public void setDatabaseName(String databaseName) {
     this.databaseName = databaseName;
   }
+
+  @Override
+  public String toString() {
+    return "NewSessionRequest [userName=" + userName + ", databaseName=" + databaseName + "]";
+  }
+  
 }

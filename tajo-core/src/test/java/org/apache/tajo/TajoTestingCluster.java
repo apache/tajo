@@ -344,6 +344,7 @@ public class TajoTestingCluster {
     c.setVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS, "localhost:0");
     c.setVar(ConfVars.WORKER_PEER_RPC_ADDRESS, "localhost:0");
     c.setVar(ConfVars.WORKER_TEMPORAL_DIR, "file://" + testBuildDir.getAbsolutePath() + "/tajo-localdir");
+    c.setIntVar(ConfVars.REST_SERVICE_PORT, 0);
 
     LOG.info("derby repository is set to "+conf.get(CatalogConstants.CATALOG_URI));
 
@@ -369,6 +370,10 @@ public class TajoTestingCluster {
         tajoMasterAddress.getHostName() + ":" + tajoMasterAddress.getPort());
     this.conf.setVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS, c.getVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS));
     this.conf.setVar(ConfVars.CATALOG_ADDRESS, c.getVar(ConfVars.CATALOG_ADDRESS));
+    
+    InetSocketAddress tajoRestAddress = tajoMaster.getContext().getRestServer().getBindAddress();
+    
+    this.conf.setIntVar(ConfVars.REST_SERVICE_PORT, tajoRestAddress.getPort());
 
     if(standbyWorkerMode) {
       startTajoWorkers(numSlaves);
