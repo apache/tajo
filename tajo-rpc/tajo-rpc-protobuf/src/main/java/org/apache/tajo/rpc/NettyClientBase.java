@@ -119,7 +119,7 @@ public abstract class NettyClientBase implements Closeable {
   }
 
   private void connectUsingNetty(InetSocketAddress address, GenericFutureListener<ChannelFuture> listener) {
-    LOG.warn("Try to connect : " + address);
+    LOG.debug("Try to connect : " + address);
     this.channelFuture = bootstrap.clone().group(RpcChannelFactory.getSharedClientEventloopGroup())
             .connect(address)
             .addListener(listener);
