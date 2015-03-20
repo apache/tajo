@@ -35,6 +35,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1414: Two RemoteException in rpc module. 
+    (Contributed by navis. Committed by jihun)
+
     TAJO-1368: Exceptions during processing nested union queries.
     (jihun)
 
