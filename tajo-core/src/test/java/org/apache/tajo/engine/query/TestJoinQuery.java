@@ -338,7 +338,21 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public void testCrossJoinAndCaseWhen() throws Exception {
+  public void testInnerJoinAndCaseWhen() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testComplexJoinsWithCaseWhen() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testComplexJoinsWithCaseWhen2() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);

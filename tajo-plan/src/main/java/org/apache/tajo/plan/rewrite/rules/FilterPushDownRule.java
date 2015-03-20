@@ -18,7 +18,9 @@
 
 package org.apache.tajo.plan.rewrite.rules;
 
-import com.google.common.collect.*;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.OverridableConf;
@@ -36,7 +38,11 @@ import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
 
 /**
  * This rule tries to push down all filter conditions into logical nodes as lower as possible.
@@ -48,7 +54,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   private static final String NAME = "FilterPushDown";
 
   static class FilterPushDownContext {
-    Set<EvalNode> pushingDownFilters = new HashSet<EvalNode>();
+    Set<EvalNode> pushingDownFilters = TUtil.newHashSet();
 
     public void clear() {
       pushingDownFilters.clear();
@@ -63,7 +69,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     public void setToOrigin(Map<EvalNode, EvalNode> evalMap) {
       //evalMap: copy -> origin
-      List<EvalNode> origins = new ArrayList<EvalNode>();
+      List<EvalNode> origins = TUtil.newList();
       for (EvalNode eval : pushingDownFilters) {
         EvalNode origin = evalMap.get(eval);
         if (origin != null) {
@@ -118,7 +124,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   @Override
   public LogicalNode visitFilter(FilterPushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                  SelectionNode selNode, Stack<LogicalNode> stack) throws PlanningException {
-    context.pushingDownFilters.addAll(Sets.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(selNode.getQual())));
+    context.pushingDownFilters.addAll(TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(selNode.getQual())));
 
     stack.push(selNode);
     visit(context, plan, block, selNode.getChild(), stack);
@@ -158,159 +164,24 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   public LogicalNode visitJoin(FilterPushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                JoinNode joinNode,
                                Stack<LogicalNode> stack) throws PlanningException {
-    // here we should stop selection pushdown on the null supplying side(s) of an outer join
-    // get the two operands of the join operation as well as the join type
-    JoinType joinType = joinNode.getJoinType();
-    EvalNode joinQual = joinNode.getJoinQual();
-    if (joinQual != null && LogicalPlanner.isOuterJoin(joinType)) {
-      BinaryEval binaryEval = (BinaryEval) joinQual;
-      // if both are fields
-      if (binaryEval.getLeftExpr().getType() == EvalType.FIELD &&
-          binaryEval.getRightExpr().getType() == EvalType.FIELD) {
-
-        String leftTableName = ((FieldEval) binaryEval.getLeftExpr()).getQualifier();
-        String rightTableName = ((FieldEval) binaryEval.getRightExpr()).getQualifier();
-        List<String> nullSuppliers = Lists.newArrayList();
-        Set<String> leftTableSet = Sets.newHashSet(PlannerUtil.getRelationLineageWithinQueryBlock(plan,
-            joinNode.getLeftChild()));
-        Set<String> rightTableSet = Sets.newHashSet(PlannerUtil.getRelationLineageWithinQueryBlock(plan,
-            joinNode.getRightChild()));
-
-        // some verification
-        if (joinType == JoinType.FULL_OUTER) {
-          nullSuppliers.add(leftTableName);
-          nullSuppliers.add(rightTableName);
-
-          // verify that these null suppliers are indeed in the left and right sets
-          if (!rightTableSet.contains(nullSuppliers.get(0)) && !leftTableSet.contains(nullSuppliers.get(0))) {
-            throw new InvalidQueryException("Incorrect Logical Query Plan with regard to outer join");
-          }
-          if (!rightTableSet.contains(nullSuppliers.get(1)) && !leftTableSet.contains(nullSuppliers.get(1))) {
-            throw new InvalidQueryException("Incorrect Logical Query Plan with regard to outer join");
-          }
-
-        } else if (joinType == JoinType.LEFT_OUTER) {
-          nullSuppliers.add(((RelationNode)joinNode.getRightChild()).getCanonicalName());
-          //verify that this null supplier is indeed in the right sub-tree
-          if (!rightTableSet.contains(nullSuppliers.get(0))) {
-            throw new InvalidQueryException("Incorrect Logical Query Plan with regard to outer join");
-          }
-        } else if (joinType == JoinType.RIGHT_OUTER) {
-          if (((RelationNode)joinNode.getRightChild()).getCanonicalName().equals(rightTableName)) {
-            nullSuppliers.add(leftTableName);
-          } else {
-            nullSuppliers.add(rightTableName);
-          }
-
-          // verify that this null supplier is indeed in the left sub-tree
-          if (!leftTableSet.contains(nullSuppliers.get(0))) {
-            throw new InvalidQueryException("Incorrect Logical Query Plan with regard to outer join");
-          }
-        }
-      }
-    }
-
-    /* non-equi filter should not be push down as a join qualifier until theta join is implemented
-     * TODO this code SHOULD be restored after TAJO-742 is resolved. */
-    List<EvalNode> thetaJoinFilter = new ArrayList<EvalNode>();
-    for (EvalNode eachEval: context.pushingDownFilters) {
-      if (eachEval.getType() != EvalType.EQUAL) {
-        if (EvalTreeUtil.isJoinQual(block,
-            joinNode.getLeftChild().getOutSchema(),
-            joinNode.getRightChild().getOutSchema(),
-            eachEval, true)) {
-          thetaJoinFilter.add(eachEval);
-        }
-      }
-    }
-    context.pushingDownFilters.removeAll(thetaJoinFilter);
-
-    // get evals from ON clause
-    List<EvalNode> onConditions = new ArrayList<EvalNode>();
+    Set<EvalNode> onPredicates = TUtil.newHashSet();
     if (joinNode.hasJoinQual()) {
-      onConditions.addAll(Sets.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual())));
+      onPredicates.addAll(TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual())));
     }
-
-    boolean isTopMostJoin = stack.peek().getType() != NodeType.JOIN;
-
-    List<EvalNode> outerJoinPredicationEvals = new ArrayList<EvalNode>();
-    List<EvalNode> outerJoinFilterEvalsExcludePredication = new ArrayList<EvalNode>();
-    if (LogicalPlanner.isOuterJoin(joinNode.getJoinType())) {
-      // TAJO-853
-      // In the case of top most JOIN, all filters except JOIN condition aren't pushed down.
-      // That filters are processed by SELECTION NODE.
-      Set<String> nullSupplyingTableNameSet;
-      if (joinNode.getJoinType() == JoinType.RIGHT_OUTER) {
-        nullSupplyingTableNameSet = TUtil.newHashSet(PlannerUtil.getRelationLineage(joinNode.getLeftChild()));
-      } else {
-        nullSupplyingTableNameSet = TUtil.newHashSet(PlannerUtil.getRelationLineage(joinNode.getRightChild()));
-      }
-
-      Set<String> preservedTableNameSet;
-      if (joinNode.getJoinType() == JoinType.RIGHT_OUTER) {
-        preservedTableNameSet = TUtil.newHashSet(PlannerUtil.getRelationLineage(joinNode.getRightChild()));
-      } else {
-        preservedTableNameSet = TUtil.newHashSet(PlannerUtil.getRelationLineage(joinNode.getLeftChild()));
-      }
-
-      List<EvalNode> removedFromFilter = new ArrayList<EvalNode>();
-      for (EvalNode eachEval: context.pushingDownFilters) {
-        if (EvalTreeUtil.isJoinQual(block,
-            joinNode.getLeftChild().getOutSchema(),
-            joinNode.getRightChild().getOutSchema(),
-            eachEval, true)) {
-          outerJoinPredicationEvals.add(eachEval);
-          removedFromFilter.add(eachEval);
-        } else {
-          Set<Column> columns = EvalTreeUtil.findUniqueColumns(eachEval);
-          boolean canPushDown = true;
-          for (Column eachColumn: columns) {
-            if (nullSupplyingTableNameSet.contains(eachColumn.getQualifier())) {
-              canPushDown = false;
-              break;
-            }
-          }
-          if (!canPushDown) {
-            outerJoinFilterEvalsExcludePredication.add(eachEval);
-            removedFromFilter.add(eachEval);
-          }
-        }
-      }
-
-      context.pushingDownFilters.removeAll(removedFromFilter);
-
-      for (EvalNode eachOnEval: onConditions) {
-        if (EvalTreeUtil.isJoinQual(eachOnEval, true)) {
-          // If join condition, processing in the JoinNode.
-          outerJoinPredicationEvals.add(eachOnEval);
-        } else {
-          // If Eval has a column which belong to Preserved Row table, not using to push down but using JoinCondition
-          Set<Column> columns = EvalTreeUtil.findUniqueColumns(eachOnEval);
-          boolean canPushDown = true;
-          for (Column eachColumn: columns) {
-            if (preservedTableNameSet.contains(eachColumn.getQualifier())) {
-              canPushDown = false;
-              break;
-            }
-          }
-          if (canPushDown) {
-            context.pushingDownFilters.add(eachOnEval);
-          } else {
-            outerJoinPredicationEvals.add(eachOnEval);
-          }
-        }
-      }
-    } else {
-      context.pushingDownFilters.addAll(onConditions);
-    }
+    // we assume all the quals in pushingDownFilters as where predicates
+    Set<EvalNode> nonPushableQuals = extractNonPushableJoinQuals(plan, block, joinNode, onPredicates,
+        context.pushingDownFilters);
+    // add every predicate and remove non-pushable ones
+    context.pushingDownFilters.addAll(onPredicates);
+    context.pushingDownFilters.removeAll(nonPushableQuals);
 
     LogicalNode left = joinNode.getLeftChild();
     LogicalNode right = joinNode.getRightChild();
 
-    List<EvalNode> notMatched = new ArrayList<EvalNode>();
+    List<EvalNode> notMatched = TUtil.newList();
     // Join's input schema = right child output columns + left child output columns
     Map<EvalNode, EvalNode> transformedMap = findCanPushdownAndTransform(context, block, joinNode, left, notMatched,
-        null, true, 0);
+        null, 0);
     context.setFiltersTobePushed(transformedMap.keySet());
     visit(context, plan, block, left, stack);
 
@@ -318,9 +189,9 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     context.addFiltersTobePushed(notMatched);
 
     notMatched.clear();
-    transformedMap = findCanPushdownAndTransform(context, block, joinNode, right, notMatched, null, true,
+    transformedMap = findCanPushdownAndTransform(context, block, joinNode, right, notMatched, null,
         left.getOutSchema().size());
-    context.setFiltersTobePushed(new HashSet<EvalNode>(transformedMap.keySet()));
+    context.setFiltersTobePushed(transformedMap.keySet());
 
     visit(context, plan, block, right, stack);
 
@@ -328,14 +199,18 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     context.addFiltersTobePushed(notMatched);
 
     notMatched.clear();
-    List<EvalNode> matched = Lists.newArrayList();
-    if(LogicalPlanner.isOuterJoin(joinNode.getJoinType())) {
-      matched.addAll(outerJoinPredicationEvals);
-    } else {
-      for (EvalNode eval : context.pushingDownFilters) {
-        if (LogicalPlanner.checkIfBeEvaluatedAtJoin(block, eval, joinNode, isTopMostJoin)) {
-          matched.add(eval);
-        }
+    context.addFiltersTobePushed(nonPushableQuals);
+    List<EvalNode> matched = TUtil.newList();
+
+    // If the query involves a subquery, the stack can be empty.
+    // In this case, this join is the top most one within a query block.
+    boolean isTopMostJoin = stack.isEmpty() ? true : stack.peek().getType() != NodeType.JOIN;
+
+    for (EvalNode evalNode : context.pushingDownFilters) {
+      // TODO: currently, non-equi theta join is not supported yet.
+      if (LogicalPlanner.isEvaluatableJoinQual(block, evalNode, joinNode, onPredicates.contains(evalNode),
+          isTopMostJoin)) {
+        matched.add(evalNode);
       }
     }
 
@@ -355,12 +230,142 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       if (joinNode.getJoinType() == JoinType.CROSS) {
         joinNode.setJoinType(JoinType.INNER);
       }
-      context.pushingDownFilters.removeAll(matched);
     }
 
-    context.pushingDownFilters.addAll(outerJoinFilterEvalsExcludePredication);
-    context.pushingDownFilters.addAll(thetaJoinFilter);
+    context.pushingDownFilters.removeAll(matched);
     return joinNode;
+  }
+
+  private static Set<EvalNode> extractNonPushableJoinQuals(final LogicalPlan plan,
+                                                           final LogicalPlan.QueryBlock block,
+                                                           final JoinNode joinNode,
+                                                           final Set<EvalNode> onPredicates,
+                                                           final Set<EvalNode> wherePredicates)
+      throws PlanningException {
+    Set<EvalNode> nonPushableQuals = TUtil.newHashSet();
+    // TODO: non-equi theta join quals must not be pushed until TAJO-742 is resolved.
+    nonPushableQuals.addAll(extractNonEquiThetaJoinQuals(wherePredicates, block, joinNode));
+
+    // for outer joins
+    if (PlannerUtil.isOuterJoin(joinNode.getJoinType())) {
+      nonPushableQuals.addAll(extractNonPushableOuterJoinQuals(plan, onPredicates, wherePredicates, joinNode));
+    }
+    return nonPushableQuals;
+  }
+
+  /**
+   * For outer joins, pushable predicates can be decided based on their locations in the SQL and types of referencing
+   * relations.
+   *
+   * <h3>Table types</h3>
+   * <ul>
+   *   <li>Preserved Row table : The preserved row table refers to the table that preserves rows when there is no match
+   *   in the join operation. Therefore, all rows from the preserved row table that qualify against the WHERE clause
+   *   will be returned, regardless of whether there is a matched row in the join. For a left/right table, the preserved
+   *   row table is the left/right table. For a full outer join, both tables are preserved row tables.</li>
+   *   <li>Null Supplying table : The NULL-supplying table supplies NULLs when there is an unmatched row. Any column
+   *   from the NULL-supplying table referred to in the SELECT list or subsequent WHERE or ON clause will contain NULL
+   *   if there was no match in the join operation. For a left/right outer join, the NULL-supplying
+   *   table is the right/left table. For a full outer join, both tables are NULL-supplying
+   *   table. In a full outer join, both tables can preserve rows, and also can supply NULLs. This is significant,
+   *   because there are rules that apply to purely preserved row tables that do not apply if the table can also supply
+   *   NULLs.</li>
+   * </ul>
+   *
+   * <h3>Predicate types</h3>
+   * <ul>
+   *   <li>During Join predicate : A predicate that is in the JOIN ON clause.</li>
+   *   <li>After Join predicate : A predicate that is in the WHERE clause.</li>
+   * </ul>
+   *
+   * <h3>Predicate Pushdown Rules</h3>
+   * <ol>
+   *   <li>During Join predicates cannot be pushed past Preserved Row tables.</li>
+   *   <li>After Join predicates cannot be pushed past Null Supplying tables.</li>
+   * </ol>
+   */
+  private static Set<EvalNode> extractNonPushableOuterJoinQuals(final LogicalPlan plan,
+                                                                final Set<EvalNode> onPredicates,
+                                                                final Set<EvalNode> wherePredicates,
+                                                                final JoinNode joinNode) throws PlanningException {
+    Set<String> nullSupplyingTableNameSet = TUtil.newHashSet();
+    Set<String> preservedTableNameSet = TUtil.newHashSet();
+    String leftRelation = PlannerUtil.getTopRelationInLineage(plan, joinNode.getLeftChild());
+    String rightRelation = PlannerUtil.getTopRelationInLineage(plan, joinNode.getRightChild());
+
+    if (joinNode.getJoinType() == JoinType.LEFT_OUTER) {
+      nullSupplyingTableNameSet.add(rightRelation);
+      preservedTableNameSet.add(leftRelation);
+    } else if (joinNode.getJoinType() == JoinType.RIGHT_OUTER) {
+      nullSupplyingTableNameSet.add(leftRelation);
+      preservedTableNameSet.add(rightRelation);
+    } else {
+      // full outer join
+      preservedTableNameSet.add(leftRelation);
+      preservedTableNameSet.add(rightRelation);
+      nullSupplyingTableNameSet.add(leftRelation);
+      nullSupplyingTableNameSet.add(rightRelation);
+    }
+
+    Set<EvalNode> nonPushableQuals = TUtil.newHashSet();
+    for (EvalNode eachQual : onPredicates) {
+      for (String relName : preservedTableNameSet) {
+        if (isEvalNeedRelation(eachQual, relName)) {
+          nonPushableQuals.add(eachQual);
+        }
+      }
+    }
+
+    for (EvalNode eachQual : wherePredicates) {
+      for (String relName : nullSupplyingTableNameSet) {
+        if (isEvalNeedRelation(eachQual, relName)) {
+          nonPushableQuals.add(eachQual);
+        }
+      }
+    }
+
+    return nonPushableQuals;
+  }
+
+  private static boolean isEvalNeedRelation(final EvalNode evalNode, final String relationName) {
+    Set<Column> columns = EvalTreeUtil.findUniqueColumns(evalNode);
+    for (Column column : columns) {
+      if (isColumnFromRelation(column, relationName)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private static boolean isColumnFromRelation(final Column column, final String relationName) {
+    if (relationName.equals(column.getQualifier())) {
+      return true;
+    }
+    return false;
+  }
+
+  private static boolean isNonEquiThetaJoinQual(final LogicalPlan.QueryBlock block,
+                                                final JoinNode joinNode,
+                                                final EvalNode evalNode) {
+    if (EvalTreeUtil.isJoinQual(block, joinNode.getLeftChild().getOutSchema(),
+        joinNode.getRightChild().getOutSchema(), evalNode, true) &&
+        evalNode.getType() != EvalType.EQUAL) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  private static List<EvalNode> extractNonEquiThetaJoinQuals(final Set<EvalNode> predicates,
+                                                             final LogicalPlan.QueryBlock block,
+                                                             final JoinNode joinNode) {
+    List<EvalNode> nonEquiThetaJoinQuals = TUtil.newList();
+    for (EvalNode eachEval: predicates) {
+      if (isNonEquiThetaJoinQual(block, joinNode, eachEval)) {
+        nonEquiThetaJoinQuals.add(eachEval);
+      }
+    }
+    return nonEquiThetaJoinQuals;
   }
 
   private Map<EvalNode, EvalNode> transformEvalsWidthByPassNode(
@@ -368,7 +373,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       LogicalPlan.QueryBlock block,
       LogicalNode node, LogicalNode childNode) throws PlanningException {
     // transformed -> pushingDownFilters
-    Map<EvalNode, EvalNode> transformedMap = new HashMap<EvalNode, EvalNode>();
+    Map<EvalNode, EvalNode> transformedMap = TUtil.newHashMap();
 
     if (originEvals.isEmpty()) {
       return transformedMap;
@@ -426,7 +431,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     }
 
     // node in column -> child out column
-    Map<String, String> columnMap = new HashMap<String, String>();
+    Map<String, String> columnMap = TUtil.newHashMap();
 
     for (int i = 0; i < node.getInSchema().size(); i++) {
       String inColumnName = node.getInSchema().getColumn(i).getQualifiedName();
@@ -474,7 +479,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   @Override
   public LogicalNode visitTableSubQuery(FilterPushDownContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                                         TableSubQueryNode node, Stack<LogicalNode> stack) throws PlanningException {
-    List<EvalNode> matched = Lists.newArrayList();
+    List<EvalNode> matched = TUtil.newList();
     for (EvalNode eval : context.pushingDownFilters) {
       if (LogicalPlanner.checkIfBeEvaluatedAtRelation(block, eval, node)) {
         matched.add(eval);
@@ -484,8 +489,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     // transformed -> pushingDownFilters
     Map<EvalNode, EvalNode> transformedMap =
         transformEvalsWidthByPassNode(matched, plan, block, node, node.getSubQuery());
-
-    context.setFiltersTobePushed(new HashSet<EvalNode>(transformedMap.keySet()));
+    context.setFiltersTobePushed(transformedMap.keySet());
     visit(context, plan, plan.getBlock(node.getSubQuery()));
     context.setToOrigin(transformedMap);
 
@@ -498,11 +502,11 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
                                 Stack<LogicalNode> stack) throws PlanningException {
     LogicalNode leftNode = unionNode.getLeftChild();
 
-    List<EvalNode> origins = new ArrayList<EvalNode>(context.pushingDownFilters);
+    List<EvalNode> origins = TUtil.newList(context.pushingDownFilters);
 
     // transformed -> pushingDownFilters
     Map<EvalNode, EvalNode> transformedMap = transformEvalsWidthByPassNode(origins, plan, block, unionNode, leftNode);
-    context.setFiltersTobePushed(new HashSet<EvalNode>(transformedMap.keySet()));
+    context.setFiltersTobePushed(transformedMap.keySet());
     visit(context, plan, plan.getBlock(leftNode));
 
     if (!context.pushingDownFilters.isEmpty()) {
@@ -511,7 +515,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     LogicalNode rightNode = unionNode.getRightChild();
     transformedMap = transformEvalsWidthByPassNode(origins, plan, block, unionNode, rightNode);
-    context.setFiltersTobePushed(new HashSet<EvalNode>(transformedMap.keySet()));
+    context.setFiltersTobePushed(transformedMap.keySet());
     visit(context, plan, plan.getBlock(rightNode), rightNode, stack);
 
     if (!context.pushingDownFilters.isEmpty()) {
@@ -531,11 +535,11 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
                                      Stack<LogicalNode> stack) throws PlanningException {
     LogicalNode childNode = projectionNode.getChild();
 
-    List<EvalNode> notMatched = new ArrayList<EvalNode>();
+    List<EvalNode> notMatched = TUtil.newList();
 
     //copy -> origin
     BiMap<EvalNode, EvalNode> transformedMap = findCanPushdownAndTransform(
-        context, block,projectionNode, childNode, notMatched, null, false, 0);
+        context, block,projectionNode, childNode, notMatched, null, 0);
 
     context.setFiltersTobePushed(transformedMap.keySet());
 
@@ -583,7 +587,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   }
 
   private Collection<EvalNode> reverseTransform(BiMap<EvalNode, EvalNode> map, Set<EvalNode> remainFilters) {
-    Set<EvalNode> reversed = Sets.newHashSet();
+    Set<EvalNode> reversed = TUtil.newHashSet();
     for (EvalNode evalNode : remainFilters) {
       reversed.add(map.get(evalNode));
     }
@@ -593,10 +597,9 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   private BiMap<EvalNode, EvalNode> findCanPushdownAndTransform(
       FilterPushDownContext context, LogicalPlan.QueryBlock block, Projectable node,
       LogicalNode childNode, List<EvalNode> notMatched,
-      Set<String> partitionColumns,
-      boolean ignoreJoin, int columnOffset) throws PlanningException {
+      Set<String> partitionColumns, int columnOffset) throws PlanningException {
     // canonical name -> target
-    Map<String, Target> nodeTargetMap = new HashMap<String, Target>();
+    Map<String, Target> nodeTargetMap = TUtil.newHashMap();
     for (Target target : node.getTargets()) {
       nodeTargetMap.put(target.getCanonicalName(), target);
     }
@@ -605,10 +608,6 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
     BiMap<EvalNode, EvalNode> matched = HashBiMap.create();
 
     for (EvalNode eval : context.pushingDownFilters) {
-      if (ignoreJoin && EvalTreeUtil.isJoinQual(block, null, null, eval, true)) {
-        notMatched.add(eval);
-        continue;
-      }
       // If all column is field eval, can push down.
       Set<Column> evalColumns = EvalTreeUtil.findUniqueColumns(eval);
       boolean columnMatched = true;
@@ -725,16 +724,16 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
                                        HavingNode havingNode,
                                        GroupbyNode groupByNode) throws PlanningException {
     // find aggregation column
-    Set<Column> groupingColumns = new HashSet<Column>(Arrays.asList(groupByNode.getGroupingColumns()));
-    Set<String> aggrFunctionOutColumns = new HashSet<String>();
+    Set<Column> groupingColumns = TUtil.newHashSet(groupByNode.getGroupingColumns());
+    Set<String> aggrFunctionOutColumns = TUtil.newHashSet();
     for (Column column : groupByNode.getOutSchema().getColumns()) {
       if (!groupingColumns.contains(column)) {
         aggrFunctionOutColumns.add(column.getQualifiedName());
       }
     }
 
-    List<EvalNode> aggrEvalOrigins = new ArrayList<EvalNode>();
-    List<EvalNode> aggrEvals = new ArrayList<EvalNode>();
+    List<EvalNode> aggrEvalOrigins = TUtil.newList();
+    List<EvalNode> aggrEvals = TUtil.newList();
 
     for (EvalNode eval : context.pushingDownFilters) {
       EvalNode copy = null;
@@ -818,10 +817,10 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
       context.pushingDownFilters.removeAll(aggrEvals);
     }
 
-    List<EvalNode> notMatched = new ArrayList<EvalNode>();
+    List<EvalNode> notMatched = TUtil.newList();
     // transform
     Map<EvalNode, EvalNode> transformed =
-        findCanPushdownAndTransform(context, block, groupbyNode,groupbyNode.getChild(), notMatched, null, false, 0);
+        findCanPushdownAndTransform(context, block, groupbyNode,groupbyNode.getChild(), notMatched, null, 0);
 
     context.setFiltersTobePushed(transformed.keySet());
     LogicalNode current = super.visitGroupBy(context, plan, block, groupbyNode, stack);
@@ -836,10 +835,10 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
   public LogicalNode visitScan(FilterPushDownContext context, LogicalPlan plan,
                                LogicalPlan.QueryBlock block, ScanNode scanNode,
                                Stack<LogicalNode> stack) throws PlanningException {
-    List<EvalNode> matched = Lists.newArrayList();
+    List<EvalNode> matched = TUtil.newList();
 
     // find partition column and check matching
-    Set<String> partitionColumns = new HashSet<String>();
+    Set<String> partitionColumns = TUtil.newHashSet();
     TableDesc table = scanNode.getTableDesc();
     boolean hasQualifiedName = false;
     if (table.hasPartition()) {
@@ -848,7 +847,7 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
         hasQualifiedName = c.hasQualifier();
       }
     }
-    Set<EvalNode> partitionEvals = new HashSet<EvalNode>();
+    Set<EvalNode> partitionEvals = TUtil.newHashSet();
     for (EvalNode eval : context.pushingDownFilters) {
       if (table.hasPartition()) {
         Set<Column> columns = EvalTreeUtil.findUniqueColumns(eval);
@@ -882,11 +881,11 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
     context.pushingDownFilters.removeAll(partitionEvals);
 
-    List<EvalNode> notMatched = new ArrayList<EvalNode>();
+    List<EvalNode> notMatched = TUtil.newList();
 
     // transform
     Map<EvalNode, EvalNode> transformed =
-        findCanPushdownAndTransform(context, block, scanNode, null, notMatched, partitionColumns, true, 0);
+        findCanPushdownAndTransform(context, block, scanNode, null, notMatched, partitionColumns, 0);
 
     for (EvalNode eval : transformed.keySet()) {
       if (LogicalPlanner.checkIfBeEvaluatedAtRelation(block, eval, scanNode)) {
