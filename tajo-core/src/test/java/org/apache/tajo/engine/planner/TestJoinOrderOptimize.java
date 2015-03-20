@@ -18,28 +18,14 @@
 
 package org.apache.tajo.engine.planner;
 
-import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
 
-import java.util.Arrays;
-import java.util.Collection;
-
-@Category(IntegrationTest.class)
-@RunWith(Parameterized.class)
 public class TestJoinOrderOptimize extends QueryPlanTestCaseBase {
 
-  public TestJoinOrderOptimize(String joinOption) {
+  public TestJoinOrderOptimize() {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
-
-    testBase.util.getConf().set(TajoConf.ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname,
-        TajoConf.ConfVars.$TEST_BROADCAST_JOIN_ENABLED.defaultVal);
-    testBase.util.getConf().set(TajoConf.ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname,
-        TajoConf.ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.defaultVal);
 
     testBase.util.getConf().set(
         TajoConf.ConfVars.$EXECUTOR_HASH_JOIN_SIZE_THRESHOLD.varname,
@@ -50,60 +36,38 @@ public class TestJoinOrderOptimize extends QueryPlanTestCaseBase {
     testBase.util.getConf().set(TajoConf.ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.varname,
         TajoConf.ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD.defaultVal);
 
-    if (joinOption.indexOf("NoBroadcast") >= 0) {
-      testBase.util.getConf().set(TajoConf.ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname, "false");
-      testBase.util.getConf().set(TajoConf.ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname, "-1");
-    }
-  }
-
-  @Parameterized.Parameters
-  public static Collection<Object[]> generateParameters() {
-    return Arrays.asList(new Object[][]{
-        {"NoBroadcast"},
-        {"Broadcast"},
-    });
-  }
-
-  @Test
-  public final void test() throws Exception {
-    String query = "select count(*) from nation, region where n_regionkey = r_regionkey ";
-
-    System.out.println(executeString(query));
-  }
-
-  @Test
-  public final void testTwoPartJoin() throws Exception {
-    String plan = executeQuery();
-    System.out.println(plan);
-    assertPlan(plan);
+    testBase.util.getConf().set(TajoConf.ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname, "false");
+    testBase.util.getConf().set(TajoConf.ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname, "-1");
   }
 
   @Test
   public final void testJoinWithMultipleJoinTypes() throws Exception {
     String plan = executeQuery();
-    System.out.println(plan);
+    assertPlan(plan);
   }
 
   @Test
   public final void testWhereClauseJoin5() throws Exception {
     String plan = executeQuery();
-    System.out.println(plan);
+    assertPlan(plan);
   }
 
   @Test
   public final void testWhereClauseJoin6() throws Exception {
     String plan = executeQuery();
-    System.out.println(plan);
+    assertPlan(plan);
   }
 
   @Test
   public final void testJoinWithMultipleJoinQual1() throws Exception {
     String plan = executeQuery();
+    assertPlan(plan);
   }
 
   @Test
   public final void testJoinWithMultipleJoinQual4() throws Exception {
     String plan = executeQuery();
+    assertPlan(plan);
   }
 
   @Test
@@ -118,7 +82,7 @@ public class TestJoinOrderOptimize extends QueryPlanTestCaseBase {
               "left outer join table13 t3\n" +
               "on t1.id = t3.id and t2.id = t3.id");
 
-//      System.out.println(plan);
+      assertPlan(plan);
     } finally {
       dropOuterJoinTestTable();
     }
@@ -128,7 +92,7 @@ public class TestJoinOrderOptimize extends QueryPlanTestCaseBase {
   public final void testRightOuterJoinPredicationCaseByCase3() throws Exception {
     createOuterJoinTestTable();
     try {
-      String res = executeString(
+      String plan = executeString(
           "select t1.id, t1.name, t2.id, t3.id\n" +
               "from table11 t1\n" +
               "right outer join table12 t2 \n" +
@@ -136,6 +100,7 @@ public class TestJoinOrderOptimize extends QueryPlanTestCaseBase {
               "right outer join table13 t3\n" +
               "on t1.id = t3.id "
       );
+      assertPlan(plan);
     } finally {
       dropOuterJoinTestTable();
     }
@@ -173,7 +138,7 @@ public class TestJoinOrderOptimize extends QueryPlanTestCaseBase {
     // outer -> outer -> inner
     createOuterJoinTestTable();
     try {
-      String res = executeString(
+      String plan = executeString(
           "select t1.id, t1.name, t2.id, t3.id, t4.id\n" +
               "from table11 t1\n" +
               "left outer join table12 t2\n" +
@@ -183,6 +148,7 @@ public class TestJoinOrderOptimize extends QueryPlanTestCaseBase {
               "inner join table14 t4\n" +
               "on t2.id = t4.id"
       );
+      assertPlan(plan);
     } finally {
       dropOuterJoinTestTable();
     }

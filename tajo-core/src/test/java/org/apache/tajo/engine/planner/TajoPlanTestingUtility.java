@@ -125,15 +125,11 @@ public class TajoPlanTestingUtility {
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
     optimizer.optimize(defaultContext, plan);
 
-    QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
+    QueryId queryId = QueryIdFactory.newQueryId(0, 0);
     MasterPlan masterPlan = new MasterPlan(queryId, defaultContext, plan);
     globalPlanner.build(masterPlan);
 
-    StringBuilder sb = new StringBuilder("********** Logical plan **********").append("\n\n");
-    sb.append(masterPlan.getLogicalPlan().getLogicalPlanAsString()).append("\n\n");
-    sb.append("********** Master plan **********").append("\n\n").append(masterPlan.toString());
-
-    return sb.toString();
+    return masterPlan.toString();
   }
 
   public TajoConf getConf() {
