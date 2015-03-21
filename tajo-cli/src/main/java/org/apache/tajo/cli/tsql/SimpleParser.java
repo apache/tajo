@@ -180,7 +180,7 @@ public class SimpleParser {
             appendToBothStatements(chars, lineStartIdx, idx, 2); // omit two dash characters '--' from history statement
             int commentStartIdx = idx;
             idx = consumeInlineComment(chars, idx);
-            appendToRawStatement(str.subSequence(commentStartIdx, idx).toString(), true);
+            appendToRawStatement(str.subSequence(commentStartIdx, idx).toString(), false);
             lineStartIdx = idx;
           }
           ///////////////////////////////////////////////////////
@@ -281,6 +281,7 @@ public class SimpleParser {
   private void appendToRawStatement(String str, boolean addLF) {
     if (!str.isEmpty() && !"\n".equals(str) &&
         rawAppender.length() > 0 && addLF && rawAppender.charAt(rawAppender.length() - 1) != '\n') {
+      rawAppender.append("\n");
       rawAppender.append(str);
     } else {
       rawAppender.append(str);

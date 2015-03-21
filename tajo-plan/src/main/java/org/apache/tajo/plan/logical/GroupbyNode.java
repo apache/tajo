@@ -28,6 +28,8 @@ import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.util.TUtil;
 
+import java.util.Arrays;
+
 public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   /** Grouping key sets */
   @Expose private Column [] groupingKeys = PlannerUtil.EMPTY_COLUMNS;
@@ -107,7 +109,7 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
   
   public String toString() {
     StringBuilder sb = new StringBuilder("GroupBy (");
-    if (groupingKeys != null || groupingKeys.length > 0) {
+    if (groupingKeys != null && groupingKeys.length > 0) {
       sb.append("grouping set=").append(StringUtils.join(groupingKeys));
       sb.append(", ");
     }
@@ -118,6 +120,17 @@ public class GroupbyNode extends UnaryNode implements Projectable, Cloneable {
     return sb.toString();
   }
   
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + Arrays.hashCode(aggrFunctions);
+    result = prime * result + Arrays.hashCode(groupingKeys);
+    result = prime * result + (hasDistinct ? 1231 : 1237);
+    result = prime * result + Arrays.hashCode(targets);
+    return result;
+  }
+
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof GroupbyNode) {

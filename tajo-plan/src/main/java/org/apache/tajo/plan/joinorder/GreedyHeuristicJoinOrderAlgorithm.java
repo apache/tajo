@@ -36,7 +36,7 @@ import java.util.*;
  * all join operators.
  */
 public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
-  public static double DEFAULT_SELECTION_FACTOR = 0.1;
+  public static final double DEFAULT_SELECTION_FACTOR = 0.1;
 
   @Override
   public FoundJoinOrder findBestOrder(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraph joinGraph,
@@ -88,6 +88,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
               if (checkingRelations.size() <= 1) {
                 checkingRelations.add(relation);
               }
+              break;
+            default:
               break;
           }
         }

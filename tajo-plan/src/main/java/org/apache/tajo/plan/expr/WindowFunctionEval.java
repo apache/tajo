@@ -18,7 +18,10 @@
 
 package org.apache.tajo.plan.expr;
 
+import java.util.Arrays;
+
 import com.google.gson.annotations.Expose;
+
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
@@ -87,6 +90,17 @@ public class WindowFunctionEval extends AggregationFunctionCallEval implements C
     return funcDesc.getReturnType();
   }
 
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = super.hashCode();
+    result = prime * result + ((params == null) ? 0 : params.hashCode());
+    result = prime * result + Arrays.hashCode(sortSpecs);
+    result = prime * result + ((windowFrame == null) ? 0 : windowFrame.hashCode());
+    return result;
+  }
+
+  @Override
   public boolean equals(Object obj) {
     if (obj instanceof WindowFunctionEval) {
       WindowFunctionEval other = (WindowFunctionEval) obj;

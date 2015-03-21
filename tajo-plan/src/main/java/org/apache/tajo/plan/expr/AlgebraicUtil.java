@@ -342,6 +342,11 @@ public class AlgebraicUtil {
   }
 
   private static EvalNode createSingletonExprFromCNFRecursive(EvalNode[] evalNode, int idx) {
+    if (idx >= evalNode.length) {
+      throw new ArrayIndexOutOfBoundsException("index " + idx + " is exceeded the maximum length ("+
+          evalNode.length+") of EvalNode");
+    }
+
     if (idx == evalNode.length - 2) {
       return new BinaryEval(EvalType.AND, evalNode[idx], evalNode[idx + 1]);
     } else {

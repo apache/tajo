@@ -18,7 +18,10 @@
 
 package org.apache.tajo.plan.expr;
 
+import java.util.Arrays;
+
 import com.google.gson.annotations.Expose;
+
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
@@ -64,6 +67,14 @@ public class RowConstantEval extends EvalNode {
 
   public Datum [] getValues() {
     return values;
+  }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + Arrays.hashCode(values);
+    return result;
   }
 
   @Override

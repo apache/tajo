@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.logical;
 
 import com.google.gson.annotations.Expose;
+
 import org.apache.tajo.plan.PlanString;
 
 public final class LimitNode extends UnaryNode implements Cloneable {
@@ -41,7 +42,15 @@ public final class LimitNode extends UnaryNode implements Cloneable {
     return new PlanString(this).appendTitle(" " + fetchFirstNum);
   }
   
-  @Override 
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + (int) (fetchFirstNum ^ (fetchFirstNum >>> 32));
+    return result;
+  }
+
+  @Override
   public boolean equals(Object obj) {
     if (obj instanceof LimitNode) {
       LimitNode other = (LimitNode) obj;

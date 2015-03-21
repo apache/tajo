@@ -21,7 +21,10 @@
  */
 package org.apache.tajo.plan.logical;
 
+import java.util.Arrays;
+
 import com.google.gson.annotations.Expose;
+
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.Target;
@@ -70,9 +73,18 @@ public class EvalExprNode extends LogicalNode implements Projectable {
     return "EvalExprNode (" + StringUtils.join(exprs) + ")";
   }
 
-  public boolean equals(Object object) {
-    if (object instanceof EvalExprNode) {
-      EvalExprNode other = (EvalExprNode) object;
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + Arrays.hashCode(exprs);
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof EvalExprNode) {
+      EvalExprNode other = (EvalExprNode) obj;
       return TUtil.checkEquals(this.exprs, other.exprs);
     } else {
       return false;

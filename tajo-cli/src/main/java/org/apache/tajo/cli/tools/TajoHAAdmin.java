@@ -44,7 +44,6 @@ public class TajoHAAdmin {
   }
 
   private TajoConf tajoConf;
-  private TajoClient tajoClient;
   private Writer writer;
 
   public TajoHAAdmin(TajoConf tajoConf, Writer writer) {
@@ -54,7 +53,6 @@ public class TajoHAAdmin {
   public TajoHAAdmin(TajoConf tajoConf, Writer writer, TajoClient tajoClient) {
     this.tajoConf = tajoConf;
     this.writer = writer;
-    this.tajoClient = tajoClient;
   }
 
   private void printUsage() {
@@ -127,9 +125,6 @@ public class TajoHAAdmin {
       return;
     } else if (hostName != null && port != null) {
       tajoConf.setVar(TajoConf.ConfVars.TAJO_MASTER_CLIENT_RPC_ADDRESS, hostName + ":" + port);
-      tajoClient = new TajoClientImpl(ServiceTrackerFactory.get(tajoConf));
-    } else if (hostName == null && port == null) {
-      tajoClient = new TajoClientImpl(ServiceTrackerFactory.get(tajoConf));
     }
 
     if (!tajoConf.getBoolVar(TajoConf.ConfVars.TAJO_MASTER_HA_ENABLE)) {
