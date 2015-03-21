@@ -964,8 +964,7 @@ public class TestCatalog {
   private AlterTableDesc createMockAlterTableSetProperty() {
     AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName("default.mynewcooltable");
-    alterTableDesc.setPropertyKey("timezone");
-    alterTableDesc.setPropertyValue("GMT+0");
+    alterTableDesc.setProperty("timezone", "GMT+0");
     return alterTableDesc;
   }
 

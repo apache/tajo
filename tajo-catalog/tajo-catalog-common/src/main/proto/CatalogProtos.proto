@@ -346,8 +346,7 @@ message AlterTableDescProto {
   optional ColumnProto addColumn = 3;
   optional AlterColumnProto alterColumnName = 4;
   required AlterTableType alterTableType = 5;
-  optional string propertyKey = 6;
-  optional string propertyValue = 7;
+  optional KeyValueSetProto params = 6;
 }
 
 message AlterColumnProto {

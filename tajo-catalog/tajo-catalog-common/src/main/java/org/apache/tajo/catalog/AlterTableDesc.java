@@ -24,6 +24,7 @@ import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.util.KeyValueSet;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTableDescProto;
 
@@ -42,13 +43,15 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
   @Expose
   protected Column addColumn = null; //optional
   @Expose
-  protected String propertyKey; // optional
-  @Expose
-  protected String propertyValue; // optional
+  protected KeyValueSet properties;
 
   public AlterTableDesc() {
+    this.properties = new KeyValueSet();
   }
 
+  public AlterTableDesc(KeyValueSet properties) {
+    this.properties = new KeyValueSet(properties);
+  }
 
   public String getTableName() {
     return tableName;
@@ -98,20 +101,20 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
     this.alterTableType = alterTableType;
   }
 
-  public String getPropertyKey() {
-    return propertyKey;
+  public void setProperties(KeyValueSet properties) {
+    this.properties = properties;
   }
 
-  public void setPropertyKey(String propertyKey) {
-    this.propertyKey = propertyKey;
+  public KeyValueSet getProperties() {
+    return properties;
   }
 
-  public String getPropertyValue() {
-    return propertyValue;
+  public void setProperty(String key, String value) {
+    this.properties.set(key, value);
   }
 
-  public void setPropertyValue(String propertyValue) {
-    this.propertyValue = propertyValue;
+  public String getProperty(String key) {
+    return this.properties.get(key);
   }
 
   @Override
@@ -129,8 +132,7 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
     newAlter.newTableName = newTableName;
     newAlter.columnName = newColumnName;
     newAlter.addColumn = addColumn;
-    newAlter.propertyKey = propertyKey;
-    newAlter.propertyValue = propertyValue;
+    newAlter.properties = (KeyValueSet)properties.clone();
     return newAlter;
   }
 
@@ -158,12 +160,10 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
     if (null != this.addColumn) {
       builder.setAddColumn(addColumn.getProto());
     }
-    if (null != this.propertyKey) {
-      builder.setPropertyKey(this.propertyKey);
+    if (null != this.properties) {
+      builder.setParams(properties.getProto());
     }
-    if (null != this.propertyValue) {
-      builder.setPropertyValue(this.propertyValue);
-    }
+
 
     switch (alterTableType) {
       case RENAME_TABLE:
