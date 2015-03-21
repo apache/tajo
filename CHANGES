@@ -48,6 +48,9 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1439: Some method name is written wrongly.
+    (Contributed by Jongyoung Park. Committed by jihoon)
+
     TAJO-1380: Update JDBC documentation for new JDBC driver.
     (Contributed by Dongjoon Hyun, Committed by hyunsik)
 
