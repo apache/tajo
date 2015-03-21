@@ -176,6 +176,14 @@ public class QueryPlanTestCaseBase {
     return buildLogicalPlan(getMethodName() + ".sql");
   }
 
+  public MasterPlan buildMasterPlan(LogicalPlan logicalPlan) throws IOException, PlanningException {
+    return testBase.buildMasterPlan(logicalPlan);
+  }
+
+  public MasterPlan buildPlan() throws Exception {
+    return buildMasterPlan(buildLogicalPlan());
+  }
+
   protected String getMethodName() {
     String methodName = name.getMethodName();
     // In the case of parameter execution name's pattern is methodName[0]
@@ -237,21 +245,40 @@ public class QueryPlanTestCaseBase {
    *
    * @param result Query result to be compared.
    */
-  public final void assertPlan(LogicalPlan result) throws IOException {
-    assertPlan("Result Verification", result, getMethodName() + ".plan");
+  public final void assertLogicalPlan(LogicalPlan result) throws IOException {
+    assertLogicalPlan("Result Verification", result, getMethodName() + ".logical.plan");
   }
 
-  public final void assertPlan(String message, LogicalPlan result, String resultFileName) throws IOException {
+  public final void assertLogicalPlan(String message, LogicalPlan result, String resultFileName) throws IOException {
     Path resultFile = getResultFile(resultFileName);
     try {
-      verifyPlan(message, result, resultFile);
+      verifyLogicalPlan(message, result, resultFile);
     } catch (SQLException e) {
       throw new IOException(e);
     }
   }
 
-  private void verifyPlan(String message, LogicalPlan res, Path resultFile) throws SQLException, IOException {
+  public final void assertMasterPlan(MasterPlan result) throws IOException {
+    assertMasterPlan("Result Verification", result, getMethodName() + ".master.plan");
+  }
+
+  public final void assertMasterPlan(String message, MasterPlan result, String resultFileName) throws IOException {
+    Path resultFile = getResultFile(resultFileName);
+    try {
+      verifyMasterPlan(message, result, resultFile);
+    } catch (SQLException e) {
+      throw new IOException(e);
+    }
+  }
+
+  private void verifyLogicalPlan(String message, LogicalPlan res, Path resultFile) throws SQLException, IOException {
     LogicalPlan actualResult = res;
+    String expectedResult = FileUtil.readTextFile(new File(resultFile.toUri()));
+    assertEquals(message, expectedResult.trim(), actualResult.getLogicalPlanAsString().trim());
+  }
+
+  private void verifyMasterPlan(String message, MasterPlan res, Path resultFile) throws SQLException, IOException {
+    MasterPlan actualResult = res;
     String expectedResult = FileUtil.readTextFile(new File(resultFile.toUri()));
     assertEquals(message, expectedResult.trim(), actualResult.toString().trim());
   }

@@ -79,31 +79,33 @@ public class TestJoinOrderOptimize extends QueryPlanTestCaseBase {
   @Test
   public final void testJoinWithMultipleJoinTypes() throws Exception {
     LogicalPlan plan = buildLogicalPlan();
-    assertPlan(plan);
+    assertLogicalPlan(plan);
+    assertMasterPlan(buildMasterPlan(plan));
   }
 
   @Test
   public final void testWhereClauseJoin5() throws Exception {
     LogicalPlan plan = buildLogicalPlan();
-    assertPlan(plan);
+    assertLogicalPlan(plan);
+    assertMasterPlan(buildMasterPlan(plan));
   }
 
   @Test
   public final void testWhereClauseJoin6() throws Exception {
     LogicalPlan plan = buildLogicalPlan();
-    assertPlan(plan);
+    assertLogicalPlan(plan);
   }
 
   @Test
   public final void testJoinWithMultipleJoinQual1() throws Exception {
     LogicalPlan plan = buildLogicalPlan();
-    assertPlan(plan);
+    assertLogicalPlan(plan);
   }
 
   @Test
   public final void testJoinWithMultipleJoinQual4() throws Exception {
     LogicalPlan plan = buildLogicalPlan();
-    assertPlan(plan);
+    assertLogicalPlan(plan);
   }
 
   @Test
@@ -118,7 +120,7 @@ public class TestJoinOrderOptimize extends QueryPlanTestCaseBase {
               "left outer join table13 t3\n" +
               "on t1.id = t3.id and t2.id = t3.id");
 
-      assertPlan(plan);
+      assertLogicalPlan(plan);
     } finally {
       dropOuterJoinTestTable();
     }
@@ -136,7 +138,7 @@ public class TestJoinOrderOptimize extends QueryPlanTestCaseBase {
               "right outer join table13 t3\n" +
               "on t1.id = t3.id "
       );
-      assertPlan(plan);
+      assertLogicalPlan(plan);
     } finally {
       dropOuterJoinTestTable();
     }
@@ -157,7 +159,7 @@ public class TestJoinOrderOptimize extends QueryPlanTestCaseBase {
               "inner join table14 t4\n" +
               "on t2.id = t4.id"
       );
-      assertPlan(plan);
+      assertLogicalPlan(plan);
     } finally {
       dropOuterJoinTestTable();
     }

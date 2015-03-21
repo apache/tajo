@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang.ObjectUtils;

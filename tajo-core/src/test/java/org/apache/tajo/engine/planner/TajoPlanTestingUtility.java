@@ -221,7 +221,7 @@ public class TajoPlanTestingUtility {
         if (leftChildNum < rightChildNum) {
           swapChildren(node);
         } else if (leftChildNum == rightChildNum) {
-          if (node.getLeftChild().toJson().compareTo(node.getRightChild().toJson()) <
+          if (node.getLeftChild().toString().compareTo(node.getRightChild().toString()) <
               0) {
             swapChildren(node);
           }
