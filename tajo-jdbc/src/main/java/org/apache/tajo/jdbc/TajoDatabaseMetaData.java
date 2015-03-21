@@ -157,7 +157,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public String getProcedureTerm()  throws SQLException {
-    return new String("UDF");
+    return "UDF";
   }
 
   @Override

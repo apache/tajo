@@ -48,12 +48,10 @@ public class ResolverByLegacy extends NameResolver {
   private static Column resolveColumnWithQualifier(LogicalPlan plan, LogicalPlan.QueryBlock block,
                                                    ColumnReferenceExpr columnRef) throws PlanningException {
     final String qualifier;
-    String canonicalName;
     final String qualifiedName;
 
     Pair<String, String> normalized = lookupQualifierAndCanonicalName(block, columnRef);
     qualifier = normalized.getFirst();
-    canonicalName = normalized.getSecond();
     qualifiedName = CatalogUtil.buildFQName(qualifier, columnRef.getName());
 
     Column found = resolveFromRelsWithinBlock(plan, block, columnRef);

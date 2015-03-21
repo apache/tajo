@@ -271,7 +271,7 @@ public class SessionConnection implements Closeable {
       }
     }.withRetries();
 
-    if (selected == Boolean.TRUE) {
+    if (selected.equals(Boolean.TRUE)) {
       this.baseDatabase = databaseName;
     }
     return selected;
