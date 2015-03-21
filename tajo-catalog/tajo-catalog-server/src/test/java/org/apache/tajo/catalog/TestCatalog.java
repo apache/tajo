@@ -930,6 +930,10 @@ public class TestCatalog {
     TableDesc addColumnDesc = catalog.getTableDesc("default","mynewcooltable");
     assertTrue(addColumnDesc.getSchema().containsByName("mynewcol"));
 
+    //SET_PROPERTY
+    catalog.alterTable(createMockAlterTableSetProperty());
+    TableDesc setPropertyDesc = catalog.getTableDesc("default","mynewcooltable");
+    assertTrue(setPropertyDesc.getMeta().getOption("timezone").equals("GMT+0"));
   }
 
   private AlterTableDesc createMockAlterTableName(){
@@ -954,6 +958,14 @@ public class TestCatalog {
     alterTableDesc.setTableName("default.mynewcooltable");
     alterTableDesc.setAddColumn(new Column("mynewcol", Type.TEXT));
     alterTableDesc.setAlterTableType(AlterTableType.ADD_COLUMN);
+    return alterTableDesc;
+  }
+
+  private AlterTableDesc createMockAlterTableSetProperty() {
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName("default.mynewcooltable");
+    alterTableDesc.setPropertyKey("timezone");
+    alterTableDesc.setPropertyValue("GMT+0");
     return alterTableDesc;
   }
 

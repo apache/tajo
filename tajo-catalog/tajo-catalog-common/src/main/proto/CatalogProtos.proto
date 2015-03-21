@@ -58,6 +58,7 @@ enum AlterTableType {
   RENAME_TABLE = 0;
   RENAME_COLUMN = 1;
   ADD_COLUMN = 2;
+  SET_PROPERTY = 3;
 }
 
 message ColumnProto {
@@ -345,6 +346,8 @@ message AlterTableDescProto {
   optional ColumnProto addColumn = 3;
   optional AlterColumnProto alterColumnName = 4;
   required AlterTableType alterTableType = 5;
+  optional string propertyKey = 6;
+  optional string propertyValue = 7;
 }
 
 message AlterColumnProto {

@@ -40,7 +40,11 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
   @Expose
   protected String newColumnName; //optional
   @Expose
-  protected Column addColumn = null; //optiona
+  protected Column addColumn = null; //optional
+  @Expose
+  protected String propertyKey; // optional
+  @Expose
+  protected String propertyValue; // optional
 
   public AlterTableDesc() {
   }
@@ -94,6 +98,22 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
     this.alterTableType = alterTableType;
   }
 
+  public String getPropertyKey() {
+    return propertyKey;
+  }
+
+  public void setPropertyKey(String propertyKey) {
+    this.propertyKey = propertyKey;
+  }
+
+  public String getPropertyValue() {
+    return propertyValue;
+  }
+
+  public void setPropertyValue(String propertyValue) {
+    this.propertyValue = propertyValue;
+  }
+
   @Override
   public String toString() {
     Gson gson = new GsonBuilder().setPrettyPrinting().
@@ -109,6 +129,8 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
     newAlter.newTableName = newTableName;
     newAlter.columnName = newColumnName;
     newAlter.addColumn = addColumn;
+    newAlter.propertyKey = propertyKey;
+    newAlter.propertyValue = propertyValue;
     return newAlter;
   }
 
@@ -136,6 +158,12 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
     if (null != this.addColumn) {
       builder.setAddColumn(addColumn.getProto());
     }
+    if (null != this.propertyKey) {
+      builder.setPropertyKey(this.propertyKey);
+    }
+    if (null != this.propertyValue) {
+      builder.setPropertyValue(this.propertyValue);
+    }
 
     switch (alterTableType) {
       case RENAME_TABLE:
@@ -146,6 +174,9 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
         break;
       case ADD_COLUMN:
         builder.setAlterTableType(CatalogProtos.AlterTableType.ADD_COLUMN);
+        break;
+      case SET_PROPERTY:
+        builder.setAlterTableType(CatalogProtos.AlterTableType.SET_PROPERTY);
         break;
       default:
     }
