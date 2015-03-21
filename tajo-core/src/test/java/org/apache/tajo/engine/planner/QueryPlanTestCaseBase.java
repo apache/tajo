@@ -37,6 +37,8 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.cli.tsql.ParsedResult;
 import org.apache.tajo.cli.tsql.SimpleParser;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.FileUtil;
@@ -160,8 +162,8 @@ public class QueryPlanTestCaseBase {
     return currentDatabase;
   }
 
-  protected String executeString(String sql) throws Exception {
-    return testBase.execute(sql);
+  protected LogicalPlan buildLogicalPlanFromString(String sql) throws Exception {
+    return testBase.buildLogicalPlan(sql);
   }
 
   /**
@@ -170,8 +172,8 @@ public class QueryPlanTestCaseBase {
    *
    * @return ResultSet of query execution.
    */
-  public String executeQuery() throws Exception {
-    return executeFile(getMethodName() + ".sql");
+  public LogicalPlan buildLogicalPlan() throws Exception {
+    return buildLogicalPlan(getMethodName() + ".sql");
   }
 
   protected String getMethodName() {
@@ -187,10 +189,10 @@ public class QueryPlanTestCaseBase {
    * Execute a query contained in the given named file. This methods tries to find the given file within the directory
    * src/test/resources/results/<i>ClassName</i>.
    *
-   * @param queryFileName The file name to be used to execute a query.
+   * @param queryFileName The file name to be used to buildLogicalPlan a query.
    * @return ResultSet of query execution.
    */
-  public String executeFile(String queryFileName) throws Exception {
+  public LogicalPlan buildLogicalPlan(String queryFileName) throws Exception {
     Path queryFilePath = getQueryFilePath(queryFileName);
 
     List<ParsedResult> parsedResults = SimpleParser.parseScript(FileUtil.readTextFile(new File(queryFilePath.toUri())));
@@ -200,10 +202,10 @@ public class QueryPlanTestCaseBase {
 
     int idx = 0;
     for (; idx < parsedResults.size() - 1; idx++) {
-      testBase.execute(parsedResults.get(idx).getHistoryStatement());
+      testBase.buildLogicalPlan(parsedResults.get(idx).getHistoryStatement());
     }
 
-    String result = testBase.execute(parsedResults.get(idx).getHistoryStatement());
+    LogicalPlan result = testBase.buildLogicalPlan(parsedResults.get(idx).getHistoryStatement());
     assertNotNull("Query succeeded test", result);
     return result;
   }
@@ -235,23 +237,11 @@ public class QueryPlanTestCaseBase {
    *
    * @param result Query result to be compared.
    */
-  public final void assertPlan(String result) throws IOException {
+  public final void assertPlan(LogicalPlan result) throws IOException {
     assertPlan("Result Verification", result, getMethodName() + ".plan");
   }
 
-  /**
-   * Assert the equivalence between the expected result and an actual query result.
-   * If it isn't it throws an AssertionError.
-   *
-   * @param result Query result to be compared.
-   * @param resultFileName The file name containing the result to be compared
-   */
-  public final void assertPlan(String result, String resultFileName) throws IOException {
-    assertPlan("Result Verification", result, resultFileName);
-  }
-
-  public final void assertPlan(String message, String result, String resultFileName) throws IOException {
-    FileSystem fs = currentQueryPath.getFileSystem(testBase.getUtilility().getConf());
+  public final void assertPlan(String message, LogicalPlan result, String resultFileName) throws IOException {
     Path resultFile = getResultFile(resultFileName);
     try {
       verifyPlan(message, result, resultFile);
@@ -260,10 +250,10 @@ public class QueryPlanTestCaseBase {
     }
   }
 
-  private void verifyPlan(String message, String res, Path resultFile) throws SQLException, IOException {
-    String actualResult = res;
+  private void verifyPlan(String message, LogicalPlan res, Path resultFile) throws SQLException, IOException {
+    LogicalPlan actualResult = res;
     String expectedResult = FileUtil.readTextFile(new File(resultFile.toUri()));
-    assertEquals(message, expectedResult.trim(), actualResult.trim());
+    assertEquals(message, expectedResult.trim(), actualResult.toString().trim());
   }
 
   public void executeDDLString(String ddl) throws IOException, PlanningException {

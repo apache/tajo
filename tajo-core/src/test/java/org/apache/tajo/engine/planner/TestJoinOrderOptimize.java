@@ -20,6 +20,7 @@ package org.apache.tajo.engine.planner;
 
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.plan.LogicalPlan;
 import org.junit.Test;
 
 public class TestJoinOrderOptimize extends QueryPlanTestCaseBase {
@@ -38,72 +39,6 @@ public class TestJoinOrderOptimize extends QueryPlanTestCaseBase {
 
     testBase.util.getConf().set(TajoConf.ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname, "false");
     testBase.util.getConf().set(TajoConf.ConfVars.$DIST_QUERY_BROADCAST_JOIN_THRESHOLD.varname, "-1");
-  }
-
-  @Test
-  public final void testJoinWithMultipleJoinTypes() throws Exception {
-    String plan = executeQuery();
-    assertPlan(plan);
-  }
-
-  @Test
-  public final void testWhereClauseJoin5() throws Exception {
-    String plan = executeQuery();
-    assertPlan(plan);
-  }
-
-  @Test
-  public final void testWhereClauseJoin6() throws Exception {
-    String plan = executeQuery();
-    assertPlan(plan);
-  }
-
-  @Test
-  public final void testJoinWithMultipleJoinQual1() throws Exception {
-    String plan = executeQuery();
-    assertPlan(plan);
-  }
-
-  @Test
-  public final void testJoinWithMultipleJoinQual4() throws Exception {
-    String plan = executeQuery();
-    assertPlan(plan);
-  }
-
-  @Test
-  public final void testLeftOuterJoinPredicationCaseByCase1() throws Exception {
-    createOuterJoinTestTable();
-    try {
-      String plan = executeString(
-          "select t1.id, t1.name, t2.id, t3.id\n" +
-              "from default.table11 t1\n" +
-              "left outer join table12 t2\n" +
-              "on t1.id = t2.id\n" +
-              "left outer join table13 t3\n" +
-              "on t1.id = t3.id and t2.id = t3.id");
-
-      assertPlan(plan);
-    } finally {
-      dropOuterJoinTestTable();
-    }
-  }
-
-  @Test
-  public final void testRightOuterJoinPredicationCaseByCase3() throws Exception {
-    createOuterJoinTestTable();
-    try {
-      String plan = executeString(
-          "select t1.id, t1.name, t2.id, t3.id\n" +
-              "from table11 t1\n" +
-              "right outer join table12 t2 \n" +
-              "on t1.id = t2.id and (concat(t1.name, cast(t2.id as TEXT)) = 'table11-11' or concat(t1.name, cast(t2.id as TEXT)) = 'table11-33')\n" +
-              "right outer join table13 t3\n" +
-              "on t1.id = t3.id "
-      );
-      assertPlan(plan);
-    } finally {
-      dropOuterJoinTestTable();
-    }
   }
 
   private void createOuterJoinTestTable() throws Exception {
@@ -133,12 +68,86 @@ public class TestJoinOrderOptimize extends QueryPlanTestCaseBase {
 
   }
 
+
+  private void dropOuterJoinTestTable() throws Exception {
+    executeDDLString("DROP TABLE table11 PURGE;");
+    executeDDLString("DROP TABLE table12 PURGE;");
+    executeDDLString("DROP TABLE table13 PURGE;");
+    executeDDLString("DROP TABLE table14 PURGE;");
+  }
+
+  @Test
+  public final void testJoinWithMultipleJoinTypes() throws Exception {
+    LogicalPlan plan = buildLogicalPlan();
+    assertPlan(plan);
+  }
+
+  @Test
+  public final void testWhereClauseJoin5() throws Exception {
+    LogicalPlan plan = buildLogicalPlan();
+    assertPlan(plan);
+  }
+
+  @Test
+  public final void testWhereClauseJoin6() throws Exception {
+    LogicalPlan plan = buildLogicalPlan();
+    assertPlan(plan);
+  }
+
+  @Test
+  public final void testJoinWithMultipleJoinQual1() throws Exception {
+    LogicalPlan plan = buildLogicalPlan();
+    assertPlan(plan);
+  }
+
+  @Test
+  public final void testJoinWithMultipleJoinQual4() throws Exception {
+    LogicalPlan plan = buildLogicalPlan();
+    assertPlan(plan);
+  }
+
+  @Test
+  public final void testLeftOuterJoinPredicationCaseByCase1() throws Exception {
+    createOuterJoinTestTable();
+    try {
+      LogicalPlan plan = buildLogicalPlanFromString(
+          "select t1.id, t1.name, t2.id, t3.id\n" +
+              "from default.table11 t1\n" +
+              "left outer join table12 t2\n" +
+              "on t1.id = t2.id\n" +
+              "left outer join table13 t3\n" +
+              "on t1.id = t3.id and t2.id = t3.id");
+
+      assertPlan(plan);
+    } finally {
+      dropOuterJoinTestTable();
+    }
+  }
+
+  @Test
+  public final void testRightOuterJoinPredicationCaseByCase3() throws Exception {
+    createOuterJoinTestTable();
+    try {
+      LogicalPlan plan = buildLogicalPlanFromString(
+          "select t1.id, t1.name, t2.id, t3.id\n" +
+              "from table11 t1\n" +
+              "right outer join table12 t2 \n" +
+              "on t1.id = t2.id and (concat(t1.name, cast(t2.id as TEXT)) = 'table11-11' or concat(t1.name, cast(t2.id as TEXT)) = 'table11-33')\n" +
+              "right outer join table13 t3\n" +
+              "on t1.id = t3.id "
+      );
+      assertPlan(plan);
+    } finally {
+      dropOuterJoinTestTable();
+    }
+  }
+
   @Test
   public final void testLeftOuterJoinPredicationCaseByCase2() throws Exception {
     // outer -> outer -> inner
     createOuterJoinTestTable();
     try {
-      String plan = executeString(
+      LogicalPlan plan = buildLogicalPlanFromString(
           "select t1.id, t1.name, t2.id, t3.id, t4.id\n" +
               "from table11 t1\n" +
               "left outer join table12 t2\n" +
@@ -152,12 +161,5 @@ public class TestJoinOrderOptimize extends QueryPlanTestCaseBase {
     } finally {
       dropOuterJoinTestTable();
     }
-  }
-
-  private void dropOuterJoinTestTable() throws Exception {
-    executeDDLString("DROP TABLE table11 PURGE;");
-    executeDDLString("DROP TABLE table12 PURGE;");
-    executeDDLString("DROP TABLE table13 PURGE;");
-    executeDDLString("DROP TABLE table14 PURGE;");
   }
 }

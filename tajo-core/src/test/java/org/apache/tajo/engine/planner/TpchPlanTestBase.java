@@ -23,6 +23,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.benchmark.TPCH;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.KeyValueSet;
@@ -94,8 +97,12 @@ public class TpchPlanTestBase {
     return testBase;
   }
 
-  public String execute(String query) throws Exception {
-    return util.execute(query);
+  public LogicalPlan buildLogicalPlan(String query) throws PlanningException {
+    return util.buildLogicalPlan(query);
+  }
+
+  public MasterPlan buildMasterPlan(LogicalPlan plan) throws IOException, PlanningException {
+    return util.buildMasterPlan(plan);
   }
 
   public TajoPlanTestingUtility getUtilility() {
