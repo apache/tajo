@@ -228,9 +228,9 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
     if (params.length > 0) {
       givenArgs[0] = visit(ctx, stack, params[0]);
 
-      if (windowFunc.getSignature().equalsIgnoreCase("count")) {
+      if (funcName.equalsIgnoreCase("count")) {
         paramTypes[0] = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.ANY);
-      } else if (windowFunc.getSignature().equalsIgnoreCase("row_number")) {
+      } else if (funcName.equalsIgnoreCase("row_number")) {
         paramTypes[0] = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INT8);
       } else {
         paramTypes[0] = givenArgs[0];
@@ -244,17 +244,9 @@ public class TypeDeterminant extends SimpleAlgebraVisitor<LogicalPlanner.PlanCon
 
     // TODO - containFunction and getFunction should support the function type mask which provides ORing multiple types.
     // the below checking against WINDOW_FUNCTIONS is a workaround code for the above problem.
-    if (ExprAnnotator.WINDOW_FUNCTIONS.contains(funcName.toLowerCase())) {
-      if (distinct) {
-        throw new NoSuchFunctionException("row_number() does not support distinct keyword.");
-      }
-      functionType = CatalogProtos.FunctionType.WINDOW;
-    } else {
-      functionType = distinct ?
-          CatalogProtos.FunctionType.DISTINCT_AGGREGATION : CatalogProtos.FunctionType.AGGREGATION;
-    }
+    functionType = ExprAnnotator.getFunctionType(funcName, distinct);
 
-    if (!catalog.containFunction(windowFunc.getSignature(), functionType, paramTypes)) {
+    if (!catalog.containFunction(funcName, functionType, paramTypes)) {
       throw new NoSuchFunctionException(funcName, paramTypes);
     }
 

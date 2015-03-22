@@ -31,7 +31,7 @@ import org.apache.tajo.engine.function.annotation.ParamTypes;
     returnType = Type.TIMESTAMP,
     paramTypes = {@ParamTypes(paramTypes = {Type.TIMESTAMP})}
 )
-public class FirstValueTimestamp extends FirstValue {
+public class FirstValueTimestamp extends CurrentValue {
 
   public FirstValueTimestamp() {
     super(new Column[] {

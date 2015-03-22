@@ -31,7 +31,7 @@ import org.apache.tajo.engine.function.annotation.ParamTypes;
     returnType = Type.DATE,
     paramTypes = {@ParamTypes(paramTypes = {Type.DATE})}
 )
-public class FirstValueDate extends FirstValue {
+public class FirstValueDate extends CurrentValue {
 
   public FirstValueDate() {
     super(new Column[] {

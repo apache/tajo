@@ -16,9 +16,8 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.function.builtin;
+package org.apache.tajo.engine.function.window;
 
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.engine.function.annotation.Description;
@@ -26,21 +25,16 @@ import org.apache.tajo.engine.function.annotation.ParamTypes;
 
 @Description(
     functionName = "last_value",
-    description = "the last value of expr",
-    example = "> SELECT last_value(expr);",
-    returnType = TajoDataTypes.Type.TIME,
-    paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TIME})}
+    description = "the last value of retrieved rows",
+    example = "> SELECT last_value(column) OVER();",
+    returnType = TajoDataTypes.Type.TIMESTAMP,
+    paramTypes = {@ParamTypes(paramTypes = {TajoDataTypes.Type.TIMESTAMP})}
 )
-public class LastValueTime extends LastValue {
+public class LastValueTimestamp extends CurrentValue {
 
-  public LastValueTime() {
+  public LastValueTimestamp() {
     super(new Column[] {
-        new Column("expr", TajoDataTypes.Type.TIME)
+        new Column("expr", TajoDataTypes.Type.TIMESTAMP)
     });
-  }
-
-  @Override
-  public TajoDataTypes.DataType getPartialResultType() {
-    return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.TIME);
   }
 }

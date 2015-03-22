@@ -128,12 +128,14 @@ public class WindowSpec implements Cloneable {
   public static enum WindowFrameStartBoundType {
     UNBOUNDED_PRECEDING,
     CURRENT_ROW,
-    PRECEDING
+    PRECEDING,
+    FOLLOWING
   }
 
   public static enum WindowFrameEndBoundType {
     UNBOUNDED_FOLLOWING,
     CURRENT_ROW,
+    PRECEDING,
     FOLLOWING
   }
 
@@ -150,6 +152,10 @@ public class WindowSpec implements Cloneable {
     public WindowFrame(WindowFrameUnit unit, WindowStartBound startBound, WindowEndBound endBound) {
       this(unit, startBound);
       this.endBound = endBound;
+    }
+
+    public WindowFrameUnit getFrameUnit() {
+      return unit;
     }
 
     public WindowStartBound getStartBound() {

@@ -23,10 +23,12 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.plan.expr.ConstEval;
 import org.apache.tajo.plan.expr.WindowFunctionEval;
 import org.apache.tajo.plan.function.FunctionContext;
+import org.apache.tajo.plan.logical.LogicalWindowSpec;
 import org.apache.tajo.plan.logical.WindowAggNode;
-import org.apache.tajo.plan.logical.WindowSpec;
 import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleComparator;
@@ -64,8 +66,8 @@ public class WindowAggExec extends UnaryPhysicalExec {
   private boolean [] orderedFuncFlags;
   private boolean [] aggFuncFlags;
   private boolean [] windowFuncFlags;
-  private boolean [] endUnboundedFollowingFlags;
-  private boolean [] endCurrentRowFlags;
+  private int [] startOffset;
+  private int [] endOffset;
 
   // operator state
   enum WindowState {
@@ -112,28 +114,33 @@ public class WindowAggExec extends UnaryPhysicalExec {
       windowFuncFlags = new boolean[functions.length];
       aggFuncFlags = new boolean[functions.length];
 
-      endUnboundedFollowingFlags = new boolean[functions.length];
-      endCurrentRowFlags = new boolean[functions.length];
+      startOffset = new int[functions.length];
+      endOffset = new int[functions.length];
 
       List<Column> additionalSortKeyColumns = Lists.newArrayList();
       Schema rewrittenSchema = new Schema(outSchema);
       for (int i = 0; i < functions.length; i++) {
-        WindowSpec.WindowEndBound endBound = functions[i].getWindowFrame().getEndBound();
-        switch (endBound.getBoundType()) {
-        case CURRENT_ROW:
-          endCurrentRowFlags[i] = true; break;
-        case UNBOUNDED_FOLLOWING:
-          endUnboundedFollowingFlags[i] = true; break;
-        default:
+        switch (functions[i].getLogicalWindowFrame().getStartBound().getBoundType()) {
+          case PRECEDING:
+          case FOLLOWING:
+            startOffset[i] = functions[i].getLogicalWindowFrame().getStartBound().getNumber(); break;
+          default:
+        }
+
+        switch (functions[i].getLogicalWindowFrame().getEndBound().getBoundType()) {
+          case PRECEDING:
+          case FOLLOWING:
+            endOffset[i] = functions[i].getLogicalWindowFrame().getStartBound().getNumber(); break;
+          default:
         }
 
         switch (functions[i].getFuncDesc().getFuncType()) {
-        case AGGREGATION:
-        case DISTINCT_AGGREGATION:
-          aggFuncFlags[i] = true; break;
-        case WINDOW:
-          windowFuncFlags[i] = true; break;
-        default:
+          case AGGREGATION:
+          case DISTINCT_AGGREGATION:
+            aggFuncFlags[i] = true; break;
+          case WINDOW:
+            windowFuncFlags[i] = true; break;
+          default:
         }
 
         if (functions[i].hasSortSpecs()) {
@@ -142,13 +149,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
           for (SortSpec sortSpec : functions[i].getSortSpecs()) {
             if (!rewrittenSchema.contains(sortSpec.getSortKey())) {
               // check if additionalSortKeyColumns already has that sort key
-              boolean newKey = true;
-              for (Column c : additionalSortKeyColumns) {
-                if (c.equals(sortSpec.getSortKey())) {
-                  newKey = false;
-                }
-              }
-              if (newKey) {
+              if (!additionalSortKeyColumns.contains(sortSpec.getSortKey())) {
                 additionalSortKeyColumns.add(sortSpec.getSortKey());
               }
             }
@@ -299,23 +300,195 @@ public class WindowAggExec extends UnaryPhysicalExec {
         Collections.sort(evaluatedTuples, comp);
       }
 
-      for (int i = 0; i < accumulatedInTuples.size(); i++) {
-        Tuple inTuple = accumulatedInTuples.get(i);
-        Tuple outTuple = evaluatedTuples.get(i);
+      LogicalWindowSpec.LogicalWindowFrame.WindowFrameType windowFrameType = functions[idx].getLogicalWindowFrame().getFrameType();
+      int frameStart = 0, frameEnd = accumulatedInTuples.size() - 1;
+      int startOffset = functions[idx].getLogicalWindowFrame().getStartBound().getNumber();
+      int endOffset = functions[idx].getLogicalWindowFrame().getEndBound().getNumber();
 
-        functions[idx].merge(contexts[idx], inSchema, inTuple);
+      switch (functions[idx].getFunctionType()) {
+        case NONFRAMABLE:
+        {
+          for (int i = 0; i < accumulatedInTuples.size(); i++) {
+            Tuple inTuple = accumulatedInTuples.get(i);
+            Tuple outTuple = evaluatedTuples.get(i);
 
-        if (windowFuncFlags[idx]) {
-          Datum result = functions[idx].terminate(contexts[idx]);
-          outTuple.put(nonFunctionColumnNum + idx, result);
+            functions[idx].merge(contexts[idx], inSchema, inTuple);
+
+            if (windowFuncFlags[idx]) {
+              Datum result = functions[idx].terminate(contexts[idx]);
+              outTuple.put(nonFunctionColumnNum + idx, result);
+            }
+          }
+
+          if (aggFuncFlags[idx]) {
+            for (int i = 0; i < evaluatedTuples.size(); i++) {
+              Datum result = functions[idx].terminate(contexts[idx]);
+              Tuple outTuple = evaluatedTuples.get(i);
+              outTuple.put(nonFunctionColumnNum + idx, result);
+            }
+          }
+          break;
         }
-      }
+        case FRAMABLE:
+        {
+          String funcName = functions[idx].getName();
 
-      if (aggFuncFlags[idx]) {
-        for (int i = 0; i < evaluatedTuples.size(); i++) {
-          Datum result = functions[idx].terminate(contexts[idx]);
-          Tuple outTuple = evaluatedTuples.get(i);
-          outTuple.put(nonFunctionColumnNum + idx, result);
+          for (int i = 0; i < accumulatedInTuples.size(); i++) {
+            switch(windowFrameType) {
+              case TO_CURRENT_ROW:
+                frameEnd = i + endOffset; break;
+              case FROM_CURRENT_ROW:
+                frameStart = i + startOffset; break;
+              case SLIDING_WINDOW:
+                frameStart = i + startOffset;
+                frameEnd = i + endOffset;
+                break;
+            }
+
+            // As the number of built-in window functions that support window frame is small,
+            // special treatment for each function seems to be reasonable
+            Tuple outTuple = evaluatedTuples.get(i);
+            Tuple inTuple = null;
+            Datum result = NullDatum.get();
+            if (funcName.equals("first_value")) {
+              if (frameStart <= frameEnd && frameStart >= 0 && frameStart < accumulatedInTuples.size()) {
+                inTuple = accumulatedInTuples.get(frameStart);
+              }
+            } else if (funcName.equals("last_value")) {
+              if (frameStart <= frameEnd && frameEnd >= 0 && frameEnd < accumulatedInTuples.size()) {
+                inTuple = accumulatedInTuples.get(frameEnd);
+              }
+            }
+
+            if (inTuple != null) {
+              functions[idx].merge(contexts[idx], inSchema, inTuple);
+              result = functions[idx].terminate(contexts[idx]);
+            }
+            outTuple.put(nonFunctionColumnNum + idx, result);
+          }
+          break;
+        }
+        case AGGREGATION:
+        {
+          switch(windowFrameType) {
+            case ENTIRE_PARTITION:
+            {
+              for (int i = 0; i < accumulatedInTuples.size(); i++) {
+                Tuple inTuple = accumulatedInTuples.get(i);
+
+                functions[idx].merge(contexts[idx], inSchema, inTuple);
+              }
+
+              Datum result = functions[idx].terminate(contexts[idx]);
+              for (int j = 0; j < evaluatedTuples.size(); j++) {
+                Tuple outTuple = evaluatedTuples.get(j);
+
+                outTuple.put(nonFunctionColumnNum + idx, result);
+              }
+              break;
+            }
+            case TO_CURRENT_ROW:
+            {
+              if (endOffset > 0) {
+                int i =0; int j = 0;
+                for (; i < Math.min(accumulatedInTuples.size(), endOffset); i++) {
+                  Tuple inTuple = accumulatedInTuples.get(i);
+
+                  functions[idx].merge(contexts[idx], inSchema, inTuple);
+                }
+
+                for (; i < accumulatedInTuples.size(); i++, j++) {
+                  Tuple inTuple = accumulatedInTuples.get(i);
+                  Tuple outTuple = evaluatedTuples.get(j);
+
+                  functions[idx].merge(contexts[idx], inSchema, inTuple);
+                  Datum result = functions[idx].terminate(contexts[idx]);
+                  outTuple.put(nonFunctionColumnNum + idx, result);
+                }
+
+                Datum result = functions[idx].terminate(contexts[idx]);
+                for (; j < evaluatedTuples.size(); j++) {
+                  Tuple outTuple = evaluatedTuples.get(j);
+                  outTuple.put(nonFunctionColumnNum + idx, result);
+                }
+              } else {
+                int i = endOffset; int j = 0;
+                Datum result = functions[idx].terminate(contexts[idx]);
+                for (; i < 0 && j < evaluatedTuples.size(); i++, j++) {
+                  Tuple outTuple = evaluatedTuples.get(j);
+                  outTuple.put(nonFunctionColumnNum + idx, result);
+                }
+                for (; j < evaluatedTuples.size(); i++, j++) {
+                  Tuple inTuple = accumulatedInTuples.get(i);
+                  Tuple outTuple = evaluatedTuples.get(j);
+
+                  functions[idx].merge(contexts[idx], inSchema, inTuple);
+                  result = functions[idx].terminate(contexts[idx]);
+                  outTuple.put(nonFunctionColumnNum + idx, result);
+                }
+              }
+              break;
+            }
+            case FROM_CURRENT_ROW:
+            {
+              if (startOffset > 0) {
+                int i = startOffset; int j = evaluatedTuples.size();
+                for (; i > 0 && j > 0; i--, j--) {
+                  Tuple outTuple = evaluatedTuples.get(j-1);
+                  Datum result = functions[idx].terminate(contexts[idx]);
+                  outTuple.put(nonFunctionColumnNum + idx, result);
+                }
+
+                for (i = accumulatedInTuples.size(); j > 0; i--, j--) {
+                  Tuple inTuple = accumulatedInTuples.get(i-1);
+                  functions[idx].merge(contexts[idx], inSchema, inTuple);
+
+                  Tuple outTuple = evaluatedTuples.get(j-1);
+                  Datum result = functions[idx].terminate(contexts[idx]);
+                  outTuple.put(nonFunctionColumnNum + idx, result);
+                }
+              } else {
+                int i = accumulatedInTuples.size(); int j = evaluatedTuples.size();
+                for (; i > Math.max(0, accumulatedInTuples.size() + startOffset); i--) {
+                  Tuple inTuple = accumulatedInTuples.get(i-1);
+                  functions[idx].merge(contexts[idx], inSchema, inTuple);
+                }
+
+                for (; i > 0; i--, j--) {
+                  Tuple inTuple = accumulatedInTuples.get(i-1);
+                  Tuple outTuple = evaluatedTuples.get(j-1);
+
+                  functions[idx].merge(contexts[idx], inSchema, inTuple);
+                  Datum result = functions[idx].terminate(contexts[idx]);
+                  outTuple.put(nonFunctionColumnNum + idx, result);
+                }
+
+                Datum result = functions[idx].terminate(contexts[idx]);
+                for (; j > 0; j--) {
+                  Tuple outTuple = evaluatedTuples.get(j-1);
+                  outTuple.put(nonFunctionColumnNum + idx, result);
+                }
+              }
+            }
+            break;
+            case SLIDING_WINDOW:
+            {
+              for (int i = 0; i < accumulatedInTuples.size(); i++) {
+                frameStart = i + startOffset;
+                frameEnd = i + endOffset;
+                contexts[idx] = functions[idx].newContext();
+                for (int j = Math.max(frameStart, 0); j < Math.min(frameEnd + 1, accumulatedInTuples.size()); j++) {
+                  Tuple inTuple = accumulatedInTuples.get(j);
+                  functions[idx].merge(contexts[idx], inSchema, inTuple);
+                }
+                Tuple outTuple = evaluatedTuples.get(i);
+                Datum result = functions[idx].terminate(contexts[idx]);
+                outTuple.put(nonFunctionColumnNum + idx, result);
+              }
+            }
+            break;
+          }
+          break;
         }
       }
     }

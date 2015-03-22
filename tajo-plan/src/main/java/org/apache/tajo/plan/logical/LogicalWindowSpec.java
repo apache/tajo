@@ -27,13 +27,14 @@ import org.apache.tajo.util.TUtil;
 
 import static org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
 import static org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
+import static org.apache.tajo.algebra.WindowSpec.WindowFrameUnit;
 
-public class WindowSpec {
+public class LogicalWindowSpec {
   @Expose private String windowName;
 
   @Expose private Column[] partitionKeys;
 
-  @Expose private WindowFrame windowFrame;
+  @Expose private LogicalWindowFrame logicalWindowFrame;
 
   public String getWindowName() {
     return windowName;
@@ -48,21 +49,21 @@ public class WindowSpec {
   }
 
   public boolean hasWindowFrame() {
-    return windowFrame != null;
+    return logicalWindowFrame != null;
   }
 
-  public WindowFrame getWindowFrame() {
-    return windowFrame;
+  public LogicalWindowFrame getLogicalWindowFrame() {
+    return logicalWindowFrame;
   }
 
   @Override
   public boolean equals(Object obj) {
-    if (obj instanceof WindowSpec) {
-      WindowSpec another = (WindowSpec) obj;
+    if (obj instanceof LogicalWindowSpec) {
+      LogicalWindowSpec another = (LogicalWindowSpec) obj;
       return
           TUtil.checkEquals(windowName, another.windowName) &&
           TUtil.checkEquals(partitionKeys, another.partitionKeys) &&
-          TUtil.checkEquals(windowFrame, another.windowFrame);
+          TUtil.checkEquals(logicalWindowFrame, another.logicalWindowFrame);
     } else {
       return false;
     }
@@ -70,25 +71,27 @@ public class WindowSpec {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(windowName, partitionKeys, windowFrame);
+    return Objects.hashCode(windowName, partitionKeys, logicalWindowFrame);
   }
 
-  public static class WindowFrame implements Cloneable {
-    @Expose private WindowStartBound startBound;
-    @Expose private WindowEndBound endBound;
-    @Expose org.apache.tajo.algebra.WindowSpec.WindowFrameUnit unit; // TODO - to be supported
+  public static class LogicalWindowFrame implements Cloneable {
+    @Expose private LogicalWindowStartBound startBound;
+    @Expose private LogicalWindowEndBound endBound;
+    @Expose private WindowFrameUnit unit; // TODO - to be supported
 
-    public WindowFrame() {
-      this.startBound = new WindowStartBound(WindowFrameStartBoundType.UNBOUNDED_PRECEDING);
-      this.endBound = new WindowEndBound(WindowFrameEndBoundType.UNBOUNDED_FOLLOWING);
+    public LogicalWindowFrame() {
+      this.unit = WindowFrameUnit.RANGE;
+      this.startBound = new LogicalWindowStartBound(WindowFrameStartBoundType.UNBOUNDED_PRECEDING);
+      this.endBound = new LogicalWindowEndBound(WindowFrameEndBoundType.CURRENT_ROW);
     }
 
-    public WindowFrame(WindowStartBound startBound, WindowEndBound endBound) {
+    public LogicalWindowFrame(WindowFrameUnit unit, LogicalWindowStartBound startBound, LogicalWindowEndBound endBound) {
+      this.unit = unit;
       this.startBound = startBound;
       this.endBound = endBound;
     }
 
-    public WindowStartBound getStartBound() {
+    public LogicalWindowStartBound getStartBound() {
       return startBound;
     }
 
@@ -96,7 +99,7 @@ public class WindowSpec {
       return endBound != null;
     }
 
-    public WindowEndBound getEndBound() {
+    public LogicalWindowEndBound getEndBound() {
       return endBound;
     }
 
@@ -104,18 +107,35 @@ public class WindowSpec {
       return this.unit != null;
     }
 
-    public void setFrameUnit(org.apache.tajo.algebra.WindowSpec.WindowFrameUnit unit) {
+    public void setFrameUnit(WindowFrameUnit unit) {
       this.unit = unit;
     }
 
-    public org.apache.tajo.algebra.WindowSpec.WindowFrameUnit getFrameUnit() {
+    public WindowFrameUnit getFrameUnit() {
       return this.unit;
+    }
+
+    public static enum WindowFrameType {
+      ENTIRE_PARTITION,
+      TO_CURRENT_ROW,
+      FROM_CURRENT_ROW,
+      SLIDING_WINDOW
+    }
+
+    private WindowFrameType frameType;
+
+    public WindowFrameType getFrameType() {
+      return frameType;
+    }
+
+    public void setFrameType(WindowFrameType type) {
+      frameType = type;
     }
 
     @Override
     public boolean equals(Object obj) {
-      if (obj instanceof WindowFrame) {
-        WindowFrame another = (WindowFrame) obj;
+      if (obj instanceof LogicalWindowFrame) {
+        LogicalWindowFrame another = (LogicalWindowFrame) obj;
         boolean eq = TUtil.checkEquals(startBound, another.startBound);
         eq &= TUtil.checkEquals(endBound, another.endBound);
         eq &= TUtil.checkEquals(unit, another.unit);
@@ -125,8 +145,8 @@ public class WindowSpec {
       }
     }
 
-    public WindowFrame clone() throws CloneNotSupportedException {
-      WindowFrame newFrame = (WindowFrame) super.clone();
+    public LogicalWindowFrame clone() throws CloneNotSupportedException {
+      LogicalWindowFrame newFrame = (LogicalWindowFrame) super.clone();
       newFrame.startBound = startBound.clone();
       newFrame.endBound = endBound.clone();
       newFrame.unit = unit;
@@ -138,11 +158,11 @@ public class WindowSpec {
     }
   }
 
-  public static class WindowStartBound implements Cloneable {
+  public static class LogicalWindowStartBound implements Cloneable {
     @Expose private WindowFrameStartBoundType boundType;
-    @Expose private EvalNode number;
+    @Expose private int number;
 
-    public WindowStartBound(WindowFrameStartBoundType type) {
+    public LogicalWindowStartBound(WindowFrameStartBoundType type) {
       this.boundType = type;
     }
 
@@ -150,20 +170,20 @@ public class WindowSpec {
       return boundType;
     }
 
-    public void setNumber(EvalNode number) {
+    public void setNumber(int number) {
       this.number = number;
     }
 
-    public EvalNode getNumber() {
+    public int getNumber() {
       return number;
     }
 
     @Override
     public boolean equals(Object obj) {
-      if (obj instanceof WindowStartBound) {
-        WindowStartBound other = (WindowStartBound) obj;
+      if (obj instanceof LogicalWindowStartBound) {
+        LogicalWindowStartBound other = (LogicalWindowStartBound) obj;
         boolean eq = boundType == other.boundType;
-        eq &= TUtil.checkEquals(number, other.number);
+        eq &= (number == other.number);
         return eq;
       } else {
         return false;
@@ -176,21 +196,19 @@ public class WindowSpec {
     }
 
     @Override
-    public WindowStartBound clone() throws CloneNotSupportedException {
-      WindowStartBound newStartBound = (WindowStartBound) super.clone();
+    public LogicalWindowStartBound clone() throws CloneNotSupportedException {
+      LogicalWindowStartBound newStartBound = (LogicalWindowStartBound) super.clone();
       newStartBound.boundType = boundType;
-      if (number != null) {
-        newStartBound.number = (EvalNode) number.clone();
-      }
+      newStartBound.number = number;
       return newStartBound;
     }
   }
 
-  public static class WindowEndBound implements Cloneable {
+  public static class LogicalWindowEndBound implements Cloneable {
     @Expose private WindowFrameEndBoundType boundType;
-    @Expose private EvalNode number;
+    @Expose private int number;
 
-    public WindowEndBound(WindowFrameEndBoundType type) {
+    public LogicalWindowEndBound(WindowFrameEndBoundType type) {
       this.boundType = type;
     }
 
@@ -198,20 +216,20 @@ public class WindowSpec {
       return boundType;
     }
 
-    public EvalNode setNumber(EvalNode number) {
-      return number;
+    public void setNumber(int number) {
+      this.number = number;
     }
 
-    public EvalNode getNumber() {
+    public int getNumber() {
       return number;
     }
 
     @Override
     public boolean equals(Object obj) {
-      if (obj instanceof WindowEndBound) {
-        WindowEndBound other = (WindowEndBound) obj;
+      if (obj instanceof LogicalWindowEndBound) {
+        LogicalWindowEndBound other = (LogicalWindowEndBound) obj;
         boolean eq = boundType == other.boundType;
-        eq &= TUtil.checkEquals(number, other.number);
+        eq &= (number == other.number);
         return eq;
       } else {
         return false;
@@ -223,12 +241,10 @@ public class WindowSpec {
       return Objects.hashCode(boundType, number);
     }
 
-    public WindowEndBound clone() throws CloneNotSupportedException {
-      WindowEndBound newEndBound = (WindowEndBound) super.clone();
+    public LogicalWindowEndBound clone() throws CloneNotSupportedException {
+      LogicalWindowEndBound newEndBound = (LogicalWindowEndBound) super.clone();
       newEndBound.boundType = boundType;
-      if (number != null) {
-        newEndBound.number = (EvalNode) number.clone();
-      }
+      newEndBound.number = number;
       return newEndBound;
     }
   }

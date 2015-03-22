@@ -49,10 +49,11 @@ import java.util.TimeZone;
 
 import static org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
 import static org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
+import static org.apache.tajo.algebra.WindowSpec.WindowFrameUnit;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
-import static org.apache.tajo.plan.logical.WindowSpec.*;
+import static org.apache.tajo.plan.logical.LogicalWindowSpec.*;
 
 /**
  * <code>ExprAnnotator</code> makes an annotated expression called <code>EvalNode</code> from an
@@ -678,8 +679,26 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
   }
 
+
   public static final Set<String> WINDOW_FUNCTIONS =
-      Sets.newHashSet("row_number", "rank", "dense_rank", "percent_rank", "cume_dist", "first_value", "lag");
+      Sets.newHashSet("row_number", "rank", "dense_rank", "percent_rank", "cume_dist", "ntile", "first_value", "last_value", "lag");
+
+  public static final Set<String> NONFRAMABLE_WINDOW_FUNCTIONS =
+      Sets.newHashSet("row_number", "rank", "dense_rank", "percent_rank", "cume_dist", "ntile", "lag", "lead");
+  public static final Set<String> FRAMABLE_WINDOW_FUNCTIONS =
+      Sets.newHashSet("first_value", "last_value", "nth_value");
+
+  public static FunctionType getFunctionType(String functionName, boolean distinct) {
+//    if (NONFRAMABLE_WINDOW_FUNCTIONS.contains(functionName.toLowerCase()) || FRAMABLE_WINDOW_FUNCTIONS.contains(functionName.toLowerCase())) {
+    if (WINDOW_FUNCTIONS.contains(functionName.toLowerCase())) {
+      if (distinct && functionName.equalsIgnoreCase("row_number")) {
+        throw new NoSuchFunctionException("row_number() does not support distinct keyword.");
+      }
+      return FunctionType.WINDOW;
+    } else {
+      return distinct ? FunctionType.DISTINCT_AGGREGATION : FunctionType.AGGREGATION;
+    }
+  }
 
   public EvalNode visitWindowFunction(Context ctx, Stack<Expr> stack, WindowFunctionExpr windowFunc)
       throws PlanningException {
@@ -709,14 +728,14 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     EvalNode[] givenArgs = new EvalNode[params.length];
     TajoDataTypes.DataType[] paramTypes = new TajoDataTypes.DataType[params.length];
     FunctionType functionType;
-
-    WindowFrame frame = null;
+    WindowFunctionEval.WindowFunctionType windowFunctionType;
+    LogicalWindowFrame frame = convertWindowFrameToLogical(ctx, stack, windowSpec.getWindowFrame());
 
     if (params.length > 0) {
       givenArgs[0] = visit(ctx, stack, params[0]);
-      if (windowFunc.getSignature().equalsIgnoreCase("count")) {
+      if (funcName.equalsIgnoreCase("count")) {
         paramTypes[0] = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.ANY);
-      } else if (windowFunc.getSignature().equalsIgnoreCase("row_number")) {
+      } else if (funcName.equalsIgnoreCase("row_number")) {
         paramTypes[0] = CatalogUtil.newSimpleDataType(Type.INT8);
       } else {
         paramTypes[0] = givenArgs[0].getValueType();
@@ -726,45 +745,119 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
         paramTypes[i] = givenArgs[i].getValueType();
       }
     } else {
-      if (windowFunc.getSignature().equalsIgnoreCase("rank")) {
+      if (funcName.equalsIgnoreCase("rank")) {
         givenArgs = sortKeys != null ? sortKeys : new EvalNode[0];
       }
     }
 
     if (frame == null) {
-      if (windowSpec.hasOrderBy()) {
-        frame = new WindowFrame(new WindowStartBound(WindowFrameStartBoundType.UNBOUNDED_PRECEDING),
-            new WindowEndBound(WindowFrameEndBoundType.CURRENT_ROW));
-      } else if (windowFunc.getSignature().equalsIgnoreCase("row_number")) {
-        frame = new WindowFrame(new WindowStartBound(WindowFrameStartBoundType.UNBOUNDED_PRECEDING),
-            new WindowEndBound(WindowFrameEndBoundType.UNBOUNDED_FOLLOWING));
+      // default window frame is RANGE BETWEEN UNBOUNDED PROCEEDING AND CURRENT ROW
+      frame = new LogicalWindowFrame(WindowFrameUnit.RANGE, new LogicalWindowStartBound(WindowFrameStartBoundType.UNBOUNDED_PRECEDING),
+            new LogicalWindowEndBound(WindowFrameEndBoundType.CURRENT_ROW));
+    }
+
+    // set Function Type
+    //    NONFRAMABLE: builtin window function that works on entire partition
+    //    FRAMABLE: builtin window function that works on window frame
+    //    AGGREGATION: aggregation functions that work on window frame
+    if (NONFRAMABLE_WINDOW_FUNCTIONS.contains(funcName.toLowerCase())) {
+      windowFunctionType = WindowFunctionEval.WindowFunctionType.NONFRAMABLE;
+    } else if (FRAMABLE_WINDOW_FUNCTIONS.contains(funcName.toLowerCase())) {
+      windowFunctionType = WindowFunctionEval.WindowFunctionType.FRAMABLE;
+    } else {
+      windowFunctionType = WindowFunctionEval.WindowFunctionType.AGGREGATION;
+    }
+
+    // set Frame type
+    //    ENTIRE_PARTITION: from UNBOUNDED_PROCEDING to UNBOUNDED_FOLLOWING
+    //    TO_CURRENT_ROW: from UNBOUNDED_PROCEDING to some position relative to CURRENT_ROW
+    //    FROM_CURRENT_ROW: from some position relative to CURRENT_ROW to UNBOUNDED_FOLLOWING
+    //    SLIDING_WINDOW: from some position relative to CURRENT_ROW to other position relative to CURRENT_ROW
+    if (NONFRAMABLE_WINDOW_FUNCTIONS.contains(funcName.toLowerCase())) {
+      frame.setFrameType(LogicalWindowFrame.WindowFrameType.ENTIRE_PARTITION);
+    } else {
+      if (frame.getStartBound().getBoundType() == WindowFrameStartBoundType.UNBOUNDED_PRECEDING) {
+        if (frame.getEndBound().getBoundType() == WindowFrameEndBoundType.UNBOUNDED_FOLLOWING) {
+          frame.setFrameType(LogicalWindowFrame.WindowFrameType.ENTIRE_PARTITION);
+        } else {
+          frame.setFrameType(LogicalWindowFrame.WindowFrameType.TO_CURRENT_ROW);
+        }
       } else {
-        frame = new WindowFrame();
+        if (frame.getEndBound().getBoundType() == WindowFrameEndBoundType.UNBOUNDED_FOLLOWING) {
+          frame.setFrameType(LogicalWindowFrame.WindowFrameType.FROM_CURRENT_ROW);
+        } else {
+          frame.setFrameType(LogicalWindowFrame.WindowFrameType.SLIDING_WINDOW);
+        }
       }
     }
 
     // TODO - containFunction and getFunction should support the function type mask which provides ORing multiple types.
     // the below checking against WINDOW_FUNCTIONS is a workaround code for the above problem.
-    if (WINDOW_FUNCTIONS.contains(funcName.toLowerCase())) {
-      if (distinct) {
-        throw new NoSuchFunctionException("row_number() does not support distinct keyword.");
-      }
-      functionType = FunctionType.WINDOW;
-    } else {
-      functionType = distinct ? FunctionType.DISTINCT_AGGREGATION : FunctionType.AGGREGATION;
-    }
+    functionType = ExprAnnotator.getFunctionType(funcName, distinct);
 
-    if (!catalog.containFunction(windowFunc.getSignature(), functionType, paramTypes)) {
+    if (!catalog.containFunction(funcName, functionType, paramTypes)) {
       throw new NoSuchFunctionException(funcName, paramTypes);
     }
 
     FunctionDesc funcDesc = catalog.getFunction(funcName, functionType, paramTypes);
 
     try {
-      return new WindowFunctionEval(funcDesc, (AggFunction) funcDesc.newInstance(), givenArgs, frame);
+      return new WindowFunctionEval(funcDesc, (AggFunction) funcDesc.newInstance(), givenArgs, frame, windowFunctionType);
     } catch (InternalException e) {
       throw new PlanningException(e);
     }
+  }
+
+  private LogicalWindowFrame convertWindowFrameToLogical(Context ctx, Stack<Expr> stack, WindowSpec.WindowFrame frame) throws PlanningException {
+    if (frame != null) {
+      WindowSpec.WindowStartBound exprStartBound = frame.getStartBound();
+      LogicalWindowStartBound startBound = new LogicalWindowStartBound(exprStartBound.getBoundType());
+      if (exprStartBound.hasNumber()) {
+        int startOffset = getOffset(ctx, stack, exprStartBound.getNumber());
+        startBound.setNumber(exprStartBound.getBoundType() == WindowFrameStartBoundType.PRECEDING ? -startOffset : startOffset);
+      }
+      LogicalWindowEndBound endBound;
+      if (frame.hasEndBound()) {
+        WindowSpec.WindowEndBound exprEndBound = frame.getEndBound();
+        endBound = new LogicalWindowEndBound(exprEndBound.getBoundType());
+        if (exprEndBound.hasNumber()) {
+          int endOffset = getOffset(ctx, stack, exprEndBound.getNumber());
+          endBound.setNumber(exprEndBound.getBoundType() == WindowFrameEndBoundType.PRECEDING ? -endOffset : endOffset);
+          if (exprStartBound.hasNumber()) {
+            if (startBound.getNumber() > endBound.getNumber()) {
+              throw new PlanningException("In window frame, start point SHOULD NOT exceed the end point");
+            }
+          }
+        }
+      } else {
+        // if no frame end is specified, default is CURRENT_ROW
+        if (exprStartBound.hasNumber()) {
+          // check if frame starting point is after the current row
+          if (startBound.getNumber() > 0) {
+            throw new PlanningException("In window frame, start point SHOULD NOT exceed the end point (current row)");
+          }
+        }
+        endBound = new LogicalWindowEndBound(WindowFrameEndBoundType.CURRENT_ROW);
+      }
+
+      return new LogicalWindowFrame(frame.getFrameUnit(), startBound, endBound);
+    }
+    return null;
+  }
+
+  private int getOffset(Context ctx, Stack<Expr> stack, Expr expr) throws PlanningException {
+    EvalNode number = visit(ctx, stack, expr);
+
+    if (number instanceof ConstEval) {
+      ConstEval constEval = (ConstEval)number;
+      switch(constEval.getValue().type()) {
+        case INT4:
+        case INT8:
+          return constEval.getValue().asInt4();
+      }
+    }
+
+    throw new PlanningException("only non-negative integer literal value is allowed for window frame specification");
   }
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////

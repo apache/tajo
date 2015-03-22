@@ -467,17 +467,27 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
           unit = WindowSpec.WindowFrameUnit.ROW;
         }
 
-        WindowSpec.WindowFrame windowFrame;
+        WindowSpec.WindowFrame windowFrame = null;
 
         if (checkIfExist(frameContext.window_frame_extent().window_frame_between())) { // when 'between' is given
           Window_frame_betweenContext between = frameContext.window_frame_extent().window_frame_between();
           WindowSpec.WindowStartBound startBound = buildWindowStartBound(between.window_frame_start_bound());
           WindowSpec.WindowEndBound endBound = buildWindowEndBound(between.window_frame_end_bound());
 
+          if (unit == WindowSpec.WindowFrameUnit.RANGE) {
+            if (startBound.hasNumber() || endBound.hasNumber()) {
+              throw new SQLSyntaxError("PRECEDING and FOLLOWING are allowed with ROWS only");
+            }
+          }
           windowFrame = new WindowSpec.WindowFrame(unit, startBound, endBound);
         } else { // if there is only start bound
           WindowSpec.WindowStartBound startBound =
               buildWindowStartBound(frameContext.window_frame_extent().window_frame_start_bound());
+          if (unit == WindowSpec.WindowFrameUnit.RANGE) {
+            if (startBound.hasNumber()) {
+              throw new SQLSyntaxError("PRECEDING and FOLLOWING are allowed with ROWS only");
+            }
+          }
           windowFrame = new WindowSpec.WindowFrame(unit, startBound);
         }
 
@@ -491,14 +501,16 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     WindowFrameStartBoundType boundType = null;
     if (checkIfExist(context.UNBOUNDED())) {
       boundType = WindowFrameStartBoundType.UNBOUNDED_PRECEDING;
-    } else if (checkIfExist(context.unsigned_value_specification())) {
+    } else if (checkIfExist(context.PRECEDING())) {
       boundType = WindowFrameStartBoundType.PRECEDING;
+    } else if (checkIfExist(context.FOLLOWING())) {
+      boundType = WindowFrameStartBoundType.FOLLOWING;
     } else {
       boundType = WindowFrameStartBoundType.CURRENT_ROW;
     }
 
     WindowSpec.WindowStartBound bound = new WindowSpec.WindowStartBound(boundType);
-    if (boundType == WindowFrameStartBoundType.PRECEDING) {
+    if (boundType == WindowFrameStartBoundType.PRECEDING || boundType == WindowFrameStartBoundType.FOLLOWING) {
       bound.setNumber(visitUnsigned_value_specification(context.unsigned_value_specification()));
     }
 
@@ -509,14 +521,16 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     WindowFrameEndBoundType boundType;
     if (checkIfExist(context.UNBOUNDED())) {
       boundType = WindowFrameEndBoundType.UNBOUNDED_FOLLOWING;
-    } else if (checkIfExist(context.unsigned_value_specification())) {
+    } else if (checkIfExist(context.PRECEDING())) {
+      boundType = WindowFrameEndBoundType.PRECEDING;
+    } else if (checkIfExist(context.FOLLOWING())) {
       boundType = WindowFrameEndBoundType.FOLLOWING;
     } else {
       boundType = WindowFrameEndBoundType.CURRENT_ROW;
     }
 
     WindowSpec.WindowEndBound endBound = new WindowSpec.WindowEndBound(boundType);
-    if (boundType == WindowFrameEndBoundType.FOLLOWING) {
+    if (boundType == WindowFrameEndBoundType.PRECEDING || boundType == WindowFrameEndBoundType.FOLLOWING) {
       endBound.setNumber(visitUnsigned_value_specification(context.unsigned_value_specification()));
     }
 

@@ -31,7 +31,7 @@ import org.apache.tajo.engine.function.annotation.ParamTypes;
     returnType = Type.FLOAT8,
     paramTypes = {@ParamTypes(paramTypes = {Type.FLOAT8})}
 )
-public class FirstValueDouble extends FirstValue {
+public class FirstValueDouble extends CurrentValue {
 
   public FirstValueDouble() {
     super(new Column[] {

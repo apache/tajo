@@ -16,52 +16,42 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.function.builtin;
+package org.apache.tajo.engine.function.window;
 
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.plan.function.AggFunction;
+import org.apache.tajo.datum.*;
 import org.apache.tajo.plan.function.FunctionContext;
+import org.apache.tajo.plan.function.WindowAggFunc;
 import org.apache.tajo.storage.Tuple;
 
+public abstract class CurrentValue extends WindowAggFunc<Datum> {
 
-public abstract class LastValue extends AggFunction<Datum> {
-
-  public LastValue(Column[] columns) {
+  public CurrentValue(Column[] columns) {
     super(columns);
   }
 
   @Override
   public FunctionContext newContext() {
-    return new LastValueContext();
+    return new CurrentValueContext();
   }
 
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
-    LastValueContext lastValueCtx = (LastValueContext) ctx;
-    Datum datum = params.get(0);
-    if ( datum.isNotNull() ) {
-      lastValueCtx.last = datum;
-    }
-  }
-
-  @Override
-  public Datum getPartialResult(FunctionContext ctx) {
-    return ((LastValueContext) ctx).last;
+    CurrentValueContext currentValueCtx = (CurrentValueContext)ctx;
+      if (params.get(0).isNotNull()) {
+        currentValueCtx.current = params.get(0);
+      } else {
+        currentValueCtx.current = NullDatum.get();
+      }
   }
 
   @Override
   public Datum terminate(FunctionContext ctx) {
-    if (((LastValueContext) ctx).last == null) {
-      return NullDatum.get();
-    }
-    else {
-      return ((LastValueContext) ctx).last;
-    }
+    return ((CurrentValueContext) ctx).current;
   }
 
-  private static class LastValueContext implements FunctionContext {
-    Datum last = null;
+  protected static class CurrentValueContext implements FunctionContext {
+    Datum current = null;
   }
+
 }

@@ -312,7 +312,7 @@ public class TestWindowQuery extends QueryTestCaseBase {
       String ascExpected = "id,time_last\n" +
           "-------------------------------\n" +
           "1,12:11:12\n" +
-          "2,10:11:13\n" +
+          "2,05:42:41\n" +
           "2,10:11:13\n";
 
       assertEquals(ascExpected, resultSetToString(res));
@@ -439,13 +439,44 @@ public class TestWindowQuery extends QueryTestCaseBase {
       String ascExpected = "id,time_last,name_last\n" +
           "-------------------------------\n" +
           "1,12:11:12,abc\n" +
-          "2,10:11:13,def\n" +
+          "2,05:42:41,ghi\n" +
           "2,10:11:13,def\n";
 
       assertEquals(ascExpected, resultSetToString(res));
       res.close();
     } finally {
       executeString("DROP TABLE multiwindow PURGE");
+    }
+  }
+
+  @Test
+  public final void testWindowFrame1() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    schema.addColumn("num", TajoDataTypes.Type.INT4);
+    String[] data = new String[]{ "1|abc|3", "2|def|2", "2|ghi|4", "2|abd|3", "2|abe|9" };
+    TajoTestingCluster.createTable("windowframe", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString(
+          "select id, name, num, sum(num) over ( partition by id order by name ) as sum1, sum(num) over ( partition by id order by name rows 1 preceding ) as sum2, sum(num) over ( partition by id order by name rows between 1 preceding and 1 following) as sum3 from windowframe");
+      String ascExpected = "id,name,num,sum1,sum2,sum3\n" +
+          "-------------------------------\n" +
+          "1,abc,3,3,3,3\n" +
+          "2,abd,3,3,3,12\n" +
+          "2,abe,9,12,12,14\n" +
+          "2,def,2,14,11,15\n" +
+          "2,ghi,4,18,6,6\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE windowframe PURGE");
     }
   }
 }

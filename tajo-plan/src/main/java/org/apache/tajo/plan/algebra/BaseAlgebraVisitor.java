@@ -740,8 +740,10 @@ public class BaseAlgebraVisitor<CONTEXT, RESULT> implements AlgebraVisitor<CONTE
       if (windowSpec.getWindowFrame().getStartBound().hasNumber()) {
         visit(ctx, stack, windowSpec.getWindowFrame().getStartBound().getNumber());
       }
-      if (windowSpec.getWindowFrame().getEndBound().hasNumber()) {
-        visit(ctx, stack, windowSpec.getWindowFrame().getEndBound().getNumber());
+      if (windowSpec.getWindowFrame().hasEndBound()) {
+        if (windowSpec.getWindowFrame().getEndBound().hasNumber()) {
+          visit(ctx, stack, windowSpec.getWindowFrame().getEndBound().getNumber());
+        }
       }
     }
 

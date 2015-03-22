@@ -23,11 +23,12 @@ import com.google.common.collect.Maps;
 import com.google.protobuf.ByteString;
 import org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
 import org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
+import org.apache.tajo.algebra.WindowSpec.WindowFrameUnit;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.plan.expr.*;
-import org.apache.tajo.plan.logical.WindowSpec;
+import org.apache.tajo.plan.logical.LogicalWindowSpec;
 import org.apache.tajo.plan.serder.PlanProto.WinFunctionEvalSpec;
 import org.apache.tajo.plan.serder.PlanProto.WinFunctionEvalSpec.WindowFrame;
 import org.apache.tajo.util.ProtoUtil;
@@ -293,7 +294,8 @@ public class EvalNodeSerializer
             (winFunc.getSortSpecs()));
       }
 
-      windowFuncBuilder.setWindowFrame(buildWindowFrame(winFunc.getWindowFrame()));
+      windowFuncBuilder.setWindowFrame(buildWindowFrame(winFunc.getLogicalWindowFrame()));
+      windowFuncBuilder.setFunctionType(buildWindowFunctionType(winFunc.getFunctionType()));
       builder.setWinFunction(windowFuncBuilder);
     }
 
@@ -302,22 +304,68 @@ public class EvalNodeSerializer
     return function;
   }
 
-  private WindowFrame buildWindowFrame(WindowSpec.WindowFrame frame) {
+  private WinFunctionEvalSpec.WindowFunctionType buildWindowFunctionType(WindowFunctionEval.WindowFunctionType funcType) {
+    switch(funcType) {
+      case NONFRAMABLE:
+        return WinFunctionEvalSpec.WindowFunctionType.F_NONFRAMABLE;
+      case FRAMABLE:
+        return WinFunctionEvalSpec.WindowFunctionType.F_FRAMABLE;
+      case AGGREGATION:
+        return WinFunctionEvalSpec.WindowFunctionType.F_AGGREGATION;
+    }
+
+    throw new IllegalStateException("Unknown Window Function Type: " + funcType.name());
+  }
+
+  private WindowFrame buildWindowFrame(LogicalWindowSpec.LogicalWindowFrame frame) {
     WindowFrame.Builder windowFrameBuilder = WindowFrame.newBuilder();
 
-    WindowSpec.WindowStartBound startBound = frame.getStartBound();
-    WindowSpec.WindowEndBound endBound = frame.getEndBound();
+    LogicalWindowSpec.LogicalWindowStartBound startBound = frame.getStartBound();
+    LogicalWindowSpec.LogicalWindowEndBound endBound = frame.getEndBound();
+
+    WinFunctionEvalSpec.WindowFrameUnit unit = convertFrameUnit(frame.getFrameUnit());
 
     WinFunctionEvalSpec.WindowStartBound.Builder startBoundBuilder = WinFunctionEvalSpec.WindowStartBound.newBuilder();
     startBoundBuilder.setBoundType(convertStartBoundType(startBound.getBoundType()));
+    startBoundBuilder.setNumber(startBound.getNumber());
 
     WinFunctionEvalSpec.WindowEndBound.Builder endBoundBuilder = WinFunctionEvalSpec.WindowEndBound.newBuilder();
     endBoundBuilder.setBoundType(convertEndBoundType(endBound.getBoundType()));
+    endBoundBuilder.setNumber(endBound.getNumber());
 
+    WinFunctionEvalSpec.WindowFrameType type = convertFrameType(frame.getFrameType());
+
+    windowFrameBuilder.setUnit(unit);
     windowFrameBuilder.setStartBound(startBoundBuilder);
     windowFrameBuilder.setEndBound(endBoundBuilder);
+    windowFrameBuilder.setType(type);
 
     return windowFrameBuilder.build();
+  }
+
+  private WinFunctionEvalSpec.WindowFrameType convertFrameType(LogicalWindowSpec.LogicalWindowFrame.WindowFrameType type) {
+    switch (type) {
+      case ENTIRE_PARTITION:
+        return WinFunctionEvalSpec.WindowFrameType.FT_ENTIRE_PARTITION;
+      case FROM_CURRENT_ROW:
+        return WinFunctionEvalSpec.WindowFrameType.FT_FROM_CURRENT_ROW;
+      case TO_CURRENT_ROW:
+        return WinFunctionEvalSpec.WindowFrameType.FT_TO_CURRENT_ROW;
+      case SLIDING_WINDOW:
+        return WinFunctionEvalSpec.WindowFrameType.FT_SLIDING_WINDOW;
+    }
+
+    throw new IllegalStateException("Unknown Window Frame Type: " + type.name());
+  }
+
+  private WinFunctionEvalSpec.WindowFrameUnit convertFrameUnit(WindowFrameUnit unit) {
+    if (unit == WindowFrameUnit.RANGE) {
+      return WinFunctionEvalSpec.WindowFrameUnit.RANGE;
+    } else if (unit == WindowFrameUnit.ROW) {
+      return WinFunctionEvalSpec.WindowFrameUnit.ROW;
+    } else {
+      throw new IllegalStateException("Unknown Window Frame Unit: " + unit.name());
+    }
   }
 
   private WinFunctionEvalSpec.WindowFrameStartBoundType convertStartBoundType(WindowFrameStartBoundType type) {
@@ -327,6 +375,8 @@ public class EvalNodeSerializer
       return WinFunctionEvalSpec.WindowFrameStartBoundType.S_CURRENT_ROW;
     } else if (type == WindowFrameStartBoundType.PRECEDING) {
       return WinFunctionEvalSpec.WindowFrameStartBoundType.S_PRECEDING;
+    } else if (type == WindowFrameStartBoundType.FOLLOWING) {
+      return WinFunctionEvalSpec.WindowFrameStartBoundType.S_FOLLOWING;
     } else {
       throw new IllegalStateException("Unknown Window Start Bound type: " + type.name());
     }
@@ -337,6 +387,8 @@ public class EvalNodeSerializer
       return WinFunctionEvalSpec.WindowFrameEndBoundType.E_UNBOUNDED_FOLLOWING;
     } else if (type == WindowFrameEndBoundType.CURRENT_ROW) {
       return WinFunctionEvalSpec.WindowFrameEndBoundType.E_CURRENT_ROW;
+    } else if (type == WindowFrameEndBoundType.PRECEDING) {
+      return WinFunctionEvalSpec.WindowFrameEndBoundType.E_PRECEDING;
     } else if (type == WindowFrameEndBoundType.FOLLOWING) {
       return WinFunctionEvalSpec.WindowFrameEndBoundType.E_FOLLOWING;
     } else {

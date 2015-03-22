@@ -430,19 +430,22 @@ message WinFunctionEvalSpec {
   message WindowFrame {
     required WindowStartBound startBound = 1;
     required WindowEndBound endBound = 2;
-    optional WindowFrameUnit unit = 3;
+    required WindowFrameUnit unit = 3;
+    required WindowFrameType type = 4;
   }
 
   enum WindowFrameStartBoundType {
     S_UNBOUNDED_PRECEDING = 0;
     S_CURRENT_ROW = 1;
     S_PRECEDING = 2;
+    S_FOLLOWING = 3;
   }
 
   enum WindowFrameEndBoundType {
     E_UNBOUNDED_FOLLOWING = 0;
     E_CURRENT_ROW = 1;
-    E_FOLLOWING = 2;
+    E_PRECEDING = 2;
+    E_FOLLOWING = 3;
   }
 
   enum WindowFrameUnit {
@@ -450,18 +453,32 @@ message WinFunctionEvalSpec {
     RANGE = 1;
   }
 
+  enum WindowFrameType {
+    FT_ENTIRE_PARTITION = 0;
+    FT_TO_CURRENT_ROW = 1;
+    FT_FROM_CURRENT_ROW = 2;
+    FT_SLIDING_WINDOW = 3;
+  }
+
   message WindowStartBound {
     required WindowFrameStartBoundType boundType = 1;
-    optional EvalNodeTree number = 2;
+    required int32 number = 2;
   }
 
   message WindowEndBound {
     required WindowFrameEndBoundType boundType = 1;
-    optional EvalNodeTree number = 2;
+    required int32 number = 2;
+  }
+
+  enum WindowFunctionType {
+    F_NONFRAMABLE = 0;
+    F_FRAMABLE = 1;
+    F_AGGREGATION = 2;
   }
 
   repeated SortSpecProto sortSpec = 1;
   required WindowFrame windowFrame = 2;
+  required WindowFunctionType functionType = 3;
 }
 
 message Datum {

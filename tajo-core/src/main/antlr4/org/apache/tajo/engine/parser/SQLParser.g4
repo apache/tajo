@@ -1197,6 +1197,7 @@ window_frame_extent
 window_frame_start_bound
   : UNBOUNDED PRECEDING
   | unsigned_value_specification PRECEDING // window_frame_preceding
+  | unsigned_value_specification FOLLOWING // window_frame_following FOLLOWING
   | CURRENT ROW
   ;
 
@@ -1206,6 +1207,7 @@ window_frame_between
 
 window_frame_end_bound
   : UNBOUNDED FOLLOWING
+  | unsigned_value_specification PRECEDING // window_frame_preceding
   | unsigned_value_specification FOLLOWING // window_frame_following FOLLOWING
   | CURRENT ROW
   ;
