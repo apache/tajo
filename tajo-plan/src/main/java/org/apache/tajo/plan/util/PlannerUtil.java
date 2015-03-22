@@ -135,6 +135,11 @@ public class PlannerUtil {
         }
       }
 
+      /**
+       * TODO: Remove isExternal check after resolving the following issues
+       * - TAJO-1416: INSERT INTO EXTERNAL PARTITIONED TABLE
+       * - TAJO-1441: INSERT INTO MANAGED PARTITIONED TABLE
+       */
       if (!noWhere && scanNode.getTableDesc().isExternal() && scanNode.getTableDesc().getPartitionMethod() != null) {
         EvalNode node = ((SelectionNode) plan.getRootBlock().getNode(NodeType.SELECTION)).getQual();
         Schema partSchema = scanNode.getTableDesc().getPartitionMethod().getExpressionSchema();

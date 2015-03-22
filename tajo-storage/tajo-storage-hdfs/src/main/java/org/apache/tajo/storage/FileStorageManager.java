@@ -737,15 +737,13 @@ public class FileStorageManager extends StorageManager {
 
     List<FileStatus> nonZeroLengthFiles = new ArrayList<FileStatus>();
     if (fs.exists(tablePath)) {
-      if (!partitionPath.isEmpty())
-      {
+      if (!partitionPath.isEmpty()) {
         Path partPath = new Path(tableDesc.getPath() + partitionPath);
         if (fs.exists(partPath)) {
           getNonZeroLengthDataFiles(fs, partPath, nonZeroLengthFiles, currentPage, numResultFragments,
                   new AtomicInteger(0), tableDesc.hasPartition(), this.currentDepth, partitionDepth);
         }
-      }
-      else {
+      } else {
         getNonZeroLengthDataFiles(fs, tablePath, nonZeroLengthFiles, currentPage, numResultFragments,
                 new AtomicInteger(0), tableDesc.hasPartition(), 0, partitionDepth);
       }
