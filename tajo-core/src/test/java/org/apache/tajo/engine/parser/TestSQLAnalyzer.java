@@ -485,6 +485,18 @@ public class TestSQLAnalyzer {
   }
 
   @Test
+  public void testAlterTableSetProperty1() throws IOException {
+    String sql = FileUtil.readTextFileFromResource("queries/default/alter_table_set_property_1.sql");
+    Expr expr = parseQuery(sql);
+    assertEquals(OpType.AlterTable, expr.getType());
+    AlterTable alterTable = (AlterTable)expr;
+    assertEquals(alterTable.getAlterTableOpType(), AlterTableOpType.SET_PROPERTY);
+    assertTrue(alterTable.hasParams());
+    assertTrue(alterTable.getParams().containsKey("timezone"));
+    assertEquals("ASIA/Seoul", alterTable.getParams().get("timezone"));
+  }
+
+  @Test
   public void testTableSubQuery1() throws IOException {
     String sql = FileUtil.readTextFileFromResource("queries/default/table_subquery1.sql");
     parseQuery(sql);
