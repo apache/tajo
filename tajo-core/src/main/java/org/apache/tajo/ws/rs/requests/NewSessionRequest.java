@@ -18,10 +18,12 @@
 
 package org.apache.tajo.ws.rs.requests;
 
+import com.google.gson.annotations.Expose;
+
 public class NewSessionRequest {
 
-  private String userName;
-  private String databaseName;
+  @Expose private String userName;
+  @Expose private String databaseName;
 
   public String getUserName() {
     return userName;

@@ -34,4 +34,14 @@ public class ResourcesUtil {
     response.setMessage(message);
     return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(response).build();
   }
+  
+  public static Response createBadRequestResponse(Log log, String message) {
+    if (log != null) {
+      log.error(message);
+    }
+    
+    ExceptionResponse response = new ExceptionResponse();
+    response.setMessage(message);
+    return Response.status(Response.Status.BAD_REQUEST).entity(response).build();
+  }
 }

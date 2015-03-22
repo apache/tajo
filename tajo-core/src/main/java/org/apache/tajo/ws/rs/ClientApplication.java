@@ -19,7 +19,9 @@
 package org.apache.tajo.ws.rs;
 
 import org.apache.tajo.master.TajoMaster.MasterContext;
+import org.apache.tajo.ws.rs.resources.DatabasesResource;
 import org.apache.tajo.ws.rs.resources.SessionsResource;
+import org.apache.tajo.ws.rs.resources.TablesResource;
 
 import javax.ws.rs.core.Application;
 
@@ -42,6 +44,8 @@ public class ClientApplication extends Application {
     Set<Class<?>> classes = new HashSet<Class<?>>();
     
     classes.add(SessionsResource.class);
+    classes.add(DatabasesResource.class);
+    classes.add(TablesResource.class);
     
     return classes;
   }

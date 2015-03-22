@@ -23,10 +23,13 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.master.TajoMaster;
+import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.session.InvalidSessionException;
 import org.apache.tajo.session.Session;
-import org.apache.tajo.ws.rs.ClientApplication;
-import org.apache.tajo.ws.rs.ResourceConfigUtil;
+import org.apache.tajo.ws.rs.JerseyResourceDelegate;
+import org.apache.tajo.ws.rs.JerseyResourceDelegateContext;
+import org.apache.tajo.ws.rs.JerseyResourceDelegateContextKey;
+import org.apache.tajo.ws.rs.JerseyResourceDelegateUtil;
 import org.apache.tajo.ws.rs.ResourcesUtil;
 import org.apache.tajo.ws.rs.requests.NewSessionRequest;
 import org.apache.tajo.ws.rs.responses.ExceptionResponse;
@@ -43,13 +46,28 @@ import java.util.Map;
 @Path("/sessions")
 public class SessionsResource {
 
-  private final Log LOG = LogFactory.getLog(getClass());
+  private static final Log LOG = LogFactory.getLog(SessionsResource.class);
 
   @Context
   UriInfo uriInfo;
 
   @Context
   Application application;
+  
+  JerseyResourceDelegateContext context;
+  
+  private static final String newSessionRequestKeyName = "NewSessionRequest";
+  private static final String sessionIdKeyName = "SessionId";
+  private static final String variablesKeyName = "VariablesMap";
+  
+  private static final String variablesOutputKeyName = "variables";
+  
+  private void initializeContext() {
+    context = new JerseyResourceDelegateContext();
+    JerseyResourceDelegateContextKey<UriInfo> uriInfoKey =
+        JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey);
+    context.put(uriInfoKey, uriInfo);
+  }
 
   /**
    * Creates a new client session.
@@ -65,12 +83,34 @@ public class SessionsResource {
       LOG.debug("Client sent a new session request. : " + request);
     }
     
-    Application localApp = ResourceConfigUtil.getJAXRSApplication(application);
-    
-    if (localApp instanceof ClientApplication) {
-      ClientApplication clientApplication = (ClientApplication) localApp;
-      if (request == null || request.getUserName() == null || request.getUserName().isEmpty()) {
-        return Response.status(Response.Status.BAD_REQUEST).build();
+    Response response = null;
+    try {
+      initializeContext();
+      JerseyResourceDelegateContextKey<NewSessionRequest> newSessionRequestKey = 
+          JerseyResourceDelegateContextKey.valueOf(newSessionRequestKeyName);
+      context.put(newSessionRequestKey, request);
+
+      response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
+          new CreateNewSessionDelegate(), 
+          application, 
+          context,
+          LOG);
+    } catch (Exception e) {
+      LOG.error(e.getMessage(), e);
+    }
+    return response;
+  }
+  
+  private static class CreateNewSessionDelegate implements JerseyResourceDelegate {
+
+    @Override
+    public Response run(JerseyResourceDelegateContext context) {
+      JerseyResourceDelegateContextKey<NewSessionRequest> sessionRequestKey =
+          JerseyResourceDelegateContextKey.valueOf(newSessionRequestKeyName);
+      NewSessionRequest request = context.get(sessionRequestKey);
+      
+      if (request.getUserName() == null || request.getUserName().isEmpty()) {
+        return ResourcesUtil.createBadRequestResponse(LOG, "userName is null or empty.");
       }
 
       String userName = request.getUserName();
@@ -79,9 +119,11 @@ public class SessionsResource {
         databaseName = TajoConstants.DEFAULT_DATABASE_NAME;
       }
 
-      TajoMaster.MasterContext masterContext = clientApplication.getMasterContext();
-
       try {
+        JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
+            JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey);
+        TajoMaster.MasterContext masterContext = context.get(masterContextKey);
+        
         NewSessionResponse sessionResponse = new NewSessionResponse();
         String sessionId = masterContext.getSessionManager().createSession(userName, databaseName);
         
@@ -90,6 +132,10 @@ public class SessionsResource {
         sessionResponse.setId(sessionId);
         sessionResponse.setResultCode(ClientProtos.ResultCode.OK);
         sessionResponse.setVariables(masterContext.getSessionManager().getAllVariables(sessionId));
+        
+        JerseyResourceDelegateContextKey<UriInfo> uriInfoKey =
+            JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey);
+        UriInfo uriInfo = context.get(uriInfoKey);
 
         URI newSessionUri = uriInfo.getBaseUriBuilder()
             .path(SessionsResource.class).path(sessionId).build();
@@ -112,13 +158,13 @@ public class SessionsResource {
 
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(sessionResponse).build();
       }
-    } else {
-      return ResourcesUtil.createExceptionResponse(LOG, "Invalid injection on SessionsResource.");
     }
+    
   }
 
   /**
    * Removes existing sessions.
+   * 
    * @param sessionId
    * @return
    */
@@ -128,13 +174,36 @@ public class SessionsResource {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Client sent remove session request : Session Id (" + sessionId + ")");
     }
+    
+    Response response = null;
+    try {
+      initializeContext();
+      JerseyResourceDelegateContextKey<String> sessionIdKey =
+          JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName);
+      context.put(sessionIdKey, sessionId);
+      
+      response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
+          new RemoveSessionDelegate(),
+          application,
+          context,
+          LOG);
+    } catch (Exception e) {
+      LOG.error(e.getMessage(), e);
+    }
+    
+    return response;
+  }
+  
+  private static class RemoveSessionDelegate implements JerseyResourceDelegate {
 
-    Application localApp = ResourceConfigUtil.getJAXRSApplication(application);
-
-    if (localApp instanceof ClientApplication) {
-      ClientApplication clientApplication = (ClientApplication) localApp;
-
-      TajoMaster.MasterContext masterContext = clientApplication.getMasterContext();
+    @Override
+    public Response run(JerseyResourceDelegateContext context) {
+      JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
+          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey);
+      TajoMaster.MasterContext masterContext = context.get(masterContextKey);
+      JerseyResourceDelegateContextKey<String> sessionIdKey =
+          JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName);
+      String sessionId = context.get(sessionIdKey);
 
       Session session = masterContext.getSessionManager().removeSession(sessionId);
 
@@ -148,25 +217,57 @@ public class SessionsResource {
 
         return Response.status(Response.Status.NOT_FOUND).entity(response).build();
       }
-    } else {
-      return ResourcesUtil.createExceptionResponse(LOG, "Invalid injection on SessionsResource.");
     }
+    
   }
 
+  /**
+   * Retrieves all session variables
+   * 
+   * @param sessionId
+   * @return
+   */
   @GET
   @Path("/{session-id}/variables")
   @Produces(MediaType.APPLICATION_JSON)
   public Response getAllSessionVariables(@PathParam("session-id") String sessionId) {
-    Application localApp = ResourceConfigUtil.getJAXRSApplication(application);
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Client sent a GetAllSessionVariables request for a session : " + sessionId);
+    }
+    
+    Response response = null;
+    try {
+      initializeContext();
+      JerseyResourceDelegateContextKey<String> sessionIdKey =
+          JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName);
+      context.put(sessionIdKey, sessionId);
+      
+      response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
+          new GetAllSessionVariablesDelegate(),
+          application,
+          context,
+          LOG);
+    } catch (Exception e) {
+      LOG.error(e.getMessage(), e);
+    }
+    
+    return response;
+  }
+  
+  private static class GetAllSessionVariablesDelegate implements JerseyResourceDelegate {
 
-    if (localApp instanceof ClientApplication) {
-      ClientApplication clientApplication = (ClientApplication) localApp;
-
-      TajoMaster.MasterContext masterContext = clientApplication.getMasterContext();
+    @Override
+    public Response run(JerseyResourceDelegateContext context) {
+      JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
+          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey);
+      TajoMaster.MasterContext masterContext = context.get(masterContextKey);
+      JerseyResourceDelegateContextKey<String> sessionIdKey =
+          JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName);
+      String sessionId = context.get(sessionIdKey);
 
       try {
         Map<String, Map<String, String>> variablesMap = new HashMap<String, Map<String, String>>();
-        variablesMap.put("variables",
+        variablesMap.put(variablesOutputKeyName,
             masterContext.getSessionManager().getAllVariables(sessionId));
         GenericEntity<Map<String, Map<String, String>>> variablesEntity =
             new GenericEntity<Map<String, Map<String, String>>>(variablesMap, Map.class);
@@ -180,26 +281,66 @@ public class SessionsResource {
 
         return ResourcesUtil.createExceptionResponse(null, e.getMessage());
       }
-    } else {
-      return ResourcesUtil.createExceptionResponse(LOG, "Invalid injection on SessionsResource.");
     }
+    
   }
 
+  /**
+   * Updates the specified session varaible or variables
+   * 
+   * @param sessionId
+   * @param variables
+   * @return
+   */
   @PUT
   @Path("/{session-id}/variables")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public Response updateSessionVariables(@PathParam("session-id") String sessionId, Map<String, Object> variables) {
-    Application localApp = ResourceConfigUtil.getJAXRSApplication(application);
+  public Response updateSessionVariables(@PathParam("session-id") String sessionId, 
+      Map<String, Object> variables) {
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("Client sent a update session variables request for a session : " + sessionId);
+    }
+    
+    Response response = null;
+    try {
+      initializeContext();
+      JerseyResourceDelegateContextKey<String> sessionIdKey =
+          JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName);
+      context.put(sessionIdKey, sessionId);
+      JerseyResourceDelegateContextKey<Map<String, Object>> variablesMapKey =
+          JerseyResourceDelegateContextKey.valueOf(variablesKeyName);
+      context.put(variablesMapKey, variables);
+      
+      response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
+          new UpdateSessionVariablesDelegate(),
+          application,
+          context,
+          LOG);
+    } catch (Exception e) {
+      LOG.error(e.getMessage(), e);
+    }
+    
+    return response;
+  }
+  
+  private static class UpdateSessionVariablesDelegate implements JerseyResourceDelegate {
 
-    if (localApp instanceof ClientApplication) {
-      ClientApplication clientApplication = (ClientApplication) localApp;
-
-      TajoMaster.MasterContext masterContext = clientApplication.getMasterContext();
+    @Override
+    public Response run(JerseyResourceDelegateContext context) {
+      JerseyResourceDelegateContextKey<String> sessionIdKey =
+          JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName);
+      String sessionId = context.get(sessionIdKey);
+      JerseyResourceDelegateContextKey<Map<String, Object>> variablesKey =
+          JerseyResourceDelegateContextKey.valueOf(variablesKeyName);
+      Map<String, Object> variables = context.get(variablesKey);
+      JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
+          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey);
+      TajoMaster.MasterContext masterContext = context.get(masterContextKey);
 
       try {
-        if (variables.containsKey("variables")) {
-          Map<String, String> variablesMap = (Map<String, String>) variables.get("variables");
+        if (variables.containsKey(variablesOutputKeyName)) {
+          Map<String, String> variablesMap = (Map<String, String>) variables.get(variablesOutputKeyName);
           for (Map.Entry<String, String> variableEntry: variablesMap.entrySet()) {
             masterContext.getSessionManager().setVariable(sessionId, variableEntry.getKey(), variableEntry.getValue());
           }
@@ -214,7 +355,7 @@ public class SessionsResource {
 
             return Response.ok().build();
           } else {
-            return Response.status(Response.Status.BAD_REQUEST).build();
+            return ResourcesUtil.createBadRequestResponse(LOG, "At least one variable is required.");
           }
         }
       } catch (InvalidSessionException e) {
@@ -226,8 +367,6 @@ public class SessionsResource {
 
         return ResourcesUtil.createExceptionResponse(null, e.getMessage());
       }
-    } else {
-      return ResourcesUtil.createExceptionResponse(LOG, "Invalid injection on SessionsResource.");
-    }
+    } 
   }
 }

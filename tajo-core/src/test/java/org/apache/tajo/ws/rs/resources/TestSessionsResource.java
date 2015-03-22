@@ -29,7 +29,6 @@ import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.Response.StatusType;
 
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
@@ -207,5 +206,58 @@ public class TestSessionsResource extends QueryTestCaseBase {
 
     assertNotNull(restResponse);
     assertEquals(Status.OK.getStatusCode(), restResponse.getStatus());
+    
+    Map<String, Map<String, String>> retrievedVariables = restClient.target(sessionsURI)
+        .path("/{session-id}/variables").resolveTemplate("session-id", response.getId())
+        .request().get(new GenericType<Map<String, Map<String, String>>>(Map.class));
+    
+    assertNotNull(retrievedVariables);
+    assertFalse(retrievedVariables.isEmpty());
+    
+    Map<String, String> retrievedVariablesMap = retrievedVariables.get("variables");
+    
+    assertNotNull(retrievedVariablesMap);
+    assertFalse(retrievedVariablesMap.isEmpty());
+    
+    assertTrue(retrievedVariablesMap.containsKey("variableA"));
+    assertTrue(retrievedVariablesMap.containsKey("variableB"));
+    assertTrue("valueA".equals(retrievedVariablesMap.get("variableA")));
+    assertTrue("valueB".equals(retrievedVariablesMap.get("variableB")));
+  }
+  
+  @Test
+  public void testUpdateSessionVariable() throws Exception {
+    NewSessionRequest request = new NewSessionRequest();
+    request.setUserName("tajo-user");
+
+    NewSessionResponse response = restClient.target(sessionsURI)
+        .request().post(Entity.entity(request, MediaType.APPLICATION_JSON), NewSessionResponse.class);
+
+    assertNotNull(response);
+    assertTrue(response.getId() != null && !response.getId().isEmpty());
+
+    Map<String, String> variablesMap = new HashMap<String, String>();
+    variablesMap.put("variableA", "valueA");
+    Response restResponse = restClient.target(sessionsURI)
+        .path("/{session-id}/variables").resolveTemplate("session-id", response.getId())
+        .request().put(Entity.entity(variablesMap, MediaType.APPLICATION_JSON));
+
+    assertNotNull(restResponse);
+    assertEquals(Status.OK.getStatusCode(), restResponse.getStatus());
+    
+    Map<String, Map<String, String>> retrievedVariables = restClient.target(sessionsURI)
+        .path("/{session-id}/variables").resolveTemplate("session-id", response.getId())
+        .request().get(new GenericType<Map<String, Map<String, String>>>(Map.class));
+    
+    assertNotNull(retrievedVariables);
+    assertFalse(retrievedVariables.isEmpty());
+    
+    Map<String, String> retrievedVariablesMap = retrievedVariables.get("variables");
+    
+    assertNotNull(retrievedVariablesMap);
+    assertFalse(retrievedVariablesMap.isEmpty());
+    
+    assertTrue(retrievedVariablesMap.containsKey("variableA"));
+    assertTrue("valueA".equals(retrievedVariablesMap.get("variableA")));
   }
 }

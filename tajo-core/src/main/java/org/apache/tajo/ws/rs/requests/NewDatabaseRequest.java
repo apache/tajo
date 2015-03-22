@@ -16,18 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.ws.rs.responses;
+package org.apache.tajo.ws.rs.requests;
 
 import com.google.gson.annotations.Expose;
 
-public class ExceptionResponse {
-  @Expose private String message;
+public class NewDatabaseRequest {
+  @Expose private String databaseName;
 
-  public String getMessage() {
-    return message;
+  public String getDatabaseName() {
+    return databaseName;
   }
 
-  public void setMessage(String message) {
-    this.message = message;
+  public void setDatabaseName(String databaseName) {
+    this.databaseName = databaseName;
   }
+  
 }

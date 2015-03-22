@@ -33,6 +33,7 @@ import org.glassfish.jersey.server.ServerProperties;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.logging.Logger;
 
 public class TajoRestService extends CompositeService {
   
@@ -52,7 +53,7 @@ public class TajoRestService extends CompositeService {
     ClientApplication clientApplication = new ClientApplication(masterContext);
     ResourceConfig resourceConfig = ResourceConfig.forApplication(clientApplication)
         .register(GsonFeature.class)
-        .register(LoggingFilter.class)
+        .register(new LoggingFilter(Logger.getLogger(getClass().getName()), true))
         .property(ServerProperties.FEATURE_AUTO_DISCOVERY_DISABLE, true)
         .property(ServerProperties.METAINF_SERVICES_LOOKUP_DISABLE, true);
     TajoConf tajoConf = (TajoConf) conf;
@@ -80,7 +81,9 @@ public class TajoRestService extends CompositeService {
   protected void serviceStop() throws Exception {
     super.serviceStop();
 
-    restServer.shutdown();
+    if (restServer != null) {
+      restServer.shutdown();
+    }
     
     LOG.info("Tajo Rest Service stopped.");
   }

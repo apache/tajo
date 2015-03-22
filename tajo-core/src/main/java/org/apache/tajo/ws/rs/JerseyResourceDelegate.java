@@ -16,18 +16,16 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.ws.rs.responses;
+package org.apache.tajo.ws.rs;
 
-import com.google.gson.annotations.Expose;
+import javax.ws.rs.core.Response;
 
-public class ExceptionResponse {
-  @Expose private String message;
+/**
+ * Implements business flows for jersey resource
+ * 
+ */
+public interface JerseyResourceDelegate {
 
-  public String getMessage() {
-    return message;
-  }
-
-  public void setMessage(String message) {
-    this.message = message;
-  }
+  public Response run(JerseyResourceDelegateContext context);
+  
 }

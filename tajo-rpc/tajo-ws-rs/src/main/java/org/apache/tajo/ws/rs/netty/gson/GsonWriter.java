@@ -26,6 +26,9 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyWriter;
+
+import org.apache.tajo.catalog.json.CatalogGsonHelper;
+
 import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -50,7 +53,7 @@ public class GsonWriter<T> implements MessageBodyWriter<T> {
   public void writeTo(T t, Class<?> aClass, Type type, Annotation[] annotations, MediaType mediaType,
                       MultivaluedMap<String, Object> multivaluedMap, OutputStream outputStream)
       throws IOException, WebApplicationException {
-    Gson gson = new GsonBuilder().create();
+    Gson gson = CatalogGsonHelper.getInstance();
     Writer writer = new BufferedWriter(new OutputStreamWriter(outputStream));
 
     gson.toJson(t, type, writer);

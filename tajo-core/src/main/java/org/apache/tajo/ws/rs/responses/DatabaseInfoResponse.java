@@ -20,14 +20,29 @@ package org.apache.tajo.ws.rs.responses;
 
 import com.google.gson.annotations.Expose;
 
-public class ExceptionResponse {
-  @Expose private String message;
+public class DatabaseInfoResponse {
 
-  public String getMessage() {
-    return message;
+  @Expose private int id;
+  @Expose private String tablespace;
+  @Expose private String name;
+  
+  public int getId() {
+    return id;
   }
-
-  public void setMessage(String message) {
-    this.message = message;
+  public void setId(int id) {
+    this.id = id;
   }
+  public String getTablespace() {
+    return tablespace;
+  }
+  public void setTablespace(String tablespace) {
+    this.tablespace = tablespace;
+  }
+  public String getName() {
+    return name;
+  }
+  public void setName(String name) {
+    this.name = name;
+  }
+  
 }

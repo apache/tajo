@@ -16,18 +16,33 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.ws.rs.responses;
+package org.apache.tajo.ws.rs;
 
-import com.google.gson.annotations.Expose;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
-public class ExceptionResponse {
-  @Expose private String message;
+/**
+ * It holds variables for running deletegates
+ */
+public class JerseyResourceDelegateContext {
 
-  public String getMessage() {
-    return message;
+  private final ConcurrentMap<JerseyResourceDelegateContextKey<?>, Object> contextMap =
+      new ConcurrentHashMap<JerseyResourceDelegateContextKey<?>, Object>();
+  
+  /**
+   * Add value to Context. If value exists, it will overwrite.
+   * 
+   * @param key
+   * @param value
+   * @return
+   */
+  public <T> JerseyResourceDelegateContext put(JerseyResourceDelegateContextKey<T> key, T value) {
+    contextMap.put(key, value);
+    return this;
   }
-
-  public void setMessage(String message) {
-    this.message = message;
+  
+  @SuppressWarnings("unchecked")
+  public <T> T get(JerseyResourceDelegateContextKey<T> key) {
+    return (T) contextMap.get(key);
   }
 }

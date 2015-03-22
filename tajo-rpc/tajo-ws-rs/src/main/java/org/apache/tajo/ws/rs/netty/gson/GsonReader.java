@@ -26,6 +26,9 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.MessageBodyReader;
+
+import org.apache.tajo.catalog.json.CatalogGsonHelper;
+
 import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -45,7 +48,7 @@ public class GsonReader<T> implements MessageBodyReader<T> {
   public T readFrom(Class<T> aClass, Type type, Annotation[] annotations, MediaType mediaType,
                     MultivaluedMap<String, String> multivaluedMap, InputStream inputStream)
       throws IOException, WebApplicationException {
-    Gson gson = new GsonBuilder().create();
+    Gson gson = CatalogGsonHelper.getInstance();
     Reader reader = new BufferedReader(new InputStreamReader(inputStream));
     return gson.fromJson(reader, type);
   }

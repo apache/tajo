@@ -21,14 +21,16 @@ package org.apache.tajo.ws.rs.responses;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.util.TUtil;
 
+import com.google.gson.annotations.Expose;
+
 import java.util.Map;
 
 public class NewSessionResponse {
 
-  private String id;
-  private String message;
-  private ClientProtos.ResultCode resultCode;
-  private Map<String, String> variables;
+  @Expose private String id;
+  @Expose private String message;
+  @Expose private ClientProtos.ResultCode resultCode;
+  @Expose private Map<String, String> variables;
 
   public String getId() {
     return id;
