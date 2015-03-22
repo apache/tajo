@@ -1130,13 +1130,25 @@ public class GlobalPlanner {
 
     if (node.getType() == NodeType.INSERT) {
       InsertNode insertNode = (InsertNode) node;
-      channel.setSchema(((InsertNode)node).getProjectedSchema());
-      Column [] shuffleKeys = new Column[partitionMethod.getExpressionSchema().size()];
+      channel.setSchema(((InsertNode) node).getProjectedSchema());
+      Column[] shuffleKeys = new Column[partitionMethod.getExpressionSchema().size()];
       int i = 0;
       for (Column column : partitionMethod.getExpressionSchema().getColumns()) {
         int id = insertNode.getTableSchema().getColumnId(column.getQualifiedName());
         shuffleKeys[i++] = insertNode.getProjectedSchema().getColumn(id);
       }
+      channel.setShuffleKeys(shuffleKeys);
+      channel.setShuffleType(SCATTERED_HASH_SHUFFLE);
+    } else if (node.getType() == NodeType.CREATE_TABLE) {
+      channel.setSchema(node.getInSchema());
+      Column[] shuffleKeys = new Column[partitionMethod.getExpressionSchema().size()];
+
+      int i = 0;
+      for (int j = 0; j < partitionMethod.getExpressionSchema().getColumns().size(); j++) {
+        int id = node.getOutSchema().getColumns().size() + j;
+        shuffleKeys[i++] = node.getInSchema().getColumn(id);
+      }
+
       channel.setShuffleKeys(shuffleKeys);
       channel.setShuffleType(SCATTERED_HASH_SHUFFLE);
     } else {
