@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<configuration>
+    <property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://hnn-001-01:9000</value>
+    </property>
+    <property>
+        <name>tajo.rootdir</name>
+        <value>hdfs://hnn-001-01:9000/tajo</value>
+    </property>
+    <property>
+        <name>tajo.master.info-http.address</name>
+        <value>hnn-001-01:26080</value>
+    </property>
+    <property>
+        <name>tajo.master.umbilical-rpc.address</name>
+        <value>hnn-001-01:26001</value>
+    </property>
+    <property>
+        <name>tajo.master.client-rpc.address</name>
+        <value>hnn-001-01:26002</value>
+    </property>
+    <property>
+        <name>tajo.catalog.client-rpc.address</name>
+        <value>hnn-001-01:26005</value>
+    </property>
+    <property>
+        <name>tajo.resource-tracker.rpc.address</name>
+        <value>hnn-001-01:26003</value>
+    </property>
+    <property>
+        <name>tajo.worker.tmpdir.locations</name>
+        <value>/tmp/tajo</value>
+    </property>
+    <property>
+        <name>tajo.query.session.timeout-sec</name>
+        <value>600</value>
+    </property>
+    <property>
+        <name>tajo.worker.tmpdir.cleanup-at-startup</name>
+        <value>true</value>
+    </property>
+    <property>
+        <name>tajo.worker.mode.querymaster</name>
+        <value>false</value>
+    </property>
+    <property>
+        <name>tajo.worker.mode.taskrunner</name>
+        <value>true</value>
+    </property>
+</configuration>
