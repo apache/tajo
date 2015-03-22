@@ -423,8 +423,6 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
           } else {
             aTuple.put(fieldId, DatumFactory.createNullDatum());
           }
-        } else if ("ordinal_position".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt4(partition.getOrdinalPosition()));
         } else if ("path".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createText(partition.getPath()));
         }
