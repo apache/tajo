@@ -46,6 +46,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
       "abs,acos,asin,atan,atan2,ceiling,cos,degrees,exp,,floor,mod,pi,pow," +
       "radians,round,sign,sin,sqrt,tan";
   private static final String STRING_FUNCTIONS = "ascii,chr,concat,left,length,ltrim,repeat,rtrim,substring";
+  private static final String PROCEDURE_TERM = "UDF";
 
   private final JdbcConnection conn;
 
@@ -157,7 +158,7 @@ public class TajoDatabaseMetaData implements DatabaseMetaData {
 
   @Override
   public String getProcedureTerm()  throws SQLException {
-    return new String("UDF");
+    return PROCEDURE_TERM;
   }
 
   @Override
