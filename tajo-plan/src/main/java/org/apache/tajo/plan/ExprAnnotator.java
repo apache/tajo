@@ -898,7 +898,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   public EvalNode visitLiteral(Context ctx, Stack<Expr> stack, LiteralValue expr) throws PlanningException {
     switch (expr.getValueType()) {
     case Boolean:
-      return new ConstEval(DatumFactory.createBool(((BooleanLiteral) expr).isTrue()));
+      return new ConstEval(DatumFactory.createBool(Boolean.parseBoolean(expr.getValue())));
     case String:
       return new ConstEval(DatumFactory.createText(expr.getValue()));
     case Unsigned_Integer:

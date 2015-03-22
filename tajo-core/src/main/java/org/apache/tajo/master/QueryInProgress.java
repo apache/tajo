@@ -156,7 +156,7 @@ public class QueryInProgress {
     queryMasterRpcClient = queryMasterRpc.getStub();
   }
 
-  public void submmitQueryToMaster() {
+  public void submitQueryToMaster() {
     if(querySubmitted.get()) {
       return;
     }
