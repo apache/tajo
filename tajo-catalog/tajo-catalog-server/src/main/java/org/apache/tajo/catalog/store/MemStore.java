@@ -28,6 +28,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.exception.*;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
@@ -40,6 +41,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.TableOptionProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueProto;
+import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
@@ -302,6 +304,20 @@ public class MemStore implements CatalogStore {
         CatalogProtos.SchemaProto newSchemaProto =
             schemaProto.toBuilder().addFields(alterTableDescProto.getAddColumn()).build();
         newTableDescProto = tableDescProto.toBuilder().setSchema(newSchemaProto).build();
+        database.put(tableName, newTableDescProto);
+        break;
+      case SET_PROPERTY:
+        KeyValueSet properties = new KeyValueSet(tableDescProto.getMeta().getParams());
+        KeyValueSet newProperties = new KeyValueSet(alterTableDescProto.getParams());
+
+        for (String key : newProperties.getAllKeyValus().keySet()) {
+          if (properties.containsKey(key))
+            properties.remove(key);
+          properties.set(key, newProperties.get(key));
+        }
+
+        TableMeta newMeta = new TableMeta(tableDescProto.getMeta().getStoreType(), properties);
+        newTableDescProto = tableDescProto.toBuilder().setMeta(newMeta.getProto()).build();
         database.put(tableName, newTableDescProto);
         break;
       default:

@@ -965,6 +965,7 @@ public class TestCatalog {
     AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName("default.mynewcooltable");
     alterTableDesc.setProperty("timezone", "GMT+0");
+    alterTableDesc.setAlterTableType(AlterTableType.SET_PROPERTY);
     return alterTableDesc;
   }
 
