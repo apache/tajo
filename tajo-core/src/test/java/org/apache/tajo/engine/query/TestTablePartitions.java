@@ -97,10 +97,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
       res = testBase.execute(
         "create table " + tableName + "(col1 int4, col2 int4) partition by column(key float8) "
           + " as select l_orderkey, l_partkey, l_quantity from lineitem");
-
-      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
-      assertEquals(2, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getSchema().size());
-      assertEquals(3, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getLogicalSchema().size());
     }
 
     MasterPlan plan = getQueryPlan(res);
@@ -148,10 +144,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
     } else {
       res = testBase.execute("create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8) "
         + " AS select l_orderkey, l_partkey, l_quantity from lineitem join orders on l_orderkey = o_orderkey");
-
-      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
-      assertEquals(2, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getSchema().size());
-      assertEquals(3, catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName).getLogicalSchema().size());
     }
 
     MasterPlan plan = getQueryPlan(res);
@@ -216,13 +208,11 @@ public class TestTablePartitions extends QueryTestCaseBase {
 
       res = executeString("insert overwrite into " + tableName
         + " (col1, col2, key) select l_orderkey, l_partkey, l_quantity from lineitem");
-      res.close();
     } else {
       res = executeString("create table " + tableName + " (col1 int4, col2 int4, null_col int4) "
         + " partition by column(key float8) as select l_orderkey, l_partkey, null, l_quantity from lineitem");
-      res.close();
-      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
     }
+    res.close();
 
 
     TableDesc desc = catalog.getTableDesc(DEFAULT_DATABASE_NAME, tableName);
@@ -276,8 +266,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
     } else {
       res = executeString("create table " + tableName + " (col1 int4, col2 int4, null_col int4) "
         + " partition by column(key float8) as select l_orderkey, l_partkey, null, l_quantity from lineitem");
-
-      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
     }
     res.close();
 
@@ -369,10 +357,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
       res = executeString( "create table " + tableName + " (col4 text) "
         + " partition by column(col1 int4, col2 int4, col3 float8) as select l_returnflag, l_orderkey, l_partkey, " +
         "l_quantity from lineitem");
-
-      TajoTestingCluster cluster = testBase.getTestingCluster();
-      CatalogService catalog = cluster.getMaster().getCatalog();
-      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
     }
     res.close();
 
@@ -446,10 +430,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
       res = executeString( "create table " + tableName + " (col4 text) "
         + " partition by column(col1 int4, col2 int4, col3 float8) as select l_returnflag, l_orderkey, l_partkey, " +
         "l_quantity from lineitem");
-
-      TajoTestingCluster cluster = testBase.getTestingCluster();
-      CatalogService catalog = cluster.getMaster().getCatalog();
-      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
     }
     res.close();
 
@@ -638,8 +618,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
         "create table " + tableName + " (col2 int4, col3 float8) USING csv " +
           "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
           "PARTITION BY column(col1 int4) as select l_partkey, l_quantity, l_orderkey from lineitem");
-
-      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
     }
     res.close();
 
@@ -689,8 +667,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
           "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
           "PARTITION by column(col1 int4, col2 int4) as select  l_quantity, l_returnflag, l_orderkey, " +
         "l_partkey from lineitem");
-
-      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
     }
     res.close();
 
@@ -748,8 +724,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
           "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
           "partition by column(col1 int4, col2 int4, col3 float8) as select l_returnflag, l_orderkey, l_partkey, " +
         "l_quantity from lineitem");
-
-      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
     }
     res.close();
 
@@ -845,8 +819,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
           "WITH ('csvfile.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec') " +
           "partition by column(col1 int4, col2 int4, col3 float8) as select l_returnflag , l_orderkey, l_partkey, " +
         "l_quantity from lineitem");
-
-      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
     }
     res.close();
 
@@ -967,42 +939,29 @@ public class TestTablePartitions extends QueryTestCaseBase {
       res = executeString("insert overwrite into testinsertquery1.table1 " +
         "select l_orderkey, l_partkey, l_quantity from default.lineitem;");
       res.close();
-
-      TableDesc desc = catalog.getTableDesc("testinsertquery1", "table1");
-      if (!testingCluster.isHCatalogStoreRunning()) {
-        assertEquals(5, desc.getStats().getNumRows().intValue());
-      }
-
-      res = executeString("insert overwrite into testinsertquery2.table1 " +
-        "select col1, col2, col3 from testinsertquery1.table1;");
-      res.close();
-
-      desc = catalog.getTableDesc("testinsertquery2", "table1");
-      if (!testingCluster.isHCatalogStoreRunning()) {
-        assertEquals(5, desc.getStats().getNumRows().intValue());
-      }
     } else {
       res = executeString("create table testinsertquery1.table1 " +
         "(col1 int4, col2 int4, col3 float8) as select l_orderkey, l_partkey, l_quantity from default.lineitem;");
       res.close();
+    }
 
+    TableDesc desc = catalog.getTableDesc("testinsertquery1", "table1");
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      assertEquals(5, desc.getStats().getNumRows().intValue());
+    }
+
+    if (nodeType == NodeType.INSERT) {
+      res = executeString("insert overwrite into testinsertquery2.table1 " +
+        "select col1, col2, col3 from testinsertquery1.table1;");
+      res.close();
+    } else {
       res = executeString("create table testinsertquery2.table1 " +
         "(col1 int4, col2 int4, col3 float8) as select col1, col2, col3 from testinsertquery1.table1;");
       res.close();
-
-      CatalogService catalog = testingCluster.getMaster().getCatalog();
-      assertTrue(catalog.existsTable("testinsertquery1", "table1"));
-      assertTrue(catalog.existsTable("testinsertquery2", "table1"));
-
-      TableDesc desc = catalog.getTableDesc("testinsertquery1", "table1");
-      if (!testingCluster.isHCatalogStoreRunning()) {
-        assertEquals(5, desc.getStats().getNumRows().intValue());
-      }
-
-      desc = catalog.getTableDesc("testinsertquery2", "table1");
-      if (!testingCluster.isHCatalogStoreRunning()) {
-        assertEquals(5, desc.getStats().getNumRows().intValue());
-      }
+    }
+    desc = catalog.getTableDesc("testinsertquery2", "table1");
+    if (!testingCluster.isHCatalogStoreRunning()) {
+      assertEquals(5, desc.getStats().getNumRows().intValue());
     }
 
     executeString("DROP TABLE testinsertquery1.table1 PURGE").close();
@@ -1028,8 +987,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
     } else {
       res = executeString("create table " + tableName + " (col1 text) partition by column(col2 text) " +
         " as select l_returnflag, null from lineitem");
-
-      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
     }
     res.close();
     res = executeString("select * from " + tableName);
@@ -1056,8 +1013,6 @@ public class TestTablePartitions extends QueryTestCaseBase {
     } else {
       res = executeString( "create table " + tableName + " (col1 text) partition by column(col2 text) " +
         " as select l_returnflag, null from lineitem where l_orderkey = 1");
-
-      assertTrue(catalog.existsTable(DEFAULT_DATABASE_NAME, tableName));
     }
     res.close();
 
