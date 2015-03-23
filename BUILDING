@@ -53,6 +53,10 @@ Maven build goals:
   * -Dtest=<TESTCLASSNAME>,<TESTCLASSNAME#METHODNAME>,....
   * -Dtest.exclude=<TESTCLASSNAME>
   * -Dtest.exclude.pattern=**/<TESTCLASSNAME1>.java,**/<TESTCLASSNAME2>.java
+  * Use -Dtpcds-test to run TPC-DS test case with teh following additional options:
+    -Dtpcds.gen.data=<true or false> : required
+    -Dtpcds.data.dir=<TPC-DS DATA DIRECTORY>: required
+    -Dtpcds.generator=<TPC-DS DATA GENERATOR>: if tpcds.gen.data=true, required
 
 --------------------------------------------------------------------------------
 Building distributions:
