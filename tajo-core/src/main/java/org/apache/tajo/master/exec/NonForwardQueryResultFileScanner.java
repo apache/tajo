@@ -24,19 +24,23 @@ import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.engine.planner.physical.SeqScanExec;
 import org.apache.tajo.engine.query.QueryContext;
+import org.apache.tajo.storage.FileStorageManager;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
+import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -74,10 +78,37 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     initSeqScanExec();
   }
 
+  /**
+   * Set partition path and depth if ScanNode's qualification exists
+   *
+   * @param storageManager target storage manager to be set with partition info
+   */
+  private void setPartition(StorageManager storageManager) {
+    if (tableDesc.isExternal() && tableDesc.hasPartition() && scanNode.getQual() != null &&
+        storageManager instanceof FileStorageManager) {
+      StringBuffer path = new StringBuffer();
+      int depth = 0;
+      if (tableDesc.hasPartition()) {
+        for (Column c : tableDesc.getPartitionMethod().getExpressionSchema().getColumns()) {
+          String partitionValue = EvalTreeUtil.getPartitionValue(scanNode.getQual(), c.getSimpleName());
+          if (partitionValue == null)
+            break;
+          path.append(String.format("/%s=%s", c.getSimpleName(), StringUtils.escapePathName(partitionValue)));
+          depth++;
+        }
+      }
+      ((FileStorageManager)storageManager).setPartitionPath(path.toString());
+      ((FileStorageManager)storageManager).setCurrentDepth(depth);
+      scanNode.setQual(null);
+    }
+  }
+
   private void initSeqScanExec() throws IOException {
-    List<Fragment> fragments = StorageManager.getStorageManager(tajoConf, tableDesc.getMeta().getStoreType())
-        .getNonForwardSplit(tableDesc, currentFragmentIndex, MAX_FRAGMENT_NUM_PER_SCAN);
-    
+    StorageManager storageManager = StorageManager.getStorageManager(tajoConf, tableDesc.getMeta().getStoreType());
+    List<Fragment> fragments = null;
+    setPartition(storageManager);
+    fragments = storageManager.getNonForwardSplit(tableDesc, currentFragmentIndex, MAX_FRAGMENT_NUM_PER_SCAN);
+
     if (fragments != null && !fragments.isEmpty()) {
       FragmentProto[] fragmentProtos = FragmentConvertor.toFragmentProtoArray(fragments.toArray(new Fragment[] {}));
       this.taskContext = new TaskAttemptContext(
