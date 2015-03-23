@@ -629,6 +629,9 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         }
         addNewColumn(databaseName, tableName, alterTableDescProto.getAddColumn());
         break;
+      case SET_PROPERTY:
+        // TODO - not implemented yet
+        break;
       default:
         //TODO
     }
