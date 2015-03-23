@@ -92,6 +92,9 @@
             <tajo.test>TRUE</tajo.test>
           </systemProperties>
           <argLine>-Xms512m -Xmx1024m -XX:MaxPermSize=128m -Dfile.encoding=UTF-8</argLine>
+          <excludes>
+            <exclude>**/TpcDSTest.java</exclude>
+          </excludes>
         </configuration>
       </plugin>
       <plugin>
@@ -790,6 +793,90 @@
               </systemProperties>
             </configuration>
           </plugin>        
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>tpcds-test</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <version>1.6</version>
+            <executions>
+              <execution>
+                <phase>generate-test-resources</phase>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <configuration>
+                  <target if="${tpcds.gen.data}">
+                    <echo file="${project.build.directory}/tpcds-datagen.sh">
+                      mkdir -p ${tpcds.data.dir}
+                      TABLE_NAMES="call_center,catalog_page,catalog_sales,customer,\
+                      customer_address,customer_demographics,date_dim,household_demographics,income_band,\
+                      inventory,item,promotion,reason,ship_mode,store,store_sales,time_dim,warehouse,\
+                      web_page,web_sales,web_site"
+
+                      CURRENT_PATH=`pwd`
+                      GENERATOR="${tpcds.generator}"
+                      PARENTDIR="$(dirname "${GENERATOR}")"
+                      cd "${PARENTDIR}"
+                      for EACH_TABLE in $(echo "$TABLE_NAMES" | tr "," "\n")
+                      do
+                        TABLE_DATA_PATH=${tpcds.data.dir}/"${EACH_TABLE}"
+                        mkdir "${TABLE_DATA_PATH}"
+                        ${tpcds.generator} -DIR "${TABLE_DATA_PATH}" -TABLE "${EACH_TABLE}" -SCALE 1
+                      done
+                      mkdir ${tpcds.data.dir}/catalog_returns
+                      mv ${tpcds.data.dir}/catalog_sales/catalog_returns* ${tpcds.data.dir}/catalog_returns/.
+
+                      mkdir ${tpcds.data.dir}/store_returns
+                      mv ${tpcds.data.dir}/store_sales/store_returns* ${tpcds.data.dir}/store_returns/.
+
+                      mkdir ${tpcds.data.dir}/web_returns
+                      mv ${tpcds.data.dir}/web_sales/web_returns* ${tpcds.data.dir}/web_returns/.
+
+                      cd ${CURRENT_PATH}
+                    </echo>
+
+                    <exec executable="bash" dir="${project.build.directory}" failonerror="true">
+                      <arg line="./tpcds-datagen.sh" />
+                    </exec>
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>test</phase>
+                <goals>
+                  <goal>test</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <systemProperties>
+                <tajo.test>TRUE</tajo.test>
+              </systemProperties>
+              <argLine>-Xms512m -Xmx1024m -XX:MaxPermSize=128m -Dfile.encoding=UTF-8</argLine>
+              <excludes>
+                <exclude>**/Test*.java</exclude>
+              </excludes>
+              <includes>
+                <include>**/TpcDSTest.java</include>
+              </includes>
+            </configuration>
+          </plugin>
         </plugins>
       </build>
     </profile>
