@@ -19,7 +19,6 @@
 package org.apache.tajo.ws.rs.netty.gson;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.WebApplicationException;
