@@ -91,7 +91,7 @@
 <!--
 <property>
   <name>tajo.catalog.store.class</name>
-  <value>org.apache.tajo.catalog.store.HCatalogStore</value>
+  <value>org.apache.tajo.catalog.store.HiveCatalogStore</value>
 </property>
 -->
 

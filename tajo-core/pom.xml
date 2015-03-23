@@ -549,7 +549,7 @@
     </profile>
 
     <profile>
-      <id>hcatalog-0.12.0</id>
+      <id>hive-0.12.0</id>
       <activation>
         <activeByDefault>false</activeByDefault>
       </activation>
@@ -568,7 +568,7 @@
         </dependency>
         <dependency>
           <groupId>org.apache.tajo</groupId>
-          <artifactId>tajo-hcatalog</artifactId>
+          <artifactId>tajo-hive</artifactId>
           <version>${tajo.version}</version>
           <scope>test</scope>
           <exclusions>
@@ -711,50 +711,6 @@
             <exclusion>
               <groupId>jline</groupId>
               <artifactId>jline</artifactId>
-            </exclusion>
-          </exclusions>
-        </dependency>
-        <dependency>
-          <groupId>org.apache.hive.hcatalog</groupId>
-          <artifactId>hcatalog-core</artifactId>
-          <version>0.12.0</version>
-          <scope>provided</scope>
-          <exclusions>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-cli</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-common</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-exec</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-metastore</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-serde</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-service</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>org.apache.hive</groupId>
-              <artifactId>hive-shims</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>com.jolbox</groupId>
-              <artifactId>bonecp</artifactId>
-            </exclusion>
-            <exclusion>
-              <groupId>com.google.protobuf</groupId>
-              <artifactId>protobuf-java</artifactId>
             </exclusion>
           </exclusions>
         </dependency>
