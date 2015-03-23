@@ -9,6 +9,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1403: Improve 'Simple Query' with only partition columns and constant 
+    values. (Contributed by Dongjoon Hyun, Committed by jihoon)
+
     TAJO-1418: Comment on TAJO_PULLSERVER_STANDALONE in tajo-env.sh 
     is not consistent. (Contributed by navis, Committed by hyunsik)
 
@@ -34,6 +37,9 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1414: Two RemoteException in rpc module. 
+    (Contributed by navis. Committed by jihun)
 
     TAJO-1368: Exceptions during processing nested union queries.
     (jihun)
@@ -68,6 +74,9 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1439: Some method name is written wrongly. 
+    (Contributed by Jongyoung Park. Committed by jihoon)
+
     TAJO-1398: Fix 'Getting Started' link error from 0.9.0 into 0.10.0. 
     (Contributed by Dongjoon Hyun, Committed by jihoon)
 
@@ -81,6 +90,8 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1392: Resolve findbug warnings on Tajo Plan Module. (jihun)
 
     TAJO-1393: Resolve findbug warnings on Tajo Cli Module.
     (Contributed by Dongjoon Hyun, Committed by hyunsik)

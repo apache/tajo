@@ -919,13 +919,15 @@ public class FilterPushDownRule extends BasicLogicalPlanVisitor<FilterPushDownCo
 
   private void errorFilterPushDown(LogicalPlan plan, LogicalNode node,
                                    FilterPushDownContext context) throws PlanningException {
-    String notMatchedNodeStr = "";
     String prefix = "";
+    StringBuilder notMatchedNodeStrBuilder = new StringBuilder();
     for (EvalNode notMatchedNode: context.pushingDownFilters) {
-      notMatchedNodeStr += prefix + notMatchedNode;
-      prefix = ", ";
+      notMatchedNodeStrBuilder.append(prefix).append(notMatchedNode.toString());
+      if (prefix.isEmpty()) {
+        prefix = ", ";
+      }
     }
-    throw new PlanningException("FilterPushDown failed cause some filters not matched: " + notMatchedNodeStr + "\n" +
+    throw new PlanningException("FilterPushDown failed cause some filters not matched: " + notMatchedNodeStrBuilder.toString() + "\n" +
         "Error node: " + node.getPlanString() + "\n" +
         plan.toString());
   }

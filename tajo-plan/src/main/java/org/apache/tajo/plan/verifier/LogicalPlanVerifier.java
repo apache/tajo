@@ -34,20 +34,13 @@ import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import java.util.Stack;
 
 public class LogicalPlanVerifier extends BasicLogicalPlanVisitor<LogicalPlanVerifier.Context, LogicalNode> {
-  private TajoConf conf;
-  private CatalogService catalog;
-
   public LogicalPlanVerifier(TajoConf conf, CatalogService catalog) {
-    this.conf = conf;
-    this.catalog = catalog;
   }
 
   public static class Context {
-    OverridableConf queryContext;
     VerificationState state;
 
     public Context(OverridableConf queryContext, VerificationState state) {
-      this.queryContext = this.queryContext;
       this.state = state;
     }
   }
