@@ -101,7 +101,6 @@ public class TestKillQuery {
     optimizer.optimize(plan);
 
     QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    System.out.println("queryID:"+queryId);
     QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
@@ -122,7 +121,6 @@ public class TestKillQuery {
     }
 
     Stage stage = queryMasterTask.getQuery().getStages().iterator().next();
-    assertEquals(queryId, queryMasterTask.getQueryId());
     assertNotNull(stage);
 
     try {
