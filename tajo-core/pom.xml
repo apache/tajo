@@ -454,6 +454,12 @@
       <artifactId>jcip-annotations</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.python</groupId>
+      <artifactId>jython-standalone</artifactId>
+      <version>2.7-b3</version>
+    </dependency>
   </dependencies>
 
   <profiles>
