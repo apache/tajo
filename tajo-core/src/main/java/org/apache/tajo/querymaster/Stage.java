@@ -537,8 +537,13 @@ public class Stage implements EventHandler<StageEvent> {
     eventHandler.handle(new StageCompletedEvent(getId(), finalState));
   }
 
-  public StateMachine<StageState, StageEventType, StageEvent> getStateMachine() {
-    return this.stateMachine;
+  public void doStateTransition(StageEventType type, StageEvent event) {
+    try {
+      writeLock.lock();
+      stateMachine.doTransition(type, event);
+    } finally {
+      writeLock.unlock();
+    }
   }
 
   public void setPriority(int priority) {
@@ -740,7 +745,7 @@ public class Stage implements EventHandler<StageEvent> {
       writeLock.lock();
       StageState oldState = getSynchronizedState();
       try {
-        getStateMachine().doTransition(event.getType(), event);
+        doStateTransition(event.getType(), event);
         stageState = getSynchronizedState();
       } catch (InvalidStateTransitonException e) {
         LOG.error("Can't handle this event at current state"
