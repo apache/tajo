@@ -469,7 +469,8 @@ public class TajoMasterClientService extends AbstractService {
 
             boolean isCreateTable = queryInfo.getQueryContext().isCreateTable();
             boolean isInsert = queryInfo.getQueryContext().isInsert();
-            builder.setHasResult(!(isCreateTable || isInsert));
+            boolean isCreateIndex = queryInfo.getQueryContext().isCreateIndex();
+            builder.setHasResult(!(isCreateTable || isInsert || isCreateIndex));
 
             builder.setProgress(queryInfo.getProgress());
             builder.setSubmitTime(queryInfo.getStartTime());

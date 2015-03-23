@@ -980,7 +980,7 @@ public class TestPhysicalPlanner {
     FileFragment[] frags = FileStorageManager.splitNG(conf, "default.employee", employee.getMeta(),
         new Path(employee.getPath()), Integer.MAX_VALUE);
     Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testCreateIndex");
-    Path indexPath = StorageUtil.concatPath(TajoConf.getWarehouseDir(conf), "default/idx_employee");
+    Path indexPath = StorageUtil.concatPath(workDir, "idx_employee");
     if (sm.getFileSystem().exists(indexPath)) {
       sm.getFileSystem().delete(indexPath, true);
     }
@@ -989,6 +989,7 @@ public class TestPhysicalPlanner {
         LocalTajoTestingUtility.newTaskAttemptId(masterPlan),
         new FileFragment[] {frags[0]}, workDir);
     ctx.setEnforcer(new Enforcer());
+    ctx.setOutputPath(indexPath);
     Expr context = analyzer.parse(createIndexStmt[0]);
     LogicalPlan plan = planner.createPlan(defaultContext, context);
     LogicalNode rootNode = optimizer.optimize(plan);
@@ -1000,7 +1001,7 @@ public class TestPhysicalPlanner {
     }
     exec.close();
 
-    FileStatus[] list = sm.getFileSystem().listStatus(indexPath);
+    FileStatus[] list = sm.getFileSystem().listStatus(indexPath.getParent());
     assertEquals(2, list.length);
   }
 

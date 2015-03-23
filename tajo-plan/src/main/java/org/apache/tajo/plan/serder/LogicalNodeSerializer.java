@@ -23,7 +23,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
+import org.apache.tajo.common.PlanTypesProto;
 import org.apache.tajo.exception.UnimplementedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
@@ -35,6 +35,7 @@ import org.apache.tajo.plan.serder.PlanProto.AlterTableNode.RenameColumn;
 import org.apache.tajo.plan.serder.PlanProto.AlterTableNode.RenameTable;
 import org.apache.tajo.plan.serder.PlanProto.AlterTablespaceNode.SetLocation;
 import org.apache.tajo.plan.serder.PlanProto.LogicalNodeTree;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.ProtoUtil;
 import org.apache.tajo.util.TUtil;
@@ -89,7 +90,7 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     PlanProto.LogicalNode.Builder nodeBuilder = PlanProto.LogicalNode.newBuilder();
     nodeBuilder.setVisitSeq(selfId);
     nodeBuilder.setNodeId(node.getPID());
-    nodeBuilder.setType(convertType(node.getType()));
+    nodeBuilder.setType(PlannerUtil.convertType(node.getType()));
 
     // some DDL statements like DropTable or DropDatabase do not have in/out schemas
     if (node.getInSchema() != null) {
@@ -745,10 +746,6 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
     context.treeBuilder.addNodes(nodeBuilder);
 
     return node;
-  }
-
-  public static PlanProto.NodeType convertType(NodeType type) {
-    return PlanProto.NodeType.valueOf(type.name());
   }
 
   public static PlanProto.JoinType convertJoinType(JoinType type) {

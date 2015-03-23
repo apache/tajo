@@ -166,4 +166,12 @@ public class QueryContext extends OverridableConf {
   public boolean isInsert() {
     return isCommandType(NodeType.INSERT.name());
   }
+
+  public void setCreateIndex() {
+    setCommandType(NodeType.CREATE_INDEX);
+  }
+
+  public boolean isCreateIndex() {
+    return isCommandType(NodeType.CREATE_INDEX.name());
+  }
 }

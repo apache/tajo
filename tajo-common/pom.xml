@@ -151,6 +151,7 @@
                 <argument>src/main/proto/DataTypes.proto</argument>
                 <argument>src/main/proto/PrimitiveProtos.proto</argument>
                 <argument>src/main/proto/tajo_protos.proto</argument>
+                <argument>src/main/proto/PlanTypes.proto</argument>
               </arguments>
             </configuration>
             <goals>

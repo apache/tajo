@@ -429,7 +429,7 @@ public class QueryMasterTask extends CompositeService {
     ////////////////////////////////////////////
 
     String outputPath = context.get(QueryVars.OUTPUT_TABLE_PATH, "");
-    if (context.isCreateTable() || context.isInsert()) {
+    if (context.isCreateTable() || context.isInsert() || context.isCreateIndex()) {
       if (outputPath == null || outputPath.isEmpty()) {
         // hbase
         stagingDir = new Path(TajoConf.getDefaultRootStagingDir(conf), queryId);

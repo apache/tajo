@@ -27,6 +27,7 @@ import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
+import org.apache.tajo.common.PlanTypesProto;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.*;
@@ -59,6 +60,19 @@ public class PlannerUtil {
 
   }
 
+  public static PlanTypesProto.PlanNodeType convertType(NodeType type) {
+    return PlanTypesProto.PlanNodeType.valueOf(type.name());
+  }
+
+  public static NodeType extractPlanType(LogicalNode node) {
+    LogicalNode baseNode = node;
+    if (node instanceof LogicalRootNode) {
+      baseNode = ((LogicalRootNode) node).getChild();
+    }
+
+    return baseNode.getType();
+  }
+
   public static boolean checkIfDDLPlan(LogicalNode node) {
     LogicalNode baseNode = node;
     if (node instanceof LogicalRootNode) {
@@ -70,7 +84,7 @@ public class PlannerUtil {
     return
         type == NodeType.CREATE_DATABASE ||
             type == NodeType.DROP_DATABASE ||
-            (type == NodeType.CREATE_TABLE && !((CreateTableNode) baseNode).hasSubQuery()) ||
+            type == NodeType.CREATE_TABLE ||
             type == NodeType.DROP_TABLE ||
             type == NodeType.ALTER_TABLESPACE ||
             type == NodeType.ALTER_TABLE ||

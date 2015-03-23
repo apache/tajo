@@ -45,6 +45,7 @@ import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.ipc.ClientProtos.SubmitQueryResponse;
 import org.apache.tajo.master.*;
+import org.apache.tajo.master.exec.prehook.CreateIndexHook;
 import org.apache.tajo.master.exec.prehook.CreateTableHook;
 import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
 import org.apache.tajo.master.exec.prehook.InsertIntoHook;
@@ -82,6 +83,7 @@ public class QueryExecutor {
     this.hookManager = new DistributedQueryHookManager();
     this.hookManager.addHook(new CreateTableHook());
     this.hookManager.addHook(new InsertIntoHook());
+    this.hookManager.addHook(new CreateIndexHook());
   }
 
   public SubmitQueryResponse execute(QueryContext queryContext, Session session, String sql, String jsonExpr,
@@ -101,7 +103,7 @@ public class QueryExecutor {
       context.getSystemMetrics().counter("Query", "numDDLQuery").inc();
 
       if (PlannerUtil.isDistExecDDL(rootNode)) {
-        if (rootNode.getChild().getType() == NodeType.CREATE_INDEX) {
+        if (PlannerUtil.extractPlanType(rootNode) == NodeType.CREATE_INDEX) {
           checkIndexExistence(queryContext, (CreateIndexNode) rootNode.getChild());
         }
         executeDistributedQuery(queryContext, session, plan, sql, jsonExpr, response);
@@ -110,6 +112,7 @@ public class QueryExecutor {
         response.setResult(IPCUtil.buildOkRequestResult());
         ddlExecutor.execute(queryContext, plan);
       }
+      response.setPlanType(PlannerUtil.convertType(PlannerUtil.extractPlanType(rootNode)));
 
     } else if (plan.isExplain()) { // explain query
       execExplain(plan, response);
