@@ -479,4 +479,117 @@ public class TestWindowQuery extends QueryTestCaseBase {
       executeString("DROP TABLE windowframe PURGE");
     }
   }
+
+  @Test
+  public final void testWindowFrame2() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    schema.addColumn("num", TajoDataTypes.Type.INT4);
+    String[] data = new String[]{ "1|abc|3", "2|abd|2", "2|abe|4", "2|abe|2", "2|abd|3", "2|abd|9" };
+    TajoTestingCluster.createTable("windowframe", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString(
+          "select id, name, num, " +
+              "first_value(num) over ( partition by id order by name rows between unbounded preceding and current row ) as first_value_rows, " +
+              "first_value(num) over ( partition by id order by name range between unbounded preceding and current row ) as first_value_range, " +
+              "last_value(num) over ( partition by id order by name rows between unbounded preceding and current row ) as last_value_rows, " +
+              "last_value(num) over ( partition by id order by name range between unbounded preceding and current row ) as last_value_range " +
+              "from windowframe");
+      String ascExpected = "id,name,num,first_value_rows,first_value_range,last_value_rows,last_value_range\n" +
+          "-------------------------------\n" +
+          "1,abc,3,3,3,3,3\n" +
+          "2,abd,2,2,2,2,9\n" +
+          "2,abd,3,2,2,3,9\n" +
+          "2,abd,9,2,2,9,9\n" +
+          "2,abe,4,2,2,4,2\n" +
+          "2,abe,2,2,2,2,2\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE windowframe PURGE");
+    }
+  }
+
+  @Test
+  public final void testWindowFrame3() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    schema.addColumn("num", TajoDataTypes.Type.INT4);
+    String[] data = new String[]{ "1|abc|3", "2|abd|2", "2|abe|4", "2|abe|1", "2|abd|3", "2|abd|9" };
+    TajoTestingCluster.createTable("windowframe", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString(
+          "select id, name, num, " +
+              "first_value(num) over ( partition by id order by name rows between current row and unbounded following) as first_value_rows, " +
+              "first_value(num) over ( partition by id order by name range between current row and unbounded following) as first_value_range, " +
+              "last_value(num) over ( partition by id order by name rows between current row and unbounded following) as last_value_rows, " +
+              "last_value(num) over ( partition by id order by name range between current row and unbounded following) as last_value_range " +
+              "from windowframe");
+      String ascExpected = "id,name,num,first_value_rows,first_value_range,last_value_rows,last_value_range\n" +
+          "-------------------------------\n" +
+          "1,abc,3,3,3,3,3\n" +
+          "2,abd,2,2,2,1,1\n" +
+          "2,abd,3,3,2,1,1\n" +
+          "2,abd,9,9,2,1,1\n" +
+          "2,abe,4,4,4,1,1\n" +
+          "2,abe,1,1,4,1,1\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE windowframe PURGE");
+    }
+  }
+
+  @Test
+  public final void testWindowFrame4() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    schema.addColumn("num", TajoDataTypes.Type.INT4);
+    String[] data = new String[]{ "1|abc|3", "2|abd|2", "2|abe|4", "2|abe|1", "2|abd|3", "2|abd|9" };
+    TajoTestingCluster.createTable("windowframe", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString(
+          "select id, name, num, " +
+              "sum(num) over ( partition by id order by name ) as sum1, " +
+              "sum(num) over ( partition by id order by name range between current row and unbounded following) as sum2, " +
+              "sum(num) over ( partition by id order by name range between current row and current row) as sum3, " +
+              "sum(num) over ( partition by id order by name rows between unbounded preceding and current row) as sum4, " +
+              "sum(num) over ( partition by id order by name rows between current row and unbounded following) as sum5, " +
+              "sum(num) over ( partition by id order by name rows between current row and current row) as sum6 " +
+              "from windowframe");
+      String ascExpected = "id,name,num,sum1,sum2,sum3,sum4,sum5,sum6\n" +
+          "-------------------------------\n" +
+          "1,abc,3,3,3,3,3,3,3\n" +
+          "2,abd,2,14,19,14,2,19,2\n" +
+          "2,abd,3,14,19,14,5,17,3\n" +
+          "2,abd,9,14,19,14,14,14,9\n" +
+          "2,abe,4,19,5,5,18,5,4\n" +
+          "2,abe,1,19,5,5,19,1,1\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE windowframe PURGE");
+    }
+  }
 }

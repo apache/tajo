@@ -474,6 +474,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
           WindowSpec.WindowStartBound startBound = buildWindowStartBound(between.window_frame_start_bound());
           WindowSpec.WindowEndBound endBound = buildWindowEndBound(between.window_frame_end_bound());
 
+          // PRECEDING and FOLLOWING with Integer number cannot come with RANGE
           if (unit == WindowSpec.WindowFrameUnit.RANGE) {
             if (startBound.hasNumber() || endBound.hasNumber()) {
               throw new SQLSyntaxError("PRECEDING and FOLLOWING are allowed with ROWS only");
@@ -483,6 +484,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         } else { // if there is only start bound
           WindowSpec.WindowStartBound startBound =
               buildWindowStartBound(frameContext.window_frame_extent().window_frame_start_bound());
+
+          // PRECEDING and FOLLOWING with Integer number cannot come with RANGE
           if (unit == WindowSpec.WindowFrameUnit.RANGE) {
             if (startBound.hasNumber()) {
               throw new SQLSyntaxError("PRECEDING and FOLLOWING are allowed with ROWS only");
@@ -491,6 +494,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
           windowFrame = new WindowSpec.WindowFrame(unit, startBound);
         }
 
+        // At this point, windowFrame has information only specified in SQL string
+        // , which means has no implicit information about default window frame values
         windowSpec.setWindowFrame(windowFrame);
       }
     }

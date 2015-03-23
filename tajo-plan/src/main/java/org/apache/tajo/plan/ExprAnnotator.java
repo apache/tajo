@@ -729,6 +729,9 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     TajoDataTypes.DataType[] paramTypes = new TajoDataTypes.DataType[params.length];
     FunctionType functionType;
     WindowFunctionEval.WindowFunctionType windowFunctionType;
+
+    // set the window frame with the information given by SQL query,
+    // and fill the implicit information with default values
     LogicalWindowFrame frame = convertWindowFrameToLogical(ctx, stack, windowSpec.getWindowFrame());
 
     if (params.length > 0) {
@@ -750,13 +753,14 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       }
     }
 
+    // When no window frame is declared in the query, use default value
+    //    default window frame is RANGE BETWEEN UNBOUNDED PROCEEDING AND CURRENT ROW
     if (frame == null) {
-      // default window frame is RANGE BETWEEN UNBOUNDED PROCEEDING AND CURRENT ROW
       frame = new LogicalWindowFrame(WindowFrameUnit.RANGE, new LogicalWindowStartBound(WindowFrameStartBoundType.UNBOUNDED_PRECEDING),
             new LogicalWindowEndBound(WindowFrameEndBoundType.CURRENT_ROW));
     }
 
-    // set Function Type
+    // set Function Type to determine whether window frame is applied or not
     //    NONFRAMABLE: builtin window function that works on entire partition
     //    FRAMABLE: builtin window function that works on window frame
     //    AGGREGATION: aggregation functions that work on window frame
@@ -768,12 +772,12 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       windowFunctionType = WindowFunctionEval.WindowFunctionType.AGGREGATION;
     }
 
-    // set Frame type
+    // set Frame type to determine the range of data used in the function
     //    ENTIRE_PARTITION: from UNBOUNDED_PROCEDING to UNBOUNDED_FOLLOWING
     //    TO_CURRENT_ROW: from UNBOUNDED_PROCEDING to some position relative to CURRENT_ROW
     //    FROM_CURRENT_ROW: from some position relative to CURRENT_ROW to UNBOUNDED_FOLLOWING
     //    SLIDING_WINDOW: from some position relative to CURRENT_ROW to other position relative to CURRENT_ROW
-    if (NONFRAMABLE_WINDOW_FUNCTIONS.contains(funcName.toLowerCase())) {
+    if (sortKeys == null || NONFRAMABLE_WINDOW_FUNCTIONS.contains(funcName.toLowerCase())) {
       frame.setFrameType(LogicalWindowFrame.WindowFrameType.ENTIRE_PARTITION);
     } else {
       if (frame.getStartBound().getBoundType() == WindowFrameStartBoundType.UNBOUNDED_PRECEDING) {
@@ -808,6 +812,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
   }
 
+  // fill the start point and end point of window frame
   private LogicalWindowFrame convertWindowFrameToLogical(Context ctx, Stack<Expr> stack, WindowSpec.WindowFrame frame) throws PlanningException {
     if (frame != null) {
       WindowSpec.WindowStartBound exprStartBound = frame.getStartBound();
@@ -823,6 +828,8 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
         if (exprEndBound.hasNumber()) {
           int endOffset = getOffset(ctx, stack, exprEndBound.getNumber());
           endBound.setNumber(exprEndBound.getBoundType() == WindowFrameEndBoundType.PRECEDING ? -endOffset : endOffset);
+
+          // check if window frame has valid parameter
           if (exprStartBound.hasNumber()) {
             if (startBound.getNumber() > endBound.getNumber()) {
               throw new PlanningException("In window frame, start point SHOULD NOT exceed the end point");
