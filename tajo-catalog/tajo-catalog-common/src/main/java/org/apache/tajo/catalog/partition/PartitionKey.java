@@ -24,6 +24,7 @@ import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.util.TUtil;
 
 
 /**
@@ -93,17 +94,11 @@ public class PartitionKey implements ProtoObject<CatalogProtos.PartitionKeyProto
   public boolean equals(Object o) {
     if (o instanceof PartitionKey) {
       PartitionKey another = (PartitionKey) o;
-      boolean eq = ((columnName != null && another.columnName != null
-          && columnName.equals(another.columnName)) ||
-          (columnName == null && another.columnName == null));
-      eq = eq && ((partitionValue != null && another.partitionValue != null
-        && partitionValue.equals(another.partitionValue)) ||
-        (partitionValue == null && another.partitionValue == null));
-      return eq;
+      return TUtil.checkEquals(columnName, another.columnName) &&
+        TUtil.checkEquals(partitionValue, another.partitionValue);
     }
     return false;
   }
-
 
   @Override
   public CatalogProtos.PartitionKeyProto getProto() {

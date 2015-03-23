@@ -282,7 +282,7 @@ message SortSpecProto {
 
 
 message PartitionsProto {
-  repeated PartitionDescProto partition = 21;
+  repeated PartitionDescProto partition = 1;
 }
 
 message PartitionMethodProto {
@@ -294,7 +294,7 @@ message PartitionMethodProto {
 
 message PartitionDescProto {
   required string partitionName = 1;
-  repeated PartitionKeyProto partitionKeys = 32;
+  repeated PartitionKeyProto partitionKeys = 2;
   optional string path = 3;
 }
 
