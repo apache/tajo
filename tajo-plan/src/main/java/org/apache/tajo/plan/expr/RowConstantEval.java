@@ -23,7 +23,6 @@ import java.util.Arrays;
 import com.google.gson.annotations.Expose;
 
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
@@ -60,7 +59,8 @@ public class RowConstantEval extends EvalNode {
   }
 
   @Override
-  public Datum eval(Schema schema, Tuple tuple) {
+  @SuppressWarnings("unchecked")
+  public Datum eval(Tuple tuple) {
     return NullDatum.get();
   }
 

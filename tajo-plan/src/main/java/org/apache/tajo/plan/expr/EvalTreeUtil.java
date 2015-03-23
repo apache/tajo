@@ -571,7 +571,8 @@ public class EvalTreeUtil {
   }
 
   public static Datum evaluateImmediately(EvalNode evalNode) {
-    return evalNode.eval(null, null);
+    evalNode.bind(null);
+    return evalNode.eval(null);
   }
 
   /**

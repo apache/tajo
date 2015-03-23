@@ -40,7 +40,6 @@ import java.util.*;
 public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
   private static Log LOG = LogFactory.getLog(DistinctGroupbyThirdAggregationExec.class);
   private DistinctGroupbyNode plan;
-  private PhysicalExec child;
 
   private boolean finished = false;
 
@@ -56,12 +55,11 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
       throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema(), sortExec);
     this.plan = plan;
-    this.child = sortExec;
   }
 
   @Override
   public void init() throws IOException {
-    this.child.init();
+    super.init();
 
     numGroupingColumns = plan.getGroupingColumns().length;
     resultTupleLength = numGroupingColumns;
@@ -254,6 +252,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
       aggrFunctions = groupbyNode.getAggFunctions();
       if (aggrFunctions != null) {
         for (AggregationFunctionCallEval eachFunction: aggrFunctions) {
+          eachFunction.bind(inSchema);
           eachFunction.setFinalPhase();
         }
       }
@@ -269,7 +268,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
 
     public void merge(Tuple tuple) {
       for (int i = 0; i < aggrFunctions.length; i++) {
-        aggrFunctions[i].merge(functionContexts[i], inSchema, tuple);
+        aggrFunctions[i].merge(functionContexts[i], tuple);
       }
 
       if (seq == 0 && nonDistinctAggr != null) {

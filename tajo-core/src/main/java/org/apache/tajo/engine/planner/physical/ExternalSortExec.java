@@ -354,7 +354,7 @@ public class ExternalSortExec extends SortExec {
       int remainInputRuns = inputFiles.size();
       int outChunkId = 0;
       int outputFileNum = 0;
-      List<Future> futures = TUtil.newList();
+      List<Future<FileFragment>> futures = TUtil.newList();
       // the number of files being merged in threads.
       List<Integer> numberOfMergingFiles = TUtil.newList();
 

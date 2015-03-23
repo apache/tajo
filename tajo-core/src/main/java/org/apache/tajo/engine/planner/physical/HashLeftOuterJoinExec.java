@@ -120,6 +120,11 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
     leftKeyTuple = new VTuple(leftKeyList.length);
 
     rightNumCols = rightChild.getSchema().size();
+
+    joinQual.bind(inSchema);
+    if (joinFilter != null) {
+      joinFilter.bind(inSchema);
+    }
   }
 
   @Override
@@ -177,8 +182,8 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
       frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
 
       // if there is no join filter, it is always true.
-      boolean satisfiedWithFilter = joinFilter == null ? true : joinFilter.eval(inSchema, frameTuple).isTrue();
-      boolean satisfiedWithJoinCondition = joinQual.eval(inSchema, frameTuple).isTrue();
+      boolean satisfiedWithFilter = joinFilter == null || joinFilter.eval(frameTuple).isTrue();
+      boolean satisfiedWithJoinCondition = joinQual.eval(frameTuple).isTrue();
 
       // if a composited tuple satisfies with both join filter and join condition
       if (satisfiedWithJoinCondition && satisfiedWithFilter) {

@@ -21,7 +21,6 @@ package org.apache.tajo.plan.expr;
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
@@ -77,6 +76,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
     this.leftExpr = expr;
   }
 
+ @SuppressWarnings("unchecked")
   public <T extends EvalNode> T getLeftExpr() {
     return (T) this.leftExpr;
   }
@@ -85,6 +85,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
     this.rightExpr = expr;
   }
 
+ @SuppressWarnings("unchecked")
   public <T extends EvalNode> T getRightExpr() {
     return (T) this.rightExpr;
   }
@@ -116,9 +117,10 @@ public class BinaryEval extends EvalNode implements Cloneable {
   }
 
   @Override
-  public Datum eval(Schema schema, Tuple tuple) {
-    Datum lhs = leftExpr.eval(schema, tuple);
-    Datum rhs = rightExpr.eval(schema, tuple);
+  @SuppressWarnings("unchecked")
+  public Datum eval(Tuple tuple) {
+    Datum lhs = leftExpr.eval(tuple);
+    Datum rhs = rightExpr.eval(tuple);
 
     switch(type) {
     case AND:
