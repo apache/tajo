@@ -108,7 +108,7 @@ public class WindowFunctionEval extends AggregationFunctionCallEval implements C
     int result = super.hashCode();
     result = prime * result + ((params == null) ? 0 : params.hashCode());
     result = prime * result + Arrays.hashCode(sortSpecs);
-    result = prime * result + ((windowFrame == null) ? 0 : windowFrame.hashCode());
+    result = prime * result + ((logicalWindowFrame == null) ? 0 : logicalWindowFrame.hashCode());
     return result;
   }
 
