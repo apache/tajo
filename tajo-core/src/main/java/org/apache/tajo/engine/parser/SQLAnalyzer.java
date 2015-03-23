@@ -1843,7 +1843,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   private Map<String, String> getProperties(SQLParser.Property_listContext ctx) {
     Map<String, String> params = new HashMap<String, String>();
     for (int i = 0; i < ctx.property().size(); i++) {
-      params.put(ctx.property(i).key.getText(), stripQuote(ctx.property(i).value.getText()));
+      params.put(stripQuote(ctx.property(i).key.getText()), stripQuote(ctx.property(i).value.getText()));
     }
 
     return params;

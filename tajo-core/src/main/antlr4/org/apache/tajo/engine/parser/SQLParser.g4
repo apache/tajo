@@ -1620,5 +1620,5 @@ property_list
   ;
 
 property
-  : key=identifier EQUAL value=Character_String_Literal
+  : key=Character_String_Literal EQUAL value=Character_String_Literal
   ;

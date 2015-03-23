@@ -493,7 +493,7 @@ public class TestSQLAnalyzer {
     assertEquals(alterTable.getAlterTableOpType(), AlterTableOpType.SET_PROPERTY);
     assertTrue(alterTable.hasParams());
     assertTrue(alterTable.getParams().containsKey("timezone"));
-    assertEquals("ASIA/Seoul", alterTable.getParams().get("timezone"));
+    assertEquals("GMT-7", alterTable.getParams().get("timezone"));
   }
 
   @Test
