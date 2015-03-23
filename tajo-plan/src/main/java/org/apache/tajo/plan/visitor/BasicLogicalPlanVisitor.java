@@ -267,8 +267,8 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
       LogicalPlan.QueryBlock rightBlock = plan.getBlock(node.getRightChild());
       visit(context, plan, rightBlock, rightBlock.getRoot(), stack);
     } else {
-      result = visit(context, plan, null, node.getLeftChild(), stack);
-      visit(context, plan, null, node.getRightChild(), stack);
+      result = visit(context, null, null, node.getLeftChild(), stack);
+      visit(context, null, null, node.getRightChild(), stack);
     }
 
     stack.pop();
@@ -304,7 +304,7 @@ public class BasicLogicalPlanVisitor<CONTEXT, RESULT> implements LogicalPlanVisi
       LogicalPlan.QueryBlock childBlock = plan.getBlock(node.getSubQuery());
       result = visit(context, plan, childBlock, childBlock.getRoot(), stack);
     } else {
-      result = visit(context, plan, null, node.getSubQuery(), stack);
+      result = visit(context, null, null, node.getSubQuery(), stack);
     }
     stack.pop();
     return result;

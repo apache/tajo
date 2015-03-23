@@ -780,7 +780,8 @@ public class Stage implements EventHandler<StageEvent> {
       try {
         // Union operator does not require actual query processing. It is performed logically.
         if (execBlock.hasUnion()) {
-          stage.finalizeStats();
+          // Though union operator does not be processed at all, but it should handle the completion event.
+          stage.complete();
           state = StageState.SUCCEEDED;
         } else {
           ExecutionBlock parent = stage.getMasterPlan().getParent(stage.getBlock());

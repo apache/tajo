@@ -69,12 +69,10 @@ public class LogicalPlan {
 
   /** planning and optimization log */
   private List<String> planingHistory = Lists.newArrayList();
-  LogicalPlanner planner;
 
   private boolean isExplain;
 
   public LogicalPlan(LogicalPlanner planner) {
-    this.planner = planner;
   }
 
   /**

@@ -223,6 +223,11 @@ public class QueryExecutor {
       scanNode = plan.getRootBlock().getNode(NodeType.PARTITIONS_SCAN);
     }
     TableDesc desc = scanNode.getTableDesc();
+    // Keep info for partition-column-only queries
+    SelectionNode selectionNode = plan.getRootBlock().getNode(NodeType.SELECTION);
+    if (desc.isExternal() && desc.hasPartition() && selectionNode != null) {
+      scanNode.setQual(selectionNode.getQual());
+    }
     int maxRow = Integer.MAX_VALUE;
     if (plan.getRootBlock().hasNode(NodeType.LIMIT)) {
       LimitNode limitNode = plan.getRootBlock().getNode(NodeType.LIMIT);

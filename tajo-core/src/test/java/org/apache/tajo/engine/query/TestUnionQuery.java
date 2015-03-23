@@ -450,4 +450,66 @@ public class TestUnionQuery extends QueryTestCaseBase {
     assertEquals(expected, resultSetToString(res));
     res.close();
   }
+
+  @Test
+  public void testTajo1368Case1() throws Exception {
+    ResultSet res = executeString(
+        "select * from " +
+            "   (select c_custkey, c_nationkey from customer where c_nationkey < 0 " +
+            "   union all " +
+            "   select c_custkey, c_nationkey from customer where c_nationkey > 0 " +
+            ") a " +
+            "union all " +
+            "select * from " +
+            "   (select c_custkey, c_nationkey from customer where c_nationkey < 0 " +
+            "   union all " +
+            "   select c_custkey, c_nationkey from customer where c_nationkey > 0 " +
+            ") b ");
+
+    String expected = "c_custkey,c_nationkey\n" +
+        "-------------------------------\n" +
+        "1,15\n" +
+        "2,13\n" +
+        "3,1\n" +
+        "4,4\n" +
+        "5,3\n" +
+        "1,15\n" +
+        "2,13\n" +
+        "3,1\n" +
+        "4,4\n" +
+        "5,3\n";
+
+    assertEquals(expected, resultSetToString(res));
+    res.close();
+  }
+
+  @Test
+  public void testTajo1368Case2() throws Exception {
+    ResultSet res = executeString("select * from ( "+
+        "select c_custkey, c_nationkey from ( " +
+        "select c_custkey, c_nationkey from ( " +
+        "select c_custkey, c_nationkey from customer) a " +
+        "union all " +
+        "select c_custkey, c_nationkey from ( " +
+        "select c_custkey, c_nationkey from customer) a " +
+        " ) a " +
+        " ) a ");
+
+    String expected = "c_custkey,c_nationkey\n" +
+        "-------------------------------\n" +
+        "1,15\n" +
+        "2,13\n" +
+        "3,1\n" +
+        "4,4\n" +
+        "5,3\n" +
+        "1,15\n" +
+        "2,13\n" +
+        "3,1\n" +
+        "4,4\n" +
+        "5,3\n";
+
+    assertEquals(expected, resultSetToString(res));
+    res.close();
+  }
+
 }

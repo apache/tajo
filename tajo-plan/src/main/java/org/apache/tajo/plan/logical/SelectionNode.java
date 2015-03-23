@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.logical;
 
 import com.google.gson.annotations.Expose;
+
 import org.apache.tajo.plan.PlanString;
 import org.apache.tajo.plan.expr.EvalNode;
 
@@ -47,6 +48,14 @@ public class SelectionNode extends UnaryNode implements SelectableNode, Cloneabl
     PlanString planStr = new PlanString(this);
     planStr.addExplan("Search Cond: " + getQual());
     return planStr;
+  }
+
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + ((qual == null) ? 0 : qual.hashCode());
+    return result;
   }
 
   @Override
