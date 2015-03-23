@@ -20,6 +20,7 @@ package org.apache.tajo.plan.serder;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
 import org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
@@ -28,6 +29,8 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.FunctionSignatureProto;
+import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.plan.expr.*;
@@ -210,7 +213,19 @@ public class EvalNodeDeserializer {
             }
           }
         } catch (ClassNotFoundException cnfe) {
-          throw new NoSuchFunctionException(funcDesc.getFunctionName(), funcDesc.getParamTypes());
+          String functionName = "Unknown";
+          DataType[] parameterTypes = new DataType[0];
+          if (funcProto.getFuncion() != null && funcProto.getFuncion().getSignature() != null) {
+            FunctionSignatureProto funcSignatureProto = funcProto.getFuncion().getSignature();
+            
+            if (funcSignatureProto.hasName()) {
+              functionName = funcSignatureProto.getName();
+            }
+            
+            parameterTypes = funcSignatureProto.getParameterTypesList().toArray(
+                new DataType[funcSignatureProto.getParameterTypesCount()]);
+          }
+          throw new NoSuchFunctionException(functionName, parameterTypes);
         } catch (InternalException ie) {
           throw new NoSuchFunctionException(funcDesc.getFunctionName(), funcDesc.getParamTypes());
         }

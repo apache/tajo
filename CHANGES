@@ -9,6 +9,15 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1403: Improve 'Simple Query' with only partition columns and constant 
+    values. (Contributed by Dongjoon Hyun, Committed by jihoon)
+
+    TAJO-1418: Comment on TAJO_PULLSERVER_STANDALONE in tajo-env.sh 
+    is not consistent. (Contributed by navis, Committed by hyunsik)
+
+    TAJO-1381: Support multi-bytes delimiter for Text file.
+    (Contributed by navis, Committed by jinho)
+
     TAJO-1391: RpcConnectionPool should check reference counter of connection 
     before close. (Contributed by navis, Committed by jihun)
 
@@ -28,6 +37,15 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1414: Two RemoteException in rpc module. 
+    (Contributed by navis. Committed by jihun)
+
+    TAJO-1368: Exceptions during processing nested union queries.
+    (jihun)
+
+    TAJO-1405: Fix some illegal way of usages on connection pool. 
+    (Contributed by navis, Committed by Keuntae Park)
 
     TAJO-1384: Duplicated output file path problem. (jihoon)
 
@@ -56,6 +74,9 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1439: Some method name is written wrongly. 
+    (Contributed by Jongyoung Park. Committed by jihoon)
+
     TAJO-1398: Fix 'Getting Started' link error from 0.9.0 into 0.10.0. 
     (Contributed by Dongjoon Hyun, Committed by jihoon)
 
@@ -69,6 +90,13 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1392: Resolve findbug warnings on Tajo Plan Module. (jihun)
+
+    TAJO-1393: Resolve findbug warnings on Tajo Cli Module.
+    (Contributed by Dongjoon Hyun, Committed by hyunsik)
+
+    TAJO-1337: Implements common modules to handle RESTful API. (jihun)
 
     TAJO-1329: Improve Schema class to support nested struct support.
     (hyunsik)
