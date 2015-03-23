@@ -50,7 +50,6 @@ public class TpcDSTestUtil {
 
   private static String getDataDir() {
     String dataDir = System.getProperty("tpcds.data.dir");
-    //dataDir = "/Users/babokim/tmp/tpcds";
 
     return dataDir;
   }
