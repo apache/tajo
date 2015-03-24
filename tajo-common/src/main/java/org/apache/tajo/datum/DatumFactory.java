@@ -317,6 +317,10 @@ public class DatumFactory {
     return new IntervalDatum(interval);
   }
 
+  public static IntervalDatum createInterval(int month, long interval) {
+    return new IntervalDatum(month, interval);
+  }
+
   public static DateDatum createDate(Datum datum) {
     switch (datum.type()) {
     case INT4:
