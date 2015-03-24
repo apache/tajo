@@ -83,9 +83,13 @@ public class PartitionKey implements ProtoObject<CatalogProtos.PartitionKeyProto
     this.partitionValue = partitionValue;
   }
 
-  public String getColumnName() { return columnName; }
+  public String getColumnName() {
+    return columnName;
+  }
 
-  public void setColumnName(String columnName) { this.columnName = columnName; }
+  public void setColumnName(String columnName) {
+    this.columnName = columnName;
+  }
 
   public int hashCode() {
     return Objects.hashCode(partitionValue, columnName);

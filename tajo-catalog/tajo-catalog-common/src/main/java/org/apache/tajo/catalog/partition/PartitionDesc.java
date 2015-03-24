@@ -85,23 +85,26 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
     }
   }
 
-  public String getPartitionName() { return partitionName; }
-  public void setPartitionName(String partitionName) { this.partitionName = partitionName; }
-
-  public void setName(String partitionName) {
-    this.partitionName = partitionName;
-  }
-  public String getName() {
+  public String getPartitionName() {
     return partitionName;
   }
 
-  public List<PartitionKey> getPartitionKeys() { return partitionKeys; }
+  public void setPartitionName(String partitionName) {
+    this.partitionName = partitionName;
+  }
 
-  public void setPartitionKeys(List<PartitionKey> partitionKeys) { this.partitionKeys = partitionKeys; }
+  public List<PartitionKey> getPartitionKeys() {
+    return partitionKeys;
+  }
+
+  public void setPartitionKeys(List<PartitionKey> partitionKeys) {
+    this.partitionKeys = partitionKeys;
+  }
 
   public void setPath(String path) {
     this.path = path;
   }
+
   public String getPath() {
     return path;
   }
