@@ -20,6 +20,7 @@ package org.apache.tajo.util.metrics.reporter;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.io.IOUtils;
 
 import java.io.*;
 
@@ -51,8 +52,7 @@ public class MetricsFileScheduledReporter extends MetricsStreamScheduledReporter
       this.setDateFormat(null);
     } catch (FileNotFoundException e) {
       LOG.warn("Can't open metrics file:" + fileName);
-    } finally {
-      this.close();
+      IOUtils.cleanup(LOG, this);
     }
   }
 }
