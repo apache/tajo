@@ -200,7 +200,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   public LogicalNode visitExplain(PlanContext ctx, Stack<Expr> stack, Explain expr) throws PlanningException {
-    ctx.plan.setExplain();
+    ctx.plan.setExplain(expr.isPhysical());
     return visit(ctx, stack, expr.getChild());
   }
 

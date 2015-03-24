@@ -36,6 +36,7 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.physical.EvalExprExec;
 import org.apache.tajo.engine.planner.physical.StoreTableExec;
 import org.apache.tajo.engine.query.QueryContext;
@@ -101,7 +102,7 @@ public class QueryExecutor {
 
 
     } else if (plan.isExplain()) { // explain query
-      execExplain(plan, response);
+      execExplain(plan, queryContext, plan.isExplainPhysical(), response);
 
     } else if (PlannerUtil.checkIfQueryTargetIsVirtualTable(plan)) {
       execQueryOnVirtualTable(queryContext, session, sql, plan, response);
@@ -157,9 +158,17 @@ public class QueryExecutor {
     response.setResultCode(ClientProtos.ResultCode.OK);
   }
 
-  public void execExplain(LogicalPlan plan, SubmitQueryResponse.Builder response) throws IOException {
+  public void execExplain(LogicalPlan plan, QueryContext queryContext, boolean physical, SubmitQueryResponse.Builder response)
+      throws Exception {
 
-    String explainStr = PlannerUtil.buildExplainString(plan.getRootBlock().getRoot());
+    String explainStr;
+    if (physical) {
+      GlobalPlanner planner = new GlobalPlanner(context.getConf(), context.getCatalog());
+      explainStr = QueryMasterTask.compile(plan, queryContext, planner).toString();
+    } else {
+      explainStr = PlannerUtil.buildExplainString(plan.getRootBlock().getRoot());
+    }
+
     Schema schema = new Schema();
     schema.addColumn("explain", TajoDataTypes.Type.TEXT);
     RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(schema);

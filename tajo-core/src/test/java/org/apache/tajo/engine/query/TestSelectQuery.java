@@ -105,6 +105,20 @@ public class TestSelectQuery extends QueryTestCaseBase {
   }
 
   @Test
+  @SimpleTest(queries = {
+      "explain physical " +
+          "select l_orderkey, l_partkey from lineitem",
+      "explain physical " +
+          "select n1.n_nationkey, n1.n_name, n2.n_name from nation n1 join nation n2 on n1.n_name = upper(n2.n_name) " +
+          "order by n1.n_nationkey;",
+      "explain physical " +
+          "select l_linenumber, count(*), count(distinct l_orderkey), sum(distinct l_orderkey) from lineitem " +
+          "group by l_linenumber having sum(distinct l_orderkey) = 6"})
+  public final void testExplainSelectPhysical() throws Exception {
+    runSimpleTests();
+  }
+
+  @Test
   public final void testSelect() throws Exception {
     // select l_orderkey, l_partkey from lineitem;
     ResultSet res = executeQuery();

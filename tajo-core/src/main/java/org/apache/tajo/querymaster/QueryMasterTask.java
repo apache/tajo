@@ -38,6 +38,7 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.UnimplementedException;
@@ -377,6 +378,36 @@ public class QueryMasterTask extends CompositeService {
         }
       }
     }
+  }
+
+  public static MasterPlan compile(LogicalPlan plan, QueryContext context, GlobalPlanner planner)
+      throws Exception {
+
+    StoreType storeType = PlannerUtil.getStoreType(plan);
+    if (storeType != null) {
+      StorageManager sm = StorageManager.getStorageManager(planner.getConf(), storeType);
+      StorageProperty storageProperty = sm.getStorageProperty();
+      if (storageProperty.isSortedInsert()) {
+        String tableName = PlannerUtil.getStoreTableName(plan);
+        LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+        TableDesc tableDesc = PlannerUtil.getTableDesc(planner.getCatalog(), rootNode.getChild());
+        if (tableDesc == null) {
+          throw new VerifyException("Can't get table meta data from catalog: " + tableName);
+        }
+        List<LogicalPlanRewriteRule> storageSpecifiedRewriteRules = sm.getRewriteRules(
+            context, tableDesc);
+        if (storageSpecifiedRewriteRules != null) {
+          for (LogicalPlanRewriteRule eachRule: storageSpecifiedRewriteRules) {
+            eachRule.rewrite(context, plan);
+          }
+        }
+      }
+    }
+
+    MasterPlan masterPlan = new MasterPlan(QueryIdFactory.NULL_QUERY_ID, context, plan);
+    planner.build(masterPlan);
+
+    return masterPlan;
   }
 
   private void initStagingDir() throws IOException {
