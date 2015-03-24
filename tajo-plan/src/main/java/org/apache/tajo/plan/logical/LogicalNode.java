@@ -22,6 +22,7 @@
 package org.apache.tajo.plan.logical;
 
 import com.google.gson.annotations.Expose;
+
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.plan.PlanString;
@@ -87,9 +88,23 @@ public abstract class LogicalNode implements Cloneable, GsonObject {
 	}
 	
 	@Override
-	public boolean equals(Object obj) {
-	  if (obj instanceof LogicalNode) {
-	    LogicalNode other = (LogicalNode) obj;
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    long temp;
+    temp = Double.doubleToLongBits(cost);
+    result = prime * result + (int) (temp ^ (temp >>> 32));
+    result = prime * result + ((inputSchema == null) ? 0 : inputSchema.hashCode());
+    result = prime * result + nodeId;
+    result = prime * result + ((outputSchema == null) ? 0 : outputSchema.hashCode());
+    result = prime * result + ((type == null) ? 0 : type.hashCode());
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof LogicalNode) {
+      LogicalNode other = (LogicalNode) obj;
 
       boolean eq = this.type == other.type;
       eq = eq && TUtil.checkEquals(this.inputSchema, other.inputSchema);
@@ -97,9 +112,9 @@ public abstract class LogicalNode implements Cloneable, GsonObject {
       eq = eq && this.cost == other.cost;
 
       return eq;
-	  } else {
-	    return false;
-	  }
+    } else {
+      return false;
+    }
   }
 
   public boolean deepEquals(Object o) {

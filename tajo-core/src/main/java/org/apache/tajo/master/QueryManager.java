@@ -221,7 +221,7 @@ public class QueryManager extends CompositeService {
       }
 
       if (event.getType() == QueryJobEvent.Type.QUERY_MASTER_START) {
-        queryInProgress.submmitQueryToMaster();
+        queryInProgress.submitQueryToMaster();
 
       } else if (event.getType() == QueryJobEvent.Type.QUERY_JOB_KILL) {
         scheduler.removeQuery(queryInProgress.getQueryId());

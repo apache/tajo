@@ -30,8 +30,8 @@ import java.io.OutputStream;
 public class CSVLineSerializer extends TextLineSerializer {
   private FieldSerializerDeserializer serde;
 
-  private byte [] nullChars;
-  private char delimiter;
+  private byte[] nullChars;
+  private byte[] delimiter;
   private int columnNum;
 
   public CSVLineSerializer(Schema schema, TableMeta meta) {
@@ -56,8 +56,8 @@ public class CSVLineSerializer extends TextLineSerializer {
       writtenBytes += serde.serialize(out, datum, schema.getColumn(i), i, nullChars);
 
       if (columnNum - 1 > i) {
-        out.write((byte) delimiter);
-        writtenBytes += 1;
+        out.write(delimiter);
+        writtenBytes += delimiter.length;
       }
     }
 

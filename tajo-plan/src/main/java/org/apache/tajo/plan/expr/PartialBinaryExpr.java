@@ -56,10 +56,7 @@ public class PartialBinaryExpr extends BinaryEval {
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof PartialBinaryExpr) {
-      PartialBinaryExpr other = (PartialBinaryExpr) obj;
-      return type.equals(other.type) &&
-          leftExpr.equals(other.leftExpr) &&
-          rightExpr.equals(other.rightExpr);
+      return super.equals(obj);
     }
     return false;
   }

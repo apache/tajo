@@ -665,12 +665,10 @@ public class TajoCli {
     }
     if (reconnect && (t instanceof InvalidClientSessionException ||
         (message != null && message.startsWith("org.apache.tajo.session.InvalidSessionException")))) {
-      if (client instanceof SessionConnection) {
-        try {
-          ((SessionConnection)client).reconnect();
-        } catch (Exception e) {
-          // ignore
-        }
+      try {
+        ((SessionConnection)client).reconnect();
+      } catch (Exception e) {
+        // ignore
       }
     }
   }
