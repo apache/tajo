@@ -100,9 +100,13 @@ public class TestSelectQuery extends QueryTestCaseBase {
   public final void testExplainSelect() throws Exception {
     // explain select l_orderkey, l_partkey from lineitem;
     testingCluster.getConfiguration().set(ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED.varname, "true");
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    try {
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      testingCluster.getConfiguration().set(ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED.varname, "false");
+    }
   }
 
   @Test
@@ -118,7 +122,11 @@ public class TestSelectQuery extends QueryTestCaseBase {
   public final void testExplainSelectPhysical() throws Exception {
     // Enable this option to fix the shape of the generated plans.
     testingCluster.getConfiguration().set(ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED.varname, "true");
-    runSimpleTests();
+    try {
+      runSimpleTests();
+    } finally {
+      testingCluster.getConfiguration().set(ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED.varname, "false");
+    }
   }
 
   @Test
