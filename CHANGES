@@ -9,6 +9,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1407: Minor performance improvement of MemSortExec. (Contributed by
+    navis, Committed by jihoon)
+
     TAJO-1403: Improve 'Simple Query' with only partition columns and constant 
     values. (Contributed by Dongjoon Hyun, Committed by jihoon)
 
