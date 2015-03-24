@@ -32,11 +32,10 @@ public abstract class StdDevSamp extends StdDev {
   @Override
   public Datum terminate(FunctionContext ctx) {
     StdDevContext StdDevCtx = (StdDevContext) ctx;
-    if (StdDevCtx.count == 0) {
+    if (StdDevCtx.count <= 1) {
       return NullDatum.get();
-    } else if (StdDevCtx.count == 1) {
-      return DatumFactory.createFloat8(0);
     }
+
     return DatumFactory.createFloat8(Math.sqrt(StdDevCtx.squareSumOfDiff / (StdDevCtx.count - 1)));
   }
 }

@@ -377,7 +377,7 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
       ResultSet res = executeString("select stddev_samp(value_int) as sdsamp_int, stddev_samp(value_long) as sdsamp_long, stddev_samp(value_float) as sdsamp_float, stddev_samp(value_double) as sdsamp_double from table11");
       String ascExpected = "sdsamp_int,sdsamp_long,sdsamp_float,sdsamp_double\n" +
           "-------------------------------\n" +
-          "0.0,null,null,0.0\n";
+          "null,null,null,null\n";
 
       assertEquals(ascExpected, resultSetToString(res));
       res.close();
