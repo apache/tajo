@@ -1,6 +1,6 @@
 Tajo Change Log 
 
-Release 0.11.0 - unreleased
+Release 0.10.1 - unreleased
 
   NEW FEATURES
 
@@ -20,6 +20,9 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1147: Simple query doesn't work in Web UI.
+    (Contributed by Jongyoung Park. Committed by jaehwa)
 
     TAJO-1434: Fix supporting version of Hadoop. 
     (Contributed by Dongjoon Hyun, Committed by jinho)
