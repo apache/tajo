@@ -102,7 +102,7 @@ public enum SessionVars implements ConfigKey {
   GROUPBY_PER_SHUFFLE_SIZE(ConfVars.$DIST_QUERY_GROUPBY_PARTITION_VOLUME, "shuffle output size for sort (mb)", DEFAULT,
       Integer.class, Validators.min("1")),
   TABLE_PARTITION_PER_SHUFFLE_SIZE(ConfVars.$DIST_QUERY_TABLE_PARTITION_VOLUME,
-      "shuffle output size for partition table write (mb)", DEFAULT, Long.class, Validators.min("1")),
+      "shuffle output size for partition table write (mb)", DEFAULT, Integer.class, Validators.min("1")),
 
   GROUPBY_MULTI_LEVEL_ENABLED(ConfVars.$GROUPBY_MULTI_LEVEL_ENABLED, "Multiple level groupby enabled", DEFAULT,
       Boolean.class, Validators.bool()),
@@ -130,6 +130,8 @@ public enum SessionVars implements ConfigKey {
   // ResultSet ----------------------------------------------------------------
   FETCH_ROWNUM(ConfVars.$RESULT_SET_FETCH_ROWNUM, "Sets the number of rows at a time from Master", DEFAULT,
       Integer.class, Validators.min("0")),
+  FETCH_BLOCK(ConfVars.$RESULT_SET_BLOCK_WAIT, "Whether to block result set on query execution", DEFAULT,
+      Boolean.class, Validators.bool()),
 
   //-------------------------------------------------------------------------------
   // Only for Unit Testing

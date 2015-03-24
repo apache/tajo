@@ -107,7 +107,7 @@ public class SessionConnection implements Closeable {
     return connPool.getConnection(addr, protocolClass, asyncMode);
   }
 
-  protected KeyValueSet getProperties() {
+  public KeyValueSet getProperties() {
     return properties;
   }
 

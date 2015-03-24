@@ -19,17 +19,21 @@ package org.apache.tajo.jdbc;
 
 import com.google.common.collect.Lists;
 import com.google.protobuf.ServiceException;
+import org.apache.tajo.QueryId;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.client.TajoClient;
 import org.apache.tajo.client.TajoClientUtil;
+import org.apache.tajo.ipc.ClientProtos;
 
+import java.io.IOException;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
 
 public class TajoStatement implements Statement {
-  private JdbcConnection conn;
-  private TajoClient tajoClient;
-  private int fetchSize = 200;
+  protected JdbcConnection conn;
+  protected TajoClient tajoClient;
+  protected int fetchSize = SessionVars.FETCH_ROWNUM.getConfVars().defaultIntVal;
 
   /**
    * We need to keep a reference to the result set to support the following:
@@ -38,16 +42,24 @@ public class TajoStatement implements Statement {
    * statement.getResultSet();
    * </code>.
    */
-  private ResultSet resultSet = null;
+  protected ResultSet resultSet = null;
+
+  /**
+   * Add SQLWarnings to the warningChain if needed.
+   */
+  protected SQLWarning warningChain = null;
 
   /**
    * Keep state so we can fail certain calls made after close().
    */
-  private boolean isClosed = false;
+  private boolean isClosed;
+
+  private boolean blockWait;
 
   public TajoStatement(JdbcConnection conn, TajoClient tajoClient) {
     this.conn = conn;
     this.tajoClient = tajoClient;
+    this.blockWait = tajoClient.getProperties().getBool(SessionVars.FETCH_BLOCK);
   }
 
   @Override
@@ -57,7 +69,20 @@ public class TajoStatement implements Statement {
 
   @Override
   public void cancel() throws SQLException {
-    throw new SQLFeatureNotSupportedException("cancel not supported");
+    checkConnection("Can't cancel query");
+    if (!(resultSet instanceof TajoResultSetBase)) {
+      return;
+    }
+    TajoResultSetBase result = (TajoResultSetBase)resultSet;
+    if (!result.getQueryId().isNull() && result.getSchema() == null) {
+      try {
+        tajoClient.killQuery(result.getQueryId());
+      } catch (Exception e) {
+        throw new SQLException(e);
+      } finally {
+        resultSet = null;
+      }
+    }
   }
 
   @Override
@@ -66,7 +91,10 @@ public class TajoStatement implements Statement {
   }
 
   @Override
-  public void clearWarnings() throws SQLException {}
+  public void clearWarnings() throws SQLException {
+    checkConnection("Can't clear warnings");
+    warningChain = null;
+  }
 
   @Override
   public void close() throws SQLException {
@@ -111,20 +139,52 @@ public class TajoStatement implements Statement {
 
   @Override
   public ResultSet executeQuery(String sql) throws SQLException {
-    if (isClosed) {
-      throw new SQLException("Can't execute after statement has been closed");
-    }
+    checkConnection("Can't execute");
 
     try {
-      if (isSetVariableQuery(sql)) {
-        return setSessionVariable(tajoClient, sql);
-      } else if (isUnSetVariableQuery(sql)) {
-        return unSetSessionVariable(tajoClient, sql);
-      } else {
-        return tajoClient.executeQueryAndGetResult(sql);
-      }
+      return executeSQL(sql);
     } catch (Exception e) {
       throw new SQLException(e.getMessage(), e);
+    }
+  }
+
+  protected ResultSet executeSQL(String sql) throws SQLException, ServiceException, IOException {
+    if (isSetVariableQuery(sql)) {
+      return setSessionVariable(tajoClient, sql);
+    }
+    if (isUnSetVariableQuery(sql)) {
+      return unSetSessionVariable(tajoClient, sql);
+    }
+
+    ClientProtos.SubmitQueryResponse response = tajoClient.executeQuery(sql);
+    if (response.getResultCode() == ClientProtos.ResultCode.ERROR) {
+      if (response.hasErrorMessage()) {
+        throw new ServiceException(response.getErrorMessage());
+      }
+      if (response.hasErrorTrace()) {
+        throw new ServiceException(response.getErrorTrace());
+      }
+      throw new ServiceException("Failed to submit query by unknown reason");
+    }
+
+    QueryId queryId = new QueryId(response.getQueryId());
+    if (response.getIsForwarded() && !queryId.isNull()) {
+      WaitingResultSet result = new WaitingResultSet(tajoClient, queryId, fetchSize);
+      if (blockWait) {
+        result.getSchema();
+      }
+      return result;
+    }
+
+    if (response.hasResultSet() || response.hasTableDesc()) {
+      return TajoClientUtil.createResultSet(tajoClient, response, fetchSize);
+    }
+    return tajoClient.createNullResultSet(queryId);
+  }
+
+  protected void checkConnection(String errorMsg) throws SQLException {
+    if (isClosed) {
+      throw new SQLException(errorMsg + " after statement has been closed");
     }
   }
 
@@ -186,6 +246,7 @@ public class TajoStatement implements Statement {
 
   @Override
   public int executeUpdate(String sql) throws SQLException {
+    checkConnection("Can't execute update");
     try {
       tajoClient.executeQuery(sql);
 
@@ -212,20 +273,19 @@ public class TajoStatement implements Statement {
 
   @Override
   public Connection getConnection() throws SQLException {
-    if (isClosed)
-      throw new SQLException("Can't get connection after statement has been closed");
+    checkConnection("Can't get connection");
     return conn;
   }
 
   @Override
   public int getFetchDirection() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getFetchDirection not supported");
+    checkConnection("Can't get fetch direction");
+    return ResultSet.FETCH_FORWARD;
   }
 
   @Override
   public int getFetchSize() throws SQLException {
-    if (isClosed)
-      throw new SQLException("Can't get fetch size after statement has been closed");
+    checkConnection("Can't get fetch size");
     return fetchSize;
   }
 
@@ -256,13 +316,13 @@ public class TajoStatement implements Statement {
 
   @Override
   public int getQueryTimeout() throws SQLException {
-    throw new SQLFeatureNotSupportedException("getQueryTimeout not supported");
+    checkConnection("Can't get query timeout");
+    return 0;
   }
 
   @Override
   public ResultSet getResultSet() throws SQLException {
-    if (isClosed)
-      throw new SQLException("Can't get result set after statement has been closed");
+    checkConnection("Can't get result set");
     return resultSet;
   }
 
@@ -283,16 +343,14 @@ public class TajoStatement implements Statement {
 
   @Override
   public int getUpdateCount() throws SQLException {
-    if (isClosed)
-      throw new SQLException("Can't get update count after statement has been closed");
+    checkConnection("Can't get update count");
     return 0;
   }
 
   @Override
   public SQLWarning getWarnings() throws SQLException {
-    if (isClosed)
-      throw new SQLException("Can't get warnings after statement has been closed");
-    return null;
+    checkConnection("Can't get warnings");
+    return warningChain;
   }
 
   @Override
@@ -319,7 +377,9 @@ public class TajoStatement implements Statement {
    * Not necessary.
    */
   @Override
-  public void setEscapeProcessing(boolean enable) throws SQLException {}
+  public void setEscapeProcessing(boolean enable) throws SQLException {
+    throw new SQLFeatureNotSupportedException("setEscapeProcessing not supported");
+  }
 
   @Override
   public void setFetchDirection(int direction) throws SQLException {
@@ -328,8 +388,7 @@ public class TajoStatement implements Statement {
 
   @Override
   public void setFetchSize(int rows) throws SQLException {
-    if (isClosed)
-      throw new SQLException("Can't set fetch size after statement has been closed");
+    checkConnection("Can't set fetch size");
     fetchSize = rows;
   }
 
