@@ -47,10 +47,11 @@ public class MetricsFileScheduledReporter extends MetricsStreamScheduledReporter
           LOG.warn("Can't create dir for tajo metrics:" + parentFile.getAbsolutePath());
         }
       }
-      this.setOutput(new FileOutputStream(fileName, true));
+      this.output = new FileOutputStream(fileName, true);
       this.setDateFormat(null);
     } catch (FileNotFoundException e) {
       LOG.warn("Can't open metrics file:" + fileName);
+    } finally {
       this.close();
     }
   }
