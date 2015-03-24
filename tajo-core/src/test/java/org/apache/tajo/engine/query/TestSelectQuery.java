@@ -99,6 +99,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
   @Test
   public final void testExplainSelect() throws Exception {
     // explain select l_orderkey, l_partkey from lineitem;
+    testingCluster.getConfiguration().set(ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED.varname, "true");
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
