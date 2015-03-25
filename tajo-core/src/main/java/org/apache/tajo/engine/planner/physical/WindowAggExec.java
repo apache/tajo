@@ -298,11 +298,9 @@ public class WindowAggExec extends UnaryPhysicalExec {
       if (orderedFuncFlags[idx]) {
         SortSpec[] sortSpecs = functions[idx].getSortSpecs();
         comp = new BaseTupleComparator(schemaForOrderBy, sortSpecs);
-//        new VectorizedSorter(evaluatedTuples, sortSpecs, comp.getSortKeyIds()).sort();
         Collections.sort(evaluatedTuples, comp);
         // following comparator is used later when RANGE unit is handled to check whether order by value is changed or not
         comp = new BaseTupleComparator(inSchema, sortSpecs);
-//        new VectorizedSorter(accumulatedInTuples, sortSpecs, comp.getSortKeyIds()).sort();
         Collections.sort(accumulatedInTuples, comp);
       }
 
