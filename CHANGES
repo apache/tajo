@@ -44,6 +44,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1449: TestSelectQuery.testExplainSelect() fails. (jihoon)
+
     TAJO-1396: Unexpected IllegalMonitorStateException can be thrown 
     in QueryInProgress. (Contributed by navis. Committed by jinho)
 
