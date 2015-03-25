@@ -40,6 +40,7 @@ public class InfoSchemaMetadataDictionary {
     TABLEOPTIONS,
     TABLESTATS,
     PARTITIONS,
+    PARTITION_KEYS,
     CLUSTER,
     MAX_TABLE;
   }
@@ -60,6 +61,7 @@ public class InfoSchemaMetadataDictionary {
     schemaInfoTableDescriptors.set(DEFINED_TABLES.TABLEOPTIONS.ordinal(), new TableOptionsTableDescriptor(this));
     schemaInfoTableDescriptors.set(DEFINED_TABLES.TABLESTATS.ordinal(), new TableStatsTableDescriptor(this));
     schemaInfoTableDescriptors.set(DEFINED_TABLES.PARTITIONS.ordinal(), new PartitionsTableDescriptor(this));
+    schemaInfoTableDescriptors.set(DEFINED_TABLES.PARTITION_KEYS.ordinal(), new PartitionKeysTableDescriptor(this));
     schemaInfoTableDescriptors.set(DEFINED_TABLES.CLUSTER.ordinal(), new ClusterTableDescriptor(this));
   }
 

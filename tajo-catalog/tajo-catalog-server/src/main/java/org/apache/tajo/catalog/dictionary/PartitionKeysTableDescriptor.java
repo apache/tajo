@@ -20,17 +20,16 @@ package org.apache.tajo.catalog.dictionary;
 
 import org.apache.tajo.common.TajoDataTypes.Type;
 
-class PartitionsTableDescriptor extends AbstractTableDescriptor {
-  
-  private static final String TABLENAME = "partitions";
+class PartitionKeysTableDescriptor extends AbstractTableDescriptor {
+
+  private static final String TABLENAME = "partition_keys";
   private final ColumnDescriptor[] columns = new ColumnDescriptor[] {
       new ColumnDescriptor("partition_id", Type.INT4, 0),
-      new ColumnDescriptor("tid", Type.INT4, 0),
-      new ColumnDescriptor("partition_name", Type.TEXT, 0),
-      new ColumnDescriptor("path", Type.TEXT, 0)
+      new ColumnDescriptor("column_name", Type.TEXT, 0),
+      new ColumnDescriptor("partition_value", Type.TEXT, 0),
   };
 
-  public PartitionsTableDescriptor(InfoSchemaMetadataDictionary metadataDictionary) {
+  public PartitionKeysTableDescriptor(InfoSchemaMetadataDictionary metadataDictionary) {
     super(metadataDictionary);
   }
 
