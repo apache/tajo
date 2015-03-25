@@ -33,7 +33,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <hadoop.version>2.5.1</hadoop.version>
+    <hadoop.version>2.6.0</hadoop.version>
     <protobuf.version>2.5.0</protobuf.version>
     <tajo.version>0.11.0-SNAPSHOT</tajo.version>
     <hbase.version>0.98.7-hadoop2</hbase.version>
