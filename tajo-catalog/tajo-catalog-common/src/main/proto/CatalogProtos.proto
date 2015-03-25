@@ -186,7 +186,7 @@ message TableOptionProto {
 }
 
 message TablePartitionProto {
-  required int32 pid = 1;
+  required int32 partition_id = 1;
   required int32 tid = 2;
   optional string partitionName = 3;
   optional string path = 4;

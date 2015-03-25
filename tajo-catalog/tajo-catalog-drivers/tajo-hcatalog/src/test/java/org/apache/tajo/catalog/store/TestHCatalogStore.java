@@ -285,7 +285,7 @@ public class TestHCatalogStore {
     Path path = new Path(uri.getPath(), partitionName);
 
     PartitionDesc partitionDesc = new PartitionDesc();
-    partitionDesc.setName(partitionName);
+    partitionDesc.setPartitionName(partitionName);
 
     List<PartitionKey> partitionKeyList = new ArrayList<PartitionKey>();
     String[] partitionNames = partitionName.split("/");
@@ -320,7 +320,7 @@ public class TestHCatalogStore {
     alterTableDesc.setAlterTableType(AlterTableType.DROP_PARTITION);
 
     PartitionDesc partitionDesc = new PartitionDesc();
-    partitionDesc.setName(partitionName);
+    partitionDesc.setPartitionName(partitionName);
 
     alterTableDesc.setPartitionDesc(partitionDesc);
 

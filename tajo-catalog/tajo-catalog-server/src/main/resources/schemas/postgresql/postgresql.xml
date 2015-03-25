@@ -148,7 +148,7 @@ xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.
 			<tns:Object name="PARTITIONS" type="table" order="15">
 				<tns:sql><![CDATA[
 				CREATE TABLE PARTITIONS (
-  				PID INT NOT NULL PRIMARY KEY,
+  				PARTITION_ID SERIAL NOT NULL PRIMARY KEY,
   				TID INT NOT NULL,
   				PARTITION_NAME VARCHAR(128),
   				PARTITION_VALUE VARCHAR(1024),
@@ -164,6 +164,19 @@ xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.
 			<tns:Object name="IDX_TID_NAME" type="index" order="17" dependsOn="PARTITIONS">
 				<tns:sql><![CDATA[CREATE UNIQUE INDEX IDX_TID_NAME on PARTITIONS (TID, PARTITION_NAME)]]></tns:sql>
 			</tns:Object>
+      <tns:Object name="PARTITION_KEYS" type="table" order="18">
+        <tns:sql><![CDATA[
+          CREATE TABLE PARTITION_KEYS (
+            PARTITION_ID INT NOT NULL,
+            COLUMN_NAME VARCHAR2(255) NOT NULL,
+            PARTITION_VALUE VARCHAR(255) NULL,
+            FOREIGN KEY (PARTITION_ID) REFERENCES PARTITIONS (PARTITION_ID) ON DELETE CASCADE)
+				)]]>
+        </tns:sql>
+      </tns:Object>
+      <tns:Object name="PARTITION_KEYS_IDX" type="index" order="19" dependsOn="PARTITION_KEYS">
+        <tns:sql><![CDATA[CREATE INDEX PARTITION_KEYS_IDX on PARTITION_KEYS (PARTITION_ID, COLUMN_NAME, PARTITION_VALUE)]]></tns:sql>
+      </tns:Object>
 		</tns:objects>
 	</tns:base>
 	<tns:existQueries>

@@ -2095,7 +2095,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       while (resultSet.next()) {
         TablePartitionProto.Builder builder = TablePartitionProto.newBuilder();
 
-        builder.setPid(resultSet.getInt(COL_PARTITIONS_PK));
+        builder.setPartitionId(resultSet.getInt(COL_PARTITIONS_PK));
         builder.setTid(resultSet.getInt(COL_TABLES_PK));
         builder.setPartitionName(resultSet.getString("PARTITION_NAME"));
         builder.setPath(resultSet.getString("PATH"));

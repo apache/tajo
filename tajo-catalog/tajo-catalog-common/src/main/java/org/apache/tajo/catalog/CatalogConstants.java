@@ -55,7 +55,7 @@ public class CatalogConstants {
   public static final String COL_TABLES_PK = "TID";
   public static final String COL_TABLES_NAME = "TABLE_NAME";
 
-  public static final String COL_PARTITIONS_PK = "PID";
+  public static final String COL_PARTITIONS_PK = "PARTITION_ID";
   public static final String COL_COLUMN_NAME = "COLUMN_NAME";
   public static final String COL_PARTITION_VALUE = "PARTITION_VALUE";
   

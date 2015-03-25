@@ -932,7 +932,7 @@ public class TestCatalog {
     alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
 
     PartitionDesc partitionDesc = new PartitionDesc();
-    partitionDesc.setName(partitionName);
+    partitionDesc.setPartitionName(partitionName);
 
     String[] partitionNames = partitionName.split("/");
 
@@ -967,7 +967,7 @@ public class TestCatalog {
     alterTableDesc.setAlterTableType(AlterTableType.DROP_PARTITION);
 
     PartitionDesc partitionDesc = new PartitionDesc();
-    partitionDesc.setName(partitionName);
+    partitionDesc.setPartitionName(partitionName);
 
     alterTableDesc.setPartitionDesc(partitionDesc);
 
