@@ -275,7 +275,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
   }
 
   private void evaluationWindowFrame() {
-    TupleComparator comp;
+    BaseTupleComparator comp;
 
     evaluatedTuples = new ArrayList<Tuple>();
 
@@ -296,10 +296,13 @@ public class WindowAggExec extends UnaryPhysicalExec {
     for (int idx = 0; idx < functions.length; idx++) {
       comp = null;
       if (orderedFuncFlags[idx]) {
-        comp = new BaseTupleComparator(schemaForOrderBy, functions[idx].getSortSpecs());
+        SortSpec[] sortSpecs = functions[idx].getSortSpecs();
+        comp = new BaseTupleComparator(schemaForOrderBy, sortSpecs);
+//        new VectorizedSorter(evaluatedTuples, sortSpecs, comp.getSortKeyIds()).sort();
         Collections.sort(evaluatedTuples, comp);
         // following comparator is used later when RANGE unit is handled to check whether order by value is changed or not
-        comp = new BaseTupleComparator(inSchema, functions[idx].getSortSpecs());
+        comp = new BaseTupleComparator(inSchema, sortSpecs);
+//        new VectorizedSorter(accumulatedInTuples, sortSpecs, comp.getSortKeyIds()).sort();
         Collections.sort(accumulatedInTuples, comp);
       }
 
@@ -351,7 +354,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
           }
           break;
         }
-        case FRAMABLE:  // 2) buiit-in window functions with window frame support
+        case FRAMABLE:  // 2) built-in window functions with window frame support
         {
           String funcName = functions[idx].getName();
           int sameStartRange = 0; int sameEndRange = 0;
