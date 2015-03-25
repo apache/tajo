@@ -20,8 +20,16 @@ package org.apache.tajo.plan.expr;
 
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.function.PythonInvocationDesc;
+import org.apache.tajo.plan.function.python.JythonScriptEngine;
+import org.apache.tajo.plan.function.python.JythonUtils;
 import org.apache.tajo.storage.Tuple;
+import org.python.core.PyFunction;
+import org.python.core.PyObject;
+
+import java.io.IOException;
 
 public class GeneralPythonFunctionEval extends FunctionEval {
 
@@ -31,7 +39,21 @@ public class GeneralPythonFunctionEval extends FunctionEval {
 
   @Override
   public Datum eval(Schema schema, Tuple tuple) {
-    
+    PythonInvocationDesc desc = funcDesc.getInvocation().getPython();
+    try {
+      PyFunction function = JythonScriptEngine.getFunction(desc.getPath(), desc.getName());
+      TajoDataTypes.DataType[] paramTypes = funcDesc.getSignature().getParamTypes();
+      PyObject result;
+      if (tuple.size() == 0 || paramTypes.length == 0) {
+        result = function.__call__();
+      } else {
+        PyObject[] params = JythonUtils.tupleToPyTuple(tuple).getArray();
+        result = function.__call__(params);
+      }
+      // TODO: result to datum
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     return null;
   }
 }

@@ -16,10 +16,9 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.function.python;
+package org.apache.tajo.plan.function.python;
 
 import org.apache.hadoop.util.Shell;
-import org.apache.tajo.engine.query.QueryContext;
 
 import javax.script.ScriptEngine;
 import java.io.*;

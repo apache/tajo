@@ -36,9 +36,8 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.function.FunctionLoader;
-import org.apache.tajo.engine.function.python.JythonScriptEngine;
-import org.apache.tajo.engine.function.python.OptionalFunctionContext;
 import org.apache.tajo.function.FunctionSignature;
+import org.apache.tajo.plan.function.OptionalFunctionContext;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.service.TajoMasterInfo;
@@ -69,7 +68,6 @@ import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 

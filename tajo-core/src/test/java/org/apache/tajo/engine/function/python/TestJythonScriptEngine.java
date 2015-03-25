@@ -21,6 +21,8 @@ package org.apache.tajo.engine.function.python;
 import junit.framework.TestCase;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.plan.function.OptionalFunctionContext;
+import org.apache.tajo.plan.function.python.JythonScriptEngine;
 import org.apache.tajo.util.FileUtil;
 import org.python.core.PyFunction;
 

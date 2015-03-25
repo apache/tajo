@@ -34,11 +34,12 @@ import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.codegen.EvalCodeGenerator;
 import org.apache.tajo.engine.codegen.TajoClassLoader;
 import org.apache.tajo.engine.function.FunctionLoader;
-import org.apache.tajo.engine.function.python.OptionalFunctionContext;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.function.OptionalFunctionContext;
 import org.apache.tajo.plan.serder.EvalNodeDeserializer;
 import org.apache.tajo.plan.serder.EvalNodeSerializer;
 import org.apache.tajo.engine.query.QueryContext;
@@ -59,6 +60,7 @@ import org.junit.BeforeClass;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
@@ -92,7 +94,9 @@ public class ExprTestBase {
     cat = util.getMiniCatalogCluster().getCatalog();
     cat.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
     cat.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-    for (FunctionDesc funcDesc : FunctionLoader.load().values()) {
+    Map<FunctionSignature, FunctionDesc> map = FunctionLoader.load();
+    map = FunctionLoader.loadOptionalFunctions(conf, new OptionalFunctionContext(), map);
+    for (FunctionDesc funcDesc : map.values()) {
       cat.createFunction(funcDesc);
     }
 

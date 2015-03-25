@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.function.python;
+package org.apache.tajo.plan.function;
 
 import java.io.File;
 import java.util.LinkedHashMap;

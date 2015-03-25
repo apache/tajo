@@ -36,9 +36,9 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamOptionTypes;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
-import org.apache.tajo.engine.function.python.JythonScriptEngine;
-import org.apache.tajo.engine.function.python.OptionalFunctionContext;
 import org.apache.tajo.function.*;
+import org.apache.tajo.plan.function.OptionalFunctionContext;
+import org.apache.tajo.plan.function.python.JythonScriptEngine;
 import org.apache.tajo.util.ClassUtil;
 import org.apache.tajo.util.TUtil;
 

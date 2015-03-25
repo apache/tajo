@@ -16,11 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.function.python;
+package org.apache.tajo.plan.function.python;
 
-import org.apache.tajo.catalog.Schema;
-
-import java.util.HashMap;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.storage.Tuple;
+import org.python.core.Py;
+import org.python.core.PyObject;
+import org.python.core.PyTuple;
 
 public class JythonUtils {
 
@@ -44,4 +46,37 @@ public class JythonUtils {
 //    LogicalSchema schema = queryParser.parseSchema(schemaString);
 //    return schema;
 //  }
+
+  public static PyObject datumToPyObject(Datum v) {
+    return Py.java2py(v.asByteArray());
+
+//    if (object instanceof Tuple) {
+//      return tupleToPyTuple((Tuple) object);
+//    } else if (object instanceof DataBag) {
+//      PyList list = new PyList();
+//      for (Tuple bagTuple : (DataBag) object) {
+//        list.add(tupleToPyTuple(bagTuple));
+//      }
+//      return list;
+//    } else if (object instanceof Map<?, ?>) {
+//      PyDictionary newMap = new PyDictionary();
+//      for (Map.Entry<?, ?> entry : ((Map<?, ?>) object).entrySet()) {
+//        newMap.put(entry.getKey(), datumToPyObject(entry.getValue()));
+//      }
+//      return newMap;
+//    } else if (object instanceof DataByteArray) {
+//      return Py.java2py(((DataByteArray) object).get());
+//    } else {
+//      return Py.java2py(object);
+//    }
+  }
+
+  public static PyTuple tupleToPyTuple(Tuple tuple) {
+    PyObject[] pyTuple = new PyObject[tuple.size()];
+    int i = 0;
+    for (Datum v : tuple.getValues()) {
+      pyTuple[i++] = datumToPyObject(v);
+    }
+    return new PyTuple(pyTuple);
+  }
 }

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.function.python;
+package org.apache.tajo.plan.function.python;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -42,6 +42,7 @@ import org.apache.tajo.function.FunctionInvocation;
 import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.function.FunctionSupplement;
 import org.apache.tajo.function.PythonInvocationDesc;
+import org.apache.tajo.plan.function.OptionalFunctionContext;
 import org.apache.tajo.util.TUtil;
 import org.python.core.*;
 import org.python.modules.zipimport.zipimporter;
