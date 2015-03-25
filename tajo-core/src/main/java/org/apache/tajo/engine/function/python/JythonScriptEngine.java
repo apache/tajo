@@ -20,7 +20,6 @@ package org.apache.tajo.engine.function.python;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -35,21 +34,16 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.engine.query.QueryContext;
-import org.python.core.ClasspathPyImporter;
-import org.python.core.Py;
-import org.python.core.PyException;
-import org.python.core.PyFrame;
-import org.python.core.PyFunction;
-import org.python.core.PyInteger;
-import org.python.core.PyJavaPackage;
-import org.python.core.PyObject;
-import org.python.core.PyString;
-import org.python.core.PyStringMap;
-import org.python.core.PySystemState;
-import org.python.core.PyTuple;
+import org.apache.tajo.function.FunctionInvocation;
+import org.apache.tajo.function.FunctionSignature;
+import org.apache.tajo.function.FunctionSupplement;
+import org.apache.tajo.function.PythonInvocationDesc;
+import org.apache.tajo.util.TUtil;
+import org.python.core.*;
 import org.python.modules.zipimport.zipimporter;
 import org.python.util.PythonInterpreter;
 
@@ -60,6 +54,7 @@ import javax.script.ScriptEngine;
  */
 public class JythonScriptEngine extends TajoScriptEngine {
   private static final Log LOG = LogFactory.getLog(JythonScriptEngine.class);
+  public static final String NAMESPACE_SEPARATOR = ".";
 
   /**
    * Language Interpreter Uses static holder pattern
@@ -127,7 +122,7 @@ public class JythonScriptEngine extends TajoScriptEngine {
      * @param queryContext if non-null, module import state is tracked
      * @throws IOException
      */
-    static synchronized void init(String path, QueryContext queryContext) throws IOException {
+    static synchronized void init(OptionalFunctionContext context, String path) throws IOException {
       // Decorators -
       // "schemaFunction"
       // "outputSchema"
@@ -158,7 +153,7 @@ public class JythonScriptEngine extends TajoScriptEngine {
           throw new IllegalStateException("unable to create a stream for path: " + path);
         }
         try {
-          execfile(is, path, queryContext);
+          execfile(context, is, path);
         } finally {
           is.close();
         }
@@ -172,10 +167,10 @@ public class JythonScriptEngine extends TajoScriptEngine {
      * @param queryContext
      * @throws Exception
      */
-    static void execfile(InputStream script, String path, QueryContext queryContext) throws RuntimeException {
+    static void execfile(OptionalFunctionContext context, InputStream script, String path) throws RuntimeException {
       try {
 
-        if( queryContext != null ) {
+        if( context != null ) {
           String [] argv;
           try {
 //            argv = (String[])ObjectSerializer.deserialize(
@@ -197,7 +192,7 @@ public class JythonScriptEngine extends TajoScriptEngine {
         }
 
         // determine the current module state
-        Map<String, String> before = queryContext != null ? getModuleState() : null;
+        Map<String, String> before = context != null ? getModuleState() : null;
         if (before != null) {
           // os.py, stax.py and posixpath.py are part of the initial state
           // if Lib directory is present and without including os.py, modules
@@ -219,10 +214,10 @@ public class JythonScriptEngine extends TajoScriptEngine {
         interpreter.execfile(script, path);
 
         // determine the 'post import' module state
-        Map<String, String> after = queryContext != null ? getModuleState() : null;
+        Map<String, String> after = context != null ? getModuleState() : null;
 
         // add the module files to the context
-        if (after != null && queryContext != null) {
+        if (after != null && context != null) {
           after.keySet().removeAll(before.keySet());
           for (Map.Entry<String, String> entry : after.entrySet()) {
             String modulename = entry.getKey();
@@ -230,9 +225,10 @@ public class JythonScriptEngine extends TajoScriptEngine {
             if (modulepath.equals(JVM_JAR)) {
               continue;
             } else if (modulepath.endsWith(".jar") || modulepath.endsWith(".zip")) {
-              queryContext.addScriptJar(modulepath);
+//              context.addScriptJar(modulepath);
+              throw new RuntimeException("jar and zip script files are not supported");
             } else {
-              queryContext.addScriptFile(modulename, modulepath);
+              context.addScriptFile(modulename, modulepath);
             }
           }
         }
@@ -349,7 +345,7 @@ public class JythonScriptEngine extends TajoScriptEngine {
    */
   public static PyFunction getFunction(String path, String functionName) throws IOException {
     Interpreter.setMain(false);
-    Interpreter.init(path, null);
+    Interpreter.init(null, path);
     return (PyFunction) Interpreter.interpreter.get(functionName);
   }
 
@@ -426,6 +422,64 @@ public class JythonScriptEngine extends TajoScriptEngine {
       }
       return file.delete();
     }
+  }
+
+  //  @Override
+//  public void registerFunctions(String path, String namespace, QueryContext context)
+  public static Set<FunctionDesc> registerFunctions(OptionalFunctionContext context, String path, String namespace)
+      throws IOException {
+    Interpreter.setMain(false);
+    Interpreter.init(context, path);
+//    context.addScriptJar(getJarPath(PythonInterpreter.class));
+    PythonInterpreter pi = Interpreter.interpreter;
+    @SuppressWarnings("unchecked")
+    List<PyTuple> locals = ((PyStringMap) pi.getLocals()).items();
+    namespace = (namespace == null) ? "" : namespace + NAMESPACE_SEPARATOR;
+    Set<FunctionDesc> functionDescs = TUtil.newHashSet();
+
+    for (PyTuple item : locals) {
+      String key = (String) item.get(0);
+      Object value = item.get(1);
+      if (!key.startsWith("__") && !key.equals("schemaFunction")
+          && !key.equals("outputSchema")
+          && !key.equals("outputSchemaFunction")
+          && (value instanceof PyFunction)
+          && (((PyFunction)value).__findattr__("schemaFunction".intern())== null)) {
+        PyFunction pyFunction = (PyFunction) value;
+        PyObject obj = pyFunction.__findattr__("outputSchema".intern());
+        TajoDataTypes.Type returnType;
+        if(obj != null) {
+//            Utils.getSchemaFromString(obj.toString());
+          LOG.info("outputSchema: " + obj.toString());
+          String[] types = obj.toString().split(",");
+          if (types.length > 1) {
+            throw new IOException("Multiple return type is not supported");
+          }
+          returnType = TajoDataTypes.Type.valueOf(types[0].trim().toUpperCase());
+        } else {
+          // the default return type is the byte array
+          returnType = TajoDataTypes.Type.BLOB;
+        }
+        int paramNum = ((PyBaseCode) pyFunction.__code__).co_argcount;
+        LOG.info("co_argcount: " + paramNum);
+        TajoDataTypes.DataType[] paramTypes = new TajoDataTypes.DataType[paramNum];
+        for (int i = 0; i < paramNum; i++) {
+          paramTypes[i] = TajoDataTypes.DataType.newBuilder().setType(TajoDataTypes.Type.ANY).build();
+        }
+
+        FunctionSignature signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, key,
+            TajoDataTypes.DataType.newBuilder().setType(returnType).build(), paramTypes);
+        FunctionInvocation invocation = new FunctionInvocation();
+        invocation.setPython(new PythonInvocationDesc(key, path));
+        FunctionSupplement supplement = new FunctionSupplement();
+        functionDescs.add(new FunctionDesc(signature, invocation, supplement));
+        LOG.info("Register scripting UDF: " + namespace + key);
+      }
+    }
+
+    context.addScriptFile(path);
+    Interpreter.setMain(true);
+    return functionDescs;
   }
 }
 

@@ -33,7 +33,12 @@ import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.CatalogClient;
 import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.function.FunctionLoader;
+import org.apache.tajo.engine.function.python.JythonScriptEngine;
+import org.apache.tajo.engine.function.python.OptionalFunctionContext;
+import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.service.TajoMasterInfo;
@@ -51,10 +56,7 @@ import org.apache.tajo.rule.SelfDiagnosisRuleEngine;
 import org.apache.tajo.rule.SelfDiagnosisRuleSession;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.StorageManager;
-import org.apache.tajo.util.CommonTestingUtil;
-import org.apache.tajo.util.JvmPauseMonitor;
-import org.apache.tajo.util.NetUtils;
-import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.util.*;
 import org.apache.tajo.util.history.HistoryReader;
 import org.apache.tajo.util.history.HistoryWriter;
 import org.apache.tajo.util.metrics.TajoSystemMetrics;
@@ -65,7 +67,9 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -143,6 +147,9 @@ public class TajoWorker extends CompositeService {
   private HistoryWriter taskHistoryWriter;
 
   private HistoryReader historyReader;
+
+  // context for non-builtin functions
+  private OptionalFunctionContext functionContext = new OptionalFunctionContext();
 
   public TajoWorker() throws Exception {
     super(TajoWorker.class.getName());
@@ -278,9 +285,26 @@ public class TajoWorker extends CompositeService {
     taskHistoryWriter.init(conf);
 
     historyReader = new HistoryReader(workerContext.getWorkerName(), this.systemConf);
+
+    FunctionLoader.loadOptionalFunctions(systemConf, functionContext, new HashMap<FunctionSignature, FunctionDesc>());
     
     diagnoseTajoWorker();
   }
+
+//  private void initOptionalFunctions() throws IOException {
+//    String[] codePaths = systemConf.getStrings(TajoConf.ConfVars.PYTHON_CODE_DIR.varname);
+//    for (String codePath : codePaths) {
+//      Set<FunctionDesc> functions = JythonScriptEngine.registerFunctions(functionContext, codePath,
+//          FunctionLoader.PYTHON_FUNCTION_NAMESPACE);
+//      for (FunctionDesc desc : functions) {
+//        LOG.info("FunctionLoader: " + desc);
+//      }
+////      for (FunctionDesc f : JythonScriptEngine.registerFunctions(functionContext, codePath,
+////          FunctionLoader.PYTHON_FUNCTION_NAMESPACE)) {
+////        map.put(f.getSignature(), f);
+////      }
+//    }
+//  }
 
   private void initWorkerMetrics() {
     workerSystemMetrics = new TajoSystemMetrics(systemConf, "worker", workerContext.getWorkerName());

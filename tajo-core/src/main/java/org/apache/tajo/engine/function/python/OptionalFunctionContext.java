@@ -18,27 +18,32 @@
 
 package org.apache.tajo.engine.function.python;
 
-import junit.framework.TestCase;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.util.FileUtil;
-import org.python.core.PyFunction;
+import java.io.File;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
-import java.net.URL;
+public class OptionalFunctionContext {
 
-public class TestJythonScriptEngine extends TestCase {
-  static final Log LOG = LogFactory.getLog(TestJythonScriptEngine.class);
+  private Map<String,File> aliasedScriptFiles = new LinkedHashMap<String,File>();
 
-  public void testGetFunction() throws Exception {
-    URL url = FileUtil.getResourcePath("python/test1.py");
-    LOG.info("File path: " + url);
-    PyFunction function = JythonScriptEngine.getFunction(url.getPath(), "return_one");
-    LOG.info(function.getType());
-    LOG.info(function.__call__().toString());
+  /**
+   * this method adds script files that must be added to the shipped jar
+   * named differently from their local fs path.
+   * @param name  name in the jar
+   * @param path  path on the local fs
+   */
+  public void addScriptFile(String name, String path) {
+    if (path != null) {
+      aliasedScriptFiles.put(name.replaceFirst("^/", "").replaceAll(":", ""), new File(path));
+    }
   }
 
-  public void testRegisterFunction() throws Exception {
-    OptionalFunctionContext context = new OptionalFunctionContext();
-    JythonScriptEngine.registerFunctions(context, "python/test1.py", "test");
+  /**
+   * calls: addScriptFile(path, new File(path)), ensuring that a given path is
+   * added to the jar at most once.
+   * @param path
+   */
+  public void addScriptFile(String path) {
+    addScriptFile(path, path);
   }
 }

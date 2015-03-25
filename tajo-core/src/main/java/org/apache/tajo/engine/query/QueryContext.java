@@ -166,10 +166,4 @@ public class QueryContext extends OverridableConf {
   public boolean isInsert() {
     return isCommandType(NodeType.INSERT.name());
   }
-
-  public void addScriptJar(String modulepath) {
-  }
-
-  public void addScriptFile(String modulename, String modulepath) {
-  }
 }

@@ -34,6 +34,7 @@ import org.apache.tajo.datum.*;
 import org.apache.tajo.engine.codegen.EvalCodeGenerator;
 import org.apache.tajo.engine.codegen.TajoClassLoader;
 import org.apache.tajo.engine.function.FunctionLoader;
+import org.apache.tajo.engine.function.python.OptionalFunctionContext;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.plan.*;
@@ -91,7 +92,7 @@ public class ExprTestBase {
     cat = util.getMiniCatalogCluster().getCatalog();
     cat.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
     cat.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-    for (FunctionDesc funcDesc : FunctionLoader.load()) {
+    for (FunctionDesc funcDesc : FunctionLoader.load().values()) {
       cat.createFunction(funcDesc);
     }
 

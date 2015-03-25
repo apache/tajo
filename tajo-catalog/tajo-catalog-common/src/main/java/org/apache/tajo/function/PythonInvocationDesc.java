@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,22 +16,22 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.plan.expr;
+package org.apache.tajo.function;
 
-import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.storage.Tuple;
+public class PythonInvocationDesc {
+  private final String funcName;
+  private final String filePath;
 
-public class GeneralPythonFunctionEval extends FunctionEval {
-
-  public GeneralPythonFunctionEval(FunctionDesc funcDesc, EvalNode[] argEvals) {
-    super(EvalType.FUNCTION, funcDesc, argEvals);
+  public PythonInvocationDesc(String funcName, String filePath) {
+    this.funcName = funcName;
+    this.filePath = filePath;
   }
 
-  @Override
-  public Datum eval(Schema schema, Tuple tuple) {
-    
-    return null;
+  public String getName() {
+    return funcName;
+  }
+
+  public String getPath() {
+    return filePath;
   }
 }

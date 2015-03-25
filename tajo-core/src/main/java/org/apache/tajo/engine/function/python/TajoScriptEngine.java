@@ -19,9 +19,11 @@
 package org.apache.tajo.engine.function.python;
 
 import org.apache.hadoop.util.Shell;
+import org.apache.tajo.engine.query.QueryContext;
 
 import javax.script.ScriptEngine;
 import java.io.*;
+import java.net.URL;
 import java.util.Map;
 
 public abstract class TajoScriptEngine {
@@ -91,4 +93,34 @@ public abstract class TajoScriptEngine {
    * @throws java.io.IOException
    */
   protected abstract Map<String, Object> getParamsFromVariables() throws IOException;
+
+//  /**
+//   * Registers scripting language functions as Pig functions with given namespace
+//   *
+//   * @param path path of the script
+//   * @param namespace namespace for the functions
+//   * @param context context to register functions to tajo in the given namespace
+//   * @throws IOException
+//   */
+//  public abstract void registerFunctions(String path, String namespace,
+//                                         QueryContext context) throws IOException;
+
+  /**
+   * Figures out the jar location from the class
+   * @param clazz class in the jar file
+   * @return the jar file location, null if the class was not loaded from a jar
+   * @throws FileNotFoundException
+   */
+  public static String getJarPath(Class<?> clazz)
+      throws FileNotFoundException {
+    URL resource = clazz.getClassLoader().getResource(
+        clazz.getCanonicalName().replace(".", "/") + ".class");
+    if (resource.getProtocol().equals("jar")) {
+      return resource.getPath().substring(
+          resource.getPath().indexOf(':') + 1,
+          resource.getPath().indexOf('!'));
+    }
+    throw new FileNotFoundException("Jar for " + clazz.getName()
+        + " class is not found");
+  }
 }
