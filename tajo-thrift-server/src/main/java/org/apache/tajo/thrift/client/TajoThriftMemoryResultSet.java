@@ -16,34 +16,35 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.jdbc;
+package org.apache.tajo.thrift.client;
 
-import com.google.protobuf.ByteString;
-import org.apache.tajo.QueryId;
 import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.storage.RowStoreUtil;
+import org.apache.tajo.jdbc.TajoResultSetBase;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.thrift.ThriftRowStoreDecoder;
+import org.apache.tajo.thrift.generated.TRowData;
 
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class TajoMemoryResultSet extends TajoResultSetBase {
-  private QueryId queryId;
-  private List<ByteString> serializedTuples;
+public class TajoThriftMemoryResultSet extends TajoResultSetBase {
+  private List<TRowData> rows;
   private AtomicBoolean closed = new AtomicBoolean(false);
-  private RowStoreUtil.RowStoreDecoder decoder;
+  private ThriftRowStoreDecoder decoder;
+  private TajoThriftClient client;
+  private String queryId;
 
-  public TajoMemoryResultSet(QueryId queryId, Schema schema, List<ByteString> serializedTuples, int maxRowNum,
-                             Map<String, String> clientSideSessionVars) {
-    super(clientSideSessionVars);
+  public TajoThriftMemoryResultSet(TajoThriftClient client, String queryId, Schema schema,
+                                   List<TRowData> rows, int maxRowNum) {
+    super(null);
+    this.client = client;
     this.queryId = queryId;
     this.schema = schema;
     this.totalRow = maxRowNum;
-    this.serializedTuples = serializedTuples;
-    this.decoder = RowStoreUtil.createDecoder(schema);
+    this.rows = rows;
+    decoder = new ThriftRowStoreDecoder(schema);
     init();
   }
 
@@ -53,19 +54,16 @@ public class TajoMemoryResultSet extends TajoResultSetBase {
     curRow = 0;
   }
 
-  public QueryId getQueryId() {
-    return queryId;
-  }
-
   @Override
   public synchronized void close() throws SQLException {
     if (closed.getAndSet(true)) {
       return;
     }
 
+    client.closeQuery(queryId);
     cur = null;
     curRow = -1;
-    serializedTuples = null;
+    rows.clear();
   }
 
   @Override
@@ -76,7 +74,7 @@ public class TajoMemoryResultSet extends TajoResultSetBase {
   @Override
   protected Tuple nextTuple() throws IOException {
     if (curRow < totalRow) {
-      cur = decoder.toTuple(serializedTuples.get(curRow).toByteArray());
+      cur = decoder.toTuple(rows.get(curRow));
       return cur;
     } else {
       return null;
@@ -84,11 +82,6 @@ public class TajoMemoryResultSet extends TajoResultSetBase {
   }
 
   public boolean hasResult() {
-    return serializedTuples.size() > 0;
+    return rows.size() > 0;
   }
-
-  public List<ByteString> getSerializedTuples(){
-      return serializedTuples;
-  }
-
 }
