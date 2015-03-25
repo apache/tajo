@@ -16,30 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.algebra;
+package org.apache.tajo.engine.planner.physical;
 
-import com.google.common.base.Objects;
+import org.apache.tajo.storage.Tuple;
 
-public class Explain extends UnaryOperator {
+import java.util.Iterator;
 
-  private boolean isGlobal;
-
-  public Explain(Expr operand, boolean isGlobal) {
-    super(OpType.Explain);
-    this.isGlobal = isGlobal;
-    setChild(operand);
-  }
-
-  public boolean isGlobal() {
-    return isGlobal;
-  }
-
-  public int hashCode() {
-    return Objects.hashCode(getChild());
-  }
-
-  @Override
-  boolean equalsTo(Expr expr) {
-    return true;
-  }
+public interface TupleSorter {
+  Iterator<Tuple> sort();
 }
