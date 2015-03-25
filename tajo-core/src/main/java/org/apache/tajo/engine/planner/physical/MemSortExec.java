@@ -29,12 +29,12 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-public class MemSortExec extends SortExec {
+public class MemSortExec extends SortExec implements TupleSorter {
   private SortNode plan;
   private List<Tuple> tupleSlots;
   private boolean sorted = false;
   private Iterator<Tuple> iterator;
-  
+
   public MemSortExec(final TaskAttemptContext context,
                      SortNode plan, PhysicalExec child) {
     super(context, plan.getInSchema(), plan.getOutSchema(), child, plan.getSortKeys());
@@ -43,7 +43,7 @@ public class MemSortExec extends SortExec {
 
   public void init() throws IOException {
     super.init();
-    this.tupleSlots = new ArrayList<Tuple>(1000);
+    this.tupleSlots = new ArrayList<Tuple>(10000);
   }
 
   @Override
@@ -54,16 +54,22 @@ public class MemSortExec extends SortExec {
       while (!context.isStopped() && (tuple = child.next()) != null) {
         tupleSlots.add(new VTuple(tuple));
       }
-      
-      Collections.sort(tupleSlots, getComparator());
-      this.iterator = tupleSlots.iterator();
+      iterator = getSorter().sort();
       sorted = true;
     }
-    
+
     if (iterator.hasNext()) {
       return this.iterator.next();
     } else {
       return null;
+    }
+  }
+
+  private TupleSorter getSorter() {
+    try {
+      return new VectorizedSorter(tupleSlots, sortSpecs, comparator.getSortKeyIds());
+    } catch (Exception e) {
+      return this;
     }
   }
 
@@ -85,5 +91,11 @@ public class MemSortExec extends SortExec {
 
   public SortNode getPlan() {
     return this.plan;
+  }
+
+  @Override
+  public Iterator<Tuple> sort() {
+    Collections.sort(tupleSlots, comparator);
+    return tupleSlots.iterator();
   }
 }

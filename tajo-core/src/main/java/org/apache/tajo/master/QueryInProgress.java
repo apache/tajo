@@ -95,7 +95,7 @@ public class QueryInProgress {
         queryMasterRpcClient.killQuery(null, queryId.getProto(), NullCallback.get());
       }
     } catch (Throwable e) {
-      catchException(e);
+      catchException("Failed to kill query " + queryId + " by exception " + e, e);
     } finally {
       writeLock.unlock();
     }
@@ -125,6 +125,11 @@ public class QueryInProgress {
   public boolean startQueryMaster() {
     try {
       writeLock.lockInterruptibly();
+    } catch (Exception e) {
+      catchException("Failed to lock by exception " + e, e);
+      return false;
+    }
+    try {
       LOG.info("Initializing QueryInProgress for QueryID=" + queryId);
       WorkerResourceManager resourceManager = masterContext.getResourceManager();
       WorkerAllocatedResource resource = resourceManager.allocateQueryMaster(this);
@@ -141,7 +146,7 @@ public class QueryInProgress {
 
       return true;
     } catch (Exception e) {
-      catchException(e);
+      catchException("Failed to start query master for query " + queryId + " by exception " + e, e);
       return false;
     } finally {
       writeLock.unlock();
@@ -163,12 +168,17 @@ public class QueryInProgress {
 
     try {
       writeLock.lockInterruptibly();
+    } catch (Exception e) {
+      LOG.error("Failed to lock by exception " + e.getMessage(), e);
+      return;
+    }
 
+    try {
       if(queryMasterRpcClient == null) {
         connectQueryMaster();
       }
       if(queryMasterRpcClient == null) {
-        LOG.info("No QueryMaster conneciton info.");
+        LOG.info("No QueryMaster connection info.");
         //TODO wait
         return;
       }
@@ -186,14 +196,14 @@ public class QueryInProgress {
       querySubmitted.set(true);
       getQueryInfo().setQueryState(TajoProtos.QueryState.QUERY_MASTER_LAUNCHED);
     } catch (Exception e) {
-      LOG.error(e.getMessage(), e);
+      LOG.error("Failed to submit query " + queryId + " to master by exception " + e, e);
     } finally {
       writeLock.unlock();
     }
   }
 
-  public void catchException(Throwable e) {
-    LOG.error(e.getMessage(), e);
+  public void catchException(String message, Throwable e) {
+    LOG.error(message, e);
     queryInfo.setQueryState(TajoProtos.QueryState.QUERY_FAILED);
     queryInfo.setLastMessage(StringUtils.stringifyException(e));
   }

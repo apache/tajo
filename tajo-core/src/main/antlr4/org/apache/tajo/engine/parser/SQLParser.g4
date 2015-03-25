@@ -39,7 +39,7 @@ sql
   ;
 
 explain_clause
-  : EXPLAIN
+  : EXPLAIN (GLOBAL)?
   ;
 
 statement

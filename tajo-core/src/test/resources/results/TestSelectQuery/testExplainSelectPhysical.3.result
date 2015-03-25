@@ -1,0 +1,89 @@
+explain
+-------------------------------
+-------------------------------------------------------------------------------
+Execution Block Graph (TERMINAL - eb_0000000000000_0000_000004)
+-------------------------------------------------------------------------------
+|-eb_0000000000000_0000_000004
+   |-eb_0000000000000_0000_000003
+      |-eb_0000000000000_0000_000002
+         |-eb_0000000000000_0000_000001
+-------------------------------------------------------------------------------
+Order of Execution
+-------------------------------------------------------------------------------
+1: eb_0000000000000_0000_000001
+2: eb_0000000000000_0000_000002
+3: eb_0000000000000_0000_000003
+4: eb_0000000000000_0000_000004
+-------------------------------------------------------------------------------
+
+=======================================================
+Block Id: eb_0000000000000_0000_000001 [LEAF]
+=======================================================
+
+[Outgoing]
+[q_0000000000000_0000] 1 => 2 (type=HASH_SHUFFLE, key=?distinctseq (INT2), default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4), num=32)
+
+[Enforcers]
+ 0: type=Distinct,alg=hash
+
+DISTINCT_GROUP_BY(9)(l_linenumber)
+  => exprs: (count( distinct default.lineitem.l_orderkey (INT4)),sum( distinct default.lineitem.l_orderkey (INT4)),count())
+  => target list: ?distinctseq (INT2), default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4), ?count (INT8)
+  => out schema:{(4) ?distinctseq (INT2), default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4), ?count (INT8)}
+  => in schema:{(2) default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4)}
+  => 	distinct: true, GROUP_BY(10)(l_orderkey), exprs: (count( distinct default.lineitem.l_orderkey (INT4)),sum( distinct default.lineitem.l_orderkey (INT4))), target list:{default.lineitem.l_orderkey (INT4), ?count_1 (INT8), ?sum_2 (INT8)}, out schema:{(3) default.lineitem.l_orderkey (INT4), ?count_1 (INT8), ?sum_2 (INT8)}, in schema:{(2) default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4)}
+  => 	distinct: false, GROUP_BY(11)(), exprs: (count()), target list:{?count (INT8)}, out schema:{(1) ?count (INT8)}, in schema:{(2) default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4)}
+   SCAN(0) on default.lineitem
+     => target list: default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4)
+     => out schema: {(2) default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4)}
+     => in schema: {(16) default.lineitem.l_comment (TEXT), default.lineitem.l_commitdate (TEXT), default.lineitem.l_discount (FLOAT8), default.lineitem.l_extendedprice (FLOAT8), default.lineitem.l_linenumber (INT4), default.lineitem.l_linestatus (TEXT), default.lineitem.l_orderkey (INT4), default.lineitem.l_partkey (INT4), default.lineitem.l_quantity (FLOAT8), default.lineitem.l_receiptdate (TEXT), default.lineitem.l_returnflag (TEXT), default.lineitem.l_shipdate (TEXT), default.lineitem.l_shipinstruct (TEXT), default.lineitem.l_shipmode (TEXT), default.lineitem.l_suppkey (INT4), default.lineitem.l_tax (FLOAT8)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000002 [INTERMEDIATE]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 1 => 2 (type=HASH_SHUFFLE, key=?distinctseq (INT2), default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4), num=32)
+
+[Outgoing]
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.lineitem.l_linenumber (INT4), num=32)
+
+[Enforcers]
+ 0: type=Distinct,alg=hash
+
+DISTINCT_GROUP_BY(12)(l_linenumber)
+  => exprs: (count( distinct default.lineitem.l_orderkey (INT4)),sum( distinct default.lineitem.l_orderkey (INT4)),count(?count (INT8)))
+  => target list: ?distinctseq (INT2), default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4), ?count (INT8)
+  => out schema:{(4) ?distinctseq (INT2), default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4), ?count (INT8)}
+  => in schema:{(4) ?distinctseq (INT2), default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4), ?count (INT8)}
+  => 	distinct: true, GROUP_BY(13)(l_orderkey), exprs: (count( distinct default.lineitem.l_orderkey (INT4)),sum( distinct default.lineitem.l_orderkey (INT4))), target list:{default.lineitem.l_orderkey (INT4), ?count_1 (INT8), ?sum_2 (INT8)}, out schema:{(3) default.lineitem.l_orderkey (INT4), ?count_1 (INT8), ?sum_2 (INT8)}, in schema:{(2) default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4)}
+  => 	distinct: false, GROUP_BY(14)(), exprs: (count(?count (INT8))), target list:{?count (INT8)}, out schema:{(1) ?count (INT8)}, in schema:{(2) default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4)}
+   SCAN(18) on eb_0000000000000_0000_000001
+     => out schema: {(4) ?distinctseq (INT2), default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4), ?count (INT8)}
+     => in schema: {(4) ?distinctseq (INT2), default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4), ?count (INT8)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000003 [ROOT]
+=======================================================
+
+[Incoming]
+[q_0000000000000_0000] 2 => 3 (type=HASH_SHUFFLE, key=default.lineitem.l_linenumber (INT4), num=32)
+
+[Enforcers]
+ 0: type=Distinct,alg=sort,keys=default.lineitem.l_orderkey | 
+
+HAVING(2) (?sum_2 (INT8) = 6)
+   DISTINCT_GROUP_BY(15)(l_linenumber)
+     => exprs: (count( distinct default.lineitem.l_orderkey (INT4)),sum( distinct default.lineitem.l_orderkey (INT4)),count(?count (INT8)))
+     => target list: ?distinctseq (INT2), default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4), ?count (INT8)
+     => out schema:{(4) default.lineitem.l_linenumber (INT4), ?count (INT8), ?count_1 (INT8), ?sum_2 (INT8)}
+     => in schema:{(4) ?distinctseq (INT2), default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4), ?count (INT8)}
+     => 	distinct: true, GROUP_BY(16)(l_orderkey), exprs: (count( distinct default.lineitem.l_orderkey (INT4)),sum( distinct default.lineitem.l_orderkey (INT4))), target list:{default.lineitem.l_orderkey (INT4), ?count_1 (INT8), ?sum_2 (INT8)}, out schema:{(3) default.lineitem.l_orderkey (INT4), ?count_1 (INT8), ?sum_2 (INT8)}, in schema:{(2) default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4)}
+     => 	distinct: false, GROUP_BY(17)(), exprs: (count(?count (INT8))), target list:{?count (INT8)}, out schema:{(1) ?count (INT8)}, in schema:{(2) default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4)}
+      SCAN(19) on eb_0000000000000_0000_000002
+        => out schema: {(4) ?distinctseq (INT2), default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4), ?count (INT8)}
+        => in schema: {(4) ?distinctseq (INT2), default.lineitem.l_linenumber (INT4), default.lineitem.l_orderkey (INT4), ?count (INT8)}
+
+=======================================================
+Block Id: eb_0000000000000_0000_000004 [TERMINAL]
+=======================================================

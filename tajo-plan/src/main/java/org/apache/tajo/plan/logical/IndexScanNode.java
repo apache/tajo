@@ -82,9 +82,9 @@ public class IndexScanNode extends ScanNode {
   public int hashCode() {
     final int prime = 31;
     int result = super.hashCode();
-    result = prime * result + Arrays.hashCode(datum);
+    result = prime * result + indexPath.hashCode();
     result = prime * result + ((keySchema == null) ? 0 : keySchema.hashCode());
-    result = prime * result + Arrays.hashCode(sortKeys);
+    result = prime * result + Arrays.hashCode(predicates);
     return result;
   }
 
