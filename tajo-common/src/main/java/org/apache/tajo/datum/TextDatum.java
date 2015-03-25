@@ -33,7 +33,6 @@ import java.util.Comparator;
 public class TextDatum extends Datum {
   public static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
 
-  @Expose private final int size;
   /* encoded in UTF-8 */
   @Expose private final byte[] bytes;
 
@@ -44,7 +43,6 @@ public class TextDatum extends Datum {
   public TextDatum(byte[] bytes) {
     super(TajoDataTypes.Type.TEXT);
     this.bytes = bytes;
-    this.size = bytes.length;
   }
 
   public TextDatum(String string) {
@@ -108,7 +106,7 @@ public class TextDatum extends Datum {
 
   @Override
   public int size() {
-    return size;
+    return bytes.length;
   }
 
   @Override
