@@ -860,7 +860,8 @@ public class PlannerUtil {
   }
 
   public static boolean isFileStorageType(String storageType) {
-    if (storageType.equalsIgnoreCase("hbase")) {
+    if (storageType.equalsIgnoreCase("hbase") ||
+        storageType.equalsIgnoreCase("elasticsearch") ) {
       return false;
     } else {
       return true;
@@ -868,7 +869,8 @@ public class PlannerUtil {
   }
 
   public static boolean isFileStorageType(StoreType storageType) {
-    if (storageType== StoreType.HBASE) {
+    if (storageType== StoreType.HBASE ||
+        storageType== StoreType.ELASTICSEARCH) {
       return false;
     } else {
       return true;
