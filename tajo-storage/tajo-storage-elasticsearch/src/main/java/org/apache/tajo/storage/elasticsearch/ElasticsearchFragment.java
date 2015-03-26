@@ -31,9 +31,6 @@ import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.storage.elasticsearch.StorageFragmentProtos.*;
 import org.apache.tajo.storage.fragment.Fragment;
 
-/**
- * Created by hwjeong on 15. 3. 18..
- */
 public class ElasticsearchFragment implements Fragment, Comparable<ElasticsearchFragment>, Cloneable {
   private static final Log LOG = LogFactory.getLog(ElasticsearchFragment.class);
 

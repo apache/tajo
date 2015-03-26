@@ -54,9 +54,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Created by hwjeong on 15. 3. 18..
- */
 public class ElasticsearchStorageManager extends StorageManager {
   private static final Log LOG = LogFactory.getLog(ElasticsearchStorageManager.class);
   private Map<String, Client> clientMap = new HashMap<String, Client>();

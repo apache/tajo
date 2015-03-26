@@ -20,9 +20,6 @@ package org.apache.tajo.storage.elasticsearch;
 
 import org.apache.tajo.catalog.TableMeta;
 
-/**
- * Created by hwjeong on 15. 3. 25..
- */
 public class ElasticsearchWithOptionInfo {
   public String clusterName;
   public String nodes;

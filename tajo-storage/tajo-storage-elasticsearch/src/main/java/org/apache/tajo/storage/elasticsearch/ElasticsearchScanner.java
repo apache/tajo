@@ -48,9 +48,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * Created by hwjeong on 15. 3. 18..
- */
 public class ElasticsearchScanner implements Scanner {
   private static final Log LOG = LogFactory.getLog(ElasticsearchScanner.class);
 

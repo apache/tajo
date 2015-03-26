@@ -18,9 +18,6 @@
 
 package org.apache.tajo.storage.elasticsearch;
 
-/**
- * Created by hwjeong on 15. 3. 25..
- */
 public class ElasticsearchConstants {
   public static final String FETCH_SIZE = "1000";
   public static final String CLUSTER_NAME = "elasticsearch";
