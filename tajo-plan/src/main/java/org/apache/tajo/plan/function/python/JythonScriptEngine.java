@@ -106,7 +106,8 @@ public class JythonScriptEngine extends TajoScriptEngine {
         if (jyhome != null) {
           Py.getSystemState().path.append(new PyString(jyhome + File.separator + "Lib"));
         }
-        LOG.info(ClassLoader.getSystemResource("python"));
+        URL pythonPath = ClassLoader.getSystemResource("/usr/bin/python");
+        LOG.info(pythonPath == null ? "null" : pythonPath);
         Py.getSystemState().path.append(new PyString(ClassLoader.getSystemResource("python").toString()));
       } catch (Exception e) {
         LOG.warn("issue with jython cache dir", e);
