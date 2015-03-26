@@ -106,9 +106,9 @@ public class JythonScriptEngine extends TajoScriptEngine {
         if (jyhome != null) {
           Py.getSystemState().path.append(new PyString(jyhome + File.separator + "Lib"));
         }
-        URL pythonPath = ClassLoader.getSystemResource("/usr/bin/python");
+        URL pythonPath = ClassLoader.getSystemResource("python");
         LOG.info(pythonPath == null ? "null" : pythonPath);
-        Py.getSystemState().path.append(new PyString(ClassLoader.getSystemResource("python").toString()));
+//        Py.getSystemState().path.append(new PyString(ClassLoader.getSystemResource("python").toString()));
       } catch (Exception e) {
         LOG.warn("issue with jython cache dir", e);
       }
@@ -209,8 +209,8 @@ public class JythonScriptEngine extends TajoScriptEngine {
           before.keySet().removeAll(includePyModules);
         }
 
-        LOG.info(ClassLoader.getSystemResource("python").getPath());
-        interpreter.getSystemState().path.append(new PyString(ClassLoader.getSystemResource("python").getPath()));
+//        LOG.info(ClassLoader.getSystemResource("python").getPath());
+//        interpreter.getSystemState().path.append(new PyString(ClassLoader.getSystemResource("python").getPath()));
 
         // exec the code, arbitrary imports are processed
         interpreter.execfile(script, path);
