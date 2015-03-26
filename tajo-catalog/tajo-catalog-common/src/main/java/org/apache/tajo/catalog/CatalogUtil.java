@@ -291,6 +291,8 @@ public class CatalogUtil {
       return StoreType.JSON;
     } else if (typeStr.equalsIgnoreCase(StoreType.HBASE.name())) {
       return StoreType.HBASE;
+    } else if (typeStr.equalsIgnoreCase(StoreType.ELASTICSEARCH.name())) {
+	    return StoreType.ELASTICSEARCH;
     } else {
       return null;
     }
