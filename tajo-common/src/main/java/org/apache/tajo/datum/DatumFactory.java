@@ -405,6 +405,10 @@ public class DatumFactory {
     return new Inet4Datum(val);
   }
 
+  public static AnyDatum createAny(byte[] val) {
+    return new AnyDatum(val);
+  }
+
   public static Datum cast(Datum operandDatum, DataType target, @Nullable TimeZone tz) {
     switch (target.getType()) {
     case BOOLEAN:
@@ -454,6 +458,8 @@ public class DatumFactory {
       return DatumFactory.createBlob(operandDatum.asByteArray());
     case INET4:
       return DatumFactory.createInet4(operandDatum.asByteArray());
+    case ANY:
+      return DatumFactory.createAny(operandDatum.asByteArray());
     default:
       throw new InvalidCastException(operandDatum.type(), target.getType());
     }

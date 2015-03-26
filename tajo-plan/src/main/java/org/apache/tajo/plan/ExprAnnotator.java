@@ -608,7 +608,11 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       FunctionType functionType = funcDesc.getFuncType();
       if (functionType == FunctionType.GENERAL
           || functionType == FunctionType.UDF) {
-        return new GeneralFunctionEval(ctx.queryContext, funcDesc, (GeneralFunction) funcDesc.newInstance(), givenArgs);
+        if (funcDesc.getInvocation().hasPython()) {
+          return new GeneralPythonFunctionEval(funcDesc, givenArgs);
+        } else {
+          return new GeneralFunctionEval(ctx.queryContext, funcDesc, (GeneralFunction) funcDesc.newInstance(), givenArgs);
+        }
       } else if (functionType == FunctionType.AGGREGATION
           || functionType == FunctionType.UDA) {
         if (!ctx.currentBlock.hasNode(NodeType.GROUP_BY)) {

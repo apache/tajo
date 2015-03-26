@@ -26,12 +26,14 @@ import org.apache.tajo.function.PythonInvocationDesc;
 import org.apache.tajo.plan.function.python.JythonScriptEngine;
 import org.apache.tajo.plan.function.python.JythonUtils;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
 import org.python.core.PyFunction;
 import org.python.core.PyObject;
 
 import java.io.IOException;
 
 public class GeneralPythonFunctionEval extends FunctionEval {
+  private Tuple params = null;
 
   public GeneralPythonFunctionEval(FunctionDesc funcDesc, EvalNode[] argEvals) {
     super(EvalType.FUNCTION, funcDesc, argEvals);
@@ -39,16 +41,25 @@ public class GeneralPythonFunctionEval extends FunctionEval {
 
   @Override
   public Datum eval(Schema schema, Tuple tuple) {
+    if (this.params == null) {
+      params = new VTuple(argEvals.length);
+    }
+    if(argEvals != null) {
+      params.clear();
+      for(int i=0;i < argEvals.length; i++) {
+        params.put(i, argEvals[i].eval(schema, tuple));
+      }
+    }
     PythonInvocationDesc desc = funcDesc.getInvocation().getPython();
     try {
       PyFunction function = JythonScriptEngine.getFunction(desc.getPath(), desc.getName());
       TajoDataTypes.DataType[] paramTypes = funcDesc.getSignature().getParamTypes();
       PyObject result;
-      if (tuple.size() == 0 || paramTypes.length == 0) {
+      if (paramTypes.length == 0) {
         result = function.__call__();
       } else {
-        PyObject[] params = JythonUtils.tupleToPyTuple(tuple).getArray();
-        result = function.__call__(params);
+        PyObject[] pyParams = JythonUtils.tupleToPyTuple(params).getArray();
+        result = function.__call__(pyParams);
       }
       // TODO: result to datum
     } catch (IOException e) {

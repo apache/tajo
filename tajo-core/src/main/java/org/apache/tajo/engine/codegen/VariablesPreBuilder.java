@@ -75,7 +75,7 @@ class VariablesPreBuilder extends SimpleEvalNodeVisitor<EvalCodeGenContext> {
       String fieldName = function.getFuncDesc().getFunctionName() + "_" + context.seqId++;
       context.symbols.put(function, fieldName);
       context.classWriter.visitField(Opcodes.ACC_PRIVATE, fieldName,
-          "L" + TajoGeneratorAdapter.getInternalName(function.getFuncDesc().getFuncClass()) + ";", null, null);
+          "L" + TajoGeneratorAdapter.getInternalName(function.getFuncDesc().getLegacyFuncClass()) + ";", null, null);
     }
 
     return function;

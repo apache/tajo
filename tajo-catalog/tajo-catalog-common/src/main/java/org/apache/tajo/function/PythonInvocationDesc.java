@@ -18,7 +18,10 @@
 
 package org.apache.tajo.function;
 
-public class PythonInvocationDesc {
+import org.apache.tajo.catalog.proto.CatalogProtos.PythonInvocationDescProto;
+import org.apache.tajo.common.ProtoObject;
+
+public class PythonInvocationDesc implements ProtoObject<PythonInvocationDescProto> {
   private final String funcName;
   private final String filePath;
 
@@ -27,11 +30,21 @@ public class PythonInvocationDesc {
     this.filePath = filePath;
   }
 
+  public PythonInvocationDesc(PythonInvocationDescProto proto) {
+    this(proto.getFuncName(), proto.getFilePath());
+  }
+
   public String getName() {
     return funcName;
   }
 
   public String getPath() {
     return filePath;
+  }
+
+  @Override
+  public PythonInvocationDescProto getProto() {
+    return PythonInvocationDescProto.newBuilder()
+        .setFuncName(funcName).setFilePath(filePath).build();
   }
 }

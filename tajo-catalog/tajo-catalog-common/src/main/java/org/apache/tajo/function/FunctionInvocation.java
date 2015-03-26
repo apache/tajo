@@ -57,7 +57,9 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
     if (proto.hasAggregationJIT()) {
       this.aggregationJIT = new ClassBaseInvocationDesc(proto.getAggregation());
     }
-    // TODO: add PythonInvocationDesc to FucntionInvocationProto
+    if (proto.hasPython()) {
+      this.python = new PythonInvocationDesc(proto.getPython());
+    }
   }
 
   public boolean isAvailable() {
@@ -154,7 +156,9 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
     if (hasAggregationJIT()) {
       builder.setAggregationJIT(aggregationJIT.getProto());
     }
-    // TODO: add PythonInvocationDesc to FucntionInvocationProto
+    if (hasPython()) {
+      builder.setPython(python.getProto());
+    }
     return builder.build();
   }
 
