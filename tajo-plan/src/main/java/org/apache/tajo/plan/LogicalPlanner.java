@@ -1978,22 +1978,35 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
   public static boolean isEvaluatableJoinQual(QueryBlock block, EvalNode evalNode, JoinNode node,
                                               boolean isOnPredicate, boolean isTopMostJoin) {
+
     if (checkIfBeEvaluatedAtJoin(block, evalNode, node, isTopMostJoin)) {
 
       if (isNonEquiThetaJoinQual(block, node, evalNode)) {
         return false;
       }
-      /*
-       * For outer joins, only predicates which are specified at the on clause can be evaluated during processing join.
-       * Other predicates from the where clause must be evaluated after the join.
-       * The below code will be modified after improving join operators to keep join filters by themselves (TAJO-1310).
-       */
-      if (PlannerUtil.isOuterJoin(node.getJoinType()) && !isOnPredicate) {
-        return false;
+
+      if (PlannerUtil.isOuterJoin(node.getJoinType())) {
+        /*
+         * For outer joins, only predicates which are specified at the on clause can be evaluated during processing join.
+         * Other predicates from the where clause must be evaluated after the join.
+         * The below code will be modified after improving join operators to keep join filters by themselves (TAJO-1310).
+         */
+        if (!isOnPredicate) {
+          return false;
+        }
+      } else {
+        /*
+         * Only join predicates should be evaluated at join if the join type is inner or cross. (TAJO-1445)
+         */
+        if (!EvalTreeUtil.isJoinQual(block, node.getLeftChild().getOutSchema(), node.getRightChild().getOutSchema(),
+            evalNode, false)) {
+          return false;
+        }
       }
 
       return true;
     }
+
     return false;
   }
 
