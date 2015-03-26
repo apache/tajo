@@ -66,7 +66,7 @@ public class DatumFactory {
       case INET4:
         return Inet4Datum.class;
       case ANY:
-        return NullDatum.class;
+        return AnyDatum.class;
       case NULL_TYPE:
         return NullDatum.class;
       default:
@@ -405,7 +405,7 @@ public class DatumFactory {
     return new Inet4Datum(val);
   }
 
-  public static AnyDatum createAny(byte[] val) {
+  public static AnyDatum createAny(Datum val) {
     return new AnyDatum(val);
   }
 
@@ -459,7 +459,7 @@ public class DatumFactory {
     case INET4:
       return DatumFactory.createInet4(operandDatum.asByteArray());
     case ANY:
-      return DatumFactory.createAny(operandDatum.asByteArray());
+      return DatumFactory.createAny(operandDatum);
     default:
       throw new InvalidCastException(operandDatum.type(), target.getType());
     }

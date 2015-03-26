@@ -18,17 +18,17 @@
 
 # from tajo_util import outputSchema
 
-# @outputSchema('int4')
-# def return_one():
-#     return 100
-#
-# @outputSchema("text")
-# def helloworld():
-#     return 'Hello, World'
-#
-# # No decorator - bytearray
-# def concat(str):
-#     return str+str
+@outputSchema('int4')
+def return_one():
+    return 100
+
+@outputSchema("text")
+def helloworld():
+    return 'Hello, World'
+
+# No decorator - bytearray
+def concat_py(str):
+    return str+str
 
 @outputSchema('int4')
 def sum_py(a,b):

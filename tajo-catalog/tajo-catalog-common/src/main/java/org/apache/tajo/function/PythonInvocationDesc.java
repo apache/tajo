@@ -18,15 +18,28 @@
 
 package org.apache.tajo.function;
 
+import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.proto.CatalogProtos.PythonInvocationDescProto;
 import org.apache.tajo.common.ProtoObject;
 
 public class PythonInvocationDesc implements ProtoObject<PythonInvocationDescProto> {
-  private final String funcName;
-  private final String filePath;
+  @Expose private String funcName;
+  @Expose private String filePath;
+
+  public PythonInvocationDesc() {
+
+  }
 
   public PythonInvocationDesc(String funcName, String filePath) {
     this.funcName = funcName;
+    this.filePath = filePath;
+  }
+
+  public void setFuncName(String funcName) {
+    this.funcName = funcName;
+  }
+
+  public void setFilePath(String filePath) {
     this.filePath = filePath;
   }
 

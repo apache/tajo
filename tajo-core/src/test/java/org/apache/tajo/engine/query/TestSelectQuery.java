@@ -708,4 +708,10 @@ public class TestSelectQuery extends QueryTestCaseBase {
       executeString("DROP TABLE table2");
     }
   }
+
+  @Test
+  public void test() throws Exception {
+    ResultSet res = executeString("select concat_py(n_name) from nation where n_nationkey = 1");
+    System.out.println(resultSetToString(res));
+  }
 }

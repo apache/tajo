@@ -211,6 +211,8 @@ public class EvalNodeDeserializer {
 
               current = winFunc;
             }
+          } else if (type == EvalType.PYTHON_FUNCTION) {
+            current = new GeneralPythonFunctionEval(new FunctionDesc(funcProto.getFuncion()), params);
           }
         } catch (ClassNotFoundException cnfe) {
           String functionName = "Unknown";
@@ -309,6 +311,8 @@ public class EvalNodeDeserializer {
       return new IntervalDatum(datum.getInterval().getMonth(), datum.getInterval().getMsec());
     case NULL_TYPE:
       return NullDatum.get();
+    case ANY:
+      return DatumFactory.createAny(deserialize(datum.getActual()));
     default:
       throw new RuntimeException("Unknown data type: " + datum.getType().name());
     }

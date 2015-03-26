@@ -18,11 +18,14 @@
 
 package org.apache.tajo.plan.function.python;
 
+import com.google.common.base.Preconditions;
+import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.datum.AnyDatum;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
-import org.python.core.Py;
-import org.python.core.PyObject;
-import org.python.core.PyTuple;
+import org.python.core.*;
 
 public class JythonUtils {
 
@@ -48,7 +51,44 @@ public class JythonUtils {
 //  }
 
   public static PyObject datumToPyObject(Datum v) {
-    return Py.java2py(v.asByteArray());
+    Preconditions.checkArgument(v.type() == TajoDataTypes.Type.ANY);
+    Datum actual = ((AnyDatum) v).getActual();
+    switch (actual.type()) {
+      case NULL_TYPE:
+        return Py.java2py(null);
+      case BOOLEAN:
+        return Py.java2py(actual.asBool());
+      case UINT1:
+      case INT1:
+        return Py.java2py(actual.asInt2());
+      case UINT2:
+      case INT2:
+        return Py.java2py(actual.asInt2());
+      case UINT4:
+      case INT4:
+        return Py.java2py(actual.asInt4());
+      case UINT8:
+      case INT8:
+        return Py.java2py(actual.asInt8());
+      case FLOAT4:
+      case FLOAT8:
+        return Py.java2py(actual.asFloat8());
+      case CHAR:
+      case VARCHAR:
+      case TEXT:
+        return Py.java2py(actual.asChars());
+      case NCHAR:
+      case NVARCHAR:
+        return Py.java2py(actual.asUnicodeChars());
+      case BLOB:
+        return Py.java2py(actual.asByteArray());
+      case INET4:
+        return Py.java2py(actual.asByteArray());
+      case INET6:
+        return Py.java2py(actual.asByteArray());
+      default:
+        throw new UnsupportedException("Unsupported type: " + actual.type());
+    }
 
 //    if (object instanceof Tuple) {
 //      return tupleToPyTuple((Tuple) object);
@@ -78,5 +118,37 @@ public class JythonUtils {
       pyTuple[i++] = datumToPyObject(v);
     }
     return new PyTuple(pyTuple);
+  }
+
+  public static Datum pyObjectToDatum(PyObject object) {
+    if (object instanceof PyLong) {
+      return DatumFactory.createInt8((Long) object.__tojava__(Long.class));
+    } else if (object instanceof PyBoolean) {
+      return DatumFactory.createBool((Boolean) object.__tojava__(Boolean.class));
+    } else if (object instanceof PyInteger) {
+      return DatumFactory.createInt4((Integer) object.__tojava__(Integer.class));
+    } else if (object instanceof PyFloat) {
+      // J(P)ython is loosely typed, supports only float type,
+      // hence we convert everything to double to save precision
+      return DatumFactory.createFloat8((Double) object.__tojava__(Double.class));
+    } else if (object instanceof PyString) {
+      return DatumFactory.createText((String) object.__tojava__(String.class));
+    } else if (object instanceof PyNone) {
+      return DatumFactory.createNullDatum();
+    } else if (object instanceof PyTuple) {
+      throw new UnsupportedException("Not supported data type: " + object.getClass().getName());
+    } else if (object instanceof PyList) {
+      throw new UnsupportedException("Not supported data type: " + object.getClass().getName());
+    } else if (object instanceof PyDictionary) {
+      throw new UnsupportedException("Not supported data type: " + object.getClass().getName());
+    } else {
+      Object javaObj = object.__tojava__(byte[].class);
+      if(javaObj instanceof byte[]) {
+        return DatumFactory.createBlob((byte[]) javaObj);
+      }
+      else {
+        throw new UnsupportedException("Not supported data type: " + object.getClass().getName());
+      }
+    }
   }
 }

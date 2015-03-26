@@ -36,7 +36,7 @@ public class GeneralPythonFunctionEval extends FunctionEval {
   private Tuple params = null;
 
   public GeneralPythonFunctionEval(FunctionDesc funcDesc, EvalNode[] argEvals) {
-    super(EvalType.FUNCTION, funcDesc, argEvals);
+    super(EvalType.PYTHON_FUNCTION, funcDesc, argEvals);
   }
 
   @Override
@@ -61,10 +61,10 @@ public class GeneralPythonFunctionEval extends FunctionEval {
         PyObject[] pyParams = JythonUtils.tupleToPyTuple(params).getArray();
         result = function.__call__(pyParams);
       }
-      // TODO: result to datum
+
+      return JythonUtils.pyObjectToDatum(result);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    return null;
   }
 }

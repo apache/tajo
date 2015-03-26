@@ -74,6 +74,9 @@ public abstract class SimpleEvalNodeVisitor<CONTEXT> {
       case WINDOW_FUNCTION:
         result = visitFuncCall(context, (FunctionEval) evalNode, stack);
         break;
+      case PYTHON_FUNCTION:
+        result = visitFuncCall(context, (FunctionEval) evalNode, stack);
+        break;
 
       default:
         throw new UnsupportedException("Unknown EvalType: " + evalNode);

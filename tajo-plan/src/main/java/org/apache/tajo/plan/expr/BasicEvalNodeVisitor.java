@@ -128,6 +128,9 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
       case WINDOW_FUNCTION:
         result = visitWindowFunc(context, (WindowFunctionEval) evalNode, stack);
       break;
+      case PYTHON_FUNCTION:
+        result = visitPythonFunc(context, (GeneralPythonFunctionEval) evalNode, stack);
+        break;
 
       case SIGNED:
         result = visitSigned(context, (SignedEval) evalNode, stack);
@@ -330,6 +333,11 @@ public class BasicEvalNodeVisitor<CONTEXT, RESULT> implements EvalNodeVisitor2<C
 
   @Override
   public RESULT visitWindowFunc(CONTEXT context, WindowFunctionEval evalNode, Stack<EvalNode> stack) {
+    return visitDefaultFunctionEval(context, evalNode, stack);
+  }
+
+  @Override
+  public RESULT visitPythonFunc(CONTEXT context, GeneralPythonFunctionEval evalNode, Stack<EvalNode> stack) {
     return visitDefaultFunctionEval(context, evalNode, stack);
   }
 
