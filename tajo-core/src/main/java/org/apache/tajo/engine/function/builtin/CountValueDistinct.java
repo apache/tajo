@@ -53,13 +53,14 @@ public final class CountValueDistinct extends CountRows {
   }
 
   @Override
-  public void merge(FunctionContext context, Tuple part) {
+  public void merge(FunctionContext context, Tuple params) {
     CountDistinctValueContext distinctContext = (CountDistinctValueContext) context;
-    Datum value = part.get(0);
-
-    if (!value.isNull() && (distinctContext.latest == null || (!distinctContext.latest.equals(value)))) {
-      distinctContext.latest = value;
-      distinctContext.count++;
+    if (!params.isBlankOrNull(0)) {
+      Datum value = params.asDatum(0);
+      if (distinctContext.latest == null || !distinctContext.latest.equals(value)) {
+        distinctContext.latest = value;
+        distinctContext.count++;
+      }
     }
   }
 

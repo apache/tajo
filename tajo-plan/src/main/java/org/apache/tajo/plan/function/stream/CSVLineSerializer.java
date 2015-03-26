@@ -56,7 +56,7 @@ public class CSVLineSerializer extends TextLineSerializer {
     int writtenBytes = 0;
 
     for (int i = 0; i < columnNum; i++) {
-      Datum datum = input.get(i);
+      Datum datum = input.asDatum(i);
       String typeStr;
       if (datum.type() == TajoDataTypes.Type.ANY) {
         typeStr = getTypeString(((AnyDatum)datum).getActual());

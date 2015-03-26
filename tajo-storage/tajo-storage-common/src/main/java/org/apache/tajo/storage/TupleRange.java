@@ -28,11 +28,11 @@ import java.util.Comparator;
  * It represents a pair of start and end tuples.
  */
 public class TupleRange implements Comparable<TupleRange>, Cloneable {
-  private Tuple start;
-  private Tuple end;
+  private VTuple start;
+  private VTuple end;
   private final TupleComparator comp;
 
-  public TupleRange(final SortSpec[] sortSpecs, final Tuple start, final Tuple end) {
+  public TupleRange(final SortSpec[] sortSpecs, final VTuple start, final VTuple end) {
     this.comp = new BaseTupleComparator(sortSpecsToSchema(sortSpecs), sortSpecs);
     // if there is only one value, start == end
     this.start = start;
@@ -48,19 +48,19 @@ public class TupleRange implements Comparable<TupleRange>, Cloneable {
     return schema;
   }
 
-  public void setStart(Tuple tuple) {
+  public void setStart(VTuple tuple) {
     this.start = tuple;
   }
 
-  public final Tuple getStart() {
+  public final VTuple getStart() {
     return this.start;
   }
 
-  public void setEnd(Tuple tuple) {
+  public void setEnd(VTuple tuple) {
     this.end = tuple;
   }
 
-  public final Tuple getEnd() {
+  public final VTuple getEnd() {
     return this.end;
   }
 

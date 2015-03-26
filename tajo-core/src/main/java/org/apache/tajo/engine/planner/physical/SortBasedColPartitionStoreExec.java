@@ -52,7 +52,7 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
 
   private void fillKeyTuple(Tuple inTuple, Tuple keyTuple) {
     for (int i = 0; i < keyIds.length; i++) {
-      keyTuple.put(i, inTuple.get(keyIds[i]));
+      keyTuple.put(i, inTuple.asDatum(keyIds[i]));
     }
   }
 
@@ -60,12 +60,11 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
     StringBuilder sb = new StringBuilder();
 
     for(int i = 0; i < keyIds.length; i++) {
-      Datum datum = keyTuple.get(i);
       if(i > 0) {
         sb.append("/");
       }
       sb.append(keyNames[i]).append("=");      
-      sb.append(StringUtils.escapePathName(datum.asChars()));
+      sb.append(StringUtils.escapePathName(keyTuple.getText(i)));
     }
     return sb.toString();
   }

@@ -140,7 +140,7 @@ public class TestBroadcastJoinPlan {
     Appender appender = ((FileStorageManager)StorageManager.getFileStorageManager(conf))
         .getAppender(tableMeta, schema, dataPath);
     appender.init();
-    Tuple tuple = new VTuple(schema.size());
+    VTuple tuple = new VTuple(schema.size());
     int writtenSize = 0;
     int count = 0;
     while (true) {

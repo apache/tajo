@@ -54,15 +54,12 @@ public class SplitPart extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum text = params.get(0);
-    Datum part = params.get(2);
-
-    if (text.isNull() || part.isNull()) {
+    if (params.isBlankOrNull(0) || params.isBlankOrNull(2)) {
       return NullDatum.get();
     }
 
-    String [] split = StringUtils.splitByWholeSeparatorPreserveAllTokens(text.asChars(), params.get(1).asChars(), -1);
-    int idx = params.get(2).asInt4() - 1;
+    String [] split = StringUtils.splitByWholeSeparatorPreserveAllTokens(params.getText(0), params.getText(1), -1);
+    int idx = params.getInt4(2) - 1;
     if (split.length > idx) {
       return DatumFactory.createText(split[idx]);
     } else {

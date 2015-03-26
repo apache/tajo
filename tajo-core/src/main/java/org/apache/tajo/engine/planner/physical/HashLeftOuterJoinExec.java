@@ -134,7 +134,7 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
 
   protected void getKeyLeftTuple(final Tuple outerTuple, Tuple keyTuple) {
     for (int i = 0; i < leftKeyList.length; i++) {
-      keyTuple.put(i, outerTuple.get(leftKeyList[i]));
+      keyTuple.put(i, outerTuple.asDatum(leftKeyList[i]));
     }
   }
 
@@ -249,7 +249,7 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
     while (!context.isStopped() && (tuple = rightChild.next()) != null) {
       keyTuple = new VTuple(joinKeyPairs.size());
       for (int i = 0; i < rightKeyList.length; i++) {
-        keyTuple.put(i, tuple.get(rightKeyList[i]));
+        keyTuple.put(i, tuple.asDatum(rightKeyList[i]));
       }
 
       List<Tuple> newValue = map.get(keyTuple);

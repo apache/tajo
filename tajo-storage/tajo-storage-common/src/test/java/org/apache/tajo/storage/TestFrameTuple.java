@@ -33,8 +33,7 @@ public class TestFrameTuple {
 
   @Before
   public void setUp() throws Exception {
-    tuple1 = new VTuple(11);
-    tuple1.put(new Datum[] {
+    tuple1 = new VTuple(new Datum[] {
         DatumFactory.createBool(true),
         DatumFactory.createBit((byte) 0x99),
         DatumFactory.createChar('9'),
@@ -48,8 +47,7 @@ public class TestFrameTuple {
         DatumFactory.createInet4("192.168.0.1")
     });
     
-    tuple2 = new VTuple(11);
-    tuple2.put(new Datum[] {
+    tuple2 = new VTuple(new Datum[] {
         DatumFactory.createBool(true),
         DatumFactory.createBit((byte) 0x99),
         DatumFactory.createChar('9'),
@@ -76,9 +74,9 @@ public class TestFrameTuple {
       assertTrue(frame.contains(i));
     }
     
-    assertEquals(DatumFactory.createInt8(23l), frame.get(5));
-    assertEquals(DatumFactory.createInt8(23l), frame.get(16));
-    assertEquals(DatumFactory.createInet4("192.168.0.1"), frame.get(10));
-    assertEquals(DatumFactory.createInet4("192.168.0.1"), frame.get(21));
+    assertEquals(23l, frame.getInt8(5));
+    assertEquals(23l, frame.getInt8(16));
+    assertEquals("192.168.0.1", frame.getText(10));
+    assertEquals("192.168.0.1", frame.getText(21));
   }
 }

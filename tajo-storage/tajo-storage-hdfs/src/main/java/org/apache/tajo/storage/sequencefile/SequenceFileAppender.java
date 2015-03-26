@@ -35,7 +35,6 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.storage.*;
@@ -125,6 +124,7 @@ public class SequenceFileAppender extends FileAppender {
       String serdeClass = this.meta.getOption(StorageConstants.SEQUENCEFILE_SERDE,
           TextSerializerDeserializer.class.getName());
       serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
+      serde.init(schema);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       throw new IOException(e);
@@ -159,16 +159,13 @@ public class SequenceFileAppender extends FileAppender {
 
   @Override
   public void addTuple(Tuple tuple) throws IOException {
-    Datum datum;
 
     if (serde instanceof BinarySerializerDeserializer) {
       byte nullByte = 0;
       int lasti = 0;
       for (int i = 0; i < columnNum; i++) {
-        datum = tuple.get(i);
-
         // set bit to 1 if a field is not null
-        if (null != datum) {
+        if (!tuple.isBlank(i)) {
           nullByte |= 1 << (i % 8);
         }
 
@@ -179,29 +176,28 @@ public class SequenceFileAppender extends FileAppender {
           os.write(nullByte);
 
           for (int j = lasti; j <= i; j++) {
-            datum = tuple.get(j);
 
             switch (schema.getColumn(j).getDataType().getType()) {
               case TEXT:
-                BytesUtils.writeVLong(os, datum.asTextBytes().length);
+                BytesUtils.writeVLong(os, tuple.getTextBytes(j).length);
                 break;
               case PROTOBUF:
-                ProtobufDatum protobufDatum = (ProtobufDatum) datum;
+                ProtobufDatum protobufDatum = (ProtobufDatum) tuple.getProtobufDatum(j);
                 BytesUtils.writeVLong(os, protobufDatum.asByteArray().length);
                 break;
               case CHAR:
               case INET4:
               case BLOB:
-                BytesUtils.writeVLong(os, datum.asByteArray().length);
+                BytesUtils.writeVLong(os, tuple.getBytes(j).length);
                 break;
               default:
             }
 
-            serde.serialize(schema.getColumn(j), datum, os, nullChars);
+            serde.serialize(j, tuple, os, nullChars);
 
             if (isShuffle) {
               // it is to calculate min/max values, and it is only used for the intermediate file.
-              stats.analyzeField(j, datum);
+              stats.analyzeField(j, tuple);
             }
           }
           lasti = i + 1;
@@ -215,8 +211,7 @@ public class SequenceFileAppender extends FileAppender {
 
     } else {
       for (int i = 0; i < columnNum; i++) {
-        datum = tuple.get(i);
-        serde.serialize(schema.getColumn(i), datum, os, nullChars);
+        serde.serialize(i, tuple, os, nullChars);
 
         if (columnNum -1 > i) {
           os.write((byte) delimiter);
@@ -224,7 +219,7 @@ public class SequenceFileAppender extends FileAppender {
 
         if (isShuffle) {
           // it is to calculate min/max values, and it is only used for the intermediate file.
-          stats.analyzeField(i, datum);
+          stats.analyzeField(i, tuple);
         }
 
       }

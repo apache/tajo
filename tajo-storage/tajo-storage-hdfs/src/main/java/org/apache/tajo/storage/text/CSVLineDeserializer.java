@@ -54,6 +54,7 @@ public class CSVLineDeserializer extends TextLineDeserializer {
     nullChars = TextLineSerDe.getNullChars(meta);
 
     fieldSerDer = new TextFieldSerializerDeserializer(meta);
+    fieldSerDer.init(schema);
   }
 
   public void deserialize(final ByteBuf lineBuf, Tuple output) throws IOException, TextLineParsingError {
@@ -80,7 +81,7 @@ public class CSVLineDeserializer extends TextLineDeserializer {
 
       if (projection.length > currentTarget && currentIndex == projection[currentTarget]) {
         lineBuf.setIndex(start, start + fieldLength);
-        Datum datum = fieldSerDer.deserialize(lineBuf, schema.getColumn(currentIndex), currentIndex, nullChars);
+        Datum datum = fieldSerDer.deserialize(currentIndex, lineBuf, nullChars);
         output.put(currentIndex, datum);
         currentTarget++;
       }

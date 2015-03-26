@@ -19,6 +19,7 @@
 package org.apache.tajo.storage;
 
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
 
 import java.io.IOException;
@@ -27,8 +28,10 @@ import java.io.OutputStream;
 @Deprecated
 public interface SerializerDeserializer {
 
-  public int serialize(Column col, Datum datum, OutputStream out, byte[] nullCharacters) throws IOException;
+  public void init(Schema schema);
 
-  public Datum deserialize(Column col, byte[] bytes, int offset, int length, byte[] nullCharacters) throws IOException;
+  public int serialize(int index, Tuple tuple, OutputStream out, byte[] nullCharacters) throws IOException;
+
+  public Datum deserialize(int index, byte[] bytes, int offset, int length, byte[] nullCharacters) throws IOException;
 
 }

@@ -51,11 +51,10 @@ public class SumFloat extends SumDouble {
 
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
-    Datum datum = params.get(0);
-    if (datum.isNotNull()) {
+    if (!params.isBlankOrNull(0)) {
       SumContext sumCtx = (SumContext)ctx;
       sumCtx.hasNonNull = true;
-      sumCtx.sum += datum.asFloat4();
+      sumCtx.sum += params.getFloat4(0);
     }
   }
 }

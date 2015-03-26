@@ -54,12 +54,11 @@ public class Round extends GeneralFunction {
 
   @Override
   public Datum eval(Tuple params) {
-    Datum valueDatum = params.get(0);
-    if(valueDatum instanceof NullDatum) {
+    if (params.isBlankOrNull(0)) {
       return NullDatum.get();
     }
 
-    double value = valueDatum.asFloat8();
+    double value = params.getFloat8(0);
 
     // Note: there are various round up/down approaches (https://en.wikipedia.org/wiki/Rounding#Tie-breaking).
     //       Math.round uses an approach different from other programming languages, so the results of round function

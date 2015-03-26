@@ -69,8 +69,8 @@ public abstract class TajoResultSetBase implements ResultSet {
     wasNull = false;
   }
 
-  private void handleNull(Datum d) {
-    wasNull = (d instanceof NullDatum);
+  private boolean handleNull(Tuple tuple, int index) {
+    return wasNull = tuple.isBlankOrNull(index);
   }
 
   public Tuple getCurrentTuple() {
@@ -84,274 +84,211 @@ public abstract class TajoResultSetBase implements ResultSet {
 
   @Override
   public boolean getBoolean(int fieldId) throws SQLException {
-    Datum datum = cur.get(fieldId - 1);
-    handleNull(datum);
-    if (wasNull) {
-      return false;
-    }
-    return datum.asBool();
+    return getBoolean(cur, fieldId - 1);
   }
 
   @Override
   public boolean getBoolean(String colName) throws SQLException {
-    Datum datum = cur.get(findColumn(colName));
-    handleNull(datum);
-    if (wasNull) {
-      return false;
-    }
-    return datum.asBool();
+    return getBoolean(cur, findColumn(colName));
+  }
+
+  private boolean getBoolean(Tuple tuple, int index) {
+    return handleNull(tuple, index) ? false : tuple.getBool(index);
   }
 
   @Override
   public byte getByte(int fieldId) throws SQLException {
-    Datum datum = cur.get(fieldId - 1);
-    handleNull(datum);
-    if (wasNull) {
-      return 0;
-    }
-    return datum.asByte();
+    return getByte(cur, fieldId - 1);
   }
 
   @Override
   public byte getByte(String name) throws SQLException {
-    Datum datum = cur.get(findColumn(name));
-    handleNull(datum);
-    if (wasNull) {
-      return 0;
-    }
-    return datum.asByte();
+    return getByte(cur, findColumn(name));
+  }
+
+  private byte getByte(Tuple tuple, int index) {
+    return handleNull(tuple, index) ? 0 : tuple.getByte(index);
   }
 
   @Override
   public byte[] getBytes(int fieldId) throws SQLException {
-    Datum datum = cur.get(fieldId - 1);
-    handleNull(datum);
-    if (wasNull) {
-      return null;
-    }
-    return datum.asByteArray();
+    return getBytes(cur, fieldId - 1);
   }
 
   @Override
   public byte[] getBytes(String name) throws SQLException {
-    Datum datum = cur.get(findColumn(name));
-    handleNull(datum);
-    if (wasNull) {
-      return null;
-    }
-    return datum.asByteArray();
+    return getBytes(cur, findColumn(name));
+  }
+
+  private byte[] getBytes(Tuple tuple, int index) {
+    return handleNull(tuple, index) ? null : tuple.getBytes(index);
   }
 
   @Override
   public double getDouble(int fieldId) throws SQLException {
-    Datum datum = cur.get(fieldId - 1);
-    handleNull(datum);
-    if (wasNull) {
-      return 0.0d;
-    }
-    return datum.asFloat8();
+    return getDouble(cur, fieldId - 1);
   }
 
   @Override
   public double getDouble(String name) throws SQLException {
-    Datum datum = cur.get(findColumn(name));
-    handleNull(datum);
-    if (wasNull) {
-      return 0.0d;
-    }
-    return datum.asFloat8();
+    return getDouble(cur, findColumn(name));
+  }
+
+  private double getDouble(Tuple tuple, int index) {
+    return handleNull(tuple, index) ? 0.0d : tuple.getFloat8(index);
   }
 
   @Override
   public float getFloat(int fieldId) throws SQLException {
-    Datum datum = cur.get(fieldId - 1);
-    handleNull(datum);
-    if (wasNull) {
-      return 0.0f;
-    }
-    return datum.asFloat4();
+    return getFloat(cur, fieldId - 1);
   }
 
   @Override
   public float getFloat(String name) throws SQLException {
-    Datum datum = cur.get(findColumn(name));
-    handleNull(datum);
-    if (wasNull) {
-      return 0.0f;
-    }
-    return datum.asFloat4();
+    return getFloat(cur, findColumn(name));
+  }
+
+  private float getFloat(Tuple tuple, int index) throws SQLException {
+    return handleNull(tuple, index) ? 0.0f : tuple.getFloat4(index);
   }
 
   @Override
   public int getInt(int fieldId) throws SQLException {
-    Datum datum = cur.get(fieldId - 1);
-    handleNull(datum);
-    if (wasNull) {
-      return 0;
-    }
-    return datum.asInt4();
+    return getInt(cur, fieldId - 1);
   }
 
   @Override
   public int getInt(String name) throws SQLException {
-    Datum datum = cur.get(findColumn(name));
-    handleNull(datum);
-    if (wasNull) {
-      return 0;
-    }
-    return datum.asInt4();
+    return getInt(cur, findColumn(name));
+  }
+
+  private int getInt(Tuple tuple, int index) throws SQLException {
+    return handleNull(tuple, index) ? 0 : tuple.getInt4(index);
   }
 
   @Override
   public long getLong(int fieldId) throws SQLException {
-    Datum datum = cur.get(fieldId - 1);
-    handleNull(datum);
-    if (wasNull) {
-      return 0;
-    }
-    return datum.asInt8();
+    return getLong(cur, fieldId - 1);
   }
 
   @Override
   public long getLong(String name) throws SQLException {
-    Datum datum = cur.get(findColumn(name));
-    handleNull(datum);
-    if (wasNull) {
-      return 0;
-    }
-    return datum.asInt8();
+    return getLong(cur, findColumn(name));
+  }
+
+  private long getLong(Tuple tuple, int index) throws SQLException {
+    return handleNull(tuple, index) ? 0 : tuple.getInt8(index);
   }
 
   @Override
   public Object getObject(int fieldId) throws SQLException {
-    Datum d = cur.get(fieldId - 1);
-    handleNull(d);
-
-    if (wasNull) {
-      return null;
-    }
-    TajoDataTypes.Type dataType = schema.getColumn(fieldId - 1).getDataType().getType();
-
-    switch(dataType) {
-      case BOOLEAN:  return d.asBool();
-      case INT1:
-      case INT2: return d.asInt2();
-      case INT4: return d.asInt4();
-      case INT8: return d.asInt8();
-      case TEXT:
-      case CHAR:
-      case VARCHAR:  return d.asChars();
-      case FLOAT4:  return d.asFloat4();
-      case FLOAT8:  return d.asFloat8();
-      case NUMERIC:  return d.asFloat8();
-      case DATE: {
-        return getDate((DateDatum)d, timezone);
-      }
-      case TIME: {
-        return getTime((TimeDatum)d, timezone);
-      }
-      case TIMESTAMP: {
-        return getTimestamp((TimestampDatum) d, timezone);
-      }
-      default: return d.asChars();
-    }
+    return getObject(cur, fieldId - 1);
   }
 
   @Override
   public Object getObject(String name) throws SQLException {
-    return getObject(findColumn(name) + 1);
+    return getObject(cur, findColumn(name));
+  }
+
+  private Object getObject(Tuple tuple, int index) {
+    if (handleNull(tuple, index)) {
+      return null;
+    }
+
+    TajoDataTypes.Type dataType = schema.getColumn(index).getDataType().getType();
+
+    switch(dataType) {
+      case BOOLEAN:  return tuple.getBool(index);
+      case INT1:
+      case INT2: return tuple.getInt2(index);
+      case INT4: return tuple.getInt4(index);
+      case INT8: return tuple.getInt8(index);
+      case TEXT:
+      case CHAR:
+      case VARCHAR:  return tuple.getText(index);
+      case FLOAT4:  return tuple.getFloat4(index);
+      case FLOAT8:  return tuple.getFloat8(index);
+      case NUMERIC:  return tuple.getFloat8(index);
+      case DATE: {
+        return toDate(tuple.getTimeDate(index), timezone);
+      }
+      case TIME: {
+        return toTime(tuple.getTimeDate(index), timezone);
+      }
+      case TIMESTAMP: {
+        return toTimestamp(tuple.getTimeDate(index), timezone);
+      }
+      default:
+        return tuple.getText(index);
+    }
   }
 
   @Override
   public short getShort(int fieldId) throws SQLException {
-    Datum datum = cur.get(fieldId - 1);
-    handleNull(datum);
-    if (wasNull) {
-      return 0;
-    }
-    return datum.asInt2();
+    return getShort(cur, fieldId - 1);
   }
 
   @Override
   public short getShort(String name) throws SQLException {
-    Datum datum = cur.get(findColumn(name));
-    handleNull(datum);
-    if (wasNull) {
-      return 0;
-    }
-    return datum.asInt2();
+    return getShort(cur, findColumn(name));
+  }
+
+  private short getShort(Tuple tuple, int index) throws SQLException {
+    return handleNull(tuple, index) ? 0 : tuple.getInt2(index);
   }
 
   @Override
   public String getString(int fieldId) throws SQLException {
-    Datum datum = cur.get(fieldId - 1);
-    return getString(datum, fieldId);
+    return getString(cur, fieldId - 1);
   }
 
   @Override
   public String getString(String name) throws SQLException {
-    int id = findColumn(name);
-    Datum datum = cur.get(id);
-    return getString(datum, id + 1);
+    return getString(cur, findColumn(name));
   }
 
-  private String getString(Datum datum, int fieldId) throws SQLException {
-    handleNull(datum);
-
-    if (wasNull) {
+  private String getString(Tuple tuple, int index) throws SQLException {
+    if (handleNull(tuple, index)) {
       return null;
     }
 
-    TajoDataTypes.Type dataType = datum.type();
-
-    switch(dataType) {
+    switch(tuple.type(index)) {
       case BOOLEAN:
-        return String.valueOf(datum.asBool());
-      case TIME: {
-        return ((TimeDatum)datum).asChars(timezone, false);
-      }
-      case TIMESTAMP: {
-        return ((TimestampDatum)datum).asChars(timezone, false);
-      }
+        return String.valueOf(tuple.getBool(index));
+      case TIME:
+        return TimeDatum.asChars(tuple.getTimeDate(index), timezone, false);
+      case TIMESTAMP:
+        return TimestampDatum.asChars(tuple.getTimeDate(index), timezone, false);
       default :
-        return datum.asChars();
+        return tuple.getText(index);
     }
   }
 
   @Override
   public Date getDate(int fieldId) throws SQLException {
-    Datum datum = cur.get(fieldId - 1);
-    handleNull(datum);
-    if (wasNull) {
-      return null;
-    }
-
-    return getDate((DateDatum)datum, null);
+    return getDate(cur, null, fieldId - 1);
   }
 
   @Override
   public Date getDate(String name) throws SQLException {
-    return getDate(findColumn(name) + 1);
+    return getDate(cur, null, findColumn(name));
   }
 
   @Override
   public Date getDate(int fieldId, Calendar x) throws SQLException {
-    Datum datum = cur.get(fieldId - 1);
-    handleNull(datum);
-    if (wasNull) {
-      return null;
-    }
-
-    return getDate((DateDatum)datum, x.getTimeZone());
+    return getDate(cur, x.getTimeZone(), fieldId - 1);
   }
 
   @Override
   public Date getDate(String name, Calendar x) throws SQLException {
-    return getDate(findColumn(name) + 1, x);
+    return getDate(cur, x.getTimeZone(), findColumn(name));
   }
 
-  private Date getDate(DateDatum datum, TimeZone tz) {
-    TimeMeta tm = datum.toTimeMeta();
+  private Date getDate(Tuple tuple, TimeZone tz, int index) throws SQLException {
+    return handleNull(tuple, index) ? null : toDate(tuple.getTimeDate(index), tz);
+  }
+
+  private Date toDate(TimeMeta tm, TimeZone tz) {
     if (tz != null) {
       DateTimeUtil.toUserTimezone(tm, tz);
     }
@@ -360,39 +297,29 @@ public abstract class TajoResultSetBase implements ResultSet {
 
   @Override
   public Time getTime(int fieldId) throws SQLException {
-    Datum datum = cur.get(fieldId - 1);
-    handleNull(datum);
-    if (wasNull) {
-      return null;
-    }
-
-    return getTime((TimeDatum)datum, timezone);
-
+    return getTime(cur, null, fieldId - 1);
   }
 
   @Override
   public Time getTime(String name) throws SQLException {
-    return getTime(findColumn(name) + 1);
+    return getTime(cur, null, findColumn(name));
   }
 
   @Override
   public Time getTime(int fieldId, Calendar x) throws SQLException {
-    Datum datum = cur.get(fieldId - 1);
-    handleNull(datum);
-    if (wasNull) {
-      return null;
-    }
-
-    return getTime((TimeDatum)datum, x.getTimeZone());
+    return getTime(cur, x.getTimeZone(), fieldId - 1);
   }
 
   @Override
   public Time getTime(String name, Calendar x) throws SQLException {
-    return getTime(findColumn(name) + 1, x);
+    return getTime(cur, x.getTimeZone(), findColumn(name));
   }
 
-  private Time getTime(TimeDatum datum, TimeZone tz) {
-    TimeMeta tm = datum.toTimeMeta();
+  private Time getTime(Tuple tuple, TimeZone tz, int index) throws SQLException {
+    return handleNull(tuple, index) ? null : toTime(tuple.getTimeDate(index), tz);
+  }
+
+  private Time toTime(TimeMeta tm, TimeZone tz) {
     if (tz != null) {
       DateTimeUtil.toUserTimezone(tm, tz);
     }
@@ -401,38 +328,29 @@ public abstract class TajoResultSetBase implements ResultSet {
 
   @Override
   public Timestamp getTimestamp(int fieldId) throws SQLException {
-    Datum datum = cur.get(fieldId - 1);
-    handleNull(datum);
-    if (wasNull) {
-      return null;
-    }
-
-    return getTimestamp((TimestampDatum)datum, timezone);
+    return getTimestamp(cur, null, fieldId - 1);
   }
 
   @Override
   public Timestamp getTimestamp(String name) throws SQLException {
-    return getTimestamp(findColumn(name) + 1);
+    return getTimestamp(cur, null, findColumn(name));
   }
 
   @Override
   public Timestamp getTimestamp(int fieldId, Calendar x) throws SQLException {
-    Datum datum = cur.get(fieldId - 1);
-    handleNull(datum);
-    if (wasNull) {
-      return null;
-    }
-
-    return getTimestamp((TimestampDatum)datum, x.getTimeZone());
+    return getTimestamp(cur, x.getTimeZone(), fieldId - 1);
   }
 
   @Override
   public Timestamp getTimestamp(String name, Calendar x) throws SQLException {
-    return getTimestamp(findColumn(name) + 1, x);
+    return getTimestamp(cur, x.getTimeZone(), findColumn(name));
   }
 
-  private Timestamp getTimestamp(TimestampDatum datum, TimeZone tz) {
-    TimeMeta tm = datum.toTimeMeta();
+  private Timestamp getTimestamp(Tuple tuple, TimeZone tz, int index) throws SQLException {
+    return handleNull(tuple, index) ? null : toTimestamp(tuple.getTimeDate(index), tz);
+  }
+
+  private Timestamp toTimestamp(TimeMeta tm, TimeZone tz) {
     if (tz != null) {
       DateTimeUtil.toUserTimezone(tm, tz);
     }

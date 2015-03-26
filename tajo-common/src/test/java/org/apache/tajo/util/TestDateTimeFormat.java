@@ -142,7 +142,7 @@ public class TestDateTimeFormat {
   private void evalToCharAndAssert(String dateTimeText,
                                    String toTimestampFormatText, String toCharFormatText, String expected) {
     TimestampDatum datum = DateTimeFormat.toTimestamp(dateTimeText, toTimestampFormatText);
-    String toCharResult = DateTimeFormat.to_char(datum.toTimeMeta(), toCharFormatText);
+    String toCharResult = DateTimeFormat.to_char(datum.asTimeMeta(), toCharFormatText);
     assertEquals(expected, toCharResult);
   }
 }

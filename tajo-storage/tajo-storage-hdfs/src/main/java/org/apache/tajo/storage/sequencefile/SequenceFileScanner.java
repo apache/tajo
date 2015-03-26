@@ -117,6 +117,7 @@ public class SequenceFileScanner extends FileScanner {
     try {
       String serdeClass = this.meta.getOption(StorageConstants.SEQUENCEFILE_SERDE, TextSerializerDeserializer.class.getName());
       serde = (SerializerDeserializer) Class.forName(serdeClass).newInstance();
+      serde.init(schema);
 
       if (serde instanceof BinarySerializerDeserializer) {
         hasBinarySerDe = true;
@@ -225,7 +226,7 @@ public class SequenceFileScanner extends FileScanner {
 
         for (int j = 0; j < projectionMap.length; j++) {
           if (projectionMap[j] == i) {
-            Datum datum = serde.deserialize(schema.getColumn(i), bytes, fieldStart[i], fieldLength[i], nullChars);
+            Datum datum = serde.deserialize(i, bytes, fieldStart[i], fieldLength[i], nullChars);
             tuple.put(i, datum);
           }
         }
