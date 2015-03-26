@@ -286,7 +286,7 @@ public abstract class StorageManager {
     if ("HBASE".equalsIgnoreCase(storeType)) {
       return getStorageManager(tajoConf, StoreType.HBASE);
     } else if ("ELASTICSEARCH".equalsIgnoreCase(storeType)) {
-	    return getStorageManager(tajoConf, StoreType.ELASTICSEARCH);
+      return getStorageManager(tajoConf, StoreType.ELASTICSEARCH);
     } else {
       return getStorageManager(tajoConf, StoreType.CSV);
     }
@@ -326,10 +326,10 @@ public abstract class StorageManager {
       case HBASE:
         typeName = "hbase";
         break;
-	    case ELASTICSEARCH:
-		    typeName = "elasticsearch";
-		    break;
-	    default:
+      case ELASTICSEARCH:
+        typeName = "elasticsearch";
+        break;
+      default:
         typeName = "hdfs";
     }
 

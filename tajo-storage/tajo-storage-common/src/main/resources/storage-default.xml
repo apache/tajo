@@ -29,10 +29,10 @@
     <name>tajo.storage.manager.hbase.class</name>
     <value>org.apache.tajo.storage.hbase.HBaseStorageManager</value>
   </property>
-	<property>
-		<name>tajo.storage.manager.elasticsearch.class</name>
-		<value>org.apache.tajo.storage.elasticsearch.ElasticsearchStorageManager</value>
-	</property>
+  <property>
+    <name>tajo.storage.manager.elasticsearch.class</name>
+    <value>org.apache.tajo.storage.elasticsearch.ElasticsearchStorageManager</value>
+  </property>
 
   <property>
     <name>tajo.storage.manager.concurrency.perDisk</name>
@@ -87,10 +87,10 @@
     <name>tajo.storage.fragment.hbase.class</name>
     <value>org.apache.tajo.storage.hbase.HBaseFragment</value>
   </property>
-	<property>
-		<name>tajo.storage.fragment.elasticsearch.class</name>
-		<value>org.apache.tajo.storage.elasticsearch.ElasticsearchFragment</value>
-	</property>
+  <property>
+    <name>tajo.storage.fragment.elasticsearch.class</name>
+    <value>org.apache.tajo.storage.elasticsearch.ElasticsearchFragment</value>
+  </property>
 
   <!--- Scanner Handler -->
   <property>
@@ -143,10 +143,10 @@
     <value>org.apache.tajo.storage.hbase.HBaseScanner</value>
   </property>
 
-	<property>
-		<name>tajo.storage.scanner-handler.elasticsearch.class</name>
-		<value>org.apache.tajo.storage.elasticsearch.ElasticsearchScanner</value>
-	</property>
+  <property>
+    <name>tajo.storage.scanner-handler.elasticsearch.class</name>
+    <value>org.apache.tajo.storage.elasticsearch.ElasticsearchScanner</value>
+  </property>
   
   <!--- Appender Handler -->
   <property>
