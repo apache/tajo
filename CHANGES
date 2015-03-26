@@ -44,6 +44,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1434: Fix supporting version of Hadoop. 
+    (Contributed by Dongjoon Hyun, Committed by jinho)
+
     TAJO-1449: TestSelectQuery.testExplainSelect() fails. (jihoon)
 
     TAJO-1396: Unexpected IllegalMonitorStateException can be thrown 
