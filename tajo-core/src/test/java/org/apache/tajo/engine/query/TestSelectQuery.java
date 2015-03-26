@@ -711,7 +711,7 @@ public class TestSelectQuery extends QueryTestCaseBase {
 
   @Test
   public void test() throws Exception {
-    ResultSet res = executeString("select concat_py(n_name) from nation where n_nationkey = 1");
+    ResultSet res = executeString("select sum_py(n_nationkey, n_regionkey), concat_py(n_name) from nation where n_nationkey < 5");
     System.out.println(resultSetToString(res));
   }
 }

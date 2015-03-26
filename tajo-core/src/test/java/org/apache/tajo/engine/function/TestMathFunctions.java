@@ -472,9 +472,9 @@ public class TestMathFunctions extends ExprTestBase {
   @Test
   public void test() throws IOException {
 //    testSimpleEval("select pow(1,2)", new String[]{"1.0"});
-//    testSimpleEval("select sum_py(1,2)", new String[]{"3"});
-//    testSimpleEval("select return_one()", new String[]{"100"});
-//    testSimpleEval("select helloworld()", new String[]{"Hello, World"});
+    testSimpleEval("select sum_py(1,2)", new String[]{"3"});
+    testSimpleEval("select return_one()", new String[]{"100"});
+    testSimpleEval("select helloworld()", new String[]{"Hello, World"});
     testSimpleEval("select concat_py('1')", new String[]{"11"});
   }
 }

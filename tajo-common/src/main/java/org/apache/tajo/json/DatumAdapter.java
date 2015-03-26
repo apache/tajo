@@ -43,8 +43,7 @@ public class DatumAdapter implements GsonSerDerAdapter<Datum> {
       String[] values = CommonGsonHelper.getOrDie(jsonObject, "value").getAsString().split(",");
       return new IntervalDatum(Integer.parseInt(values[0]), Long.parseLong(values[1]));
     case ANY:
-      return new AnyDatum(context.<Datum>deserialize(CommonGsonHelper.getOrDie(jsonObject, "actual"),
-          DatumFactory.getDatumClass(TajoDataTypes.Type.valueOf(typeName))));
+      return new AnyDatum(deserialize(CommonGsonHelper.getOrDie(jsonObject, "actual"), typeOfT, context));
     default:
       return context.deserialize(CommonGsonHelper.getOrDie(jsonObject, "body"),
           DatumFactory.getDatumClass(TajoDataTypes.Type.valueOf(typeName)));
@@ -70,7 +69,7 @@ public class DatumAdapter implements GsonSerDerAdapter<Datum> {
       jsonObj.addProperty("value", interval.getMonths() + "," + interval.getMilliSeconds());
       break;
     case ANY:
-      jsonObj.add("actual", context.serialize(((AnyDatum) src).getActual()));
+      jsonObj.add("actual", serialize(((AnyDatum) src).getActual(), typeOfSrc, context));
       break;
     default:
       jsonObj.add("body", context.serialize(src));

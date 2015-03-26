@@ -57,7 +57,7 @@ public abstract class EvalNode implements Cloneable, GsonObject, ProtoObject<Pla
 
   @Override
 	public String toJson() {
-    return PlanGsonHelper.toJson(this, EvalNode.class);
+    return PlanGsonHelper.getPrettyInstance().toJson(this, EvalNode.class);
 	}
 	
 	public abstract <T extends Datum> T eval(Schema schema, Tuple tuple);
