@@ -123,7 +123,7 @@ public class TestKillQuery {
     Stage stage = queryMasterTask.getQuery().getStages().iterator().next();
     assertNotNull(stage);
 
-    try{
+    try {
       cluster.waitForStageState(stage, StageState.INITED, 2);
     } finally {
       assertEquals(StageState.INITED, stage.getSynchronizedState());
@@ -178,23 +178,23 @@ public class TestKillQuery {
 
     assertEquals(StageState.KILLED, lastStage.getSynchronizedState());
 
-    lastStage.getStateMachine().doTransition(StageEventType.SQ_START,
-        new StageEvent(lastStage.getId(), StageEventType.SQ_START));
+    lastStage.doStateTransition(StageEventType.SQ_START,
+      new StageEvent(lastStage.getId(), StageEventType.SQ_START));
 
-    lastStage.getStateMachine().doTransition(StageEventType.SQ_KILL,
-        new StageEvent(lastStage.getId(), StageEventType.SQ_KILL));
+    lastStage.doStateTransition(StageEventType.SQ_KILL,
+      new StageEvent(lastStage.getId(), StageEventType.SQ_KILL));
 
-    lastStage.getStateMachine().doTransition(StageEventType.SQ_CONTAINER_ALLOCATED,
-        new StageEvent(lastStage.getId(), StageEventType.SQ_CONTAINER_ALLOCATED));
+    lastStage.doStateTransition(StageEventType.SQ_CONTAINER_ALLOCATED,
+      new StageEvent(lastStage.getId(), StageEventType.SQ_CONTAINER_ALLOCATED));
 
-    lastStage.getStateMachine().doTransition(StageEventType.SQ_SHUFFLE_REPORT,
-        new StageEvent(lastStage.getId(), StageEventType.SQ_SHUFFLE_REPORT));
+    lastStage.doStateTransition(StageEventType.SQ_SHUFFLE_REPORT,
+      new StageEvent(lastStage.getId(), StageEventType.SQ_SHUFFLE_REPORT));
 
-    lastStage.getStateMachine().doTransition(StageEventType.SQ_STAGE_COMPLETED,
-        new StageEvent(lastStage.getId(), StageEventType.SQ_STAGE_COMPLETED));
+    lastStage.doStateTransition(StageEventType.SQ_STAGE_COMPLETED,
+      new StageEvent(lastStage.getId(), StageEventType.SQ_STAGE_COMPLETED));
 
-    lastStage.getStateMachine().doTransition(StageEventType.SQ_FAILED,
-        new StageEvent(lastStage.getId(), StageEventType.SQ_FAILED));
+    lastStage.doStateTransition(StageEventType.SQ_FAILED,
+      new StageEvent(lastStage.getId(), StageEventType.SQ_FAILED));
   }
 
   @Test
