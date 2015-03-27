@@ -57,6 +57,6 @@ public class ToDate extends GeneralFunction {
 
     TimeMeta tm = DateTimeFormat.parseDateTime(value, pattern);
 
-    return new DateDatum(DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth));
+    return new DateDatum(tm);
   }
 }

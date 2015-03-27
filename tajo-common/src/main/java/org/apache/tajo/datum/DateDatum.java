@@ -18,13 +18,13 @@
 
 package org.apache.tajo.datum;
 
+import com.google.common.primitives.Ints;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.Bytes;
 import org.apache.tajo.util.datetime.DateTimeConstants.DateStyle;
-import org.apache.tajo.util.datetime.DateTimeFormat;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
@@ -32,15 +32,16 @@ public class DateDatum extends Datum {
   public static final int SIZE = 4;
 
   // Dates are stored in UTC.
-  private int year;
-  private int monthOfYear;
-  private int dayOfMonth;
+  final int year;
+  final int monthOfYear;
+  final int dayOfMonth;
 
   public DateDatum(int value) {
-    super(TajoDataTypes.Type.DATE);
-    TimeMeta tm = new TimeMeta();
-    DateTimeUtil.j2date(value, tm);
+    this(DateTimeUtil.j2date(value));
+  }
 
+  public DateDatum(TimeMeta tm) {
+    super(TajoDataTypes.Type.DATE);
     year = tm.years;
     monthOfYear = tm.monthOfYear;
     dayOfMonth = tm.dayOfMonth;
@@ -48,7 +49,9 @@ public class DateDatum extends Datum {
 
   public TimeMeta toTimeMeta() {
     TimeMeta tm = new TimeMeta();
-    DateTimeUtil.j2date(DateTimeUtil.date2j(year, monthOfYear, dayOfMonth), tm);
+    tm.years = year;
+    tm.monthOfYear = monthOfYear;
+    tm.dayOfMonth = dayOfMonth;
     return tm;
   }
 
@@ -58,8 +61,7 @@ public class DateDatum extends Datum {
   }
 
   public int getYear() {
-    TimeMeta tm = toTimeMeta();
-    return tm.years;
+    return year;
   }
 
   public int getWeekyear() {
@@ -68,8 +70,7 @@ public class DateDatum extends Datum {
   }
 
   public int getMonthOfYear() {
-    TimeMeta tm = toTimeMeta();
-    return tm.monthOfYear;
+    return monthOfYear;
   }
 
   public int getDayOfYear() {
@@ -93,15 +94,15 @@ public class DateDatum extends Datum {
   }
 
   public int getDayOfMonth() {
-    TimeMeta tm = toTimeMeta();
-    return tm.dayOfMonth;
+    return dayOfMonth;
   }
 
-
+  @Override
   public String toString() {
     return asChars();
   }
 
+  @Override
   public Datum plus(Datum datum) {
     switch(datum.type()) {
       case INT2:
@@ -111,17 +112,13 @@ public class DateDatum extends Datum {
       case FLOAT8: {
         TimeMeta tm = toTimeMeta();
         tm.plusDays(datum.asInt4());
-        return new DateDatum(DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth));
+        return new DateDatum(tm);
       }
-      case INTERVAL: {
+      case INTERVAL:
         IntervalDatum interval = (IntervalDatum) datum;
         TimeMeta tm = toTimeMeta();
-        tm.plusMillis(interval.getMilliSeconds());
-        if (interval.getMonths() > 0) {
-          tm.plusMonths(interval.getMonths());
-        }
+        tm.plusInterval(interval.months, interval.milliseconds);
         return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
-      }
       case TIME: {
         TimeMeta tm1 = toTimeMeta();
         TimeMeta tm2 = ((TimeDatum)datum).toTimeMeta();
@@ -133,6 +130,7 @@ public class DateDatum extends Datum {
     }
   }
 
+  @Override
   public Datum minus(Datum datum) {
     switch(datum.type()) {
       case INT2:
@@ -142,15 +140,12 @@ public class DateDatum extends Datum {
       case FLOAT8: {
         TimeMeta tm = toTimeMeta();
         tm.plusDays(0 - datum.asInt4());
-        return new DateDatum(DateTimeUtil.date2j(tm.years, tm.monthOfYear, tm.dayOfMonth));
+        return new DateDatum(tm);
       }
       case INTERVAL: {
         IntervalDatum interval = (IntervalDatum) datum;
         TimeMeta tm = toTimeMeta();
-        if (interval.getMonths() > 0) {
-          tm.plusMonths(0 - interval.getMonths());
-        }
-        tm.plusMillis(0 - interval.getMilliSeconds());
+        tm.plusInterval(-interval.months, -interval.milliseconds);
         return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
       }
       case TIME: {
@@ -160,11 +155,9 @@ public class DateDatum extends Datum {
         return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm1));
       }
       case DATE: {
-        TimeMeta tm1 = toTimeMeta();
-        TimeMeta tm2 = ((DateDatum) datum).toTimeMeta();
-
-        int day1 = DateTimeUtil.date2j(tm1.years, tm1.monthOfYear, tm1.dayOfMonth);
-        int day2 = DateTimeUtil.date2j(tm2.years, tm2.monthOfYear, tm2.dayOfMonth);
+        DateDatum d = (DateDatum) datum;
+        int day1 = DateTimeUtil.date2j(year, monthOfYear, dayOfMonth);
+        int day2 = DateTimeUtil.date2j(d.year, d.monthOfYear, d.dayOfMonth);
         return new Int4Datum(day1 - day2);
       }
       default:
@@ -198,13 +191,7 @@ public class DateDatum extends Datum {
 
   @Override
   public String asChars() {
-    TimeMeta tm = toTimeMeta();
-    return DateTimeUtil.encodeDate(tm, DateStyle.ISO_DATES);
-  }
-
-  public String toChars(String format) {
-    TimeMeta tm = toTimeMeta();
-    return DateTimeFormat.to_char(tm, format);
+    return DateTimeUtil.encodeDate(year, monthOfYear, dayOfMonth, DateStyle.ISO_DATES);
   }
 
   @Override
@@ -232,10 +219,15 @@ public class DateDatum extends Datum {
   public int compareTo(Datum datum) {
     if (datum.type() == TajoDataTypes.Type.DATE) {
       DateDatum another = (DateDatum) datum;
-      TimeMeta myMeta, otherMeta;
-      myMeta = toTimeMeta();
-      otherMeta = another.toTimeMeta();
-      return myMeta.compareTo(otherMeta);
+      int compare = Ints.compare(year, another.year);
+      if (compare != 0) {
+        return compare;
+      }
+      compare = Ints.compare(monthOfYear, another.monthOfYear);
+      if (compare != 0) {
+        return compare;
+      }
+      return Ints.compare(dayOfMonth, another.dayOfMonth);
     } else if (datum.type() == TajoDataTypes.Type.TIMESTAMP) {
       TimestampDatum another = (TimestampDatum) datum;
       TimeMeta myMeta, otherMeta;
@@ -249,6 +241,7 @@ public class DateDatum extends Datum {
     }
   }
 
+  @Override
   public boolean equals(Object obj) {
     if (obj instanceof DateDatum) {
       DateDatum another = (DateDatum) obj;
