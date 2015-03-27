@@ -19,12 +19,51 @@
 package org.apache.tajo.function;
 
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 
 import java.util.Collection;
+import java.util.Comparator;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 
 public class FunctionUtil {
+
+  public static class FunctionDescProtoComparator implements Comparator<CatalogProtos.FunctionDescProto>
+  {
+    @Override
+    public int compare(CatalogProtos.FunctionDescProto f1, CatalogProtos.FunctionDescProto f2) {
+      CatalogProtos.FunctionSignatureProto s1 = f1.getSignature();
+      CatalogProtos.FunctionSignatureProto s2 = f2.getSignature();
+
+      int cmpVal = s1.getName().compareTo(s2.getName());
+
+      if (cmpVal != 0) {
+        return cmpVal;
+      }
+
+      cmpVal = s1.getType().name().compareTo(s2.getType().name());
+
+      if (cmpVal != 0) {
+        return cmpVal;
+      }
+
+      cmpVal = s1.getReturnType().getType().name().compareTo(s2.getReturnType().getType().name());
+
+      if (cmpVal != 0) {
+        return cmpVal;
+      }
+
+      for (int i = 0; i < Math.min(s1.getParameterTypesCount(), s2.getParameterTypesCount()); i++) {
+        cmpVal = s1.getParameterTypes(i).getType().name().compareTo(s2.getParameterTypes(i).getType().name());
+
+        if (cmpVal != 0) {
+          return cmpVal;
+        }
+      }
+
+      return s2.getParameterTypesCount() - s1.getParameterTypesCount();
+    }
+  }
 
   public static String buildFQFunctionSignature(String funcName, DataType returnType, DataType... paramTypes) {
     return returnType.getType().name().toLowerCase() + " " + buildSimpleFunctionSignature(funcName, paramTypes);

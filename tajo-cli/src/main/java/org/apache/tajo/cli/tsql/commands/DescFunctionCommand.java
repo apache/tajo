@@ -52,17 +52,7 @@ public class DescFunctionCommand extends TajoShellCommand {
     List<CatalogProtos.FunctionDescProto> functions =
         new ArrayList<CatalogProtos.FunctionDescProto>(client.getFunctions(functionName));
 
-    Collections.sort(functions, new Comparator<CatalogProtos.FunctionDescProto>() {
-      @Override
-      public int compare(CatalogProtos.FunctionDescProto f1, CatalogProtos.FunctionDescProto f2) {
-        int nameCompared = f1.getSignature().getName().compareTo(f2.getSignature().getName());
-        if (nameCompared != 0) {
-          return nameCompared;
-        } else {
-          return f1.getSignature().getReturnType().getType().compareTo(f2.getSignature().getReturnType().getType());
-        }
-      }
-    });
+    Collections.sort(functions, new FunctionUtil.FunctionDescProtoComparator());
 
     String[] headers = new String[]{"Name", "Result type", "Argument types", "Description", "Type"};
     float[] columnWidthRates = new float[]{0.15f, 0.15f, 0.2f, 0.4f, 0.1f};
@@ -70,12 +60,12 @@ public class DescFunctionCommand extends TajoShellCommand {
 
     for(CatalogProtos.FunctionDescProto eachFunction: functions) {
       String name = eachFunction.getSignature().getName();
-      String resultDataType = eachFunction.getSignature().getReturnType().getType().toString();
+      String resultDataType = eachFunction.getSignature().getReturnType().getType().toString().toLowerCase();
       String arguments = FunctionUtil.buildParamTypeString(
           eachFunction.getSignature().getParameterTypesList().toArray(
               new DataType[eachFunction.getSignature().getParameterTypesCount()]));
-      String functionType = eachFunction.getSignature().getType().toString();
-      String description = eachFunction.getSupplement().getShortDescription();
+      String functionType = eachFunction.getSignature().getType().toString().toLowerCase();
+      String description = eachFunction.getSupplement().getShortDescription().trim();
 
       int index = 0;
       printLeft(" " + name, columnWidths[index++]);
