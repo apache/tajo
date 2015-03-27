@@ -37,7 +37,6 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.function.FunctionSignature;
-import org.apache.tajo.plan.function.OptionalFunctionContext;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.service.ServiceTrackerFactory;
 import org.apache.tajo.service.TajoMasterInfo;
@@ -147,7 +146,7 @@ public class TajoWorker extends CompositeService {
   private HistoryReader historyReader;
 
   // context for non-builtin functions
-  private OptionalFunctionContext functionContext = new OptionalFunctionContext();
+//  private OptionalFunctionContext functionContext = new OptionalFunctionContext();
 
   public TajoWorker() throws Exception {
     super(TajoWorker.class.getName());
@@ -284,7 +283,7 @@ public class TajoWorker extends CompositeService {
 
     historyReader = new HistoryReader(workerContext.getWorkerName(), this.systemConf);
 
-    FunctionLoader.loadOptionalFunctions(systemConf, functionContext, new HashMap<FunctionSignature, FunctionDesc>());
+    FunctionLoader.loadOptionalFunctions(systemConf, new HashMap<FunctionSignature, FunctionDesc>());
     
     diagnoseTajoWorker();
   }

@@ -93,17 +93,6 @@ public abstract class TajoScriptEngine {
    */
   protected abstract Map<String, Object> getParamsFromVariables() throws IOException;
 
-//  /**
-//   * Registers scripting language functions as Pig functions with given namespace
-//   *
-//   * @param path path of the script
-//   * @param namespace namespace for the functions
-//   * @param context context to register functions to tajo in the given namespace
-//   * @throws IOException
-//   */
-//  public abstract void registerFunctions(String path, String namespace,
-//                                         QueryContext context) throws IOException;
-
   /**
    * Figures out the jar location from the class
    * @param clazz class in the jar file

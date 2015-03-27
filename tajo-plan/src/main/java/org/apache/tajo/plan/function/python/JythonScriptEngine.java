@@ -42,7 +42,6 @@ import org.apache.tajo.function.FunctionInvocation;
 import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.function.FunctionSupplement;
 import org.apache.tajo.function.PythonInvocationDesc;
-import org.apache.tajo.plan.function.OptionalFunctionContext;
 import org.apache.tajo.util.TUtil;
 import org.python.core.*;
 import org.python.modules.zipimport.zipimporter;
@@ -89,7 +88,7 @@ public class JythonScriptEngine extends TajoScriptEngine {
             }
           }
           if (tmp == null) {
-            tmp = File.createTempFile("pig_jython_", "");
+            tmp = File.createTempFile("tajo_jython_", "");
             tmp.delete();
             if (tmp.mkdirs() == false) {
               LOG.warn("unable to create a tmp dir for the cache, jython may not work");
@@ -106,9 +105,6 @@ public class JythonScriptEngine extends TajoScriptEngine {
         if (jyhome != null) {
           Py.getSystemState().path.append(new PyString(jyhome + File.separator + "Lib"));
         }
-        URL pythonPath = ClassLoader.getSystemResource("python");
-        LOG.info(pythonPath == null ? "null" : pythonPath);
-//        Py.getSystemState().path.append(new PyString(ClassLoader.getSystemResource("python").toString()));
       } catch (Exception e) {
         LOG.warn("issue with jython cache dir", e);
       }
@@ -120,11 +116,11 @@ public class JythonScriptEngine extends TajoScriptEngine {
     /**
      * ensure the decorator functions are defined in the interpreter, and
      * manage the module import dependencies.
+     * @param context
      * @param path       location of a file to exec in the interpreter
-     * @param queryContext if non-null, module import state is tracked
      * @throws IOException
      */
-    static synchronized void init(OptionalFunctionContext context, String path) throws IOException {
+    static synchronized void init(boolean init, String path) throws IOException {
       // Decorators -
       // "schemaFunction"
       // "outputSchema"
@@ -155,7 +151,7 @@ public class JythonScriptEngine extends TajoScriptEngine {
           throw new IllegalStateException("unable to create a stream for path: " + path);
         }
         try {
-          execfile(context, is, path);
+          execfile(init, is, path);
         } finally {
           is.close();
         }
@@ -169,10 +165,11 @@ public class JythonScriptEngine extends TajoScriptEngine {
      * @param queryContext
      * @throws Exception
      */
-    static void execfile(OptionalFunctionContext context, InputStream script, String path) throws RuntimeException {
+    static void execfile(boolean init, InputStream script, String path) throws RuntimeException {
       try {
 
-        if( context != null ) {
+//        if( context != null ) {
+        if (init) {
           String [] argv;
           try {
 //            argv = (String[])ObjectSerializer.deserialize(
@@ -194,7 +191,8 @@ public class JythonScriptEngine extends TajoScriptEngine {
         }
 
         // determine the current module state
-        Map<String, String> before = context != null ? getModuleState() : null;
+//        Map<String, String> before = context != null ? getModuleState() : null;
+        Map<String, String> before = init ? getModuleState() : null;
         if (before != null) {
           // os.py, stax.py and posixpath.py are part of the initial state
           // if Lib directory is present and without including os.py, modules
@@ -209,17 +207,16 @@ public class JythonScriptEngine extends TajoScriptEngine {
           before.keySet().removeAll(includePyModules);
         }
 
-//        LOG.info(ClassLoader.getSystemResource("python").getPath());
-//        interpreter.getSystemState().path.append(new PyString(ClassLoader.getSystemResource("python").getPath()));
-
         // exec the code, arbitrary imports are processed
         interpreter.execfile(script, path);
 
         // determine the 'post import' module state
-        Map<String, String> after = context != null ? getModuleState() : null;
+//        Map<String, String> after = context != null ? getModuleState() : null;
+        Map<String, String> after = init ? getModuleState() : null;
 
         // add the module files to the context
-        if (after != null && context != null) {
+//        if (after != null && context != null) {
+        if (after != null && init) {
           after.keySet().removeAll(before.keySet());
           for (Map.Entry<String, String> entry : after.entrySet()) {
             String modulename = entry.getKey();
@@ -230,7 +227,7 @@ public class JythonScriptEngine extends TajoScriptEngine {
 //              context.addScriptJar(modulepath);
               throw new RuntimeException("jar and zip script files are not supported");
             } else {
-              context.addScriptFile(modulename, modulepath);
+//              context.addScriptFile(modulename, modulepath);
             }
           }
         }
@@ -347,7 +344,7 @@ public class JythonScriptEngine extends TajoScriptEngine {
    */
   public static PyFunction getFunction(String path, String functionName) throws IOException {
     Interpreter.setMain(false);
-    Interpreter.init(null, path);
+    Interpreter.init(false, path);
     return (PyFunction) Interpreter.interpreter.get(functionName);
   }
 
@@ -428,10 +425,10 @@ public class JythonScriptEngine extends TajoScriptEngine {
 
   //  @Override
 //  public void registerFunctions(String path, String namespace, QueryContext context)
-  public static Set<FunctionDesc> registerFunctions(OptionalFunctionContext context, String path, String namespace)
+  public static Set<FunctionDesc> registerFunctions(String path, String namespace)
       throws IOException {
     Interpreter.setMain(false);
-    Interpreter.init(context, path);
+    Interpreter.init(true, path);
 //    context.addScriptJar(getJarPath(PythonInterpreter.class));
     PythonInterpreter pi = Interpreter.interpreter;
     @SuppressWarnings("unchecked")
@@ -479,7 +476,7 @@ public class JythonScriptEngine extends TajoScriptEngine {
       }
     }
 
-    context.addScriptFile(path);
+//    context.addScriptFile(path);
     Interpreter.setMain(true);
     return functionDescs;
   }

@@ -39,7 +39,6 @@ import org.apache.tajo.engine.parser.SQLAnalyzer;
 import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.function.OptionalFunctionContext;
 import org.apache.tajo.plan.serder.EvalNodeDeserializer;
 import org.apache.tajo.plan.serder.EvalNodeSerializer;
 import org.apache.tajo.engine.query.QueryContext;
@@ -95,7 +94,7 @@ public class ExprTestBase {
     cat.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
     cat.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     Map<FunctionSignature, FunctionDesc> map = FunctionLoader.load();
-    map = FunctionLoader.loadOptionalFunctions(conf, new OptionalFunctionContext(), map);
+    map = FunctionLoader.loadOptionalFunctions(conf, map);
     for (FunctionDesc funcDesc : map.values()) {
       cat.createFunction(funcDesc);
     }

@@ -43,7 +43,6 @@ import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.master.rm.WorkerResourceManager;
 import org.apache.tajo.metrics.CatalogMetricsGaugeSet;
 import org.apache.tajo.metrics.WorkerResourceMetricsGaugeSet;
-import org.apache.tajo.plan.function.OptionalFunctionContext;
 import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rule.EvaluationContext;
 import org.apache.tajo.rule.EvaluationFailedException;
@@ -137,7 +136,7 @@ public class TajoMaster extends CompositeService {
   private HistoryReader historyReader;
 
   // context for non-builtin functions
-  private OptionalFunctionContext functionContext = new OptionalFunctionContext();
+//  private OptionalFunctionContext functionContext = new OptionalFunctionContext();
 
   public TajoMaster() throws Exception {
     super(TajoMaster.class.getName());
@@ -209,7 +208,7 @@ public class TajoMaster extends CompositeService {
 
   private Collection<FunctionDesc> loadFunctions() throws IOException {
     Map<FunctionSignature, FunctionDesc> functionMap = FunctionLoader.load();
-    return FunctionLoader.loadOptionalFunctions(systemConf, functionContext, functionMap).values();
+    return FunctionLoader.loadOptionalFunctions(systemConf, functionMap).values();
   }
 
   private void initSystemMetrics() {
@@ -485,9 +484,9 @@ public class TajoMaster extends CompositeService {
       return historyReader;
     }
 
-    public OptionalFunctionContext getFunctionContext() {
-      return functionContext;
-    }
+//    public OptionalFunctionContext getFunctionContext() {
+//      return functionContext;
+//    }
   }
 
   String getThreadTaskName(long id, String name) {

@@ -21,7 +21,6 @@ package org.apache.tajo.engine.function.python;
 import junit.framework.TestCase;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.plan.function.OptionalFunctionContext;
 import org.apache.tajo.plan.function.python.JythonScriptEngine;
 import org.apache.tajo.util.FileUtil;
 import org.python.core.PyFunction;
@@ -40,7 +39,6 @@ public class TestJythonScriptEngine extends TestCase {
   }
 
   public void testRegisterFunction() throws Exception {
-    OptionalFunctionContext context = new OptionalFunctionContext();
-    JythonScriptEngine.registerFunctions(context, "python/test1.py", "test");
+    JythonScriptEngine.registerFunctions("python/test1.py", "test");
   }
 }

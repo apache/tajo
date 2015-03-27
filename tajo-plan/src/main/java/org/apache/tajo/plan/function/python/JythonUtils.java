@@ -29,27 +29,6 @@ import org.python.core.*;
 
 public class JythonUtils {
 
-//  /**
-//   * @param schemaString a String representation of the Schema <b>without</b>
-//   *                     any enclosing curly-braces.<b>Not</b> for use with
-//   *                     <code>Schema#toString</code>
-//   * @return Schema instance
-//   * @throws ParserException
-//   */
-//  public static Schema getSchemaFromString(String schemaString) {
-//    LogicalSchema schema = parseSchema(schemaString);
-//    Schema result = org.apache.pig.newplan.logical.Util.translateSchema(schema);
-//    Schema.setSchemaDefaultType(result, DataType.BYTEARRAY);
-//    return result;
-//  }
-//
-//  public static LogicalSchema parseSchema(String schemaString) {
-//    QueryParserDriver queryParser = new QueryParserDriver( new PigContext(),
-//        "util", new HashMap<String, String>() ) ;
-//    LogicalSchema schema = queryParser.parseSchema(schemaString);
-//    return schema;
-//  }
-
   public static PyObject datumToPyObject(Datum v) {
     Preconditions.checkArgument(v.type() == TajoDataTypes.Type.ANY);
     Datum actual = ((AnyDatum) v).getActual();
