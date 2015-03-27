@@ -707,7 +707,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
   private void addPartition(String databaseName, String tableName, CatalogProtos.PartitionDescProto
     partitionDescProto) {
-    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     try {
 
       client = clientPool.getClient();
@@ -739,7 +739,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
 
   private void dropPartition(String databaseName, String tableName, CatalogProtos.PartitionDescProto
     partitionDescProto) {
-    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     try {
 
       client = clientPool.getClient();
@@ -789,7 +789,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   @Override
   public CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
                                                        String partitionName) throws CatalogException {
-    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     CatalogProtos.PartitionDescProto.Builder builder = null;
 
     try {

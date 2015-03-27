@@ -57,62 +57,9 @@
     </plugins>
   </build>
 
-  <profiles>
-    <profile>
-      <id>hive-0.12.0</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
-      <modules>
-        <module>tajo-hive</module>
-      </modules>
-    </profile>
-    <profile>
-      <id>hive-0.13.0</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
-      <modules>
-        <module>tajo-hive</module>
-      </modules>
-    </profile>
-    <profile>
-      <id>hive-0.13.1</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
-      <modules>
-        <module>tajo-hive</module>
-      </modules>
-    </profile>
-    <profile>
-      <id>hive-0.14.0</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
-      <modules>
-        <module>tajo-hive</module>
-      </modules>
-    </profile>
-    <profile>
-      <id>hive-1.0.0</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
-      <modules>
-        <module>tajo-hive</module>
-      </modules>
-    </profile>
-    <profile>
-      <id>hive-1.1.0</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
-      <modules>
-        <module>tajo-hive</module>
-      </modules>
-    </profile>
-  </profiles>
+  <modules>
+    <module>tajo-hive</module>
+  </modules>
 
   <reporting>
     <plugins>
