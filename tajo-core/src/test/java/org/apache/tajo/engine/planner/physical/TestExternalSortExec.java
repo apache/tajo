@@ -61,7 +61,7 @@ public class TestExternalSortExec {
   private LogicalPlanner planner;
   private Path testDir;
 
-  private final int numTuple = 100000;
+  private final int numTuple = 3000000;
   private Random rnd = new Random(System.currentTimeMillis());
 
   private TableDesc employee;
@@ -161,7 +161,7 @@ public class TestExternalSortExec {
       if (preVal != null) {
         assertTrue("prev: " + preVal + ", but cur: " + curVal, comparator.compare(preVal, curVal) <= 0);
       }
-      preVal = curVal;
+      preVal = new VTuple(curVal);
       cnt++;
     }
     long end = System.currentTimeMillis();
