@@ -263,16 +263,16 @@ public class JythonScriptEngine extends TajoScriptEngine {
     for (PyTuple item : locals) {
       String key = (String) item.get(0);
       Object value = item.get(1);
-      if (!key.startsWith("__") && !key.equals("schemaFunction")
-          && !key.equals("outputSchema")
-          && !key.equals("outputSchemaFunction")
+      if (!key.startsWith(JythonConstants.SKIP_TOKEN) && !key.equals(JythonConstants.SCHEMA_FUNCTION)
+          && !key.equals(JythonConstants.OUTPUT_SCHEMA)
+          && !key.equals(JythonConstants.OUTPUT_SCHEMA_FUNCTION)
           && (value instanceof PyFunction)
-          && (((PyFunction)value).__findattr__("schemaFunction".intern())== null)) {
+          && (((PyFunction)value).__findattr__(JythonConstants.SCHEMA_FUNCTION)== null)) {
         PyFunction pyFunction = (PyFunction) value;
 
         // Find the pre-defined output schema
         TajoDataTypes.Type returnType;
-        PyObject obj = pyFunction.__findattr__("outputSchema".intern());
+        PyObject obj = pyFunction.__findattr__(JythonConstants.SCHEMA_FUNCTION);
         if (obj != null) {
           returnType = pyObjectToType(obj);
         } else {
@@ -281,7 +281,6 @@ public class JythonScriptEngine extends TajoScriptEngine {
         }
 
         int paramNum = ((PyBaseCode) pyFunction.__code__).co_argcount;
-        LOG.info("co_argcount: " + paramNum);
         TajoDataTypes.DataType[] paramTypes = new TajoDataTypes.DataType[paramNum];
         for (int i = 0; i < paramNum; i++) {
           paramTypes[i] = TajoDataTypes.DataType.newBuilder().setType(TajoDataTypes.Type.ANY).build();
@@ -307,7 +306,6 @@ public class JythonScriptEngine extends TajoScriptEngine {
   }
 
   private static String pyObjectToTypeStringCand(PyObject obj) {
-    LOG.info("outputSchema: " + obj.toString());
     String[] types = obj.toString().split(",");
     if (types.length > 1) {
       throw new UnsupportedException("Multiple return type is not supported");

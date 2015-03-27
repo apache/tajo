@@ -16,20 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.function;
+package org.apache.tajo.plan.function.python;
 
-import org.apache.tajo.engine.eval.ExprTestBase;
-import org.junit.Test;
-
-import java.io.IOException;
-
-public class TestPythonFunctions extends ExprTestBase {
-
-  @Test
-  public void test() throws IOException {
-    testSimpleEval("select sum_py(1,2)", new String[]{"3"});
-    testSimpleEval("select return_one()", new String[]{"100"});
-    testSimpleEval("select helloworld()", new String[]{"Hello, World"});
-    testSimpleEval("select concat_py('1')", new String[]{"11"});
-  }
+public class JythonConstants {
+  public final static String SKIP_TOKEN = "__";
+  public final static String OUTPUT_SCHEMA = "outputSchema".intern();
+  public final static String OUTPUT_SCHEMA_FUNCTION = "outputSchemaFunction".intern();
+  public final static String SCHEMA_FUNCTION = "schemaFunction".intern();
 }
