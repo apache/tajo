@@ -9,6 +9,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1350: Refactor FilterPushDownRule::visitJoin() into well-defined, 
+    small methods. (jihoon)
+
     TAJO-1426: Support "explain global" to get physical plan. (Contributed by
     navis, Committed by jihoon)
 
