@@ -135,9 +135,6 @@ public class TajoMaster extends CompositeService {
 
   private HistoryReader historyReader;
 
-  // context for non-builtin functions
-//  private OptionalFunctionContext functionContext = new OptionalFunctionContext();
-
   public TajoMaster() throws Exception {
     super(TajoMaster.class.getName());
   }
@@ -483,10 +480,6 @@ public class TajoMaster extends CompositeService {
     public HistoryReader getHistoryReader() {
       return historyReader;
     }
-
-//    public OptionalFunctionContext getFunctionContext() {
-//      return functionContext;
-//    }
   }
 
   String getThreadTaskName(long id, String name) {

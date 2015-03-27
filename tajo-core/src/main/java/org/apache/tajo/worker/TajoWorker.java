@@ -145,9 +145,6 @@ public class TajoWorker extends CompositeService {
 
   private HistoryReader historyReader;
 
-  // context for non-builtin functions
-//  private OptionalFunctionContext functionContext = new OptionalFunctionContext();
-
   public TajoWorker() throws Exception {
     super(TajoWorker.class.getName());
   }
@@ -287,21 +284,6 @@ public class TajoWorker extends CompositeService {
     
     diagnoseTajoWorker();
   }
-
-//  private void initOptionalFunctions() throws IOException {
-//    String[] codePaths = systemConf.getStrings(TajoConf.ConfVars.PYTHON_CODE_DIR.varname);
-//    for (String codePath : codePaths) {
-//      Set<FunctionDesc> functions = JythonScriptEngine.registerFunctions(functionContext, codePath,
-//          FunctionLoader.PYTHON_FUNCTION_NAMESPACE);
-//      for (FunctionDesc desc : functions) {
-//        LOG.info("FunctionLoader: " + desc);
-//      }
-////      for (FunctionDesc f : JythonScriptEngine.registerFunctions(functionContext, codePath,
-////          FunctionLoader.PYTHON_FUNCTION_NAMESPACE)) {
-////        map.put(f.getSignature(), f);
-////      }
-//    }
-//  }
 
   private void initWorkerMetrics() {
     workerSystemMetrics = new TajoSystemMetrics(systemConf, "worker", workerContext.getWorkerName());
