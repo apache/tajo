@@ -15,8 +15,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.tajo.catalog;
 
-public enum AlterTableType {
-    RENAME_TABLE, RENAME_COLUMN, ADD_COLUMN, ADD_PARTITION, DROP_PARTITION
+package org.apache.tajo.catalog.dictionary;
+
+import org.apache.tajo.common.TajoDataTypes.Type;
+
+class PartitionKeysTableDescriptor extends AbstractTableDescriptor {
+
+  private static final String TABLENAME = "partition_keys";
+  private final ColumnDescriptor[] columns = new ColumnDescriptor[] {
+      new ColumnDescriptor("partition_id", Type.INT4, 0),
+      new ColumnDescriptor("column_name", Type.TEXT, 0),
+      new ColumnDescriptor("partition_value", Type.TEXT, 0),
+  };
+
+  public PartitionKeysTableDescriptor(InfoSchemaMetadataDictionary metadataDictionary) {
+    super(metadataDictionary);
+  }
+
+  @Override
+  public String getTableNameString() {
+    return TABLENAME;
+  }
+
+  @Override
+  protected ColumnDescriptor[] getColumnDescriptors() {
+    return columns;
+  }
+
 }

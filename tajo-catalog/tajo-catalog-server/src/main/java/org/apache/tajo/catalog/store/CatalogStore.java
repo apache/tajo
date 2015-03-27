@@ -102,25 +102,17 @@ public interface CatalogStore extends Closeable {
 
 
   /************************** PARTITIONS *****************************/
-  void addPartitions(CatalogProtos.PartitionsProto partitionsProto) throws CatalogException;
-
-  void addPartition(String databaseName, String tableName,
-                    CatalogProtos.PartitionDescProto partitionDescProto) throws CatalogException;
-
   /**
    * Get all partitions of a table
    * @param tableName the table name
    * @return
    * @throws CatalogException
    */
-  CatalogProtos.PartitionsProto getPartitions(String tableName) throws CatalogException;
+  List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName) throws CatalogException;
 
-  CatalogProtos.PartitionDescProto getPartition(String partitionName) throws CatalogException;
+  CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
+                                                String partitionName) throws CatalogException;
 
-  void delPartition(String partitionName) throws CatalogException;
-
-  void dropPartitions(String tableName) throws CatalogException;
-  
   List<TablePartitionProto> getAllPartitions() throws CatalogException;
 
   /**************************** INDEX *******************************/

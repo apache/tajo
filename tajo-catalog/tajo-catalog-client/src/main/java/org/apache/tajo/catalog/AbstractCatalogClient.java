@@ -410,7 +410,50 @@ public abstract class AbstractCatalogClient implements CatalogService {
       return false;
     }
   }
-  
+
+  @Override
+  public final PartitionDescProto getPartition(final String databaseName, final String tableName,
+                                               final String partitionName) {
+    try {
+      return new ServerCallable<PartitionDescProto>(this.pool, getCatalogServerAddr(), CatalogProtocol.class, false) {
+        public PartitionDescProto call(NettyClientBase client) throws ServiceException {
+
+          PartitionIdentifierProto.Builder builder = PartitionIdentifierProto.newBuilder();
+          builder.setDatabaseName(databaseName);
+          builder.setTableName(tableName);
+          builder.setPartitionName(partitionName);
+
+          CatalogProtocolService.BlockingInterface stub = getStub(client);
+          return stub.getPartitionByPartitionName(null, builder.build());
+        }
+      }.withRetries();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return null;
+    }
+  }
+
+  @Override
+  public final List<PartitionDescProto> getPartitions(final String databaseName, final String tableName) {
+    try {
+      return new ServerCallable<List<PartitionDescProto>>(this.pool, getCatalogServerAddr(), CatalogProtocol.class,
+        false) {
+        public List<PartitionDescProto> call(NettyClientBase client) throws ServiceException {
+
+          PartitionIdentifierProto.Builder builder = PartitionIdentifierProto.newBuilder();
+          builder.setDatabaseName(databaseName);
+          builder.setTableName(tableName);
+
+          CatalogProtocolService.BlockingInterface stub = getStub(client);
+          PartitionsProto response = stub.getPartitionsByTableName(null, builder.build());
+          return response.getPartitionList();
+        }
+      }.withRetries();
+    } catch (ServiceException e) {
+      LOG.error(e.getMessage(), e);
+      return null;
+    }
+  }
   @Override
   public List<TablePartitionProto> getAllPartitions() {
     try {

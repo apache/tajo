@@ -108,6 +108,8 @@ Release 0.11.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1284: Add alter partition method to CatalogStore. (jaehwa)
+
     TAJO-1392: Resolve findbug warnings on Tajo Plan Module. (jihun)
 
     TAJO-1393: Resolve findbug warnings on Tajo Cli Module.
