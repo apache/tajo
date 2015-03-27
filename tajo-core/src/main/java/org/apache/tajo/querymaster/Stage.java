@@ -1142,7 +1142,7 @@ public class Stage implements EventHandler<StageEvent> {
                                   TaskAttemptScheduleContext taskContext,
                                   Stage stage, int taskId) {
     ExecutionBlock execBlock = stage.getBlock();
-    Task unit = new Task(schedulerContext.getMasterContext().getConf(),
+    Task unit = new Task(schedulerContext.getMasterContext(),
         taskContext,
         QueryIdFactory.newTaskId(schedulerContext.getBlockId(), taskId),
         schedulerContext.isLeafQuery(), stage.eventHandler);

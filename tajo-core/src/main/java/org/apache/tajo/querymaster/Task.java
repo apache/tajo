@@ -30,10 +30,12 @@ import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.TajoWorkerProtocol.FailureIntermediateProto;
 import org.apache.tajo.ipc.TajoWorkerProtocol.IntermediateEntryProto;
 import org.apache.tajo.master.TaskState;
@@ -81,7 +83,7 @@ public class Task implements EventHandler<TaskEvent> {
   private List<IntermediateEntry> intermediateData;
 
   private Map<TaskAttemptId, TaskAttempt> attempts;
-  private final int maxAttempts = 3;
+  private int maxAttempts = 2;
   private Integer nextAttempt = -1;
   private TaskAttemptId lastAttemptId;
 
@@ -186,9 +188,17 @@ public class Task implements EventHandler<TaskEvent> {
   private final Lock writeLock;
   private TaskAttemptScheduleContext scheduleContext;
 
-	public Task(Configuration conf, TaskAttemptScheduleContext scheduleContext,
+  public Task(QueryMasterTask.QueryMasterTaskContext masterContext,
+              TaskAttemptScheduleContext scheduleContext,
               TaskId id, boolean isLeafTask, EventHandler eventHandler) {
-    this.systemConf = conf;
+    this(masterContext.getConf(), masterContext.getQueryContext(),
+        scheduleContext, id , isLeafTask, eventHandler);
+  }
+
+	public Task(Configuration systemConf, QueryContext queryContext,
+              TaskAttemptScheduleContext scheduleContext,
+              TaskId id, boolean isLeafTask, EventHandler eventHandler) {
+    this.systemConf = systemConf;
 		this.taskId = id;
     this.eventHandler = eventHandler;
     this.isLeafTask = isLeafTask;
@@ -208,7 +218,11 @@ public class Task implements EventHandler<TaskEvent> {
 
     stateMachine = stateMachineFactory.make(this);
     totalFragmentNum = 0;
-	}
+
+    maxAttempts = Math.min(
+        SessionVars.TASK_RETRY_COUNT.getConfVars().defaultIntVal,
+        queryContext.getInt(SessionVars.TASK_RETRY_COUNT));
+  }
 
   public boolean isLeafTask() {
     return this.isLeafTask;
@@ -276,7 +290,7 @@ public class Task implements EventHandler<TaskEvent> {
         fragmentList.add("ERROR: " + eachFragment.getStoreType() + "," + eachFragment.getId() + ": " + e.getMessage());
       }
     }
-    taskHistory.setFragments(fragmentList.toArray(new String[]{}));
+    taskHistory.setFragments(fragmentList.toArray(new String[fragmentList.size()]));
 
     List<String[]> fetchList = new ArrayList<String[]>();
     for (Map.Entry<String, Set<FetchImpl>> e : getFetchMap().entrySet()) {
@@ -294,7 +308,7 @@ public class Task implements EventHandler<TaskEvent> {
       dataLocationList.add(eachLocation.toString());
     }
 
-    taskHistory.setDataLocations(dataLocationList.toArray(new String[]{}));
+    taskHistory.setDataLocations(dataLocationList.toArray(new String[dataLocationList.size()]));
     return taskHistory;
   }
 
@@ -658,10 +672,11 @@ public class Task implements EventHandler<TaskEvent> {
       if (!(taskEvent instanceof TaskTAttemptEvent)) {
         throw new IllegalArgumentException("taskEvent should be a TaskTAttemptEvent type.");
       }
-      TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) taskEvent;
+      boolean retry = task.failedAttempts < task.maxAttempts;
       task.failedAttempts++;
       task.finishedAttempts++;
-      boolean retry = task.failedAttempts < task.maxAttempts;
+
+      TaskTAttemptEvent attemptEvent = (TaskTAttemptEvent) taskEvent;
 
       LOG.info("====================================================================================");
       LOG.info(">>> Task Failed: " + attemptEvent.getTaskAttemptId() + ", " +

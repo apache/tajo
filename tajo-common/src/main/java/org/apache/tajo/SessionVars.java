@@ -107,6 +107,9 @@ public enum SessionVars implements ConfigKey {
   GROUPBY_MULTI_LEVEL_ENABLED(ConfVars.$GROUPBY_MULTI_LEVEL_ENABLED, "Multiple level groupby enabled", DEFAULT,
       Boolean.class, Validators.bool()),
 
+  TASK_RETRY_COUNT(ConfVars.$TASK_RETRY_COUNT, "Retry count for failed task, should be less than or equal to 2",
+      DEFAULT, Integer.class, Validators.max("2")),
+
   // for physical Executors
   EXTSORT_BUFFER_SIZE(ConfVars.$EXECUTOR_EXTERNAL_SORT_BUFFER_SIZE, "sort buffer size for external sort (mb)", DEFAULT,
       Long.class, Validators.min("0")),
