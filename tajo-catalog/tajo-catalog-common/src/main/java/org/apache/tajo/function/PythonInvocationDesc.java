@@ -22,6 +22,10 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.proto.CatalogProtos.PythonInvocationDescProto;
 import org.apache.tajo.common.ProtoObject;
 
+/**
+ * <code>PythonInvocationDesc</code> describes a function name
+ * and a file path to the script where the function is defined.
+ */
 public class PythonInvocationDesc implements ProtoObject<PythonInvocationDescProto> {
   @Expose private String funcName;
   @Expose private String filePath;

@@ -32,6 +32,9 @@ import org.python.core.PyObject;
 
 import java.io.IOException;
 
+/**
+ * Python implementation of a Tajo UDF Performs mappings between Python & Tajo data structures.
+ */
 public class GeneralPythonFunctionEval extends FunctionEval {
   private Tuple params = null;
 
@@ -53,11 +56,14 @@ public class GeneralPythonFunctionEval extends FunctionEval {
     PythonInvocationDesc invokeDesc = funcDesc.getInvocation().getPython();
     try {
       PyFunction function = JythonScriptEngine.getFunction(invokeDesc.getPath(), invokeDesc.getName());
+
       TajoDataTypes.DataType[] paramTypes = funcDesc.getSignature().getParamTypes();
       PyObject result;
       if (paramTypes.length == 0) {
         result = function.__call__();
       } else {
+        // Find the actual data types from the given parameters at runtime,
+        // and convert them into PyObject instances.
         PyObject[] pyParams = JythonUtils.tupleToPyTuple(params).getArray();
         result = function.__call__(pyParams);
       }

@@ -30,6 +30,11 @@ import org.python.core.*;
 
 public class JythonUtils {
 
+  /**
+   * Convert a datum to a PyObject.
+   * @param v
+   * @return
+   */
   public static PyObject datumToPyObject(Datum v) {
     Preconditions.checkArgument(v.type() == TajoDataTypes.Type.ANY);
     Datum actual = ((AnyDatum) v).getActual();
@@ -71,6 +76,11 @@ public class JythonUtils {
     }
   }
 
+  /**
+   * Convert a Tajo tuple to a PyTuple
+   * @param tuple
+   * @return
+   */
   public static PyTuple tupleToPyTuple(Tuple tuple) {
     PyObject[] pyTuple = new PyObject[tuple.size()];
     int i = 0;
@@ -80,6 +90,11 @@ public class JythonUtils {
     return new PyTuple(pyTuple);
   }
 
+  /**
+   * Convert a PyObject to a datum.
+   * @param object
+   * @return
+   */
   public static Datum pyObjectToDatum(PyObject object) {
     if (object instanceof PyLong) {
       return DatumFactory.createInt8((Long) object.__tojava__(Long.class));
@@ -112,10 +127,21 @@ public class JythonUtils {
     }
   }
 
+  /**
+   * Convert a pyObject to a datum of the given type.
+   * @param object an object will be converted to a datum.
+   * @param type target datum type.
+   * @return a datum of the given type.
+   */
   public static Datum pyObjectToDatum(PyObject object, TajoDataTypes.Type type) {
     return DatumFactory.cast(pyObjectToDatum(object), CatalogUtil.newSimpleDataType(type), null);
   }
 
+  /**
+   * Convert the primitive type to the Tajo type.
+   * @param clazz
+   * @return
+   */
   public static TajoDataTypes.Type primitiveTypeToDataType(Class clazz) {
     if (clazz.getName().equals(Long.class.getName())) {
       return TajoDataTypes.Type.INT8;
@@ -141,6 +167,11 @@ public class JythonUtils {
     }
   }
 
+  /**
+   * Convert the Tajo type to the primitive type.
+   * @param type
+   * @return
+   */
   public static Object dataTypeToPrimitiveType(TajoDataTypes.Type type) {
     switch (type) {
       case BOOLEAN:

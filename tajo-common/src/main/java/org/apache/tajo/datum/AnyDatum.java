@@ -22,6 +22,9 @@ import com.google.gson.annotations.Expose;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.ANY;
 
+/**
+ * <code>AnyDatum</code> can contain any types of datum.
+ */
 public class AnyDatum extends Datum {
   @Expose Datum val;
 
@@ -68,7 +71,8 @@ public class AnyDatum extends Datum {
       AnyDatum other = (AnyDatum) datum;
       return val.compareTo(other.val);
     }
-    return -1;
+    // Any datums will be lastly appeared.
+    return 1;
   }
 
   @Override

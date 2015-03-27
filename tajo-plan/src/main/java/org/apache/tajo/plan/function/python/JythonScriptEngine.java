@@ -272,7 +272,7 @@ public class JythonScriptEngine extends TajoScriptEngine {
 
         // Find the pre-defined output schema
         TajoDataTypes.Type returnType;
-        PyObject obj = pyFunction.__findattr__(JythonConstants.SCHEMA_FUNCTION);
+        PyObject obj = pyFunction.__findattr__(JythonConstants.OUTPUT_SCHEMA);
         if (obj != null) {
           returnType = pyObjectToType(obj);
         } else {
@@ -280,6 +280,7 @@ public class JythonScriptEngine extends TajoScriptEngine {
           returnType = TajoDataTypes.Type.BLOB;
         }
 
+        // Parameters have the ANY type.
         int paramNum = ((PyBaseCode) pyFunction.__code__).co_argcount;
         TajoDataTypes.DataType[] paramTypes = new TajoDataTypes.DataType[paramNum];
         for (int i = 0; i < paramNum; i++) {
