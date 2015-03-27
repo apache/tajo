@@ -18,6 +18,7 @@
 
 package org.apache.tajo.ws.rs;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -41,8 +42,23 @@ public class JerseyResourceDelegateContext {
     return this;
   }
   
-  @SuppressWarnings("unchecked")
   public <T> T get(JerseyResourceDelegateContextKey<T> key) {
-    return (T) contextMap.get(key);
+    Class<T> keyTypeClass = key.getType();
+    Object object = contextMap.get(key);
+    if (object != null) {
+      return keyTypeClass.cast(contextMap.get(key));
+    } else {
+      if (Boolean.class.isAssignableFrom(keyTypeClass)) {
+        return keyTypeClass.cast(false);
+      } else if (Number.class.isAssignableFrom(keyTypeClass)) {
+        try {
+          return keyTypeClass.getConstructor(String.class).newInstance("0");
+        } catch (Throwable e) {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    }
   }
 }

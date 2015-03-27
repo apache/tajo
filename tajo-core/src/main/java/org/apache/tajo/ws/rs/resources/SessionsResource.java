@@ -65,7 +65,7 @@ public class SessionsResource {
   private void initializeContext() {
     context = new JerseyResourceDelegateContext();
     JerseyResourceDelegateContextKey<UriInfo> uriInfoKey =
-        JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey);
+        JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey, UriInfo.class);
     context.put(uriInfoKey, uriInfo);
   }
 
@@ -87,7 +87,7 @@ public class SessionsResource {
     try {
       initializeContext();
       JerseyResourceDelegateContextKey<NewSessionRequest> newSessionRequestKey = 
-          JerseyResourceDelegateContextKey.valueOf(newSessionRequestKeyName);
+          JerseyResourceDelegateContextKey.valueOf(newSessionRequestKeyName, NewSessionRequest.class);
       context.put(newSessionRequestKey, request);
 
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
@@ -95,8 +95,10 @@ public class SessionsResource {
           application, 
           context,
           LOG);
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
+      
+      response = ResourcesUtil.createExceptionResponse(null, e.getMessage());
     }
     return response;
   }
@@ -105,23 +107,23 @@ public class SessionsResource {
 
     @Override
     public Response run(JerseyResourceDelegateContext context) {
-      JerseyResourceDelegateContextKey<NewSessionRequest> sessionRequestKey =
-          JerseyResourceDelegateContextKey.valueOf(newSessionRequestKeyName);
-      NewSessionRequest request = context.get(sessionRequestKey);
-      
-      if (request.getUserName() == null || request.getUserName().isEmpty()) {
-        return ResourcesUtil.createBadRequestResponse(LOG, "userName is null or empty.");
-      }
-
-      String userName = request.getUserName();
-      String databaseName = request.getDatabaseName();
-      if (databaseName == null || databaseName.isEmpty()) {
-        databaseName = TajoConstants.DEFAULT_DATABASE_NAME;
-      }
-
       try {
+        JerseyResourceDelegateContextKey<NewSessionRequest> sessionRequestKey =
+            JerseyResourceDelegateContextKey.valueOf(newSessionRequestKeyName, NewSessionRequest.class);
+        NewSessionRequest request = context.get(sessionRequestKey);
+        
+        if (request.getUserName() == null || request.getUserName().isEmpty()) {
+          return ResourcesUtil.createBadRequestResponse(LOG, "userName is null or empty.");
+        }
+
+        String userName = request.getUserName();
+        String databaseName = request.getDatabaseName();
+        if (databaseName == null || databaseName.isEmpty()) {
+          databaseName = TajoConstants.DEFAULT_DATABASE_NAME;
+        }
+        
         JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
-            JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey);
+            JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
         TajoMaster.MasterContext masterContext = context.get(masterContextKey);
         
         NewSessionResponse sessionResponse = new NewSessionResponse();
@@ -134,7 +136,7 @@ public class SessionsResource {
         sessionResponse.setVariables(masterContext.getSessionManager().getAllVariables(sessionId));
         
         JerseyResourceDelegateContextKey<UriInfo> uriInfoKey =
-            JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey);
+            JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey, UriInfo.class);
         UriInfo uriInfo = context.get(uriInfoKey);
 
         URI newSessionUri = uriInfo.getBaseUriBuilder()
@@ -179,7 +181,7 @@ public class SessionsResource {
     try {
       initializeContext();
       JerseyResourceDelegateContextKey<String> sessionIdKey =
-          JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName);
+          JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName, String.class);
       context.put(sessionIdKey, sessionId);
       
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
@@ -187,8 +189,10 @@ public class SessionsResource {
           application,
           context,
           LOG);
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
+      
+      response = ResourcesUtil.createExceptionResponse(null, e.getMessage());
     }
     
     return response;
@@ -199,10 +203,10 @@ public class SessionsResource {
     @Override
     public Response run(JerseyResourceDelegateContext context) {
       JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
-          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey);
+          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       TajoMaster.MasterContext masterContext = context.get(masterContextKey);
       JerseyResourceDelegateContextKey<String> sessionIdKey =
-          JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName);
+          JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName, String.class);
       String sessionId = context.get(sessionIdKey);
 
       Session session = masterContext.getSessionManager().removeSession(sessionId);
@@ -239,7 +243,7 @@ public class SessionsResource {
     try {
       initializeContext();
       JerseyResourceDelegateContextKey<String> sessionIdKey =
-          JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName);
+          JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName, String.class);
       context.put(sessionIdKey, sessionId);
       
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
@@ -247,8 +251,10 @@ public class SessionsResource {
           application,
           context,
           LOG);
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
+      
+      response = ResourcesUtil.createExceptionResponse(null, e.getMessage());
     }
     
     return response;
@@ -259,10 +265,10 @@ public class SessionsResource {
     @Override
     public Response run(JerseyResourceDelegateContext context) {
       JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
-          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey);
+          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       TajoMaster.MasterContext masterContext = context.get(masterContextKey);
       JerseyResourceDelegateContextKey<String> sessionIdKey =
-          JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName);
+          JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName, String.class);
       String sessionId = context.get(sessionIdKey);
 
       try {
@@ -306,10 +312,10 @@ public class SessionsResource {
     try {
       initializeContext();
       JerseyResourceDelegateContextKey<String> sessionIdKey =
-          JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName);
+          JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName, String.class);
       context.put(sessionIdKey, sessionId);
-      JerseyResourceDelegateContextKey<Map<String, Object>> variablesMapKey =
-          JerseyResourceDelegateContextKey.valueOf(variablesKeyName);
+      JerseyResourceDelegateContextKey<Map> variablesMapKey =
+          JerseyResourceDelegateContextKey.valueOf(variablesKeyName, Map.class);
       context.put(variablesMapKey, variables);
       
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
@@ -317,8 +323,10 @@ public class SessionsResource {
           application,
           context,
           LOG);
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
+      
+      response = ResourcesUtil.createExceptionResponse(null, e.getMessage());
     }
     
     return response;
@@ -329,13 +337,13 @@ public class SessionsResource {
     @Override
     public Response run(JerseyResourceDelegateContext context) {
       JerseyResourceDelegateContextKey<String> sessionIdKey =
-          JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName);
+          JerseyResourceDelegateContextKey.valueOf(sessionIdKeyName, String.class);
       String sessionId = context.get(sessionIdKey);
-      JerseyResourceDelegateContextKey<Map<String, Object>> variablesKey =
-          JerseyResourceDelegateContextKey.valueOf(variablesKeyName);
+      JerseyResourceDelegateContextKey<Map> variablesKey =
+          JerseyResourceDelegateContextKey.valueOf(variablesKeyName, Map.class);
       Map<String, Object> variables = context.get(variablesKey);
       JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
-          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey);
+          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       TajoMaster.MasterContext masterContext = context.get(masterContextKey);
 
       try {

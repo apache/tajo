@@ -72,7 +72,7 @@ public class TablesResource {
   private void initializeContext() {
     context = new JerseyResourceDelegateContext();
     JerseyResourceDelegateContextKey<UriInfo> uriInfoKey =
-        JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey);
+        JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey, UriInfo.class);
     context.put(uriInfoKey, uriInfo);
   }
   
@@ -105,10 +105,10 @@ public class TablesResource {
     try {
       initializeContext();
       JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName);
+          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
       context.put(databaseNameKey, databaseName);
       JerseyResourceDelegateContextKey<TableDesc> tableDescKey =
-          JerseyResourceDelegateContextKey.valueOf(tableDescKeyName);
+          JerseyResourceDelegateContextKey.valueOf(tableDescKeyName, TableDesc.class);
       context.put(tableDescKey, tableDesc);
       
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
@@ -116,8 +116,10 @@ public class TablesResource {
           application,
           context,
           LOG);
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
+      
+      response = ResourcesUtil.createExceptionResponse(null, e.getMessage());
     }
     
     return response;
@@ -128,13 +130,13 @@ public class TablesResource {
     @Override
     public Response run(JerseyResourceDelegateContext context) {
       JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName);
+          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
       String databaseName = context.get(databaseNameKey);
       JerseyResourceDelegateContextKey<TableDesc> tableDescKey =
-          JerseyResourceDelegateContextKey.valueOf(tableDescKeyName);
+          JerseyResourceDelegateContextKey.valueOf(tableDescKeyName, TableDesc.class);
       TableDesc tableDesc = context.get(tableDescKey);
       JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
-          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey);
+          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       MasterContext masterContext = context.get(masterContextKey);
       
       if (!CatalogUtil.isFQTableName(tableDesc.getName())) {
@@ -145,7 +147,7 @@ public class TablesResource {
       boolean tableCreated = catalogService.createTable(tableDesc);
       if (tableCreated) {
         JerseyResourceDelegateContextKey<UriInfo> uriInfoKey =
-            JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey);
+            JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey, UriInfo.class);
         UriInfo uriInfo = context.get(uriInfoKey);
         
         URI tableUri = uriInfo.getBaseUriBuilder()
@@ -171,7 +173,7 @@ public class TablesResource {
     try {
       initializeContext();
       JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName);
+          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
       context.put(databaseNameKey, databaseName);
       
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
@@ -179,8 +181,10 @@ public class TablesResource {
           application,
           context,
           LOG);
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
+      
+      response = ResourcesUtil.createExceptionResponse(null, e.getMessage());
     }
     
     return response;
@@ -191,10 +195,10 @@ public class TablesResource {
     @Override
     public Response run(JerseyResourceDelegateContext context) {
       JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
-          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey);
+          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       MasterContext masterContext = context.get(masterContextKey);
       JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName);
+          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
       String databaseName = context.get(databaseNameKey);
       
       CatalogService catalogService = masterContext.getCatalog();
@@ -227,10 +231,10 @@ public class TablesResource {
     try {
       initializeContext();
       JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName);
+          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
       context.put(databaseNameKey, databaseName);
       JerseyResourceDelegateContextKey<String> tableNameKey =
-          JerseyResourceDelegateContextKey.valueOf(tableNameKeyName);
+          JerseyResourceDelegateContextKey.valueOf(tableNameKeyName, String.class);
       context.put(tableNameKey, tableName);
       
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
@@ -238,8 +242,10 @@ public class TablesResource {
           application,
           context,
           LOG);
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
+      
+      response = ResourcesUtil.createExceptionResponse(null, e.getMessage());
     }
     
     return response;
@@ -250,13 +256,13 @@ public class TablesResource {
     @Override
     public Response run(JerseyResourceDelegateContext context) {
       JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName);
+          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
       String databaseName = context.get(databaseNameKey);
       JerseyResourceDelegateContextKey<String> tableNameKey =
-          JerseyResourceDelegateContextKey.valueOf(tableNameKeyName);
+          JerseyResourceDelegateContextKey.valueOf(tableNameKeyName, String.class);
       String tableName = context.get(tableNameKey);
       JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
-          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey);
+          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       MasterContext masterContext = context.get(masterContextKey);
       
       if (CatalogUtil.isFQTableName(tableName)) {
@@ -286,10 +292,10 @@ public class TablesResource {
     try {
       initializeContext();
       JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName);
+          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
       context.put(databaseNameKey, databaseName);
       JerseyResourceDelegateContextKey<String> tableNameKey =
-          JerseyResourceDelegateContextKey.valueOf(tableNameKeyName);
+          JerseyResourceDelegateContextKey.valueOf(tableNameKeyName, String.class);
       context.put(tableNameKey, tableName);
       
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
@@ -297,8 +303,10 @@ public class TablesResource {
           application,
           context,
           LOG);
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
+      
+      response = ResourcesUtil.createExceptionResponse(null, e.getMessage());
     }
     
     return response;
@@ -309,13 +317,13 @@ public class TablesResource {
     @Override
     public Response run(JerseyResourceDelegateContext context) {
       JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName);
+          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
       String databaseName = context.get(databaseNameKey);
       JerseyResourceDelegateContextKey<String> tableNameKey =
-          JerseyResourceDelegateContextKey.valueOf(tableNameKeyName);
+          JerseyResourceDelegateContextKey.valueOf(tableNameKeyName, String.class);
       String tableName = context.get(tableNameKey);
       JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
-          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey);
+          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       MasterContext masterContext = context.get(masterContextKey);
       
       if (CatalogUtil.isFQTableName(tableName)) {

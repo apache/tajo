@@ -76,7 +76,7 @@ public class DatabasesResource {
   private void initializeContext() {
     context = new JerseyResourceDelegateContext();
     JerseyResourceDelegateContextKey<UriInfo> uriInfoKey =
-        JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey);
+        JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey, UriInfo.class);
     context.put(uriInfoKey, uriInfo);
   }
   
@@ -101,8 +101,10 @@ public class DatabasesResource {
           application,
           context,
           LOG);
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
+      
+      response = ResourcesUtil.createExceptionResponse(null, e.getMessage());
     }
     
     return response;
@@ -113,7 +115,7 @@ public class DatabasesResource {
     @Override
     public Response run(JerseyResourceDelegateContext context) {
       JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
-          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey);
+          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       MasterContext masterContext = context.get(masterContextKey);
       
       Collection<String> databaseNames = masterContext.getCatalog().getAllDatabaseNames();
@@ -139,7 +141,7 @@ public class DatabasesResource {
     try {
       initializeContext();
       JerseyResourceDelegateContextKey<NewDatabaseRequest> newDatabaseRequestKey =
-          JerseyResourceDelegateContextKey.valueOf(newDatabaseRequestKeyName);
+          JerseyResourceDelegateContextKey.valueOf(newDatabaseRequestKeyName, NewDatabaseRequest.class);
       context.put(newDatabaseRequestKey, request);
       
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
@@ -147,8 +149,10 @@ public class DatabasesResource {
           application,
           context,
           LOG);
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
+      
+      response = ResourcesUtil.createExceptionResponse(null, e.getMessage());
     }
     
     return response;
@@ -159,13 +163,13 @@ public class DatabasesResource {
     @Override
     public Response run(JerseyResourceDelegateContext context) {
       JerseyResourceDelegateContextKey<NewDatabaseRequest> newDatabaseRequestKey =
-          JerseyResourceDelegateContextKey.valueOf(newDatabaseRequestKeyName);
+          JerseyResourceDelegateContextKey.valueOf(newDatabaseRequestKeyName, NewDatabaseRequest.class);
       NewDatabaseRequest request = context.get(newDatabaseRequestKey);
       JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
-          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey);
+          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       MasterContext masterContext = context.get(masterContextKey);
       JerseyResourceDelegateContextKey<UriInfo> uriInfoKey =
-          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey);
+          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey, UriInfo.class);
       UriInfo uriInfo = context.get(uriInfoKey);
       
       if (request.getDatabaseName() == null || request.getDatabaseName().isEmpty()) {
@@ -205,7 +209,7 @@ public class DatabasesResource {
     try {
       initializeContext();
       JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName);
+          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
       context.put(databaseNameKey, databaseName);
       
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
@@ -213,8 +217,10 @@ public class DatabasesResource {
           application,
           context,
           LOG);
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
+      
+      response = ResourcesUtil.createExceptionResponse(null, e.getMessage());
     }
     
     return response;
@@ -225,10 +231,10 @@ public class DatabasesResource {
     @Override
     public Response run(JerseyResourceDelegateContext context) {
       JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
-          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey);
+          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       MasterContext masterContext = context.get(masterContextKey);
       JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName);
+          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
       String databaseName = context.get(databaseNameKey);
       
       if (databaseName.isEmpty()) {
@@ -283,7 +289,7 @@ public class DatabasesResource {
     try {
       initializeContext();
       JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName);
+          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
       context.put(databaseNameKey, databaseName);
       
       return JerseyResourceDelegateUtil.runJerseyResourceDelegate(
@@ -291,8 +297,10 @@ public class DatabasesResource {
           application,
           context,
           LOG);
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
+      
+      response = ResourcesUtil.createExceptionResponse(null, e.getMessage());
     }
     
     return response;
@@ -303,10 +311,10 @@ public class DatabasesResource {
     @Override
     public Response run(JerseyResourceDelegateContext context) {
       JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
-          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey);
+          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       MasterContext masterContext = context.get(masterContextKey);
       JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName);
+          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
       String databaseName = context.get(databaseNameKey);
       
       if (databaseName.isEmpty()) {

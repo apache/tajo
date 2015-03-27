@@ -29,9 +29,7 @@ import javax.ws.rs.core.GenericType;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf.ConfVars;
-import org.apache.tajo.master.rm.Worker;
 import org.apache.tajo.ws.rs.netty.gson.GsonFeature;
-import org.apache.tajo.ws.rs.responses.WorkerResponse;
 import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.filter.LoggingFilter;
 import org.junit.After;
@@ -56,7 +54,7 @@ public class TestClusterResource extends QueryTestCaseBase {
     restServiceURI = new URI("http", null, "127.0.0.1", restPort, "/rest", null, null);
     clusterURI = new URI(restServiceURI + "/cluster");
     restClient = ClientBuilder.newBuilder()
-        .register(GsonFeature.class)
+        .register(new GsonFeature(RestTestUtils.registerTypeAdapterMap()))
         .register(LoggingFilter.class)
         .property(ClientProperties.FEATURE_AUTO_DISCOVERY_DISABLE, true)
         .property(ClientProperties.METAINF_SERVICES_LOOKUP_DISABLE, true)

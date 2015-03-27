@@ -60,7 +60,7 @@ public class TestSessionsResource extends QueryTestCaseBase {
     restServiceURI = new URI("http", null, "127.0.0.1", restPort, "/rest", null, null);
     sessionsURI = new URI(restServiceURI + "/sessions");
     restClient = ClientBuilder.newBuilder()
-        .register(GsonFeature.class)
+        .register(new GsonFeature(RestTestUtils.registerTypeAdapterMap()))
         .register(LoggingFilter.class)
         .property(ClientProperties.FEATURE_AUTO_DISCOVERY_DISABLE, true)
         .property(ClientProperties.METAINF_SERVICES_LOOKUP_DISABLE, true)

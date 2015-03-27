@@ -40,6 +40,7 @@ import org.apache.tajo.ws.rs.JerseyResourceDelegate;
 import org.apache.tajo.ws.rs.JerseyResourceDelegateContext;
 import org.apache.tajo.ws.rs.JerseyResourceDelegateContextKey;
 import org.apache.tajo.ws.rs.JerseyResourceDelegateUtil;
+import org.apache.tajo.ws.rs.ResourcesUtil;
 import org.apache.tajo.ws.rs.responses.WorkerResponse;
 
 @Path("/cluster")
@@ -60,7 +61,7 @@ public class ClusterResource {
   private void initializeContext() {
     context = new JerseyResourceDelegateContext();
     JerseyResourceDelegateContextKey<UriInfo> uriInfoKey =
-        JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey);
+        JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey, UriInfo.class);
     context.put(uriInfoKey, uriInfo);
   }
   
@@ -81,8 +82,10 @@ public class ClusterResource {
           application,
           context,
           LOG);
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
+      
+      response = ResourcesUtil.createExceptionResponse(null, e.getMessage());
     }
     
     return response;
@@ -93,7 +96,7 @@ public class ClusterResource {
     @Override
     public Response run(JerseyResourceDelegateContext context) {
       JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
-          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey);
+          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       MasterContext masterContext = context.get(masterContextKey);
       
       Map<Integer, Worker> workerMap = masterContext.getResourceManager().getWorkers();

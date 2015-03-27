@@ -43,7 +43,7 @@ public class JerseyResourceDelegateUtil {
       
       if (masterContext != null) {
         JerseyResourceDelegateContextKey<MasterContext> key = 
-            JerseyResourceDelegateContextKey.valueOf(MasterContextKey);
+            JerseyResourceDelegateContextKey.valueOf(MasterContextKey, MasterContext.class);
         context.put(key, masterContext);
       
         return delegate.run(context);

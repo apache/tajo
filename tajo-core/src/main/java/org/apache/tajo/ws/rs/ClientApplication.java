@@ -22,6 +22,7 @@ import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.ws.rs.resources.ClusterResource;
 import org.apache.tajo.ws.rs.resources.DatabasesResource;
 import org.apache.tajo.ws.rs.resources.FunctionsResource;
+import org.apache.tajo.ws.rs.resources.QueryResource;
 import org.apache.tajo.ws.rs.resources.SessionsResource;
 import org.apache.tajo.ws.rs.resources.TablesResource;
 
@@ -50,6 +51,7 @@ public class ClientApplication extends Application {
     classes.add(TablesResource.class);
     classes.add(FunctionsResource.class);
     classes.add(ClusterResource.class);
+    classes.add(QueryResource.class);
     
     return classes;
   }

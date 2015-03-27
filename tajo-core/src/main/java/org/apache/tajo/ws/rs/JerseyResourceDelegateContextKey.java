@@ -21,29 +21,42 @@ package org.apache.tajo.ws.rs;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import javax.ws.rs.core.GenericType;
+
 public class JerseyResourceDelegateContextKey<T> {
   
   private static final ConcurrentMap<String, JerseyResourceDelegateContextKey<?>> keyMap =
       new ConcurrentHashMap<String, JerseyResourceDelegateContextKey<?>>();
   
   private final String name;
+  private final Class<T> type;
   
-  private JerseyResourceDelegateContextKey(String name) {
+  private JerseyResourceDelegateContextKey(String name, Class<T> type) {
     this.name = name;
+    this.type = type;
   }
   
-  public static <T> JerseyResourceDelegateContextKey<T> valueOf(String name) {
+  public static <T> JerseyResourceDelegateContextKey<T> valueOf(String name, Class<T> type) {
     if (name == null || name.isEmpty()) {
       throw new RuntimeException("name cannnot be null or empty.");
     }
     
     JerseyResourceDelegateContextKey<T> key = (JerseyResourceDelegateContextKey<T>) keyMap.get(name);
     if (key == null) {
-      key = new JerseyResourceDelegateContextKey<T>(name);
+      key = new JerseyResourceDelegateContextKey<T>(name, type);
       keyMap.putIfAbsent(name, key);
     }
     
     return key;
+  }
+  
+  @SuppressWarnings("unchecked")
+  public static <T> JerseyResourceDelegateContextKey<T> valueOf(String name, GenericType<T> genericType) {
+    return (JerseyResourceDelegateContextKey<T>) valueOf(name, genericType.getRawType());
+  }
+  
+  public Class<T> getType() {
+    return type;
   }
 
   @Override

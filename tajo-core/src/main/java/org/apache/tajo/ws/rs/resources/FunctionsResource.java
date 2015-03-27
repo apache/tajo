@@ -35,8 +35,6 @@ import javax.ws.rs.core.UriInfo;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.catalog.CatalogService;
-import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.master.TajoMaster.MasterContext;
@@ -44,6 +42,7 @@ import org.apache.tajo.ws.rs.JerseyResourceDelegate;
 import org.apache.tajo.ws.rs.JerseyResourceDelegateContext;
 import org.apache.tajo.ws.rs.JerseyResourceDelegateContextKey;
 import org.apache.tajo.ws.rs.JerseyResourceDelegateUtil;
+import org.apache.tajo.ws.rs.ResourcesUtil;
 
 @Path("/databases/{databaseName}/functions")
 public class FunctionsResource {
@@ -67,7 +66,7 @@ public class FunctionsResource {
   private void initializeContext() {
     context = new JerseyResourceDelegateContext();
     JerseyResourceDelegateContextKey<UriInfo> uriInfoKey =
-        JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey);
+        JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.UriInfoKey, UriInfo.class);
     context.put(uriInfoKey, uriInfo);
   }
 
@@ -82,7 +81,7 @@ public class FunctionsResource {
     try {
       initializeContext();
       JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName);
+          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
       context.put(databaseNameKey, databaseName);
       
       response = JerseyResourceDelegateUtil.runJerseyResourceDelegate(
@@ -90,8 +89,10 @@ public class FunctionsResource {
           application,
           context,
           LOG);
-    } catch (Exception e) {
+    } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
+      
+      response = ResourcesUtil.createExceptionResponse(null, e.getMessage());
     }
     return response;
   }
@@ -101,10 +102,10 @@ public class FunctionsResource {
     @Override
     public Response run(JerseyResourceDelegateContext context) {
       JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName);
+          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
       String databaseName = context.get(databaseNameKey);
       JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
-          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey);
+          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       MasterContext masterContext = context.get(masterContextKey);
       
       Collection<FunctionDesc> functionDescriptors = masterContext.getCatalog().getFunctions();

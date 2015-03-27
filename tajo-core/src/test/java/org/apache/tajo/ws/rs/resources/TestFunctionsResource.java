@@ -43,7 +43,7 @@ public class TestFunctionsResource extends QueryTestCaseBase {
   private URI restServiceURI;
   private URI functionsURI;
   private Client restClient;
-
+  
   public TestFunctionsResource() {
     super(TajoConstants.DEFAULT_DATABASE_NAME);
   }
@@ -54,7 +54,7 @@ public class TestFunctionsResource extends QueryTestCaseBase {
     restServiceURI = new URI("http", null, "127.0.0.1", restPort, "/rest", null, null);
     functionsURI = new URI(restServiceURI + "/databases/" + TajoConstants.DEFAULT_DATABASE_NAME + "/functions");
     restClient = ClientBuilder.newBuilder()
-        .register(GsonFeature.class)
+        .register(new GsonFeature(RestTestUtils.registerTypeAdapterMap()))
         .register(LoggingFilter.class)
         .property(ClientProperties.FEATURE_AUTO_DISCOVERY_DISABLE, true)
         .property(ClientProperties.METAINF_SERVICES_LOOKUP_DISABLE, true)
