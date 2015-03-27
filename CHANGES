@@ -47,6 +47,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1440: Some tests fail in parallel test environment in TestKillQuery.
+    (Contributed by Jongyoung Park. Committed by jinho)
+
     TAJO-1147: Simple query doesn't work in Web UI.
     (Contributed by Jongyoung Park. Committed by jaehwa)
 
