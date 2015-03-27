@@ -238,7 +238,7 @@ public class PullServerAuxService extends AuxiliaryService {
     accepted.add(future.channel());
     port = ((InetSocketAddress)future.channel().localAddress()).getPort();
     conf.set(ConfVars.PULLSERVER_PORT.varname, Integer.toString(port));
-    initializer.PullServer.setPort(port);
+    initializer.pullServer.setPort(port);
     LOG.info(getName() + " listening on port " + port);
     super.start();
 
@@ -288,11 +288,11 @@ public class PullServerAuxService extends AuxiliaryService {
 
   class HttpChannelInitializer extends ChannelInitializer<Channel> {
 
-    final PullServer PullServer;
+    final PullServer pullServer;
     private SSLFactory sslFactory;
 
     public HttpChannelInitializer(Configuration conf) throws Exception {
-      PullServer = new PullServer(conf);
+      pullServer = new PullServer(conf);
       if (conf.getBoolean(ConfVars.SHUFFLE_SSL_ENABLED_KEY.varname,
           ConfVars.SHUFFLE_SSL_ENABLED_KEY.defaultBoolVal)) {
         sslFactory = new SSLFactory(SSLFactory.Mode.SERVER, conf);
@@ -317,7 +317,7 @@ public class PullServerAuxService extends AuxiliaryService {
       pipeline.addLast("decoder", new HttpRequestDecoder());
       pipeline.addLast("aggregator", new HttpObjectAggregator(1 << 16));
       pipeline.addLast("chunking", new ChunkedWriteHandler());
-      pipeline.addLast("shuffle", PullServer);
+      pipeline.addLast("shuffle", pullServer);
       // TODO factor security manager into pipeline
       // TODO factor out encode/decode to permit binary shuffle
       // TODO factor out decode of index to permit alt. models

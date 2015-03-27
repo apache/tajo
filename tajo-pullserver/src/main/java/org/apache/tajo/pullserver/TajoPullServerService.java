@@ -249,7 +249,7 @@ public class TajoPullServerService extends AbstractService {
     accepted.add(future.channel());
     port = ((InetSocketAddress)future.channel().localAddress()).getPort();
     conf.set(ConfVars.PULLSERVER_PORT.varname, Integer.toString(port));
-    channelInitializer.PullServer.setPort(port);
+    channelInitializer.pullServer.setPort(port);
     LOG.info(getName() + " listening on port " + port);
 
     sslFileBufferSize = conf.getInt(SUFFLE_SSL_FILE_BUFFER_SIZE_KEY,
@@ -353,11 +353,11 @@ public class TajoPullServerService extends AbstractService {
 
   class HttpChannelInitializer extends ChannelInitializer<SocketChannel> {
 
-    final PullServer PullServer;
+    final PullServer pullServer;
     private SSLFactory sslFactory;
 
     public HttpChannelInitializer(Configuration conf) throws Exception {
-      PullServer = new PullServer(conf);
+      pullServer = new PullServer(conf);
       if (conf.getBoolean(ConfVars.SHUFFLE_SSL_ENABLED_KEY.varname,
           ConfVars.SHUFFLE_SSL_ENABLED_KEY.defaultBoolVal)) {
         sslFactory = new SSLFactory(SSLFactory.Mode.SERVER, conf);
@@ -383,7 +383,7 @@ public class TajoPullServerService extends AbstractService {
       pipeline.addLast("codec", new HttpServerCodec(4096, 8192, maxChunkSize));
       pipeline.addLast("aggregator", new HttpObjectAggregator(1 << 16));
       pipeline.addLast("chunking", new ChunkedWriteHandler());
-      pipeline.addLast("shuffle", PullServer);
+      pipeline.addLast("shuffle", pullServer);
       // TODO factor security manager into pipeline
       // TODO factor out encode/decode to permit binary shuffle
       // TODO factor out decode of index to permit alt. models
