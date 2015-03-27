@@ -57,7 +57,8 @@ public class PythonInvocationDesc implements ProtoObject<PythonInvocationDescPro
 
   @Override
   public PythonInvocationDescProto getProto() {
-    return PythonInvocationDescProto.newBuilder()
-        .setFuncName(funcName).setFilePath(filePath).build();
+    PythonInvocationDescProto.Builder builder = PythonInvocationDescProto.newBuilder();
+    builder.setFuncName(funcName).setFilePath(filePath);
+    return builder.build();
   }
 }

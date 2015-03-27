@@ -31,7 +31,7 @@ public class TestJythonScriptEngine extends TestCase {
   static final Log LOG = LogFactory.getLog(TestJythonScriptEngine.class);
 
   public void testGetFunction() throws Exception {
-    URL url = FileUtil.getResourcePath("python/test1.py");
+    URL url = FileUtil.getResourcePath("python/test_funcs.py");
     LOG.info("File path: " + url);
     PyFunction function = JythonScriptEngine.getFunction(url.getPath(), "return_one");
     LOG.info(function.getType());
@@ -39,6 +39,6 @@ public class TestJythonScriptEngine extends TestCase {
   }
 
   public void testRegisterFunction() throws Exception {
-    JythonScriptEngine.registerFunctions("python/test1.py", "test");
+    JythonScriptEngine.registerFunctions("python/test_funcs.py", "test");
   }
 }

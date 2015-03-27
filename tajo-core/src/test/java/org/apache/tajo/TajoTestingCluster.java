@@ -165,7 +165,7 @@ public class TajoTestingCluster {
     // Memory cache termination
     conf.setIntVar(ConfVars.WORKER_HISTORY_EXPIRE_PERIOD, 1);
 
-    conf.setStrings(ConfVars.PYTHON_CODE_DIR.varname, "python/test1.py");
+    conf.setStrings(ConfVars.PYTHON_CODE_DIR.varname, "python/test_funcs.py");
 
     this.standbyWorkerMode = conf.getVar(ConfVars.RESOURCE_MANAGER_CLASS)
         .indexOf(TajoWorkerResourceManager.class.getName()) >= 0;

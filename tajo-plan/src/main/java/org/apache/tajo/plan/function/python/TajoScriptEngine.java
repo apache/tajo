@@ -21,20 +21,23 @@ package org.apache.tajo.plan.function.python;
 import org.apache.hadoop.util.Shell;
 
 import javax.script.ScriptEngine;
-import java.io.*;
-import java.net.URL;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.io.IOException;
 import java.util.Map;
 
 public abstract class TajoScriptEngine {
+
   /**
-   * open a stream load a script locally or in the classpath
+   * Open a stream load a script locally or in the classpath
    * @param scriptPath the path of the script
    * @return a stream (it is the responsibility of the caller to close it)
    * @throws IllegalStateException if we could not open a stream
    */
-  public static InputStream getScriptAsStream(String scriptPath) {
-    //protected static InputStream getScriptAsStream(String scriptPath) {
-    InputStream is = null;
+  protected static InputStream getScriptAsStream(String scriptPath) {
+    InputStream is;
     File file = new File(scriptPath);
     if (file.exists()) {
       try {
@@ -66,8 +69,6 @@ public abstract class TajoScriptEngine {
       }
     }
 
-    // TODO: discuss if we want to add logic here to load a script from HDFS
-
     if (is == null) {
       throw new IllegalStateException(
           "Could not initialize interpreter (from file system or classpath) with " + scriptPath);
@@ -92,23 +93,4 @@ public abstract class TajoScriptEngine {
    * @throws java.io.IOException
    */
   protected abstract Map<String, Object> getParamsFromVariables() throws IOException;
-
-  /**
-   * Figures out the jar location from the class
-   * @param clazz class in the jar file
-   * @return the jar file location, null if the class was not loaded from a jar
-   * @throws FileNotFoundException
-   */
-  public static String getJarPath(Class<?> clazz)
-      throws FileNotFoundException {
-    URL resource = clazz.getClassLoader().getResource(
-        clazz.getCanonicalName().replace(".", "/") + ".class");
-    if (resource.getProtocol().equals("jar")) {
-      return resource.getPath().substring(
-          resource.getPath().indexOf(':') + 1,
-          resource.getPath().indexOf('!'));
-    }
-    throw new FileNotFoundException("Jar for " + clazz.getName()
-        + " class is not found");
-  }
 }

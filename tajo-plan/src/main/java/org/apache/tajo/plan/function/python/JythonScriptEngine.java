@@ -18,36 +18,28 @@
 
 package org.apache.tajo.plan.function.python;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.function.FunctionInvocation;
 import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.function.FunctionSupplement;
 import org.apache.tajo.function.PythonInvocationDesc;
 import org.apache.tajo.util.TUtil;
 import org.python.core.*;
-import org.python.modules.zipimport.zipimporter;
 import org.python.util.PythonInterpreter;
-
-import javax.script.ScriptEngine;
 
 /**
  * Implementation of the script engine for Jython
@@ -82,7 +74,7 @@ public class JythonScriptEngine extends TajoScriptEngine {
           String cdir = System.getProperty(PySystemState.PYTHON_CACHEDIR);
           if (cdir != null) {
             tmp = new File(cdir);
-            if (tmp.canWrite() == false) {
+            if (!tmp.canWrite()) {
               LOG.error("CACHEDIR: not writable");
               throw new RuntimeException("python.cachedir not writable: " + cdir);
             }
@@ -90,7 +82,7 @@ public class JythonScriptEngine extends TajoScriptEngine {
           if (tmp == null) {
             tmp = File.createTempFile("tajo_jython_", "");
             tmp.delete();
-            if (tmp.mkdirs() == false) {
+            if (!tmp.mkdirs()) {
               LOG.warn("unable to create a tmp dir for the cache, jython may not work");
             } else {
               LOG.info("created tmp python.cachedir=" + tmp);
@@ -114,13 +106,13 @@ public class JythonScriptEngine extends TajoScriptEngine {
     }
 
     /**
-     * ensure the decorator functions are defined in the interpreter, and
+     * Ensure the decorator functions are defined in the interpreter, and
      * manage the module import dependencies.
-     * @param context
-     * @param path       location of a file to exec in the interpreter
+     * @param initPhase   True if the script is not registered. Otherwise false.
+     * @param path        location of a script file to exec in the interpreter
      * @throws IOException
      */
-    static synchronized void init(boolean init, String path) throws IOException {
+    static synchronized void init(boolean initPhase, String path) throws IOException {
       // Decorators -
       // "schemaFunction"
       // "outputSchema"
@@ -134,24 +126,25 @@ public class JythonScriptEngine extends TajoScriptEngine {
             + "        return func\n"
             + "    return decorator\n\n");
 
-        interpreter.exec("def outputSchemaFunction(schema_def):\n"
-            + "    def decorator(func):\n"
-            + "        func.outputSchemaFunction = schema_def\n"
-            + "        return func\n"
-            + "    return decorator\n");
-
-        interpreter.exec("def schemaFunction(schema_def):\n"
-            + "     def decorator(func):\n"
-            + "         func.schemaFunction = schema_def\n"
-            + "         return func\n"
-            + "     return decorator\n\n");
+        // TODO: Currently, we don't support the customized output schema feature.
+//        interpreter.exec("def outputSchemaFunction(schema_def):\n"
+//            + "    def decorator(func):\n"
+//            + "        func.outputSchemaFunction = schema_def\n"
+//            + "        return func\n"
+//            + "    return decorator\n");
+//
+//        interpreter.exec("def schemaFunction(schema_def):\n"
+//            + "     def decorator(func):\n"
+//            + "         func.schemaFunction = schema_def\n"
+//            + "         return func\n"
+//            + "     return decorator\n\n");
 
         InputStream is = getScriptAsStream(path);
         if (is == null) {
           throw new IllegalStateException("unable to create a stream for path: " + path);
         }
         try {
-          execfile(init, is, path);
+          execfile(initPhase, is, path);
         } finally {
           is.close();
         }
@@ -160,77 +153,15 @@ public class JythonScriptEngine extends TajoScriptEngine {
 
     /**
      * does not call script.close()
-     * @param script
-     * @param path
-     * @param queryContext
+     * @param initPhase   True if the script is not registered. Otherwise false.
+     * @param script      Input stream to the script file
+     * @param path        Path to the script file
      * @throws Exception
      */
-    static void execfile(boolean init, InputStream script, String path) throws RuntimeException {
+    static void execfile(boolean initPhase, InputStream script, String path) throws RuntimeException {
       try {
-
-//        if( context != null ) {
-        if (init) {
-          String [] argv;
-          try {
-//            argv = (String[])ObjectSerializer.deserialize(
-//                queryContext.get(ConfVars.PYTHON_CMD_ARGS_REMAINDERS));
-            argv = new String [] {};
-          } catch (Exception e) {
-            throw new RuntimeException("Cannot deserialize command line arguments", e);
-          }
-          PySystemState  state = Py.getSystemState();
-          state.argv.clear();
-          if( argv != null ) {
-            for (String str : argv ) {
-              state.argv.append(new PyString(str));
-            }
-          } else {
-            LOG.warn(ConfVars.PYTHON_CMD_ARGS_REMAINDERS.name()
-                + " is empty. This is not expected unless on testing." );
-          }
-        }
-
-        // determine the current module state
-//        Map<String, String> before = context != null ? getModuleState() : null;
-        Map<String, String> before = init ? getModuleState() : null;
-        if (before != null) {
-          // os.py, stax.py and posixpath.py are part of the initial state
-          // if Lib directory is present and without including os.py, modules
-          // which import os fail
-          Set<String> includePyModules = new HashSet<String>();
-          for (String key : before.keySet()) {
-            // $py.class is created if Lib folder is writable
-            if (key.endsWith(".py") || key.endsWith("$py.class")) {
-              includePyModules.add(key);
-            }
-          }
-          before.keySet().removeAll(includePyModules);
-        }
-
         // exec the code, arbitrary imports are processed
         interpreter.execfile(script, path);
-
-        // determine the 'post import' module state
-//        Map<String, String> after = context != null ? getModuleState() : null;
-        Map<String, String> after = init ? getModuleState() : null;
-
-        // add the module files to the context
-//        if (after != null && context != null) {
-        if (after != null && init) {
-          after.keySet().removeAll(before.keySet());
-          for (Map.Entry<String, String> entry : after.entrySet()) {
-            String modulename = entry.getKey();
-            String modulepath = entry.getValue();
-            if (modulepath.equals(JVM_JAR)) {
-              continue;
-            } else if (modulepath.endsWith(".jar") || modulepath.endsWith(".zip")) {
-//              context.addScriptJar(modulepath);
-              throw new RuntimeException("jar and zip script files are not supported");
-            } else {
-//              context.addScriptFile(modulename, modulepath);
-            }
-          }
-        }
       } catch (PyException e) {
         if (e.match(Py.SystemExit)) {
           PyObject value = e.value;
@@ -243,13 +174,8 @@ public class JythonScriptEngine extends TajoScriptEngine {
           }
         }
         String message = "Python Error. " + e;
-        //throw new ExecException(message, 1121, e);
         throw new RuntimeException(message, e);
       }
-    }
-
-    static String get(String name) {
-      return interpreter.get(name).toString();
     }
 
     static void setMain(boolean isMain) {
@@ -259,80 +185,6 @@ public class JythonScriptEngine extends TajoScriptEngine {
         interpreter.set("__name__", "__lib__");
       }
     }
-
-    /**
-     * get the state of modules currently loaded
-     * @return a map of module name to module file (absolute path)
-     */
-    private static Map<String, String> getModuleState() {
-      // determine the current module state
-      Map<String, String> files = new HashMap<String, String>();
-      PyStringMap modules = (PyStringMap) Py.getSystemState().modules;
-      for (PyObject kvp : modules.iteritems().asIterable()) {
-        PyTuple tuple = (PyTuple) kvp;
-        String name = tuple.get(0).toString();
-        Object value = tuple.get(1);
-        // inspect the module to determine file location and status
-        try {
-          Object fileEntry = null;
-          Object loader = null;
-          if (value instanceof PyJavaPackage ) {
-            fileEntry = ((PyJavaPackage) value).__file__;
-          } else if (value instanceof PyObject) {
-            // resolved through the filesystem (or built-in)
-            PyObject dict = ((PyObject) value).getDict();
-            if (dict != null) {
-              fileEntry = dict.__finditem__("__file__");
-              loader = dict.__finditem__("__loader__");
-            } // else built-in
-          }   // else some system module?
-
-          if (fileEntry != null) {
-            File file = resolvePyModulePath(fileEntry.toString(), loader);
-            if (file.exists()) {
-              String apath = file.getAbsolutePath();
-              if (apath.endsWith(".jar") || apath.endsWith(".zip")) {
-                // jar files are simple added to the pigContext
-                files.put(apath, apath);
-              } else {
-                // determine the relative path that the file should have in the jar
-                int pos = apath.lastIndexOf(File.separatorChar + name.replace('.', File.separatorChar));
-                if (pos > 0) {
-                  files.put(apath.substring(pos + 1), apath);
-                } else {
-                  files.put(apath, apath);
-                }
-              }
-            } else {
-              LOG.warn("module file does not exist: " + name + ", " + file);
-            }
-          } // else built-in
-        } catch (Exception e) {
-          LOG.warn("exception while retrieving module state: " + value, e);
-        }
-      }
-      return files;
-    }
-  }
-
-  private static File resolvePyModulePath(String path, Object loader) {
-    File file = new File(path);
-    if (!file.exists() && loader != null) {
-      if(path.startsWith(ClasspathPyImporter.PYCLASSPATH_PREFIX) && loader instanceof ClasspathPyImporter) {
-        path = path.replaceFirst(ClasspathPyImporter.PYCLASSPATH_PREFIX, "");
-        URL resource = ScriptEngine.class.getResource(path);
-        if (resource == null) {
-          resource = ScriptEngine.class.getResource(File.separator + path);
-        }
-        if (resource != null) {
-          return new File(resource.getFile());
-        }
-      } else if (loader instanceof zipimporter) {
-        zipimporter importer = (zipimporter) loader;
-        return new File(importer.archive);
-      } //JavaImporter??
-    }
-    return file;
   }
 
   /**
@@ -370,31 +222,6 @@ public class JythonScriptEngine extends TajoScriptEngine {
     return vars;
   }
 
-  private static final Pattern p = Pattern.compile("^\\s*def\\s+(\\w+)\\s*.+");
-  private static final Pattern p1 = Pattern.compile("^\\s*if\\s+__name__\\s+==\\s+[\"']__main__[\"']\\s*:\\s*$");
-
-  private static boolean hasFunction(InputStream is) throws IOException {
-    boolean hasFunction = false;
-    boolean hasMain = false;
-    InputStreamReader in = new InputStreamReader(is);
-    BufferedReader br = new BufferedReader(in);
-    String line = br.readLine();
-    while (line != null) {
-      if (p.matcher(line).matches()) {
-        hasFunction = true;
-      } else if (p1.matcher(line).matches()) {
-        hasMain = true;
-      }
-      line = br.readLine();
-    }
-    if (hasFunction && !hasMain) {
-      String msg = "Embedded script cannot mix UDFs with top level code. "
-          + "Please use if __name__ == '__main__': construct";
-      throw new IOException(msg);
-    }
-    return hasFunction;
-  }
-
   /**
    * File.deleteOnExit(File) does not work for a non-empty directory. This
    * Thread is used to clean up the python.cachedir (if it was a tmp dir
@@ -423,13 +250,10 @@ public class JythonScriptEngine extends TajoScriptEngine {
     }
   }
 
-  //  @Override
-//  public void registerFunctions(String path, String namespace, QueryContext context)
   public static Set<FunctionDesc> registerFunctions(String path, String namespace)
       throws IOException {
     Interpreter.setMain(false);
     Interpreter.init(true, path);
-//    context.addScriptJar(getJarPath(PythonInterpreter.class));
     PythonInterpreter pi = Interpreter.interpreter;
     @SuppressWarnings("unchecked")
     List<PyTuple> locals = ((PyStringMap) pi.getLocals()).items();
@@ -445,20 +269,17 @@ public class JythonScriptEngine extends TajoScriptEngine {
           && (value instanceof PyFunction)
           && (((PyFunction)value).__findattr__("schemaFunction".intern())== null)) {
         PyFunction pyFunction = (PyFunction) value;
-        PyObject obj = pyFunction.__findattr__("outputSchema".intern());
+
+        // Find the pre-defined output schema
         TajoDataTypes.Type returnType;
-        if(obj != null) {
-//            Utils.getSchemaFromString(obj.toString());
-          LOG.info("outputSchema: " + obj.toString());
-          String[] types = obj.toString().split(",");
-          if (types.length > 1) {
-            throw new IOException("Multiple return type is not supported");
-          }
-          returnType = TajoDataTypes.Type.valueOf(types[0].trim().toUpperCase());
+        PyObject obj = pyFunction.__findattr__("outputSchema".intern());
+        if (obj != null) {
+          returnType = pyObjectToType(obj);
         } else {
           // the default return type is the byte array
           returnType = TajoDataTypes.Type.BLOB;
         }
+
         int paramNum = ((PyBaseCode) pyFunction.__code__).co_argcount;
         LOG.info("co_argcount: " + paramNum);
         TajoDataTypes.DataType[] paramTypes = new TajoDataTypes.DataType[paramNum];
@@ -469,16 +290,29 @@ public class JythonScriptEngine extends TajoScriptEngine {
         FunctionSignature signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, key,
             TajoDataTypes.DataType.newBuilder().setType(returnType).build(), paramTypes);
         FunctionInvocation invocation = new FunctionInvocation();
-        invocation.setPython(new PythonInvocationDesc(key, path));
+        PythonInvocationDesc invocationDesc = new PythonInvocationDesc(key, path);
+        invocation.setPython(invocationDesc);
         FunctionSupplement supplement = new FunctionSupplement();
         functionDescs.add(new FunctionDesc(signature, invocation, supplement));
         LOG.info("Register scripting UDF: " + namespace + key);
       }
     }
 
-//    context.addScriptFile(path);
     Interpreter.setMain(true);
     return functionDescs;
+  }
+
+  private static TajoDataTypes.Type pyObjectToType(PyObject obj) {
+    return TajoDataTypes.Type.valueOf(pyObjectToTypeStringCand(obj).toUpperCase());
+  }
+
+  private static String pyObjectToTypeStringCand(PyObject obj) {
+    LOG.info("outputSchema: " + obj.toString());
+    String[] types = obj.toString().split(",");
+    if (types.length > 1) {
+      throw new UnsupportedException("Multiple return type is not supported");
+    }
+    return types[0].trim();
   }
 }
 

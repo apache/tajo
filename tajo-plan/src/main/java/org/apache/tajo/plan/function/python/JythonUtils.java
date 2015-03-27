@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.function.python;
 
 import com.google.common.base.Preconditions;
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.AnyDatum;
 import org.apache.tajo.datum.Datum;
@@ -68,26 +69,6 @@ public class JythonUtils {
       default:
         throw new UnsupportedException("Unsupported type: " + actual.type());
     }
-
-//    if (object instanceof Tuple) {
-//      return tupleToPyTuple((Tuple) object);
-//    } else if (object instanceof DataBag) {
-//      PyList list = new PyList();
-//      for (Tuple bagTuple : (DataBag) object) {
-//        list.add(tupleToPyTuple(bagTuple));
-//      }
-//      return list;
-//    } else if (object instanceof Map<?, ?>) {
-//      PyDictionary newMap = new PyDictionary();
-//      for (Map.Entry<?, ?> entry : ((Map<?, ?>) object).entrySet()) {
-//        newMap.put(entry.getKey(), datumToPyObject(entry.getValue()));
-//      }
-//      return newMap;
-//    } else if (object instanceof DataByteArray) {
-//      return Py.java2py(((DataByteArray) object).get());
-//    } else {
-//      return Py.java2py(object);
-//    }
   }
 
   public static PyTuple tupleToPyTuple(Tuple tuple) {
@@ -128,6 +109,71 @@ public class JythonUtils {
       else {
         throw new UnsupportedException("Not supported data type: " + object.getClass().getName());
       }
+    }
+  }
+
+  public static Datum pyObjectToDatum(PyObject object, TajoDataTypes.Type type) {
+    return DatumFactory.cast(pyObjectToDatum(object), CatalogUtil.newSimpleDataType(type), null);
+  }
+
+  public static TajoDataTypes.Type primitiveTypeToDataType(Class clazz) {
+    if (clazz.getName().equals(Long.class.getName())) {
+      return TajoDataTypes.Type.INT8;
+    } else if (clazz.getName().equals(Boolean.class.getName())) {
+      return TajoDataTypes.Type.BOOLEAN;
+    } else if (clazz.getName().equals(Integer.class.getName())) {
+      return TajoDataTypes.Type.INT4;
+    } else if (clazz.getName().equals(Float.class.getName())) {
+      // J(P)ython is loosely typed, supports only float type,
+      // hence we convert everything to double to save precision
+      return TajoDataTypes.Type.FLOAT4;
+    } else if (clazz.getName().equals(Double.class.getName())) {
+      return TajoDataTypes.Type.FLOAT8;
+    } else if (clazz.getName().equals(String.class.getName())) {
+      return TajoDataTypes.Type.TEXT;
+    } else {
+      if(clazz.getName().equals(byte[].class.getName())) {
+        return TajoDataTypes.Type.BLOB;
+      }
+      else {
+        throw new UnsupportedException("Not supported data type: " + clazz.getName());
+      }
+    }
+  }
+
+  public static Object dataTypeToPrimitiveType(TajoDataTypes.Type type) {
+    switch (type) {
+      case BOOLEAN:
+        return Boolean.class;
+      case UINT1:
+      case INT1:
+      case UINT2:
+      case INT2:
+        return Short.class;
+      case UINT4:
+      case INT4:
+        return Integer.class;
+      case UINT8:
+      case INT8:
+        return Long.class;
+      case FLOAT4:
+        return Float.class;
+      case FLOAT8:
+        return Double.class;
+      case CHAR:
+      case VARCHAR:
+        return Character.class;
+      case TEXT:
+      case NCHAR:
+      case NVARCHAR:
+        return String.class;
+      case BLOB:
+        return Byte[].class;
+      case INET4:
+      case INET6:
+        return Byte[].class;
+      default:
+        throw new UnsupportedException("Unsupported type: " + type);
     }
   }
 }

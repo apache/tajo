@@ -468,12 +468,4 @@ public class TestMathFunctions extends ExprTestBase {
 
     testEval(schema, "table1", ",", "select round(col1, col2) from table1", new String[]{""});
   }
-
-  @Test
-  public void test() throws IOException {
-    testSimpleEval("select sum_py(1,2)", new String[]{"3"});
-    testSimpleEval("select return_one()", new String[]{"100"});
-    testSimpleEval("select helloworld()", new String[]{"Hello, World"});
-    testSimpleEval("select concat_py('1')", new String[]{"11"});
-  }
 }

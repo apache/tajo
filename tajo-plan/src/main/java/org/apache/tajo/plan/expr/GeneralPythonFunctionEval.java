@@ -50,9 +50,9 @@ public class GeneralPythonFunctionEval extends FunctionEval {
         params.put(i, argEvals[i].eval(schema, tuple));
       }
     }
-    PythonInvocationDesc desc = funcDesc.getInvocation().getPython();
+    PythonInvocationDesc invokeDesc = funcDesc.getInvocation().getPython();
     try {
-      PyFunction function = JythonScriptEngine.getFunction(desc.getPath(), desc.getName());
+      PyFunction function = JythonScriptEngine.getFunction(invokeDesc.getPath(), invokeDesc.getName());
       TajoDataTypes.DataType[] paramTypes = funcDesc.getSignature().getParamTypes();
       PyObject result;
       if (paramTypes.length == 0) {
