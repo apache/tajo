@@ -122,14 +122,20 @@ public class FunctionSignature implements Comparable<FunctionSignature>, ProtoOb
       return cmpVal;
     }
 
-    cmpVal = returnType.getType().compareTo(o.returnType.getType());
+    cmpVal = functionType.name().compareTo(o.functionType.name());
+
+    if (cmpVal != 0) {
+      return cmpVal;
+    }
+
+    cmpVal = returnType.getType().name().compareTo(o.returnType.getType().name());
 
     if (cmpVal != 0) {
       return cmpVal;
     }
 
     for (int i = 0; i < Math.min(paramTypes.length, o.paramTypes.length); i++) {
-      cmpVal = paramTypes[i].getType().compareTo(o.paramTypes[i].getType());
+      cmpVal = paramTypes[i].getType().name().compareTo(o.paramTypes[i].getType().name());
 
       if (cmpVal != 0) {
         return cmpVal;
