@@ -56,11 +56,8 @@ service CatalogProtocolService {
   rpc existPartitionMethod(TableIdentifierProto) returns (BoolProto);
   rpc dropPartitionMethod(TableIdentifierProto) returns (BoolProto);
 
-  rpc addPartitions(PartitionsProto) returns (BoolProto);
-  rpc addPartition(PartitionDescProto) returns (BoolProto);
-  rpc getPartitionByPartitionName(StringProto) returns (PartitionDescProto);
-  rpc getPartitionsByTableName(StringProto) returns (PartitionsProto);
-  rpc delAllPartitions(StringProto) returns (PartitionsProto);
+  rpc getPartitionByPartitionName(PartitionIdentifierProto) returns (PartitionDescProto);
+  rpc getPartitionsByTableName(PartitionIdentifierProto) returns (PartitionsProto);
   rpc getAllPartitions(NullProto) returns (GetTablePartitionsProto);
 
   rpc createIndex(IndexDescProto) returns (BoolProto);

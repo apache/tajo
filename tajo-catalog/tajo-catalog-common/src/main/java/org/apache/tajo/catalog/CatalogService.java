@@ -20,16 +20,17 @@ package org.apache.tajo.catalog;
 
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.*;
+import org.apache.tajo.catalog.proto.CatalogProtos;
+import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.DatabaseProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableDescriptorProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableOptionProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TablePartitionProto;
+import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 
 import java.util.Collection;
 import java.util.List;
-
-import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto;
-import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
-import static org.apache.tajo.catalog.proto.CatalogProtos.TablespaceProto;
-import static org.apache.tajo.catalog.proto.CatalogProtos.UpdateTableStatsProto;
-
 
 public interface CatalogService {
 
@@ -179,7 +180,11 @@ public interface CatalogService {
   PartitionMethodDesc getPartitionMethod(String databaseName, String tableName);
 
   boolean existPartitionMethod(String databaseName, String tableName);
-  
+
+  CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName, String partitionName);
+
+  List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName);
+
   List<TablePartitionProto> getAllPartitions();
 
   boolean createIndex(IndexDesc index);
@@ -222,5 +227,7 @@ public interface CatalogService {
   boolean alterTable(AlterTableDesc desc);
 
   boolean updateTableStats(UpdateTableStatsProto stats);
+
+
 
 }
