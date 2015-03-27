@@ -186,20 +186,47 @@
   		<tns:Object order="18" type="table" name="PARTITIONS">
   			<tns:sql><![CDATA[
   			CREATE TABLE PARTITIONS (
-					PID INT NOT NULL PRIMARY KEY,
+					PARTITION_ID INT NOT NULL PRIMARY KEY,
 					TID INT NOT NULL,
-					PARTITION_NAME VARCHAR2(128),
-					ORDINAL_POSITION INT NOT NULL,
-					PARTITION_VALUE VARCHAR2(1024),
+					PARTITION_NAME VARCHAR2(767),
 					PATH VARCHAR2(4000),
-					FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE,
-					CONSTRAINT C_PARTITION_UNIQUE UNIQUE (TID, PARTITION_NAME)
+					FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
 				)]]>
 				</tns:sql>
   		</tns:Object>
-  		<tns:Object order="19" type="index" name="PARTITIONS_IDX_TID" dependsOn="PARTITIONS">
-  			<tns:sql><![CDATA[CREATE INDEX PARTITIONS_IDX_TID on PARTITIONS (TID)]]></tns:sql>
+      <tns:Object order="19" type="sequence" name="PARTITIONS_SEQ">
+        <tns:sql><![CDATA[
+  			CREATE SEQUENCE PARTITIONS_SEQ
+  			]]>
+        </tns:sql>
+      </tns:Object>
+      <tns:Object order="20" type="trigger" name="PARTITIONS_AUTOINC">
+        <tns:sql><![CDATA[
+  			CREATE OR REPLACE TRIGGER PARTITIONS_AUTOINC
+				BEFORE INSERT ON TABLES
+				FOR EACH ROW
+				WHEN (new.PARTITION_ID IS NULL)
+				BEGIN
+				  SELECT PARTITIONS_SEQ.NEXTVAL INTO :new.TID FROM DUAL;
+				END;]]>
+        </tns:sql>
+      </tns:Object>
+  		<tns:Object order="21" type="index" name="PARTITIONS_IDX" dependsOn="PARTITIONS">
+  			<tns:sql><![CDATA[CREATE INDEX PARTITIONS_IDX on PARTITIONS (PARTITION_ID, TID, PARTITION_NAME)]]></tns:sql>
   		</tns:Object>
+      <tns:Object order="22" type="table" name="PARTITION_KEYS">
+        <tns:sql><![CDATA[
+          CREATE TABLE PARTITION_KEYS (
+            PARTITION_ID INT NOT NULL,
+            COLUMN_NAME VARCHAR2(255) NOT NULL,
+            PARTITION_VALUE VARCHAR(255) NULL,
+            FOREIGN KEY (PARTITION_ID) REFERENCES PARTITIONS (PARTITION_ID) ON DELETE CASCADE)
+				)]]>
+        </tns:sql>
+      </tns:Object>
+      <tns:Object order="23" type="index" name="PARTITION_KEYS_IDX" dependsOn="PARTITION_KEYS">
+        <tns:sql><![CDATA[CREATE INDEX PARTITION_KEYS_IDX on PARTITION_KEYS (PARTITION_ID, COLUMN_NAME, PARTITION_VALUE)]]></tns:sql>
+      </tns:Object>
     </tns:objects>
   </tns:base>
   <tns:existQueries>

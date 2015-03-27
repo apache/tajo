@@ -25,6 +25,8 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.dictionary.InfoSchemaMetadataDictionary;
 import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
+import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.partition.PartitionKey;
 import org.apache.tajo.catalog.store.PostgreSQLStore;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -57,7 +59,7 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.AlterTablespaceProto.S
 import static org.junit.Assert.*;
 
 public class TestCatalog {
-	static final String FieldName1="f1";
+  static final String FieldName1="f1";
 	static final String FieldName2="f2";
 	static final String FieldName3="f3";	
 
@@ -886,15 +888,16 @@ public class TestCatalog {
 
     Schema partSchema = new Schema();
     partSchema.addColumn("id", Type.INT4);
+    partSchema.addColumn("name", Type.TEXT);
 
-    PartitionMethodDesc partitionDesc =
+    PartitionMethodDesc partitionMethodDesc =
         new PartitionMethodDesc(DEFAULT_DATABASE_NAME, tableName,
-            CatalogProtos.PartitionType.COLUMN, "id", partSchema);
+            CatalogProtos.PartitionType.COLUMN, "id,name", partSchema);
 
     TableDesc desc =
         new TableDesc(tableName, schema, meta,
             new Path(CommonTestingUtil.getTestDir(), "addedtable").toUri());
-    desc.setPartitionMethod(partitionDesc);
+    desc.setPartitionMethod(partitionMethodDesc);
     assertFalse(catalog.existsTable(tableName));
     catalog.createTable(desc);
     assertTrue(catalog.existsTable(tableName));
@@ -905,8 +908,70 @@ public class TestCatalog {
     assertEquals(retrieved.getPartitionMethod().getPartitionType(), CatalogProtos.PartitionType.COLUMN);
     assertEquals(retrieved.getPartitionMethod().getExpressionSchema().getColumn(0).getSimpleName(), "id");
 
+    testAddPartition(tableName, "id=10/name=aaa");
+    testAddPartition(tableName, "id=20/name=bbb");
+
+    List<CatalogProtos.PartitionDescProto> partitions = catalog.getPartitions(DEFAULT_DATABASE_NAME, "addedtable");
+    assertNotNull(partitions);
+    assertEquals(partitions.size(), 2);
+
+    testDropPartition(tableName, "id=10/name=aaa");
+    testDropPartition(tableName, "id=20/name=bbb");
+
+    partitions = catalog.getPartitions(DEFAULT_DATABASE_NAME, "addedtable");
+    assertNotNull(partitions);
+    assertEquals(partitions.size(), 0);
+
     catalog.dropTable(tableName);
     assertFalse(catalog.existsTable(tableName));
+  }
+
+  private void testAddPartition(String tableName, String partitionName) throws Exception {
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(tableName);
+    alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
+
+    PartitionDesc partitionDesc = new PartitionDesc();
+    partitionDesc.setPartitionName(partitionName);
+
+    String[] partitionNames = partitionName.split("/");
+
+    List<PartitionKey> partitionKeyList = new ArrayList<PartitionKey>();
+    for(int i = 0; i < partitionNames.length; i++) {
+      String columnName = partitionNames[i].split("=")[0];
+      partitionKeyList.add(new PartitionKey(partitionNames[i], columnName));
+    }
+
+    partitionDesc.setPartitionKeys(partitionKeyList);
+
+    partitionDesc.setPath("hdfs://xxx.com/warehouse/" + partitionName);
+
+    alterTableDesc.setPartitionDesc(partitionDesc);
+
+    catalog.alterTable(alterTableDesc);
+
+    CatalogProtos.PartitionDescProto resultDesc = catalog.getPartition(DEFAULT_DATABASE_NAME,
+      "addedtable", partitionName);
+
+    assertNotNull(resultDesc);
+    assertEquals(resultDesc.getPartitionName(), partitionName);
+    assertEquals(resultDesc.getPath(), "hdfs://xxx.com/warehouse/" + partitionName);
+
+    assertEquals(resultDesc.getPartitionKeysCount(), 2);
+  }
+
+
+  private void testDropPartition(String tableName, String partitionName) throws Exception {
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(tableName);
+    alterTableDesc.setAlterTableType(AlterTableType.DROP_PARTITION);
+
+    PartitionDesc partitionDesc = new PartitionDesc();
+    partitionDesc.setPartitionName(partitionName);
+
+    alterTableDesc.setPartitionDesc(partitionDesc);
+
+    catalog.alterTable(alterTableDesc);
   }
 
   @Test

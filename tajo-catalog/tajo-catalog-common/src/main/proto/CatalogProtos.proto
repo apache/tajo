@@ -58,6 +58,8 @@ enum AlterTableType {
   RENAME_TABLE = 0;
   RENAME_COLUMN = 1;
   ADD_COLUMN = 2;
+  ADD_PARTITION = 3;
+  DROP_PARTITION = 4;
 }
 
 message ColumnProto {
@@ -184,11 +186,10 @@ message TableOptionProto {
 }
 
 message TablePartitionProto {
-  required int32 pid = 1;
+  required int32 partition_id = 1;
   required int32 tid = 2;
   optional string partitionName = 3;
-  required int32  ordinalPosition = 4;
-  optional string path = 5;
+  optional string path = 4;
 }
 
 message GetIndexByColumnRequest {
@@ -281,8 +282,7 @@ message SortSpecProto {
 
 
 message PartitionsProto {
-  required TableIdentifierProto tableIdentifier = 1;
-  repeated PartitionDescProto partition = 2;
+  repeated PartitionDescProto partition = 1;
 }
 
 message PartitionMethodProto {
@@ -293,10 +293,21 @@ message PartitionMethodProto {
 }
 
 message PartitionDescProto {
-  optional string partitionName = 2;
-  required int32  ordinalPosition = 3;
-  optional string partitionValue = 4;
-  optional string path = 5;
+  required string partitionName = 1;
+  repeated PartitionKeyProto partitionKeys = 2;
+  optional string path = 3;
+}
+
+message PartitionKeyProto {
+  required string columnName = 1;
+  required string partitionValue = 2;
+}
+
+
+message PartitionIdentifierProto {
+  required string databaseName = 1;
+  required string tableName = 2;
+  optional string partitionName = 3;
 }
 
 message TablespaceProto {
@@ -345,6 +356,7 @@ message AlterTableDescProto {
   optional ColumnProto addColumn = 3;
   optional AlterColumnProto alterColumnName = 4;
   required AlterTableType alterTableType = 5;
+  optional PartitionDescProto partitionDesc = 6;
 }
 
 message AlterColumnProto {
