@@ -397,8 +397,8 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
       for (int fieldId = 0; fieldId < columns.size(); fieldId++) {
         Column column = columns.get(fieldId);
         
-        if ("pid".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt4(partition.getPid()));
+        if ("partition_id".equalsIgnoreCase(column.getSimpleName())) {
+          aTuple.put(fieldId, DatumFactory.createInt4(partition.getPartitionId()));
         } else if ("tid".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createInt4(partition.getTid()));
         } else if ("partition_name".equalsIgnoreCase(column.getSimpleName())) {
@@ -407,8 +407,6 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
           } else {
             aTuple.put(fieldId, DatumFactory.createNullDatum());
           }
-        } else if ("ordinal_position".equalsIgnoreCase(column.getSimpleName())) {
-          aTuple.put(fieldId, DatumFactory.createInt4(partition.getOrdinalPosition()));
         } else if ("path".equalsIgnoreCase(column.getSimpleName())) {
           aTuple.put(fieldId, DatumFactory.createText(partition.getPath()));
         }

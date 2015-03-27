@@ -155,21 +155,30 @@
 			<tns:Object name="PARTITIONS" type="table" order="18">
 				<tns:sql><![CDATA[
 				CREATE TABLE PARTITIONS (
-  				PID INT NOT NULL GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1),
+  				PARTITION_ID INT NOT NULL GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1),
   				TID INT NOT NULL REFERENCES TABLES (TID) ON DELETE CASCADE,
-  				PARTITION_NAME VARCHAR(255),
-  				ORDINAL_POSITION INT NOT NULL,
-  				PARTITION_VALUE VARCHAR(1024),
+  				PARTITION_NAME VARCHAR(767),
   				PATH VARCHAR(1024),
-  				CONSTRAINT C_PARTITION_PK PRIMARY KEY (PID),
-  				CONSTRAINT C_PARTITION_UNIQUE UNIQUE (TID, PARTITION_NAME)
+  				CONSTRAINT C_PARTITION_PK PRIMARY KEY (PARTITION_ID)
 				)]]>
 				</tns:sql>
 			</tns:Object>
-			<tns:Object name="IDX_PARTITIONS_TABLE_NAME" type="index" dependsOn="PARTITIONS" order="19">
-				<tns:sql><![CDATA[CREATE INDEX idx_partitions_table_name ON PARTITIONS(TID)]]></tns:sql>
+			<tns:Object name="PARTITIONS_IDX" type="index" dependsOn="PARTITIONS" order="19">
+				<tns:sql><![CDATA[CREATE INDEX PARTITIONS_IDX ON PARTITIONS(PARTITION_ID, TID, PARTITION_NAME)]]></tns:sql>
 			</tns:Object>
-		</tns:objects>
+      <tns:Object name="PARTITION_KEYS" type="table" order="20">
+        <tns:sql><![CDATA[
+				CREATE TABLE PARTITION_KEYS (
+  				PARTITION_ID INT NOT NULL REFERENCES PARTITIONS (PARTITION_ID) ON DELETE CASCADE,
+  				COLUMN_NAME VARCHAR(128) NOT NULL,
+  				PARTITION_VALUE VARCHAR(255)
+				)]]>
+        </tns:sql>
+      </tns:Object>
+      <tns:Object name="PARTITION_KEYS_IDX" type="index" dependsOn="PARTITION_KEYS" order="21">
+        <tns:sql><![CDATA[CREATE INDEX PARTITION_KEYS_IDX ON PARTITION_KEYS(PARTITION_ID, COLUMN_NAME, PARTITION_VALUE)]]></tns:sql>
+      </tns:Object>
+    </tns:objects>
 	</tns:base>
 	<tns:existQueries>
 	  <tns:existQuery type="trigger">
