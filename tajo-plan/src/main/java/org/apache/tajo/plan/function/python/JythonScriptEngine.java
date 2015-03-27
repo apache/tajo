@@ -114,19 +114,17 @@ public class JythonScriptEngine extends TajoScriptEngine {
      */
     static synchronized void init(boolean initPhase, String path) throws IOException {
       // Decorators -
-      // "schemaFunction"
-      // "outputSchema"
-      // "outputSchemaFunction"
+      // "outputType"
 
       if (!filesLoaded.contains(path)) {
-        // attempt addition of schema decorator handler, fail silently
-        interpreter.exec("def outputSchema(schema_def):\n"
+        // attempt addition of type decorator handler, fail silently
+        interpreter.exec("def outputType(type_def):\n"
             + "    def decorator(func):\n"
-            + "        func.outputSchema = schema_def\n"
+            + "        func.outputType = type_def\n"
             + "        return func\n"
             + "    return decorator\n\n");
 
-        // TODO: Currently, we don't support the customized output schema feature.
+        // TODO: Currently, we don't support the customized output type feature.
 //        interpreter.exec("def outputSchemaFunction(schema_def):\n"
 //            + "    def decorator(func):\n"
 //            + "        func.outputSchemaFunction = schema_def\n"
@@ -264,7 +262,7 @@ public class JythonScriptEngine extends TajoScriptEngine {
       String key = (String) item.get(0);
       Object value = item.get(1);
       if (!key.startsWith(JythonConstants.SKIP_TOKEN) && !key.equals(JythonConstants.SCHEMA_FUNCTION)
-          && !key.equals(JythonConstants.OUTPUT_SCHEMA)
+          && !key.equals(JythonConstants.OUTPUT_TYPE)
           && !key.equals(JythonConstants.OUTPUT_SCHEMA_FUNCTION)
           && (value instanceof PyFunction)
           && (((PyFunction)value).__findattr__(JythonConstants.SCHEMA_FUNCTION)== null)) {
@@ -272,7 +270,7 @@ public class JythonScriptEngine extends TajoScriptEngine {
 
         // Find the pre-defined output schema
         TajoDataTypes.Type returnType;
-        PyObject obj = pyFunction.__findattr__(JythonConstants.OUTPUT_SCHEMA);
+        PyObject obj = pyFunction.__findattr__(JythonConstants.OUTPUT_TYPE);
         if (obj != null) {
           returnType = pyObjectToType(obj);
         } else {

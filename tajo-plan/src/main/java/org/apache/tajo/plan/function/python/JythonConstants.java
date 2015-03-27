@@ -20,7 +20,7 @@ package org.apache.tajo.plan.function.python;
 
 public class JythonConstants {
   public final static String SKIP_TOKEN = "__";
-  public final static String OUTPUT_SCHEMA = "outputSchema".intern();
+  public final static String OUTPUT_TYPE = "outputType".intern();
   public final static String OUTPUT_SCHEMA_FUNCTION = "outputSchemaFunction".intern();
   public final static String SCHEMA_FUNCTION = "schemaFunction".intern();
 }

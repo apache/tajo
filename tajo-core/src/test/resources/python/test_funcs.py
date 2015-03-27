@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 ############################################################################
 #  Licensed to the Apache Software Foundation (ASF) under one or more
 #  contributor license agreements.  See the NOTICE file distributed with
@@ -16,13 +14,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-# from tajo_util import outputSchema
-
-@outputSchema('int4')
+@outputType('int4')
 def return_one():
-    return 100
+    return 1
 
-@outputSchema("text")
+@outputType("text")
 def helloworld():
     return 'Hello, World'
 
@@ -30,6 +26,6 @@ def helloworld():
 def concat_py(str):
     return str+str
 
-@outputSchema('int4')
+@outputType('int4')
 def sum_py(a,b):
     return a+b

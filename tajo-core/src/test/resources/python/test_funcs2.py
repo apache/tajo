@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 ############################################################################
 #  Licensed to the Apache Software Foundation (ASF) under one or more
 #  contributor license agreements.  See the NOTICE file distributed with
@@ -16,9 +14,17 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-def outputType(type_str):
-    def wrap(f):
-        def wrapped_f(*args):
-            return f(*args)
-        return wrapped_f
-    return wrap
+#Percent- Percentage
+@outputType("float8")
+def percent(num, total):
+    return num * 100 / float(total)
+
+#commaFormat- format a number with commas, 12345-> 12,345
+@outputType("text")
+def comma_format(num):
+    return '{:,}'.format(num)
+
+#concatMultiple- concat multiple words
+@outputType("text")
+def concat4(word1, word2, word3, word4):
+    return word1 + " " + word2 + " " + word3 + " " + word4

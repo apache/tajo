@@ -98,7 +98,6 @@ public class FunctionLoader {
           for (FunctionDesc f : JythonScriptEngine.registerFunctions(filePath.toString(),
               FunctionLoader.PYTHON_FUNCTION_NAMESPACE)) {
             functionMap.put(f.getSignature(), f);
-            LOG.info(f);
           }
         }
       }
