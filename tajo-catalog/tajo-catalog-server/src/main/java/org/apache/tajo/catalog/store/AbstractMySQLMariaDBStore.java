@@ -204,6 +204,19 @@ public abstract class AbstractMySQLMariaDBStore extends AbstractDBStore  {
         baseTableMaps.put(TB_PARTTIONS, true);
       }
 
+      // PARTITION_KEYS
+      if (!baseTableMaps.get(TB_PARTTION_KEYS)) {
+        String sql = readSchemaFile("partition_params.sql");
+
+        if (LOG.isDebugEnabled()) {
+          LOG.debug(sql.toString());
+        }
+
+        stmt.executeUpdate(sql.toString());
+        LOG.info("Table '" + TB_PARTTION_KEYS + "' is created.");
+        baseTableMaps.put(TB_PARTTION_KEYS, true);
+      }
+
       insertSchemaVersion();
 
     } catch (SQLException se) {
@@ -270,6 +283,7 @@ public abstract class AbstractMySQLMariaDBStore extends AbstractDBStore  {
       baseTableMaps.put(TB_INDEXES, false);
       baseTableMaps.put(TB_PARTITION_METHODS, false);
       baseTableMaps.put(TB_PARTTIONS, false);
+      baseTableMaps.put(TB_PARTTION_KEYS, false);
 
       if (res.wasNull())
         return false;

@@ -50,13 +50,13 @@ public class TestQueryStringDecoder {
     QueryStringDecoder decoder = null;
     String rawUriStr = "";
     
-    rawUriStr = "http://127.0.0.1:26200/?qid=1234&tid=2345&pid=4567";
+    rawUriStr = "http://127.0.0.1:26200/?qid=1234&tid=2345&partition_id=4567";
     decoder = new QueryStringDecoder(rawUriStr);
-    assertThat(decoder.getQueries(), is("qid=1234&tid=2345&pid=4567"));
+    assertThat(decoder.getQueries(), is("qid=1234&tid=2345&partition_id=4567"));
     assertThat(decoder.getParameters(), is(notNullValue()));
     assertThat(decoder.getParameters().size(), is(3));
     assertThat(decoder.getParameters().get("qid").get(0), is("1234"));
-    assertThat(decoder.getParameters().get("pid").get(0), is("4567"));
+    assertThat(decoder.getParameters().get("partition_id").get(0), is("4567"));
     
     rawUriStr = "http://127.0.0.1:26200/?tid=2345";
     decoder = new QueryStringDecoder(rawUriStr);
@@ -71,9 +71,9 @@ public class TestQueryStringDecoder {
     QueryStringDecoder decoder = null;
     String rawUriStr = "";
     
-    rawUriStr = "http://127.0.0.1:26200/?qid=1234&tid=2345&pid=4567&tid=4890";
+    rawUriStr = "http://127.0.0.1:26200/?qid=1234&tid=2345&partition_id=4567&tid=4890";
     decoder = new QueryStringDecoder(rawUriStr);
-    assertThat(decoder.getQueries(), is("qid=1234&tid=2345&pid=4567&tid=4890"));
+    assertThat(decoder.getQueries(), is("qid=1234&tid=2345&partition_id=4567&tid=4890"));
     assertThat(decoder.getParameters(), is(notNullValue()));
     assertThat(decoder.getParameters().size(), is(3));
     assertThat(decoder.getParameters().get("tid").size(), is(2));
@@ -86,9 +86,9 @@ public class TestQueryStringDecoder {
     QueryStringDecoder decoder = null;
     String rawUriStr = "";
     
-    rawUriStr = "http://127.0.0.1:26200/?=1234&tid=&pid=4567";
+    rawUriStr = "http://127.0.0.1:26200/?=1234&tid=&partition_id=4567";
     decoder = new QueryStringDecoder(rawUriStr);
-    assertThat(decoder.getQueries(), is("=1234&tid=&pid=4567"));
+    assertThat(decoder.getQueries(), is("=1234&tid=&partition_id=4567"));
     decoder.getParameters();
   }
 }
