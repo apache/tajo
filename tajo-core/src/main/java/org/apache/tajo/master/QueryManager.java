@@ -87,7 +87,7 @@ public class QueryManager extends CompositeService {
 
       this.scheduler = new SimpleFifoScheduler(this);
     } catch (Exception e) {
-      catchException(null, e);
+      LOG.error("Failed to init service " + getName() + " by exception " + e, e);
     }
 
     super.serviceInit(conf);
@@ -302,12 +302,6 @@ public class QueryManager extends CompositeService {
 
   public long getExecutedQuerySize() {
     return executedQuerySize.get();
-  }
-
-  private void catchException(QueryId queryId, Exception e) {
-    LOG.error(e.getMessage(), e);
-    QueryInProgress queryInProgress = runningQueries.get(queryId);
-    queryInProgress.catchException(e);
   }
 
   public synchronized QueryCoordinatorProtocol.TajoHeartbeatResponse.ResponseCommand queryHeartbeat(

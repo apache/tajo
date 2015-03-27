@@ -36,6 +36,8 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.engine.planner.global.GlobalPlanner;
+import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.physical.EvalExprExec;
 import org.apache.tajo.engine.planner.physical.StoreTableExec;
 import org.apache.tajo.engine.query.QueryContext;
@@ -45,6 +47,7 @@ import org.apache.tajo.master.*;
 import org.apache.tajo.master.exec.prehook.CreateTableHook;
 import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
 import org.apache.tajo.master.exec.prehook.InsertIntoHook;
+import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.querymaster.*;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.plan.LogicalPlan;
@@ -101,7 +104,7 @@ public class QueryExecutor {
 
 
     } else if (plan.isExplain()) { // explain query
-      execExplain(plan, response);
+      execExplain(plan, queryContext, plan.isExplainGlobal(), response);
 
     } else if (PlannerUtil.checkIfQueryTargetIsVirtualTable(plan)) {
       execQueryOnVirtualTable(queryContext, session, sql, plan, response);
@@ -157,9 +160,28 @@ public class QueryExecutor {
     response.setResultCode(ClientProtos.ResultCode.OK);
   }
 
-  public void execExplain(LogicalPlan plan, SubmitQueryResponse.Builder response) throws IOException {
+  public void execExplain(LogicalPlan plan, QueryContext queryContext, boolean isGlobal,
+                          SubmitQueryResponse.Builder response)
+      throws Exception {
+    String explainStr;
+    boolean isTest = queryContext.getBool(SessionVars.TEST_PLAN_SHAPE_FIX_ENABLED);
+    if (isTest) {
+      ExplainPlanPreprocessorForTest preprocessorForTest = new ExplainPlanPreprocessorForTest();
+      preprocessorForTest.prepareTest(plan);
+    }
 
-    String explainStr = PlannerUtil.buildExplainString(plan.getRootBlock().getRoot());
+    if (isGlobal) {
+      GlobalPlanner planner = new GlobalPlanner(context.getConf(), context.getCatalog());
+      MasterPlan masterPlan = compileMasterPlan(plan, queryContext, planner);
+      if (isTest) {
+        ExplainGlobalPlanPreprocessorForTest globalPlanPreprocessorForTest = new ExplainGlobalPlanPreprocessorForTest();
+        globalPlanPreprocessorForTest.prepareTest(masterPlan);
+      }
+      explainStr = masterPlan.toString();
+    } else {
+      explainStr = PlannerUtil.buildExplainString(plan.getRootBlock().getRoot());
+    }
+
     Schema schema = new Schema();
     schema.addColumn("explain", TajoDataTypes.Type.TEXT);
     RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(schema);
@@ -415,5 +437,35 @@ public class QueryExecutor {
       LOG.info("Query " + queryInfo.getQueryId().toString() + "," + queryInfo.getSql() + "," +
           " is forwarded to " + queryInfo.getQueryMasterHost() + ":" + queryInfo.getQueryMasterPort());
     }
+  }
+
+  public static MasterPlan compileMasterPlan(LogicalPlan plan, QueryContext context, GlobalPlanner planner)
+      throws Exception {
+
+    CatalogProtos.StoreType storeType = PlannerUtil.getStoreType(plan);
+    if (storeType != null) {
+      StorageManager sm = StorageManager.getStorageManager(planner.getConf(), storeType);
+      StorageProperty storageProperty = sm.getStorageProperty();
+      if (storageProperty.isSortedInsert()) {
+        String tableName = PlannerUtil.getStoreTableName(plan);
+        LogicalRootNode rootNode = plan.getRootBlock().getRoot();
+        TableDesc tableDesc = PlannerUtil.getTableDesc(planner.getCatalog(), rootNode.getChild());
+        if (tableDesc == null) {
+          throw new VerifyException("Can't get table meta data from catalog: " + tableName);
+        }
+        List<LogicalPlanRewriteRule> storageSpecifiedRewriteRules = sm.getRewriteRules(
+            context, tableDesc);
+        if (storageSpecifiedRewriteRules != null) {
+          for (LogicalPlanRewriteRule eachRule: storageSpecifiedRewriteRules) {
+            eachRule.rewrite(context, plan);
+          }
+        }
+      }
+    }
+
+    MasterPlan masterPlan = new MasterPlan(QueryIdFactory.NULL_QUERY_ID, context, plan);
+    planner.build(masterPlan);
+
+    return masterPlan;
   }
 }

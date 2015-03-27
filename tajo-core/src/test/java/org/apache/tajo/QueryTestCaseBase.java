@@ -21,9 +21,12 @@ package org.apache.tajo;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.algebra.*;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogService;
@@ -50,10 +53,19 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.TestName;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.annotation.Annotation;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -181,6 +193,8 @@ public class QueryTestCaseBase {
   protected Path currentResultPath;
   protected Path currentDatasetPath;
 
+  protected FileSystem currentResultFS;
+
   // for getting a method name
   @Rule public TestName name = new TestName();
 
@@ -243,8 +257,10 @@ public class QueryTestCaseBase {
         client.updateQuery("CREATE DATABASE IF NOT EXISTS " + CatalogUtil.denormalizeIdentifier(currentDatabase));
       }
       client.selectDatabase(currentDatabase);
-    } catch (ServiceException e) {
-      e.printStackTrace();
+      currentResultFS = currentResultPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
+
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
     testingCluster.setAllTajoDaemonConfValue(TajoConf.ConfVars.$TEST_BROADCAST_JOIN_ENABLED.varname, "false");
   }
@@ -315,6 +331,61 @@ public class QueryTestCaseBase {
    */
   public ResultSet executeQuery() throws Exception {
     return executeFile(getMethodName() + ".sql");
+  }
+
+  private volatile Description current;
+
+  @Rule
+  public TestRule watcher = new TestWatcher() {
+    @Override
+    protected void starting(Description description) {
+      QueryTestCaseBase.this.current = description;
+    }
+  };
+
+  @Target({ElementType.METHOD})
+  @Retention(RetentionPolicy.RUNTIME)
+  protected static @interface SimpleTest {
+    String[] queries();
+    String[] cleanupTables() default {};
+  }
+
+  protected void runSimpleTests() throws Exception {
+    String methodName = getMethodName();
+    Method method = current.getTestClass().getMethod(methodName);
+    SimpleTest annotation = method.getAnnotation(SimpleTest.class);
+    if (annotation == null) {
+      throw new IllegalStateException("Cannot find test annotation");
+    }
+    String[] queries = annotation.queries();
+    try {
+      for (int i = 0; i < queries.length; i++) {
+        ResultSet result = client.executeQueryAndGetResult(queries[i]);
+        Path resultPath = StorageUtil.concatPath(
+            currentResultPath, methodName + "." + String.valueOf(i + 1) + ".result");
+        if (currentResultFS.exists(resultPath)) {
+          assertEquals("Result Verification for: " + (i+1) + "th test",
+              FileUtil.readTextFromStream(currentResultFS.open(resultPath)), resultSetToString(result).trim());
+        } else if (!isNull(result)) {
+          // If there is no result file expected, create gold files for new tests.
+          FileUtil.writeTextToStream(resultSetToString(result).trim(), currentResultFS.create(resultPath));
+          LOG.info("New test output for " + current.getDisplayName() + " is written to " + resultPath);
+          // should be copied to src directory
+        }
+      }
+    } finally {
+      for (String tableName : annotation.cleanupTables()) {
+        try {
+          client.dropTable(tableName);
+        } catch (ServiceException e) {
+          // ignore
+        }
+      }
+    }
+  }
+
+  private boolean isNull(ResultSet result) throws SQLException {
+    return result.getMetaData().getColumnCount() == 0;
   }
 
   protected String getMethodName() {
