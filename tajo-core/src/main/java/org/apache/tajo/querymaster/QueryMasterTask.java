@@ -38,7 +38,6 @@ import org.apache.tajo.catalog.CatalogService;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.engine.planner.global.GlobalPlanner;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.UnimplementedException;
@@ -117,7 +116,8 @@ public class QueryMasterTask extends CompositeService {
       new ArrayList<TajoWorkerProtocol.TaskFatalErrorReport>();
 
   public QueryMasterTask(QueryMaster.QueryMasterContext queryMasterContext,
-                         QueryId queryId, Session session, QueryContext queryContext, String jsonExpr) {
+                         QueryId queryId, Session session, QueryContext queryContext,
+                         String jsonExpr, AsyncDispatcher dispatcher) {
 
     super(QueryMasterTask.class.getName());
     this.queryMasterContext = queryMasterContext;
@@ -126,6 +126,13 @@ public class QueryMasterTask extends CompositeService {
     this.queryContext = queryContext;
     this.jsonExpr = jsonExpr;
     this.querySubmitTime = System.currentTimeMillis();
+    this.dispatcher = dispatcher;
+  }
+
+  public QueryMasterTask(QueryMaster.QueryMasterContext queryMasterContext,
+                         QueryId queryId, Session session, QueryContext queryContext,
+                         String jsonExpr) {
+    this(queryMasterContext, queryId, session, queryContext, jsonExpr, new AsyncDispatcher());
   }
 
   @Override
@@ -145,8 +152,6 @@ public class QueryMasterTask extends CompositeService {
         throw new UnimplementedException(resourceManagerClassName + " is not supported yet");
       }
       addService(resourceAllocator);
-
-      dispatcher = new AsyncDispatcher();
       addService(dispatcher);
 
       dispatcher.register(StageEventType.class, new StageEventDispatcher());
