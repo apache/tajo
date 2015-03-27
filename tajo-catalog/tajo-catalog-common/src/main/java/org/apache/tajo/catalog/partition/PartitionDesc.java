@@ -19,20 +19,44 @@
 package org.apache.tajo.catalog.partition;
 
 import com.google.common.base.Objects;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.json.GsonObject;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
- * <code>PartitionDesc</code> presents a table partition.
+ * This presents each partitions of column partitioned table.
+ * Each partitions can have a own name, partition path, colum name and partition value pairs.
+ *
+ * For example, consider you have a partitioned table as follows:
+ *
+ * create external table table1 (id text, name text) PARTITION BY COLUMN (dt text, phone text,
+ * gender text) USING RCFILE LOCATION '/tajo/data/table1';
+ *
+ * Then, its data will be stored on HDFS as follows:
+ * - /tajo/data/table1/dt=20150301/phone=1300/gender=m
+ * - /tajo/data/table1/dt=20150301/phone=1300/gender=f
+ * - /tajo/data/table1/dt=20150302/phone=1500/gender=m
+ * - /tajo/data/table1/dt=20150302/phone=1500/gender=f
+ *
+ * In such as above, first directory can be presented with this class as follows:
+ * - partitionName : dt=20150301/phone=1300/gender=m
+ * - path: /tajo/data/table1/dt=20150301/phone=1300/gender=m
+ * - partitionKeys:
+ *    dt=20150301, phone=1300, gender=m
+ *
  */
 public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescProto>, Cloneable, GsonObject {
-  @Expose protected String partitionName;                      // optional
-  @Expose protected int ordinalPosition;                       // required
-  @Expose protected String partitionValue;                     // optional
-  @Expose protected String path;                               // optional
+  @Expose protected String partitionName;
+  @Expose protected List<PartitionKey> partitionKeys;
+  @Expose protected String path; //optional
 
   private CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
 
@@ -41,8 +65,7 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
 
   public PartitionDesc(PartitionDesc partition) {
     this.partitionName = partition.partitionName;
-    this.ordinalPosition = partition.ordinalPosition;
-    this.partitionValue = partition.partitionValue;
+    this.partitionKeys = partition.partitionKeys;
     this.path = partition.path;
   }
 
@@ -50,46 +73,44 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
     if(proto.hasPartitionName()) {
       this.partitionName = proto.getPartitionName();
     }
-    this.ordinalPosition = proto.getOrdinalPosition();
-    if(proto.hasPartitionValue()) {
-      this.partitionValue = proto.getPartitionValue();
+
+    this.partitionKeys = new ArrayList<PartitionKey>();
+    for(CatalogProtos.PartitionKeyProto keyProto : proto.getPartitionKeysList()) {
+      PartitionKey partitionKey = new PartitionKey(keyProto);
+      this.partitionKeys.add(partitionKey);
     }
+
     if(proto.hasPath()) {
       this.path = proto.getPath();
     }
   }
 
-  public void setName(String partitionName) {
-    this.partitionName = partitionName;
-  }
-  public String getName() {
+  public String getPartitionName() {
     return partitionName;
   }
 
-
-  public void setOrdinalPosition(int ordinalPosition) {
-    this.ordinalPosition = ordinalPosition;
-  }
-  public int getOrdinalPosition() {
-    return ordinalPosition;
+  public void setPartitionName(String partitionName) {
+    this.partitionName = partitionName;
   }
 
-  public void setPartitionValue(String partitionValue) {
-    this.partitionValue = partitionValue;
+  public List<PartitionKey> getPartitionKeys() {
+    return partitionKeys;
   }
-  public String getPartitionValue() {
-    return partitionValue;
+
+  public void setPartitionKeys(List<PartitionKey> partitionKeys) {
+    this.partitionKeys = partitionKeys;
   }
 
   public void setPath(String path) {
     this.path = path;
   }
+
   public String getPath() {
     return path;
   }
 
   public int hashCode() {
-    return Objects.hashCode(partitionName, ordinalPosition, partitionValue, path);
+    return Objects.hashCode(partitionName, partitionKeys, path);
   }
 
   public boolean equals(Object o) {
@@ -98,10 +119,9 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
       boolean eq = ((partitionName != null && another.partitionName != null
           && partitionName.equals(another.partitionName)) ||
           (partitionName == null && another.partitionName == null));
-      eq = eq && (ordinalPosition == another.ordinalPosition);
-      eq = eq && ((partitionValue != null && another.partitionValue != null
-                     && partitionValue.equals(another.partitionValue))
-                 || (partitionValue == null && another.partitionValue == null));
+      eq = eq && ((partitionKeys != null && another.partitionKeys != null
+                     && partitionKeys.equals(another.partitionKeys))
+                 || (partitionKeys == null && another.partitionKeys == null));
       eq = eq && ((path != null && another.path != null && path.equals(another.path)) ||
           (path == null && another.path == null));
       return eq;
@@ -117,13 +137,14 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
     }
 
     if(this.partitionName != null) {
-      builder.setPartitionName(partitionName);
+      builder.setPartitionName(this.partitionName);
     }
 
-    builder.setOrdinalPosition(this.ordinalPosition);
-
-    if (this.partitionValue != null) {
-      builder.setPartitionValue(this.partitionValue);
+    builder.clearPartitionKeys();
+    if (this.partitionKeys != null) {
+      for(PartitionKey partitionKey : this.partitionKeys) {
+        builder.addPartitionKeys(partitionKey.getProto());
+      }
     }
 
     if(this.path != null) {
@@ -134,8 +155,9 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
   }
 
   public String toString() {
-    StringBuilder sb = new StringBuilder("name: " + partitionName);
-    return sb.toString();
+    Gson gson = new GsonBuilder().setPrettyPrinting().
+      excludeFieldsWithoutExposeAnnotation().create();
+    return gson.toJson(this);
   }
 
   @Override
@@ -151,8 +173,7 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
     PartitionDesc desc = (PartitionDesc) super.clone();
     desc.builder = CatalogProtos.PartitionDescProto.newBuilder();
     desc.partitionName = partitionName;
-    desc.ordinalPosition = ordinalPosition;
-    desc.partitionValue = partitionValue;
+    desc.partitionKeys = partitionKeys;
     desc.path = path;
 
     return desc;

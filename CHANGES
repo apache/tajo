@@ -9,6 +9,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1350: Refactor FilterPushDownRule::visitJoin() into well-defined, 
+    small methods. (jihoon)
+
     TAJO-1426: Support "explain global" to get physical plan. (Contributed by
     navis, Committed by jihoon)
 
@@ -43,6 +46,9 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1147: Simple query doesn't work in Web UI.
+    (Contributed by Jongyoung Park. Committed by jaehwa)
 
     TAJO-1434: Fix supporting version of Hadoop. 
     (Contributed by Dongjoon Hyun, Committed by jinho)
@@ -104,6 +110,8 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1284: Add alter partition method to CatalogStore. (jaehwa)
 
     TAJO-1392: Resolve findbug warnings on Tajo Plan Module. (jihun)
 

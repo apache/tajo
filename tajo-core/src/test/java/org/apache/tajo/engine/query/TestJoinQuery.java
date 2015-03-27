@@ -338,7 +338,21 @@ public class TestJoinQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public void testCrossJoinAndCaseWhen() throws Exception {
+  public void testInnerJoinAndCaseWhen() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testComplexJoinsWithCaseWhen() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testComplexJoinsWithCaseWhen2() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
@@ -1166,6 +1180,13 @@ public class TestJoinQuery extends QueryTestCaseBase {
   @Test
   public final void testJoinFilterOfRowPreservedTable1() throws Exception {
     // this test is for join filter of a row preserved table.
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testJoinWithOrPredicates() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);

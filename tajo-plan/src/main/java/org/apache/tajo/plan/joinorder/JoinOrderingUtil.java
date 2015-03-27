@@ -19,12 +19,8 @@
 package org.apache.tajo.plan.joinorder;
 
 import org.apache.tajo.algebra.JoinType;
-import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.LogicalPlanner;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalTreeUtil;
@@ -64,7 +60,7 @@ public class JoinOrderingUtil {
       return false;
     }
     // Currently, join filters cannot be evaluated at joins
-    if (LogicalPlanner.isOuterJoin(edge.getJoinType()) && !isOnPredicate) {
+    if (PlannerUtil.isOuterJoin(edge.getJoinType()) && !isOnPredicate) {
       return false;
     }
     return true;

@@ -29,6 +29,7 @@ import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.exception.*;
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.DatabaseProto;
@@ -58,6 +59,7 @@ public class MemStore implements CatalogStore {
   private final Map<String, CatalogProtos.FunctionDescProto> functions = Maps.newHashMap();
   private final Map<String, Map<String, IndexDescProto>> indexes = Maps.newHashMap();
   private final Map<String, Map<String, IndexDescProto>> indexesByColumn = Maps.newHashMap();
+  private final Map<String, Map<String, CatalogProtos.PartitionDescProto>> partitions = Maps.newHashMap();
 
   public MemStore(Configuration conf) {
   }
@@ -67,6 +69,7 @@ public class MemStore implements CatalogStore {
     databases.clear();
     functions.clear();
     indexes.clear();
+    partitions.clear();
   }
 
   @Override
@@ -270,6 +273,8 @@ public class MemStore implements CatalogStore {
     final CatalogProtos.TableDescProto tableDescProto = database.get(tableName);
     CatalogProtos.TableDescProto newTableDescProto;
     CatalogProtos.SchemaProto schemaProto;
+    String partitionName = null;
+    CatalogProtos.PartitionDescProto partitionDesc = null;
 
     switch (alterTableDescProto.getAlterTableType()) {
       case RENAME_TABLE:
@@ -304,10 +309,51 @@ public class MemStore implements CatalogStore {
         newTableDescProto = tableDescProto.toBuilder().setSchema(newSchemaProto).build();
         database.put(tableName, newTableDescProto);
         break;
+      case ADD_PARTITION:
+        partitionDesc = alterTableDescProto.getPartitionDesc();
+        partitionName = partitionDesc.getPartitionName();
+
+        if (partitions.containsKey(tableName) && partitions.get(tableName).containsKey(partitionName)) {
+          throw new AlreadyExistsPartitionException(databaseName, tableName, partitionName);
+        } else {
+          CatalogProtos.PartitionDescProto.Builder builder = CatalogProtos.PartitionDescProto.newBuilder();
+          builder.setPartitionName(partitionName);
+          builder.setPath(partitionDesc.getPath());
+
+          if (partitionDesc.getPartitionKeysCount() > 0) {
+            int i = 0;
+            for (CatalogProtos.PartitionKeyProto eachKey : partitionDesc.getPartitionKeysList()) {
+              CatalogProtos.PartitionKeyProto.Builder keyBuilder = CatalogProtos.PartitionKeyProto.newBuilder();
+              keyBuilder.setColumnName(eachKey.getColumnName());
+              keyBuilder.setPartitionValue(eachKey.getPartitionValue());
+              builder.setPartitionKeys(i, keyBuilder.build());
+              i++;
+            }
+          }
+
+          Map<String, CatalogProtos.PartitionDescProto> protoMap = null;
+          if (!partitions.containsKey(tableName)) {
+            protoMap = Maps.newHashMap();
+          } else {
+            protoMap = partitions.get(tableName);
+          }
+          protoMap.put(partitionName, builder.build());
+          partitions.put(tableName, protoMap);
+        }
+        break;
+      case DROP_PARTITION:
+        partitionDesc = alterTableDescProto.getPartitionDesc();
+        partitionName = partitionDesc.getPartitionName();
+        if(!partitions.containsKey(tableName)) {
+          throw new NoSuchPartitionException(databaseName, tableName, partitionName);
+        } else {
+          partitions.remove(partitionName);
+        }
+        break;
       default:
-        //TODO
     }
   }
+
 
   private int getIndexOfColumnToBeRenamed(List<CatalogProtos.ColumnProto> fieldList, String columnName) {
     int fieldCount = fieldList.size();
@@ -498,39 +544,50 @@ public class MemStore implements CatalogStore {
   }
 
   @Override
-  public void addPartitions(CatalogProtos.PartitionsProto partitionDescList) throws CatalogException {
-    throw new RuntimeException("not supported!");
+  public List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName, String tableName) throws CatalogException {
+    List<CatalogProtos.PartitionDescProto> protos = new ArrayList<CatalogProtos.PartitionDescProto>();
+
+    if (partitions.containsKey(tableName)) {
+      for (CatalogProtos.PartitionDescProto proto : partitions.get(tableName).values()) {
+        protos.add(proto);
+      }
+    }
+    return protos;
   }
 
   @Override
-  public void addPartition(String databaseName, String tableName, CatalogProtos.PartitionDescProto
-      partitionDescProto) throws CatalogException {
-    throw new RuntimeException("not supported!");
+  public CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
+                                                       String partitionName) throws CatalogException {
+    if (partitions.containsKey(tableName) && partitions.get(tableName).containsKey(partitionName)) {
+      return partitions.get(tableName).get(partitionName);
+    } else {
+      throw new NoSuchPartitionException(partitionName);
+    }
   }
 
-  @Override
-  public CatalogProtos.PartitionsProto getPartitions(String tableName) throws CatalogException {
-    throw new RuntimeException("not supported!");
-  }
-
-  @Override
-  public CatalogProtos.PartitionDescProto getPartition(String partitionName) throws CatalogException {
-    throw new RuntimeException("not supported!");
-  }
-
-  @Override
-  public void delPartition(String partitionName) throws CatalogException {
-    throw new RuntimeException("not supported!");
-  }
-
-  @Override
-  public void dropPartitions(String tableName) throws CatalogException {
-    throw new RuntimeException("not supported!");
-  }
-  
-  @Override
   public List<TablePartitionProto> getAllPartitions() throws CatalogException {
-    throw new UnsupportedOperationException();
+    List<TablePartitionProto> protos = new ArrayList<TablePartitionProto>();
+    Set<String> tables = partitions.keySet();
+    for (String table : tables) {
+      Map<String, CatalogProtos.PartitionDescProto> entryMap = partitions.get(table);
+      for (Map.Entry<String, CatalogProtos.PartitionDescProto> proto : entryMap.entrySet()) {
+        CatalogProtos.PartitionDescProto partitionDescProto = proto.getValue();
+
+        TablePartitionProto.Builder builder = TablePartitionProto.newBuilder();
+
+        builder.setPartitionName(partitionDescProto.getPartitionName());
+        builder.setPath(partitionDescProto.getPath());
+
+        // PARTITION_ID and TID is always necessary variables. In other CatalogStore excepting MemStore,
+        // all partitions would have PARTITION_ID and TID. But MemStore doesn't contain these variable values because
+        // it is implemented for test purpose. Thus, we need to set each variables to 0.
+        builder.setPartitionId(0);
+        builder.setTid(0);
+
+        protos.add(builder.build());
+      }
+    }
+    return protos;
   }
 
   /* (non-Javadoc)
