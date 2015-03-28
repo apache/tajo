@@ -40,19 +40,19 @@ Please note that you can specify multiple paths with ``','`` as a delimiter. Eac
 
   # /path/to/script1.py
 
-  @outputSchema('int4')
+  @outputType('int4')
   def return_one():
     return 1
 
-  @outputSchema("text")
+  @outputType("text")
   def helloworld():
     return 'Hello, World'
 
-  # No decorator - bytearray
+  # No decorator - blob
   def concat_py(str):
     return str+str
 
-  @outputSchema('int4')
+  @outputType('int4')
   def sum_py(a,b):
     return a+b
 

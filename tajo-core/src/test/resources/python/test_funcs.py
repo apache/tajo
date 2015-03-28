@@ -22,7 +22,7 @@ def return_one():
 def helloworld():
     return 'Hello, World'
 
-# No decorator - bytearray
+# No decorator - blob
 def concat_py(str):
     return str+str
 
