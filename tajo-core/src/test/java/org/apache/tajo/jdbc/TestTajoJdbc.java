@@ -635,4 +635,41 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       }
     }
   }
+
+  @Test
+  public void testMaxRows() throws Exception {
+    String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
+      DEFAULT_DATABASE_NAME);
+    Connection conn = DriverManager.getConnection(connUri);
+    assertTrue(conn.isValid(100));
+    Statement stmt = null;
+    ResultSet res = null;
+    final int maxRowsNum = 3;
+    int resultRowsNum = 0, returnMaxRows = 0;
+    try {
+      stmt = conn.createStatement();
+      stmt.setMaxRows(maxRowsNum);
+      returnMaxRows = stmt.getMaxRows();
+      res = stmt.executeQuery("select * from lineitem");
+      try {
+        assertNotNull(res);
+        while (res.next()) {
+        	resultRowsNum++;	
+        }
+        assertTrue(maxRowsNum == resultRowsNum && maxRowsNum == returnMaxRows);
+      } finally {
+        res.close();
+      }
+    } finally {
+      if (res != null) {
+        res.close();
+      }
+      if (stmt != null) {
+        stmt.close();
+      }
+      if (conn != null) {
+        conn.close();
+      }
+    }
+  }
 }
