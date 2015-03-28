@@ -25,7 +25,7 @@ statement. The below is an example statement for creating a table using CSV file
     name text,
     score float,
     type text
-  ) USING CSV;
+  ) USING TEXT WITH ('text.delimiter'=',');
 
 =========================================
 Physical Properties
@@ -55,9 +55,9 @@ The following example is to set a custom field delimiter, NULL character, and co
   name text,
   score float,
   type text
- ) USING CSV WITH('text.delimiter'='\u0001',
-                  'text.null'='\\N',
-                  'compression.codec'='org.apache.hadoop.io.compress.SnappyCodec');
+ ) USING TEXT WITH('text.delimiter'='\u0001',
+                   'text.null'='\\N',
+                   'compression.codec'='org.apache.hadoop.io.compress.SnappyCodec');
 
 .. warning::
 
@@ -84,7 +84,7 @@ For example:
   name text,
   score float,
   type text
- ) USING CSV WITH ('csvfile.serde'='org.my.storage.CustomSerializerDeserializer')
+ ) USING TEXT WITH ('csvfile.serde'='org.my.storage.CustomSerializerDeserializer')
 
 
 =========================================
