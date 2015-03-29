@@ -61,6 +61,8 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   protected final String catalogUri;
 
   private Connection conn;
+
+  protected Map<String, Boolean> baseTableMaps = new HashMap<String, Boolean>();
   
   protected XMLCatalogSchemaManager catalogSchemaManager;
 
@@ -1174,7 +1176,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   }
 
   public void addPartition(int tableId, CatalogProtos.PartitionDescProto partition) throws CatalogException {
-    Connection conn;
+    Connection conn = null;
     PreparedStatement pstmt = null;
     final String ADD_PARTITION_SQL =
       "INSERT INTO " + TB_PARTTIONS

@@ -33,7 +33,7 @@ import org.python.core.PyObject;
 import java.io.IOException;
 
 /**
- * Python implementation of a Tajo UDF Performs mappings between Python & Tajo data structures.
+ * Python implementation of a Tajo UDF performs mappings between Python & Tajo data structures.
  */
 public class GeneralPythonFunctionEval extends FunctionEval {
   private Tuple params = null;
