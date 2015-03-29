@@ -7,6 +7,8 @@ Release 0.11.0 - unreleased
     TAJO-1135: Implement queryable virtual table for cluster information.
     (jihun)
 
+    TAJO-1344: Python UDF support. (jihoon)
+
   IMPROVEMENT
 
     TAJO-1350: Refactor FilterPushDownRule::visitJoin() into well-defined, 
