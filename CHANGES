@@ -47,6 +47,12 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1437: Resolve findbug warnings on Tajo JDBC Module. 
+    (Contributed by Dongjoon Hyun, Committed by jihoon)
+
+    TAJO-1438: Resolve findbug warnings on Tajo Client Module. 
+    (Contributed by Dongjoon Hyun, Committed by jihoon)
+
     TAJO-1440: Some tests fail in parallel test environment in TestKillQuery.
     (Contributed by Jongyoung Park. Committed by jinho)
 
