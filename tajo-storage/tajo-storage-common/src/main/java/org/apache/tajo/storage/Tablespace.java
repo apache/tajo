@@ -31,6 +31,7 @@ import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
@@ -296,7 +297,7 @@ public abstract class Tablespace {
     }
 
     if (scannerClass == null) {
-      throw new IOException("Unknown Storage Type: " + storeType);
+      throw new UnsupportedException("Unsupported Storage Type: " + storeType.name());
     }
 
     return scannerClass;
