@@ -31,6 +31,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.NodeType;
@@ -538,11 +539,13 @@ public abstract class StorageManager {
     if (scannerClass == null) {
       scannerClass = conf.getClass(
           String.format("tajo.storage.scanner-handler.%s.class", handlerName), null, Scanner.class);
-      SCANNER_HANDLER_CACHE.put(handlerName, scannerClass);
+      if (scannerClass != null) {
+        SCANNER_HANDLER_CACHE.put(handlerName, scannerClass);
+      }
     }
 
     if (scannerClass == null) {
-      throw new IOException("Unknown Storage Type: " + storeType.name());
+      throw new UnsupportedException("Unsupported Storage Type: " + storeType.name());
     }
 
     return scannerClass;
