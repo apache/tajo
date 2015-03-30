@@ -174,4 +174,9 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
     appender.enableStats();
     appender.init();
   }
+
+  @Override
+  public void rescan() throws IOException {
+    // nothing to do
+  }
 }

@@ -106,6 +106,7 @@ public class ComparableVector {
         case 6: doubles = new double[length]; break;
         case 7: bytes = new byte[length][]; break;
         case 8: ints = new int[length]; break;
+        case -1: break;
         default:
           throw new IllegalArgumentException();
       }
@@ -170,8 +171,12 @@ public class ComparableVector {
     private final int[] keyIndex;
     private final Object[] keys;
 
+    public ComparableTuple(Schema schema, int[] keyIndex) {
+      this(getTypes(schema, keyIndex), keyIndex);
+    }
+
     public ComparableTuple(int[] keyTypes, int[] keyIndex) {
-      this.keyTypes = new int[keyIndex.length];
+      this.keyTypes = keyTypes;
       this.keyIndex = keyIndex;
       this.keys = new Object[keyIndex.length];
     }
@@ -195,7 +200,7 @@ public class ComparableVector {
           case 8: keys[i] = tuple.getInt4(field); break;
           default:
             throw new IllegalArgumentException();
-          }
+        }
       }
     }
 
@@ -216,6 +221,34 @@ public class ComparableVector {
         }
         if (!keys[i].equals(other.keys[i])) {
           return false;
+        }
+      }
+      return true;
+    }
+
+    public boolean equals(Tuple tuple) {
+      for (int i = 0; i < keys.length; i++) {
+        final int field = keyIndex[i];
+        final boolean n1 = keys[i] == null;
+        final boolean n2 = tuple.isNull(field);
+        if (n1 && n2) {
+          continue;
+        }
+        if (n1 ^ n2) {
+          return false;
+        }
+        switch (keyTypes[i]) {
+          case 0: if ((Boolean)keys[i] != tuple.getBool(field)) return false; continue;
+          case 1: if ((Byte)keys[i] != tuple.getByte(field)) return false; continue;
+          case 2: if ((Short)keys[i] != tuple.getInt2(field)) return false; continue;
+          case 3: if ((Integer)keys[i] != tuple.getInt4(field)) return false; continue;
+          case 4: if ((Long)keys[i] != tuple.getInt8(field)) return false; continue;
+          case 5: if ((Float)keys[i] != tuple.getFloat4(field)) return false; continue;
+          case 6: if ((Double)keys[i] != tuple.getFloat8(field)) return false; continue;
+          case 7: if (!Arrays.equals((byte[])keys[i], tuple.getBytes(field))) return false; continue;
+          case 8: if ((Integer)keys[i] != tuple.getInt4(field)) return false; continue;
+          default:
+            throw new IllegalArgumentException();
         }
       }
       return true;
@@ -247,6 +280,14 @@ public class ComparableVector {
     return true;
   }
 
+  public static int[] getTypes(Schema schema, int[] keyIndex) {
+    int[] types = new int[keyIndex.length];
+    for (int i = 0; i < keyIndex.length; i++) {
+      types[i] = getType(schema.getColumn(keyIndex[i]).getDataType().getType());
+    }
+    return types;
+  }
+
   public static int getType(TajoDataTypes.Type type) {
     switch (type) {
       case BOOLEAN: return 0;
@@ -258,6 +299,7 @@ public class ComparableVector {
       case FLOAT8: return 6;
       case TEXT: case CHAR: case BLOB: return 7;
       case INET4: return 8;
+      case NULL_TYPE: return -1;
     }
     // todo
     throw new UnsupportedException(type.name());
