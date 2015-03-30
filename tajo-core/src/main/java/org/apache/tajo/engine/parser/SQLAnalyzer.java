@@ -204,6 +204,16 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   @Override
+  public Expr visitNon_join_query_primary(Non_join_query_primaryContext ctx) {
+    if (ctx.simple_table() != null) {
+      return visitSimple_table(ctx.simple_table());
+    } else if (ctx.non_join_query_expression() != null) {
+      return visitNon_join_query_expression(ctx.non_join_query_expression());
+    }
+    return visitChildren(ctx);
+  }
+
+  @Override
   public Expr visitQuery_specification(SQLParser.Query_specificationContext ctx) {
     Expr current = null;
     if (ctx.table_expression() != null) {
