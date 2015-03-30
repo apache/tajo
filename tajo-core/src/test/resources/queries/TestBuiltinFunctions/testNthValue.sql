@@ -1,0 +1,1 @@
+select l_orderkey,l_extendedprice, nth_value(l_extendedprice, 2) over (partition by l_orderkey order by l_orderkey) as nthvalue from lineitem;

@@ -1,0 +1,1 @@
+select l_orderkey, ntile(3) over (order by l_orderkey) as tile from lineitem;

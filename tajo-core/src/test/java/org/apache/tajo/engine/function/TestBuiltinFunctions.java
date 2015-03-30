@@ -390,4 +390,47 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
       executeString("DROP TABLE rank_table2 PURGE");
     }
   }
+  
+  @Test
+  public void testNthValue() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("name", TajoDataTypes.Type.TEXT);
+    schema.addColumn("department", TajoDataTypes.Type.TEXT);
+    schema.addColumn("salary", TajoDataTypes.Type.INT4);
+
+    String[] data = new String[] {"1|Jeff|IT|10000","2|Sam|IT|12000","3|Richard|Manager|30000",
+        "4|Ian|Manager|20000","5|John|IT|60000","6|Matthew|Director|60000"};
+    TajoTestingCluster.createTable("nthvalue_table1", schema, tableOptions, data, 1);
+    res = null;
+
+    try {
+      res = executeString("select *,nth_value(name,2) over (partition by department order by id) from nthvalue_table1;");
+      String expectedString = "id,name,department,salary,?windowfunction\n" +
+          "-------------------------------\n" +
+          "6,Matthew,Director,60000,null\n" +
+          "1,Jeff,IT,10000,Sam\n" +
+          "2,Sam,IT,12000,Sam\n" +
+          "5,John,IT,60000,Sam\n" +
+          "3,Richard,Manager,30000,Ian\n" +
+          "4,Ian,Manager,20000,Ian\n";
+
+      assertEquals(expectedString, resultSetToString(res));
+    } finally {
+      if (res != null) {
+        try {
+          res.close();
+        } catch(Throwable ignored) {}
+      }
+      executeString("DROP TABLE nthvalue_table1 PURGE");
+    }
+  }
 }

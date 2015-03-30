@@ -639,6 +639,7 @@ window_function_type
   | LAST_VALUE LEFT_PAREN column_reference RIGHT_PAREN
   | LAG LEFT_PAREN column_reference ( COMMA numeric_value_expression ( COMMA common_value_expression )? )? RIGHT_PAREN
   | LEAD LEFT_PAREN column_reference ( COMMA numeric_value_expression ( COMMA common_value_expression )? )? RIGHT_PAREN
+  | NTH_VALUE LEFT_PAREN column_reference COMMA numeric_value_expression RIGHT_PAREN
   ;
 
 rank_function_type

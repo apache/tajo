@@ -409,6 +409,9 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       } else {
         functionBody = new GeneralSetFunctionExpr("lead", false, new Expr[]{visitColumn_reference(functionType.column_reference())});
       }
+    } else if (checkIfExist(functionType.NTH_VALUE())) {
+      functionBody = new GeneralSetFunctionExpr("nth_value", false, new Expr[]{visitColumn_reference(functionType.column_reference()),
+          visitNumeric_value_expression(functionType.numeric_value_expression())});
     } else {
       functionBody = visitAggregate_function(functionType.aggregate_function());
     }
