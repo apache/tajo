@@ -395,8 +395,7 @@ public class Query implements EventHandler<QueryEvent> {
           query.getExecutionBlockCursor().nextBlock());
       stage.setPriority(query.priority--);
       query.addStage(stage);
-
-      stage.handle(new StageEvent(stage.getId(), StageEventType.SQ_INIT));
+      stage.getEventHandler().handle(new StageEvent(stage.getId(), StageEventType.SQ_INIT));
       LOG.debug("Schedule unit plan: \n" + stage.getBlock().getPlan());
     }
   }
@@ -675,7 +674,7 @@ public class Query implements EventHandler<QueryEvent> {
       Stage nextStage = new Stage(query.context, query.getPlan(), nextBlock);
       nextStage.setPriority(query.priority--);
       query.addStage(nextStage);
-      nextStage.handle(new StageEvent(nextStage.getId(), StageEventType.SQ_INIT));
+      nextStage.getEventHandler().handle(new StageEvent(nextStage.getId(), StageEventType.SQ_INIT));
 
       LOG.info("Scheduling Stage:" + nextStage.getId());
       if(LOG.isDebugEnabled()) {

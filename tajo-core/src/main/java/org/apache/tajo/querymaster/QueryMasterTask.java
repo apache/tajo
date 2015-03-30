@@ -116,7 +116,8 @@ public class QueryMasterTask extends CompositeService {
       new ArrayList<TajoWorkerProtocol.TaskFatalErrorReport>();
 
   public QueryMasterTask(QueryMaster.QueryMasterContext queryMasterContext,
-                         QueryId queryId, Session session, QueryContext queryContext, String jsonExpr) {
+                         QueryId queryId, Session session, QueryContext queryContext,
+                         String jsonExpr, AsyncDispatcher dispatcher) {
 
     super(QueryMasterTask.class.getName());
     this.queryMasterContext = queryMasterContext;
@@ -125,6 +126,13 @@ public class QueryMasterTask extends CompositeService {
     this.queryContext = queryContext;
     this.jsonExpr = jsonExpr;
     this.querySubmitTime = System.currentTimeMillis();
+    this.dispatcher = dispatcher;
+  }
+
+  public QueryMasterTask(QueryMaster.QueryMasterContext queryMasterContext,
+                         QueryId queryId, Session session, QueryContext queryContext,
+                         String jsonExpr) {
+    this(queryMasterContext, queryId, session, queryContext, jsonExpr, new AsyncDispatcher());
   }
 
   @Override
@@ -144,8 +152,6 @@ public class QueryMasterTask extends CompositeService {
         throw new UnimplementedException(resourceManagerClassName + " is not supported yet");
       }
       addService(resourceAllocator);
-
-      dispatcher = new AsyncDispatcher();
       addService(dispatcher);
 
       dispatcher.register(StageEventType.class, new StageEventDispatcher());
