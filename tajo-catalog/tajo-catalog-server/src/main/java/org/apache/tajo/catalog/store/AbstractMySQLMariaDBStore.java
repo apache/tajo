@@ -206,7 +206,7 @@ public abstract class AbstractMySQLMariaDBStore extends AbstractDBStore  {
 
       // PARTITION_KEYS
       if (!baseTableMaps.get(TB_PARTTION_KEYS)) {
-        String sql = readSchemaFile("partition_params.sql");
+        String sql = readSchemaFile("partition_keys.sql");
 
         if (LOG.isDebugEnabled()) {
           LOG.debug(sql.toString());
