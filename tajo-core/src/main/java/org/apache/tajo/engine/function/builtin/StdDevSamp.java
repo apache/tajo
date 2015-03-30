@@ -16,23 +16,26 @@
  * limitations under the License.
  */
 
-option java_package = "org.apache.tajo";
-option java_outer_classname = "InternalTypes";
-option java_generic_services = false;
-option java_generate_equals_and_hash = true;
+package org.apache.tajo.engine.function.builtin;
 
-message AvgLongProto {
-  required int64 sum = 1;
-  required int64 count = 2;
-}
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.plan.function.FunctionContext;
 
-message AvgDoubleProto {
-  required double sum = 1;
-  required int64 count = 2;
-}
+public abstract class StdDevSamp extends StdDev {
+  public StdDevSamp(Column[] definedArgs) {
+    super(definedArgs);
+  }
 
-message StdDevProto {
-  required double squareSumOfDiff = 1;
-  required double avg = 2;
-  required int64 count = 3;
+  @Override
+  public Datum terminate(FunctionContext ctx) {
+    StdDevContext StdDevCtx = (StdDevContext) ctx;
+    if (StdDevCtx.count <= 1) {
+      return NullDatum.get();
+    }
+
+    return DatumFactory.createFloat8(Math.sqrt(StdDevCtx.squareSumOfDiff / (StdDevCtx.count - 1)));
+  }
 }
