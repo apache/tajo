@@ -1,0 +1,32 @@
+create external table if not exists ${DB}.date_dim
+(
+    d_date_sk                 int4,
+    d_date_id                 text,
+    d_date                    date,
+    d_month_seq               int4,
+    d_week_seq                int4,
+    d_quarter_seq             int4,
+    d_year                    int4,
+    d_dow                     int4,
+    d_moy                     int4,
+    d_dom                     int4,
+    d_qoy                     int4,
+    d_fy_year                 int4,
+    d_fy_quarter_seq          int4,
+    d_fy_week_seq             int4,
+    d_day_name                text,
+    d_quarter_name            text,
+    d_holiday                 text,
+    d_weekend                 text,
+    d_following_holiday       text,
+    d_first_dom               int4,
+    d_last_dom                int4,
+    d_same_day_ly             int4,
+    d_same_day_lq             int4,
+    d_current_day             text,
+    d_current_week            text,
+    d_current_month           text,
+    d_current_quarter         text,
+    d_current_year            text
+)
+using csv with ('text.delimiter'='|') location '${DATA_LOCATION}';

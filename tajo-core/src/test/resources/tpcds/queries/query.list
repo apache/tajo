@@ -1,0 +1,51 @@
+modified/q3.sql
+modified/q7.sql
+
+###############################################################################
+# The result of q15 is different with hive because of FilterPushDown bug.
+#modified/q15.sql
+###############################################################################
+
+modified/q19.sql
+modified/q21.sql
+
+###############################################################################
+# The result of q25 is empty.
+modified/q25.sql
+###############################################################################
+
+modified/q26.sql
+
+###############################################################################
+# The result of q29 is empty.
+modified/q29.sql
+###############################################################################
+
+modified/q34.sql
+
+###############################################################################
+# The result of q37 is empty because there is not matched row
+# with i_current_price and i_manufact_id condition.
+modified/q37.sql
+###############################################################################
+
+modified/q40.sql
+modified/q42.sql
+modified/q43.sql
+modified/q46.sql
+modified/q50.sql
+modified/q52.sql
+modified/q55.sql
+modified/q61.sql
+modified/q62.sql
+modified/q65.sql
+modified/q68.sql
+modified/q73.sql
+modified/q76.sql
+modified/q79.sql
+modified/q82.sql
+modified/q84.sql
+modified/q90.sql
+origin/q91.sql
+modified/q93.sql
+modified/q99.sql
