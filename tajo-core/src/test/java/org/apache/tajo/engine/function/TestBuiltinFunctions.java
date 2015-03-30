@@ -323,6 +323,135 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
 
   }
 
+  @Test
+  public void testStdDevSamp() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_int", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_long", TajoDataTypes.Type.INT8);
+    schema.addColumn("value_float", TajoDataTypes.Type.FLOAT4);
+    schema.addColumn("value_double", TajoDataTypes.Type.FLOAT8);
+    String[] data = new String[]{
+        "1|\\N|-111|1.2|-50.5",
+        "2|1|\\N|\\N|52.5",
+        "3|2|-333|2.8|\\N" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select stddev_samp(value_int) as sdsamp_int, stddev_samp(value_long) as sdsamp_long, stddev_samp(value_float) as sdsamp_float, stddev_samp(value_double) as sdsamp_double from table11");
+      String ascExpected = "sdsamp_int,sdsamp_long,sdsamp_float,sdsamp_double\n" +
+          "-------------------------------\n" +
+          "0.7071067811865476,156.97770542341354,1.1313707824635184,72.8319984622144\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+
+  }
+
+  @Test
+  public void testStdDevSampWithFewNumbers() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_int", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_long", TajoDataTypes.Type.INT8);
+    schema.addColumn("value_float", TajoDataTypes.Type.FLOAT4);
+    schema.addColumn("value_double", TajoDataTypes.Type.FLOAT8);
+    String[] data = new String[]{
+        "1|\\N|\\N|\\N|-50.5",
+        "2|1|\\N|\\N|\\N",
+        "3|\\N|\\N|\\N|\\N" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select stddev_samp(value_int) as sdsamp_int, stddev_samp(value_long) as sdsamp_long, stddev_samp(value_float) as sdsamp_float, stddev_samp(value_double) as sdsamp_double from table11");
+      String ascExpected = "sdsamp_int,sdsamp_long,sdsamp_float,sdsamp_double\n" +
+          "-------------------------------\n" +
+          "null,null,null,null\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+
+  }
+
+  @Test
+  public void testStdDevPop() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_int", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_long", TajoDataTypes.Type.INT8);
+    schema.addColumn("value_float", TajoDataTypes.Type.FLOAT4);
+    schema.addColumn("value_double", TajoDataTypes.Type.FLOAT8);
+    String[] data = new String[]{
+        "1|\\N|-111|1.2|-50.5",
+        "2|1|\\N|\\N|52.5",
+        "3|2|-333|2.8|\\N" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select stddev_pop(value_int) as sdpop_int, stddev_pop(value_long) as sdpop_long, stddev_pop(value_float) as sdpop_float, stddev_pop(value_double) as sdpop_double from table11");
+      String ascExpected = "sdpop_int,sdpop_long,sdpop_float,sdpop_double\n" +
+          "-------------------------------\n" +
+          "0.5,111.0,0.7999999523162842,51.5\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+
+  }
+
+  @Test
+  public void testStdDevPopWithFewNumbers() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_int", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_long", TajoDataTypes.Type.INT8);
+    schema.addColumn("value_float", TajoDataTypes.Type.FLOAT4);
+    schema.addColumn("value_double", TajoDataTypes.Type.FLOAT8);
+    String[] data = new String[]{
+        "1|\\N|\\N|\\N|-50.5",
+        "2|1|\\N|\\N|\\N",
+        "3|\\N|\\N|\\N|\\N" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select stddev_pop(value_int) as sdpop_int, stddev_pop(value_long) as sdpop_long, stddev_pop(value_float) as sdpop_float, stddev_pop(value_double) as sdpop_double from table11");
+      String ascExpected = "sdpop_int,sdpop_long,sdpop_float,sdpop_double\n" +
+          "-------------------------------\n" +
+          "0.0,null,null,0.0\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+
+  }
+
+
 //  @Test
 //  public void testRandom() throws Exception {
 //    ResultSet res = executeQuery();

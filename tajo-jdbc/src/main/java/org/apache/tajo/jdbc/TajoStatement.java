@@ -41,11 +41,6 @@ public class TajoStatement implements Statement {
   private ResultSet resultSet = null;
 
   /**
-   * Add SQLWarnings to the warningChain if needed.
-   */
-  private SQLWarning warningChain = null;
-
-  /**
    * Keep state so we can fail certain calls made after close().
    */
   private boolean isClosed = false;
@@ -71,9 +66,7 @@ public class TajoStatement implements Statement {
   }
 
   @Override
-  public void clearWarnings() throws SQLException {
-    warningChain = null;
-  }
+  public void clearWarnings() throws SQLException {}
 
   @Override
   public void close() throws SQLException {
@@ -219,6 +212,8 @@ public class TajoStatement implements Statement {
 
   @Override
   public Connection getConnection() throws SQLException {
+    if (isClosed)
+      throw new SQLException("Can't get connection after statement has been closed");
     return conn;
   }
 
@@ -229,6 +224,8 @@ public class TajoStatement implements Statement {
 
   @Override
   public int getFetchSize() throws SQLException {
+    if (isClosed)
+      throw new SQLException("Can't get fetch size after statement has been closed");
     return fetchSize;
   }
 
@@ -264,6 +261,8 @@ public class TajoStatement implements Statement {
 
   @Override
   public ResultSet getResultSet() throws SQLException {
+    if (isClosed)
+      throw new SQLException("Can't get result set after statement has been closed");
     return resultSet;
   }
 
@@ -284,12 +283,16 @@ public class TajoStatement implements Statement {
 
   @Override
   public int getUpdateCount() throws SQLException {
+    if (isClosed)
+      throw new SQLException("Can't get update count after statement has been closed");
     return 0;
   }
 
   @Override
   public SQLWarning getWarnings() throws SQLException {
-    return warningChain;
+    if (isClosed)
+      throw new SQLException("Can't get warnings after statement has been closed");
+    return null;
   }
 
   @Override
@@ -325,6 +328,8 @@ public class TajoStatement implements Statement {
 
   @Override
   public void setFetchSize(int rows) throws SQLException {
+    if (isClosed)
+      throw new SQLException("Can't set fetch size after statement has been closed");
     fetchSize = rows;
   }
 
