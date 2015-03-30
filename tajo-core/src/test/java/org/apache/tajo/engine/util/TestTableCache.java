@@ -24,7 +24,6 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.utils.CacheHolder;
 import org.apache.tajo.engine.utils.TableCache;
 import org.apache.tajo.engine.utils.TableCacheKey;
-import org.apache.tajo.worker.ExecutionBlockSharedResource;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -46,32 +45,32 @@ public class TestTableCache {
         QueryIdFactory.newQueryId(System.currentTimeMillis(), 0));
 
     final TableCacheKey key = new TableCacheKey(ebId.toString(), "testBroadcastTableCache", "path");
-    final ExecutionBlockSharedResource resource = new ExecutionBlockSharedResource();
 
     final int parallelCount = 30;
     ExecutorService executor = Executors.newFixedThreadPool(parallelCount);
     List<Future<CacheHolder<Long>>> tasks = new ArrayList<Future<CacheHolder<Long>>>();
     for (int i = 0; i < parallelCount; i++) {
-      tasks.add(executor.submit(createTask(key, resource)));
+      tasks.add(executor.submit(createTask(key)));
     }
 
-    long expected = tasks.get(0).get().getData().longValue();
+    long expected = tasks.get(0).get().acquire();
 
     for (Future<CacheHolder<Long>> future : tasks) {
-      assertEquals(expected, future.get().getData().longValue());
+      assertEquals(expected, future.get().acquire().longValue());
     }
 
-    resource.releaseBroadcastCache(ebId);
-    assertFalse(resource.hasBroadcastCache(key));
+    TableCache.getInstance().releaseCache(ebId);
+    assertFalse(TableCache.getInstance().hasCache(key));
     executor.shutdown();
   }
 
-  private Callable<CacheHolder<Long>> createTask(final TableCacheKey key, final ExecutionBlockSharedResource resource) {
+  private Callable<CacheHolder<Long>> createTask(final TableCacheKey key) {
+    final TableCache tableCache = TableCache.getInstance();
     return new Callable<CacheHolder<Long>>() {
       @Override
       public CacheHolder<Long> call() throws Exception {
         CacheHolder<Long> result;
-        synchronized (resource.getLock()) {
+        synchronized (tableCache.getLock()) {
           if (!TableCache.getInstance().hasCache(key)) {
             final long nanoTime = System.nanoTime();
             final TableStats tableStats = new TableStats();
@@ -81,27 +80,21 @@ public class TestTableCache {
             final CacheHolder<Long> cacheHolder = new CacheHolder<Long>() {
 
               @Override
-              public Long getData() {
+              public Long acquire() {
                 return nanoTime;
               }
 
               @Override
-              public TableStats getTableStats() {
-                return tableStats;
-              }
-
-              @Override
-              public void release() {
-
+              public boolean release() {
+                return true;
               }
             };
 
-            resource.addBroadcastCache(key, cacheHolder);
+            tableCache.addCache(key, cacheHolder);
           }
         }
 
-        CacheHolder<?> holder = resource.getBroadcastCache(key);
-        result = (CacheHolder<Long>) holder;
+        result = tableCache.getCache(key);
         return result;
       }
     };

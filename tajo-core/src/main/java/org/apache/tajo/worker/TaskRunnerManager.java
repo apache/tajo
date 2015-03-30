@@ -182,7 +182,6 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
       ExecutionBlockContext executionBlockContext =  executionBlockContextMap.remove(event.getExecutionBlockId());
       if(executionBlockContext != null){
         try {
-          executionBlockContext.getSharedResource().releaseBroadcastCache(event.getExecutionBlockId());
           executionBlockContext.reportExecutionBlock(event.getExecutionBlockId());
           workerContext.getHashShuffleAppenderManager().close(event.getExecutionBlockId());
           workerContext.getTaskHistoryWriter().flushTaskHistories();

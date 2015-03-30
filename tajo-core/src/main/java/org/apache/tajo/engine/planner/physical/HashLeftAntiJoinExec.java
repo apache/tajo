@@ -36,7 +36,7 @@ public class HashLeftAntiJoinExec extends HashJoinExec {
   private Tuple rightNullTuple;
 
   public HashLeftAntiJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec fromSideChild,
-                              PhysicalExec notInSideChild) {
+                              PhysicalExec notInSideChild) throws IOException {
     super(context, plan, fromSideChild, notInSideChild);
     // NUll Tuple
     rightNullTuple = new VTuple(leftChild.outColumnNum);
@@ -56,9 +56,10 @@ public class HashLeftAntiJoinExec extends HashJoinExec {
    * @return The tuple which is unmatched to a given join condition.
    * @throws IOException
    */
+  @Override
   public Tuple next() throws IOException {
-    if (first) {
-      loadRightToHashTable();
+    if (hashedTable == null) {
+      hashedTable = loader.loadTable();
     }
 
     Tuple rightTuple;
@@ -75,7 +76,7 @@ public class HashLeftAntiJoinExec extends HashJoinExec {
 
       // Try to find a hash bucket in in-memory hash table
       getKeyLeftTuple(leftTuple, leftKeyTuple);
-      List<Tuple> rightTuples = tupleSlots.get(leftKeyTuple);
+      List<Tuple> rightTuples = hashedTable.tupleSlots.get(leftKeyTuple);
       if (rightTuples != null) {
         // if found, it gets a hash bucket from the hash table.
         iterator = rightTuples.iterator();

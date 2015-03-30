@@ -46,30 +46,26 @@ import java.util.Map;
     return instance;
   }
 
+  public Object getLock() {
+    return this;
+  }
+
   public synchronized void releaseCache(ExecutionBlockId ebId) {
-    if (ebId == null) {
-      return;
+    final String target = ebId.toString();
+    List<TableCacheKey> purge = Lists.newArrayList();
+    for (Map.Entry<TableCacheKey, CacheHolder<?>> entry : cacheMap.entrySet()) {
+      TableCacheKey eachKey = entry.getKey();
+      if (eachKey.ebId.equals(target) && entry.getValue().release()) {
+        purge.add(eachKey);
+      }
     }
-
-    List<TableCacheKey> keys = getCacheKeyByExecutionBlockId(ebId);
-
-    for (TableCacheKey cacheKey: keys) {
+    for (TableCacheKey cacheKey: purge) {
       cacheMap.remove(cacheKey).release();
       LOG.info("Removed Broadcast Table Cache: " + cacheKey.getTableName() + " EbId: " + cacheKey.ebId);
     }
   }
 
-  public synchronized List<TableCacheKey> getCacheKeyByExecutionBlockId(ExecutionBlockId ebId) {
-    List<TableCacheKey> keys = Lists.newArrayList();
-    for (TableCacheKey eachKey : cacheMap.keySet()) {
-      if (eachKey.ebId.equals(ebId.toString())) {
-        keys.add(eachKey);
-      }
-    }
-    return keys;
-  }
-
-  public synchronized void addCache(TableCacheKey cacheKey,  CacheHolder<?> cacheData) {
+  public synchronized void addCache(TableCacheKey cacheKey, CacheHolder<?> cacheData) {
     cacheMap.put(cacheKey, cacheData);
     LOG.info("Added Broadcast Table Cache: " + cacheKey.getTableName() + " EbId: " + cacheKey.ebId);
   }
@@ -78,7 +74,8 @@ import java.util.Map;
     return cacheMap.containsKey(cacheKey);
   }
 
-  public synchronized CacheHolder<?> getCache(TableCacheKey cacheKey) {
-    return cacheMap.get(cacheKey);
+  @SuppressWarnings("unchecked")
+  public synchronized <T> CacheHolder<T> getCache(TableCacheKey cacheKey) {
+    return (CacheHolder<T>) cacheMap.get(cacheKey);
   }
 }
