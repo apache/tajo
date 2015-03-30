@@ -651,23 +651,19 @@ public class TestTajoJdbc extends QueryTestCaseBase {
       stmt = conn.createStatement();
       //set maxRows(3)
       stmt.setMaxRows(maxRowsNum);
-      //getMaxRows
+      //get MaxRows
       returnMaxRows = stmt.getMaxRows();
       res = stmt.executeQuery("select * from lineitem");
-      try {
-        assertNotNull(res);
-        while (res.next()) {
-          //Actuality result Rows.
-          resultRowsNum++;	
-        }
-        //The test success, if maxRowsNum and resultRowsNum and returnMaxRows is same.
-        assertTrue(maxRowsNum == resultRowsNum && maxRowsNum == returnMaxRows);
-      } finally {
-        res.close();
+      assertNotNull(res);
+      while (res.next()) {
+        //Actuality result Rows.
+        resultRowsNum++;	
       }
+      //The test success, if maxRowsNum and resultRowsNum and returnMaxRows is same.
+      assertTrue(maxRowsNum == resultRowsNum && maxRowsNum == returnMaxRows);
     } finally {
       if (res != null) {
-        res.close();
+        cleanupQuery(res);
       }
       if (stmt != null) {
         stmt.close();
