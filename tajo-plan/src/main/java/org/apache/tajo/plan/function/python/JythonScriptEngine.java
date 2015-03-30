@@ -279,7 +279,7 @@ public class JythonScriptEngine extends TajoScriptEngine {
         }
 
         // Parameters have the ANY type.
-        int paramNum = ((PyBaseCode) pyFunction.__code__).co_argcount;
+        int paramNum = ((PyBaseCode) pyFunction.func_code).co_argcount;
         TajoDataTypes.DataType[] paramTypes = new TajoDataTypes.DataType[paramNum];
         for (int i = 0; i < paramNum; i++) {
           paramTypes[i] = TajoDataTypes.DataType.newBuilder().setType(TajoDataTypes.Type.ANY).build();
