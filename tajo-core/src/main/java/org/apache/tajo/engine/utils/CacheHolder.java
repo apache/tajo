@@ -18,80 +18,62 @@
 
 package org.apache.tajo.engine.utils;
 
-import com.google.common.collect.Maps;
-import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.fragment.Fragment;
-import org.apache.tajo.storage.fragment.FragmentConvertor;
-import org.apache.tajo.util.Deallocatable;
-import org.apache.tajo.worker.TaskAttemptContext;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public interface CacheHolder<T> {
 
   /**
    * Get a shared data from the TableCache.
    */
-  T getData();
-
-  /**
-   * Get a shared table stats from the TableCache.
-   */
-  TableStats getTableStats();
+  T acquire() throws Exception;
 
   /**
    * Release a cache to the memory.
-   *
    */
-  void release();
+  boolean release();
 
   /**
    * This is a cache-holder for a join table
    * It will release when execution block is finished
    */
-  public static class BroadcastCacheHolder implements CacheHolder<Map<Tuple, List<Tuple>>> {
-    private Map<Tuple, List<Tuple>> data;
-    private Deallocatable rowBlock;
-    private TableStats tableStats;
+  public static abstract class BasicCacheHolder<T> implements CacheHolder<T> {
 
-    public BroadcastCacheHolder(Map<Tuple, List<Tuple>> data, TableStats tableStats, Deallocatable rowBlock){
-      this.data = data;
-      this.tableStats = tableStats;
-      this.rowBlock = rowBlock;
-    }
+    protected T cached;
+    protected Exception ex;
+    protected final AtomicInteger counter = new AtomicInteger(-1);
+    protected final CountDownLatch latch = new CountDownLatch(1);
 
     @Override
-    public Map<Tuple, List<Tuple>> getData() {
-      return Maps.newHashMap(data);
-    }
-
-    @Override
-    public TableStats getTableStats(){
-      return tableStats;
-    }
-
-    @Override
-    public void release() {
-      if(rowBlock != null) rowBlock.release();
-    }
-
-    public static TableCacheKey getCacheKey(TaskAttemptContext ctx, String canonicalName,
-                                                 CatalogProtos.FragmentProto[] fragments) throws IOException {
-      String pathNameKey = "";
-      if (fragments != null) {
-        StringBuilder stringBuilder = new StringBuilder();
-        for (CatalogProtos.FragmentProto f : fragments) {
-          Fragment fragement = FragmentConvertor.convert(ctx.getConf(), f);
-          stringBuilder.append(fragement.getKey());
+    public T acquire() throws Exception {
+      if (counter.compareAndSet(-1, 0)) {
+        try {
+          this.cached = init();
+        } catch (Exception e) {
+          this.ex = e;
+        } finally {
+          latch.countDown();
         }
-        pathNameKey = stringBuilder.toString();
       }
+      latch.await();
+      if (ex != null) {
+        throw ex;
+      }
+      counter.incrementAndGet();
+      return cached;
+    }
 
-      return new TableCacheKey(ctx.getTaskId().getTaskId().getExecutionBlockId().toString(), canonicalName, pathNameKey);
+    protected abstract T init() throws Exception;
+
+    protected abstract void clear(T cached);
+
+    @Override
+    public boolean release() {
+      if (counter.decrementAndGet() == 0) {
+        clear(cached);
+        return true;
+      }
+      return false;
     }
   }
 }

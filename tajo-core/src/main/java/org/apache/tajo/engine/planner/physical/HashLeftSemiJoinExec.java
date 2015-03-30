@@ -36,7 +36,7 @@ public class HashLeftSemiJoinExec extends HashJoinExec {
   private Tuple rightNullTuple;
 
   public HashLeftSemiJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec fromSideChild,
-                              PhysicalExec inSideChild) {
+                              PhysicalExec inSideChild) throws IOException {
     super(context, plan, fromSideChild, inSideChild);
     // NUll Tuple
     rightNullTuple = new VTuple(leftChild.outColumnNum);
@@ -63,8 +63,8 @@ public class HashLeftSemiJoinExec extends HashJoinExec {
    * @throws java.io.IOException
    */
   public Tuple next() throws IOException {
-    if (first) {
-      loadRightToHashTable();
+    if (hashedTable == null) {
+      hashedTable = loader.loadTable();
     }
 
     Tuple rightTuple;
@@ -81,7 +81,7 @@ public class HashLeftSemiJoinExec extends HashJoinExec {
 
       // Try to find a hash bucket in in-memory hash table
       getKeyLeftTuple(leftTuple, leftKeyTuple);
-      List<Tuple> rightTuples = tupleSlots.get(leftKeyTuple);
+      List<Tuple> rightTuples = hashedTable.tupleSlots.get(leftKeyTuple);
       if (rightTuples != null) {
         // if found, it gets a hash bucket from the hash table.
         iterator = rightTuples.iterator();

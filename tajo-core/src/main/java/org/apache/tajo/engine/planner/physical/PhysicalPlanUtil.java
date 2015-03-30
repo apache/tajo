@@ -46,9 +46,9 @@ import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class PhysicalPlanUtil {
-  public static <T extends PhysicalExec> T findExecutor(PhysicalExec plan, Class<? extends PhysicalExec> clazz)
+  public static <T extends PhysicalExec> T findExecutor(PhysicalExec plan, Class<T> clazz)
       throws PhysicalPlanningException {
-    return (T) new FindVisitor().visit(plan, new Stack<PhysicalExec>(), clazz);
+    return new FindVisitor<T>().visit(plan, new Stack<PhysicalExec>(), clazz);
   }
 
   public static TupleComparator [] getComparatorsFromJoinQual(EvalNode joinQual, Schema leftSchema, Schema rightSchema) {
@@ -187,11 +187,12 @@ public class PhysicalPlanUtil {
     }
   }
 
-  private static class FindVisitor extends BasicPhysicalExecutorVisitor<Class<? extends PhysicalExec>, PhysicalExec> {
-    public PhysicalExec visit(PhysicalExec exec, Stack<PhysicalExec> stack, Class<? extends PhysicalExec> target)
+  private static class FindVisitor<T extends PhysicalExec> extends BasicPhysicalExecutorVisitor<Class<T>, T> {
+    @Override
+    public T visit(PhysicalExec exec, Stack<PhysicalExec> stack, Class<T> target)
         throws PhysicalPlanningException {
       if (target.isAssignableFrom(exec.getClass())) {
-        return exec;
+        return target.cast(exec);
       } else {
         return super.visit(exec, stack, target);
       }

@@ -22,15 +22,12 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.engine.planner.Projector;
-import org.apache.tajo.engine.utils.CacheHolder;
-import org.apache.tajo.engine.utils.TableCacheKey;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.worker.ExecutionBlockSharedResource;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -44,10 +41,8 @@ public class HashJoinExec extends BinaryPhysicalExec {
   protected List<Column[]> joinKeyPairs;
 
   // temporal tuples and states for nested loop join
-  protected boolean first = true;
   protected FrameTuple frameTuple;
   protected Tuple outTuple = null;
-  protected Map<Tuple, List<Tuple>> tupleSlots;
   protected Iterator<Tuple> iterator = null;
   protected Tuple leftTuple;
   protected Tuple leftKeyTuple;
@@ -61,10 +56,11 @@ public class HashJoinExec extends BinaryPhysicalExec {
   // projection
   protected final Projector projector;
 
-  private TableStats cachedRightTableStats;
+  protected final HashedTableLoader loader;
+  protected HashedTableLoader.HashedTable hashedTable;
 
   public HashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftExec,
-      PhysicalExec rightExec) {
+      PhysicalExec rightExec) throws IOException {
     super(context, SchemaUtil.merge(leftExec.getSchema(), rightExec.getSchema()), plan.getOutSchema(),
         leftExec, rightExec);
     this.plan = plan;
@@ -84,6 +80,8 @@ public class HashJoinExec extends BinaryPhysicalExec {
     for (int i = 0; i < joinKeyPairs.size(); i++) {
       rightKeyList[i] = rightExec.getSchema().getColumnId(joinKeyPairs.get(i)[1].getQualifiedName());
     }
+
+    this.loader = new HashedTableLoader(context, rightChild, rightKeyList);
 
     // for projection
     this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
@@ -106,8 +104,8 @@ public class HashJoinExec extends BinaryPhysicalExec {
   }
 
   public Tuple next() throws IOException {
-    if (first) {
-      loadRightToHashTable();
+    if (hashedTable == null) {
+      hashedTable = loader.loadTable();
     }
 
     Tuple rightTuple;
@@ -124,7 +122,7 @@ public class HashJoinExec extends BinaryPhysicalExec {
 
         // getting corresponding right
         getKeyLeftTuple(leftTuple, leftKeyTuple); // get a left key tuple
-        List<Tuple> rightTuples = tupleSlots.get(leftKeyTuple);
+        List<Tuple> rightTuples = hashedTable.tupleSlots.get(leftKeyTuple);
         if (rightTuples != null) { // found right tuples on in-memory hash table.
           iterator = rightTuples.iterator();
           shouldGetLeftTuple = false;
@@ -154,70 +152,9 @@ public class HashJoinExec extends BinaryPhysicalExec {
     return new VTuple(outTuple);
   }
 
-  protected void loadRightToHashTable() throws IOException {
-    ScanExec scanExec = PhysicalPlanUtil.findExecutor(rightChild, ScanExec.class);
-    if (scanExec.canBroadcast()) {
-      /* If this table can broadcast, all tasks in a node will share the same cache */
-      TableCacheKey key = CacheHolder.BroadcastCacheHolder.getCacheKey(
-          context, scanExec.getCanonicalName(), scanExec.getFragments());
-      loadRightFromCache(key);
-    } else {
-      this.tupleSlots = buildRightToHashTable();
-    }
-
-    first = false;
-  }
-
-  protected void loadRightFromCache(TableCacheKey key) throws IOException {
-    ExecutionBlockSharedResource sharedResource = context.getSharedResource();
-    synchronized (sharedResource.getLock()) {
-      if (sharedResource.hasBroadcastCache(key)) {
-        CacheHolder<Map<Tuple, List<Tuple>>> data = sharedResource.getBroadcastCache(key);
-        this.tupleSlots = data.getData();
-        this.cachedRightTableStats = data.getTableStats();
-      } else {
-        CacheHolder.BroadcastCacheHolder holder =
-            new CacheHolder.BroadcastCacheHolder(buildRightToHashTable(), rightChild.getInputStats(), null);
-        sharedResource.addBroadcastCache(key, holder);
-        CacheHolder<Map<Tuple, List<Tuple>>> data = sharedResource.getBroadcastCache(key);
-        this.tupleSlots = data.getData();
-        this.cachedRightTableStats = data.getTableStats();
-      }
-    }
-  }
-
-  private Map<Tuple, List<Tuple>> buildRightToHashTable() throws IOException {
-    Tuple tuple;
-    Tuple keyTuple;
-    Map<Tuple, List<Tuple>> map = new HashMap<Tuple, List<Tuple>>(100000);
-
-    while (!context.isStopped() && (tuple = rightChild.next()) != null) {
-      keyTuple = new VTuple(joinKeyPairs.size());
-      for (int i = 0; i < rightKeyList.length; i++) {
-        keyTuple.put(i, tuple.get(rightKeyList[i]));
-      }
-
-      List<Tuple> newValue = map.get(keyTuple);
-
-      if (newValue != null) {
-        newValue.add(tuple);
-      } else {
-        newValue = new ArrayList<Tuple>();
-        newValue.add(tuple);
-        map.put(keyTuple, newValue);
-      }
-    }
-
-    return map;
-  }
-
   @Override
   public void rescan() throws IOException {
     super.rescan();
-
-    tupleSlots.clear();
-    first = true;
-
     finished = false;
     iterator = null;
     shouldGetLeftTuple = true;
@@ -226,11 +163,9 @@ public class HashJoinExec extends BinaryPhysicalExec {
   @Override
   public void close() throws IOException {
     super.close();
-    if (tupleSlots != null) {
-      tupleSlots.clear();
-      tupleSlots = null;
+    if (hashedTable != null) {
+      loader.release(hashedTable);
     }
-
     iterator = null;
     plan = null;
     joinQual = null;
@@ -256,7 +191,7 @@ public class HashJoinExec extends BinaryPhysicalExec {
       inputStats.setNumRows(leftInputStats.getNumRows());
     }
 
-    TableStats rightInputStats = cachedRightTableStats == null ? rightChild.getInputStats() : cachedRightTableStats;
+    TableStats rightInputStats = rightChild.getInputStats();
     if (rightInputStats != null) {
       inputStats.setNumBytes(inputStats.getNumBytes() + rightInputStats.getNumBytes());
       inputStats.setReadBytes(inputStats.getReadBytes() + rightInputStats.getReadBytes());

@@ -31,6 +31,7 @@ import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.storage.RowStoreUtil;
 import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
@@ -38,7 +39,9 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.StringUtils;
+import org.apache.tajo.worker.TaskAttemptContext;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Collection;
@@ -226,4 +229,33 @@ public class TupleUtil {
       return results;
     }
   }
+
+  public static Iterator<Tuple> tupleIterator(
+      final PhysicalExec child, final TaskAttemptContext context) {
+    return new Iterator<Tuple>() {
+
+      private Tuple tuple;
+
+      @Override
+      public boolean hasNext() {
+        try {
+          return !context.isStopped() && (tuple = child.next()) != null;
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+
+      @Override
+      public Tuple next() {
+        return tuple;
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException("remove");
+      }
+    };
+  }
+
+
 }
