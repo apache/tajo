@@ -130,6 +130,8 @@ public enum SessionVars implements ConfigKey {
   // ResultSet ----------------------------------------------------------------
   FETCH_ROWNUM(ConfVars.$RESULT_SET_FETCH_ROWNUM, "Sets the number of rows at a time from Master", DEFAULT,
       Integer.class, Validators.min("0")),
+  FETCH_COMPRESS(ConfVars.$RESULT_SET_COMPRESS, "Compressed resultset fetch enabled", DEFAULT,
+      Boolean.class, Validators.bool()),
 
   //-------------------------------------------------------------------------------
   // Only for Unit Testing

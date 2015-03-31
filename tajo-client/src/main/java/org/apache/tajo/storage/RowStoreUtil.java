@@ -18,6 +18,8 @@
 
 package org.apache.tajo.storage;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
@@ -27,12 +29,22 @@ import org.apache.tajo.exception.UnknownDataTypeException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.util.BitArray;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.io.IOException;
+import java.util.zip.DataFormatException;
+import java.util.zip.Deflater;
+import java.util.zip.Inflater;
 
 /**
  * It is a copy from tajo-storage-common module.
  */
 public class RowStoreUtil {
+  private final static Log LOG = LogFactory.getLog(RowStoreUtil.class);
+
   public static int[] getTargetIds(Schema inSchema, Schema outSchema) {
     int[] targetIds = new int[outSchema.size()];
     int i = 0;
@@ -285,6 +297,105 @@ public class RowStoreUtil {
 
     public Schema getSchema() {
       return schema;
+    }
+  }
+
+  public static class RowStoreCompressor {
+    public static byte[] toBytes(List<byte[]> rows) {
+      int numRows = 0;
+      int size = 0;
+      for (byte[] row : rows) {
+        ++numRows;
+        size += row.length;
+      }
+      int headerSize = 4 * (numRows + 1);
+      ByteBuffer bb = ByteBuffer.allocate(size + headerSize);
+
+      // ByteBuffer shall have
+      // " numRows (4bytes) | offset1 (4bytes) | offset2 (4bytes) | .... | row1 | row2 | ... "
+      bb.putInt(numRows);
+      int offset = headerSize;
+      for (byte[] row : rows) {
+        offset += row.length;
+        bb.putInt(offset);
+      }
+      for (byte[] row : rows) {
+        bb.put(row);
+      }
+      bb.flip();
+      byte[] buf = new byte[bb.limit()];
+      bb.get(buf);
+
+      try {
+        byte[] compressed = compress(buf);
+        LOG.debug("Original: " + size + "B, Encoded: " + buf.length + "B, Compressed: " + compressed.length + "B");
+        return compressed;
+      } catch (IOException ex) {
+        return buf;
+      }
+    }
+
+    private static byte[] compress(byte[] data) throws IOException {
+      Deflater deflater = new Deflater();
+      deflater.setInput(data);
+
+      ByteArrayOutputStream outputStream = new ByteArrayOutputStream(data.length);
+
+      deflater.finish();
+      byte[] buffer = new byte[1024];
+      while (!deflater.finished()) {
+        int count = deflater.deflate(buffer); // returns the generated code... index
+        outputStream.write(buffer, 0, count);
+      }
+      outputStream.close();
+      byte[] output = outputStream.toByteArray();
+
+      return output;
+    }
+  }
+
+  public static class RowStoreDecompressor {
+    public static List<byte[]> toList(byte[] compressedRows) {
+      byte[] decompressedRows;
+
+      try {
+        decompressedRows = decompress(compressedRows);
+      } catch (Exception ex) {
+        decompressedRows = compressedRows;
+      }
+
+      ByteBuffer bb = ByteBuffer.wrap(decompressedRows);
+
+      List<byte[]> rows = new ArrayList<byte[]>();
+
+      int numRows = bb.getInt();
+      int offset = 4 * (numRows + 1);
+      LOG.debug("Decoding " + numRows + " rows, starting from " + offset);
+      for (int i = 0; i < numRows; i++) {
+        int nextOffset = bb.getInt();
+        byte[] row = Arrays.copyOfRange(decompressedRows, offset, nextOffset);
+        rows.add(row);
+        offset = nextOffset;
+      }
+
+      return rows;
+    }
+
+    private static byte[] decompress(byte[] data) throws IOException, DataFormatException {
+      Inflater inflater = new Inflater();
+      inflater.setInput(data);
+
+      ByteArrayOutputStream outputStream = new ByteArrayOutputStream(data.length);
+      byte[] buffer = new byte[1024];
+      while (!inflater.finished()) {
+        int count = inflater.inflate(buffer);
+        outputStream.write(buffer, 0, count);
+      }
+      outputStream.close();
+      byte[] output = outputStream.toByteArray();
+
+      LOG.debug("Compressed: " + data.length + "B, Decompressed: " + output.length + "B");
+      return output;
     }
   }
 }

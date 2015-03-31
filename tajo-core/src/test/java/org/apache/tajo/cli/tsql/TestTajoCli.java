@@ -84,7 +84,7 @@ public class TestTajoCli {
   }
 
   private static void setVar(TajoCli cli, ConfigKey key, String val) throws Exception {
-    cli.executeMetaCommand("\\set " + key.keyname() +" " + val);
+    cli.executeMetaCommand("\\set " + key.keyname() + " " + val);
   }
 
   private static void assertSessionVar(TajoCli cli, String key, String expectedVal) {
@@ -307,8 +307,8 @@ public class TestTajoCli {
     assertSessionVar(tajoCli, SessionVars.ON_ERROR_STOP.keyname(), "true");
 
     tajoCli.executeScript("select count(*) from lineitem; " +
-        "select count(*) from lineitem2; " +
-        "select count(*) from orders");
+            "select count(*) from lineitem2; " +
+            "select count(*) from orders");
 
     String consoleResult = new String(out.toByteArray());
     assertOutputResult(consoleResult);
@@ -407,6 +407,28 @@ public class TestTajoCli {
 
     tajoCli.executeScript("create table " + tableName + " (col1 int4, col2 int4) partition by column(key float8)");
     tajoCli.executeScript("alter table " + tableName + " drop partition (key = 0.1)");
+
+    String consoleResult = new String(out.toByteArray());
+    assertOutputResult(consoleResult);
+  }
+
+  @Test
+  public void testCompressedFetch() throws Exception {
+    assertSessionVar(tajoCli, SessionVars.FETCH_COMPRESS.keyname(), "false");
+    setVar(tajoCli, SessionVars.FETCH_COMPRESS, "true");
+
+    String sql = "select\n" +
+                    "  c_custkey,\n" +
+                    "  orders.o_orderkey,\n" +
+                    "  orders.o_orderstatus \n" +
+                    "from\n" +
+                    "  orders full outer join customer on c_custkey = o_orderkey\n" +
+                    "order by\n" +
+            "  c_custkey,\n" +
+            "  orders.o_orderkey;\n";
+
+    setVar(tajoCli, SessionVars.CLI_FORMATTER_CLASS, TajoCliOutputTestFormatter.class.getName());
+    tajoCli.executeScript(sql);
 
     String consoleResult = new String(out.toByteArray());
     assertOutputResult(consoleResult);

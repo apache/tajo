@@ -362,6 +362,7 @@ public class TajoConf extends Configuration {
 
     // ResultSet ---------------------------------------------------------
     $RESULT_SET_FETCH_ROWNUM("tajo.resultset.fetch.rownum", 200),
+    $RESULT_SET_COMPRESS("tajo.resultset.compress", false),
     ;
 
     public final String varname;
