@@ -75,7 +75,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 public class TajoPullServerService extends AbstractService {
 
@@ -118,7 +118,14 @@ public class TajoPullServerService extends AbstractService {
 
   private static boolean STANDALONE = false;
 
+  private static final AtomicIntegerFieldUpdater<ProcessingStatus> SLOW_FILE_UPDATER;
+  private static final AtomicIntegerFieldUpdater<ProcessingStatus> REMAIN_FILE_UPDATER;
+
   static {
+    /* AtomicIntegerFieldUpdater can save the memory usage instead of AtomicInteger instance */
+    SLOW_FILE_UPDATER = AtomicIntegerFieldUpdater.newUpdater(ProcessingStatus.class, "numSlowFile");
+    REMAIN_FILE_UPDATER = AtomicIntegerFieldUpdater.newUpdater(ProcessingStatus.class, "remainFiles");
+
     String standalone = System.getenv("TAJO_PULLSERVER_STANDALONE");
     if (!StringUtils.isEmpty(standalone)) {
       STANDALONE = standalone.equalsIgnoreCase("true");
@@ -201,7 +208,7 @@ public class TajoPullServerService extends AbstractService {
 
   // TODO change AbstractService to throw InterruptedException
   @Override
-  public synchronized void serviceInit(Configuration conf) throws Exception {
+  public void serviceInit(Configuration conf) throws Exception {
     if (!(conf instanceof TajoConf)) {
       throw new IllegalArgumentException("Configuration must be a TajoConf instance");
     }
@@ -292,7 +299,7 @@ public class TajoPullServerService extends AbstractService {
   }
 
   @Override
-  public synchronized void stop() {
+  public void stop() {
     try {
       accepted.close();
       if (selector != null) {
@@ -370,12 +377,12 @@ public class TajoPullServerService extends AbstractService {
   class ProcessingStatus {
     String requestUri;
     int numFiles;
-    AtomicInteger remainFiles;
     long startTime;
     long makeFileListTime;
     long minTime = Long.MAX_VALUE;
     long maxTime;
-    int numSlowFile;
+    volatile int numSlowFile;
+    volatile int remainFiles;
 
     public ProcessingStatus(String requestUri) {
       this.requestUri = requestUri;
@@ -384,14 +391,14 @@ public class TajoPullServerService extends AbstractService {
 
     public void setNumFiles(int numFiles) {
       this.numFiles = numFiles;
-      this.remainFiles = new AtomicInteger(numFiles);
+      this.remainFiles = numFiles;
     }
 
-    public synchronized void decrementRemainFiles(FileRegion filePart, long fileStartTime) {
+    public void decrementRemainFiles(FileRegion filePart, long fileStartTime) {
       long fileSendTime = System.currentTimeMillis() - fileStartTime;
       if (fileSendTime > 20 * 1000) {
         LOG.info("PullServer send too long time: filePos=" + filePart.position() + ", fileLen=" + filePart.count());
-        numSlowFile++;
+         SLOW_FILE_UPDATER.compareAndSet(this, numSlowFile, numSlowFile+ 1);
       }
       if (fileSendTime > maxTime) {
         maxTime = fileSendTime;
@@ -399,8 +406,9 @@ public class TajoPullServerService extends AbstractService {
       if (fileSendTime < minTime) {
         minTime = fileSendTime;
       }
-      int remain = remainFiles.decrementAndGet();
-      if (remain <= 0) {
+
+      REMAIN_FILE_UPDATER.compareAndSet(this, remainFiles, remainFiles - 1);
+      if (REMAIN_FILE_UPDATER.get(this) <= 0) {
         processingStatusMap.remove(requestUri);
         LOG.info("PullServer processing status: totalTime=" + (System.currentTimeMillis() - startTime) + " ms, "
             + "makeFileListTime=" + makeFileListTime + " ms, minTime=" + minTime + " ms, maxTime=" + maxTime + " ms, "
