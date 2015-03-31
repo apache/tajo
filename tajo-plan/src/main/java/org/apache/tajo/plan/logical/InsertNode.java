@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.logical;
 
 import com.google.gson.annotations.Expose;
+
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
@@ -123,6 +124,18 @@ public class InsertNode extends StoreTableNode implements Cloneable {
     return this.storageType != null;
   }
   
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + (overwrite ? 1231 : 1237);
+    result = prime * result + ((path == null) ? 0 : path.hashCode());
+    result = prime * result + ((projectedSchema == null) ? 0 : projectedSchema.hashCode());
+    result = prime * result + ((tableSchema == null) ? 0 : tableSchema.hashCode());
+    result = prime * result + ((targetSchema == null) ? 0 : targetSchema.hashCode());
+    return result;
+  }
+
   @Override
   public boolean equals(Object obj) {
     if (obj instanceof InsertNode) {

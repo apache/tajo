@@ -608,7 +608,8 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
     final String databaseName = split[0];
     final String tableName = split[1];
-
+    String partitionName = null;
+    CatalogProtos.PartitionDescProto partitionDesc = null;
 
     switch (alterTableDescProto.getAlterTableType()) {
       case RENAME_TABLE:
@@ -628,6 +629,22 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
           throw new ColumnNameAlreadyExistException(alterTableDescProto.getAddColumn().getName());
         }
         addNewColumn(databaseName, tableName, alterTableDescProto.getAddColumn());
+        break;
+      case ADD_PARTITION:
+        partitionName = alterTableDescProto.getPartitionDesc().getPartitionName();
+        partitionDesc = getPartition(databaseName, tableName, partitionName);
+        if(partitionDesc != null) {
+          throw new AlreadyExistsPartitionException(databaseName, tableName, partitionName);
+        }
+        addPartition(databaseName, tableName, alterTableDescProto.getPartitionDesc());
+        break;
+      case DROP_PARTITION:
+        partitionName = alterTableDescProto.getPartitionDesc().getPartitionName();
+        partitionDesc = getPartition(databaseName, tableName, partitionName);
+        if(partitionDesc == null) {
+          throw new NoSuchPartitionException(databaseName, tableName, partitionName);
+        }
+        dropPartition(databaseName, tableName, partitionDesc);
         break;
       default:
         //TODO
@@ -701,6 +718,59 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     }
   }
 
+  private void addPartition(String databaseName, String tableName, CatalogProtos.PartitionDescProto
+    partitionDescProto) {
+    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    try {
+
+      client = clientPool.getClient();
+
+      Partition partition = new Partition();
+      partition.setDbName(databaseName);
+      partition.setTableName(tableName);
+
+      List<String> values = Lists.newArrayList();
+      for(CatalogProtos.PartitionKeyProto keyProto : partitionDescProto.getPartitionKeysList()) {
+        values.add(keyProto.getPartitionValue());
+      }
+      partition.setValues(values);
+
+      Table table = client.getHiveClient().getTable(databaseName, tableName);
+      StorageDescriptor sd = table.getSd();
+      sd.setLocation(partitionDescProto.getPath());
+      partition.setSd(sd);
+
+      client.getHiveClient().add_partition(partition);
+    } catch (Exception e) {
+      throw new CatalogException(e);
+    } finally {
+      if (client != null) {
+        client.release();
+      }
+    }
+  }
+
+  private void dropPartition(String databaseName, String tableName, CatalogProtos.PartitionDescProto
+    partitionDescProto) {
+    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    try {
+
+      client = clientPool.getClient();
+
+      List<String> values = Lists.newArrayList();
+      for(CatalogProtos.PartitionKeyProto keyProto : partitionDescProto.getPartitionKeysList()) {
+        values.add(keyProto.getPartitionValue());
+      }
+      client.getHiveClient().dropPartition(databaseName, tableName, values, true);
+    } catch (Exception e) {
+      throw new CatalogException(e);
+    } finally {
+      if (client != null) {
+        client.release();
+      }
+    }
+  }
+
   @Override
   public void addPartitionMethod(CatalogProtos.PartitionMethodProto partitionMethodProto) throws CatalogException {
     // TODO - not implemented yet
@@ -723,35 +793,48 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   @Override
-  public void addPartitions(CatalogProtos.PartitionsProto partitionsProto) throws CatalogException {
-    // TODO - not implemented yet
+  public List<CatalogProtos.PartitionDescProto> getPartitions(String databaseName,
+                                                         String tableName) throws CatalogException {
+    throw new UnsupportedOperationException();
   }
+
 
   @Override
-  public void addPartition(String databaseName, String tableName, CatalogProtos.PartitionDescProto partitionDescProto) throws CatalogException {
+  public CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
+                                                       String partitionName) throws CatalogException {
+    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    CatalogProtos.PartitionDescProto.Builder builder = null;
 
+    try {
+      client = clientPool.getClient();
+
+      Partition partition = client.getHiveClient().getPartition(databaseName, tableName, partitionName);
+      builder = CatalogProtos.PartitionDescProto.newBuilder();
+      builder.setPartitionName(partitionName);
+      builder.setPath(partition.getSd().getLocation());
+
+      String[] partitionNames = partitionName.split("/");
+
+      for (int i = 0; i < partition.getValues().size(); i++) {
+        String value = partition.getValues().get(i);
+        CatalogProtos.PartitionKeyProto.Builder keyBuilder = CatalogProtos.PartitionKeyProto.newBuilder();
+
+        String columnName = partitionNames[i].split("=")[0];
+        keyBuilder.setColumnName(columnName);
+        keyBuilder.setPartitionValue(value);
+        builder.addPartitionKeys(keyBuilder);
+      }
+    } catch (NoSuchObjectException e) {
+      return null;
+    } catch (Exception e) {
+      throw new CatalogException(e);
+    } finally {
+      if (client != null) {
+        client.release();
+      }
+    }
+    return builder.build();
   }
-
-  @Override
-  public CatalogProtos.PartitionsProto getPartitions(String tableName) throws CatalogException {
-    return null; // TODO - not implemented yet
-  }
-
-  @Override
-  public CatalogProtos.PartitionDescProto getPartition(String partitionName) throws CatalogException {
-    return null; // TODO - not implemented yet
-  }
-
-  @Override
-  public void delPartition(String partitionName) throws CatalogException {
-    // TODO - not implemented yet
-  }
-
-  @Override
-  public void dropPartitions(String tableName) throws CatalogException {
-
-  }
-
 
   @Override
   public final void addFunction(final FunctionDesc func) throws CatalogException {

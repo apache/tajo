@@ -48,11 +48,16 @@ public class CatalogConstants {
   public static final String TB_STATISTICS = "STATS";
   public static final String TB_PARTITION_METHODS = "PARTITION_METHODS";
   public static final String TB_PARTTIONS = "PARTITIONS";
+  public static final String TB_PARTTION_KEYS = "PARTITION_KEYS";
 
   public static final String COL_TABLESPACE_PK = "SPACE_ID";
   public static final String COL_DATABASES_PK = "DB_ID";
   public static final String COL_TABLES_PK = "TID";
   public static final String COL_TABLES_NAME = "TABLE_NAME";
+
+  public static final String COL_PARTITIONS_PK = "PARTITION_ID";
+  public static final String COL_COLUMN_NAME = "COLUMN_NAME";
+  public static final String COL_PARTITION_VALUE = "PARTITION_VALUE";
   
   public static final String INFORMATION_SCHEMA_DB_NAME = "information_schema";
 }

@@ -67,12 +67,15 @@ public class LogicalPlan {
 
   /** planning and optimization log */
   private List<String> planingHistory = Lists.newArrayList();
-  LogicalPlanner planner;
 
-  private boolean isExplain;
+  private static enum ExplainType {
+    NOT_EXPLAIN,
+    EXPLAIN_LOGICAL,
+    EXPLAIN_GLOBAL
+  }
+  private ExplainType explainType = ExplainType.NOT_EXPLAIN;
 
   public LogicalPlan(LogicalPlanner planner) {
-    this.planner = planner;
   }
 
   /**
@@ -106,12 +109,16 @@ public class LogicalPlan {
     }
   }
 
-  public void setExplain() {
-    isExplain = true;
+  public void setExplain(boolean isGlobal) {
+    explainType = isGlobal ? ExplainType.EXPLAIN_GLOBAL : ExplainType.EXPLAIN_LOGICAL;
   }
 
   public boolean isExplain() {
-    return isExplain;
+    return explainType != ExplainType.NOT_EXPLAIN;
+  }
+
+  public boolean isExplainGlobal() {
+    return explainType == ExplainType.EXPLAIN_GLOBAL;
   }
 
   /**

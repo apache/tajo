@@ -16,22 +16,24 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.rpc;
+package org.apache.tajo.engine.function.builtin;
 
-public class RemoteException extends RuntimeException {
-  public RemoteException() {
-    super();
-  }
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 
-  public RemoteException(String message) {
-    super(message);
-  }
-
-  public RemoteException(Throwable t) {
-    super(t);
-  }
-
-  public RemoteException(String message, Throwable t) {
-    super(message, t);
+@Description(
+    functionName = "STDDEV_SAMP",
+    description = "The sample standard deviation of a set of numbers.",
+    example = "> SELECT STDDEV_SAMP(expr);",
+    returnType = Type.FLOAT8,
+    paramTypes = {@ParamTypes(paramTypes = {Type.FLOAT8})}
+)
+public class StdDevSampDouble extends StdDevSamp {
+  public StdDevSampDouble() {
+    super(new Column[] {
+        new Column("expr", Type.FLOAT8)
+    });
   }
 }

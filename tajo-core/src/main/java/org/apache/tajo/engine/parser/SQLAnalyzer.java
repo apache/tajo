@@ -78,7 +78,7 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   public Expr visitSql(SqlContext ctx) {
     Expr statement = visit(ctx.statement());
     if (checkIfExist(ctx.explain_clause())) {
-      return new Explain(statement);
+      return new Explain(statement, checkIfExist(ctx.explain_clause().GLOBAL()));
     } else {
       return statement;
     }
