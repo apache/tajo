@@ -23,6 +23,7 @@ import com.google.common.collect.Lists;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.service.ServiceStateException;
 import org.apache.hadoop.yarn.api.records.Priority;
 import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.event.Event;
@@ -817,8 +818,14 @@ public class Stage implements EventHandler<StageEvent> {
                               }
                             }
                           } catch (Throwable e) {
-                            LOG.error("Stage (" + stage.getId() + ") ERROR: ", e);
+                            StageState state = stage.getSynchronizedState();
+                            if (e instanceof ServiceStateException &&
+                                (state == StageState.KILL_WAIT || state == StageState.KILLED)) {
+                              LOG.info("Stage (" + stage.getId() + ") is in state " + state);
+                              return;
+                            }
                             stage.setFinishTime();
+                            LOG.error("Stage (" + stage.getId() + ") ERROR: ", e);
                             stage.eventHandler.handle(new StageDiagnosticsUpdateEvent(stage.getId(), e.getMessage()));
                             stage.eventHandler.handle(new StageCompletedEvent(stage.getId(), StageState.ERROR));
                           }
