@@ -25,7 +25,7 @@ statement. The below is an example statement for creating a table using CSV file
     name text,
     score float,
     type text
-  ) USING TEXT WITH ('text.delimiter'=',');
+  ) USING TEXT;
 
 =========================================
 Physical Properties
