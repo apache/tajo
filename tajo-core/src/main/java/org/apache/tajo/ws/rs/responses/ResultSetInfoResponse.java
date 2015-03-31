@@ -24,13 +24,13 @@ import com.google.gson.annotations.Expose;
 
 public class ResultSetInfoResponse {
 
-  @Expose private String id;
+  @Expose private long id;
   @Expose private URI link;
   
-  public String getId() {
+  public long getId() {
     return id;
   }
-  public void setId(String id) {
+  public void setId(long id) {
     this.id = id;
   }
   public URI getLink() {

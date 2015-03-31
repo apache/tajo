@@ -27,6 +27,7 @@ import org.apache.tajo.ws.rs.ResourcesUtil;
 
 public class JerseyResourceDelegateUtil {
   
+  public static final String ClientApplicationKey = "ClientApplication";
   public static final String MasterContextKey = "MasterContextKey";
   public static final String UriInfoKey = "UriInfoKey";
 
@@ -38,6 +39,9 @@ public class JerseyResourceDelegateUtil {
     
     if ((localApp != null) && (localApp instanceof ClientApplication)) {
       ClientApplication clientApplication = (ClientApplication) localApp;
+      JerseyResourceDelegateContextKey<ClientApplication> clientApplicationKey =
+          JerseyResourceDelegateContextKey.valueOf(ClientApplicationKey, ClientApplication.class);
+      context.put(clientApplicationKey, clientApplication);
       
       MasterContext masterContext = clientApplication.getMasterContext();
       

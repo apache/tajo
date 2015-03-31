@@ -34,4 +34,5 @@ public class ResourceConfigUtil {
     
     return result;
   }
+  
 }
