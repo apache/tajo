@@ -49,6 +49,8 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1479: NPE during startup CatalogStore. (jaehwa)
+
     TAJO-1437: Resolve findbug warnings on Tajo JDBC Module. 
     (Contributed by Dongjoon Hyun, Committed by jihoon)
 
