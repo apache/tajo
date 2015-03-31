@@ -29,8 +29,8 @@ import java.io.IOException;
 import java.util.Comparator;
 
 public abstract class SortExec extends UnaryPhysicalExec {
-  private final TupleComparator comparator;
-  private final SortSpec [] sortSpecs;
+  protected final BaseTupleComparator comparator;
+  protected final SortSpec [] sortSpecs;
 
   public SortExec(TaskAttemptContext context, Schema inSchema,
                   Schema outSchema, PhysicalExec child, SortSpec [] sortSpecs) {

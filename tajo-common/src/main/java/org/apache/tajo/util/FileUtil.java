@@ -87,19 +87,23 @@ public class FileUtil {
   }
 
   public static String readTextFileFromResource(String resource) throws IOException {
-    StringBuilder fileData = new StringBuilder(1000);
-    InputStream inputStream = ClassLoader.getSystemResourceAsStream(resource);
-    byte[] buf = new byte[1024];
-    int numRead;
+    return readTextFromStream(ClassLoader.getSystemResourceAsStream(resource));
+  }
+
+  public static String readTextFromStream(InputStream inputStream)
+      throws IOException {
     try {
+      StringBuilder fileData = new StringBuilder(1000);
+      byte[] buf = new byte[1024];
+      int numRead;
       while ((numRead = inputStream.read(buf)) != -1) {
         String readData = new String(buf, 0, numRead, Charset.defaultCharset());
         fileData.append(readData);
       }
+      return fileData.toString();
     } finally {
-      IOUtils.cleanup(null, inputStream);
+      IOUtils.closeStream(inputStream);
     }
-    return fileData.toString();
   }
 
   public static String readTextFile(File file) throws IOException {
@@ -117,6 +121,15 @@ public class FileUtil {
       IOUtils.cleanup(null, reader);
     }
     return fileData.toString();
+  }
+
+  public static void writeTextToStream(String text, OutputStream outputStream)
+      throws IOException {
+    try {
+      outputStream.write(text.getBytes());
+    } finally {
+      IOUtils.closeStream(outputStream);
+    }
   }
 
   public static String humanReadableByteCount(long bytes, boolean si) {

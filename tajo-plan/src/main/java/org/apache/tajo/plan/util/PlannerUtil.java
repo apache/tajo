@@ -100,6 +100,7 @@ public class PlannerUtil {
         PlannerUtil.getRelationLineage(plan.getRootBlock().getRoot()).length == 1;
 
     boolean noComplexComputation = false;
+    boolean prefixPartitionWhere = false;
     if (singleRelation) {
       ScanNode scanNode = plan.getRootBlock().getNode(NodeType.SCAN);
       if (scanNode == null) {
@@ -133,11 +134,34 @@ public class PlannerUtil {
           }
         }
       }
+
+      /**
+       * TODO: Remove isExternal check after resolving the following issues
+       * - TAJO-1416: INSERT INTO EXTERNAL PARTITIONED TABLE
+       * - TAJO-1441: INSERT INTO MANAGED PARTITIONED TABLE
+       */
+      if (!noWhere && scanNode.getTableDesc().isExternal() && scanNode.getTableDesc().getPartitionMethod() != null) {
+        EvalNode node = ((SelectionNode) plan.getRootBlock().getNode(NodeType.SELECTION)).getQual();
+        Schema partSchema = scanNode.getTableDesc().getPartitionMethod().getExpressionSchema();
+        if (EvalTreeUtil.checkIfPartitionSelection(node, partSchema)) {
+          prefixPartitionWhere = true;
+          boolean isPrefix = true;
+          for (Column c : partSchema.getColumns()) {
+            String value = EvalTreeUtil.getPartitionValue(node, c.getSimpleName());
+            if (isPrefix && value == null)
+              isPrefix = false;
+            else if (!isPrefix && value != null) {
+              prefixPartitionWhere = false;
+              break;
+            }
+          }
+        }
+      }
     }
 
     return !checkIfDDLPlan(rootNode) &&
         (simpleOperator && noComplexComputation && isOneQueryBlock &&
-            noOrderBy && noGroupBy && noWhere && noJoin && singleRelation);
+            noOrderBy && noGroupBy && (noWhere || prefixPartitionWhere) && noJoin && singleRelation);
   }
   
   /**
@@ -194,6 +218,16 @@ public class PlannerUtil {
     return tableNames;
   }
 
+  public static String getTopRelationInLineage(LogicalPlan plan, LogicalNode from) throws PlanningException {
+    RelationFinderVisitor visitor = new RelationFinderVisitor(true);
+    visitor.visit(null, plan, null, from, new Stack<LogicalNode>());
+    if (visitor.getFoundRelations().isEmpty()) {
+      return null;
+    } else {
+      return visitor.getFoundRelations().iterator().next();
+    }
+  }
+
   /**
    * Get all RelationNodes which are descendant of a given LogicalNode.
    * The finding is restricted within a query block.
@@ -203,13 +237,18 @@ public class PlannerUtil {
    */
   public static Collection<String> getRelationLineageWithinQueryBlock(LogicalPlan plan, LogicalNode from)
       throws PlanningException {
-    RelationFinderVisitor visitor = new RelationFinderVisitor();
+    RelationFinderVisitor visitor = new RelationFinderVisitor(false);
     visitor.visit(null, plan, null, from, new Stack<LogicalNode>());
     return visitor.getFoundRelations();
   }
 
   public static class RelationFinderVisitor extends BasicLogicalPlanVisitor<Object, LogicalNode> {
     private Set<String> foundRelNameSet = Sets.newHashSet();
+    private boolean topOnly = false;
+
+    public RelationFinderVisitor(boolean topOnly) {
+      this.topOnly = topOnly;
+    }
 
     public Set<String> getFoundRelations() {
       return foundRelNameSet;
@@ -218,6 +257,10 @@ public class PlannerUtil {
     @Override
     public LogicalNode visit(Object context, LogicalPlan plan, @Nullable LogicalPlan.QueryBlock block, LogicalNode node,
                              Stack<LogicalNode> stack) throws PlanningException {
+      if (topOnly && foundRelNameSet.size() > 0) {
+        return node;
+      }
+
       if (node.getType() != NodeType.TABLE_SUBQUERY) {
         super.visit(context, plan, block, node, stack);
       }
@@ -733,6 +776,10 @@ public class PlannerUtil {
 
   public static boolean isCommutativeJoin(JoinType joinType) {
     return joinType == JoinType.INNER;
+  }
+
+  public static boolean isOuterJoin(JoinType joinType) {
+    return joinType == JoinType.LEFT_OUTER || joinType == JoinType.RIGHT_OUTER || joinType==JoinType.FULL_OUTER;
   }
 
   public static boolean existsAggregationFunction(Expr expr) throws PlanningException {

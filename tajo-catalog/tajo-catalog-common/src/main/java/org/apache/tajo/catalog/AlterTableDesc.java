@@ -21,6 +21,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
+import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.json.GsonObject;
@@ -42,6 +43,8 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
   protected String newColumnName; //optional
   @Expose
   protected Column addColumn = null; //optional
+  @Expose
+  protected PartitionDesc partitionDesc; //optional
   @Expose
   protected KeyValueSet properties;
 
@@ -101,6 +104,10 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
     this.alterTableType = alterTableType;
   }
 
+  public PartitionDesc getPartitionDesc() { return partitionDesc; }
+
+  public void setPartitionDesc(PartitionDesc partitionDesc) { this.partitionDesc = partitionDesc; }
+
   public void setProperties(KeyValueSet properties) {
     this.properties = properties;
   }
@@ -132,6 +139,7 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
     newAlter.newTableName = newTableName;
     newAlter.columnName = newColumnName;
     newAlter.addColumn = addColumn;
+    newAlter.partitionDesc = partitionDesc;
     newAlter.properties = (KeyValueSet)properties.clone();
     return newAlter;
   }
@@ -164,7 +172,6 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
       builder.setParams(properties.getProto());
     }
 
-
     switch (alterTableType) {
       case RENAME_TABLE:
         builder.setAlterTableType(CatalogProtos.AlterTableType.RENAME_TABLE);
@@ -178,8 +185,19 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
       case SET_PROPERTY:
         builder.setAlterTableType(CatalogProtos.AlterTableType.SET_PROPERTY);
         break;
+      case ADD_PARTITION:
+        builder.setAlterTableType(CatalogProtos.AlterTableType.ADD_PARTITION);
+        break;
+      case DROP_PARTITION:
+        builder.setAlterTableType(CatalogProtos.AlterTableType.DROP_PARTITION);
+        break;
       default:
     }
+
+    if (null != this.partitionDesc) {
+      builder.setPartitionDesc(partitionDesc.getProto());
+    }
+
     return builder.build();
   }
 

@@ -91,6 +91,10 @@ public class GlobalPlanner {
     this(conf, workerContext.getCatalog());
   }
 
+  public TajoConf getConf() {
+    return conf;
+  }
+
   public CatalogService getCatalog() {
     return catalog;
   }

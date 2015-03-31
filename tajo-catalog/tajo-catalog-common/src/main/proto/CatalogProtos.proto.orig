@@ -1,0 +1,431 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+option java_package = "org.apache.tajo.catalog.proto";
+option java_outer_classname = "CatalogProtos";
+option optimize_for = SPEED;
+option java_generic_services = false;
+option java_generate_equals_and_hash = true;
+
+import "DataTypes.proto";
+import "PrimitiveProtos.proto";
+
+enum StoreType {
+  MEM = 0;
+  CSV = 1;
+  RAW = 2;
+  RCFILE = 3;
+  ROWFILE = 4;
+  HCFILE = 5;
+  PARQUET = 7;
+  SEQUENCEFILE = 8;
+  AVRO = 9;
+  TEXTFILE = 10;
+  JSON = 11;
+  HBASE = 12;
+  SYSTEM = 13;
+}
+
+enum OrderType {
+  ORDER_NONE = 0;
+  ASC = 1;
+  DSC = 2;
+}
+
+enum PartitionType {
+  RANGE = 0;
+  HASH = 1;
+  LIST = 2;
+  COLUMN = 3;
+}
+
+enum AlterTableType {
+  RENAME_TABLE = 0;
+  RENAME_COLUMN = 1;
+  ADD_COLUMN = 2;
+<<<<<<< HEAD
+  SET_PROPERTY = 3;
+=======
+  ADD_PARTITION = 3;
+  DROP_PARTITION = 4;
+>>>>>>> master
+}
+
+message ColumnProto {
+  required string name = 1;
+  optional int32 tid = 2;
+  required DataType dataType = 3;
+}
+
+message SchemaProto {
+  repeated ColumnProto fields = 1;
+}
+
+message FragmentProto {
+  required string id = 1;
+  required string storeType = 2;
+  required bytes contents = 3;
+}
+
+message TableProto {
+  required StoreType storeType = 1;
+  optional KeyValueSetProto params = 2;
+}
+
+message CreateTablespaceRequest {
+  required string tablespace_name = 1;
+  required string tablespace_uri = 2;
+}
+
+message CreateDatabaseRequest {
+  required string database_name = 1;
+  optional string tablespace_name = 2;
+}
+
+message TableDescProto {
+  required string table_name = 2;
+  optional string path = 3;
+  required TableProto meta = 4;
+  required SchemaProto schema = 5;
+  optional TableStatsProto stats = 6;
+  optional PartitionMethodProto partition = 7;
+  optional bool isExternal = 8 [default = false];
+}
+
+message TableIdentifierProto {
+  required string database_name = 1;
+  required string table_name = 2;
+  optional int32 dbId = 3;
+  optional int32 tid = 4;
+}
+
+message NamespaceProto {
+  required string database_name = 1;
+  optional string namespace = 2;
+}
+
+message IndexDescProto {
+  required TableIdentifierProto tableIdentifier = 1;
+  required string indexName = 2;
+  required ColumnProto column = 3;
+  required IndexMethod indexMethod = 4;
+  optional bool isUnique = 5 [default = false];
+  optional bool isClustered = 6 [default = false];
+  optional bool isAscending = 7 [default = false];
+}
+
+enum IndexMethod {
+  TWO_LEVEL_BIN_TREE = 0;
+  BTREE_IDX = 1;
+  HASH_IDX = 2;
+  BITMAP_IDX = 3;
+}
+
+message GetAllTableNamesResponse {
+  repeated string tableName = 1;
+}
+
+message GetTablespacesProto {
+  repeated TablespaceProto tablespace = 1;
+}
+
+message GetDatabasesProto {
+  repeated DatabaseProto database = 1;
+}
+
+message GetTablesProto {
+  repeated TableDescriptorProto table = 1;
+}
+
+message GetColumnsProto {
+  repeated ColumnProto column = 1;
+}
+
+message GetIndexesProto {
+  repeated IndexProto index = 1;
+}
+
+message GetTableOptionsProto {
+  repeated TableOptionProto tableOption = 1;
+}
+
+message GetTableStatsProto {
+  repeated TableStatsProto stat = 1;
+}
+
+message GetTablePartitionsProto {
+  repeated TablePartitionProto part = 1;
+}
+
+message IndexProto {
+  required int32 dbId = 1;
+  required int32 tId = 2;
+  required string indexName = 3;
+  required string columnName = 4;
+  required string dataType = 5;
+  required string indexType = 6;
+  optional bool isUnique = 7 [default = false];
+  optional bool isClustered = 8 [default = false];
+  optional bool isAscending = 9 [default = false];
+}
+
+message TableOptionProto {
+  required int32 tid = 1;
+  required KeyValueProto keyval = 2;
+}
+
+message TablePartitionProto {
+  required int32 partition_id = 1;
+  required int32 tid = 2;
+  optional string partitionName = 3;
+  optional string path = 4;
+}
+
+message GetIndexByColumnRequest {
+  required TableIdentifierProto tableIdentifier = 1;
+  required string columnName = 2;
+}
+
+message IndexNameProto {
+  required string databaseName = 1;
+  optional string namespace = 2;
+  required string indexName = 3;
+}
+
+message GetFunctionsResponse {
+  repeated FunctionDescProto functionDesc = 1;
+}
+
+message UnregisterFunctionRequest {
+  required string signature = 1;
+}
+
+message GetFunctionMetaRequest {
+  required string signature = 1;
+  optional FunctionType functionType = 2;
+  repeated DataType parameterTypes = 3;
+}
+
+message ContainFunctionRequest {
+  required string signature = 1;
+  optional FunctionType functionType = 2;
+  repeated DataType parameterTypes = 3;
+}
+
+message TableStatsProto {
+  required int64 numRows = 1;
+  required int64 numBytes = 2;
+  optional int32 numBlocks = 4;
+  optional int32 numShuffleOutputs = 5;
+  optional int64 avgRows = 6;
+  optional int64 readBytes = 7;
+  repeated ColumnStatsProto colStat = 8;
+  optional int32 tid = 9;
+}
+
+message ColumnStatsProto {
+  required ColumnProto column = 1;
+  optional int64 numDistVal = 2;
+  optional int64 numNulls = 3;
+  optional bytes minValue = 4;
+  optional bytes maxValue = 5;
+}
+
+enum StatType {
+  TABLE_NUM_ROWS = 0;
+  TABLE_NUM_BLOCKS = 1;
+  TABLE_NUM_PARTITIONS = 2;
+  TABLE_AVG_ROWS = 3;
+  TABLE_NUM_BYTES = 4;
+
+  COLUMN_NUM_NDV = 5;
+  COLUMN_NUM_NULLS = 6;
+}
+
+message StatSetProto {
+  repeated StatProto stats = 1;
+}
+
+message StatProto {
+  required StatType type = 1;
+  required int64 value = 2;
+}
+
+message ServerNameProto {
+  required string serverName = 1;
+  required string hostName = 2;
+  required int32 port = 3;
+}
+
+message TupleComparatorSpecProto {
+  required int32 columnId = 1;
+  optional bool ascending = 2 [default = true];
+  optional bool nullFirst = 3 [default = false];
+}
+
+message SortSpecProto {
+  required ColumnProto column = 1;
+  optional bool ascending = 2 [default = true];
+  optional bool nullFirst = 3 [default = false];
+}
+
+
+message PartitionsProto {
+  repeated PartitionDescProto partition = 1;
+}
+
+message PartitionMethodProto {
+  required TableIdentifierProto tableIdentifier = 1;
+  required PartitionType partitionType = 2;
+  required string expression = 3;
+  required SchemaProto expressionSchema = 4;
+}
+
+message PartitionDescProto {
+  required string partitionName = 1;
+  repeated PartitionKeyProto partitionKeys = 2;
+  optional string path = 3;
+}
+
+message PartitionKeyProto {
+  required string columnName = 1;
+  required string partitionValue = 2;
+}
+
+
+message PartitionIdentifierProto {
+  required string databaseName = 1;
+  required string tableName = 2;
+  optional string partitionName = 3;
+}
+
+message TablespaceProto {
+  required string spaceName = 1;
+  required string uri = 2;
+  optional string handler = 3;
+  optional int32 id = 4; 
+}
+
+message DatabaseProto {
+	required int32 spaceId = 1;
+	required int32 id = 2;
+	required string name = 3;
+}
+
+message TableDescriptorProto {
+	required int32 dbId = 1;
+	required int32 tid = 2;
+	required string name = 3;
+	optional string tableType = 4;
+	required string path = 5;
+	required string storeType = 6;
+}
+
+message AlterTablespaceProto {
+  required string spaceName = 1;
+  repeated AlterTablespaceCommand command = 2;
+
+  enum AlterTablespaceType {
+    LOCATION = 0;
+  }
+
+  message SetLocation {
+    required string uri = 1;
+  }
+
+  message AlterTablespaceCommand {
+    required AlterTablespaceType type = 1;
+    optional SetLocation location = 2;
+  }
+}
+
+message AlterTableDescProto {
+  required string tableName = 1;
+  optional string newTableName = 2 ;
+  optional ColumnProto addColumn = 3;
+  optional AlterColumnProto alterColumnName = 4;
+  required AlterTableType alterTableType = 5;
+<<<<<<< HEAD
+  optional KeyValueSetProto params = 6;
+=======
+  optional PartitionDescProto partitionDesc = 6;
+>>>>>>> master
+}
+
+message AlterColumnProto {
+  required string oldColumnName = 1;
+  required string newColumnName = 2;
+}
+
+message UpdateTableStatsProto {
+  required string tableName = 1;
+  required TableStatsProto stats = 2;
+}
+
+////////////////////////////////////////////////
+// Function and UDF Section
+////////////////////////////////////////////////
+
+enum FunctionType {
+  GENERAL = 0;
+  AGGREGATION = 1;
+  DISTINCT_AGGREGATION = 2;
+  WINDOW = 3;
+  UDF = 4;
+  UDA = 5;
+  DISTINCT_UDA = 6;
+  WINDOW_UDA = 7;
+}
+
+message FunctionDescProto {
+  required FunctionSignatureProto signature = 1;
+  required FunctionSupplementProto supplement = 2;
+  required FunctionInvocationProto invocation = 3;
+}
+
+message FunctionSignatureProto {
+  required FunctionType type = 1;
+  required string name = 2;
+  required DataType returnType = 3;
+  repeated DataType parameterTypes = 4;
+}
+
+message FunctionSupplementProto {
+  optional string shortDescription = 1;
+  optional string detail = 2;
+  optional string example = 3;
+}
+
+message FunctionInvocationProto {
+  optional ClassBaseInvocationDescProto legacy = 1;
+  optional StaticMethodInvocationDescProto scalar = 2;
+  optional ClassBaseInvocationDescProto aggregation = 3;
+  optional StaticMethodInvocationDescProto scalarJIT = 4;
+  optional ClassBaseInvocationDescProto aggregationJIT = 5;
+}
+
+message ClassBaseInvocationDescProto {
+  required string className = 1;
+}
+
+message StaticMethodInvocationDescProto {
+  required string className = 1;
+  required string methodName = 2;
+  required string returnClass = 3;
+  repeated string paramClasses = 4;
+}

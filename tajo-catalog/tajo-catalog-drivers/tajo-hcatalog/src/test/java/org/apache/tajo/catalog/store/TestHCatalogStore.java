@@ -24,10 +24,9 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.catalog.TableDesc;
-import org.apache.tajo.catalog.TableMeta;
+import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.partition.PartitionDesc;
+import org.apache.tajo.catalog.partition.PartitionKey;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
@@ -40,8 +39,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
+import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
 
 /**
@@ -232,11 +234,12 @@ public class TestHCatalogStore {
 
     org.apache.tajo.catalog.Schema expressionSchema = new org.apache.tajo.catalog.Schema();
     expressionSchema.addColumn("n_nationkey", TajoDataTypes.Type.INT4);
+    expressionSchema.addColumn("n_date", TajoDataTypes.Type.TEXT);
 
     PartitionMethodDesc partitions = new PartitionMethodDesc(
         DB_NAME,
         NATION,
-        CatalogProtos.PartitionType.COLUMN, expressionSchema.getColumn(0).getQualifiedName(), expressionSchema);
+        CatalogProtos.PartitionType.COLUMN, "n_nationkey,n_date", expressionSchema);
     table.setPartitionMethod(partitions);
 
     store.createTable(table.getProto());
@@ -250,17 +253,79 @@ public class TestHCatalogStore {
       assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
     }
 
-
     Schema partitionSchema = table.getPartitionMethod().getExpressionSchema();
     Schema partitionSchema1 = table1.getPartitionMethod().getExpressionSchema();
     assertEquals(partitionSchema.size(), partitionSchema1.size());
+
     for (int i = 0; i < partitionSchema.size(); i++) {
       assertEquals(partitionSchema.getColumn(i).getSimpleName(), partitionSchema1.getColumn(i).getSimpleName());
     }
 
+    testAddPartition(table1.getPath(), NATION, "n_nationkey=10/n_date=20150101");
+    testAddPartition(table1.getPath(), NATION, "n_nationkey=20/n_date=20150102");
+
+    testDropPartition(NATION, "n_nationkey=10/n_date=20150101");
+    testDropPartition(NATION, "n_nationkey=20/n_date=20150102");
+
+    CatalogProtos.PartitionDescProto partition = store.getPartition(DB_NAME, NATION, "n_nationkey=10/n_date=20150101");
+    assertNull(partition);
+
+    partition = store.getPartition(DB_NAME, NATION, "n_nationkey=20/n_date=20150102");
+    assertNull(partition);
+
     store.dropTable(DB_NAME, NATION);
   }
 
+
+  private void testAddPartition(URI uri, String tableName, String partitionName) throws Exception {
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(DB_NAME + "." + tableName);
+    alterTableDesc.setAlterTableType(AlterTableType.ADD_PARTITION);
+
+    Path path = new Path(uri.getPath(), partitionName);
+
+    PartitionDesc partitionDesc = new PartitionDesc();
+    partitionDesc.setPartitionName(partitionName);
+
+    List<PartitionKey> partitionKeyList = new ArrayList<PartitionKey>();
+    String[] partitionNames = partitionName.split("/");
+    for(int i = 0; i < partitionNames.length; i++) {
+      String[] eachPartitionName = partitionNames[i].split("=");
+      partitionKeyList.add(new PartitionKey(eachPartitionName[0], eachPartitionName[1]));
+    }
+    partitionDesc.setPartitionKeys(partitionKeyList);
+    partitionDesc.setPath(path.toString());
+
+    alterTableDesc.setPartitionDesc(partitionDesc);
+
+    store.alterTable(alterTableDesc.getProto());
+
+    CatalogProtos.PartitionDescProto resultDesc = store.getPartition(DB_NAME, NATION, partitionName);
+    assertNotNull(resultDesc);
+    assertEquals(resultDesc.getPartitionName(), partitionName);
+    assertEquals(resultDesc.getPath(), uri.toString() + "/" + partitionName);
+    assertEquals(resultDesc.getPartitionKeysCount(), 2);
+
+    for (int i = 0; i < resultDesc.getPartitionKeysCount(); i++) {
+      CatalogProtos.PartitionKeyProto keyProto = resultDesc.getPartitionKeys(i);
+      String[] eachName = partitionNames[i].split("=");
+      assertEquals(keyProto.getPartitionValue(), eachName[1]);
+    }
+  }
+
+
+  private void testDropPartition(String tableName,  String partitionName) throws Exception {
+    AlterTableDesc alterTableDesc = new AlterTableDesc();
+    alterTableDesc.setTableName(DB_NAME + "." + tableName);
+    alterTableDesc.setAlterTableType(AlterTableType.DROP_PARTITION);
+
+    PartitionDesc partitionDesc = new PartitionDesc();
+    partitionDesc.setPartitionName(partitionName);
+
+    alterTableDesc.setPartitionDesc(partitionDesc);
+
+    store.alterTable(alterTableDesc.getProto());
+  }
 
   @Test
   public void testGetAllTableNames() throws Exception{

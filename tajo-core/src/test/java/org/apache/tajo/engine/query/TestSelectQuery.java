@@ -99,9 +99,34 @@ public class TestSelectQuery extends QueryTestCaseBase {
   @Test
   public final void testExplainSelect() throws Exception {
     // explain select l_orderkey, l_partkey from lineitem;
-    ResultSet res = executeQuery();
-    assertResultSet(res);
-    cleanupQuery(res);
+    testingCluster.getConfiguration().set(ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED.varname, "true");
+    try {
+      ResultSet res = executeQuery();
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      testingCluster.getConfiguration().set(ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED.varname, "false");
+    }
+  }
+
+  @Test
+  @SimpleTest(queries = {
+      "explain global " +
+          "select l_orderkey, l_partkey from lineitem",
+      "explain global " +
+          "select n1.n_nationkey, n1.n_name, n2.n_name from nation n1 join nation n2 on n1.n_name = upper(n2.n_name) " +
+          "order by n1.n_nationkey;",
+      "explain global " +
+          "select l_linenumber, count(*), count(distinct l_orderkey), sum(distinct l_orderkey) from lineitem " +
+          "group by l_linenumber having sum(distinct l_orderkey) = 6"})
+  public final void testExplainSelectPhysical() throws Exception {
+    // Enable this option to fix the shape of the generated plans.
+    testingCluster.getConfiguration().set(ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED.varname, "true");
+    try {
+      runSimpleTests();
+    } finally {
+      testingCluster.getConfiguration().set(ConfVars.$TEST_PLAN_SHAPE_FIX_ENABLED.varname, "false");
+    }
   }
 
   @Test
