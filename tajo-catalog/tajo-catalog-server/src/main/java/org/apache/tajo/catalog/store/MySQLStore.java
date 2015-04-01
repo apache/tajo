@@ -36,7 +36,7 @@ public class MySQLStore extends AbstractDBStore {
   /**
    * 1-  Before 2013-03-20
    */
-  private static final int MYSQL_CATALOG_STORE_VERSION = 3;
+  private static final int MYSQL_CATALOG_STORE_VERSION = 4;
 
   private static final String CATALOG_DRIVER = "com.mysql.jdbc.Driver";
 

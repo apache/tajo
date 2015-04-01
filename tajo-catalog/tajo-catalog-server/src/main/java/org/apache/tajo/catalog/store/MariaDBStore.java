@@ -32,7 +32,7 @@ import java.sql.SQLException;
 public class MariaDBStore extends AbstractDBStore {
   /** 3 - 2015-03-12: Nested Schema (TAJO-1329) */
   /** 2 - First versioning */
-  private static final int MARIADB_CATALOG_STORE_VERSION = 3;
+  private static final int MARIADB_CATALOG_STORE_VERSION = 4;
 
   private static final String CATALOG_DRIVER = "org.mariadb.jdbc.Driver";
 
