@@ -167,10 +167,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
     super.stop();
 
-    LOG.info("QueryMaster stop");
-    if(queryMasterContext.getWorkerContext().isYarnContainerMode()) {
-      queryMasterContext.getWorkerContext().stopWorker(true);
-    }
+    LOG.info("QueryMaster stopped");
   }
 
   protected void cleanupExecutionBlock(List<TajoIdProtos.ExecutionBlockIdProto> executionBlockIds) {
@@ -378,9 +375,6 @@ public class QueryMaster extends CompositeService implements EventHandler {
             LOG.warn(e, e);
           }
         }
-      }
-      if(workerContext.isYarnContainerMode()) {
-        stop();
       }
     }
   }
