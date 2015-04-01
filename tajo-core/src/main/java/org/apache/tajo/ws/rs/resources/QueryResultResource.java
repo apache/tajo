@@ -18,22 +18,8 @@
 
 package org.apache.tajo.ws.rs.resources;
 
-import java.io.IOException;
-import java.net.URI;
-
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.UriInfo;
-
+import com.google.protobuf.ByteString;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.QueryId;
@@ -48,14 +34,21 @@ import org.apache.tajo.plan.logical.PartitionedTableScanNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.util.TajoIdUtils;
-import org.apache.tajo.ws.rs.ClientApplication;
-import org.apache.tajo.ws.rs.JerseyResourceDelegate;
-import org.apache.tajo.ws.rs.JerseyResourceDelegateContext;
-import org.apache.tajo.ws.rs.JerseyResourceDelegateContextKey;
-import org.apache.tajo.ws.rs.JerseyResourceDelegateUtil;
-import org.apache.tajo.ws.rs.ResourcesUtil;
+import org.apache.tajo.ws.rs.*;
 import org.apache.tajo.ws.rs.responses.GetQueryResultDataResponse;
 import org.apache.tajo.ws.rs.responses.ResultSetInfoResponse;
+
+import javax.ws.rs.*;
+import javax.ws.rs.core.*;
+import javax.ws.rs.core.Response.Status;
+import java.io.BufferedOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URI;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.List;
 
 public class QueryResultResource {
   
@@ -77,6 +70,8 @@ public class QueryResultResource {
   private static final String cacheIdKeyName = "cacheId";
   private static final String offsetKeyName = "offset";
   private static final String countKeyName = "count";
+
+  private static final String tajoDigestHeaderName = "X-Tajo-Digest";
 
   public UriInfo getUriInfo() {
     return uriInfo;
@@ -224,11 +219,17 @@ public class QueryResultResource {
           response.setErrorMessage("Unable to find a query info for requested id : " + queryId);
           return Response.status(Status.NOT_FOUND).entity(response).build();
         }
-        
-        response.setSchema(queryInfo.getResultDesc().getSchema());
+
+        NonForwardQueryResultScanner queryResultScanner = getNonForwardQueryResultScanner(masterContext, session, queryIdObj);
+
+        if (queryInfo.getResultDesc() != null && queryInfo.getResultDesc().getSchema() != null) {
+          response.setSchema(queryInfo.getResultDesc().getSchema());
+        } else {
+          response.setSchema(queryResultScanner.getLogicalSchema());
+        }
+
         long cacheId = clientApplication.generateCacheIdIfAbsent(queryIdObj);
-        clientApplication.setCachedNonForwardResultScanner(queryIdObj, cacheId,
-            getNonForwardQueryResultScanner(masterContext, session, queryIdObj));
+        clientApplication.setCachedNonForwardResultScanner(queryIdObj, cacheId, queryResultScanner);
         URI resultSetCacheUri = uriInfo.getBaseUriBuilder()
             .path(QueryResource.class)
             .path(QueryResource.class, "getQueryResult")
@@ -238,6 +239,7 @@ public class QueryResultResource {
         resultSetInfoResponse.setId(cacheId);
         resultSetInfoResponse.setLink(resultSetCacheUri);
         response.setResultset(resultSetInfoResponse);
+        response.setResultCode(ResultCode.OK);
         
         return Response.status(Status.OK).entity(response).build();
       } catch (Throwable e) {
@@ -251,7 +253,8 @@ public class QueryResultResource {
       }
     }
   }
-  
+
+  @GET
   @Path("{cacheId}")
   @Produces(MediaType.APPLICATION_OCTET_STREAM)
   public Response getQueryResultSet(@HeaderParam(QueryResource.tajoSessionIdHeaderName) String sessionId,
@@ -337,8 +340,78 @@ public class QueryResultResource {
       if (cacheId == null || cacheId.longValue() == 0) {
         return ResourcesUtil.createBadRequestResponse(LOG, "Cache id is null or empty.");
       }
-      
-      return null;
+
+      if (count < 0) {
+        return ResourcesUtil.createBadRequestResponse(LOG, "Invalid count value : " + count);
+      }
+
+      NonForwardQueryResultScanner cachedQueryResultScanner =
+          clientApplication.getCachedNonForwardResultScanner(queryIdObj, cacheId.longValue());
+
+      try {
+        skipOffsetRow(cachedQueryResultScanner, offset);
+
+        List<ByteString> output = cachedQueryResultScanner.getNextRows(count);
+        String digestString = getEncodedBase64DigestString(output);
+
+        return Response.ok(new QueryResultStreamingOutput(output))
+            .header(tajoDigestHeaderName, digestString)
+            .build();
+      } catch (IOException e) {
+        LOG.error(e.getMessage(), e);
+
+        return ResourcesUtil.createExceptionResponse(null, e.getMessage());
+      } catch (NoSuchAlgorithmException e) {
+        LOG.error(e.getMessage(), e);
+
+        return ResourcesUtil.createExceptionResponse(null, e.getMessage());
+      }
+    }
+
+    private void skipOffsetRow(NonForwardQueryResultScanner queryResultScanner, int offset) throws IOException {
+      if (offset < 0) {
+        return;
+      }
+
+      int currentRow = queryResultScanner.getCurrentRowNumber();
+
+      if (offset < (currentRow+1)) {
+        throw new RuntimeException("Offset must be over the current row number");
+      }
+
+      queryResultScanner.getNextRows(offset - currentRow - 1);
+    }
+
+    private String getEncodedBase64DigestString(List<ByteString> outputList) throws NoSuchAlgorithmException {
+      MessageDigest messageDigest = MessageDigest.getInstance("SHA-1");
+
+      for (ByteString byteString: outputList) {
+        messageDigest.update(byteString.toByteArray());
+      }
+
+      return Base64.encodeBase64String(messageDigest.digest());
+    }
+  }
+
+  private static class QueryResultStreamingOutput implements StreamingOutput {
+
+    private final List<ByteString> outputList;
+
+    public QueryResultStreamingOutput(List<ByteString> outputList) {
+      this.outputList = outputList;
+    }
+
+    @Override
+    public void write(OutputStream outputStream) throws IOException, WebApplicationException {
+      DataOutputStream streamingOutputStream = new DataOutputStream(new BufferedOutputStream(outputStream));
+
+      for (ByteString byteString: outputList) {
+        byte[] byteStringArray = byteString.toByteArray();
+        streamingOutputStream.writeInt(byteStringArray.length);
+        streamingOutputStream.write(byteStringArray);
+      }
+
+      streamingOutputStream.flush();
     }
   }
   

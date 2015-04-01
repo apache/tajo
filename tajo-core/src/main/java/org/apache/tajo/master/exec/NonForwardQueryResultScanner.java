@@ -43,4 +43,6 @@ public interface NonForwardQueryResultScanner {
 
   public void init() throws IOException;
 
+  public int getCurrentRowNumber();
+
 }

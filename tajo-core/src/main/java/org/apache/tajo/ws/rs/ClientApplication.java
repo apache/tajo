@@ -111,13 +111,16 @@ public class ClientApplication extends Application {
     
     if (cacheId == null) {
       boolean generated = false;
-      while (!generated) {
+      do {
         newCacheId = generateCacheId();
         if (queryResultScannerCache.getIfPresent(newCacheId) == null) {
           generated = true;
         }
+      } while (!generated);
+      cacheId = this.queryIdToResultSetCacheIdMap.putIfAbsent(queryId, newCacheId);
+      if (cacheId != null) {
+        newCacheId = cacheId.longValue();
       }
-      newCacheId = this.queryIdToResultSetCacheIdMap.putIfAbsent(queryId, newCacheId).longValue();
     } else {
       newCacheId = cacheId.longValue();
     }
@@ -165,6 +168,9 @@ public class ClientApplication extends Application {
     cachedScanner = getCachedNonForwardResultScanner(queryId, cacheId);
     if (cachedScanner == null) {
       cachedScanner = this.queryResultScannerCache.asMap().putIfAbsent(cacheId, resultScanner);
+      if (cachedScanner == null) {
+        cachedScanner = resultScanner;
+      }
     }
     
     return cachedScanner;
