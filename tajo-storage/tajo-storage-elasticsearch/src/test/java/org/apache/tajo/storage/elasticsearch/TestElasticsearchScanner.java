@@ -71,8 +71,8 @@ public class TestElasticsearchScanner {
     node = NodeBuilder.nodeBuilder()
         .settings(settings)
         .data(true)
-        .local(false)
-        .node();
+        .local(true)  // Nodes outside of the JVM will not be discovered.
+        .node();    // included start() method.
 
     client = node.client();
   }
