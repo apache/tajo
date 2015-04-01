@@ -41,7 +41,7 @@ public abstract class SortExec extends UnaryPhysicalExec {
   }
 
   protected TupleSorter getSorter(List<Tuple> tupleSlots) {
-    if (!tupleSlots.isEmpty() && ComparableVector.isApplicable(sortSpecs)) {
+    if (!tupleSlots.isEmpty() && ComparableVector.isVectorizable(sortSpecs)) {
       return new VectorizedSorter(tupleSlots, sortSpecs, comparator.getSortKeyIds());
     }
     return new TupleSorter.DefaultSorter(tupleSlots, comparator);

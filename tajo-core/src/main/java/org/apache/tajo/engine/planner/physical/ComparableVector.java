@@ -28,9 +28,13 @@ import com.google.common.primitives.UnsignedInts;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.TextDatum;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -52,7 +56,7 @@ public class ComparableVector {
       boolean nullFirst = sortKeys[i].isNullFirst();
       boolean ascending = sortKeys[i].isAscending();
       boolean nullInvert = nullFirst && ascending || !nullFirst && !ascending;
-      vectors[i] = new TupleVector(getType(type), tuples.length, nullInvert, ascending);
+      vectors[i] = new TupleVector(vectorType(type), tuples.length, nullInvert, ascending);
     }
     this.keyIndex = keyIndex;
   }
@@ -167,18 +171,26 @@ public class ComparableVector {
 
   public static class ComparableTuple {
 
-    private final int[] keyTypes;
+    private final TupleType[] keyTypes;
     private final int[] keyIndex;
     private final Object[] keys;
 
     public ComparableTuple(Schema schema, int[] keyIndex) {
-      this(getTypes(schema, keyIndex), keyIndex);
+      this(tupleTypes(schema, keyIndex), keyIndex);
     }
 
-    public ComparableTuple(int[] keyTypes, int[] keyIndex) {
+    public ComparableTuple(Schema schema, int start, int end) {
+      this(schema, toKeyIndex(start, end));
+    }
+
+    private ComparableTuple(TupleType[] keyTypes, int[] keyIndex) {
       this.keyTypes = keyTypes;
       this.keyIndex = keyIndex;
       this.keys = new Object[keyIndex.length];
+    }
+
+    public int size() {
+      return keyIndex.length;
     }
 
     public void set(Tuple tuple) {
@@ -189,15 +201,22 @@ public class ComparableVector {
           continue;
         }
         switch (keyTypes[i]) {
-          case 0: keys[i] = tuple.getBool(field); break;
-          case 1: keys[i] = tuple.getByte(field); break;
-          case 2: keys[i] = tuple.getInt2(field); break;
-          case 3: keys[i] = tuple.getInt4(field); break;
-          case 4: keys[i] = tuple.getInt8(field); break;
-          case 5: keys[i] = tuple.getFloat4(field); break;
-          case 6: keys[i] = tuple.getFloat8(field); break;
-          case 7: keys[i] = tuple.getBytes(field); break;
-          case 8: keys[i] = tuple.getInt4(field); break;
+          case BOOLEAN: keys[i] = tuple.getBool(field); break;
+          case BIT: keys[i] = tuple.getByte(field); break;
+          case INT1:
+          case INT2: keys[i] = tuple.getInt2(field); break;
+          case INT4:
+          case DATE:
+          case INET4: keys[i] = tuple.getInt4(field); break;
+          case INT8:
+          case TIME:
+          case TIMESTAMP: keys[i] = tuple.getInt8(field); break;
+          case FLOAT4: keys[i] = tuple.getFloat4(field); break;
+          case FLOAT8: keys[i] = tuple.getFloat8(field); break;
+          case TEXT:
+          case CHAR:
+          case BLOB: keys[i] = tuple.getBytes(field); break;
+          case DATUM: keys[i] = tuple.get(field); break;
           default:
             throw new IllegalArgumentException();
         }
@@ -216,8 +235,11 @@ public class ComparableVector {
         if (n1 ^ n2) {
           return false;
         }
-        if (keyTypes[i] == 7 && !Arrays.equals((byte[])keys[i], (byte[])other.keys[i])) {
-          return false;
+        if (keys[i] instanceof byte[]) {
+          if (!Arrays.equals((byte[])keys[i], (byte[])other.keys[i])) {
+            return false;
+          }
+          continue;
         }
         if (!keys[i].equals(other.keys[i])) {
           return false;
@@ -238,17 +260,22 @@ public class ComparableVector {
           return false;
         }
         switch (keyTypes[i]) {
-          case 0: if ((Boolean)keys[i] != tuple.getBool(field)) return false; continue;
-          case 1: if ((Byte)keys[i] != tuple.getByte(field)) return false; continue;
-          case 2: if ((Short)keys[i] != tuple.getInt2(field)) return false; continue;
-          case 3: if ((Integer)keys[i] != tuple.getInt4(field)) return false; continue;
-          case 4: if ((Long)keys[i] != tuple.getInt8(field)) return false; continue;
-          case 5: if ((Float)keys[i] != tuple.getFloat4(field)) return false; continue;
-          case 6: if ((Double)keys[i] != tuple.getFloat8(field)) return false; continue;
-          case 7: if (!Arrays.equals((byte[])keys[i], tuple.getBytes(field))) return false; continue;
-          case 8: if ((Integer)keys[i] != tuple.getInt4(field)) return false; continue;
-          default:
-            throw new IllegalArgumentException();
+          case BOOLEAN: if ((Boolean)keys[i] != tuple.getBool(field)) return false; continue;
+          case BIT: if ((Byte)keys[i] != tuple.getByte(field)) return false; continue;
+          case INT1:
+          case INT2: if ((Short)keys[i] != tuple.getInt2(field)) return false; continue;
+          case INT4:
+          case DATE:
+          case INET4: if ((Integer)keys[i] != tuple.getInt4(field)) return false; continue;
+          case INT8:
+          case TIME:
+          case TIMESTAMP: if ((Long)keys[i] != tuple.getInt8(field)) return false; continue;
+          case FLOAT4: if ((Float)keys[i] != tuple.getFloat4(field)) return false; continue;
+          case FLOAT8: if ((Double)keys[i] != tuple.getFloat8(field)) return false; continue;
+          case TEXT:
+          case CHAR:
+          case BLOB: if (!Arrays.equals((byte[])keys[i], tuple.getBytes(field))) return false; continue;
+          case DATUM: if (!keys[i].equals(tuple.get(field))) return false; continue;
         }
       }
       return true;
@@ -256,23 +283,68 @@ public class ComparableVector {
 
     @Override
     public int hashCode() {
-      return Arrays.hashCode(keys);
+      int result = 1;
+      for (Object key : keys) {
+        int hash = key == null ? 0 :
+            key instanceof byte[] ? Arrays.hashCode((byte[])key) : key.hashCode();
+        result = 31 * result + hash;
+      }
+      return result;
     }
 
     public ComparableTuple copy() {
-      ComparableTuple copy = new ComparableTuple(keyTypes, keyIndex);
+      ComparableTuple copy = emptyCopy();
       System.arraycopy(keys, 0, copy.keys, 0, keys.length);
       return copy;
     }
+
+    public ComparableTuple emptyCopy() {
+      return new ComparableTuple(keyTypes, keyIndex);
+    }
+
+    public VTuple toVTuple() {
+      VTuple vtuple = new VTuple(keyIndex.length);
+      for (int i = 0; i < keyIndex.length; i++) {
+        vtuple.put(i, toDatum(i));
+      }
+      return vtuple;
+    }
+
+    public Datum toDatum(int i) {
+      if (keys[i] == null) {
+        return NullDatum.get();
+      }
+      switch (keyTypes[i]) {
+        case NULL_TYPE: return NullDatum.get();
+        case BOOLEAN: return DatumFactory.createBool((Boolean) keys[i]);
+        case BIT: return DatumFactory.createBit((Byte)keys[i]);
+        case INT1:
+        case INT2: return DatumFactory.createInt2((Short) keys[i]);
+        case INT4: return DatumFactory.createInt4((Integer) keys[i]);
+        case DATE: return DatumFactory.createDate((Integer) keys[i]);
+        case INET4: return DatumFactory.createInet4((Integer) keys[i]);
+        case INT8: return DatumFactory.createInt8((Long) keys[i]);
+        case TIME: return DatumFactory.createTime((Long) keys[i]);
+        case TIMESTAMP: return DatumFactory.createTimestamp((Long) keys[i]);
+        case FLOAT4: return DatumFactory.createFloat4((Float) keys[i]);
+        case FLOAT8: return DatumFactory.createFloat8((Double) keys[i]);
+        case TEXT: return DatumFactory.createText((byte[]) keys[i]);
+        case CHAR: return DatumFactory.createChar((byte[]) keys[i]);
+        case BLOB: return DatumFactory.createBlob((byte[]) keys[i]);
+        case DATUM: return (Datum)keys[i];
+        default:
+          throw new IllegalArgumentException();
+      }
+    }
   }
 
-  public static boolean isApplicable(SortSpec[] sortKeys) {
+  public static boolean isVectorizable(SortSpec[] sortKeys) {
     if (sortKeys.length == 0) {
       return false;
     }
     for (SortSpec spec : sortKeys) {
       try {
-        getType(spec.getSortKey().getDataType().getType());
+        vectorType(spec.getSortKey().getDataType().getType());
       } catch (Exception e) {
         return false;
       }
@@ -280,19 +352,11 @@ public class ComparableVector {
     return true;
   }
 
-  public static int[] getTypes(Schema schema, int[] keyIndex) {
-    int[] types = new int[keyIndex.length];
-    for (int i = 0; i < keyIndex.length; i++) {
-      types[i] = getType(schema.getColumn(keyIndex[i]).getDataType().getType());
-    }
-    return types;
-  }
-
-  public static int getType(TajoDataTypes.Type type) {
+  private static int vectorType(TajoDataTypes.Type type) {
     switch (type) {
       case BOOLEAN: return 0;
-      case BIT: case INT1: return 1;
-      case INT2: return 2;
+      case BIT: return 1;
+      case INT1: case INT2: return 2;
       case INT4: case DATE: return 3;
       case INT8: case TIME: case TIMESTAMP: case INTERVAL: return 4;
       case FLOAT4: return 5;
@@ -305,11 +369,46 @@ public class ComparableVector {
     throw new UnsupportedException(type.name());
   }
 
-  public static int[] toTypes(Schema schema, int[] keyIndex) {
-    int[] types = new int[keyIndex.length];
+  private static TupleType[] tupleTypes(Schema schema, int[] keyIndex) {
+    TupleType[] types = new TupleType[keyIndex.length];
     for (int i = 0; i < keyIndex.length; i++) {
-      types[i] = getType(schema.getColumn(keyIndex[i]).getDataType().getType());
+      types[i] = tupleType(schema.getColumn(keyIndex[i]).getDataType().getType());
     }
     return types;
+  }
+
+  private static TupleType tupleType(TajoDataTypes.Type type) {
+    switch (type) {
+      case BOOLEAN: return TupleType.BOOLEAN;
+      case BIT: return TupleType.BIT;
+      case INT1: return TupleType.INT1;
+      case INT2: return TupleType.INT2;
+      case INT4: return TupleType.INT4;
+      case DATE: return TupleType.DATE;
+      case INT8: return TupleType.INT8;
+      case TIME: return TupleType.TIME;
+      case TIMESTAMP: return TupleType.TIMESTAMP;
+      case FLOAT4: return TupleType.FLOAT4;
+      case FLOAT8: return TupleType.FLOAT8;
+      case TEXT: return TupleType.TEXT;
+      case CHAR: return TupleType.CHAR;
+      case BLOB: return TupleType.BLOB;
+      case INET4: return TupleType.INET4;
+      case NULL_TYPE: return TupleType.NULL_TYPE;
+      default: return TupleType.DATUM;
+    }
+  }
+
+  private static int[] toKeyIndex(int start, int end) {
+    int[] keyIndex = new int[end - start];
+    for (int i = 0; i < keyIndex.length; i++) {
+      keyIndex[i] = start + i;
+    }
+    return keyIndex;
+  }
+
+  private static enum TupleType {
+    NULL_TYPE, BOOLEAN, BIT, INT1, INT2, INT4, DATE, INET4, INT8, TIME, TIMESTAMP,
+    FLOAT4, FLOAT8, TEXT, CHAR, BLOB, DATUM
   }
 }

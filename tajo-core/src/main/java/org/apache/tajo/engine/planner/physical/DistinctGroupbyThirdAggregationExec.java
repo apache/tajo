@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
+import org.apache.tajo.engine.planner.physical.ComparableVector.ComparableTuple;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.function.FunctionContext;
@@ -32,6 +33,7 @@ import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.*;
+
 
 /**
  *  This class aggregates the output of DistinctGroupbySecondAggregationExec.
@@ -87,7 +89,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
       }
       resultTupleLength += eachGroupby.getAggFunctions().length;
     }
-    aggregators = aggregatorList.toArray(new DistinctFinalAggregator[]{});
+    aggregators = aggregatorList.toArray(new DistinctFinalAggregator[aggregatorList.size()]);
 
     // make output schema mapping index
     resultTupleIndexes = new int[outSchema.size()];
@@ -99,9 +101,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
     }
     for (GroupbyNode eachGroupby : groupbyNodes) {
       Set<Column> groupingColumnSet = new HashSet<Column>();
-      for (Column column: eachGroupby.getGroupingColumns()) {
-        groupingColumnSet.add(column);
-      }
+      Collections.addAll(groupingColumnSet, eachGroupby.getGroupingColumns());
       for (Target eachTarget: eachGroupby.getTargets()) {
         if (!groupingColumnSet.contains(eachTarget.getNamedColumn())) {
           //aggr function
@@ -130,8 +130,8 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
     }
   }
 
-  Tuple prevKeyTuple = null;
-  Tuple prevTuple = null;
+  private transient ComparableTuple keyTuple;
+  private transient Tuple prevTuple;
 
   @Override
   public Tuple next() throws IOException {
@@ -166,7 +166,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
         break;
       }
 
-      Tuple tuple = null;
+      Tuple tuple;
       try {
         tuple = childTuple.clone();
       } catch (CloneNotSupportedException e) {
@@ -174,18 +174,18 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
       }
 
       int distinctSeq = tuple.get(0).asInt2();
-      Tuple keyTuple = getGroupingKeyTuple(tuple);
 
       // First tuple
-      if (prevKeyTuple == null) {
-        prevKeyTuple = keyTuple;
+      if (keyTuple == null) {
+        keyTuple = new ComparableTuple(inSchema, 1, numGroupingColumns + 1);
+        keyTuple.set(tuple);
         prevTuple = tuple;
 
         aggregators[distinctSeq].merge(tuple);
         continue;
       }
 
-      if (!prevKeyTuple.equals(keyTuple)) {
+      if (!keyTuple.equals(tuple)) {
         // new grouping key
         for (int i = 0; i < numGroupingColumns; i++) {
           resultTuple.put(resultTupleIndexes[i], prevTuple.get(i + 1));
@@ -194,13 +194,12 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
           eachAggr.terminate(resultTuple);
         }
 
-        prevKeyTuple = keyTuple;
+        keyTuple.set(tuple);
         prevTuple = tuple;
 
         aggregators[distinctSeq].merge(tuple);
         break;
       } else {
-        prevKeyTuple = keyTuple;
         prevTuple = tuple;
         aggregators[distinctSeq].merge(tuple);
       }
@@ -218,26 +217,12 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
     return resultTuple;
   }
 
-  private Tuple getGroupingKeyTuple(Tuple tuple) {
-    Tuple keyTuple = new VTuple(numGroupingColumns);
-    for (int i = 0; i < numGroupingColumns; i++) {
-      keyTuple.put(i, tuple.get(i + 1));
-    }
-
-    return keyTuple;
-  }
-
   @Override
   public void rescan() throws IOException {
     super.rescan();
-    prevKeyTuple = null;
+    keyTuple = null;
     prevTuple = null;
     finished = false;
-  }
-
-  @Override
-  public void close() throws IOException {
-    super.close();
   }
 
   class DistinctFinalAggregator {

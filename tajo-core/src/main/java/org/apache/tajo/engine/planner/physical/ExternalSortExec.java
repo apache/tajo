@@ -524,7 +524,7 @@ public class ExternalSortExec extends SortExec {
       final int mid = (int) Math.ceil((float)num / 2);
       Scanner left = createKWayMergerInternal(sources, startIdx, mid);
       Scanner right = createKWayMergerInternal(sources, startIdx + mid, num - mid);
-      if (ComparableVector.isApplicable(sortSpecs)) {
+      if (ComparableVector.isVectorizable(sortSpecs)) {
         return new VectorComparePairWiseMerger(inSchema, left, right, comparator);
       }
       return new PairWiseMerger(inSchema, left, right, comparator);
