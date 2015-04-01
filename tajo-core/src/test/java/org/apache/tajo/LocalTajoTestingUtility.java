@@ -56,16 +56,6 @@ public class LocalTajoTestingUtility {
   private TajoConf conf;
   private TajoClient client;
 
-  private static UserGroupInformation dummyUserInfo;
-
-  static {
-    try {
-      dummyUserInfo = UserGroupInformation.getCurrentUser();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-  }
-
   private static int taskAttemptId;
 
   public static TaskAttemptId newTaskAttemptId() {
@@ -77,7 +67,7 @@ public class LocalTajoTestingUtility {
   }
 
   public static Session createDummySession() {
-    return new Session(UUID.randomUUID().toString(), dummyUserInfo.getUserName(), TajoConstants.DEFAULT_DATABASE_NAME);
+    return new Session(UUID.randomUUID().toString(), "tajo-test", TajoConstants.DEFAULT_DATABASE_NAME);
   }
 
   public static QueryContext createDummyContext(TajoConf conf) {
