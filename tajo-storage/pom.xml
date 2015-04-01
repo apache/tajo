@@ -35,6 +35,7 @@
     <module>tajo-storage-common</module>
     <module>tajo-storage-hdfs</module>
     <module>tajo-storage-hbase</module>
+    <module>tajo-storage-elasticsearch</module>
   </modules>
 
   <build>
