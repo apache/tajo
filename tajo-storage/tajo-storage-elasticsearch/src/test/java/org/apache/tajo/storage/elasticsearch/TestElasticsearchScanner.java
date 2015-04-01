@@ -147,22 +147,6 @@ public class TestElasticsearchScanner {
     client.admin().indices().prepareRefresh("test-index").execute().actionGet();
 
     // run scanner
-    /*
-    create external table testIndex (
-      _type text,
-      _score  double,
-      _id text,
-      field1  bigint,
-      field2  text,
-      field3  text
-    ) using elasticsearch
-    with (
-      'es.cluster'='testTajoCluster',
-      'es.nodes'='localhost:9300',
-      'es.index'='testIndex',
-      'es.type'='testType'
-    )
-     */
     conf = new TajoConf();
 
     schema = new Schema();
