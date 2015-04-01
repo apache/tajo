@@ -31,6 +31,7 @@ import java.sql.SQLException;
 
 public class MySQLStore extends AbstractDBStore {
 
+  /** 4 - 2015-03-27: Partition Schema (TAJO-1284) */
   /** 3 - 2015-03-12: Nested Schema (TAJO-1329) */
   /** 2 - 2014-06-09: First versioning */
   /**
