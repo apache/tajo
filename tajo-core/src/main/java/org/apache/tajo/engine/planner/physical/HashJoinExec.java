@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.engine.planner.physical.ComparableVector.ComparableTuple;
 import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.utils.CacheHolder;
 import org.apache.tajo.engine.utils.TableCacheKey;
@@ -47,10 +48,12 @@ public class HashJoinExec extends BinaryPhysicalExec {
   protected boolean first = true;
   protected FrameTuple frameTuple;
   protected Tuple outTuple = null;
-  protected Map<Tuple, List<Tuple>> tupleSlots;
+  protected Map<ComparableTuple, List<Tuple>> tupleSlots;
   protected Iterator<Tuple> iterator = null;
   protected Tuple leftTuple;
-  protected Tuple leftKeyTuple;
+
+  protected ComparableTuple leftKeyTuple;
+  protected ComparableTuple rightKeyTuple;
 
   protected int [] leftKeyList;
   protected int [] rightKeyList;
@@ -91,7 +94,8 @@ public class HashJoinExec extends BinaryPhysicalExec {
     // for join
     frameTuple = new FrameTuple();
     outTuple = new VTuple(outSchema.size());
-    leftKeyTuple = new VTuple(leftKeyList.length);
+    leftKeyTuple = new ComparableTuple(leftExec.getSchema(), leftKeyList);
+    rightKeyTuple = new ComparableTuple(rightExec.getSchema(), rightKeyList);
   }
 
   @Override
@@ -123,7 +127,7 @@ public class HashJoinExec extends BinaryPhysicalExec {
         }
 
         // getting corresponding right
-        getKeyLeftTuple(leftTuple, leftKeyTuple); // get a left key tuple
+        leftKeyTuple.set(leftTuple);
         List<Tuple> rightTuples = tupleSlots.get(leftKeyTuple);
         if (rightTuples != null) { // found right tuples on in-memory hash table.
           iterator = rightTuples.iterator();
@@ -172,39 +176,34 @@ public class HashJoinExec extends BinaryPhysicalExec {
     ExecutionBlockSharedResource sharedResource = context.getSharedResource();
     synchronized (sharedResource.getLock()) {
       if (sharedResource.hasBroadcastCache(key)) {
-        CacheHolder<Map<Tuple, List<Tuple>>> data = sharedResource.getBroadcastCache(key);
+        CacheHolder<Map<ComparableTuple, List<Tuple>>> data = sharedResource.getBroadcastCache(key);
         this.tupleSlots = data.getData();
         this.cachedRightTableStats = data.getTableStats();
       } else {
         CacheHolder.BroadcastCacheHolder holder =
             new CacheHolder.BroadcastCacheHolder(buildRightToHashTable(), rightChild.getInputStats(), null);
         sharedResource.addBroadcastCache(key, holder);
-        CacheHolder<Map<Tuple, List<Tuple>>> data = sharedResource.getBroadcastCache(key);
+        CacheHolder<Map<ComparableTuple, List<Tuple>>> data = sharedResource.getBroadcastCache(key);
         this.tupleSlots = data.getData();
         this.cachedRightTableStats = data.getTableStats();
       }
     }
   }
 
-  private Map<Tuple, List<Tuple>> buildRightToHashTable() throws IOException {
+  private Map<ComparableTuple, List<Tuple>> buildRightToHashTable() throws IOException {
+    Map<ComparableTuple, List<Tuple>> map = new HashMap<ComparableTuple, List<Tuple>>(100000);
+
     Tuple tuple;
-    Tuple keyTuple;
-    Map<Tuple, List<Tuple>> map = new HashMap<Tuple, List<Tuple>>(100000);
-
     while (!context.isStopped() && (tuple = rightChild.next()) != null) {
-      keyTuple = new VTuple(joinKeyPairs.size());
-      for (int i = 0; i < rightKeyList.length; i++) {
-        keyTuple.put(i, tuple.get(rightKeyList[i]));
-      }
-
-      List<Tuple> newValue = map.get(keyTuple);
+      rightKeyTuple.set(tuple);
+      List<Tuple> newValue = map.get(rightKeyTuple);
 
       if (newValue != null) {
         newValue.add(tuple);
       } else {
         newValue = new ArrayList<Tuple>();
         newValue.add(tuple);
-        map.put(keyTuple, newValue);
+        map.put(rightKeyTuple.copy(), newValue);
       }
     }
 
