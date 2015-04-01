@@ -25,7 +25,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.pullserver.PullServerAuxService.PullServer;
 import org.apache.tajo.util.StringUtils;
 
 public class TajoPullServer extends CompositeService {
@@ -40,6 +39,9 @@ public class TajoPullServer extends CompositeService {
 
   @Override
   public void init(Configuration conf) {
+    if (!(conf instanceof TajoConf)) {
+      throw new IllegalArgumentException("Configuration must be a TajoConf instance");
+    }
     this.systemConf = (TajoConf)conf;
     pullService = new TajoPullServerService();
     addService(pullService);
@@ -58,7 +60,7 @@ public class TajoPullServer extends CompositeService {
   }
 
   public static void main(String[] args) throws Exception {
-    StringUtils.startupShutdownMessage(PullServer.class, args, LOG);
+    StringUtils.startupShutdownMessage(TajoPullServerService.PullServer.class, args, LOG);
 
     if (!TajoPullServerService.isStandalone()) {
       LOG.fatal("TAJO_PULLSERVER_STANDALONE env variable is not 'true'");
