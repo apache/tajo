@@ -23,9 +23,9 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.engine.planner.physical.ComparableVector.ComparableTuple;
 import org.apache.tajo.plan.logical.StoreTableNode;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.StringUtils;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -36,35 +36,24 @@ import java.io.IOException;
  * ascending or descending order of partition columns.
  */
 public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
-  private Tuple currentKey;
-  private Tuple prevKey;
+
+  private ComparableTuple prevKey;
 
   public SortBasedColPartitionStoreExec(TaskAttemptContext context, StoreTableNode plan, PhysicalExec child)
       throws IOException {
     super(context, plan, child);
   }
 
-  public void init() throws IOException {
-    super.init();
-
-    currentKey = new VTuple(keyNum);
-  }
-
-  private void fillKeyTuple(Tuple inTuple, Tuple keyTuple) {
-    for (int i = 0; i < keyIds.length; i++) {
-      keyTuple.put(i, inTuple.get(keyIds[i]));
-    }
-  }
+  private transient StringBuilder sb = new StringBuilder();
 
   private String getSubdirectory(Tuple keyTuple) {
-    StringBuilder sb = new StringBuilder();
-
+    sb.setLength(0);
     for(int i = 0; i < keyIds.length; i++) {
-      Datum datum = keyTuple.get(i);
-      if(i > 0) {
-        sb.append("/");
+      Datum datum = keyTuple.get(keyIds[i]);
+      if (i > 0) {
+        sb.append('/');
       }
-      sb.append(keyNames[i]).append("=");      
+      sb.append(keyNames[i]).append('=');
       sb.append(StringUtils.escapePathName(datum.asChars()));
     }
     return sb.toString();
@@ -75,22 +64,19 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
     Tuple tuple;
     while(!context.isStopped() && (tuple = child.next()) != null) {
 
-      fillKeyTuple(tuple, currentKey);
-
       if (prevKey == null) {
-        appender = getNextPartitionAppender(getSubdirectory(currentKey));
-        prevKey = new VTuple(currentKey);
-      } else {
-        if (!prevKey.equals(currentKey)) {
-          appender.close();
-          StatisticsUtil.aggregateTableStat(aggregatedStats, appender.getStats());
+        appender = getNextPartitionAppender(getSubdirectory(tuple));
+        prevKey = new ComparableTuple(inSchema, keyIds);
+        prevKey.set(tuple);
+      } else if (!prevKey.equals(tuple)) {
+        appender.close();
+        StatisticsUtil.aggregateTableStat(aggregatedStats, appender.getStats());
 
-          appender = getNextPartitionAppender(getSubdirectory(currentKey));
-          prevKey = new VTuple(currentKey);
+        appender = getNextPartitionAppender(getSubdirectory(tuple));
+        prevKey.set(tuple);
 
-          // reset all states for file rotating
-          writtenFileNum = 0;
-        }
+        // reset all states for file rotating
+        writtenFileNum = 0;
       }
 
       appender.addTuple(tuple);
@@ -116,10 +102,5 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
       StatisticsUtil.aggregateTableStat(aggregatedStats, appender.getStats());
       context.setResultStats(aggregatedStats);
     }
-  }
-
-  @Override
-  public void rescan() throws IOException {
-    // nothing to do
   }
 }

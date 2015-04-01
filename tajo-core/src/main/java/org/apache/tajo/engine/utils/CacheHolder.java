@@ -21,6 +21,7 @@ package org.apache.tajo.engine.utils;
 import com.google.common.collect.Maps;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.engine.planner.physical.ComparableVector.ComparableTuple;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.fragment.Fragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
@@ -53,19 +54,20 @@ public interface CacheHolder<T> {
    * This is a cache-holder for a join table
    * It will release when execution block is finished
    */
-  public static class BroadcastCacheHolder implements CacheHolder<Map<Tuple, List<Tuple>>> {
-    private Map<Tuple, List<Tuple>> data;
+  public static class BroadcastCacheHolder implements CacheHolder<Map<ComparableTuple, List<Tuple>>> {
+    private Map<ComparableTuple, List<Tuple>> data;
     private Deallocatable rowBlock;
     private TableStats tableStats;
 
-    public BroadcastCacheHolder(Map<Tuple, List<Tuple>> data, TableStats tableStats, Deallocatable rowBlock){
+    public BroadcastCacheHolder(Map<ComparableTuple, List<Tuple>> data,
+                                TableStats tableStats, Deallocatable rowBlock){
       this.data = data;
       this.tableStats = tableStats;
       this.rowBlock = rowBlock;
     }
 
     @Override
-    public Map<Tuple, List<Tuple>> getData() {
+    public Map<ComparableTuple, List<Tuple>> getData() {
       return Maps.newHashMap(data);
     }
 

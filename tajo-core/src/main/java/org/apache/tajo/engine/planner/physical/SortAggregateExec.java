@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.engine.planner.physical.ComparableVector.ComparableTuple;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.logical.GroupbyNode;
 import org.apache.tajo.storage.Tuple;
@@ -42,7 +43,7 @@ import java.io.IOException;
  * it makes an output tuple.
  */
 public class SortAggregateExec extends AggregationExec {
-  private Tuple lastKey = null;
+  private ComparableTuple lastKey = null;
   private boolean finished = false;
   private FunctionContext contexts[];
 
@@ -53,19 +54,13 @@ public class SortAggregateExec extends AggregationExec {
 
   @Override
   public Tuple next() throws IOException {
-    Tuple currentKey;
     Tuple tuple = null;
     Tuple outputTuple = null;
 
     while(!context.isStopped() && (tuple = child.next()) != null) {
-      // get a key tuple
-      currentKey = new VTuple(groupingKeyIds.length);
-      for(int i = 0; i < groupingKeyIds.length; i++) {
-        currentKey.put(i, tuple.get(groupingKeyIds[i]));
-      }
-
+      groupingKey.set(tuple);
       /** Aggregation State */
-      if (lastKey == null || lastKey.equals(currentKey)) {
+      if (lastKey == null || lastKey.equals(groupingKey)) {
         if (lastKey == null) {
           for(int i = 0; i < aggFunctionsNum; i++) {
             contexts[i] = aggFunctions[i].newContext();
@@ -76,7 +71,7 @@ public class SortAggregateExec extends AggregationExec {
               aggFunctions[i].merge(contexts[i], inSchema, tuple);
             }
           }
-          lastKey = currentKey;
+          lastKey = groupingKey.copy();
         } else {
           // aggregate
           for (int i = 0; i < aggFunctionsNum; i++) {
@@ -90,7 +85,7 @@ public class SortAggregateExec extends AggregationExec {
         int tupleIdx = 0;
 
         for(; tupleIdx < groupingKeyNum; tupleIdx++) {
-          outputTuple.put(tupleIdx, lastKey.get(tupleIdx));
+          outputTuple.put(tupleIdx, lastKey.toDatum(tupleIdx));
         }
         for(int aggFuncIdx = 0; aggFuncIdx < aggFunctionsNum; tupleIdx++, aggFuncIdx++) {
           outputTuple.put(tupleIdx, aggFunctions[aggFuncIdx].terminate(contexts[aggFuncIdx]));
@@ -101,7 +96,7 @@ public class SortAggregateExec extends AggregationExec {
           aggFunctions[evalIdx].merge(contexts[evalIdx], inSchema, tuple);
         }
 
-        lastKey = currentKey;
+        lastKey = groupingKey.copy();
         return outputTuple;
       }
     } // while loop
@@ -114,7 +109,7 @@ public class SortAggregateExec extends AggregationExec {
       outputTuple = new VTuple(outSchema.size());
       int tupleIdx = 0;
       for(; tupleIdx < groupingKeyNum; tupleIdx++) {
-        outputTuple.put(tupleIdx, lastKey.get(tupleIdx));
+        outputTuple.put(tupleIdx, lastKey.toDatum(tupleIdx));
       }
       for(int aggFuncIdx = 0; aggFuncIdx < aggFunctionsNum; tupleIdx++, aggFuncIdx++) {
         outputTuple.put(tupleIdx, aggFunctions[aggFuncIdx].terminate(contexts[aggFuncIdx]));

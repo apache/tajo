@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.tajo.catalog.statistics.StatisticsUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.engine.planner.physical.ComparableVector.ComparableTuple;
 import org.apache.tajo.plan.logical.StoreTableNode;
 import org.apache.tajo.storage.Appender;
 import org.apache.tajo.storage.Tuple;
@@ -37,26 +38,35 @@ import java.util.Map;
  * This class is a physical operator to store at column partitioned table.
  */
 public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
-  private final Map<String, Appender> appenderMap = new HashMap<String, Appender>();
+
+  private final ComparableTuple partKey;
+  private final Map<ComparableTuple, Appender> appenderMap = new HashMap<ComparableTuple, Appender>();
 
   public HashBasedColPartitionStoreExec(TaskAttemptContext context, StoreTableNode plan, PhysicalExec child)
       throws IOException {
     super(context, plan, child);
+    partKey = new ComparableTuple(inSchema, keyIds);
   }
 
-  public void init() throws IOException {
-    super.init();
-  }
+  private transient final StringBuilder sb = new StringBuilder();
 
-  private Appender getAppender(String partition) throws IOException {
-    Appender appender = appenderMap.get(partition);
-
-    if (appender == null) {
-      appender = getNextPartitionAppender(partition);
-      appenderMap.put(partition, appender);
-    } else {
-      appender = appenderMap.get(partition);
+  private Appender getAppender(ComparableTuple partitionKey, Tuple tuple) throws IOException {
+    Appender appender = appenderMap.get(partitionKey);
+    if (appender != null) {
+      return appender;
     }
+    sb.setLength(0);
+    for (int i = 0; i < keyNum; i++) {
+      if (i > 0) {
+        sb.append('/');
+      }
+      sb.append(keyNames[i]).append('=');
+      Datum datum = tuple.get(keyIds[i]);
+      sb.append(StringUtils.escapePathName(datum.asChars()));
+    }
+    appender = getNextPartitionAppender(sb.toString());
+
+    appenderMap.put(partitionKey.copy(), appender);
     return appender;
   }
 
@@ -66,28 +76,14 @@ public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
   @Override
   public Tuple next() throws IOException {
     Tuple tuple;
-    StringBuilder sb = new StringBuilder();
     while(!context.isStopped() && (tuple = child.next()) != null) {
-      // set subpartition directory name
-      sb.delete(0, sb.length());
-      if (keyIds != null) {
-        for(int i = 0; i < keyIds.length; i++) {
-          Datum datum = tuple.get(keyIds[i]);
-          if(i > 0)
-            sb.append("/");
-          sb.append(keyNames[i]).append("=");
-          sb.append(StringUtils.escapePathName(datum.asChars()));
-        }
-      }
-
+      partKey.set(tuple);
       // add tuple
-      Appender appender = getAppender(sb.toString());
-      appender.addTuple(tuple);
+      getAppender(partKey, tuple).addTuple(tuple);
     }
 
     List<TableStats> statSet = new ArrayList<TableStats>();
-    for (Map.Entry<String, Appender> entry : appenderMap.entrySet()) {
-      Appender app = entry.getValue();
+    for (Appender app : appenderMap.values()) {
       app.flush();
       app.close();
       statSet.add(app.getStats());
@@ -98,10 +94,5 @@ public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
     context.setResultStats(aggregated);
 
     return null;
-  }
-
-  @Override
-  public void rescan() throws IOException {
-    // nothing to do
   }
 }

@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.planner.physical;
 
+import org.apache.tajo.engine.planner.physical.ComparableVector.ComparableTuple;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.logical.GroupbyNode;
 import org.apache.tajo.storage.Tuple;
@@ -35,44 +36,38 @@ import java.util.Map.Entry;
  */
 public class HashAggregateExec extends AggregationExec {
   private Tuple tuple = null;
-  private Map<Tuple, FunctionContext[]> hashTable;
+  private Map<ComparableTuple, FunctionContext[]> hashTable;
   private boolean computed = false;
-  private Iterator<Entry<Tuple, FunctionContext []>> iterator = null;
+  private Iterator<Entry<ComparableTuple, FunctionContext []>> iterator = null;
 
   public HashAggregateExec(TaskAttemptContext ctx, GroupbyNode plan, PhysicalExec subOp) throws IOException {
     super(ctx, plan, subOp);
-    hashTable = new HashMap<Tuple, FunctionContext []>(100000);
+    hashTable = new HashMap<ComparableTuple, FunctionContext []>(100000);
     this.tuple = new VTuple(plan.getOutSchema().size());
   }
 
   private void compute() throws IOException {
     Tuple tuple;
-    Tuple keyTuple;
     while(!context.isStopped() && (tuple = child.next()) != null) {
-      keyTuple = new VTuple(groupingKeyIds.length);
-      // build one key tuple
-      for(int i = 0; i < groupingKeyIds.length; i++) {
-        keyTuple.put(i, tuple.get(groupingKeyIds[i]));
-      }
+      groupingKey.set(tuple);
 
-      FunctionContext [] contexts = hashTable.get(keyTuple);
-      if(contexts != null) {
-        for(int i = 0; i < aggFunctions.length; i++) {
-          aggFunctions[i].merge(contexts[i], inSchema, tuple);
-        }
-      } else { // if the key occurs firstly
+      FunctionContext [] contexts = hashTable.get(groupingKey);
+      if (contexts == null) {
+        // if the key occurs firstly
         contexts = new FunctionContext[aggFunctionsNum];
         for(int i = 0; i < aggFunctionsNum; i++) {
           contexts[i] = aggFunctions[i].newContext();
-          aggFunctions[i].merge(contexts[i], inSchema, tuple);
         }
-        hashTable.put(keyTuple, contexts);
+        hashTable.put(groupingKey.copy(), contexts);
+      }
+      for(int i = 0; i < aggFunctions.length; i++) {
+        aggFunctions[i].merge(contexts[i], inSchema, tuple);
       }
     }
 
     // If HashAggregateExec received NullDatum and didn't has any grouping keys,
     // it should return primitive values for NullLDatum.
-    if (groupingKeyNum == 0 && aggFunctionsNum > 0 && hashTable.entrySet().size() == 0) {
+    if (groupingKeyNum == 0 && aggFunctionsNum > 0 && hashTable.isEmpty()) {
       FunctionContext[] contexts = new FunctionContext[aggFunctionsNum];
       for(int i = 0; i < aggFunctionsNum; i++) {
         contexts[i] = aggFunctions[i].newContext();
@@ -92,13 +87,13 @@ public class HashAggregateExec extends AggregationExec {
     FunctionContext [] contexts;
 
     if (iterator.hasNext()) {
-      Entry<Tuple, FunctionContext []> entry = iterator.next();
-      Tuple keyTuple = entry.getKey();
+      Entry<ComparableTuple, FunctionContext []> entry = iterator.next();
+      ComparableTuple keyTuple = entry.getKey();
       contexts =  entry.getValue();
 
       int tupleIdx = 0;
       for (; tupleIdx < groupingKeyNum; tupleIdx++) {
-        tuple.put(tupleIdx, keyTuple.get(tupleIdx));
+        tuple.put(tupleIdx, keyTuple.toDatum(tupleIdx));
       }
       for (int funcIdx = 0; funcIdx < aggFunctionsNum; funcIdx++, tupleIdx++) {
         tuple.put(tupleIdx, aggFunctions[funcIdx].terminate(contexts[funcIdx]));

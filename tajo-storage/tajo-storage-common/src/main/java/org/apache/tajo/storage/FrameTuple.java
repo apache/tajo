@@ -52,6 +52,16 @@ public class FrameTuple implements Tuple, Cloneable {
     this.right = right;
   }
 
+  public void setLeft(Tuple left) {
+    this.left = left;
+    this.leftSize = left.size();
+  }
+
+  public void setRight(Tuple right) {
+    this.right = right;
+    this.size = leftSize + right.size();
+  }
+
   @Override
   public int size() {
     return size;

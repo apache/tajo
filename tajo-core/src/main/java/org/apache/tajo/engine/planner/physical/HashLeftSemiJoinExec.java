@@ -80,7 +80,7 @@ public class HashLeftSemiJoinExec extends HashJoinExec {
       }
 
       // Try to find a hash bucket in in-memory hash table
-      getKeyLeftTuple(leftTuple, leftKeyTuple);
+      leftKeyTuple.set(leftTuple);
       List<Tuple> rightTuples = tupleSlots.get(leftKeyTuple);
       if (rightTuples != null) {
         // if found, it gets a hash bucket from the hash table.
