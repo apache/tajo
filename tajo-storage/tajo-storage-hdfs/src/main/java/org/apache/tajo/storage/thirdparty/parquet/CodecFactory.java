@@ -34,7 +34,7 @@ import java.util.Map;
 
 class CodecFactory {
 
-  public class BytesDecompressor {
+  public static class BytesDecompressor {
 
     private final CompressionCodec codec;
     private final Decompressor decompressor;
