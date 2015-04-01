@@ -107,6 +107,8 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1482: Cleanup the legacy cluster mode. (jinho)
+
     TAJO-1439: Some method name is written wrongly. 
     (Contributed by Jongyoung Park. Committed by jihoon)
 
