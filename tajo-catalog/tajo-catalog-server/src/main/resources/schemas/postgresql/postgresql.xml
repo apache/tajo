@@ -154,17 +154,11 @@ xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.
   				PARTITION_VALUE VARCHAR(1024),
   				PATH VARCHAR(4096),
   				FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE,
-  				CONSTRAINT C_PARTITION_UNIQUE UNIQUE (TID, PARTITION_NAME)
+  				CONSTRAINT C_PARTITION_UNIQUE UNIQUE (PARTITION_NAME)
 				)]]>
 				</tns:sql>
 			</tns:Object>
-			<tns:Object name="PARTITIONS_IDX_TID" type="index" order="16" dependsOn="PARTITIONS">
-				<tns:sql><![CDATA[CREATE INDEX PARTITIONS_IDX_TID on PARTITIONS (TID)]]></tns:sql>
-			</tns:Object>
-			<tns:Object name="IDX_TID_NAME" type="index" order="17" dependsOn="PARTITIONS">
-				<tns:sql><![CDATA[CREATE UNIQUE INDEX IDX_TID_NAME on PARTITIONS (TID, PARTITION_NAME)]]></tns:sql>
-			</tns:Object>
-      <tns:Object name="PARTITION_KEYS" type="table" order="18">
+      <tns:Object name="PARTITION_KEYS" type="table" order="16">
         <tns:sql><![CDATA[
           CREATE TABLE PARTITION_KEYS (
             PARTITION_ID INT NOT NULL,
@@ -174,7 +168,7 @@ xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.
 				)]]>
         </tns:sql>
       </tns:Object>
-      <tns:Object name="PARTITION_KEYS_IDX" type="index" order="19" dependsOn="PARTITION_KEYS">
+      <tns:Object name="PARTITION_KEYS_IDX" type="index" order="17" dependsOn="PARTITION_KEYS">
         <tns:sql><![CDATA[CREATE INDEX PARTITION_KEYS_IDX on PARTITION_KEYS (PARTITION_ID, COLUMN_NAME, PARTITION_VALUE)]]></tns:sql>
       </tns:Object>
 		</tns:objects>

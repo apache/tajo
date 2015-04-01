@@ -211,10 +211,7 @@
 				END;]]>
         </tns:sql>
       </tns:Object>
-  		<tns:Object order="21" type="index" name="PARTITIONS_IDX" dependsOn="PARTITIONS">
-  			<tns:sql><![CDATA[CREATE INDEX PARTITIONS_IDX on PARTITIONS (PARTITION_ID, TID, PARTITION_NAME)]]></tns:sql>
-  		</tns:Object>
-      <tns:Object order="22" type="table" name="PARTITION_KEYS">
+      <tns:Object order="21" type="table" name="PARTITION_KEYS">
         <tns:sql><![CDATA[
           CREATE TABLE PARTITION_KEYS (
             PARTITION_ID INT NOT NULL,
