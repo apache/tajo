@@ -46,6 +46,7 @@ public abstract class NettyClientBase implements Closeable {
 
   private Bootstrap bootstrap;
   private volatile ChannelFuture channelFuture;
+  private volatile long lastConnected = -1;
 
   protected final Class<?> protocol;
   protected final AtomicInteger sequence = new AtomicInteger(0);
@@ -106,20 +107,20 @@ public abstract class NettyClientBase implements Closeable {
   }
 
   private boolean checkConnection(long timeout) {
-    if (isConnected()) {
-      return true;
-    }
+    return isConnected() || handleConnectionInternally(key.addr, timeout);
+  }
 
-    InetSocketAddress addr = key.addr;
-    if (addr.isUnresolved()) {
-      addr = RpcUtils.createSocketAddr(addr.getHostName(), addr.getPort());
+  private InetSocketAddress resolveAddress(InetSocketAddress address) {
+    if (address.isUnresolved()) {
+      return RpcUtils.createSocketAddr(address.getHostName(), address.getPort());
     }
-
-    return handleConnectionInternally(addr, timeout);
+    return address;
   }
 
   private void connectUsingNetty(InetSocketAddress address, GenericFutureListener<ChannelFuture> listener) {
-    LOG.warn("Try to connect : " + address);
+    if (lastConnected > 0) {
+      LOG.warn("Try to reconnect : " + address);
+    }
     this.channelFuture = bootstrap.clone().group(RpcChannelFactory.getSharedClientEventloopGroup())
             .connect(address)
             .addListener(listener);
@@ -139,7 +140,8 @@ public abstract class NettyClientBase implements Closeable {
     }
 
     if (ticket == granted) {
-      connectUsingNetty(addr, new RetryConnectionListener(addr, granted));
+      InetSocketAddress address = resolveAddress(addr);
+      connectUsingNetty(address, new RetryConnectionListener(address, granted));
     }
 
     try {
@@ -173,12 +175,11 @@ public abstract class NettyClientBase implements Closeable {
         channelFuture.channel().close();
 
         if (numRetries > retryCount.getAndIncrement()) {
-          final GenericFutureListener<ChannelFuture> currentListener = this;
 
           RpcChannelFactory.getSharedClientEventloopGroup().schedule(new Runnable() {
             @Override
             public void run() {
-              connectUsingNetty(address, currentListener);
+              connectUsingNetty(address, RetryConnectionListener.this);
             }
           }, PAUSE, TimeUnit.MILLISECONDS);
 
@@ -192,6 +193,7 @@ public abstract class NettyClientBase implements Closeable {
       }
       else {
         latch.countDown();
+        lastConnected = System.currentTimeMillis();
       }
     }
   }

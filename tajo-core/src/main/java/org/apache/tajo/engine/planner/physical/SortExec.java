@@ -22,13 +22,14 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.List;
 
 public abstract class SortExec extends UnaryPhysicalExec {
+
   protected final BaseTupleComparator comparator;
   protected final SortSpec [] sortSpecs;
 
@@ -37,6 +38,13 @@ public abstract class SortExec extends UnaryPhysicalExec {
     super(context, inSchema, outSchema, child);
     this.sortSpecs = sortSpecs;
     this.comparator = new BaseTupleComparator(inSchema, sortSpecs);
+  }
+
+  protected TupleSorter getSorter(List<Tuple> tupleSlots) {
+    if (!tupleSlots.isEmpty() && ComparableVector.isVectorizable(sortSpecs)) {
+      return new VectorizedSorter(tupleSlots, sortSpecs, comparator.getSortKeyIds());
+    }
+    return new TupleSorter.DefaultSorter(tupleSlots, comparator);
   }
 
   public SortSpec[] getSortSpecs() {
