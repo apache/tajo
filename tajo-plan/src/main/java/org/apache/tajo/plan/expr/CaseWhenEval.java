@@ -22,7 +22,6 @@ import com.google.common.collect.Lists;
 import com.google.gson.annotations.Expose;
 
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -105,15 +104,17 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
     return "?";
   }
 
-  public Datum eval(Schema schema, Tuple tuple) {
-    for (int i = 0; i < whens.size(); i++) {
-      if (whens.get(i).checkIfCondition(schema, tuple)) {
-        return whens.get(i).eval(schema, tuple);
+  @Override
+  @SuppressWarnings("unchecked")
+  public Datum eval(Tuple tuple) {
+    for (IfThenEval eval : whens) {
+      if (eval.checkIfCondition(tuple)) {
+        return eval.eval(tuple);
       }
     }
 
     if (elseResult != null) { // without else clause
-      return elseResult.eval(schema, tuple);
+      return elseResult.eval(tuple);
     }
 
     return NullDatum.get();
@@ -225,12 +226,14 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
       return "when?";
     }
 
-    public boolean checkIfCondition(Schema schema, Tuple tuple) {
-      return condition.eval(schema, tuple).isTrue();
+    public boolean checkIfCondition(Tuple tuple) {
+      return condition.eval(tuple).isTrue();
     }
 
-    public Datum eval(Schema schema, Tuple tuple) {
-      return result.eval(schema, tuple);
+    @Override
+    @SuppressWarnings("unchecked")
+    public Datum eval(Tuple tuple) {
+      return result.eval(tuple);
     }
 
     public void setCondition(EvalNode condition) {

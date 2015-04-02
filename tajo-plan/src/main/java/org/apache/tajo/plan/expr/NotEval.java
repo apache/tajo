@@ -19,7 +19,6 @@
 package org.apache.tajo.plan.expr;
 
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
@@ -44,8 +43,9 @@ public class NotEval extends UnaryEval implements Cloneable {
   }
 
   @Override
-  public Datum eval(Schema schema, Tuple tuple) {
-    Datum datum = child.eval(schema, tuple);
+  @SuppressWarnings("unchecked")
+  public Datum eval(Tuple tuple) {
+    Datum datum = child.eval(tuple);
     return !datum.isNull() ? DatumFactory.createBool(!datum.asBool()) : datum;
   }
 
