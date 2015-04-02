@@ -119,6 +119,7 @@ public class BinaryEval extends EvalNode implements Cloneable {
   @Override
   @SuppressWarnings("unchecked")
   public Datum eval(Tuple tuple) {
+    super.eval(tuple);
     Datum lhs = leftExpr.eval(tuple);
     Datum rhs = rightExpr.eval(tuple);
 

@@ -79,6 +79,7 @@ public class TestEvalTree extends ExprTestBase {
 
     @Override
     public Datum eval(Tuple tuple) {
+      super.eval(tuple);
       return DatumFactory.createBool(true);
     }
 
@@ -111,6 +112,7 @@ public class TestEvalTree extends ExprTestBase {
 
     @Override
     public Datum eval(Tuple tuple) {
+      super.eval(tuple);
       return DatumFactory.createBool(false);
     }
 
@@ -156,15 +158,19 @@ public class TestEvalTree extends ExprTestBase {
     MockFalseExpr falseExpr = new MockFalseExpr();
 
     BinaryEval andExpr = new BinaryEval(EvalType.AND, trueExpr, trueExpr);
+    andExpr.bind(null);
     assertTrue(andExpr.eval(null).asBool());
 
     andExpr = new BinaryEval(EvalType.AND, falseExpr, trueExpr);
+    andExpr.bind(null);
     assertFalse(andExpr.eval(null).asBool());
 
     andExpr = new BinaryEval(EvalType.AND, trueExpr, falseExpr);
+    andExpr.bind(null);
     assertFalse(andExpr.eval(null).asBool());
 
     andExpr = new BinaryEval(EvalType.AND, falseExpr, falseExpr);
+    andExpr.bind(null);
     assertFalse(andExpr.eval(null).asBool());
   }
 
@@ -174,15 +180,19 @@ public class TestEvalTree extends ExprTestBase {
     MockFalseExpr falseExpr = new MockFalseExpr();
 
     BinaryEval orExpr = new BinaryEval(EvalType.OR, trueExpr, trueExpr);
+    orExpr.bind(null);
     assertTrue(orExpr.eval(null).asBool());
 
     orExpr = new BinaryEval(EvalType.OR, falseExpr, trueExpr);
+    orExpr.bind(null);
     assertTrue(orExpr.eval(null).asBool());
 
     orExpr = new BinaryEval(EvalType.OR, trueExpr, falseExpr);
+    orExpr.bind(null);
     assertTrue(orExpr.eval(null).asBool());
 
     orExpr = new BinaryEval(EvalType.OR, falseExpr, falseExpr);
+    orExpr.bind(null);
     assertFalse(orExpr.eval(null).asBool());
   }
 
@@ -196,41 +206,41 @@ public class TestEvalTree extends ExprTestBase {
     e1 = new ConstEval(DatumFactory.createInt4(9));
     e2 = new ConstEval(DatumFactory.createInt4(34));
     expr = new BinaryEval(EvalType.LTH, e1, e2);
-    assertTrue(expr.eval(null).asBool());
+    assertTrue(expr.bind(null).eval(null).asBool());
     expr = new BinaryEval(EvalType.LEQ, e1, e2);
-    assertTrue(expr.eval(null).asBool());
+    assertTrue(expr.bind(null).eval(null).asBool());
     expr = new BinaryEval(EvalType.LTH, e2, e1);
-    assertFalse(expr.eval(null).asBool());
+    assertFalse(expr.bind(null).eval(null).asBool());
     expr = new BinaryEval(EvalType.LEQ, e2, e1);
-    assertFalse(expr.eval(null).asBool());
+    assertFalse(expr.bind(null).eval(null).asBool());
 
     expr = new BinaryEval(EvalType.GTH, e2, e1);
-    assertTrue(expr.eval(null).asBool());
+    assertTrue(expr.bind(null).eval(null).asBool());
     expr = new BinaryEval(EvalType.GEQ, e2, e1);
-    assertTrue(expr.eval(null).asBool());
+    assertTrue(expr.bind(null).eval(null).asBool());
     expr = new BinaryEval(EvalType.GTH, e1, e2);
-    assertFalse(expr.eval(null).asBool());
+    assertFalse(expr.bind(null).eval(null).asBool());
     expr = new BinaryEval(EvalType.GEQ, e1, e2);
-    assertFalse(expr.eval(null).asBool());
+    assertFalse(expr.bind(null).eval(null).asBool());
 
     BinaryEval plus = new BinaryEval(EvalType.PLUS, e1, e2);
     expr = new BinaryEval(EvalType.LTH, e1, plus);
-    assertTrue(expr.eval(null).asBool());
+    assertTrue(expr.bind(null).eval(null).asBool());
     expr = new BinaryEval(EvalType.LEQ, e1, plus);
-    assertTrue(expr.eval(null).asBool());
+    assertTrue(expr.bind(null).eval(null).asBool());
     expr = new BinaryEval(EvalType.LTH, plus, e1);
-    assertFalse(expr.eval(null).asBool());
+    assertFalse(expr.bind(null).eval(null).asBool());
     expr = new BinaryEval(EvalType.LEQ, plus, e1);
-    assertFalse(expr.eval(null).asBool());
+    assertFalse(expr.bind(null).eval(null).asBool());
 
     expr = new BinaryEval(EvalType.GTH, plus, e1);
-    assertTrue(expr.eval(null).asBool());
+    assertTrue(expr.bind(null).eval(null).asBool());
     expr = new BinaryEval(EvalType.GEQ, plus, e1);
-    assertTrue(expr.eval(null).asBool());
+    assertTrue(expr.bind(null).eval(null).asBool());
     expr = new BinaryEval(EvalType.GTH, e1, plus);
-    assertFalse(expr.eval(null).asBool());
+    assertFalse(expr.bind(null).eval(null).asBool());
     expr = new BinaryEval(EvalType.GEQ, e1, plus);
-    assertFalse(expr.eval(null).asBool());
+    assertFalse(expr.bind(null).eval(null).asBool());
   }
 
   @Test
@@ -243,28 +253,28 @@ public class TestEvalTree extends ExprTestBase {
     e1 = new ConstEval(DatumFactory.createInt4(9));
     e2 = new ConstEval(DatumFactory.createInt4(34));
     BinaryEval expr = new BinaryEval(EvalType.PLUS, e1, e2);
-    assertEquals(expr.eval(null).asInt4(), 43);
+    assertEquals(expr.bind(null).eval(null).asInt4(), 43);
     assertCloneEqual(expr);
     
     // MINUS
     e1 = new ConstEval(DatumFactory.createInt4(5));
     e2 = new ConstEval(DatumFactory.createInt4(2));
     expr = new BinaryEval(EvalType.MINUS, e1, e2);
-    assertEquals(expr.eval(null).asInt4(), 3);
+    assertEquals(expr.bind(null).eval(null).asInt4(), 3);
     assertCloneEqual(expr);
     
     // MULTIPLY
     e1 = new ConstEval(DatumFactory.createInt4(5));
     e2 = new ConstEval(DatumFactory.createInt4(2));
     expr = new BinaryEval(EvalType.MULTIPLY, e1, e2);
-    assertEquals(expr.eval(null).asInt4(), 10);
+    assertEquals(expr.bind(null).eval(null).asInt4(), 10);
     assertCloneEqual(expr);
     
     // DIVIDE
     e1 = new ConstEval(DatumFactory.createInt4(10));
     e2 = new ConstEval(DatumFactory.createInt4(5));
     expr = new BinaryEval(EvalType.DIVIDE, e1, e2);
-    assertEquals(expr.eval(null).asInt4(), 2);
+    assertEquals(expr.bind(null).eval(null).asInt4(), 2);
     assertCloneEqual(expr);
   }
 
@@ -280,7 +290,7 @@ public class TestEvalTree extends ExprTestBase {
     assertEquals(CatalogUtil.newSimpleDataType(INT4), expr.getValueType());
 
     expr = new BinaryEval(EvalType.LTH, e1, e2);
-    assertTrue(expr.eval(null).asBool());
+    assertTrue(expr.bind(null).eval(null).asBool());
     assertEquals(CatalogUtil.newSimpleDataType(BOOLEAN), expr.getValueType());
 
     e1 = new ConstEval(DatumFactory.createFloat8(9.3));

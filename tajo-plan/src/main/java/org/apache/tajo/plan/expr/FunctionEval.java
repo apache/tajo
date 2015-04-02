@@ -33,7 +33,7 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.DISTINCT_
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.DISTINCT_UDA;
 
 public abstract class FunctionEval extends EvalNode implements Cloneable {
-  public static enum ParamType {
+  public enum ParamType {
     CONSTANT, VARIABLE, NULL
   }
 
@@ -49,9 +49,10 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
 	}
 
   @Override
-  public void bind(Schema schema) {
+  public EvalNode bind(Schema schema) {
     super.bind(schema);
     this.params = new VTuple(argEvals.length);
+    return this;
   }
 
   protected final Tuple evalParams(Tuple tuple) {

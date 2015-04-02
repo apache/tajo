@@ -45,6 +45,7 @@ public class ConstEval extends EvalNode implements Comparable<ConstEval>, Clonea
   @Override
   @SuppressWarnings("unchecked")
   public Datum eval(Tuple tuple) {
+    super.eval(tuple);
     return datum;
   }
 
