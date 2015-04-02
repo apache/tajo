@@ -22,7 +22,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import io.netty.channel.EventLoopGroup;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -791,7 +790,7 @@ public class Task {
       boolean last = params.get("final") != null;
 
       try {
-        chunk = TajoPullServerService.getFileCunks(path, startKey, endKey, last);
+        chunk = TajoPullServerService.getFileChunks(path, startKey, endKey, last);
             } catch (Throwable t) {
         LOG.error("getFileChunks() throws exception");
         return null;
