@@ -10,6 +10,8 @@ Release 0.11.0 - unreleased
     (jihun)
 
   IMPROVEMENT
+
+    TAJO-1495: Clean up CatalogStore. (jaehwa)
    
     TAJO-1460: Apply TAJO-1407 to ExternalSortExec. (Contributed by navis, 
     Committed by hyoungjun)
