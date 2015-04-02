@@ -44,10 +44,6 @@ public class WorkerResponse {
   
   @Expose private long lastHeartbeatTime;
   
-  @Expose private boolean queryMasterMode;
-
-  @Expose private boolean taskRunnerMode;
-  
   public WorkerResponse(Worker worker) {
     this(worker.getResource());
     
@@ -67,9 +63,6 @@ public class WorkerResponse {
     this.totalHeap = resource.getTotalHeap();
     this.numRunningTasks = resource.getNumRunningTasks();
     this.numQueryMasterTasks = resource.getNumQueryMasterTasks();
-    
-    this.queryMasterMode = resource.isQueryMasterMode();
-    this.taskRunnerMode = resource.isTaskRunnerMode();
   }
 
   public WorkerConnectionInfoResponse getConnectionInfo() {
@@ -174,22 +167,6 @@ public class WorkerResponse {
 
   public void setLastHeartbeatTime(long lastHeartbeatTime) {
     this.lastHeartbeatTime = lastHeartbeatTime;
-  }
-
-  public boolean isQueryMasterMode() {
-    return queryMasterMode;
-  }
-
-  public void setQueryMasterMode(boolean queryMasterMode) {
-    this.queryMasterMode = queryMasterMode;
-  }
-
-  public boolean isTaskRunnerMode() {
-    return taskRunnerMode;
-  }
-
-  public void setTaskRunnerMode(boolean taskRunnerMode) {
-    this.taskRunnerMode = taskRunnerMode;
   }
   
 }
