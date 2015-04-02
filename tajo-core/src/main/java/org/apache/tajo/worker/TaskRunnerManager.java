@@ -18,7 +18,6 @@
 
 package org.apache.tajo.worker;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -63,7 +62,9 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
 
   @Override
   public void init(Configuration conf) {
-    Preconditions.checkArgument(conf instanceof TajoConf);
+    if (!(conf instanceof TajoConf)) {
+      throw new IllegalArgumentException("Configuration must be a TajoConf instance");
+    }
     tajoConf = (TajoConf)conf;
     dispatcher.register(TaskRunnerEvent.EventType.class, this);
     super.init(tajoConf);
@@ -98,18 +99,12 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
     }
 
     super.stop();
-    if(workerContext.isYarnContainerMode()) {
-      workerContext.stopWorker(true);
-    }
   }
 
   public void stopTaskRunner(String id) {
     LOG.info("Stop Task:" + id);
     TaskRunner taskRunner = taskRunnerMap.remove(id);
     taskRunner.stop();
-    if(workerContext.isYarnContainerMode()) {
-      stop();
-    }
   }
 
   public Collection<TaskRunner> getTaskRunners() {

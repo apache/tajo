@@ -189,9 +189,7 @@ message WorkerResourceInfo {
   required int32 numRunningTasks = 11;
   required string workerStatus = 12;
   required int64 lastHeartbeat = 13;
-  required bool queryMasterMode = 14;
-  required bool taskRunnerMode = 15;
-  required int32 numQueryMasterTasks = 16;
+  required int32 numQueryMasterTasks = 14;
 }
 
 message GetClusterInfoResponse {

@@ -59,7 +59,6 @@
   <hr/>
 
 <%
-if(tajoWorker.getWorkerContext().isQueryMasterMode()) {
   List<QueryMasterTask> queryMasterTasks = JSPUtil.sortQueryMasterTask(tajoWorker.getWorkerContext()
           .getQueryMasterManagerService().getQueryMaster().getQueryMasterTasks(), true);
 
@@ -122,8 +121,6 @@ if(tajoWorker.getWorkerContext().isQueryMasterMode()) {
   <p/>
   <hr/>
 <%
-} // end of QueryMaster
-if(tajoWorker.getWorkerContext().isTaskRunnerMode()) {
   List<TaskRunner> taskRunners = new ArrayList<TaskRunner>(tajoWorker.getWorkerContext().getTaskRunnerManager().getTaskRunners());
   JSPUtil.sortTaskRunner(taskRunners);
 %>
@@ -145,9 +142,6 @@ if(tajoWorker.getWorkerContext().isTaskRunnerMode()) {
       }   //end of for
 %>
   </table>
-<%
-} //end of if
-%>
 </div>
 </body>
 </html>
