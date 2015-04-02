@@ -24,7 +24,6 @@ import org.apache.tajo.DataTypeUtil;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.common.TajoDataTypes;
@@ -291,6 +290,8 @@ public class CatalogUtil {
       return StoreType.JSON;
     } else if (typeStr.equalsIgnoreCase(StoreType.HBASE.name())) {
       return StoreType.HBASE;
+    } else if (typeStr.equalsIgnoreCase(StoreType.ELASTICSEARCH.name())) {
+      return StoreType.ELASTICSEARCH;
     } else {
       return null;
     }
