@@ -680,7 +680,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
       } else {
         while (currentRow < cachedData.size()) {
           aTuple = cachedData.get(currentRow++);
-          if (qual.eval(inSchema, aTuple).isTrue()) {
+          if (qual.eval(aTuple).isTrue()) {
             projector.eval(aTuple, outTuple);
             return outTuple;
           }

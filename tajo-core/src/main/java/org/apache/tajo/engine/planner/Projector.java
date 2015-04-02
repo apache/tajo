@@ -58,11 +58,18 @@ public class Projector {
         evals[i] = this.targets[i].getEvalTree();
       }
     }
+    init();
+  }
+
+  public void init() {
+    for (EvalNode eval : evals) {
+      eval.bind(inSchema);
+    }
   }
 
   public void eval(Tuple in, Tuple out) {
     for (int i = 0; i < evals.length; i++) {
-      out.put(i, evals[i].eval(inSchema, in));
+      out.put(i, evals[i].eval(in));
     }
   }
 }

@@ -19,12 +19,9 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.utils.CacheHolder;
 import org.apache.tajo.engine.utils.TableCacheKey;
-import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.storage.FrameTuple;
@@ -36,10 +33,7 @@ import org.apache.tajo.worker.TaskAttemptContext;
 import java.io.IOException;
 import java.util.*;
 
-public class HashJoinExec extends BinaryPhysicalExec {
-  // from logical plan
-  protected JoinNode plan;
-  protected EvalNode joinQual;
+public class HashJoinExec extends CommonJoinExec {
 
   protected List<Column[]> joinKeyPairs;
 
@@ -58,17 +52,11 @@ public class HashJoinExec extends BinaryPhysicalExec {
   protected boolean finished = false;
   protected boolean shouldGetLeftTuple = true;
 
-  // projection
-  protected final Projector projector;
-
   private TableStats cachedRightTableStats;
 
   public HashJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftExec,
       PhysicalExec rightExec) {
-    super(context, SchemaUtil.merge(leftExec.getSchema(), rightExec.getSchema()), plan.getOutSchema(),
-        leftExec, rightExec);
-    this.plan = plan;
-    this.joinQual = plan.getJoinQual();
+    super(context, plan, leftExec, rightExec);
 
     // HashJoin only can manage equi join key pairs.
     this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, leftExec.getSchema(),
@@ -85,18 +73,10 @@ public class HashJoinExec extends BinaryPhysicalExec {
       rightKeyList[i] = rightExec.getSchema().getColumnId(joinKeyPairs.get(i)[1].getQualifiedName());
     }
 
-    // for projection
-    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
-
     // for join
     frameTuple = new FrameTuple();
     outTuple = new VTuple(outSchema.size());
     leftKeyTuple = new VTuple(leftKeyList.length);
-  }
-
-  @Override
-  protected void compile() {
-    joinQual = context.getPrecompiledEval(inSchema, joinQual);
   }
 
   protected void getKeyLeftTuple(final Tuple outerTuple, Tuple keyTuple) {
@@ -137,7 +117,7 @@ public class HashJoinExec extends BinaryPhysicalExec {
       // getting a next right tuple on in-memory hash table.
       rightTuple = iterator.next();
       frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
-      if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if both tuples are joinable
+      if (joinQual.eval(frameTuple).isTrue()) { // if both tuples are joinable
         projector.eval(frameTuple, outTuple);
         found = true;
       }
@@ -232,12 +212,6 @@ public class HashJoinExec extends BinaryPhysicalExec {
     }
 
     iterator = null;
-    plan = null;
-    joinQual = null;
-  }
-
-  public JoinNode getPlan() {
-    return this.plan;
   }
 
   @Override

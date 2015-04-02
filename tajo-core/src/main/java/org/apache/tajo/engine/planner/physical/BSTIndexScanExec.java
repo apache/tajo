@@ -111,7 +111,11 @@ public class BSTIndexScanExec extends PhysicalExec {
 
   @Override
   public void init() throws IOException {
+    super.init();
     progress = 0.0f;
+    if (qual != null) {
+      qual.bind(inSchema);
+    }
   }
 
   @Override
@@ -153,7 +157,7 @@ public class BSTIndexScanExec extends PhysicalExec {
       }
     } else {
        while(reader.isCurInMemory() && (tuple = fileScanner.next()) != null) {
-         if (qual.eval(inSchema, tuple).isTrue()) {
+         if (qual.eval(tuple).isTrue()) {
            projector.eval(tuple, outTuple);
            return outTuple;
          } else {
