@@ -24,7 +24,6 @@ import com.google.common.collect.Maps;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
@@ -37,7 +36,6 @@ import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.util.StringUtils;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -219,7 +217,7 @@ public class TupleUtil {
       Tuple tuple;
       while (iterator.hasNext()) {
         tuple = iterator.next();
-        if (qual.eval(schema, tuple).isTrue()) {
+        if (qual.eval(tuple).isTrue()) {
           results.add(tuple);
         }
       }

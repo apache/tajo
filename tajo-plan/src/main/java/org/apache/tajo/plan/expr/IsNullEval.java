@@ -21,7 +21,6 @@ package org.apache.tajo.plan.expr;
 import com.google.gson.annotations.Expose;
 
 import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
@@ -57,8 +56,9 @@ public class IsNullEval extends UnaryEval {
   }
 
   @Override
-  public Datum eval(Schema schema, Tuple tuple) {
-    boolean isNull = child.eval(schema, tuple).isNull();
+  @SuppressWarnings("unchecked")
+  public Datum eval(Tuple tuple) {
+    boolean isNull = child.eval(tuple).isNull();
     return DatumFactory.createBool(isNot ^ isNull);
   }
 

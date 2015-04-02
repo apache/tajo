@@ -16,41 +16,65 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.planner.physical;
+package org.apache.tajo.storage;
 
-import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.logical.HavingNode;
-import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.worker.TaskAttemptContext;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.statistics.TableStats;
 
 import java.io.IOException;
 
-public class HavingExec extends UnaryPhysicalExec  {
-  private final EvalNode qual;
-
-  public HavingExec(TaskAttemptContext context,
-                    HavingNode plan,
-                    PhysicalExec child) {
-    super(context, plan.getInSchema(), plan.getOutSchema(), child);
-
-    this.qual = plan.getQual();
-  }
+// dummy scanner
+public abstract class AbstractScanner implements Scanner {
 
   @Override
   public void init() throws IOException {
-    super.init();
-    qual.bind(inSchema);
+
   }
 
   @Override
-  public Tuple next() throws IOException {
-    Tuple tuple;
-    while (!context.isStopped() && (tuple = child.next()) != null) {
-      if (qual.eval(tuple).isTrue()) {
-        return tuple;
-      }
-    }
+  public void reset() throws IOException {
+  }
 
+  @Override
+  public void close() throws IOException {
+  }
+
+  @Override
+  public boolean isProjectable() {
+    return false;
+  }
+
+  @Override
+  public void setTarget(Column[] targets) {
+  }
+
+  @Override
+  public boolean isSelectable() {
+    return false;
+  }
+
+  @Override
+  public void setSearchCondition(Object expr) {
+  }
+
+  @Override
+  public boolean isSplittable() {
+    return false;
+  }
+
+  @Override
+  public float getProgress() {
+    return 0;
+  }
+
+  @Override
+  public TableStats getInputStats() {
+    return null;
+  }
+
+  @Override
+  public Schema getSchema() {
     return null;
   }
 }

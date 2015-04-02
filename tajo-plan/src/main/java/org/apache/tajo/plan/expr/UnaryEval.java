@@ -21,7 +21,6 @@ package org.apache.tajo.plan.expr;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
@@ -67,7 +66,7 @@ public abstract class UnaryEval extends EvalNode implements Cloneable {
   }
 
   @Override
-  public <T extends Datum> T eval(Schema schema, Tuple tuple) {
+  public <T extends Datum> T eval(Tuple tuple) {
     return null;
   }
 
