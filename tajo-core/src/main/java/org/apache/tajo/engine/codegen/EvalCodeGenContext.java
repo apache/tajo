@@ -54,7 +54,7 @@ public class EvalCodeGenContext extends TajoGeneratorAdapter {
     emitConstructor();
 
     String methodName = "eval";
-    String methodDesc = TajoGeneratorAdapter.getMethodDescription(Datum.class, new Class[]{Schema.class, Tuple.class});
+    String methodDesc = TajoGeneratorAdapter.getMethodDescription(Datum.class, new Class[]{Tuple.class});
     MethodVisitor evalMethod = classWriter.visitMethod(Opcodes.ACC_PUBLIC, methodName, methodDesc, null, null);
     evalMethod.visitCode();
     this.methodvisitor = evalMethod;

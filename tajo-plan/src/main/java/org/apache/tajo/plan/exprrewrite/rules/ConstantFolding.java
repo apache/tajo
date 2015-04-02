@@ -51,7 +51,8 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
     }
 
     if (lhs.getType() == EvalType.CONST && rhs.getType() == EvalType.CONST) {
-      return new ConstEval(binaryEval.eval(null, null));
+      binaryEval.bind(null);
+      return new ConstEval(binaryEval.eval(null));
     }
 
     return binaryEval;
@@ -64,7 +65,8 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
     stack.pop();
 
     if (child.getType() == EvalType.CONST) {
-      return new ConstEval(unaryEval.eval(null, null));
+      unaryEval.bind(null);
+      return new ConstEval(unaryEval.eval(null));
     }
 
     return unaryEval;
@@ -77,16 +79,15 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
     if (SLEEP_FUNCTION_NAME.equals(evalNode.getFuncDesc().getFunctionName())) {
       constantOfAllDescendents = false;
     } else {
-      if (evalNode.getArgs() != null) {
-        for (EvalNode arg : evalNode.getArgs()) {
-          arg = visit(context, arg, stack);
-          constantOfAllDescendents &= (arg.getType() == EvalType.CONST);
-        }
+      for (EvalNode arg : evalNode.getArgs()) {
+        arg = visit(context, arg, stack);
+        constantOfAllDescendents &= (arg.getType() == EvalType.CONST);
       }
     }
 
     if (constantOfAllDescendents && evalNode.getType() == EvalType.FUNCTION) {
-      return new ConstEval(evalNode.eval(null, null));
+      evalNode.bind(null);
+      return new ConstEval(evalNode.eval(null));
     } else {
       return evalNode;
     }
