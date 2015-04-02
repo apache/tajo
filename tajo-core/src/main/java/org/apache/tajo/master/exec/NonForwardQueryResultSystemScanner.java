@@ -18,14 +18,7 @@
 
 package org.apache.tajo.master.exec;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.Stack;
-
+import com.google.protobuf.ByteString;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.QueryId;
@@ -61,14 +54,15 @@ import org.apache.tajo.plan.logical.IndexScanNode;
 import org.apache.tajo.plan.logical.LogicalNode;
 import org.apache.tajo.plan.logical.ScanNode;
 import org.apache.tajo.storage.RowStoreUtil;
+import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
 
-import com.google.protobuf.ByteString;
+import java.io.IOException;
+import java.util.*;
 
 public class NonForwardQueryResultSystemScanner implements NonForwardQueryResultScanner {
   
@@ -523,22 +517,13 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   
   private List<Tuple> getClusterInfo(Schema outSchema) {
     Map<Integer, Worker> workerMap = masterContext.getResourceManager().getWorkers();
-    Set<Integer> keySet = workerMap.keySet();
-    List<Tuple> tuples = Collections.emptyList();
+    List<Tuple> tuples;
     List<Worker> queryMasterList = new ArrayList<Worker>();
     List<Worker> workerList = new ArrayList<Worker>();
     
-    for (Integer keyId: keySet) {
-      Worker aWorker = workerMap.get(keyId);
-      WorkerResource aResource = aWorker.getResource();
-      
-      if (aResource.isQueryMasterMode()) {
-        queryMasterList.add(aWorker);
-      }
-      
-      if (aResource.isTaskRunnerMode()) {
-        workerList.add(aWorker);
-      }
+    for (Worker aWorker: workerMap.values()) {
+      queryMasterList.add(aWorker);
+      workerList.add(aWorker);
     }
     
     tuples = new ArrayList<Tuple>(queryMasterList.size() + workerList.size());

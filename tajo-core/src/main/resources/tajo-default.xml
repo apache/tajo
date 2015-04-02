@@ -26,18 +26,6 @@
   </property>
 
   <property>
-    <name>tajo.worker.mode.querymaster</name>
-    <value>true</value>
-    <description></description>
-  </property>
-
-  <property>
-    <name>tajo.worker.mode.taskrunner</name>
-    <value>true</value>
-    <description></description>
-  </property>
-
-  <property>
     <name>tajo.querymaster.task-scheduler</name>
     <value>org.apache.tajo.querymaster.DefaultTaskScheduler</value>
   </property>

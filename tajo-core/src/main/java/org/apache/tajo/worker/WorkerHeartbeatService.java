@@ -18,7 +18,6 @@
 
 package org.apache.tajo.worker;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
@@ -26,7 +25,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.ClusterResourceSummary;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.ServerStatusProto;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.TajoHeartbeatResponse;
@@ -34,7 +32,6 @@ import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
-import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.storage.DiskDeviceInfo;
 import org.apache.tajo.storage.DiskMountInfo;
@@ -72,7 +69,9 @@ public class WorkerHeartbeatService extends AbstractService {
 
   @Override
   public void serviceInit(Configuration conf) throws Exception {
-    Preconditions.checkArgument(conf instanceof TajoConf, "Configuration must be a TajoConf instance.");
+    if (!(conf instanceof TajoConf)) {
+      throw new IllegalArgumentException("Configuration must be a TajoConf instance");
+    }
     this.systemConf = (TajoConf) conf;
 
     connectionPool = RpcConnectionPool.getPool();
@@ -170,8 +169,6 @@ public class WorkerHeartbeatService extends AbstractService {
             .setDiskSlots(workerDiskSlots)
             .setMemoryResourceMB(workerMemoryMB)
             .setJvmHeap(jvmHeap)
-            .setQueryMasterMode(PrimitiveProtos.BoolProto.newBuilder().setValue(context.isQueryMasterMode()))
-            .setTaskRunnerMode(PrimitiveProtos.BoolProto.newBuilder().setValue(context.isTaskRunnerMode()))
             .build();
 
         NodeHeartbeat heartbeatProto = NodeHeartbeat.newBuilder()
