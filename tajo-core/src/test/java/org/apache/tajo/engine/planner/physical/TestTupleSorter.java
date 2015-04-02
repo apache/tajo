@@ -93,7 +93,7 @@ public class TestTupleSorter {
 
       long start = System.currentTimeMillis();
       VectorizedSorter sorter = new VectorizedSorter(target, sortKeys, keyIndices);
-      Iterator<Tuple> iterator = sorter.sort();
+      Iterator<Tuple> iterator = sorter.sort().iterator();
 
       String[] result1 = new String[SAMPLING];
       for (int i = 0; i < result1.length; i++) {

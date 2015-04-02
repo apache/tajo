@@ -10,6 +10,9 @@ Release 0.11.0 - unreleased
     (jihun)
 
   IMPROVEMENT
+   
+    TAJO-1460: Apply TAJO-1407 to ExternalSortExec. (Contributed by navis, 
+    Committed by hyoungjun)
 
     TAJO-1350: Refactor FilterPushDownRule::visitJoin() into well-defined, 
     small methods. (jihoon)
@@ -48,6 +51,9 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1360: VALUES_ field in OPTIONS table of catalog store should be longer.
+    (Contributed by DaeMyung Kang, Committed by jihun)
 
     TAJO-1479: NPE during startup CatalogStore. (jaehwa)
 
@@ -106,6 +112,9 @@ Release 0.11.0 - unreleased
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1424: Investigate the problem of too many "Try to connect" messeges 
+    during Travic CI build. (Contributed by navis, Committed by jihoon)
 
     TAJO-1482: Cleanup the legacy cluster mode. (jinho)
 
