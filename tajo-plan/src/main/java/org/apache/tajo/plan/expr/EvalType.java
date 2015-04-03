@@ -47,7 +47,6 @@ public enum EvalType {
   WINDOW_FUNCTION(WindowFunctionEval.class),
   AGG_FUNCTION(AggregationFunctionCallEval.class),
   FUNCTION(GeneralFunctionEval.class),
-  PYTHON_FUNCTION(GeneralPythonFunctionEval.class),
 
   // String operator or pattern matching predicates
   LIKE(LikePredicateEval.class),
@@ -149,7 +148,6 @@ public enum EvalType {
     match |= type == FUNCTION;
     match |= type == AGG_FUNCTION;
     match |= type == WINDOW_FUNCTION;
-    match |= type == PYTHON_FUNCTION;
 
     return match;
   }

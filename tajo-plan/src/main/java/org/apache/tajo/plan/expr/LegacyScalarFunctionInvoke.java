@@ -18,59 +18,52 @@
 
 package org.apache.tajo.plan.expr;
 
-import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 
-import javax.annotation.Nullable;
+public class LegacyScalarFunctionInvoke extends FunctionInvoke {
+  @Expose private GeneralFunction function;
 
-public class GeneralFunctionEval extends FunctionEval {
-  @Expose protected FunctionInvoke funcInvoke;
-
-	public GeneralFunctionEval(@Nullable OverridableConf queryContext, FunctionDesc desc, EvalNode[] givenArgs) throws InternalException {
-		super(EvalType.FUNCTION, desc, givenArgs);
-    this.funcInvoke = FunctionInvoke.newInstance(desc);
-    this.funcInvoke.init(queryContext, getParamType());
+  public LegacyScalarFunctionInvoke(FunctionDesc funcDesc) throws InternalException {
+    super(funcDesc);
+    function = (GeneralFunction) funcDesc.newInstance();
   }
 
   @Override
-  public void bind(Schema schema) {
-    super.bind(schema);
+  public void init(OverridableConf queryContext, FunctionEval.ParamType[] paramTypes) {
+    function.init(queryContext, paramTypes);
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public Datum eval(Tuple tuple) {
-    return funcInvoke.eval(evalParams(tuple));
+    return function.eval(tuple);
   }
 
-	@Override
-	public boolean equals(Object obj) {
-	  if (obj instanceof GeneralFunctionEval) {
-      GeneralFunctionEval other = (GeneralFunctionEval) obj;
+  @Override
+  public boolean equals(Object o) {
+    if (o instanceof LegacyScalarFunctionInvoke) {
+      LegacyScalarFunctionInvoke other = (LegacyScalarFunctionInvoke) o;
       return super.equals(other) &&
-          TUtil.checkEquals(funcInvoke, other.funcInvoke);
-	  }
-	  
-	  return false;
-	}
-	
-	@Override
-	public int hashCode() {
-	  return Objects.hashCode(funcDesc, funcInvoke);
-	}
-	
-	@Override
+          TUtil.checkEquals(function, other.function);
+    }
+    return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return function.hashCode();
+  }
+
+  @Override
   public Object clone() throws CloneNotSupportedException {
-    GeneralFunctionEval eval = (GeneralFunctionEval) super.clone();
-    eval.funcInvoke = (FunctionInvoke) funcInvoke.clone();
-    return eval;
+    LegacyScalarFunctionInvoke clone = (LegacyScalarFunctionInvoke) super.clone();
+    clone.function = (GeneralFunction) function.clone();
+    return clone;
   }
 }

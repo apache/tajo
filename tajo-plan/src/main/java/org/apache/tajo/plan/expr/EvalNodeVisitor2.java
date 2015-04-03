@@ -65,7 +65,6 @@ public interface EvalNodeVisitor2<CONTEXT, RESULT> {
   RESULT visitFuncCall(CONTEXT context, GeneralFunctionEval evalNode, Stack<EvalNode> stack);
   RESULT visitAggrFuncCall(CONTEXT context, AggregationFunctionCallEval evalNode, Stack<EvalNode> stack);
   RESULT visitWindowFunc(CONTEXT context, WindowFunctionEval evalNode, Stack<EvalNode> stack);
-  RESULT visitPythonFunc(CONTEXT context, GeneralPythonFunctionEval evalNode, Stack<EvalNode> stack);
 
   RESULT visitSigned(CONTEXT context, SignedEval signedEval, Stack<EvalNode> stack);
 

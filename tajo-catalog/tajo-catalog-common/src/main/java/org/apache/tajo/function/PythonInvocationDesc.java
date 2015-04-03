@@ -18,15 +18,17 @@
 
 package org.apache.tajo.function;
 
+import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.proto.CatalogProtos.PythonInvocationDescProto;
 import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.util.TUtil;
 
 /**
  * <code>PythonInvocationDesc</code> describes a function name
  * and a file path to the script where the function is defined.
  */
-public class PythonInvocationDesc implements ProtoObject<PythonInvocationDescProto> {
+public class PythonInvocationDesc implements ProtoObject<PythonInvocationDescProto>, Cloneable {
   @Expose private String funcName;
   @Expose private String filePath;
 
@@ -64,5 +66,33 @@ public class PythonInvocationDesc implements ProtoObject<PythonInvocationDescPro
     PythonInvocationDescProto.Builder builder = PythonInvocationDescProto.newBuilder();
     builder.setFuncName(funcName).setFilePath(filePath);
     return builder.build();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o instanceof PythonInvocationDesc) {
+      PythonInvocationDesc other = (PythonInvocationDesc) o;
+      return TUtil.checkEquals(funcName, other.funcName) &&
+          TUtil.checkEquals(filePath, other.filePath);
+    }
+    return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(funcName, filePath);
+  }
+
+  @Override
+  public String toString() {
+    return funcName + " at " + filePath;
+  }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    PythonInvocationDesc clone = (PythonInvocationDesc) super.clone();
+    clone.funcName = funcName == null ? null : new String(funcName);
+    clone.filePath = filePath == null ? null : new String(filePath);
+    return clone;
   }
 }

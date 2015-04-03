@@ -15,10 +15,3 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
-def outputType(type_str):
-    def wrap(f):
-        def wrapped_f(*args):
-            return f(*args)
-        return wrapped_f
-    return wrap

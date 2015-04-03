@@ -180,9 +180,7 @@ public class EvalNodeDeserializer {
         try {
           funcDesc = new FunctionDesc(funcProto.getFuncion());
           if (type == EvalType.FUNCTION) {
-            GeneralFunction instance = (GeneralFunction) funcDesc.newInstance();
-            current = new GeneralFunctionEval(context, new FunctionDesc(funcProto.getFuncion()), instance, params);
-
+            current = new GeneralFunctionEval(context, new FunctionDesc(funcProto.getFuncion()), params);
           } else if (type == EvalType.AGG_FUNCTION || type == EvalType.WINDOW_FUNCTION) {
             AggFunction instance = (AggFunction) funcDesc.newInstance();
             if (type == EvalType.AGG_FUNCTION) {
@@ -211,8 +209,6 @@ public class EvalNodeDeserializer {
 
               current = winFunc;
             }
-          } else if (type == EvalType.PYTHON_FUNCTION) {
-            current = new GeneralPythonFunctionEval(new FunctionDesc(funcProto.getFuncion()), params);
           }
         } catch (ClassNotFoundException cnfe) {
           String functionName = "Unknown";
