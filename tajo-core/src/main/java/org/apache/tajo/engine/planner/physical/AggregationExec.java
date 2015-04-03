@@ -19,8 +19,8 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.GroupbyNode;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -29,7 +29,7 @@ import java.io.IOException;
 public abstract class AggregationExec extends UnaryPhysicalExec {
 
   protected final int groupingKeyNum;
-  protected int groupingKeyIds[];
+  protected final int groupingKeyIds[];
   protected final int aggFunctionsNum;
   protected final AggregationFunctionCallEval aggFunctions[];
 
@@ -60,7 +60,10 @@ public abstract class AggregationExec extends UnaryPhysicalExec {
   }
 
   @Override
-  public void close() throws IOException {
-    super.close();
+  public void init() throws IOException {
+    super.init();
+    for (EvalNode aggFunction : aggFunctions) {
+      aggFunction.bind(inSchema);
+    }
   }
 }

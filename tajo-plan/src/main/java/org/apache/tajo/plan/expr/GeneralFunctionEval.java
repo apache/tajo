@@ -22,18 +22,15 @@ import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.TUtil;
 
 import javax.annotation.Nullable;
 
 public class GeneralFunctionEval extends FunctionEval {
   @Expose protected GeneralFunction instance;
-  private Tuple params = null;
 
 	public GeneralFunctionEval(@Nullable OverridableConf queryContext, FunctionDesc desc, GeneralFunction instance,
                              EvalNode[] givenArgs) {
@@ -42,24 +39,12 @@ public class GeneralFunctionEval extends FunctionEval {
     this.instance.init(queryContext, getParamType());
   }
 
-  /* (non-Javadoc)
-    * @see nta.query.executor.eval.Expr#evalVal(Tuple)
-    */
-	@Override
-	public Datum eval(Schema schema, Tuple tuple) {
-    if (this.params == null) {
-      params = new VTuple(argEvals.length);
-    }
-    if(argEvals != null) {
-      params.clear();
-      for(int i=0;i < argEvals.length; i++) {
-        params.put(i, argEvals[i].eval(schema, tuple));
-      }
-    }
+  @Override
+  @SuppressWarnings("unchecked")
+  public Datum eval(Tuple tuple) {
+    return instance.eval(evalParams(tuple));
+  }
 
-    return instance.eval(params);
-	}
-	
 	@Override
 	public boolean equals(Object obj) {
 	  if (obj instanceof GeneralFunctionEval) {

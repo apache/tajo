@@ -59,11 +59,17 @@ public abstract class EvalNode implements Cloneable, GsonObject, ProtoObject<Pla
 	public String toJson() {
     return PlanGsonHelper.toJson(this, EvalNode.class);
 	}
-	
-	public abstract <T extends Datum> T eval(Schema schema, Tuple tuple);
+
+  public void bind(Schema schema) {
+    for (int i = 0; i < childNum(); i++) {
+      getChild(i).bind(schema);
+    }
+  }
+
+	public abstract <T extends Datum> T eval(Tuple tuple);
 
   @Deprecated
-  public abstract  void preOrder(EvalNodeVisitor visitor);
+  public abstract void preOrder(EvalNodeVisitor visitor);
 
   @Deprecated
   public abstract void postOrder(EvalNodeVisitor visitor);

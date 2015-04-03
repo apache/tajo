@@ -27,6 +27,7 @@ import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.engine.codegen.CompilationError;
 import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.plan.Target;
@@ -69,9 +70,8 @@ public class SeqScanExec extends ScanExec {
     this.qual = plan.getQual();
     this.fragments = fragments;
 
-    if (fragments != null
-        && plan.getTableDesc().hasPartition()
-        && plan.getTableDesc().getPartitionMethod().getPartitionType() == CatalogProtos.PartitionType.COLUMN) {
+    if (plan.getTableDesc().hasPartition() &&
+        plan.getTableDesc().getPartitionMethod().getPartitionType() == CatalogProtos.PartitionType.COLUMN) {
       rewriteColumnPartitionedTableSchema();
     }
   }
@@ -94,20 +94,25 @@ public class SeqScanExec extends ScanExec {
     // Remove partition key columns from an input schema.
     this.inSchema = plan.getTableDesc().getSchema();
 
-    List<FileFragment> fileFragments = FragmentConvertor.convert(FileFragment.class, fragments);
+    Tuple partitionRow = null;
+    if (fragments != null && fragments.length > 0) {
+      List<FileFragment> fileFragments = FragmentConvertor.convert(FileFragment.class, fragments);
 
-    // Get a partition key value from a given path
-    Tuple partitionRow =
-        PartitionedTableRewriter.buildTupleFromPartitionPath(columnPartitionSchema, fileFragments.get(0).getPath(),
-            false);
+      // Get a partition key value from a given path
+      partitionRow = PartitionedTableRewriter.buildTupleFromPartitionPath(
+              columnPartitionSchema, fileFragments.get(0).getPath(), false);
+    }
 
     // Targets or search conditions may contain column references.
     // However, actual values absent in tuples. So, Replace all column references by constant datum.
     for (Column column : columnPartitionSchema.toArray()) {
       FieldEval targetExpr = new FieldEval(column);
-      Datum datum = targetExpr.eval(columnPartitionSchema, partitionRow);
+      Datum datum = NullDatum.get();
+      if (partitionRow != null) {
+        targetExpr.bind(columnPartitionSchema);
+        datum = targetExpr.eval(partitionRow);
+      }
       ConstEval constExpr = new ConstEval(datum);
-
 
       for (int i = 0; i < plan.getTargets().length; i++) {
         Target target = plan.getTargets()[i];
@@ -156,6 +161,10 @@ public class SeqScanExec extends ScanExec {
 
     initScanner(projected);
     super.init();
+
+    if (plan.hasQual()) {
+      qual.bind(inSchema);
+    }
   }
 
   @Override
@@ -211,7 +220,7 @@ public class SeqScanExec extends ScanExec {
       }
     } else {
       while ((tuple = scanner.next()) != null) {
-        if (qual.eval(inSchema, tuple).isTrue()) {
+        if (qual.eval(tuple).isTrue()) {
           projector.eval(tuple, outTuple);
           return outTuple;
         }

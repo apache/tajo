@@ -25,8 +25,8 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
-import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.TUtil;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.DISTINCT_AGGREGATION;
@@ -40,12 +40,26 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
   @Expose protected FunctionDesc funcDesc;
 	@Expose protected EvalNode [] argEvals;
 
+  private transient Tuple params;
+
 	public FunctionEval(EvalType type, FunctionDesc funcDesc, EvalNode[] argEvals) {
 		super(type);
 		this.funcDesc = funcDesc;
-    Preconditions.checkArgument(argEvals != null, "argEvals cannot be null");
-    this.argEvals = argEvals;
+    setArgs(argEvals);
 	}
+
+  @Override
+  public void bind(Schema schema) {
+    super.bind(schema);
+    this.params = new VTuple(argEvals.length);
+  }
+
+  protected final Tuple evalParams(Tuple tuple) {
+    for (int i = 0; i < argEvals.length; i++) {
+      params.put(i, argEvals[i].eval(tuple));
+    }
+    return params;
+  }
 
   public FunctionDesc getFuncDesc() {
     return funcDesc;
@@ -80,16 +94,13 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
   }
 
   public void setArgs(EvalNode [] args) {
+    Preconditions.checkArgument(args != null, "argEvals cannot be null");
     this.argEvals = args;
   }
 
   @Override
   public int childNum() {
-    if (argEvals != null) {
-      return argEvals.length;
-    } else {
-      return 0;
-    }
+    return argEvals.length;
   }
 
   @Override
@@ -101,9 +112,6 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
 	public DataType getValueType() {
 		return this.funcDesc.getReturnType();
 	}
-
-	@Override
-	public abstract Datum eval(Schema schema, Tuple tuple);
 
 	@Override
 	public String getName() {
@@ -144,31 +152,25 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
   public Object clone() throws CloneNotSupportedException {
     FunctionEval eval = (FunctionEval) super.clone();
     eval.funcDesc = (FunctionDesc) funcDesc.clone();
-    if (argEvals != null) {
-      eval.argEvals = new EvalNode[argEvals.length];
-      for (int i = 0; i < argEvals.length; i++) {
-        eval.argEvals[i] = (EvalNode) argEvals[i].clone();
-      }
+    eval.argEvals = new EvalNode[argEvals.length];
+    for (int i = 0; i < argEvals.length; i++) {
+      eval.argEvals[i] = (EvalNode) argEvals[i].clone();
     }
     return eval;
   }
 	
 	@Override
   public void preOrder(EvalNodeVisitor visitor) {
-    if (argEvals != null) {
-      for (EvalNode eval : argEvals) {
-        eval.postOrder(visitor);
-      }
+    for (EvalNode eval : argEvals) {
+      eval.postOrder(visitor);
     }
     visitor.visit(this);
   }
 	
 	@Override
 	public void postOrder(EvalNodeVisitor visitor) {
-    if (argEvals != null) {
-      for (EvalNode eval : argEvals) {
-        eval.postOrder(visitor);
-      }
+    for (EvalNode eval : argEvals) {
+      eval.postOrder(visitor);
     }
 	  visitor.visit(this);
 	}

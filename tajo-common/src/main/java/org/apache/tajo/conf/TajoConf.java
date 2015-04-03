@@ -329,7 +329,7 @@ public class TajoConf extends Configuration {
     $EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD("tajo.executor.groupby.in-memory-hash-threshold-bytes",
         (long)256 * 1048576),
     $MAX_OUTPUT_FILE_SIZE("tajo.query.max-outfile-size-mb", 0), // zero means infinite
-    $CODEGEN("tajo.executor.codegen.enabled", false), // Runtime code generation
+    $CODEGEN("tajo.executor.codegen.enabled", false), // Runtime code generation (todo this is broken)
 
     // Client -----------------------------------------------------------------
     $CLIENT_SESSION_EXPIRY_TIME("tajo.client.session.expiry-time-sec", 3600), // default time is one hour.
