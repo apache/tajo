@@ -168,12 +168,16 @@ public class AlterTable extends Expr {
     alter.newTableName = newTableName;
     alter.columnName = columnName;
     alter.newColumnName = newColumnName;
-    alter.addNewColumn = (ColumnDefinition) addNewColumn.clone();
+    if (addNewColumn != null) {
+      alter.addNewColumn = (ColumnDefinition) addNewColumn.clone();
+    }
     alter.alterTableOpType = alterTableOpType;
     alter.columns = columns;
     alter.values = values;
     alter.location = location;
-    alter.params = new HashMap<String, String>(params);
+    if (params != null) {
+      alter.params = new HashMap<String, String>(params);
+    }
     return alter;
   }
 }

@@ -49,7 +49,9 @@ public abstract class UnaryOperator extends Expr {
   @Override
   public Object clone() throws CloneNotSupportedException {
     UnaryOperator unaryOperator = (UnaryOperator) super.clone();
-    unaryOperator.child = (Expr) child.clone();
+    if (child != null) {
+      unaryOperator.child = (Expr) child.clone();
+    }
     return unaryOperator;
   }
 }

@@ -120,6 +120,31 @@ public class TestExpr {
     assertFalse(sort.equals(different));
   }
 
+  @Test
+  public void testClone() throws Exception {
+    Expr expr = new BinaryOperator(OpType.LessThan,
+            new LiteralValue("1", LiteralType.Unsigned_Integer),
+            new LiteralValue("2", LiteralType.Unsigned_Integer));
+
+    Relation relation = new Relation("employee");
+    Selection selection = new Selection(expr);
+    selection.setChild(relation);
+
+    Aggregation aggregation = new Aggregation();
+    aggregation.setTargets(new NamedExpr[]{
+                    new NamedExpr(new ColumnReferenceExpr("col1"))
+            }
+    );
+
+    aggregation.setChild(selection);
+
+    Sort.SortSpec spec = new Sort.SortSpec(new ColumnReferenceExpr("col2"));
+    Sort sort = new Sort(new Sort.SortSpec[]{spec});
+    sort.setChild(aggregation);
+
+    assertEquals(sort, sort.clone());
+  }
+
   private Expr generateOneExpr() {
     Expr expr = new BinaryOperator(OpType.LessThan,
         new LiteralValue("1", LiteralType.Unsigned_Integer),
