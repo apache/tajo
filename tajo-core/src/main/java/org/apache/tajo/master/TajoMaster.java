@@ -380,6 +380,14 @@ public class TajoMaster extends CompositeService {
         LOG.error(e, e);
       }
     }
+    
+    if (restServer != null) {
+      try {
+        restServer.stop();
+      } catch (Exception e) {
+        LOG.error(e.getMessage(), e);
+      }
+    }
 
     if (webServer != null) {
       try {
