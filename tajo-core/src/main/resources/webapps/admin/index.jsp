@@ -57,27 +57,19 @@
           master.getContext().getResourceManager().getClusterResourceSummary();
 
   for(Worker eachWorker: workers.values()) {
-    if(eachWorker.getResource().isQueryMasterMode()) {
-      numQueryMasters++;
-      numLiveQueryMasters++;
-      runningQueryMasterTask += eachWorker.getResource().getNumQueryMasterTasks();
-    }
-    if(eachWorker.getResource().isTaskRunnerMode()) {
-      numWorkers++;
-      numLiveWorkers++;
-    }
+    numQueryMasters++;
+    numLiveQueryMasters++;
+    runningQueryMasterTask += eachWorker.getResource().getNumQueryMasterTasks();
+    numWorkers++;
+    numLiveWorkers++;
   }
 
   for (Worker eachWorker : inactiveWorkers.values()) {
     if (eachWorker.getState() == WorkerState.LOST) {
-      if(eachWorker.getResource().isQueryMasterMode()) {
-        numQueryMasters++;
-        numDeadQueryMasters++;
-      }
-      if(eachWorker.getResource().isTaskRunnerMode()) {
-        numWorkers++;
-        numDeadWorkers++;
-      }
+      numQueryMasters++;
+      numDeadQueryMasters++;
+      numWorkers++;
+      numDeadWorkers++;
     } else if(eachWorker.getState() == WorkerState.DECOMMISSIONED) {
       numDecommissionWorkers++;
     }

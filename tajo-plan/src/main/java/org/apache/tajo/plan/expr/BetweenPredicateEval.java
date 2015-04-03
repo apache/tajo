@@ -80,7 +80,8 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
   }
 
   private static interface Checker {
-    Datum eval(Schema schema, Tuple param);
+    void bind(Schema schema);
+    Datum eval(Tuple param);
   }
 
   private static class ConstantChecker implements Checker {
@@ -102,8 +103,13 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
     }
 
     @Override
-    public Datum eval(Schema schema, Tuple param) {
-      Datum predicandValue = predicand.eval(schema, param);
+    public void bind(Schema schema) {
+      predicand.bind(schema);
+    }
+
+    @Override
+    public Datum eval(Tuple param) {
+      Datum predicandValue = predicand.eval(param);
 
       if (!predicandValue.isNull()) {
         return DatumFactory.createBool(not ^ (predicandValue.greaterThanEqual(begin).asBool()
@@ -128,10 +134,17 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
     }
 
     @Override
-    public Datum eval(Schema schema, Tuple param) {
-      Datum predicandValue = predicand.eval(schema, param);
-      Datum beginValue = begin.eval(schema, param);
-      Datum endValue = end.eval(schema, param);
+    public void bind(Schema schema) {
+      predicand.bind(schema);
+      begin.bind(schema);
+      end.bind(schema);
+    }
+
+    @Override
+    public Datum eval(Tuple param) {
+      Datum predicandValue = predicand.eval(param);
+      Datum beginValue = begin.eval(param);
+      Datum endValue = end.eval(param);
 
       if (!(predicandValue.isNull() || beginValue.isNull() || endValue.isNull())) {
         return
@@ -157,10 +170,17 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
     }
 
     @Override
-    public Datum eval(Schema schema, Tuple param) {
-      Datum predicandValue = predicand.eval(schema, param);
-      Datum beginValue = begin.eval(schema, param);
-      Datum endValue = end.eval(schema, param);
+    public void bind(Schema schema) {
+      predicand.bind(schema);
+      begin.bind(schema);
+      end.bind(schema);
+    }
+
+    @Override
+    public Datum eval(Tuple param) {
+      Datum predicandValue = predicand.eval(param);
+      Datum beginValue = begin.eval(param);
+      Datum endValue = end.eval(param);
 
       if (!(predicandValue.isNull()|| beginValue.isNull() || endValue.isNull())) {
         return DatumFactory.createBool( not ^
@@ -207,27 +227,30 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
   }
 
   @Override
-  public Datum eval(Schema schema, Tuple tuple) {
-    if (checker == null) {
-      if (begin.getType() == EvalType.CONST && end.getType() == EvalType.CONST) {
-        Datum beginValue = ((ConstEval)begin).getValue();
-        Datum endValue = ((ConstEval)end).getValue();
+  public void bind(Schema schema) {
+    if (begin.getType() == EvalType.CONST && end.getType() == EvalType.CONST) {
+      Datum beginValue = ((ConstEval)begin).getValue();
+      Datum endValue = ((ConstEval)end).getValue();
 
-        if (symmetric || beginValue.compareTo(endValue) <= 0) {
-          checker = new ConstantChecker(not, predicand, beginValue, endValue);
-        } else {
-          checker = new AsymmetricChecker(not, predicand, begin, end);
-        }
+      if (symmetric || beginValue.compareTo(endValue) <= 0) {
+        checker = new ConstantChecker(not, predicand, beginValue, endValue);
       } else {
-        if (symmetric) {
-          checker = new SymmetricChecker(not, predicand, begin, end);
-        } else {
-          checker = new AsymmetricChecker(not, predicand, begin, end);
-        }
+        checker = new AsymmetricChecker(not, predicand, begin, end);
+      }
+    } else {
+      if (symmetric) {
+        checker = new SymmetricChecker(not, predicand, begin, end);
+      } else {
+        checker = new AsymmetricChecker(not, predicand, begin, end);
       }
     }
+    checker.bind(schema);
+  }
 
-    return checker.eval(schema, tuple);
+  @Override
+  @SuppressWarnings("unchecked")
+  public Datum eval(Tuple tuple) {
+    return checker.eval(tuple);
   }
 
   @Override

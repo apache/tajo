@@ -37,10 +37,16 @@ public class HavingExec extends UnaryPhysicalExec  {
   }
 
   @Override
+  public void init() throws IOException {
+    super.init();
+    qual.bind(inSchema);
+  }
+
+  @Override
   public Tuple next() throws IOException {
     Tuple tuple;
     while (!context.isStopped() && (tuple = child.next()) != null) {
-      if (qual.eval(inSchema, tuple).isTrue()) {
+      if (qual.eval(tuple).isTrue()) {
         return tuple;
       }
     }

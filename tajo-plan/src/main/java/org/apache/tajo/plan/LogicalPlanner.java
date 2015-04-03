@@ -810,7 +810,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     limitNode.setInSchema(child.getOutSchema());
     limitNode.setOutSchema(child.getOutSchema());
 
-    limitNode.setFetchFirst(firstFetNum.eval(null, null).asInt8());
+    limitNode.setFetchFirst(firstFetNum.eval(null).asInt8());
 
     return limitNode;
   }
