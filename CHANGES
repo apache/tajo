@@ -9,6 +9,9 @@ Release 0.10.1 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1501: Too many log message of HashShuffleAppenderManager.
+    (Contributed by Jongyoung Park. Committed by jaehwa)
+
     TAJO-1395: Remove deprecated sql files for Oracle and PostgreSQL. (jihun)
 
     TAJO-1394: Support reconnect on tsql. 
