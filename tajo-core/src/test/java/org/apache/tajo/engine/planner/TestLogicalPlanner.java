@@ -1042,7 +1042,7 @@ public class TestLogicalPlanner {
   }
 
   static final String setStatements [] = {
-    "select deptName from employee where deptName like 'data%' union select deptName from score where deptName like 'data%'",
+    "select deptName from employee where deptName like 'data%' union all select deptName from score where deptName like 'data%'",
   };
 
   @Test

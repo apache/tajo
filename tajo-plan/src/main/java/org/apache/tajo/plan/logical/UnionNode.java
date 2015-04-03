@@ -25,6 +25,8 @@ import org.apache.tajo.plan.PlanString;
 
 public class UnionNode extends BinaryNode {
 
+  private boolean isDistinct = false;
+
   public UnionNode(int pid) {
     super(pid, NodeType.UNION);
   }
@@ -33,5 +35,13 @@ public class UnionNode extends BinaryNode {
   public PlanString getPlanString() {
     PlanString planStr = new PlanString(this);
     return planStr;
+  }
+
+  public boolean isDistinct() {
+    return isDistinct;
+  }
+
+  public void setDistinct(boolean isDistinct) {
+    this.isDistinct = isDistinct;
   }
 }

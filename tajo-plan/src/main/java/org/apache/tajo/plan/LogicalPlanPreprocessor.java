@@ -36,6 +36,7 @@ import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.plan.visitor.SimpleAlgebraVisitor;
 import org.apache.tajo.util.TUtil;
 
+import java.sql.SQLSyntaxErrorException;
 import java.util.*;
 
 /**
@@ -337,6 +338,7 @@ public class LogicalPlanPreprocessor extends BaseAlgebraVisitor<LogicalPlanner.P
     unionNode.setRightChild(rightChild);
     unionNode.setInSchema(leftChild.getOutSchema());
     unionNode.setOutSchema(leftChild.getOutSchema());
+    unionNode.setDistinct(expr.isDistinct());
 
     return unionNode;
   }

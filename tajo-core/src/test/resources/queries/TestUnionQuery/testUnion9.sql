@@ -11,7 +11,7 @@ FROM (
     n_regionkey = 0
 
 
-  UNION ALL
+  UNION
 
   SELECT
     *

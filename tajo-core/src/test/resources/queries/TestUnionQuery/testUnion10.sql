@@ -16,7 +16,7 @@ SELECT * FROM (
         n_regionkey = 0
 
 
-      UNION ALL
+      UNION
 
       SELECT
         n_nationkey,
@@ -49,7 +49,7 @@ SELECT * FROM (
       WHERE
         n_regionkey = 0
 
-      UNION ALL
+      UNION
 
       SELECT
         n_nationkey,
@@ -93,7 +93,7 @@ SELECT * FROM (
         n_regionkey = 0
 
 
-      UNION ALL
+      UNION
 
       SELECT
         n_nationkey,
@@ -126,7 +126,7 @@ SELECT * FROM (
       WHERE
         n_regionkey = 0
 
-      UNION ALL
+      UNION
 
       SELECT
         n_nationkey,

@@ -1339,15 +1339,21 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
   public TableSubQueryNode visitTableSubQuery(PlanContext context, Stack<Expr> stack, TablePrimarySubQuery expr)
       throws PlanningException {
-    QueryBlock block = context.queryBlock;
-
+    QueryBlock currentBlock = context.queryBlock;
     QueryBlock childBlock = context.plan.getBlock(context.plan.getBlockNameByExpr(expr.getSubQuery()));
+    context.plan.connectBlocks(childBlock, currentBlock, BlockType.TableSubQuery);
+
     PlanContext newContext = new PlanContext(context, childBlock);
     LogicalNode child = visit(newContext, new Stack<Expr>(), expr.getSubQuery());
-    TableSubQueryNode subQueryNode = context.queryBlock.getNodeFromExpr(expr);
-    context.plan.connectBlocks(childBlock, context.queryBlock, BlockType.TableSubQuery);
-    subQueryNode.setSubQuery(child);
+    TableSubQueryNode subQueryNode = currentBlock.getNodeFromExpr(expr);
 
+    subQueryNode.setSubQuery(child);
+    setTargetOfTableSubQuery(context, currentBlock, subQueryNode);
+
+    return subQueryNode;
+  }
+
+  private void setTargetOfTableSubQuery (PlanContext context, QueryBlock block, TableSubQueryNode subQueryNode) throws PlanningException {
     // Add additional expressions required in upper nodes.
     Set<String> newlyEvaluatedExprs = TUtil.newHashSet();
     for (NamedExpr rawTarget : block.namedExprsMgr.getAllNamedExprs()) {
@@ -1370,8 +1376,6 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     }
 
     subQueryNode.setTargets(targets.toArray(new Target[targets.size()]));
-
-    return subQueryNode;
   }
 
     /*===============================================================================================
@@ -1381,7 +1385,77 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   @Override
   public LogicalNode visitUnion(PlanContext context, Stack<Expr> stack, SetOperation setOperation)
       throws PlanningException {
-    return buildSetPlan(context, stack, setOperation);
+    UnionNode unionNode = (UnionNode)buildSetPlan(context, stack, setOperation);
+    LogicalNode resultingNode = unionNode;
+
+    /**
+     *  if the given node is Union (Distinct), it adds group by node
+     *    change
+     *     from
+     *             union
+     *
+     *       to
+     *           projection
+     *               |
+     *            group by
+     *               |
+     *         table subquery
+     *               |
+     *             union
+     */
+    if (unionNode.isDistinct()) {
+      return insertProjectionGroupbyBeforeUnion(context, unionNode);
+    }
+
+    return resultingNode;
+  }
+
+  private ProjectionNode insertProjectionGroupbyBeforeUnion(PlanContext context, UnionNode unionNode) throws PlanningException {
+    QueryBlock currentBlock = context.queryBlock;
+
+    // make table subquery node which has union as its subquery
+    TableSubQueryNode unionTableSubQueryNode = context.plan.createNode(TableSubQueryNode.class);
+    unionTableSubQueryNode.init(CatalogUtil.buildFQName(context.queryContext.get(SessionVars.CURRENT_DATABASE), context.plan.generateUniqueSubQueryName()), unionNode);
+    setTargetOfTableSubQuery(context, currentBlock, unionTableSubQueryNode);
+    currentBlock.registerNode(unionTableSubQueryNode);
+    currentBlock.addRelation(unionTableSubQueryNode);
+
+    Schema unionSchema = unionTableSubQueryNode.getOutSchema();
+    Target[] unionTarget = unionTableSubQueryNode.getTargets();
+
+    // make group by node whose grouping keys are all columns of union
+    GroupbyNode unionGroupbyNode = context.plan.createNode(GroupbyNode.class);
+    unionGroupbyNode.setInSchema(unionSchema);
+    unionGroupbyNode.setGroupingColumns(unionSchema.toArray());
+    unionGroupbyNode.setTargets(unionTarget);
+    unionGroupbyNode.setChild(unionTableSubQueryNode);
+    currentBlock.registerNode(unionGroupbyNode);
+
+    // make projection node which projects all the union columns
+    ProjectionNode unionProjectionNode = context.plan.createNode(ProjectionNode.class);
+    unionProjectionNode.setInSchema(unionSchema);
+    unionProjectionNode.setTargets(unionTarget);
+    unionProjectionNode.setChild(unionGroupbyNode);
+    currentBlock.registerNode(unionProjectionNode);
+
+    // changing query block chain: at below, ( ) indicates query block
+    // (... + union ) - (...) ==> (... + projection + group by + table subquery) - (union) - (...)
+    QueryBlock unionBlock = context.plan.newQueryBlock();
+    unionBlock.registerNode(unionNode);
+    unionBlock.setRoot(unionNode);
+
+    QueryBlock leftBlock = context.plan.getBlock(unionNode.getLeftChild());
+    QueryBlock rightBlock = context.plan.getBlock(unionNode.getRightChild());
+
+    context.plan.disconnectBlocks(leftBlock, context.queryBlock);
+    context.plan.disconnectBlocks(rightBlock, context.queryBlock);
+
+    context.plan.connectBlocks(unionBlock, context.queryBlock, BlockType.TableSubQuery);
+    context.plan.connectBlocks(leftBlock, unionBlock, BlockType.TableSubQuery);
+    context.plan.connectBlocks(rightBlock, unionBlock, BlockType.TableSubQuery);
+
+    // projection node (not original union node) will be a new child of parent node
+    return unionProjectionNode;
   }
 
   @Override

@@ -11,7 +11,7 @@ from (
   where
     (key = 45.0 or key = 38.0) and null_col is null
 
-  union
+  union all
 
   select
     col1,
