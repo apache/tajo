@@ -101,9 +101,6 @@ public class FunctionsResource {
 
     @Override
     public Response run(JerseyResourceDelegateContext context) {
-      JerseyResourceDelegateContextKey<String> databaseNameKey =
-          JerseyResourceDelegateContextKey.valueOf(databaseNameKeyName, String.class);
-      String databaseName = context.get(databaseNameKey);
       JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
           JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
       MasterContext masterContext = context.get(masterContextKey);

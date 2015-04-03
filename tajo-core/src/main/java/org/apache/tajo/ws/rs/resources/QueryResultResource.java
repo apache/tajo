@@ -311,9 +311,6 @@ public class QueryResultResource {
       JerseyResourceDelegateContextKey<ClientApplication> clientApplicationKey =
           JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.ClientApplicationKey, ClientApplication.class);
       ClientApplication clientApplication = context.get(clientApplicationKey);
-      JerseyResourceDelegateContextKey<MasterContext> masterContextKey =
-          JerseyResourceDelegateContextKey.valueOf(JerseyResourceDelegateUtil.MasterContextKey, MasterContext.class);
-      MasterContext masterContext = context.get(masterContextKey);
       JerseyResourceDelegateContextKey<Integer> offsetKey =
           JerseyResourceDelegateContextKey.valueOf(offsetKeyName, Integer.class);
       int offset = context.get(offsetKey);
