@@ -20,6 +20,7 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
+import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
@@ -50,7 +51,7 @@ import java.util.Random;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TestExternalSortExec {
   private TajoConf conf;
@@ -119,12 +120,23 @@ public class TestExternalSortExec {
   };
 
   @Test
-  public final void testNext() throws IOException, PlanningException {
+  public final void testMergeScan() throws IOException, PlanningException {
+    runTest(36, 2);
+  }
+
+  @Test
+  public final void testMemoryScan() throws IOException, PlanningException {
+    runTest(200, 2);
+  }
+
+  private void runTest(long buffer, int fanout) throws IOException, PlanningException {
     FileFragment[] frags = FileStorageManager.splitNG(conf, "default.employee", employee.getMeta(),
         new Path(employee.getPath()), Integer.MAX_VALUE);
     Path workDir = new Path(testDir, TestExternalSortExec.class.getName());
     TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
         LocalTajoTestingUtility.newTaskAttemptId(), new FileFragment[] { frags[0] }, workDir);
+    ctx.getQueryContext().setInt(TajoConf.ConfVars.EXECUTOR_EXTERNAL_SORT_FANOUT, fanout);
+    ctx.getQueryContext().setLong(SessionVars.EXTSORT_BUFFER_SIZE, buffer);
     ctx.setEnforcer(new Enforcer());
     Expr expr = analyzer.parse(QUERIES[0]);
     LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
@@ -136,17 +148,13 @@ public class TestExternalSortExec {
     ProjectionExec proj = (ProjectionExec) exec;
 
     // TODO - should be planed with user's optimization hint
-    ExternalSortExec extSort;
     if (!(proj.getChild() instanceof ExternalSortExec)) {
       UnaryPhysicalExec sortExec = proj.getChild();
       SeqScanExec scan = sortExec.getChild();
 
-      extSort = new ExternalSortExec(ctx, ((MemSortExec)sortExec).getPlan(), scan);
+      ExternalSortExec extSort = new ExternalSortExec(ctx, ((MemSortExec)sortExec).getPlan(), scan);
       proj.setChild(extSort);
-    } else {
-      extSort = proj.getChild();
     }
-    extSort.setSortBufferBytesNum(1024*1024);
 
     Tuple tuple;
     Tuple preVal = null;
@@ -162,8 +170,8 @@ public class TestExternalSortExec {
 
     while ((tuple = exec.next()) != null) {
       curVal = tuple;
-      if (preVal != null) {
-        assertTrue("prev: " + preVal + ", but cur: " + curVal, comparator.compare(preVal, curVal) <= 0);
+      if (preVal != null && comparator.compare(preVal, curVal) > 0) {
+        fail("prev: " + preVal + ", but cur: " + curVal);   // making string takes times
       }
       preVal = new VTuple(curVal);
       cnt++;
@@ -177,8 +185,8 @@ public class TestExternalSortExec {
     cnt = 0;
     while ((tuple = exec.next()) != null) {
       curVal = tuple;
-      if (preVal != null) {
-        assertTrue("prev: " + preVal + ", but cur: " + curVal, comparator.compare(preVal, curVal) <= 0);
+      if (preVal != null && comparator.compare(preVal, curVal) > 0) {
+        fail("prev: " + preVal + ", but cur: " + curVal);
       }
       preVal = curVal;
       cnt++;

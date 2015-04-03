@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage;
 
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatum;
@@ -48,6 +49,11 @@ public class EmptyTuple implements Tuple, Cloneable {
 
   public boolean contains(int fieldId) {
     return false;
+  }
+
+  @Override
+  public TajoDataTypes.Type type(int fieldId) {
+    return TajoDataTypes.Type.NULL_TYPE;
   }
 
   @Override

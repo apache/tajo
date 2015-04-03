@@ -19,6 +19,7 @@
 package org.apache.tajo.storage;
 
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.NullDatum;
@@ -65,6 +66,11 @@ public class LazyTuple implements Tuple, Cloneable {
   @Override
   public boolean contains(int fieldid) {
     return textBytes[fieldid] != null || values[fieldid] != null;
+  }
+
+  @Override
+  public TajoDataTypes.Type type(int fieldId) {
+    return get(fieldId).type();
   }
 
   @Override

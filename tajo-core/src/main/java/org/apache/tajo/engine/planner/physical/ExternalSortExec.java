@@ -28,12 +28,16 @@ import org.apache.hadoop.fs.RawLocalFileSystem;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.statistics.TableStats;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf.ConfVars;
+import org.apache.tajo.datum.Datum;
 import org.apache.tajo.engine.planner.PhysicalPlanningException;
 import org.apache.tajo.plan.logical.SortNode;
 import org.apache.tajo.storage.*;
@@ -41,6 +45,9 @@ import org.apache.tajo.storage.Scanner;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.unit.StorageUnit;
+import org.apache.tajo.util.Bytes;
+import org.apache.tajo.util.ClassSize;
+import org.apache.tajo.util.ComparableVector;
 import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.worker.TaskAttemptContext;
@@ -81,7 +88,7 @@ public class ExternalSortExec extends SortExec {
   /** If there are available multiple cores, it tries parallel merge. */
   private ExecutorService executorService;
   /** used for in-memory sort of each chunk. */
-  private List<Tuple> inMemoryTable;
+  private MemoryCache inMemoryTable;
   /** temporal dir */
   private final Path sortTmpDir;
   /** It enables round-robin disks allocation */
@@ -120,7 +127,6 @@ public class ExternalSortExec extends SortExec {
     this.sortBufferBytesNum = context.getQueryContext().getLong(SessionVars.EXTSORT_BUFFER_SIZE) * StorageUnit.MB;
     this.allocatedCoreNum = context.getConf().getIntVar(ConfVars.EXECUTOR_EXTERNAL_SORT_THREAD_NUM);
     this.executorService = Executors.newFixedThreadPool(this.allocatedCoreNum);
-    this.inMemoryTable = new ArrayList<Tuple>(100000);
 
     this.sortTmpDir = getExecutorTmpDir();
     localDirAllocator = new LocalDirAllocator(ConfVars.WORKER_TEMPORAL_DIR.varname);
@@ -161,24 +167,24 @@ public class ExternalSortExec extends SortExec {
   /**
    * Sort a tuple block and store them into a chunk file
    */
-  private Path sortAndStoreChunk(int chunkId, List<Tuple> tupleBlock)
+  private Path sortAndStoreChunk(int chunkId, MemoryCache cache)
       throws IOException {
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.RAW);
-    int rowNum = tupleBlock.size();
+    int rowNum = cache.size();
 
     long sortStart = System.currentTimeMillis();
-    Iterable<Tuple> sorted = getSorter(tupleBlock).sort();
+    cache.sortTuples();
     long sortEnd = System.currentTimeMillis();
 
     long chunkWriteStart = System.currentTimeMillis();
     Path outputPath = getChunkPathForWrite(0, chunkId);
     final RawFileAppender appender = new RawFileAppender(context.getConf(), null, inSchema, meta, outputPath);
     appender.init();
-    for (Tuple t : sorted) {
+    for (ReadableTuple t : cache) {
       appender.addTuple(t);
     }
     appender.close();
-    tupleBlock.clear();
+    cache.reset();
     long chunkWriteEnd = System.currentTimeMillis();
 
 
@@ -197,27 +203,30 @@ public class ExternalSortExec extends SortExec {
    */
   private List<Path> sortAndStoreAllChunks() throws IOException {
     Tuple tuple;
-    long memoryConsumption = 0;
     List<Path> chunkPaths = TUtil.newList();
+
+    // TODO - calculate average tuple size from scan exec
+    int limit = estimateLimit(inSchema, sortBufferBytesNum);
+    inMemoryTable = new MemoryCache(limit, sortSpecs, comparator.getSortKeyIds(), sortBufferBytesNum);
 
     int chunkId = 0;
     long runStartTime = System.currentTimeMillis();
     while (!context.isStopped() && (tuple = child.next()) != null) { // partition sort start
-      Tuple vtuple = new VTuple(tuple);
-      inMemoryTable.add(vtuple);
-      memoryConsumption += MemoryUtil.calculateMemorySize(vtuple);
 
-      if (memoryConsumption > sortBufferBytesNum) {
+      if (!inMemoryTable.addTuple(tuple)) {
         long runEndTime = System.currentTimeMillis();
         info(LOG, chunkId + " run loading time: " + (runEndTime - runStartTime) + " msec");
         runStartTime = runEndTime;
 
-        info(LOG, "Memory consumption exceeds " + sortBufferBytesNum + " bytes");
+        if (inMemoryTable.memoryConsumption > sortBufferBytesNum) {
+          info(LOG, "Memory consumption exceeds " + sortBufferBytesNum + " bytes");
+        }
         memoryResident = false;
 
         chunkPaths.add(sortAndStoreChunk(chunkId, inMemoryTable));
 
-        memoryConsumption = 0;
+        inMemoryTable.reset();
+        inMemoryTable.addTuple(tuple);
         chunkId++;
 
         // When the volume of sorting data once exceed the size of sort buffer,
@@ -235,13 +244,15 @@ public class ExternalSortExec extends SortExec {
       }
     }
 
-    if (!memoryResident && !inMemoryTable.isEmpty()) { // if there are at least one or more input tuples
+    if (!memoryResident && inMemoryTable.size() > 0) { // if there are at least one or more input tuples
       // check if data exceeds a sort buffer. If so, it store the remain data into a chunk.
       long start = System.currentTimeMillis();
       int rowNum = inMemoryTable.size();
       chunkPaths.add(sortAndStoreChunk(chunkId, inMemoryTable));
       long end = System.currentTimeMillis();
       info(LOG, "Last Chunk #" + chunkId + " " + rowNum + " rows written (" + (end - start) + " msec)");
+      inMemoryTable.reset();
+      inMemoryTable = null;
     }
 
     // get total loaded (or stored) bytes and total row numbers
@@ -279,8 +290,7 @@ public class ExternalSortExec extends SortExec {
         info(LOG, "Chunks creation time: " + (endTimeOfChunkSplit - startTimeOfChunkSplit) + " msec");
 
         if (memoryResident) { // if all sorted data reside in a main-memory table.
-          TupleSorter sorter = getSorter(inMemoryTable);
-          result = new MemTableScanner(sorter.sort(), inMemoryTable.size(), sortAndStoredBytes);
+          result = new MemTableScanner();
         } else { // if input data exceeds main-memory at least once
 
           try {
@@ -498,11 +508,9 @@ public class ExternalSortExec extends SortExec {
    */
   private Scanner createFinalMerger(List<FileFragment> inputs) throws IOException {
     if (inputs.size() == 1) {
-      this.result = getFileScanner(inputs.get(0));
-    } else {
-      this.result = createKWayMerger(inputs, 0, inputs.size());
+      return getFileScanner(inputs.get(0));
     }
-    return result;
+    return createKWayMerger(inputs, 0, inputs.size());
   }
 
   private Scanner getFileScanner(FileFragment frag) throws IOException {
@@ -533,45 +541,41 @@ public class ExternalSortExec extends SortExec {
     }
   }
 
-  private static class MemTableScanner extends AbstractScanner {
-    final Iterable<Tuple> iterable;
-    final long sortAndStoredBytes;
-    final int totalRecords;
+  private class MemTableScanner extends AbstractScanner {
 
-    Iterator<Tuple> iterator;
+    private final int[] mapping;
     // for input stats
-    float scannerProgress;
-    int numRecords;
-    TableStats scannerTableStats;
+    private float scannerProgress;
 
-    public MemTableScanner(Iterable<Tuple> iterable, int length, long inBytes) {
-      this.iterable = iterable;
-      this.totalRecords = length;
-      this.sortAndStoredBytes = inBytes;
+    private TableStats scannerTableStats;
+
+    private transient int index;
+
+    public MemTableScanner() {
+      this.mapping = inMemoryTable.sortTuples();
+      LOG.info("Using memory scanner, used only " +
+          FileUtil.humanReadableByteCount(inMemoryTable.memoryConsumption, false));
     }
 
     @Override
     public void init() throws IOException {
-      iterator = iterable.iterator();
+      index = 0;
 
       scannerProgress = 0.0f;
-      numRecords = 0;
 
       // it will be returned as the final stats
       scannerTableStats = new TableStats();
       scannerTableStats.setNumBytes(sortAndStoredBytes);
       scannerTableStats.setReadBytes(sortAndStoredBytes);
-      scannerTableStats.setNumRows(totalRecords);
+      scannerTableStats.setNumRows(inMemoryTable.size());
     }
 
     @Override
     public Tuple next() throws IOException {
-      if (iterator.hasNext()) {
-        numRecords++;
-        return iterator.next();
-      } else {
-        return null;
+      if (index < mapping.length) {
+        return inMemoryTable.toVTuple(mapping[index++]);
       }
+      return null;
     }
 
     @Override
@@ -581,15 +585,13 @@ public class ExternalSortExec extends SortExec {
 
     @Override
     public void close() throws IOException {
-      iterator = null;
       scannerProgress = 1.0f;
     }
 
     @Override
     public float getProgress() {
-      if (iterator != null && numRecords > 0) {
-        return (float)numRecords / (float)totalRecords;
-
+      if (mapping.length > 0) {
+        return (float)index / (float)mapping.length;
       } else { // if an input is empty
         return scannerProgress;
       }
@@ -794,15 +796,13 @@ public class ExternalSortExec extends SortExec {
       }
     }
 
-    if(inMemoryTable != null){
-      inMemoryTable.clear();
+    if (inMemoryTable != null) {
+      inMemoryTable.reset();
       inMemoryTable = null;
     }
 
-    if(executorService != null){
-      executorService.shutdown();
-      executorService = null;
-    }
+    executorService.shutdown();
+    executorService = null;
 
     plan = null;
     super.close();
@@ -810,7 +810,10 @@ public class ExternalSortExec extends SortExec {
 
   @Override
   public void rescan() throws IOException {
-    if (result != null) {
+    // parents should propagate if they needs rescanning
+    if (result instanceof MemoryCache) {
+      sorted = false;
+    } else if (result != null) {
       result.reset();
     }
     super.rescan();
@@ -832,6 +835,124 @@ public class ExternalSortExec extends SortExec {
       return result.getInputStats();
     } else {
       return inputStats;
+    }
+  }
+
+  private int estimateLimit(Schema schema, long allocation) {
+    int allocated = 0;
+    List<Column> columns = schema.getColumns();
+    allocation -= ClassSize.ARRAY * 3 * columns.size() * Bytes.SIZEOF_INT;
+    for (Column column : columns) {
+      allocation -= ClassSize.ARRAY + ClassSize.REFERENCE * 12 + ClassSize.BITSET;
+      switch(column.getDataType().getType()) {
+        case BOOLEAN:
+        case BIT: allocated += 1; continue;
+        case INT1:
+        case INT2: allocated += 2; continue;
+        case INET4:
+        case DATE:
+        case INT4: allocated += 4; continue;
+        case INT8:
+        case TIME:
+        case TIMESTAMP: allocated += 8; continue;
+        case FLOAT4: allocated += 4; continue;
+        case FLOAT8: allocated += 8; continue;
+        default: allocated += ClassSize.OBJECT;
+      }
+    }
+    return (int)(allocation / allocated);
+  }
+
+  private class MemoryCache extends VectorizedSorter implements Iterable<ReadableTuple> {
+
+    private final long memoryLimit;
+    private final long initialSize;
+    private final TajoDataTypes.Type[] types;
+    private long memoryConsumption;
+
+    public MemoryCache(int limit, SortSpec[] sortKeys, int[] keyIndex, long memoryLimit) {
+      super(limit, inSchema, sortKeys, keyIndex);
+      this.memoryLimit = memoryLimit;
+      this.types = new TajoDataTypes.Type[inSchema.size()];
+      for (int i = 0; i < inSchema.size(); i++) {
+        types[i] = inSchema.getColumn(i).getDataType().getType();
+      }
+      int allocated = ClassSize.ARRAY * 3 * inSchema.size() * Bytes.SIZEOF_INT;
+      for (TajoDataTypes.Type type : types) {
+        allocated += ClassSize.ARRAY + ClassSize.REFERENCE * 12 + ClassSize.BITSET;
+        switch(type) {
+          case BOOLEAN:
+          case BIT: allocated += limit; continue;
+          case INT1:
+          case INT2: allocated += 2 * limit; continue;
+          case INET4:
+          case DATE:
+          case INT4: allocated += 4 * limit; continue;
+          case INT8:
+          case TIME:
+          case TIMESTAMP: allocated += 8 * limit; continue;
+          case FLOAT4: allocated += 4 * limit; continue;
+          case FLOAT8: allocated += 8 * limit; continue;
+        }
+      }
+      initialSize = memoryConsumption = allocated;
+    }
+
+    @Override
+    public boolean addTuple(Tuple tuple) {
+      memoryConsumption += MemoryUtil.calculateVectorMemorySize(tuple);
+      if (memoryConsumption <= memoryLimit) {
+        return super.addTuple(tuple);
+      }
+      return false;
+    }
+
+    @Override
+    public void reset() {
+      super.reset();
+      memoryConsumption = initialSize;
+    }
+
+    @Override
+    public Iterator<ReadableTuple> iterator() {
+      return newIterator();
+    }
+
+    public Iterator<ReadableTuple> newIterator() {
+      final int[] mapping = mapping();
+      return new Iterator<ReadableTuple>() {
+        private int index = -1;
+        private final TupleIterator iterator = new TupleIterator();
+        public boolean hasNext() { return index + 1 < mapping.length; }
+        public ReadableTuple next() {
+          index++;
+          return iterator;
+        }
+
+        @Override
+        public void remove() {
+          throw new UnsupportedOperationException("remove");
+        }
+
+        class TupleIterator implements ReadableTuple {
+          public TajoDataTypes.Type type(int fieldId) { return types[fieldId]; }
+          public boolean isNull(int fieldId) { return MemoryCache.this.isNull(mapping[index], fieldId); }
+          public boolean getBool(int fieldId) { return MemoryCache.this.getBool(mapping[index], fieldId); }
+          public byte getByte(int fieldId) { return MemoryCache.this.getByte(mapping[index], fieldId); }
+          public char getChar(int fieldId) { return MemoryCache.this.getChar(mapping[index], fieldId); }
+          public byte[] getBytes(int fieldId) { return MemoryCache.this.getBytes(mapping[index], fieldId); }
+          public short getInt2(int fieldId) { return MemoryCache.this.getInt2(mapping[index], fieldId); }
+          public int getInt4(int fieldId) { return MemoryCache.this.getInt4(mapping[index], fieldId); }
+          public long getInt8(int fieldId) { return MemoryCache.this.getInt8(mapping[index], fieldId); }
+          public float getFloat4(int fieldId) { return MemoryCache.this.getFloat4(mapping[index], fieldId); }
+          public double getFloat8(int fieldId) { return MemoryCache.this.getFloat8(mapping[index], fieldId); }
+          public String getText(int fieldId) { return MemoryCache.this.getText(mapping[index], fieldId); }
+          public Datum getProtobufDatum(int fieldId) { return MemoryCache.this.getProtobufDatum(mapping[index], fieldId); }
+          public Datum getInterval(int fieldId) { return MemoryCache.this.getInterval(mapping[index], fieldId); }
+          public char[] getUnicodeChars(int fieldId) { return MemoryCache.this.getUnicodeChars(mapping[index], fieldId); }
+          public Datum get(int fieldId) { return MemoryCache.this.get(mapping[index], fieldId); }
+        }
+      };
     }
   }
 }

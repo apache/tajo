@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
 
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
@@ -61,6 +62,11 @@ public abstract class UnSafeTuple implements Tuple {
   @Override
   public int size() {
     return types.length;
+  }
+
+  @Override
+  public TajoDataTypes.Type type(int fieldId) {
+    return types[fieldId].getType();
   }
 
   public ByteBuffer nioBuffer() {

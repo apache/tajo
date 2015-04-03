@@ -21,12 +21,13 @@ package org.apache.tajo.storage;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.SchemaUtil;
 import org.apache.tajo.catalog.statistics.ColumnStats;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.util.ComparableVector;
 
 /**
  * This class is not thread-safe.
@@ -34,8 +35,7 @@ import org.apache.tajo.datum.NullDatum;
 public class TableStatistics {
   private static final Log LOG = LogFactory.getLog(TableStatistics.class);
   private Schema schema;
-  private Tuple minValues;
-  private Tuple maxValues;
+  private MinMaxStats minMaxValues;
   private long [] numNulls;
   private long numRows = 0;
   private long numBytes = 0;
@@ -44,20 +44,14 @@ public class TableStatistics {
 
   public TableStatistics(Schema schema) {
     this.schema = schema;
-    minValues = new VTuple(schema.size());
-    maxValues = new VTuple(schema.size());
+    this.minMaxValues = new MinMaxStats();
 
     numNulls = new long[schema.size()];
     comparable = new boolean[schema.size()];
 
-    DataType type;
     for (int i = 0; i < schema.size(); i++) {
-      type = schema.getColumn(i).getDataType();
-      if (type.getType() == Type.PROTOBUF) {
-        comparable[i] = false;
-      } else {
-        comparable[i] = true;
-      }
+      DataType type = schema.getColumn(i).getDataType();
+      comparable[i] = type.getType() != Type.PROTOBUF;
     }
   }
 
@@ -81,22 +75,12 @@ public class TableStatistics {
     return this.numBytes;
   }
 
-  public void analyzeField(int idx, Datum datum) {
-    if (datum instanceof NullDatum) {
-      numNulls[idx]++;
-      return;
-    }
+  public void analyzeField(ReadableTuple tuple) {
+    minMaxValues.update(tuple);
+  }
 
-    if (comparable[idx]) {
-      if (!maxValues.contains(idx) ||
-          maxValues.get(idx).compareTo(datum) < 0) {
-        maxValues.put(idx, datum);
-      }
-      if (!minValues.contains(idx) ||
-          minValues.get(idx).compareTo(datum) > 0) {
-        minValues.put(idx, datum);
-      }
-    }
+  public void analyzeNullField() {
+    minMaxValues.updateNull();
   }
 
   public TableStats getTableStat() {
@@ -106,18 +90,8 @@ public class TableStatistics {
     for (int i = 0; i < schema.size(); i++) {
       columnStats = new ColumnStats(schema.getColumn(i));
       columnStats.setNumNulls(numNulls[i]);
-      if (minValues.get(i) == null || schema.getColumn(i).getDataType().getType() == minValues.get(i).type()) {
-        columnStats.setMinValue(minValues.get(i));
-      } else {
-        LOG.warn("Wrong statistics column type (" + minValues.get(i).type() +
-            ", expected=" + schema.getColumn(i).getDataType().getType() + ")");
-      }
-      if (maxValues.get(i) == null || schema.getColumn(i).getDataType().getType() == maxValues.get(i).type()) {
-        columnStats.setMaxValue(maxValues.get(i));
-      } else {
-        LOG.warn("Wrong statistics column type (" + maxValues.get(i).type() +
-            ", expected=" + schema.getColumn(i).getDataType().getType() + ")");
-      }
+      columnStats.setMinValue(minMaxValues.getMinDatum(i));
+      columnStats.setMaxValue(minMaxValues.getMaxDatum(i));
       stat.addColumnStat(columnStats);
     }
 
@@ -125,5 +99,66 @@ public class TableStatistics {
     stat.setNumBytes(this.numBytes);
 
     return stat;
+  }
+
+  private class MinMaxStats extends ComparableVector {
+
+    private static final int MAX_INDEX = 0;
+    private static final int MIN_INDEX = 1;
+    private static final int TMP_INDEX = 2;
+
+    private final boolean[] warned;
+    private final Type[] types;
+
+    public MinMaxStats() {
+      super(3, schema);
+      this.types = SchemaUtil.toTypes(schema);
+      this.warned = new boolean[types.length];
+      setNull(MAX_INDEX);
+      setNull(MIN_INDEX);
+    }
+
+    public void update(ReadableTuple tuple) {
+      set(TMP_INDEX, tuple);
+      for (int i = 0; i < types.length; i++) {
+        if (tuple.isNull(i)) {
+          numNulls[i]++;
+          continue;
+        }
+        if (warned[i] || !comparable[i]) {
+          continue;
+        }
+        if (tuple.type(i) != types[i]) {
+          LOG.warn("Wrong statistics column type (" + tuple.type(i) +
+            ", expected=" + types[i] + ")");
+          warned[i] = true;
+          continue;
+        }
+        if (vectors[i].isNull(MAX_INDEX) || vectors[i].compare(MAX_INDEX, TMP_INDEX) < 0) {
+          vectors[i].set(MAX_INDEX, tuple, i);
+        }
+        if (vectors[i].isNull(MIN_INDEX) || vectors[i].compare(MIN_INDEX, TMP_INDEX) > 0) {
+          vectors[i].set(MIN_INDEX, tuple, i);
+        }
+      }
+    }
+
+    public void updateNull() {
+      for (int i = 0; i < types.length; i++) {
+        numNulls[i]++;
+      }
+    }
+
+    public Datum getMaxDatum(int field) {
+      return getDatum(MAX_INDEX, field);
+    }
+
+    public Datum getMinDatum(int field) {
+      return getDatum(MIN_INDEX, field);
+    }
+
+    public Datum getDatum(int index, int field) {
+      return vectors[field].isNull(index) ? null : vectors[field].toDatum(index);
+    }
   }
 }

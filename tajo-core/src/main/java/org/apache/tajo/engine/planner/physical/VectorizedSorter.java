@@ -20,31 +20,41 @@ package org.apache.tajo.engine.planner.physical;
 
 import org.apache.hadoop.util.IndexedSortable;
 import org.apache.hadoop.util.QuickSort;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
-import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.ComparableVector;
 
-import java.util.Iterator;
-import java.util.List;
+import java.util.Arrays;
 
 /**
  * Extract raw level values (primitive or String/byte[]) from each of key columns before sorting
  * Uses indirection for efficient swapping
  */
-public class VectorizedSorter extends ComparableVector implements IndexedSortable, TupleSorter {
+public class VectorizedSorter extends ComparableVector implements IndexedSortable {
 
   private final int[] mappings;         // index indirection
 
-  public VectorizedSorter(List<Tuple> source, SortSpec[] sortKeys, int[] keyIndex) {
-    super(source.size(), sortKeys, keyIndex);
-    source.toArray(tuples);   // wish it's array list
-    mappings = new int[tuples.length];
-    for (int i = 0; i < tuples.length; i++) {
-      for (int j = 0; j < keyIndex.length; j++) {
-        vectors[j].append(tuples[i], keyIndex[j]);
-      }
-      mappings[i] = i;
+  private int counter;
+
+  public VectorizedSorter(int limit, SortSpec[] sortKeys, int[] keyIndex) {
+    super(limit, sortKeys, keyIndex);
+    mappings = new int[limit];
+  }
+
+  public VectorizedSorter(int limit, Schema schema, SortSpec[] sortKeys, int[] keyIndex) {
+    super(limit, schema, sortKeys, keyIndex);
+    mappings = new int[limit];
+  }
+
+  public boolean addTuple(Tuple tuple) {
+    if (counter >= mappings.length) {
+      return false;
     }
+    append(tuple);
+    mappings[counter] = counter;
+    counter++;
+    return true;
   }
 
   @Override
@@ -59,19 +69,24 @@ public class VectorizedSorter extends ComparableVector implements IndexedSortabl
     mappings[i2] = v1;
   }
 
+  public int[] sortTuples() {
+    if (counter > 0) {
+      new QuickSort().sort(this, 0, counter);
+    }
+    return mapping();
+  }
+
+  public int size() {
+    return counter;
+  }
+
   @Override
-  public Iterable<Tuple> sort() {
-    new QuickSort().sort(this, 0, mappings.length);
-    return new Iterable<Tuple>() {
-      @Override
-      public Iterator<Tuple> iterator() {
-        return new Iterator<Tuple>() {
-          int index;
-          public boolean hasNext() { return index < mappings.length; }
-          public Tuple next() { return tuples[mappings[index++]]; }
-          public void remove() { throw new UnsupportedException(); }
-        };
-      }
-    };
+  public void reset() {
+    super.reset();
+    counter = 0;
+  }
+
+  public int[] mapping() {
+    return Arrays.copyOf(mappings, counter);
   }
 }

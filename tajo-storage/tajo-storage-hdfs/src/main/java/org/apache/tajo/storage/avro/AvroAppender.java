@@ -137,12 +137,12 @@ public class AvroAppender extends FileAppender {
    */
   @Override
   public void addTuple(Tuple tuple) throws IOException {
+    if (enabledStats) {
+      stats.analyzeField(tuple);
+    }
     GenericRecord record = new GenericData.Record(avroSchema);
     for (int i = 0; i < schema.size(); ++i) {
       Column column = schema.getColumn(i);
-      if (enabledStats) {
-        stats.analyzeField(i, tuple.get(i));
-      }
       Object value;
       Schema.Field avroField = avroFields.get(i);
       Schema.Type avroType = avroField.schema().getType();

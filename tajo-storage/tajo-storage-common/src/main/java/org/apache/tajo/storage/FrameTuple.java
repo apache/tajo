@@ -22,6 +22,7 @@
 package org.apache.tajo.storage;
 
 import com.google.common.base.Preconditions;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
@@ -67,6 +68,11 @@ public class FrameTuple implements Tuple, Cloneable {
     } else {
       return right.contains(fieldId - leftSize);
     }
+  }
+
+  @Override
+  public TajoDataTypes.Type type(int fieldId) {
+    return get(fieldId).type();
   }
 
   @Override

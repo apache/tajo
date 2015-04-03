@@ -622,7 +622,14 @@ public class RawFile {
 
     @Override
     public void addTuple(Tuple t) throws IOException {
+      addTuple((ReadableTuple)t);
+    }
 
+    public void addTuple(ReadableTuple t) throws IOException {
+
+      if (enabledStats) {
+        stats.analyzeField(t);
+      }
       if (buffer.remaining() < headerSize) {
         flushBuffer();
       }
@@ -633,9 +640,6 @@ public class RawFile {
       // reset the null flags
       nullFlags.clear();
       for (int i = 0; i < schema.size(); i++) {
-        if (enabledStats) {
-          stats.analyzeField(i, t.get(i));
-        }
 
         if (t.isNull(i)) {
           nullFlags.set(i);

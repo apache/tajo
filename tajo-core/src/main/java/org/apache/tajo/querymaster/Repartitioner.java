@@ -699,7 +699,11 @@ public class Repartitioner {
 
       LOG.info(stage.getId() + ", Try to divide " + mergedRange + " into " + determinedTaskNum +
           " sub ranges (total units: " + determinedTaskNum + ")");
-      ranges = partitioner.partition(determinedTaskNum);
+      if (determinedTaskNum > 1) {
+        ranges = partitioner.partition(determinedTaskNum);
+      } else {
+        ranges = new TupleRange[] {mergedRange};
+      }
       if (ranges == null) {
         throw new NullPointerException("ranges is null on " + stage.getId() + " stage.");
       }
@@ -710,10 +714,8 @@ public class Repartitioner {
 
       TupleUtil.setMaxRangeIfNull(sortSpecs, sortSchema, totalStat.getColumnStats(), ranges);
       if (LOG.isDebugEnabled()) {
-        if (ranges != null) {
-          for (TupleRange eachRange : ranges) {
-            LOG.debug(stage.getId() + " range: " + eachRange.getStart() + " ~ " + eachRange.getEnd());
-          }
+        for (TupleRange eachRange : ranges) {
+          LOG.debug(stage.getId() + " range: " + eachRange.getStart() + " ~ " + eachRange.getEnd());
         }
       }
     }

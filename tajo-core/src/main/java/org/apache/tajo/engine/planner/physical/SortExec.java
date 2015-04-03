@@ -22,6 +22,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.util.ComparableVector;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
@@ -42,7 +43,7 @@ public abstract class SortExec extends UnaryPhysicalExec {
 
   protected TupleSorter getSorter(List<Tuple> tupleSlots) {
     if (!tupleSlots.isEmpty() && ComparableVector.isVectorizable(sortSpecs)) {
-      return new VectorizedSorter(tupleSlots, sortSpecs, comparator.getSortKeyIds());
+      return new VectorizedTupleSorter(tupleSlots, sortSpecs, comparator.getSortKeyIds());
     }
     return new TupleSorter.DefaultSorter(tupleSlots, comparator);
   }

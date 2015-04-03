@@ -163,6 +163,10 @@ public class CSVFile {
 
     @Override
     public void addTuple(Tuple tuple) throws IOException {
+      if (isShuffle) {
+        // it is to calculate min/max values, and it is only used for the intermediate file.
+        stats.analyzeField(tuple);
+      }
       Datum datum;
       int rowBytes = 0;
 
@@ -173,10 +177,6 @@ public class CSVFile {
         if(columnNum - 1 > i){
           os.write(delimiter);
           rowBytes += delimiter.length;
-        }
-        if (isShuffle) {
-          // it is to calculate min/max values, and it is only used for the intermediate file.
-          stats.analyzeField(i, datum);
         }
       }
       os.write(LF);
