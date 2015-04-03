@@ -26,6 +26,7 @@ import org.apache.tajo.datum.IntervalDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.exception.UnknownDataTypeException;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.exception.ValueTooLongForTypeCharactersException;
 import org.apache.tajo.tuple.offheap.RowWriter;
 import org.apache.tajo.util.BitArray;
 
@@ -99,8 +100,9 @@ public class RowStoreUtil {
             break;
 
           case CHAR:
-            byte c = bb.get();
-            tuple.put(i, DatumFactory.createChar(c));
+            byte [] _str = new byte[type.getLength()];
+            bb.get(_str);
+            tuple.put(i, DatumFactory.createChar(_str));
             break;
 
           case INT2:
@@ -204,7 +206,15 @@ public class RowStoreUtil {
           bb.put(tuple.get(i).asByte());
           break;
         case CHAR:
-          bb.put(tuple.get(i).asByte());
+          int charSize = col.getDataType().getLength();
+          byte [] _char = new byte[charSize];
+          byte [] src = tuple.get(i).asByteArray();
+          if (charSize < src.length) {
+            throw new ValueTooLongForTypeCharactersException(charSize);
+          }
+
+          System.arraycopy(src, 0, _char, 0, src.length);
+          bb.put(_char);
           break;
         case INT2:
           bb.putShort(tuple.get(i).asInt2());
@@ -281,8 +291,10 @@ public class RowStoreUtil {
         switch (col.getDataType().getType()) {
         case BOOLEAN:
         case BIT:
-        case CHAR:
           size += 1;
+          break;
+        case CHAR:
+          size += col.getDataType().getLength();
           break;
         case INT2:
           size += 2;
