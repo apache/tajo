@@ -11,6 +11,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1501: Too many log message of HashShuffleAppenderManager.
+    (Contributed by Jongyoung Park. Committed by jaehwa)
+
     TAJO-1428: Support min, max builtin functions for DATE, TIME, TIMESTAMP.
     (Contributed by Dongjoon Hyun, Committed by Keuntae Park)
 
