@@ -43,7 +43,7 @@ public class TestWorkerConnectionInfo {
     WorkerConnectionInfo worker = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
     connectionInfoMap.put(worker.getId(), worker);
     
-    for (int i = 0; i < 10000; i++) {
+    for (int i = 0; i < 1000; i++) {
       worker = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
       assertNull(connectionInfoMap.putIfAbsent(worker.getId(), worker));
     }
