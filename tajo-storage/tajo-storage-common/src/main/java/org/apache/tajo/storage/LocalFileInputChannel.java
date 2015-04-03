@@ -16,34 +16,36 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.text;
+package org.apache.tajo.storage;
 
-import io.netty.buffer.ByteBufProcessor;
+import org.apache.hadoop.io.IOUtils;
 
-public class LineSplitProcessor implements ByteBufProcessor {
-  public static final byte CR = '\r';
-  public static final byte LF = '\n';
-  private boolean prevCharCR = false; //true of prev char was CR
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+
+/**
+ * LocalFileInputChannel is a FileChannel wrapper of seek ability
+ */
+public final class LocalFileInputChannel extends InputChannel implements SeekableChannel {
+  private FileChannel channel;
+
+  public LocalFileInputChannel(FileChannel channel) {
+    this.channel = channel;
+  }
 
   @Override
-  public boolean process(byte value) throws Exception {
-    switch (value) {
-      case LF:
-        return false;
-      case CR:
-        prevCharCR = true;
-        return false;
-      default:
-        prevCharCR = false;
-        return true;
-    }
+  public int read(ByteBuffer dst) throws IOException {
+    return channel.read(dst);
   }
 
-  public boolean isPrevCharCR() {
-    return prevCharCR;
+  @Override
+  public void seek(long offset) throws IOException {
+    this.channel.position(offset);
   }
 
-  public void reset() {
-    prevCharCR = false;
+  @Override
+  protected void implCloseChannel() throws IOException {
+    IOUtils.cleanup(null, channel);
   }
 }

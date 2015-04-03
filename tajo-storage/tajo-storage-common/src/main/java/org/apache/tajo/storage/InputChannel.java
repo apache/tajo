@@ -16,34 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.text;
+package org.apache.tajo.storage;
 
-import io.netty.buffer.ByteBufProcessor;
+import java.nio.ByteBuffer;
+import java.nio.channels.ScatteringByteChannel;
+import java.nio.channels.spi.AbstractInterruptibleChannel;
 
-public class LineSplitProcessor implements ByteBufProcessor {
-  public static final byte CR = '\r';
-  public static final byte LF = '\n';
-  private boolean prevCharCR = false; //true of prev char was CR
+public abstract class InputChannel extends AbstractInterruptibleChannel implements ScatteringByteChannel {
 
   @Override
-  public boolean process(byte value) throws Exception {
-    switch (value) {
-      case LF:
-        return false;
-      case CR:
-        prevCharCR = true;
-        return false;
-      default:
-        prevCharCR = false;
-        return true;
-    }
+  public long read(ByteBuffer[] dsts, int offset, int length) {
+    throw new UnsupportedOperationException();
   }
 
-  public boolean isPrevCharCR() {
-    return prevCharCR;
-  }
-
-  public void reset() {
-    prevCharCR = false;
+  @Override
+  public long read(ByteBuffer[] dsts) {
+    return read(dsts, 0, dsts.length);
   }
 }
