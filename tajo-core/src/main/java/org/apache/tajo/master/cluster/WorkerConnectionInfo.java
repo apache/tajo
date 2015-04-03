@@ -27,7 +27,7 @@ public class WorkerConnectionInfo implements ProtoObject<WorkerConnectionInfoPro
   /**
   * unique worker id
   */
-  private int id;
+  private WorkerConnectionInfoId id;
   /**
    * Hostname
    */
@@ -58,7 +58,7 @@ public class WorkerConnectionInfo implements ProtoObject<WorkerConnectionInfoPro
 
   public WorkerConnectionInfo(WorkerConnectionInfoProto proto) {
     this();
-    this.id = proto.getId();
+    this.id = new WorkerConnectionInfoId(proto.getId());
     this.host = proto.getHost();
     this.peerRpcPort = proto.getPeerRpcPort();
     this.pullServerPort = proto.getPullServerPort();
@@ -76,7 +76,7 @@ public class WorkerConnectionInfo implements ProtoObject<WorkerConnectionInfoPro
     this.clientPort = clientPort;
     this.queryMasterPort = queryMasterPort;
     this.httpInfoPort = httpInfoPort;
-    this.id = hashCode();
+    this.id = new WorkerConnectionInfoId();
   }
 
   public String getHost() {
@@ -104,7 +104,7 @@ public class WorkerConnectionInfo implements ProtoObject<WorkerConnectionInfoPro
   }
 
   public int getId() {
-    return id;
+    return id.getId();
   }
 
   public String getHostAndPeerRpcPort() {
@@ -114,7 +114,7 @@ public class WorkerConnectionInfo implements ProtoObject<WorkerConnectionInfoPro
   @Override
   public WorkerConnectionInfoProto getProto() {
     WorkerConnectionInfoProto.Builder builder = WorkerConnectionInfoProto.newBuilder();
-    builder.setId(id)
+    builder.setId(id.getId())
         .setHost(host)
         .setPeerRpcPort(peerRpcPort)
         .setPullServerPort(pullServerPort)
@@ -166,7 +166,7 @@ public class WorkerConnectionInfo implements ProtoObject<WorkerConnectionInfoPro
   @Override
   public String toString() {
     StringBuilder builder = new StringBuilder();
-    builder.append("id:").append(id).append(", ")
+    builder.append("id:").append(id.getId()).append(", ")
         .append("host:").append(host).append(", ")
         .append("PeerRpcPort:").append(peerRpcPort).append(", ")
         .append("PullServerPort:").append(pullServerPort).append(", ")
