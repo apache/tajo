@@ -79,8 +79,5 @@ public abstract class InputHandler {
    */
   public void bindTo(OutputStream os) throws IOException {
     out = os;
-    if (this.serializer instanceof PigStreamingBase) {
-      this.newSerializer = (PigStreamingBase) serializer;
-    }
   }
 }
