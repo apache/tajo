@@ -497,6 +497,33 @@ public class TestSQLAnalyzer {
   }
 
   @Test
+  public void testAlterTableSetProperty2() throws IOException {
+    String sql = FileUtil.readTextFileFromResource("queries/default/alter_table_set_property_2.sql");
+    Expr expr = parseQuery(sql);
+    assertEquals(OpType.AlterTable, expr.getType());
+    AlterTable alterTable = (AlterTable)expr;
+    assertEquals(alterTable.getAlterTableOpType(), AlterTableOpType.SET_PROPERTY);
+    assertTrue(alterTable.hasParams());
+    assertTrue(alterTable.getParams().containsKey("text.delimiter"));
+    assertEquals("&", alterTable.getParams().get("text.delimiter"));
+  }
+
+  @Test
+  public void testAlterTableSetProperty3() throws IOException {
+    // update multiple table properties with a single 'SET PROPERTY' sql
+    String sql = FileUtil.readTextFileFromResource("queries/default/alter_table_set_property_3.sql");
+    Expr expr = parseQuery(sql);
+    assertEquals(OpType.AlterTable, expr.getType());
+    AlterTable alterTable = (AlterTable)expr;
+    assertEquals(alterTable.getAlterTableOpType(), AlterTableOpType.SET_PROPERTY);
+    assertTrue(alterTable.hasParams());
+    assertTrue(alterTable.getParams().containsKey("compression.type"));
+    assertEquals("RECORD", alterTable.getParams().get("compression.type"));
+    assertTrue(alterTable.getParams().containsKey("compression.codec"));
+    assertEquals("org.apache.hadoop.io.compress.SnappyCodec", alterTable.getParams().get("compression.codec"));
+  }
+
+  @Test
   public void testTableSubQuery1() throws IOException {
     String sql = FileUtil.readTextFileFromResource("queries/default/table_subquery1.sql");
     parseQuery(sql);

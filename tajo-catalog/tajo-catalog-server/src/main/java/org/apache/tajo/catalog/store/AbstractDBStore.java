@@ -1041,9 +1041,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       res = pstmt.executeQuery();
 
       while (res.next()) {
-        String key = res.getString("KEY_");
-        String value = res.getString("VALUE_");
-        options.put(key, value);
+        options.put(res.getString("KEY_"), res.getString("VALUE_"));
       }
     } catch (SQLException se) {
       throw new CatalogException(se);

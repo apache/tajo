@@ -49,11 +49,11 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
   protected KeyValueSet properties;
 
   public AlterTableDesc() {
-    this.properties = new KeyValueSet();
+    init();
   }
 
-  public AlterTableDesc(KeyValueSet properties) {
-    this.properties = new KeyValueSet(properties);
+  private void init() {
+    this.properties = new KeyValueSet();
   }
 
   public String getTableName() {

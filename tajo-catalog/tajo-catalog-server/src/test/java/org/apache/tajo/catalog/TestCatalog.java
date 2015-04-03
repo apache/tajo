@@ -996,9 +996,16 @@ public class TestCatalog {
     assertTrue(addColumnDesc.getSchema().containsByName("mynewcol"));
 
     //SET_PROPERTY
-    catalog.alterTable(createMockAlterTableSetProperty());
     TableDesc setPropertyDesc = catalog.getTableDesc("default","mynewcooltable");
-    assertEquals("GMT+0", setPropertyDesc.getMeta().getOption("timezone"));
+    KeyValueSet options = new KeyValueSet();
+    options.set("timezone", "GMT+9");   // Seoul, Korea
+    setPropertyDesc.setMeta(new TableMeta(StoreType.CSV, options));
+    String prevTimeZone = setPropertyDesc.getMeta().getOption("timezone");
+    String newTimeZone = "GMT-7";       // Silicon Valley, California
+    catalog.alterTable(createMockAlterTableSetProperty(newTimeZone));
+    setPropertyDesc = catalog.getTableDesc("default","mynewcooltable");
+    assertNotEquals(prevTimeZone, setPropertyDesc.getMeta().getOption("timezone"));
+    assertEquals(newTimeZone, setPropertyDesc.getMeta().getOption("timezone"));
   }
 
   private AlterTableDesc createMockAlterTableName(){
@@ -1026,10 +1033,10 @@ public class TestCatalog {
     return alterTableDesc;
   }
 
-  private AlterTableDesc createMockAlterTableSetProperty() {
+  private AlterTableDesc createMockAlterTableSetProperty(String newTimeZone) {
     AlterTableDesc alterTableDesc = new AlterTableDesc();
     alterTableDesc.setTableName("default.mynewcooltable");
-    alterTableDesc.setProperty("timezone", "GMT+0");
+    alterTableDesc.setProperty("timezone", newTimeZone);
     alterTableDesc.setAlterTableType(AlterTableType.SET_PROPERTY);
     return alterTableDesc;
   }
