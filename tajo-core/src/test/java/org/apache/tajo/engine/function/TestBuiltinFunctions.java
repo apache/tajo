@@ -74,6 +74,152 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
   }
 
   @Test
+  public void testMinMaxDate() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("value", TajoDataTypes.Type.DATE);
+    String[] data = new String[]{ "2014-01-02", "2014-12-01", "2015-01-01", "1999-08-09", "2000-03-01" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select min(value) as min_value, max(value) as max_value from table11");
+      String ascExpected = "min_value,max_value\n" +
+              "-------------------------------\n" +
+              "1999-08-09,2015-01-01\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+  }
+
+  @Test
+  public void testMinMaxDateWithNull() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("value", TajoDataTypes.Type.DATE);
+    String[] data = new String[]{ "2014-01-02", "2014-12-01", "\\N", "\\N", "2000-03-01" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select min(value) as min_value, max(value) as max_value from table11");
+      String ascExpected = "min_value,max_value\n" +
+              "-------------------------------\n" +
+              "2000-03-01,2014-12-01\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+  }
+
+  @Test
+  public void testMinMaxTime() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("value", TajoDataTypes.Type.TIME);
+    String[] data = new String[]{ "11:11:11", "23:12:50", "00:00:01", "09:59:59", "12:13:14" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select min(value) as min_value, max(value) as max_value from table11");
+      String ascExpected = "min_value,max_value\n" +
+              "-------------------------------\n" +
+              "00:00:01,23:12:50\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+  }
+
+  @Test
+  public void testMinMaxTimeWithNull() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("value", TajoDataTypes.Type.TIME);
+    String[] data = new String[]{ "11:11:11", "\\N", "\\N", "09:59:59", "12:13:14" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select min(value) as min_value, max(value) as max_value from table11");
+      String ascExpected = "min_value,max_value\n" +
+              "-------------------------------\n" +
+              "09:59:59,12:13:14\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+  }
+
+  @Test
+  public void testMinMaxTimestamp() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("value", TajoDataTypes.Type.TIMESTAMP);
+    String[] data = new String[]{ "1999-01-01 11:11:11", "2015-01-01 23:12:50", "2016-12-24 00:00:01", 
+            "1977-05-04 09:59:59", "2002-11-21 12:13:14" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select min(value) as min_value, max(value) as max_value from table11");
+      String ascExpected = "min_value,max_value\n" +
+              "-------------------------------\n" +
+              "1977-05-04 09:59:59,2016-12-24 00:00:01\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+  }
+
+  @Test
+  public void testMinMaxTimestampWithNull() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("value", TajoDataTypes.Type.TIMESTAMP);
+    String[] data = new String[]{ "1999-01-01 11:11:11", "2015-01-01 23:12:50", "\\N",
+            "\\N", "2002-11-21 12:13:14" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select min(value) as min_value, max(value) as max_value from table11");
+      String ascExpected = "min_value,max_value\n" +
+              "-------------------------------\n" +
+              "1999-01-01 11:11:11,2015-01-01 23:12:50\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+  }
+
+  @Test
   public void testMinLong() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);

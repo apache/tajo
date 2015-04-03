@@ -11,6 +11,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1428: Support min, max builtin functions for DATE, TIME, TIMESTAMP.
+    (Contributed by Dongjoon Hyun, Committed by Keuntae Park)
+
     TAJO-1436: Add Bind method to EvalNode. (Contributed by navis,
     Committed by jihoon)
 
