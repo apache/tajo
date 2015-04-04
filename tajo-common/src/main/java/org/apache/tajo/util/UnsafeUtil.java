@@ -28,6 +28,21 @@ import java.nio.ByteBuffer;
 public class UnsafeUtil {
   public static final Unsafe unsafe;
 
+  // copied from
+  // http://stackoverflow.com/questions/52353/in-java-what-is-the-best-way-to-determine-the-size-of-an-object
+  public static enum AddressMode {
+    /** Unknown address mode. Size calculations may be unreliable. */
+    UNKNOWN,
+    /** 32-bit address mode using 32-bit references. */
+    MEM_32BIT,
+    /** 64-bit address mode using 64-bit references. */
+    MEM_64BIT,
+    /** 64-bit address mode using 32-bit compressed references. */
+    MEM_64BIT_COMPRESSED_OOPS
+  }
+
+  public static final AddressMode ADDRESS_MODE;
+
   // offsets
   public static final int ARRAY_BOOLEAN_BASE_OFFSET;
   public static final int ARRAY_BYTE_BASE_OFFSET;
@@ -83,6 +98,19 @@ public class UnsafeUtil {
     ARRAY_FLOAT_INDEX_SCALE = unsafe.arrayIndexScale(float[].class);
     ARRAY_DOUBLE_INDEX_SCALE = unsafe.arrayIndexScale(double[].class);
     ARRAY_OBJECT_INDEX_SCALE = unsafe.arrayIndexScale(Object[].class);
+
+    int addressSize = unsafe.addressSize();
+    int referenceSize = unsafe.arrayIndexScale(Object[].class);
+
+    if (addressSize == 4) {
+      ADDRESS_MODE = AddressMode.MEM_32BIT;
+    } else if (addressSize == 8 && referenceSize == 8) {
+      ADDRESS_MODE = AddressMode.MEM_64BIT;
+    } else if (addressSize == 8 && referenceSize == 4) {
+      ADDRESS_MODE = AddressMode.MEM_64BIT_COMPRESSED_OOPS;
+    } else {
+      ADDRESS_MODE = AddressMode.UNKNOWN;
+    }
   }
 
   public static int alignedSize(int size) {
