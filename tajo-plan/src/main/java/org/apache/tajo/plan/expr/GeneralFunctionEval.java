@@ -30,11 +30,13 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 
 public class GeneralFunctionEval extends FunctionEval {
   @Expose protected FunctionInvoke funcInvoke;
 
-	public GeneralFunctionEval(@Nullable OverridableConf queryContext, FunctionDesc desc, EvalNode[] givenArgs) throws InternalException {
+	public GeneralFunctionEval(@Nullable OverridableConf queryContext, FunctionDesc desc, EvalNode[] givenArgs)
+      throws IOException {
 		super(EvalType.FUNCTION, desc, givenArgs);
     this.funcInvoke = FunctionInvoke.newInstance(desc);
     this.funcInvoke.init(queryContext, getParamType());

@@ -39,6 +39,7 @@ import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.plan.logical.WindowSpec;
 import org.apache.tajo.plan.serder.PlanProto.WinFunctionEvalSpec;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -226,6 +227,8 @@ public class EvalNodeDeserializer {
           throw new NoSuchFunctionException(functionName, parameterTypes);
         } catch (InternalException ie) {
           throw new NoSuchFunctionException(funcDesc.getFunctionName(), funcDesc.getParamTypes());
+        } catch (IOException e) {
+          throw new NoSuchFunctionException(e.getMessage());
         }
       } else {
         throw new RuntimeException("Unknown EvalType: " + type.name());

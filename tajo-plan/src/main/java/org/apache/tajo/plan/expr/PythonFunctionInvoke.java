@@ -22,6 +22,7 @@ import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.function.PythonInvocationDesc;

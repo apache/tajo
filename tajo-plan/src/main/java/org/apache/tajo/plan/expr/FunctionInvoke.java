@@ -21,10 +21,13 @@ package org.apache.tajo.plan.expr;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
+
+import java.io.IOException;
 
 public abstract class FunctionInvoke {
   @Expose protected FunctionDesc functionDesc;
@@ -37,13 +40,21 @@ public abstract class FunctionInvoke {
     if (desc.getInvocation().hasLegacy()) {
       return new LegacyScalarFunctionInvoke(desc);
     } else if (desc.getInvocation().hasPython()) {
-      return new PythonFunctionInvoke(desc);
+//      return new PythonFunctionInvoke(desc);
+      return new PythonFunctionInvoke2(desc);
     } else {
       throw new UnsupportedException(desc.getInvocation() + " is not supported");
     }
   }
 
-  public abstract void init(OverridableConf queryContext, FunctionEval.ParamType[] paramTypes);
+  public abstract void init(OverridableConf queryContext, FunctionEval.ParamType[] paramTypes) throws IOException;
+
+
+//  /**
+//   * Bind an input schema.
+//   * @param schema intpu schema
+//   */
+//  public abstract void bind(Schema schema);
 
   /**
    * Evaluate the given tuple with a function

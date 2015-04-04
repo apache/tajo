@@ -90,6 +90,49 @@ public class JythonUtils {
     return new PyTuple(pyTuple);
   }
 
+  public static Datum objectToDatum(TajoDataTypes.DataType type, Object o) {
+    switch (type.getType()) {
+      case BOOLEAN:
+        return DatumFactory.createBool((Boolean) o);
+      case INT1:
+      case INT2:
+        return DatumFactory.createInt2((Short) o);
+      case INT4:
+        return DatumFactory.createInt4((Integer) o);
+      case INT8:
+        return DatumFactory.createInt8((Long) o);
+      case UINT1:
+      case UINT2:
+        return DatumFactory.createInt2((Short) o);
+      case UINT4:
+        return DatumFactory.createInt4((Integer) o);
+      case UINT8:
+        return DatumFactory.createInt8((Long) o);
+      case FLOAT4:
+        return DatumFactory.createFloat4((Float) o);
+      case FLOAT8:
+        return DatumFactory.createFloat8((Double) o);
+      case CHAR:
+        return DatumFactory.createChar((Character) o);
+      case TEXT:
+        return DatumFactory.createText((String) o);
+      case DATE:
+        return DatumFactory.createDate((Integer) o);
+      case TIME:
+        return DatumFactory.createTime((Long) o);
+      case TIMESTAMP:
+        return DatumFactory.createTimestamp((Long) o);
+      case INTERVAL:
+        return DatumFactory.createInterval((Long) o);
+      case BLOB:
+        return DatumFactory.createBlob((byte[]) o);
+      case INET4:
+        return DatumFactory.createInet4((Integer) o);
+      default:
+        throw new UnsupportedException(type.toString());
+    }
+  }
+
   /**
    * Convert a PyObject to a datum.
    * @param object

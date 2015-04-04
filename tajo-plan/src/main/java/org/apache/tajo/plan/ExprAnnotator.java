@@ -43,6 +43,7 @@ import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.apache.tajo.util.datetime.TimeMeta;
 
+import java.io.IOException;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TimeZone;
@@ -622,6 +623,8 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
         throw new PlanningException("Unsupported Function Type: " + functionType.name());
       }
     } catch (InternalException e) {
+      throw new PlanningException(e);
+    } catch (IOException e) {
       throw new PlanningException(e);
     }
   }
