@@ -28,7 +28,7 @@ For example, if you want to backup a table customer, you should type a command a
   -- Name: customer; Type: TABLE; Storage: CSV
   -- Path: file:/home/hyunsik/tpch/customer
   --
-  CREATE EXTERNAL TABLE customer (c_custkey INT8, c_name TEXT, c_address TEXT, c_nationkey INT8, c_phone TEXT, c_acctbal FLOAT8, c_mktsegment TEXT, c_comment TEXT) USING CSV LOCATION 'file:/home/hyunsik/tpch/customer';
+  CREATE EXTERNAL TABLE customer (c_custkey INT8, c_name TEXT, c_address TEXT, c_nationkey INT8, c_phone TEXT, c_acctbal FLOAT8, c_mktsegment TEXT, c_comment TEXT) USING TEXT LOCATION 'file:/home/hyunsik/tpch/customer';
   
 
 If you want to restore the catalog from the SQL dump file, please type the below command: ::
