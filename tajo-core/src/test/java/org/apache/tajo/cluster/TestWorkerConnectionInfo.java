@@ -18,6 +18,8 @@
 
 package org.apache.tajo.cluster;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.junit.Test;
 
@@ -31,6 +33,19 @@ public class TestWorkerConnectionInfo {
     WorkerConnectionInfo worker2 = new WorkerConnectionInfo("host2", 28091, 28092, 21000, 28093, 28080);
 
     assertNotEquals(worker.getId(), worker2.getId());
-    assertEquals(worker.getId(), new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080).getId());
+    assertNotEquals(worker.getId(), new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080).getId());
+  }
+  
+  @Test
+  public void testWorkerIdUniqueness() {
+    ConcurrentMap<Integer, WorkerConnectionInfo> connectionInfoMap =
+        new ConcurrentHashMap<Integer, WorkerConnectionInfo>();
+    WorkerConnectionInfo worker = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
+    connectionInfoMap.put(worker.getId(), worker);
+    
+    for (int i = 0; i < 1000; i++) {
+      worker = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
+      assertNull(connectionInfoMap.putIfAbsent(worker.getId(), worker));
+    }
   }
 }
