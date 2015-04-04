@@ -20,11 +20,11 @@ package org.apache.tajo.storage.kafka;
 
 import org.apache.tajo.storage.StorageConstants;
 
-public class KafkaStorageConstants extends StorageConstants{
-	public static final String KAFKA_TOPIC = "kafka.topic";
-	public static final String KAFKA_BROKER = "kafka.broker";
-	public static final String KAFKA_TOPIC_PARTITION = "kafka.topic.partition";
-	public static final String DEFAULT_KAFKA_SERDE_CLASS = "org.apache.tajo.storage.kafka.serDe.KafkaTextSerDe";
-	public static final String KAFKA_SERDE_CLASS = "kafka.serde";
-	public static final String KAFKA_FRAGMENT_SIZE = "kafka.fragment.size";
+public class KafkaStorageConstants extends StorageConstants {
+  public static final String KAFKA_TOPIC = "kafka.topic";
+  public static final String KAFKA_BROKER = "kafka.broker";
+  public static final String KAFKA_TOPIC_PARTITION = "kafka.topic.partition";
+  public static final String DEFAULT_KAFKA_SERDE_CLASS = "org.apache.tajo.storage.kafka.serDe.KafkaTextSerDe";
+  public static final String KAFKA_SERDE_CLASS = "kafka.serde";
+  public static final String KAFKA_FRAGMENT_SIZE = "kafka.fragment.size";
 }

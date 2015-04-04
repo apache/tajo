@@ -27,36 +27,36 @@ import org.apache.tajo.storage.Tuple;
 //is not supported yet.
 public class KafkaAppender implements Appender {
 
-	@Override
-	public void init() throws IOException {
-	}
+  @Override
+  public void init() throws IOException {
+  }
 
-	@Override
-	public void addTuple(Tuple t) throws IOException {
-	  throw new IOException("It is not supported.");
-	}
+  @Override
+  public void addTuple(Tuple t) throws IOException {
+    throw new IOException("It is not supported.");
+  }
 
-	@Override
-	public void flush() throws IOException {
-	  throw new IOException("It is not supported.");
-	}
+  @Override
+  public void flush() throws IOException {
+    throw new IOException("It is not supported.");
+  }
 
-	@Override
-	public long getEstimatedOutputSize() throws IOException {
-		return 0;
-	}
+  @Override
+  public long getEstimatedOutputSize() throws IOException {
+    return 0;
+  }
 
-	@Override
-	public void close() throws IOException {
-	}
+  @Override
+  public void close() throws IOException {
+  }
 
-	@Override
-	public void enableStats() {
-	}
+  @Override
+  public void enableStats() {
+  }
 
-	@Override
-	public TableStats getStats() {
-		return null;
-	}
+  @Override
+  public TableStats getStats() {
+    return null;
+  }
 
 }
