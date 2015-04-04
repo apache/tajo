@@ -69,6 +69,9 @@ Release 0.10.1 - unreleased
   
   TASKS
 
+    TAJO-1462: Replace CSV examples into TEXT examples in docs.
+    (Contributed by Dongjoon Hyun, Committed by jihoon)
+
     TAJO-1439: Some method name is written wrongly.
     (Contributed by Jongyoung Park. Committed by jihoon)
 
