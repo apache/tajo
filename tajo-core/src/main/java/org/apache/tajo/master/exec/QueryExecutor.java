@@ -274,7 +274,7 @@ public class QueryExecutor {
     final Tuple outTuple = new VTuple(targets.length);
     for (int i = 0; i < targets.length; i++) {
       EvalNode eval = targets[i].getEvalTree();
-      outTuple.put(i, eval.eval(null, null));
+      outTuple.put(i, eval.eval(null));
     }
     boolean isInsert = rootNode.getChild() != null && rootNode.getChild().getType() == NodeType.INSERT;
     if (isInsert) {

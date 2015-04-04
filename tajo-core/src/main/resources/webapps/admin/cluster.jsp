@@ -48,26 +48,17 @@
   Set<Worker> deadQueryMasters = new TreeSet<Worker>();
 
   for(Worker eachWorker: workers.values()) {
-    if(eachWorker.getResource().isQueryMasterMode()) {
-      liveQueryMasters.add(eachWorker);
-      runningQueryMasterTasks += eachWorker.getResource().getNumQueryMasterTasks();
-    }
-
-    if(eachWorker.getResource().isTaskRunnerMode()) {
-      liveWorkers.add(eachWorker);
-    }
+    liveQueryMasters.add(eachWorker);
+    liveWorkers.add(eachWorker);
+    runningQueryMasterTasks += eachWorker.getResource().getNumQueryMasterTasks();
   }
 
   for (Worker inactiveWorker : master.getContext().getResourceManager().getInactiveWorkers().values()) {
     WorkerState state = inactiveWorker.getState();
 
     if (state == WorkerState.LOST) {
-      if (inactiveWorker.getResource().isQueryMasterMode()) {
-        deadQueryMasters.add(inactiveWorker);
-      }
-      if (inactiveWorker.getResource().isTaskRunnerMode()) {
-        deadWorkers.add(inactiveWorker);
-      }
+      deadQueryMasters.add(inactiveWorker);
+      deadWorkers.add(inactiveWorker);
     } else if (state == WorkerState.DECOMMISSIONED) {
       decommissionWorkers.add(inactiveWorker);
     }

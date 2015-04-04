@@ -24,6 +24,7 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.logical.DistinctGroupbyNode;
 import org.apache.tajo.plan.logical.GroupbyNode;
@@ -35,27 +36,29 @@ import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
 
-public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
+public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
   private boolean finished = false;
 
+  private DistinctGroupbyNode plan;
   private HashAggregator[] hashAggregators;
-  private PhysicalExec child;
   private int distinctGroupingKeyIds[];
   private boolean first = true;
   private int groupbyNodeNum;
   private int outputColumnNum;
   private int totalNumRows;
   private int fetchedRows;
-  private float progress;
 
   private int[] resultColumnIdIndexes;
 
   public DistinctGroupbyHashAggregationExec(TaskAttemptContext context, DistinctGroupbyNode plan, PhysicalExec subOp)
       throws IOException {
-    super(context, plan.getInSchema(), plan.getOutSchema());
+    super(context, plan.getInSchema(), plan.getOutSchema(), subOp);
+    this.plan = plan;
+  }
 
-    this.child = subOp;
-    this.child.init();
+  @Override
+  public void init() throws IOException {
+    super.init();
 
     List<Integer> distinctGroupingKeyIdList = new ArrayList<Integer>();
     for (Column col: plan.getGroupingColumns()) {
@@ -72,7 +75,7 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
     int idx = 0;
     distinctGroupingKeyIds = new int[distinctGroupingKeyIdList.size()];
     for (Integer intVal: distinctGroupingKeyIdList) {
-      distinctGroupingKeyIds[idx++] = intVal.intValue();
+      distinctGroupingKeyIds[idx++] = intVal;
     }
 
     List<GroupbyNode> groupbyNodes = plan.getSubPlans();
@@ -81,7 +84,7 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
 
     int index = 0;
     for (GroupbyNode eachGroupby: groupbyNodes) {
-      hashAggregators[index++] = new HashAggregator(eachGroupby);
+      hashAggregators[index++] = new HashAggregator(eachGroupby, inSchema);
     }
 
     outputColumnNum = plan.getOutSchema().size();
@@ -295,10 +298,6 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
     }
   }
 
-  @Override
-  public void init() throws IOException {
-  }
-
   public void rescan() throws IOException {
     finished = false;
     for (int i = 0; i < hashAggregators.length; i++) {
@@ -337,7 +336,7 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
 
     int tupleSize;
 
-    public HashAggregator(GroupbyNode groupbyNode) throws IOException {
+    public HashAggregator(GroupbyNode groupbyNode, Schema schema) throws IOException {
 
       hashTable = new HashMap<Tuple, Map<Tuple, FunctionContext[]>>(10000);
 
@@ -375,6 +374,10 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
         aggFunctionsNum = 0;
       }
 
+      for (EvalNode aggFunction : aggFunctions) {
+        aggFunction.bind(schema);
+      }
+
       tupleSize = groupingKeyIds.length + aggFunctionsNum;
     }
 
@@ -401,13 +404,13 @@ public class DistinctGroupbyHashAggregationExec extends PhysicalExec {
       FunctionContext[] contexts = distinctEntry.get(keyTuple);
       if (contexts != null) {
         for (int i = 0; i < aggFunctions.length; i++) {
-          aggFunctions[i].merge(contexts[i], inSchema, tuple);
+          aggFunctions[i].merge(contexts[i], tuple);
         }
       } else { // if the key occurs firstly
         contexts = new FunctionContext[aggFunctionsNum];
         for (int i = 0; i < aggFunctionsNum; i++) {
           contexts[i] = aggFunctions[i].newContext();
-          aggFunctions[i].merge(contexts[i], inSchema, tuple);
+          aggFunctions[i].merge(contexts[i], tuple);
         }
         distinctEntry.put(keyTuple, contexts);
       }

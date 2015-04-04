@@ -22,7 +22,6 @@ import com.google.gson.annotations.Expose;
 
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.Tuple;
@@ -68,8 +67,10 @@ public class CastEval extends UnaryEval {
     return target.getType().name();
   }
 
-  public Datum eval(Schema schema, Tuple tuple) {
-    Datum operandDatum = child.eval(schema, tuple);
+  @Override
+  @SuppressWarnings("unchecked")
+  public Datum eval(Tuple tuple) {
+    Datum operandDatum = child.eval(tuple);
     if (operandDatum.isNull()) {
       return operandDatum;
     }

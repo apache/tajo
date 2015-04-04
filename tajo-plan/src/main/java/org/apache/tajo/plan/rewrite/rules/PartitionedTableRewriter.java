@@ -86,6 +86,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
     public PartitionPathFilter(Schema schema, EvalNode partitionFilter) {
       this.schema = schema;
       this.partitionFilter = partitionFilter;
+      partitionFilter.bind(schema);
     }
 
     @Override
@@ -95,7 +96,7 @@ public class PartitionedTableRewriter implements LogicalPlanRewriteRule {
         return false;
       }
 
-      return partitionFilter.eval(schema, tuple).asBool();
+      return partitionFilter.eval(tuple).asBool();
     }
 
     @Override
