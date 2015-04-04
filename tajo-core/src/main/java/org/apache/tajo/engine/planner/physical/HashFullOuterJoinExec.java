@@ -19,12 +19,8 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.engine.codegen.CompilationError;
-import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.catalog.SchemaUtil;
-import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
@@ -35,10 +31,7 @@ import java.io.IOException;
 import java.util.*;
 
 
-public class HashFullOuterJoinExec extends BinaryPhysicalExec {
-  // from logical plan
-  protected JoinNode plan;
-  protected EvalNode joinQual;
+public class HashFullOuterJoinExec extends CommonJoinExec {
 
   protected List<Column[]> joinKeyPairs;
 
@@ -57,19 +50,13 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
   protected boolean finished = false;
   protected boolean shouldGetLeftTuple = true;
 
-  // projection
-  protected final Projector projector;
-
   private int rightNumCols;
   private int leftNumCols;
   private Map<Tuple, Boolean> matched;
 
   public HashFullOuterJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec outer,
                                PhysicalExec inner) {
-    super(context, SchemaUtil.merge(outer.getSchema(), inner.getSchema()),
-        plan.getOutSchema(), outer, inner);
-    this.plan = plan;
-    this.joinQual = plan.getJoinQual();
+    super(context, plan, outer, inner);
     this.tupleSlots = new HashMap<Tuple, List<Tuple>>(10000);
 
     // this hashmap mirrors the evolution of the tupleSlots, with the same keys. For each join key,
@@ -91,9 +78,6 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
       rightKeyList[i] = inner.getSchema().getColumnId(joinKeyPairs.get(i)[1].getQualifiedName());
     }
 
-    // for projection
-    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
-
     // for join
     frameTuple = new FrameTuple();
     outTuple = new VTuple(outSchema.size());
@@ -101,11 +85,6 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
 
     leftNumCols = outer.getSchema().size();
     rightNumCols = inner.getSchema().size();
-  }
-
-  @Override
-  protected void compile() throws CompilationError {
-    joinQual = context.getPrecompiledEval(inSchema, joinQual);
   }
 
   protected void getKeyLeftTuple(final Tuple outerTuple, Tuple keyTuple) {
@@ -186,7 +165,7 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
       rightTuple = iterator.next();
       frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
 
-      if (joinQual.eval(inSchema, frameTuple).isTrue()) { // if both tuples are joinable
+      if (joinQual.eval(frameTuple).isTrue()) { // if both tuples are joinable
         projector.eval(frameTuple, outTuple);
         found = true;
         getKeyLeftTuple(leftTuple, leftKeyTuple);
@@ -247,12 +226,6 @@ public class HashFullOuterJoinExec extends BinaryPhysicalExec {
     tupleSlots = null;
     matched = null;
     iterator = null;
-    plan = null;
-    joinQual = null;
-  }
-
-  public JoinNode getPlan() {
-    return this.plan;
   }
 }
 

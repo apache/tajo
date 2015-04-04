@@ -196,9 +196,7 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
     @Override
     public void transition(Worker worker, WorkerEvent workerEvent) {
 
-      if(worker.getResource().isQueryMasterMode()) {
-        worker.rmContext.getQueryMasterWorker().add(worker.getWorkerId());
-      }
+      worker.rmContext.getQueryMasterWorker().add(worker.getWorkerId());
       LOG.info("Worker with " + worker.getResource() + " is joined to Tajo cluster");
     }
   }

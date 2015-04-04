@@ -281,8 +281,9 @@ public class ExprTestBase {
         if (queryContext.getBool(SessionVars.CODEGEN)) {
           eval = codegen.compile(inputSchema, eval);
         }
+        eval.bind(inputSchema);
 
-        outTuple.put(i, eval.eval(inputSchema, vtuple));
+        outTuple.put(i, eval.eval(vtuple));
       }
 
       try {
