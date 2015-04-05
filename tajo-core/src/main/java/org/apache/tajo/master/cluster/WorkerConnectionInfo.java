@@ -25,6 +25,11 @@ import static org.apache.tajo.TajoProtos.WorkerConnectionInfoProto;
 public class WorkerConnectionInfo implements ProtoObject<WorkerConnectionInfoProto>, Comparable<WorkerConnectionInfo> {
 
   /**
+   * Unallocated worker id.
+   */
+  public static final int UNALLOCATED_WORKER_ID = 0;
+
+  /**
   * unique worker id
   */
   private int id;
@@ -53,11 +58,7 @@ public class WorkerConnectionInfo implements ProtoObject<WorkerConnectionInfoPro
    */
   private int httpInfoPort;
 
-  public WorkerConnectionInfo() {
-  }
-
   public WorkerConnectionInfo(WorkerConnectionInfoProto proto) {
-    this();
     this.id = proto.getId();
     this.host = proto.getHost();
     this.peerRpcPort = proto.getPeerRpcPort();
@@ -69,14 +70,13 @@ public class WorkerConnectionInfo implements ProtoObject<WorkerConnectionInfoPro
 
   public WorkerConnectionInfo(String host, int peerRpcPort, int pullServerPort, int clientPort,
                               int queryMasterPort, int httpInfoPort) {
-    this();
     this.host = host;
     this.peerRpcPort = peerRpcPort;
     this.pullServerPort = pullServerPort;
     this.clientPort = clientPort;
     this.queryMasterPort = queryMasterPort;
     this.httpInfoPort = httpInfoPort;
-    this.id = hashCode();
+    this.id = UNALLOCATED_WORKER_ID;
   }
 
   public String getHost() {
@@ -105,6 +105,10 @@ public class WorkerConnectionInfo implements ProtoObject<WorkerConnectionInfoPro
 
   public int getId() {
     return id;
+  }
+
+  public void setId(int id) {
+    this.id = id;
   }
 
   public String getHostAndPeerRpcPort() {

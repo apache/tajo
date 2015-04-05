@@ -18,19 +18,79 @@
 
 package org.apache.tajo.cluster;
 
+import org.apache.tajo.QueryTestCaseBase;
+import org.apache.tajo.TajoConstants;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
+import org.apache.tajo.master.rm.Worker;
+import org.apache.tajo.util.TUtil;
+import org.apache.tajo.worker.TajoWorker;
 import org.junit.Test;
+
+import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
-public class TestWorkerConnectionInfo {
+public class TestWorkerConnectionInfo extends QueryTestCaseBase {
+
+  public TestWorkerConnectionInfo() {
+    super(TajoConstants.DEFAULT_DATABASE_NAME);
+  }
 
   @Test
   public void testWorkerId() {
     WorkerConnectionInfo worker = new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080);
     WorkerConnectionInfo worker2 = new WorkerConnectionInfo("host2", 28091, 28092, 21000, 28093, 28080);
 
-    assertNotEquals(worker.getId(), worker2.getId());
+    assertEquals(WorkerConnectionInfo.UNALLOCATED_WORKER_ID, worker.getId());
+    assertEquals(worker.getId(), worker2.getId());
     assertEquals(worker.getId(), new WorkerConnectionInfo("host", 28091, 28092, 21000, 28093, 28080).getId());
+  }
+
+  private final List<TajoWorker> additionalWorkerList = TUtil.newList();
+
+  private void createSeveralWorkers() throws Exception {
+    for (int workerIndex = 0; workerIndex < 10; workerIndex++) {
+      TajoWorker tajoWorker = new TajoWorker();
+
+      TajoConf workerConf  = new TajoConf(testingCluster.getConfiguration());
+
+      workerConf.setVar(TajoConf.ConfVars.WORKER_INFO_ADDRESS, "localhost:0");
+      workerConf.setVar(TajoConf.ConfVars.WORKER_CLIENT_RPC_ADDRESS, "localhost:0");
+      workerConf.setVar(TajoConf.ConfVars.WORKER_PEER_RPC_ADDRESS, "localhost:0");
+
+      workerConf.setVar(TajoConf.ConfVars.WORKER_QM_RPC_ADDRESS, "localhost:0");
+
+      tajoWorker.startWorker(workerConf, new String[0]);
+
+      additionalWorkerList.add(tajoWorker);
+    }
+  }
+
+  @Test(timeout = 60000)
+  public void testIsWorkerIdGenarated() throws Exception {
+    createSeveralWorkers();
+    Set<Integer> workerIdSet = TUtil.newHashSet();
+
+    Thread.sleep(30 * 1000);
+
+    assertTrue(testingCluster.getTajoWorkers().size() > 0);
+
+    for (TajoWorker tajoWorker: testingCluster.getTajoWorkers()) {
+      int workerId = tajoWorker.getWorkerContext().getConnectionInfo().getId();
+      assertNotEquals(WorkerConnectionInfo.UNALLOCATED_WORKER_ID, workerId);
+
+      assertTrue(workerIdSet.add(workerId));
+    }
+
+    assertTrue(additionalWorkerList.size() > 0);
+
+    for (TajoWorker tajoWorker: additionalWorkerList) {
+      int workerId = tajoWorker.getWorkerContext().getConnectionInfo().getId();
+      assertNotEquals(WorkerConnectionInfo.UNALLOCATED_WORKER_ID, workerId);
+
+      assertTrue(workerIdSet.add(workerId));
+    }
   }
 }

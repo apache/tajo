@@ -77,6 +77,7 @@ message TajoHeartbeatResponse {
   required BoolProto heartbeatResult = 1;
   required ClusterResourceSummary clusterResourceSummary = 2;
   optional ResponseCommand responseCommand = 3;
+  optional int32 generatedWorkerId = 4;
 }
 
 message ClusterResourceSummary {
