@@ -19,7 +19,9 @@
 package org.apache.tajo.engine.eval;
 
 import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
@@ -31,6 +33,7 @@ import org.junit.Test;
 
 import static org.apache.tajo.common.TajoDataTypes.Type.*;
 import static org.junit.Assert.*;
+import static org.junit.Assert.fail;
 
 public class TestEvalTree extends ExprTestBase {
   @Test
@@ -360,11 +363,57 @@ public class TestEvalTree extends ExprTestBase {
     assertEquals(e3.getType(), eval.getLeftExpr().getType());
     assertEquals(plus3.getType(), eval.getRightExpr().getType());
     assertEquals(plus3.getLeftExpr(), ((BinaryEval)eval.getRightExpr()).getLeftExpr());
-    assertEquals(plus3.getRightExpr(), ((BinaryEval)eval.getRightExpr()).getRightExpr());
+    assertEquals(plus3.getRightExpr(), ((BinaryEval) eval.getRightExpr()).getRightExpr());
     assertEquals(plus2.getLeftExpr(), ((BinaryEval)((BinaryEval)eval.getRightExpr()).getLeftExpr()).getLeftExpr());
     assertEquals(plus2.getRightExpr(), ((BinaryEval)((BinaryEval)eval.getRightExpr()).getLeftExpr()).getRightExpr());
-    assertEquals(plus1.getLeftExpr(), ((BinaryEval)((BinaryEval)eval.getRightExpr()).getRightExpr()).getLeftExpr());
-    assertEquals(plus1.getRightExpr(), ((BinaryEval)((BinaryEval)eval.getRightExpr()).getRightExpr()).getRightExpr());
+    assertEquals(plus1.getLeftExpr(), ((BinaryEval) ((BinaryEval) eval.getRightExpr()).getRightExpr()).getLeftExpr());
+    assertEquals(plus1.getRightExpr(), ((BinaryEval) ((BinaryEval) eval.getRightExpr()).getRightExpr()).getRightExpr());
+  }
+
+  @Test
+  public final void testBindCheck() {
+    ConstEval e1;
+    ConstEval e2;
+    BinaryEval binEval;
+
+    // Constant
+    e1 = new ConstEval(DatumFactory.createInt4(9));
+    e2 = new ConstEval(DatumFactory.createInt4(34));
+    binEval = new BinaryEval(EvalType.LTH, e1, e2);
+    try {
+      binEval.eval(null);
+      fail("EvalNode is not binded");
+    } catch (IllegalStateException e) {
+      assertTrue(binEval.bind(null).eval(null).asBool());
+    }
+
+    CaseWhenEval caseWhenEval = new CaseWhenEval();
+    caseWhenEval.addIfCond(new CaseWhenEval.IfThenEval(binEval, new ConstEval(DatumFactory.createInt4(1))));
+    try {
+      caseWhenEval.eval(null);
+      fail("EvalNode is not binded");
+    } catch (IllegalStateException e) {
+      assertEquals(caseWhenEval.bind(null).eval(null).asInt4(), 1);
+    }
+
+    Schema schema = new Schema(new Column[]{new Column("test", TajoDataTypes.Type.INT4)});
+    Tuple tuple = new VTuple(new Datum[]{DatumFactory.createText("aaa")});
+    RegexPredicateEval regexEval = new RegexPredicateEval(false, new FieldEval("test",
+        CatalogUtil.newSimpleDataType(TajoDataTypes.Type.INT4)), new ConstEval(DatumFactory.createText("a*")), false);
+    try {
+      regexEval.eval(null);
+      fail("EvalNode is not binded");
+    } catch (IllegalStateException e) {
+      assertEquals(regexEval.bind(schema).eval(tuple).asBool(), true);
+    }
+
+    RowConstantEval rowConstantEval = new RowConstantEval(new Datum[]{});
+    try {
+      rowConstantEval.eval(null);
+      fail("EvalNode is not binded");
+    } catch (IllegalStateException e) {
+      assertEquals(rowConstantEval.bind(null).eval(null).isNull(), true);
+    }
   }
   
   private void assertCloneEqual(EvalNode eval) throws CloneNotSupportedException {
