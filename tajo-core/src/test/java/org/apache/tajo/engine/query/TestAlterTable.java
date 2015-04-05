@@ -51,9 +51,8 @@ public class TestAlterTable extends QueryTestCaseBase {
   }
 
   @Test
-  public final void testAlterTableSetProperty1() throws Exception {
-    List<String> createdNames = executeDDL("table2_ddl.sql", "table2.tbl", "ALTX");
-
+  public final void testAlterTableSetProperty() throws Exception {
+    executeDDL("table2_ddl.sql", "table2.tbl", "ALTX");
     ResultSet before_res = executeQuery();
     assertResultSet(before_res, "before_set_property_delimiter.result");
     cleanupQuery(before_res);
@@ -62,21 +61,6 @@ public class TestAlterTable extends QueryTestCaseBase {
 
     ResultSet after_res = executeQuery();
     assertResultSet(after_res, "after_set_property_delimiter.result");
-    cleanupQuery(after_res);
-  }
-
-  @Test
-  public final void testAlterTableSetProperty2() throws Exception {
-    List<String> createdNames = executeDDL("table3_ddl.sql", "table3.tbl", "ALTY");
-
-    ResultSet before_res = executeQuery();
-    assertResultSet(before_res, "before_set_property_timezone.result");
-    cleanupQuery(before_res);
-
-    executeDDL("alter_table_set_property_timezone.sql", null);
-
-    ResultSet after_res = executeQuery();
-    assertResultSet(after_res, "after_set_property_timezone.result");
     cleanupQuery(after_res);
   }
 }
