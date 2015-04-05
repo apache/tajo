@@ -90,74 +90,12 @@ limitations under the License.
           </execution>
         </executions>
       </plugin>
-	  <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>create-protobuf-generated-sources-directory</id>
-            <phase>initialize</phase>
-            <configuration>
-              <target>
-                <mkdir dir="target/generated-sources/proto" />
-              </target>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>1.2</version>
-        <executions>
-          <execution>
-            <id>generate-sources</id>
-            <phase>generate-sources</phase>
-            <configuration>
-              <executable>protoc</executable>
-              <arguments>
-                <argument>-Isrc/main/proto/</argument>
-                <argument>--proto_path=../../tajo-common/src/main/proto</argument>
-                <argument>--proto_path=../../tajo-catalog/tajo-catalog-common/src/main/proto</argument>
-                <argument>--java_out=target/generated-sources/proto</argument>
-                <argument>src/main/proto/StorageFragmentProtos.proto</argument>
-              </arguments>
-            </configuration>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <version>1.5</version>
-        <executions>
-          <execution>
-            <id>add-source</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>add-source</goal>
-            </goals>
-            <configuration>
-              <sources>
-                <source>target/generated-sources/proto</source>
-              </sources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-report-plugin</artifactId>
       </plugin>
     </plugins>
   </build>
-  
   <dependencies>
     <dependency>
       <groupId>org.apache.tajo</groupId>
@@ -185,34 +123,34 @@ limitations under the License.
       <scope>provided</scope>
     </dependency>
     <dependency>
-	  <groupId>org.apache.kafka</groupId>
-	  <artifactId>kafka_2.10</artifactId>
-	  <version>0.8.2.0</version>
-	  <scope>provided</scope>
-	</dependency>
-	<dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>${kafka.artifactId}</artifactId>
+      <version>${kafka.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
-	<dependency>
-		<groupId>org.apache.zookeeper</groupId>
-		<artifactId>zookeeper</artifactId>
-		<version>3.4.6</version>
-		<scope>test</scope>
-	</dependency>
-	<dependency>
-		<groupId>io.airlift</groupId>
-		<artifactId>testing</artifactId>
-		<version>0.88</version>
-		<scope>test</scope>
-	</dependency>
-	<dependency>
-		<groupId>com.101tec</groupId>
-		<artifactId>zkclient</artifactId>
-		<scope>test</scope>
-		<version>0.4</version>
-	</dependency>
+    <dependency>
+      <groupId>org.apache.zookeeper</groupId>
+      <artifactId>zookeeper</artifactId>
+      <version>3.4.6</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.airlift</groupId>
+      <artifactId>testing</artifactId>
+      <version>0.88</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.101tec</groupId>
+      <artifactId>zkclient</artifactId>
+      <scope>test</scope>
+      <version>0.4</version>
+    </dependency>
   </dependencies>
 
   <profiles>
