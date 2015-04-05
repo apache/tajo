@@ -14,6 +14,8 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from tajo_util import outputType
+
 @outputType('int4')
 def return_one():
     return 1

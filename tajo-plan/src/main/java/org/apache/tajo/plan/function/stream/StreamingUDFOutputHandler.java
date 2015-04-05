@@ -20,7 +20,7 @@ package org.apache.tajo.plan.function.stream;
 
 public class StreamingUDFOutputHandler extends OutputHandler {
 
-  public StreamingUDFOutputHandler(RowStoreUtil.RowStoreDecoder deserializer) {
+  public StreamingUDFOutputHandler(TextLineDeserializer deserializer) {
     this.deserializer = deserializer;
   }
 

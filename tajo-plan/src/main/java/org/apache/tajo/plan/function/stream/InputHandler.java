@@ -25,13 +25,17 @@ import java.io.OutputStream;
 
 /**
  * {@link InputHandler} is responsible for handling the input to the
- * Pig-Streaming external command.
+ * Tajo-Streaming external command.
  *
  * The managed executable could be fed input in a {@link InputType#SYNCHRONOUS}
  * manner via its <code>stdin</code> or in an {@link InputType#ASYNCHRONOUS}
  * manner via an external file which is subsequently read by the executable.
  */
 public abstract class InputHandler {
+
+  private final static byte[] END_OF_RECORD_DELIM = "|_\n".getBytes();
+  private final static byte[] END_OF_STREAM = ("C" + "\\x04" + "|_\n").getBytes();
+
   /**
    *
    */
@@ -43,7 +47,7 @@ public abstract class InputHandler {
    * It is the responsibility of the concrete sub-classes to setup and
    * manage the serializer.
    */
-  protected RowStoreUtil.RowStoreEncoder serializer;
+  protected TextLineSerializer serializer;
 
   private OutputStream out;
 
@@ -63,7 +67,8 @@ public abstract class InputHandler {
    * @throws IOException
    */
   public void putNext(Tuple t) throws IOException {
-    out.write(serializer.toBytes(t));
+    serializer.serialize(out, t);
+    out.write(END_OF_RECORD_DELIM);
   }
 
   /**

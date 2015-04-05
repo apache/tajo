@@ -19,15 +19,20 @@
 package org.apache.tajo.plan.function.stream;
 
 import com.google.common.base.Charsets;
+import io.netty.buffer.ByteBuf;
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
 
 import java.io.IOException;
 import java.io.InputStream;
 
 /**
  * {@link OutputHandler} is responsible for handling the output of the
- * Pig-Streaming external command.
+ * Tajo-Streaming external command.
  *
  * The output of the managed executable could be fetched in a
  * {@link OutputType#SYNCHRONOUS} manner via its <code>stdout</code> or in an
@@ -35,25 +40,25 @@ import java.io.InputStream;
  * process wrote its output.
  */
 public abstract class OutputHandler {
+  private static int DEFAULT_BUFFER = 64 * 1024;
   public static final Object END_OF_OUTPUT = new Object();
   private static final byte[] DEFAULT_RECORD_DELIM = new byte[] {'\n'};
 
   public enum OutputType {SYNCHRONOUS, ASYNCHRONOUS}
 
-  protected RowStoreUtil.RowStoreDecoder deserializer;
+  protected TextLineDeserializer deserializer;
 
   protected ByteBufLineReader in = null;
 
-//  private Text currValue = new Text();
   private String currValue = null;
 
-//  private BufferedPositionedInputStream istream;
   private InputStream istream;
 
   //Both of these ignore the trailing \n.  So if the
   //default delimiter is "\n" recordDelimStr is "".
   private String recordDelimStr = null;
   private int recordDelimLength = 0;
+  private Tuple tuple = new VTuple(1);
 
   /**
    * Get the handled <code>OutputType</code>.
@@ -76,6 +81,8 @@ public abstract class OutputHandler {
                      long offset, long end) throws IOException {
     this.istream  = is;
     this.in = new ByteBufLineReader(new ByteBufInputChannel(istream));
+
+    // TODO
   }
 
   /**
@@ -93,9 +100,14 @@ public abstract class OutputHandler {
     if (!readValue()) {
       return null;
     }
-    byte[] newBytes = new byte[currValue.length()];
-    System.arraycopy(currValue.getBytes(), 0, newBytes, 0, currValue.length());
-    return deserializer.toTuple(newBytes);
+    ByteBuf buf = BufferPool.directBuffer(DEFAULT_BUFFER);
+    buf.writeBytes(currValue.getBytes());
+    try {
+      deserializer.deserialize(buf, tuple);
+    } catch (TextLineParsingError textLineParsingError) {
+      throw new IOException(textLineParsingError);
+    }
+    return tuple;
   }
 
   private boolean readValue() throws IOException {
@@ -116,6 +128,11 @@ public abstract class OutputHandler {
       }
 //      currValue.append(lineBytes, 0, lineBytes.length);
       currValue += new String(lineBytes);
+    }
+
+    if (currValue.contains("|_")) {
+      int pos = currValue.lastIndexOf("|_");
+      currValue = currValue.substring(0, pos);
     }
 
     return true;

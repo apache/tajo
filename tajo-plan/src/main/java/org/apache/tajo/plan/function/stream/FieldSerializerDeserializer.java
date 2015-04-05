@@ -1,4 +1,4 @@
-/*
+/**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -16,23 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.engine.function;
+package org.apache.tajo.plan.function.stream;
 
-import org.apache.tajo.engine.eval.ExprTestBase;
-import org.junit.Test;
+import io.netty.buffer.ByteBuf;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.datum.Datum;
 
 import java.io.IOException;
+import java.io.OutputStream;
 
-public class TestPythonFunctions extends ExprTestBase {
 
-  @Test
-  public void test() throws IOException {
-//    testSimpleEval("select return_one()", new String[]{"1"});
-//    testSimpleEval("select helloworld()", new String[]{"Hello, World"});
-    testSimpleEval("select sum_py(1,2)", new String[]{"3"});
-    testSimpleEval("select concat_py('1')", new String[]{"11"});
-    testSimpleEval("select comma_format(12345)", new String[]{"12,345"});
-    testSimpleEval("select concat4('Tajo', 'is', 'awesome', '!')", new String[]{"Tajo is awesome !"});
-    testSimpleEval("select percent(386, 1000)", new String[]{"38.6"});
-  }
+public interface FieldSerializerDeserializer {
+
+  int serialize(OutputStream out, Datum datum, Column col, int columnIndex, byte[] nullChars) throws IOException;
+
+  Datum deserialize(ByteBuf buf, Column col, int columnIndex, ByteBuf nullChars)
+      throws IOException, TextLineParsingError;
+
 }

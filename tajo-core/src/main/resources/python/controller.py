@@ -26,7 +26,7 @@ try:
 except ImportError:
     USE_DATEUTIL = False
 
-from tajo_util import write_user_exception, udf_logging
+from tajo_util import write_user_exception, udf_logging, outputType
 
 FIELD_DELIMITER = ','
 TUPLE_START = '('
@@ -90,7 +90,7 @@ class PythonStreamingController:
         self.stream_error = os.fdopen(sys.stderr.fileno(), 'wb', 0)
 
         self.input_stream = sys.stdin
-        self.output_stream = open(output_stream_path, 'a')
+        self.log_stream = open(output_stream_path, 'a')
         sys.stderr = open(error_stream_path, 'w')
         is_illustrate = is_illustrate_str == "true"
 
@@ -102,9 +102,14 @@ class PythonStreamingController:
         logging.info("To reduce the amount of information being logged only a small subset of rows are logged at the INFO level.  Call udf_logging.set_log_level_debug in tajo_util to see all rows being processed.")
 
         input_str = self.get_next_input()
+        logging.info('main: ' + input_str)
 
         try:
+            # logging.info('module: ' + module_name + ' func_name: ' + func_name)
+            # logging.info(globals())
+            # logging.info(locals())
             func = __import__(module_name, globals(), locals(), [func_name], -1).__dict__[func_name]
+            logging.info("imported")
         except:
             #These errors should always be caused by user code.
             write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
@@ -114,9 +119,10 @@ class PythonStreamingController:
             #Only log output for illustrate after we get the flag to capture output.
             sys.stdout = open(os.devnull, 'w')
         else:
-            sys.stdout = self.output_stream
+            sys.stdout = self.log_stream
 
         while input_str != END_OF_STREAM:
+            logging.info('while loop')
             should_log = False
             if self.input_count == self.next_input_count_to_log:
                 should_log = True
@@ -168,12 +174,15 @@ class PythonStreamingController:
 
     def get_next_input(self):
         input_stream = self.input_stream
-        output_stream = self.output_stream
+        log_stream = self.log_stream
 
+        logging.info('test')
         input_str = input_stream.readline()
+        logging.info('input_str: ' + input_str)
 
         while input_str.endswith(END_RECORD_DELIM) == False:
             line = input_stream.readline()
+            logging.info('line: ' + line)
             if line == '':
                 input_str = ''
                 break
@@ -184,7 +193,7 @@ class PythonStreamingController:
 
         if input_str == TURN_ON_OUTPUT_CAPTURING:
             logging.debug("Turned on Output Capturing")
-            sys.stdout = output_stream
+            sys.stdout = log_stream
             return self.get_next_input()
 
         if input_str == END_OF_STREAM:
@@ -219,10 +228,18 @@ def deserialize_input(input_str):
     if len(input_str) == 0:
         return []
 
-    return [_deserialize_input(param, 0, len(param)-1) for param in input_str.split(WRAPPED_PARAMETER_DELIMITER)]
+    logging.info('deserialize_input: ' + input_str)
+    # [logging.info(param) for param in input_str.split(WRAPPED_PARAMETER_DELIMITER)]
+    # return [_deserialize_input(param, 0, len(param)) for param in input_str.split(WRAPPED_PARAMETER_DELIMITER)]
+    [logging.info(param) for param in input_str.split(WRAPPED_FIELD_DELIMITER)]
+    return [_deserialize_input(param, 0, len(param)) for param in input_str.split(WRAPPED_FIELD_DELIMITER)]
 
 def _deserialize_input(input_str, si, ei):
-    if ei - si < 1:
+    logging.info('_deserialize_input: ' + input_str)
+    logging.info(si)
+    logging.info(ei)
+    len = ei - si + 1
+    if len < 1:
         #Handle all of the cases where you can have valid empty input.
         if ei == si:
             if input_str[si] == TYPE_CHARARRAY:
@@ -234,35 +251,67 @@ def _deserialize_input(input_str, si, ei):
         else:
             raise Exception("Start index %d greater than end index %d.\nInput string: %s\n, Slice: %s" % (si, ei, input_str[si:ei+1]))
 
-    first = input_str[si]
-    schema = input_str[si+1] if first == PRE_WRAP_DELIM else first
+    tokens = input_str.split(WRAPPED_PARAMETER_DELIMITER)
+    schema = tokens[0];
+    param = tokens[1];
+
+    # first = input_str[si]
+    # schema = input_str[si+1] if first == PRE_WRAP_DELIM else first
+    # logging.info('first: ' + first)
+    logging.info('schema: ' + schema)
+    logging.info('param: ' + param)
+
+    # if schema == NULL_BYTE:
+    #     return None
+    # elif schema == TYPE_TUPLE or schema == TYPE_MAP or schema == TYPE_BAG:
+    #     return _deserialize_collection(input_str, schema, si+3, ei-3)
+    # elif schema == TYPE_CHARARRAY:
+    #     return unicode(input_str[si+1:ei+1], 'utf-8')
+    # elif schema == TYPE_BYTEARRAY:
+    #     return bytearray(input_str[si+1:ei+1])
+    # elif schema == TYPE_INTEGER:
+    #     return int(input_str[si+1:ei+1])
+    # elif schema == TYPE_LONG or schema == TYPE_BIGINTEGER:
+    #     return long(input_str[si+1:ei+1])
+    # elif schema == TYPE_FLOAT or schema == TYPE_DOUBLE or schema == TYPE_BIGDECIMAL:
+    #     return float(input_str[si+1:ei+1])
+    # elif schema == TYPE_BOOLEAN:
+    #     return input_str[si+1:ei+1] == "true"
+    # elif schema == TYPE_DATETIME:
+    #     #Format is "yyyy-MM-ddTHH:mm:ss.SSS+00:00" or "2013-08-23T18:14:03.123+ZZ"
+    #     if USE_DATEUTIL:
+    #         return parser.parse(input_str[si+1:ei+1])
+    #     else:
+    #         #Try to use datetime even though it doesn't handle time zones properly,
+    #         #We only use the first 3 microsecond digits and drop time zone (first 23 characters)
+    #         return datetime.strptime(input_str[si+1:si+24], "%Y-%m-%dT%H:%M:%S.%f")
+    # else:
+    #     raise Exception("Can't determine type of input: %s" % input_str[si:ei+1])
 
     if schema == NULL_BYTE:
         return None
-    elif schema == TYPE_TUPLE or schema == TYPE_MAP or schema == TYPE_BAG:
-        return _deserialize_collection(input_str, schema, si+3, ei-3)
     elif schema == TYPE_CHARARRAY:
-        return unicode(input_str[si+1:ei+1], 'utf-8')
+        return unicode(param, 'utf-8')
     elif schema == TYPE_BYTEARRAY:
-        return bytearray(input_str[si+1:ei+1])
+        return bytearray(param)
     elif schema == TYPE_INTEGER:
-        return int(input_str[si+1:ei+1])
+        return int(param)
     elif schema == TYPE_LONG or schema == TYPE_BIGINTEGER:
-        return long(input_str[si+1:ei+1])
+        return long(param)
     elif schema == TYPE_FLOAT or schema == TYPE_DOUBLE or schema == TYPE_BIGDECIMAL:
-        return float(input_str[si+1:ei+1])
+        return float(param)
     elif schema == TYPE_BOOLEAN:
-        return input_str[si+1:ei+1] == "true"
+        return param == "true"
     elif schema == TYPE_DATETIME:
         #Format is "yyyy-MM-ddTHH:mm:ss.SSS+00:00" or "2013-08-23T18:14:03.123+ZZ"
         if USE_DATEUTIL:
-            return parser.parse(input_str[si+1:ei+1])
+            return parser.parse(param)
         else:
             #Try to use datetime even though it doesn't handle time zones properly,
             #We only use the first 3 microsecond digits and drop time zone (first 23 characters)
-            return datetime.strptime(input_str[si+1:si+24], "%Y-%m-%dT%H:%M:%S.%f")
+            return datetime.strptime(param, "%Y-%m-%dT%H:%M:%S.%f")
     else:
-        raise Exception("Can't determine type of input: %s" % input_str[si:ei+1])
+        raise Exception("Can't determine type of input: %s" % param)
 
 def _deserialize_collection(input_str, return_type, si, ei):
     list_result = []

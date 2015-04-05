@@ -43,8 +43,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
 
   public static Set<FunctionDesc> registerFunctions(String path, String namespace) throws IOException {
 
-//    String command = pigContext.getProperties().getProperty(
-//        PigConfiguration.PIG_STREAMING_UDF_PYTHON_COMMAND, "python");
     Set<FunctionDesc> functionDescs = TUtil.newHashSet();
 
     String command = "python";
@@ -67,17 +65,8 @@ public class PythonScriptEngine extends TajoScriptEngine {
     namespace = namespace == null ? "" : namespace + NAMESPACE_SEPARATOR;
     for(FuncInfo funcInfo : functions) {
       String alias = namespace + funcInfo.funcName;
-//      String execType = (pigContext.getExecType() == ExecType.LOCAL? "local" : "mapreduce");
-//      String isIllustrate = (Boolean.valueOf(pigContext.inIllustrator)).toString();
       log.debug("Registering Function: " + alias);
-//      pigContext.registerFunction(alias,
-//          new FuncSpec("StreamingUDF",
-//              new String[] {
-//                  command,
-//                  fileName, name,
-//                  schemaString, schemaLineNumber,
-//                  execType, isIllustrate
-//              }));
+
       TajoDataTypes.DataType returnType = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.valueOf(funcInfo.returnType));
       FunctionSignature signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, funcInfo.funcName,
           returnType, createParamTypes(funcInfo.paramNum));
@@ -97,14 +86,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
     }
     return paramTypes;
   }
-
-//  @Override
-//  protected Map<String, List<PigStats>> main(PigContext context,
-//                                             String scriptFile) throws IOException {
-//    log.warn("ScriptFile: " + scriptFile);
-//    registerFunctions(scriptFile, null, context);
-//    return getPigStatsMap();
-//  }
 
   @Override
   protected String getScriptingLang() {

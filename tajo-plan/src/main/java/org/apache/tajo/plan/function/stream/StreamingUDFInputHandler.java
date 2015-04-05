@@ -22,7 +22,7 @@ import java.io.IOException;
 
 public class StreamingUDFInputHandler extends InputHandler {
 
-  public StreamingUDFInputHandler(RowStoreUtil.RowStoreEncoder serializer) {
+  public StreamingUDFInputHandler(TextLineSerializer serializer) {
     this.serializer = serializer;
   }
 

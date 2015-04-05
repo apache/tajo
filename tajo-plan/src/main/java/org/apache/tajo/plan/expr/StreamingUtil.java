@@ -98,24 +98,6 @@ public class StreamingUtil {
     env.put(PATH, envPath);
   }
 
-//  protected static void addJobConfToEnvironment(OverridableConf queryContext, Map<String, String> env) {
-//    String propsToSend = queryContext.get(PIG_STREAMING_ENVIRONMENT);
-//    LOG.debug("Properties to ship to streaming environment set in "+PIG_STREAMING_ENVIRONMENT+": " + propsToSend);
-//    if (propsToSend == null) {
-//      return;
-//    }
-//
-//    for (String prop : propsToSend.split(",")) {
-//      String value = conf.get(prop);
-//      if (value == null) {
-//        LOG.warn("Property set in "+PIG_STREAMING_ENVIRONMENT+" not found in Configuration: " + prop);
-//        continue;
-//      }
-//      LOG.debug("Setting property in streaming environment: " + prop);
-//      envPut(env, prop, value);
-//    }
-//  }
-
   private static void envPut(Map<String, String> env, String name, String value) {
     if (LOG.isDebugEnabled()) {
       LOG.debug("Add  env entry:" + name + "=" + value);

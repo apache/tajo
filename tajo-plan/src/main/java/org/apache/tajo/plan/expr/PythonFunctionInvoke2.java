@@ -23,13 +23,10 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.catalog.Column;
-import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.catalog.*;
+import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DatumFactory;
-import org.apache.tajo.function.FunctionInvocation;
 import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.function.PythonInvocationDesc;
 import org.apache.tajo.plan.function.python.JythonUtils;
@@ -39,15 +36,16 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 
 import java.io.*;
+import java.util.Scanner;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 public class PythonFunctionInvoke2 extends FunctionInvoke {
 
-  private static final Log log = LogFactory.getLog(PythonFunctionInvoke2.class);
+  private static final Log LOG = LogFactory.getLog(PythonFunctionInvoke2.class);
 
   private static final String PYTHON_CONTROLLER_JAR_PATH = "/python/controller.py"; //Relative to root of tajo jar.
-  private static final String PYTHON_PIG_UTIL_PATH = "/python/tajo_util.py"; //Relative to root of tajo jar.
+  private static final String PYTHON_TAJO_UTIL_PATH = "/python/tajo_util.py"; //Relative to root of tajo jar.
 
   //Indexes for arguments being passed to external process
   private static final int UDF_LANGUAGE = 0;
@@ -90,7 +88,11 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
   private PythonInvocationDesc invocationDesc;
   private Schema inSchema;
   private Schema outSchema;
+  private int [] projectionCols;
   private boolean isBinded = false;
+
+  private CSVLineSerDe lineSerDe = new CSVLineSerDe();
+  private TableMeta pipeMeta;
 
   public static final String TURN_ON_OUTPUT_CAPTURING = "TURN_ON_OUTPUT_CAPTURING";
 
@@ -110,6 +112,8 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
       inSchema.addColumn(new Column("in_" + i, paramTypes[i]));
     }
     outSchema = new Schema(new Column[]{new Column("out", functionSignature.getReturnType())});
+    projectionCols = new int[]{0};
+    pipeMeta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.TEXTFILE);
   }
 
   @Override
@@ -125,7 +129,7 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
   }
 
   private StreamingCommand startUdfController() throws IOException {
-    StreamingCommand sc = new StreamingCommand(constructCommand());
+    StreamingCommand sc = new StreamingCommand(buildCommand());
     ProcessBuilder processBuilder = StreamingUtil.createProcess(queryContext, sc);
     process = processBuilder.start();
 
@@ -133,7 +137,7 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
     return sc;
   }
 
-  private String[] constructCommand() throws IOException {
+  private String[] buildCommand() throws IOException {
     String[] command = new String[10];
 
 //    String jarPath = conf.get("mapreduce.job.jar");
@@ -148,7 +152,9 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
 //    }
 
 //    String standardOutputRootWriteLocation = soc.getStandardOutputRootWriteLocation();
-    String standardOutputRootWriteLocation = System.getProperty("TAJO_LOG_DIR");
+//    String standardOutputRootWriteLocation = System.getProperty("tajo.log.dir");
+    // TODO
+    String standardOutputRootWriteLocation = "/Users/jihoonson/Projects/tajo/";
     String controllerLogFileName, outFileName, errOutFileName;
 
 //    if (execType.isLocal()) {
@@ -169,19 +175,27 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
     command[UDF_LANGUAGE] = "python";
     command[PATH_TO_CONTROLLER_FILE] = getControllerPath();
     int lastSeparator = filePath.lastIndexOf(File.separator) + 1;
-    command[UDF_FILE_NAME] = filePath.substring(lastSeparator);
+    String fileName = filePath.substring(lastSeparator);
+    fileName = fileName.endsWith(".py") ? fileName.substring(0, fileName.length()-3) : fileName;
+    command[UDF_FILE_NAME] = fileName;
     command[UDF_FILE_PATH] = lastSeparator <= 0 ?
         "." :
         filePath.substring(0, lastSeparator - 1);
     command[UDF_NAME] = funcName;
+    // TODO
     String fileCachePath = filePath.substring(0, lastSeparator);
-    command[PATH_TO_FILE_CACHE] = "'" + fileCachePath + "'";
+//    command[PATH_TO_FILE_CACHE] = "'" + fileCachePath + "'";
+    command[PATH_TO_FILE_CACHE] = "'" + "/Users/jihoonson/Projects/tajo/tajo-core/src/test/resources/python/" + "'";
     command[STD_OUT_OUTPUT_PATH] = outFileName;
     command[STD_ERR_OUTPUT_PATH] = errOutFileName;
     command[CONTROLLER_LOG_FILE_PATH] = controllerLogFileName;
-    command[IS_ILLUSTRATE] = "";
+    command[IS_ILLUSTRATE] = "false";
 
 //    ensureUserFileAvailable(command, fileCachePath);
+
+    for (String cmd : command) {
+      LOG.info(cmd);
+    }
 
     return command;
   }
@@ -232,9 +246,11 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
   }
 
   private void createInputHandlers() {
-    RowStoreUtil.RowStoreEncoder serializer = RowStoreUtil.createEncoder(inSchema);
+    TextLineSerializer serializer = lineSerDe.createSerializer(inSchema, pipeMeta);
+    serializer.init();
     this.inputHandler = new StreamingUDFInputHandler(serializer);
-    RowStoreUtil.RowStoreDecoder deserializer = RowStoreUtil.createDecoder(outSchema);
+    TextLineDeserializer deserializer = lineSerDe.createDeserializer(outSchema, pipeMeta, projectionCols);
+    deserializer.init();
     this.outputHandler = new StreamingUDFOutputHandler(deserializer);
   }
 
@@ -285,11 +301,11 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
         pythonControllerStream.close();
       }
       controllerFile.deleteOnExit();
-      File pigUtilFile = new File(controllerFile.getParent() + "/pig_util.py");
-      pigUtilFile.deleteOnExit();
-      InputStream pythonUtilStream = this.getClass().getResourceAsStream(PYTHON_PIG_UTIL_PATH);
+      File tajoUtilFile = new File(controllerFile.getParent() + "/tajo_util.py");
+      tajoUtilFile.deleteOnExit();
+      InputStream pythonUtilStream = this.getClass().getResourceAsStream(PYTHON_TAJO_UTIL_PATH);
       try {
-        FileUtils.copyInputStreamToFile(pythonUtilStream, pigUtilFile);
+        FileUtils.copyInputStreamToFile(pythonUtilStream, tajoUtilFile);
       } finally {
         pythonUtilStream.close();
       }
@@ -320,13 +336,15 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
 //    }
 
     try {
-      if (this.inSchema == null || this.inSchema.size() == 0) {
+//      if (this.inSchema == null || this.inSchema.size() == 0) {
+      if (input == null) {
         //When nothing is passed into the UDF the tuple
         //being sent is the full tuple for the relation.
         //We want it to be nothing (since that's what the user wrote).
 //        input = TupleFactory.getInstance().newTuple(0);
         input = new VTuple(0);
       }
+      LOG.info("input: " + input);
       inputQueue.put(input);
     } catch (Exception e) {
       throw new RuntimeException("Failed adding input to inputQueue", e);
@@ -351,7 +369,9 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
       throw new RuntimeException(outerrThreadsError);
     }
 
-    return JythonUtils.objectToDatum(outSchema.getColumn(0).getDataType(), o);
+//    Datum out = JythonUtils.objectToDatum(outSchema.getColumn(0).getDataType(), o);
+//    LOG.info("out: " + out);
+    return (Datum) o;
   }
 
   /**
@@ -364,18 +384,20 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
 
     public void run() {
       try {
-        log.debug("Starting PIT");
+        LOG.info("Starting PIT");
         while (true) {
           Tuple inputTuple = inputQueue.take();
+          LOG.info("PIT: " + inputTuple);
           inputHandler.putNext(inputTuple);
           try {
             stdin.flush();
+            LOG.info("PIT flushed");
           } catch(Exception e) {
             return;
           }
         }
       } catch (Exception e) {
-        log.error(e);
+        LOG.error(e);
       }
     }
   }
@@ -394,8 +416,8 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
     public void run() {
       Object o = null;
       try{
-        log.debug("Starting POT");
-        //StreamUDFToPig wraps object in single element tuple
+        LOG.info("Starting POT");
+
         o = outputHandler.getNext().get(0);
         while (o != OutputHandler.END_OF_OUTPUT) {
           if (o != null)
@@ -423,7 +445,7 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
             }
             outputQueue.put(ERROR_OUTPUT); //Need to wake main thread.
           } catch(InterruptedException ie) {
-            log.error(ie);
+            LOG.error(ie);
           }
         }
       }
@@ -437,7 +459,7 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
 
     public void run() {
       try {
-        log.debug("Starting PET");
+        LOG.info("Starting PET");
         Integer lineNumber = null;
         StringBuffer error = new StringBuffer();
         String errInput;
@@ -465,9 +487,9 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
           stderr = null;
         }
       } catch (IOException e) {
-        log.debug("Process Ended", e);
+        LOG.info("Process Ended", e);
       } catch (Exception e) {
-        log.error("standard error problem", e);
+        LOG.error("standard error problem", e);
       }
     }
   }
@@ -477,4 +499,38 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
       process.destroy();
     }
   }
+//
+//  public static void main(String[] args) throws IOException {
+//    String line;
+//    Scanner scan = new Scanner(System.in);
+//
+//    Process process = Runtime.getRuntime ().exec("/bin/bash");
+//    OutputStream stdin = process.getOutputStream();
+//    InputStream stderr = process.getErrorStream();
+//    InputStream stdout = process.getInputStream();
+//
+//    BufferedReader reader = new BufferedReader (new InputStreamReader(stdout));
+//    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin));
+//
+//    while (scan.hasNext()) {
+//      String input = scan.nextLine();
+//      if (input.trim().equals("exit")) {
+//        // Putting 'exit' amongst the echo --EOF--s below doesn't work.
+//        writer.write("exit\n");
+//      } else {
+////        writer.write("((" + input + ") && echo --EOF--) || echo --EOF--\n");
+//        writer.write("((" + input + ") && echo --EOF--)\n");
+//      }
+//      writer.flush();
+//
+//      line = reader.readLine();
+//      while (line != null && ! line.trim().equals("--EOF--")) {
+//        System.out.println ("Stdout: " + line);
+//        line = reader.readLine();
+//      }
+//      if (line == null) {
+//        break;
+//      }
+//    }
+//  }
 }
