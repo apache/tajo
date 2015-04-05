@@ -37,6 +37,8 @@
     <protobuf.version>2.5.0</protobuf.version>
     <tajo.version>0.11.0-SNAPSHOT</tajo.version>
     <hbase.version>0.98.7-hadoop2</hbase.version>
+    <kafka.version>0.8.2.0</kafka.version>
+    <kafka.artifactId>kafka_2.10</kafka.artifactId>
     <netty.version>4.0.25.Final</netty.version>
     <jersey.version>2.6</jersey.version>
     <tajo.root>${project.parent.relativePath}/..</tajo.root>
@@ -761,6 +763,11 @@
       <dependency>
         <groupId>org.apache.tajo</groupId>
         <artifactId>tajo-storage-hbase</artifactId>
+        <version>${tajo.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.tajo</groupId>
+        <artifactId>tajo-storage-kafka</artifactId>
         <version>${tajo.version}</version>
       </dependency>
       <dependency>
