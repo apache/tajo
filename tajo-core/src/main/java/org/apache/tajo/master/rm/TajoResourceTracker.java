@@ -155,7 +155,7 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
         rmContext.getDispatcher().getEventHandler().handle(createStatusEvent(workerId, heartbeat));
         // refresh ping
         workerLivelinessMonitor.receivedPing(workerId);
-
+        builder.clearGeneratedWorkerId();
       } else if (rmContext.getInactiveWorkers().containsKey(workerId)) { // worker was inactive
 
         // remove the inactive worker from the list of inactive workers.
@@ -172,7 +172,7 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
         rmContext.getDispatcher().getEventHandler().handle(new WorkerEvent(newWorkerId, WorkerEventType.STARTED));
         // register the worker to the liveliness monitor
         workerLivelinessMonitor.register(newWorkerId);
-
+        builder.clearGeneratedWorkerId();
       }
 
     } finally {
