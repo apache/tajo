@@ -173,6 +173,22 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
         // register the worker to the liveliness monitor
         workerLivelinessMonitor.register(newWorkerId);
         builder.clearGeneratedWorkerId();
+      } else { // If resource tracker restart, tajo worker needed to re-register to context
+
+        // create new worker instance
+        Worker newWorker = createWorkerResource(workerId, heartbeat);
+        Worker oldWorker = rmContext.getWorkers().putIfAbsent(workerId, newWorker);
+
+        if (oldWorker == null) {
+          // Transit the worker to RUNNING
+          rmContext.rmDispatcher.getEventHandler().handle(new WorkerEvent(workerId, WorkerEventType.STARTED));
+        } else {
+          LOG.info("Reconnect from the node at: " + workerId);
+          workerLivelinessMonitor.unregister(workerId);
+          rmContext.getDispatcher().getEventHandler().handle(new WorkerReconnectEvent(workerId, newWorker));
+        }
+
+        workerLivelinessMonitor.register(workerId);
       }
 
     } finally {
