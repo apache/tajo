@@ -15,8 +15,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.tajo.algebra;
 
-public enum AlterTableOpType {
-  RENAME_TABLE, RENAME_COLUMN, ADD_COLUMN, ADD_PARTITION, DROP_PARTITION, SET_PROPERTY
+package org.apache.tajo.engine.function.builtin;
+
+import org.apache.tajo.catalog.CatalogUtil;
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.common.TajoDataTypes.DataType;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
+
+@Description(
+  functionName = "min",
+  description = "the minimum value of expr",
+  example = "> SELECT min(expr);",
+  returnType = Type.TIME,
+  paramTypes = {@ParamTypes(paramTypes = {Type.TIME})}
+)
+public class MinTime extends Min {
+
+  public MinTime() {
+    super(new Column[] {
+        new Column("expr", Type.TIME)
+    });
+  }
+
+  @Override
+  public DataType getPartialResultType() {
+    return CatalogUtil.newSimpleDataType(Type.TIME);
+  }
+
 }

@@ -11,6 +11,18 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1400: Add TajoStatement::setMaxRows method support.
+    (Contributed by YeonSu Han, Committed by jihoon)
+
+    TAJO-1421: Add 'ALTER TABLE SET PROPERTY' statement.
+    (Contributed by Yongjin Choi. Committed by jaehwa)
+
+    TAJO-1501: Too many log message of HashShuffleAppenderManager.
+    (Contributed by Jongyoung Park. Committed by jaehwa)
+
+    TAJO-1428: Support min, max builtin functions for DATE, TIME, TIMESTAMP.
+    (Contributed by Dongjoon Hyun, Committed by Keuntae Park)
+
     TAJO-1436: Add Bind method to EvalNode. (Contributed by navis,
     Committed by jihoon)
 
@@ -117,6 +129,9 @@ Release 0.11.0 - unreleased
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1462: Replace CSV examples into TEXT examples in docs. 
+    (Contributed by Dongjoon Hyun, Committed by jihoon)
 
     TAJO-1424: Investigate the problem of too many "Try to connect" messeges 
     during Travic CI build. (Contributed by navis, Committed by jihoon)

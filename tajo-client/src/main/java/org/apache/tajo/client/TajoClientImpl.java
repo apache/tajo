@@ -166,6 +166,14 @@ public class TajoClientImpl extends SessionConnection implements TajoClient, Que
     return queryClient.getQueryHistory(queryId);
   }
 
+  public void setMaxRows(int maxRows) {
+	  queryClient.setMaxRows(maxRows);
+  }
+
+  public int getMaxRows() {
+	  return queryClient.getMaxRows();
+  }
+  
   /*------------------------------------------------------------------------*/
   // CatalogClient wrappers
   /*------------------------------------------------------------------------*/
