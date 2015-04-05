@@ -63,45 +63,5 @@ public class WorkerConnectionInfoResponse {
   public void setHost(String host) {
     this.host = host;
   }
-
-  public int getPeerRpcPort() {
-    return peerRpcPort;
-  }
-
-  public void setPeerRpcPort(int peerRpcPort) {
-    this.peerRpcPort = peerRpcPort;
-  }
-
-  public int getPullServerPort() {
-    return pullServerPort;
-  }
-
-  public void setPullServerPort(int pullServerPort) {
-    this.pullServerPort = pullServerPort;
-  }
-
-  public int getQueryMasterPort() {
-    return queryMasterPort;
-  }
-
-  public void setQueryMasterPort(int queryMasterPort) {
-    this.queryMasterPort = queryMasterPort;
-  }
-
-  public int getClientPort() {
-    return clientPort;
-  }
-
-  public void setClientPort(int clientPort) {
-    this.clientPort = clientPort;
-  }
-
-  public int getHttpInfoPort() {
-    return httpInfoPort;
-  }
-
-  public void setHttpInfoPort(int httpInfoPort) {
-    this.httpInfoPort = httpInfoPort;
-  }
   
 }

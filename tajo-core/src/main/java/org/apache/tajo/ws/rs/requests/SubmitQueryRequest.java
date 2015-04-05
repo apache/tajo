@@ -18,26 +18,17 @@
 
 package org.apache.tajo.ws.rs.requests;
 
-import java.util.Map;
-
 import com.google.gson.annotations.Expose;
 
 public class SubmitQueryRequest {
 
   @Expose private String query;
-  @Expose private Map<String, String> sessionVariables;
   
   public String getQuery() {
     return query;
   }
   public void setQuery(String query) {
     this.query = query;
-  }
-  public Map<String, String> getSessionVariables() {
-    return sessionVariables;
-  }
-  public void setSessionVariables(Map<String, String> sessionVariables) {
-    this.sessionVariables = sessionVariables;
   }
   
 }

@@ -61,7 +61,6 @@ public class FunctionsResource {
   JerseyResourceDelegateContext context;
   
   private static final String databaseNameKeyName = "databaseName";
-  private static final String functionNameKeyName = "functionName";
   
   private void initializeContext() {
     context = new JerseyResourceDelegateContext();
