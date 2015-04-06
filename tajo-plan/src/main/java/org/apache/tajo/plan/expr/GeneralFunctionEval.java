@@ -34,22 +34,32 @@ import java.io.IOException;
 
 public class GeneralFunctionEval extends FunctionEval {
   @Expose protected FunctionInvoke funcInvoke;
+  @Expose protected OverridableConf queryContext;
 
 	public GeneralFunctionEval(@Nullable OverridableConf queryContext, FunctionDesc desc, EvalNode[] givenArgs)
       throws IOException {
 		super(EvalType.FUNCTION, desc, givenArgs);
-    this.funcInvoke = FunctionInvoke.newInstance(desc);
-    this.funcInvoke.init(queryContext, getParamType());
+    this.queryContext = queryContext;
+//    this.funcInvoke = FunctionInvoke.newInstance(desc);
+//    this.funcInvoke.init(queryContext, getParamType());
   }
 
   @Override
-  public void bind(Schema schema) {
+  public EvalNode bind(Schema schema) {
     super.bind(schema);
+    try {
+      this.funcInvoke = FunctionInvoke.newInstance(funcDesc);
+      this.funcInvoke.init(queryContext, getParamType());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    return this;
   }
 
   @Override
   @SuppressWarnings("unchecked")
   public Datum eval(Tuple tuple) {
+    super.eval(tuple);
     return funcInvoke.eval(evalParams(tuple));
   }
 
@@ -72,7 +82,9 @@ public class GeneralFunctionEval extends FunctionEval {
 	@Override
   public Object clone() throws CloneNotSupportedException {
     GeneralFunctionEval eval = (GeneralFunctionEval) super.clone();
-    eval.funcInvoke = (FunctionInvoke) funcInvoke.clone();
+    if (funcInvoke != null) {
+      eval.funcInvoke = (FunctionInvoke) funcInvoke.clone();
+    }
     return eval;
   }
 }

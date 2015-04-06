@@ -45,6 +45,10 @@ public interface QueryClient extends Closeable {
   public Map<String, String> getClientSideSessionVars();
 
   public String getBaseDatabase();
+  
+  public void setMaxRows(int maxRows);
+  
+  public int getMaxRows();
 
   @Override
   public void close();

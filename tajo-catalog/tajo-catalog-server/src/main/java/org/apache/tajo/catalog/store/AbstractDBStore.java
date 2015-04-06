@@ -1015,12 +1015,84 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
           }
           dropPartition(tableId, alterTableDescProto.getPartitionDesc().getPartitionName());
           break;
+        case SET_PROPERTY:
+          setProperties(tableId, alterTableDescProto.getParams());
+          break;
         default:
       }
     } catch (SQLException sqlException) {
       throw new CatalogException(sqlException);
     }
 
+  }
+
+  private Map<String, String> getTableOptions(final int tableId) throws CatalogException {
+    Connection conn = null;
+    PreparedStatement pstmt = null;
+    ResultSet res = null;
+    Map<String, String> options = TUtil.newHashMap();
+
+    try {
+      String tidSql = "SELECT key_, value_ FROM " + TB_OPTIONS + " WHERE TID=?";
+
+      conn = getConnection();
+      pstmt = conn.prepareStatement(tidSql);
+      pstmt.setInt(1, tableId);
+      res = pstmt.executeQuery();
+
+      while (res.next()) {
+        options.put(res.getString("KEY_"), res.getString("VALUE_"));
+      }
+    } catch (SQLException se) {
+      throw new CatalogException(se);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt, res);
+    }
+
+    return options;
+  }
+
+  private void setProperties(final int tableId, final KeyValueSetProto properties) {
+    final String updateSql = "UPDATE " + TB_OPTIONS + " SET VALUE_=? WHERE TID=? AND KEY_=?";
+    final String insertSql = "INSERT INTO " + TB_OPTIONS + " (TID, KEY_, VALUE_) VALUES(?, ?, ?)";
+
+    Connection conn;
+    PreparedStatement pstmt = null;
+
+    Map<String, String> oldProperties = getTableOptions(tableId);
+
+    try {
+      conn = getConnection();
+      conn.setAutoCommit(false);
+
+      for (KeyValueProto entry : properties.getKeyvalList()) {
+        if (oldProperties.containsKey(entry.getKey())) {
+          // replace old property with new one
+          pstmt = conn.prepareStatement(updateSql);
+
+          pstmt.setString(1, entry.getValue());
+          pstmt.setInt(2, tableId);
+          pstmt.setString(3, entry.getKey());
+          pstmt.executeUpdate();
+          pstmt.close();
+         } else {
+          // insert new property
+          pstmt = conn.prepareStatement(insertSql);
+
+          pstmt.setInt(1, tableId);
+          pstmt.setString(2, entry.getKey());
+          pstmt.setString(3, entry.getValue());
+          pstmt.executeUpdate();
+          pstmt.close();
+        }
+      }
+
+      conn.commit();
+    } catch (SQLException sqlException) {
+      throw new CatalogException(sqlException);
+    } finally {
+      CatalogUtil.closeQuietly(pstmt);
+    }
   }
 
   private void renameTable(final int tableId, final String tableName) throws CatalogException {
