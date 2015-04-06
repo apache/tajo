@@ -91,7 +91,7 @@ public class TestJsonSerDe {
         DatumFactory.createFloat4(77.9f),               // 5
         DatumFactory.createFloat8(271.9d),              // 6
         DatumFactory.createText("hyunsik"),             // 7
-        DatumFactory.createBlob("hyunsik".getBytes()),  // 8
+        DatumFactory.createBlob("hyunsik"),  // 8
         DatumFactory.createInet4("192.168.0.1"),        // 9
         NullDatum.get(),                                // 10
     });

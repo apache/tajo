@@ -185,11 +185,6 @@
       <artifactId>mockito-core</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.python</groupId>
-      <artifactId>jython-standalone</artifactId>
-      <version>2.7-b1</version>
-    </dependency>
   </dependencies>
 
   <profiles>

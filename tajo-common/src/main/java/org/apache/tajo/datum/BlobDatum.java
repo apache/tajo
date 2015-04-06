@@ -132,7 +132,7 @@ public class BlobDatum extends Datum {
       initFromBytes();
       other.initFromBytes();
 //      return bb.equals(other.bb);
-			return Arrays.equals(bb.array(), other.bb.array());
+			return Arrays.equals(this.val, other.val);
 		}
     
     return false;

@@ -19,6 +19,7 @@
 package org.apache.tajo.datum;
 
 import com.google.protobuf.Message;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.InvalidCastException;
@@ -386,7 +387,7 @@ public class DatumFactory {
   }
 
   public static BlobDatum createBlob(String val) {
-    return new BlobDatum(val.getBytes());
+    return new BlobDatum(Base64.encodeBase64(val.getBytes()));
   }
 
   public static Inet4Datum createInet4(int encoded) {
