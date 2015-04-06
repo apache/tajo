@@ -24,7 +24,6 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
-import org.apache.tajo.datum.BlobDatum;
 import org.apache.tajo.function.FunctionInvocation;
 import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.function.FunctionSupplement;
