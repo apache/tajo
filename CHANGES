@@ -69,6 +69,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1510: Change a function name from getFileCunks to getFileChunks.
+    (Contributed by Soonwoong Lee, Committed by jaehwa)
+
     TAJO-1360: VALUES_ field in OPTIONS table of catalog store should be longer.
     (Contributed by DaeMyung Kang, Committed by jihun)
 
