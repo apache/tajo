@@ -18,16 +18,19 @@
 
 package org.apache.tajo.plan.logical;
 
-import org.apache.tajo.plan.PlanString;
+public abstract class SetOperationNode extends BinaryNode {
 
-public class UnionNode extends SetOperationNode {
-  public UnionNode(int pid) {
-    super(pid, NodeType.UNION);
+  private boolean isDistinct = false;
+
+  public SetOperationNode(int pid, NodeType setType) {
+    super(pid, setType);
   }
 
-  @Override
-  public PlanString getPlanString() {
-    PlanString planStr = new PlanString(this);
-    return planStr;
+  public boolean isDistinct() {
+    return isDistinct;
+  }
+
+  public void setDistinct(boolean isDistinct) {
+    this.isDistinct = isDistinct;
   }
 }
