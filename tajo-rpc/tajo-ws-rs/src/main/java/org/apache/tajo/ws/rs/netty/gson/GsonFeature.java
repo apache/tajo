@@ -18,17 +18,38 @@
 
 package org.apache.tajo.ws.rs.netty.gson;
 
+import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.ws.rs.core.Feature;
 import javax.ws.rs.core.FeatureContext;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.ws.rs.ext.MessageBodyWriter;
 
+import org.apache.tajo.json.GsonSerDerAdapter;
+
 public class GsonFeature implements Feature {
+  
+  private Map<Type, GsonSerDerAdapter<?>> adapterMap;
+  
+  public GsonFeature() {
+  }
+  
+  public GsonFeature(Map<Type, GsonSerDerAdapter<?>> adapterMap) {
+    this.adapterMap = new HashMap<Type, GsonSerDerAdapter<?>>(adapterMap.size());
+    this.adapterMap.putAll(adapterMap);
+  }
 
   @Override
   public boolean configure(FeatureContext featureContext) {
-    featureContext.register(GsonReader.class, MessageBodyReader.class);
-    featureContext.register(GsonWriter.class, MessageBodyWriter.class);
+    if (adapterMap != null && !adapterMap.isEmpty()) {
+      featureContext.register(new GsonReader().setAdapterMap(adapterMap), MessageBodyReader.class);
+      featureContext.register(new GsonWriter().setAdapterMap(adapterMap), MessageBodyWriter.class);
+    } else {
+      featureContext.register(GsonReader.class, MessageBodyReader.class);
+      featureContext.register(GsonWriter.class, MessageBodyWriter.class);
+    }
     return true;
   }
 }

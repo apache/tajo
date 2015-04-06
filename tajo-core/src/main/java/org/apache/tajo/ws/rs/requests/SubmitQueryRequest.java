@@ -16,39 +16,19 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.ws.rs.netty.testapp2;
-
-import java.io.Serializable;
+package org.apache.tajo.ws.rs.requests;
 
 import com.google.gson.annotations.Expose;
 
-public class Directory implements Serializable {
+public class SubmitQueryRequest {
 
-  @Expose private String name;
-  @Expose private String owner;
-  @Expose private String group;
-
-  public String getName() {
-    return name;
+  @Expose private String query;
+  
+  public String getQuery() {
+    return query;
   }
-
-  public void setName(String name) {
-    this.name = name;
+  public void setQuery(String query) {
+    this.query = query;
   }
-
-  public String getOwner() {
-    return owner;
-  }
-
-  public void setOwner(String owner) {
-    this.owner = owner;
-  }
-
-  public String getGroup() {
-    return group;
-  }
-
-  public void setGroup(String group) {
-    this.group = group;
-  }
+  
 }

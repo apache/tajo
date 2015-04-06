@@ -16,39 +16,28 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.ws.rs.netty.testapp2;
+package org.apache.tajo.ws.rs.responses;
 
-import java.io.Serializable;
+import java.net.URI;
 
 import com.google.gson.annotations.Expose;
 
-public class Directory implements Serializable {
+public class ResultSetInfoResponse {
 
-  @Expose private String name;
-  @Expose private String owner;
-  @Expose private String group;
-
-  public String getName() {
-    return name;
+  @Expose private long id;
+  @Expose private URI link;
+  
+  public long getId() {
+    return id;
   }
-
-  public void setName(String name) {
-    this.name = name;
+  public void setId(long id) {
+    this.id = id;
   }
-
-  public String getOwner() {
-    return owner;
+  public URI getLink() {
+    return link;
   }
-
-  public void setOwner(String owner) {
-    this.owner = owner;
+  public void setLink(URI link) {
+    this.link = link;
   }
-
-  public String getGroup() {
-    return group;
-  }
-
-  public void setGroup(String group) {
-    this.group = group;
-  }
+  
 }

@@ -16,39 +16,33 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.ws.rs.netty.testapp2;
-
-import java.io.Serializable;
+package org.apache.tajo.ws.rs.responses;
 
 import com.google.gson.annotations.Expose;
 
-public class Directory implements Serializable {
+public class DatabaseInfoResponse {
 
+  @Expose private int id;
+  @Expose private String tablespace;
   @Expose private String name;
-  @Expose private String owner;
-  @Expose private String group;
-
+  
+  public int getId() {
+    return id;
+  }
+  public void setId(int id) {
+    this.id = id;
+  }
+  public String getTablespace() {
+    return tablespace;
+  }
+  public void setTablespace(String tablespace) {
+    this.tablespace = tablespace;
+  }
   public String getName() {
     return name;
   }
-
   public void setName(String name) {
     this.name = name;
   }
-
-  public String getOwner() {
-    return owner;
-  }
-
-  public void setOwner(String owner) {
-    this.owner = owner;
-  }
-
-  public String getGroup() {
-    return group;
-  }
-
-  public void setGroup(String group) {
-    this.group = group;
-  }
+  
 }

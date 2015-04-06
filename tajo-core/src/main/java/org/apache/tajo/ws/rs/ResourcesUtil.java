@@ -16,17 +16,32 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.ws.rs.netty.gson;
+package org.apache.tajo.ws.rs;
 
-import javax.ws.rs.core.MediaType;
+import org.apache.commons.logging.Log;
+import org.apache.tajo.ws.rs.responses.ExceptionResponse;
 
-public class GsonUtil {
-  
-  public static boolean isJsonType(MediaType mediaType) {
-    if (mediaType != null) {
-      String subType = mediaType.getSubtype();
-      return "json".equalsIgnoreCase(subType) || subType.endsWith("+json");
+import javax.ws.rs.core.Response;
+
+public class ResourcesUtil {
+
+  public static Response createExceptionResponse(Log log, String message) {
+    if (log != null) {
+      log.error(message);
     }
-    return false;
+
+    ExceptionResponse response = new ExceptionResponse();
+    response.setMessage(message);
+    return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(response).build();
+  }
+  
+  public static Response createBadRequestResponse(Log log, String message) {
+    if (log != null) {
+      log.error(message);
+    }
+    
+    ExceptionResponse response = new ExceptionResponse();
+    response.setMessage(message);
+    return Response.status(Response.Status.BAD_REQUEST).entity(response).build();
   }
 }

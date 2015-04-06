@@ -16,39 +16,16 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.ws.rs.netty.testapp2;
+package org.apache.tajo.ws.rs;
 
-import java.io.Serializable;
+import javax.ws.rs.core.Response;
 
-import com.google.gson.annotations.Expose;
+/**
+ * Implements business flows for jersey resource
+ * 
+ */
+public interface JerseyResourceDelegate {
 
-public class Directory implements Serializable {
-
-  @Expose private String name;
-  @Expose private String owner;
-  @Expose private String group;
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public String getOwner() {
-    return owner;
-  }
-
-  public void setOwner(String owner) {
-    this.owner = owner;
-  }
-
-  public String getGroup() {
-    return group;
-  }
-
-  public void setGroup(String group) {
-    this.group = group;
-  }
+  public Response run(JerseyResourceDelegateContext context);
+  
 }

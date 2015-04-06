@@ -16,39 +16,34 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.ws.rs.netty.testapp2;
-
-import java.io.Serializable;
+package org.apache.tajo.ws.rs.requests;
 
 import com.google.gson.annotations.Expose;
 
-public class Directory implements Serializable {
+public class NewSessionRequest {
 
-  @Expose private String name;
-  @Expose private String owner;
-  @Expose private String group;
+  @Expose private String userName;
+  @Expose private String databaseName;
 
-  public String getName() {
-    return name;
+  public String getUserName() {
+    return userName;
   }
 
-  public void setName(String name) {
-    this.name = name;
+  public void setUserName(String userName) {
+    this.userName = userName;
   }
 
-  public String getOwner() {
-    return owner;
+  public String getDatabaseName() {
+    return databaseName;
   }
 
-  public void setOwner(String owner) {
-    this.owner = owner;
+  public void setDatabaseName(String databaseName) {
+    this.databaseName = databaseName;
   }
 
-  public String getGroup() {
-    return group;
+  @Override
+  public String toString() {
+    return "NewSessionRequest [userName=" + userName + ", databaseName=" + databaseName + "]";
   }
-
-  public void setGroup(String group) {
-    this.group = group;
-  }
+  
 }
