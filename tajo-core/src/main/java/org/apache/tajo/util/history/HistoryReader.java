@@ -172,7 +172,7 @@ public class HistoryReader {
     FileSystem fs = HistoryWriter.getNonCrcFileSystem(queryHistoryFile, tajoConf);
 
     FileStatus fileStatus = fs.getFileStatus(queryHistoryFile);
-    if (fileStatus.getLen() > 10 * 1024 * 1024) {
+    if (fileStatus.getLen() > tajoConf.getIntVar(TajoConf.ConfVars.HISTORY_QUERY_MAX_FILE_SIZE)) {
       throw new IOException("QueryHistory file is too big: " +
           queryHistoryFile + ", " + fileStatus.getLen() + " bytes");
     }
@@ -204,7 +204,7 @@ public class HistoryReader {
     }
 
     FileStatus fileStatus = fs.getFileStatus(detailFile);
-    if (fileStatus.getLen() > 100 * 1024 * 1024) {    // 100MB
+    if (fileStatus.getLen() > tajoConf.getIntVar(TajoConf.ConfVars.HISTORY_TASK_MAX_FILE_SIZE)) {
       throw new IOException("TaskHistory file is too big: " + detailFile + ", " + fileStatus.getLen() + " bytes");
     }
 

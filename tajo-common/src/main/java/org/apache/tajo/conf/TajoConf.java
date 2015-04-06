@@ -279,6 +279,8 @@ public class TajoConf extends Configuration {
     HISTORY_EXPIRY_TIME_DAY("tajo.history.expiry-time-day", 7),
     HISTORY_QUERY_REPLICATION("tajo.history.query.replication", 1, Validators.min("1")),
     HISTORY_TASK_REPLICATION("tajo.history.task.replication", 1, Validators.min("1")),
+    HISTORY_QUERY_MAX_FILE_SIZE("tajo.history.query.max-file-size", (10 * 1024 * 1024)),
+    HISTORY_TASK_MAX_FILE_SIZE("tajo.history.task.max-file-size", (100 * 1024 * 1024)),
 
     // Misc -------------------------------------------------------------------
     // Fragment
