@@ -61,6 +61,7 @@ public class RowConstantEval extends EvalNode {
   @Override
   @SuppressWarnings("unchecked")
   public Datum eval(Tuple tuple) {
+    super.eval(tuple);
     return NullDatum.get();
   }
 

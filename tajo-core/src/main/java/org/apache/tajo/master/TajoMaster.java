@@ -59,6 +59,7 @@ import org.apache.tajo.util.history.HistoryWriter;
 import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.webapp.QueryExecutorServlet;
 import org.apache.tajo.webapp.StaticHttpServer;
+import org.apache.tajo.ws.rs.TajoRestService;
 
 import java.io.*;
 import java.lang.management.ManagementFactory;
@@ -119,6 +120,7 @@ public class TajoMaster extends CompositeService {
   private WorkerResourceManager resourceManager;
   //Web Server
   private StaticHttpServer webServer;
+  private TajoRestService restServer;
 
   private QueryManager queryManager;
 
@@ -193,6 +195,9 @@ public class TajoMaster extends CompositeService {
 
       tajoMasterService = new QueryCoordinatorService(context);
       addIfService(tajoMasterService);
+      
+      restServer = new TajoRestService(context);
+      addIfService(restServer);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       throw e;
@@ -375,6 +380,14 @@ public class TajoMaster extends CompositeService {
         LOG.error(e, e);
       }
     }
+    
+    if (restServer != null) {
+      try {
+        restServer.stop();
+      } catch (Exception e) {
+        LOG.error(e.getMessage(), e);
+      }
+    }
 
     if (webServer != null) {
       try {
@@ -473,6 +486,10 @@ public class TajoMaster extends CompositeService {
 
     public HistoryReader getHistoryReader() {
       return historyReader;
+    }
+    
+    public TajoRestService getRestServer() {
+      return restServer;
     }
   }
 

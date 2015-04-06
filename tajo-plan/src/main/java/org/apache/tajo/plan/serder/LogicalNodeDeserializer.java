@@ -583,6 +583,9 @@ public class LogicalNodeDeserializer {
       alterTable.setColumnName(alterTableProto.getRenameColumn().getOldName());
       alterTable.setNewColumnName(alterTableProto.getRenameColumn().getNewName());
       break;
+    case SET_PROPERTY:
+      alterTable.setProperties(new KeyValueSet(alterTableProto.getProperties()));
+      break;
     default:
       throw new UnimplementedException("Unknown SET type in ALTER TABLE: " + alterTableProto.getSetType().name());
     }

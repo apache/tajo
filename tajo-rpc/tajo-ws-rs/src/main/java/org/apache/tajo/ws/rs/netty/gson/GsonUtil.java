@@ -21,7 +21,7 @@ package org.apache.tajo.ws.rs.netty.gson;
 import javax.ws.rs.core.MediaType;
 
 public class GsonUtil {
-
+  
   public static boolean isJsonType(MediaType mediaType) {
     if (mediaType != null) {
       String subType = mediaType.getSubtype();

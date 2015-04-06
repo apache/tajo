@@ -107,6 +107,7 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
   @Override
   @SuppressWarnings("unchecked")
   public Datum eval(Tuple tuple) {
+    super.eval(tuple);
     for (IfThenEval eval : whens) {
       if (eval.checkIfCondition(tuple)) {
         return eval.eval(tuple);
@@ -233,6 +234,7 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
     @Override
     @SuppressWarnings("unchecked")
     public Datum eval(Tuple tuple) {
+      super.eval(tuple);
       return result.eval(tuple);
     }
 
