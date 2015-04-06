@@ -61,7 +61,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   protected final String catalogUri;
 
   private Connection conn;
-  
+
   protected Map<String, Boolean> baseTableMaps = new HashMap<String, Boolean>();
   
   protected XMLCatalogSchemaManager catalogSchemaManager;
@@ -1266,11 +1266,11 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
 
       conn = getConnection();
       pstmt = conn.prepareStatement(ADD_PARTITION_SQL);
-
       pstmt.setInt(1, tableId);
       pstmt.setString(2, partition.getPartitionName());
       pstmt.setString(3, partition.getPath());
       pstmt.executeUpdate();
+      pstmt.close();
 
       if (partition.getPartitionKeysCount() > 0) {
         pstmt = conn.prepareStatement(ADD_PARTITION_KEYS_SQL);
@@ -1349,6 +1349,7 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
       pstmt = conn.prepareStatement(sqlDeletePartitionKeys);
       pstmt.setInt(1, partitionId);
       pstmt.executeUpdate();
+      pstmt.close();
 
       pstmt = conn.prepareStatement(sqlDeletePartition);
       pstmt.setInt(1, partitionId);

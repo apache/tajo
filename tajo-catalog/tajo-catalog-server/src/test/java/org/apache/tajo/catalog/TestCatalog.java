@@ -666,7 +666,7 @@ public class TestCatalog {
     FunctionDesc retrived = catalog.getFunction("test10", CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.BLOB));
 
     assertEquals(retrived.getFunctionName(), "test10");
-    assertEquals(retrived.getFuncClass(), TestFunc2.class);
+    assertEquals(retrived.getLegacyFuncClass(), TestFunc2.class);
     assertEquals(retrived.getFuncType(), FunctionType.GENERAL);
 
     assertFalse(catalog.containFunction("test10", CatalogUtil.newSimpleDataTypeArray(Type.BLOB, Type.INT4)));
@@ -685,7 +685,7 @@ public class TestCatalog {
 		FunctionDesc retrived = catalog.getFunction("test2", CatalogUtil.newSimpleDataTypeArray(Type.INT4));
 
 		assertEquals(retrived.getFunctionName(),"test2");
-		assertEquals(retrived.getFuncClass(),TestFunc1.class);
+		assertEquals(retrived.getLegacyFuncClass(),TestFunc1.class);
 		assertEquals(retrived.getFuncType(),FunctionType.UDF);
 	}
 

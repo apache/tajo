@@ -665,4 +665,9 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
       executeString("DROP TABLE rank_table2 PURGE");
     }
   }
+
+  @Test
+  public void test() throws Exception {
+    executeString("select abs(n_nationkey) from nation");
+  }
 }

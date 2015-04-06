@@ -20,6 +20,7 @@ package org.apache.tajo.engine.planner;
 
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.plan.expr.GeneralFunctionEval;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.EvalNode;
@@ -63,6 +64,9 @@ public class Projector {
 
   public void init() {
     for (EvalNode eval : evals) {
+      if (eval.requirePythonScriptExecutor()) {
+        ((GeneralFunctionEval)eval).setPythonScriptExecutor(context.getPythonScriptExecutor());
+      }
       eval.bind(inSchema);
     }
   }

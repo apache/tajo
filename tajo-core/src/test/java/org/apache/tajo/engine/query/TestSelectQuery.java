@@ -708,4 +708,18 @@ public class TestSelectQuery extends QueryTestCaseBase {
       executeString("DROP TABLE table2");
     }
   }
+
+  @Test
+  public void testSelectPythonFuncs() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testSelectWithPredicateOnPythonFunc() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
 }
