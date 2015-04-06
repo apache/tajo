@@ -1604,6 +1604,7 @@ alter_table_statement
   | ALTER TABLE table_name ADD COLUMN field_element
   | ALTER TABLE table_name (if_not_exists)? ADD PARTITION LEFT_PAREN partition_column_value_list RIGHT_PAREN (LOCATION path=Character_String_Literal)?
   | ALTER TABLE table_name (if_exists)? DROP PARTITION LEFT_PAREN partition_column_value_list RIGHT_PAREN
+  | ALTER TABLE table_name SET PROPERTY property_list
   ;
 
 partition_column_value_list
@@ -1612,4 +1613,12 @@ partition_column_value_list
 
 partition_column_value
   : identifier EQUAL row_value_predicand
+  ;
+
+property_list
+  : property (COMMA property)*
+  ;
+
+property
+  : key=Character_String_Literal EQUAL value=Character_String_Literal
   ;

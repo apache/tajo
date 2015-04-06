@@ -58,6 +58,7 @@ public class IsNullEval extends UnaryEval {
   @Override
   @SuppressWarnings("unchecked")
   public Datum eval(Tuple tuple) {
+    super.eval(tuple);
     boolean isNull = child.eval(tuple).isNull();
     return DatumFactory.createBool(isNot ^ isNull);
   }

@@ -58,6 +58,9 @@ public class InEval extends BinaryEval {
 
   @Override
   public Datum eval(Tuple tuple) {
+    if (!isBinded) {
+      throw new IllegalStateException("bind() must be called before eval()");
+    }
     if (values == null) {
       values = Sets.newHashSet(((RowConstantEval)rightExpr).getValues());
     }
