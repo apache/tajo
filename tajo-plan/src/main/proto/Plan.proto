@@ -280,6 +280,7 @@ message AlterTableNode {
     RENAME_TABLE = 0;
     RENAME_COLUMN = 1;
     ADD_COLUMN = 2;
+    SET_PROPERTY = 3;
   }
 
   message RenameTable {
@@ -300,6 +301,7 @@ message AlterTableNode {
   optional RenameTable renameTable = 3;
   optional RenameColumn renameColumn = 4;
   optional AddColumn addColumn = 5;
+  optional KeyValueSetProto properties = 6;
 }
 
 enum EvalType {

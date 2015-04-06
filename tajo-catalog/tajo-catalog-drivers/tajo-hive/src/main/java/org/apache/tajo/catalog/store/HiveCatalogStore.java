@@ -633,6 +633,9 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         }
         dropPartition(databaseName, tableName, partitionDesc);
         break;
+      case SET_PROPERTY:
+        // TODO - not implemented yet
+        break;
       default:
         //TODO
     }

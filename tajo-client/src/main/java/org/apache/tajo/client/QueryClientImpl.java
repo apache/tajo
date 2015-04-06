@@ -51,11 +51,14 @@ public class QueryClientImpl implements QueryClient {
   private static final Log LOG = LogFactory.getLog(QueryClientImpl.class);
   private final SessionConnection connection;
   private final int defaultFetchRows;
+//maxRows number is limit value of resultSet. The value must be >= 0, and 0 means there is not limit.
+  private int maxRows;
 
   public QueryClientImpl(SessionConnection connection) {
     this.connection = connection;
     this.defaultFetchRows = this.connection.getProperties().getInt(SessionVars.FETCH_ROWNUM.getConfVars().keyname(),
         SessionVars.FETCH_ROWNUM.getConfVars().defaultIntVal);
+    this.maxRows = 0;
   }
 
   @Override
@@ -577,6 +580,16 @@ public class QueryClientImpl implements QueryClient {
     return status;
   }
 
+  @Override
+  public void setMaxRows(int maxRows) {
+		this.maxRows = maxRows;
+  }
+  
+  @Override
+  public int getMaxRows() {
+  	return this.maxRows;
+  }
+  
   public QueryInfoProto getQueryInfo(final QueryId queryId) throws ServiceException {
     return new ServerCallable<QueryInfoProto>(connection.connPool, connection.getTajoMasterAddr(),
         TajoMasterClientProtocol.class, false, true) {

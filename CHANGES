@@ -11,6 +11,12 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1400: Add TajoStatement::setMaxRows method support.
+    (Contributed by YeonSu Han, Committed by jihoon)
+
+    TAJO-1421: Add 'ALTER TABLE SET PROPERTY' statement.
+    (Contributed by Yongjin Choi. Committed by jaehwa)
+
     TAJO-1501: Too many log message of HashShuffleAppenderManager.
     (Contributed by Jongyoung Park. Committed by jaehwa)
 
