@@ -121,26 +121,15 @@ public class PythonScriptExecutor {
     process = processBuilder.start();
     LOG.info("process started.");
 
-    Runtime.getRuntime().addShutdownHook(new Thread(new ProcessKiller()));
+//    Runtime.getRuntime().addShutdownHook(new Thread(new ProcessKiller()));
     return sc;
   }
 
   private String[] buildCommand(PythonInvocationDesc invocationDesc) throws IOException {
     String[] command = new String[10];
 
-//    String jarPath = conf.get("mapreduce.job.jar");
-//    if (jarPath == null) {
-//      jarPath = conf.get(MRConfiguration.JAR);
-//    }
-//    String jobDir;
-//    if (jarPath != null) {
-//      jobDir = new File(jarPath).getParent();
-//    } else {
-//      jobDir = "";
-//    }
 
 //    String standardOutputRootWriteLocation = soc.getStandardOutputRootWriteLocation();
-//    String standardOutputRootWriteLocation = System.getProperty("tajo.log.dir");
     // TODO
 //    String standardOutputRootWriteLocation = "/Users/jihoonson/Projects/tajo/";
     String standardOutputRootWriteLocation = "/home/jihoon/Projects/tajo/";
@@ -359,6 +348,11 @@ public class PythonScriptExecutor {
     return (Datum) o;
   }
 
+  public void stop() throws IOException {
+    process.destroy();
+    LOG.info("process destroyed.");
+  }
+
   /**
    * The thread which consumes input and feeds it to the the Process
    */
@@ -481,10 +475,10 @@ public class PythonScriptExecutor {
     }
   }
 
-  public class ProcessKiller implements Runnable {
-    public void run() {
-      process.destroy();
-      LOG.info("process destroyed.");
-    }
-  }
+//  public class ProcessKiller implements Runnable {
+//    public void run() {
+//      process.destroy();
+//      LOG.info("process destroyed.");
+//    }
+//  }
 }

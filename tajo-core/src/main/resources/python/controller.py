@@ -26,7 +26,7 @@ try:
 except ImportError:
     USE_DATEUTIL = False
 
-from tajo_util import write_user_exception, udf_logging, outputType
+from tajo_util import write_user_exception, udf_logging
 
 FIELD_DELIMITER = ','
 TUPLE_START = '('

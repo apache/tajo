@@ -24,8 +24,6 @@ import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.plan.function.python.executor.PythonScriptExecutor;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
@@ -92,5 +90,14 @@ public class GeneralFunctionEval extends FunctionEval {
       eval.funcInvoke = (FunctionInvoke) funcInvoke.clone();
     }
     return eval;
+  }
+
+  @Override
+  public boolean requirePythonScriptExecutor() {
+    return funcDesc.getInvocation().hasPython();
+  }
+
+  public void setPythonScriptExecutor(PythonScriptExecutor executor) {
+    this.executor = executor;
   }
 }

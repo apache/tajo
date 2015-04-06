@@ -94,4 +94,8 @@ public abstract class EvalNode implements Cloneable, GsonObject, ProtoObject<Pla
   public PlanProto.EvalNodeTree getProto() {
     return EvalNodeSerializer.serialize(this);
   }
+
+  public boolean requirePythonScriptExecutor() {
+    return false;
+  }
 }

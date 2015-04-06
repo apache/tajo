@@ -33,6 +33,7 @@ import org.apache.tajo.engine.planner.enforce.Enforcer;
 import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.function.python.executor.PythonScriptExecutor;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.Fragment;
@@ -83,6 +84,8 @@ public class TaskAttemptContext {
   private Map<Integer, Long> partitionOutputVolume;
   private HashShuffleAppenderManager hashShuffleAppenderManager;
 
+  private PythonScriptExecutor pythonScriptExecutor;
+
   public TaskAttemptContext(QueryContext queryContext, final ExecutionBlockContext executionBlockContext,
                             final TaskAttemptId queryId,
                             final FragmentProto[] fragments,
@@ -124,6 +127,8 @@ public class TaskAttemptContext {
         LOG.error(e.getMessage(), e);
       }
     }
+
+    pythonScriptExecutor = new PythonScriptExecutor(queryContext);
   }
 
   @VisibleForTesting
@@ -402,5 +407,9 @@ public class TaskAttemptContext {
 
   public HashShuffleAppenderManager getHashShuffleAppenderManager() {
     return hashShuffleAppenderManager;
+  }
+
+  public PythonScriptExecutor getPythonScriptExecutor() {
+    return pythonScriptExecutor;
   }
 }
