@@ -23,6 +23,7 @@ import org.apache.tajo.QueryTestCaseBase;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import java.sql.ResultSet;
 import java.util.List;
 
 @Category(IntegrationTest.class)
@@ -39,7 +40,7 @@ public class TestAlterTable extends QueryTestCaseBase {
   public final void testAlterTableColumnName() throws Exception {
     List<String> createdNames = executeDDL("table1_ddl.sql", "table1.tbl", "XYZ");
     executeDDL("alter_table_rename_column_ddl.sql", null);
-    assertColumnExists(createdNames.get(0),"renum");
+    assertColumnExists(createdNames.get(0), "renum");
   }
 
   @Test
@@ -49,4 +50,17 @@ public class TestAlterTable extends QueryTestCaseBase {
     assertColumnExists(createdNames.get(0),"cool");
   }
 
+  @Test
+  public final void testAlterTableSetProperty() throws Exception {
+    executeDDL("table2_ddl.sql", "table2.tbl", "ALTX");
+    ResultSet before_res = executeQuery();
+    assertResultSet(before_res, "before_set_property_delimiter.result");
+    cleanupQuery(before_res);
+
+    executeDDL("alter_table_set_property_delimiter.sql", null);
+
+    ResultSet after_res = executeQuery();
+    assertResultSet(after_res, "after_set_property_delimiter.result");
+    cleanupQuery(after_res);
+  }
 }
