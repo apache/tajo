@@ -227,7 +227,8 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
   }
 
   @Override
-  public void bind(Schema schema) {
+  public EvalNode bind(Schema schema) {
+    super.bind(schema);
     if (begin.getType() == EvalType.CONST && end.getType() == EvalType.CONST) {
       Datum beginValue = ((ConstEval)begin).getValue();
       Datum endValue = ((ConstEval)end).getValue();
@@ -245,11 +246,13 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
       }
     }
     checker.bind(schema);
+    return this;
   }
 
   @Override
   @SuppressWarnings("unchecked")
   public Datum eval(Tuple tuple) {
+    super.eval(tuple);
     return checker.eval(tuple);
   }
 

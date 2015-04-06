@@ -152,7 +152,7 @@ public class AlgebraicUtil {
       }
 
       if (lhs.getType() == EvalType.CONST && rhs.getType() == EvalType.CONST) {
-        return new ConstEval(binaryEval.eval(null));
+        return new ConstEval(binaryEval.bind(null).eval(null));
       }
 
       return binaryEval;
@@ -165,7 +165,7 @@ public class AlgebraicUtil {
       stack.pop();
 
       if (child.getType() == EvalType.CONST) {
-        return new ConstEval(unaryEval.eval(null));
+        return new ConstEval(unaryEval.bind(null).eval(null));
       }
 
       return unaryEval;
@@ -187,7 +187,7 @@ public class AlgebraicUtil {
       }
 
       if (constantOfAllDescendents && evalNode.getType() == EvalType.FUNCTION) {
-        return new ConstEval(evalNode.eval(null));
+        return new ConstEval(evalNode.bind(null).eval(null));
       } else {
         return evalNode;
       }

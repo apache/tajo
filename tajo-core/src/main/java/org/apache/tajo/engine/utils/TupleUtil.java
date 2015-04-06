@@ -193,35 +193,4 @@ public class TupleUtil {
     }
     return aTuple;
   }
-
-  @SuppressWarnings("unused")
-  public static Collection<Tuple> filterTuple(Schema schema, Collection<Tuple> tupleBlock, EvalNode filterCondition) {
-    TupleBlockFilterScanner filter = new TupleBlockFilterScanner(schema, tupleBlock, filterCondition);
-    return filter.nextBlock();
-  }
-
-  private static class TupleBlockFilterScanner {
-    private EvalNode qual;
-    private Iterator<Tuple> iterator;
-    private Schema schema;
-
-    public TupleBlockFilterScanner(Schema schema, Collection<Tuple> tuples, EvalNode qual) {
-      this.schema = schema;
-      this.qual = qual;
-      this.iterator = tuples.iterator();
-    }
-
-    public List<Tuple> nextBlock() {
-      List<Tuple> results = Lists.newArrayList();
-
-      Tuple tuple;
-      while (iterator.hasNext()) {
-        tuple = iterator.next();
-        if (qual.eval(tuple).isTrue()) {
-          results.add(tuple);
-        }
-      }
-      return results;
-    }
-  }
 }

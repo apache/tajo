@@ -499,6 +499,9 @@ public class DDLExecutor {
       }
       catalog.alterTable(CatalogUtil.addNewColumn(qualifiedName, alterTable.getAddNewColumn(), AlterTableType.ADD_COLUMN));
       break;
+    case SET_PROPERTY:
+      catalog.alterTable(CatalogUtil.setProperty(qualifiedName, alterTable.getProperties(), AlterTableType.SET_PROPERTY));
+      break;
     default:
       //TODO
     }

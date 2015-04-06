@@ -546,6 +546,11 @@ public class QueryTestCaseBase {
     return client.getTableDesc(tableName);
   }
 
+  public void assertTablePropertyEquals(String tableName, String key, String expectedValue) throws ServiceException {
+    TableDesc tableDesc = fetchTableMetaData(tableName);
+    assertEquals(expectedValue, tableDesc.getMeta().getOption(key));
+  }
+
   /**
    * It transforms a ResultSet instance to rows represented as strings.
    *
