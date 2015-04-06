@@ -24,6 +24,7 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.algebra.AlterTableOpType;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.plan.PlanString;
+import org.apache.tajo.util.KeyValueSet;
 
 public class AlterTableNode extends LogicalNode {
 
@@ -37,6 +38,8 @@ public class AlterTableNode extends LogicalNode {
   private String newColumnName;
   @Expose
   private Column addNewColumn;
+  @Expose
+  private KeyValueSet properties = new KeyValueSet();
   @Expose
   private AlterTableOpType alterTableOpType;
 
@@ -102,6 +105,18 @@ public class AlterTableNode extends LogicalNode {
     this.alterTableOpType = alterTableOpType;
   }
 
+  public boolean hasProperties() {
+    return this.properties != null;
+  }
+
+  public KeyValueSet getProperties() {
+    return this.properties;
+  }
+
+  public void setProperties(KeyValueSet properties) {
+    this.properties = properties;
+  }
+
   @Override
   public PlanString getPlanString() {
     return new PlanString(this);
@@ -117,6 +132,7 @@ public class AlterTableNode extends LogicalNode {
     result = prime * result + ((newColumnName == null) ? 0 : newColumnName.hashCode());
     result = prime * result + ((newTableName == null) ? 0 : newTableName.hashCode());
     result = prime * result + ((tableName == null) ? 0 : tableName.hashCode());
+    result = prime * result + ((properties == null) ? 0 : properties.hashCode());
     return result;
   }
 

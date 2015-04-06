@@ -74,12 +74,14 @@ public abstract class PatternMatchPredicateEval extends BinaryEval {
   }
 
   @Override
-  public Datum eval(Schema schema, Tuple tuple) {
-    if (this.compiled == null) {
-      compile(this.pattern);
-    }
+  public void bind(Schema schema) {
+    super.bind(schema);
+    compile(pattern);
+  }
 
-    Datum predicand = leftExpr.eval(schema, tuple);
+  @Override
+  public Datum eval(Tuple tuple) {
+    Datum predicand = leftExpr.eval(tuple);
     if (predicand.isNull()) {
       return NullDatum.get();
     }

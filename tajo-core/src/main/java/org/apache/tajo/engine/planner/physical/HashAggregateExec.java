@@ -58,13 +58,13 @@ public class HashAggregateExec extends AggregationExec {
       FunctionContext [] contexts = hashTable.get(keyTuple);
       if(contexts != null) {
         for(int i = 0; i < aggFunctions.length; i++) {
-          aggFunctions[i].merge(contexts[i], inSchema, tuple);
+          aggFunctions[i].merge(contexts[i], tuple);
         }
       } else { // if the key occurs firstly
         contexts = new FunctionContext[aggFunctionsNum];
         for(int i = 0; i < aggFunctionsNum; i++) {
           contexts[i] = aggFunctions[i].newContext();
-          aggFunctions[i].merge(contexts[i], inSchema, tuple);
+          aggFunctions[i].merge(contexts[i], tuple);
         }
         hashTable.put(keyTuple, contexts);
       }

@@ -94,26 +94,27 @@ public class RpcConnectionPool {
   }
 
   public void releaseConnection(NettyClientBase client) {
-    release(client, false);
+    if (client != null) {
+      release(client, false);
+    }
   }
 
   public void closeConnection(NettyClientBase client) {
-    release(client, true);
+    if (client != null) {
+      release(client, true);
+    }
   }
 
   private void release(NettyClientBase client, boolean close) {
-    if (client == null) {
-      return;
-    }
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("Close connection [" + client.getKey() + "]");
-    }
     try {
       if (returnToPool(client, close)) {
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Closing connection [" + client.getKey() + "]");
+        }
         client.close();
       }
       if (LOG.isDebugEnabled()) {
-        LOG.debug("Current Connections [" + connections.size() + "]");
+        LOG.debug("Current Connections in pool [" + connections.size() + "]");
       }
     } catch (Exception e) {
       LOG.error("Can't close connection:" + client.getKey() + ":" + e.getMessage(), e);

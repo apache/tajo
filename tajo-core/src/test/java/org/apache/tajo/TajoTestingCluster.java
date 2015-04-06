@@ -26,13 +26,10 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.*;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.util.ShutdownHookManager;
-import org.apache.hadoop.yarn.conf.YarnConfiguration;
-import org.apache.hadoop.yarn.server.resourcemanager.ResourceManager;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.tajo.catalog.*;
@@ -56,9 +53,10 @@ import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.worker.TajoWorker;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.Writer;
 import java.net.InetSocketAddress;
-import java.net.URL;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,8 +66,6 @@ import java.util.UUID;
 public class TajoTestingCluster {
 	private static Log LOG = LogFactory.getLog(TajoTestingCluster.class);
 	private TajoConf conf;
-
-  protected MiniTajoYarnCluster yarnCluster;
   private FileSystem defaultFS;
   private MiniDFSCluster dfsCluster;
 	private MiniCatalogServer catalogServer;
@@ -77,7 +73,6 @@ public class TajoTestingCluster {
 
   private TajoMaster tajoMaster;
   private List<TajoWorker> tajoWorkers = new ArrayList<TajoWorker>();
-  private boolean standbyWorkerMode = false;
   private boolean isDFSRunning = false;
   private boolean isTajoClusterRunning = false;
   private boolean isCatalogServerRunning = false;
@@ -164,9 +159,6 @@ public class TajoTestingCluster {
 
     // Memory cache termination
     conf.setIntVar(ConfVars.WORKER_HISTORY_EXPIRE_PERIOD, 1);
-
-    this.standbyWorkerMode = conf.getVar(ConfVars.RESOURCE_MANAGER_CLASS)
-        .indexOf(TajoWorkerResourceManager.class.getName()) >= 0;
 
     /* Since Travi CI limits the size of standard output log up to 4MB */
     if (!StringUtils.isEmpty(LOG_LEVEL)) {
@@ -370,9 +362,8 @@ public class TajoTestingCluster {
     this.conf.setVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS, c.getVar(ConfVars.RESOURCE_TRACKER_RPC_ADDRESS));
     this.conf.setVar(ConfVars.CATALOG_ADDRESS, c.getVar(ConfVars.CATALOG_ADDRESS));
 
-    if(standbyWorkerMode) {
-      startTajoWorkers(numSlaves);
-    }
+    startTajoWorkers(numSlaves);
+
     isTajoClusterRunning = true;
     LOG.info("Mini Tajo cluster is up");
     LOG.info("====================================================================================");
@@ -434,7 +425,7 @@ public class TajoTestingCluster {
 
       workerConf.setVar(ConfVars.WORKER_QM_RPC_ADDRESS, "localhost:0");
       
-      tajoWorker.startWorker(workerConf, new String[]{"standby"});
+      tajoWorker.startWorker(workerConf, new String[0]);
 
       LOG.info("MiniTajoCluster Worker #" + (i + 1) + " started.");
       tajoWorkers.add(tajoWorker);
@@ -512,44 +503,7 @@ public class TajoTestingCluster {
 
     hbaseUtil = new HBaseTestClusterUtil(conf, clusterTestBuildDir);
 
-    if(!standbyWorkerMode) {
-      startMiniYarnCluster();
-    }
-
     startMiniTajoCluster(this.clusterTestBuildDir, numSlaves, false);
-  }
-
-  private void startMiniYarnCluster() throws Exception {
-    LOG.info("Starting up YARN cluster");
-    // Scheduler properties required for YARN to work
-    conf.set("yarn.scheduler.capacity.root.queues", "default");
-    conf.set("yarn.scheduler.capacity.root.default.capacity", "100");
-
-    conf.setInt(YarnConfiguration.RM_SCHEDULER_MINIMUM_ALLOCATION_MB, 384);
-    conf.setInt(YarnConfiguration.RM_SCHEDULER_MAXIMUM_ALLOCATION_MB, 3000);
-    conf.setInt(YarnConfiguration.RM_SCHEDULER_MINIMUM_ALLOCATION_VCORES, 1);
-    conf.setInt(YarnConfiguration.RM_SCHEDULER_MAXIMUM_ALLOCATION_VCORES, 2);
-
-    if (yarnCluster == null) {
-      yarnCluster = new MiniTajoYarnCluster(TajoTestingCluster.class.getName(), 3);
-      yarnCluster.init(conf);
-      yarnCluster.start();
-
-      ResourceManager resourceManager = yarnCluster.getResourceManager();
-      InetSocketAddress rmAddr = resourceManager.getClientRMService().getBindAddress();
-      InetSocketAddress rmSchedulerAddr = resourceManager.getApplicationMasterService().getBindAddress();
-      conf.set(YarnConfiguration.RM_ADDRESS, NetUtils.normalizeInetSocketAddress(rmAddr));
-      conf.set(YarnConfiguration.RM_SCHEDULER_ADDRESS, NetUtils.normalizeInetSocketAddress(rmSchedulerAddr));
-
-      URL url = Thread.currentThread().getContextClassLoader().getResource("yarn-site.xml");
-      if (url == null) {
-        throw new RuntimeException("Could not find 'yarn-site.xml' dummy file in classpath");
-      }
-      yarnCluster.getConfig().set("yarn.application.classpath", new File(url.getPath()).getParent());
-      OutputStream os = new FileOutputStream(new File(url.getPath()));
-      yarnCluster.getConfig().writeXml(os);
-      os.close();
-    }
   }
 
   public void startMiniClusterInLocal(final int numSlaves) throws Exception {
@@ -578,10 +532,6 @@ public class TajoTestingCluster {
     if(this.catalogServer != null) {
       shutdownCatalogCluster();
       isCatalogServerRunning = false;
-    }
-
-    if(this.yarnCluster != null) {
-      this.yarnCluster.stop();
     }
 
     try {
