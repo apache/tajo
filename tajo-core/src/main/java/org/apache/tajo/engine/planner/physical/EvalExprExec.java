@@ -38,7 +38,11 @@ public class EvalExprExec extends PhysicalExec {
 
   @Override
   public void init() throws IOException {
+    super.init();
     progress = 0.0f;
+    for (Target target : plan.getTargets()) {
+      target.getEvalTree().bind(inSchema);
+    }
   }
 
   @Override
@@ -47,7 +51,7 @@ public class EvalExprExec extends PhysicalExec {
       Target [] targets = plan.getTargets();
       Tuple t = new VTuple(targets.length);
       for (int i = 0; i < targets.length; i++) {
-        t.put(i, targets[i].getEvalTree().eval(inSchema, null));
+        t.put(i, targets[i].getEvalTree().eval(null));
       }
 
       executedOnce = true;

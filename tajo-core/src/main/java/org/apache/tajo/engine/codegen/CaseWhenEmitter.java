@@ -197,9 +197,9 @@ class CaseWhenEmitter {
     BinaryEval bin = (BinaryEval) predicate;
 
     if (bin.getLeftExpr().getType() == EvalType.CONST) {
-      return bin.getLeftExpr().eval(null, null).asInt4();
+      return bin.getLeftExpr().eval(null).asInt4();
     } else {
-      return bin.getRightExpr().eval(null, null).asInt4();
+      return bin.getRightExpr().eval(null).asInt4();
     }
   }
 }

@@ -19,9 +19,29 @@
 package org.apache.tajo.engine.planner.physical;
 
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.TupleComparator;
 
-import java.util.Iterator;
+import java.util.Collections;
+import java.util.List;
 
 public interface TupleSorter {
-  Iterator<Tuple> sort();
+
+  Iterable<Tuple> sort();
+
+  public static class DefaultSorter implements TupleSorter {
+
+    private final List<Tuple> target;
+    private final TupleComparator comparator;
+
+    public DefaultSorter(List<Tuple> target, TupleComparator comparator) {
+      this.target = target;
+      this.comparator = comparator;
+    }
+
+    @Override
+    public Iterable<Tuple> sort() {
+      Collections.sort(target, comparator);
+      return target;
+    }
+  }
 }
