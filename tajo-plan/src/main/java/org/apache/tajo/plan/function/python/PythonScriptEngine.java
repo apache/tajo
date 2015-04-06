@@ -24,6 +24,7 @@ import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.datum.BlobDatum;
 import org.apache.tajo.function.FunctionInvocation;
 import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.function.FunctionSupplement;
@@ -33,28 +34,20 @@ import org.apache.tajo.util.TUtil;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 public class PythonScriptEngine extends TajoScriptEngine {
 
-  private static final Log log = LogFactory.getLog(PythonScriptEngine.class);
+  private static final String LANGUAGE_NAME = "python";
+  private static final Log LOG = LogFactory.getLog(PythonScriptEngine.class);
 
   public static Set<FunctionDesc> registerFunctions(String path, String namespace) throws IOException {
 
     Set<FunctionDesc> functionDescs = TUtil.newHashSet();
 
-    String command = "python";
     String fileName = path.substring(0, path.length() - ".py".length());
-    log.debug("Path: " + path + " FileName: " + fileName + " Namespace: " + namespace);
-//    File f = new File(path);
-//
-//    if (!f.canRead()) {
-//      throw new IOException("Can't read file: " + path);
-//    }
-//
-//    FileInputStream fin = new FileInputStream(f);
+    LOG.debug("Path: " + path + " FileName: " + fileName + " Namespace: " + namespace);
     InputStream in = getScriptAsStream(path);
     List<FuncInfo> functions = null;
     try {
@@ -65,7 +58,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
     namespace = namespace == null ? "" : namespace + NAMESPACE_SEPARATOR;
     for(FuncInfo funcInfo : functions) {
       String alias = namespace + funcInfo.funcName;
-      log.debug("Registering Function: " + alias);
+      LOG.debug("Registering Function: " + alias);
 
       TajoDataTypes.DataType returnType = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.valueOf(funcInfo.returnType));
       FunctionSignature signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, funcInfo.funcName,
@@ -89,16 +82,17 @@ public class PythonScriptEngine extends TajoScriptEngine {
 
   @Override
   protected String getScriptingLang() {
-    return "streaming_python";
-  }
-
-  @Override
-  protected Map<String, Object> getParamsFromVariables() throws IOException {
-    throw new IOException("Unsupported Operation");
+    return LANGUAGE_NAME;
   }
 
   private static final Pattern pSchema = Pattern.compile("^\\s*\\W+outputType.*");
   private static final Pattern pDef = Pattern.compile("^\\s*def\\s+(\\w+)\\s*.+");
+  private static final String FUNC_PREFIX = "def ";
+  private static final String BLOB_TYPE_STRING = TajoDataTypes.Type.BLOB.name();
+  private static final String PARAM_DELIMITER = ",";
+  private static final String LEFT_PAREN = "(";
+  private static final String RIGHT_PAREN = ")";
+  private static final String EMPTY_STR = "";
 
   private static class FuncInfo {
     String returnType;
@@ -125,24 +119,24 @@ public class PythonScriptEngine extends TajoScriptEngine {
     int schemaLineNumber = -1;
     while (line != null) {
       if (pSchema.matcher(line).matches()) {
-        int start = line.indexOf("(") + 2; //drop brackets/quotes
-        int end = line.lastIndexOf(")") - 1;
+        int start = line.indexOf(LEFT_PAREN) + 2; //drop brackets/quotes
+        int end = line.lastIndexOf(RIGHT_PAREN) - 1;
         schemaString = line.substring(start,end).trim();
         schemaLineNumber = lineNumber;
       } else if (pDef.matcher(line).matches()) {
-        int nameStart = line.indexOf("def ") + "def ".length();
-        int nameEnd = line.indexOf('(');
-        int signatureEnd = line.indexOf(')');
-        String[] params = line.substring(nameEnd+1, signatureEnd).split(",");
+        int nameStart = line.indexOf(FUNC_PREFIX) + FUNC_PREFIX.length();
+        int nameEnd = line.indexOf(LEFT_PAREN);
+        int signatureEnd = line.indexOf(RIGHT_PAREN);
+        String[] params = line.substring(nameEnd+1, signatureEnd).split(PARAM_DELIMITER);
         int paramNum;
         if (params.length == 1) {
-          paramNum = params[0].equals("") ? 0 : 1;
+          paramNum = params[0].equals(EMPTY_STR) ? 0 : 1;
         } else {
           paramNum = params.length;
         }
 
         String functionName = line.substring(nameStart, nameEnd).trim();
-        schemaString = schemaString == null ? "blob" : schemaString;
+        schemaString = schemaString == null ? BLOB_TYPE_STRING : schemaString;
         functions.add(new FuncInfo(schemaString, functionName, paramNum, schemaLineNumber));
         schemaString = null;
       }

@@ -89,10 +89,4 @@ public abstract class TajoScriptEngine {
    * Gets ScriptEngine classname or keyword for the scripting language
    */
   protected abstract String getScriptingLang();
-
-  /**
-   * Returns a map from local variable names to their values
-   * @throws java.io.IOException
-   */
-  protected abstract Map<String, Object> getParamsFromVariables() throws IOException;
 }

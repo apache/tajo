@@ -99,7 +99,6 @@ public class Task {
   // TODO - to be refactored
   private ShuffleType shuffleType = null;
   private Schema finalSchema = null;
-  private TupleComparator sortComp = null;
 
   public Task(String taskRunnerId,
               Path baseDir,
@@ -160,7 +159,6 @@ public class Task {
       if (shuffleType == ShuffleType.RANGE_SHUFFLE) {
         SortNode sortNode = PlannerUtil.findTopNode(plan, NodeType.SORT);
         this.finalSchema = PlannerUtil.sortSpecsToSchema(sortNode.getSortKeys());
-        this.sortComp = new BaseTupleComparator(finalSchema, sortNode.getSortKeys());
       }
     } else {
       Path outFilePath = ((FileStorageManager)StorageManager.getFileStorageManager(systemConf))

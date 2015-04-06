@@ -89,7 +89,6 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
   private Schema inSchema;
   private Schema outSchema;
   private int [] projectionCols;
-  private boolean isBinded = false;
 
   private CSVLineSerDe lineSerDe = new CSVLineSerDe();
   private TableMeta pipeMeta;
@@ -132,6 +131,7 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
     StreamingCommand sc = new StreamingCommand(buildCommand());
     ProcessBuilder processBuilder = StreamingUtil.createProcess(queryContext, sc);
     process = processBuilder.start();
+    LOG.info("process started.");
 
     Runtime.getRuntime().addShutdownHook(new Thread(new ProcessKiller()));
     return sc;
@@ -499,6 +499,7 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
   public class ProcessKiller implements Runnable {
     public void run() {
       process.destroy();
+      LOG.info("process destroyed.");
     }
   }
 //
