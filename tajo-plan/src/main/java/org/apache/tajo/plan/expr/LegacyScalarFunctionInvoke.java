@@ -36,8 +36,8 @@ public class LegacyScalarFunctionInvoke extends FunctionInvoke {
   }
 
   @Override
-  public void init(OverridableConf queryContext, FunctionEval.ParamType[] paramTypes) {
-    function.init(queryContext, paramTypes);
+  public void init(FunctionInvokeContext invokeContext, FunctionEval.ParamType[] paramTypes) {
+    function.init(((LegacyScalarFunctionInvokeContext)invokeContext).getQueryContext(), paramTypes);
   }
 
   @Override

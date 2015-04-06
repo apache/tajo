@@ -26,6 +26,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.plan.function.GeneralFunction;
+import org.apache.tajo.plan.function.python.executor.PythonScriptExecutor;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 
@@ -35,13 +36,12 @@ import java.io.IOException;
 public class GeneralFunctionEval extends FunctionEval {
   @Expose protected FunctionInvoke funcInvoke;
   @Expose protected OverridableConf queryContext;
+  @Expose protected PythonScriptExecutor executor;
 
 	public GeneralFunctionEval(@Nullable OverridableConf queryContext, FunctionDesc desc, EvalNode[] givenArgs)
       throws IOException {
 		super(EvalType.FUNCTION, desc, givenArgs);
     this.queryContext = queryContext;
-//    this.funcInvoke = FunctionInvoke.newInstance(desc);
-//    this.funcInvoke.init(queryContext, getParamType());
   }
 
   @Override
@@ -49,7 +49,13 @@ public class GeneralFunctionEval extends FunctionEval {
     super.bind(schema);
     try {
       this.funcInvoke = FunctionInvoke.newInstance(funcDesc);
-      this.funcInvoke.init(queryContext, getParamType());
+      FunctionInvokeContext invokeContext = FunctionInvokeContext.newInstance(funcDesc);
+      if (funcDesc.getInvocation().hasLegacy()) {
+        ((LegacyScalarFunctionInvokeContext)invokeContext).set(queryContext);
+      } else if (funcDesc.getInvocation().hasPython()) {
+        ((PythonFunctionInvokeContext)invokeContext).set(executor);
+      }
+      this.funcInvoke.init(invokeContext, getParamType());
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

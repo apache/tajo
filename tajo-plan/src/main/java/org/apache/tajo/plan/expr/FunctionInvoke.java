@@ -47,7 +47,7 @@ public abstract class FunctionInvoke {
     }
   }
 
-  public abstract void init(OverridableConf queryContext, FunctionEval.ParamType[] paramTypes) throws IOException;
+  public abstract void init(FunctionInvokeContext invokeContext, FunctionEval.ParamType[] paramTypes) throws IOException;
 
 
 //  /**
