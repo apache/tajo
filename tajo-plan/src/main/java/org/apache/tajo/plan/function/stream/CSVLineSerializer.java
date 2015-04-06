@@ -45,7 +45,7 @@ public class CSVLineSerializer extends TextLineSerializer {
   @Override
   public void init() {
     nullChars = TextLineSerDe.getNullCharsAsBytes(meta);
-    delimiter = ",".getBytes();
+    delimiter = "|,_".getBytes();
     columnNum = schema.size();
 
     serde = new TextFieldSerializerDeserializer(meta);

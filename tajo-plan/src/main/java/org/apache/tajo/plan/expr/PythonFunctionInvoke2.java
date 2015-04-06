@@ -154,7 +154,8 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
 //    String standardOutputRootWriteLocation = soc.getStandardOutputRootWriteLocation();
 //    String standardOutputRootWriteLocation = System.getProperty("tajo.log.dir");
     // TODO
-    String standardOutputRootWriteLocation = "/Users/jihoonson/Projects/tajo/";
+//    String standardOutputRootWriteLocation = "/Users/jihoonson/Projects/tajo/";
+    String standardOutputRootWriteLocation = "/home/jihoon/Projects/tajo/";
     String controllerLogFileName, outFileName, errOutFileName;
 
 //    if (execType.isLocal()) {
@@ -185,7 +186,8 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
     // TODO
     String fileCachePath = filePath.substring(0, lastSeparator);
 //    command[PATH_TO_FILE_CACHE] = "'" + fileCachePath + "'";
-    command[PATH_TO_FILE_CACHE] = "'" + "/Users/jihoonson/Projects/tajo/tajo-core/src/test/resources/python/" + "'";
+//    command[PATH_TO_FILE_CACHE] = "'" + "/Users/jihoonson/Projects/tajo/tajo-core/src/test/resources/python/" + "'";
+    command[PATH_TO_FILE_CACHE] = "'" + "/home/jihoon/Projects/tajo/tajo-core/src/test/resources/python/" + "'";
     command[STD_OUT_OUTPUT_PATH] = outFileName;
     command[STD_ERR_OUTPUT_PATH] = errOutFileName;
     command[CONTROLLER_LOG_FILE_PATH] = controllerLogFileName;
