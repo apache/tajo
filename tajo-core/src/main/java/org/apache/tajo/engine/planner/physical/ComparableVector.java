@@ -225,24 +225,27 @@ public class ComparableVector {
 
     @Override
     public boolean equals(Object obj) {
-      ComparableTuple other = (ComparableTuple)obj;
-      for (int i = 0; i < keys.length; i++) {
-        final boolean n1 = keys[i] == null;
-        final boolean n2 = other.keys[i] == null;
-        if (n1 && n2) {
-          continue;
+      if (obj instanceof ComparableTuple) {
+        ComparableTuple other = (ComparableTuple)obj;
+        for (int i = 0; i < keys.length; i++) {
+          final boolean n1 = keys[i] == null;
+          final boolean n2 = other.keys[i] == null;
+          if (n1 && n2) {
+            continue;
+          }
+          if (n1 ^ n2) {
+            return false;
+          }
+          switch (keyTypes[i]) {
+            case TEXT:
+            case CHAR:
+            case BLOB: if (!Arrays.equals((byte[])keys[i], (byte[])other.keys[i])) return false; continue;
+            default: if (!keys[i].equals(other.keys[i])) return false; continue;
+          }
         }
-        if (n1 ^ n2) {
-          return false;
-        }
-        switch (keyTypes[i]) {
-          case TEXT:
-          case CHAR:
-          case BLOB: if (!Arrays.equals((byte[])keys[i], (byte[])other.keys[i])) return false; continue;
-          default: if (!keys[i].equals(other.keys[i])) return false; continue;
-        }
+        return true;
       }
-      return true;
+      return false;
     }
 
     public boolean equals(Tuple tuple) {

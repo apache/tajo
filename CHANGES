@@ -11,6 +11,8 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1499: Check the bind status when EvalNode::eval() is called. (jihoon)
+
     TAJO-1400: Add TajoStatement::setMaxRows method support.
     (Contributed by YeonSu Han, Committed by jihoon)
 
