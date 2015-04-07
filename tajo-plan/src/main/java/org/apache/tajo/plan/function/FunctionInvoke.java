@@ -31,6 +31,10 @@ import java.io.IOException;
 public abstract class FunctionInvoke implements Closeable {
   @Expose protected FunctionDesc functionDesc;
 
+  public FunctionInvoke() {
+
+  }
+
   public FunctionInvoke(FunctionDesc functionDesc) {
     this.functionDesc = functionDesc;
   }
@@ -43,6 +47,10 @@ public abstract class FunctionInvoke implements Closeable {
     } else {
       throw new UnsupportedException(desc.getInvocation() + " is not supported");
     }
+  }
+
+  public void setFunctionDesc(FunctionDesc functionDesc) throws InternalException {
+    this.functionDesc = functionDesc;
   }
 
   public abstract void init(FunctionInvokeContext context) throws IOException;

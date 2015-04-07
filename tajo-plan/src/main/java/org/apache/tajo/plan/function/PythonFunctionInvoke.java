@@ -25,18 +25,22 @@ import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
 
-public class PythonFunctionInvoke extends FunctionInvoke {
+public class PythonFunctionInvoke extends FunctionInvoke implements Cloneable {
 
   private PythonScriptExecutor scriptExecutor;
   private FunctionInvokeContext context;
 
+  public PythonFunctionInvoke() {
+
+  }
+
   public PythonFunctionInvoke(FunctionDesc functionDesc) {
     super(functionDesc);
-    scriptExecutor = new PythonScriptExecutor(functionDesc);
   }
 
   @Override
   public void init(FunctionInvokeContext context) throws IOException {
+    this.scriptExecutor = new PythonScriptExecutor(functionDesc);
     this.context = context;
   }
 
@@ -54,4 +58,18 @@ public class PythonFunctionInvoke extends FunctionInvoke {
   public void close() {
     scriptExecutor.stop();
   }
+
+//  @Override
+//  public Object clone() throws CloneNotSupportedException {
+//    PythonFunctionInvoke clone = (PythonFunctionInvoke) super.clone();
+//    if (context != null) {
+//      clone.context = context;
+//    }
+//    return clone;
+//  }
+//
+//  @Override
+//  public int hashCode() {
+//    return Objects.hashCode(super.hashCode(), context);
+//  }
 }

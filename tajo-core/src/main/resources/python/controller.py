@@ -95,12 +95,11 @@ class PythonStreamingController:
         sys.path.append(cache_path)
         sys.path.append('.')
 
-        logging.basicConfig(filename=log_file_name, format="%(asctime)s %(levelname)s %(message)s", level=udf_logging.udf_log_level)
-        logging.info("To reduce the amount of information being logged only a small subset of rows are logged at the "
-                     "INFO level.  Call udf_logging.set_log_level_debug in tajo_util to see all rows being processed.")
+        # logging.basicConfig(filename=log_file_name, format="%(asctime)s %(levelname)s %(message)s", level=udf_logging.udf_log_level)
+        # logging.info("To reduce the amount of information being logged only a small subset of rows are logged at the "
+        #              "INFO level.  Call udf_logging.set_log_level_debug in tajo_util to see all rows being processed.")
 
         input_str = self.get_next_input()
-        logging.info('1: ' + input_str)
 
         try:
             func = __import__(module_name, globals(), locals(), [func_name], -1).__dict__[func_name]
@@ -109,20 +108,18 @@ class PythonStreamingController:
             write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
             self.close_controller(-1)
 
-        logging.info('2: ')
         # if udf_logging.udf_log_level != logging.DEBUG:
         #     #Only log output for illustrate after we get the flag to capture output.
         #     sys.stdout = open(os.devnull, 'w')
         # else:
         #     sys.stdout = self.log_stream
 
-        should_log = True
+        should_log = False
         log_message = logging.info
         if udf_logging.udf_log_level == logging.DEBUG:
             should_log = True
             log_message = logging.debug
 
-        logging.info('3: ')
         while input_str != END_OF_STREAM:
             try:
                 try:
@@ -169,7 +166,6 @@ class PythonStreamingController:
         # log_stream = self.log_stream
 
         input_str = input_stream.readline()
-        logging.info('get_next_input1: ' + input_str)
 
         while input_str.endswith(END_RECORD_DELIM) == False:
             line = input_stream.readline()
@@ -177,8 +173,6 @@ class PythonStreamingController:
                 input_str = ''
                 break
             input_str += line
-
-        logging.info('get_next_input2: ' + input_str)
 
         if input_str == '':
             return END_OF_STREAM
@@ -191,7 +185,6 @@ class PythonStreamingController:
         if input_str == END_OF_STREAM:
             return input_str
 
-        logging.info('get_next_input3: ' + input_str)
         return input_str[:-END_RECORD_DELIM_LENGTH]
 
     def close_controller(self, exit_code):

@@ -120,12 +120,10 @@ public class PythonScriptExecutor {
     createInputHandlers();
     setStreams();
     startThreads();
-    LOG.info("process started");
   }
 
   public void stop() {
     process.destroy();
-    LOG.info("process destroyed");
   }
 
   private StreamingCommand startUdfController() throws IOException {
@@ -146,8 +144,6 @@ public class PythonScriptExecutor {
       LOG.warn("Currently, logging is not supported for the python controller.");
       standardOutputRootWriteLocation = invokeContext.getQueryContext().get(QueryVars.PYTHON_CONTROLLER_LOG_DIR);
     }
-    standardOutputRootWriteLocation = "/home/jihoon/Projects/tajo/";
-//    standardOutputRootWriteLocation = "/Users/jihoonson/Projects/tajo/";
     String controllerLogFileName, outFileName, errOutFileName;
 
     String funcName = invocationDesc.getName();
@@ -257,14 +253,12 @@ public class PythonScriptExecutor {
         input = new VTuple(0);
       }
       inputQueue.put(input);
-      LOG.info(inputQueue.size() + ", " + input);
     } catch (Exception e) {
       throw new RuntimeException("Failed adding input to inputQueue", e);
     }
     Object o = null;
     try {
       if (outputQueue != null) {
-        LOG.info("outputQueue.size(): " + outputQueue.size());
         o = outputQueue.take();
         if (o == NULL_OBJECT) {
           o = null;
@@ -329,16 +323,14 @@ public class PythonScriptExecutor {
         while (o != OutputHandler.END_OF_OUTPUT) {
           if (o != null) {
             outputQueue.put(o);
-            LOG.info("put " + o + " to outputQueue");
           }
           else {
             outputQueue.put(NULL_OBJECT);
-            LOG.info("put NULL_OBJECT to outputQueue");
           }
           o = outputHandler.getNext().get(0);
         }
       } catch (IOException e) {
-        LOG.warn(e);
+        // EOF
       } catch(Exception e) {
         if (outputQueue != null) {
           try {
@@ -357,7 +349,6 @@ public class PythonScriptExecutor {
                   invocationDesc.getName() + " matches the data type being returned.", e);
             }
             outputQueue.put(ERROR_OUTPUT); //Need to wake main thread.
-            LOG.info("put ERROR_OUTPUT to outputQueue");
           } catch(InterruptedException ie) {
             LOG.error(ie);
           }
@@ -394,7 +385,6 @@ public class PythonScriptExecutor {
         outerrThreadsError = new StreamingUDFException("python", error.toString(), lineNumber);
         if (outputQueue != null) {
           outputQueue.put(ERROR_OUTPUT); //Need to wake main thread.
-          LOG.info("put ERROR_OUTPUT to outputQueue");
         }
         if (stderr != null) {
           stderr.close();

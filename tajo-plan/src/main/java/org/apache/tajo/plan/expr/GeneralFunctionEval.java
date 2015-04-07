@@ -33,7 +33,7 @@ import java.io.IOException;
 import java.util.Map;
 
 public class GeneralFunctionEval extends FunctionEval {
-  @Expose protected FunctionInvoke funcInvoke;
+  protected FunctionInvoke funcInvoke;
   @Expose protected FunctionInvokeContext invokeContext;
 
 	public GeneralFunctionEval(OverridableConf queryContext, FunctionDesc desc, EvalNode[] givenArgs)
@@ -63,21 +63,20 @@ public class GeneralFunctionEval extends FunctionEval {
     return res;
   }
 
-	@Override
-	public boolean equals(Object obj) {
-	  if (obj instanceof GeneralFunctionEval) {
-      GeneralFunctionEval other = (GeneralFunctionEval) obj;
-      return super.equals(other) &&
-          TUtil.checkEquals(funcInvoke, other.funcInvoke);
-	  }
-	  
-	  return false;
-	}
+//	@Override
+//	public boolean equals(Object obj) {
+//	  if (obj instanceof GeneralFunctionEval) {
+//      GeneralFunctionEval other = (GeneralFunctionEval) obj;
+//      return super.equals(other);
+//	  }
+//
+//	  return false;
+//	}
 	
-	@Override
-	public int hashCode() {
-	  return Objects.hashCode(funcDesc, funcInvoke);
-	}
+//	@Override
+//	public int hashCode() {
+//	  return Objects.hashCode(funcDesc, funcInvoke);
+//	}
 	
 	@Override
   public Object clone() throws CloneNotSupportedException {

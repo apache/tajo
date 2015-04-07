@@ -97,11 +97,24 @@ public class CastEval extends UnaryEval {
     boolean valid = obj != null && obj instanceof CastEval;
     if (valid) {
       CastEval another = (CastEval) obj;
-      return child.equals(another.child) &&
-          target.equals(another.target) &&
-          TUtil.checkEquals(timezone, another.timezone);
+      boolean b1 = child.equals(another.child);
+      boolean b2 = target.equals(another.target);
+      boolean b3 = TUtil.checkEquals(timezone, another.timezone);
+      return b1 && b2 && b3;
     } else {
       return false;
     }
+  }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    CastEval clone = (CastEval) super.clone();
+    if (target != null) {
+      clone.target = target;
+    }
+    if (timezone != null) {
+      clone.timezone = timezone;
+    }
+    return clone;
   }
 }

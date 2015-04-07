@@ -28,9 +28,19 @@ import org.apache.tajo.util.TUtil;
 public class LegacyScalarFunctionInvoke extends FunctionInvoke {
   @Expose private GeneralFunction function;
 
+  public LegacyScalarFunctionInvoke() {
+
+  }
+
   public LegacyScalarFunctionInvoke(FunctionDesc funcDesc) throws InternalException {
     super(funcDesc);
     function = (GeneralFunction) funcDesc.newInstance();
+  }
+
+  @Override
+  public void setFunctionDesc(FunctionDesc desc) throws InternalException {
+    super.setFunctionDesc(desc);
+    function = (GeneralFunction) functionDesc.newInstance();
   }
 
   @Override

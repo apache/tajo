@@ -18,10 +18,12 @@
 
 package org.apache.tajo.plan.function;
 
+import com.google.common.base.Objects;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.plan.expr.FunctionEval;
 import org.apache.tajo.util.KeyValueSet;
 
+import java.util.Arrays;
 import java.util.Map;
 
 public class FunctionInvokeContext {
@@ -39,5 +41,19 @@ public class FunctionInvokeContext {
 
   public FunctionEval.ParamType[] getParamTypes() {
     return paramTypes;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(queryContext, Arrays.hashCode(paramTypes));
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o instanceof FunctionInvokeContext) {
+      FunctionInvokeContext other = (FunctionInvokeContext) o;
+      return queryContext.equals(other.queryContext) && Arrays.equals(paramTypes, other.paramTypes);
+    }
+    return false;
   }
 }
