@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one
+  or more contributor license agreements.  See the NOTICE file
+  distributed with this work for additional information
+  regarding copyright ownership.  The ASF licenses this file
+  to you under the Apache License, Version 2.0 (the
+  "License"); you may not use this file except in compliance
+  with the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+<tns:store xmlns:tns="http://tajo.apache.org/catalogstore" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://tajo.apache.org/catalogstore ../DBMSSchemaDefinition.xsd ">
+  <!--
+      Catalog base version history
+      * 4 - 2015-03-27: Partition Schema (TAJO-1284)
+      * 3 - 2015-03-12: Nested Schema (TAJO-1329)
+      * 2 - 2014-06-09: First versioning
+      * 1-  Before 2013-03-20
+    -->
+  <tns:base version="4">
+    <tns:objects>
+      <tns:Object order="0" type="table" name="META">
+        <tns:sql><![CDATA[CREATE TABLE META (VERSION INT NOT NULL)]]></tns:sql>
+      </tns:Object>
+      <tns:Object order="1" type="table" name="TABLESPACES">
+        <tns:sql><![CDATA[
+        CREATE TABLE TABLESPACES (
+          SPACE_ID INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+          SPACE_NAME VARCHAR(128) BINARY NOT NULL UNIQUE,
+          SPACE_HANDLER VARCHAR (1024) DEFAULT 'HDFS',
+          SPACE_URI VARCHAR (4096) BINARY NOT NULL,
+          UNIQUE INDEX IDX_NAME (SPACE_NAME)
+				)]]>
+        </tns:sql>
+      </tns:Object>
+      <tns:Object order="2" type="table" name="DATABASES_">
+        <tns:sql><![CDATA[
+        CREATE TABLE DATABASES_ (
+          DB_ID INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+          DB_NAME VARCHAR(128) BINARY NOT NULL UNIQUE,
+          SPACE_ID INT NOT NULL,
+          FOREIGN KEY (SPACE_ID) REFERENCES TABLESPACES (SPACE_ID),
+          UNIQUE INDEX IDX_NAME (DB_NAME)
+				)]]>
+        </tns:sql>
+      </tns:Object>
+      <tns:Object order="3" type="table" name="TABLES">
+        <tns:sql><![CDATA[
+        CREATE TABLE TABLES (
+          TID INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+          DB_ID INT NOT NULL,
+          TABLE_NAME VARCHAR(128) BINARY NOT NULL,
+          TABLE_TYPE VARCHAR(128) NOT NULL,
+          PATH VARCHAR(4096) BINARY,
+          STORE_TYPE CHAR(16),
+          FOREIGN KEY (DB_ID) REFERENCES DATABASES_ (DB_ID),
+          INDEX IDX_DB_ID (DB_ID),
+          UNIQUE INDEX IDX_TABLE_ID (DB_ID, TABLE_NAME)
+        )]]>
+        </tns:sql>
+      </tns:Object>
+      <tns:Object order="4" type="table" name="COLUMNS">
+        <tns:sql><![CDATA[
+        CREATE TABLE COLUMNS (
+          TID INT NOT NULL,
+          COLUMN_NAME VARCHAR(255) BINARY NOT NULL,
+          ORDINAL_POSITION INT NOT NULL,
+          NESTED_FIELD_NUM INT NOT NULL,
+          DATA_TYPE CHAR(16),
+          TYPE_LENGTH INTEGER,
+          PRIMARY KEY (TID, ORDINAL_POSITION),
+          FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
+        )]]>
+        </tns:sql>
+      </tns:Object>
+      <tns:Object order="5" type="table" name="OPTIONS">
+        <tns:sql><![CDATA[
+        CREATE TABLE OPTIONS (
+          TID INT NOT NULL,
+          KEY_ VARCHAR(255) BINARY NOT NULL,
+          VALUE_ VARCHAR(4000) NOT NULL,
+          PRIMARY KEY (TID, KEY_),
+          FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
+        )]]>
+        </tns:sql>
+      </tns:Object>
+      <tns:Object order="6" type="table" name="INDEXES">
+        <tns:sql><![CDATA[
+        CREATE TABLE INDEXES (
+          DB_ID INT NOT NULL,
+          TID INT NOT NULL,
+          INDEX_NAME VARCHAR(128) BINARY NOT NULL,
+          COLUMN_NAME VARCHAR(128) BINARY NOT NULL,
+          DATA_TYPE VARCHAR(128) NOT NULL,
+          INDEX_TYPE CHAR(32) NOT NULL,
+          IS_UNIQUE BOOLEAN NOT NULL,
+          IS_CLUSTERED BOOLEAN NOT NULL,
+          IS_ASCENDING BOOLEAN NOT NULL,
+          PRIMARY KEY (DB_ID, INDEX_NAME),
+          FOREIGN KEY (DB_ID) REFERENCES DATABASES_ (DB_ID) ON DELETE CASCADE,
+          FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE,
+          UNIQUE INDEX IDX_DB_ID_NAME (DB_ID, INDEX_NAME),
+          INDEX IDX_TID_COLUMN_NAME (TID, COLUMN_NAME)
+        )]]>
+        </tns:sql>
+      </tns:Object>
+      <tns:Object order="7" type="table" name="STATS">
+        <tns:sql><![CDATA[
+        CREATE TABLE STATS (
+          TID INT NOT NULL PRIMARY KEY,
+          NUM_ROWS BIGINT,
+          NUM_BYTES BIGINT,
+          FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
+        )]]>
+        </tns:sql>
+      </tns:Object>
+      <tns:Object order="8" type="table" name="PARTITION_METHODS">
+        <tns:sql><![CDATA[
+        CREATE TABLE PARTITION_METHODS (
+          TID INT NOT NULL PRIMARY KEY,
+          PARTITION_TYPE VARCHAR(10) NOT NULL,
+          EXPRESSION VARCHAR(1024) NOT NULL,
+          EXPRESSION_SCHEMA VARCHAR(1024) NOT NULL,
+          FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
+        )]]>
+        </tns:sql>
+      </tns:Object>
+      <tns:Object order="9" type="table" name="PARTITIONS">
+        <tns:sql><![CDATA[
+        CREATE TABLE PARTITIONS (
+          PARTITION_ID INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+          TID INT NOT NULL,
+          PARTITION_NAME VARCHAR(255) BINARY,
+          PATH VARCHAR(4096) BINARY,
+          CONSTRAINT CONST_PARTITION_UNIQUE UNIQUE (PARTITION_NAME),
+          FOREIGN KEY (TID) REFERENCES TABLES (TID) ON DELETE CASCADE
+        )]]>
+        </tns:sql>
+      </tns:Object>
+      <tns:Object order="10" type="table" name="PARTITION_KEYS">
+        <tns:sql><![CDATA[
+        CREATE TABLE PARTITION_KEYS (
+          PARTITION_ID INT NOT NULL,
+          COLUMN_NAME VARCHAR(255) BINARY NOT NULL,
+          PARTITION_VALUE VARCHAR(255) BINARY NOT NULL,
+          UNIQUE INDEX PARTITION_KEYS_IDX (PARTITION_ID, COLUMN_NAME, PARTITION_VALUE),
+          FOREIGN KEY (PARTITION_ID) REFERENCES PARTITIONS (PARTITION_ID) ON DELETE CASCADE
+        )]]>
+        </tns:sql>
+      </tns:Object>
+    </tns:objects>
+  </tns:base>
+
+</tns:store>

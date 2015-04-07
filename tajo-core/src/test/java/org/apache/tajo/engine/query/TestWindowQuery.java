@@ -232,35 +232,35 @@ public class TestWindowQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public final void rowNumber1() throws Exception {
+  public final void testRowNumber1() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
-  public final void rowNumber2() throws Exception {
+  public final void testRowNumber2() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
-  public final void rowNumber3() throws Exception {
+  public final void testRowNumber3() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
-  public final void firstValue1() throws Exception {
+  public final void testFirstValue1() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
-  public final void firstValueTime() throws Exception {
+  public final void testFirstValueTime() throws Exception {
     KeyValueSet tableOptions = new KeyValueSet();
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
@@ -288,14 +288,14 @@ public class TestWindowQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public final void lastValue1() throws Exception {
+  public final void testLastValue1() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
   }
 
   @Test
-  public final void lastValueTime() throws Exception {
+  public final void testLastValueTime() throws Exception {
     KeyValueSet tableOptions = new KeyValueSet();
     tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
     tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
@@ -415,6 +415,20 @@ public class TestWindowQuery extends QueryTestCaseBase {
 
   @Test
   public final void testLeadWithDefault() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testStdDevSamp1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testStdDevPop1() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);

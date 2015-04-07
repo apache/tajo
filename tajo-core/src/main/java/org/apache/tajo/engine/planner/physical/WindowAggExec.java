@@ -19,20 +19,19 @@
 package org.apache.tajo.engine.planner.physical;
 
 import com.google.common.collect.Lists;
-import org.antlr.v4.runtime.atn.RangeTransition;
 import org.apache.tajo.algebra.WindowSpec;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.NullDatum;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.WindowFunctionEval;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.logical.LogicalWindowSpec;
 import org.apache.tajo.plan.logical.WindowAggNode;
 import org.apache.tajo.storage.BaseTupleComparator;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.TupleComparator;
 import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
@@ -180,6 +179,14 @@ public class WindowAggExec extends UnaryPhysicalExec {
     outputColumnNum = nonFunctionColumnNum + functionNum;
   }
 
+  @Override
+  public void init() throws IOException {
+    super.init();
+    for (EvalNode functionEval : functions) {
+      functionEval.bind(inSchema);
+    }
+  }
+
   private void transition(WindowState state) {
     this.state = state;
   }
@@ -309,6 +316,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
       int frameStart = 0, frameEnd = accumulatedInTuples.size() - 1;
       int startOffset = functions[idx].getLogicalWindowFrame().getStartBound().getNumber();
       int endOffset = functions[idx].getLogicalWindowFrame().getEndBound().getNumber();
+      functions[idx].bind(inSchema);
 
       /*
          Following code handles evaluation of window functions with two nested switch statements
@@ -335,7 +343,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
             Tuple inTuple = accumulatedInTuples.get(i);
             Tuple outTuple = evaluatedTuples.get(i);
 
-            functions[idx].merge(contexts[idx], inSchema, inTuple);
+            functions[idx].merge(contexts[idx], inTuple);
 
             if (windowFuncFlags[idx]) {
               Datum result = functions[idx].terminate(contexts[idx]);
@@ -411,7 +419,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
             }
 
             if (inTuple != null) {
-              functions[idx].merge(contexts[idx], inSchema, inTuple);
+              functions[idx].merge(contexts[idx], inTuple);
               result = functions[idx].terminate(contexts[idx]);
             }
             outTuple.put(nonFunctionColumnNum + idx, result);
@@ -426,7 +434,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
               for (int i = 0; i < accumulatedInTuples.size(); i++) {
                 Tuple inTuple = accumulatedInTuples.get(i);
 
-                functions[idx].merge(contexts[idx], inSchema, inTuple);
+                functions[idx].merge(contexts[idx], inTuple);
               }
 
               Datum result = functions[idx].terminate(contexts[idx]);
@@ -452,7 +460,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
                     do {
                       sameEndRange++;
                       inTuple = accumulatedInTuples.get(advance);
-                      functions[idx].merge(contexts[idx], inSchema, inTuple);
+                      functions[idx].merge(contexts[idx], inTuple);
                       advance++;
                     } while (advance < accumulatedInTuples.size() && comp.compare(accumulatedInTuples.get(advance), inTuple) == 0);
                   }
@@ -467,14 +475,14 @@ public class WindowAggExec extends UnaryPhysicalExec {
                   for (; i < Math.min(accumulatedInTuples.size(), endOffset); i++) {
                     Tuple inTuple = accumulatedInTuples.get(i);
 
-                    functions[idx].merge(contexts[idx], inSchema, inTuple);
+                    functions[idx].merge(contexts[idx], inTuple);
                   }
 
                   for (; i < accumulatedInTuples.size(); i++, j++) {
                     Tuple inTuple = accumulatedInTuples.get(i);
                     Tuple outTuple = evaluatedTuples.get(j);
 
-                    functions[idx].merge(contexts[idx], inSchema, inTuple);
+                    functions[idx].merge(contexts[idx], inTuple);
                     Datum result = functions[idx].terminate(contexts[idx]);
                     outTuple.put(nonFunctionColumnNum + idx, result);
                   }
@@ -495,7 +503,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
                     Tuple inTuple = accumulatedInTuples.get(i);
                     Tuple outTuple = evaluatedTuples.get(j);
 
-                    functions[idx].merge(contexts[idx], inSchema, inTuple);
+                    functions[idx].merge(contexts[idx], inTuple);
                     result = functions[idx].terminate(contexts[idx]);
                     outTuple.put(nonFunctionColumnNum + idx, result);
                   }
@@ -517,7 +525,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
                     do {
                       sameStartRange ++;
                       inTuple = accumulatedInTuples.get(rewind - 1);
-                      functions[idx].merge(contexts[idx], inSchema, inTuple);
+                      functions[idx].merge(contexts[idx], inTuple);
                       rewind --;
                     } while (rewind > 0 && comp.compare(accumulatedInTuples.get(rewind - 1), inTuple) == 0);
                   }
@@ -537,7 +545,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
 
                   for (i = accumulatedInTuples.size(); j > 0; i--, j--) {
                     Tuple inTuple = accumulatedInTuples.get(i-1);
-                    functions[idx].merge(contexts[idx], inSchema, inTuple);
+                    functions[idx].merge(contexts[idx], inTuple);
 
                     Tuple outTuple = evaluatedTuples.get(j-1);
                     Datum result = functions[idx].terminate(contexts[idx]);
@@ -547,14 +555,14 @@ public class WindowAggExec extends UnaryPhysicalExec {
                   int i = accumulatedInTuples.size(); int j = evaluatedTuples.size();
                   for (; i > Math.max(0, accumulatedInTuples.size() + startOffset); i--) {
                     Tuple inTuple = accumulatedInTuples.get(i-1);
-                    functions[idx].merge(contexts[idx], inSchema, inTuple);
+                    functions[idx].merge(contexts[idx], inTuple);
                   }
 
                   for (; i > 0; i--, j--) {
                     Tuple inTuple = accumulatedInTuples.get(i-1);
                     Tuple outTuple = evaluatedTuples.get(j-1);
 
-                    functions[idx].merge(contexts[idx], inSchema, inTuple);
+                    functions[idx].merge(contexts[idx], inTuple);
                     Datum result = functions[idx].terminate(contexts[idx]);
                     outTuple.put(nonFunctionColumnNum + idx, result);
                   }
@@ -590,7 +598,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
 
                   contexts[idx] = functions[idx].newContext();
                   for (int j = actualStart; j <= actualEnd; j++) {
-                    functions[idx].merge(contexts[idx], inSchema, accumulatedInTuples.get(j));
+                    functions[idx].merge(contexts[idx], accumulatedInTuples.get(j));
                   }
                   Tuple outTuple = evaluatedTuples.get(i);
                   Datum result = functions[idx].terminate(contexts[idx]);
@@ -603,7 +611,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
                   contexts[idx] = functions[idx].newContext();
                   for (int j = Math.max(frameStart, 0); j < Math.min(frameEnd + 1, accumulatedInTuples.size()); j++) {
                     Tuple inTuple = accumulatedInTuples.get(j);
-                    functions[idx].merge(contexts[idx], inSchema, inTuple);
+                    functions[idx].merge(contexts[idx], inTuple);
                   }
                   Tuple outTuple = evaluatedTuples.get(i);
                   Datum result = functions[idx].terminate(contexts[idx]);

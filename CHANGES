@@ -4,10 +4,37 @@ Release 0.11.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-921: Add STDDEV_SAMP and STDDEV_POP window functions. (Keuntae Park)
+
     TAJO-1135: Implement queryable virtual table for cluster information.
     (jihun)
 
   IMPROVEMENT
+
+    TAJO-1499: Check the bind status when EvalNode::eval() is called. (jihoon)
+
+    TAJO-1400: Add TajoStatement::setMaxRows method support.
+    (Contributed by YeonSu Han, Committed by jihoon)
+
+    TAJO-1421: Add 'ALTER TABLE SET PROPERTY' statement.
+    (Contributed by Yongjin Choi. Committed by jaehwa)
+
+    TAJO-1501: Too many log message of HashShuffleAppenderManager.
+    (Contributed by Jongyoung Park. Committed by jaehwa)
+
+    TAJO-1428: Support min, max builtin functions for DATE, TIME, TIMESTAMP.
+    (Contributed by Dongjoon Hyun, Committed by Keuntae Park)
+
+    TAJO-1436: Add Bind method to EvalNode. (Contributed by navis,
+    Committed by jihoon)
+
+    TAJO-1495: Clean up CatalogStore. (jaehwa)
+   
+    TAJO-1460: Apply TAJO-1407 to ExternalSortExec. (Contributed by navis, 
+    Committed by hyoungjun)
+
+    TAJO-1350: Refactor FilterPushDownRule::visitJoin() into well-defined, 
+    small methods. (jihoon)
 
     TAJO-1426: Support "explain global" to get physical plan. (Contributed by
     navis, Committed by jihoon)
@@ -43,6 +70,29 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1510: Change a function name from getFileCunks to getFileChunks.
+    (Contributed by Soonwoong Lee, Committed by jaehwa)
+
+    TAJO-1360: VALUES_ field in OPTIONS table of catalog store should be longer.
+    (Contributed by DaeMyung Kang, Committed by jihun)
+
+    TAJO-1479: NPE during startup CatalogStore. (jaehwa)
+
+    TAJO-1437: Resolve findbug warnings on Tajo JDBC Module. 
+    (Contributed by Dongjoon Hyun, Committed by jihoon)
+
+    TAJO-1438: Resolve findbug warnings on Tajo Client Module. 
+    (Contributed by Dongjoon Hyun, Committed by jihoon)
+
+    TAJO-1440: Some tests fail in parallel test environment in TestKillQuery.
+    (Contributed by Jongyoung Park. Committed by jinho)
+
+    TAJO-1147: Simple query doesn't work in Web UI.
+    (Contributed by Jongyoung Park. Committed by jaehwa)
+
+    TAJO-1434: Fix supporting version of Hadoop. 
+    (Contributed by Dongjoon Hyun, Committed by jinho)
 
     TAJO-1449: TestSelectQuery.testExplainSelect() fails. (jihoon)
 
@@ -85,6 +135,14 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1462: Replace CSV examples into TEXT examples in docs. 
+    (Contributed by Dongjoon Hyun, Committed by jihoon)
+
+    TAJO-1424: Investigate the problem of too many "Try to connect" messeges 
+    during Travic CI build. (Contributed by navis, Committed by jihoon)
+
+    TAJO-1482: Cleanup the legacy cluster mode. (jinho)
+
     TAJO-1439: Some method name is written wrongly. 
     (Contributed by Jongyoung Park. Committed by jihoon)
 
@@ -101,6 +159,10 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1338: Defines RESTful API for Clients. (jihun)
+
+    TAJO-1284: Add alter partition method to CatalogStore. (jaehwa)
 
     TAJO-1392: Resolve findbug warnings on Tajo Plan Module. (jihun)
 

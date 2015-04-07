@@ -72,9 +72,6 @@
 # The scheduling priority for daemon processes.  See 'man nice'.
 # export TAJO_NICENESS=10
 
-# Tajo cluster mode. the default mode is standby mode.
-export TAJO_WORKER_STANDBY_MODE=true
-
 # It must be required to use HCatalogStore
 # export HIVE_HOME=
 # export HIVE_JDBC_DRIVER_DIR=

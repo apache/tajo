@@ -21,13 +21,11 @@ package org.apache.tajo.plan.expr;
 import com.google.gson.annotations.Expose;
 
 import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.function.AggFunction;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.TUtil;
 
 public class AggregationFunctionCallEval extends FunctionEval implements Cloneable {
@@ -36,7 +34,6 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   @Expose String alias;
 
   protected AggFunction instance;
-  private Tuple params;
 
   protected AggregationFunctionCallEval(EvalType type, FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs) {
     super(type, desc, givenArgs);
@@ -52,17 +49,14 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
     return instance.newContext();
   }
 
-  public void merge(FunctionContext context, Schema schema, Tuple tuple) {
-    if (params == null) {
-      this.params = new VTuple(argEvals.length);
+  public void merge(FunctionContext context, Tuple tuple) {
+    if (!isBinded) {
+      throw new IllegalStateException("bind() must be called before merge()");
     }
+    mergeParam(context, evalParams(tuple));
+  }
 
-    if (argEvals != null) {
-      for (int i = 0; i < argEvals.length; i++) {
-        params.put(i, argEvals[i].eval(schema, tuple));
-      }
-    }
-
+  protected void mergeParam(FunctionContext context, Tuple params) {
     if (!intermediatePhase && !finalPhase) {
       // firstPhase
       instance.eval(context, params);
@@ -72,11 +66,14 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   }
 
   @Override
-  public Datum eval(Schema schema, Tuple tuple) {
-    throw new UnsupportedOperationException("Cannot execute eval() of aggregation function");
+  public <T extends Datum> T eval(Tuple tuple) {
+    throw new IllegalStateException("Cannot execute aggregation function in generic expression");
   }
 
   public Datum terminate(FunctionContext context) {
+    if (!isBinded) {
+      throw new IllegalStateException("bind() must be called before terminate()");
+    }
     if (!finalPhase) {
       return instance.getPartialResult(context);
     } else {
@@ -151,7 +148,6 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
     result = prime * result + (finalPhase ? 1231 : 1237);
     result = prime * result + ((instance == null) ? 0 : instance.hashCode());
     result = prime * result + (intermediatePhase ? 1231 : 1237);
-    result = prime * result + ((params == null) ? 0 : params.hashCode());
     return result;
   }
 

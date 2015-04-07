@@ -135,6 +135,9 @@ public class TajoConf extends Configuration {
         Validators.networkAddr()),
     TAJO_MASTER_INFO_ADDRESS("tajo.master.info-http.address", "0.0.0.0:26080", Validators.networkAddr()),
 
+    // Tajo Rest Service
+    REST_SERVICE_PORT("tajo.rest.service.port", 26880),
+
     // High availability configurations
     TAJO_MASTER_HA_ENABLE("tajo.master.ha.enable", false, Validators.bool()),
     TAJO_MASTER_HA_MONITOR_INTERVAL("tajo.master.ha.monitor.interval", 5 * 1000), // 5 sec
@@ -192,11 +195,9 @@ public class TajoConf extends Configuration {
     // for Yarn Resource Manager ----------------------------------------------
 
     /** how many launching TaskRunners in parallel */
-    YARN_RM_QUERY_MASTER_MEMORY_MB("tajo.querymaster.memory-mb", 512, Validators.min("64")),
-    YARN_RM_QUERY_MASTER_DISKS("tajo.yarn-rm.querymaster.disks", 1),
+    @Deprecated
     YARN_RM_TASKRUNNER_LAUNCH_PARALLEL_NUM("tajo.yarn-rm.parallel-task-runner-launcher-num",
         Runtime.getRuntime().availableProcessors() * 2),
-    YARN_RM_WORKER_NUMBER_PER_NODE("tajo.yarn-rm.max-worker-num-per-node", 8),
 
     // Query Configuration
     QUERY_SESSION_TIMEOUT("tajo.query.session.timeout-sec", 60, Validators.min("0")),
@@ -328,7 +329,7 @@ public class TajoConf extends Configuration {
     $EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD("tajo.executor.groupby.in-memory-hash-threshold-bytes",
         (long)256 * 1048576),
     $MAX_OUTPUT_FILE_SIZE("tajo.query.max-outfile-size-mb", 0), // zero means infinite
-    $CODEGEN("tajo.executor.codegen.enabled", false), // Runtime code generation
+    $CODEGEN("tajo.executor.codegen.enabled", false), // Runtime code generation (todo this is broken)
 
     // Client -----------------------------------------------------------------
     $CLIENT_SESSION_EXPIRY_TIME("tajo.client.session.expiry-time-sec", 3600), // default time is one hour.

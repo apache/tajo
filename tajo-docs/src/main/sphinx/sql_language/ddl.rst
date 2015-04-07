@@ -56,7 +56,7 @@ If you want to add an external table that contains compressed data, you should g
   ...
   L_COMMENT text) 
 
-  USING csv WITH ('text.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec')
+  USING TEXT WITH ('text.delimiter'='|','compression.codec'='org.apache.hadoop.io.compress.DeflateCodec')
   LOCATION 'hdfs://localhost:9010/tajo/warehouse/lineitem_100_snappy';
 
 `compression.codec` parameter can have one of the following compression codecs:

@@ -39,19 +39,25 @@ public class FieldEval extends EvalNode implements Cloneable {
 	  this.column = column;
 	}
 
+  @Override
+  public EvalNode bind(Schema schema) {
+    super.bind(schema);
+    // TODO - column namespace should be improved to simplify name handling and resolving.
+    if (column.hasQualifier()) {
+      fieldId = schema.getColumnId(column.getQualifiedName());
+    } else {
+      fieldId = schema.getColumnIdByName(column.getSimpleName());
+    }
+    if (fieldId == -1) {
+      throw new IllegalStateException("No Such Column Reference: " + column + ", schema: " + schema);
+    }
+    return this;
+  }
+
 	@Override
-	public Datum eval(Schema schema, Tuple tuple) {
-	  if (fieldId == -1) {
-      // TODO - column namespace should be improved to simplify name handling and resolving.
-      if (column.hasQualifier()) {
-        fieldId = schema.getColumnId(column.getQualifiedName());
-      } else {
-        fieldId = schema.getColumnIdByName(column.getSimpleName());
-      }
-      if (fieldId == -1) {
-        throw new IllegalStateException("No Such Column Reference: " + column + ", schema: " + schema);
-      }
-	  }
+  @SuppressWarnings("unchecked")
+	public Datum eval(Tuple tuple) {
+    super.eval(tuple);
 	  return tuple.get(fieldId);
   }
 
@@ -90,7 +96,7 @@ public class FieldEval extends EvalNode implements Cloneable {
 	public String getName() {
 		return this.column.getQualifiedName();
 	}
-	
+
 	public String toString() {
 	  return this.column.toString();
 	}
