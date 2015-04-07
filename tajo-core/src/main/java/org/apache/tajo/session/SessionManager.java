@@ -25,6 +25,8 @@ import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.event.Dispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -90,6 +92,14 @@ public class SessionManager extends CompositeService implements EventHandler<Ses
     assertSessionExistence(sessionId);
     touch(sessionId);
     return sessions.get(sessionId);
+  }
+
+  public List<Session> getAllSessions() {
+    List<Session> current_sessions = new ArrayList<Session>(sessions.size());
+    for (Map.Entry<String, Session> e : sessions.entrySet()) {
+      current_sessions.add(e.getValue());
+    }
+    return current_sessions;
   }
 
   public void setVariable(String sessionId, String name, String value) throws InvalidSessionException {
