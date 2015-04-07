@@ -147,6 +147,7 @@ public class PythonScriptExecutor {
       standardOutputRootWriteLocation = invokeContext.getQueryContext().get(QueryVars.PYTHON_CONTROLLER_LOG_DIR);
     }
     standardOutputRootWriteLocation = "/home/jihoon/Projects/tajo/";
+//    standardOutputRootWriteLocation = "/Users/jihoonson/Projects/tajo/";
     String controllerLogFileName, outFileName, errOutFileName;
 
     String funcName = invocationDesc.getName();
@@ -162,9 +163,7 @@ public class PythonScriptExecutor {
     String fileName = filePath.substring(lastSeparator);
     fileName = fileName.endsWith(".py") ? fileName.substring(0, fileName.length()-3) : fileName;
     command[UDF_FILE_NAME] = fileName;
-    command[UDF_FILE_PATH] = lastSeparator <= 0 ?
-        "." :
-        filePath.substring(0, lastSeparator - 1);
+    command[UDF_FILE_PATH] = lastSeparator <= 0 ? "." : filePath.substring(0, lastSeparator - 1);
     command[UDF_NAME] = funcName;
     // TODO
     if (!invokeContext.getQueryContext().containsKey(QueryVars.PYTHON_SCRIPT_CODE_DIR)) {

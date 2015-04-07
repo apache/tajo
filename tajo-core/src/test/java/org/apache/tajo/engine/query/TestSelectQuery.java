@@ -717,15 +717,14 @@ public class TestSelectQuery extends QueryTestCaseBase {
   }
 
   @Test
-  public void testSelectPythonFuncs2() throws Exception {
-    executeString("select sum_py(n_nationkey, n_regionkey) as sum\n" +
-        "from nation where n_nationkey < 5");
-  }
-
-  @Test
   public void testSelectWithPredicateOnPythonFunc() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);
+  }
+
+  @Test
+  public void testNestedPythonFunction() throws Exception {
+    executeString("select * from nation where sum_py(n_regionkey, return_one()) > 2");
   }
 }

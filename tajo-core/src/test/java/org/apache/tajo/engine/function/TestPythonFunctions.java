@@ -35,4 +35,10 @@ public class TestPythonFunctions extends ExprTestBase {
     testSimpleEval("select percent(386, 1000)", new String[]{"38.6"});
     testSimpleEval("select concat4('Tajo', 'is', 'awesome', '!')", new String[]{"Tajo is awesome !"});
   }
+
+  @Test
+  public void testNestedFunctions() throws IOException {
+    testSimpleEval("select sum_py(3, return_one())", new String[]{"4"});
+    testSimpleEval("select concat_py(helloworld())", new String[]{"Hello, WorldHello, World"});
+  }
 }

@@ -799,4 +799,9 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
   }
+
+  @Test
+  public final void testGroupbyWithPythonFunc() throws Exception {
+    executeString("select count(*) from nation where sum_py(n_nationkey, 1) > 2 group by n_regionkey");
+  }
 }
