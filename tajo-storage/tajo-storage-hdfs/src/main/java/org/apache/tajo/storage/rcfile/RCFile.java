@@ -1255,16 +1255,21 @@ public class RCFile {
 
       for (int i = 0; i < targetColumnIndexes.length; i++) {
         int tid = targetColumnIndexes[i];
+        SelectedColumn col = new SelectedColumn();
         if (tid < columnNumber) {
           skippedColIDs[tid] = false;
 
-          SelectedColumn col = new SelectedColumn();
           col.colIndex = tid;
           col.runLength = 0;
           col.prvLength = -1;
           col.rowReadIndex = 0;
           selectedColumns[i] = col;
           colValLenBufferReadIn[i] = new NonSyncDataInputBuffer();
+        }  else {
+          col = new SelectedColumn();
+          col.isNulled = true;
+          col.colIndex = tid;
+          selectedColumns[i] = col;
         }
       }
 
@@ -1583,10 +1588,7 @@ public class RCFile {
 
       for (int selIx = 0; selIx < selectedColumns.length; selIx++) {
         SelectedColumn col = selectedColumns[selIx];
-        if (col == null) {
-          col = new SelectedColumn();
-          col.isNulled = true;
-          selectedColumns[selIx] = col;
+        if (col.isNulled) {
           continue;
         }
 

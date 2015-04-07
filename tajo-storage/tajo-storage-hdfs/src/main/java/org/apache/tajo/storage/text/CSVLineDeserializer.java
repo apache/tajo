@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBufProcessor;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.FieldSerializerDeserializer;
 import org.apache.tajo.storage.Tuple;
 
@@ -80,8 +81,14 @@ public class CSVLineDeserializer extends TextLineDeserializer {
 
       if (projection.length > currentTarget && currentIndex == projection[currentTarget]) {
         lineBuf.setIndex(start, start + fieldLength);
-        Datum datum = fieldSerDer.deserialize(lineBuf, schema.getColumn(currentIndex), currentIndex, nullChars);
-        output.put(currentIndex, datum);
+
+        try {
+          Datum datum = fieldSerDer.deserialize(lineBuf, schema.getColumn(currentIndex), currentIndex, nullChars);
+          output.put(currentIndex, datum);
+        } catch (Exception e) {
+          output.put(currentIndex, NullDatum.get());
+        }
+
         currentTarget++;
       }
 
@@ -91,6 +98,13 @@ public class CSVLineDeserializer extends TextLineDeserializer {
 
       start = end + 1;
       currentIndex++;
+    }
+
+    /* If a text row is less than table schema size, tuple should set to NullDatum */
+    if (projection.length > currentTarget) {
+      for (; currentTarget < projection.length; currentTarget++) {
+        output.put(projection[currentTarget], NullDatum.get());
+      }
     }
   }
 

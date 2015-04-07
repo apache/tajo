@@ -952,4 +952,63 @@ public class TestStorages {
       StorageManager.clearCache();
     }
   }
+
+  @Test
+  public void testLessThanSchemaSize() throws IOException {
+    /* RAW is internal storage. It must be same with schema size */
+    if (storeType == StoreType.RAW || storeType == StoreType.AVRO){
+      return;
+    }
+
+    Schema dataSchema = new Schema();
+    dataSchema.addColumn("col1", Type.FLOAT4);
+    dataSchema.addColumn("col2", Type.FLOAT8);
+    dataSchema.addColumn("col3", Type.INT2);
+
+    KeyValueSet options = new KeyValueSet();
+    TableMeta meta = CatalogUtil.newTableMeta(storeType, options);
+    meta.setOptions(CatalogUtil.newPhysicalProperties(storeType));
+
+    Path tablePath = new Path(testDir, "testLessThanSchemaSize.data");
+    FileStorageManager sm = (FileStorageManager) StorageManager.getFileStorageManager(conf);
+    Appender appender = sm.getAppender(meta, dataSchema, tablePath);
+    appender.init();
+
+
+    Tuple expect = new VTuple(dataSchema.size());
+    expect.put(new Datum[]{
+        DatumFactory.createFloat4(Float.MAX_VALUE),
+        DatumFactory.createFloat8(Double.MAX_VALUE),
+        DatumFactory.createInt2(Short.MAX_VALUE)
+    });
+
+    appender.addTuple(expect);
+    appender.flush();
+    appender.close();
+
+    assertTrue(fs.exists(tablePath));
+    FileStatus status = fs.getFileStatus(tablePath);
+    Schema inSchema = new Schema();
+    inSchema.addColumn("col1", Type.FLOAT4);
+    inSchema.addColumn("col2", Type.FLOAT8);
+    inSchema.addColumn("col3", Type.INT2);
+    inSchema.addColumn("col4", Type.INT4);
+    inSchema.addColumn("col5", Type.INT8);
+
+    FileFragment fragment = new FileFragment("table", tablePath, 0, status.getLen());
+    Scanner scanner = StorageManager.getFileStorageManager(conf).getScanner(meta, inSchema, fragment);
+
+    Schema target = new Schema();
+
+    target.addColumn("col2", Type.FLOAT8);
+    target.addColumn("col5", Type.INT8);
+    scanner.setTarget(target.toArray());
+    scanner.init();
+
+    Tuple tuple = scanner.next();
+    scanner.close();
+
+    assertEquals(expect.get(1), tuple.get(1));
+    assertEquals(NullDatum.get(), tuple.get(4));
+  }
 }
