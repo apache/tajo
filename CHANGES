@@ -89,6 +89,9 @@ Release 0.10.1 - unreleased
 
   SUB TASKS
 
+    TAJO-1529: Implement json_extract_path_text(string, string) function.
+    (jinho)
+
     TAJO-1353: Nested record support in CREATE TABLE statement. (hyunsik)
 
 

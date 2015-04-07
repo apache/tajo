@@ -9,3 +9,4 @@ Functions
     functions/string_func_and_operators
     functions/datetime_func_and_operators
     functions/network_func_and_operators
+    functions/json_func
