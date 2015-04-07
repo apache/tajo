@@ -55,6 +55,7 @@ import org.apache.tajo.storage.Tuple;
 )
 public class JsonExtractPathText extends GeneralFunction {
   private JSONParser parser;
+  private JsonPath jsonPath;
 
   public JsonExtractPathText() {
     super(new Column[]{
@@ -77,7 +78,9 @@ public class JsonExtractPathText extends GeneralFunction {
     try {
 
       JSONObject object = (JSONObject) parser.parse(json.asTextBytes());
-      JsonPath jsonPath = JsonPath.compile(xPath.asChars());
+      if (jsonPath == null) {
+        jsonPath = JsonPath.compile(xPath.asChars());
+      }
       return DatumFactory.createText(jsonPath.read(object).toString());
     } catch (Exception e) {
       return NullDatum.get();
