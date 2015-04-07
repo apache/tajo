@@ -508,7 +508,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
    */
   @Override
   public void releaseWorkerResource(ContainerProtocol.TajoContainerIdProto containerId) {
-    AllocatedWorkerResource allocated = allocatedResourceMap.get(containerId);
+    AllocatedWorkerResource allocated = allocatedResourceMap.remove(containerId);
     if(allocated != null) {
       LOG.info("Release Resource: " + allocated.allocatedDiskSlots + "," + allocated.allocatedMemoryMB);
       allocated.worker.getResource().releaseResource( allocated.allocatedDiskSlots, allocated.allocatedMemoryMB);
