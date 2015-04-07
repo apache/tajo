@@ -163,6 +163,9 @@ Release 0.11.0 - unreleased
 
   SUB TASKS
 
+    TAJO-1529: Implement json_extract_path_text(string, string) function.
+    (jinho)
+
     TAJO-1338: Defines RESTful API for Clients. (jihun)
 
     TAJO-1284: Add alter partition method to CatalogStore. (jaehwa)
