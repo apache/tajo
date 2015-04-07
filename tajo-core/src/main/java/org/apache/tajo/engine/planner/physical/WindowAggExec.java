@@ -23,6 +23,7 @@ import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.WindowFunctionEval;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.logical.WindowAggNode;
@@ -178,6 +179,14 @@ public class WindowAggExec extends UnaryPhysicalExec {
     outputColumnNum = nonFunctionColumnNum + functionNum;
   }
 
+  @Override
+  public void init() throws IOException {
+    super.init();
+    for (EvalNode functionEval : functions) {
+      functionEval.bind(inSchema);
+    }
+  }
+
   private void transition(WindowState state) {
     this.state = state;
   }
@@ -303,7 +312,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
         Tuple inTuple = accumulatedInTuples.get(i);
         Tuple outTuple = evaluatedTuples.get(i);
 
-        functions[idx].merge(contexts[idx], inSchema, inTuple);
+        functions[idx].merge(contexts[idx], inTuple);
 
         if (windowFuncFlags[idx]) {
           Datum result = functions[idx].terminate(contexts[idx]);

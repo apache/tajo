@@ -86,8 +86,8 @@ public class TajoPreparedStatement implements PreparedStatement {
 
   @Override
   public boolean execute() throws SQLException {
-    ResultSet rs = executeImmediate(sql);
-    return rs != null;
+    resultSet = executeImmediate(sql);
+    return resultSet != null;
   }
 
   @Override

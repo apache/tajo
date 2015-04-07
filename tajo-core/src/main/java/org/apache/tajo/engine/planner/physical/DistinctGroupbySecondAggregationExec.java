@@ -77,7 +77,6 @@ package org.apache.tajo.engine.planner.physical;
 public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
   private static Log LOG = LogFactory.getLog(DistinctGroupbySecondAggregationExec.class);
   private DistinctGroupbyNode plan;
-  private PhysicalExec child;
 
   private boolean finished = false;
 
@@ -91,13 +90,11 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
       throws IOException {
     super(context, plan.getInSchema(), plan.getOutSchema(), sortExec);
     this.plan = plan;
-    this.child = sortExec;
   }
 
   @Override
   public void init() throws IOException {
-    this.child.init();
-
+    super.init();
     numGroupingColumns = plan.getGroupingColumns().length;
 
     List<GroupbyNode> groupbyNodes = plan.getSubPlans();
@@ -122,6 +119,7 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
         nonDistinctAggrFunctions = eachGroupby.getAggFunctions();
         if (nonDistinctAggrFunctions != null) {
           for (AggregationFunctionCallEval eachFunction: nonDistinctAggrFunctions) {
+            eachFunction.bind(inSchema);
             eachFunction.setIntermediatePhase();
           }
           nonDistinctAggrContexts = new FunctionContext[nonDistinctAggrFunctions.length];
@@ -252,7 +250,7 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
       return;
     }
     for (int i = 0; i < nonDistinctAggrFunctions.length; i++) {
-      nonDistinctAggrFunctions[i].merge(nonDistinctAggrContexts[i], inSchema, tuple);
+      nonDistinctAggrFunctions[i].merge(nonDistinctAggrContexts[i], tuple);
     }
   }
 

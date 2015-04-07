@@ -18,7 +18,6 @@
 
 package org.apache.tajo.master.rm;
 
-import com.google.common.base.Preconditions;
 import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
 import org.apache.commons.logging.Log;
@@ -76,7 +75,9 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
 
   @Override
   public void serviceInit(Configuration conf) {
-    Preconditions.checkArgument(conf instanceof TajoConf, "Configuration must be a TajoConf instance");
+    if (!(conf instanceof TajoConf)) {
+      throw new IllegalArgumentException("Configuration must be a TajoConf instance");
+    }
     TajoConf systemConf = (TajoConf) conf;
 
     String confMasterServiceAddr = systemConf.getVar(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS);
@@ -180,12 +181,7 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
   }
 
   private Worker createWorkerResource(NodeHeartbeat request) {
-    boolean queryMasterMode = request.getServerStatus().getQueryMasterMode().getValue();
-    boolean taskRunnerMode = request.getServerStatus().getTaskRunnerMode().getValue();
-
     WorkerResource workerResource = new WorkerResource();
-    workerResource.setQueryMasterMode(queryMasterMode);
-    workerResource.setTaskRunnerMode(taskRunnerMode);
 
     if(request.getServerStatus() != null) {
       workerResource.setMemoryMB(request.getServerStatus().getMemoryResourceMB());

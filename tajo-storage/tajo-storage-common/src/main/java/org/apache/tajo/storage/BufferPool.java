@@ -44,7 +44,7 @@ public class BufferPool {
   }
 
 
-  public synchronized static ByteBuf directBuffer(int size) {
+  public static ByteBuf directBuffer(int size) {
     return allocator.directBuffer(size);
   }
 

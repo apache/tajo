@@ -35,6 +35,7 @@ import org.apache.tajo.storage.Tuple;
  */
 public abstract class EvalNode implements Cloneable, GsonObject, ProtoObject<PlanProto.EvalNodeTree> {
 	@Expose protected EvalType type;
+  protected boolean isBinded = false;
 
   public EvalNode() {
   }
@@ -59,11 +60,24 @@ public abstract class EvalNode implements Cloneable, GsonObject, ProtoObject<Pla
 	public String toJson() {
     return PlanGsonHelper.toJson(this, EvalNode.class);
 	}
-	
-	public abstract <T extends Datum> T eval(Schema schema, Tuple tuple);
+
+  public EvalNode bind(Schema schema) {
+    for (int i = 0; i < childNum(); i++) {
+      getChild(i).bind(schema);
+    }
+    isBinded = true;
+    return this;
+  }
+
+	public <T extends Datum> T eval(Tuple tuple) {
+    if (!isBinded) {
+      throw new IllegalStateException("bind() must be called before eval()");
+    }
+    return null;
+  }
 
   @Deprecated
-  public abstract  void preOrder(EvalNodeVisitor visitor);
+  public abstract void preOrder(EvalNodeVisitor visitor);
 
   @Deprecated
   public abstract void postOrder(EvalNodeVisitor visitor);
@@ -72,6 +86,7 @@ public abstract class EvalNode implements Cloneable, GsonObject, ProtoObject<Pla
   public Object clone() throws CloneNotSupportedException {
     EvalNode evalNode = (EvalNode) super.clone();
     evalNode.type = type;
+    evalNode.isBinded = isBinded;
     return evalNode;
   }
 

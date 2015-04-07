@@ -24,7 +24,6 @@ import com.google.common.collect.Maps;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.fs.Path;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
@@ -37,7 +36,6 @@ import org.apache.tajo.storage.RowStoreUtil.RowStoreEncoder;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.TupleRange;
 import org.apache.tajo.storage.VTuple;
-import org.apache.tajo.util.StringUtils;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
@@ -194,36 +192,5 @@ public class TupleUtil {
       aTuple.put(i, DatumFactory.createNullDatum());
     }
     return aTuple;
-  }
-
-  @SuppressWarnings("unused")
-  public static Collection<Tuple> filterTuple(Schema schema, Collection<Tuple> tupleBlock, EvalNode filterCondition) {
-    TupleBlockFilterScanner filter = new TupleBlockFilterScanner(schema, tupleBlock, filterCondition);
-    return filter.nextBlock();
-  }
-
-  private static class TupleBlockFilterScanner {
-    private EvalNode qual;
-    private Iterator<Tuple> iterator;
-    private Schema schema;
-
-    public TupleBlockFilterScanner(Schema schema, Collection<Tuple> tuples, EvalNode qual) {
-      this.schema = schema;
-      this.qual = qual;
-      this.iterator = tuples.iterator();
-    }
-
-    public List<Tuple> nextBlock() {
-      List<Tuple> results = Lists.newArrayList();
-
-      Tuple tuple;
-      while (iterator.hasNext()) {
-        tuple = iterator.next();
-        if (qual.eval(schema, tuple).isTrue()) {
-          results.add(tuple);
-        }
-      }
-      return results;
-    }
   }
 }

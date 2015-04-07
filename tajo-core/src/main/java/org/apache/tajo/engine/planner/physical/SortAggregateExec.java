@@ -73,14 +73,14 @@ public class SortAggregateExec extends AggregationExec {
             // Merge when aggregator doesn't receive NullDatum
             if (!(groupingKeyNum == 0 && aggFunctionsNum == tuple.size()
                 && tuple.get(i) == NullDatum.get())) {
-              aggFunctions[i].merge(contexts[i], inSchema, tuple);
+              aggFunctions[i].merge(contexts[i], tuple);
             }
           }
           lastKey = currentKey;
         } else {
           // aggregate
           for (int i = 0; i < aggFunctionsNum; i++) {
-            aggFunctions[i].merge(contexts[i], inSchema, tuple);
+            aggFunctions[i].merge(contexts[i], tuple);
           }
         }
 
@@ -98,7 +98,7 @@ public class SortAggregateExec extends AggregationExec {
 
         for(int evalIdx = 0; evalIdx < aggFunctionsNum; evalIdx++) {
           contexts[evalIdx] = aggFunctions[evalIdx].newContext();
-          aggFunctions[evalIdx].merge(contexts[evalIdx], inSchema, tuple);
+          aggFunctions[evalIdx].merge(contexts[evalIdx], tuple);
         }
 
         lastKey = currentKey;

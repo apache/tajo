@@ -30,3 +30,9 @@ message AvgDoubleProto {
   required double sum = 1;
   required int64 count = 2;
 }
+
+message StdDevProto {
+  required double squareSumOfDiff = 1;
+  required double avg = 2;
+  required int64 count = 3;
+}
