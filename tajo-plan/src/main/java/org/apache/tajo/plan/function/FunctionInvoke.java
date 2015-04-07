@@ -16,12 +16,10 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.plan.expr;
+package org.apache.tajo.plan.function;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.FunctionDesc;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.exception.UnsupportedException;
@@ -41,21 +39,13 @@ public abstract class FunctionInvoke implements Closeable {
     if (desc.getInvocation().hasLegacy()) {
       return new LegacyScalarFunctionInvoke(desc);
     } else if (desc.getInvocation().hasPython()) {
-//      return new PythonFunctionInvoke(desc);
-      return new PythonFunctionInvoke2(desc);
+      return new PythonFunctionInvoke(desc);
     } else {
       throw new UnsupportedException(desc.getInvocation() + " is not supported");
     }
   }
 
-  public abstract void init(OverridableConf queryContext, FunctionEval.ParamType[] paramTypes) throws IOException;
-
-
-//  /**
-//   * Bind an input schema.
-//   * @param schema intpu schema
-//   */
-//  public abstract void bind(Schema schema);
+  public abstract void init(FunctionInvokeContext context) throws IOException;
 
   /**
    * Evaluate the given tuple with a function

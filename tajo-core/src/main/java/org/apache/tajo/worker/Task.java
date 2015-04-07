@@ -58,6 +58,7 @@ import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.NetUtils;
 
 import io.netty.handler.codec.http.QueryStringDecoder;
+import org.apache.tajo.util.QueryContextUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -135,6 +136,7 @@ public class Task {
   }
 
   public void initPlan() throws IOException {
+    QueryContextUtil.updatePythonScriptPath(systemConf, queryContext);
     plan = LogicalNodeDeserializer.deserialize(queryContext, request.getPlan());
     LogicalNode [] scanNode = PlannerUtil.findAllNodes(plan, NodeType.SCAN);
     if (scanNode != null) {

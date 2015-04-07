@@ -16,12 +16,11 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.plan.expr;
+package org.apache.tajo.plan.function.stream;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.plan.function.stream.StreamingCommand;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -82,7 +81,6 @@ public class StreamingUtil {
   private static void setupEnvironment(OverridableConf queryContext, ProcessBuilder pb) {
     String separator = ":";
     Map<String, String> env = pb.environment();
-//    addJobConfToEnvironment(queryContext, env);
 
     // Add the current-working-directory to the $PATH
     File dir = pb.directory();
@@ -96,12 +94,5 @@ public class StreamingUtil {
       envPath = envPath + separator + cwd;
     }
     env.put(PATH, envPath);
-  }
-
-  private static void envPut(Map<String, String> env, String name, String value) {
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("Add  env entry:" + name + "=" + value);
-    }
-    env.put(name, value);
   }
 }

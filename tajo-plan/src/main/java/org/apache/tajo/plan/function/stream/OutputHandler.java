@@ -20,6 +20,7 @@ package org.apache.tajo.plan.function.stream;
 
 import com.google.common.base.Charsets;
 import io.netty.buffer.ByteBuf;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
@@ -54,17 +55,13 @@ public abstract class OutputHandler {
 
   private InputStream istream;
 
+  private final ByteBuf buf = BufferPool.directBuffer(DEFAULT_BUFFER);
+
   //Both of these ignore the trailing \n.  So if the
   //default delimiter is "\n" recordDelimStr is "".
   private String recordDelimStr = null;
   private int recordDelimLength = 0;
   private Tuple tuple = new VTuple(1);
-
-  /**
-   * Get the handled <code>OutputType</code>.
-   * @return the handled <code>OutputType</code>
-   */
-  public abstract OutputType getOutputType();
 
   // flag to mark if close() has already been called
   protected boolean alreadyClosed = false;
@@ -77,12 +74,9 @@ public abstract class OutputHandler {
    *           of the managed process
    * @throws IOException
    */
-  public void bindTo(String fileName, InputStream is,
-                     long offset, long end) throws IOException {
+  public void bindTo(InputStream is) throws IOException {
     this.istream  = is;
     this.in = new ByteBufLineReader(new ByteBufInputChannel(istream));
-
-    // TODO
   }
 
   /**
@@ -100,7 +94,6 @@ public abstract class OutputHandler {
     if (!readValue()) {
       return null;
     }
-    ByteBuf buf = BufferPool.directBuffer(DEFAULT_BUFFER);
     buf.writeBytes(currValue.getBytes());
     try {
       deserializer.deserialize(buf, tuple);
@@ -118,7 +111,6 @@ public abstract class OutputHandler {
 
     while(!isEndOfRow()) {
       //Need to add back the newline character we ate.
-//      currValue.append(new byte[] {'\n'}, 0, 1);
       currValue += '\n';
 
       byte[] lineBytes = readNextLine();
@@ -126,7 +118,6 @@ public abstract class OutputHandler {
         //We have no more input, so just break;
         break;
       }
-//      currValue.append(lineBytes, 0, lineBytes.length);
       currValue += new String(lineBytes);
     }
 
@@ -139,7 +130,6 @@ public abstract class OutputHandler {
   }
 
   private byte[] readNextLine() throws IOException {
-//    Text line = new Text();
     String line = in.readLine();
     if (line == null) {
       return null;

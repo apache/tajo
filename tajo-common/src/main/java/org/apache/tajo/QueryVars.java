@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -29,6 +29,8 @@ public enum QueryVars implements ConfigKey {
   OUTPUT_OVERWRITE,
   OUTPUT_AS_DIRECTORY,
   OUTPUT_PER_FILE_SIZE,
+  PYTHON_SCRIPT_CODE_DIR,
+  PYTHON_CONTROLLER_LOG_DIR
   ;
 
   QueryVars() {

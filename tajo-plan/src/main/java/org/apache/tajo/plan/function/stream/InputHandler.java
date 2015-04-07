@@ -55,12 +55,6 @@ public abstract class InputHandler {
   protected boolean alreadyClosed = false;
 
   /**
-   * Get the handled <code>InputType</code>
-   * @return the handled <code>InputType</code>
-   */
-  public abstract InputType getInputType();
-
-  /**
    * Send the given input <code>Tuple</code> to the managed executable.
    *
    * @param t input <code>Tuple</code>

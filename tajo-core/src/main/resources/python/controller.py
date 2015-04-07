@@ -18,6 +18,7 @@
 import sys
 import os
 import logging
+import base64
 
 from datetime import datetime
 try:
@@ -26,7 +27,7 @@ try:
 except ImportError:
     USE_DATEUTIL = False
 
-from tajo_util import write_user_exception, udf_logging, outputType
+from tajo_util import write_user_exception, udf_logging
 
 FIELD_DELIMITER = ','
 TUPLE_START = '('
@@ -76,91 +77,82 @@ class PythonStreamingController:
     def __init__(self, profiling_mode=False):
         self.profiling_mode = profiling_mode
 
-        self.input_count = 0
-        self.next_input_count_to_log = 1
-
     def main(self,
              module_name, file_path, func_name, cache_path,
-             output_stream_path, error_stream_path, log_file_name, is_illustrate_str):
+             output_stream_path, error_stream_path, log_file_name, output_schema):
         sys.stdin = os.fdopen(sys.stdin.fileno(), 'rb', 0)
 
-        #Need to ensure that user functions can't write to the streams we use to
-        #communicate with pig.
+        # Need to ensure that user functions can't write to the streams we use to communicate with pig.
         self.stream_output = os.fdopen(sys.stdout.fileno(), 'wb', 0)
         self.stream_error = os.fdopen(sys.stderr.fileno(), 'wb', 0)
 
         self.input_stream = sys.stdin
-        self.log_stream = open(output_stream_path, 'a')
-        sys.stderr = open(error_stream_path, 'w')
-        is_illustrate = is_illustrate_str == "true"
+        # TODO: support controller logging
+        # self.log_stream = open(output_stream_path, 'a')
+        # sys.stderr = open(error_stream_path, 'w')
 
         sys.path.append(file_path)
         sys.path.append(cache_path)
         sys.path.append('.')
 
         logging.basicConfig(filename=log_file_name, format="%(asctime)s %(levelname)s %(message)s", level=udf_logging.udf_log_level)
-        logging.info("To reduce the amount of information being logged only a small subset of rows are logged at the INFO level.  Call udf_logging.set_log_level_debug in tajo_util to see all rows being processed.")
+        logging.info("To reduce the amount of information being logged only a small subset of rows are logged at the "
+                     "INFO level.  Call udf_logging.set_log_level_debug in tajo_util to see all rows being processed.")
 
         input_str = self.get_next_input()
-        logging.info('main: ' + input_str)
+        logging.info('1: ' + input_str)
 
         try:
-            # logging.info('module: ' + module_name + ' func_name: ' + func_name)
-            # logging.info(globals())
-            # logging.info(locals())
             func = __import__(module_name, globals(), locals(), [func_name], -1).__dict__[func_name]
-            logging.info("imported")
         except:
-            #These errors should always be caused by user code.
+            # These errors should always be caused by user code.
             write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
             self.close_controller(-1)
 
-        if is_illustrate or udf_logging.udf_log_level != logging.DEBUG:
-            #Only log output for illustrate after we get the flag to capture output.
-            sys.stdout = open(os.devnull, 'w')
-        else:
-            sys.stdout = self.log_stream
+        logging.info('2: ')
+        # if udf_logging.udf_log_level != logging.DEBUG:
+        #     #Only log output for illustrate after we get the flag to capture output.
+        #     sys.stdout = open(os.devnull, 'w')
+        # else:
+        #     sys.stdout = self.log_stream
 
+        should_log = True
+        log_message = logging.info
+        if udf_logging.udf_log_level == logging.DEBUG:
+            should_log = True
+            log_message = logging.debug
+
+        logging.info('3: ')
         while input_str != END_OF_STREAM:
-            logging.info('while loop')
-            should_log = False
-            if self.input_count == self.next_input_count_to_log:
-                should_log = True
-                log_message = logging.info
-                self.update_next_input_count_to_log()
-            elif udf_logging.udf_log_level == logging.DEBUG:
-                should_log = True
-                log_message = logging.debug
-
             try:
                 try:
                     if should_log:
-                        log_message("Row %s: Serialized Input: %s" % (self.input_count, input_str))
+                        log_message("Serialized Input: %s" % (input_str))
                     inputs = deserialize_input(input_str)
                     if should_log:
-                        log_message("Row %s: Deserialized Input: %s" % (self.input_count, unicode(inputs)))
+                        log_message("Deserialized Input: %s" % (unicode(inputs)))
                 except:
-                    #Capture errors where the user passes in bad data.
+                    # Capture errors where the user passes in bad data.
                     write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
                     self.close_controller(-3)
 
                 try:
                     func_output = func(*inputs)
                     if should_log:
-                        log_message("Row %s: UDF Output: %s" % (self.input_count, unicode(func_output)))
+                        log_message("UDF Output: %s" % (unicode(func_output)))
                 except:
-                    #These errors should always be caused by user code.
+                    # These errors should always be caused by user code.
                     write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
                     self.close_controller(-2)
 
-                output = serialize_output(func_output)
+                output = serialize_output(func_output, output_schema)
                 if should_log:
-                    log_message("Row %s: Serialized Output: %s" % (self.input_count, output))
+                    log_message("Serialized Output: %s" % (output))
 
                 self.stream_output.write( "%s%s" % (output, END_RECORD_DELIM) )
             except Exception as e:
-                #This should only catch internal exceptions with the controller
-                #and pig- not with user code.
+                # This should only catch internal exceptions with the controller
+                # and pig- not with user code.
                 import traceback
                 traceback.print_exc(file=self.stream_error)
                 sys.exit(-3)
@@ -174,46 +166,33 @@ class PythonStreamingController:
 
     def get_next_input(self):
         input_stream = self.input_stream
-        log_stream = self.log_stream
+        # log_stream = self.log_stream
 
-        logging.info('test')
         input_str = input_stream.readline()
-        logging.info('input_str: ' + input_str)
+        logging.info('get_next_input1: ' + input_str)
 
         while input_str.endswith(END_RECORD_DELIM) == False:
             line = input_stream.readline()
-            logging.info('line: ' + line)
             if line == '':
                 input_str = ''
                 break
             input_str += line
 
+        logging.info('get_next_input2: ' + input_str)
+
         if input_str == '':
             return END_OF_STREAM
 
-        if input_str == TURN_ON_OUTPUT_CAPTURING:
-            logging.debug("Turned on Output Capturing")
-            sys.stdout = log_stream
-            return self.get_next_input()
+        # if input_str == TURN_ON_OUTPUT_CAPTURING:
+            # logging.debug("Turned on Output Capturing")
+            # sys.stdout = log_stream
+            # return self.get_next_input()
 
         if input_str == END_OF_STREAM:
             return input_str
 
-        self.input_count += 1
-
+        logging.info('get_next_input3: ' + input_str)
         return input_str[:-END_RECORD_DELIM_LENGTH]
-
-    def update_next_input_count_to_log(self):
-        """
-        Want to log enough rows that you can see progress being made and see timings without wasting time logging thousands of rows.
-        Show first 10 rows, and then the first 5 rows of every order of magnitude (10-15, 100-105, 1000-1005, ...)
-        """
-        if self.next_input_count_to_log < 10:
-            self.next_input_count_to_log = self.next_input_count_to_log + 1
-        elif self.next_input_count_to_log % 10 == 5:
-            self.next_input_count_to_log = (self.next_input_count_to_log - 5) * 10
-        else:
-            self.next_input_count_to_log = self.next_input_count_to_log + 1
 
     def close_controller(self, exit_code):
         sys.stderr.close()
@@ -228,19 +207,12 @@ def deserialize_input(input_str):
     if len(input_str) == 0:
         return []
 
-    logging.info('deserialize_input: ' + input_str)
-    # [logging.info(param) for param in input_str.split(WRAPPED_PARAMETER_DELIMITER)]
-    # return [_deserialize_input(param, 0, len(param)) for param in input_str.split(WRAPPED_PARAMETER_DELIMITER)]
-    [logging.info(param) for param in input_str.split(WRAPPED_FIELD_DELIMITER)]
     return [_deserialize_input(param, 0, len(param)) for param in input_str.split(WRAPPED_FIELD_DELIMITER)]
 
 def _deserialize_input(input_str, si, ei):
-    logging.info('_deserialize_input: ' + input_str)
-    logging.info(si)
-    logging.info(ei)
     len = ei - si + 1
     if len < 1:
-        #Handle all of the cases where you can have valid empty input.
+        # Handle all of the cases where you can have valid empty input.
         if ei == si:
             if input_str[si] == TYPE_CHARARRAY:
                 return u""
@@ -254,39 +226,6 @@ def _deserialize_input(input_str, si, ei):
     tokens = input_str.split(WRAPPED_PARAMETER_DELIMITER)
     schema = tokens[0];
     param = tokens[1];
-
-    # first = input_str[si]
-    # schema = input_str[si+1] if first == PRE_WRAP_DELIM else first
-    # logging.info('first: ' + first)
-    logging.info('schema: ' + schema)
-    logging.info('param: ' + param)
-
-    # if schema == NULL_BYTE:
-    #     return None
-    # elif schema == TYPE_TUPLE or schema == TYPE_MAP or schema == TYPE_BAG:
-    #     return _deserialize_collection(input_str, schema, si+3, ei-3)
-    # elif schema == TYPE_CHARARRAY:
-    #     return unicode(input_str[si+1:ei+1], 'utf-8')
-    # elif schema == TYPE_BYTEARRAY:
-    #     return bytearray(input_str[si+1:ei+1])
-    # elif schema == TYPE_INTEGER:
-    #     return int(input_str[si+1:ei+1])
-    # elif schema == TYPE_LONG or schema == TYPE_BIGINTEGER:
-    #     return long(input_str[si+1:ei+1])
-    # elif schema == TYPE_FLOAT or schema == TYPE_DOUBLE or schema == TYPE_BIGDECIMAL:
-    #     return float(input_str[si+1:ei+1])
-    # elif schema == TYPE_BOOLEAN:
-    #     return input_str[si+1:ei+1] == "true"
-    # elif schema == TYPE_DATETIME:
-    #     #Format is "yyyy-MM-ddTHH:mm:ss.SSS+00:00" or "2013-08-23T18:14:03.123+ZZ"
-    #     if USE_DATEUTIL:
-    #         return parser.parse(input_str[si+1:ei+1])
-    #     else:
-    #         #Try to use datetime even though it doesn't handle time zones properly,
-    #         #We only use the first 3 microsecond digits and drop time zone (first 23 characters)
-    #         return datetime.strptime(input_str[si+1:si+24], "%Y-%m-%dT%H:%M:%S.%f")
-    # else:
-    #     raise Exception("Can't determine type of input: %s" % input_str[si:ei+1])
 
     if schema == NULL_BYTE:
         return None
@@ -303,12 +242,12 @@ def _deserialize_input(input_str, si, ei):
     elif schema == TYPE_BOOLEAN:
         return param == "true"
     elif schema == TYPE_DATETIME:
-        #Format is "yyyy-MM-ddTHH:mm:ss.SSS+00:00" or "2013-08-23T18:14:03.123+ZZ"
+        # Format is "yyyy-MM-ddTHH:mm:ss.SSS+00:00" or "2013-08-23T18:14:03.123+ZZ"
         if USE_DATEUTIL:
             return parser.parse(param)
         else:
-            #Try to use datetime even though it doesn't handle time zones properly,
-            #We only use the first 3 microsecond digits and drop time zone (first 23 characters)
+            # Try to use datetime even though it doesn't handle time zones properly,
+            # We only use the first 3 microsecond digits and drop time zone (first 23 characters)
             return datetime.strptime(param, "%Y-%m-%dT%H:%M:%S.%f")
     else:
         raise Exception("Can't determine type of input: %s" % param)
@@ -375,7 +314,7 @@ def wrap_tuple(o, serialized_item):
     else:
         return serialized_item
 
-def serialize_output(output, utfEncodeAllFields=False):
+def serialize_output(output, out_schema, utfEncodeAllFields=False):
     """
     @param utfEncodeStrings - Generally we want to utf encode only strings.  But for
         Maps we utf encode everything because on the Java side we don't know the schema
@@ -385,30 +324,23 @@ def serialize_output(output, utfEncodeAllFields=False):
     output_type = type(output)
 
     if output is None:
-        return WRAPPED_NULL_BYTE
-    elif output_type == tuple:
-        return (WRAPPED_TUPLE_START +
-                WRAPPED_FIELD_DELIMITER.join([serialize_output(o, utfEncodeAllFields) for o in output]) +
-                WRAPPED_TUPLE_END)
-    elif output_type == list:
-        return (WRAPPED_BAG_START +
-                WRAPPED_FIELD_DELIMITER.join([wrap_tuple(o, serialize_output(o, utfEncodeAllFields)) for o in output]) +
-                WRAPPED_BAG_END)
-    elif output_type == dict:
-        return (WRAPPED_MAP_START +
-                WRAPPED_FIELD_DELIMITER.join(['%s%s%s' % (k.encode('utf-8'), MAP_KEY, serialize_output(v, True)) for k, v in output.iteritems()]) +
-                WRAPPED_MAP_END)
+        result = WRAPPED_NULL_BYTE
     elif output_type == bool:
-        return ("true" if output else "false")
+        result = ("true" if output else "false")
     elif output_type == bytearray:
-        return str(output)
+        result = str(output)
     elif output_type == datetime:
-        return output.isoformat()
+        result = output.isoformat()
     elif utfEncodeAllFields or output_type == str or output_type == unicode:
-        #unicode is necessary in cases where we're encoding non-strings.
-        return unicode(output).encode('utf-8')
+        # unicode is necessary in cases where we're encoding non-strings.
+        result = unicode(output).encode('utf-8')
     else:
-        return str(output)
+        result = str(output)
+
+    if out_schema == "blob":
+        return base64.b64encode(result)
+    else:
+        return result
 
 if __name__ == '__main__':
     controller = PythonStreamingController()

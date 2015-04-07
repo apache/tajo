@@ -18,14 +18,12 @@
 
 package org.apache.tajo.plan.function.python;
 
-import org.apache.hadoop.util.Shell;
-
-import javax.script.ScriptEngine;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Map;
 
 public abstract class TajoScriptEngine {
@@ -38,8 +36,8 @@ public abstract class TajoScriptEngine {
    * @return a stream (it is the responsibility of the caller to close it)
    * @throws IllegalStateException if we could not open a stream
    */
-  protected static InputStream getScriptAsStream(String scriptPath) {
-    InputStream is;
+  protected static InputStream getScriptAsStream(URI scriptPath) {
+    InputStream is = null;
     File file = new File(scriptPath);
     if (file.exists()) {
       try {
@@ -47,28 +45,25 @@ public abstract class TajoScriptEngine {
       } catch (FileNotFoundException e) {
         throw new IllegalStateException("could not find existing file "+scriptPath, e);
       }
-    } else {
-      if (Shell.WINDOWS && scriptPath.charAt(1)==':') {
-        scriptPath = scriptPath.charAt(0) + scriptPath.substring(2);
-      }
-      // Try system, current and context classloader.
-      is = ScriptEngine.class.getResourceAsStream(scriptPath);
-      if (is == null) {
-        is = getResourceUsingClassLoader(scriptPath, ScriptEngine.class.getClassLoader());
-      }
-      if (is == null) {
-        is = getResourceUsingClassLoader(scriptPath, Thread.currentThread().getContextClassLoader());
-      }
-      if (is == null && !file.isAbsolute()) {
-        String path = "/" + scriptPath;
-        is = ScriptEngine.class.getResourceAsStream(path);
-        if (is == null) {
-          is = getResourceUsingClassLoader(path, ScriptEngine.class.getClassLoader());
-        }
-        if (is == null) {
-          is = getResourceUsingClassLoader(path, Thread.currentThread().getContextClassLoader());
-        }
-      }
+//    } else {
+//      // Try system, current and context classloader.
+//      is = TajoScriptEngine.class.getResourceAsStream(scriptPath);
+//      if (is == null) {
+//        is = getResourceUsingClassLoader(scriptPath, TajoScriptEngine.class.getClassLoader());
+//      }
+//      if (is == null) {
+//        is = getResourceUsingClassLoader(scriptPath, Thread.currentThread().getContextClassLoader());
+//      }
+//      if (is == null && !file.isAbsolute()) {
+//        String path = "/" + scriptPath;
+//        is = TajoScriptEngine.class.getResourceAsStream(path);
+//        if (is == null) {
+//          is = getResourceUsingClassLoader(path, TajoScriptEngine.class.getClassLoader());
+//        }
+//        if (is == null) {
+//          is = getResourceUsingClassLoader(path, Thread.currentThread().getContextClassLoader());
+//        }
+//      }
     }
 
     if (is == null) {

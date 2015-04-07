@@ -18,8 +18,6 @@
 
 package org.apache.tajo.plan.function.stream;
 
-import org.apache.tajo.util.TUtil;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -52,12 +50,6 @@ public class StreamingCommand implements Serializable, Cloneable {
    * Handle to communicate with the external process.
    */
   public enum Handle {INPUT, OUTPUT}
-
-  /**
-   * Map from the the stdin/stdout/stderr handles to their specifications
-   */
-  Map<Handle, List<HandleSpec>> handleSpecs =
-      new TreeMap<Handle, List<HandleSpec>>();
 
   // Should the stderr of the process be persisted?
   boolean persistStderr = false;
@@ -160,91 +152,6 @@ public class StreamingCommand implements Serializable, Cloneable {
   }
 
   /**
-   * Attach a {@link HandleSpec} to a given {@link Handle}
-   * @param handle <code>Handle</code> to which the specification is to
-   *               be attached.
-   * @param handleSpec <code>HandleSpec</code> for the given handle.
-   */
-  public void addHandleSpec(Handle handle, HandleSpec handleSpec) {
-    List<HandleSpec> handleSpecList = handleSpecs.get(handle);
-
-    if (handleSpecList == null) {
-      handleSpecList = new LinkedList<HandleSpec>();
-      handleSpecs.put(handle, handleSpecList);
-    }
-
-    handleSpecList.add(handleSpec);
-  }
-
-  /**
-   * Set the input specification for the <code>StreamingCommand</code>.
-   *
-   * @param spec input specification
-   */
-  public void setInputSpec(HandleSpec spec) {
-    List<HandleSpec> inputSpecs = getHandleSpecs(Handle.INPUT);
-    if (inputSpecs == null || inputSpecs.size() == 0) {
-      addHandleSpec(Handle.INPUT, spec);
-    } else {
-      inputSpecs.set(0, spec);
-    }
-  }
-
-//  /**
-//   * Get the input specification of the <code>StreamingCommand</code>.
-//   *
-//   * @return input specification of the <code>StreamingCommand</code>
-//   */
-//  public HandleSpec getInputSpec() {
-//    List<HandleSpec> inputSpecs = getHandleSpecs(Handle.INPUT);
-//    if (inputSpecs == null || inputSpecs.size() == 0) {
-//      addHandleSpec(Handle.INPUT, new HandleSpec("stdin", PigStreaming.class.getName()));
-//    }
-//    return getHandleSpecs(Handle.INPUT).get(0);
-//  }
-
-  /**
-   * Set the specification for the primary output of the
-   * <code>StreamingCommand</code>.
-   *
-   * @param spec specification for the primary output of the
-   *             <code>StreamingCommand</code>
-   */
-  public void setOutputSpec(HandleSpec spec) {
-    List<HandleSpec> outputSpecs = getHandleSpecs(Handle.OUTPUT);
-    if (outputSpecs == null || outputSpecs.size() == 0) {
-      addHandleSpec(Handle.OUTPUT, spec);
-    } else {
-      outputSpecs.set(0, spec);
-    }
-  }
-//
-//  /**
-//   * Get the specification of the primary output of the
-//   * <code>StreamingCommand</code>.
-//   *
-//   * @return specification of the primary output of the
-//   *         <code>StreamingCommand</code>
-//   */
-//  public HandleSpec getOutputSpec() {
-//    List<HandleSpec> outputSpecs = getHandleSpecs(Handle.OUTPUT);
-//    if (outputSpecs == null || outputSpecs.size() == 0) {
-//      addHandleSpec(Handle.OUTPUT, new HandleSpec("stdout", PigStreaming.class.getName()));
-//    }
-//    return getHandleSpecs(Handle.OUTPUT).get(0);
-//  }
-
-  /**
-   * Get specifications for the given <code>Handle</code>.
-   *
-   * @param handle <code>Handle</code> of the stream
-   * @return specification for the given <code>Handle</code>
-   */
-  public List<HandleSpec> getHandleSpecs(Handle handle) {
-    return handleSpecs.get(handle);
-  }
-
-  /**
    * Should the stderr of the managed process be persisted?
    *
    * @return <code>true</code> if the stderr of the managed process should be
@@ -324,17 +231,6 @@ public class StreamingCommand implements Serializable, Cloneable {
     return shipFiles;
   }
 
-//  public String toString() {
-//    StringBuffer sb = new StringBuffer();
-//    for (String arg : getCommandArgs()) {
-//      sb.append(arg);
-//      sb.append(" ");
-//    }
-//    sb.append("(" + getInputSpec().toString() + "/"+getOutputSpec() + ")");
-//
-//    return sb.toString();
-//  }
-
   public Object clone() {
     try {
       StreamingCommand clone = (StreamingCommand)super.clone();
@@ -342,136 +238,10 @@ public class StreamingCommand implements Serializable, Cloneable {
       clone.shipSpec = new ArrayList<String>(shipSpec);
       clone.cacheSpec = new ArrayList<String>(cacheSpec);
 
-      clone.handleSpecs = new HashMap<Handle, List<HandleSpec>>();
-      for (Map.Entry<Handle, List<HandleSpec>> e : handleSpecs.entrySet()) {
-        List<HandleSpec> values = new ArrayList<HandleSpec>();
-        for (HandleSpec spec : e.getValue()) {
-          values.add((HandleSpec)spec.clone());
-        }
-        clone.handleSpecs.put(e.getKey(), values);
-      }
-
       return clone;
     } catch (CloneNotSupportedException cnse) {
       // Shouldn't happen since we do implement Clonable
       throw new InternalError(cnse.toString());
-    }
-  }
-
-
-  /**
-   * Specification about the usage of the {@link Handle} to communicate
-   * with the external process.
-   *
-   * It specifies the stream-handle which can be one of <code>stdin</code>/
-   * <code>stdout</code>/<code>stderr</code> or a named file and also the
-   * serializer/deserializer specification to be used to read/write data
-   * to/from the stream.
-   */
-  public static class HandleSpec
-      implements Comparable<HandleSpec>, Serializable, Cloneable {
-    private static final long serialVersionUID = 1L;
-
-    String name;
-//    String spec;
-
-//    /**
-//     * Create a new {@link HandleSpec} with a given name using the default
-//     * {@link PigStorage} serializer/deserializer.
-//     *
-//     * @param handleName name of the handle (one of <code>stdin</code>,
-//     *                   <code>stdout</code> or a file-path)
-//     */
-//    public HandleSpec(String handleName) {
-//      this(handleName, PigStreaming.class.getName());
-//    }
-
-//    /**
-//     * Create a new {@link HandleSpec} with a given name using the default
-//     * {@link PigStorage} serializer/deserializer.
-//     *
-//     * @param handleName name of the handle (one of <code>stdin</code>,
-//     *                   <code>stdout</code> or a file-path)
-//     * @param spec serializer/deserializer spec
-//     */
-//    public HandleSpec(String handleName, String spec) {
-//      this.name = handleName;
-//      this.spec = spec;
-//    }
-
-    public HandleSpec(String handleName) {
-      this.name = handleName;
-    }
-
-    public int compareTo(HandleSpec o) {
-      return this.name.compareTo(o.name);
-    }
-
-    public String toString() {
-//      return name + "-" + spec;
-      return name;
-    }
-
-    /**
-     * Get the <b>name</b> of the <code>HandleSpec</code>.
-     *
-     * @return the <b>name</b> of the <code>HandleSpec</code> (one of
-     *         <code>stdin</code>, <code>stdout</code> or a file-path)
-     */
-    public String getName() {
-      return name;
-    }
-
-    /**
-     * Set the <b>name</b> of the <code>HandleSpec</code>.
-     *
-     * @param name <b>name</b> of the <code>HandleSpec</code> (one of
-     *         <code>stdin</code>, <code>stdout</code> or a file-path)
-     */
-    public void setName(String name) {
-      this.name = name;
-    }
-
-//    /**
-//     * Get the serializer/deserializer spec of the <code>HandleSpec</code>.
-//     *
-//     * @return the serializer/deserializer spec of the
-//     *         <code>HandleSpec</code>
-//     */
-//    public String getSpec() {
-//      return spec;
-//    }
-//
-//    /**
-//     * Set the serializer/deserializer spec of the <code>HandleSpec</code>.
-//     *
-//     * @param spec the serializer/deserializer spec of the
-//     *             <code>HandleSpec</code>
-//     */
-//    public void setSpec(String spec) {
-//      this.spec = spec;
-//    }
-
-    public boolean equals(Object obj) {
-      if (obj instanceof HandleSpec){
-        HandleSpec other = (HandleSpec)obj;
-//        return (other != null && name.equals(other.name) && spec.equals(other.spec));
-        return TUtil.checkEquals(name, other.name);
-      } else
-        return false;
-    }
-
-    public int hashCode() {
-      return name.hashCode();
-    }
-
-    public Object clone() {
-      try {
-        return super.clone();
-      } catch (CloneNotSupportedException cnse) {
-        // Shouldn't happen since we do implement Clonable
-        throw new InternalError(cnse.toString());
-      }
     }
   }
 }

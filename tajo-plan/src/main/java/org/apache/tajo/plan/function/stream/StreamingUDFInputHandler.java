@@ -27,11 +27,6 @@ public class StreamingUDFInputHandler extends InputHandler {
   }
 
   @Override
-  public InputType getInputType() {
-    return InputType.SYNCHRONOUS;
-  }
-
-  @Override
   public synchronized void close(Process process) throws IOException {
     try {
       super.close(process);

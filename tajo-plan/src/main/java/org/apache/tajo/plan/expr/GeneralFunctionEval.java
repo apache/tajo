@@ -24,22 +24,22 @@ import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.plan.function.GeneralFunction;
+import org.apache.tajo.plan.function.FunctionInvoke;
+import org.apache.tajo.plan.function.FunctionInvokeContext;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
+import java.util.Map;
 
 public class GeneralFunctionEval extends FunctionEval {
   @Expose protected FunctionInvoke funcInvoke;
-  @Expose protected OverridableConf queryContext;
+  @Expose protected FunctionInvokeContext invokeContext;
 
-	public GeneralFunctionEval(@Nullable OverridableConf queryContext, FunctionDesc desc, EvalNode[] givenArgs)
+	public GeneralFunctionEval(OverridableConf queryContext, FunctionDesc desc, EvalNode[] givenArgs)
       throws IOException {
 		super(EvalType.FUNCTION, desc, givenArgs);
-    this.queryContext = queryContext;
+    this.invokeContext = new FunctionInvokeContext(queryContext, getParamType());
   }
 
   @Override
@@ -47,7 +47,7 @@ public class GeneralFunctionEval extends FunctionEval {
     super.bind(schema);
     try {
       this.funcInvoke = FunctionInvoke.newInstance(funcDesc);
-      this.funcInvoke.init(queryContext, getParamType());
+      this.funcInvoke.init(invokeContext);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }

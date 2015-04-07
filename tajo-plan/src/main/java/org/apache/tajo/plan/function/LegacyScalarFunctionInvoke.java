@@ -16,14 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.plan.expr;
+package org.apache.tajo.plan.function;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.plan.function.GeneralFunction;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 
@@ -36,8 +34,8 @@ public class LegacyScalarFunctionInvoke extends FunctionInvoke {
   }
 
   @Override
-  public void init(OverridableConf queryContext, FunctionEval.ParamType[] paramTypes) {
-    function.init(queryContext, paramTypes);
+  public void init(FunctionInvokeContext context) {
+    function.init(context.getQueryContext(), context.getParamTypes());
   }
 
   @Override

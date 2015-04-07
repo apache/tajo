@@ -7,7 +7,7 @@
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,11 +16,28 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.plan.function.python;
+package org.apache.tajo.plan.function;
 
-public class JythonConstants {
-  public final static String SKIP_TOKEN = "__";
-  public final static String OUTPUT_TYPE = "outputType".intern();
-  public final static String OUTPUT_SCHEMA_FUNCTION = "outputSchemaFunction".intern();
-  public final static String SCHEMA_FUNCTION = "schemaFunction".intern();
+import org.apache.tajo.OverridableConf;
+import org.apache.tajo.plan.expr.FunctionEval;
+import org.apache.tajo.util.KeyValueSet;
+
+import java.util.Map;
+
+public class FunctionInvokeContext {
+  private final OverridableConf queryContext;
+  private final FunctionEval.ParamType[] paramTypes;
+
+  public FunctionInvokeContext(OverridableConf queryContext, FunctionEval.ParamType[] paramTypes) {
+    this.queryContext = queryContext;
+    this.paramTypes = paramTypes;
+  }
+
+  public OverridableConf getQueryContext() {
+    return queryContext;
+  }
+
+  public FunctionEval.ParamType[] getParamTypes() {
+    return paramTypes;
+  }
 }

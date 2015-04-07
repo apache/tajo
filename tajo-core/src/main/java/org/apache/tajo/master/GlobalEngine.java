@@ -50,6 +50,7 @@ import org.apache.tajo.plan.verifier.VerificationState;
 import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.QueryContextUtil;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -147,6 +148,7 @@ public class GlobalEngine extends AbstractService {
   public SubmitQueryResponse executeQuery(Session session, String query, boolean isJson) {
     LOG.info("Query: " + query);
     QueryContext queryContext = createQueryContext(session);
+    QueryContextUtil.updatePythonScriptPath(context.getConf(), queryContext);
     Expr planningContext;
 
     try {

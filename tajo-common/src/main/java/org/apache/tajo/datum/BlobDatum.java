@@ -131,7 +131,6 @@ public class BlobDatum extends Datum {
       BlobDatum other = (BlobDatum) obj;
       initFromBytes();
       other.initFromBytes();
-//      return bb.equals(other.bb);
 			return Arrays.equals(this.val, other.val);
 		}
     

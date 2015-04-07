@@ -31,6 +31,7 @@ import org.apache.tajo.function.PythonInvocationDesc;
 import org.apache.tajo.util.TUtil;
 
 import java.io.*;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
@@ -39,22 +40,13 @@ import java.util.regex.Pattern;
 
 public class PythonScriptEngine extends TajoScriptEngine {
 
-  private static final Log log = LogFactory.getLog(PythonScriptEngine.class);
+  public static final String FILE_EXTENSION = ".py";
+  private static final Log LOG = LogFactory.getLog(PythonScriptEngine.class);
 
-  public static Set<FunctionDesc> registerFunctions(String path, String namespace) throws IOException {
+  public static Set<FunctionDesc> registerFunctions(URI path, String namespace) throws IOException {
 
     Set<FunctionDesc> functionDescs = TUtil.newHashSet();
 
-    String command = "python";
-    String fileName = path.substring(0, path.length() - ".py".length());
-    log.debug("Path: " + path + " FileName: " + fileName + " Namespace: " + namespace);
-//    File f = new File(path);
-//
-//    if (!f.canRead()) {
-//      throw new IOException("Can't read file: " + path);
-//    }
-//
-//    FileInputStream fin = new FileInputStream(f);
     InputStream in = getScriptAsStream(path);
     List<FuncInfo> functions = null;
     try {
@@ -62,16 +54,12 @@ public class PythonScriptEngine extends TajoScriptEngine {
     } finally {
       in.close();
     }
-    namespace = namespace == null ? "" : namespace + NAMESPACE_SEPARATOR;
     for(FuncInfo funcInfo : functions) {
-      String alias = namespace + funcInfo.funcName;
-      log.debug("Registering Function: " + alias);
-
       TajoDataTypes.DataType returnType = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.valueOf(funcInfo.returnType));
       FunctionSignature signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, funcInfo.funcName,
           returnType, createParamTypes(funcInfo.paramNum));
       FunctionInvocation invocation = new FunctionInvocation();
-      PythonInvocationDesc invocationDesc = new PythonInvocationDesc(funcInfo.funcName, path);
+      PythonInvocationDesc invocationDesc = new PythonInvocationDesc(funcInfo.funcName, path.getPath());
       invocation.setPython(invocationDesc);
       FunctionSupplement supplement = new FunctionSupplement();
       functionDescs.add(new FunctionDesc(signature, invocation, supplement));

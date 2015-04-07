@@ -87,20 +87,16 @@ public class ByteBufLineReader implements Closeable {
     boolean release = true;
     try {
       int readBytes = tailBytes;
-//      for (; ; ) {
-        int localReadBytes = buffer.writeBytes(channel, this.bufferSize - readBytes);
-        if (localReadBytes < 0) {
-          if (buffer.isWritable()) {
-            //if read bytes is less than the buffer capacity,  there is no more bytes in the channel
-            eof = true;
-          }
-//          break;
+      // read only once
+      int localReadBytes = buffer.writeBytes(channel, this.bufferSize - readBytes);
+      if (localReadBytes < 0) {
+        if (buffer.isWritable()) {
+          //if read bytes is less than the buffer capacity,  there is no more bytes in the channel
+          eof = true;
         }
-        readBytes += localReadBytes;
-//        if (readBytes == bufferSize) {
-//          break;
-//        }
-//      }
+      }
+      readBytes += localReadBytes;
+
       this.readBytes += (readBytes - tailBytes);
       release = false;
 

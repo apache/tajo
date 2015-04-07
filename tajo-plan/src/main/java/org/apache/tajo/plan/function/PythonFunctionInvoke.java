@@ -16,16 +16,36 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.plan.function.stream;
+package org.apache.tajo.plan.function;
 
-public class StreamingUDFOutputHandler extends OutputHandler {
+import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.plan.function.python.PythonScriptExecutor;
+import org.apache.tajo.storage.Tuple;
 
-  public StreamingUDFOutputHandler(TextLineDeserializer deserializer) {
-    this.deserializer = deserializer;
+import java.io.IOException;
+
+public class PythonFunctionInvoke extends FunctionInvoke {
+
+  private PythonScriptExecutor scriptExecutor;
+
+  public PythonFunctionInvoke(FunctionDesc functionDesc) {
+    super(functionDesc);
+    scriptExecutor = new PythonScriptExecutor(functionDesc);
   }
 
   @Override
-  protected byte[] getRecordDelimiter() {
-    return ",".getBytes();
+  public void init(FunctionInvokeContext context) throws IOException {
+    scriptExecutor.start(context);
+  }
+
+  @Override
+  public Datum eval(Tuple tuple) {
+    return scriptExecutor.eval(tuple);
+  }
+
+  @Override
+  public void close() {
+    scriptExecutor.stop();
   }
 }

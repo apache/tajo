@@ -378,16 +378,16 @@ public class DatumFactory {
     return new TimestampDatum(DateTimeUtil.toJulianTimestampWithTZ(str, tz));
   }
 
-  public static BlobDatum createBlob(byte[] val) {
-    return new BlobDatum(val);
+  public static BlobDatum createBlob(byte[] encoded) {
+    return new BlobDatum(encoded);
   }
 
-  public static BlobDatum createBlob(byte[] val, int offset, int length) {
-    return new BlobDatum(val, offset, length);
+  public static BlobDatum createBlob(byte[] encoded, int offset, int length) {
+    return new BlobDatum(encoded, offset, length);
   }
 
-  public static BlobDatum createBlob(String val) {
-    return new BlobDatum(Base64.encodeBase64(val.getBytes()));
+  public static BlobDatum createBlob(String plainString) {
+    return new BlobDatum(Base64.encodeBase64(plainString.getBytes()));
   }
 
   public static Inet4Datum createInet4(int encoded) {

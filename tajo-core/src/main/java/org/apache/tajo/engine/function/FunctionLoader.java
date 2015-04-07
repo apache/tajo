@@ -28,6 +28,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
@@ -88,17 +89,21 @@ public class FunctionLoader {
         Path codePath = new Path(codePathStr);
         List<Path> filePaths = TUtil.newList();
         if (localFS.isDirectory(codePath)) {
-          for (FileStatus file : localFS.listStatus(codePath)) {
+          for (FileStatus file : localFS.listStatus(codePath, new PathFilter() {
+            @Override
+            public boolean accept(Path path) {
+              return path.getName().endsWith(PythonScriptEngine.FILE_EXTENSION);
+            }
+          })) {
             filePaths.add(file.getPath());
           }
         } else {
           filePaths.add(codePath);
         }
         for (Path filePath : filePaths) {
-          for (FunctionDesc f : PythonScriptEngine.registerFunctions(filePath.toString(),
+          for (FunctionDesc f : PythonScriptEngine.registerFunctions(filePath.toUri(),
               FunctionLoader.PYTHON_FUNCTION_NAMESPACE)) {
             functionMap.put(f.getSignature(), f);
-//            LOG.info(f);
           }
         }
       }
