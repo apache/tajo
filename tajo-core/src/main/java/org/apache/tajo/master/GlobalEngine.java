@@ -38,7 +38,6 @@ import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.exec.DDLExecutor;
 import org.apache.tajo.master.exec.QueryExecutor;
-import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.logical.InsertNode;
@@ -51,6 +50,7 @@ import org.apache.tajo.plan.verifier.VerificationState;
 import org.apache.tajo.plan.verifier.VerifyException;
 import org.apache.tajo.storage.StorageManager;
 import org.apache.tajo.util.CommonTestingUtil;
+import org.apache.tajo.util.QueryContextUtil;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -70,7 +70,6 @@ public class GlobalEngine extends AbstractService {
   private LogicalPlanner planner;
   private LogicalOptimizer optimizer;
   private LogicalPlanVerifier annotatedPlanVerifier;
-  private DistributedQueryHookManager hookManager;
 
   private QueryExecutor queryExecutor;
   private DDLExecutor ddlExecutor;
@@ -149,6 +148,7 @@ public class GlobalEngine extends AbstractService {
   public SubmitQueryResponse executeQuery(Session session, String query, boolean isJson) {
     LOG.info("Query: " + query);
     QueryContext queryContext = createQueryContext(session);
+    QueryContextUtil.updatePythonScriptPath(context.getConf(), queryContext);
     Expr planningContext;
 
     try {

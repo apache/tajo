@@ -22,28 +22,45 @@ import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.plan.function.GeneralFunction;
+import org.apache.tajo.plan.function.FunctionInvoke;
+import org.apache.tajo.plan.function.FunctionInvokeContext;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 
-import javax.annotation.Nullable;
+import java.io.IOException;
+import java.util.Map;
 
 public class GeneralFunctionEval extends FunctionEval {
-  @Expose protected GeneralFunction instance;
+  @Expose protected FunctionInvoke funcInvoke;
+  @Expose protected FunctionInvokeContext invokeContext;
 
-	public GeneralFunctionEval(@Nullable OverridableConf queryContext, FunctionDesc desc, GeneralFunction instance,
-                             EvalNode[] givenArgs) {
+	public GeneralFunctionEval(OverridableConf queryContext, FunctionDesc desc, EvalNode[] givenArgs)
+      throws IOException {
 		super(EvalType.FUNCTION, desc, givenArgs);
-		this.instance = instance;
-    this.instance.init(queryContext, getParamType());
+    this.invokeContext = new FunctionInvokeContext(queryContext, getParamType());
+  }
+
+  @Override
+  public EvalNode bind(Schema schema) {
+    super.bind(schema);
+    try {
+      this.funcInvoke = FunctionInvoke.newInstance(funcDesc);
+      this.funcInvoke.init(invokeContext);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    return this;
   }
 
   @Override
   @SuppressWarnings("unchecked")
   public Datum eval(Tuple tuple) {
     super.eval(tuple);
-    return instance.eval(evalParams(tuple));
+    Datum res = funcInvoke.eval(evalParams(tuple));
+    funcInvoke.close();
+    return res;
   }
 
 	@Override
@@ -51,7 +68,7 @@ public class GeneralFunctionEval extends FunctionEval {
 	  if (obj instanceof GeneralFunctionEval) {
       GeneralFunctionEval other = (GeneralFunctionEval) obj;
       return super.equals(other) &&
-          TUtil.checkEquals(instance, other.instance);
+          TUtil.checkEquals(funcInvoke, other.funcInvoke);
 	  }
 	  
 	  return false;
@@ -59,13 +76,15 @@ public class GeneralFunctionEval extends FunctionEval {
 	
 	@Override
 	public int hashCode() {
-	  return Objects.hashCode(funcDesc, instance);
+	  return Objects.hashCode(funcDesc, funcInvoke);
 	}
 	
 	@Override
   public Object clone() throws CloneNotSupportedException {
     GeneralFunctionEval eval = (GeneralFunctionEval) super.clone();
-    eval.instance = (GeneralFunction) instance.clone();
+    if (funcInvoke != null) {
+      eval.funcInvoke = (FunctionInvoke) funcInvoke.clone();
+    }
     return eval;
   }
 }

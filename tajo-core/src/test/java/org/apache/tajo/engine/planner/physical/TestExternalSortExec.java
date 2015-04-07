@@ -61,7 +61,7 @@ public class TestExternalSortExec {
   private LogicalPlanner planner;
   private Path testDir;
 
-  private final int numTuple = 3000000;
+  private final int numTuple = 100000;
   private Random rnd = new Random(System.currentTimeMillis());
 
   private TableDesc employee;
@@ -141,7 +141,11 @@ public class TestExternalSortExec {
       SeqScanExec scan = sortExec.getChild();
 
       ExternalSortExec extSort = new ExternalSortExec(ctx, ((MemSortExec)sortExec).getPlan(), scan);
+      extSort.setSortBufferBytesNum(1024*1024);
       proj.setChild(extSort);
+    } else {
+      ExternalSortExec extSort = proj.getChild();
+      extSort.setSortBufferBytesNum(1024*1024);
     }
 
     Tuple tuple;

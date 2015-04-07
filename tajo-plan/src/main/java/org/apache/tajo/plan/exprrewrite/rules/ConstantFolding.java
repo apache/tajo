@@ -29,6 +29,8 @@ import java.util.Stack;
 public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanContext>
     implements EvalTreeOptimizationRule {
 
+  private final static String SLEEP_FUNCTION_NAME = "sleep";
+
   @Override
   public EvalNode optimize(LogicalPlanner.PlanContext context, EvalNode evalNode) {
     return visit(context, evalNode, new Stack<EvalNode>());
@@ -74,7 +76,7 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
   public EvalNode visitFuncCall(LogicalPlanner.PlanContext context, FunctionEval evalNode, Stack<EvalNode> stack) {
     boolean constantOfAllDescendents = true;
 
-    if ("sleep".equals(evalNode.getFuncDesc().getFunctionName())) {
+    if (SLEEP_FUNCTION_NAME.equals(evalNode.getFuncDesc().getFunctionName())) {
       constantOfAllDescendents = false;
     } else {
       for (EvalNode arg : evalNode.getArgs()) {
