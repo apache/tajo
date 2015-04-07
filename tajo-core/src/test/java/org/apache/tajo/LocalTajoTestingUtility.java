@@ -116,7 +116,7 @@ public class LocalTajoTestingUtility {
       fs.mkdirs(tablePath);
       Path dfsPath = new Path(tablePath, localPath.getName());
       fs.copyFromLocalFile(localPath, dfsPath);
-      TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.CSV, option);
+      TableMeta meta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.TEXTFILE, option);
 
       // Add fake table statistic data to tables.
       // It gives more various situations to unit tests.

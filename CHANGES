@@ -4,6 +4,9 @@ Release 0.11.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1494: Add SeekableScanner support to DelimitedTextFileScanner.
+    (jinho)
+
     TAJO-921: Add STDDEV_SAMP and STDDEV_POP window functions. (Keuntae Park)
 
     TAJO-1135: Implement queryable virtual table for cluster information.
