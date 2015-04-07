@@ -133,7 +133,6 @@ public class PythonScriptExecutor {
     ProcessBuilder processBuilder = StreamingUtil.createProcess(invokeContext.getQueryContext(), sc);
     process = processBuilder.start();
 
-    Runtime.getRuntime().addShutdownHook(new Thread(new ProcessKiller()));
     return sc;
   }
 
@@ -407,12 +406,6 @@ public class PythonScriptExecutor {
       } catch (Exception e) {
         LOG.error("standard error problem", e);
       }
-    }
-  }
-
-  public class ProcessKiller implements Runnable {
-    public void run() {
-      process.destroy();
     }
   }
 }

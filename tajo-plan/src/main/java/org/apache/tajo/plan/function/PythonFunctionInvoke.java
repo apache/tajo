@@ -28,6 +28,7 @@ import java.io.IOException;
 public class PythonFunctionInvoke extends FunctionInvoke {
 
   private PythonScriptExecutor scriptExecutor;
+  private FunctionInvokeContext context;
 
   public PythonFunctionInvoke(FunctionDesc functionDesc) {
     super(functionDesc);
@@ -36,11 +37,16 @@ public class PythonFunctionInvoke extends FunctionInvoke {
 
   @Override
   public void init(FunctionInvokeContext context) throws IOException {
-    scriptExecutor.start(context);
+    this.context = context;
   }
 
   @Override
   public Datum eval(Tuple tuple) {
+    try {
+      scriptExecutor.start(context);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     return scriptExecutor.eval(tuple);
   }
 
