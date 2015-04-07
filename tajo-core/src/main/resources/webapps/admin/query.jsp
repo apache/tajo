@@ -185,14 +185,14 @@
       <td><%=runTime == -1 ? "-" : StringUtils.formatTime(runTime) %></td>
       <td><%=eachQuery.getQueryState()%></td>
       <%
-          if(eachQuery.getQueryInfo().getSql().length() >=500) {
+          if(eachQuery.getSql().length() >=500) {
       %>
-        <td><div style="height: 100px;display: block;overflow: auto;" ><%=eachQuery.getQueryInfo().getSql()%></div></td>
+        <td><div style="height: 100px;display: block;overflow: auto;" ><%=eachQuery.getSql()%></div></td>
       <%
           }
           else {
       %>
-      <td><%=eachQuery.getQueryInfo().getSql()%></td>
+        <td><%=eachQuery.getSql()%></td>
       <%
           }
       %>
