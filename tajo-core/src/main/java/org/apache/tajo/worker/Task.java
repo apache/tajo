@@ -402,7 +402,7 @@ public class Task {
 
         this.executor = executionBlockContext.getTQueryEngine().
             createPlan(context, plan);
-        this.executor.init();
+        this.executor.init(false);
 
         while(!context.isStopped() && executor.next() != null) {
         }

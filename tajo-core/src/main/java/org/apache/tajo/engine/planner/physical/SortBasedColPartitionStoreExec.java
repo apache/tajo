@@ -44,8 +44,8 @@ public class SortBasedColPartitionStoreExec extends ColPartitionStoreExec {
     super(context, plan, child);
   }
 
-  public void init() throws IOException {
-    super.init();
+  public void init(boolean needsRescan) throws IOException {
+    super.init(needsRescan);
 
     currentKey = new VTuple(keyNum);
   }

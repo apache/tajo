@@ -283,7 +283,7 @@ public class TestLeftOuterNLJoinExec {
     }
 
     int count = 0;
-    exec.init();
+    exec.init(false);
     while (exec.next() != null) {
        //TODO check contents
          count = count + 1;
@@ -329,7 +329,7 @@ public class TestLeftOuterNLJoinExec {
     Tuple tuple;
     int i = 1;
     int count = 0;
-    exec.init();
+    exec.init(false);
     while ((tuple = exec.next()) != null) {
        //TODO check contents
          count = count + 1;
@@ -373,7 +373,7 @@ public class TestLeftOuterNLJoinExec {
     Tuple tuple;
     int i = 1;
     int count = 0;
-    exec.init();
+    exec.init(false);
     while ((tuple = exec.next()) != null) {
        //TODO check contents
          count = count + 1;
@@ -418,7 +418,7 @@ public class TestLeftOuterNLJoinExec {
     Tuple tuple;
     int i = 1;
     int count = 0;
-    exec.init();
+    exec.init(false);
     while ((tuple = exec.next()) != null) {
        //TODO check contents
          count = count + 1;
@@ -462,7 +462,7 @@ public class TestLeftOuterNLJoinExec {
     Tuple tuple;
     int i = 1;
     int count = 0;
-    exec.init();
+    exec.init(false);
     while ((tuple = exec.next()) != null) {
        //TODO check contents
          count = count + 1;

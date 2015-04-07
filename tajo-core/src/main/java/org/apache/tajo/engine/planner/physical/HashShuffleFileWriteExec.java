@@ -78,8 +78,8 @@ public final class HashShuffleFileWriteExec extends UnaryPhysicalExec {
   }
 
   @Override
-  public void init() throws IOException {
-    super.init();
+  public void init(boolean needsRescan) throws IOException {
+    super.init(needsRescan);
   }
   
   private HashShuffleAppender getAppender(int partId) throws IOException {

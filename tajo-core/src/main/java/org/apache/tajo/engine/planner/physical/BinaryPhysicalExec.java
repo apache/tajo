@@ -47,13 +47,16 @@ public abstract class BinaryPhysicalExec extends PhysicalExec {
     return rightChild;
   }
 
-  @Override
-  public void init() throws IOException {
-    leftChild.init();
-    rightChild.init();
+  protected void init(boolean leftRescan, boolean rightRescan) throws IOException {
+    leftChild.init(leftRescan);
+    rightChild.init(rightRescan);
     progress = 0.0f;
+    super.init(leftRescan || rightRescan);
+  }
 
-    super.init();
+  @Override
+  public void init(boolean needsRescan) throws IOException {
+    init(needsRescan, needsRescan);
   }
 
   @Override

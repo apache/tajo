@@ -257,7 +257,7 @@ public class TestRightOuterHashJoinExec {
        Tuple tuple;
        int count = 0;
        int i = 1;
-       exec.init();
+       exec.init(false);
   
        while ((tuple = exec.next()) != null) {
          //TODO check contents
@@ -298,7 +298,7 @@ public class TestRightOuterHashJoinExec {
        Tuple tuple;
        int count = 0;
        int i = 1;
-       exec.init();
+       exec.init(false);
   
        while ((tuple = exec.next()) != null) {
          //TODO check contents
@@ -339,7 +339,7 @@ public class TestRightOuterHashJoinExec {
        Tuple tuple;
        int count = 0;
        int i = 1;
-       exec.init();
+       exec.init(false);
   
        while ((tuple = exec.next()) != null) {
          //TODO check contents

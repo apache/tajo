@@ -37,6 +37,9 @@ public abstract class PhysicalExec implements SchemaObject {
   protected Schema outSchema;
   protected int outColumnNum;
 
+  // some exec's hold data in memory. in high-memory pressure situation, we need paging on them
+  protected boolean parentNeedsRescan;
+
   public PhysicalExec(final TaskAttemptContext context, final Schema inSchema,
                       final Schema outSchema) {
     this.context = context;
@@ -49,7 +52,9 @@ public abstract class PhysicalExec implements SchemaObject {
     return outSchema;
   }
 
-  public void init() throws IOException {
+  // needsRescan=true : parent might rescan on this
+  public void init(boolean needsRescan) throws IOException {
+    parentNeedsRescan = needsRescan;
     if (context.getQueryContext().getBool(SessionVars.CODEGEN)) {
       this.compile();
     }

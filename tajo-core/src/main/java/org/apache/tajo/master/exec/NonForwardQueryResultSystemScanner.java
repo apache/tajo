@@ -124,7 +124,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     outSchema = physicalExec.getSchema();
     encoder = RowStoreUtil.createEncoder(getLogicalSchema());
     
-    physicalExec.init();
+    physicalExec.init(false);
   }
 
   @Override
@@ -664,6 +664,8 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
       
       projector = new Projector(context, inSchema, outSchema, scanNode.getTargets());
     }
+
+    // this class rescans but it's not from children. so we need not to init with flag needsRescan=true
 
     @Override
     public Tuple next() throws IOException {

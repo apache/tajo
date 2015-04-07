@@ -171,7 +171,7 @@ public class TestHashJoinExec {
     Tuple tuple;
     int count = 0;
     int i = 1;
-    exec.init();
+    exec.init(false);
     while ((tuple = exec.next()) != null) {
       count++;
       assertTrue(i == tuple.get(0).asInt4());

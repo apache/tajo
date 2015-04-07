@@ -289,7 +289,7 @@ public class TestLeftOuterHashJoinExec {
     assertTrue(proj.getChild() instanceof HashLeftOuterJoinExec);
 
     int count = 0;
-    exec.init();
+    exec.init(false);
     while (exec.next() != null) {
       //TODO check contents
       count = count + 1;
@@ -328,7 +328,7 @@ public class TestLeftOuterHashJoinExec {
        Tuple tuple;
        int count = 0;
        int i = 1;
-       exec.init();
+       exec.init(false);
   
        while ((tuple = exec.next()) != null) {
          //TODO check contents
@@ -370,7 +370,7 @@ public class TestLeftOuterHashJoinExec {
        Tuple tuple;
        int count = 0;
        int i = 1;
-       exec.init();
+       exec.init(false);
   
        while ((tuple = exec.next()) != null) {
          //TODO check contents
@@ -412,7 +412,7 @@ public class TestLeftOuterHashJoinExec {
        Tuple tuple;
        int count = 0;
        int i = 1;
-       exec.init();
+       exec.init(false);
   
        while ((tuple = exec.next()) != null) {
          //TODO check contents
@@ -452,7 +452,7 @@ public class TestLeftOuterHashJoinExec {
     }
     else{
        int count = 0;
-       exec.init();
+       exec.init(false);
   
        while (exec.next() != null) {
          //TODO check contents

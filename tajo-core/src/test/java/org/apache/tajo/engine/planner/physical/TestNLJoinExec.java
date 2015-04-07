@@ -163,7 +163,7 @@ public class TestNLJoinExec {
     PhysicalExec exec = phyPlanner.createPlan(ctx, plan);
 
     int i = 0;
-    exec.init();
+    exec.init(false);
     while (exec.next() != null) {
       i++;
     }
@@ -194,7 +194,7 @@ public class TestNLJoinExec {
     Tuple tuple;
     int i = 1;
     int count = 0;
-    exec.init();
+    exec.init(false);
     while ((tuple = exec.next()) != null) {
       count++;
       assertTrue(i == tuple.get(0).asInt4());

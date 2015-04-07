@@ -18,20 +18,14 @@
 
 package org.apache.tajo.engine.planner.physical;
 
-import com.google.common.collect.Lists;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.statistics.TableStats;
-import org.apache.tajo.engine.planner.Projector;
 import org.apache.tajo.engine.utils.CacheHolder;
 import org.apache.tajo.engine.utils.TableCacheKey;
 import org.apache.tajo.engine.utils.TupleUtil;
 import org.apache.tajo.plan.util.PlannerUtil;
-import org.apache.tajo.catalog.SchemaUtil;
-import org.apache.tajo.plan.expr.AlgebraicUtil;
-import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.logical.JoinNode;
 import org.apache.tajo.storage.FrameTuple;
 import org.apache.tajo.storage.Tuple;
@@ -43,11 +37,7 @@ import java.io.IOException;
 import java.util.*;
 
 
-public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
-  // from logical plan
-  protected JoinNode plan;
-  protected EvalNode joinQual;   // ex) a.id = b.id
-  protected EvalNode joinFilter; // ex) a > 10
+public class HashLeftOuterJoinExec extends CommonJoinExec {
 
   protected List<Column[]> joinKeyPairs;
 
@@ -66,35 +56,13 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
   protected boolean finished = false;
   protected boolean shouldGetLeftTuple = true;
 
-  // projection
-  protected Projector projector;
-
   private int rightNumCols;
   private TableStats cachedRightTableStats;
   private static final Log LOG = LogFactory.getLog(HashLeftOuterJoinExec.class);
 
   public HashLeftOuterJoinExec(TaskAttemptContext context, JoinNode plan, PhysicalExec leftChild,
                                PhysicalExec rightChild) {
-    super(context, SchemaUtil.merge(leftChild.getSchema(), rightChild.getSchema()),
-        plan.getOutSchema(), leftChild, rightChild);
-    this.plan = plan;
-
-    List<EvalNode> joinQuals = Lists.newArrayList();
-    List<EvalNode> joinFilters = Lists.newArrayList();
-    for (EvalNode eachQual : AlgebraicUtil.toConjunctiveNormalFormArray(plan.getJoinQual())) {
-      if (EvalTreeUtil.isJoinQual(eachQual, true)) {
-        joinQuals.add(eachQual);
-      } else {
-        joinFilters.add(eachQual);
-      }
-    }
-
-    this.joinQual = AlgebraicUtil.createSingletonExprFromCNF(joinQuals.toArray(new EvalNode[joinQuals.size()]));
-    if (joinFilters.size() > 0) {
-      this.joinFilter = AlgebraicUtil.createSingletonExprFromCNF(joinFilters.toArray(new EvalNode[joinFilters.size()]));
-    } else {
-      this.joinFilter = null;
-    }
+    super(context, plan, leftChild, rightChild, true);
 
     // HashJoin only can manage equi join key pairs.
     this.joinKeyPairs = PlannerUtil.getJoinKeyPairs(joinQual, leftChild.getSchema(),
@@ -111,25 +79,12 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
       rightKeyList[i] = rightChild.getSchema().getColumnId(joinKeyPairs.get(i)[1].getQualifiedName());
     }
 
-    // for projection
-    this.projector = new Projector(context, inSchema, outSchema, plan.getTargets());
-
     // for join
     frameTuple = new FrameTuple();
     outTuple = new VTuple(outSchema.size());
     leftKeyTuple = new VTuple(leftKeyList.length);
 
     rightNumCols = rightChild.getSchema().size();
-
-    joinQual.bind(inSchema);
-    if (joinFilter != null) {
-      joinFilter.bind(inSchema);
-    }
-  }
-
-  @Override
-  protected void compile() {
-    joinQual = context.getPrecompiledEval(inSchema, joinQual);
   }
 
   protected void getKeyLeftTuple(final Tuple outerTuple, Tuple keyTuple) {
@@ -182,7 +137,7 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
       frameTuple.set(leftTuple, rightTuple); // evaluate a join condition on both tuples
 
       // if there is no join filter, it is always true.
-      boolean satisfiedWithFilter = joinFilter == null || joinFilter.eval(frameTuple).isTrue();
+      boolean satisfiedWithFilter = !hasJoinFilter || joinFilter.eval(frameTuple).isTrue();
       boolean satisfiedWithJoinCondition = joinQual.eval(frameTuple).isTrue();
 
       // if a composited tuple satisfies with both join filter and join condition
@@ -287,8 +242,6 @@ public class HashLeftOuterJoinExec extends BinaryPhysicalExec {
     iterator = null;
     plan = null;
     joinQual = null;
-    joinFilter = null;
-    projector = null;
   }
 
   public JoinNode getPlan() {

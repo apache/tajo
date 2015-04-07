@@ -333,7 +333,7 @@ public class TestFullOuterMergeJoinExec {
     ProjectionExec proj = (ProjectionExec) exec;
     assertTrue(proj.getChild() instanceof MergeFullOuterJoinExec);
     int count = 0;
-    exec.init();
+    exec.init(false);
 
     while (exec.next() != null) {
       //TODO check contents
@@ -371,7 +371,7 @@ public class TestFullOuterMergeJoinExec {
     assertTrue(proj.getChild() instanceof MergeFullOuterJoinExec);
 
     int count = 0;
-    exec.init();
+    exec.init(false);
 
     while (exec.next() != null) {
       //TODO check contents
@@ -409,7 +409,7 @@ public class TestFullOuterMergeJoinExec {
 
 
     int count = 0;
-    exec.init();
+    exec.init(false);
 
     while (exec.next() != null) {
       //TODO check contents
@@ -448,7 +448,7 @@ public class TestFullOuterMergeJoinExec {
     assertTrue(proj.getChild() instanceof MergeFullOuterJoinExec);
 
     int count = 0;
-    exec.init();
+    exec.init(false);
 
     while (exec.next() != null) {
       //TODO check contents
@@ -487,7 +487,7 @@ public class TestFullOuterMergeJoinExec {
     assertTrue(proj.getChild() instanceof MergeFullOuterJoinExec);
 
     int count = 0;
-    exec.init();
+    exec.init(false);
 
     while (exec.next() != null) {
       //TODO check contents
@@ -526,7 +526,7 @@ public class TestFullOuterMergeJoinExec {
     assertTrue(proj.getChild() instanceof MergeFullOuterJoinExec);
 
     int count = 0;
-    exec.init();
+    exec.init(false);
 
     while (exec.next() != null) {
       //TODO check contents

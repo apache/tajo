@@ -107,8 +107,8 @@ public class DistinctGroupbyFirstAggregationExec extends UnaryPhysicalExec {
   }
 
   @Override
-  public void init() throws IOException {
-    super.init();
+  public void init(boolean needsRescan) throws IOException {
+    super.init(needsRescan);
 
     // finding grouping column index
     Column[] groupingColumns = plan.getGroupingColumns();

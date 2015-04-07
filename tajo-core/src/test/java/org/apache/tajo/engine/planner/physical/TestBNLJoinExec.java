@@ -169,7 +169,7 @@ public class TestBNLJoinExec {
     assertTrue(proj.getChild() instanceof BNLJoinExec);
 
     int i = 0;
-    exec.init();
+    exec.init(false);
     while (exec.next() != null) {
       i++;
     }
@@ -210,7 +210,7 @@ public class TestBNLJoinExec {
     Tuple tuple;
     int i = 1;
     int count = 0;
-    exec.init();
+    exec.init(false);
     while ((tuple = exec.next()) != null) {
       count++;
       assertTrue(i == tuple.get(0).asInt4());

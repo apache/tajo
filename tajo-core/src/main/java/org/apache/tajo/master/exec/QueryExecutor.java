@@ -322,7 +322,7 @@ public class QueryExecutor {
     EvalExprExec evalExprExec = new EvalExprExec(taskAttemptContext, (EvalExprNode) insertNode.getChild());
     StoreTableExec exec = new StoreTableExec(taskAttemptContext, insertNode, evalExprExec);
     try {
-      exec.init();
+      exec.init(false);
       exec.next();
     } finally {
       exec.close();

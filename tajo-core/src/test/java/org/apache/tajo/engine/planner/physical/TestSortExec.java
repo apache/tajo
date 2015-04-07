@@ -127,7 +127,7 @@ public class TestSortExec {
     Tuple tuple;
     Datum preVal = null;
     Datum curVal;
-    exec.init();
+    exec.init(false);
     while ((tuple = exec.next()) != null) {
       curVal = tuple.get(0);
       if (preVal != null) {

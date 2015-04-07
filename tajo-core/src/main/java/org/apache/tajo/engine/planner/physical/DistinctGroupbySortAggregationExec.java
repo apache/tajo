@@ -22,7 +22,6 @@ import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
-import org.apache.tajo.plan.expr.AggregationFunctionCallEval;
 import org.apache.tajo.plan.logical.DistinctGroupbyNode;
 import org.apache.tajo.plan.logical.GroupbyNode;
 import org.apache.tajo.storage.Tuple;
@@ -66,9 +65,12 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
     for(int i = 0; i < resultColumnIds.length; i++) {
       resultColumnIdIndexes[resultColumnIds[i]] = i;
     }
+  }
 
-    for (SortAggregateExec eachExec: aggregateExecs) {
-      eachExec.init();
+  @Override
+  public void init(boolean needsScan) throws IOException {
+    for (int i = 0; i < aggregateExecs.length; i++) {
+      aggregateExecs[i].init(i < groupbyNodeNum);
     }
   }
 
@@ -169,10 +171,6 @@ public class DistinctGroupbySortAggregationExec extends PhysicalExec {
         eachExec.close();
       }
     }
-  }
-
-  @Override
-  public void init() throws IOException {
   }
 
   @Override

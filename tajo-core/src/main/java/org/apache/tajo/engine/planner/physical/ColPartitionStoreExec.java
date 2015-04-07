@@ -123,8 +123,8 @@ public abstract class ColPartitionStoreExec extends UnaryPhysicalExec {
   }
 
   @Override
-  public void init() throws IOException {
-    super.init();
+  public void init(boolean needsRescan) throws IOException {
+    super.init(needsRescan);
 
     storeTablePath = context.getOutputPath();
 

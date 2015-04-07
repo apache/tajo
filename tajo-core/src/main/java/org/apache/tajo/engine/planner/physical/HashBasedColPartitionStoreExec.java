@@ -44,8 +44,8 @@ public class HashBasedColPartitionStoreExec extends ColPartitionStoreExec {
     super(context, plan, child);
   }
 
-  public void init() throws IOException {
-    super.init();
+  public void init(boolean needsRescan) throws IOException {
+    super.init(needsRescan);
   }
 
   private Appender getAppender(String partition) throws IOException {

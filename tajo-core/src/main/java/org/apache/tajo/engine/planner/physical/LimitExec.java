@@ -48,8 +48,9 @@ public class LimitExec extends UnaryPhysicalExec {
     return tuple;
   }
 
+  @Override
   public void rescan() throws IOException {
-    super.init();
+    super.init(false);
     fetchCount = 0;
   }
 }

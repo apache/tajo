@@ -122,7 +122,7 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
       } catch (CloneNotSupportedException e) {
         throw new IOException(e.getMessage(), e);
       }
-      scanExec.init();
+      scanExec.init(false);
       currentFragmentIndex += fragments.size();
     }
   }

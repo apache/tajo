@@ -44,6 +44,11 @@ public class NLJoinExec extends CommonJoinExec {
     outTuple = new VTuple(outSchema.size());
   }
 
+  @Override
+  public void init(boolean rescan) throws IOException {
+    init(rescan, true);
+  }
+
   public Tuple next() throws IOException {
     while (!context.isStopped()) {
       if (needNewOuter) {
