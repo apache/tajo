@@ -27,6 +27,9 @@ Release 0.10.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1538: TajoWorkerResourceManager.allocatedResourceMap is increasing 
+    forever. (Contributed by navis. Committed by jinho)
+
     TAJO-1360: VALUES_ field in OPTIONS table of catalog store should be longer.
     (Contributed by DaeMyung Kang, Committed by jaehwa)
 
