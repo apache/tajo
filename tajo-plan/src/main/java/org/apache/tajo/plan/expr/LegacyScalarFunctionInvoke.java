@@ -46,6 +46,11 @@ public class LegacyScalarFunctionInvoke extends FunctionInvoke {
   }
 
   @Override
+  public void close() {
+
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (o instanceof LegacyScalarFunctionInvoke) {
       LegacyScalarFunctionInvoke other = (LegacyScalarFunctionInvoke) o;

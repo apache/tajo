@@ -40,8 +40,6 @@ public class GeneralFunctionEval extends FunctionEval {
       throws IOException {
 		super(EvalType.FUNCTION, desc, givenArgs);
     this.queryContext = queryContext;
-//    this.funcInvoke = FunctionInvoke.newInstance(desc);
-//    this.funcInvoke.init(queryContext, getParamType());
   }
 
   @Override
@@ -60,7 +58,9 @@ public class GeneralFunctionEval extends FunctionEval {
   @SuppressWarnings("unchecked")
   public Datum eval(Tuple tuple) {
     super.eval(tuple);
-    return funcInvoke.eval(evalParams(tuple));
+    Datum res = funcInvoke.eval(evalParams(tuple));
+    funcInvoke.close();
+    return res;
   }
 
 	@Override

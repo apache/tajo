@@ -27,9 +27,10 @@ import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
 
+import java.io.Closeable;
 import java.io.IOException;
 
-public abstract class FunctionInvoke {
+public abstract class FunctionInvoke implements Closeable {
   @Expose protected FunctionDesc functionDesc;
 
   public FunctionInvoke(FunctionDesc functionDesc) {
@@ -62,6 +63,8 @@ public abstract class FunctionInvoke {
    * @return a result of a fuction execution
    */
   public abstract Datum eval(Tuple tuple);
+
+  public abstract void close();
 
   @Override
   public boolean equals(Object o) {

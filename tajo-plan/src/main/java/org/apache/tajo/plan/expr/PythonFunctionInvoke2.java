@@ -89,12 +89,9 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
   private Schema inSchema;
   private Schema outSchema;
   private int [] projectionCols;
-  private boolean isBinded = false;
 
   private CSVLineSerDe lineSerDe = new CSVLineSerDe();
   private TableMeta pipeMeta;
-
-  public static final String TURN_ON_OUTPUT_CAPTURING = "TURN_ON_OUTPUT_CAPTURING";
 
   public PythonFunctionInvoke2(FunctionDesc functionDesc) {
     super(functionDesc);
@@ -134,22 +131,12 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
     process = processBuilder.start();
 
     Runtime.getRuntime().addShutdownHook(new Thread(new ProcessKiller()));
+    LOG.info("process started");
     return sc;
   }
 
   private String[] buildCommand() throws IOException {
     String[] command = new String[10];
-
-//    String jarPath = conf.get("mapreduce.job.jar");
-//    if (jarPath == null) {
-//      jarPath = conf.get(MRConfiguration.JAR);
-//    }
-//    String jobDir;
-//    if (jarPath != null) {
-//      jobDir = new File(jarPath).getParent();
-//    } else {
-//      jobDir = "";
-//    }
 
 //    String standardOutputRootWriteLocation = soc.getStandardOutputRootWriteLocation();
 //    String standardOutputRootWriteLocation = System.getProperty("tajo.log.dir");
@@ -158,18 +145,12 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
     String standardOutputRootWriteLocation = "/home/jihoon/Projects/tajo/";
     String controllerLogFileName, outFileName, errOutFileName;
 
-//    if (execType.isLocal()) {
-//      controllerLogFileName = standardOutputRootWriteLocation + funcName + "_python.log";
-//      outFileName = standardOutputRootWriteLocation + "cpython_" + funcName + "_" + ScriptingOutputCapturer.getRunId() + ".out";
-//      errOutFileName = standardOutputRootWriteLocation + "cpython_" + funcName + "_" + ScriptingOutputCapturer.getRunId() + ".err";
-//    } else {
     String funcName = invocationDesc.getName();
     String filePath = invocationDesc.getPath();
 
-      controllerLogFileName = standardOutputRootWriteLocation + funcName + "_python.log";
-      outFileName = standardOutputRootWriteLocation + funcName + ".out";
-      errOutFileName = standardOutputRootWriteLocation + funcName + ".err";
-//    }
+    controllerLogFileName = standardOutputRootWriteLocation + funcName + "_python.log";
+    outFileName = standardOutputRootWriteLocation + funcName + ".out";
+    errOutFileName = standardOutputRootWriteLocation + funcName + ".err";
 
     soc.registerOutputLocation(funcName, outFileName);
 
@@ -321,29 +302,22 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
     return getOutput(tuple);
   }
 
+  @Override
+  public void close() {
+    process.destroy();
+    LOG.info("process destroyed");
+  }
+
   private Datum getOutput(Tuple input) {
     if (outputQueue == null) {
       throw new RuntimeException("Process has already been shut down.  No way to retrieve output for input: " + input);
     }
 
-//    if (ScriptingOutputCapturer.isClassCapturingOutput() &&
-//        !soc.isInstanceCapturingOutput()) {
-//      Tuple t = TupleFactory.getInstance().newTuple(TURN_ON_OUTPUT_CAPTURING);
-//      try {
-//        inputQueue.put(t);
-//      } catch (InterruptedException e) {
-//        throw new RuntimeException("Failed adding capture input flag to inputQueue");
-//      }
-//      soc.setInstanceCapturingOutput(true);
-//    }
-
     try {
-//      if (this.inSchema == null || this.inSchema.size() == 0) {
       if (input == null) {
         //When nothing is passed into the UDF the tuple
         //being sent is the full tuple for the relation.
         //We want it to be nothing (since that's what the user wrote).
-//        input = TupleFactory.getInstance().newTuple(0);
         input = new VTuple(0);
       }
       LOG.info("input: " + input);
@@ -371,8 +345,6 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
       throw new RuntimeException(outerrThreadsError);
     }
 
-//    Datum out = JythonUtils.objectToDatum(outSchema.getColumn(0).getDataType(), o);
-//    LOG.info("out: " + out);
     return (Datum) o;
   }
 
@@ -501,38 +473,4 @@ public class PythonFunctionInvoke2 extends FunctionInvoke {
       process.destroy();
     }
   }
-//
-//  public static void main(String[] args) throws IOException {
-//    String line;
-//    Scanner scan = new Scanner(System.in);
-//
-//    Process process = Runtime.getRuntime ().exec("/bin/bash");
-//    OutputStream stdin = process.getOutputStream();
-//    InputStream stderr = process.getErrorStream();
-//    InputStream stdout = process.getInputStream();
-//
-//    BufferedReader reader = new BufferedReader (new InputStreamReader(stdout));
-//    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(stdin));
-//
-//    while (scan.hasNext()) {
-//      String input = scan.nextLine();
-//      if (input.trim().equals("exit")) {
-//        // Putting 'exit' amongst the echo --EOF--s below doesn't work.
-//        writer.write("exit\n");
-//      } else {
-////        writer.write("((" + input + ") && echo --EOF--) || echo --EOF--\n");
-//        writer.write("((" + input + ") && echo --EOF--)\n");
-//      }
-//      writer.flush();
-//
-//      line = reader.readLine();
-//      while (line != null && ! line.trim().equals("--EOF--")) {
-//        System.out.println ("Stdout: " + line);
-//        line = reader.readLine();
-//      }
-//      if (line == null) {
-//        break;
-//      }
-//    }
-//  }
 }
