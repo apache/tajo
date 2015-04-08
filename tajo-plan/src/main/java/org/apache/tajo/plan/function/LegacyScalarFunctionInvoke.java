@@ -25,6 +25,9 @@ import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 
+/**
+ * This class invokes the legacy scala functions.
+ */
 public class LegacyScalarFunctionInvoke extends FunctionInvoke {
   @Expose private GeneralFunction function;
 
@@ -51,11 +54,6 @@ public class LegacyScalarFunctionInvoke extends FunctionInvoke {
   @Override
   public Datum eval(Tuple tuple) {
     return function.eval(tuple);
-  }
-
-  @Override
-  public void close() {
-
   }
 
   @Override

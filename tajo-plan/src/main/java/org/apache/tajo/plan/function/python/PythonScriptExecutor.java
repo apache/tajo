@@ -40,13 +40,21 @@ import java.io.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+/**
+ * {@link PythonScriptExecutor} is a script executor for python functions.
+ * It internally creates a child process which is responsible for executing python codes.
+ * Given an input tuple, it sends the tuple to the child process, and then receives a result from that.
+ */
 public class PythonScriptExecutor {
 
   private static final Log LOG = LogFactory.getLog(PythonScriptExecutor.class);
 
+  private static final String PYTHON_LANGUAGE = "python";
   private static final String PYTHON_ROOT_PATH = "/python";
-  private static final String PYTHON_CONTROLLER_JAR_PATH = PYTHON_ROOT_PATH + "/controller.py"; // Relative to root of tajo jar.
-  private static final String PYTHON_TAJO_UTIL_PATH = PYTHON_ROOT_PATH + "/tajo_util.py"; // Relative to root of tajo jar.
+  private static final String TAJO_UTIL_NAME = "tajo_util.py";
+  private static final String CONTROLLER_NAME = "controller.py";
+  private static final String PYTHON_CONTROLLER_JAR_PATH = PYTHON_ROOT_PATH + File.separator + CONTROLLER_NAME; // Relative to root of tajo jar.
+  private static final String PYTHON_TAJO_UTIL_PATH = PYTHON_ROOT_PATH + File.separator + TAJO_UTIL_NAME; // Relative to root of tajo jar.
   private static final String DEFAULT_LOG_DIR = "/tmp/tajo-" + System.getProperty("user.name") + "/python";
 
   // Indexes for arguments being passed to external process
@@ -61,7 +69,7 @@ public class PythonScriptExecutor {
   private static final int CONTROLLER_LOG_FILE_PATH = 8; // Controller log file logs progress through the controller script not user code.
   private static final int OUT_SCHEMA = 9; // the schema of the output column
 
-  private Process process; // Handle to the externwlgns1441
+  private Process process; // Handle to the external execution of python functions
   // all processes
   private ProcessErrorThread stderrThread; // thread to get process stderr
   private ProcessInputThread stdinThread; // thread to send input to process
@@ -78,20 +86,20 @@ public class PythonScriptExecutor {
   private InputStream stderr; // stderr of the process
 
   private static final Object ERROR_OUTPUT = new Object();
-  private static final Object NULL_OBJECT = new Object(); //BlockingQueue can't have null.  Use place holder object instead.
+  private static final Object NULL_OBJECT = new Object();
 
   private volatile StreamingUDFException outerrThreadsError;
 
   private FunctionInvokeContext invokeContext = null;
 
-  private FunctionSignature functionSignature;
-  private PythonInvocationDesc invocationDesc;
-  private Schema inSchema;
-  private Schema outSchema;
-  private int [] projectionCols;
+  private final FunctionSignature functionSignature;
+  private final PythonInvocationDesc invocationDesc;
+  private final Schema inSchema;
+  private final Schema outSchema;
+  private final int [] projectionCols;
 
-  private CSVLineSerDe lineSerDe = new CSVLineSerDe();
-  private TableMeta pipeMeta;
+  private final CSVLineSerDe lineSerDe = new CSVLineSerDe();
+  private final TableMeta pipeMeta;
 
   public PythonScriptExecutor(FunctionDesc functionDesc) {
     if (!functionDesc.getInvocation().hasPython()) {
@@ -134,6 +142,11 @@ public class PythonScriptExecutor {
     return sc;
   }
 
+  /**
+   * Build a command to execute external process.
+   * @return
+   * @throws IOException
+   */
   private String[] buildCommand() throws IOException {
     OverridableConf queryContext = invokeContext.getQueryContext();
     String[] command = new String[10];
@@ -144,6 +157,7 @@ public class PythonScriptExecutor {
       LOG.warn("Currently, logging is not supported for the python controller.");
       standardOutputRootWriteLocation = invokeContext.getQueryContext().get(QueryVars.PYTHON_CONTROLLER_LOG_DIR);
     }
+    standardOutputRootWriteLocation = "/home/jihoon/Projects/tajo/";
     String controllerLogFileName, outFileName, errOutFileName;
 
     String funcName = invocationDesc.getName();
@@ -153,7 +167,7 @@ public class PythonScriptExecutor {
     outFileName = standardOutputRootWriteLocation + funcName + ".out";
     errOutFileName = standardOutputRootWriteLocation + funcName + ".err";
 
-    command[UDF_LANGUAGE] = "python";
+    command[UDF_LANGUAGE] = PYTHON_LANGUAGE;
     command[PATH_TO_CONTROLLER_FILE] = getControllerPath();
     int lastSeparator = filePath.lastIndexOf(File.separator) + 1;
     String fileName = filePath.substring(lastSeparator);
@@ -161,7 +175,6 @@ public class PythonScriptExecutor {
     command[UDF_FILE_NAME] = fileName;
     command[UDF_FILE_PATH] = lastSeparator <= 0 ? "." : filePath.substring(0, lastSeparator - 1);
     command[UDF_NAME] = funcName;
-    // TODO
     if (!invokeContext.getQueryContext().containsKey(QueryVars.PYTHON_SCRIPT_CODE_DIR)) {
       throw new IOException(TajoConf.ConfVars.PYTHON_CODE_DIR.keyname() + " must be set.");
     }
@@ -178,10 +191,10 @@ public class PythonScriptExecutor {
   private void createInputHandlers() {
     TextLineSerializer serializer = lineSerDe.createSerializer(inSchema, pipeMeta);
     serializer.init();
-    this.inputHandler = new StreamingUDFInputHandler(serializer);
+    this.inputHandler = new InputHandler(serializer);
     TextLineDeserializer deserializer = lineSerDe.createDeserializer(outSchema, pipeMeta, projectionCols);
     deserializer.init();
-    this.outputHandler = new StreamingUDFOutputHandler(deserializer);
+    this.outputHandler = new OutputHandler(deserializer);
   }
 
   private void setStreams() throws IOException {
@@ -227,7 +240,7 @@ public class PythonScriptExecutor {
         pythonControllerStream.close();
       }
       controllerFile.deleteOnExit();
-      File tajoUtilFile = new File(controllerFile.getParent() + "/tajo_util.py");
+      File tajoUtilFile = new File(controllerFile.getParent() + File.separator + TAJO_UTIL_NAME);
       tajoUtilFile.deleteOnExit();
       InputStream pythonUtilStream = this.getClass().getResourceAsStream(PYTHON_TAJO_UTIL_PATH);
       try {
@@ -247,11 +260,12 @@ public class PythonScriptExecutor {
 
     try {
       if (input == null) {
-        //When nothing is passed into the UDF the tuple
-        //being sent is the full tuple for the relation.
-        //We want it to be nothing (since that's what the user wrote).
+        // When nothing is passed into the UDF the tuple
+        // being sent is the full tuple for the relation.
+        // We want it to be nothing (since that's what the user wrote).
         input = new VTuple(0);
       }
+
       inputQueue.put(input);
     } catch (Exception e) {
       throw new RuntimeException("Failed adding input to inputQueue", e);
@@ -334,21 +348,22 @@ public class PythonScriptExecutor {
       } catch(Exception e) {
         if (outputQueue != null) {
           try {
-            //Give error thread a chance to check the standard error output
-            //for an exception message.
+            // Give error thread a chance to check the standard error output
+            // for an exception message.
             int attempt = 0;
             while (stderrThread.isAlive() && attempt < MAX_WAIT_FOR_ERROR_ATTEMPTS) {
               Thread.sleep(WAIT_FOR_ERROR_LENGTH);
               attempt++;
             }
-            //Only write this if no other error.  Don't want to overwrite
-            //an error from the error thread.
+            // Only write this if no other error.  Don't want to overwrite
+            // an error from the error thread.
             if (outerrThreadsError == null) {
               outerrThreadsError = new StreamingUDFException(
-                  "python", "Error deserializing output.  Please check that the declared outputSchema for function " +
+                  PYTHON_LANGUAGE, "Error deserializing output.  Please check that the declared outputSchema for function " +
                   invocationDesc.getName() + " matches the data type being returned.", e);
             }
-            outputQueue.put(ERROR_OUTPUT); //Need to wake main thread.
+            // TODO: Currently, errors occurred before executing an input are ignored.
+//            outputQueue.put(ERROR_OUTPUT); // Need to wake main thread.
           } catch(InterruptedException ie) {
             LOG.error(ie);
           }
@@ -370,8 +385,8 @@ public class PythonScriptExecutor {
         BufferedReader reader = new BufferedReader(
             new InputStreamReader(stderr, Charsets.UTF_8));
         while ((errInput = reader.readLine()) != null) {
-          //First line of error stream is usually the line number of error.
-          //If its not a number just treat it as first line of error message.
+          // First line of error stream is usually the line number of error.
+          // If its not a number just treat it as first line of error message.
           if (lineNumber == null) {
             try {
               lineNumber = Integer.valueOf(errInput);
@@ -382,9 +397,10 @@ public class PythonScriptExecutor {
             error.append(errInput + "\n");
           }
         }
-        outerrThreadsError = new StreamingUDFException("python", error.toString(), lineNumber);
+        outerrThreadsError = new StreamingUDFException(PYTHON_LANGUAGE, error.toString(), lineNumber);
         if (outputQueue != null) {
-          outputQueue.put(ERROR_OUTPUT); //Need to wake main thread.
+          // TODO: Currently, errors occurred before executing an input are ignored.
+//          outputQueue.put(ERROR_OUTPUT); // Need to wake main thread.
         }
         if (stderr != null) {
           stderr.close();

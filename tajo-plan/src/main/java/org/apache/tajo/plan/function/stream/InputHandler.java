@@ -24,22 +24,13 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * {@link InputHandler} is responsible for handling the input to the
- * Tajo-Streaming external command.
+ * {@link InputHandler} is responsible for handling the input to the Tajo-Streaming external command.
  *
- * The managed executable could be fed input in a {@link InputType#SYNCHRONOUS}
- * manner via its <code>stdin</code> or in an {@link InputType#ASYNCHRONOUS}
- * manner via an external file which is subsequently read by the executable.
  */
-public abstract class InputHandler {
+public class InputHandler {
 
   private final static byte[] END_OF_RECORD_DELIM = "|_\n".getBytes();
   private final static byte[] END_OF_STREAM = ("C" + "\\x04" + "|_\n").getBytes();
-
-  /**
-   *
-   */
-  public enum InputType {SYNCHRONOUS, ASYNCHRONOUS}
 
   /**
    * The serializer to be used to send data to the managed process.
@@ -53,6 +44,10 @@ public abstract class InputHandler {
 
   // flag to mark if close() has already been called
   protected boolean alreadyClosed = false;
+
+  public InputHandler(TextLineSerializer serializer) {
+    this.serializer = serializer;
+  }
 
   /**
    * Send the given input <code>Tuple</code> to the managed executable.
@@ -78,11 +73,22 @@ public abstract class InputHandler {
    * @throws IOException
    */
   public synchronized void close(Process process) throws IOException {
-    if(!alreadyClosed) {
-      alreadyClosed = true;
-      out.flush();
-      out.close();
-      out = null;
+    try {
+      if (!alreadyClosed) {
+        alreadyClosed = true;
+        out.flush();
+        out.close();
+        out = null;
+      }
+    } catch(IOException e) {
+      // check if we got an exception because
+      // the process actually completed and we were
+      // trying to flush and close it's stdin
+      if (process == null || process.exitValue() != 0) {
+        // the process had not terminated normally
+        // throw the exception we got
+        throw e;
+      }
     }
   }
 

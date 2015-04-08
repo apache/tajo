@@ -18,7 +18,6 @@
 
 package org.apache.tajo.plan.expr;
 
-import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.FunctionDesc;
@@ -27,10 +26,8 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.function.FunctionInvoke;
 import org.apache.tajo.plan.function.FunctionInvokeContext;
 import org.apache.tajo.storage.Tuple;
-import org.apache.tajo.util.TUtil;
 
 import java.io.IOException;
-import java.util.Map;
 
 public class GeneralFunctionEval extends FunctionEval {
   protected FunctionInvoke funcInvoke;
@@ -59,25 +56,9 @@ public class GeneralFunctionEval extends FunctionEval {
   public Datum eval(Tuple tuple) {
     super.eval(tuple);
     Datum res = funcInvoke.eval(evalParams(tuple));
-    funcInvoke.close();
     return res;
   }
 
-//	@Override
-//	public boolean equals(Object obj) {
-//	  if (obj instanceof GeneralFunctionEval) {
-//      GeneralFunctionEval other = (GeneralFunctionEval) obj;
-//      return super.equals(other);
-//	  }
-//
-//	  return false;
-//	}
-	
-//	@Override
-//	public int hashCode() {
-//	  return Objects.hashCode(funcDesc, funcInvoke);
-//	}
-	
 	@Override
   public Object clone() throws CloneNotSupportedException {
     GeneralFunctionEval eval = (GeneralFunctionEval) super.clone();

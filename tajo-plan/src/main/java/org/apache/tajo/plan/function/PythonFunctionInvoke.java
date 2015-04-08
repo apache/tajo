@@ -25,6 +25,9 @@ import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
 
+/**
+ * This class invokes the python functions.
+ */
 public class PythonFunctionInvoke extends FunctionInvoke implements Cloneable {
 
   private PythonScriptExecutor scriptExecutor;
@@ -46,30 +49,18 @@ public class PythonFunctionInvoke extends FunctionInvoke implements Cloneable {
 
   @Override
   public Datum eval(Tuple tuple) {
+    // TODO: Currently, the script executor is started and stopped for every eval() call.
+    // TODO: Since it internally forks a child process which executes python functions,
+    // TODO: frequent calls of start/stop functions will incur a large overhead.
+    // TODO: To avoid this problem, PythonScriptExecutor should have the same life cycle of the TaskRunner.
+    // TODO: In that case, we should consider the resource management problem, too.
     try {
       scriptExecutor.start(context);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    return scriptExecutor.eval(tuple);
-  }
-
-  @Override
-  public void close() {
+    Datum res = scriptExecutor.eval(tuple);
     scriptExecutor.stop();
+    return res;
   }
-
-//  @Override
-//  public Object clone() throws CloneNotSupportedException {
-//    PythonFunctionInvoke clone = (PythonFunctionInvoke) super.clone();
-//    if (context != null) {
-//      clone.context = context;
-//    }
-//    return clone;
-//  }
-//
-//  @Override
-//  public int hashCode() {
-//    return Objects.hashCode(super.hashCode(), context);
-//  }
 }

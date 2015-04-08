@@ -28,7 +28,11 @@ import org.apache.tajo.storage.Tuple;
 import java.io.Closeable;
 import java.io.IOException;
 
-public abstract class FunctionInvoke implements Closeable {
+/**
+ * An abstract class for actual function invocation.
+ * The metadata for function invocation are stored in the {@link org.apache.tajo.function.FunctionInvocation} class.
+ */
+public abstract class FunctionInvoke {
   @Expose protected FunctionDesc functionDesc;
 
   public FunctionInvoke() {
@@ -61,8 +65,6 @@ public abstract class FunctionInvoke implements Closeable {
    * @return a result of a fuction execution
    */
   public abstract Datum eval(Tuple tuple);
-
-  public abstract void close();
 
   @Override
   public boolean equals(Object o) {
