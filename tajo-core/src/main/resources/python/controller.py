@@ -105,8 +105,8 @@ class PythonStreamingController:
             func = __import__(module_name, globals(), locals(), [func_name], -1).__dict__[func_name]
         except:
             # These errors should always be caused by user code.
-            write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
             logging.info('write_user_exception1')
+            write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
             self.close_controller(-1)
 
         # if udf_logging.udf_log_level != logging.DEBUG:
@@ -131,8 +131,8 @@ class PythonStreamingController:
                         log_message("Deserialized Input: %s" % (unicode(inputs)))
                 except:
                     # Capture errors where the user passes in bad data.
-                    write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
                     logging.info('write_user_exception2')
+                    write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
                     self.close_controller(-3)
 
                 try:
@@ -141,8 +141,8 @@ class PythonStreamingController:
                         log_message("UDF Output: %s" % (unicode(func_output)))
                 except:
                     # These errors should always be caused by user code.
-                    write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
                     logging.info('write_user_exception3')
+                    write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
                     self.close_controller(-2)
 
                 output = serialize_output(func_output, output_schema)
@@ -154,8 +154,8 @@ class PythonStreamingController:
                 # This should only catch internal exceptions with the controller
                 # and pig- not with user code.
                 import traceback
-                traceback.print_exc(file=self.stream_error)
                 logging.info('traceback')
+                traceback.print_exc(file=self.stream_error)
                 sys.exit(-3)
 
             sys.stdout.flush()
@@ -193,8 +193,8 @@ class PythonStreamingController:
 
     def close_controller(self, exit_code):
         sys.stderr.close()
-        self.stream_error.write("\n")
         logging.info('last')
+        self.stream_error.write("\n")
         self.stream_error.close()
         sys.stdout.close()
         self.stream_output.write("\n")

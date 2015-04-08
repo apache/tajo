@@ -39,6 +39,7 @@ import org.apache.tajo.storage.VTuple;
 import java.io.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * {@link PythonScriptExecutor} is a script executor for python functions.
@@ -101,6 +102,8 @@ public class PythonScriptExecutor {
   private final CSVLineSerDe lineSerDe = new CSVLineSerDe();
   private final TableMeta pipeMeta;
 
+  private boolean isStopped = false;
+
   public PythonScriptExecutor(FunctionDesc functionDesc) {
     if (!functionDesc.getInvocation().hasPython()) {
       throw new IllegalStateException("Function type must be python");
@@ -121,6 +124,7 @@ public class PythonScriptExecutor {
   }
 
   public void start(FunctionInvokeContext context) throws IOException {
+    isStopped = false;
     this.invokeContext = context;
     this.inputQueue = new ArrayBlockingQueue<Tuple>(1);
     this.outputQueue = new ArrayBlockingQueue<Object>(2);
@@ -130,7 +134,22 @@ public class PythonScriptExecutor {
     startThreads();
   }
 
-  public void stop() {
+  public void stop() throws IOException, InterruptedException {
+    isStopped = true;
+    if (stdin != null) {
+      stdin.close();
+    }
+    if (stdout != null) {
+      stdout.close();
+    }
+    if (stderr != null) {
+      stderr.close();
+    }
+    inputHandler.close(process);
+    outputHandler.close();
+    stdinThread.join();
+    stderrThread.join();
+    stdoutThread.join();
     process.destroy();
   }
 
@@ -157,7 +176,8 @@ public class PythonScriptExecutor {
       LOG.warn("Currently, logging is not supported for the python controller.");
       standardOutputRootWriteLocation = invokeContext.getQueryContext().get(QueryVars.PYTHON_CONTROLLER_LOG_DIR);
     }
-    standardOutputRootWriteLocation = "/home/jihoon/Projects/tajo/";
+//    standardOutputRootWriteLocation = "/home/jihoon/Projects/tajo/";
+    standardOutputRootWriteLocation = "/Users/jihoonson/Projects/tajo/";
     String controllerLogFileName, outFileName, errOutFileName;
 
     String funcName = invocationDesc.getName();
@@ -303,15 +323,19 @@ public class PythonScriptExecutor {
 
     public void run() {
       try {
-        while (true) {
-          Tuple inputTuple = inputQueue.take();
-          inputHandler.putNext(inputTuple);
+        while (!isStopped) {
+          Tuple inputTuple = inputQueue.poll(10, TimeUnit.MILLISECONDS);
+          if (inputTuple != null) {
+            inputHandler.putNext(inputTuple);
+          }
           try {
             stdin.flush();
           } catch(Exception e) {
             return;
           }
         }
+      } catch (InterruptedException e) {
+
       } catch (Exception e) {
         LOG.error(e);
       }
@@ -334,7 +358,7 @@ public class PythonScriptExecutor {
       try {
 
         o = outputHandler.getNext().get(0);
-        while (o != OutputHandler.END_OF_OUTPUT) {
+        while (!isStopped && o != OutputHandler.END_OF_OUTPUT) {
           if (o != null) {
             outputQueue.put(o);
           }
@@ -363,7 +387,7 @@ public class PythonScriptExecutor {
                   invocationDesc.getName() + " matches the data type being returned.", e);
             }
             // TODO: Currently, errors occurred before executing an input are ignored.
-//            outputQueue.put(ERROR_OUTPUT); // Need to wake main thread.
+            outputQueue.put(ERROR_OUTPUT); // Need to wake main thread.
           } catch(InterruptedException ie) {
             LOG.error(ie);
           }
@@ -384,7 +408,7 @@ public class PythonScriptExecutor {
         String errInput;
         BufferedReader reader = new BufferedReader(
             new InputStreamReader(stderr, Charsets.UTF_8));
-        while ((errInput = reader.readLine()) != null) {
+        while (!isStopped && ((errInput = reader.readLine()) != null)) {
           // First line of error stream is usually the line number of error.
           // If its not a number just treat it as first line of error message.
           if (lineNumber == null) {
@@ -397,14 +421,16 @@ public class PythonScriptExecutor {
             error.append(errInput + "\n");
           }
         }
-        outerrThreadsError = new StreamingUDFException(PYTHON_LANGUAGE, error.toString(), lineNumber);
-        if (outputQueue != null) {
-          // TODO: Currently, errors occurred before executing an input are ignored.
-//          outputQueue.put(ERROR_OUTPUT); // Need to wake main thread.
-        }
-        if (stderr != null) {
-          stderr.close();
-          stderr = null;
+        if (!isStopped) {
+          outerrThreadsError = new StreamingUDFException(PYTHON_LANGUAGE, error.toString(), lineNumber);
+          if (outputQueue != null) {
+            // TODO: Currently, errors occurred before executing an input are ignored.
+            outputQueue.put(ERROR_OUTPUT); // Need to wake main thread.
+          }
+          if (stderr != null) {
+            stderr.close();
+            stderr = null;
+          }
         }
       } catch (IOException e) {
         LOG.info("Process Ended", e);

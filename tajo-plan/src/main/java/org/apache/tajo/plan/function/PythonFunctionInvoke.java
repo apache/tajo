@@ -52,15 +52,21 @@ public class PythonFunctionInvoke extends FunctionInvoke implements Cloneable {
     // TODO: Currently, the script executor is started and stopped for every eval() call.
     // TODO: Since it internally forks a child process which executes python functions,
     // TODO: frequent calls of start/stop functions will incur a large overhead.
-    // TODO: To avoid this problem, PythonScriptExecutor should have the same life cycle of the TaskRunner.
-    // TODO: In that case, we should consider the resource management problem, too.
+    // TODO: To avoid this problem, PythonScriptExecutor should have the same life cycle with the TaskRunner.
+    // TODO: In addition, we should consider the resource management problem, too.
     try {
       scriptExecutor.start(context);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
     Datum res = scriptExecutor.eval(tuple);
-    scriptExecutor.stop();
+    try {
+      scriptExecutor.stop();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    }
     return res;
   }
 }

@@ -79,6 +79,7 @@ public class CSVLineSerializer extends TextLineSerializer {
 
   @Override
   public void release() {
+
   }
 
   private static String getTypeString(Datum val) {
