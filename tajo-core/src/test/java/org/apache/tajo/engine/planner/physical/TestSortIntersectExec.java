@@ -56,9 +56,9 @@ import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestSortIntersectAllExec {
+public class TestSortIntersectExec {
   private TajoConf conf;
-  private final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestSortIntersectAllExec";
+  private final String TEST_PATH = TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/TestSortIntersectExec";
   private TajoTestingCluster util;
   private CatalogService catalog;
   private SQLAnalyzer analyzer;
@@ -71,7 +71,8 @@ public class TestSortIntersectAllExec {
 
   private int[] leftNum = new int[] {1, 2, 3, 3, 9, 9, 3, 0, 3};
   private int[] rightNum = new int[] {3, 7, 3, 5};
-  private int[] answerNum = new int[] {3, 3}; // this should be set as leftNum intersect all rightNum
+  private int[] answerAllNum = new int[] {3, 3}; // this should be set as leftNum intersect all rightNum + order by
+  private int[] answerDistinctNum = new int[] {3}; // this should be set as leftNum intersect rightNum + order by
 
   @Before
   public void setUp() throws Exception {
@@ -181,7 +182,7 @@ public class TestSortIntersectAllExec {
     // replace an equal join with sort intersect all .
     if (exec instanceof MergeJoinExec) {
       MergeJoinExec join = (MergeJoinExec) exec;
-      exec = new SortIntersectAllExec(ctx, join.getLeftChild(), join.getRightChild());
+      exec = new SortIntersectExec(ctx, join.getLeftChild(), join.getRightChild(), false);
     } else if (exec instanceof HashJoinExec) {
       // we need to sort the results from both left and right children
       HashJoinExec join = (HashJoinExec) exec;
@@ -200,7 +201,7 @@ public class TestSortIntersectAllExec {
       rightSortNode.setOutSchema(join.getRightChild().getSchema());
       ExternalSortExec rightSort = new ExternalSortExec(ctx, rightSortNode, join.getRightChild());
 
-      exec = new SortIntersectAllExec(ctx, leftSort, rightSort);
+      exec = new SortIntersectExec(ctx, leftSort, rightSort, false);
     }
 
     Tuple tuple;
@@ -210,7 +211,7 @@ public class TestSortIntersectAllExec {
 
     while ((tuple = exec.next()) != null) {
       count++;
-      int answer = answerNum[i];
+      int answer = answerAllNum[i];
       assertTrue(answer == tuple.get(0).asInt4());
       assertTrue(answer == tuple.get(1).asInt4());
       assertTrue(10 + answer == tuple.get(2).asInt4());
@@ -219,6 +220,71 @@ public class TestSortIntersectAllExec {
       i++;
     }
     exec.close();
-    assertEquals(answerNum.length , count);
+    assertEquals(answerAllNum.length , count);
+  }
+
+  @Test
+  public final void testSortIntersect() throws IOException, PlanningException {
+    FileFragment[] empFrags1 = FileStorageManager.splitNG(conf, "default.e1", employee1.getMeta(),
+        new Path(employee1.getPath()), Integer.MAX_VALUE);
+    FileFragment[] empFrags2 = FileStorageManager.splitNG(conf, "default.e2", employee2.getMeta(),
+        new Path(employee2.getPath()), Integer.MAX_VALUE);
+
+    FileFragment[] merged = TUtil.concat(empFrags1, empFrags2);
+
+    Path workDir = CommonTestingUtil.getTestDir(TajoTestingCluster.DEFAULT_TEST_DIRECTORY + "/testSortIntersect");
+    TaskAttemptContext ctx = new TaskAttemptContext(new QueryContext(conf),
+        LocalTajoTestingUtility.newTaskAttemptId(), merged, workDir);
+    ctx.setEnforcer(new Enforcer());
+    Expr expr = analyzer.parse(QUERIES[0]);
+    LogicalPlan plan = planner.createPlan(LocalTajoTestingUtility.createDummyContext(conf), expr);
+    optimizer.optimize(plan);
+    LogicalNode rootNode = plan.getRootBlock().getRoot();
+
+    PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
+    PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
+
+    // replace an equal join with sort intersect all .
+    if (exec instanceof MergeJoinExec) {
+      MergeJoinExec join = (MergeJoinExec) exec;
+      exec = new SortIntersectExec(ctx, join.getLeftChild(), join.getRightChild(), true);
+    } else if (exec instanceof HashJoinExec) {
+      // we need to sort the results from both left and right children
+      HashJoinExec join = (HashJoinExec) exec;
+      SortSpec[] sortSpecsLeft = PlannerUtil.schemaToSortSpecs(join.getLeftChild().getSchema());
+      SortSpec[] sortSpecsRight = PlannerUtil.schemaToSortSpecs(join.getRightChild().getSchema());
+
+      SortNode leftSortNode = LogicalPlan.createNodeWithoutPID(SortNode.class);
+      leftSortNode.setSortSpecs(sortSpecsLeft);
+      leftSortNode.setInSchema(join.getLeftChild().getSchema());
+      leftSortNode.setOutSchema(join.getLeftChild().getSchema());
+      ExternalSortExec leftSort = new ExternalSortExec(ctx, leftSortNode, join.getLeftChild());
+
+      SortNode rightSortNode = LogicalPlan.createNodeWithoutPID(SortNode.class);
+      rightSortNode.setSortSpecs(sortSpecsRight);
+      rightSortNode.setInSchema(join.getRightChild().getSchema());
+      rightSortNode.setOutSchema(join.getRightChild().getSchema());
+      ExternalSortExec rightSort = new ExternalSortExec(ctx, rightSortNode, join.getRightChild());
+
+      exec = new SortIntersectExec(ctx, leftSort, rightSort, true);
+    }
+
+    Tuple tuple;
+    int count = 0;
+    int i = 0;
+    exec.init();
+
+    while ((tuple = exec.next()) != null) {
+      count++;
+      int answer = answerDistinctNum[i];
+      assertTrue(answer == tuple.get(0).asInt4());
+      assertTrue(answer == tuple.get(1).asInt4());
+      assertTrue(10 + answer == tuple.get(2).asInt4());
+      assertTrue(("dept_" + answer).equals(tuple.get(3).asChars()));
+
+      i++;
+    }
+    exec.close();
+    assertEquals(answerDistinctNum.length , count);
   }
 }

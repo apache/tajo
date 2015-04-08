@@ -28,9 +28,11 @@ import org.apache.tajo.worker.TaskAttemptContext;
 import java.io.IOException;
 import java.util.Arrays;
 
-public class SortIntersectAllExec extends BinaryPhysicalExec {
+public class SortIntersectExec extends BinaryPhysicalExec {
   SetTupleComparator comparator;
-  public SortIntersectAllExec(TaskAttemptContext context, PhysicalExec left, PhysicalExec right) {
+  Tuple lastReturned = null;
+  boolean isDistinct = false;
+  public SortIntersectExec(TaskAttemptContext context, PhysicalExec left, PhysicalExec right, boolean isDistinct) {
     super(context, left.getSchema(), right.getSchema(), left, right);
     TajoDataTypes.DataType[] leftTypes = SchemaUtil.toDataTypes(left.getSchema());
     TajoDataTypes.DataType[] rightTypes = SchemaUtil.toDataTypes(right.getSchema());
@@ -39,16 +41,28 @@ public class SortIntersectAllExec extends BinaryPhysicalExec {
           "The both schemas are not compatible");
     }
     comparator = new SetTupleComparator(left.getSchema(), right.getSchema());
+    this.isDistinct = isDistinct;
   }
 
   @Override
   public Tuple next() throws IOException {
-    while (!context.isStopped()) {
+    if (!context.isStopped()) {
       Tuple leftTuple = leftChild.next();
       Tuple rightTuple = rightChild.next();
       if (leftTuple == null || rightTuple == null) {
         return null;
       }
+
+      // handling routine for INTERSECT without ALL
+      // it eliminates duplicated return of the same row values
+      if (isDistinct && lastReturned != null) {
+        while (comparator.compare(leftTuple, lastReturned) == 0) {
+          leftTuple = leftChild.next();
+          if (leftTuple == null)
+            return null;
+        }
+      }
+
       // At this point, Both Tuples are not null
       do {
         int compVal = comparator.compare(leftTuple, rightTuple);
@@ -58,6 +72,7 @@ public class SortIntersectAllExec extends BinaryPhysicalExec {
         } else if (compVal < 0) {
           leftTuple = leftChild.next();
         } else {
+          lastReturned = leftTuple;
           return leftTuple;
         }
       } while (leftTuple != null && rightTuple != null);
@@ -65,5 +80,12 @@ public class SortIntersectAllExec extends BinaryPhysicalExec {
       return null;
     }
     return null;
+  }
+
+  @Override
+  public void rescan() throws IOException {
+    super.rescan();
+
+    lastReturned = null;
   }
 }
