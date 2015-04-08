@@ -34,7 +34,12 @@ public abstract class TajoScriptEngine {
    */
   protected static InputStream getScriptAsStream(URI scriptPath) {
     InputStream is = null;
-    File file = new File(scriptPath);
+    File file;
+    try {
+      file = new File(scriptPath);
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException("path: " + scriptPath, e);
+    }
     if (file.exists()) {
       try {
         is = new FileInputStream(file);

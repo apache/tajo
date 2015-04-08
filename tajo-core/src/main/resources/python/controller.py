@@ -95,9 +95,9 @@ class PythonStreamingController:
         sys.path.append(cache_path)
         sys.path.append('.')
 
-        # logging.basicConfig(filename=log_file_name, format="%(asctime)s %(levelname)s %(message)s", level=udf_logging.udf_log_level)
-        # logging.info("To reduce the amount of information being logged only a small subset of rows are logged at the "
-        #              "INFO level.  Call udf_logging.set_log_level_debug in tajo_util to see all rows being processed.")
+        logging.basicConfig(filename=log_file_name, format="%(asctime)s %(levelname)s %(message)s", level=udf_logging.udf_log_level)
+        logging.info("To reduce the amount of information being logged only a small subset of rows are logged at the "
+                     "INFO level.  Call udf_logging.set_log_level_debug in tajo_util to see all rows being processed.")
 
         input_str = self.get_next_input()
 
@@ -106,6 +106,7 @@ class PythonStreamingController:
         except:
             # These errors should always be caused by user code.
             write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
+            logging.info('write_user_exception1')
             self.close_controller(-1)
 
         # if udf_logging.udf_log_level != logging.DEBUG:
@@ -114,7 +115,7 @@ class PythonStreamingController:
         # else:
         #     sys.stdout = self.log_stream
 
-        should_log = False
+        should_log = True
         log_message = logging.info
         if udf_logging.udf_log_level == logging.DEBUG:
             should_log = True
@@ -131,6 +132,7 @@ class PythonStreamingController:
                 except:
                     # Capture errors where the user passes in bad data.
                     write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
+                    logging.info('write_user_exception2')
                     self.close_controller(-3)
 
                 try:
@@ -140,6 +142,7 @@ class PythonStreamingController:
                 except:
                     # These errors should always be caused by user code.
                     write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
+                    logging.info('write_user_exception3')
                     self.close_controller(-2)
 
                 output = serialize_output(func_output, output_schema)
@@ -152,6 +155,7 @@ class PythonStreamingController:
                 # and pig- not with user code.
                 import traceback
                 traceback.print_exc(file=self.stream_error)
+                logging.info('traceback')
                 sys.exit(-3)
 
             sys.stdout.flush()
@@ -190,6 +194,7 @@ class PythonStreamingController:
     def close_controller(self, exit_code):
         sys.stderr.close()
         self.stream_error.write("\n")
+        logging.info('last')
         self.stream_error.close()
         sys.stdout.close()
         self.stream_output.write("\n")

@@ -157,6 +157,7 @@ public class PythonScriptExecutor {
       LOG.warn("Currently, logging is not supported for the python controller.");
       standardOutputRootWriteLocation = invokeContext.getQueryContext().get(QueryVars.PYTHON_CONTROLLER_LOG_DIR);
     }
+    standardOutputRootWriteLocation = "/home/jihoon/Projects/tajo/";
     String controllerLogFileName, outFileName, errOutFileName;
 
     String funcName = invocationDesc.getName();
@@ -264,8 +265,7 @@ public class PythonScriptExecutor {
         // We want it to be nothing (since that's what the user wrote).
         input = new VTuple(0);
       }
-      // TODO: Currently, errors occurred before executing an input are ignored.
-      outputQueue.clear();
+
       inputQueue.put(input);
     } catch (Exception e) {
       throw new RuntimeException("Failed adding input to inputQueue", e);
@@ -362,7 +362,8 @@ public class PythonScriptExecutor {
                   PYTHON_LANGUAGE, "Error deserializing output.  Please check that the declared outputSchema for function " +
                   invocationDesc.getName() + " matches the data type being returned.", e);
             }
-            outputQueue.put(ERROR_OUTPUT); // Need to wake main thread.
+            // TODO: Currently, errors occurred before executing an input are ignored.
+//            outputQueue.put(ERROR_OUTPUT); // Need to wake main thread.
           } catch(InterruptedException ie) {
             LOG.error(ie);
           }
@@ -398,7 +399,8 @@ public class PythonScriptExecutor {
         }
         outerrThreadsError = new StreamingUDFException(PYTHON_LANGUAGE, error.toString(), lineNumber);
         if (outputQueue != null) {
-          outputQueue.put(ERROR_OUTPUT); // Need to wake main thread.
+          // TODO: Currently, errors occurred before executing an input are ignored.
+//          outputQueue.put(ERROR_OUTPUT); // Need to wake main thread.
         }
         if (stderr != null) {
           stderr.close();
