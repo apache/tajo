@@ -4,6 +4,9 @@ Release 0.11.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1494: Add SeekableScanner support to DelimitedTextFileScanner.
+    (jinho)
+
     TAJO-921: Add STDDEV_SAMP and STDDEV_POP window functions. (Keuntae Park)
 
     TAJO-1135: Implement queryable virtual table for cluster information.
@@ -70,6 +73,12 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1469: allocateQueryMaster can leak resources if it times-out (3sec, 
+    hardcoded) (Contributed by navis, Committed by hyoungjun)
+
+    TAJO-1538: TajoWorkerResourceManager.allocatedResourceMap is increasing 
+    forever. (Contributed by navis. Committed by jinho)
 
     TAJO-1510: Change a function name from getFileCunks to getFileChunks.
     (Contributed by Soonwoong Lee, Committed by jaehwa)
@@ -159,6 +168,9 @@ Release 0.11.0 - unreleased
 
 
   SUB TASKS
+
+    TAJO-1529: Implement json_extract_path_text(string, string) function.
+    (jinho)
 
     TAJO-1338: Defines RESTful API for Clients. (jihun)
 

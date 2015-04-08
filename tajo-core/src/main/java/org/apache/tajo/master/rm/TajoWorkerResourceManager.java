@@ -37,7 +37,7 @@ import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.*;
 import org.apache.tajo.master.QueryInProgress;
 import org.apache.tajo.master.TajoMaster;
-import org.apache.tajo.rpc.CallFuture;
+import org.apache.tajo.rpc.CancelableRpcCallback;
 import org.apache.tajo.util.ApplicationIdUtils;
 
 import java.io.IOException;
@@ -209,23 +209,41 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
 
   @Override
   public WorkerAllocatedResource allocateQueryMaster(QueryInProgress queryInProgress) {
+
+    // 3 seconds, by default
+    long timeout = masterContext.getConf().getTimeVar(
+        TajoConf.ConfVars.TAJO_QUERYMASTER_ALLOCATION_TIMEOUT, TimeUnit.MILLISECONDS);
+
     // Create a resource request for a query master
     WorkerResourceAllocationRequest qmResourceRequest = createQMResourceRequest(queryInProgress.getQueryId());
 
     // call future for async call
-    CallFuture<WorkerResourceAllocationResponse> callFuture = new CallFuture<WorkerResourceAllocationResponse>();
+    final CancelableRpcCallback<WorkerResourceAllocationResponse> callFuture =
+        new CancelableRpcCallback<WorkerResourceAllocationResponse>() {
+          @Override
+          protected void cancel(WorkerResourceAllocationResponse canceled) {
+            if (canceled != null && !canceled.getWorkerAllocatedResourceList().isEmpty()) {
+              LOG.info("Canceling resources allocated");
+              WorkerAllocatedResource resource = canceled.getWorkerAllocatedResource(0);
+              releaseWorkerResource(resource.getContainerId());
+            }
+          }
+        };
     allocateWorkerResources(qmResourceRequest, callFuture);
 
-    // Wait for 3 seconds
     WorkerResourceAllocationResponse response = null;
     try {
-      response = callFuture.get(3, TimeUnit.SECONDS);
+      response = callFuture.get(timeout, TimeUnit.MILLISECONDS);
     } catch (Throwable t) {
-      LOG.error(t, t);
-      return null;
+      response = callFuture.cancel(); // try cancel
+      if (response == null) {
+        // canceled successfuly
+        LOG.warn("Got exception waiting resources for query master " + queryInProgress.getQueryId(), t);
+        return null;
+      }
     }
 
-    if (response.getWorkerAllocatedResourceList().size() == 0) {
+    if (response == null || response.getWorkerAllocatedResourceList().size() == 0) {
       return null;
     }
 
@@ -508,7 +526,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
    */
   @Override
   public void releaseWorkerResource(ContainerProtocol.TajoContainerIdProto containerId) {
-    AllocatedWorkerResource allocated = allocatedResourceMap.get(containerId);
+    AllocatedWorkerResource allocated = allocatedResourceMap.remove(containerId);
     if(allocated != null) {
       LOG.info("Release Resource: " + allocated.allocatedDiskSlots + "," + allocated.allocatedMemoryMB);
       allocated.worker.getResource().releaseResource( allocated.allocatedDiskSlots, allocated.allocatedMemoryMB);

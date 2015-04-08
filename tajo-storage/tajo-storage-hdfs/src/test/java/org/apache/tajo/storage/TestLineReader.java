@@ -104,7 +104,7 @@ public class TestLineReader {
   }
 
   @Test
-  public void testLineDelimitedReader() throws IOException {
+  public void testLineDelimitedReaderWithCompression() throws IOException {
     TajoConf conf = new TajoConf();
     Path testDir = CommonTestingUtil.getTestDir(TEST_PATH);
     FileSystem fs = testDir.getFileSystem(conf);
@@ -118,7 +118,7 @@ public class TestLineReader {
     TableMeta meta = CatalogUtil.newTableMeta(StoreType.TEXTFILE);
     meta.putOption("compression.codec", DeflateCodec.class.getCanonicalName());
 
-    Path tablePath = new Path(testDir, "line1." + DeflateCodec.class.getSimpleName());
+    Path tablePath = new Path(testDir, "testLineDelimitedReaderWithCompression." + DeflateCodec.class.getSimpleName());
     FileAppender appender = (FileAppender) StorageManager.getFileStorageManager(conf).getAppender(
         null, null, meta, schema, tablePath);
     appender.enableStats();
@@ -160,7 +160,55 @@ public class TestLineReader {
 
     IOUtils.cleanup(null, reader, fs);
     assertEquals(tupleNum, i);
+  }
 
+  @Test
+  public void testLineDelimitedReader() throws IOException {
+    TajoConf conf = new TajoConf();
+    Path testDir = CommonTestingUtil.getTestDir(TEST_PATH);
+    FileSystem fs = testDir.getFileSystem(conf);
+
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("age", Type.INT8);
+    schema.addColumn("comment", Type.TEXT);
+    schema.addColumn("comment2", Type.TEXT);
+
+    TableMeta meta = CatalogUtil.newTableMeta(StoreType.TEXTFILE);
+
+    Path tablePath = new Path(testDir, "testLineDelimitedReader");
+    FileAppender appender = (FileAppender) StorageManager.getFileStorageManager(conf).getAppender(
+        null, null, meta, schema, tablePath);
+    appender.enableStats();
+    appender.init();
+    int tupleNum = 10000;
+    VTuple vTuple;
+
+    for (int i = 0; i < tupleNum; i++) {
+      vTuple = new VTuple(4);
+      vTuple.put(0, DatumFactory.createInt4(i + 1));
+      vTuple.put(1, DatumFactory.createInt8(25l));
+      vTuple.put(2, DatumFactory.createText("emiya muljomdao"));
+      vTuple.put(3, NullDatum.get());
+      appender.addTuple(vTuple);
+    }
+    appender.close();
+
+    FileFragment fragment = new FileFragment("table", tablePath, 0, appender.getOffset());
+    DelimitedLineReader reader = new DelimitedLineReader(conf, fragment);
+    assertFalse(reader.isReadable());
+    reader.init();
+    assertTrue(reader.isReadable());
+
+
+    int i = 0;
+    while(reader.isReadable()){
+      ByteBuf buf = reader.readLine();
+      if(buf == null) break;
+      i++;
+    }
+    assertEquals(tupleNum, i);
+    IOUtils.cleanup(null, reader, fs);
   }
 
   @Test
@@ -214,6 +262,67 @@ public class TestLineReader {
       i++;
     }
     IOUtils.cleanup(null, reader);
+    assertEquals(status.getLen(), totalRead);
+    assertEquals(status.getLen(), reader.readBytes());
+  }
+
+  @Test
+  public void testSeekableByteBufLineReader() throws IOException {
+    TajoConf conf = new TajoConf();
+    Path testDir = CommonTestingUtil.getTestDir(TEST_PATH);
+    FileSystem fs = testDir.getFileSystem(conf);
+
+    Schema schema = new Schema();
+    schema.addColumn("id", Type.INT4);
+    schema.addColumn("age", Type.INT8);
+    schema.addColumn("comment", Type.TEXT);
+    schema.addColumn("comment2", Type.TEXT);
+
+    TableMeta meta = CatalogUtil.newTableMeta(StoreType.TEXTFILE);
+    Path tablePath = new Path(testDir, "testSeekableByteBufLineReader.data");
+    FileAppender appender = (FileAppender) StorageManager.getFileStorageManager(conf).getAppender(
+        null, null, meta, schema, tablePath);
+    appender.enableStats();
+    appender.init();
+    int tupleNum = 10000;
+    VTuple vTuple;
+
+    for (int i = 0; i < tupleNum; i++) {
+      vTuple = new VTuple(4);
+      vTuple.put(0, DatumFactory.createInt4(i + 1));
+      vTuple.put(1, DatumFactory.createInt8(25l));
+      vTuple.put(2, DatumFactory.createText("emiya muljomdao"));
+      vTuple.put(3, NullDatum.get());
+      appender.addTuple(vTuple);
+    }
+    appender.close();
+
+    FileStatus status = fs.getFileStatus(tablePath);
+
+    AtomicInteger bytes = new AtomicInteger();
+
+    InputChannel channel = new FSDataInputChannel(fs.open(tablePath));
+    ByteBufLineReader reader = new ByteBufLineReader(channel);
+
+    //seek to end of file
+    reader.seek(status.getLen());
+    assertNull(reader.readLineBuf(bytes));
+    assertEquals(0, bytes.get());
+
+    reader.seek(0);
+    long totalRead = 0;
+    int i = 0;
+
+    for(;;){
+      ByteBuf buf = reader.readLineBuf(bytes);
+      totalRead += bytes.get();
+      if(buf == null) break;
+      i++;
+    }
+
+    IOUtils.cleanup(null, reader, channel, fs);
+
+    assertEquals(tupleNum, i);
     assertEquals(status.getLen(), totalRead);
     assertEquals(status.getLen(), reader.readBytes());
   }
