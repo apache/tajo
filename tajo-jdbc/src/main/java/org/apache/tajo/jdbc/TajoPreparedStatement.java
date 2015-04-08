@@ -82,7 +82,7 @@ public class TajoPreparedStatement extends TajoStatement implements PreparedStat
     return updateCount;
   }
 
-  protected ResultSet executeImmediate(String sql) throws SQLException {
+  protected TajoResultSetBase executeImmediate(String sql) throws SQLException {
     checkConnection("Can't execute");
 
     try {
@@ -104,7 +104,7 @@ public class TajoPreparedStatement extends TajoStatement implements PreparedStat
    */
   private String updateSql(final String sql, HashMap<Integer, String> parameters) {
 
-    StringBuffer newSql = new StringBuffer(sql);
+    StringBuilder newSql = new StringBuilder(sql);
 
     int paramLoc = 1;
     while (getCharIndexFromSqlByParamLocation(sql, '?', paramLoc) > 0) {

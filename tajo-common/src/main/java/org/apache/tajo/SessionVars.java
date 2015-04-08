@@ -130,7 +130,7 @@ public enum SessionVars implements ConfigKey {
   // ResultSet ----------------------------------------------------------------
   FETCH_ROWNUM(ConfVars.$RESULT_SET_FETCH_ROWNUM, "Sets the number of rows at a time from Master", DEFAULT,
       Integer.class, Validators.min("0")),
-  FETCH_BLOCK(ConfVars.$RESULT_SET_BLOCK_WAIT, "Whether to block result set on query execution", DEFAULT,
+  BLOCK_ON_RESULT(ConfVars.$RESULT_SET_BLOCK_WAIT, "Whether to block result set on query execution", DEFAULT,
       Boolean.class, Validators.bool()),
 
   //-------------------------------------------------------------------------------

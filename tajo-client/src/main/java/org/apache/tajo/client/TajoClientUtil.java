@@ -30,6 +30,7 @@ import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.jdbc.TajoResultSetBase;
+import org.apache.tajo.rpc.RpcUtils;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 
 import java.io.IOException;
@@ -59,10 +60,32 @@ public class TajoClientUtil {
     return !isQueryWaitingForSchedule(state) && !isQueryRunning(state);
   }
 
+  /* query complete */
+  public static boolean isTerminal(TajoProtos.QueryState state) {
+    return state == TajoProtos.QueryState.QUERY_SUCCEEDED ||
+        state == TajoProtos.QueryState.QUERY_ERROR ||
+        state == TajoProtos.QueryState.QUERY_FAILED ||
+        state == TajoProtos.QueryState.QUERY_KILLED;
+  }
+
+  public static QueryStatus waitTerminal(QueryClient client, QueryId queryId, long timeout)
+      throws ServiceException {
+    QueryStatus status = client.getQueryStatus(queryId);
+
+    long interval = 100;
+    RpcUtils.Timer timer = new RpcUtils.Timer(timeout);
+    for (;!TajoClientUtil.isTerminal(status.getState()) && !timer.isTimedOut(); timer.elapsed()) {
+      timer.interval(interval);
+      status = client.getQueryStatus(queryId);
+      interval = Math.min(1000, interval << 1);
+    }
+    return status;
+  }
+
   public static QueryStatus waitCompletion(QueryClient client, QueryId queryId) throws ServiceException {
     QueryStatus status = client.getQueryStatus(queryId);
 
-    while(status != null && !TajoClientUtil.isQueryComplete(status.getState())) {
+    while(!isQueryComplete(status.getState())) {
       try {
         Thread.sleep(500);
       } catch (InterruptedException e) {

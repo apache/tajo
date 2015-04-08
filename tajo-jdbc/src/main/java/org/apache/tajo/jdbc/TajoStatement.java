@@ -42,7 +42,7 @@ public class TajoStatement implements Statement {
    * statement.getResultSet();
    * </code>.
    */
-  protected ResultSet resultSet = null;
+  protected TajoResultSetBase resultSet = null;
 
   /**
    * Add SQLWarnings to the warningChain if needed.
@@ -59,7 +59,7 @@ public class TajoStatement implements Statement {
   public TajoStatement(JdbcConnection conn, TajoClient tajoClient) {
     this.conn = conn;
     this.tajoClient = tajoClient;
-    this.blockWait = tajoClient.getProperties().getBool(SessionVars.FETCH_BLOCK);
+    this.blockWait = tajoClient.getProperties().getBool(SessionVars.BLOCK_ON_RESULT);
   }
 
   @Override
@@ -70,18 +70,15 @@ public class TajoStatement implements Statement {
   @Override
   public void cancel() throws SQLException {
     checkConnection("Can't cancel query");
-    if (!(resultSet instanceof TajoResultSetBase)) {
+    if (resultSet == null || resultSet.getQueryId().isNull()) {
       return;
     }
-    TajoResultSetBase result = (TajoResultSetBase)resultSet;
-    if (!result.getQueryId().isNull() && result.getSchema() == null) {
-      try {
-        tajoClient.killQuery(result.getQueryId());
-      } catch (Exception e) {
-        throw new SQLException(e);
-      } finally {
-        resultSet = null;
-      }
+    try {
+      tajoClient.killQuery(resultSet.getQueryId());
+    } catch (Exception e) {
+      throw new SQLException(e);
+    } finally {
+      resultSet = null;
     }
   }
 
@@ -112,7 +109,7 @@ public class TajoStatement implements Statement {
 
   @Override
   public boolean execute(String sql) throws SQLException {
-    resultSet = executeQuery(sql);
+    resultSet = (TajoResultSetBase) executeQuery(sql);
 
     return resultSet != null;
   }
@@ -148,7 +145,7 @@ public class TajoStatement implements Statement {
     }
   }
 
-  protected ResultSet executeSQL(String sql) throws SQLException, ServiceException, IOException {
+  protected TajoResultSetBase executeSQL(String sql) throws SQLException, ServiceException, IOException {
     if (isSetVariableQuery(sql)) {
       return setSessionVariable(tajoClient, sql);
     }
@@ -179,7 +176,7 @@ public class TajoStatement implements Statement {
     if (response.hasResultSet() || response.hasTableDesc()) {
       return TajoClientUtil.createResultSet(tajoClient, response, fetchSize);
     }
-    return tajoClient.createNullResultSet(queryId);
+    return TajoClientUtil.createNullResultSet(queryId);
   }
 
   protected void checkConnection(String errorMsg) throws SQLException {
@@ -204,7 +201,7 @@ public class TajoStatement implements Statement {
     return sql.trim().toLowerCase().startsWith("unset");
   }
 
-  public static ResultSet setSessionVariable(TajoClient client, String sql) throws SQLException {
+  private TajoResultSetBase setSessionVariable(TajoClient client, String sql) throws SQLException {
     int index = sql.toLowerCase().indexOf("set");
     if (index < 0) {
       throw new SQLException("SET statement should be started 'SET' keyword: " + sql);
@@ -225,7 +222,7 @@ public class TajoStatement implements Statement {
     return TajoClientUtil.createNullResultSet();
   }
 
-  public static ResultSet unSetSessionVariable(TajoClient client, String sql) throws SQLException {
+  private TajoResultSetBase unSetSessionVariable(TajoClient client, String sql) throws SQLException {
     int index = sql.toLowerCase().indexOf("unset");
     if (index < 0) {
       throw new SQLException("UNSET statement should be started 'UNSET' keyword: " + sql);
