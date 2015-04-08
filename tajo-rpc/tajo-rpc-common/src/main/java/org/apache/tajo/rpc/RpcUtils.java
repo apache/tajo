@@ -81,7 +81,7 @@ public class RpcUtils {
 
     public void elapsed() {
       long current = System.currentTimeMillis();
-      remaining -= (prev - current);
+      remaining -= current - prev;
       prev = current;
     }
 
