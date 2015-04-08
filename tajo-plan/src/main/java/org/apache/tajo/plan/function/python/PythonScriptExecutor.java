@@ -136,6 +136,7 @@ public class PythonScriptExecutor {
 
   public void stop() throws IOException, InterruptedException {
     isStopped = true;
+    process.destroy();
     if (stdin != null) {
       stdin.close();
     }
@@ -147,10 +148,9 @@ public class PythonScriptExecutor {
     }
     inputHandler.close(process);
     outputHandler.close();
-    stdinThread.join();
-    stderrThread.join();
-    stdoutThread.join();
-    process.destroy();
+//    stdinThread.join();
+//    stderrThread.join();
+//    stdoutThread.join();
   }
 
   private StreamingCommand startUdfController() throws IOException {
@@ -228,14 +228,14 @@ public class PythonScriptExecutor {
   }
 
   private void startThreads() {
-    stdinThread = new ProcessInputThread();
-    stdinThread.start();
+//    stdinThread = new ProcessInputThread();
+//    stdinThread.start();
 
-    stdoutThread = new ProcessOutputThread();
-    stdoutThread.start();
+//    stdoutThread = new ProcessOutputThread();
+//    stdoutThread.start();
 
-    stderrThread = new ProcessErrorThread();
-    stderrThread.start();
+//    stderrThread = new ProcessErrorThread();
+//    stderrThread.start();
   }
 
   /**
@@ -286,14 +286,17 @@ public class PythonScriptExecutor {
         input = new VTuple(0);
       }
 
-      inputQueue.put(input);
+//      inputQueue.put(input);
+      inputHandler.putNext(input);
+      stdin.flush();
     } catch (Exception e) {
       throw new RuntimeException("Failed adding input to inputQueue", e);
     }
     Object o = null;
     try {
       if (outputQueue != null) {
-        o = outputQueue.take();
+//        o = outputQueue.take();
+        o = outputHandler.getNext().get(0);
         if (o == NULL_OBJECT) {
           o = null;
         }
