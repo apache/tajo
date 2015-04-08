@@ -74,6 +74,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1469: allocateQueryMaster can leak resources if it times-out (3sec, 
+    hardcoded) (Contributed by navis, Committed by hyoungjun)
+
     TAJO-1538: TajoWorkerResourceManager.allocatedResourceMap is increasing 
     forever. (Contributed by navis. Committed by jinho)
 
