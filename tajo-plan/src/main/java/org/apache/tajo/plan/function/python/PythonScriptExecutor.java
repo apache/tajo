@@ -134,7 +134,7 @@ public class PythonScriptExecutor {
     startThreads();
   }
 
-  public void stop() throws IOException, InterruptedException {
+  public void shutdown() throws IOException, InterruptedException {
     isStopped = true;
     process.destroy();
     if (stdin != null) {
@@ -148,6 +148,7 @@ public class PythonScriptExecutor {
     }
     inputHandler.close(process);
     outputHandler.close();
+    LOG.info("shutdowned");
 //    stdinThread.join();
 //    stderrThread.join();
 //    stdoutThread.join();
@@ -157,6 +158,8 @@ public class PythonScriptExecutor {
     StreamingCommand sc = new StreamingCommand(buildCommand());
     ProcessBuilder processBuilder = StreamingUtil.createProcess(invokeContext.getQueryContext(), sc);
     process = processBuilder.start();
+
+    Runtime.getRuntime().addShutdownHook(new ProcessKiller());
 
     return sc;
   }
@@ -439,6 +442,21 @@ public class PythonScriptExecutor {
         LOG.info("Process Ended", e);
       } catch (Exception e) {
         LOG.error("standard error problem", e);
+      }
+    }
+  }
+
+  class ProcessKiller extends Thread {
+    public ProcessKiller() {
+      setDaemon(true);
+    }
+    public void run() {
+      try {
+        shutdown();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e);
       }
     }
   }

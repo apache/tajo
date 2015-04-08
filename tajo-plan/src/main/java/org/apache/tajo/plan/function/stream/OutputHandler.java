@@ -91,6 +91,7 @@ public class OutputHandler {
     if (!readValue()) {
       return null;
     }
+    buf.clear();
     buf.writeBytes(currValue.getBytes());
     try {
       deserializer.deserialize(buf, tuple);
