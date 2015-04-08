@@ -26,6 +26,9 @@ import org.apache.tajo.util.KeyValueSet;
 import java.util.Arrays;
 import java.util.Map;
 
+/**
+ * This class contains some metadata need to execute functions.
+ */
 public class FunctionInvokeContext {
   private final OverridableConf queryContext;
   private final FunctionEval.ParamType[] paramTypes;

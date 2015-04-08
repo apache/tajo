@@ -34,18 +34,11 @@ import java.io.InputStream;
 /**
  * {@link OutputHandler} is responsible for handling the output of the
  * Tajo-Streaming external command.
- *
- * The output of the managed executable could be fetched in a
- * {@link OutputType#SYNCHRONOUS} manner via its <code>stdout</code> or in an
- * {@link OutputType#ASYNCHRONOUS} manner via an external file to which the
- * process wrote its output.
  */
-public abstract class OutputHandler {
+public class OutputHandler {
   private static int DEFAULT_BUFFER = 64 * 1024;
   public static final Object END_OF_OUTPUT = new Object();
-  private static final byte[] DEFAULT_RECORD_DELIM = new byte[] {'\n'};
-
-  public enum OutputType {SYNCHRONOUS, ASYNCHRONOUS}
+  private static final byte[] DEFAULT_RECORD_DELIM = ",".getBytes();
 
   protected TextLineDeserializer deserializer;
 
@@ -65,6 +58,10 @@ public abstract class OutputHandler {
 
   // flag to mark if close() has already been called
   protected boolean alreadyClosed = false;
+
+  public OutputHandler(TextLineDeserializer deserializer) {
+    this.deserializer = deserializer;
+  }
 
   /**
    * Bind the <code>OutputHandler</code> to the <code>InputStream</code>
