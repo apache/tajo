@@ -21,6 +21,7 @@ package org.apache.tajo.function;
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.util.ClassUtil;
 import org.apache.tajo.util.TUtil;
@@ -121,7 +122,7 @@ public class StaticMethodInvocationDesc implements ProtoObject<StaticMethodInvoc
 
 
   @Override
-  public StaticMethodInvocationDescProto getProto() {
+  public StaticMethodInvocationDescProto getProto(SerializeOption option) {
     StaticMethodInvocationDescProto.Builder builder = StaticMethodInvocationDescProto.newBuilder();
     builder.setClassName(baseClassName.getName());
     builder.setMethodName(methodName);

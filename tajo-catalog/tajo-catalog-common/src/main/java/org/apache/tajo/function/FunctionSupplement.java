@@ -19,6 +19,7 @@
 package org.apache.tajo.function;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.common.ProtoObject;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionSupplementProto;
@@ -88,15 +89,15 @@ public class FunctionSupplement implements ProtoObject<FunctionSupplementProto>,
   }
 
   @Override
-  public FunctionSupplementProto getProto() {
+  public FunctionSupplementProto getProto(SerializeOption option) {
     FunctionSupplementProto.Builder builder = FunctionSupplementProto.newBuilder();
-    if (shortDescription != null) {
+    if (shortDescription != null && option != SerializeOption.INTERNAL) {
       builder.setShortDescription(shortDescription);
     }
-    if (detail != null) {
+    if (detail != null && option != SerializeOption.INTERNAL) {
       builder.setDetail(detail);
     }
-    if (example != null) {
+    if (example != null && option != SerializeOption.INTERNAL) {
       builder.setExample(example);
     }
     return builder.build();

@@ -24,6 +24,7 @@ package org.apache.tajo.catalog.statistics;
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import com.google.protobuf.ByteString;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -144,17 +145,17 @@ public class ColumnStats implements ProtoObject<CatalogProtos.ColumnStatsProto>,
   }
 
   @Override
-  public String toJson() {
+  public String toJson(SerializeOption option) {
     return CatalogGsonHelper.toJson(this, ColumnStats.class);
   }
 
 
   @Override
-  public CatalogProtos.ColumnStatsProto getProto() {
+  public CatalogProtos.ColumnStatsProto getProto(SerializeOption option) {
     CatalogProtos.ColumnStatsProto.Builder builder = CatalogProtos.ColumnStatsProto.newBuilder();
 
     if (this.column != null) {
-      builder.setColumn(this.column.getProto());
+      builder.setColumn(this.column.getProto(option));
     }
     if (this.numDistVals != null) {
       builder.setNumDistVal(this.numDistVals);

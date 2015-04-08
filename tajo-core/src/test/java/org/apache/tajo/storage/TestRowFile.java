@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TpchTestBase;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -77,7 +78,7 @@ public class TestRowFile {
     FileSystem fs = sm.getFileSystem();
     fs.mkdirs(tablePath);
 
-    FileUtil.writeProto(fs, metaPath, meta.getProto());
+    FileUtil.writeProto(fs, metaPath, meta.getProto(SerializeOption.GENERIC));
 
     Appender appender = sm.getAppender(meta, schema, dataPath);
     appender.enableStats();

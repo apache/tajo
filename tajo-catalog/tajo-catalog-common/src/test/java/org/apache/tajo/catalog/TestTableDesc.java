@@ -19,6 +19,7 @@
 package org.apache.tajo.catalog;
 
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -89,7 +90,7 @@ public class TestTableDesc {
     Path path = new Path(CommonTestingUtil.getTestDir(), "tajo");
     TableDesc desc = new TableDesc("table1", schema, info, path.toUri());
     desc.setStats(stats);
-    CatalogProtos.TableDescProto proto = desc.getProto();
+    CatalogProtos.TableDescProto proto = desc.getProto(SerializeOption.GENERIC);
 
     TableDesc fromProto = new TableDesc(proto);
     assertEquals("equality check the object deserialized from json", desc, fromProto);
@@ -100,11 +101,11 @@ public class TestTableDesc {
     Path path = new Path(CommonTestingUtil.getTestDir(), "tajo");
     TableDesc desc = new TableDesc("table1", schema, info, path.toUri());
     desc.setStats(stats);
-    String json = desc.toJson();
+    String json = desc.toJson(SerializeOption.GENERIC);
 
     TableDesc fromJson = CatalogGsonHelper.fromJson(json, TableDesc.class);
     assertEquals("equality check the object deserialized from json", desc, fromJson);
-    assertEquals("equality between protos", desc.getProto(), fromJson.getProto());
+    assertEquals("equality between protos", desc.getProto(SerializeOption.GENERIC), fromJson.getProto(SerializeOption.GENERIC));
   }
 
   public TableDesc testClone(TableDesc desc) throws CloneNotSupportedException {

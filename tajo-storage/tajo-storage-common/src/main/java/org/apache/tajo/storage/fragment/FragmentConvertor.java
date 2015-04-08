@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.protobuf.ByteString;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.annotation.ThreadSafe;
 
 import java.io.IOException;
@@ -111,19 +112,19 @@ public class FragmentConvertor {
     return list;
   }
 
-  public static List<FragmentProto> toFragmentProtoList(Fragment... fragments) {
+  public static List<FragmentProto> toFragmentProtoList(SerializeOption option, Fragment... fragments) {
     List<FragmentProto> list = Lists.newArrayList();
     if (fragments == null) {
       return list;
     }
     for (Fragment fragment : fragments) {
-      list.add(fragment.getProto());
+      list.add(fragment.getProto(option));
     }
     return list;
   }
 
-  public static FragmentProto [] toFragmentProtoArray(Fragment... fragments) {
-    List<FragmentProto> list = toFragmentProtoList(fragments);
+  public static FragmentProto [] toFragmentProtoArray(SerializeOption option, Fragment... fragments) {
+    List<FragmentProto> list = toFragmentProtoList(option, fragments);
     return list.toArray(new FragmentProto[list.size()]);
   }
 }

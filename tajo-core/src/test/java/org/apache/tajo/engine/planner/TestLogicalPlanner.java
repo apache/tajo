@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.TajoTestingCluster;
@@ -520,7 +521,7 @@ public class TestLogicalPlanner {
     for (Map.Entry<BinaryEval, Boolean> entry : qualMap.entrySet()) {
       if (!entry.getValue().booleanValue()) {
         Preconditions.checkArgument(false,
-            "JoinQual not found. -> required JoinQual:" + entry.getKey().toJson());
+            "JoinQual not found. -> required JoinQual:" + entry.getKey().toJson(SerializeOption.GENERIC));
       }
     }
   }
@@ -561,7 +562,7 @@ public class TestLogicalPlanner {
     for (Map.Entry<BinaryEval, Boolean> entry : qualMap.entrySet()) {
       if (!entry.getValue().booleanValue()) {
         Preconditions.checkArgument(false,
-            "SelectionQual not found. -> required JoinQual:" + entry.getKey().toJson());
+            "SelectionQual not found. -> required JoinQual:" + entry.getKey().toJson(SerializeOption.GENERIC));
       }
     }
   }
@@ -607,7 +608,7 @@ public class TestLogicalPlanner {
     for (Map.Entry<BinaryEval, Boolean> entry : qualMap.entrySet()) {
       if (!entry.getValue().booleanValue()) {
         Preconditions.checkArgument(false,
-            "ScanQual not found. -> required JoinQual:" + entry.getKey().toJson());
+            "ScanQual not found. -> required JoinQual:" + entry.getKey().toJson(SerializeOption.GENERIC));
       }
     }
   }
@@ -677,14 +678,14 @@ public class TestLogicalPlanner {
     for (Map.Entry<BinaryEval, Boolean> entry : joinQualMap.entrySet()) {
       if (!entry.getValue().booleanValue()) {
         Preconditions.checkArgument(false,
-            "JoinQual not found. -> required JoinQual:" + entry.getKey().toJson());
+            "JoinQual not found. -> required JoinQual:" + entry.getKey().toJson(SerializeOption.GENERIC));
       }
     }
 
     for (Map.Entry<BinaryEval, Boolean> entry : scanMap.entrySet()) {
       if (!entry.getValue().booleanValue()) {
         Preconditions.checkArgument(false,
-            "ScanQual not found. -> required JoinQual:" + entry.getKey().toJson());
+            "ScanQual not found. -> required JoinQual:" + entry.getKey().toJson(SerializeOption.GENERIC));
       }
     }
   }
@@ -817,7 +818,7 @@ public class TestLogicalPlanner {
 	  LogicalNode plan = planner.createPlan(qc, expr).getRootBlock().getRoot();
     testJsonSerDerObject(plan);
 
-	  String json = plan.toJson();
+	  String json = plan.toJson(SerializeOption.GENERIC);
 	  LogicalNode fromJson = CoreGsonHelper.fromJson(json, LogicalNode.class);
 	  assertEquals(NodeType.ROOT, fromJson.getType());
 	  LogicalNode project = ((LogicalRootNode)fromJson).getChild();
@@ -1098,7 +1099,7 @@ public class TestLogicalPlanner {
   }
 
   public void testJsonSerDerObject(LogicalNode rootNode) {
-    String json = rootNode.toJson();
+    String json = rootNode.toJson(SerializeOption.GENERIC);
     LogicalNode fromJson = CoreGsonHelper.fromJson(json, LogicalNode.class);
     assertTrue("JSON (de) serialization equivalence check", rootNode.deepEquals(fromJson));
   }

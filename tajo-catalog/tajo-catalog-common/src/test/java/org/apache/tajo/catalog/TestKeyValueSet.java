@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.Test;
@@ -88,7 +89,7 @@ public class TestKeyValueSet {
 		opts.set("name", "abc");
 		opts.set("delimiter", ",");
 		
-		PrimitiveProtos.KeyValueSetProto proto = opts.getProto();
+		PrimitiveProtos.KeyValueSetProto proto = opts.getProto(SerializeOption.GENERIC);
 		KeyValueSet opts2 = new KeyValueSet(proto);
 		
 		assertEquals(opts, opts2);
@@ -109,7 +110,7 @@ public class TestKeyValueSet {
       assertTrue(true);
     }
 		
-		KeyValueSet opts2 = new KeyValueSet(opts.getProto());
+		KeyValueSet opts2 = new KeyValueSet(opts.getProto(SerializeOption.GENERIC));
     try {
       opts2.get("name");
       assertTrue(false);

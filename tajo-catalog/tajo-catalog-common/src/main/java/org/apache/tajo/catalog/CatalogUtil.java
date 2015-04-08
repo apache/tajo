@@ -20,11 +20,11 @@ package org.apache.tajo.catalog;
 
 import com.google.common.collect.Maps;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.DataTypeUtil;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.common.TajoDataTypes;
@@ -328,7 +328,7 @@ public class CatalogUtil {
   public static SchemaProto getQualfiedSchema(String tableName, SchemaProto schema) {
     Schema restored = new Schema(schema);
     restored.setQualifier(tableName);
-    return restored.getProto();
+    return restored.getProto(SerializeOption.GENERIC);
   }
 
   public static DataType newDataType(Type type, String code) {

@@ -18,6 +18,7 @@
 
 package org.apache.tajo.storage.fragment;
 
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.common.ProtoObject;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FragmentProto;
@@ -27,7 +28,7 @@ public interface Fragment extends ProtoObject<FragmentProto> {
   public abstract String getTableName();
 
   @Override
-  public abstract FragmentProto getProto();
+  public abstract FragmentProto getProto(SerializeOption option);
 
   public abstract long getLength();
 

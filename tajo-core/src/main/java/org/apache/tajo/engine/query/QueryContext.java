@@ -20,6 +20,7 @@ package org.apache.tajo.engine.query;
 
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.ConfigKey;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.QueryVars;
 import org.apache.tajo.SessionVars;
@@ -107,7 +108,8 @@ public class QueryContext extends OverridableConf {
   }
 
   public void setPartitionMethod(PartitionMethodDesc partitionMethodDesc) {
-    put(QueryVars.OUTPUT_PARTITIONS, partitionMethodDesc != null ? partitionMethodDesc.toJson() : null);
+    put(QueryVars.OUTPUT_PARTITIONS,
+        partitionMethodDesc != null ? partitionMethodDesc.toJson(SerializeOption.GENERIC) : null);
   }
 
 //  public PartitionMethodDesc getPartitionMethod() {

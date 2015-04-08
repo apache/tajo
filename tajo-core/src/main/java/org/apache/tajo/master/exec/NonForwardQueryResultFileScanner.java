@@ -22,6 +22,7 @@ import com.google.protobuf.ByteString;
 
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TaskId;
 import org.apache.tajo.catalog.Column;
@@ -110,7 +111,8 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     fragments = storageManager.getNonForwardSplit(tableDesc, currentFragmentIndex, MAX_FRAGMENT_NUM_PER_SCAN);
 
     if (fragments != null && !fragments.isEmpty()) {
-      FragmentProto[] fragmentProtos = FragmentConvertor.toFragmentProtoArray(fragments.toArray(new Fragment[] {}));
+      FragmentProto[] fragmentProtos = FragmentConvertor.toFragmentProtoArray(
+          SerializeOption.INTERNAL, fragments.toArray(new Fragment[fragments.size()]));
       this.taskContext = new TaskAttemptContext(
           new QueryContext(tajoConf), null, 
           new TaskAttemptId(new TaskId(new ExecutionBlockId(queryId, 1), 0), 0), 

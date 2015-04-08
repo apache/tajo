@@ -24,6 +24,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.storage.StorageFragmentProtos.*;
@@ -211,7 +212,7 @@ public class FileFragment implements Fragment, Comparable<FileFragment>, Cloneab
         + getLength() + "}" ;
   }
 
-  public FragmentProto getProto() {
+  public FragmentProto getProto(SerializeOption option) {
     FileFragmentProto.Builder builder = FileFragmentProto.newBuilder();
     builder.setId(this.tableName);
     builder.setStartOffset(this.startOffset);

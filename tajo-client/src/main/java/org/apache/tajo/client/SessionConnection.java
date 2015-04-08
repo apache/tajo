@@ -21,6 +21,7 @@ package org.apache.tajo.client;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoIdProtos;
 import org.apache.tajo.annotation.Nullable;
@@ -164,7 +165,7 @@ public class SessionConnection implements Closeable {
         keyValueSet.putAll(variables);
         ClientProtos.UpdateSessionVariableRequest request = ClientProtos.UpdateSessionVariableRequest.newBuilder()
             .setSessionId(sessionId)
-            .setSessionVars(keyValueSet.getProto()).build();
+            .setSessionVars(keyValueSet.getProto(SerializeOption.GENERIC)).build();
 
         SessionUpdateResponse response = tajoMasterService.updateSessionVariables(null, request);
 
@@ -364,7 +365,7 @@ public class SessionConnection implements Closeable {
           keyValueSet.putAll(sessionVarsCache);
           ClientProtos.UpdateSessionVariableRequest request = ClientProtos.UpdateSessionVariableRequest.newBuilder()
               .setSessionId(sessionId)
-              .setSessionVars(keyValueSet.getProto()).build();
+              .setSessionVars(keyValueSet.getProto(SerializeOption.GENERIC)).build();
 
           if (tajoMasterService.updateSessionVariables(null, request).getResultCode() != ResultCode.OK) {
             tajoMasterService.removeSession(null, sessionId);

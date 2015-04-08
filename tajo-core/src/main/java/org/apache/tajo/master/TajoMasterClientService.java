@@ -29,6 +29,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.service.AbstractService;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoIdProtos;
@@ -177,7 +178,7 @@ public class TajoMasterClientService extends AbstractService {
     public SessionUpdateResponse buildSessionUpdateOnSuccess(Map<String, String> variables) {
       SessionUpdateResponse.Builder builder = SessionUpdateResponse.newBuilder();
       builder.setResultCode(ResultCode.OK);
-      builder.setSessionVars(new KeyValueSet(variables).getProto());
+      builder.setSessionVars(new KeyValueSet(variables).getProto(SerializeOption.GENERIC));
       return builder.build();
     }
 
@@ -242,7 +243,7 @@ public class TajoMasterClientService extends AbstractService {
         String sessionId = request.getId();
         KeyValueSet keyValueSet = new KeyValueSet();
         keyValueSet.putAll(context.getSessionManager().getAllVariables(sessionId));
-        return keyValueSet.getProto();
+        return keyValueSet.getProto(SerializeOption.GENERIC);
       } catch (Throwable t) {
         throw new ServiceException(t);
       }
@@ -361,7 +362,7 @@ public class TajoMasterClientService extends AbstractService {
         switch (queryInfo.getQueryState()) {
           case QUERY_SUCCEEDED:
             if (queryInfo.hasResultdesc()) {
-              builder.setTableDesc(queryInfo.getResultDesc().getProto());
+              builder.setTableDesc(queryInfo.getResultDesc().getProto(SerializeOption.GENERIC));
             }
             break;
           case QUERY_FAILED:
@@ -550,7 +551,7 @@ public class TajoMasterClientService extends AbstractService {
 
         List<ByteString> rows = queryResultScanner.getNextRows(request.getFetchRowNum());
 
-        resultSetBuilder.setSchema(queryResultScanner.getLogicalSchema().getProto());
+        resultSetBuilder.setSchema(queryResultScanner.getLogicalSchema().getProto(SerializeOption.GENERIC));
         resultSetBuilder.addAllSerializedTuples(rows);
 
         builder.setResultSet(resultSetBuilder.build());
@@ -603,7 +604,7 @@ public class TajoMasterClientService extends AbstractService {
         }
 
         if (queryInfo != null) {
-          builder.setQueryInfo(queryInfo.getProto());
+          builder.setQueryInfo(queryInfo.getProto(SerializeOption.GENERIC));
         }
         builder.setResultCode(ResultCode.OK);
       } catch (Throwable t) {
@@ -652,7 +653,7 @@ public class TajoMasterClientService extends AbstractService {
         for(Worker worker: workers.values()) {
           WorkerResource workerResource = worker.getResource();
 
-          workerBuilder.setConnectionInfo(worker.getConnectionInfo().getProto());
+          workerBuilder.setConnectionInfo(worker.getConnectionInfo().getProto(SerializeOption.GENERIC));
           workerBuilder.setDiskSlots(workerResource.getDiskSlots());
           workerBuilder.setCpuCoreSlots(workerResource.getCpuCoreSlots());
           workerBuilder.setMemoryMB(workerResource.getMemoryMB());
@@ -802,7 +803,7 @@ public class TajoMasterClientService extends AbstractService {
         if (catalog.existsTable(databaseName, tableName)) {
           return TableResponse.newBuilder()
               .setResultCode(ResultCode.OK)
-              .setTableDesc(catalog.getTableDesc(databaseName, tableName).getProto())
+              .setTableDesc(catalog.getTableDesc(databaseName, tableName).getProto(SerializeOption.GENERIC))
               .build();
         } else {
           return TableResponse.newBuilder()
@@ -849,7 +850,7 @@ public class TajoMasterClientService extends AbstractService {
 
         return TableResponse.newBuilder()
             .setResultCode(ResultCode.OK)
-            .setTableDesc(desc.getProto()).build();
+            .setTableDesc(desc.getProto(SerializeOption.GENERIC)).build();
       } catch (InvalidSessionException ise) {
         return TableResponse.newBuilder()
             .setResultCode(ResultCode.ERROR)
@@ -889,10 +890,10 @@ public class TajoMasterClientService extends AbstractService {
 
         for (FunctionDesc eachFunction: functions) {
           if (functionName == null || functionName.isEmpty()) {
-            functionProtos.add(eachFunction.getProto());
+            functionProtos.add(eachFunction.getProto(SerializeOption.GENERIC));
           } else {
             if(functionName.equals(eachFunction.getFunctionName())) {
-              functionProtos.add(eachFunction.getProto());
+              functionProtos.add(eachFunction.getProto(SerializeOption.GENERIC));
             }
           }
         }

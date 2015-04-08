@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableProto;
@@ -42,7 +43,7 @@ public class TestTableMeta {
     schema1.addColumn("addr", Type.TEXT);
     TableMeta meta1 = CatalogUtil.newTableMeta(StoreType.CSV);
     
-    TableMeta meta2 = new TableMeta(meta1.getProto());
+    TableMeta meta2 = new TableMeta(meta1.getProto(SerializeOption.GENERIC));
     assertEquals(meta1, meta2);
   }
   
@@ -89,16 +90,16 @@ public class TestTableMeta {
   
   @Test
   public void testGetProto() {
-    TableProto proto = meta.getProto();
+    TableProto proto = meta.getProto(SerializeOption.GENERIC);
     TableMeta newMeta = new TableMeta(proto);
     assertEquals(meta, newMeta);
   }
 
   @Test
   public void testToJson() {
-    String json = meta.toJson();
+    String json = meta.toJson(SerializeOption.GENERIC);
     TableMeta fromJson = CatalogGsonHelper.fromJson(json, TableMeta.class);
     assertEquals(meta, fromJson);
-    assertEquals(meta.getProto(), fromJson.getProto());
+    assertEquals(meta.getProto(SerializeOption.GENERIC), fromJson.getProto(SerializeOption.GENERIC));
   }
 }

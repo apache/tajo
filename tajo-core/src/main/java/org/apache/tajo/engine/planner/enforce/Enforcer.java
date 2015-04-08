@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.enforce;
 
 
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -78,7 +79,7 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
     SortedInputEnforce.Builder enforce = SortedInputEnforce.newBuilder();
     enforce.setTableName(tableName);
     for (SortSpec sortSpec : sortSpecs) {
-      enforce.addSortSpecs(sortSpec.getProto());
+      enforce.addSortSpecs(sortSpec.getProto(SerializeOption.INTERNAL));
     }
 
     builder.setType(EnforceType.SORTED_INPUT);
@@ -113,7 +114,7 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
     enforce.setAlgorithm(GroupbyAlgorithm.SORT_AGGREGATION);
     if (sortSpecs != null) {
       for (SortSpec sortSpec : sortSpecs) {
-        enforce.addSortSpecs(sortSpec.getProto());
+        enforce.addSortSpecs(sortSpec.getProto(SerializeOption.INTERNAL));
       }
     }
 
@@ -238,7 +239,7 @@ public class Enforcer implements ProtoObject<EnforcerProto> {
   }
 
   @Override
-  public EnforcerProto getProto() {
+  public EnforcerProto getProto(SerializeOption option) {
     EnforcerProto.Builder builder = EnforcerProto.newBuilder();
     builder.addAllProperties(getProperties());
     return builder.build();

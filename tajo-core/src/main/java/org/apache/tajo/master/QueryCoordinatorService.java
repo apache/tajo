@@ -23,6 +23,7 @@ import com.google.protobuf.RpcController;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.service.AbstractService;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
@@ -148,7 +149,7 @@ public class QueryCoordinatorService extends AbstractService {
 
         WorkerResourceProto.Builder workerResource = WorkerResourceProto.newBuilder();
 
-        workerResource.setConnectionInfo(worker.getConnectionInfo().getProto());
+        workerResource.setConnectionInfo(worker.getConnectionInfo().getProto(SerializeOption.INTERNAL));
         workerResource.setMemoryMB(resource.getMemoryMB());
         workerResource.setDiskSlots(resource.getDiskSlots());
 

@@ -20,6 +20,7 @@ package org.apache.tajo.engine.eval;
 
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.algebra.Expr;
@@ -322,7 +323,7 @@ public class ExprTestBase {
   }
 
   public static void assertEvalTreeProtoSerDer(OverridableConf context, EvalNode evalNode) {
-    PlanProto.EvalNodeTree converted = EvalNodeSerializer.serialize(evalNode);
+    PlanProto.EvalNodeTree converted = EvalNodeSerializer.serialize(evalNode, SerializeOption.GENERIC);
     assertEquals(evalNode, EvalNodeDeserializer.deserialize(context, converted));
   }
 }

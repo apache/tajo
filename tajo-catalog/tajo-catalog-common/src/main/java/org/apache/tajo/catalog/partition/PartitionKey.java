@@ -20,6 +20,7 @@ package org.apache.tajo.catalog.partition;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
@@ -105,7 +106,7 @@ public class PartitionKey implements ProtoObject<CatalogProtos.PartitionKeyProto
   }
 
   @Override
-  public CatalogProtos.PartitionKeyProto getProto() {
+  public CatalogProtos.PartitionKeyProto getProto(SerializeOption option) {
     if (builder == null) {
       builder = CatalogProtos.PartitionKeyProto.newBuilder();
     }
@@ -127,7 +128,7 @@ public class PartitionKey implements ProtoObject<CatalogProtos.PartitionKeyProto
   }
 
   @Override
-  public String toJson() {
+  public String toJson(SerializeOption option) {
     return CatalogGsonHelper.toJson(this, PartitionKey.class);
   }
 

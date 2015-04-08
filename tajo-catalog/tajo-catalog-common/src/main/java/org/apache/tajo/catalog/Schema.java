@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.gson.annotations.Expose;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.SchemaUtil.ColumnVisitor;
 import org.apache.tajo.catalog.exception.AlreadyExistsFieldException;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
@@ -362,7 +363,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	public boolean equals(Object o) {
 		if (o instanceof Schema) {
 		  Schema other = (Schema) o;
-		  return getProto().equals(other.getProto());
+		  return getProto(SerializeOption.GENERIC).equals(other.getProto(SerializeOption.GENERIC));
 		}
 		return false;
 	}
@@ -379,16 +380,17 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
   }
 
 	@Override
-	public SchemaProto getProto() {
+	public SchemaProto getProto(SerializeOption option) {
     SchemaProto.Builder builder = SchemaProto.newBuilder();
-    SchemaProtoBuilder recursiveBuilder = new SchemaProtoBuilder(builder);
+    SchemaProtoBuilder recursiveBuilder = new SchemaProtoBuilder(builder, option);
     SchemaUtil.visitSchema(this, recursiveBuilder);
     return builder.build();
 	}
 
   private static class SchemaProtoBuilder implements ColumnVisitor {
     private SchemaProto.Builder builder;
-    public SchemaProtoBuilder(SchemaProto.Builder builder) {
+    private SerializeOption option;
+    public SchemaProtoBuilder(SchemaProto.Builder builder, SerializeOption option) {
       this.builder = builder;
     }
 
@@ -399,12 +401,12 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
         DataType.Builder updatedType = DataType.newBuilder(column.getDataType());
         updatedType.setNumNestedFields(column.typeDesc.nestedRecordSchema.size());
 
-        ColumnProto.Builder updatedColumn = ColumnProto.newBuilder(column.getProto());
+        ColumnProto.Builder updatedColumn = ColumnProto.newBuilder(column.getProto(option));
         updatedColumn.setDataType(updatedType);
 
         builder.addFields(updatedColumn.build());
       } else {
-        builder.addFields(column.getProto());
+        builder.addFields(column.getProto(option));
       }
     }
   }
@@ -426,7 +428,7 @@ public class Schema implements ProtoObject<SchemaProto>, Cloneable, GsonObject {
 	}
 
   @Override
-	public String toJson() {
+	public String toJson(SerializeOption option) {
 	  return CatalogGsonHelper.toJson(this, Schema.class);
 	}
 

@@ -20,6 +20,7 @@ package org.apache.tajo.function;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.util.TUtil;
@@ -105,7 +106,7 @@ public class FunctionSignature implements Comparable<FunctionSignature>, ProtoOb
   }
 
   @Override
-  public FunctionSignatureProto getProto() {
+  public FunctionSignatureProto getProto(SerializeOption option) {
     FunctionSignatureProto.Builder builder = FunctionSignatureProto.newBuilder();
     builder.setType(functionType);
     builder.setName(name);

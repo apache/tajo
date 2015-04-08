@@ -25,6 +25,7 @@ import com.google.gson.annotations.Expose;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -196,30 +197,30 @@ public class TableDesc implements ProtoObject<TableDescProto>, GsonObject, Clone
     return gson.toJson(this);
   }
 	
-	public String toJson() {
+	public String toJson(SerializeOption option) {
 		return CatalogGsonHelper.toJson(this, TableDesc.class);
 	}
 
-  public TableDescProto getProto() {
+  public TableDescProto getProto(SerializeOption option) {
     TableDescProto.Builder builder = TableDescProto.newBuilder();
 
     if (this.tableName != null) {
       builder.setTableName(this.tableName);
     }
     if (this.schema != null) {
-      builder.setSchema(schema.getProto());
+      builder.setSchema(schema.getProto(option));
     }
     if (this.meta != null) {
-      builder.setMeta(meta.getProto());
+      builder.setMeta(meta.getProto(option));
     }
     if (this.uri != null) {
       builder.setPath(this.uri.toString());
     }
     if (this.stats != null) {
-      builder.setStats(this.stats.getProto());
+      builder.setStats(this.stats.getProto(option));
     }
     if (this.partitionMethodDesc != null) {
-      builder.setPartition(this.partitionMethodDesc.getProto());
+      builder.setPartition(this.partitionMethodDesc.getProto(option));
     }
     if (this.external != null) {
       builder.setIsExternal(external);

@@ -20,6 +20,7 @@ package org.apache.tajo.catalog;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.json.GsonObject;
@@ -103,7 +104,7 @@ public class SortSpec implements Cloneable, GsonObject, ProtoObject<SortSpecProt
   }
 
   @Override
-  public String toJson() {
+  public String toJson(SerializeOption option) {
     return CatalogGsonHelper.toJson(this, SortSpec.class);
   }
 
@@ -112,9 +113,9 @@ public class SortSpec implements Cloneable, GsonObject, ProtoObject<SortSpecProt
   }
 
   @Override
-  public SortSpecProto getProto() {
+  public SortSpecProto getProto(SerializeOption option) {
     SortSpecProto.Builder builder = SortSpecProto.newBuilder();
-    builder.setColumn(sortKey.getProto());
+    builder.setColumn(sortKey.getProto(option));
     builder.setAscending(ascending);
     builder.setNullFirst(nullFirst);
     return builder.build();

@@ -20,6 +20,7 @@ package org.apache.tajo.worker;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
@@ -106,13 +107,13 @@ public class TaskHistory implements ProtoObject<TaskHistoryProto>, History {
   public boolean equals(Object o) {
     if (o instanceof TaskHistory) {
       TaskHistory other = (TaskHistory) o;
-      return getProto().equals(other.getProto());
+      return getProto(SerializeOption.GENERIC).equals(other.getProto(SerializeOption.GENERIC));
     }
     return false;
   }
 
   @Override
-  public TaskHistoryProto getProto() {
+  public TaskHistoryProto getProto(SerializeOption option) {
     TaskHistoryProto.Builder builder = TaskHistoryProto.newBuilder();
     builder.setTaskAttemptId(taskAttemptId.getProto());
     builder.setState(state);

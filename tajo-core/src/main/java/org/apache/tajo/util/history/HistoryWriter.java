@@ -28,6 +28,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.service.AbstractService;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.master.QueryInfo;
 import org.apache.tajo.util.Bytes;
@@ -361,7 +362,7 @@ public class HistoryWriter extends AbstractService {
       try {
         LOG.info("Saving query summary: " + queryHistoryFile);
         out = fs.create(queryHistoryFile, queryReplication);
-        out.write(queryHistory.toJson().getBytes(Bytes.UTF8_CHARSET));
+        out.write(queryHistory.toJson(SerializeOption.GENERIC).getBytes(Bytes.UTF8_CHARSET));
       } finally {
         IOUtils.cleanup(LOG, out);
       }
@@ -397,7 +398,7 @@ public class HistoryWriter extends AbstractService {
           rollingQuerySummaryWriter();
         }
       }
-      byte[] jsonBytes = ("\n" + queryInfo.toJson() + "\n").getBytes(Bytes.UTF8_CHARSET);
+      byte[] jsonBytes = ("\n" + queryInfo.toJson(SerializeOption.GENERIC) + "\n").getBytes(Bytes.UTF8_CHARSET);
       try {
         querySummaryWriter.out.writeInt(jsonBytes.length);
         querySummaryWriter.out.write(jsonBytes);
@@ -459,7 +460,7 @@ public class HistoryWriter extends AbstractService {
 
       if (writerHolder.out != null) {
         try {
-          byte[] taskHistoryBytes = taskHistory.getProto().toByteArray();
+          byte[] taskHistoryBytes = taskHistory.getProto(SerializeOption.GENERIC).toByteArray();
           writerHolder.out.writeInt(taskHistoryBytes.length);
           writerHolder.out.write(taskHistoryBytes);
         } catch (IOException ie) {

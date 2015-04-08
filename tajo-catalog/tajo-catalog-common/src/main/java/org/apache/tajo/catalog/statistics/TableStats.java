@@ -24,6 +24,7 @@ package org.apache.tajo.catalog.statistics;
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.json.GsonObject;
@@ -232,12 +233,12 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
   }
 
   @Override
-  public String toJson() {
+  public String toJson(SerializeOption option) {
     return CatalogGsonHelper.toJson(this, TableStats.class);
   }
 
   @Override
-  public TableStatsProto getProto() {
+  public TableStatsProto getProto(SerializeOption option) {
     TableStatsProto.Builder builder = CatalogProtos.TableStatsProto.newBuilder();
 
     builder.setNumRows(this.numRows);
@@ -257,7 +258,7 @@ public class TableStats implements ProtoObject<TableStatsProto>, Cloneable, Gson
     }
     if (this.columnStatses != null) {
       for (ColumnStats colStat : columnStatses) {
-        builder.addColStat(colStat.getProto());
+        builder.addColStat(colStat.getProto(option));
       }
     }
     return builder.build();

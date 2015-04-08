@@ -21,6 +21,7 @@ package org.apache.tajo.util;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.json.GsonObject;
@@ -227,7 +228,7 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
 	}
 	
 	@Override
-	public KeyValueSetProto getProto() {
+	public KeyValueSetProto getProto(SerializeOption option) {
     KeyValueSetProto.Builder builder = KeyValueSetProto.newBuilder();
 
     KeyValueProto.Builder kvBuilder = KeyValueProto.newBuilder();
@@ -243,7 +244,7 @@ public class KeyValueSet implements ProtoObject<KeyValueSetProto>, Cloneable, Gs
     return builder.build();
 	}
   
-  public String toJson() {
+  public String toJson(SerializeOption option) {
     return CommonGsonHelper.toJson(this, KeyValueSet.class);
   }
 }

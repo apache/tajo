@@ -28,6 +28,7 @@ import com.google.common.collect.ObjectArrays;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.SortSpec;
@@ -914,14 +915,15 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
         if (broadcastFlag) {
           PartitionedTableScanNode partitionedTableScanNode = (PartitionedTableScanNode) scanNode;
-          List<Fragment> fileFragments = TUtil.newList();
+          List<FileFragment> fileFragments = TUtil.newList();
           FileStorageManager fileStorageManager = (FileStorageManager)StorageManager.getFileStorageManager(ctx.getConf());
           for (Path path : partitionedTableScanNode.getInputPaths()) {
             fileFragments.addAll(TUtil.newList(fileStorageManager.split(scanNode.getCanonicalName(), path)));
           }
 
           FragmentProto[] fragments =
-                FragmentConvertor.toFragmentProtoArray(fileFragments.toArray(new FileFragment[fileFragments.size()]));
+                FragmentConvertor.toFragmentProtoArray(
+                    SerializeOption.INTERNAL, fileFragments.toArray(new FileFragment[fileFragments.size()]));
 
           ctx.addFragments(scanNode.getCanonicalName(), fragments);
           return new PartitionMergeScanExec(ctx, scanNode, fragments);

@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.codegen;
 
 import com.google.common.collect.Maps;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
@@ -75,22 +76,22 @@ public class EvalCodeGenContext extends TajoGeneratorAdapter {
   }
 
   public static void emitCreateSchema(TajoGeneratorAdapter adapter, MethodVisitor mv, Schema schema) {
-    mv.visitLdcInsn(schema.toJson());
+    mv.visitLdcInsn(schema.toJson(SerializeOption.GENERIC));
     adapter.invokeStatic(EvalCodeGenerator.class, "createSchema", Schema.class, new Class[] {String.class});
   }
 
   public static void emitCreateEval(TajoGeneratorAdapter adapter, MethodVisitor mv, EvalNode evalNode) {
-    mv.visitLdcInsn(evalNode.toJson());
+    mv.visitLdcInsn(evalNode.toJson(SerializeOption.GENERIC));
     adapter.invokeStatic(EvalCodeGenerator.class, "createEval", EvalNode.class, new Class[] {String.class});
   }
 
   public static void emitConstEval(TajoGeneratorAdapter adapter, MethodVisitor mv, ConstEval evalNode) {
-    mv.visitLdcInsn(evalNode.toJson());
+    mv.visitLdcInsn(evalNode.toJson(SerializeOption.GENERIC));
     adapter.invokeStatic(EvalCodeGenerator.class, "createConstEval", ConstEval.class, new Class[] {String.class});
   }
 
   public static void emitRowConstantEval(TajoGeneratorAdapter adapter, MethodVisitor mv, RowConstantEval evalNode) {
-    mv.visitLdcInsn(evalNode.toJson());
+    mv.visitLdcInsn(evalNode.toJson(SerializeOption.GENERIC));
     adapter.invokeStatic(EvalCodeGenerator.class, "createRowConstantEval", RowConstantEval.class,
         new Class[] {String.class});
   }

@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog.statistics;
 
+import org.apache.tajo.SerializeOption;
 import org.junit.Test;
 import org.apache.tajo.catalog.proto.CatalogProtos.StatType;
 
@@ -52,7 +53,7 @@ public class TestStatSet {
     assertEquals(101, group.getStat(StatType.TABLE_NUM_ROWS).getValue());
     assertEquals(1, group.getStat(StatType.TABLE_NUM_BLOCKS).getValue());
     
-    StatSet group2 = new StatSet(group.getProto());
+    StatSet group2 = new StatSet(group.getProto(SerializeOption.GENERIC));
     assertEquals(2, group2.getAllStats().size());
     assertEquals(stat, group2.getStat(StatType.TABLE_NUM_ROWS));
     assertEquals(101, group2.getStat(StatType.TABLE_NUM_ROWS).getValue());

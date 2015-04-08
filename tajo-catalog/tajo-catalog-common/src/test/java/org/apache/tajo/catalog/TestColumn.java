@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -94,16 +95,16 @@ public class TestColumn {
 
 	@Test
 	public final void testToJson() {
-		Column col = new Column(field1.getProto());
-		String json = col.toJson();
+		Column col = new Column(field1.getProto(SerializeOption.GENERIC));
+		String json = col.toJson(SerializeOption.GENERIC);
 		Column fromJson = CatalogGsonHelper.fromJson(json, Column.class);
 		assertEquals(col, fromJson);
 	}
 
   @Test
   public final void testToProto() {
-    Column column = new Column(field1.getProto());
-    CatalogProtos.ColumnProto proto = column.getProto();
+    Column column = new Column(field1.getProto(SerializeOption.GENERIC));
+    CatalogProtos.ColumnProto proto = column.getProto(SerializeOption.GENERIC);
     Column fromProto = new Column(proto);
     assertEquals(column, fromProto);
   }

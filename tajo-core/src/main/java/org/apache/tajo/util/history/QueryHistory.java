@@ -19,6 +19,7 @@
 package org.apache.tajo.util.history;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.ipc.ClientProtos.QueryHistoryProto;
@@ -102,7 +103,7 @@ public class QueryHistory implements GsonObject, History {
   }
 
   @Override
-  public String toJson() {
+  public String toJson(SerializeOption option) {
     return CoreGsonHelper.toJson(this, QueryHistory.class);
   }
 

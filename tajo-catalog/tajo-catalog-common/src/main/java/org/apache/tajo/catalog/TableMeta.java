@@ -22,6 +22,7 @@ import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StoreType;
@@ -132,17 +133,19 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
   public Map<String,String> toMap() {
     return getOptions().getAllKeyValus();
   }
-	
+
+  @Override
 	public boolean equals(Object object) {
 		if(object instanceof TableMeta) {
 			TableMeta other = (TableMeta) object;
 			
-			return this.getProto().equals(other.getProto());
+			return this.getProto(SerializeOption.GENERIC).equals(other.getProto(SerializeOption.GENERIC));
 		}
 		
 		return false;		
 	}
-	
+
+  @Override
 	public int hashCode() {
 	  return Objects.hashCode(getStoreType(), getOptions());
 	}
@@ -166,15 +169,15 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
 	////////////////////////////////////////////////////////////////////////
 	// ProtoObject
 	////////////////////////////////////////////////////////////////////////
-	public TableProto getProto() {
-    mergeLocalToProto();
+	public TableProto getProto(SerializeOption option) {
+    mergeLocalToProto(option);
     proto = viaProto ? proto : builder.build();
     viaProto = true;
     return proto;
 	}
 
   @Override
-	public String toJson() {
+	public String toJson(SerializeOption option) {
     mergeProtoToLocal();
 		return CatalogGsonHelper.toJson(this, TableMeta.class);
 	}
@@ -191,20 +194,20 @@ public class TableMeta implements ProtoObject<CatalogProtos.TableProto>, GsonObj
     viaProto = true;
   }
 
-  private void mergeLocalToBuilder() {
+  private void mergeLocalToBuilder(SerializeOption option) {
     if (storeType != null) {
       builder.setStoreType(storeType);
     }
     if (this.options != null) {
-      builder.setParams(options.getProto());
+      builder.setParams(options.getProto(option));
     }
   }
 
-  private void mergeLocalToProto() {
+  private void mergeLocalToProto(SerializeOption option) {
     if(viaProto) {
       maybeInitBuilder();
     }
-    mergeLocalToBuilder();
+    mergeLocalToBuilder(option);
     proto = builder.build();
     viaProto = true;
   }

@@ -22,6 +22,7 @@ import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -114,7 +115,7 @@ public class PartitionMethodDesc implements ProtoObject<CatalogProtos.PartitionM
   }
 
   @Override
-  public CatalogProtos.PartitionMethodProto getProto() {
+  public CatalogProtos.PartitionMethodProto getProto(SerializeOption option) {
     TableIdentifierProto.Builder tableIdentifierBuilder = TableIdentifierProto.newBuilder();
     if (databaseName != null) {
       tableIdentifierBuilder.setDatabaseName(databaseName);
@@ -127,7 +128,7 @@ public class PartitionMethodDesc implements ProtoObject<CatalogProtos.PartitionM
     builder.setTableIdentifier(tableIdentifierBuilder.build());
     builder.setPartitionType(partitionType);
     builder.setExpression(expression);
-    builder.setExpressionSchema(expressionSchema.getProto());
+    builder.setExpressionSchema(expressionSchema.getProto(option));
     return builder.build();
   }
 
@@ -148,7 +149,7 @@ public class PartitionMethodDesc implements ProtoObject<CatalogProtos.PartitionM
   }
 
   @Override
-  public String toJson() {
+  public String toJson(SerializeOption option) {
     return CatalogGsonHelper.toJson(this, PartitionMethodDesc.class);
   }
 

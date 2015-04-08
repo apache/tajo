@@ -20,6 +20,7 @@ package org.apache.tajo.master;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.LocalTajoTestingUtility;
 import org.apache.tajo.QueryId;
@@ -76,9 +77,9 @@ public class TestRepartitioner {
 
       fetch.setName(sid.toString());
 
-      TajoWorkerProtocol.FetchProto proto = fetch.getProto();
+      TajoWorkerProtocol.FetchProto proto = fetch.getProto(SerializeOption.GENERIC);
       fetch = new FetchImpl(proto);
-      assertEquals(proto, fetch.getProto());
+      assertEquals(proto, fetch.getProto(SerializeOption.GENERIC));
 
       Map<ExecutionBlockId, List<IntermediateEntry>> ebEntries = new HashMap<ExecutionBlockId, List<IntermediateEntry>>();
       ebEntries.put(sid, eachEntry.getValue());

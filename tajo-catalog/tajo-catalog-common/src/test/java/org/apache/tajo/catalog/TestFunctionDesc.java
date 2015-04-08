@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.function.Function;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -76,7 +77,7 @@ public class TestFunctionDesc {
 
     CommonTestingUtil.getTestDir(TEST_PATH);
     File save = new File(TEST_PATH + "/save.dat");
-    FileUtil.writeProto(save, desc.getProto());
+    FileUtil.writeProto(save, desc.getProto(SerializeOption.GENERIC));
 
     FunctionDescProto proto = FunctionDescProto.getDefaultInstance();
     proto = (FunctionDescProto) FileUtil.loadProto(save, proto);
@@ -91,7 +92,7 @@ public class TestFunctionDesc {
     assertArrayEquals(CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8),
         newDesc.getParamTypes());
 
-    assertEquals(desc.getProto(), newDesc.getProto());
+    assertEquals(desc.getProto(SerializeOption.GENERIC), newDesc.getProto(SerializeOption.GENERIC));
   }
   
   @Test
@@ -99,10 +100,10 @@ public class TestFunctionDesc {
 	  FunctionDesc desc = new FunctionDesc("sum", TestSum.class, FunctionType.GENERAL,
         CatalogUtil.newSimpleDataType(Type.INT4),
         CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8));
-	  String json = desc.toJson();
+	  String json = desc.toJson(SerializeOption.GENERIC);
 	  FunctionDesc fromJson = CatalogGsonHelper.fromJson(json, FunctionDesc.class);
 	  assertEquals(desc, fromJson);
-	  assertEquals(desc.getProto(), fromJson.getProto());
+	  assertEquals(desc.getProto(SerializeOption.GENERIC), fromJson.getProto(SerializeOption.GENERIC));
   }
 
   @Test
@@ -110,10 +111,10 @@ public class TestFunctionDesc {
     FunctionDesc desc = new FunctionDesc("sum", TestSum.class, FunctionType.GENERAL,
         CatalogUtil.newSimpleDataType(Type.INT4),
         CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8));
-    FunctionDescProto proto = desc.getProto();
+    FunctionDescProto proto = desc.getProto(SerializeOption.GENERIC);
     FunctionDesc fromProto = new FunctionDesc(proto);
     assertEquals(desc, fromProto);
-    assertEquals(desc.toJson(), fromProto.toJson());
+    assertEquals(desc.toJson(SerializeOption.GENERIC), fromProto.toJson(SerializeOption.GENERIC));
   }
   
   @Test

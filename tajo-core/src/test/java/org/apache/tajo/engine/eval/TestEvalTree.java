@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.eval;
 
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -355,7 +356,7 @@ public class TestEvalTree extends ExprTestBase {
     BinaryEval gth = new BinaryEval(EvalType.GTH, e3, plus3);
     assertCloneEqual(gth);
     
-    String json = gth.toJson();
+    String json = gth.toJson(SerializeOption.GENERIC);
     BinaryEval eval = (BinaryEval) CoreGsonHelper.fromJson(json, EvalNode.class);
     assertCloneEqual(eval);
     

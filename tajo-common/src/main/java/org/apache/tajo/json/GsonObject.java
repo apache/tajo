@@ -18,6 +18,9 @@
 
 package org.apache.tajo.json;
 
+import org.apache.tajo.SerializeOption;
+
 public interface GsonObject {
-  public String toJson();
+
+  String toJson(SerializeOption option);
 }

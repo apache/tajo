@@ -21,6 +21,7 @@ package org.apache.tajo.master;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.util.StringUtils;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.engine.query.QueryContext;
@@ -187,10 +188,11 @@ public class QueryInProgress {
 
       QueryExecutionRequestProto.Builder builder = TajoWorkerProtocol.QueryExecutionRequestProto.newBuilder();
       builder.setQueryId(queryId.getProto())
-          .setQueryContext(queryInfo.getQueryContext().getProto())
-          .setSession(session.getProto())
+          .setQueryContext(queryInfo.getQueryContext().getProto(SerializeOption.INTERNAL))
+          .setSession(session.getProto(SerializeOption.INTERNAL))
           .setExprInJson(PrimitiveProtos.StringProto.newBuilder().setValue(queryInfo.getJsonExpr()))
-          .setLogicalPlanJson(PrimitiveProtos.StringProto.newBuilder().setValue(plan.toJson()).build());
+          .setLogicalPlanJson(PrimitiveProtos.StringProto.newBuilder().setValue(plan.toJson(SerializeOption.INTERNAL))
+          .build());
 
       queryMasterRpcClient.executeQuery(null, builder.build(), NullCallback.get());
       querySubmitted.set(true);

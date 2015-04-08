@@ -21,11 +21,10 @@ package org.apache.tajo.master;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.TaskAttemptId;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -108,11 +107,11 @@ public class TajoContainerProxy extends ContainerProxy {
       TajoWorkerProtocol.RunExecutionBlockRequestProto request =
           TajoWorkerProtocol.RunExecutionBlockRequestProto.newBuilder()
               .setExecutionBlockId(executionBlockId.getProto())
-              .setQueryMaster(context.getQueryMasterContext().getWorkerContext().getConnectionInfo().getProto())
+              .setQueryMaster(context.getQueryMasterContext().getWorkerContext().getConnectionInfo().getProto(SerializeOption.INTERNAL))
               .setNodeId(container.getNodeId().toString())
               .setContainerId(container.getId().toString())
               .setQueryOutputPath(context.getStagingDir().toString())
-              .setQueryContext(queryContext.getProto())
+              .setQueryContext(queryContext.getProto(SerializeOption.INTERNAL))
               .setPlanJson(planJson)
               .build();
 

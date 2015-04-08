@@ -19,6 +19,7 @@
 package org.apache.tajo.function;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.common.ProtoObject;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.ClassBaseInvocationDescProto;
@@ -63,7 +64,7 @@ public class ClassBaseInvocationDesc<T> implements ProtoObject<ClassBaseInvocati
   }
 
   @Override
-  public ClassBaseInvocationDescProto getProto() {
+  public ClassBaseInvocationDescProto getProto(SerializeOption option) {
     ClassBaseInvocationDescProto.Builder builder = ClassBaseInvocationDescProto.newBuilder();
     builder.setClassName(functionClass.getName());
     return builder.build();

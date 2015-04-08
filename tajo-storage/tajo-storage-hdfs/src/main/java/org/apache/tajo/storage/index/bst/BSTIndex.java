@@ -25,6 +25,7 @@ import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.storage.*;
@@ -147,12 +148,12 @@ public class BSTIndex implements IndexMethod {
 
     public void writeHeader(int entryNum) throws IOException {
       // schema
-      byte [] schemaBytes = keySchema.getProto().toByteArray();
+      byte [] schemaBytes = keySchema.getProto(SerializeOption.GENERIC).toByteArray();
       out.writeInt(schemaBytes.length);
       out.write(schemaBytes);
 
       // comparator
-      byte [] comparatorBytes = compartor.getProto().toByteArray();
+      byte [] comparatorBytes = compartor.getProto(SerializeOption.GENERIC).toByteArray();
       out.writeInt(comparatorBytes.length);
       out.write(comparatorBytes);
 

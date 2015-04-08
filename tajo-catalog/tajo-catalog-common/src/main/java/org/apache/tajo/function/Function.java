@@ -20,6 +20,7 @@ package org.apache.tajo.function;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.catalog.Column;
@@ -58,7 +59,7 @@ public abstract class Function<T extends Datum> implements Cloneable, GsonObject
   }
 
   @Override
-  public String toJson() {
+  public String toJson(SerializeOption option) {
     return CatalogGsonHelper.toJson(this, Function.class);
   }
 

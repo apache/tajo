@@ -24,6 +24,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.AbstractService;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.ClusterResourceSummary;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.ServerStatusProto;
@@ -172,7 +173,7 @@ public class WorkerHeartbeatService extends AbstractService {
             .build();
 
         NodeHeartbeat heartbeatProto = NodeHeartbeat.newBuilder()
-            .setConnectionInfo(context.getConnectionInfo().getProto())
+            .setConnectionInfo(context.getConnectionInfo().getProto(SerializeOption.INTERNAL))
             .setServerStatus(serverStatus)
             .build();
 

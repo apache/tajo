@@ -28,6 +28,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
 import org.apache.hadoop.yarn.util.Clock;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
@@ -599,7 +600,7 @@ public class Query implements EventHandler<QueryEvent> {
         if (insertNode.hasTargetTable()) {
           UpdateTableStatsProto.Builder builder = UpdateTableStatsProto.newBuilder();
           builder.setTableName(finalTable.getName());
-          builder.setStats(stats.getProto());
+          builder.setStats(stats.getProto(SerializeOption.GENERIC));
 
           catalog.updateTableStats(builder.build());
         }

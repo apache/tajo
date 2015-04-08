@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.function;
 
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
@@ -48,7 +49,7 @@ public abstract class GeneralFunction extends Function implements GsonObject {
 	}
 
   @Override
-  public String toJson() {
+  public String toJson(SerializeOption option) {
     return CatalogGsonHelper.toJson(this, GeneralFunction.class);
   }
 

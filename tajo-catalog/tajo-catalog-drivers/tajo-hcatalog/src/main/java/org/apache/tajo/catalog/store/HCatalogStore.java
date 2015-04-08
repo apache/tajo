@@ -36,6 +36,7 @@ import org.apache.hadoop.hive.serde2.lazybinary.LazyBinarySerDe;
 import org.apache.hcatalog.common.HCatUtil;
 import org.apache.hcatalog.data.schema.HCatFieldSchema;
 import org.apache.hcatalog.data.schema.HCatSchema;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.*;
@@ -279,7 +280,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
     if (partitions != null) {
       tableDesc.setPartitionMethod(partitions);
     }
-    return tableDesc.getProto();
+    return tableDesc.getProto(SerializeOption.GENERIC);
   }
 
 

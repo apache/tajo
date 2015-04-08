@@ -18,6 +18,7 @@
 
 package org.apache.tajo.master.cluster;
 
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.common.ProtoObject;
 
 import static org.apache.tajo.TajoProtos.WorkerConnectionInfoProto;
@@ -112,7 +113,7 @@ public class WorkerConnectionInfo implements ProtoObject<WorkerConnectionInfoPro
   }
 
   @Override
-  public WorkerConnectionInfoProto getProto() {
+  public WorkerConnectionInfoProto getProto(SerializeOption option) {
     WorkerConnectionInfoProto.Builder builder = WorkerConnectionInfoProto.newBuilder();
     builder.setId(id)
         .setHost(host)

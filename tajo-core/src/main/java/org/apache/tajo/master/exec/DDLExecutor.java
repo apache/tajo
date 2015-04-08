@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.algebra.AlterTablespaceSetType;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.*;
@@ -102,7 +103,7 @@ public class DDLExecutor {
       return true;
 
     default:
-      throw new InternalError("updateQuery cannot handle such query: \n" + root.toJson());
+      throw new InternalError("updateQuery cannot handle such query: \n" + root.toJson(SerializeOption.GENERIC));
     }
   }
 

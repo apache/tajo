@@ -25,12 +25,12 @@ import com.google.common.collect.Maps;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.exception.*;
-import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.DatabaseProto;
@@ -363,7 +363,7 @@ public class MemStore implements CatalogStore {
         }
 
         TableMeta newMeta = new TableMeta(tableDescProto.getMeta().getStoreType(), properties);
-        newTableDescProto = tableDescProto.toBuilder().setMeta(newMeta.getProto()).build();
+        newTableDescProto = tableDescProto.toBuilder().setMeta(newMeta.getProto(SerializeOption.GENERIC)).build();
         database.put(tableName, newTableDescProto);
         break;
       default:

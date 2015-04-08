@@ -21,6 +21,7 @@ package org.apache.tajo.session;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.master.exec.NonForwardQueryResultScanner;
@@ -122,7 +123,7 @@ public class Session implements SessionConstants, ProtoObject<SessionProto>, Clo
   }
 
   @Override
-  public SessionProto getProto() {
+  public SessionProto getProto(SerializeOption option) {
     SessionProto.Builder builder = SessionProto.newBuilder();
     builder.setSessionId(getSessionId());
     builder.setUsername(getUserName());
@@ -132,7 +133,7 @@ public class Session implements SessionConstants, ProtoObject<SessionProto>, Clo
 
     synchronized (sessionVariables) {
       variables.putAll(this.sessionVariables);
-      builder.setVariables(variables.getProto());
+      builder.setVariables(variables.getProto(option));
       return builder.build();
     }
   }

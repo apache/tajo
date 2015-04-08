@@ -18,12 +18,14 @@
 
 package org.apache.tajo.storage;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.datum.Datum;
+
+import java.util.Arrays;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.TupleComparatorSpecProto;
 import static org.apache.tajo.index.IndexProtos.TupleComparatorProto;
@@ -145,7 +147,7 @@ public class BaseTupleComparator extends TupleComparator implements ProtoObject<
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(sortKeyIds);
+    return Arrays.hashCode(sortKeyIds);
   }
 
   @Override
@@ -171,11 +173,11 @@ public class BaseTupleComparator extends TupleComparator implements ProtoObject<
   }
 
   @Override
-  public TupleComparatorProto getProto() {
+  public TupleComparatorProto getProto(SerializeOption option) {
     TupleComparatorProto.Builder builder = TupleComparatorProto.newBuilder();
-    builder.setSchema(schema.getProto());
+    builder.setSchema(schema.getProto(option));
     for (int i = 0; i < sortSpecs.length; i++) {
-      builder.addSortSpecs(sortSpecs[i].getProto());
+      builder.addSortSpecs(sortSpecs[i].getProto(option));
     }
 
     TupleComparatorSpecProto.Builder sortSpecBuilder;

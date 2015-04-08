@@ -20,6 +20,7 @@ package org.apache.tajo.function;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.common.ProtoObject;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionInvocationProto;
@@ -122,22 +123,22 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
   }
 
   @Override
-  public FunctionInvocationProto getProto() {
+  public FunctionInvocationProto getProto(SerializeOption option) {
     FunctionInvocationProto.Builder builder = FunctionInvocationProto.newBuilder();
     if (hasLegacy()) {
-      builder.setLegacy(legacy.getProto());
+      builder.setLegacy(legacy.getProto(option));
     }
     if (hasScalar()) {
-      builder.setScalar(scalar.getProto());
+      builder.setScalar(scalar.getProto(option));
     }
     if (hasAggregation()) {
-      builder.setAggregation(aggregation.getProto());
+      builder.setAggregation(aggregation.getProto(option));
     }
     if (hasScalarJIT()) {
-      builder.setScalarJIT(scalarJIT.getProto());
+      builder.setScalarJIT(scalarJIT.getProto(option));
     }
     if (hasAggregationJIT()) {
-      builder.setAggregationJIT(aggregationJIT.getProto());
+      builder.setAggregationJIT(aggregationJIT.getProto(option));
     }
     return builder.build();
   }

@@ -20,6 +20,7 @@ package org.apache.tajo.catalog;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.common.ProtoObject;
@@ -144,9 +145,10 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
   /**
    *
    * @return The protocol buffer object for Column
+   * @param option
    */
 	@Override
-	public ColumnProto getProto() {
+	public ColumnProto getProto(SerializeOption option) {
     ColumnProto.Builder builder = ColumnProto.newBuilder();
     builder
         .setName(this.name)
@@ -161,7 +163,7 @@ public class Column implements ProtoObject<ColumnProto>, GsonObject {
 	}
 
   @Override
-	public String toJson() {
+	public String toJson(SerializeOption option) {
 		return CatalogGsonHelper.toJson(this, Column.class);
 	}
 

@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.rewrite.rules;
 
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.LogicalNode;
@@ -47,7 +48,7 @@ public class LogicalPlanEqualityTester implements LogicalPlanRewriteRule {
   @Override
   public LogicalPlan rewrite(OverridableConf queryContext, LogicalPlan plan) throws PlanningException {
     LogicalNode root = plan.getRootBlock().getRoot();
-    PlanProto.LogicalNodeTree serialized = LogicalNodeSerializer.serialize(plan.getRootBlock().getRoot());
+    PlanProto.LogicalNodeTree serialized = LogicalNodeSerializer.serialize(root, SerializeOption.GENERIC);
     LogicalNode deserialized = LogicalNodeDeserializer.deserialize(queryContext, serialized);
     assert root.deepEquals(deserialized);
     return plan;

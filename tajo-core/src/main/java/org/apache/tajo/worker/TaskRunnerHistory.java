@@ -21,6 +21,7 @@ package org.apache.tajo.worker;
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.service.Service;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.common.ProtoObject;
@@ -82,13 +83,13 @@ public class TaskRunnerHistory implements ProtoObject<TaskRunnerHistoryProto> {
   public boolean equals(Object o) {
     if (o instanceof TaskRunnerHistory) {
       TaskRunnerHistory other = (TaskRunnerHistory) o;
-      return getProto().equals(other.getProto());
+      return getProto(SerializeOption.GENERIC).equals(other.getProto(SerializeOption.GENERIC));
     }
     return false;
   }
 
   @Override
-  public TaskRunnerHistoryProto getProto() {
+  public TaskRunnerHistoryProto getProto(SerializeOption option) {
     TaskRunnerHistoryProto.Builder builder = TaskRunnerHistoryProto.newBuilder();
     builder.setContainerId(containerId.toString());
     builder.setState(state.toString());
@@ -96,7 +97,7 @@ public class TaskRunnerHistory implements ProtoObject<TaskRunnerHistoryProto> {
     builder.setStartTime(startTime);
     builder.setFinishTime(finishTime);
     for (TaskHistory taskHistory : taskHistoryMap.values()){
-      builder.addTaskHistories(taskHistory.getProto());
+      builder.addTaskHistories(taskHistory.getProto(option));
     }
     return builder.build();
   }
