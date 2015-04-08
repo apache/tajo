@@ -34,7 +34,6 @@ import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -73,16 +72,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
       paramTypes[i] = TajoDataTypes.DataType.newBuilder().setType(TajoDataTypes.Type.ANY).build();
     }
     return paramTypes;
-  }
-
-  @Override
-  protected String getScriptingLang() {
-    return "streaming_python";
-  }
-
-  @Override
-  protected Map<String, Object> getParamsFromVariables() throws IOException {
-    throw new IOException("Unsupported Operation");
   }
 
   private static final Pattern pSchema = Pattern.compile("^\\s*\\W+outputType.*");

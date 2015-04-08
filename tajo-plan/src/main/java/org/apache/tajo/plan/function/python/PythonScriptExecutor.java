@@ -259,9 +259,9 @@ public class PythonScriptExecutor {
 
     try {
       if (input == null) {
-        //When nothing is passed into the UDF the tuple
-        //being sent is the full tuple for the relation.
-        //We want it to be nothing (since that's what the user wrote).
+        // When nothing is passed into the UDF the tuple
+        // being sent is the full tuple for the relation.
+        // We want it to be nothing (since that's what the user wrote).
         input = new VTuple(0);
       }
       // TODO: Currently, errors occurred before executing an input are ignored.
@@ -362,7 +362,7 @@ public class PythonScriptExecutor {
                   PYTHON_LANGUAGE, "Error deserializing output.  Please check that the declared outputSchema for function " +
                   invocationDesc.getName() + " matches the data type being returned.", e);
             }
-            outputQueue.put(ERROR_OUTPUT); //Need to wake main thread.
+            outputQueue.put(ERROR_OUTPUT); // Need to wake main thread.
           } catch(InterruptedException ie) {
             LOG.error(ie);
           }
@@ -384,8 +384,8 @@ public class PythonScriptExecutor {
         BufferedReader reader = new BufferedReader(
             new InputStreamReader(stderr, Charsets.UTF_8));
         while ((errInput = reader.readLine()) != null) {
-          //First line of error stream is usually the line number of error.
-          //If its not a number just treat it as first line of error message.
+          // First line of error stream is usually the line number of error.
+          // If its not a number just treat it as first line of error message.
           if (lineNumber == null) {
             try {
               lineNumber = Integer.valueOf(errInput);
@@ -398,7 +398,7 @@ public class PythonScriptExecutor {
         }
         outerrThreadsError = new StreamingUDFException(PYTHON_LANGUAGE, error.toString(), lineNumber);
         if (outputQueue != null) {
-          outputQueue.put(ERROR_OUTPUT); //Need to wake main thread.
+          outputQueue.put(ERROR_OUTPUT); // Need to wake main thread.
         }
         if (stderr != null) {
           stderr.close();

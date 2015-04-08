@@ -245,7 +245,6 @@ public class TextFieldSerializerDeserializer implements FieldSerializerDeseriali
           byte[] bytes = new byte[buf.readableBytes()];
           buf.readBytes(bytes);
           datum = DatumFactory.createBlob(Base64.decodeBase64(bytes));
-//          datum = DatumFactory.createBlob(bytes);
           break;
         }
         default:

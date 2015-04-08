@@ -22,13 +22,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.io.IOException;
 import java.net.URI;
-import java.util.Map;
 
 public abstract class TajoScriptEngine {
-
-  public static final String NAMESPACE_SEPARATOR = ".";
 
   /**
    * Open a stream load a script locally or in the classpath
@@ -45,25 +41,6 @@ public abstract class TajoScriptEngine {
       } catch (FileNotFoundException e) {
         throw new IllegalStateException("could not find existing file "+scriptPath, e);
       }
-//    } else {
-//      // Try system, current and context classloader.
-//      is = TajoScriptEngine.class.getResourceAsStream(scriptPath);
-//      if (is == null) {
-//        is = getResourceUsingClassLoader(scriptPath, TajoScriptEngine.class.getClassLoader());
-//      }
-//      if (is == null) {
-//        is = getResourceUsingClassLoader(scriptPath, Thread.currentThread().getContextClassLoader());
-//      }
-//      if (is == null && !file.isAbsolute()) {
-//        String path = "/" + scriptPath;
-//        is = TajoScriptEngine.class.getResourceAsStream(path);
-//        if (is == null) {
-//          is = getResourceUsingClassLoader(path, TajoScriptEngine.class.getClassLoader());
-//        }
-//        if (is == null) {
-//          is = getResourceUsingClassLoader(path, Thread.currentThread().getContextClassLoader());
-//        }
-//      }
     }
 
     if (is == null) {
@@ -72,22 +49,4 @@ public abstract class TajoScriptEngine {
     }
     return is;
   }
-
-  private static InputStream getResourceUsingClassLoader(String fullFilename, ClassLoader loader) {
-    if (loader != null) {
-      return loader.getResourceAsStream(fullFilename);
-    }
-    return null;
-  }
-
-  /**
-   * Gets ScriptEngine classname or keyword for the scripting language
-   */
-  protected abstract String getScriptingLang();
-
-  /**
-   * Returns a map from local variable names to their values
-   * @throws java.io.IOException
-   */
-  protected abstract Map<String, Object> getParamsFromVariables() throws IOException;
 }
