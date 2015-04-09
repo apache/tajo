@@ -29,6 +29,7 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.worker.TaskAttemptContext;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.UUID;
 
 public abstract class PhysicalExec implements SchemaObject {
@@ -85,5 +86,31 @@ public abstract class PhysicalExec implements SchemaObject {
 
   public TableStats getInputStats() {
     return null;
+  }
+
+  public Iterator<Tuple> newIterator(final PhysicalExec source) {
+    return new Iterator<Tuple>() {
+
+      private Tuple tuple;
+
+      @Override
+      public boolean hasNext() {
+        try {
+          return (tuple = source.next()) == null;
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+
+      @Override
+      public Tuple next() {
+        return tuple;
+      }
+
+      @Override
+      public void remove() {
+        throw new UnsupportedOperationException("remove");
+      }
+    };
   }
 }
