@@ -63,7 +63,7 @@ public class WindowFunctionEval extends AggregationFunctionCallEval implements C
 
   @Override
   public Datum terminate(FunctionContext context) {
-    if (!isBinded) {
+    if (!isBound) {
       throw new IllegalStateException("bind() must be called before terminate()");
     }
     return functionInvoke.terminate(context);

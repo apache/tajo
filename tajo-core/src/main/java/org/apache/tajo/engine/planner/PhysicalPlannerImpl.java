@@ -465,14 +465,14 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
         case IN_MEMORY_HASH_JOIN:
           LOG.info("Left Outer Join (" + plan.getPID() +") chooses [Hash Join].");
           return new HashLeftOuterJoinExec(context, plan, leftExec, rightExec);
-        case NESTED_LOOP_JOIN:
-          //the right operand is too large, so we opt for NL implementation of left outer join
-          LOG.info("Left Outer Join (" + plan.getPID() +") chooses [Nested Loop Join].");
-          return new NLLeftOuterJoinExec(context, plan, leftExec, rightExec);
+        case MERGE_JOIN:
+          //the right operand is too large, so we opt for merge join implementation
+          LOG.info("Left Outer Join (" + plan.getPID() +") chooses [Merge Join].");
+          return createRightOuterMergeJoinPlan(context, plan, rightExec, leftExec);
         default:
           LOG.error("Invalid Left Outer Join Algorithm Enforcer: " + algorithm.name());
-          LOG.error("Choose a fallback inner join algorithm: " + JoinAlgorithm.IN_MEMORY_HASH_JOIN.name());
-          return new HashLeftOuterJoinExec(context, plan, leftExec, rightExec);
+          LOG.error("Choose a fallback to join algorithm: " + JoinAlgorithm.MERGE_JOIN);
+          return createRightOuterMergeJoinPlan(context, plan, rightExec, leftExec);
       }
     } else {
       return createBestLeftOuterJoinPlan(context, plan, leftExec, rightExec);
@@ -499,9 +499,9 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       return new HashLeftOuterJoinExec(context, plan, leftExec, rightExec);
     }
     else {
-      //the right operand is too large, so we opt for NL implementation of left outer join
-      LOG.info("Left Outer Join (" + plan.getPID() +") chooses [Nested Loop Join].");
-      return new NLLeftOuterJoinExec(context, plan, leftExec, rightExec);
+      //the right operand is too large, so we opt for merge join implementation
+      LOG.info("Left Outer Join (" + plan.getPID() +") chooses [Merge Join].");
+      return createRightOuterMergeJoinPlan(context, plan, rightExec, leftExec);
     }
   }
 
@@ -565,7 +565,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           return createRightOuterMergeJoinPlan(context, plan, leftExec, rightExec);
         default:
           LOG.error("Invalid Right Outer Join Algorithm Enforcer: " + algorithm.name());
-          LOG.error("Choose a fallback merge join algorithm: " + JoinAlgorithm.MERGE_JOIN.name());
+          LOG.error("Choose a fallback to join algorithm: " + JoinAlgorithm.MERGE_JOIN);
           return createRightOuterMergeJoinPlan(context, plan, leftExec, rightExec);
       }
     } else {
@@ -588,7 +588,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
         default:
           LOG.error("Invalid Full Outer Join Algorithm Enforcer: " + algorithm.name());
-          LOG.error("Choose a fallback merge join algorithm: " + JoinAlgorithm.MERGE_JOIN.name());
+          LOG.error("Choose a fallback to join algorithm: " + JoinAlgorithm.MERGE_JOIN);
           return createFullOuterMergeJoinPlan(context, plan, leftExec, rightExec);
       }
     } else {

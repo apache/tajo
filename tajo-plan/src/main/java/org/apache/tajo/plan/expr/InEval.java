@@ -58,7 +58,7 @@ public class InEval extends BinaryEval {
 
   @Override
   public Datum eval(Tuple tuple) {
-    if (!isBinded) {
+    if (!isBound) {
       throw new IllegalStateException("bind() must be called before eval()");
     }
     if (values == null) {

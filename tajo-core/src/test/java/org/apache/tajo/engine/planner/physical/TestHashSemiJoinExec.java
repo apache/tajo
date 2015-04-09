@@ -205,11 +205,12 @@ public class TestHashSemiJoinExec {
     exec.init();
     // expect result without duplicated tuples.
     while ((tuple = exec.next()) != null) {
+      System.out.println("[TestHashSemiJoinExec/testHashSemiJoin] " + tuple);
       count++;
-      assertTrue(i == tuple.get(0).asInt4());
-      assertTrue(i == tuple.get(1).asInt4());
-      assertTrue(("dept_" + i).equals(tuple.get(2).asChars()));
-      assertTrue(10 + i == tuple.get(3).asInt4());
+      assertEquals(i, tuple.get(0).asInt4());
+      assertEquals(i, tuple.get(1).asInt4());
+      assertEquals("dept_" + i, tuple.get(2).asChars());
+      assertEquals(10 + i, tuple.get(3).asInt4());
 
       i += 2;
     }
