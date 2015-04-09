@@ -136,17 +136,17 @@ public class TestExternalSortExec {
     ProjectionExec proj = (ProjectionExec) exec;
 
     // TODO - should be planed with user's optimization hint
+    ExternalSortExec extSort;
     if (!(proj.getChild() instanceof ExternalSortExec)) {
       UnaryPhysicalExec sortExec = proj.getChild();
       SeqScanExec scan = sortExec.getChild();
 
-      ExternalSortExec extSort = new ExternalSortExec(ctx, ((MemSortExec)sortExec).getPlan(), scan);
-      extSort.setSortBufferBytesNum(1024*1024);
+      extSort = new ExternalSortExec(ctx, ((MemSortExec)sortExec).getPlan(), scan);
       proj.setChild(extSort);
     } else {
-      ExternalSortExec extSort = proj.getChild();
-      extSort.setSortBufferBytesNum(1024*1024);
+      extSort = proj.getChild();
     }
+    extSort.setSortBufferBytesNum(1024*1024);
 
     Tuple tuple;
     Tuple preVal = null;

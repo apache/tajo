@@ -146,6 +146,8 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1526: Investigate the frequent failures of Travis CI. (jihoon)
+
     TAJO-1462: Replace CSV examples into TEXT examples in docs. 
     (Contributed by Dongjoon Hyun, Committed by jihoon)
 
