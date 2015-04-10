@@ -136,11 +136,11 @@ public class TestEvalTreeUtil {
     util.shutdownCatalogCluster();
   }
 
-  public static Target [] getRawTargets(EvalContext evalContext, String query) {
+  public static Target [] getRawTargets(String query) {
     Expr expr = analyzer.parse(query);
     LogicalPlan plan = null;
     try {
-      plan = planner.createPlan(defaultContext, evalContext, expr);
+      plan = planner.createPlan(defaultContext, expr);
     } catch (PlanningException e) {
       e.printStackTrace();
     }
@@ -159,7 +159,7 @@ public class TestEvalTreeUtil {
     }
 
     LogicalPlanner.PlanContext context = new LogicalPlanner.PlanContext(defaultContext, plan, plan.getRootBlock(),
-        new EvalTreeOptimizer(null), true);
+        new EvalTreeOptimizer(), true);
 
     Selection selection = plan.getRootBlock().getSingletonExpr(OpType.Filter);
     return planner.getExprAnnotator().createEvalNode(context, selection.getQual(),
@@ -310,7 +310,7 @@ public class TestEvalTreeUtil {
     assertTrue(7.0d == node.bind(null, null).eval(null).asFloat8());
 
     Expr expr = analyzer.parse(QUERIES[1]);
-    LogicalPlan plan = planner.createPlan(defaultContext, new EvalContext(), expr, true);
+    LogicalPlan plan = planner.createPlan(defaultContext, expr, true);
     targets = plan.getRootBlock().getRawTargets();
     Column col1 = new Column("default.people.score", TajoDataTypes.Type.INT4);
     Collection<EvalNode> exprs =

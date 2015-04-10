@@ -133,7 +133,7 @@ public class ExprTestBase {
    * @return
    * @throws PlanningException
    */
-  private static Target[] getRawTargets(QueryContext context, EvalContext evalContext, String query, boolean condition)
+  private static Target[] getRawTargets(QueryContext context, String query, boolean condition)
       throws PlanningException, InvalidStatementException {
 
     List<ParsedResult> parsedResults = SimpleParser.parseScript(query);
@@ -149,7 +149,7 @@ public class ExprTestBase {
       }
       assertFalse(state.getErrorMessages().get(0), true);
     }
-    LogicalPlan plan = planner.createPlan(context, evalContext, expr, true);
+    LogicalPlan plan = planner.createPlan(context, expr, true);
     optimizer.optimize(context, plan);
     annotatedPlanVerifier.verify(context, state, plan);
 
@@ -276,7 +276,7 @@ public class ExprTestBase {
     EvalContext evalContext = new EvalContext();
 
     try {
-      targets = getRawTargets(queryContext, evalContext, query, condition);
+      targets = getRawTargets(queryContext, query, condition);
 
       EvalCodeGenerator codegen = null;
       if (queryContext.getBool(SessionVars.CODEGEN)) {

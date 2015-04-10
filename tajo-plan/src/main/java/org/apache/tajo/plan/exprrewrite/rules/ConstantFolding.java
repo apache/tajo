@@ -18,11 +18,15 @@
 
 package org.apache.tajo.plan.exprrewrite.rules;
 
+import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.exprrewrite.EvalTreeOptimizationRule;
 import org.apache.tajo.plan.annotator.Prioritized;
 import org.apache.tajo.plan.LogicalPlanner;
+import org.apache.tajo.plan.function.python.PythonScriptExecutor;
+import org.apache.tajo.plan.function.python.ScriptExecutor;
 
+import java.io.IOException;
 import java.util.Stack;
 
 @Prioritized(priority = 10)
@@ -51,7 +55,7 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
     }
 
     if (lhs.getType() == EvalType.CONST && rhs.getType() == EvalType.CONST) {
-      binaryEval.bind(context.getEvalContext(), null);
+      binaryEval.bind(null, null);
       return new ConstEval(binaryEval.eval(null));
     }
 
@@ -64,8 +68,9 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
     EvalNode child = visit(context, unaryEval.getChild(), stack);
     stack.pop();
 
+    unaryEval.setChild(child);
     if (child.getType() == EvalType.CONST) {
-      unaryEval.bind(context.getEvalContext(), null);
+      unaryEval.bind(null, null);
       return new ConstEval(unaryEval.eval(null));
     }
 
@@ -86,8 +91,18 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
     }
 
     if (constantOfAllDescendents && evalNode.getType() == EvalType.FUNCTION) {
-      evalNode.bind(context.getEvalContext(), null);
-      return new ConstEval(evalNode.eval(null));
+      ScriptExecutor executor = new PythonScriptExecutor(evalNode.getFuncDesc());
+      try {
+        executor.start(context.getQueryContext());
+        EvalContext evalContext = new EvalContext();
+        evalContext.addScriptExecutor(evalNode, executor);
+        evalNode.bind(evalContext, null);
+        Datum funcRes = evalNode.eval(null);
+        executor.shutdown();
+        return new ConstEval(funcRes);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
     } else {
       return evalNode;
     }

@@ -182,7 +182,7 @@ public class EvalNodeDeserializer {
           funcDesc = new FunctionDesc(funcProto.getFuncion());
           if (type == EvalType.FUNCTION) {
             current = new GeneralFunctionEval(context, funcDesc, params);
-            if (funcDesc.getInvocation().hasPython()) {
+            if (evalContext != null && funcDesc.getInvocation().hasPython()) {
               evalContext.addScriptExecutor(current, new PythonScriptExecutor(funcDesc));
             }
           } else if (type == EvalType.AGG_FUNCTION || type == EvalType.WINDOW_FUNCTION) {

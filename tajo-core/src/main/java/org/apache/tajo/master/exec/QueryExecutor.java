@@ -89,7 +89,7 @@ public class QueryExecutor {
   }
 
   public SubmitQueryResponse execute(QueryContext queryContext, Session session, String sql, String jsonExpr,
-                      LogicalPlan plan, EvalContext evalContext) throws Exception {
+                      LogicalPlan plan) throws Exception {
 
     SubmitQueryResponse.Builder response = SubmitQueryResponse.newBuilder();
     response.setIsForwarded(false);
@@ -120,7 +120,7 @@ public class QueryExecutor {
 
       // NonFromQuery indicates a form of 'select a, x+y;'
     } else if (PlannerUtil.checkIfNonFromQuery(plan)) {
-      execNonFromQuery(queryContext, plan, response, evalContext);
+      execNonFromQuery(queryContext, plan, response);
 
     } else { // it requires distributed execution. So, the query is forwarded to a query master.
       executeDistributedQuery(queryContext, session, plan, sql, jsonExpr, response);
@@ -266,10 +266,11 @@ public class QueryExecutor {
     response.setResultCode(ClientProtos.ResultCode.OK);
   }
 
-  public void execNonFromQuery(QueryContext queryContext, LogicalPlan plan, SubmitQueryResponse.Builder responseBuilder,
-                               EvalContext evalContext) throws Exception {
+  public void execNonFromQuery(QueryContext queryContext, LogicalPlan plan, SubmitQueryResponse.Builder responseBuilder)
+      throws Exception {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
+    EvalContext evalContext = new EvalContext();
     Target[] targets = plan.getRootBlock().getRawTargets();
     if (targets == null) {
       throw new PlanningException("No targets");
@@ -307,7 +308,6 @@ public class QueryExecutor {
     }
   }
 
-  @VisibleForTesting
   public static void startScriptExecutors(QueryContext queryContext, EvalContext evalContext, Target[] targets)
       throws IOException {
     for (int i = 0; i < targets.length; i++) {
@@ -323,7 +323,6 @@ public class QueryExecutor {
     }
   }
 
-  @VisibleForTesting
   public static void stopScriptExecutors(EvalContext evalContext) throws IOException {
     for (ScriptExecutor executor : evalContext.getAllScriptExecutors()) {
       executor.shutdown();
