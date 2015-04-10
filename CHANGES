@@ -14,6 +14,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1454: Comparing two date or two timestamp need not normalizing
+    (Contributed by navis, Committed by hyoungjun)
+
     TAJO-1385: Remove locking on RMContext. (Contributed by navis, 
     Committed by jihoon)
 
