@@ -18,6 +18,7 @@
 
 package org.apache.tajo.master.exec;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -47,6 +48,10 @@ import org.apache.tajo.master.*;
 import org.apache.tajo.master.exec.prehook.CreateTableHook;
 import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
 import org.apache.tajo.master.exec.prehook.InsertIntoHook;
+import org.apache.tajo.plan.expr.EvalContext;
+import org.apache.tajo.plan.expr.GeneralFunctionEval;
+import org.apache.tajo.plan.function.python.PythonScriptExecutor;
+import org.apache.tajo.plan.function.python.ScriptExecutor;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.querymaster.*;
 import org.apache.tajo.session.Session;
@@ -84,7 +89,7 @@ public class QueryExecutor {
   }
 
   public SubmitQueryResponse execute(QueryContext queryContext, Session session, String sql, String jsonExpr,
-                      LogicalPlan plan) throws Exception {
+                      LogicalPlan plan, EvalContext evalContext) throws Exception {
 
     SubmitQueryResponse.Builder response = SubmitQueryResponse.newBuilder();
     response.setIsForwarded(false);
@@ -113,11 +118,9 @@ public class QueryExecutor {
     } else if (PlannerUtil.checkIfSimpleQuery(plan)) {
       execSimpleQuery(queryContext, session, sql, plan, response);
 
-
       // NonFromQuery indicates a form of 'select a, x+y;'
     } else if (PlannerUtil.checkIfNonFromQuery(plan)) {
-      execNonFromQuery(queryContext, session, sql, plan, response);
-
+      execNonFromQuery(queryContext, plan, response, evalContext);
 
     } else { // it requires distributed execution. So, the query is forwarded to a query master.
       executeDistributedQuery(queryContext, session, plan, sql, jsonExpr, response);
@@ -263,37 +266,67 @@ public class QueryExecutor {
     response.setResultCode(ClientProtos.ResultCode.OK);
   }
 
-  public void execNonFromQuery(QueryContext queryContext, Session session, String query,
-                               LogicalPlan plan, SubmitQueryResponse.Builder responseBuilder) throws Exception {
+  public void execNonFromQuery(QueryContext queryContext, LogicalPlan plan, SubmitQueryResponse.Builder responseBuilder,
+                               EvalContext evalContext) throws Exception {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
     Target[] targets = plan.getRootBlock().getRawTargets();
     if (targets == null) {
       throw new PlanningException("No targets");
     }
-    final Tuple outTuple = new VTuple(targets.length);
+    try {
+      // start script executor
+      startScriptExecutors(queryContext, evalContext, targets);
+      final Tuple outTuple = new VTuple(targets.length);
+      for (int i = 0; i < targets.length; i++) {
+        EvalNode eval = targets[i].getEvalTree();
+        eval.bind(evalContext, null);
+        outTuple.put(i, eval.eval(null));
+      }
+      boolean isInsert = rootNode.getChild() != null && rootNode.getChild().getType() == NodeType.INSERT;
+      if (isInsert) {
+        InsertNode insertNode = rootNode.getChild();
+        insertNonFromQuery(queryContext, insertNode, responseBuilder);
+      } else {
+        Schema schema = PlannerUtil.targetToSchema(targets);
+        RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(schema);
+        byte[] serializedBytes = encoder.toBytes(outTuple);
+        ClientProtos.SerializedResultSet.Builder serializedResBuilder = ClientProtos.SerializedResultSet.newBuilder();
+        serializedResBuilder.addSerializedTuples(ByteString.copyFrom(serializedBytes));
+        serializedResBuilder.setSchema(schema.getProto());
+        serializedResBuilder.setBytesNum(serializedBytes.length);
+
+        responseBuilder.setResultSet(serializedResBuilder);
+        responseBuilder.setMaxRowNum(1);
+        responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
+        responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+      }
+    } finally {
+      // stop script executor
+      stopScriptExecutors(evalContext);
+    }
+  }
+
+  @VisibleForTesting
+  public static void startScriptExecutors(QueryContext queryContext, EvalContext evalContext, Target[] targets)
+      throws IOException {
     for (int i = 0; i < targets.length; i++) {
       EvalNode eval = targets[i].getEvalTree();
-      eval.bind(null);
-      outTuple.put(i, eval.eval(null));
+      if (eval instanceof GeneralFunctionEval) {
+        GeneralFunctionEval functionEval = (GeneralFunctionEval) eval;
+        if (functionEval.getFuncDesc().getInvocation().hasPython()) {
+          PythonScriptExecutor scriptExecutor = new PythonScriptExecutor(functionEval.getFuncDesc());
+          evalContext.addScriptExecutor(eval, scriptExecutor);
+          scriptExecutor.start(queryContext);
+        }
+      }
     }
-    boolean isInsert = rootNode.getChild() != null && rootNode.getChild().getType() == NodeType.INSERT;
-    if (isInsert) {
-      InsertNode insertNode = rootNode.getChild();
-      insertNonFromQuery(queryContext, insertNode, responseBuilder);
-    } else {
-      Schema schema = PlannerUtil.targetToSchema(targets);
-      RowStoreUtil.RowStoreEncoder encoder = RowStoreUtil.createEncoder(schema);
-      byte[] serializedBytes = encoder.toBytes(outTuple);
-      ClientProtos.SerializedResultSet.Builder serializedResBuilder = ClientProtos.SerializedResultSet.newBuilder();
-      serializedResBuilder.addSerializedTuples(ByteString.copyFrom(serializedBytes));
-      serializedResBuilder.setSchema(schema.getProto());
-      serializedResBuilder.setBytesNum(serializedBytes.length);
+  }
 
-      responseBuilder.setResultSet(serializedResBuilder);
-      responseBuilder.setMaxRowNum(1);
-      responseBuilder.setQueryId(QueryIdFactory.NULL_QUERY_ID.getProto());
-      responseBuilder.setResultCode(ClientProtos.ResultCode.OK);
+  @VisibleForTesting
+  public static void stopScriptExecutors(EvalContext evalContext) throws IOException {
+    for (ScriptExecutor executor : evalContext.getAllScriptExecutors()) {
+      executor.shutdown();
     }
   }
 

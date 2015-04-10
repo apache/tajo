@@ -23,6 +23,7 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.exception.UnsupportedException;
+import org.apache.tajo.plan.expr.EvalContext;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.Closeable;

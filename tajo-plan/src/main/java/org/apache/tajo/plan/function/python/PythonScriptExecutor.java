@@ -31,7 +31,6 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.function.PythonInvocationDesc;
-import org.apache.tajo.plan.function.FunctionInvokeContext;
 import org.apache.tajo.plan.function.stream.*;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -46,7 +45,7 @@ import java.util.concurrent.TimeUnit;
  * It internally creates a child process which is responsible for executing python codes.
  * Given an input tuple, it sends the tuple to the child process, and then receives a result from that.
  */
-public class PythonScriptExecutor {
+public class PythonScriptExecutor implements ScriptExecutor {
 
   private static final Log LOG = LogFactory.getLog(PythonScriptExecutor.class);
 
@@ -70,6 +69,8 @@ public class PythonScriptExecutor {
   private static final int CONTROLLER_LOG_FILE_PATH = 8; // Controller log file logs progress through the controller script not user code.
   private static final int OUT_SCHEMA = 9; // the schema of the output column
 
+  private OverridableConf queryContext;
+
   private Process process; // Handle to the external execution of python functions
   // all processes
   private ProcessErrorThread stderrThread; // thread to get process stderr
@@ -91,7 +92,7 @@ public class PythonScriptExecutor {
 
   private volatile StreamingUDFException outerrThreadsError;
 
-  private FunctionInvokeContext invokeContext = null;
+//  private FunctionInvokeContext invokeContext = null;
 
   private final FunctionSignature functionSignature;
   private final PythonInvocationDesc invocationDesc;
@@ -123,18 +124,21 @@ public class PythonScriptExecutor {
     pipeMeta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.TEXTFILE);
   }
 
-  public void start(FunctionInvokeContext context) throws IOException {
+//  public void start(FunctionInvokeContext context) throws IOException {
+  public void start(OverridableConf queryContext) throws IOException {
     isStopped = false;
-    this.invokeContext = context;
+//    this.invokeContext = context;
+    this.queryContext = queryContext;
     this.inputQueue = new ArrayBlockingQueue<Tuple>(1);
     this.outputQueue = new ArrayBlockingQueue<Object>(2);
     startUdfController();
     createInputHandlers();
     setStreams();
     startThreads();
+    LOG.info("started");
   }
 
-  public void shutdown() throws IOException, InterruptedException {
+  public void shutdown() throws IOException {
     isStopped = true;
     process.destroy();
     if (stdin != null) {
@@ -156,7 +160,7 @@ public class PythonScriptExecutor {
 
   private StreamingCommand startUdfController() throws IOException {
     StreamingCommand sc = new StreamingCommand(buildCommand());
-    ProcessBuilder processBuilder = StreamingUtil.createProcess(invokeContext.getQueryContext(), sc);
+    ProcessBuilder processBuilder = StreamingUtil.createProcess(queryContext, sc);
     process = processBuilder.start();
 
     Runtime.getRuntime().addShutdownHook(new ProcessKiller());
@@ -170,14 +174,13 @@ public class PythonScriptExecutor {
    * @throws IOException
    */
   private String[] buildCommand() throws IOException {
-    OverridableConf queryContext = invokeContext.getQueryContext();
     String[] command = new String[10];
 
     // TODO: support controller logging
     String standardOutputRootWriteLocation = "";
     if (queryContext.containsKey(QueryVars.PYTHON_CONTROLLER_LOG_DIR)) {
       LOG.warn("Currently, logging is not supported for the python controller.");
-      standardOutputRootWriteLocation = invokeContext.getQueryContext().get(QueryVars.PYTHON_CONTROLLER_LOG_DIR);
+      standardOutputRootWriteLocation = queryContext.get(QueryVars.PYTHON_CONTROLLER_LOG_DIR);
     }
 //    standardOutputRootWriteLocation = "/home/jihoon/Projects/tajo/";
     standardOutputRootWriteLocation = "/Users/jihoonson/Projects/tajo/";
@@ -198,10 +201,10 @@ public class PythonScriptExecutor {
     command[UDF_FILE_NAME] = fileName;
     command[UDF_FILE_PATH] = lastSeparator <= 0 ? "." : filePath.substring(0, lastSeparator - 1);
     command[UDF_NAME] = funcName;
-    if (!invokeContext.getQueryContext().containsKey(QueryVars.PYTHON_SCRIPT_CODE_DIR)) {
+    if (!queryContext.containsKey(QueryVars.PYTHON_SCRIPT_CODE_DIR)) {
       throw new IOException(TajoConf.ConfVars.PYTHON_CODE_DIR.keyname() + " must be set.");
     }
-    String fileCachePath = invokeContext.getQueryContext().get(QueryVars.PYTHON_SCRIPT_CODE_DIR);
+    String fileCachePath = queryContext.get(QueryVars.PYTHON_SCRIPT_CODE_DIR);
     command[PATH_TO_FILE_CACHE] = "'" + fileCachePath + "'";
     command[STD_OUT_OUTPUT_PATH] = outFileName;
     command[STD_ERR_OUTPUT_PATH] = errOutFileName;
@@ -454,8 +457,6 @@ public class PythonScriptExecutor {
       try {
         shutdown();
       } catch (IOException e) {
-        throw new RuntimeException(e);
-      } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
     }

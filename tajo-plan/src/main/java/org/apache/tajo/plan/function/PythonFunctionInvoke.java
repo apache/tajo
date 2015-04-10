@@ -31,7 +31,6 @@ import java.io.IOException;
 public class PythonFunctionInvoke extends FunctionInvoke implements Cloneable {
 
   private PythonScriptExecutor scriptExecutor;
-  private FunctionInvokeContext context;
 
   public PythonFunctionInvoke() {
 
@@ -44,7 +43,7 @@ public class PythonFunctionInvoke extends FunctionInvoke implements Cloneable {
   @Override
   public void init(FunctionInvokeContext context) throws IOException {
 //    this.scriptExecutor = new PythonScriptExecutor(functionDesc);
-    this.context = context;
+    this.scriptExecutor = (PythonScriptExecutor) context.getScriptExecutor();
   }
 
   @Override
@@ -54,14 +53,14 @@ public class PythonFunctionInvoke extends FunctionInvoke implements Cloneable {
     // TODO: frequent calls of start/stop functions will incur a large overhead.
     // TODO: To avoid this problem, PythonScriptExecutor should have the same life cycle with the TaskRunner.
     // TODO: In addition, we should consider the resource management problem, too.
-    if (scriptExecutor == null) {
-      this.scriptExecutor = new PythonScriptExecutor(functionDesc);
-      try {
-        scriptExecutor.start(context);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
+//    if (scriptExecutor == null) {
+//      this.scriptExecutor = new PythonScriptExecutor(functionDesc);
+//      try {
+//        scriptExecutor.start(context);
+//      } catch (IOException e) {
+//        throw new RuntimeException(e);
+//      }
+//    }
     Datum res = scriptExecutor.eval(tuple);
 //    try {
 //      scriptExecutor.stop();

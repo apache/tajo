@@ -51,7 +51,7 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
     }
 
     if (lhs.getType() == EvalType.CONST && rhs.getType() == EvalType.CONST) {
-      binaryEval.bind(null);
+      binaryEval.bind(context.getEvalContext(), null);
       return new ConstEval(binaryEval.eval(null));
     }
 
@@ -65,7 +65,7 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
     stack.pop();
 
     if (child.getType() == EvalType.CONST) {
-      unaryEval.bind(null);
+      unaryEval.bind(context.getEvalContext(), null);
       return new ConstEval(unaryEval.eval(null));
     }
 
@@ -86,7 +86,7 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
     }
 
     if (constantOfAllDescendents && evalNode.getType() == EvalType.FUNCTION) {
-      evalNode.bind(null);
+      evalNode.bind(context.getEvalContext(), null);
       return new ConstEval(evalNode.eval(null));
     } else {
       return evalNode;

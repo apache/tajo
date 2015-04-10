@@ -72,6 +72,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     LogicalPlan plan;
     LogicalPlan.QueryBlock currentBlock;
     NameResolvingMode columnRsvLevel;
+    EvalContext evalContext;
 
     public Context(LogicalPlanner.PlanContext planContext, NameResolvingMode colRsvLevel) {
       this.queryContext = planContext.queryContext;
@@ -384,7 +385,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       if (!EvalTreeUtil.checkIfCanBeConstant(evalNodes[i])) {
         throw new PlanningException("Non constant values cannot be included in IN PREDICATE.");
       }
-      values[i] = EvalTreeUtil.evaluateImmediately(evalNodes[i]);
+      values[i] = EvalTreeUtil.evaluateImmediately(ctx.evalContext, evalNodes[i]);
     }
     return new RowConstantEval(values);
   }

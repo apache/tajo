@@ -86,9 +86,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     EvalTreeOptimizer evalOptimizer;
     TimeZone timeZone;
     boolean debugOrUnitTests;
+    EvalContext evalContext;
 
     public PlanContext(OverridableConf context, LogicalPlan plan, QueryBlock block, EvalTreeOptimizer evalOptimizer,
-                       boolean debugOrUnitTests) {
+                       EvalContext evalContext, boolean debugOrUnitTests) {
       this.queryContext = context;
       this.plan = plan;
       this.queryBlock = block;
@@ -100,6 +101,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
         timeZone = TimeZone.getTimeZone(timezoneId);
       }
 
+      this.evalContext = evalContext;
       this.debugOrUnitTests = debugOrUnitTests;
     }
 
@@ -109,10 +111,15 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       this.queryBlock = block;
       this.evalOptimizer = context.evalOptimizer;
       this.debugOrUnitTests = context.debugOrUnitTests;
+      this.evalContext = context.evalContext;
     }
 
     public QueryBlock getQueryBlock() {
       return queryBlock;
+    }
+
+    public EvalContext getEvalContext() {
+      return evalContext;
     }
 
     public String toString() {
@@ -127,17 +134,18 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
    * @param expr A relational algebraic expression for a query.
    * @return A logical plan
    */
-  public LogicalPlan createPlan(OverridableConf context, Expr expr) throws PlanningException {
-    return createPlan(context, expr, false);
+  public LogicalPlan createPlan(OverridableConf context, EvalContext evalContext, Expr expr) throws PlanningException {
+    return createPlan(context, evalContext, expr, false);
   }
 
   @VisibleForTesting
-  public LogicalPlan createPlan(OverridableConf queryContext, Expr expr, boolean debug) throws PlanningException {
+  public LogicalPlan createPlan(OverridableConf queryContext, EvalContext evalContext, Expr expr, boolean debug)
+      throws PlanningException {
 
     LogicalPlan plan = new LogicalPlan(this);
 
     QueryBlock rootBlock = plan.newAndGetBlock(LogicalPlan.ROOT_BLOCK);
-    PlanContext context = new PlanContext(queryContext, plan, rootBlock, evalOptimizer, debug);
+    PlanContext context = new PlanContext(queryContext, plan, rootBlock, evalOptimizer, evalContext, debug);
     preprocessor.visit(context, new Stack<Expr>(), expr);
     plan.resetGeneratedId();
     LogicalNode topMostNode = this.visit(context, new Stack<Expr>(), expr);
@@ -810,7 +818,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     limitNode.setInSchema(child.getOutSchema());
     limitNode.setOutSchema(child.getOutSchema());
 
-    firstFetNum.bind(null);
+    firstFetNum.bind(null, null);
     limitNode.setFetchFirst(firstFetNum.eval(null).asInt8());
 
     return limitNode;

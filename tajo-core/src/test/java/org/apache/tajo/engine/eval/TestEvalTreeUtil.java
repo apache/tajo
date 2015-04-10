@@ -136,11 +136,11 @@ public class TestEvalTreeUtil {
     util.shutdownCatalogCluster();
   }
 
-  public static Target [] getRawTargets(String query) {
+  public static Target [] getRawTargets(EvalContext evalContext, String query) {
     Expr expr = analyzer.parse(query);
     LogicalPlan plan = null;
     try {
-      plan = planner.createPlan(defaultContext, expr);
+      plan = planner.createPlan(defaultContext, evalContext, expr);
     } catch (PlanningException e) {
       e.printStackTrace();
     }
@@ -159,7 +159,7 @@ public class TestEvalTreeUtil {
     }
 
     LogicalPlanner.PlanContext context = new LogicalPlanner.PlanContext(defaultContext, plan, plan.getRootBlock(),
-        new EvalTreeOptimizer(), true);
+        new EvalTreeOptimizer(null), true);
 
     Selection selection = plan.getRootBlock().getSingletonExpr(OpType.Filter);
     return planner.getExprAnnotator().createEvalNode(context, selection.getQual(),
@@ -265,12 +265,12 @@ public class TestEvalTreeUtil {
     FieldEval field = first.getLeftExpr();
     assertEquals(col1, field.getColumnRef());
     assertEquals(EvalType.LTH, first.getType());
-    assertEquals(10, first.getRightExpr().bind(null).eval(null).asInt4());
+    assertEquals(10, first.getRightExpr().bind(null, null).eval(null).asInt4());
     
     field = second.getRightExpr();
     assertEquals(col1, field.getColumnRef());
     assertEquals(EvalType.LTH, second.getType());
-    assertEquals(4, second.getLeftExpr().bind(null).eval(null).asInt4());
+    assertEquals(4, second.getLeftExpr().bind(null, null).eval(null).asInt4());
   }
   
   @Test
@@ -304,13 +304,13 @@ public class TestEvalTreeUtil {
     Target [] targets = getRawTargets(QUERIES[0]);
     EvalNode node = AlgebraicUtil.eliminateConstantExprs(targets[0].getEvalTree());
     assertEquals(EvalType.CONST, node.getType());
-    assertEquals(7, node.bind(null).eval(null).asInt4());
+    assertEquals(7, node.bind(null, null).eval(null).asInt4());
     node = AlgebraicUtil.eliminateConstantExprs(targets[1].getEvalTree());
     assertEquals(EvalType.CONST, node.getType());
-    assertTrue(7.0d == node.bind(null).eval(null).asFloat8());
+    assertTrue(7.0d == node.bind(null, null).eval(null).asFloat8());
 
     Expr expr = analyzer.parse(QUERIES[1]);
-    LogicalPlan plan = planner.createPlan(defaultContext, expr, true);
+    LogicalPlan plan = planner.createPlan(defaultContext, new EvalContext(), expr, true);
     targets = plan.getRootBlock().getRawTargets();
     Column col1 = new Column("default.people.score", TajoDataTypes.Type.INT4);
     Collection<EvalNode> exprs =
@@ -335,7 +335,7 @@ public class TestEvalTreeUtil {
     assertEquals(EvalType.GTH, transposed.getType());
     FieldEval field = transposed.getLeftExpr();
     assertEquals(col1, field.getColumnRef());
-    assertEquals(1, transposed.getRightExpr().bind(null).eval(null).asInt4());
+    assertEquals(1, transposed.getRightExpr().bind(null, null).eval(null).asInt4());
 
     node = getRootSelection(QUERIES[4]);
     // we expect that score < 3
@@ -343,7 +343,7 @@ public class TestEvalTreeUtil {
     assertEquals(EvalType.LTH, transposed.getType());
     field = transposed.getLeftExpr();
     assertEquals(col1, field.getColumnRef());
-    assertEquals(2, transposed.getRightExpr().bind(null).eval(null).asInt4());
+    assertEquals(2, transposed.getRightExpr().bind(null, null).eval(null).asInt4());
   }
 
   @Test

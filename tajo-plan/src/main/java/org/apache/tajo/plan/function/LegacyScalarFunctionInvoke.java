@@ -22,6 +22,7 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.plan.expr.EvalContext;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 

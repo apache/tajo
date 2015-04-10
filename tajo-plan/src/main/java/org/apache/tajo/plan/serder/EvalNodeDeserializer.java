@@ -35,6 +35,7 @@ import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.function.AggFunction;
+import org.apache.tajo.plan.function.python.PythonScriptExecutor;
 import org.apache.tajo.plan.logical.WindowSpec;
 import org.apache.tajo.plan.serder.PlanProto.WinFunctionEvalSpec;
 
@@ -52,7 +53,7 @@ import java.util.*;
  */
 public class EvalNodeDeserializer {
 
-  public static EvalNode deserialize(OverridableConf context, PlanProto.EvalNodeTree tree) {
+  public static EvalNode deserialize(OverridableConf context, EvalContext evalContext, PlanProto.EvalNodeTree tree) {
     Map<Integer, EvalNode> evalNodeMap = Maps.newHashMap();
 
     // sort serialized eval nodes in an ascending order of their IDs.
@@ -180,7 +181,10 @@ public class EvalNodeDeserializer {
         try {
           funcDesc = new FunctionDesc(funcProto.getFuncion());
           if (type == EvalType.FUNCTION) {
-            current = new GeneralFunctionEval(context, new FunctionDesc(funcProto.getFuncion()), params);
+            current = new GeneralFunctionEval(context, funcDesc, params);
+            if (funcDesc.getInvocation().hasPython()) {
+              evalContext.addScriptExecutor(current, new PythonScriptExecutor(funcDesc));
+            }
           } else if (type == EvalType.AGG_FUNCTION || type == EvalType.WINDOW_FUNCTION) {
             AggFunction instance = (AggFunction) funcDesc.newInstance();
             if (type == EvalType.AGG_FUNCTION) {

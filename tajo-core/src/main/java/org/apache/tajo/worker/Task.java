@@ -21,7 +21,7 @@ package org.apache.tajo.worker;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-
+import io.netty.handler.codec.http.QueryStringDecoder;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -30,26 +30,27 @@ import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
+import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.catalog.TableMeta;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.master.cluster.WorkerConnectionInfo;
-import org.apache.tajo.plan.function.python.PythonScriptExecutor;
-import org.apache.tajo.plan.serder.LogicalNodeDeserializer;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.engine.planner.physical.PhysicalExec;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.engine.query.TaskRequest;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
+import org.apache.tajo.plan.function.python.PythonScriptExecutor;
+import org.apache.tajo.plan.function.python.ScriptExecutor;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.serder.LogicalNodeDeserializer;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.pullserver.TajoPullServerService;
 import org.apache.tajo.pullserver.retriever.FileChunk;
 import org.apache.tajo.rpc.NettyClientBase;
@@ -57,8 +58,6 @@ import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.NetUtils;
-
-import io.netty.handler.codec.http.QueryStringDecoder;
 import org.apache.tajo.util.QueryContextUtil;
 
 import java.io.File;
@@ -140,7 +139,7 @@ public class Task {
 
   public void initPlan() throws IOException {
     QueryContextUtil.updatePythonScriptPath(systemConf, queryContext);
-    plan = LogicalNodeDeserializer.deserialize(queryContext, request.getPlan());
+    plan = LogicalNodeDeserializer.deserialize(queryContext, context.getEvalContext(), request.getPlan());
     LogicalNode [] scanNode = PlannerUtil.findAllNodes(plan, NodeType.SCAN);
     if (scanNode != null) {
       for (LogicalNode node : scanNode) {
@@ -178,7 +177,7 @@ public class Task {
     LOG.info("==================================");
     LOG.info("* Stage " + request.getId() + " is initialized");
     LOG.info("* InterQuery: " + interQuery
-        + (interQuery ? ", Use " + this.shuffleType + " shuffle":"") +
+        + (interQuery ? ", Use " + this.shuffleType + " shuffle" : "") +
         ", Fragments (num: " + request.getFragments().size() + ")" +
         ", Fetches (total:" + request.getFetches().size() + ") :");
 
@@ -195,8 +194,27 @@ public class Task {
     LOG.info("==================================");
   }
 
+  private void startScriptExecutors() throws IOException {
+    int cnt = 0;
+    for (ScriptExecutor executor : context.getEvalContext().getAllScriptExecutors()) {
+      executor.start(queryContext);
+      cnt++;
+    }
+    LOG.info(cnt + " script executors are started.");
+  }
+
+  private void stopScriptExecutors() throws IOException {
+    int cnt = 0;
+    for (ScriptExecutor executor : context.getEvalContext().getAllScriptExecutors()) {
+      executor.shutdown();
+      cnt++;
+    }
+    LOG.info(cnt + " script executors are shutdowned.");
+  }
+
   public void init() throws IOException {
     initPlan();
+    startScriptExecutors();
 
     if (context.getState() == TaskAttemptState.TA_PENDING) {
       // initialize a task temporal dir
@@ -262,11 +280,21 @@ public class Task {
   }
 
   public void kill() {
+    try {
+      stopScriptExecutors();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     context.setState(TaskAttemptState.TA_KILLED);
     context.stop();
   }
 
   public void abort() {
+    try {
+      stopScriptExecutors();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     context.stop();
   }
 
@@ -415,6 +443,7 @@ public class Task {
     } catch (Throwable e) {
       error = e ;
       LOG.error(e.getMessage(), e);
+      stopScriptExecutors();
       context.stop();
     } finally {
       if (executor != null) {
@@ -473,6 +502,7 @@ public class Task {
             + ", failed: " + executionBlockContext.failedTasksNum.intValue());
         cleanupTask();
       } finally {
+        stopScriptExecutors();
         executionBlockContext.releaseConnection(client);
       }
     }
@@ -637,6 +667,11 @@ public class Task {
         } else {
           if (retryNum == maxRetryNum) {
             LOG.error("ERROR: the maximum retry (" + retryNum + ") on the fetch exceeded (" + fetcher.getURI() + ")");
+          }
+          try {
+            stopScriptExecutors();
+          } catch (IOException e) {
+            throw new RuntimeException(e);
           }
           context.stop(); // retry task
           ctx.getFetchLatch().countDown();

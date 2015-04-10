@@ -40,10 +40,13 @@ public class GeneralFunctionEval extends FunctionEval {
   }
 
   @Override
-  public EvalNode bind(Schema schema) {
-    super.bind(schema);
+  public EvalNode bind(EvalContext evalContext, Schema schema) {
+    super.bind(evalContext, schema);
     try {
       this.funcInvoke = FunctionInvoke.newInstance(funcDesc);
+      if (evalContext != null && evalContext.hasScriptExecutor(this)) {
+        this.invokeContext.setScriptExecutor(evalContext.getScriptExecutor(this));
+      }
       this.funcInvoke.init(invokeContext);
     } catch (IOException e) {
       throw new RuntimeException(e);
