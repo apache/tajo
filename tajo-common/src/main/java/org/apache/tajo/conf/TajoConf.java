@@ -328,6 +328,8 @@ public class TajoConf extends Configuration {
         (long)256 * 1048576),
     $EXECUTOR_OUTER_HASH_JOIN_SIZE_THRESHOLD("tajo.executor.join.outer.in-memory-hash-threshold-bytes",
         (long)256 * 1048576),
+    $EXECUTOR_CROSS_HASH_JOIN_SIZE_THRESHOLD("tajo.executor.join.cross.in-memory-hash-threshold-bytes",
+        (long)256 * 1048576),
     $EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD("tajo.executor.groupby.in-memory-hash-threshold-bytes",
         (long)256 * 1048576),
     $MAX_OUTPUT_FILE_SIZE("tajo.query.max-outfile-size-mb", 0), // zero means infinite

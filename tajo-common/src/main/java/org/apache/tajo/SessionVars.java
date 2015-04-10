@@ -116,6 +116,8 @@ public enum SessionVars implements ConfigKey {
       "limited size for hash inner join (mb)", DEFAULT, Long.class, Validators.min("0")),
   OUTER_HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_OUTER_HASH_JOIN_SIZE_THRESHOLD, "limited size for hash outer join (mb)",
       DEFAULT, Long.class, Validators.min("0")),
+  CROSS_HASH_JOIN_SIZE_LIMIT(ConfVars.$EXECUTOR_CROSS_HASH_JOIN_SIZE_THRESHOLD, "limited size for hash cross join (mb)",
+      DEFAULT, Long.class, Validators.min("0")),
   HASH_GROUPBY_SIZE_LIMIT(ConfVars.$EXECUTOR_GROUPBY_INMEMORY_HASH_THRESHOLD, "limited size for hash groupby (mb)",
       DEFAULT, Long.class, Validators.min("0")),
   MAX_OUTPUT_FILE_SIZE(ConfVars.$MAX_OUTPUT_FILE_SIZE, "Maximum per-output file size (mb). 0 means infinite.", DEFAULT,

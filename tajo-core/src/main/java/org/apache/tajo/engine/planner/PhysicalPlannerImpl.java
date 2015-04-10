@@ -256,28 +256,38 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
     return size;
   }
 
-  @VisibleForTesting
-  public boolean checkIfInMemoryInnerJoinIsPossible(TaskAttemptContext context, LogicalNode node, boolean left)
+  public boolean isInnerJoinHashApplicable(TaskAttemptContext context, LogicalNode node, INPUT input)
       throws IOException {
+    return isHashApplicable(context, node, SessionVars.INNER_HASH_JOIN_SIZE_LIMIT, input);
+  }
+
+  public boolean isOuterJoinHashApplicable(TaskAttemptContext context, LogicalNode node, INPUT input)
+      throws IOException {
+    return isHashApplicable(context, node, SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT, input);
+  }
+
+  public boolean isCrossJoinHashApplicable(TaskAttemptContext context, LogicalNode node, INPUT input)
+      throws IOException {
+    return isHashApplicable(context, node, SessionVars.CROSS_HASH_JOIN_SIZE_LIMIT, input);
+  }
+
+  private boolean isHashApplicable(TaskAttemptContext context, LogicalNode node,
+                                   SessionVars sessionVar, INPUT input) throws IOException {
     String [] lineage = PlannerUtil.getRelationLineage(node);
     long volume = estimateSizeRecursive(context, lineage);
-    boolean inMemoryInnerJoinFlag = false;
 
-    QueryContext queryContext = context.getQueryContext();
-
-    if (queryContext.containsKey(SessionVars.INNER_HASH_JOIN_SIZE_LIMIT)) {
-      inMemoryInnerJoinFlag = volume <= context.getQueryContext().getLong(SessionVars.INNER_HASH_JOIN_SIZE_LIMIT);
-    } else {
-      inMemoryInnerJoinFlag = volume <= context.getQueryContext().getLong(SessionVars.HASH_JOIN_SIZE_LIMIT);
-    }
-
-    LOG.info(String.format("[%s] the volume of %s relations (%s) is %s and is %sfit to main maemory.",
+    boolean applicable = volume <= getThreshold(context.getQueryContext(), sessionVar);
+    LOG.info(String.format("[%s] the volume of %s relations (%s) is %s and is %sfit to main memory.",
         context.getTaskId().toString(),
-        (left ? "Left" : "Right"),
+        input.name().toLowerCase(),
         TUtil.arrayToString(lineage),
         FileUtil.humanReadableByteCount(volume, false),
-        (inMemoryInnerJoinFlag ? "" : "not ")));
-    return inMemoryInnerJoinFlag;
+        (applicable ? "" : "not ")));
+    return applicable;
+  }
+
+  private long getThreshold(QueryContext context, SessionVars sessionVar) {
+    return context.getLong(sessionVar, context.getLong(SessionVars.HASH_JOIN_SIZE_LIMIT));
   }
 
   public PhysicalExec createJoinPlan(TaskAttemptContext context, JoinNode joinNode, PhysicalExec leftExec,
@@ -325,6 +335,9 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
       JoinAlgorithm algorithm = property.getJoin().getAlgorithm();
 
       switch (algorithm) {
+        case IN_MEMORY_HASH_JOIN:
+          LOG.info("Join (" + plan.getPID() +") chooses [Hash Join]");
+          return new HashCrossJoinExec(context, plan, leftExec, rightExec);
         case NESTED_LOOP_JOIN:
           LOG.info("Join (" + plan.getPID() +") chooses [Nested Loop Join]");
           return new NLJoinExec(context, plan, leftExec, rightExec);
@@ -336,10 +349,19 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
           LOG.error("Invalid Cross Join Algorithm Enforcer: " + algorithm.name());
           return new BNLJoinExec(context, plan, leftExec, rightExec);
       }
-
-    } else {
-      return new BNLJoinExec(context, plan, leftExec, rightExec);
     }
+
+    boolean inMemoryHashJoin =
+        isCrossJoinHashApplicable(context, plan.getLeftChild(), INPUT.LEFT) ||
+        isCrossJoinHashApplicable(context, plan.getRightChild(), INPUT.RIGHT);
+
+    if (inMemoryHashJoin) {
+      LOG.info("Join (" + plan.getPID() +") chooses [Hash Join]");
+      // returns two PhysicalExec. smaller one is 0, and larger one is 1.
+      PhysicalExec [] orderedChilds = switchJoinSidesIfNecessary(context, plan, leftExec, rightExec);
+      return new HashCrossJoinExec(context, plan, orderedChilds[1], orderedChilds[0]);
+    }
+    return new BNLJoinExec(context, plan, leftExec, rightExec);
   }
 
   private PhysicalExec createInnerJoinPlan(TaskAttemptContext context, JoinNode plan,
@@ -417,11 +439,9 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
   private PhysicalExec createBestInnerJoinPlan(TaskAttemptContext context, JoinNode plan,
                                                PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
-    boolean inMemoryHashJoin = false;
-    if (checkIfInMemoryInnerJoinIsPossible(context, plan.getLeftChild(), true)
-        || checkIfInMemoryInnerJoinIsPossible(context, plan.getRightChild(), false)) {
-      inMemoryHashJoin = true;
-    }
+    boolean inMemoryHashJoin =
+        isInnerJoinHashApplicable(context, plan.getLeftChild(), INPUT.LEFT) ||
+        isInnerJoinHashApplicable(context, plan.getRightChild(), INPUT.RIGHT);
 
     if (inMemoryHashJoin) {
       LOG.info("Join (" + plan.getPID() +") chooses [In-memory Hash Join]");
@@ -480,19 +500,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
 
   private PhysicalExec createBestLeftOuterJoinPlan(TaskAttemptContext context, JoinNode plan,
                                                    PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
-    String [] rightLineage = PlannerUtil.getRelationLineage(plan.getRightChild());
-    long rightTableVolume = estimateSizeRecursive(context, rightLineage);
-    boolean hashJoin;
-
-    QueryContext queryContext = context.getQueryContext();
-
-    if (queryContext.containsKey(SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT)) {
-      hashJoin = rightTableVolume <  queryContext.getLong(SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT);
-    } else {
-      hashJoin = rightTableVolume <  queryContext.getLong(SessionVars.HASH_JOIN_SIZE_LIMIT);
-    }
-
-    if (hashJoin) {
+    if (isOuterJoinHashApplicable(context, plan, INPUT.RIGHT)) {
       // we can implement left outer join using hash join, using the right operand as the build relation
       LOG.info("Left Outer Join (" + plan.getPID() +") chooses [Hash Join].");
       return new HashLeftOuterJoinExec(context, plan, leftExec, rightExec);
@@ -508,19 +516,7 @@ public class PhysicalPlannerImpl implements PhysicalPlanner {
                                                PhysicalExec leftExec, PhysicalExec rightExec) throws IOException {
     //if the left operand is small enough => implement it as a left outer hash join with exchanged operators (note:
     // blocking, but merge join is blocking as well)
-    String [] outerLineage4 = PlannerUtil.getRelationLineage(plan.getLeftChild());
-    long leftTableVolume = estimateSizeRecursive(context, outerLineage4);
-    boolean hashJoin;
-
-    QueryContext queryContext = context.getQueryContext();
-
-    if (queryContext.containsKey(SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT)) {
-      hashJoin = leftTableVolume <  queryContext.getLong(SessionVars.OUTER_HASH_JOIN_SIZE_LIMIT);
-    } else {
-      hashJoin = leftTableVolume <  queryContext.getLong(SessionVars.HASH_JOIN_SIZE_LIMIT);
-    }
-
-    if (hashJoin){
+    if (isOuterJoinHashApplicable(context, plan, INPUT.LEFT)){
       LOG.info("Right Outer Join (" + plan.getPID() +") chooses [Hash Join].");
       return new HashLeftOuterJoinExec(context, plan, rightExec, leftExec);
     } else {

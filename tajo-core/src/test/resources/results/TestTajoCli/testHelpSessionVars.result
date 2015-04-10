@@ -30,6 +30,7 @@ Available Session Variables:
 \set HASH_JOIN_SIZE_LIMIT [long value] - limited size for hash join (mb)
 \set INNER_HASH_JOIN_SIZE_LIMIT [long value] - limited size for hash inner join (mb)
 \set OUTER_HASH_JOIN_SIZE_LIMIT [long value] - limited size for hash outer join (mb)
+\set CROSS_HASH_JOIN_SIZE_LIMIT [long value] - limited size for hash cross join (mb)
 \set HASH_GROUPBY_SIZE_LIMIT [long value] - limited size for hash groupby (mb)
 \set MAX_OUTPUT_FILE_SIZE [int value] - Maximum per-output file size (mb). 0 means infinite.
 \set NULL_CHAR [text value] - null char of text file output

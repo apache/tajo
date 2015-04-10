@@ -33,4 +33,6 @@ public interface PhysicalPlanner {
   public PhysicalExec createPlan(TaskAttemptContext context,
                                  LogicalNode logicalPlan)
       throws InternalException;
+
+  enum INPUT { LEFT, RIGHT }
 }
