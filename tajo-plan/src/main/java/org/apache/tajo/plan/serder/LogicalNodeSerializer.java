@@ -599,6 +599,10 @@ public class LogicalNodeSerializer extends BasicLogicalPlanVisitor<LogicalNodeSe
           .setOldName(node.getColumnName())
           .setNewName(node.getNewColumnName()));
       break;
+    case SET_PROPERTY:
+      alterTableBuilder.setSetType(PlanProto.AlterTableNode.Type.SET_PROPERTY);
+      alterTableBuilder.setProperties(node.getProperties().getProto());
+      break;
     default:
       throw new UnimplementedException("Unknown SET type in ALTER TABLE: " + node.getAlterTableOpType().name());
     }

@@ -45,6 +45,7 @@ public class NotEval extends UnaryEval implements Cloneable {
   @Override
   @SuppressWarnings("unchecked")
   public Datum eval(Tuple tuple) {
+    super.eval(tuple);
     Datum datum = child.eval(tuple);
     return !datum.isNull() ? DatumFactory.createBool(!datum.asBool()) : datum;
   }

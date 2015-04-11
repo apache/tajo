@@ -60,6 +60,7 @@ enum AlterTableType {
   ADD_COLUMN = 2;
   ADD_PARTITION = 3;
   DROP_PARTITION = 4;
+  SET_PROPERTY = 5;
 }
 
 message ColumnProto {
@@ -350,6 +351,7 @@ message AlterTableDescProto {
   optional AlterColumnProto alterColumnName = 4;
   required AlterTableType alterTableType = 5;
   optional PartitionDescProto partitionDesc = 6;
+  optional KeyValueSetProto params = 7;
 }
 
 message AlterColumnProto {

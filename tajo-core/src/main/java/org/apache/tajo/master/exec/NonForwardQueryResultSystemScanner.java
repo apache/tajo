@@ -616,6 +616,11 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
   public Schema getLogicalSchema() {
     return outSchema;
   }
+
+  @Override
+  public int getCurrentRowNumber() {
+    return currentRow;
+  }
   
   class SimplePhysicalPlannerImpl extends PhysicalPlannerImpl {
 

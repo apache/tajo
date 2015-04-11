@@ -101,11 +101,16 @@ public class RpcUtils {
     }
   }
 
+  // non-blocking lock which passes only a ticket before cleared or removed
   public static class Scrutineer<T> {
 
     private final AtomicReference<T> reference = new AtomicReference<T>();
 
-    T check(T ticket) {
+    public T expire() {
+      return reference.getAndSet(null);
+    }
+
+    public T check(T ticket) {
       T granted = reference.get();
       for (;granted == null; granted = reference.get()) {
         if (reference.compareAndSet(null, ticket)) {
@@ -115,7 +120,7 @@ public class RpcUtils {
       return granted;
     }
 
-    boolean clear(T granted) {
+    public boolean clear(T granted) {
       return reference.compareAndSet(granted, null);
     }
   }

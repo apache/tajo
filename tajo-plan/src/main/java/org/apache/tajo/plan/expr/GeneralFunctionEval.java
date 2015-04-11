@@ -42,6 +42,7 @@ public class GeneralFunctionEval extends FunctionEval {
   @Override
   @SuppressWarnings("unchecked")
   public Datum eval(Tuple tuple) {
+    super.eval(tuple);
     return instance.eval(evalParams(tuple));
   }
 

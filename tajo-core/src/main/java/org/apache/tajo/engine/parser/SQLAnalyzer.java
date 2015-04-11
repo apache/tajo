@@ -1878,9 +1878,22 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
       }
     }
 
+    if (checkIfExist(ctx.property_list())) {
+      alterTable.setParams(getProperties(ctx.property_list()));
+    }
+
     alterTable.setAlterTableOpType(determineAlterTableType(ctx));
 
     return alterTable;
+  }
+
+  private Map<String, String> getProperties(SQLParser.Property_listContext ctx) {
+    Map<String, String> params = new HashMap<String, String>();
+    for (int i = 0; i < ctx.property().size(); i++) {
+      params.put(stripQuote(ctx.property(i).key.getText()), stripQuote(ctx.property(i).value.getText()));
+    }
+
+    return params;
   }
 
   private AlterTableOpType determineAlterTableType(SQLParser.Alter_table_statementContext ctx) {
@@ -1891,6 +1904,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
     final int ADD_MASK = 00001000;
     final int DROP_MASK = 00001001;
     final int PARTITION_MASK = 00000020;
+    final int SET_MASK = 00000002;
+    final int PROPERTY_MASK = 00010000;
 
     int val = 00000000;
 
@@ -1916,6 +1931,12 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
           case PARTITION:
             val = val | PARTITION_MASK;
             break;
+          case SET:
+            val = val | SET_MASK;
+            break;
+          case PROPERTY:
+            val = val | PROPERTY_MASK;
+            break;
           default:
             break;
         }
@@ -1937,6 +1958,8 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
         return AlterTableOpType.ADD_PARTITION;
       case 529:
         return AlterTableOpType.DROP_PARTITION;
+      case 4098:
+        return AlterTableOpType.SET_PROPERTY;
       default:
         return null;
     }
