@@ -95,9 +95,11 @@ class PythonStreamingController:
         sys.path.append(cache_path)
         sys.path.append('.')
 
-        logging.basicConfig(filename=log_file_name, format="%(asctime)s %(levelname)s %(message)s", level=udf_logging.udf_log_level)
-        logging.info("To reduce the amount of information being logged only a small subset of rows are logged at the "
-                     "INFO level.  Call udf_logging.set_log_level_debug in tajo_util to see all rows being processed.")
+        should_log = False
+        if should_log:
+            logging.basicConfig(filename=log_file_name, format="%(asctime)s %(levelname)s %(message)s", level=udf_logging.udf_log_level)
+            logging.info("To reduce the amount of information being logged only a small subset of rows are logged at the "
+                         "INFO level.  Call udf_logging.set_log_level_debug in tajo_util to see all rows being processed.")
 
         input_str = self.get_next_input()
 
@@ -105,20 +107,11 @@ class PythonStreamingController:
             func = __import__(module_name, globals(), locals(), [func_name], -1).__dict__[func_name]
         except:
             # These errors should always be caused by user code.
-            logging.info('write_user_exception1')
             write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
             self.close_controller(-1)
 
-        # if udf_logging.udf_log_level != logging.DEBUG:
-        #     #Only log output for illustrate after we get the flag to capture output.
-        #     sys.stdout = open(os.devnull, 'w')
-        # else:
-        #     sys.stdout = self.log_stream
-
-        should_log = True
         log_message = logging.info
         if udf_logging.udf_log_level == logging.DEBUG:
-            should_log = True
             log_message = logging.debug
 
         while input_str != END_OF_STREAM:
@@ -131,7 +124,6 @@ class PythonStreamingController:
                         log_message("Deserialized Input: %s" % (unicode(inputs)))
                 except:
                     # Capture errors where the user passes in bad data.
-                    logging.info('write_user_exception2')
                     write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
                     self.close_controller(-3)
 
@@ -141,7 +133,6 @@ class PythonStreamingController:
                         log_message("UDF Output: %s" % (unicode(func_output)))
                 except:
                     # These errors should always be caused by user code.
-                    logging.info('write_user_exception3')
                     write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
                     self.close_controller(-2)
 
@@ -154,7 +145,6 @@ class PythonStreamingController:
                 # This should only catch internal exceptions with the controller
                 # and pig- not with user code.
                 import traceback
-                logging.info('traceback')
                 traceback.print_exc(file=self.stream_error)
                 sys.exit(-3)
 
@@ -181,11 +171,6 @@ class PythonStreamingController:
         if input_str == '':
             return END_OF_STREAM
 
-        # if input_str == TURN_ON_OUTPUT_CAPTURING:
-            # logging.debug("Turned on Output Capturing")
-            # sys.stdout = log_stream
-            # return self.get_next_input()
-
         if input_str == END_OF_STREAM:
             return input_str
 
@@ -193,7 +178,6 @@ class PythonStreamingController:
 
     def close_controller(self, exit_code):
         sys.stderr.close()
-        logging.info('last')
         self.stream_error.write("\n")
         self.stream_error.close()
         sys.stdout.close()

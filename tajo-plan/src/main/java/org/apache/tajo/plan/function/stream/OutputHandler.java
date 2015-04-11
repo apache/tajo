@@ -20,11 +20,6 @@ package org.apache.tajo.plan.function.stream;
 
 import com.google.common.base.Charsets;
 import io.netty.buffer.ByteBuf;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.tajo.OverridableConf;
-import org.apache.tajo.catalog.Schema;
-import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 
@@ -37,12 +32,11 @@ import java.io.InputStream;
  */
 public class OutputHandler {
   private static int DEFAULT_BUFFER = 64 * 1024;
-  public static final Object END_OF_OUTPUT = new Object();
-  private static final byte[] DEFAULT_RECORD_DELIM = ",".getBytes();
+  private final static byte[] END_OF_RECORD_DELIM = "|_\n".getBytes();
 
-  protected TextLineDeserializer deserializer;
+  private final TextLineDeserializer deserializer;
 
-  protected ByteBufLineReader in = null;
+  private ByteBufLineReader in = null;
 
   private String currValue = null;
 
@@ -50,14 +44,13 @@ public class OutputHandler {
 
   private final ByteBuf buf = BufferPool.directBuffer(DEFAULT_BUFFER);
 
-  //Both of these ignore the trailing \n.  So if the
-  //default delimiter is "\n" recordDelimStr is "".
+  // Both of these ignore the trailing "\n".  So if the default delimiter is "\n", recordDelimStr is "".
   private String recordDelimStr = null;
   private int recordDelimLength = 0;
-  private Tuple tuple = new VTuple(1);
+  private final Tuple tuple = new VTuple(1);
 
   // flag to mark if close() has already been called
-  protected boolean alreadyClosed = false;
+  private boolean alreadyClosed = false;
 
   public OutputHandler(TextLineDeserializer deserializer) {
     this.deserializer = deserializer;
@@ -108,12 +101,12 @@ public class OutputHandler {
     }
 
     while(!isEndOfRow()) {
-      //Need to add back the newline character we ate.
+      // Need to add back the newline character we ate.
       currValue += '\n';
 
       byte[] lineBytes = readNextLine();
       if (lineBytes == null) {
-        //We have no more input, so just break;
+        // We have no more input, so just break;
         break;
       }
       currValue += new String(lineBytes);
@@ -138,7 +131,7 @@ public class OutputHandler {
 
   private boolean isEndOfRow() {
     if (recordDelimStr == null) {
-      byte[] recordDelimBa = getRecordDelimiter();
+      byte[] recordDelimBa = END_OF_RECORD_DELIM;
       recordDelimLength = recordDelimBa.length - 1; //Ignore trailing \n
       recordDelimStr = new String(recordDelimBa, 0, recordDelimLength,  Charsets.UTF_8);
     }
@@ -146,10 +139,6 @@ public class OutputHandler {
       return true;
     }
     return currValue.contains(recordDelimStr);
-  }
-
-  protected byte[] getRecordDelimiter() {
-    return DEFAULT_RECORD_DELIM;
   }
 
   /**

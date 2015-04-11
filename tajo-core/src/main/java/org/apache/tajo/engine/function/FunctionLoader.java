@@ -54,6 +54,11 @@ public class FunctionLoader {
   private static Log LOG = LogFactory.getLog(FunctionLoader.class);
   public static final String PYTHON_FUNCTION_NAMESPACE = "python";
 
+  /**
+   * Load built-in functions
+   *
+   * @return
+   */
   public static Map<FunctionSignature, FunctionDesc> load() {
     Map<FunctionSignature, FunctionDesc> map = Maps.newHashMap();
 
@@ -78,6 +83,14 @@ public class FunctionLoader {
     return map;
   }
 
+  /**
+   * Load functions that are optionally defined by users.
+   *
+   * @param conf
+   * @param functionMap
+   * @return
+   * @throws IOException
+   */
   public static Map<FunctionSignature, FunctionDesc> loadOptionalFunctions(TajoConf conf,
                                                                            Map<FunctionSignature, FunctionDesc> functionMap)
       throws IOException {

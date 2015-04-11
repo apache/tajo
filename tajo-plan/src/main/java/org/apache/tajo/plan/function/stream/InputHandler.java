@@ -32,18 +32,12 @@ public class InputHandler {
   private final static byte[] END_OF_RECORD_DELIM = "|_\n".getBytes();
   private final static byte[] END_OF_STREAM = ("C" + "\\x04" + "|_\n").getBytes();
 
-  /**
-   * The serializer to be used to send data to the managed process.
-   *
-   * It is the responsibility of the concrete sub-classes to setup and
-   * manage the serializer.
-   */
-  protected TextLineSerializer serializer;
+  private final TextLineSerializer serializer;
 
   private OutputStream out;
 
   // flag to mark if close() has already been called
-  protected boolean alreadyClosed = false;
+  private boolean alreadyClosed = false;
 
   public InputHandler(TextLineSerializer serializer) {
     this.serializer = serializer;

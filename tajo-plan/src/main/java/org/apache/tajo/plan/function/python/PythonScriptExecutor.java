@@ -18,7 +18,6 @@
 
 package org.apache.tajo.plan.function.python;
 
-import com.google.common.base.Charsets;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -36,9 +35,6 @@ import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 
 import java.io.*;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.TimeUnit;
 
 /**
  * {@link PythonScriptExecutor} is a script executor for python functions.
@@ -72,74 +68,49 @@ public class PythonScriptExecutor implements ScriptExecutor {
   private OverridableConf queryContext;
 
   private Process process; // Handle to the external execution of python functions
-  // all processes
-  private ProcessErrorThread stderrThread; // thread to get process stderr
-  private ProcessInputThread stdinThread; // thread to send input to process
-  private ProcessOutputThread stdoutThread; //thread to read output from process
 
   private InputHandler inputHandler;
   private OutputHandler outputHandler;
-
-  private BlockingQueue<Tuple> inputQueue;
-  private BlockingQueue<Object> outputQueue;
 
   private DataOutputStream stdin; // stdin of the process
   private InputStream stdout; // stdout of the process
   private InputStream stderr; // stderr of the process
 
-  private static final Object ERROR_OUTPUT = new Object();
-  private static final Object NULL_OBJECT = new Object();
-
-  private volatile StreamingUDFException outerrThreadsError;
-
-//  private FunctionInvokeContext invokeContext = null;
-
   private final FunctionSignature functionSignature;
   private final PythonInvocationDesc invocationDesc;
   private final Schema inSchema;
   private final Schema outSchema;
-  private final int [] projectionCols;
+  private final int [] projectionCols = new int[]{0};
 
   private final CSVLineSerDe lineSerDe = new CSVLineSerDe();
-  private final TableMeta pipeMeta;
+  private final TableMeta pipeMeta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.TEXTFILE);
 
-  private boolean isStopped = false;
+  private static final Tuple EMPTY_INPUT = new VTuple(0);
 
   public PythonScriptExecutor(FunctionDesc functionDesc) {
     if (!functionDesc.getInvocation().hasPython()) {
-      throw new IllegalStateException("Function type must be python");
+      throw new IllegalStateException("Function type must be 'python'");
     }
     functionSignature = functionDesc.getSignature();
     invocationDesc = functionDesc.getInvocation().getPython();
 
-    // Compile input/output schema
-    // Note that temporal columns are used.
     TajoDataTypes.DataType[] paramTypes = functionSignature.getParamTypes();
     inSchema = new Schema();
     for (int i = 0; i < paramTypes.length; i++) {
       inSchema.addColumn(new Column("in_" + i, paramTypes[i]));
     }
     outSchema = new Schema(new Column[]{new Column("out", functionSignature.getReturnType())});
-    projectionCols = new int[]{0};
-    pipeMeta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.TEXTFILE);
   }
 
-//  public void start(FunctionInvokeContext context) throws IOException {
   public void start(OverridableConf queryContext) throws IOException {
-    isStopped = false;
-//    this.invokeContext = context;
     this.queryContext = queryContext;
-    this.inputQueue = new ArrayBlockingQueue<Tuple>(1);
-    this.outputQueue = new ArrayBlockingQueue<Object>(2);
     startUdfController();
     createInputHandlers();
     setStreams();
-    startThreads();
-    LOG.info("started");
+    LOG.info("PythonScriptExecutor is started");
   }
 
   public void shutdown() throws IOException {
-    isStopped = true;
     process.destroy();
     if (stdin != null) {
       stdin.close();
@@ -152,24 +123,16 @@ public class PythonScriptExecutor implements ScriptExecutor {
     }
     inputHandler.close(process);
     outputHandler.close();
-    LOG.info("shutdowned");
-//    stdinThread.join();
-//    stderrThread.join();
-//    stdoutThread.join();
+    LOG.info("PythonScriptExecutor is shutdowned");
   }
 
-  private StreamingCommand startUdfController() throws IOException {
-    StreamingCommand sc = new StreamingCommand(buildCommand());
-    ProcessBuilder processBuilder = StreamingUtil.createProcess(queryContext, sc);
+  private void startUdfController() throws IOException {
+    ProcessBuilder processBuilder = StreamingUtil.createProcess(buildCommand());
     process = processBuilder.start();
-
-    Runtime.getRuntime().addShutdownHook(new ProcessKiller());
-
-    return sc;
   }
 
   /**
-   * Build a command to execute external process.
+   * Build a command to execute an external process.
    * @return
    * @throws IOException
    */
@@ -180,10 +143,8 @@ public class PythonScriptExecutor implements ScriptExecutor {
     String standardOutputRootWriteLocation = "";
     if (queryContext.containsKey(QueryVars.PYTHON_CONTROLLER_LOG_DIR)) {
       LOG.warn("Currently, logging is not supported for the python controller.");
-      standardOutputRootWriteLocation = queryContext.get(QueryVars.PYTHON_CONTROLLER_LOG_DIR);
+      standardOutputRootWriteLocation = queryContext.get(QueryVars.PYTHON_CONTROLLER_LOG_DIR, DEFAULT_LOG_DIR);
     }
-//    standardOutputRootWriteLocation = "/home/jihoon/Projects/tajo/";
-    standardOutputRootWriteLocation = "/Users/jihoonson/Projects/tajo/";
     String controllerLogFileName, outFileName, errOutFileName;
 
     String funcName = invocationDesc.getName();
@@ -223,6 +184,11 @@ public class PythonScriptExecutor implements ScriptExecutor {
     this.outputHandler = new OutputHandler(deserializer);
   }
 
+  /**
+   * Get the standard input, output, and error streams of the external process
+   *
+   * @throws IOException
+   */
   private void setStreams() throws IOException {
     stdout = new DataInputStream(new BufferedInputStream(process.getInputStream()));
     outputHandler.bindTo(stdout);
@@ -231,17 +197,6 @@ public class PythonScriptExecutor implements ScriptExecutor {
     inputHandler.bindTo(stdin);
 
     stderr = new DataInputStream(new BufferedInputStream(process.getErrorStream()));
-  }
-
-  private void startThreads() {
-//    stdinThread = new ProcessInputThread();
-//    stdinThread.start();
-
-//    stdoutThread = new ProcessOutputThread();
-//    stdoutThread.start();
-
-//    stderrThread = new ProcessErrorThread();
-//    stderrThread.start();
   }
 
   /**
@@ -280,185 +235,26 @@ public class PythonScriptExecutor implements ScriptExecutor {
   }
 
   public Datum eval(Tuple input) {
-    if (outputQueue == null) {
-      throw new RuntimeException("Process has already been shut down.  No way to retrieve output for input: " + input);
-    }
-
     try {
       if (input == null) {
         // When nothing is passed into the UDF the tuple
         // being sent is the full tuple for the relation.
         // We want it to be nothing (since that's what the user wrote).
-        input = new VTuple(0);
+        input = EMPTY_INPUT;
       }
 
-//      inputQueue.put(input);
       inputHandler.putNext(input);
       stdin.flush();
     } catch (Exception e) {
       throw new RuntimeException("Failed adding input to inputQueue", e);
     }
-    Object o = null;
+    Datum result;
     try {
-      if (outputQueue != null) {
-//        o = outputQueue.take();
-        o = outputHandler.getNext().get(0);
-        if (o == NULL_OBJECT) {
-          o = null;
-        }
-      }
+      result = outputHandler.getNext().get(0);
     } catch (Exception e) {
       throw new RuntimeException("Problem getting output", e);
     }
 
-    if (o == ERROR_OUTPUT) {
-      outputQueue = null;
-      if (outerrThreadsError == null) {
-        outerrThreadsError = new StreamingUDFException("python", "Problem with streaming udf.  Can't recreate exception.");
-      }
-      throw new RuntimeException(outerrThreadsError);
-    }
-
-    return (Datum) o;
-  }
-
-  /**
-   * The thread which consumes input and feeds it to the the Process
-   */
-  class ProcessInputThread extends Thread {
-    ProcessInputThread() {
-      setDaemon(true);
-    }
-
-    public void run() {
-      try {
-        while (!isStopped) {
-          Tuple inputTuple = inputQueue.poll(10, TimeUnit.MILLISECONDS);
-          if (inputTuple != null) {
-            inputHandler.putNext(inputTuple);
-          }
-          try {
-            stdin.flush();
-          } catch(Exception e) {
-            return;
-          }
-        }
-      } catch (InterruptedException e) {
-
-      } catch (Exception e) {
-        LOG.error(e);
-      }
-    }
-  }
-
-  private static final int WAIT_FOR_ERROR_LENGTH = 500;
-  private static final int MAX_WAIT_FOR_ERROR_ATTEMPTS = 5;
-
-  /**
-   * The thread which consumes output from process
-   */
-  class ProcessOutputThread extends Thread {
-    ProcessOutputThread() {
-      setDaemon(true);
-    }
-
-    public void run() {
-      Object o;
-      try {
-
-        o = outputHandler.getNext().get(0);
-        while (!isStopped && o != OutputHandler.END_OF_OUTPUT) {
-          if (o != null) {
-            outputQueue.put(o);
-          }
-          else {
-            outputQueue.put(NULL_OBJECT);
-          }
-          o = outputHandler.getNext().get(0);
-        }
-      } catch (IOException e) {
-        // EOF
-      } catch(Exception e) {
-        if (outputQueue != null) {
-          try {
-            // Give error thread a chance to check the standard error output
-            // for an exception message.
-            int attempt = 0;
-            while (stderrThread.isAlive() && attempt < MAX_WAIT_FOR_ERROR_ATTEMPTS) {
-              Thread.sleep(WAIT_FOR_ERROR_LENGTH);
-              attempt++;
-            }
-            // Only write this if no other error.  Don't want to overwrite
-            // an error from the error thread.
-            if (outerrThreadsError == null) {
-              outerrThreadsError = new StreamingUDFException(
-                  PYTHON_LANGUAGE, "Error deserializing output.  Please check that the declared outputSchema for function " +
-                  invocationDesc.getName() + " matches the data type being returned.", e);
-            }
-            // TODO: Currently, errors occurred before executing an input are ignored.
-            outputQueue.put(ERROR_OUTPUT); // Need to wake main thread.
-          } catch(InterruptedException ie) {
-            LOG.error(ie);
-          }
-        }
-      }
-    }
-  }
-
-  class ProcessErrorThread extends Thread {
-    public ProcessErrorThread() {
-      setDaemon(true);
-    }
-
-    public void run() {
-      try {
-        Integer lineNumber = null;
-        StringBuffer error = new StringBuffer();
-        String errInput;
-        BufferedReader reader = new BufferedReader(
-            new InputStreamReader(stderr, Charsets.UTF_8));
-        while (!isStopped && ((errInput = reader.readLine()) != null)) {
-          // First line of error stream is usually the line number of error.
-          // If its not a number just treat it as first line of error message.
-          if (lineNumber == null) {
-            try {
-              lineNumber = Integer.valueOf(errInput);
-            } catch (NumberFormatException nfe) {
-              error.append(errInput + "\n");
-            }
-          } else {
-            error.append(errInput + "\n");
-          }
-        }
-        if (!isStopped) {
-          outerrThreadsError = new StreamingUDFException(PYTHON_LANGUAGE, error.toString(), lineNumber);
-          if (outputQueue != null) {
-            // TODO: Currently, errors occurred before executing an input are ignored.
-            outputQueue.put(ERROR_OUTPUT); // Need to wake main thread.
-          }
-          if (stderr != null) {
-            stderr.close();
-            stderr = null;
-          }
-        }
-      } catch (IOException e) {
-        LOG.info("Process Ended", e);
-      } catch (Exception e) {
-        LOG.error("standard error problem", e);
-      }
-    }
-  }
-
-  class ProcessKiller extends Thread {
-    public ProcessKiller() {
-      setDaemon(true);
-    }
-    public void run() {
-      try {
-        shutdown();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
+    return result;
   }
 }

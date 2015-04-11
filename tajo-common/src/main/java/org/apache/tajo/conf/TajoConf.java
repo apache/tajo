@@ -293,7 +293,6 @@ public class TajoConf extends Configuration {
     GEOIP_DATA("tajo.function.geoip-database-location", ""),
 
     // Python UDF
-    PYTHON_CMD_ARGS_REMAINDERS("tajo.function.python.args-reminders", ""),
     PYTHON_CODE_DIR("tajo.function.python.code-dir", ""),
 
     /////////////////////////////////////////////////////////////////////////////////

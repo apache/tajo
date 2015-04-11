@@ -195,21 +195,15 @@ public class Task {
   }
 
   private void startScriptExecutors() throws IOException {
-    int cnt = 0;
     for (ScriptExecutor executor : context.getEvalContext().getAllScriptExecutors()) {
       executor.start(queryContext);
-      cnt++;
     }
-    LOG.info(cnt + " script executors are started.");
   }
 
   private void stopScriptExecutors() throws IOException {
-    int cnt = 0;
     for (ScriptExecutor executor : context.getEvalContext().getAllScriptExecutors()) {
       executor.shutdown();
-      cnt++;
     }
-    LOG.info(cnt + " script executors are shutdowned.");
   }
 
   public void init() throws IOException {

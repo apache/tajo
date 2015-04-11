@@ -26,7 +26,7 @@ import java.io.IOException;
 public class TestPythonFunctions extends ExprTestBase {
 
   @Test
-  public void test() throws IOException {
+  public void testFunctions() throws IOException {
     testSimpleEval("select return_one()", new String[]{"1"});
     testSimpleEval("select helloworld()", new String[]{"Hello, World"});
     testSimpleEval("select concat_py('1')", new String[]{"11"});

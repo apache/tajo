@@ -18,18 +18,13 @@
 
 package org.apache.tajo.plan.function.stream;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.OverridableConf;
+import org.apache.tajo.util.TUtil;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public class StreamingUtil {
-
-  private static Log LOG = LogFactory.getLog(StreamingUtil.class);
 
   private static final String BASH = "bash";
   private static final String PATH = "PATH";
@@ -37,13 +32,12 @@ public class StreamingUtil {
   /**
    * Create an external process for StreamingCommand command.
    *
-   * @param command
+   * @param argv process arguments
    * @return
    */
-  public static ProcessBuilder createProcess(OverridableConf queryContext, StreamingCommand command) {
+  public static ProcessBuilder createProcess(String[] argv) {
     // Set the actual command to run with 'bash -c exec ...'
-    List<String> cmdArgs = new ArrayList<String>();
-    String[] argv = command.getCommandArgs();
+    List<String> cmdArgs = TUtil.newList();
 
     StringBuffer argBuffer = new StringBuffer();
     for (String arg : argv) {
@@ -68,17 +62,16 @@ public class StreamingUtil {
     // Start the external process
     ProcessBuilder processBuilder = new ProcessBuilder(cmdArgs
         .toArray(new String[cmdArgs.size()]));
-    setupEnvironment(queryContext, processBuilder);
+    setupEnvironment(processBuilder);
     return processBuilder;
   }
 
   /**
    * Set up the run-time environment of the managed process.
    *
-   * @param pb
-   *            {@link ProcessBuilder} used to exec the process
+   * @param pb {@link ProcessBuilder} used to exec the process
    */
-  private static void setupEnvironment(OverridableConf queryContext, ProcessBuilder pb) {
+  private static void setupEnvironment(ProcessBuilder pb) {
     String separator = ":";
     Map<String, String> env = pb.environment();
 

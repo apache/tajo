@@ -18,8 +18,6 @@
 
 package org.apache.tajo.plan.function.python;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -30,7 +28,10 @@ import org.apache.tajo.function.FunctionSupplement;
 import org.apache.tajo.function.PythonInvocationDesc;
 import org.apache.tajo.util.TUtil;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.List;
@@ -40,9 +41,17 @@ import java.util.regex.Pattern;
 public class PythonScriptEngine extends TajoScriptEngine {
 
   public static final String FILE_EXTENSION = ".py";
-  private static final Log LOG = LogFactory.getLog(PythonScriptEngine.class);
 
+  /**
+   * Register functions defined in a python script
+   *
+   * @param path path to the python script file
+   * @param namespace namespace where the functions will be defined
+   * @return set of function descriptions
+   * @throws IOException
+   */
   public static Set<FunctionDesc> registerFunctions(URI path, String namespace) throws IOException {
+    // TODO: we should support the namespace for python functions.
 
     Set<FunctionDesc> functionDescs = TUtil.newHashSet();
 
