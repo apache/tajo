@@ -91,18 +91,24 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
     }
 
     if (constantOfAllDescendents && evalNode.getType() == EvalType.FUNCTION) {
-      ScriptExecutor executor = new PythonScriptExecutor(evalNode.getFuncDesc());
-      try {
-        executor.start(context.getQueryContext());
-        EvalContext evalContext = new EvalContext();
-        evalContext.addScriptExecutor(evalNode, executor);
-        evalNode.bind(evalContext, null);
-        Datum funcRes = evalNode.eval(null);
-        executor.shutdown();
-        return new ConstEval(funcRes);
-      } catch (IOException e) {
-        throw new RuntimeException(e);
+      if (evalNode.getFuncDesc().getInvocation().hasPython()) {
+        ScriptExecutor executor = new PythonScriptExecutor(evalNode.getFuncDesc());
+        try {
+          executor.start(context.getQueryContext());
+          EvalContext evalContext = new EvalContext();
+          evalContext.addScriptExecutor(evalNode, executor);
+          evalNode.bind(evalContext, null);
+          Datum funcRes = evalNode.eval(null);
+          executor.shutdown();
+          return new ConstEval(funcRes);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      } else {
+        evalNode.bind(null, null);
+        return new ConstEval(evalNode.eval(null));
       }
+
     } else {
       return evalNode;
     }
