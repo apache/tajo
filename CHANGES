@@ -16,6 +16,12 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1454: Comparing two date or two timestamp need not normalizing
+    (Contributed by navis, Committed by hyoungjun)
+
+    TAJO-1385: Remove locking on RMContext. (Contributed by navis, 
+    Committed by jihoon)
+
     TAJO-1499: Check the bind status when EvalNode::eval() is called. (jihoon)
 
     TAJO-1400: Add TajoStatement::setMaxRows method support.
@@ -75,6 +81,9 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1500: FinishedTaskCleanThread is not interrupted when worker stops.
+    (Contributed by navis, Committed by jihoon)
 
     TAJO-1469: allocateQueryMaster can leak resources if it times-out (3sec, 
     hardcoded) (Contributed by navis, Committed by hyoungjun)
