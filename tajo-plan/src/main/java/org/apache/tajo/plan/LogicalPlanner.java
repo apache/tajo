@@ -810,6 +810,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     limitNode.setInSchema(child.getOutSchema());
     limitNode.setOutSchema(child.getOutSchema());
 
+    firstFetNum.bind(null);
     limitNode.setFetchFirst(firstFetNum.eval(null).asInt8());
 
     return limitNode;
@@ -1928,6 +1929,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     alterTableNode.setNewTableName(alterTable.getNewTableName());
     alterTableNode.setColumnName(alterTable.getColumnName());
     alterTableNode.setNewColumnName(alterTable.getNewColumnName());
+    alterTableNode.setProperties(new KeyValueSet(alterTable.getParams()));
 
     if (null != alterTable.getAddNewColumn()) {
       alterTableNode.setAddNewColumn(convertColumn(alterTable.getAddNewColumn()));

@@ -141,7 +141,7 @@ public class TestStorages {
         {StoreType.PARQUET, false, false, false},
         {StoreType.SEQUENCEFILE, true, true, false},
         {StoreType.AVRO, false, false, false},
-        {StoreType.TEXTFILE, true, true, false},
+        {StoreType.TEXTFILE, true, true, true},
         {StoreType.JSON, true, true, false},
     });
   }

@@ -18,7 +18,7 @@
 
 package org.apache.tajo.datum;
 
-import com.google.common.base.Objects;
+import com.google.common.primitives.Longs;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.exception.InvalidOperationException;
 import org.apache.tajo.util.datetime.DateTimeUtil;
@@ -62,8 +62,8 @@ public class IntervalDatum extends Datum {
     }
   }
 
-  private int months;
-  private long millieconds;
+  final int months;
+  final long milliseconds;
 
   public IntervalDatum(long milliseconds) {
     this(0, milliseconds);
@@ -72,7 +72,7 @@ public class IntervalDatum extends Datum {
   public IntervalDatum(int months, long milliseconds) {
     super(TajoDataTypes.Type.INTERVAL);
     this.months = months;
-    this.millieconds = milliseconds;
+    this.milliseconds = milliseconds;
   }
 
   public IntervalDatum(String intervalStr) {
@@ -162,7 +162,7 @@ public class IntervalDatum extends Datum {
           throw new InvalidOperationException("invalid input syntax for type interval: " + intervalStr);
       }
 
-      this.millieconds = time + day * DAY_MILLIS + hour * HOUR_MILLIS + minute * 60 * 1000L + second * 1000L +
+      this.milliseconds = time + day * DAY_MILLIS + hour * HOUR_MILLIS + minute * 60 * 1000L + second * 1000L +
           microsecond * 100L + millisecond;
       this.months = year * 12 + month;
     } catch (InvalidOperationException e) {
@@ -220,7 +220,7 @@ public class IntervalDatum extends Datum {
   }
 
   public long getMilliSeconds() {
-    return millieconds;
+    return milliseconds;
   }
 
   @Override
@@ -228,30 +228,22 @@ public class IntervalDatum extends Datum {
     switch(datum.type()) {
       case INTERVAL:
         IntervalDatum other = (IntervalDatum) datum;
-        return new IntervalDatum(months + other.months, millieconds + other.millieconds);
+        return new IntervalDatum(months + other.months, milliseconds + other.milliseconds);
       case DATE: {
         DateDatum dateDatum = (DateDatum) datum;
         TimeMeta tm = dateDatum.toTimeMeta();
-        tm.plusMillis(getMilliSeconds());
-        if (getMonths() > 0) {
-          tm.plusMonths(getMonths());
-        }
+        tm.plusInterval(months, milliseconds);
         return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
       }
       case TIME: {
         TimeMeta tm = ((TimeDatum) datum).toTimeMeta();
-        tm.plusMillis(millieconds);
+        tm.plusInterval(months, milliseconds);
         return new TimeDatum(DateTimeUtil.toTime(tm));
       }
       case TIMESTAMP: {
         TimeMeta tm = new TimeMeta();
-        DateTimeUtil.toJulianTimeMeta(((TimestampDatum) datum).asInt8(), tm);
-        if (months > 0) {
-          tm.plusMonths(months);
-        }
-        if (millieconds > 0) {
-          tm.plusMillis(millieconds);
-        }
+        DateTimeUtil.toJulianTimeMeta(datum.asInt8(), tm);
+        tm.plusInterval(months, milliseconds);
         return new TimestampDatum(DateTimeUtil.toJulianTimestamp(tm));
       }
       default:
@@ -263,7 +255,7 @@ public class IntervalDatum extends Datum {
   public Datum minus(Datum datum) {
     if (datum.type() == TajoDataTypes.Type.INTERVAL) {
       IntervalDatum other = (IntervalDatum) datum;
-      return new IntervalDatum(months - other.months, millieconds - other.millieconds);
+      return new IntervalDatum(months - other.months, milliseconds - other.milliseconds);
     } else {
       throw new InvalidOperationException(datum.type());
     }
@@ -276,11 +268,11 @@ public class IntervalDatum extends Datum {
       case INT4:
       case INT8:
         long int8Val = datum.asInt8();
-        return createIntervalDatum((double)months * int8Val, (double) millieconds * int8Val);
+        return createIntervalDatum((double)months * int8Val, (double) milliseconds * int8Val);
       case FLOAT4:
       case FLOAT8:
         double float8Val = datum.asFloat8();
-        return createIntervalDatum((double)months * float8Val, (double) millieconds * float8Val);
+        return createIntervalDatum((double)months * float8Val, (double) milliseconds * float8Val);
       default:
         throw new InvalidOperationException(datum.type());
     }
@@ -296,14 +288,14 @@ public class IntervalDatum extends Datum {
         if (!validateDivideZero(paramValueI8)) {
           return NullDatum.get();
         }
-        return createIntervalDatum((double) months / paramValueI8, (double) millieconds / paramValueI8);
+        return createIntervalDatum((double) months / paramValueI8, (double) milliseconds / paramValueI8);
       case FLOAT4:
       case FLOAT8:
         double paramValueF8 = datum.asFloat8();
         if (!validateDivideZero(paramValueF8)) {
           return NullDatum.get();
         }
-        return createIntervalDatum((double) months / paramValueF8, (double) millieconds / paramValueF8);
+        return createIntervalDatum((double) months / paramValueF8, (double) milliseconds / paramValueF8);
       default:
         throw new InvalidOperationException(datum.type());
     }
@@ -316,9 +308,10 @@ public class IntervalDatum extends Datum {
 
   @Override
   public long asInt8() {
-    return (months * 30) * DAY_MILLIS + millieconds;
+    return (months * 30) * DAY_MILLIS + milliseconds;
   }
 
+  @Override
   public String toString() {
     return asChars();
   }
@@ -346,7 +339,7 @@ public class IntervalDatum extends Datum {
         prefix = " ";
       }
 
-      formatMillis(sb, prefix, millieconds);
+      formatMillis(sb, prefix, milliseconds);
       return sb.toString();
     } catch (Exception e) {
       return "";
@@ -398,15 +391,7 @@ public class IntervalDatum extends Datum {
   @Override
   public int compareTo(Datum datum) {
     if (datum.type() == TajoDataTypes.Type.INTERVAL) {
-      long val = asInt8();
-      long another = datum.asInt8();
-      if (val < another) {
-        return -1;
-      } else if (val > another) {
-        return 1;
-      } else {
-        return 0;
-      }
+      return Longs.compare(asInt8(), datum.asInt8());
     } else if (datum instanceof NullDatum || datum.isNull()) {
       return -1;
     } else {
@@ -436,6 +421,6 @@ public class IntervalDatum extends Datum {
 
   @Override
   public int hashCode(){
-    return Objects.hashCode(asInt8());
+    return Longs.hashCode(asInt8());
   }
 }

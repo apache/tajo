@@ -20,11 +20,13 @@ package org.apache.tajo.ws.rs.netty.testapp2;
 
 import java.io.Serializable;
 
+import com.google.gson.annotations.Expose;
+
 public class Directory implements Serializable {
 
-  private String name;
-  private String owner;
-  private String group;
+  @Expose private String name;
+  @Expose private String owner;
+  @Expose private String group;
 
   public String getName() {
     return name;
