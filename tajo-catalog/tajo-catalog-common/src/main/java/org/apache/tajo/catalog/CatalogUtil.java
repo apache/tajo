@@ -24,7 +24,6 @@ import org.apache.tajo.DataTypeUtil;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
-import org.apache.tajo.catalog.proto.CatalogProtos.ColumnProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableDescProto;
 import org.apache.tajo.common.TajoDataTypes;
@@ -344,7 +343,11 @@ public class CatalogUtil {
   }
 
   public static DataType newSimpleDataType(Type type) {
-    return DataType.newBuilder().setType(type).build();
+		if (type != Type.CHAR) {
+			return DataType.newBuilder().setType(type).build();
+		} else {
+			return newDataTypeWithLen(Type.CHAR, 1);
+		}
   }
 
   /**
