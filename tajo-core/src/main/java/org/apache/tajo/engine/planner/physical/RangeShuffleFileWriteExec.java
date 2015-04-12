@@ -58,8 +58,8 @@ public class RangeShuffleFileWriteExec extends UnaryPhysicalExec {
     this.sortSpecs = sortSpecs;
   }
 
-  public void init() throws IOException {
-    super.init();
+  public void init(boolean needsRescan) throws IOException {
+    super.init(needsRescan);
 
     indexKeys = new int[sortSpecs.length];
     keySchema = PlannerUtil.sortSpecsToSchema(sortSpecs);

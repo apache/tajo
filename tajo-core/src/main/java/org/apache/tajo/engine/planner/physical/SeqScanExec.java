@@ -135,7 +135,7 @@ public class SeqScanExec extends ScanExec {
   }
 
   @Override
-  public void init() throws IOException {
+  public void init(boolean needsRescan) throws IOException {
     Schema projected;
 
     if (plan.hasTargets()) {
@@ -160,7 +160,7 @@ public class SeqScanExec extends ScanExec {
     }
 
     initScanner(projected);
-    super.init();
+    super.init(needsRescan);
 
     if (plan.hasQual()) {
       qual.bind(inSchema);

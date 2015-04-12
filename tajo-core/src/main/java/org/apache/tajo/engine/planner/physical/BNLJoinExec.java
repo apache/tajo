@@ -68,6 +68,11 @@ public class BNLJoinExec extends CommonJoinExec {
     outputTuple = new VTuple(outSchema.size());
   }
 
+  @Override
+  public void init(boolean rescan) throws IOException {
+    init(rescan, true);
+  }
+
   public Tuple next() throws IOException {
 
     if (leftTupleSlots.isEmpty()) {

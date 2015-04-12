@@ -149,9 +149,9 @@ public class ExternalSortExec extends SortExec {
     this.sortBufferBytesNum = sortBufferBytesNum;
   }
 
-  public void init() throws IOException {
+  public void init(boolean needsRescan) throws IOException {
     inputStats = new TableStats();
-    super.init();
+    super.init(needsRescan);
   }
 
   public SortNode getPlan() {
@@ -279,8 +279,7 @@ public class ExternalSortExec extends SortExec {
         info(LOG, "Chunks creation time: " + (endTimeOfChunkSplit - startTimeOfChunkSplit) + " msec");
 
         if (memoryResident) { // if all sorted data reside in a main-memory table.
-          TupleSorter sorter = getSorter(inMemoryTable);
-          result = new MemTableScanner(sorter.sort(), inMemoryTable.size(), sortAndStoredBytes);
+          result = new MemTableScanner();
         } else { // if input data exceeds main-memory at least once
 
           try {
@@ -533,10 +532,9 @@ public class ExternalSortExec extends SortExec {
     }
   }
 
-  private static class MemTableScanner extends AbstractScanner {
-    final Iterable<Tuple> iterable;
-    final long sortAndStoredBytes;
-    final int totalRecords;
+  private class MemTableScanner extends AbstractScanner {
+    Iterable<Tuple> iterable;   // be warn, this can hold references to tuples inside of inMemoryTable
+    int totalRecords;
 
     Iterator<Tuple> iterator;
     // for input stats
@@ -544,14 +542,16 @@ public class ExternalSortExec extends SortExec {
     int numRecords;
     TableStats scannerTableStats;
 
-    public MemTableScanner(Iterable<Tuple> iterable, int length, long inBytes) {
-      this.iterable = iterable;
-      this.totalRecords = length;
-      this.sortAndStoredBytes = inBytes;
+    public MemTableScanner() {
+      this.iterable = getSorter(inMemoryTable).sort();
+      this.totalRecords = inMemoryTable.size();
     }
 
     @Override
     public void init() throws IOException {
+      if (iterable == null) {
+        throw new IllegalStateException("Backing memory is released already");
+      }
       iterator = iterable.iterator();
 
       scannerProgress = 0.0f;
@@ -566,12 +566,14 @@ public class ExternalSortExec extends SortExec {
 
     @Override
     public Tuple next() throws IOException {
-      if (iterator.hasNext()) {
+      if (iterator != null && iterator.hasNext()) {
         numRecords++;
         return iterator.next();
-      } else {
-        return null;
       }
+      if (!parentNeedsRescan) {
+        close();
+      }
+      return null;
     }
 
     @Override
@@ -582,6 +584,8 @@ public class ExternalSortExec extends SortExec {
     @Override
     public void close() throws IOException {
       iterator = null;
+      iterable = null;
+      inMemoryTable.clear();
       scannerProgress = 1.0f;
     }
 

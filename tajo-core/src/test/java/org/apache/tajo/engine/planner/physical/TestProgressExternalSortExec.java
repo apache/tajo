@@ -167,7 +167,7 @@ public class TestProgressExternalSortExec {
     Tuple preVal = null;
     Tuple curVal;
     int cnt = 0;
-    exec.init();
+    exec.init(true);
     BaseTupleComparator comparator = new BaseTupleComparator(proj.getSchema(),
         new SortSpec[]{
             new SortSpec(new Column("managerid", TajoDataTypes.Type.INT4)),

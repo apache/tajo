@@ -256,7 +256,7 @@ public class TestPhysicalPlanner {
 
     Tuple tuple;
     int i = 0;
-    exec.init();
+    exec.init(false);
     while ((tuple = exec.next()) != null) {
       assertTrue(tuple.contains(0));
       assertTrue(tuple.contains(1));
@@ -287,7 +287,7 @@ public class TestPhysicalPlanner {
 
     Tuple tuple;
     int i = 0;
-    exec.init();
+    exec.init(false);
     while ((tuple = exec.next()) != null) {
       assertTrue(tuple.contains(0));
       i++;
@@ -315,7 +315,7 @@ public class TestPhysicalPlanner {
 
     int i = 0;
     Tuple tuple;
-    exec.init();
+    exec.init(false);
     while ((tuple = exec.next()) != null) {
       assertEquals(6, tuple.get(2).asInt4()); // sum
       assertEquals(3, tuple.get(3).asInt4()); // max
@@ -346,7 +346,7 @@ public class TestPhysicalPlanner {
 
     int i = 0;
     Tuple tuple;
-    exec.init();
+    exec.init(false);
     while ((tuple = exec.next()) != null) {
       assertEquals(12, tuple.get(1).asInt4()); // sum
       assertEquals(3, tuple.get(2).asInt4()); // max
@@ -390,7 +390,7 @@ public class TestPhysicalPlanner {
 
     int i = 0;
     Tuple tuple;
-    exec.init();
+    exec.init(false);
     while ((tuple = exec.next()) != null) {
       assertEquals(6, tuple.get(2).asInt4()); // sum
       assertEquals(3, tuple.get(3).asInt4()); // max
@@ -439,7 +439,7 @@ public class TestPhysicalPlanner {
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
-    exec.init();
+    exec.init(false);
     exec.next();
     exec.close();
 
@@ -490,7 +490,7 @@ public class TestPhysicalPlanner {
     // executing StoreTableExec
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
-    exec.init();
+    exec.init(false);
     exec.next();
     exec.close();
 
@@ -536,7 +536,7 @@ public class TestPhysicalPlanner {
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
-    exec.init();
+    exec.init(false);
     exec.next();
     exec.close();
 
@@ -653,7 +653,7 @@ public class TestPhysicalPlanner {
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
-    exec.init();
+    exec.init(false);
     exec.next();
     exec.close();
     ctx.getHashShuffleAppenderManager().close(ebId);
@@ -717,7 +717,7 @@ public class TestPhysicalPlanner {
     // Executing CREATE TABLE PARTITION BY
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
-    exec.init();
+    exec.init(false);
     exec.next();
     exec.close();
 
@@ -787,7 +787,7 @@ public class TestPhysicalPlanner {
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
-    exec.init();
+    exec.init(false);
     exec.next();
     exec.close();
     ctx.getHashShuffleAppenderManager().close(ebId);
@@ -847,7 +847,7 @@ public class TestPhysicalPlanner {
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
-    exec.init();
+    exec.init(false);
     Tuple tuple = exec.next();
     assertEquals(30, tuple.get(0).asInt8());
     assertEquals(3, tuple.get(1).asInt4());
@@ -877,7 +877,7 @@ public class TestPhysicalPlanner {
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
-    exec.init();
+    exec.init(false);
     Tuple tuple = exec.next();
     assertEquals(30, tuple.get(0).asInt8());
     assertNull(exec.next());
@@ -901,7 +901,7 @@ public class TestPhysicalPlanner {
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
 
     int count = 0;
-    exec.init();
+    exec.init(false);
     while(exec.next() != null) {
       count++;
     }
@@ -931,7 +931,7 @@ public class TestPhysicalPlanner {
     PhysicalExec exec = phyPlanner.createPlan(ctx, root);
 
     int count = 0;
-    exec.init();
+    exec.init(false);
     while(exec.next() != null) {
       count++;
     }
@@ -952,7 +952,7 @@ public class TestPhysicalPlanner {
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
     Tuple tuple;
-    exec.init();
+    exec.init(false);
     tuple = exec.next();
     exec.close();
     assertEquals(true, tuple.get(0).asBool());
@@ -964,7 +964,7 @@ public class TestPhysicalPlanner {
 
     phyPlanner = new PhysicalPlannerImpl(conf);
     exec = phyPlanner.createPlan(ctx, rootNode);
-    exec.init();
+    exec.init(false);
     tuple = exec.next();
     exec.close();
     assertEquals(DatumFactory.createBool(true), tuple.get(0));
@@ -988,7 +988,7 @@ public class TestPhysicalPlanner {
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
-    exec.init();
+    exec.init(false);
     while (exec.next() != null) {
     }
     exec.close();
@@ -1022,7 +1022,7 @@ public class TestPhysicalPlanner {
     int cnt = 0;
     Set<String> expected = Sets.newHashSet(
         "name_1", "name_2", "name_3", "name_4", "name_5");
-    exec.init();
+    exec.init(false);
     while ((tuple = exec.next()) != null) {
       assertTrue(expected.contains(tuple.get(0).asChars()));
       cnt++;
@@ -1057,7 +1057,7 @@ public class TestPhysicalPlanner {
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
-    exec.init();
+    exec.init(false);
     exec.next();
     exec.close();
 
@@ -1079,7 +1079,7 @@ public class TestPhysicalPlanner {
 
     phyPlanner = new PhysicalPlannerImpl(conf);
     exec = phyPlanner.createPlan(ctx, rootNode);
-    exec.init();
+    exec.init(false);
     exec.next();
     exec.close();
 
@@ -1107,7 +1107,7 @@ public class TestPhysicalPlanner {
 
     PhysicalPlanner phyPlanner = new PhysicalPlannerImpl(conf);
     PhysicalExec exec = phyPlanner.createPlan(ctx, rootNode);
-    exec.init();
+    exec.init(false);
     exec.next();
     exec.close();
 
@@ -1129,7 +1129,7 @@ public class TestPhysicalPlanner {
 
     phyPlanner = new PhysicalPlannerImpl(conf);
     exec = phyPlanner.createPlan(ctx, rootNode);
-    exec.init();
+    exec.init(false);
     exec.next();
     exec.close();
 

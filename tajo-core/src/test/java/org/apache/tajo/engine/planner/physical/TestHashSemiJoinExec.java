@@ -202,7 +202,7 @@ public class TestHashSemiJoinExec {
     Tuple tuple;
     int count = 0;
     int i = 1;
-    exec.init();
+    exec.init(false);
     // expect result without duplicated tuples.
     while ((tuple = exec.next()) != null) {
       count++;

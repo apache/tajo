@@ -285,7 +285,7 @@ public class TestFullOuterHashJoinExec {
     assertTrue(proj.getChild() instanceof HashFullOuterJoinExec);
 
     int count = 0;
-    exec.init();
+    exec.init(false);
 
     while (exec.next() != null) {
       //TODO check contents
@@ -324,7 +324,7 @@ public class TestFullOuterHashJoinExec {
     assertTrue(proj.getChild() instanceof HashFullOuterJoinExec);
 
     int count = 0;
-    exec.init();
+    exec.init(false);
 
     while (exec.next() != null) {
       //TODO check contents
@@ -362,7 +362,7 @@ public class TestFullOuterHashJoinExec {
     assertTrue(proj.getChild() instanceof HashFullOuterJoinExec);
 
     int count = 0;
-    exec.init();
+    exec.init(false);
 
     while (exec.next() != null) {
       //TODO check contents
@@ -402,7 +402,7 @@ public class TestFullOuterHashJoinExec {
     assertTrue(proj.getChild() instanceof HashFullOuterJoinExec);
 
     int count = 0;
-    exec.init();
+    exec.init(false);
     while (exec.next() != null) {
       //TODO check contents
       count = count + 1;

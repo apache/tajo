@@ -152,7 +152,7 @@ public class TestExternalSortExec {
     Tuple preVal = null;
     Tuple curVal;
     int cnt = 0;
-    exec.init();
+    exec.init(false);
     long start = System.currentTimeMillis();
     BaseTupleComparator comparator = new BaseTupleComparator(proj.getSchema(),
         new SortSpec[]{

@@ -37,8 +37,8 @@ public class EvalExprExec extends PhysicalExec {
   }
 
   @Override
-  public void init() throws IOException {
-    super.init();
+  public void init(boolean needsRescan) throws IOException {
+    super.init(needsRescan);
     progress = 0.0f;
     for (Target target : plan.getTargets()) {
       target.getEvalTree().bind(inSchema);

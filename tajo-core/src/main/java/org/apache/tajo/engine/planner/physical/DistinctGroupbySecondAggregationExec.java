@@ -93,8 +93,8 @@ public class DistinctGroupbySecondAggregationExec extends UnaryPhysicalExec {
   }
 
   @Override
-  public void init() throws IOException {
-    super.init();
+  public void init(boolean needsRescan) throws IOException {
+    super.init(needsRescan);
     numGroupingColumns = plan.getGroupingColumns().length;
 
     List<GroupbyNode> groupbyNodes = plan.getSubPlans();

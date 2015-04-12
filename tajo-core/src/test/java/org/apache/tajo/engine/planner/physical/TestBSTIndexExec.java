@@ -176,7 +176,7 @@ public class TestBSTIndexExec {
 
     int tupleCount = this.randomValues.get(rndKey);
     int counter = 0;
-    exec.init();
+    exec.init(false);
     while (exec.next() != null) {
       counter ++;
     }

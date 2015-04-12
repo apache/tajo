@@ -37,6 +37,7 @@ public abstract class UnaryPhysicalExec extends PhysicalExec {
     this.child = child;
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends PhysicalExec> T getChild() {
     return (T) this.child;
   }
@@ -47,13 +48,12 @@ public abstract class UnaryPhysicalExec extends PhysicalExec {
   }
 
   @Override
-  public void init() throws IOException {
+  public void init(boolean needsRescan) throws IOException {
     progress = 0.0f;
     if (child != null) {
-      child.init();
+      child.init(needsRescan);
     }
-
-    super.init();
+    super.init(needsRescan);
   }
 
   @Override

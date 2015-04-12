@@ -333,7 +333,7 @@ public class TestRightOuterMergeJoinExec {
     assertTrue(proj.getChild() instanceof RightOuterMergeJoinExec);
 
     int count = 0;
-    exec.init();
+    exec.init(false);
     while (exec.next() != null) {
       //TODO check contents
       count = count + 1;
@@ -370,7 +370,7 @@ public class TestRightOuterMergeJoinExec {
     assertTrue(proj.getChild() instanceof RightOuterMergeJoinExec);
 
     int count = 0;
-    exec.init();
+    exec.init(false);
     while (exec.next() != null) {
       //TODO check contents
       count = count + 1;
@@ -405,7 +405,7 @@ public class TestRightOuterMergeJoinExec {
     assertTrue(proj.getChild() instanceof RightOuterMergeJoinExec);
 
     int count = 0;
-    exec.init();
+    exec.init(false);
     while (exec.next() != null) {
       //TODO check contents
       count = count + 1;
@@ -442,7 +442,7 @@ public class TestRightOuterMergeJoinExec {
     assertTrue(proj.getChild() instanceof RightOuterMergeJoinExec);
 
     int count = 0;
-    exec.init();
+    exec.init(false);
 
     while (exec.next() != null) {
       //TODO check contents
@@ -479,7 +479,7 @@ public class TestRightOuterMergeJoinExec {
     assertTrue(proj.getChild() instanceof RightOuterMergeJoinExec);
 
     int count = 0;
-    exec.init();
+    exec.init(false);
 
     while (exec.next() != null) {
       //TODO check contents
@@ -516,7 +516,7 @@ public class TestRightOuterMergeJoinExec {
     assertTrue(proj.getChild() instanceof RightOuterMergeJoinExec);
 
     int count = 0;
-    exec.init();
+    exec.init(false);
 
     while (exec.next() != null) {
       //TODO check contents

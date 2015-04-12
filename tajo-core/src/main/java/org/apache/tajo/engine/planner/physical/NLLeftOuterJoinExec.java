@@ -50,6 +50,11 @@ public class NLLeftOuterJoinExec extends CommonJoinExec {
     rightNumCols = rightChild.getSchema().size();
   }
 
+  @Override
+  public void init(boolean rescan) throws IOException {
+    init(rescan, true);
+  }
+
   public Tuple next() throws IOException {
     while (!context.isStopped()) {
       if (needNextRightTuple) {

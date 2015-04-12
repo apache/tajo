@@ -57,15 +57,17 @@ public class PartitionMergeScanExec extends ScanExec {
   }
 
   @Override
-  public void init() throws IOException {
+  public void init(boolean needsRescan) throws IOException {
     for (CatalogProtos.FragmentProto fragment : fragments) {
       SeqScanExec scanExec = new SeqScanExec(context, (ScanNode) PlannerUtil.clone(null, plan),
           new CatalogProtos.FragmentProto[]{fragment});
+      scanExec.init(true);
       scanners.add(scanExec);
     }
     progress = 0.0f;
     rescan();
-    super.init();
+
+    super.init(true);
   }
 
   @Override
@@ -83,7 +85,7 @@ public class PartitionMergeScanExec extends ScanExec {
           currentScanner.close();
         }
         currentScanner = iterator.next();
-        currentScanner.init();
+        currentScanner.rescan();
       } else {
         break;
       }
@@ -96,7 +98,7 @@ public class PartitionMergeScanExec extends ScanExec {
     if (scanners.size() > 0) {
       iterator = scanners.iterator();
       currentScanner = iterator.next();
-      currentScanner.init();
+      currentScanner.rescan();
     }
   }
 
@@ -105,9 +107,9 @@ public class PartitionMergeScanExec extends ScanExec {
     inputStats.reset();
     for (SeqScanExec scanner : scanners) {
       scanner.close();
-      TableStats scannerTableStsts = scanner.getInputStats();
-      if (scannerTableStsts != null) {
-        inputStats.merge(scannerTableStsts);
+      TableStats scannerTableStats = scanner.getInputStats();
+      if (scannerTableStats != null) {
+        inputStats.merge(scannerTableStats);
       }
     }
     iterator = null;

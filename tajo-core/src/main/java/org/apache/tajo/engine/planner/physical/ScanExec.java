@@ -43,10 +43,10 @@ public abstract class ScanExec extends PhysicalExec {
   public abstract CatalogProtos.FragmentProto[] getFragments();
 
   @Override
-  public void init() throws IOException {
+  public void init(boolean needsRescan) throws IOException {
     canBroadcast = checkIfBroadcast();
 
-    super.init();
+    super.init(needsRescan);
   }
 
   public boolean canBroadcast() {
