@@ -25,6 +25,9 @@ import org.apache.tajo.storage.Tuple;
 import java.io.*;
 import java.net.URI;
 
+/**
+ * Abstract class of script engine
+ */
 public abstract class TajoScriptEngine {
 
   /**
@@ -71,7 +74,7 @@ public abstract class TajoScriptEngine {
   public abstract void shutdown() throws IOException;
 
   /**
-   * Evaluate the input tuple. 
+   * Evaluate the input tuple.
    *
    * @param input
    * @return

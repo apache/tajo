@@ -44,6 +44,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+/**
+ * {@link PythonScriptEngine} is responsible for registering python functions and maintaining the controller process.
+ * The controller is a python process that executes the python UDFs.
+ * (Please refer to 'tajo-core/src/main/resources/python/controller.py')
+ * Data are exchanged via standard I/O between PythonScriptEngine and the controller.
+ */
 public class PythonScriptEngine extends TajoScriptEngine {
 
   private static final Log LOG = LogFactory.getLog(PythonScriptEngine.class);
@@ -211,7 +217,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
     startUdfController();
     createInputHandlers();
     setStreams();
-    LOG.info("PythonScriptExecutor is started");
+    LOG.info("PythonScriptExecutor starts up");
   }
 
   public void shutdown() throws IOException {
@@ -227,7 +233,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
     }
     inputHandler.close(process);
     outputHandler.close();
-    LOG.info("PythonScriptExecutor is shutdowned");
+    LOG.info("PythonScriptExecutor shuts down");
   }
 
   private void startUdfController() throws IOException {
