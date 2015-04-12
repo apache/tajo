@@ -20,9 +20,8 @@ package org.apache.tajo.plan.function;
 
 import com.google.common.base.Objects;
 import org.apache.tajo.OverridableConf;
-import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.plan.expr.FunctionEval;
-import org.apache.tajo.plan.function.python.ScriptExecutor;
+import org.apache.tajo.plan.function.python.TajoScriptEngine;
 
 import java.util.Arrays;
 
@@ -32,7 +31,7 @@ import java.util.Arrays;
 public class FunctionInvokeContext {
   private final OverridableConf queryContext;
   private final FunctionEval.ParamType[] paramTypes;
-  private ScriptExecutor scriptExecutor;
+  private TajoScriptEngine scriptEngine;
 
   public FunctionInvokeContext(OverridableConf queryContext, FunctionEval.ParamType[] paramTypes) {
     this.queryContext = queryContext;
@@ -47,16 +46,16 @@ public class FunctionInvokeContext {
     return paramTypes;
   }
 
-  public void setScriptExecutor(ScriptExecutor scriptExecutor) {
-    this.scriptExecutor = scriptExecutor;
+  public void setScriptEngine(TajoScriptEngine scriptEngine) {
+    this.scriptEngine = scriptEngine;
   }
 
   public boolean hasScriptExecutor() {
-    return scriptExecutor != null;
+    return scriptEngine != null;
   }
 
-  public ScriptExecutor getScriptExecutor() {
-    return scriptExecutor;
+  public TajoScriptEngine getScriptEngine() {
+    return scriptEngine;
   }
 
   @Override

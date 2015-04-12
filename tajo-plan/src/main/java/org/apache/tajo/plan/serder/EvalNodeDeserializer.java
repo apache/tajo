@@ -35,7 +35,7 @@ import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.function.AggFunction;
-import org.apache.tajo.plan.function.python.PythonScriptExecutor;
+import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.logical.WindowSpec;
 import org.apache.tajo.plan.serder.PlanProto.WinFunctionEvalSpec;
 
@@ -183,7 +183,7 @@ public class EvalNodeDeserializer {
           if (type == EvalType.FUNCTION) {
             current = new GeneralFunctionEval(context, funcDesc, params);
             if (evalContext != null && funcDesc.getInvocation().hasPython()) {
-              evalContext.addScriptExecutor(current, new PythonScriptExecutor(funcDesc));
+              evalContext.addScriptEngine(current, new PythonScriptEngine(funcDesc));
             }
           } else if (type == EvalType.AGG_FUNCTION || type == EvalType.WINDOW_FUNCTION) {
             AggFunction instance = (AggFunction) funcDesc.newInstance();

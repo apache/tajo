@@ -18,10 +18,11 @@
 
 package org.apache.tajo.plan.function.python;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
+import org.apache.tajo.OverridableConf;
+import org.apache.tajo.datum.Datum;
+import org.apache.tajo.storage.Tuple;
+
+import java.io.*;
 import java.net.URI;
 
 public abstract class TajoScriptEngine {
@@ -54,4 +55,26 @@ public abstract class TajoScriptEngine {
     }
     return is;
   }
+
+  /**
+   * Start TajoScriptEngine.
+   *
+   * @param queryContext
+   * @throws IOException
+   */
+  public abstract void start(OverridableConf queryContext) throws IOException;
+
+  /**
+   * Shutdown TajoScriptEngine.
+   * @throws IOException
+   */
+  public abstract void shutdown() throws IOException;
+
+  /**
+   * Evaluate the input tuple. 
+   *
+   * @param input
+   * @return
+   */
+  public abstract Datum eval(Tuple input);
 }

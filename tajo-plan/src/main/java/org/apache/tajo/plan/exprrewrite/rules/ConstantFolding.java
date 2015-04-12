@@ -23,8 +23,8 @@ import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.exprrewrite.EvalTreeOptimizationRule;
 import org.apache.tajo.plan.annotator.Prioritized;
 import org.apache.tajo.plan.LogicalPlanner;
-import org.apache.tajo.plan.function.python.PythonScriptExecutor;
-import org.apache.tajo.plan.function.python.ScriptExecutor;
+import org.apache.tajo.plan.function.python.PythonScriptEngine;
+import org.apache.tajo.plan.function.python.TajoScriptEngine;
 
 import java.io.IOException;
 import java.util.Stack;
@@ -92,11 +92,11 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
 
     if (constantOfAllDescendents && evalNode.getType() == EvalType.FUNCTION) {
       if (evalNode.getFuncDesc().getInvocation().hasPython()) {
-        ScriptExecutor executor = new PythonScriptExecutor(evalNode.getFuncDesc());
+        TajoScriptEngine executor = new PythonScriptEngine(evalNode.getFuncDesc());
         try {
           executor.start(context.getQueryContext());
           EvalContext evalContext = new EvalContext();
-          evalContext.addScriptExecutor(evalNode, executor);
+          evalContext.addScriptEngine(evalNode, executor);
           evalNode.bind(evalContext, null);
           Datum funcRes = evalNode.eval(null);
           executor.shutdown();

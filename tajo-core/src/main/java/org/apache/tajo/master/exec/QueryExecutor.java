@@ -18,7 +18,6 @@
 
 package org.apache.tajo.master.exec;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.protobuf.ByteString;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -50,8 +49,8 @@ import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
 import org.apache.tajo.master.exec.prehook.InsertIntoHook;
 import org.apache.tajo.plan.expr.EvalContext;
 import org.apache.tajo.plan.expr.GeneralFunctionEval;
-import org.apache.tajo.plan.function.python.PythonScriptExecutor;
-import org.apache.tajo.plan.function.python.ScriptExecutor;
+import org.apache.tajo.plan.function.python.PythonScriptEngine;
+import org.apache.tajo.plan.function.python.TajoScriptEngine;
 import org.apache.tajo.plan.rewrite.LogicalPlanRewriteRule;
 import org.apache.tajo.querymaster.*;
 import org.apache.tajo.session.Session;
@@ -315,8 +314,8 @@ public class QueryExecutor {
       if (eval instanceof GeneralFunctionEval) {
         GeneralFunctionEval functionEval = (GeneralFunctionEval) eval;
         if (functionEval.getFuncDesc().getInvocation().hasPython()) {
-          PythonScriptExecutor scriptExecutor = new PythonScriptExecutor(functionEval.getFuncDesc());
-          evalContext.addScriptExecutor(eval, scriptExecutor);
+          TajoScriptEngine scriptExecutor = new PythonScriptEngine(functionEval.getFuncDesc());
+          evalContext.addScriptEngine(eval, scriptExecutor);
           scriptExecutor.start(queryContext);
         }
       }
@@ -324,7 +323,7 @@ public class QueryExecutor {
   }
 
   public static void stopScriptExecutors(EvalContext evalContext) throws IOException {
-    for (ScriptExecutor executor : evalContext.getAllScriptExecutors()) {
+    for (TajoScriptEngine executor : evalContext.getAllScriptEngines()) {
       executor.shutdown();
     }
   }

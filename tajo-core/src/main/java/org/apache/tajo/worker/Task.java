@@ -46,8 +46,8 @@ import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
-import org.apache.tajo.plan.function.python.PythonScriptExecutor;
-import org.apache.tajo.plan.function.python.ScriptExecutor;
+import org.apache.tajo.plan.function.python.PythonScriptEngine;
+import org.apache.tajo.plan.function.python.TajoScriptEngine;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.serder.LogicalNodeDeserializer;
 import org.apache.tajo.plan.util.PlannerUtil;
@@ -102,7 +102,7 @@ public class Task {
   private Schema finalSchema = null;
   private TupleComparator sortComp = null;
 
-  private PythonScriptExecutor pythonExecutor;
+  private PythonScriptEngine pythonEngine;
 
   public Task(String taskRunnerId,
               Path baseDir,
@@ -195,13 +195,13 @@ public class Task {
   }
 
   private void startScriptExecutors() throws IOException {
-    for (ScriptExecutor executor : context.getEvalContext().getAllScriptExecutors()) {
+    for (TajoScriptEngine executor : context.getEvalContext().getAllScriptEngines()) {
       executor.start(queryContext);
     }
   }
 
   private void stopScriptExecutors() throws IOException {
-    for (ScriptExecutor executor : context.getEvalContext().getAllScriptExecutors()) {
+    for (TajoScriptEngine executor : context.getEvalContext().getAllScriptEngines()) {
       executor.shutdown();
     }
   }

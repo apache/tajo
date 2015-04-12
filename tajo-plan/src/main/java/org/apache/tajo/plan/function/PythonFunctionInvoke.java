@@ -20,7 +20,7 @@ package org.apache.tajo.plan.function;
 
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.plan.function.python.PythonScriptExecutor;
+import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
@@ -30,7 +30,7 @@ import java.io.IOException;
  */
 public class PythonFunctionInvoke extends FunctionInvoke implements Cloneable {
 
-  private PythonScriptExecutor scriptExecutor;
+  private PythonScriptEngine scriptEngine;
 
   public PythonFunctionInvoke() {
 
@@ -42,12 +42,12 @@ public class PythonFunctionInvoke extends FunctionInvoke implements Cloneable {
 
   @Override
   public void init(FunctionInvokeContext context) throws IOException {
-    this.scriptExecutor = (PythonScriptExecutor) context.getScriptExecutor();
+    this.scriptEngine = (PythonScriptEngine) context.getScriptEngine();
   }
 
   @Override
   public Datum eval(Tuple tuple) {
-    Datum res = scriptExecutor.eval(tuple);
+    Datum res = scriptEngine.eval(tuple);
     return res;
   }
 }

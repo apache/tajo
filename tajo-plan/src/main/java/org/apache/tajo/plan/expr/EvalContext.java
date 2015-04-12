@@ -18,28 +18,28 @@
 
 package org.apache.tajo.plan.expr;
 
-import org.apache.tajo.plan.function.python.ScriptExecutor;
+import org.apache.tajo.plan.function.python.TajoScriptEngine;
 import org.apache.tajo.util.TUtil;
 
 import java.util.Collection;
 import java.util.Map;
 
 public class EvalContext {
-  private final Map<EvalNode, ScriptExecutor> scriptExecutorMap = TUtil.newHashMap();
+  private final Map<EvalNode, TajoScriptEngine> scriptEngineMap = TUtil.newHashMap();
 
-  public void addScriptExecutor(EvalNode evalNode, ScriptExecutor scriptExecutor) {
-    this.scriptExecutorMap.put(evalNode, scriptExecutor);
+  public void addScriptEngine(EvalNode evalNode, TajoScriptEngine scriptExecutor) {
+    this.scriptEngineMap.put(evalNode, scriptExecutor);
   }
 
-  public boolean hasScriptExecutor(EvalNode evalNode) {
-    return this.scriptExecutorMap.containsKey(evalNode);
+  public boolean hasScriptEngine(EvalNode evalNode) {
+    return this.scriptEngineMap.containsKey(evalNode);
   }
 
-  public ScriptExecutor getScriptExecutor(EvalNode evalNode) {
-    return this.scriptExecutorMap.get(evalNode);
+  public TajoScriptEngine getScriptEngine(EvalNode evalNode) {
+    return this.scriptEngineMap.get(evalNode);
   }
 
-  public Collection<ScriptExecutor> getAllScriptExecutors() {
-    return this.scriptExecutorMap.values();
+  public Collection<TajoScriptEngine> getAllScriptEngines() {
+    return this.scriptEngineMap.values();
   }
 }
