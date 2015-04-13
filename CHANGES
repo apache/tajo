@@ -80,6 +80,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1541: Connection timeout in netty client is not working.
+    (Contributed by navis, Committed by jihun)
+
     TAJO-1500: FinishedTaskCleanThread is not interrupted when worker stops.
     (Contributed by navis, Committed by jihoon)
 
