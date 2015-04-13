@@ -12,7 +12,13 @@ Release 0.11.0 - unreleased
     TAJO-1135: Implement queryable virtual table for cluster information.
     (jihun)
 
+    TAJO-1430: Improve SQLAnalyzer by session-based parsing-result caching.
+    (Contributed by Dongjoon Hyun, Committed by jihoon)
+
   IMPROVEMENT
+  
+    TAJO-1509: Use dedicated thread to release resource allocated to container.
+    (Contributed by navis, Committed by hyoungjun)
 
     TAJO-1454: Comparing two date or two timestamp need not normalizing
     (Contributed by navis, Committed by hyoungjun)
@@ -79,6 +85,9 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1541: Connection timeout in netty client is not working.
+    (Contributed by navis, Committed by jihun)
 
     TAJO-1500: FinishedTaskCleanThread is not interrupted when worker stops.
     (Contributed by navis, Committed by jihoon)
