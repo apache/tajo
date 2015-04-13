@@ -13,6 +13,9 @@ Release 0.11.0 - unreleased
     (jihun)
 
   IMPROVEMENT
+  
+    TAJO-1509: Use dedicated thread to release resource allocated to container.
+    (Contributed by navis, Committed by hyoungjun)
 
     TAJO-1454: Comparing two date or two timestamp need not normalizing
     (Contributed by navis, Committed by hyoungjun)
