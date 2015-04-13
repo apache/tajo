@@ -67,6 +67,7 @@ public abstract class UnaryEval extends EvalNode implements Cloneable {
 
   @Override
   public <T extends Datum> T eval(Tuple tuple) {
+    super.eval(tuple);
     return null;
   }
 

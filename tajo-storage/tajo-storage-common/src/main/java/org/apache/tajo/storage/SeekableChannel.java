@@ -16,34 +16,12 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.text;
+package org.apache.tajo.storage;
 
-import io.netty.buffer.ByteBufProcessor;
+import java.io.IOException;
 
-public class LineSplitProcessor implements ByteBufProcessor {
-  public static final byte CR = '\r';
-  public static final byte LF = '\n';
-  private boolean prevCharCR = false; //true of prev char was CR
+public interface SeekableChannel {
 
-  @Override
-  public boolean process(byte value) throws Exception {
-    switch (value) {
-      case LF:
-        return false;
-      case CR:
-        prevCharCR = true;
-        return false;
-      default:
-        prevCharCR = false;
-        return true;
-    }
-  }
+  public abstract void seek(long offset) throws IOException;
 
-  public boolean isPrevCharCR() {
-    return prevCharCR;
-  }
-
-  public void reset() {
-    prevCharCR = false;
-  }
 }

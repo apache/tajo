@@ -40,6 +40,7 @@ import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 public class TajoConf extends Configuration {
   private static TimeZone SYSTEM_TIMEZONE;
@@ -154,6 +155,7 @@ public class TajoConf extends Configuration {
     // QueryMaster resource
     TAJO_QUERYMASTER_DISK_SLOT("tajo.qm.resource.disk.slots", 0.0f, Validators.min("0.0f")),
     TAJO_QUERYMASTER_MEMORY_MB("tajo.qm.resource.memory-mb", 512, Validators.min("64")),
+    TAJO_QUERYMASTER_ALLOCATION_TIMEOUT("tajo.qm.resource.allocation.timeout", "3 sec"),
 
     // Tajo Worker Service Addresses
     WORKER_INFO_ADDRESS("tajo.worker.info-http.address", "0.0.0.0:28080", Validators.networkAddr()),
@@ -578,6 +580,72 @@ public class TajoConf extends Configuration {
 
   public void setBoolVar(ConfVars var, boolean val) {
     setBoolVar(this, var, val);
+  }
+
+  // borrowed from HIVE-5799
+  public static long getTimeVar(Configuration conf, ConfVars var, TimeUnit outUnit) {
+    return toTime(getVar(conf, var), outUnit);
+  }
+
+  public static void setTimeVar(Configuration conf, ConfVars var, long time, TimeUnit timeunit) {
+    assert (var.valClass == String.class) : var.varname;
+    conf.set(var.varname, time + stringFor(timeunit));
+  }
+
+  public long getTimeVar(ConfVars var, TimeUnit outUnit) {
+    return getTimeVar(this, var, outUnit);
+  }
+
+  public void setTimeVar(ConfVars var, long time, TimeUnit outUnit) {
+    setTimeVar(this, var, time, outUnit);
+  }
+
+  public static long toTime(String value, TimeUnit outUnit) {
+    String[] parsed = parseTime(value.trim());
+    return outUnit.convert(Long.valueOf(parsed[0].trim()), unitFor(parsed[1].trim()));
+  }
+
+  private static String[] parseTime(String value) {
+    char[] chars = value.toCharArray();
+    int i = 0;
+    for (; i < chars.length && (chars[i] == '-' || Character.isDigit(chars[i])); i++) {
+    }
+    return new String[] {value.substring(0, i), value.substring(i)};
+  }
+
+  public static TimeUnit unitFor(String unit) {
+    unit = unit.trim().toLowerCase();
+    if (unit.isEmpty() || unit.equals("l")) {
+      return TimeUnit.MILLISECONDS;
+    } else if (unit.equals("d") || unit.startsWith("day")) {
+      return TimeUnit.DAYS;
+    } else if (unit.equals("h") || unit.startsWith("hour")) {
+      return TimeUnit.HOURS;
+    } else if (unit.equals("m") || unit.startsWith("min")) {
+      return TimeUnit.MINUTES;
+    } else if (unit.equals("s") || unit.startsWith("sec")) {
+      return TimeUnit.SECONDS;
+    } else if (unit.equals("ms") || unit.startsWith("msec")) {
+      return TimeUnit.MILLISECONDS;
+    } else if (unit.equals("us") || unit.startsWith("usec")) {
+      return TimeUnit.MICROSECONDS;
+    } else if (unit.equals("ns") || unit.startsWith("nsec")) {
+      return TimeUnit.NANOSECONDS;
+    }
+    throw new IllegalArgumentException("Invalid time unit " + unit);
+  }
+
+  public static String stringFor(TimeUnit timeunit) {
+    switch (timeunit) {
+      case DAYS: return "day";
+      case HOURS: return "hour";
+      case MINUTES: return "min";
+      case SECONDS: return "sec";
+      case MILLISECONDS: return "msec";
+      case MICROSECONDS: return "usec";
+      case NANOSECONDS: return "nsec";
+    }
+    throw new IllegalArgumentException("Invalid timeunit " + timeunit);
   }
 
   public void setClassVar(ConfVars var, Class<?> clazz) {

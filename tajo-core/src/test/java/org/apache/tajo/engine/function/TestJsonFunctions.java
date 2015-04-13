@@ -16,34 +16,21 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.storage.text;
+package org.apache.tajo.engine.function;
 
-import io.netty.buffer.ByteBufProcessor;
 
-public class LineSplitProcessor implements ByteBufProcessor {
-  public static final byte CR = '\r';
-  public static final byte LF = '\n';
-  private boolean prevCharCR = false; //true of prev char was CR
+import org.apache.tajo.engine.eval.ExprTestBase;
+import org.junit.Test;
 
-  @Override
-  public boolean process(byte value) throws Exception {
-    switch (value) {
-      case LF:
-        return false;
-      case CR:
-        prevCharCR = true;
-        return false;
-      default:
-        prevCharCR = false;
-        return true;
-    }
-  }
+import java.io.IOException;
 
-  public boolean isPrevCharCR() {
-    return prevCharCR;
-  }
+public class TestJsonFunctions extends ExprTestBase {
+  static final String JSON_DOCUMENT = "{\"map\" : {\"name\" : \"tajo\"}, \"array\" : [1,2,3]}";
 
-  public void reset() {
-    prevCharCR = false;
+  @Test
+  public void testJsonExtractPathText() throws IOException {
+    testSimpleEval("select json_extract_path_text('" + JSON_DOCUMENT + "', '$.map.name') ", new String[]{"tajo"});
+    testSimpleEval("select json_extract_path_text('" + JSON_DOCUMENT + "', '$.array[1]') ", new String[]{"2"});
+
   }
 }
