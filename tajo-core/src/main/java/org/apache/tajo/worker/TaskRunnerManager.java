@@ -95,7 +95,7 @@ public class TaskRunnerManager extends CompositeService implements EventHandler<
     }
 
     if(finishedTaskCleanThread != null) {
-      finishedTaskCleanThread.interrupted();
+      finishedTaskCleanThread.interrupt();
     }
 
     super.stop();

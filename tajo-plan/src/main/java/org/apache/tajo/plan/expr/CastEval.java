@@ -70,6 +70,7 @@ public class CastEval extends UnaryEval {
   @Override
   @SuppressWarnings("unchecked")
   public Datum eval(Tuple tuple) {
+    super.eval(tuple);
     Datum operandDatum = child.eval(tuple);
     if (operandDatum.isNull()) {
       return operandDatum;
