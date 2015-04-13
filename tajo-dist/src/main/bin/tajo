@@ -384,6 +384,7 @@ if [ "$COMMAND" = "classpath" ] ; then
 elif [ "$COMMAND" = "master" ] ; then
   CLASS='org.apache.tajo.master.TajoMaster'
   TAJO_OPTS="$TAJO_OPTS $JAVA_TAJO_MASTER_HEAP_MAX $TAJO_MASTER_OPTS"
+  TAJO_OPTS="$TAJO_OPTS -Djava.util.logging.config.class=org.apache.tajo.logging.JULDefaultConfiguration"
 elif [ "$COMMAND" = "worker" ] ; then
   CLASS='org.apache.tajo.worker.TajoWorker'
   TAJO_OPTS="$TAJO_OPTS $JAVA_WORKER_HEAP_MAX $TAJO_WORKER_OPTS"
