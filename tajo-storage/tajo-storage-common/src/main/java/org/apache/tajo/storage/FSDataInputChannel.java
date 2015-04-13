@@ -18,29 +18,46 @@
 
 package org.apache.tajo.storage;
 
+import org.apache.hadoop.fs.ByteBufferReadable;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.io.IOUtils;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 
 /**
- * ByteBufInputChannel is a NIO channel wrapper from input stream
+ * FSDataInputChannel is a NIO channel implementation of direct read ability to read from HDFS
  */
-public class ByteBufInputChannel extends InputChannel {
-  private ReadableByteChannel channel;
-  private InputStream inputStream;
+public final class FSDataInputChannel extends InputChannel implements SeekableChannel {
 
-  public ByteBufInputChannel(InputStream inputStream) {
-    this.channel = Channels.newChannel(inputStream);
+  private ReadableByteChannel channel;
+  private FSDataInputStream inputStream;
+  private boolean isDirectRead;
+
+  public FSDataInputChannel(FSDataInputStream inputStream) {
+    if (inputStream.getWrappedStream() instanceof ByteBufferReadable) {
+      this.isDirectRead = true;
+    } else {
+      /* LocalFileSystem, S3 does not support ByteBufferReadable */
+      this.channel = Channels.newChannel(inputStream);
+    }
     this.inputStream = inputStream;
   }
 
   @Override
   public int read(ByteBuffer dst) throws IOException {
-    return channel.read(dst);
+    if (isDirectRead) {
+      return inputStream.read(dst);
+    } else {
+      return channel.read(dst);
+    }
+  }
+
+  @Override
+  public void seek(long offset) throws IOException {
+    inputStream.seek(offset);
   }
 
   @Override
