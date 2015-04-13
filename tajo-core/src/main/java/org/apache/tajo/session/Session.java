@@ -18,11 +18,13 @@
 
 package org.apache.tajo.session;
 
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
+import org.apache.tajo.algebra.Expr;
 import org.apache.tajo.master.exec.NonForwardQueryResultScanner;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.common.ProtoObject;
@@ -40,6 +42,7 @@ public class Session implements SessionConstants, ProtoObject<SessionProto>, Clo
   private String currentDatabase;
   private final Map<String, String> sessionVariables;
   private final Map<QueryId, NonForwardQueryResultScanner> nonForwardQueryMap = new HashMap<QueryId, NonForwardQueryResultScanner>();
+  private LoadingCache<String, Expr> cache;
 
   // transient status
   private volatile long lastAccessTime;
@@ -119,6 +122,14 @@ public class Session implements SessionConstants, ProtoObject<SessionProto>, Clo
 
   public synchronized String getCurrentDatabase() {
     return currentDatabase;
+  }
+
+  public synchronized void setQueryCache(LoadingCache<String, Expr> cache) {
+    this.cache = cache;
+  }
+
+  public synchronized LoadingCache<String, Expr> getQueryCache() {
+    return cache;
   }
 
   @Override
