@@ -44,7 +44,7 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
   private long lastHeartbeatTime;
 
   /** Resource capability */
-  private WorkerResource resource;
+  private final WorkerResource resource;
 
   /** Worker connection information */
   private WorkerConnectionInfo connectionInfo;
@@ -210,17 +210,23 @@ public class Worker implements EventHandler<WorkerEvent>, Comparable<Worker> {
         throw new IllegalArgumentException("event should be a WorkerStatusEvent type.");
       }
       WorkerStatusEvent statusEvent = (WorkerStatusEvent) event;
-
-      // TODO - the synchronization scope using rmContext is too coarsen.
-      synchronized (worker.rmContext) {
-        worker.setLastHeartbeatTime(System.currentTimeMillis());
-        worker.getResource().setNumRunningTasks(statusEvent.getRunningTaskNum());
-        worker.getResource().setMaxHeap(statusEvent.maxHeap());
-        worker.getResource().setFreeHeap(statusEvent.getFreeHeap());
-        worker.getResource().setTotalHeap(statusEvent.getTotalHeap());
-      }
+      worker.updateStatus(statusEvent);
 
       return WorkerState.RUNNING;
+    }
+  }
+
+  private void updateStatus(WorkerStatusEvent statusEvent) {
+    this.writeLock.lock();
+
+    try {
+      lastHeartbeatTime = System.currentTimeMillis();
+      resource.setNumRunningTasks(statusEvent.getRunningTaskNum());
+      resource.setMaxHeap(statusEvent.maxHeap());
+      resource.setFreeHeap(statusEvent.getFreeHeap());
+      resource.setTotalHeap(statusEvent.getTotalHeap());
+    } finally {
+      this.writeLock.unlock();
     }
   }
 
