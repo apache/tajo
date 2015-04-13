@@ -120,19 +120,13 @@ public class WindowSpec implements Cloneable {
 
   }
 
-  public static enum WindowFrameUnit {
+  public enum WindowFrameUnit {
     ROW,
     RANGE
   }
 
-  public static enum WindowFrameStartBoundType {
+  public enum WindowFrameBoundType {
     UNBOUNDED_PRECEDING,
-    CURRENT_ROW,
-    PRECEDING,
-    FOLLOWING
-  }
-
-  public static enum WindowFrameEndBoundType {
     UNBOUNDED_FOLLOWING,
     CURRENT_ROW,
     PRECEDING,
@@ -181,14 +175,14 @@ public class WindowSpec implements Cloneable {
   }
 
   public static class WindowStartBound implements Cloneable {
-    @Expose private WindowFrameStartBoundType boundType;
+    @Expose private WindowFrameBoundType boundType;
     @Expose private Expr number;
 
-    public WindowStartBound(WindowFrameStartBoundType type) {
+    public WindowStartBound(WindowFrameBoundType type) {
       this.boundType = type;
     }
 
-    public WindowFrameStartBoundType getBoundType() {
+    public WindowFrameBoundType getBoundType() {
       return boundType;
     }
 
@@ -214,14 +208,14 @@ public class WindowSpec implements Cloneable {
   }
 
   public static class WindowEndBound implements Cloneable {
-    @Expose private WindowFrameEndBoundType boundType;
+    @Expose private WindowFrameBoundType boundType;
     @Expose private Expr number;
 
-    public WindowEndBound(WindowFrameEndBoundType type) {
+    public WindowEndBound(WindowFrameBoundType type) {
       this.boundType = type;
     }
 
-    public WindowFrameEndBoundType getBoundType() {
+    public WindowFrameBoundType getBoundType() {
       return boundType;
     }
 

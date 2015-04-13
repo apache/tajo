@@ -22,11 +22,9 @@ package org.apache.tajo.plan.logical;
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.Column;
-import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.util.TUtil;
 
-import static org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
-import static org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
+import static org.apache.tajo.algebra.WindowSpec.WindowFrameBoundType;
 import static org.apache.tajo.algebra.WindowSpec.WindowFrameUnit;
 
 public class LogicalWindowSpec {
@@ -75,23 +73,23 @@ public class LogicalWindowSpec {
   }
 
   public static class LogicalWindowFrame implements Cloneable {
-    @Expose private LogicalWindowStartBound startBound;
-    @Expose private LogicalWindowEndBound endBound;
-    @Expose private WindowFrameUnit unit; // TODO - to be supported
+    @Expose private LogicalWindowBound startBound;
+    @Expose private LogicalWindowBound endBound;
+    @Expose private WindowFrameUnit unit;
 
     public LogicalWindowFrame() {
       this.unit = WindowFrameUnit.RANGE;
-      this.startBound = new LogicalWindowStartBound(WindowFrameStartBoundType.UNBOUNDED_PRECEDING);
-      this.endBound = new LogicalWindowEndBound(WindowFrameEndBoundType.CURRENT_ROW);
+      this.startBound = new LogicalWindowBound(WindowFrameBoundType.UNBOUNDED_PRECEDING);
+      this.endBound = new LogicalWindowBound(WindowFrameBoundType.CURRENT_ROW);
     }
 
-    public LogicalWindowFrame(WindowFrameUnit unit, LogicalWindowStartBound startBound, LogicalWindowEndBound endBound) {
+    public LogicalWindowFrame(WindowFrameUnit unit, LogicalWindowBound startBound, LogicalWindowBound endBound) {
       this.unit = unit;
       this.startBound = startBound;
       this.endBound = endBound;
     }
 
-    public LogicalWindowStartBound getStartBound() {
+    public LogicalWindowBound getStartBound() {
       return startBound;
     }
 
@@ -99,7 +97,7 @@ public class LogicalWindowSpec {
       return endBound != null;
     }
 
-    public LogicalWindowEndBound getEndBound() {
+    public LogicalWindowBound getEndBound() {
       return endBound;
     }
 
@@ -115,7 +113,7 @@ public class LogicalWindowSpec {
       return this.unit;
     }
 
-    public static enum WindowFrameType {
+    public enum WindowFrameType {
       ENTIRE_PARTITION,
       TO_CURRENT_ROW,
       FROM_CURRENT_ROW,
@@ -158,15 +156,15 @@ public class LogicalWindowSpec {
     }
   }
 
-  public static class LogicalWindowStartBound implements Cloneable {
-    @Expose private WindowFrameStartBoundType boundType;
+  public static class LogicalWindowBound implements Cloneable {
+    @Expose private WindowFrameBoundType boundType;
     @Expose private int number;
 
-    public LogicalWindowStartBound(WindowFrameStartBoundType type) {
+    public LogicalWindowBound(WindowFrameBoundType type) {
       this.boundType = type;
     }
 
-    public WindowFrameStartBoundType getBoundType() {
+    public WindowFrameBoundType getBoundType() {
       return boundType;
     }
 
@@ -180,8 +178,8 @@ public class LogicalWindowSpec {
 
     @Override
     public boolean equals(Object obj) {
-      if (obj instanceof LogicalWindowStartBound) {
-        LogicalWindowStartBound other = (LogicalWindowStartBound) obj;
+      if (obj instanceof LogicalWindowBound) {
+        LogicalWindowBound other = (LogicalWindowBound) obj;
         boolean eq = boundType == other.boundType;
         eq &= (number == other.number);
         return eq;
@@ -196,56 +194,11 @@ public class LogicalWindowSpec {
     }
 
     @Override
-    public LogicalWindowStartBound clone() throws CloneNotSupportedException {
-      LogicalWindowStartBound newStartBound = (LogicalWindowStartBound) super.clone();
+    public LogicalWindowBound clone() throws CloneNotSupportedException {
+      LogicalWindowBound newStartBound = (LogicalWindowBound) super.clone();
       newStartBound.boundType = boundType;
       newStartBound.number = number;
       return newStartBound;
-    }
-  }
-
-  public static class LogicalWindowEndBound implements Cloneable {
-    @Expose private WindowFrameEndBoundType boundType;
-    @Expose private int number;
-
-    public LogicalWindowEndBound(WindowFrameEndBoundType type) {
-      this.boundType = type;
-    }
-
-    public WindowFrameEndBoundType getBoundType() {
-      return boundType;
-    }
-
-    public void setNumber(int number) {
-      this.number = number;
-    }
-
-    public int getNumber() {
-      return number;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-      if (obj instanceof LogicalWindowEndBound) {
-        LogicalWindowEndBound other = (LogicalWindowEndBound) obj;
-        boolean eq = boundType == other.boundType;
-        eq &= (number == other.number);
-        return eq;
-      } else {
-        return false;
-      }
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hashCode(boundType, number);
-    }
-
-    public LogicalWindowEndBound clone() throws CloneNotSupportedException {
-      LogicalWindowEndBound newEndBound = (LogicalWindowEndBound) super.clone();
-      newEndBound.boundType = boundType;
-      newEndBound.number = number;
-      return newEndBound;
     }
   }
 }

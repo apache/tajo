@@ -38,8 +38,7 @@ import java.util.*;
 
 import static org.apache.tajo.algebra.Aggregation.GroupElement;
 import static org.apache.tajo.algebra.CreateTable.*;
-import static org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
-import static org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
+import static org.apache.tajo.algebra.WindowSpec.WindowFrameBoundType;
 import static org.apache.tajo.common.TajoDataTypes.Type;
 import static org.apache.tajo.engine.parser.SQLParser.*;
 
@@ -503,19 +502,21 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   public WindowSpec.WindowStartBound buildWindowStartBound(Window_frame_start_boundContext context) {
-    WindowFrameStartBoundType boundType = null;
+    WindowFrameBoundType boundType = null;
     if (checkIfExist(context.UNBOUNDED())) {
-      boundType = WindowFrameStartBoundType.UNBOUNDED_PRECEDING;
+      boundType = WindowFrameBoundType.UNBOUNDED_PRECEDING;
     } else if (checkIfExist(context.PRECEDING())) {
-      boundType = WindowFrameStartBoundType.PRECEDING;
+      boundType = WindowFrameBoundType.PRECEDING;
     } else if (checkIfExist(context.FOLLOWING())) {
-      boundType = WindowFrameStartBoundType.FOLLOWING;
+      boundType = WindowFrameBoundType.FOLLOWING;
+    } else if (checkIfExist(context.CURRENT())){
+      boundType = WindowFrameBoundType.CURRENT_ROW;
     } else {
-      boundType = WindowFrameStartBoundType.CURRENT_ROW;
+      throw new SQLSyntaxError("Window frame - unknown start bound type");
     }
 
     WindowSpec.WindowStartBound bound = new WindowSpec.WindowStartBound(boundType);
-    if (boundType == WindowFrameStartBoundType.PRECEDING || boundType == WindowFrameStartBoundType.FOLLOWING) {
+    if (boundType == WindowFrameBoundType.PRECEDING || boundType == WindowFrameBoundType.FOLLOWING) {
       bound.setNumber(visitUnsigned_value_specification(context.unsigned_value_specification()));
     }
 
@@ -523,19 +524,21 @@ public class SQLAnalyzer extends SQLParserBaseVisitor<Expr> {
   }
 
   public WindowSpec.WindowEndBound buildWindowEndBound(Window_frame_end_boundContext context) {
-    WindowFrameEndBoundType boundType;
+    WindowFrameBoundType boundType;
     if (checkIfExist(context.UNBOUNDED())) {
-      boundType = WindowFrameEndBoundType.UNBOUNDED_FOLLOWING;
+      boundType = WindowFrameBoundType.UNBOUNDED_FOLLOWING;
     } else if (checkIfExist(context.PRECEDING())) {
-      boundType = WindowFrameEndBoundType.PRECEDING;
+      boundType = WindowFrameBoundType.PRECEDING;
     } else if (checkIfExist(context.FOLLOWING())) {
-      boundType = WindowFrameEndBoundType.FOLLOWING;
+      boundType = WindowFrameBoundType.FOLLOWING;
+    } else if (checkIfExist(context.CURRENT())){
+      boundType = WindowFrameBoundType.CURRENT_ROW;
     } else {
-      boundType = WindowFrameEndBoundType.CURRENT_ROW;
+      throw new SQLSyntaxError("Window frame - unknown end bound type");
     }
 
     WindowSpec.WindowEndBound endBound = new WindowSpec.WindowEndBound(boundType);
-    if (boundType == WindowFrameEndBoundType.PRECEDING || boundType == WindowFrameEndBoundType.FOLLOWING) {
+    if (boundType == WindowFrameBoundType.PRECEDING || boundType == WindowFrameBoundType.FOLLOWING) {
       endBound.setNumber(visitUnsigned_value_specification(context.unsigned_value_specification()));
     }
 

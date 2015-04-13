@@ -47,8 +47,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.TimeZone;
 
-import static org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
-import static org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
+import static org.apache.tajo.algebra.WindowSpec.WindowFrameBoundType;
 import static org.apache.tajo.algebra.WindowSpec.WindowFrameUnit;
 import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType;
 import static org.apache.tajo.common.TajoDataTypes.DataType;
@@ -754,10 +753,10 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
 
     // When no window frame is declared in the query, use default value
-    //    default window frame is RANGE BETWEEN UNBOUNDED PROCEEDING AND CURRENT ROW
+    //    default window frame is RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
     if (frame == null) {
-      frame = new LogicalWindowFrame(WindowFrameUnit.RANGE, new LogicalWindowStartBound(WindowFrameStartBoundType.UNBOUNDED_PRECEDING),
-            new LogicalWindowEndBound(WindowFrameEndBoundType.CURRENT_ROW));
+      frame = new LogicalWindowFrame(WindowFrameUnit.RANGE, new LogicalWindowBound(WindowFrameBoundType.UNBOUNDED_PRECEDING),
+            new LogicalWindowBound(WindowFrameBoundType.CURRENT_ROW));
     }
 
     // set Function Type to determine whether window frame is applied or not
@@ -773,21 +772,21 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     }
 
     // set Frame type to determine the range of data used in the function
-    //    ENTIRE_PARTITION: from UNBOUNDED_PROCEDING to UNBOUNDED_FOLLOWING
-    //    TO_CURRENT_ROW: from UNBOUNDED_PROCEDING to some position relative to CURRENT_ROW
+    //    ENTIRE_PARTITION: from UNBOUNDED_PRECEDING to UNBOUNDED_FOLLOWING
+    //    TO_CURRENT_ROW: from UNBOUNDED_PRECEDING to some position relative to CURRENT_ROW
     //    FROM_CURRENT_ROW: from some position relative to CURRENT_ROW to UNBOUNDED_FOLLOWING
     //    SLIDING_WINDOW: from some position relative to CURRENT_ROW to other position relative to CURRENT_ROW
     if (sortKeys == null || NONFRAMABLE_WINDOW_FUNCTIONS.contains(funcName.toLowerCase())) {
       frame.setFrameType(LogicalWindowFrame.WindowFrameType.ENTIRE_PARTITION);
     } else {
-      if (frame.getStartBound().getBoundType() == WindowFrameStartBoundType.UNBOUNDED_PRECEDING) {
-        if (frame.getEndBound().getBoundType() == WindowFrameEndBoundType.UNBOUNDED_FOLLOWING) {
+      if (frame.getStartBound().getBoundType() == WindowFrameBoundType.UNBOUNDED_PRECEDING) {
+        if (frame.getEndBound().getBoundType() == WindowFrameBoundType.UNBOUNDED_FOLLOWING) {
           frame.setFrameType(LogicalWindowFrame.WindowFrameType.ENTIRE_PARTITION);
         } else {
           frame.setFrameType(LogicalWindowFrame.WindowFrameType.TO_CURRENT_ROW);
         }
       } else {
-        if (frame.getEndBound().getBoundType() == WindowFrameEndBoundType.UNBOUNDED_FOLLOWING) {
+        if (frame.getEndBound().getBoundType() == WindowFrameBoundType.UNBOUNDED_FOLLOWING) {
           frame.setFrameType(LogicalWindowFrame.WindowFrameType.FROM_CURRENT_ROW);
         } else {
           frame.setFrameType(LogicalWindowFrame.WindowFrameType.SLIDING_WINDOW);
@@ -816,18 +815,18 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   private LogicalWindowFrame convertWindowFrameToLogical(Context ctx, Stack<Expr> stack, WindowSpec.WindowFrame frame) throws PlanningException {
     if (frame != null) {
       WindowSpec.WindowStartBound exprStartBound = frame.getStartBound();
-      LogicalWindowStartBound startBound = new LogicalWindowStartBound(exprStartBound.getBoundType());
+      LogicalWindowBound startBound = new LogicalWindowBound(exprStartBound.getBoundType());
       if (exprStartBound.hasNumber()) {
         int startOffset = getOffset(ctx, stack, exprStartBound.getNumber());
-        startBound.setNumber(exprStartBound.getBoundType() == WindowFrameStartBoundType.PRECEDING ? -startOffset : startOffset);
+        startBound.setNumber(exprStartBound.getBoundType() == WindowFrameBoundType.PRECEDING ? -startOffset : startOffset);
       }
-      LogicalWindowEndBound endBound;
+      LogicalWindowBound endBound;
       if (frame.hasEndBound()) {
         WindowSpec.WindowEndBound exprEndBound = frame.getEndBound();
-        endBound = new LogicalWindowEndBound(exprEndBound.getBoundType());
+        endBound = new LogicalWindowBound(exprEndBound.getBoundType());
         if (exprEndBound.hasNumber()) {
           int endOffset = getOffset(ctx, stack, exprEndBound.getNumber());
-          endBound.setNumber(exprEndBound.getBoundType() == WindowFrameEndBoundType.PRECEDING ? -endOffset : endOffset);
+          endBound.setNumber(exprEndBound.getBoundType() == WindowFrameBoundType.PRECEDING ? -endOffset : endOffset);
 
           // check if window frame has valid parameter
           if (exprStartBound.hasNumber()) {
@@ -844,7 +843,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
             throw new PlanningException("In window frame, start point SHOULD NOT exceed the end point (current row)");
           }
         }
-        endBound = new LogicalWindowEndBound(WindowFrameEndBoundType.CURRENT_ROW);
+        endBound = new LogicalWindowBound(WindowFrameBoundType.CURRENT_ROW);
       }
 
       return new LogicalWindowFrame(frame.getFrameUnit(), startBound, endBound);

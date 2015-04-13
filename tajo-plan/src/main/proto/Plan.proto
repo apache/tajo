@@ -430,24 +430,18 @@ message AggFunctionEvalSpec { // requires FunctionEval
 
 message WinFunctionEvalSpec {
   message WindowFrame {
-    required WindowStartBound startBound = 1;
-    required WindowEndBound endBound = 2;
+    required WindowBound startBound = 1;
+    required WindowBound endBound = 2;
     required WindowFrameUnit unit = 3;
     required WindowFrameType type = 4;
   }
 
-  enum WindowFrameStartBoundType {
-    S_UNBOUNDED_PRECEDING = 0;
-    S_CURRENT_ROW = 1;
-    S_PRECEDING = 2;
-    S_FOLLOWING = 3;
-  }
-
-  enum WindowFrameEndBoundType {
-    E_UNBOUNDED_FOLLOWING = 0;
-    E_CURRENT_ROW = 1;
-    E_PRECEDING = 2;
-    E_FOLLOWING = 3;
+  enum WindowFrameBoundType {
+    UNBOUNDED_PRECEDING = 0;
+    UNBOUNDED_FOLLOWING = 1;
+    CURRENT_ROW = 2;
+    PRECEDING = 3;
+    FOLLOWING = 4;
   }
 
   enum WindowFrameUnit {
@@ -462,13 +456,8 @@ message WinFunctionEvalSpec {
     FT_SLIDING_WINDOW = 3;
   }
 
-  message WindowStartBound {
-    required WindowFrameStartBoundType boundType = 1;
-    required int32 number = 2;
-  }
-
-  message WindowEndBound {
-    required WindowFrameEndBoundType boundType = 1;
+  message WindowBound {
+    required WindowFrameBoundType boundType = 1;
     required int32 number = 2;
   }
 

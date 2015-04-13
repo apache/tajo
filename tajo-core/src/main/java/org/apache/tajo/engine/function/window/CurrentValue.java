@@ -38,7 +38,7 @@ public abstract class CurrentValue extends WindowAggFunc<Datum> {
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
     CurrentValueContext currentValueCtx = (CurrentValueContext)ctx;
-      if (params.get(0).isNotNull()) {
+      if (params.get(0) == null || params.get(0).isNotNull()) {
         currentValueCtx.current = params.get(0);
       } else {
         currentValueCtx.current = NullDatum.get();
