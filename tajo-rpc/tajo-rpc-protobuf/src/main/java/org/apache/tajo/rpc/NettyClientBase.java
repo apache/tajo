@@ -18,23 +18,18 @@
 
 package org.apache.tajo.rpc;
 
-import io.netty.channel.*;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.rpc.RpcConnectionPool.RpcConnectionKey;
-
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.*;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.util.concurrent.GenericFutureListener;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.rpc.RpcConnectionManager.RpcConnectionKey;
 
 import java.io.Closeable;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class NettyClientBase implements Closeable {
@@ -46,13 +41,11 @@ public abstract class NettyClientBase implements Closeable {
 
   private Bootstrap bootstrap;
   private volatile ChannelFuture channelFuture;
-  private volatile long lastConnected = -1;
 
   protected final Class<?> protocol;
   protected final AtomicInteger sequence = new AtomicInteger(0);
 
   private final RpcConnectionKey key;
-  private final AtomicInteger counter = new AtomicInteger(0);   // reference counter
 
   public NettyClientBase(RpcConnectionKey rpcConnectionKey, int numRetries)
       throws ClassNotFoundException, NoSuchMethodException {
@@ -74,7 +67,7 @@ public abstract class NettyClientBase implements Closeable {
       .option(ChannelOption.TCP_NODELAY, true);
   }
 
-  public RpcConnectionPool.RpcConnectionKey getKey() {
+  public RpcConnectionManager.RpcConnectionKey getKey() {
     return key;
   }
 
@@ -94,21 +87,6 @@ public abstract class NettyClientBase implements Closeable {
 
   public abstract <T> T getStub();
 
-  public boolean acquire(long timeout) {
-    if (!checkConnection(timeout)) {
-      return false;
-    }
-    counter.incrementAndGet();
-    return true;
-  }
-
-  public boolean release() {
-    return counter.decrementAndGet() == 0;
-  }
-
-  private boolean checkConnection(long timeout) {
-    return isConnected() || handleConnectionInternally(key.addr, timeout);
-  }
 
   private InetSocketAddress resolveAddress(InetSocketAddress address) {
     if (address.isUnresolved()) {
@@ -117,83 +95,53 @@ public abstract class NettyClientBase implements Closeable {
     return address;
   }
 
-  private void connectUsingNetty(InetSocketAddress address, GenericFutureListener<ChannelFuture> listener) {
-    if (lastConnected > 0) {
-      LOG.warn("Try to reconnect : " + address);
-    }
-    this.channelFuture = bootstrap.clone().group(RpcChannelFactory.getSharedClientEventloopGroup())
-            .connect(address)
-            .addListener(listener);
+  private ChannelFuture doConnect(SocketAddress address) {
+    return this.channelFuture = bootstrap.clone().group(RpcChannelFactory.getSharedClientEventloopGroup())
+        .connect(address);
   }
 
-  // first attendant kicks connection
-  private final RpcUtils.Scrutineer<CountDownLatch> connect = new RpcUtils.Scrutineer<CountDownLatch>();
 
-  private boolean handleConnectionInternally(final InetSocketAddress addr, long timeout) {
-    final CountDownLatch ticket = new CountDownLatch(1);
-    final CountDownLatch granted = connect.check(ticket);
+  public void connect() throws ConnectTimeoutException {
+    if (isConnected()) return;
 
-    // basically, it's double checked lock
-    if (ticket == granted && isConnected()) {
-      granted.countDown();
-      return true;
+    final AtomicInteger retries = new AtomicInteger();
+    InetSocketAddress address = key.addr;
+    if (address.isUnresolved()) {
+      address = resolveAddress(address);
     }
 
-    if (ticket == granted) {
-      InetSocketAddress address = resolveAddress(addr);
-      connectUsingNetty(address, new RetryConnectionListener(address, granted));
+    /* do not call await() inside handler */
+    ChannelFuture f = doConnect(address).awaitUninterruptibly();
+    retries.incrementAndGet();
+
+    if (!f.isSuccess() && numRetries > 0) {
+      doReconnect(address, f, retries);
+    } else {
+      LOG.info("Connection established successfully : " + address);
     }
 
-    try {
-      granted.await(timeout, TimeUnit.MILLISECONDS);
-    } catch (InterruptedException e) {
-      // ignore
-    }
-
-    boolean success = channelFuture.isSuccess();
-
-    if (granted.getCount() == 0) {
-      connect.clear(granted);
-    }
-
-    return success;
+    this.channelFuture.channel().closeFuture().addListener(new ConnectionCloseFutureListener(getKey()));
   }
 
-  class RetryConnectionListener implements GenericFutureListener<ChannelFuture> {
-    private final AtomicInteger retryCount = new AtomicInteger();
-    private final InetSocketAddress address;
-    private final CountDownLatch latch;
+  private void doReconnect(final InetSocketAddress address, ChannelFuture future, AtomicInteger retries)
+      throws ConnectTimeoutException {
 
-    RetryConnectionListener(InetSocketAddress address, CountDownLatch latch) {
-      this.address = address;
-      this.latch = latch;
-    }
+    for (; ; ) {
+      if (numRetries >= retries.getAndIncrement()) {
 
-    @Override
-    public void operationComplete(ChannelFuture channelFuture) throws Exception {
-      if (!channelFuture.isSuccess()) {
-        channelFuture.channel().close();
-
-        if (numRetries > retryCount.getAndIncrement()) {
-
-          RpcChannelFactory.getSharedClientEventloopGroup().schedule(new Runnable() {
-            @Override
-            public void run() {
-              connectUsingNetty(address, RetryConnectionListener.this);
-            }
-          }, PAUSE, TimeUnit.MILLISECONDS);
-
-          LOG.debug("Connecting to " + address + " has been failed. Retrying to connect.");
+        LOG.warn(future.cause().getMessage() + " Try to reconnect");
+        try {
+          Thread.sleep(PAUSE);
+        } catch (InterruptedException e) {
         }
-        else {
-          latch.countDown();
 
-          LOG.error("Max retry count has been exceeded. attempts=" + numRetries);
+        this.channelFuture = doConnect(address).awaitUninterruptibly();
+        if (this.channelFuture.isDone() && this.channelFuture.isSuccess()) {
+          break;
         }
-      }
-      else {
-        latch.countDown();
-        lastConnected = System.currentTimeMillis();
+      } else {
+        throw new ConnectTimeoutException("Max retry count has been exceeded. attempts=" + numRetries
+            + " caused by: " + future.cause());
       }
     }
   }
@@ -217,7 +165,7 @@ public abstract class NettyClientBase implements Closeable {
     Channel channel = getChannel();
     if (channel != null && channel.isOpen()) {
       LOG.debug("Proxy will be disconnected from remote " + channel.remoteAddress());
-      channel.close();
+      channel.close().awaitUninterruptibly();
     }
   }
 }

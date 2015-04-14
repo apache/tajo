@@ -33,15 +33,15 @@ public abstract class ServerCallable<T> {
   protected Class<?> protocol;
   protected boolean asyncMode;
   protected boolean closeConn;
-  protected RpcConnectionPool connPool;
+  protected RpcConnectionManager connPool;
 
   public abstract T call(NettyClientBase client) throws Exception;
 
-  public ServerCallable(RpcConnectionPool connPool,  InetSocketAddress addr, Class<?> protocol, boolean asyncMode) {
+  public ServerCallable(RpcConnectionManager connPool,  InetSocketAddress addr, Class<?> protocol, boolean asyncMode) {
     this(connPool, addr, protocol, asyncMode, false);
   }
 
-  public ServerCallable(RpcConnectionPool connPool, InetSocketAddress addr, Class<?> protocol,
+  public ServerCallable(RpcConnectionManager connPool, InetSocketAddress addr, Class<?> protocol,
                         boolean asyncMode, boolean closeConn) {
     this.connPool = connPool;
     this.addr = addr;
@@ -105,9 +105,7 @@ public abstract class ServerCallable<T> {
       } finally {
         afterCall();
         if(closeConn) {
-          connPool.closeConnection(client);
-        } else {
-          connPool.releaseConnection(client);
+          connPool.cleanup(client);
         }
       }
       try {
@@ -143,9 +141,7 @@ public abstract class ServerCallable<T> {
     } finally {
       afterCall();
       if(closeConn) {
-        connPool.closeConnection(client);
-      } else {
-        connPool.releaseConnection(client);
+        connPool.cleanup(client);
       }
     }
   }

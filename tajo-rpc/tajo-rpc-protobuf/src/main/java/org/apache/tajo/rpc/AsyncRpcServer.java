@@ -138,11 +138,6 @@ public class AsyncRpcServer extends NettyServerBase {
       } else {
         LOG.error(cause.getMessage());
       }
-      
-      if (ctx != null && ctx.channel().isActive()) {
-        ctx.channel().close();
-      }
     }
-    
   }
 }

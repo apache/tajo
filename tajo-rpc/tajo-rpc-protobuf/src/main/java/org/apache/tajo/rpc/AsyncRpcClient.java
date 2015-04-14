@@ -20,16 +20,16 @@ package org.apache.tajo.rpc;
 
 import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.*;
-
 import io.netty.channel.*;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.rpc.RpcConnectionPool.RpcConnectionKey;
-import org.apache.tajo.rpc.RpcProtos.RpcRequest;
-import org.apache.tajo.rpc.RpcProtos.RpcResponse;
-
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.GenericFutureListener;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.rpc.RpcConnectionManager.RpcConnectionKey;
+import org.apache.tajo.rpc.RpcProtos.RpcRequest;
+import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
@@ -53,11 +53,16 @@ public class AsyncRpcClient extends NettyClientBase {
    */
   AsyncRpcClient(RpcConnectionKey rpcConnectionKey, int retries)
       throws ClassNotFoundException, NoSuchMethodException {
+    this(rpcConnectionKey, retries, 0);
+  }
+
+  AsyncRpcClient(RpcConnectionKey rpcConnectionKey, int retries, int idleTimeSeconds)
+      throws ClassNotFoundException, NoSuchMethodException {
     super(rpcConnectionKey, retries);
     stubMethod = getServiceClass().getMethod("newStub", RpcChannel.class);
     rpcChannel = new ProxyRpcChannel();
     inboundHandler = new ClientChannelInboundHandler();
-    init(new ProtoChannelInitializer(inboundHandler, RpcResponse.getDefaultInstance()));
+    init(new ProtoChannelInitializer(inboundHandler, RpcResponse.getDefaultInstance(), idleTimeSeconds));
   }
 
   @Override
@@ -218,9 +223,16 @@ public class AsyncRpcClient extends NettyClientBase {
       } else {
         LOG.error("RPC Exception:" + cause.getMessage());
       }
-      
-      if (ctx != null && ctx.channel().isActive()) {
-        ctx.channel().close();
+    }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+      if (evt instanceof IdleStateEvent) {
+        IdleStateEvent e = (IdleStateEvent) evt;
+        if (e.state() == IdleState.WRITER_IDLE) {
+          ctx.close();
+          LOG.info("Idle connection closed successfully :" + ctx.channel().remoteAddress());
+        }
       }
     }
   }

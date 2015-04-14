@@ -18,6 +18,7 @@
 
 package org.apache.tajo.rpc;
 
+import io.netty.channel.ConnectTimeoutException;
 import org.apache.tajo.rpc.test.DummyProtocol;
 import org.apache.tajo.rpc.test.DummyProtocol.DummyProtocolService.BlockingInterface;
 import org.apache.tajo.rpc.test.TestProtos.EchoMessage;
@@ -115,12 +116,13 @@ public class TestBlockingRpc {
   public void setUpRpcClient() throws Exception {
     retries = 1;
 
-    RpcConnectionPool.RpcConnectionKey rpcConnectionKey =
-          new RpcConnectionPool.RpcConnectionKey(
+    RpcConnectionManager.RpcConnectionKey rpcConnectionKey =
+          new RpcConnectionManager.RpcConnectionKey(
               RpcUtils.getConnectAddress(server.getListenAddress()),
               DummyProtocol.class, false);
     client = new BlockingRpcClient(rpcConnectionKey, retries);
-    assertTrue(client.acquire(RpcConnectionPool.DEFAULT_TIMEOUT));
+    client.connect();
+    assertTrue(client.isConnected());
     stub = client.getStub();
   }
 
@@ -162,7 +164,7 @@ public class TestBlockingRpc {
   @Test
   @SetupRpcConnection(setupRpcClient=false)
   public void testRpcWithServiceCallable() throws Exception {
-    RpcConnectionPool pool = RpcConnectionPool.getPool();
+    RpcConnectionManager manager = RpcConnectionManager.getInstance();
     final SumRequest request = SumRequest.newBuilder()
         .setX1(1)
         .setX2(2)
@@ -170,7 +172,7 @@ public class TestBlockingRpc {
         .setX4(2.0f).build();
 
     SumResponse response =
-    new ServerCallable<SumResponse>(pool,
+    new ServerCallable<SumResponse>(manager,
         server.getListenAddress(), DummyProtocol.class, false) {
       @Override
       public SumResponse call(NettyClientBase client) throws Exception {
@@ -183,7 +185,7 @@ public class TestBlockingRpc {
     assertEquals(8.15d, response.getResult(), 1e-15);
 
     response =
-        new ServerCallable<SumResponse>(pool,
+        new ServerCallable<SumResponse>(manager,
             server.getListenAddress(), DummyProtocol.class, false) {
           @Override
           public SumResponse call(NettyClientBase client) throws Exception {
@@ -194,7 +196,7 @@ public class TestBlockingRpc {
         }.withoutRetries();
 
     assertTrue(8.15d == response.getResult());
-    pool.close();
+    manager.close();
   }
 
   @Test
@@ -237,14 +239,16 @@ public class TestBlockingRpc {
           fail(e.getMessage());
         }
         server.start();
+        System.out.println(server.bindAddress);
       }
     });
     serverThread.start();
 
-    RpcConnectionPool.RpcConnectionKey rpcConnectionKey =
-          new RpcConnectionPool.RpcConnectionKey(address, DummyProtocol.class, false);
+    RpcConnectionManager.RpcConnectionKey rpcConnectionKey =
+          new RpcConnectionManager.RpcConnectionKey(address, DummyProtocol.class, false);
     client = new BlockingRpcClient(rpcConnectionKey, retries);
-    assertTrue(client.acquire(RpcConnectionPool.DEFAULT_TIMEOUT));
+    client.connect();
+    assertTrue(client.isConnected());
     stub = client.getStub();
 
     EchoMessage response = stub.echo(null, message);
@@ -254,22 +258,22 @@ public class TestBlockingRpc {
   @Test
   public void testConnectionFailed() throws Exception {
     NettyClientBase client = null;
-    
+    boolean expected = false;
     try {
       int port = server.getListenAddress().getPort() + 1;
-      RpcConnectionPool.RpcConnectionKey rpcConnectionKey =
-          new RpcConnectionPool.RpcConnectionKey(
+      RpcConnectionManager.RpcConnectionKey rpcConnectionKey =
+          new RpcConnectionManager.RpcConnectionKey(
               RpcUtils.getConnectAddress(new InetSocketAddress("127.0.0.1", port)),
               DummyProtocol.class, false);
       client = new BlockingRpcClient(rpcConnectionKey, retries);
-      assertFalse(client.acquire(RpcConnectionPool.DEFAULT_TIMEOUT));
-      client.close();
-    } catch (Throwable ce){
-      if (client != null) {
-        client.close();
-      }
+      client.connect();
+      fail();
+    } catch (ConnectTimeoutException e) {
+      expected = true;
+    } catch (Throwable throwable) {
       fail();
     }
+    assertTrue(expected);
   }
 
   @Test
@@ -334,11 +338,12 @@ public class TestBlockingRpc {
   @SetupRpcConnection(setupRpcClient=false)
   public void testUnresolvedAddress() throws Exception {
     String hostAndPort = RpcUtils.normalizeInetSocketAddress(server.getListenAddress());
-    RpcConnectionPool.RpcConnectionKey rpcConnectionKey =
-          new RpcConnectionPool.RpcConnectionKey(
+    RpcConnectionManager.RpcConnectionKey rpcConnectionKey =
+          new RpcConnectionManager.RpcConnectionKey(
               RpcUtils.createUnresolved(hostAndPort), DummyProtocol.class, false);
     client = new BlockingRpcClient(rpcConnectionKey, retries);
-    assertTrue(client.acquire(RpcConnectionPool.DEFAULT_TIMEOUT));
+    client.connect();
+    assertTrue(client.isConnected());
     BlockingInterface stub = client.getStub();
 
     EchoMessage message = EchoMessage.newBuilder()

@@ -137,11 +137,6 @@ public class BlockingRpcServer extends NettyServerBase {
         RemoteCallException callException = (RemoteCallException) cause;
         ctx.writeAndFlush(callException.getResponse());
       }
-      
-      if (ctx != null && ctx.channel().isActive()) {
-        ctx.channel().close();
-      }
     }
-    
   }
 }

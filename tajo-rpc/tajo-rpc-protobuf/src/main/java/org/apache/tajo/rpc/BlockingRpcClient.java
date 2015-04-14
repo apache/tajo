@@ -22,10 +22,12 @@ import com.google.protobuf.*;
 import com.google.protobuf.Descriptors.MethodDescriptor;
 
 import io.netty.channel.*;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.concurrent.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.rpc.RpcConnectionPool.RpcConnectionKey;
+import org.apache.tajo.rpc.RpcConnectionManager.RpcConnectionKey;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
 import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
@@ -52,12 +54,17 @@ public class BlockingRpcClient extends NettyClientBase {
    * new an instance through this constructor.
    */
   BlockingRpcClient(RpcConnectionKey rpcConnectionKey, int retries)
+      throws NoSuchMethodException, ClassNotFoundException {
+    this(rpcConnectionKey, retries, 0);
+  }
+
+  BlockingRpcClient(RpcConnectionKey rpcConnectionKey, int retries, int idleTimeSeconds)
       throws ClassNotFoundException, NoSuchMethodException {
     super(rpcConnectionKey, retries);
     stubMethod = getServiceClass().getMethod("newBlockingStub", BlockingRpcChannel.class);
     rpcChannel = new ProxyRpcChannel();
     inboundHandler = new ClientChannelInboundHandler();
-    init(new ProtoChannelInitializer(inboundHandler, RpcResponse.getDefaultInstance()));
+    init(new ProtoChannelInitializer(inboundHandler, RpcResponse.getDefaultInstance(), idleTimeSeconds));
   }
 
   @Override
@@ -200,8 +207,16 @@ public class BlockingRpcClient extends NettyClientBase {
       } else {
         LOG.error("RPC Exception:" + cause.getMessage());
       }
-      if (ctx != null && ctx.channel().isActive()) {
-        ctx.channel().close();
+    }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+      if (evt instanceof IdleStateEvent) {
+        IdleStateEvent e = (IdleStateEvent) evt;
+        if (e.state() == IdleState.WRITER_IDLE) {
+          ctx.close();
+          LOG.info("Idle connection closed successfully :" + ctx.channel().remoteAddress());
+        }
       }
     }
   }
