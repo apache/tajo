@@ -67,6 +67,10 @@ public abstract class ContainerProxy {
     return state == ContainerState.DONE || state == ContainerState.FAILED;
   }
 
+  public TajoContainer getContainer() {
+    return container;
+  }
+
   public String getTaskHostName() {
     return this.hostName;
   }

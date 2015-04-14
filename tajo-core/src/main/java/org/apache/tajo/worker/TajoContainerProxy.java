@@ -16,34 +16,24 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master;
+package org.apache.tajo.worker;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ipc.ContainerProtocol;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
+import org.apache.tajo.master.ContainerProxy;
 import org.apache.tajo.master.container.TajoContainer;
-import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.master.event.TaskFatalErrorEvent;
-import org.apache.tajo.master.rm.TajoWorkerContainer;
-import org.apache.tajo.master.rm.TajoWorkerContainerId;
 import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.rpc.RpcClientManager;
-import org.apache.tajo.service.ServiceTracker;
-import org.apache.tajo.worker.TajoWorker;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 public class TajoContainerProxy extends ContainerProxy {
   private final QueryContext queryContext;
@@ -64,7 +54,7 @@ public class TajoContainerProxy extends ContainerProxy {
     context.getResourceAllocator().addContainer(containerId, this);
 
     this.hostName = container.getNodeId().getHost();
-    this.port = ((TajoWorkerContainer)container).getWorkerResource().getConnectionInfo().getPullServerPort();
+    this.port = ((TajoWorkerContainer)container).getResource().getConnectionInfo().getPullServerPort();
     this.state = ContainerState.RUNNING;
 
     if (LOG.isDebugEnabled()) {
@@ -131,47 +121,12 @@ public class TajoContainerProxy extends ContainerProxy {
       LOG.info("Container already stopped:" + containerId);
       return;
     }
-    if(this.state == ContainerState.PREP) {
-      this.state = ContainerState.KILLED_BEFORE_LAUNCH;
+    if (state == ContainerState.PREP) {
+      state = ContainerState.KILLED_BEFORE_LAUNCH;
     } else {
-      try {
-        releaseWorkerResource(context, executionBlockId, Arrays.asList(containerId));
-        context.getResourceAllocator().removeContainer(containerId);
-      } catch (Throwable t) {
-        // ignore the cleanup failure
-        String message = "cleanup failed for container "
-            + this.containerId + " : "
-            + StringUtils.stringifyException(t);
-        LOG.warn(message);
-      } finally {
-        this.state = ContainerState.DONE;
-      }
+      ((TajoWorkerContainer)container).getResource().release();
+      context.getResourceAllocator().removeContainer(containerId);
+      state = ContainerState.DONE;
     }
-  }
-
-  public static void releaseWorkerResource(QueryMasterTask.QueryMasterTaskContext context,
-                                           ExecutionBlockId executionBlockId,
-                                           List<TajoContainerId> containerIds) throws Exception {
-    List<ContainerProtocol.TajoContainerIdProto> containerIdProtos =
-        new ArrayList<ContainerProtocol.TajoContainerIdProto>();
-
-    for(TajoContainerId eachContainerId: containerIds) {
-      containerIdProtos.add(TajoWorkerContainerId.getContainerIdProto(eachContainerId));
-    }
-
-    RpcClientManager manager = RpcClientManager.getInstance();
-    NettyClientBase tmClient = null;
-
-    ServiceTracker serviceTracker = context.getQueryMasterContext().getWorkerContext().getServiceTracker();
-    tmClient = manager.getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
-
-    QueryCoordinatorProtocol.QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
-    masterClientService.releaseWorkerResource(null,
-        QueryCoordinatorProtocol.WorkerResourceReleaseRequest.newBuilder()
-            .setExecutionBlockId(executionBlockId.getProto())
-            .addAllContainerIds(containerIdProtos)
-            .build(),
-        NullCallback.get());
-
   }
 }

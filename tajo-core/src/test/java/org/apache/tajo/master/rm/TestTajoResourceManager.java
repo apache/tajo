@@ -22,7 +22,6 @@ import com.google.protobuf.RpcCallback;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.*;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.rpc.NullCallback;
@@ -148,8 +147,7 @@ public class TestTajoResourceManager {
           .build();
 
       final CountDownLatch barrier = new CountDownLatch(1);
-      final List<ContainerProtocol.TajoContainerIdProto> containerIds = new
-        ArrayList<ContainerProtocol.TajoContainerIdProto>();
+      final List<Integer> resourceIds = new ArrayList<Integer>();
 
       RpcCallback<WorkerResourceAllocationResponse> callBack = new RpcCallback<WorkerResourceAllocationResponse>() {
 
@@ -186,11 +184,11 @@ public class TestTajoResourceManager {
       for(WorkerAllocatedResource eachResource: response.getWorkerAllocatedResourceList()) {
         assertTrue(
             eachResource.getAllocatedMemoryMB() >= minMemory &&  eachResource.getAllocatedMemoryMB() <= maxMemory);
-        containerIds.add(eachResource.getContainerId());
+        resourceIds.add(eachResource.getResourceId());
       }
 
-      for(ContainerProtocol.TajoContainerIdProto eachContainerId: containerIds) {
-        tajoWorkerResourceManager.releaseWorkerResource(eachContainerId);
+      for (Integer eachResourceId: resourceIds) {
+        tajoWorkerResourceManager.releaseWorkerResource(eachResourceId);
       }
 
       for(Worker worker: tajoWorkerResourceManager.getWorkers().values()) {
@@ -258,7 +256,7 @@ public class TestTajoResourceManager {
             TestTajoResourceManager.this.response.getWorkerAllocatedResourceList()) {
           assertTrue(
               eachResource.getAllocatedMemoryMB() >= minMemory &&  eachResource.getAllocatedMemoryMB() <= maxMemory);
-          tajoWorkerResourceManager.releaseWorkerResource(eachResource.getContainerId());
+          tajoWorkerResourceManager.releaseWorkerResource(eachResource.getResourceId());
         }
 
         for(Worker worker: tajoWorkerResourceManager.getWorkers().values()) {
@@ -317,8 +315,7 @@ public class TestTajoResourceManager {
           .build();
 
       final CountDownLatch barrier = new CountDownLatch(1);
-      final List<ContainerProtocol.TajoContainerIdProto> containerIds = new
-        ArrayList<ContainerProtocol.TajoContainerIdProto>();
+      final List<Integer> resourceIds = new ArrayList<Integer>();
 
 
       RpcCallback<WorkerResourceAllocationResponse> callBack = new RpcCallback<WorkerResourceAllocationResponse>() {
@@ -337,7 +334,7 @@ public class TestTajoResourceManager {
         assertTrue("AllocatedDiskSlot:" + eachResource.getAllocatedDiskSlots(),
             eachResource.getAllocatedDiskSlots() >= minDiskSlots &&
                 eachResource.getAllocatedDiskSlots() <= maxDiskSlots);
-        containerIds.add(eachResource.getContainerId());
+        resourceIds.add(eachResource.getResourceId());
       }
 
       // assert after callback
@@ -356,8 +353,8 @@ public class TestTajoResourceManager {
 
       assertEquals(numWorkers * 3, response.getWorkerAllocatedResourceList().size());
 
-      for(ContainerProtocol.TajoContainerIdProto eachContainerId: containerIds) {
-        tajoWorkerResourceManager.releaseWorkerResource(eachContainerId);
+      for (Integer eachResourceId : resourceIds) {
+        tajoWorkerResourceManager.releaseWorkerResource(eachResourceId);
       }
 
       for(Worker worker: tajoWorkerResourceManager.getWorkers().values()) {
@@ -399,9 +396,6 @@ public class TestTajoResourceManager {
           .build();
 
       final CountDownLatch barrier = new CountDownLatch(1);
-      final List<ContainerProtocol.TajoContainerIdProto> containerIds = new
-        ArrayList<ContainerProtocol.TajoContainerIdProto>();
-
 
       RpcCallback<WorkerResourceAllocationResponse> callBack = new RpcCallback<WorkerResourceAllocationResponse>() {
 
@@ -416,6 +410,11 @@ public class TestTajoResourceManager {
       tajoWorkerResourceManager.allocateWorkerResources(request, callBack);
       assertFalse(barrier.await(3, TimeUnit.SECONDS));
 
+      if (response != null) {
+        for (WorkerAllocatedResource resource : response.getWorkerAllocatedResourceList()) {
+          tajoWorkerResourceManager.releaseWorkerResource(resource.getResourceId());
+        }
+      }
       assertNull(response);
 
       // assert after callback
@@ -431,10 +430,6 @@ public class TestTajoResourceManager {
       }
 
       assertEquals(0, totalUsedDisks, 0);
-
-      for(ContainerProtocol.TajoContainerIdProto eachContainerId: containerIds) {
-        tajoWorkerResourceManager.releaseWorkerResource(eachContainerId);
-      }
 
       for(Worker worker: tajoWorkerResourceManager.getWorkers().values()) {
         WorkerResource resource = worker.getResource();

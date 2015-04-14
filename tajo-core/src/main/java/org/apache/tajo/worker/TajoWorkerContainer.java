@@ -16,25 +16,17 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.master.rm;
+package org.apache.tajo.worker;
 
 import org.apache.hadoop.yarn.api.records.*;
 import org.apache.tajo.master.container.TajoContainer;
 import org.apache.tajo.master.container.TajoContainerId;
-
+import org.apache.tajo.master.rm.Worker;
 
 public class TajoWorkerContainer extends TajoContainer {
   TajoContainerId id;
   NodeId nodeId;
-  Worker worker;
-
-  public Worker getWorkerResource() {
-    return worker;
-  }
-
-  public void setWorkerResource(Worker workerResource) {
-    this.worker = workerResource;
-  }
+  AllocatedResource resource;
 
   @Override
   public TajoContainerId getId() {
@@ -67,13 +59,13 @@ public class TajoWorkerContainer extends TajoContainer {
   }
 
   @Override
-  public Resource getResource() {
-    return null;  //To change body of implemented methods use File | Settings | File Templates.
+  public AllocatedResource getResource() {
+    return resource;
   }
 
   @Override
   public void setResource(Resource resource) {
-    //To change body of implemented methods use File | Settings | File Templates.
+    this.resource = (AllocatedResource)resource;
   }
 
   @Override
@@ -110,7 +102,6 @@ public class TajoWorkerContainer extends TajoContainer {
 
     if (id != null ? !id.equals(that.id) : that.id != null) return false;
     if (nodeId != null ? !nodeId.equals(that.nodeId) : that.nodeId != null) return false;
-    if (worker != null ? !worker.equals(that.worker) : that.worker != null) return false;
 
     return true;
   }
@@ -119,7 +110,6 @@ public class TajoWorkerContainer extends TajoContainer {
   public int hashCode() {
     int result = id != null ? id.hashCode() : 0;
     result = 31 * result + (nodeId != null ? nodeId.hashCode() : 0);
-    result = 31 * result + (worker != null ? worker.hashCode() : 0);
     return result;
   }
 }

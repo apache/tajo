@@ -24,7 +24,6 @@ import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.yarn.api.records.Priority;
-import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.event.Event;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
@@ -53,7 +52,6 @@ import org.apache.tajo.master.LaunchTaskRunnersEvent;
 import org.apache.tajo.master.TaskRunnerGroupEvent;
 import org.apache.tajo.master.TaskRunnerGroupEvent.EventType;
 import org.apache.tajo.master.TaskState;
-import org.apache.tajo.master.container.TajoContainer;
 import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.master.event.*;
 import org.apache.tajo.master.event.TaskAttemptToSchedulerEvent.TaskAttemptScheduleContext;
@@ -67,7 +65,10 @@ import org.apache.tajo.unit.StorageUnit;
 import org.apache.tajo.util.KeyValueSet;
 import org.apache.tajo.util.history.StageHistory;
 import org.apache.tajo.util.history.TaskHistory;
+import org.apache.tajo.worker.AbstractResourceAllocator;
 import org.apache.tajo.worker.FetchImpl;
+import org.apache.tajo.worker.Resources;
+import org.apache.tajo.worker.TajoWorkerContainer;
 
 import java.io.IOException;
 import java.util.*;
@@ -108,8 +109,8 @@ public class Stage implements EventHandler<StageEvent> {
   private Thread timeoutChecker;
 
   volatile Map<TaskId, Task> tasks = new ConcurrentHashMap<TaskId, Task>();
-  volatile Map<TajoContainerId, TajoContainer> containers = new ConcurrentHashMap<TajoContainerId,
-    TajoContainer>();
+  volatile Map<TajoContainerId, TajoWorkerContainer> containers =
+      new ConcurrentHashMap<TajoContainerId, TajoWorkerContainer>();
 
   private static final DiagnosticsUpdateTransition DIAGNOSTIC_UPDATE_TRANSITION = new DiagnosticsUpdateTransition();
   private static final InternalErrorTransition INTERNAL_ERROR_TRANSITION = new InternalErrorTransition();
@@ -1052,15 +1053,20 @@ public class Stage implements EventHandler<StageEvent> {
       //TODO consider disk slot
       int requiredMemoryMBPerTask = 512;
 
-      int numRequest = stage.getContext().getResourceAllocator().calculateNumRequestContainers(
-          stage.getContext().getQueryMasterContext().getWorkerContext(),
+      AbstractResourceAllocator allocator = stage.getContext().getResourceAllocator();
+      QueryMaster.QueryMasterContext masterContext = stage.getContext().getQueryMasterContext();
+      int numRequest = allocator.calculateNumRequestContainers(
+          masterContext.getWorkerContext(),
           stage.schedulerContext.getEstimatedTaskNum(),
           requiredMemoryMBPerTask
       );
 
-      final Resource resource = Records.newRecord(Resource.class);
+      //TODO consider task's resource usage pattern
+      TajoConf tajoConf = masterContext.getConf();
+      int requiredMemoryMB = tajoConf.getIntVar(TajoConf.ConfVars.TASK_DEFAULT_MEMORY);
+      float requiredDiskSlots = tajoConf.getFloatVar(TajoConf.ConfVars.TASK_DEFAULT_DISK);
 
-      resource.setMemory(requiredMemoryMBPerTask);
+      Resources resource = new Resources(1, requiredMemoryMB, requiredDiskSlots);
 
       LOG.info("Request Container for " + stage.getId() + " containers=" + numRequest);
 
@@ -1167,7 +1173,7 @@ public class Stage implements EventHandler<StageEvent> {
       try {
         StageContainerAllocationEvent allocationEvent =
             (StageContainerAllocationEvent) event;
-        for (TajoContainer container : allocationEvent.getAllocatedContainer()) {
+        for (TajoWorkerContainer container : allocationEvent.getAllocatedContainer()) {
           TajoContainerId cId = container.getId();
           if (stage.containers.containsKey(cId)) {
             stage.eventHandler.handle(new StageDiagnosticsUpdateEvent(stage.getId(),

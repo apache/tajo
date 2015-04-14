@@ -24,7 +24,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.*;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
@@ -37,7 +36,6 @@ import org.apache.tajo.util.NetUtils;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
-import java.util.List;
 
 public class QueryCoordinatorService extends AbstractService {
   private final static Log LOG = LogFactory.getLog(QueryCoordinatorService.class);
@@ -128,10 +126,8 @@ public class QueryCoordinatorService extends AbstractService {
     @Override
     public void releaseWorkerResource(RpcController controller, WorkerResourceReleaseRequest request,
                                            RpcCallback<PrimitiveProtos.BoolProto> done) {
-      List<ContainerProtocol.TajoContainerIdProto> containerIds = request.getContainerIdsList();
-
-      for(ContainerProtocol.TajoContainerIdProto eachContainer: containerIds) {
-        context.getResourceManager().releaseWorkerResource(eachContainer);
+      for (Integer integer: request.getResourceIdsList()) {
+        context.getResourceManager().releaseWorkerResource(integer);
       }
       done.run(BOOL_TRUE);
     }

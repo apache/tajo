@@ -19,15 +19,15 @@
 package org.apache.tajo.master.event;
 
 import org.apache.hadoop.yarn.api.records.Priority;
-import org.apache.hadoop.yarn.api.records.Resource;
 import org.apache.hadoop.yarn.event.AbstractEvent;
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.worker.Resources;
 
 public class ContainerAllocationEvent extends AbstractEvent<ContainerAllocatorEventType>  {
 
   private final ExecutionBlockId executionBlockId;
   private final Priority priority;
-  private final Resource resource;
+  private final Resources resource;
   private final boolean isLeafQuery;
   private final int requiredNum;
   private final float progress;
@@ -35,7 +35,7 @@ public class ContainerAllocationEvent extends AbstractEvent<ContainerAllocatorEv
   public ContainerAllocationEvent(ContainerAllocatorEventType eventType,
                                   ExecutionBlockId executionBlockId,
                                   Priority priority,
-                                  Resource resource,
+                                  Resources resource,
                                   int requiredNum,
                                   boolean isLeafQuery, float progress) {
     super(eventType);
@@ -63,7 +63,7 @@ public class ContainerAllocationEvent extends AbstractEvent<ContainerAllocatorEv
     return isLeafQuery;
   }
 
-  public Resource getCapability() {
+  public Resources getCapability() {
     return resource;
   }
 
@@ -71,7 +71,12 @@ public class ContainerAllocationEvent extends AbstractEvent<ContainerAllocatorEv
     return progress;
   }
 
-  public Resource getResource() {
+  public Resources getResource() {
     return resource;
+  }
+
+  public ContainerAllocationEvent shortOf(int shortage) {
+    return new ContainerAllocationEvent(getType(),
+        executionBlockId, priority, resource, shortage, isLeafQuery, progress);
   }
 }

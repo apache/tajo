@@ -30,7 +30,9 @@ import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.api.records.impl.pb.ApplicationAttemptIdPBImpl;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.tajo.ExecutionBlockId;
+import org.apache.tajo.QueryId;
 import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.utils.ThreadUtil;
 import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.*;
@@ -42,10 +44,7 @@ import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.master.event.ContainerAllocationEvent;
 import org.apache.tajo.master.event.ContainerAllocatorEventType;
 import org.apache.tajo.master.event.StageContainerAllocationEvent;
-import org.apache.tajo.master.rm.TajoWorkerContainer;
 import org.apache.tajo.master.rm.TajoWorkerContainerId;
-import org.apache.tajo.master.rm.Worker;
-import org.apache.tajo.master.rm.WorkerResource;
 import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.querymaster.Stage;
 import org.apache.tajo.querymaster.StageState;
@@ -61,6 +60,7 @@ import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class TajoResourceAllocator extends AbstractResourceAllocator {
   private static final Log LOG = LogFactory.getLog(TajoResourceAllocator.class);
@@ -70,7 +70,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
   private final ExecutorService allocationExecutor;
   private final Deallocator deallocator;
 
-  private AtomicBoolean stopped = new AtomicBoolean(false);
+  private final AtomicBoolean stopped = new AtomicBoolean(false);
 
   public TajoResourceAllocator(QueryMasterTask.QueryMasterTaskContext queryTaskContext) {
     this.queryTaskContext = queryTaskContext;
@@ -102,7 +102,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
     int clusterSlots = clusterResource == null ? 0 : clusterResource.getTotalMemoryMB() / memoryMBPerTask;
     clusterSlots =  Math.max(1, clusterSlots - 1); // reserve query master slot
     LOG.info("CalculateNumberRequestContainer - Number of Tasks=" + numTasks +
-      ", Number of Cluster Slots=" + clusterSlots);
+        ", Number of Cluster Slots=" + clusterSlots);
     return  Math.min(numTasks, clusterSlots);
   }
 
@@ -142,7 +142,6 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
       }
     }
 
-    workerInfoMap.clear();
     super.stop();
   }
 
@@ -177,14 +176,22 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
     }
   }
 
-  public void stopExecutionBlock(final ExecutionBlockId executionBlockId,
-                                 Collection<TajoContainer> containers) {
-    Set<NodeId> workers = Sets.newHashSet();
-    for (TajoContainer container : containers){
-      workers.add(container.getNodeId());
-    }
+  @Override
+  protected void serviceStop() throws Exception {
+    super.serviceStop();
+    releaseResources(removeFreeResources());
+    // todo do something
+  }
 
-    for (final NodeId worker : workers) {
+  public void stopExecutionBlock(final ExecutionBlockId executionBlockId,
+                                 Collection<TajoWorkerContainer> containers) {
+    List<AllocatedResource> resources = Lists.newArrayList();
+    for (TajoWorkerContainer container : containers) {
+      resources.add(container.getResource());
+    }
+    releaseResources(resources);
+
+    for (final NodeId worker : getUniqueNodes(containers)) {
       allocationExecutor.submit(new Runnable() {
         @Override
         public void run() {
@@ -192,6 +199,14 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
         }
       });
     }
+  }
+
+  private Set<NodeId> getUniqueNodes(Collection<TajoWorkerContainer> containers) {
+    Set<NodeId> nodes = Sets.newHashSet();
+    for (TajoWorkerContainer container : containers) {
+      nodes.add(container.getNodeId());
+    }
+    return nodes;
   }
 
   private void stopExecutionBlock(ExecutionBlockId executionBlockId, NodeId worker) {
@@ -224,7 +239,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
     }
   }
 
-  private void stopContainers(Collection<TajoContainer> containers) {
+  private void stopContainers(Collection<TajoWorkerContainer> containers) {
     deallocator.submit(Iterables.transform(containers, new Function<TajoContainer, TajoContainerId>() {
       public TajoContainerId apply(TajoContainer input) { return input.getId(); }
     }));
@@ -280,8 +295,75 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
   class TajoWorkerAllocationHandler implements EventHandler<ContainerAllocationEvent> {
     @Override
     public void handle(ContainerAllocationEvent event) {
-      allocationExecutor.submit(new TajoWorkerAllocationThread(event));
+      List<AllocatedResource> allocated = allocatedResources(event.getCapability(), event.getRequiredNum());
+      List<TajoWorkerContainer> containers = publish(event.getExecutionBlockId(), allocated);
+      if (allocated.size() < event.getRequiredNum()) {
+        ContainerAllocationEvent shortage = event.shortOf(event.getRequiredNum() - allocated.size());
+        allocationExecutor.submit(new TajoWorkerAllocationThread(shortage));
+      }
+      // todo consider parallelism
+      releaseResources(removeFreeResources());
     }
+  }
+
+  private void releaseResources(List<AllocatedResource> resources) {
+    Iterable<Integer> resourceIds= Iterables.transform(resources,
+        new Function<AllocatedResource, Integer>() {
+      public Integer apply(AllocatedResource input) { return input.getResourceId(); }
+    });
+
+    RpcClientManager manager = RpcClientManager.getInstance();
+    try {
+      ServiceTracker serviceTracker = queryTaskContext.getQueryMasterContext().getWorkerContext().getServiceTracker();
+      NettyClientBase tmClient = manager.getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
+
+      QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
+      masterClientService.releaseWorkerResource(null,
+          WorkerResourceReleaseRequest.newBuilder().addAllResourceIds(resourceIds).build(),
+          NullCallback.get());
+      removeResources(resources);
+    } catch (Throwable e) {
+      LOG.error(e.getMessage(), e);
+      // todo: do something (delegate to master)
+    }
+  }
+
+  private final AtomicInteger containerIdSeq = new AtomicInteger();
+
+  List<TajoWorkerContainer> publish(ExecutionBlockId executionBlockId, List<AllocatedResource> resources) {
+    StageState state = queryTaskContext.getStage(executionBlockId).getSynchronizedState();
+    if (!Stage.isRunningState(state)) {
+      releaseResources(resources);
+      return null;
+    }
+
+    List<TajoWorkerContainer> containers = new ArrayList<TajoWorkerContainer>(resources.size());
+    for (AllocatedResource resource : resources) {
+      QueryId queryId = executionBlockId.getQueryId();
+      TajoWorkerContainer container = new TajoWorkerContainer();
+      TajoWorkerContainerId containerId = new TajoWorkerContainerId();
+      containerId.setApplicationAttemptId(ApplicationIdUtils.createApplicationAttemptId(queryId));
+      containerId.setId(containerIdSeq.incrementAndGet());
+      container.setId(containerId);
+
+      WorkerConnectionInfo connectionInfo = resource.getConnectionInfo();
+      NodeId nodeId = NodeId.newInstance(connectionInfo.getHost(), connectionInfo.getPeerRpcPort());
+      container.setNodeId(nodeId);
+
+      addAllocatedResource(resource);
+
+      container.setResource(resource);
+      containers.add(container);
+    }
+
+    if (!containers.isEmpty()) {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("StageContainerAllocationEvent fire:" + executionBlockId);
+      }
+      queryTaskContext.getEventHandler().handle(new StageContainerAllocationEvent(executionBlockId, containers));
+    }
+
+    return containers;
   }
 
   class TajoWorkerAllocationThread extends Thread {
@@ -296,120 +378,78 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
       CallFuture<WorkerResourceAllocationResponse> callBack =
         new CallFuture<WorkerResourceAllocationResponse>();
 
-      //TODO consider task's resource usage pattern
-      int requiredMemoryMB = tajoConf.getIntVar(TajoConf.ConfVars.TASK_DEFAULT_MEMORY);
-      float requiredDiskSlots = tajoConf.getFloatVar(TajoConf.ConfVars.TASK_DEFAULT_DISK);
-
+      Resources requirement = event.getCapability();
       WorkerResourceAllocationRequest request = WorkerResourceAllocationRequest.newBuilder()
-          .setMinMemoryMBPerContainer(requiredMemoryMB)
-          .setMaxMemoryMBPerContainer(requiredMemoryMB)
+          .setMinMemoryMBPerContainer(requirement.getMemory())
+          .setMaxMemoryMBPerContainer(requirement.getMemory())
           .setNumContainers(event.getRequiredNum())
           .setResourceRequestPriority(!event.isLeafQuery() ?
               ResourceRequestPriority.MEMORY : ResourceRequestPriority.DISK)
-          .setMinDiskSlotPerContainer(requiredDiskSlots)
-          .setMaxDiskSlotPerContainer(requiredDiskSlots)
+          .setMinDiskSlotPerContainer(requirement.getDiskSlots())
+          .setMaxDiskSlotPerContainer(requirement.getDiskSlots())
           .setQueryId(event.getExecutionBlockId().getQueryId().getProto())
           .build();
 
+      LOG.info("Requesting resource for " + event.getRequiredNum() + " containers, " + requirement);
 
-      NettyClientBase tmClient = null;
+      ExecutionBlockId executionBlockId = event.getExecutionBlockId();
+
+      for (int i = 0; i < 3; i++) {
+        WorkerResourceAllocationResponse response = allocate(request);
+        if (response == null) {
+          ThreadUtil.sleepWithoutInterrupt(1000 * (1 << i));
+          continue;
+        }
+
+        List<AllocatedResource> resources = new ArrayList<AllocatedResource>();
+        for (WorkerAllocatedResource allocated : response.getWorkerAllocatedResourceList()) {
+
+          AllocatedResource resource = new AllocatedResource(allocated.getResourceId(),
+              1, allocated.getAllocatedMemoryMB(), allocated.getAllocatedDiskSlots(),
+              new WorkerConnectionInfo(allocated.getConnectionInfo()));
+          resource.acquire();
+
+          resources.add(resource);
+        }
+
+        List<TajoWorkerContainer> containers = publish(event.getExecutionBlockId(), resources);
+        if (containers != null && (event.getRequiredNum() > containers.size())) {
+          ContainerAllocationEvent shortage = event.shortOf(event.getRequiredNum() - containers.size());
+          queryTaskContext.getEventHandler().handle(shortage);
+        }
+      }
+      LOG.info("Stop TajoWorkerAllocationThread");
+    }
+
+    private WorkerResourceAllocationResponse allocate(WorkerResourceAllocationRequest request) {
+
+      RpcClientManager manager = RpcClientManager.getInstance();
+      ServiceTracker serviceTracker = queryTaskContext.getQueryMasterContext().getWorkerContext().getServiceTracker();
+
+      WorkerResourceAllocationResponse response = null;
       try {
-        ServiceTracker serviceTracker = queryTaskContext.getQueryMasterContext().getWorkerContext().getServiceTracker();
-        tmClient = RpcClientManager.getInstance().
-            getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
+        NettyClientBase tmClient = manager.getClient(serviceTracker.getUmbilicalAddress(),
+            QueryCoordinatorProtocol.class, true);
         QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
+
+        CallFuture<WorkerResourceAllocationResponse> callBack =
+            new CallFuture<WorkerResourceAllocationResponse>();
+
         masterClientService.allocateWorkerResources(callBack.getController(), request, callBack);
+
+        while (!stopped.get() && response == null) {
+          try {
+            response = callBack.get(3, TimeUnit.SECONDS);
+          } catch (InterruptedException e) {
+            // loop again
+          } catch (TimeoutException e) {
+            LOG.info("No available worker resource for " + event.getExecutionBlockId());
+          }
+        }
       } catch (Throwable e) {
         LOG.error(e.getMessage(), e);
       }
-
-      WorkerResourceAllocationResponse response = null;
-      while(!stopped.get()) {
-        try {
-          response = callBack.get(3, TimeUnit.SECONDS);
-          break;
-        } catch (InterruptedException e) {
-          if(stopped.get()) {
-            return;
-          }
-        } catch (TimeoutException e) {
-          LOG.info("No available worker resource for " + event.getExecutionBlockId());
-          continue;
-        } catch (ExecutionException e) {
-          LOG.error(e.getMessage(), e);
-          break;
-        }
-      }
-
-      int numAllocatedContainers = 0;
-
-      if(response != null) {
-        List<WorkerAllocatedResource> allocatedResources = response.getWorkerAllocatedResourceList();
-        ExecutionBlockId executionBlockId = event.getExecutionBlockId();
-
-        List<TajoContainer> containers = new ArrayList<TajoContainer>();
-        for(WorkerAllocatedResource eachAllocatedResource: allocatedResources) {
-          TajoWorkerContainer container = new TajoWorkerContainer();
-          NodeId nodeId = NodeId.newInstance(eachAllocatedResource.getConnectionInfo().getHost(),
-            eachAllocatedResource.getConnectionInfo().getPeerRpcPort());
-
-          TajoWorkerContainerId containerId = new TajoWorkerContainerId();
-
-          containerId.setApplicationAttemptId(
-            ApplicationIdUtils.createApplicationAttemptId(executionBlockId.getQueryId(),
-              eachAllocatedResource.getContainerId().getAppAttemptId().getAttemptId()));
-          containerId.setId(eachAllocatedResource.getContainerId().getId());
-
-          container.setId(containerId);
-          container.setNodeId(nodeId);
-
-
-          WorkerResource workerResource = new WorkerResource();
-          workerResource.setMemoryMB(eachAllocatedResource.getAllocatedMemoryMB());
-          workerResource.setDiskSlots(eachAllocatedResource.getAllocatedDiskSlots());
-
-          Worker worker = new Worker(null, workerResource,
-            new WorkerConnectionInfo(eachAllocatedResource.getConnectionInfo()));
-          container.setWorkerResource(worker);
-          addWorkerConnectionInfo(worker.getConnectionInfo());
-          containers.add(container);
-        }
-
-        StageState state = queryTaskContext.getStage(executionBlockId).getSynchronizedState();
-        if (!Stage.isRunningState(state)) {
-          List<TajoContainerId> containerIds = new ArrayList<TajoContainerId>();
-          for(TajoContainer eachContainer: containers) {
-            containerIds.add(eachContainer.getId());
-          }
-          try {
-            TajoContainerProxy.releaseWorkerResource(queryTaskContext, executionBlockId, containerIds);
-          } catch (Throwable e) {
-            deallocator.submit(containerIds);
-            LOG.error(e.getMessage(), e);
-          }
-          return;
-        }
-
-        if (allocatedResources.size() > 0) {
-          if(LOG.isDebugEnabled()) {
-            LOG.debug("StageContainerAllocationEvent fire:" + executionBlockId);
-          }
-          queryTaskContext.getEventHandler().handle(new StageContainerAllocationEvent(executionBlockId, containers));
-        }
-        numAllocatedContainers += allocatedResources.size();
-
-      }
-      if(event.getRequiredNum() > numAllocatedContainers) {
-        ContainerAllocationEvent shortRequestEvent = new ContainerAllocationEvent(
-          event.getType(), event.getExecutionBlockId(), event.getPriority(),
-          event.getResource(),
-          event.getRequiredNum() - numAllocatedContainers,
-          event.isLeafQuery(), event.getProgress()
-        );
-        queryTaskContext.getEventHandler().handle(shortRequestEvent);
-
-      }
-      LOG.info("Stop TajoWorkerAllocationThread");
+      return response;
     }
   }
 }
