@@ -133,8 +133,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
    * @return The best join pair among them
    * @throws PlanningException
    */
-  private JoinEdge getBestPair(JoinEdgeFinderContext context, JoinGraphContext graphContext,
-                               Set<JoinVertex> vertexes)
+  private JoinEdge getBestPair(JoinEdgeFinderContext context, JoinGraphContext graphContext, Set<JoinVertex> vertexes)
       throws PlanningException {
     double minCost = Double.MAX_VALUE;
     JoinEdge bestJoin = null;

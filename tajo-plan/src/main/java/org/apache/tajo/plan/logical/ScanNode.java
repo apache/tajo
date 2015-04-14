@@ -180,6 +180,7 @@ public class ScanNode extends RelationNode implements Projectable, SelectableNod
 	    eq = eq && TUtil.checkEquals(this.tableDesc, other.tableDesc);
 	    eq = eq && TUtil.checkEquals(this.qual, other.qual);
 	    eq = eq && TUtil.checkEquals(this.targets, other.targets);
+      eq = eq && TUtil.checkEquals(this.alias, other.alias);
 	    
 	    return eq;
 	  }	  
