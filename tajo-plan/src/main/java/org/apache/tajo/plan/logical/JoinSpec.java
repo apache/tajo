@@ -24,11 +24,22 @@ import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.util.TUtil;
 
+import java.util.Comparator;
 import java.util.Set;
+import java.util.TreeSet;
 
 public class JoinSpec implements Cloneable {
+
+  private static class EvalNodeComparator implements Comparator<EvalNode> {
+
+    @Override
+    public int compare(EvalNode e1, EvalNode e2) {
+      return e1.toJson().compareTo(e2.toJson());
+    }
+  }
+
   private JoinType type = null;
-  private Set<EvalNode> predicates = TUtil.newHashSet();
+  private Set<EvalNode> predicates = new TreeSet<EvalNode>(new EvalNodeComparator());
 
   public JoinSpec() {
 

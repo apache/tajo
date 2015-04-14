@@ -113,7 +113,7 @@ public class LogicalOptimizer {
 
       // finding relations and filter expressions
       JoinGraphContext joinGraphContext = JoinGraphBuilder.buildJoinGraph(plan, block);
-      addJoinEdgesFromQuals(block, joinGraphContext);
+//      addJoinEdgesFromQuals(block, joinGraphContext);
 
       // finding join order and restore remain filter order
       FoundJoinOrder order = joinOrderAlgorithm.findBestOrder(plan, block, joinGraphContext);
@@ -163,62 +163,62 @@ public class LogicalOptimizer {
     }
   }
 
-  private void addJoinEdgesFromQuals(LogicalPlan.QueryBlock block, JoinGraphContext context)
-      throws PlanningException {
-    Map<String, RelationNode> relationNodeMap = TUtil.newHashMap();
-    for (RelationNode relationNode : block.getRelations()) {
-      relationNodeMap.put(relationNode.getCanonicalName(), relationNode);
-    }
-    addJoinEdgesFromQuals(block, context, context.getJoinGraph(),
-        new HashSet(context.getCandidateJoinConditions()), relationNodeMap);
-    addJoinEdgesFromQuals(block, context, context.getJoinGraph(),
-        new HashSet(context.getCandidateJoinFilters()), relationNodeMap);
-  }
+//  private void addJoinEdgesFromQuals(LogicalPlan.QueryBlock block, JoinGraphContext context)
+//      throws PlanningException {
+//    Map<String, RelationNode> relationNodeMap = TUtil.newHashMap();
+//    for (RelationNode relationNode : block.getRelations()) {
+//      relationNodeMap.put(relationNode.getCanonicalName(), relationNode);
+//    }
+//    addJoinEdgesFromQuals(block, context, context.getJoinGraph(),
+//        new HashSet(context.getCandidateJoinConditions()), relationNodeMap);
+//    addJoinEdgesFromQuals(block, context, context.getJoinGraph(),
+//        new HashSet(context.getCandidateJoinFilters()), relationNodeMap);
+//  }
 
-  private void addJoinEdgesFromQuals(LogicalPlan.QueryBlock block, JoinGraphContext context, JoinGraph graph,
-                                     Set<EvalNode> quals, Map<String, RelationNode> relationNodeMap)
-      throws PlanningException {
-    for (EvalNode condition : quals) {
-      if (EvalTreeUtil.isJoinQual(condition, false)) {
-        String[] relations = guessRelationsFromJoinQual(block, (BinaryEval) condition);
-        String leftExprRelName = relations[0];
-        String rightExprRelName = relations[1];
-        RelationVertex left = null, right = null;
-        if (relationNodeMap.containsKey(leftExprRelName)) {
-          left = new RelationVertex(relationNodeMap.get(leftExprRelName));
-        }
-        if (relationNodeMap.containsKey(rightExprRelName)) {
-          right = new RelationVertex(relationNodeMap.get(rightExprRelName));
-        }
-        if (left != null && right != null) {
-          JoinEdge edge = graph.getEdge(left, right);
-          if (edge == null) {
-            // check if they are connectable
-            Set<JoinVertex> leftInterchangeables = JoinOrderingUtil.getAllInterchangeableVertexes(context, left);
-            Set<JoinVertex> rightInterchangeables = JoinOrderingUtil.getAllInterchangeableVertexes(context, right);
-            for (JoinVertex leftInterchangeable : leftInterchangeables) {
-              for (JoinVertex rightInterchangeable : rightInterchangeables) {
-                if (graph.getEdge(leftInterchangeable, rightInterchangeable) != null) {
-                  // If a join is an implicit join, its type is assumed as the INNER join
-                  edge = graph.addJoin(context, new JoinSpec(JoinType.INNER), left, right);
-                  edge.addJoinQual(condition);
-                }
-              }
-            }
-          } else {
-            if (edge.getJoinType() == JoinType.CROSS) {
-              edge.getJoinSpec().setType(JoinType.INNER);
-            }
-            edge.addJoinQual(condition);
-          }
-
-          if (edge != null && PlannerUtil.isCommutativeJoin(edge.getJoinType())) {
-            graph.addJoin(context, edge.getJoinSpec(), edge.getRightVertex(), edge.getLeftVertex());
-          }
-        }
-      }
-    }
-  }
+//  private void addJoinEdgesFromQuals(LogicalPlan.QueryBlock block, JoinGraphContext context, JoinGraph graph,
+//                                     Set<EvalNode> quals, Map<String, RelationNode> relationNodeMap)
+//      throws PlanningException {
+//    for (EvalNode condition : quals) {
+//      if (EvalTreeUtil.isJoinQual(condition, false)) {
+//        String[] relations = guessRelationsFromJoinQual(block, (BinaryEval) condition);
+//        String leftExprRelName = relations[0];
+//        String rightExprRelName = relations[1];
+//        RelationVertex left = null, right = null;
+//        if (relationNodeMap.containsKey(leftExprRelName)) {
+//          left = new RelationVertex(relationNodeMap.get(leftExprRelName));
+//        }
+//        if (relationNodeMap.containsKey(rightExprRelName)) {
+//          right = new RelationVertex(relationNodeMap.get(rightExprRelName));
+//        }
+//        if (left != null && right != null) {
+//          JoinEdge edge = graph.getEdge(left, right);
+//          if (edge == null) {
+//            // check if they are connectable
+//            Set<JoinVertex> leftInterchangeables = JoinOrderingUtil.getAllInterchangeableVertexes(context, left);
+//            Set<JoinVertex> rightInterchangeables = JoinOrderingUtil.getAllInterchangeableVertexes(context, right);
+//            for (JoinVertex leftInterchangeable : leftInterchangeables) {
+//              for (JoinVertex rightInterchangeable : rightInterchangeables) {
+//                if (graph.getEdge(leftInterchangeable, rightInterchangeable) != null) {
+//                  // If a join is an implicit join, its type is assumed as the INNER join
+//                  edge = graph.addJoin(context, new JoinSpec(JoinType.INNER), left, right);
+//                  edge.addJoinQual(condition);
+//                }
+//              }
+//            }
+//          } else {
+//            if (edge.getJoinType() == JoinType.CROSS) {
+//              edge.getJoinSpec().setType(JoinType.INNER);
+//            }
+//            edge.addJoinQual(condition);
+//          }
+//
+//          if (edge != null && PlannerUtil.isCommutativeJoin(edge.getJoinType())) {
+//            graph.addJoin(context, edge.getJoinSpec(), edge.getRightVertex(), edge.getLeftVertex());
+//          }
+//        }
+//      }
+//    }
+//  }
 
   private String [] guessRelationsFromJoinQual(LogicalPlan.QueryBlock block, BinaryEval joinCondition)
       throws PlanningException {

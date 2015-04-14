@@ -1,4 +1,4 @@
-select
+explain global select
 	s_acctbal,
 	s_name,
 	p_partkey,

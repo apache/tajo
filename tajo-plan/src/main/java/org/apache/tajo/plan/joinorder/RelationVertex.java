@@ -28,8 +28,8 @@ import java.util.Set;
 
 public class RelationVertex implements JoinVertex{
 
-  private RelationNode relationNode;
-  private LogicalNode topLogicalNode;
+  private final RelationNode relationNode;
+  private final LogicalNode topLogicalNode;
 
 //  public RelationVertex(LogicalNode topLogicalNode, RelationNode relationNode) {
 public RelationVertex(RelationNode relationNode) {

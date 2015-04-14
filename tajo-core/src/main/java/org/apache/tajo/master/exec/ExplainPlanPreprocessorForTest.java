@@ -25,15 +25,12 @@ import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.logical.JoinNode;
-import org.apache.tajo.plan.logical.LogicalNode;
-import org.apache.tajo.plan.logical.ScanNode;
+import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
+import org.apache.tajo.util.TUtil;
 
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Stack;
+import java.util.*;
 
 /**
  * Tajo's logical planner can generate different shapes of logical plans for the same query,
@@ -43,17 +40,22 @@ import java.util.Stack;
 public class ExplainPlanPreprocessorForTest {
   private static final PlanShapeFixerContext shapeFixerContext = new PlanShapeFixerContext();
   private static final PlanShapeFixer shapeFixer = new PlanShapeFixer();
-  private static final PidResetContext resetContext = new PidResetContext();
-  private static final PidReseter pidReseter = new PidReseter();
+  private static final PidCollectorContext collectorContext = new PidCollectorContext();
+  private static final JoinPidCollector joinPidCollector = new JoinPidCollector();
+  private static final PidReseterContext resetContext = new PidReseterContext();
+  private static final JoinPidReseter joinPidReseter = new JoinPidReseter();
 
   public void prepareTest(LogicalPlan plan) throws PlanningException {
-    // Pid reseter
-    resetContext.reset();
-    pidReseter.visit(resetContext, plan, plan.getRootBlock());
-
     // Plan shape fixer
     shapeFixerContext.reset();
     shapeFixer.visit(shapeFixerContext, plan, plan.getRootBlock());
+
+      // Pid reseter
+    collectorContext.reset();
+    joinPidCollector.visit(collectorContext, plan, plan.getRootBlock());
+
+    resetContext.reset(collectorContext.joinPids);
+    joinPidReseter.visit(resetContext, plan, plan.getRootBlock());
   }
 
   private static class PlanShapeFixerContext {
@@ -97,6 +99,10 @@ public class ExplainPlanPreprocessorForTest {
       super.visitScan(context, plan, block, node, stack);
       context.childNumbers.push(1);
       node.setInSchema(sortSchema(node.getInSchema()));
+      node.setOutSchema(sortSchema(node.getOutSchema()));
+      if (node.hasTargets()) {
+        node.setTargets(sortTargets(node.getTargets()));
+      }
       if (node.hasQual()) {
         node.setQual(sortQual(node.getQual()));
       }
@@ -115,7 +121,7 @@ public class ExplainPlanPreprocessorForTest {
         if (leftChildNum < rightChildNum) {
           swapChildren(node);
         } else if (leftChildNum == rightChildNum) {
-          if (node.getLeftChild().toString().compareTo(node.getRightChild().toString()) <
+          if (node.getLeftChild().getOutSchema().toString().compareTo(node.getRightChild().getOutSchema().toString()) <
               0) {
             swapChildren(node);
           }
@@ -125,9 +131,9 @@ public class ExplainPlanPreprocessorForTest {
       node.setInSchema(sortSchema(node.getInSchema()));
       node.setOutSchema(sortSchema(node.getOutSchema()));
 
-      if (node.hasJoinQual()) {
-        node.setJoinQual(sortQual(node.getJoinQual()));
-      }
+//      if (node.hasJoinQual()) {
+//        node.setJoinQual(sortQual(node.getJoinSpec().getPredicates()));
+//      }
 
       if (node.hasTargets()) {
         node.setTargets(sortTargets(node.getTargets()));
@@ -151,6 +157,15 @@ public class ExplainPlanPreprocessorForTest {
 
     private EvalNode sortQual(EvalNode qual) {
       EvalNode[] cnf = AlgebraicUtil.toConjunctiveNormalFormArray(qual);
+      return sortQual(cnf);
+    }
+
+    private EvalNode sortQual(Set<EvalNode> quals) {
+      EvalNode[] cnf = quals.toArray(new EvalNode[quals.size()]);
+      return sortQual(cnf);
+    }
+
+    private EvalNode sortQual(EvalNode[] cnf) {
       Arrays.sort(cnf, evalNodeComparator);
       return AlgebraicUtil.createSingletonExprFromCNF(cnf);
     }
@@ -162,9 +177,9 @@ public class ExplainPlanPreprocessorForTest {
 
     private static void swapChildren(JoinNode node) {
       LogicalNode tmpChild = node.getLeftChild();
-      int tmpId = tmpChild.getPID();
-      tmpChild.setPID(node.getRightChild().getPID());
-      node.getRightChild().setPID(tmpId);
+//      int tmpId = tmpChild.getPID();
+//      tmpChild.setPID(node.getRightChild().getPID());
+//      node.getRightChild().setPID(tmpId);
       node.setLeftChild(node.getRightChild());
       node.setRightChild(tmpChild);
     }
@@ -194,24 +209,48 @@ public class ExplainPlanPreprocessorForTest {
     }
   }
 
-  private static class PidResetContext {
-    int seqId = 0;
+  private static class PidCollectorContext {
+    List<Integer> joinPids = TUtil.newList();
     public void reset() {
-      seqId = 0;
+      joinPids.clear();
     }
   }
 
   /**
    * During join order optimization, new join nodes are created based on the chosen join order.
-   * So, each join node has different pids.
+   * So, they have different pids for each query execution.
    * This class sequentially assigns unique pids to all logical nodes.
    */
-  private static class PidReseter extends BasicLogicalPlanVisitor<PidResetContext, LogicalNode> {
+  private static class JoinPidCollector extends BasicLogicalPlanVisitor<PidCollectorContext, LogicalNode> {
 
     @Override
-    public void preHook(LogicalPlan plan, LogicalNode node, Stack<LogicalNode> stack, PidResetContext context)
-        throws PlanningException {
-      node.setPID(context.seqId++);
+    public LogicalNode visitJoin(PidCollectorContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                 JoinNode node, Stack<LogicalNode> stack) throws PlanningException {
+      context.joinPids.add(node.getPID());
+      super.visitJoin(context, plan, block, node, stack);
+
+      return null;
+    }
+  }
+
+  private static class PidReseterContext {
+    List<Integer> joinPids;
+
+    public void reset(List<Integer> joinPids) {
+      this.joinPids = joinPids;
+      Collections.sort(this.joinPids);
+    }
+  }
+
+  private static class JoinPidReseter extends BasicLogicalPlanVisitor<PidReseterContext, LogicalNode> {
+
+    @Override
+    public LogicalNode visitJoin(PidReseterContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                 JoinNode node, Stack<LogicalNode> stack) throws PlanningException {
+      super.visitJoin(context, plan, block, node, stack);
+      node.setPID(context.joinPids.remove(0));
+      
+      return null;
     }
   }
 

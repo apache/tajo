@@ -24,7 +24,6 @@ import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.storage.StorageConstants;
 import org.apache.tajo.util.KeyValueSet;
 import org.junit.AfterClass;
@@ -107,78 +106,84 @@ public class TestJoinOrderOptimize extends QueryTestCaseBase {
     cleanupQuery(res);
   }
 
-//  @Test
-//  public final void testWhereClauseJoin6() throws Exception {
-//    LogicalPlan plan = buildLogicalPlan();
-//    assertLogicalPlan(plan);
-//  }
-//
-//  @Test
-//  public final void testJoinWithMultipleJoinQual1() throws Exception {
-//    LogicalPlan plan = buildLogicalPlan();
-//    assertLogicalPlan(plan);
-//  }
-//
-//  @Test
-//  public final void testJoinWithMultipleJoinQual4() throws Exception {
-//    LogicalPlan plan = buildLogicalPlan();
-//    assertLogicalPlan(plan);
-//  }
-//
-//  @Test
-//  public final void testLeftOuterJoinPredicationCaseByCase1() throws Exception {
-//    createOuterJoinTestTable();
-//    try {
-//      LogicalPlan plan = buildLogicalPlanFromString(
-//          "select t1.id, t1.name, t2.id, t3.id\n" +
-//              "from default.table11 t1\n" +
-//              "left outer join table12 t2\n" +
-//              "on t1.id = t2.id\n" +
-//              "left outer join table13 t3\n" +
-//              "on t1.id = t3.id and t2.id = t3.id");
-//
-//      assertLogicalPlan(plan);
-//    } finally {
-//      dropOuterJoinTestTable();
-//    }
-//  }
-//
-//  @Test
-//  public final void testRightOuterJoinPredicationCaseByCase3() throws Exception {
-//    createOuterJoinTestTable();
-//    try {
-//      LogicalPlan plan = buildLogicalPlanFromString(
-//          "select t1.id, t1.name, t2.id, t3.id\n" +
-//              "from table11 t1\n" +
-//              "right outer join table12 t2 \n" +
-//              "on t1.id = t2.id and (concat(t1.name, cast(t2.id as TEXT)) = 'table11-11' or concat(t1.name, cast(t2.id as TEXT)) = 'table11-33')\n" +
-//              "right outer join table13 t3\n" +
-//              "on t1.id = t3.id "
-//      );
-//      assertLogicalPlan(plan);
-//    } finally {
-//      dropOuterJoinTestTable();
-//    }
-//  }
-//
-//  @Test
-//  public final void testLeftOuterJoinPredicationCaseByCase2() throws Exception {
-//    // outer -> outer -> inner
-//    createOuterJoinTestTable();
-//    try {
-//      LogicalPlan plan = buildLogicalPlanFromString(
-//          "select t1.id, t1.name, t2.id, t3.id, t4.id\n" +
-//              "from table11 t1\n" +
-//              "left outer join table12 t2\n" +
-//              "on t1.id = t2.id\n" +
-//              "left outer join table13 t3\n" +
-//              "on t2.id = t3.id\n" +
-//              "inner join table14 t4\n" +
-//              "on t2.id = t4.id"
-//      );
-//      assertLogicalPlan(plan);
-//    } finally {
-//      dropOuterJoinTestTable();
-//    }
-//  }
+  @Test
+  public final void testWhereClauseJoin6() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testJoinWithMultipleJoinQual1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testJoinWithMultipleJoinQual4() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testLeftOuterJoinPredicationCaseByCase1() throws Exception {
+    createOuterJoinTestTable();
+    try {
+      ResultSet res = executeString(
+          "explain global select t1.id, t1.name, t2.id, t3.id\n" +
+              "from default.table11 t1\n" +
+              "left outer join table12 t2\n" +
+              "on t1.id = t2.id\n" +
+              "left outer join table13 t3\n" +
+              "on t1.id = t3.id and t2.id = t3.id");
+
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      dropOuterJoinTestTable();
+    }
+  }
+
+  @Test
+  public final void testRightOuterJoinPredicationCaseByCase3() throws Exception {
+    createOuterJoinTestTable();
+    try {
+      ResultSet res = executeString(
+          "explain global select t1.id, t1.name, t2.id, t3.id\n" +
+              "from table11 t1\n" +
+              "right outer join table12 t2 \n" +
+              "on t1.id = t2.id and (concat(t1.name, cast(t2.id as TEXT)) = 'table11-11' or concat(t1.name, cast(t2.id as TEXT)) = 'table11-33')\n" +
+              "right outer join table13 t3\n" +
+              "on t1.id = t3.id "
+      );
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      dropOuterJoinTestTable();
+    }
+  }
+
+  @Test
+  public final void testLeftOuterJoinPredicationCaseByCase2() throws Exception {
+    // outer -> outer -> inner
+    createOuterJoinTestTable();
+    try {
+      ResultSet res = executeString(
+          "explain global select t1.id, t1.name, t2.id, t3.id, t4.id\n" +
+              "from table11 t1\n" +
+              "left outer join table12 t2\n" +
+              "on t1.id = t2.id\n" +
+              "left outer join table13 t3\n" +
+              "on t2.id = t3.id\n" +
+              "inner join table14 t4\n" +
+              "on t2.id = t4.id"
+      );
+      assertResultSet(res);
+      cleanupQuery(res);
+    } finally {
+      dropOuterJoinTestTable();
+    }
+  }
 }
