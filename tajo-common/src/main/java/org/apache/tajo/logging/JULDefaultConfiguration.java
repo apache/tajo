@@ -30,8 +30,20 @@ public class JULDefaultConfiguration {
   private static final String defaultLoggingPropertiesName = "jul-logging.properties";
 
   public JULDefaultConfiguration() throws SecurityException, IOException {
-    InputStream configFileInputStream = ClassLoader.getSystemClassLoader()
-        .getResourceAsStream(defaultLoggingPropertiesName);
-    LogManager.getLogManager().readConfiguration(configFileInputStream);
+    InputStream configFileInputStream = null;
+    
+    try {
+      configFileInputStream = ClassLoader.getSystemClassLoader()
+          .getResourceAsStream(defaultLoggingPropertiesName);
+      LogManager.getLogManager().readConfiguration(configFileInputStream);
+    } catch (SecurityException e) {
+      throw e;
+    } catch (IOException e) {
+      throw e;
+    } finally {
+      if (configFileInputStream != null) {
+        configFileInputStream.close();
+      }
+    }
   }
 }
