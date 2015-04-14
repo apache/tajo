@@ -22,6 +22,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.plan.LogicalPlan;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
@@ -153,11 +154,11 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
           LOG.error("Join between (" + outer + ", " + inner + ") is not found.");
           continue;
         }
-//        Set<EvalNode> additionalPredicates = JoinOrderingUtil.findJoinConditionForJoinVertex(
-//            graphContext.getCandidateJoinConditions(), foundJoin, true);
-//        additionalPredicates.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(
-//            graphContext.getCandidateJoinFilters(), foundJoin, false));
-//        foundJoin = JoinOrderingUtil.addPredicates(foundJoin, additionalPredicates);
+        Set<EvalNode> additionalPredicates = JoinOrderingUtil.findJoinConditionForJoinVertex(
+            graphContext.getCandidateJoinConditions(), foundJoin, true);
+        additionalPredicates.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(
+            graphContext.getCandidateJoinFilters(), foundJoin, false));
+        foundJoin = JoinOrderingUtil.addPredicates(foundJoin, additionalPredicates);
         double cost = getCost(foundJoin);
 
         if (cost < minCost) {

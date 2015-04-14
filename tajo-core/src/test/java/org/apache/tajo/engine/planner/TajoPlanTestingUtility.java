@@ -68,10 +68,10 @@ public class TajoPlanTestingUtility {
   private LogicalOptimizer optimizer;
   private GlobalPlanner globalPlanner;
   private DDLExecutor ddlExecutor;
-  private final PlanShapeFixerContext planShapeFixerContext = new PlanShapeFixerContext();
-  private final PlanShapeFixer verifyPreprocessor = new PlanShapeFixer();
-  private final PidResetContext resetContext = new PidResetContext();
-  private final PidReseter pidReseter = new PidReseter();
+//  private final PlanShapeFixerContext planShapeFixerContext = new PlanShapeFixerContext();
+//  private final PlanShapeFixer verifyPreprocessor = new PlanShapeFixer();
+//  private final PidResetContext resetContext = new PidResetContext();
+//  private final PidReseter pidReseter = new PidReseter();
 
   public void setup(String[] names,
                     String[] tablepaths,
@@ -132,10 +132,10 @@ public class TajoPlanTestingUtility {
     Expr expr = analyzer.parse(query);
     LogicalPlan plan = planner.createPlan(defaultContext, expr);
     optimizer.optimize(defaultContext, plan);
-    planShapeFixerContext.reset();
-    resetContext.reset();
-    pidReseter.visit(resetContext, plan, plan.getRootBlock());
-    verifyPreprocessor.visit(planShapeFixerContext, plan, plan.getRootBlock());
+//    planShapeFixerContext.reset();
+//    resetContext.reset();
+//    pidReseter.visit(resetContext, plan, plan.getRootBlock());
+//    verifyPreprocessor.visit(planShapeFixerContext, plan, plan.getRootBlock());
 
     return plan;
   }
@@ -167,136 +167,136 @@ public class TajoPlanTestingUtility {
     return ddlExecutor.execute(defaultContext, plan);
   }
 
-  private static class PidResetContext {
-    int seqId = 0;
-    public void reset() {
-      seqId = 0;
-    }
-  }
+//  private static class PidResetContext {
+//    int seqId = 0;
+//    public void reset() {
+//      seqId = 0;
+//    }
+//  }
 
-  private static class PidReseter extends BasicLogicalPlanVisitor<PidResetContext, LogicalNode> {
+//  private static class PidReseter extends BasicLogicalPlanVisitor<PidResetContext, LogicalNode> {
+//
+//    @Override
+//    public void preHook(LogicalPlan plan, LogicalNode node, Stack<LogicalNode> stack, PidResetContext context)
+//        throws PlanningException {
+//      node.setPID(context.seqId++);
+//    }
+//  }
+//
+//  private static class PlanShapeFixerContext {
+//
+//    Stack<Integer> childNumbers = new Stack<Integer>();
+//    public void reset() {
+//      childNumbers.clear();
+//    }
+//  }
 
-    @Override
-    public void preHook(LogicalPlan plan, LogicalNode node, Stack<LogicalNode> stack, PidResetContext context)
-        throws PlanningException {
-      node.setPID(context.seqId++);
-    }
-  }
+//  private static final ColumnComparator columnComparator = new ColumnComparator();
+//  private static final EvalNodeComparator evalNodeComparator = new EvalNodeComparator();
+//  private static final TargetComparator targetComparator = new TargetComparator();
 
-  private static class PlanShapeFixerContext {
+//  private static class PlanShapeFixer extends BasicLogicalPlanVisitor<PlanShapeFixerContext, LogicalNode> {
+//
+//    @Override
+//    public LogicalNode visitScan(PlanShapeFixerContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+//                                 ScanNode node, Stack<LogicalNode> stack) throws PlanningException {
+//      super.visitScan(context, plan, block, node, stack);
+//      context.childNumbers.push(1);
+//      node.setInSchema(sortSchema(node.getInSchema()));
+//      if (node.hasQual()) {
+//        node.setQual(sortQual(node.getQual()));
+//      }
+//      return null;
+//    }
+//
+//    @Override
+//    public LogicalNode visitJoin(PlanShapeFixerContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+//                                 JoinNode node, Stack<LogicalNode> stack) throws PlanningException {
+//      super.visitJoin(context, plan, block, node, stack);
+//      int rightChildNum = context.childNumbers.pop();
+//      int leftChildNum = context.childNumbers.pop();
+//
+//      if (PlannerUtil.isCommutativeJoin(node.getJoinType())) {
+//
+//        if (leftChildNum < rightChildNum) {
+//          swapChildren(node);
+//        } else if (leftChildNum == rightChildNum) {
+//          if (node.getLeftChild().toString().compareTo(node.getRightChild().toString()) <
+//              0) {
+//            swapChildren(node);
+//          }
+//        }
+//      }
+//
+//      node.setInSchema(sortSchema(node.getInSchema()));
+//      node.setOutSchema(sortSchema(node.getOutSchema()));
+//
+//      if (node.hasJoinQual()) {
+//        node.setJoinQual(sortQual(node.getJoinQual()));
+//      }
+//
+//      if (node.hasTargets()) {
+//        node.setTargets(sortTargets(node.getTargets()));
+//      }
+//
+//      context.childNumbers.push(rightChildNum + leftChildNum);
+//
+//      return null;
+//    }
+//
+//    private Schema sortSchema(Schema schema) {
+//      Column[] columns = schema.toArray();
+//      Arrays.sort(columns, columnComparator);
+//
+//      Schema sorted = new Schema();
+//      for (Column col : columns) {
+//        sorted.addColumn(col);
+//      }
+//      return sorted;
+//    }
+//
+//    private EvalNode sortQual(EvalNode qual) {
+//      EvalNode[] cnf = AlgebraicUtil.toConjunctiveNormalFormArray(qual);
+//      Arrays.sort(cnf, evalNodeComparator);
+//      return AlgebraicUtil.createSingletonExprFromCNF(cnf);
+//    }
+//
+//    private Target[] sortTargets(Target[] targets) {
+//      Arrays.sort(targets, targetComparator);
+//      return targets;
+//    }
+//
+//    private static void swapChildren(JoinNode node) {
+//      LogicalNode tmpChild = node.getLeftChild();
+//      int tmpId = tmpChild.getPID();
+//      tmpChild.setPID(node.getRightChild().getPID());
+//      node.getRightChild().setPID(tmpId);
+//      node.setLeftChild(node.getRightChild());
+//      node.setRightChild(tmpChild);
+//    }
+//  }
 
-    Stack<Integer> childNumbers = new Stack<Integer>();
-    public void reset() {
-      childNumbers.clear();
-    }
-  }
-
-  private static final ColumnComparator columnComparator = new ColumnComparator();
-  private static final EvalNodeComparator evalNodeComparator = new EvalNodeComparator();
-  private static final TargetComparator targetComparator = new TargetComparator();
-
-  private static class PlanShapeFixer extends BasicLogicalPlanVisitor<PlanShapeFixerContext, LogicalNode> {
-
-    @Override
-    public LogicalNode visitScan(PlanShapeFixerContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                 ScanNode node, Stack<LogicalNode> stack) throws PlanningException {
-      super.visitScan(context, plan, block, node, stack);
-      context.childNumbers.push(1);
-      node.setInSchema(sortSchema(node.getInSchema()));
-      if (node.hasQual()) {
-        node.setQual(sortQual(node.getQual()));
-      }
-      return null;
-    }
-
-    @Override
-    public LogicalNode visitJoin(PlanShapeFixerContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                 JoinNode node, Stack<LogicalNode> stack) throws PlanningException {
-      super.visitJoin(context, plan, block, node, stack);
-      int rightChildNum = context.childNumbers.pop();
-      int leftChildNum = context.childNumbers.pop();
-
-      if (PlannerUtil.isCommutativeJoin(node.getJoinType())) {
-
-        if (leftChildNum < rightChildNum) {
-          swapChildren(node);
-        } else if (leftChildNum == rightChildNum) {
-          if (node.getLeftChild().toString().compareTo(node.getRightChild().toString()) <
-              0) {
-            swapChildren(node);
-          }
-        }
-      }
-
-      node.setInSchema(sortSchema(node.getInSchema()));
-      node.setOutSchema(sortSchema(node.getOutSchema()));
-
-      if (node.hasJoinQual()) {
-        node.setJoinQual(sortQual(node.getJoinQual()));
-      }
-
-      if (node.hasTargets()) {
-        node.setTargets(sortTargets(node.getTargets()));
-      }
-
-      context.childNumbers.push(rightChildNum + leftChildNum);
-
-      return null;
-    }
-
-    private Schema sortSchema(Schema schema) {
-      Column[] columns = schema.toArray();
-      Arrays.sort(columns, columnComparator);
-
-      Schema sorted = new Schema();
-      for (Column col : columns) {
-        sorted.addColumn(col);
-      }
-      return sorted;
-    }
-
-    private EvalNode sortQual(EvalNode qual) {
-      EvalNode[] cnf = AlgebraicUtil.toConjunctiveNormalFormArray(qual);
-      Arrays.sort(cnf, evalNodeComparator);
-      return AlgebraicUtil.createSingletonExprFromCNF(cnf);
-    }
-
-    private Target[] sortTargets(Target[] targets) {
-      Arrays.sort(targets, targetComparator);
-      return targets;
-    }
-
-    private static void swapChildren(JoinNode node) {
-      LogicalNode tmpChild = node.getLeftChild();
-      int tmpId = tmpChild.getPID();
-      tmpChild.setPID(node.getRightChild().getPID());
-      node.getRightChild().setPID(tmpId);
-      node.setLeftChild(node.getRightChild());
-      node.setRightChild(tmpChild);
-    }
-  }
-
-  private static class ColumnComparator implements Comparator<Column> {
-
-    @Override
-    public int compare(Column o1, Column o2) {
-      return o1.getQualifiedName().compareTo(o2.getQualifiedName());
-    }
-  }
-
-  private static class EvalNodeComparator implements Comparator<EvalNode> {
-
-    @Override
-    public int compare(EvalNode o1, EvalNode o2) {
-      return o1.toJson().compareTo(o2.toJson());
-    }
-  }
-
-  private static class TargetComparator implements Comparator<Target> {
-
-    @Override
-    public int compare(Target o1, Target o2) {
-      return o1.toJson().compareTo(o2.toJson());
-    }
-  }
+//  private static class ColumnComparator implements Comparator<Column> {
+//
+//    @Override
+//    public int compare(Column o1, Column o2) {
+//      return o1.getQualifiedName().compareTo(o2.getQualifiedName());
+//    }
+//  }
+//
+//  private static class EvalNodeComparator implements Comparator<EvalNode> {
+//
+//    @Override
+//    public int compare(EvalNode o1, EvalNode o2) {
+//      return o1.toJson().compareTo(o2.toJson());
+//    }
+//  }
+//
+//  private static class TargetComparator implements Comparator<Target> {
+//
+//    @Override
+//    public int compare(Target o1, Target o2) {
+//      return o1.toJson().compareTo(o2.toJson());
+//    }
+//  }
 }

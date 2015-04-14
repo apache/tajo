@@ -1,4 +1,4 @@
-select
+explain global select
 	s.s_acctbal,
 	s.s_name,
 	n.n_name,

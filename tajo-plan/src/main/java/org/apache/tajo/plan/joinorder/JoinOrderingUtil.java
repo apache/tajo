@@ -66,6 +66,16 @@ public class JoinOrderingUtil {
     return true;
   }
 
+  public static JoinEdge addPredicates(JoinEdge edge, Set<EvalNode> predicates) {
+    if (!predicates.isEmpty()) {
+      if (edge.getJoinType() == JoinType.CROSS) {
+        edge.getJoinSpec().setType(JoinType.INNER);
+      }
+      edge.addJoinPredicates(predicates);
+    }
+    return edge;
+  }
+
 //  public static JoinNode createJoinNode(LogicalPlan plan, JoinType joinType, JoinVertex left, JoinVertex right,
 //                                        @Nullable EvalNode predicates) {
 //    LogicalNode leftChild = left.getCorrespondingNode();

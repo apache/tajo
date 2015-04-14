@@ -105,6 +105,7 @@ public class JoinedRelationsVertex implements JoinVertex {
     if (joinEdge.hasJoinQual()) {
       joinNode.setJoinQual(joinEdge.getSingletonJoinQual());
     }
+    block.registerNode(joinNode);
     return joinNode;
   }
 
