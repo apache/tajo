@@ -42,7 +42,7 @@ public class TestCreateTable extends QueryTestCaseBase {
   public final void testVariousTypes() throws Exception {
     List<String> createdNames;
     if (testingCluster.isHiveCatalogStoreRunning()) {
-      createdNames = executeDDL("create_table_various_types_for_hcatalog.sql", null);
+      createdNames = executeDDL("create_table_various_types_for_hive_catalog.sql", null);
     } else {
       createdNames = executeDDL("create_table_various_types.sql", null);
     }
@@ -442,7 +442,7 @@ public class TestCreateTable extends QueryTestCaseBase {
 
   @Test
   public final void testCreateTableLike1() throws Exception {
-    // Hcatalog does not support varchar type in hive-0.12.0
+    // //HiveCatalogStore does not support varchar type in hive-0.12.0
     if (testingCluster.isHiveCatalogStoreRunning()) {
       // Basic create table with default database
       executeString("CREATE TABLE table1 (c1 int, c2 text);").close();

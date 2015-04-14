@@ -131,7 +131,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         throw new CatalogException(e);
       }
 
-      // convert hcatalog field schema into tajo field schema.
+      // convert HiveCatalogStore field schema into tajo field schema.
       schema = new org.apache.tajo.catalog.Schema();
 
       List<FieldSchema> fieldSchemaList = table.getCols();
@@ -445,7 +445,7 @@ public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
         Path tablePath = new Path(tableDesc.getPath());
         FileSystem fs = tablePath.getFileSystem(conf);
         if (fs.isFile(tablePath)) {
-          LOG.warn("A table path is a file, but HCatalog does not allow a file path.");
+          LOG.warn("A table path is a file, but HiveCatalogStore does not allow a file path.");
           sd.setLocation(tablePath.getParent().toString());
         } else {
           sd.setLocation(tablePath.toString());
