@@ -26,18 +26,20 @@ import org.apache.commons.logging.LogFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.net.InetSocketAddress;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @ThreadSafe
 public class RpcConnectionManager {
   private static final Log LOG = LogFactory.getLog(RpcConnectionManager.class);
 
   public static final int RPC_RETRIES = 3;
-  private final static Map<RpcConnectionKey, NettyClientBase> connections = new HashMap();
+
+  /* entries will be removed by ConnectionCloseFutureListener */
+  private static final ConcurrentMap<RpcConnectionKey, NettyClientBase>
+      connections = new ConcurrentHashMap<RpcConnectionKey, NettyClientBase>();
 
   private static RpcConnectionManager instance;
-  private final static Object lockObject = new Object();
 
   static {
     InternalLoggerFactory.setDefaultFactory(new CommonsLoggerFactory());
@@ -68,11 +70,8 @@ public class RpcConnectionManager {
     RpcConnectionKey key = new RpcConnectionKey(addr, protocolClass, asyncMode);
 
     NettyClientBase client;
-    synchronized (lockObject) {
-      client = connections.get(key);
-      if (client == null) {
-        connections.put(key, client = makeConnection(key));
-      }
+    if ((client = connections.get(key)) == null) {
+      connections.putIfAbsent(key, client = makeConnection(key));
     }
 
     if (!client.isConnected()) {
@@ -87,15 +86,12 @@ public class RpcConnectionManager {
       LOG.debug("Pool Closed");
     }
 
-    synchronized (lockObject) {
-      for (NettyClientBase eachClient : connections.values()) {
-        try {
-          eachClient.close();
-        } catch (Exception e) {
-          LOG.error("close client pool error", e);
-        }
+    for (NettyClientBase eachClient : connections.values()) {
+      try {
+        eachClient.close();
+      } catch (Exception e) {
+        LOG.error("close client pool error", e);
       }
-      connections.clear();
     }
   }
 
@@ -105,15 +101,11 @@ public class RpcConnectionManager {
   }
 
   protected static NettyClientBase remove(RpcConnectionKey key) {
-    synchronized (lockObject) {
-      return connections.remove(key);
-    }
+    return connections.remove(key);
   }
 
   protected static boolean contains(RpcConnectionKey key) {
-    synchronized (lockObject) {
-      return connections.containsKey(key);
-    }
+    return connections.containsKey(key);
   }
 
   public static void cleanup(NettyClientBase... clients) {
