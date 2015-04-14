@@ -605,7 +605,7 @@ public class TestTajoJdbc extends QueryTestCaseBase {
     String errorMessage = null;
 
     // skip this test if catalog uses HiveCatalogStore.
-    // It is because HCatalogStore does not support Time data type.
+    // It is because HiveCatalogStore does not support Time data type.
     try {
       if (!testingCluster.isHiveCatalogStoreRunning()) {
         String connUri = buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),

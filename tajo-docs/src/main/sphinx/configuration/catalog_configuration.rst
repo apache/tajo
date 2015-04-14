@@ -158,10 +158,8 @@ First, you must compile source code and get a binary archive as follows:
 .. code-block:: sh
 
   $ git clone https://git-wip-us.apache.org/repos/asf/tajo.git tajo
-  $ mvn clean install -DskipTests -Pdist -Dtar -Phcatalog-0.1x.0
+  $ mvn clean install -DskipTests -Pdist -Dtar
   $ ls tajo-dist/target/tajo-x.y.z-SNAPSHOT.tar.gz
-
-Currently Tajo supports hive 0.12.0, hive 0.13.0, hive 0.13.1. If you enables HiveCatalogStore, you set the maven profile as ``-Phive-0.12.0``.
 
 Second, you must set your hive home directory to HIVE_HOME variable in ``conf/tajo-env.sh`` with it as follows:
 
