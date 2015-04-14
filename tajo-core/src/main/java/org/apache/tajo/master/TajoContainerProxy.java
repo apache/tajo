@@ -23,9 +23,7 @@ import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.TaskAttemptId;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -43,6 +41,7 @@ import org.apache.tajo.worker.TajoWorker;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class TajoContainerProxy extends ContainerProxy {
@@ -61,14 +60,14 @@ public class TajoContainerProxy extends ContainerProxy {
 
   @Override
   public synchronized void launch(ContainerLaunchContext containerLaunchContext) {
-    context.getResourceAllocator().addContainer(containerID, this);
+    context.getResourceAllocator().addContainer(containerId, this);
 
     this.hostName = container.getNodeId().getHost();
     this.port = ((TajoWorkerContainer)container).getWorkerResource().getConnectionInfo().getPullServerPort();
     this.state = ContainerState.RUNNING;
 
     if (LOG.isDebugEnabled()) {
-      LOG.debug("Launch Container:" + executionBlockId + "," + containerID.getId() + "," +
+      LOG.debug("Launch Container:" + executionBlockId + "," + containerId.getId() + "," +
           container.getId() + "," + container.getNodeId() + ", pullServer=" + port);
     }
 
@@ -127,39 +126,28 @@ public class TajoContainerProxy extends ContainerProxy {
   @Override
   public synchronized void stopContainer() {
     if (LOG.isDebugEnabled()) {
-      LOG.debug("Release TajoWorker Resource: " + executionBlockId + "," + containerID + ", state:" + this.state);
+      LOG.debug("Release TajoWorker Resource: " + executionBlockId + "," + containerId + ", state:" + this.state);
     }
     if(isCompletelyDone()) {
-      LOG.info("Container already stopped:" + containerID);
+      LOG.info("Container already stopped:" + containerId);
       return;
     }
     if(this.state == ContainerState.PREP) {
       this.state = ContainerState.KILLED_BEFORE_LAUNCH;
     } else {
       try {
-        TajoWorkerContainer tajoWorkerContainer = ((TajoWorkerContainer)container);
-        releaseWorkerResource(context, executionBlockId, tajoWorkerContainer.getId());
-        context.getResourceAllocator().removeContainer(containerID);
-        this.state = ContainerState.DONE;
+        releaseWorkerResource(context, executionBlockId, Arrays.asList(containerId));
+        context.getResourceAllocator().removeContainer(containerId);
       } catch (Throwable t) {
         // ignore the cleanup failure
         String message = "cleanup failed for container "
-            + this.containerID + " : "
+            + this.containerId + " : "
             + StringUtils.stringifyException(t);
         LOG.warn(message);
+      } finally {
         this.state = ContainerState.DONE;
-        return;
       }
     }
-  }
-
-  public static void releaseWorkerResource(QueryMasterTask.QueryMasterTaskContext context,
-                                           ExecutionBlockId executionBlockId,
-                                           TajoContainerId containerId) throws Exception {
-    List<TajoContainerId> containerIds = new ArrayList<TajoContainerId>();
-    containerIds.add(containerId);
-
-    releaseWorkerResource(context, executionBlockId, containerIds);
   }
 
   public static void releaseWorkerResource(QueryMasterTask.QueryMasterTaskContext context,
@@ -181,12 +169,10 @@ public class TajoContainerProxy extends ContainerProxy {
       QueryCoordinatorProtocol.QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
         masterClientService.releaseWorkerResource(null,
             QueryCoordinatorProtocol.WorkerResourceReleaseRequest.newBuilder()
-              .setExecutionBlockId(executionBlockId.getProto())
-              .addAllContainerIds(containerIdProtos)
-              .build(),
-          NullCallback.get());
-    } catch (Throwable e) {
-      LOG.error(e.getMessage(), e);
+                .setExecutionBlockId(executionBlockId.getProto())
+                .addAllContainerIds(containerIdProtos)
+                .build(),
+            NullCallback.get());
     } finally {
       connPool.releaseConnection(tmClient);
     }
