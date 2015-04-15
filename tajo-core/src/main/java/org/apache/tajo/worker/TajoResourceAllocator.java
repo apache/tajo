@@ -300,8 +300,6 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
     @Override
     public void run() {
       LOG.info("Start TajoWorkerAllocationThread");
-      CallFuture<WorkerResourceAllocationResponse> callBack =
-        new CallFuture<WorkerResourceAllocationResponse>();
 
       //TODO consider task's resource usage pattern
       int requiredMemoryMB = tajoConf.getIntVar(TajoConf.ConfVars.TASK_DEFAULT_MEMORY);
@@ -318,33 +316,8 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
           .setQueryId(event.getExecutionBlockId().getQueryId().getProto())
           .build();
 
-      RpcConnectionPool connPool = RpcConnectionPool.getPool();
-      NettyClientBase tmClient = null;
-      try {
-        ServiceTracker serviceTracker = queryTaskContext.getQueryMasterContext().getWorkerContext().getServiceTracker();
-        tmClient = connPool.getConnection(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
-        QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
-        masterClientService.allocateWorkerResources(null, request, callBack);
-      } catch (Throwable e) {
-        LOG.error(e.getMessage(), e);
-      } finally {
-        connPool.releaseConnection(tmClient);
-      }
+      WorkerResourceAllocationResponse response = allocate(request);
 
-      WorkerResourceAllocationResponse response = null;
-      while(!stopped.get()) {
-        try {
-          response = callBack.get(3, TimeUnit.SECONDS);
-          break;
-        } catch (InterruptedException e) {
-          if(stopped.get()) {
-            return;
-          }
-        } catch (TimeoutException e) {
-          LOG.info("No available worker resource for " + event.getExecutionBlockId());
-          continue;
-        }
-      }
       int numAllocatedContainers = 0;
 
       if(response != null) {
@@ -414,6 +387,44 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
 
       }
       LOG.info("Stop TajoWorkerAllocationThread");
+    }
+
+    WorkerResourceAllocationResponse allocate(WorkerResourceAllocationRequest request) {
+
+      // 3 seconds, by default
+    long timeout = tajoConf.getTimeVar(
+        TajoConf.ConfVars.WORKER_RESOURCE_ALLOCATION_TIMEOUT, TimeUnit.MILLISECONDS);
+
+      RpcConnectionPool connPool = RpcConnectionPool.getPool();
+      ServiceTracker serviceTracker = queryTaskContext.getQueryMasterContext().getWorkerContext().getServiceTracker();
+
+      WorkerResourceAllocationResponse response = null;
+      NettyClientBase tmClient = null;
+      try {
+        tmClient = connPool.getConnection(serviceTracker.getUmbilicalAddress(),
+            QueryCoordinatorProtocol.class, true);
+        QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
+
+        CallFuture<WorkerResourceAllocationResponse> callBack =
+            new CallFuture<WorkerResourceAllocationResponse>();
+
+        masterClientService.allocateWorkerResources(null, request, callBack);
+
+        while (!stopped.get() && response == null) {
+          try {
+            response = callBack.get(timeout, TimeUnit.MILLISECONDS);
+          } catch (InterruptedException e) {
+            // loop again
+          } catch (TimeoutException e) {
+            LOG.info("No available worker resource for " + event.getExecutionBlockId());
+          }
+        }
+      } catch (Throwable e) {
+        LOG.error(e.getMessage(), e);
+      } finally {
+        connPool.releaseConnection(tmClient);
+      }
+      return response;
     }
   }
 }
