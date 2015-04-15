@@ -89,7 +89,19 @@ public class ExplainPlanPreprocessorForTest {
     public LogicalNode visit(PlanShapeFixerContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
                              LogicalNode node, Stack<LogicalNode> stack) throws PlanningException {
       super.visit(context, plan, block, node, stack);
+      node.setInSchema(sortSchema(node.getInSchema()));
+      node.setOutSchema(sortSchema(node.getOutSchema()));
       context.childNumbers.push(context.childNumbers.pop()+1);
+      return null;
+    }
+
+    @Override
+    public LogicalNode visitFilter(PlanShapeFixerContext context, LogicalPlan plan, LogicalPlan.QueryBlock block,
+                                   SelectionNode node, Stack<LogicalNode> stack) throws PlanningException {
+      super.visitFilter(context, plan, block, node, stack);
+      if (node.hasQual()) {
+        node.setQual(sortQual(node.getQual()));
+      }
       return null;
     }
 
@@ -98,8 +110,6 @@ public class ExplainPlanPreprocessorForTest {
                                  ScanNode node, Stack<LogicalNode> stack) throws PlanningException {
       super.visitScan(context, plan, block, node, stack);
       context.childNumbers.push(1);
-      node.setInSchema(sortSchema(node.getInSchema()));
-      node.setOutSchema(sortSchema(node.getOutSchema()));
       if (node.hasTargets()) {
         node.setTargets(sortTargets(node.getTargets()));
       }
@@ -127,9 +137,6 @@ public class ExplainPlanPreprocessorForTest {
           }
         }
       }
-
-      node.setInSchema(sortSchema(node.getInSchema()));
-      node.setOutSchema(sortSchema(node.getOutSchema()));
 
 //      if (node.hasJoinQual()) {
 //        node.setJoinQual(sortQual(node.getJoinSpec().getPredicates()));

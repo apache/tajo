@@ -141,6 +141,11 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     double minNonCrossJoinCost = Double.MAX_VALUE;
     JoinEdge bestNonCrossJoin = null;
 
+    LOG.info("outer");
+    for (JoinVertex vertex : vertexes) {
+
+    }
+
     for (JoinVertex outer : vertexes) {
       for (JoinVertex inner : vertexes) {
         if (outer.equals(inner)) {

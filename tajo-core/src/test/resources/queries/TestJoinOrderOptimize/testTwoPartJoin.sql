@@ -1,4 +1,4 @@
-explain global select
+explain global explain global select
     l_orderkey,
     p_name,
     n_name

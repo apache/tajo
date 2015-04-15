@@ -63,10 +63,10 @@ Block Id: eb_0000000000000_0000_000003 [INTERMEDIATE]
 TABLE_SUBQUERY(4) as default.t
   => Targets: default.t.n_nationkey (INT4), default.t.n_name (TEXT), default.t.n_regionkey (INT4), default.t.n_comment (TEXT)
   => out schema: {(4) default.t.n_nationkey (INT4), default.t.n_name (TEXT), default.t.n_regionkey (INT4), default.t.n_comment (TEXT)}
-  => in  schema: {(4) default.t.n_nationkey (INT4), default.t.n_name (TEXT), default.t.n_regionkey (INT4), default.t.n_comment (TEXT)}
+  => in  schema: {(4) default.t.n_comment (TEXT), default.t.n_name (TEXT), default.t.n_nationkey (INT4), default.t.n_regionkey (INT4)}
    PROJECTION(3)
      => Targets: default.n.n_nationkey (INT4), default.n.n_name (TEXT), default.n.n_regionkey (INT4), default.n.n_comment (TEXT)
-     => out schema: {(4) default.n.n_nationkey (INT4), default.n.n_name (TEXT), default.n.n_regionkey (INT4), default.n.n_comment (TEXT)}
+     => out schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
      => in  schema: {(4) default.n.n_comment (TEXT), default.n.n_name (TEXT), default.n.n_nationkey (INT4), default.n.n_regionkey (INT4)}
       JOIN(12)(INNER)
         => Join Cond: default.n.n_regionkey (INT4) = default.r.r_regionkey (INT4)
