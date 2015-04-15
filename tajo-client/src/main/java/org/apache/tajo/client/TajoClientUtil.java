@@ -102,7 +102,7 @@ public class TajoClientUtil {
   private static final long INITIAL_INTERVAL = 500;
   private static final long MAX_INTERVAL = 10000;
 
-  private static final long POLLING_TIMEOUT = 1000;
+  private static final long POLLING_TIMEOUT = 3000;
 
   public static QueryStatus pollQueryStatus(QueryClient client, QueryId queryId)
       throws ServiceException {

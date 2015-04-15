@@ -511,7 +511,7 @@ public class TajoMasterClientService extends AbstractService {
       return context.getQueryJobManager().getFinishedQuery(queryId);
     }
 
-    private static final long MAX_POLLING = 3000;
+    private static final long MAX_POLLING = 10000;
 
     @Override
     public GetQueryStatusResponse pollQueryStatus(RpcController controller, PollQueryStatusRequest request) throws ServiceException {
