@@ -22,12 +22,11 @@
 package org.apache.tajo.plan.logical;
 
 import com.google.gson.annotations.Expose;
-
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.plan.PlanString;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.EvalNode;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.TUtil;
 
 import java.util.ArrayList;
@@ -35,8 +34,6 @@ import java.util.Arrays;
 import java.util.List;
 
 public class JoinNode extends BinaryNode implements Projectable, Cloneable {
-//  @Expose private JoinType joinType;
-//  @Expose private EvalNode joinQual;
   @Expose private JoinSpec joinSpec = new JoinSpec();
   @Expose private Target[] targets;
 
@@ -136,8 +133,6 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
     final int prime = 31;
     int result = 1;
     result = prime * result + (candidateBroadcast ? 1231 : 1237);
-//    result = prime * result + ((joinQual == null) ? 0 : joinQual.hashCode());
-//    result = prime * result + ((joinType == null) ? 0 : joinType.hashCode());
     result = prime * result + joinSpec.hashCode();
     result = prime * result + Arrays.hashCode(targets);
     return result;
@@ -158,8 +153,6 @@ public class JoinNode extends BinaryNode implements Projectable, Cloneable {
   @Override
   public Object clone() throws CloneNotSupportedException {
     JoinNode join = (JoinNode) super.clone();
-//    join.joinType = this.joinType;
-//    join.joinQual = this.joinQual == null ? null : (BinaryEval) this.joinQual.clone();
     join.joinSpec = (JoinSpec) this.joinSpec.clone();
     if (hasTargets()) {
       join.targets = new Target[targets.length];

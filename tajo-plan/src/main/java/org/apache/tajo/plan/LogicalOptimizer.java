@@ -26,12 +26,9 @@ import org.apache.tajo.ConfigKey;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.JoinType;
-import org.apache.tajo.catalog.CatalogUtil;
-import org.apache.tajo.catalog.Column;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
-import org.apache.tajo.plan.expr.BinaryEval;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.joinorder.*;
@@ -45,7 +42,9 @@ import org.apache.tajo.util.ReflectionUtil;
 import org.apache.tajo.util.TUtil;
 import org.apache.tajo.util.graph.DirectedGraphCursor;
 
-import java.util.*;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.Stack;
 
 import static org.apache.tajo.plan.LogicalPlan.BlockEdge;
 import static org.apache.tajo.plan.joinorder.GreedyHeuristicJoinOrderAlgorithm.getCost;
@@ -113,7 +112,6 @@ public class LogicalOptimizer {
 
       // finding relations and filter expressions
       JoinGraphContext joinGraphContext = JoinGraphBuilder.buildJoinGraph(plan, block);
-//      addJoinEdgesFromQuals(block, joinGraphContext);
 
       // finding join order and restore remain filter order
       FoundJoinOrder order = joinOrderAlgorithm.findBestOrder(plan, block, joinGraphContext);
@@ -154,125 +152,12 @@ public class LogicalOptimizer {
         newJoinNode.setTargets(targets.toArray(new Target[targets.size()]));
       }
       PlannerUtil.replaceNode(plan, block.getRoot(), old, newNode);
-//      PlannerUtil.replaceNode(plan, block.getRoot(), old, newJoinNode);
       // End of replacement logic
 
       String optimizedOrder = JoinOrderStringBuilder.buildJoinOrderString(plan, block);
       block.addPlanHistory("Non-optimized join order: " + originalOrder + " (cost: " + nonOptimizedJoinCost + ")");
       block.addPlanHistory("Optimized join order    : " + optimizedOrder + " (cost: " + order.getCost() + ")");
     }
-  }
-
-//  private void addJoinEdgesFromQuals(LogicalPlan.QueryBlock block, JoinGraphContext context)
-//      throws PlanningException {
-//    Map<String, RelationNode> relationNodeMap = TUtil.newHashMap();
-//    for (RelationNode relationNode : block.getRelations()) {
-//      relationNodeMap.put(relationNode.getCanonicalName(), relationNode);
-//    }
-//    addJoinEdgesFromQuals(block, context, context.getJoinGraph(),
-//        new HashSet(context.getCandidateJoinConditions()), relationNodeMap);
-//    addJoinEdgesFromQuals(block, context, context.getJoinGraph(),
-//        new HashSet(context.getCandidateJoinFilters()), relationNodeMap);
-//  }
-
-//  private void addJoinEdgesFromQuals(LogicalPlan.QueryBlock block, JoinGraphContext context, JoinGraph graph,
-//                                     Set<EvalNode> quals, Map<String, RelationNode> relationNodeMap)
-//      throws PlanningException {
-//    for (EvalNode condition : quals) {
-//      if (EvalTreeUtil.isJoinQual(condition, false)) {
-//        String[] relations = guessRelationsFromJoinQual(block, (BinaryEval) condition);
-//        String leftExprRelName = relations[0];
-//        String rightExprRelName = relations[1];
-//        RelationVertex left = null, right = null;
-//        if (relationNodeMap.containsKey(leftExprRelName)) {
-//          left = new RelationVertex(relationNodeMap.get(leftExprRelName));
-//        }
-//        if (relationNodeMap.containsKey(rightExprRelName)) {
-//          right = new RelationVertex(relationNodeMap.get(rightExprRelName));
-//        }
-//        if (left != null && right != null) {
-//          JoinEdge edge = graph.getEdge(left, right);
-//          if (edge == null) {
-//            // check if they are connectable
-//            Set<JoinVertex> leftInterchangeables = JoinOrderingUtil.getAllInterchangeableVertexes(context, left);
-//            Set<JoinVertex> rightInterchangeables = JoinOrderingUtil.getAllInterchangeableVertexes(context, right);
-//            for (JoinVertex leftInterchangeable : leftInterchangeables) {
-//              for (JoinVertex rightInterchangeable : rightInterchangeables) {
-//                if (graph.getEdge(leftInterchangeable, rightInterchangeable) != null) {
-//                  // If a join is an implicit join, its type is assumed as the INNER join
-//                  edge = graph.addJoin(context, new JoinSpec(JoinType.INNER), left, right);
-//                  edge.addJoinQual(condition);
-//                }
-//              }
-//            }
-//          } else {
-//            if (edge.getJoinType() == JoinType.CROSS) {
-//              edge.getJoinSpec().setType(JoinType.INNER);
-//            }
-//            edge.addJoinQual(condition);
-//          }
-//
-//          if (edge != null && PlannerUtil.isCommutativeJoin(edge.getJoinType())) {
-//            graph.addJoin(context, edge.getJoinSpec(), edge.getRightVertex(), edge.getLeftVertex());
-//          }
-//        }
-//      }
-//    }
-//  }
-
-  private String [] guessRelationsFromJoinQual(LogicalPlan.QueryBlock block, BinaryEval joinCondition)
-      throws PlanningException {
-
-    // Note that we can guarantee that each join qual used here is a singleton.
-    // This is because we use dissect a join qual into conjunctive normal forms.
-    // In other words, each join qual has a form 'col1 = col2'.
-    Column leftExpr = EvalTreeUtil.findAllColumnRefs(joinCondition.getLeftExpr()).get(0);
-    Column rightExpr = EvalTreeUtil.findAllColumnRefs(joinCondition.getRightExpr()).get(0);
-
-    // 0 - left table, 1 - right table
-    String [] relationNames = new String[2];
-    NamedExprsManager namedExprsMgr = block.getNamedExprsManager();
-    if (leftExpr.hasQualifier()) {
-      relationNames[0] = leftExpr.getQualifier();
-    } else {
-      if (namedExprsMgr.isAliasedName(leftExpr.getSimpleName())) {
-        String columnName = namedExprsMgr.getOriginalName(leftExpr.getSimpleName());
-        String qualifier = CatalogUtil.extractQualifier(columnName);
-        relationNames[0] = qualifier;
-      } else {
-        // search for a relation which evaluates a right term included in a join condition
-        for (RelationNode rel : block.getRelations()) {
-          if (rel.getOutSchema().contains(leftExpr)) {
-            String qualifier = rel.getCanonicalName();
-            relationNames[0] = qualifier;
-          }
-        }
-        if (relationNames[0] == null) { // if not found
-          throw new PlanningException("Cannot expect a referenced relation: " + leftExpr);
-        }
-      }
-    }
-    if (rightExpr.hasQualifier()) {
-      relationNames[1] = rightExpr.getQualifier();
-    } else {
-      if (namedExprsMgr.isAliasedName(rightExpr.getSimpleName())) {
-        String columnName = namedExprsMgr.getOriginalName(rightExpr.getSimpleName());
-        String qualifier = CatalogUtil.extractQualifier(columnName);
-        relationNames[1] = qualifier;
-      } else {
-        // search for a relation which evaluates a right term included in a join condition
-        for (RelationNode rel : block.getRelations()) {
-          if (rel.getOutSchema().contains(rightExpr)) {
-            String qualifier = rel.getCanonicalName();
-            relationNames[1] = qualifier;
-          }
-        }
-        if (relationNames[1] == null) { // if not found
-          throw new PlanningException("Cannot expect a referenced relation: " + rightExpr);
-        }
-      }
-    }
-    return relationNames;
   }
 
   private static class JoinTargetCollector extends BasicLogicalPlanVisitor<Set<Target>, LogicalNode> {
@@ -305,7 +190,6 @@ public class LogicalOptimizer {
      */
     public static JoinGraphContext buildJoinGraph(LogicalPlan plan, LogicalPlan.QueryBlock block)
         throws PlanningException {
-//      JoinGraph joinGraph = new JoinGraph();
       JoinGraphContext context = new JoinGraphContext();
       instance.visit(context, plan, block);
       return context;

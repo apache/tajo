@@ -27,7 +27,6 @@ import java.util.Set;
 public interface JoinVertex {
 
   Schema getSchema();
-//  LogicalNode getCorrespondingNode();
   Set<RelationVertex> getRelations();
   LogicalNode buildPlan(LogicalPlan plan, LogicalPlan.QueryBlock block);
 }

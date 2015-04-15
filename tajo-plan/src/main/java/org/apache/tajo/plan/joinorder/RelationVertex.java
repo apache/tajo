@@ -31,10 +31,8 @@ public class RelationVertex implements JoinVertex{
   private final RelationNode relationNode;
   private final LogicalNode topLogicalNode;
 
-//  public RelationVertex(LogicalNode topLogicalNode, RelationNode relationNode) {
 public RelationVertex(RelationNode relationNode) {
     this.relationNode = relationNode;
-//    this.topLogicalNode = topLogicalNode;
     this.topLogicalNode = relationNode;
   }
 

@@ -25,7 +25,10 @@ import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.expr.EvalTreeUtil;
 import org.apache.tajo.plan.expr.EvalType;
-import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.logical.JoinNode;
+import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.plan.logical.NodeType;
+import org.apache.tajo.plan.logical.RelationNode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
@@ -75,37 +78,6 @@ public class JoinOrderingUtil {
     }
     return edge;
   }
-
-//  public static JoinNode createJoinNode(LogicalPlan plan, JoinType joinType, JoinVertex left, JoinVertex right,
-//                                        @Nullable EvalNode predicates) {
-//    LogicalNode leftChild = left.getCorrespondingNode();
-//    LogicalNode rightChild = right.getCorrespondingNode();
-//
-//    JoinNode joinNode = plan.createNode(JoinNode.class);
-//
-//    if (PlannerUtil.isCommutativeJoin(joinType)) {
-//      // if only one operator is relation
-//      if ((leftChild instanceof RelationNode) && !(rightChild instanceof RelationNode)) {
-//        // for left deep
-//        joinNode.init(joinType, rightChild, leftChild);
-//      } else {
-//        // if both operators are relation or if both are relations
-//        // we don't need to concern the left-right position.
-//        joinNode.init(joinType, leftChild, rightChild);
-//      }
-//    } else {
-//      joinNode.init(joinType, leftChild, rightChild);
-//    }
-//
-//    Schema mergedSchema = SchemaUtil.merge(joinNode.getLeftChild().getOutSchema(),
-//        joinNode.getRightChild().getOutSchema());
-//    joinNode.setInSchema(mergedSchema);
-//    joinNode.setOutSchema(mergedSchema);
-//    if (predicates != null) {
-//      joinNode.setJoinQual(predicates);
-//    }
-//    return joinNode;
-//  }
 
   public static boolean isAssociativeJoin(JoinGraphContext context, JoinEdge leftEdge, JoinEdge rightEdge) {
     if (isAssociativeJoinType(leftEdge.getJoinType(), rightEdge.getJoinType())) {
@@ -192,16 +164,6 @@ public class JoinOrderingUtil {
     return false;
   }
 
-
-  public static Set<RelationNode> findRelationVertexes(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                       LogicalNode from) throws PlanningException {
-    RelationNodeFinderContext context = new RelationNodeFinderContext();
-    context.findMostLeft = context.findMostRight = true;
-    RelationNodeFinder finder = new RelationNodeFinder();
-    finder.visit(context, plan, block, from, new Stack<LogicalNode>());
-    return context.founds;
-  }
-
   public static RelationNode findMostLeftRelation(LogicalPlan plan, LogicalPlan.QueryBlock block,
                                                   LogicalNode from) throws PlanningException {
     RelationNodeFinderContext context = new RelationNodeFinderContext();
@@ -279,7 +241,6 @@ public class JoinOrderingUtil {
           if (rightEdgesOfCandidate != null) {
             for (JoinEdge rightEdgeOfCandidate : rightEdgesOfCandidate) {
               rightEdgeOfCandidate = updateQualIfNecessary(context, rightEdgeOfCandidate);
-//              if (!PlannerUtil.isCommutativeJoin(rightEdgeOfCandidate.getJoinType())) {
               if (!isCommutative(candidateEdge, rightEdgeOfCandidate) &&
                   !JoinOrderingUtil.isAssociativeJoin(context, candidateEdge, rightEdgeOfCandidate)) {
                 reacheable = false;
@@ -293,7 +254,6 @@ public class JoinOrderingUtil {
         }
       }
       if (foundAtThis.size() > 0) {
-//        founds.addAll(foundAtThis);
         for (JoinVertex v : foundAtThis) {
           getAllInterchangeableVertexes(founds, context, v);
         }
@@ -323,8 +283,6 @@ public class JoinOrderingUtil {
         context.getCandidateJoinConditions(), edge, true);
     additionalPredicates.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(
         context.getCandidateJoinFilters(), edge, false));
-//    context.getCandidateJoinConditions().removeAll(additionalPredicates);
-//    context.getCandidateJoinFilters().removeAll(additionalPredicates);
     edge.addJoinPredicates(additionalPredicates);
     return edge;
   }

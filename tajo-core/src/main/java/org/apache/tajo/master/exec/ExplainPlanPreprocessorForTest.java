@@ -25,7 +25,10 @@ import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.Target;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
 import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.logical.JoinNode;
+import org.apache.tajo.plan.logical.LogicalNode;
+import org.apache.tajo.plan.logical.ScanNode;
+import org.apache.tajo.plan.logical.SelectionNode;
 import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.visitor.BasicLogicalPlanVisitor;
 import org.apache.tajo.util.TUtil;
@@ -50,10 +53,11 @@ public class ExplainPlanPreprocessorForTest {
     shapeFixerContext.reset();
     shapeFixer.visit(shapeFixerContext, plan, plan.getRootBlock());
 
-      // Pid reseter
+    // Pid collector
     collectorContext.reset();
     joinPidCollector.visit(collectorContext, plan, plan.getRootBlock());
 
+    // Pid resetter
     resetContext.reset(collectorContext.joinPids);
     joinPidReseter.visit(resetContext, plan, plan.getRootBlock());
   }
@@ -138,10 +142,6 @@ public class ExplainPlanPreprocessorForTest {
         }
       }
 
-//      if (node.hasJoinQual()) {
-//        node.setJoinQual(sortQual(node.getJoinSpec().getPredicates()));
-//      }
-
       if (node.hasTargets()) {
         node.setTargets(sortTargets(node.getTargets()));
       }
@@ -167,11 +167,6 @@ public class ExplainPlanPreprocessorForTest {
       return sortQual(cnf);
     }
 
-    private EvalNode sortQual(Set<EvalNode> quals) {
-      EvalNode[] cnf = quals.toArray(new EvalNode[quals.size()]);
-      return sortQual(cnf);
-    }
-
     private EvalNode sortQual(EvalNode[] cnf) {
       Arrays.sort(cnf, evalNodeComparator);
       return AlgebraicUtil.createSingletonExprFromCNF(cnf);
@@ -184,9 +179,6 @@ public class ExplainPlanPreprocessorForTest {
 
     private static void swapChildren(JoinNode node) {
       LogicalNode tmpChild = node.getLeftChild();
-//      int tmpId = tmpChild.getPID();
-//      tmpChild.setPID(node.getRightChild().getPID());
-//      node.getRightChild().setPID(tmpId);
       node.setLeftChild(node.getRightChild());
       node.setRightChild(tmpChild);
     }

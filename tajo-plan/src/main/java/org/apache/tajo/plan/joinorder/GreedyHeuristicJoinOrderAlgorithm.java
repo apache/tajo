@@ -22,14 +22,15 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.plan.LogicalPlan;
-import org.apache.tajo.plan.expr.EvalNode;
-import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.expr.AlgebraicUtil;
+import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.logical.*;
+import org.apache.tajo.plan.util.PlannerUtil;
 import org.apache.tajo.util.TUtil;
 
-import java.util.*;
+import java.util.List;
+import java.util.Set;
 
 /**
  * This is a greedy heuristic algorithm to find a bushy join tree. This algorithm finds
@@ -127,8 +128,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
    * Find the best join pair among all joinable operators in candidate set.
    *
    * @param context
-   * @param joinGraph a join graph which consists of vertices and edges, where vertex is relation and
-   *                  each edge is join condition.
+   * @param graphContext a join graph which consists of vertices and edges, where vertex is relation and
+   *                     each edge is join condition.
    * @param vertexes candidate operators to be joined.
    * @return The best join pair among them
    * @throws PlanningException
@@ -267,103 +268,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       }
       // not found
       return null;
-//    }
   }
-
-//  private static JoinEdge updateQualIfNecessary(JoinGraphContext context, JoinEdge edge) {
-//    Set<EvalNode> additionalPredicates = JoinOrderingUtil.findJoinConditionForJoinVertex(
-//        context.getCandidateJoinConditions(), edge, true);
-//    additionalPredicates.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(
-//        context.getCandidateJoinFilters(), edge, false));
-////    context.getCandidateJoinConditions().removeAll(additionalPredicates);
-////    context.getCandidateJoinFilters().removeAll(additionalPredicates);
-////    return JoinOrderingUtil.addPredicates(edge, additionalPredicates);
-//    edge.addJoinPredicates(additionalPredicates);
-//    return edge;
-//  }
-//
-//  /**
-//   * Find all edges that are associative with the given edge.
-//   *
-//   * @param context
-//   * @param edge
-//   * @return
-//   */
-//  private static Set<JoinEdge> getAllAssociativeEdges(LogicalPlan plan, JoinGraphContext context, JoinEdge edge) {
-//    Set<JoinEdge> associativeEdges = TUtil.newHashSet();
-//    JoinVertex start = edge.getRightVertex();
-//    List<JoinEdge> candidateEdges = context.getJoinGraph().getOutgoingEdges(start);
-//    if (candidateEdges != null) {
-//      for (JoinEdge candidateEdge : candidateEdges) {
-//        candidateEdge = updateQualIfNecessary(context, candidateEdge);
-//        if (!isEqualsOrSymmetric(edge, candidateEdge) &&
-//            JoinOrderingUtil.isAssociativeJoin(context, edge, candidateEdge)) {
-//          associativeEdges.add(candidateEdge);
-//        }
-//      }
-//    }
-//    return associativeEdges;
-//  }
-//
-//  private static boolean isEqualsOrSymmetric(JoinEdge edge1, JoinEdge edge2) {
-//    if (edge1.equals(edge2) || isCommutative(edge1, edge2)) {
-//      return true;
-//    }
-//    return false;
-//  }
-//
-//  private static boolean isCommutative(JoinEdge edge1, JoinEdge edge2) {
-//    if (edge1.getLeftVertex().equals(edge2.getRightVertex()) &&
-//        edge1.getRightVertex().equals(edge2.getLeftVertex()) &&
-//        edge1.getJoinSpec().equals(edge2.getJoinSpec()) &&
-//        PlannerUtil.isCommutativeJoin(edge1.getJoinType())) {
-//      return true;
-//    }
-//    return false;
-//  }
-//
-//  private static Set<JoinVertex> getAllInterchangeableVertexes(LogicalPlan plan, JoinGraphContext context, JoinVertex from) {
-//    Set<JoinVertex> founds = TUtil.newHashSet();
-//    getAllInterchangeableVertexes(founds, plan, context, from);
-//    return founds;
-//  }
-//
-//  private static void getAllInterchangeableVertexes(Set<JoinVertex> founds, LogicalPlan plan, JoinGraphContext context,
-//                                                    JoinVertex vertex) {
-//    founds.add(vertex);
-//    Set<JoinVertex> foundAtThis = TUtil.newHashSet();
-//    List<JoinEdge> candidateEdges = context.getJoinGraph().getOutgoingEdges(vertex);
-//    if (candidateEdges != null) {
-//      for (JoinEdge candidateEdge : candidateEdges) {
-//        candidateEdge = updateQualIfNecessary(context, candidateEdge);
-//        if (PlannerUtil.isCommutativeJoin(candidateEdge.getJoinType())
-//            && !founds.contains(candidateEdge.getRightVertex())) {
-//          List<JoinEdge> rightEdgesOfCandidate = context.getJoinGraph().getOutgoingEdges(candidateEdge.getRightVertex());
-//          boolean reacheable = true;
-//          if (rightEdgesOfCandidate != null) {
-//            for (JoinEdge rightEdgeOfCandidate : rightEdgesOfCandidate) {
-//              rightEdgeOfCandidate = updateQualIfNecessary(context, rightEdgeOfCandidate);
-////              if (!PlannerUtil.isCommutativeJoin(rightEdgeOfCandidate.getJoinType())) {
-//              if (!isCommutative(candidateEdge, rightEdgeOfCandidate) &&
-//                  !JoinOrderingUtil.isAssociativeJoin(context, candidateEdge, rightEdgeOfCandidate)) {
-//                reacheable = false;
-//                break;
-//              }
-//            }
-//          }
-//          if (reacheable) {
-//            foundAtThis.add(candidateEdge.getRightVertex());
-//          }
-//        }
-//      }
-//      if (foundAtThis.size() > 0) {
-////        founds.addAll(foundAtThis);
-//        for (JoinVertex v : foundAtThis) {
-//          getAllInterchangeableVertexes(founds, plan, context, v);
-//        }
-//      }
-//    }
-//  }
 
   /**
    * Getting a cost of one join
@@ -377,32 +282,24 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       // TODO - should consider join type
       // TODO - should statistic information obtained from query history
       filterFactor = filterFactor * Math.pow(DEFAULT_SELECTION_FACTOR, joinEdge.getJoinQual().size());
-//      return getCost(joinEdge.getLeftVertex()) *
-//          getCost(joinEdge.getRightVertex()) * filterFactor;
       cost = getCost(joinEdge.getLeftVertex()) *
           getCost(joinEdge.getRightVertex()) * filterFactor;
     } else {
       // make cost bigger if cross join
-//      return Math.pow(getCost(joinEdge.getLeftVertex()) *
-//          getCost(joinEdge.getRightVertex()), 2);
       cost = Math.pow(getCost(joinEdge.getLeftVertex()) *
           getCost(joinEdge.getRightVertex()), 2);
     }
 
-    LOG.info("cost of " + joinEdge + " : " + cost);
     return cost;
   }
 
   public static double getCost(JoinVertex joinVertex) {
     double cost;
     if (joinVertex instanceof RelationVertex) {
-//      return getCost(((RelationVertex) joinVertex).getRelationNode());
       cost = getCost(((RelationVertex) joinVertex).getRelationNode());
     } else {
-//      return getCost(((JoinedRelationsVertex)joinVertex).getJoinEdge());
       cost = getCost(((JoinedRelationsVertex)joinVertex).getJoinEdge());
     }
-    LOG.info("cost of " + joinVertex + " : " + cost);
     return cost;
   }
 
@@ -413,7 +310,6 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
 
     case PROJECTION:
       ProjectionNode projectionNode = (ProjectionNode) node;
-//      return getCost(projectionNode.getChild());
       cost = getCost(projectionNode.getChild());
       break;
 
@@ -423,25 +319,20 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       if (joinNode.hasJoinQual()) {
         filterFactor = Math.pow(DEFAULT_SELECTION_FACTOR,
             AlgebraicUtil.toConjunctiveNormalFormArray(joinNode.getJoinQual()).length);
-//        return getCost(joinNode.getLeftChild()) * getCost(joinNode.getRightChild()) * filterFactor;
         cost = getCost(joinNode.getLeftChild()) * getCost(joinNode.getRightChild()) * filterFactor;
       } else {
-//        return Math.pow(getCost(joinNode.getLeftChild()) * getCost(joinNode.getRightChild()), 2);
         cost = Math.pow(getCost(joinNode.getLeftChild()) * getCost(joinNode.getRightChild()), 2);
       }
       break;
 
     case SELECTION:
       SelectionNode selectionNode = (SelectionNode) node;
-//      return getCost(selectionNode.getChild()) *
-//          Math.pow(DEFAULT_SELECTION_FACTOR, AlgebraicUtil.toConjunctiveNormalFormArray(selectionNode.getQual()).length);
       cost = getCost(selectionNode.getChild()) *
           Math.pow(DEFAULT_SELECTION_FACTOR, AlgebraicUtil.toConjunctiveNormalFormArray(selectionNode.getQual()).length);
       break;
 
     case TABLE_SUBQUERY:
       TableSubQueryNode subQueryNode = (TableSubQueryNode) node;
-//      return getCost(subQueryNode.getSubQuery());
       cost = getCost(subQueryNode.getSubQuery());
       break;
 
@@ -449,16 +340,13 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       ScanNode scanNode = (ScanNode) node;
       if (scanNode.getTableDesc().getStats() != null) {
         cost = ((ScanNode)node).getTableDesc().getStats().getNumBytes();
-//        return cost;
       } else {
-//        return Long.MAX_VALUE;
         cost = Long.MAX_VALUE;
       }
       break;
 
     case UNION:
       UnionNode unionNode = (UnionNode) node;
-//      return getCost(unionNode.getLeftChild()) + getCost(unionNode.getRightChild());
       cost = getCost(unionNode.getLeftChild()) + getCost(unionNode.getRightChild());
       break;
 
@@ -469,12 +357,10 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     default:
       // all binary operators (join, union, except, and intersect) are handled in the above cases.
       // So, we need to handle only unary nodes in default.
-//      return getCost(((UnaryNode) node).getChild());
       cost = getCost(((UnaryNode) node).getChild());
       break;
     }
 
-    LOG.info("cost of " + node + " : " + cost);
     return cost;
   }
 }
