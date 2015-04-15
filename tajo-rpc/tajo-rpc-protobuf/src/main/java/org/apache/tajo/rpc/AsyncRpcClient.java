@@ -203,6 +203,12 @@ public class AsyncRpcClient extends NettyClientBase {
     }
 
     @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+      super.channelActive(ctx);
+      LOG.info("Connection established successfully : " + ctx.channel().remoteAddress());
+    }
+
+    @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
         throws Exception {
       LOG.error(getRemoteAddress() + "," + protocol + "," + cause.getMessage(), cause);

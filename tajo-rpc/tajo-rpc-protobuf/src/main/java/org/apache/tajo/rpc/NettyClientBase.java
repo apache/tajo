@@ -58,6 +58,7 @@ public abstract class NettyClientBase implements Closeable {
   protected void init(ChannelInitializer<Channel> initializer) {
     this.bootstrap = new Bootstrap();
     this.bootstrap
+        .group(RpcChannelFactory.getSharedClientEventloopGroup())
       .channel(NioSocketChannel.class)
       .handler(initializer)
       .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
@@ -96,12 +97,11 @@ public abstract class NettyClientBase implements Closeable {
   }
 
   private ChannelFuture doConnect(SocketAddress address) {
-    return this.channelFuture = bootstrap.clone().group(RpcChannelFactory.getSharedClientEventloopGroup())
-        .connect(address);
+    return this.channelFuture = bootstrap.clone().connect(address);
   }
 
 
-  public void connect() throws ConnectTimeoutException {
+  public synchronized void connect() throws ConnectTimeoutException {
     if (isConnected()) return;
 
     final AtomicInteger retries = new AtomicInteger();
@@ -116,8 +116,6 @@ public abstract class NettyClientBase implements Closeable {
 
     if (!f.isSuccess() && numRetries > 0) {
       doReconnect(address, f, retries);
-    } else {
-      LOG.info("Connection established successfully : " + address);
     }
 
     this.channelFuture.channel().closeFuture().addListener(new ConnectionCloseFutureListener(getKey()));

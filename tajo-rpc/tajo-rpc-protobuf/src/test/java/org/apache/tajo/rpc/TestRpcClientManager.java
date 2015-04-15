@@ -62,10 +62,10 @@ public class TestRpcClientManager {
             }
           })
       );
+    }
 
-      for (Future future : tasks) {
-        future.get();
-      }
+    for (Future future : tasks) {
+      future.get();
     }
 
     NettyClientBase clientBase = manager.getConnection(address, DummyProtocol.class, true);

@@ -26,8 +26,9 @@ import org.apache.commons.logging.LogFactory;
 
 import javax.annotation.concurrent.ThreadSafe;
 import java.net.InetSocketAddress;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 @ThreadSafe
 public class RpcClientManager {
@@ -36,8 +37,8 @@ public class RpcClientManager {
   public static final int RPC_RETRIES = 3;
 
   /* entries will be removed by ConnectionCloseFutureListener */
-  private static final ConcurrentMap<RpcConnectionKey, NettyClientBase>
-      clients = new ConcurrentHashMap<RpcConnectionKey, NettyClientBase>();
+  private static final Map<RpcConnectionKey, NettyClientBase>
+      clients = Collections.synchronizedMap(new HashMap<RpcConnectionKey, NettyClientBase>());
 
   private static RpcClientManager instance;
 
@@ -80,8 +81,11 @@ public class RpcClientManager {
     RpcConnectionKey key = new RpcConnectionKey(addr, protocolClass, asyncMode);
 
     NettyClientBase client;
-    if ((client = clients.get(key)) == null) {
-      clients.put(key, client = makeConnection(key));
+    synchronized (clients) {
+      client = clients.get(key);
+      if (client == null) {
+        clients.put(key, client = makeConnection(key));
+      }
     }
 
     if (!client.isConnected()) {

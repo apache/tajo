@@ -269,8 +269,8 @@ public class TestBlockingRpc {
       fail();
     } catch (ConnectTimeoutException e) {
       expected = true;
-    } catch (Throwable throwable) {
-      fail();
+    } catch (Throwable e) {
+      fail(e.getMessage());
     }
     assertTrue(expected);
   }
