@@ -38,7 +38,7 @@ import java.util.*;
 /**
  * Tajo's logical planner can generate different shapes of logical plans for the same query,
  * especially when the query involves one or more joins.
- * This class guarantees the consistency of the logical plan for the same query.
+ * This class guarantees the plans' shape determinant.
  */
 public class ExplainPlanPreprocessorForTest {
   private static final PlanShapeFixerContext shapeFixerContext = new PlanShapeFixerContext();
@@ -53,11 +53,14 @@ public class ExplainPlanPreprocessorForTest {
     shapeFixerContext.reset();
     shapeFixer.visit(shapeFixerContext, plan, plan.getRootBlock());
 
-    // Pid collector
+    /*
+     * During join order optimization, new join nodes are created based on the chosen join order.
+     * So, they have different pids for each query execution.
+     * JoinPidCollector and JoinPidReseter reset the pids of join nodes.
+     */
     collectorContext.reset();
     joinPidCollector.visit(collectorContext, plan, plan.getRootBlock());
 
-    // Pid resetter
     resetContext.reset(collectorContext.joinPids);
     joinPidReseter.visit(resetContext, plan, plan.getRootBlock());
   }
@@ -72,7 +75,7 @@ public class ExplainPlanPreprocessorForTest {
 
   /**
    * Given a commutative join, two children of the join node are interchangeable.
-   * This class fix the logical plan according to the following rules.
+   * This class change the logical plan according to the following rules.
    *
    * <h3>Rules</h3>
    * <ul>
@@ -95,7 +98,7 @@ public class ExplainPlanPreprocessorForTest {
       super.visit(context, plan, block, node, stack);
       node.setInSchema(sortSchema(node.getInSchema()));
       node.setOutSchema(sortSchema(node.getOutSchema()));
-      context.childNumbers.push(context.childNumbers.pop()+1);
+      context.childNumbers.push(context.childNumbers.pop() + 1);
       return null;
     }
 
@@ -216,9 +219,8 @@ public class ExplainPlanPreprocessorForTest {
   }
 
   /**
-   * During join order optimization, new join nodes are created based on the chosen join order.
-   * So, they have different pids for each query execution.
-   * This class sequentially assigns unique pids to all logical nodes.
+   * {@link JoinPidCollector} collects the pids of all join
+   * nodes.
    */
   private static class JoinPidCollector extends BasicLogicalPlanVisitor<PidCollectorContext, LogicalNode> {
 
@@ -241,6 +243,10 @@ public class ExplainPlanPreprocessorForTest {
     }
   }
 
+  /**
+   * {@link JoinPidReseter} resets pids of join nodes with the pids collected by {@link JoinPidCollector} in ascending
+   * order while traversing the query plan.
+   */
   private static class JoinPidReseter extends BasicLogicalPlanVisitor<PidReseterContext, LogicalNode> {
 
     @Override

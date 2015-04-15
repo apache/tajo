@@ -56,6 +56,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       JoinEdge bestPair = getBestPair(context, graphContext, vertexes);
       JoinedRelationsVertex newVertex = new JoinedRelationsVertex(bestPair);
 
+      // Update most left vertex if the previous most left vertex is merged into a new vertex
       if (bestPair.getLeftVertex().equals(graphContext.getMostLeftVertex())
           || (PlannerUtil.isCommutativeJoin(bestPair.getJoinType())
           && bestPair.getRightVertex().equals(graphContext.getMostLeftVertex()))) {
@@ -65,6 +66,17 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       Set<JoinEdge> willBeRemoved = TUtil.newHashSet();
       Set<JoinEdge> willBeAdded = TUtil.newHashSet();
 
+      /*
+       * Once a best pair is chosen, some existing join edges should be removed and new join edges should be added.
+       *
+       * There can be some join edges which are equal to or symmetric with the best pair.
+       * They cannot be chosen anymore, and thus should be removed from the join graph.
+       *
+       * The chosen best pair will be regarded as a join vertex again.
+       * So, the join edges which share any vertexes with the best pair should be updated, too.
+       */
+
+      // Find every join edges which should be updated.
       prepareGraphUpdate(graphContext, joinGraph, bestPair, newVertex, willBeAdded, willBeRemoved);
 
       for (JoinEdge edge : willBeRemoved) {
@@ -78,6 +90,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         graphContext.removeCandidateJoinFilters(edge.getJoinQual());
       }
 
+      // Join quals involved by the best pair should be removed.
       graphContext.removeCandidateJoinConditions(bestPair.getJoinQual());
       graphContext.removeCandidateJoinFilters(bestPair.getJoinQual());
 
@@ -151,14 +164,16 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         context.reset();
         JoinEdge foundJoin = findJoin(context, graphContext, graphContext.getMostLeftVertex(), outer, inner);
         if (foundJoin == null) {
-          LOG.error("Join between (" + outer + ", " + inner + ") is not found.");
           continue;
         }
-        Set<EvalNode> additionalPredicates = JoinOrderingUtil.findJoinConditionForJoinVertex(
-            graphContext.getCandidateJoinConditions(), foundJoin, true);
-        additionalPredicates.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(
-            graphContext.getCandidateJoinFilters(), foundJoin, false));
-        foundJoin = JoinOrderingUtil.addPredicates(foundJoin, additionalPredicates);
+        // The found join edge may not have join quals even though they can be evaluated during join.
+        // So, possible join quals should be added to the join node before estimating its cost.
+//        Set<EvalNode> additionalPredicates = JoinOrderingUtil.findJoinConditionForJoinVertex(
+//            graphContext.getCandidateJoinConditions(), foundJoin, true);
+//        additionalPredicates.addAll(JoinOrderingUtil.findJoinConditionForJoinVertex(
+//            graphContext.getCandidateJoinFilters(), foundJoin, false));
+//        foundJoin = JoinOrderingUtil.addPredicates(foundJoin, additionalPredicates);
+        JoinOrderingUtil.updateQualIfNecessary(graphContext, foundJoin);
         double cost = getCost(foundJoin);
 
         if (cost < minCost) {
@@ -200,9 +215,15 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
   }
 
   /**
-   * Find a join between two logical operator trees
+   * Find a join edge between two join vertexes.
    *
-   * @return If there is no join condition between two relation, it returns NULL value.
+   * @param context context for edge finder
+   * @param graphContext graph context
+   * @param begin begin vertex to traverse the join graph
+   * @param leftTarget left target join vertex
+   * @param rightTarget right target join vertex
+   * @return If there is no join edge between two vertexes, it returns null.
+   * @throws PlanningException
    */
   private static JoinEdge findJoin(final JoinEdgeFinderContext context, final JoinGraphContext graphContext,
                                    JoinVertex begin, final JoinVertex leftTarget, final JoinVertex rightTarget)

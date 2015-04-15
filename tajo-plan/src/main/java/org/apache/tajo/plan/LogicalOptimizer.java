@@ -118,26 +118,8 @@ public class LogicalOptimizer {
 
       // replace join node with FoundJoinOrder.
       JoinNode newJoinNode = order.getOrderedJoin();
-      LogicalNode newNode = newJoinNode;
+      LogicalNode newNode = handleRemainingFiltersIfNecessary(joinGraphContext, plan, block, newJoinNode);
 
-      if (!joinGraphContext.getCandidateJoinFilters().isEmpty()) {
-        Set<EvalNode> remainings = joinGraphContext.getCandidateJoinFilters();
-        LogicalNode topParent = PlannerUtil.findTopParentNode(block.getRoot(), NodeType.JOIN);
-        if (topParent.getType() == NodeType.SELECTION) {
-          SelectionNode topParentSelect = (SelectionNode) topParent;
-          Set<EvalNode> filters = TUtil.newHashSet();
-          filters.addAll(TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(topParentSelect.getQual())));
-          filters.addAll(remainings);
-          topParentSelect.setQual(AlgebraicUtil.createSingletonExprFromCNF(
-              filters.toArray(new EvalNode[filters.size()])));
-        } else {
-          SelectionNode newSelection = plan.createNode(SelectionNode.class);
-          newSelection.setQual(AlgebraicUtil.createSingletonExprFromCNF(
-              remainings.toArray(new EvalNode[remainings.size()])));
-          newSelection.setChild(newJoinNode);
-          newNode = newSelection;
-        }
-      }
       JoinNode old = PlannerUtil.findTopNode(block.getRoot(), NodeType.JOIN);
 
       // TODO: collect all join predicates and set them at the top join node (?)
@@ -158,6 +140,32 @@ public class LogicalOptimizer {
       block.addPlanHistory("Non-optimized join order: " + originalOrder + " (cost: " + nonOptimizedJoinCost + ")");
       block.addPlanHistory("Optimized join order    : " + optimizedOrder + " (cost: " + order.getCost() + ")");
     }
+  }
+
+  private static LogicalNode handleRemainingFiltersIfNecessary(JoinGraphContext joinGraphContext,
+                                                               LogicalPlan plan,
+                                                               LogicalPlan.QueryBlock block,
+                                                               JoinNode newJoinNode) {
+    if (!joinGraphContext.getCandidateJoinFilters().isEmpty()) {
+      Set<EvalNode> remainings = joinGraphContext.getCandidateJoinFilters();
+      LogicalNode topParent = PlannerUtil.findTopParentNode(block.getRoot(), NodeType.JOIN);
+      if (topParent.getType() == NodeType.SELECTION) {
+        SelectionNode topParentSelect = (SelectionNode) topParent;
+        Set<EvalNode> filters = TUtil.newHashSet();
+        filters.addAll(TUtil.newHashSet(AlgebraicUtil.toConjunctiveNormalFormArray(topParentSelect.getQual())));
+        filters.addAll(remainings);
+        topParentSelect.setQual(AlgebraicUtil.createSingletonExprFromCNF(
+            filters.toArray(new EvalNode[filters.size()])));
+        return newJoinNode;
+      } else {
+        SelectionNode newSelection = plan.createNode(SelectionNode.class);
+        newSelection.setQual(AlgebraicUtil.createSingletonExprFromCNF(
+            remainings.toArray(new EvalNode[remainings.size()])));
+        newSelection.setChild(newJoinNode);
+        return newSelection;
+      }
+    }
+    return newJoinNode;
   }
 
   private static class JoinTargetCollector extends BasicLogicalPlanVisitor<Set<Target>, LogicalNode> {

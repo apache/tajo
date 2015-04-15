@@ -81,8 +81,10 @@ public class JoinOrderingUtil {
 
   public static boolean isAssociativeJoin(JoinGraphContext context, JoinEdge leftEdge, JoinEdge rightEdge) {
     if (isAssociativeJoinType(leftEdge.getJoinType(), rightEdge.getJoinType())) {
-      // TODO: consider when a join qual involves columns from two or more tables
-      // create a temporal left-deep join node
+      // There will be more quals which can be evaluated at input edges.
+      // In this case, the input edges are not associative to evaluate quals at proper join edges.
+
+      // Create a temporal left-deep join node to find the potentially evaluatable quals.
       JoinedRelationsVertex tempLeftChild = new JoinedRelationsVertex(leftEdge);
       JoinEdge tempEdge = context.getCachedOrNewJoinEdge(rightEdge.getJoinSpec(), tempLeftChild,
           rightEdge.getRightVertex());
@@ -101,7 +103,9 @@ public class JoinOrderingUtil {
   }
 
   /**
-   * Associativity rules
+   * Check two join types are associative according to the following rule.
+   *
+   * <h3>Associativity rules</h3>
    *
    * ==============================================================
    * Left-Hand Bracketed  | Right-Hand Bracketed  | Equivalence
@@ -123,6 +127,10 @@ public class JoinOrderingUtil {
    * (A right B) full C   | A right (B full C)    | Equivalent
    * (A full B) full C    | A full (B full C)     | Equivalent
    * ==============================================================
+   *
+   * @param leftType
+   * @param rightType
+   * @return true if two join types are associative.
    */
   public static boolean isAssociativeJoinType(JoinType leftType, JoinType rightType) {
     if (leftType == rightType) {
@@ -164,8 +172,16 @@ public class JoinOrderingUtil {
     return false;
   }
 
-  public static RelationNode findMostLeftRelation(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                  LogicalNode from) throws PlanningException {
+  /**
+   * Find the most left relation node in the join tree.
+   * @param plan
+   * @param block
+   * @param from
+   * @return
+   * @throws PlanningException
+   */
+  public static RelationNode findMostLeftRelation(LogicalPlan plan, LogicalPlan.QueryBlock block, LogicalNode from)
+      throws PlanningException {
     RelationNodeFinderContext context = new RelationNodeFinderContext();
     context.findMostLeft = true;
     RelationNodeFinder finder = new RelationNodeFinder();
@@ -173,8 +189,16 @@ public class JoinOrderingUtil {
     return context.founds.isEmpty() ? null : context.founds.iterator().next();
   }
 
-  public static RelationNode findMostRightRelation(LogicalPlan plan, LogicalPlan.QueryBlock block,
-                                                   LogicalNode from) throws PlanningException {
+  /**
+   * Find the most right relation node in the join tree.
+   * @param plan
+   * @param block
+   * @param from
+   * @return
+   * @throws PlanningException
+   */
+  public static RelationNode findMostRightRelation(LogicalPlan plan, LogicalPlan.QueryBlock block, LogicalNode from)
+      throws PlanningException {
     RelationNodeFinderContext context = new RelationNodeFinderContext();
     context.findMostRight = true;
     RelationNodeFinder finder = new RelationNodeFinder();
@@ -220,26 +244,36 @@ public class JoinOrderingUtil {
     }
   }
 
+  /**
+   * Find all interchangeable vertexes from the given vertex.
+   * A vertex is interchangeable with the given vertex if they are reachable.
+   *
+   * @param context
+   * @param from
+   * @return
+   */
   public static Set<JoinVertex> getAllInterchangeableVertexes(JoinGraphContext context, JoinVertex from) {
     Set<JoinVertex> founds = TUtil.newHashSet();
     getAllInterchangeableVertexes(founds, context, from);
     return founds;
   }
 
-  public static void getAllInterchangeableVertexes(Set<JoinVertex> founds, JoinGraphContext context,
-                                                    JoinVertex vertex) {
+  public static void getAllInterchangeableVertexes(Set<JoinVertex> founds, JoinGraphContext context, JoinVertex vertex) {
     founds.add(vertex);
     Set<JoinVertex> foundAtThis = TUtil.newHashSet();
     List<JoinEdge> candidateEdges = context.getJoinGraph().getOutgoingEdges(vertex);
     if (candidateEdges != null) {
       for (JoinEdge candidateEdge : candidateEdges) {
+        // Evaluatable quals must be added to check the associativity of join edges.
         candidateEdge = updateQualIfNecessary(context, candidateEdge);
-        if (PlannerUtil.isCommutativeJoin(candidateEdge.getJoinType())
-            && !founds.contains(candidateEdge.getRightVertex())) {
+//        if (PlannerUtil.isCommutativeJoin(candidateEdge.getJoinType())
+//            && !founds.contains(candidateEdge.getRightVertex())) {
+        if (founds.contains(candidateEdge.getRightVertex())) {
           List<JoinEdge> rightEdgesOfCandidate = context.getJoinGraph().getOutgoingEdges(candidateEdge.getRightVertex());
           boolean reacheable = true;
           if (rightEdgesOfCandidate != null) {
             for (JoinEdge rightEdgeOfCandidate : rightEdgesOfCandidate) {
+              // Evaluatable quals must be added to check the associativity of join edges.
               rightEdgeOfCandidate = updateQualIfNecessary(context, rightEdgeOfCandidate);
               if (!isCommutative(candidateEdge, rightEdgeOfCandidate) &&
                   !JoinOrderingUtil.isAssociativeJoin(context, candidateEdge, rightEdgeOfCandidate)) {

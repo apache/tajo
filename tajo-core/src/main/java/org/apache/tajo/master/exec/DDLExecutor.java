@@ -18,7 +18,6 @@
 
 package org.apache.tajo.master.exec;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -59,12 +58,6 @@ public class DDLExecutor {
   public DDLExecutor(TajoMaster.MasterContext context) {
     this.context = context;
     this.catalog = context.getCatalog();
-  }
-
-  @VisibleForTesting
-  public DDLExecutor(CatalogService catalog) {
-    this.catalog = catalog;
-    this.context = null;
   }
 
   public boolean execute(QueryContext queryContext, LogicalPlan plan) throws IOException {
@@ -217,7 +210,7 @@ public class DDLExecutor {
 
   public TableDesc createTable(QueryContext queryContext, String tableName, CatalogProtos.StoreType storeType,
                                Schema schema, TableMeta meta, Path path, boolean isExternal,
-                               @Nullable PartitionMethodDesc partitionDesc, boolean ifNotExists) throws IOException {
+                               PartitionMethodDesc partitionDesc, boolean ifNotExists) throws IOException {
     String databaseName;
     String simpleTableName;
     if (CatalogUtil.isFQTableName(tableName)) {

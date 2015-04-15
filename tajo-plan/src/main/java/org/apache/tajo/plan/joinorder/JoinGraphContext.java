@@ -28,10 +28,12 @@ import java.util.Map;
 import java.util.Set;
 
 public class JoinGraphContext {
-  private JoinVertex mostLeftVertex;
+  private JoinVertex mostLeftVertex; // most left vertex in the join plan
   private JoinGraph joinGraph = new JoinGraph();
+  // New join edges are frequently created during join order optimization.
+  // This cache is to reduce the overhead of join edge creation.
   private Map<Pair<JoinVertex,JoinVertex>, JoinEdge> edgeCache = TUtil.newHashMap();
-  private Pair<JoinVertex,JoinVertex> cacheKey = new Pair<JoinVertex, JoinVertex>();
+  private Pair<JoinVertex,JoinVertex> cacheKey = new Pair<JoinVertex, JoinVertex>(); // Join
   private Set<EvalNode> candidateJoinConditions = TUtil.newHashSet(); // predicates from the on clause
   private Set<EvalNode> candidateJoinFilters = TUtil.newHashSet();    // predicates from the where clause
 
