@@ -24,7 +24,7 @@ import io.netty.channel.*;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.tajo.rpc.RpcConnectionManager.RpcConnectionKey;
+import org.apache.tajo.rpc.RpcClientManager.RpcConnectionKey;
 
 import java.io.Closeable;
 import java.lang.reflect.Method;
@@ -67,7 +67,7 @@ public abstract class NettyClientBase implements Closeable {
       .option(ChannelOption.TCP_NODELAY, true);
   }
 
-  public RpcConnectionManager.RpcConnectionKey getKey() {
+  public RpcClientManager.RpcConnectionKey getKey() {
     return key;
   }
 

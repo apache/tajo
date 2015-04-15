@@ -33,7 +33,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class TestRpcConnectionManager {
+public class TestRpcClientManager {
 
   @Test
   public void testRaceCondition() throws Exception {
@@ -44,7 +44,7 @@ public class TestRpcConnectionManager {
     server.start();
 
     final InetSocketAddress address = server.getListenAddress();
-    final RpcConnectionManager manager = RpcConnectionManager.getInstance();
+    final RpcClientManager manager = RpcClientManager.getInstance();
 
     ExecutorService executor = Executors.newFixedThreadPool(parallelCount);
     List<Future> tasks = new ArrayList<Future>();
@@ -71,6 +71,7 @@ public class TestRpcConnectionManager {
     NettyClientBase clientBase = manager.getConnection(address, DummyProtocol.class, true);
     manager.cleanup(clientBase);
     server.shutdown();
+    executor.shutdown();
   }
 
   @Test
@@ -82,13 +83,13 @@ public class TestRpcConnectionManager {
     server.start();
 
     final InetSocketAddress address = server.getListenAddress();
-    final RpcConnectionManager manager = RpcConnectionManager.getInstance();
+    final RpcClientManager manager = RpcClientManager.getInstance();
 
     NettyClientBase clientBase = manager.getConnection(address, DummyProtocol.class, true);
     assertTrue(clientBase.isConnected());
     assertTrue(clientBase.getChannel().isWritable());
 
-    RpcConnectionManager.RpcConnectionKey key = clientBase.getKey();
+    RpcClientManager.RpcConnectionKey key = clientBase.getKey();
     assertTrue(manager.contains(key));
 
     clientBase.close();

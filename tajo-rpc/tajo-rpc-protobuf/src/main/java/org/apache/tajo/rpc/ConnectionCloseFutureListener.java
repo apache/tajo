@@ -22,14 +22,14 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 
 public class ConnectionCloseFutureListener implements GenericFutureListener {
-  private RpcConnectionManager.RpcConnectionKey key;
+  private RpcClientManager.RpcConnectionKey key;
 
-  public ConnectionCloseFutureListener(RpcConnectionManager.RpcConnectionKey key) {
+  public ConnectionCloseFutureListener(RpcClientManager.RpcConnectionKey key) {
     this.key = key;
   }
 
   @Override
   public void operationComplete(Future future) throws Exception {
-    RpcConnectionManager.remove(key);
+    RpcClientManager.remove(key);
   }
 }

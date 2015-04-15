@@ -41,7 +41,7 @@ import org.apache.tajo.master.event.QueryStopEvent;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.rpc.RpcConnectionManager;
+import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.util.NetUtils;
@@ -88,7 +88,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
   private TajoWorker.WorkerContext workerContext;
 
-  private RpcConnectionManager manager;
+  private RpcClientManager manager;
 
   private ExecutorService eventExecutor;
 
@@ -104,7 +104,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
     }
     try {
       this.systemConf = (TajoConf)conf;
-      this.manager = RpcConnectionManager.getInstance();
+      this.manager = RpcClientManager.getInstance();
 
       querySessionTimeout = systemConf.getIntVar(TajoConf.ConfVars.QUERY_SESSION_TIMEOUT);
       queryMasterContext = new QueryMasterContext(systemConf);

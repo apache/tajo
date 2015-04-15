@@ -116,8 +116,8 @@ public class TestBlockingRpc {
   public void setUpRpcClient() throws Exception {
     retries = 1;
 
-    RpcConnectionManager.RpcConnectionKey rpcConnectionKey =
-          new RpcConnectionManager.RpcConnectionKey(
+    RpcClientManager.RpcConnectionKey rpcConnectionKey =
+          new RpcClientManager.RpcConnectionKey(
               RpcUtils.getConnectAddress(server.getListenAddress()),
               DummyProtocol.class, false);
     client = new BlockingRpcClient(rpcConnectionKey, retries);
@@ -164,7 +164,7 @@ public class TestBlockingRpc {
   @Test
   @SetupRpcConnection(setupRpcClient=false)
   public void testRpcWithServiceCallable() throws Exception {
-    RpcConnectionManager manager = RpcConnectionManager.getInstance();
+    RpcClientManager manager = RpcClientManager.getInstance();
     final SumRequest request = SumRequest.newBuilder()
         .setX1(1)
         .setX2(2)
@@ -239,13 +239,12 @@ public class TestBlockingRpc {
           fail(e.getMessage());
         }
         server.start();
-        System.out.println(server.bindAddress);
       }
     });
     serverThread.start();
 
-    RpcConnectionManager.RpcConnectionKey rpcConnectionKey =
-          new RpcConnectionManager.RpcConnectionKey(address, DummyProtocol.class, false);
+    RpcClientManager.RpcConnectionKey rpcConnectionKey =
+          new RpcClientManager.RpcConnectionKey(address, DummyProtocol.class, false);
     client = new BlockingRpcClient(rpcConnectionKey, retries);
     client.connect();
     assertTrue(client.isConnected());
@@ -261,8 +260,8 @@ public class TestBlockingRpc {
     boolean expected = false;
     try {
       int port = server.getListenAddress().getPort() + 1;
-      RpcConnectionManager.RpcConnectionKey rpcConnectionKey =
-          new RpcConnectionManager.RpcConnectionKey(
+      RpcClientManager.RpcConnectionKey rpcConnectionKey =
+          new RpcClientManager.RpcConnectionKey(
               RpcUtils.getConnectAddress(new InetSocketAddress("127.0.0.1", port)),
               DummyProtocol.class, false);
       client = new BlockingRpcClient(rpcConnectionKey, retries);
@@ -338,8 +337,8 @@ public class TestBlockingRpc {
   @SetupRpcConnection(setupRpcClient=false)
   public void testUnresolvedAddress() throws Exception {
     String hostAndPort = RpcUtils.normalizeInetSocketAddress(server.getListenAddress());
-    RpcConnectionManager.RpcConnectionKey rpcConnectionKey =
-          new RpcConnectionManager.RpcConnectionKey(
+    RpcClientManager.RpcConnectionKey rpcConnectionKey =
+          new RpcClientManager.RpcConnectionKey(
               RpcUtils.createUnresolved(hostAndPort), DummyProtocol.class, false);
     client = new BlockingRpcClient(rpcConnectionKey, retries);
     client.connect();

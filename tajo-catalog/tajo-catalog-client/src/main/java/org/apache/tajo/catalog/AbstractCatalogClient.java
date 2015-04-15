@@ -30,7 +30,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos.*;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.rpc.NettyClientBase;
-import org.apache.tajo.rpc.RpcConnectionManager;
+import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.ServerCallable;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.NullProto;
@@ -50,14 +50,14 @@ public abstract class AbstractCatalogClient implements CatalogService {
   private final Log LOG = LogFactory.getLog(AbstractCatalogClient.class);
 
   protected ServiceTracker serviceTracker;
-  protected RpcConnectionManager manager;
+  protected RpcClientManager manager;
   protected InetSocketAddress catalogServerAddr;
   protected TajoConf conf;
 
   abstract CatalogProtocolService.BlockingInterface getStub(NettyClientBase client);
 
   public AbstractCatalogClient(TajoConf conf, InetSocketAddress catalogServerAddr) {
-    this.manager = RpcConnectionManager.getInstance();
+    this.manager = RpcClientManager.getInstance();
     this.catalogServerAddr = catalogServerAddr;
     this.serviceTracker = ServiceTrackerFactory.get(conf);
     this.conf = conf;

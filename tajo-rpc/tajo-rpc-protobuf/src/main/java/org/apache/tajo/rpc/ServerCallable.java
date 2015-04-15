@@ -33,15 +33,15 @@ public abstract class ServerCallable<T> {
   protected Class<?> protocol;
   protected boolean asyncMode;
   protected boolean closeConn;
-  protected RpcConnectionManager connPool;
+  protected RpcClientManager connPool;
 
   public abstract T call(NettyClientBase client) throws Exception;
 
-  public ServerCallable(RpcConnectionManager connPool,  InetSocketAddress addr, Class<?> protocol, boolean asyncMode) {
+  public ServerCallable(RpcClientManager connPool,  InetSocketAddress addr, Class<?> protocol, boolean asyncMode) {
     this(connPool, addr, protocol, asyncMode, false);
   }
 
-  public ServerCallable(RpcConnectionManager connPool, InetSocketAddress addr, Class<?> protocol,
+  public ServerCallable(RpcClientManager connPool, InetSocketAddress addr, Class<?> protocol,
                         boolean asyncMode, boolean closeConn) {
     this.connPool = connPool;
     this.addr = addr;

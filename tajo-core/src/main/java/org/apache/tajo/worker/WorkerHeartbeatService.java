@@ -31,7 +31,7 @@ import org.apache.tajo.ipc.QueryCoordinatorProtocol.TajoHeartbeatResponse;
 import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
-import org.apache.tajo.rpc.RpcConnectionManager;
+import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.storage.DiskDeviceInfo;
 import org.apache.tajo.storage.DiskMountInfo;
@@ -54,7 +54,7 @@ public class WorkerHeartbeatService extends AbstractService {
 
   private final TajoWorker.WorkerContext context;
   private TajoConf systemConf;
-  private RpcConnectionManager connectionManager;
+  private RpcClientManager connectionManager;
   private WorkerHeartbeatThread thread;
   private static final float HDFS_DATANODE_STORAGE_SIZE;
 
@@ -74,7 +74,7 @@ public class WorkerHeartbeatService extends AbstractService {
     }
     this.systemConf = (TajoConf) conf;
 
-    this.connectionManager = RpcConnectionManager.getInstance();
+    this.connectionManager = RpcClientManager.getInstance();
     super.serviceInit(conf);
   }
 

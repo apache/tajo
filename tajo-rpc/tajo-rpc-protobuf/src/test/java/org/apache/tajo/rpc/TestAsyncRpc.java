@@ -124,8 +124,8 @@ public class TestAsyncRpc {
   public void setUpRpcClient() throws Exception {
     retries = 1;
 
-    RpcConnectionManager.RpcConnectionKey rpcConnectionKey =
-          new RpcConnectionManager.RpcConnectionKey(
+    RpcClientManager.RpcConnectionKey rpcConnectionKey =
+          new RpcClientManager.RpcConnectionKey(
               RpcUtils.getConnectAddress(server.getListenAddress()),
               DummyProtocol.class, true);
     client = new AsyncRpcClient(rpcConnectionKey, retries);
@@ -299,8 +299,8 @@ public class TestAsyncRpc {
     });
     serverThread.start();
 
-    RpcConnectionManager.RpcConnectionKey rpcConnectionKey =
-          new RpcConnectionManager.RpcConnectionKey(address, DummyProtocol.class, true);
+    RpcClientManager.RpcConnectionKey rpcConnectionKey =
+          new RpcClientManager.RpcConnectionKey(address, DummyProtocol.class, true);
     client = new AsyncRpcClient(rpcConnectionKey, retries);
     client.connect();
     assertTrue(client.isConnected());
@@ -317,8 +317,8 @@ public class TestAsyncRpc {
     InetSocketAddress address = new InetSocketAddress("test", 0);
     boolean expected = false;
     try {
-      RpcConnectionManager.RpcConnectionKey rpcConnectionKey =
-          new RpcConnectionManager.RpcConnectionKey(address, DummyProtocol.class, true);
+      RpcClientManager.RpcConnectionKey rpcConnectionKey =
+          new RpcClientManager.RpcConnectionKey(address, DummyProtocol.class, true);
       NettyClientBase client = new AsyncRpcClient(rpcConnectionKey, retries);
       client.connect();
       fail();
@@ -335,8 +335,8 @@ public class TestAsyncRpc {
   @SetupRpcConnection(setupRpcClient=false)
   public void testUnresolvedAddress() throws Exception {
     String hostAndPort = RpcUtils.normalizeInetSocketAddress(server.getListenAddress());
-    RpcConnectionManager.RpcConnectionKey rpcConnectionKey =
-          new RpcConnectionManager.RpcConnectionKey(
+    RpcClientManager.RpcConnectionKey rpcConnectionKey =
+          new RpcClientManager.RpcConnectionKey(
               RpcUtils.createUnresolved(hostAndPort), DummyProtocol.class, true);
     client = new AsyncRpcClient(rpcConnectionKey, retries);
     client.connect();

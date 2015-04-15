@@ -30,26 +30,26 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 @ThreadSafe
-public class RpcConnectionManager {
-  private static final Log LOG = LogFactory.getLog(RpcConnectionManager.class);
+public class RpcClientManager {
+  private static final Log LOG = LogFactory.getLog(RpcClientManager.class);
 
   public static final int RPC_RETRIES = 3;
 
   /* entries will be removed by ConnectionCloseFutureListener */
   private static final ConcurrentMap<RpcConnectionKey, NettyClientBase>
-      connections = new ConcurrentHashMap<RpcConnectionKey, NettyClientBase>();
+      clients = new ConcurrentHashMap<RpcConnectionKey, NettyClientBase>();
 
-  private static RpcConnectionManager instance;
+  private static RpcClientManager instance;
 
   static {
     InternalLoggerFactory.setDefaultFactory(new CommonsLoggerFactory());
-    instance = new RpcConnectionManager();
+    instance = new RpcClientManager();
   }
 
-  private RpcConnectionManager() {
+  private RpcClientManager() {
   }
 
-  public static RpcConnectionManager getInstance() {
+  public static RpcClientManager getInstance() {
     return instance;
   }
 
@@ -64,14 +64,24 @@ public class RpcConnectionManager {
     return client;
   }
 
+  /**
+   * Connect a {@link NettyClientBase} to the remote {@link NettyServerBase}, and returns rpc client by protocol.
+   * @param addr
+   * @param protocolClass
+   * @param asyncMode
+   * @return
+   * @throws NoSuchMethodException
+   * @throws ClassNotFoundException
+   * @throws ConnectTimeoutException
+   */
   public NettyClientBase getConnection(InetSocketAddress addr,
                                        Class<?> protocolClass, boolean asyncMode)
       throws NoSuchMethodException, ClassNotFoundException, ConnectTimeoutException {
     RpcConnectionKey key = new RpcConnectionKey(addr, protocolClass, asyncMode);
 
     NettyClientBase client;
-    if ((client = connections.get(key)) == null) {
-      connections.putIfAbsent(key, client = makeConnection(key));
+    if ((client = clients.get(key)) == null) {
+      clients.put(key, client = makeConnection(key));
     }
 
     if (!client.isConnected()) {
@@ -81,31 +91,38 @@ public class RpcConnectionManager {
     return client;
   }
 
+  /**
+   * Request to close this clients
+   * After it is closed, it is removed from clients map.
+   */
   public static void close() {
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("Pool Closed");
-    }
+    LOG.debug("Closing RPC client manager");
 
-    for (NettyClientBase eachClient : connections.values()) {
+    for (NettyClientBase eachClient : clients.values()) {
       try {
         eachClient.close();
       } catch (Exception e) {
-        LOG.error("close client pool error", e);
+        LOG.error(e.getMessage(), e);
       }
     }
   }
 
+  /**
+   * Close client manager and shutdown Netty RPC worker pool
+   * After it is shutdown it is not possible to reuse it again.
+   */
   public static void shutdown() {
     close();
     RpcChannelFactory.shutdownGracefully();
   }
 
   protected static NettyClientBase remove(RpcConnectionKey key) {
-    return connections.remove(key);
+    LOG.debug("Removing shared rpc client :" + key);
+    return clients.remove(key);
   }
 
   protected static boolean contains(RpcConnectionKey key) {
-    return connections.containsKey(key);
+    return clients.containsKey(key);
   }
 
   public static void cleanup(NettyClientBase... clients) {
@@ -115,7 +132,7 @@ public class RpcConnectionManager {
           client.close();
         } catch (Exception e) {
           if (LOG.isDebugEnabled()) {
-            LOG.debug("Exception in closing " + client, e);
+            LOG.debug("Exception in closing " + client.getKey(), e);
           }
         }
       }

@@ -30,7 +30,7 @@ import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.ipc.ClientProtos.SessionUpdateResponse;
 import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.rpc.NettyClientBase;
-import org.apache.tajo.rpc.RpcConnectionManager;
+import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.ServerCallable;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.util.KeyValueSet;
@@ -55,7 +55,7 @@ public class SessionConnection implements Closeable {
 
   private final Log LOG = LogFactory.getLog(TajoClientImpl.class);
 
-  final RpcConnectionManager manager;
+  final RpcClientManager manager;
 
   private String baseDatabase;
 
@@ -86,7 +86,7 @@ public class SessionConnection implements Closeable {
 
     this.properties = properties;
 
-    this.manager = RpcConnectionManager.getInstance();
+    this.manager = RpcClientManager.getInstance();
     this.userInfo = UserRoleInfo.getCurrentUser();
     this.baseDatabase = baseDatabase != null ? baseDatabase : null;
 

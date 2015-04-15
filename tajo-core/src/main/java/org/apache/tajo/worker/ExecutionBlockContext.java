@@ -36,7 +36,7 @@ import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.rpc.RpcConnectionManager;
+import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.NetUtils;
@@ -79,7 +79,7 @@ public class ExecutionBlockContext {
   private ExecutionBlockSharedResource resource;
 
   private TajoQueryEngine queryEngine;
-  private RpcConnectionManager connManager;
+  private RpcClientManager connManager;
   private InetSocketAddress qmMasterAddr;
   private WorkerConnectionInfo queryMaster;
   private TajoConf systemConf;
@@ -100,7 +100,7 @@ public class ExecutionBlockContext {
                                ExecutionBlockId executionBlockId, WorkerConnectionInfo queryMaster) throws Throwable {
     this.manager = manager;
     this.executionBlockId = executionBlockId;
-    this.connManager = RpcConnectionManager.getInstance();
+    this.connManager = RpcClientManager.getInstance();
     this.queryMaster = queryMaster;
     this.systemConf = conf;
     this.reporter = new Reporter();
