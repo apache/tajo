@@ -292,7 +292,7 @@ public class SessionConnection implements Closeable {
     } catch (Throwable e) {
       // ignore
     } finally {
-      manager.cleanup(client);
+      RpcClientManager.cleanup(client);
     }
   }
 

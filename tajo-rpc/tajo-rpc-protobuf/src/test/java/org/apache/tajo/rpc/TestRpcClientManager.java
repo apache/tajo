@@ -69,7 +69,7 @@ public class TestRpcClientManager {
     }
 
     NettyClientBase clientBase = manager.getConnection(address, DummyProtocol.class, true);
-    manager.cleanup(clientBase);
+    RpcClientManager.cleanup(clientBase);
     server.shutdown();
     executor.shutdown();
   }
@@ -90,10 +90,10 @@ public class TestRpcClientManager {
     assertTrue(clientBase.getChannel().isWritable());
 
     RpcClientManager.RpcConnectionKey key = clientBase.getKey();
-    assertTrue(manager.contains(key));
+    assertTrue(RpcClientManager.contains(key));
 
     clientBase.close();
-    assertFalse(manager.contains(key));
+    assertFalse(RpcClientManager.contains(key));
     server.shutdown();
   }
 }

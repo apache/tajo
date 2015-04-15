@@ -196,7 +196,7 @@ public class TestBlockingRpc {
         }.withoutRetries();
 
     assertTrue(8.15d == response.getResult());
-    manager.close();
+    RpcClientManager.close();
   }
 
   @Test

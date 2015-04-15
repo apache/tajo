@@ -33,7 +33,7 @@ public abstract class ServerCallable<T> {
   protected Class<?> protocol;
   protected boolean asyncMode;
   protected boolean closeConn;
-  protected RpcClientManager connPool;
+  protected RpcClientManager manager;
 
   public abstract T call(NettyClientBase client) throws Exception;
 
@@ -41,9 +41,9 @@ public abstract class ServerCallable<T> {
     this(connPool, addr, protocol, asyncMode, false);
   }
 
-  public ServerCallable(RpcClientManager connPool, InetSocketAddress addr, Class<?> protocol,
+  public ServerCallable(RpcClientManager manager, InetSocketAddress addr, Class<?> protocol,
                         boolean asyncMode, boolean closeConn) {
-    this.connPool = connPool;
+    this.manager = manager;
     this.addr = addr;
     this.protocol = protocol;
     this.asyncMode = asyncMode;
@@ -89,7 +89,7 @@ public abstract class ServerCallable<T> {
       try {
         beforeCall();
         if(addr != null) {
-          client = connPool.getConnection(addr, protocol, asyncMode);
+          client = manager.getConnection(addr, protocol, asyncMode);
         }
         return call(client);
       } catch (IOException ioe) {
@@ -105,7 +105,7 @@ public abstract class ServerCallable<T> {
       } finally {
         afterCall();
         if(closeConn) {
-          connPool.cleanup(client);
+          RpcClientManager.cleanup(client);
         }
       }
       try {
@@ -129,7 +129,7 @@ public abstract class ServerCallable<T> {
     NettyClientBase client = null;
     try {
       beforeCall();
-      client = connPool.getConnection(addr, protocol, asyncMode);
+      client = manager.getConnection(addr, protocol, asyncMode);
       return call(client);
     } catch (Throwable t) {
       Throwable t2 = translateException(t);
@@ -141,7 +141,7 @@ public abstract class ServerCallable<T> {
     } finally {
       afterCall();
       if(closeConn) {
-        connPool.cleanup(client);
+        RpcClientManager.cleanup(client);
       }
     }
   }
