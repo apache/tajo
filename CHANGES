@@ -16,6 +16,9 @@ Release 0.11.0 - unreleased
     (Contributed by Dongjoon Hyun, Committed by jihoon)
 
   IMPROVEMENT
+
+    TAJO-1530: Display warn message when the query kill button is clicked in 
+    WEB UI. (Contributed by Dongjoon Hyun, Committed by hyoungjun)
   
     TAJO-1509: Use dedicated thread to release resource allocated to container.
     (Contributed by navis, Committed by hyoungjun)
