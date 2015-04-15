@@ -32,6 +32,8 @@ import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
 import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.master.event.*;
+import org.apache.tajo.rpc.InvocationFailure;
+import org.apache.tajo.rpc.RemoteCallException;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
@@ -168,7 +170,7 @@ public class QueryMasterManagerService extends CompositeService
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
-      done.run(TajoWorker.FALSE_PROTO);
+      throw new InvocationFailure(e);
     }
   }
 
@@ -193,7 +195,7 @@ public class QueryMasterManagerService extends CompositeService
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
-      done.run(TajoWorker.FALSE_PROTO);
+      throw new InvocationFailure(e);
     }
   }
 
@@ -209,7 +211,7 @@ public class QueryMasterManagerService extends CompositeService
       done.run(TajoWorker.TRUE_PROTO);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
-      done.run(TajoWorker.FALSE_PROTO);
+      throw new InvocationFailure(e);
     }
   }
 
@@ -256,7 +258,7 @@ public class QueryMasterManagerService extends CompositeService
     } catch (Exception e) {
       workerContext.getWorkerSystemMetrics().counter("querymaster", "errorQuery").inc();
       LOG.error(e.getMessage(), e);
-      done.run(TajoWorker.FALSE_PROTO);
+      throw new InvocationFailure(e);
     }
   }
 }

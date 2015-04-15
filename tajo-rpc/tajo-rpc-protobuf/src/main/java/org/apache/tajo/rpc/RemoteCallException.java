@@ -29,21 +29,29 @@ public class RemoteCallException extends RemoteException {
   private int seqId;
   private String originExceptionClass;
 
+  private transient boolean closeConnection;
+
   public RemoteCallException(int seqId, MethodDescriptor methodDesc,
-                             Throwable t) {
+                             Throwable t, boolean closeConnection) {
     super("Remote call error occurs when " + methodDesc.getFullName() + "is called:", t);
     this.seqId = seqId;
     if (t != null) {
       originExceptionClass = t.getClass().getCanonicalName();
     }
+    this.closeConnection = closeConnection;
   }
 
-  public RemoteCallException(int seqId, Throwable t) {
+  public RemoteCallException(int seqId, Throwable t, boolean closeConnection) {
     super(t);
     this.seqId = seqId;
     if (t != null) {
       originExceptionClass = t.getClass().getCanonicalName();
     }
+    this.closeConnection = closeConnection;
+  }
+
+  public boolean shouldCloseConnection() {
+    return closeConnection;
   }
 
   public RpcResponse getResponse() {
