@@ -23,7 +23,6 @@ import com.google.protobuf.*;
 import io.netty.channel.*;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
-import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.GenericFutureListener;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -182,7 +181,7 @@ public class AsyncRpcClient extends NettyClientBase {
   }
 
   @ChannelHandler.Sharable
-  private class ClientChannelInboundHandler extends ChannelInboundHandlerAdapter {
+  private class ClientChannelInboundHandler extends SimpleChannelInboundHandler<RpcResponse> {
 
     void registerCallback(int seqId, ResponseCallback callback) {
 
@@ -193,21 +192,13 @@ public class AsyncRpcClient extends NettyClientBase {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg)
-        throws Exception {
-      if (msg instanceof RpcResponse) {
-        try {
-          RpcResponse response = (RpcResponse) msg;
-          ResponseCallback callback = requests.remove(response.getId());
+    protected void channelRead0(ChannelHandlerContext ctx, RpcResponse response) throws Exception {
+      ResponseCallback callback = requests.remove(response.getId());
 
-          if (callback == null) {
-            LOG.warn("Dangling rpc call");
-          } else {
-            callback.run(response);
-          }
-        } finally {
-          ReferenceCountUtil.release(msg);
-        }
+      if (callback == null) {
+        LOG.warn("Dangling rpc call");
+      } else {
+        callback.run(response);
       }
     }
 
