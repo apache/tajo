@@ -71,14 +71,18 @@ public class Aggregation extends UnaryOperator {
   public Object clone() throws CloneNotSupportedException {
     Aggregation aggregation = (Aggregation) super.clone();
 
-    aggregation.namedExprs = new NamedExpr[namedExprs.length];
-    for (int i = 0; i < namedExprs.length; i++) {
-      aggregation.namedExprs[i] = (NamedExpr) namedExprs[i].clone();
+    if (namedExprs != null) {
+      aggregation.namedExprs = new NamedExpr[namedExprs.length];
+      for (int i = 0; i < namedExprs.length; i++) {
+        aggregation.namedExprs[i] = (NamedExpr) namedExprs[i].clone();
+      }
     }
 
-    aggregation.groups = new GroupElement[groups.length];
-    for (int i = 0; i < groups.length; i++) {
-      aggregation.groups[i] = (GroupElement) groups[i].clone();
+    if (groups != null) {
+      aggregation.groups = new GroupElement[groups.length];
+      for (int i = 0; i < groups.length; i++) {
+        aggregation.groups[i] = (GroupElement) groups[i].clone();
+      }
     }
     return aggregation;
   }

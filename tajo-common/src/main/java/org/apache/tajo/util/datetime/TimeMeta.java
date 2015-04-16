@@ -136,6 +136,15 @@ public class TimeMeta implements Comparable<TimeMeta> {
     DateTimeUtil.toJulianTimeMeta(timestamp, this);
   }
 
+  public void plusInterval(int months, long milliseconds) {
+    if (months != 0) {
+      plusMonths(months);
+    }
+    if (milliseconds != 0) {
+      plusMillis(milliseconds);
+    }
+  }
+
   public int getCenturyOfEra() {
     return DateTimeUtil.getCenturyOfEra(years);
   }
