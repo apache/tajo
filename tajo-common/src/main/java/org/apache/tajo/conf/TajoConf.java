@@ -296,7 +296,7 @@ public class TajoConf extends Configuration {
     /////////////////////////////////////////////////////////////////////////////////
     // User Session Configuration
     //
-    // All session variables begin with dollor($) sign. They are default configs
+    // All session variables begin with dollar($) sign. They are default configs
     // for session variables. Do not directly use the following configs. Instead,
     // please use QueryContext in order to access session variables.
     //
@@ -320,6 +320,9 @@ public class TajoConf extends Configuration {
     $DIST_QUERY_TABLE_PARTITION_VOLUME("tajo.dist-query.table-partition.task-volume-mb", 256, Validators.min("1")),
 
     $GROUPBY_MULTI_LEVEL_ENABLED("tajo.dist-query.groupby.multi-level-aggr", true),
+
+    // WARN "tajo.yarn-rm.parallel-task-runner-launcher-num" should be set enough to avoid deadlock
+    $QUERY_EXECUTE_PARALLEL_MAX("tajo.query.execute.parallel.max", 1),
 
     // for physical Executors
     $EXECUTOR_EXTERNAL_SORT_BUFFER_SIZE("tajo.executor.external-sort.buffer-mb", 200L),

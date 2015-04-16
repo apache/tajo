@@ -318,8 +318,7 @@ public class TestBroadcastJoinPlan {
     globalPlanner.build(masterPlan);
 
     ExecutionBlockCursor ebCursor = new ExecutionBlockCursor(masterPlan);
-    while (ebCursor.hasNext()) {
-      ExecutionBlock eb = ebCursor.nextBlock();
+    for (ExecutionBlock eb : ebCursor) {
       Collection<String> broadcastTables = eb.getBroadcastTables();
       assertTrue(broadcastTables == null || broadcastTables.isEmpty());
     }
@@ -355,8 +354,7 @@ public class TestBroadcastJoinPlan {
 
     ExecutionBlockCursor ebCursor = new ExecutionBlockCursor(masterPlan);
     int index = 0;
-    while (ebCursor.hasNext()) {
-      ExecutionBlock eb = ebCursor.nextBlock();
+    for (ExecutionBlock eb : ebCursor) {
       if(index == 0) {
         Collection<String> broadcastTables = eb.getBroadcastTables();
         assertEquals(1, broadcastTables.size());
@@ -407,8 +405,7 @@ public class TestBroadcastJoinPlan {
 
     ExecutionBlockCursor ebCursor = new ExecutionBlockCursor(masterPlan);
     int index = 0;
-    while (ebCursor.hasNext()) {
-      ExecutionBlock eb = ebCursor.nextBlock();
+    for (ExecutionBlock eb : ebCursor) {
       Collection<String> broadcastTables = eb.getBroadcastTables();
       assertTrue(broadcastTables == null || broadcastTables.isEmpty());
       index++;
@@ -446,8 +443,7 @@ public class TestBroadcastJoinPlan {
 
     ExecutionBlockCursor ebCursor = new ExecutionBlockCursor(masterPlan);
     int index = 0;
-    while (ebCursor.hasNext()) {
-      ExecutionBlock eb = ebCursor.nextBlock();
+    for (ExecutionBlock eb : ebCursor) {
       if(index == 0) {
         //LEAF, JOIN
         Collection<String> broadcastTables = eb.getBroadcastTables();
@@ -505,8 +501,7 @@ public class TestBroadcastJoinPlan {
 
     ExecutionBlockCursor ebCursor = new ExecutionBlockCursor(masterPlan);
     int index = 0;
-    while (ebCursor.hasNext()) {
-      ExecutionBlock eb = ebCursor.nextBlock();
+    for (ExecutionBlock eb : ebCursor) {
       if(index == 0) {
         Collection<String> broadcastTables = eb.getBroadcastTables();
         assertEquals(2, broadcastTables.size());
@@ -557,8 +552,7 @@ public class TestBroadcastJoinPlan {
 
     ExecutionBlockCursor ebCursor = new ExecutionBlockCursor(masterPlan);
     int index = 0;
-    while (ebCursor.hasNext()) {
-      ExecutionBlock eb = ebCursor.nextBlock();
+    for (ExecutionBlock eb : ebCursor) {
       if(index == 0) {
         LogicalNode node = eb.getPlan();
         assertEquals(NodeType.SCAN, node.getType());
@@ -641,8 +635,7 @@ public class TestBroadcastJoinPlan {
     */
     ExecutionBlockCursor ebCursor = new ExecutionBlockCursor(masterPlan);
     int index = 0;
-    while (ebCursor.hasNext()) {
-      ExecutionBlock eb = ebCursor.nextBlock();
+    for (ExecutionBlock eb : ebCursor) {
       if(index == 0) {
         LogicalNode node = eb.getPlan();
         assertEquals(NodeType.SCAN, node.getType());
@@ -720,8 +713,7 @@ public class TestBroadcastJoinPlan {
 
     ExecutionBlockCursor ebCursor = new ExecutionBlockCursor(masterPlan);
     int index = 0;
-    while (ebCursor.hasNext()) {
-      ExecutionBlock eb = ebCursor.nextBlock();
+    for (ExecutionBlock eb : ebCursor) {
       if(index == 0) {
         GroupbyNode node = (GroupbyNode)eb.getPlan();
         JoinNode joinNode = node.getChild();
@@ -782,8 +774,7 @@ public class TestBroadcastJoinPlan {
 
     ExecutionBlockCursor ebCursor = new ExecutionBlockCursor(masterPlan);
     int index = 0;
-    while (ebCursor.hasNext()) {
-      ExecutionBlock eb = ebCursor.nextBlock();
+    for (ExecutionBlock eb : ebCursor) {
       if(index == 0) {
         Collection<String> broadcastTables = eb.getBroadcastTables();
         assertEquals(1, broadcastTables.size());
@@ -837,8 +828,7 @@ public class TestBroadcastJoinPlan {
     */
     ExecutionBlockCursor ebCursor = new ExecutionBlockCursor(masterPlan);
     int index = 0;
-    while (ebCursor.hasNext()) {
-      ExecutionBlock eb = ebCursor.nextBlock();
+    for (ExecutionBlock eb : ebCursor) {
       if(index == 0) {
         LogicalNode node = eb.getPlan();
         assertEquals(NodeType.JOIN, node.getType());
@@ -925,8 +915,7 @@ public class TestBroadcastJoinPlan {
 
     ExecutionBlockCursor ebCursor = new ExecutionBlockCursor(masterPlan);
     int index = 0;
-    while (ebCursor.hasNext()) {
-      ExecutionBlock eb = ebCursor.nextBlock();
+    for (ExecutionBlock eb : ebCursor) {
       if(index == 0) {
         LogicalNode node = eb.getPlan();
         assertEquals(NodeType.GROUP_BY, node.getType());
@@ -992,8 +981,7 @@ public class TestBroadcastJoinPlan {
 
     ExecutionBlockCursor ebCursor = new ExecutionBlockCursor(masterPlan);
     int index = 0;
-    while (ebCursor.hasNext()) {
-      ExecutionBlock eb = ebCursor.nextBlock();
+    for (ExecutionBlock eb : ebCursor) {
       if(index == 0) {
         LogicalNode node = eb.getPlan();
         assertEquals(NodeType.JOIN, node.getType());

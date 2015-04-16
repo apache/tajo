@@ -101,8 +101,7 @@ public class NonForwardQueryResultSystemScanner implements NonForwardQueryResult
     
     ExecutionBlockCursor cursor = new ExecutionBlockCursor(masterPlan);
     ExecutionBlock leafBlock = null;
-    while (cursor.hasNext()) {
-      ExecutionBlock block = cursor.nextBlock();
+    for (ExecutionBlock block : cursor) {
       if (masterPlan.isLeaf(block)) {
         leafBlock = block;
         break;
