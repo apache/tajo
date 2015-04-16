@@ -18,9 +18,7 @@
 
 package org.apache.tajo.engine.planner.global;
 
-import junit.framework.Assert;
 import junit.framework.TestCase;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.tajo.LocalTajoTestingUtility;
@@ -164,7 +162,6 @@ public class TestBroadcastJoinPlan {
     TableDesc tableDesc = CatalogUtil.newTableDesc(tableName, schema, tableMeta, dataPath);
     TableStats tableStats = new TableStats();
     FileSystem fs = dataPath.getFileSystem(conf);
-    FileStatus fileStatus = fs.getFileStatus(dataPath);
     tableStats.setNumBytes(fs.getFileStatus(dataPath).getLen());
 
     tableDesc.setStats(tableStats);
