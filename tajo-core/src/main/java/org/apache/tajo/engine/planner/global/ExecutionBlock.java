@@ -130,6 +130,10 @@ public class ExecutionBlock {
     enforcer.removeBroadcast(tableName);
   }
 
+  public boolean hasBroadcastTable() {
+    return broadcasted.size() > 0;
+  }
+
   public boolean isBroadcastTable(String tableName) {
     return broadcasted.contains(tableName);
   }
