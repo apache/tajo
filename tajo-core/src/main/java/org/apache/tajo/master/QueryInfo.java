@@ -27,6 +27,7 @@ import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.ClientProtos.QueryInfoProto;
 import org.apache.tajo.json.GsonObject;
+import org.apache.tajo.rpc.RpcUtils;
 import org.apache.tajo.util.TajoIdUtils;
 import org.apache.tajo.util.history.History;
 
@@ -141,12 +142,9 @@ public class QueryInfo implements GsonObject, History, Comparable<QueryInfo> {
 
   public synchronized boolean waitState(TajoProtos.QueryState expect, long timeout)
       throws InterruptedException {
-    long prev = System.currentTimeMillis();
-    while (timeout > 0 && expect != queryState && !isTerminalState()) {
+    RpcUtils.Timer timer = new RpcUtils.Timer(timeout);
+    for (;!timer.isTimedOut() && expect != queryState && !isTerminalState(); timer.elapsed()) {
       wait(timeout);
-      long current = System.currentTimeMillis();
-      timeout -= (current - prev);
-      prev = current;
     }
     return expect == queryState;
   }
