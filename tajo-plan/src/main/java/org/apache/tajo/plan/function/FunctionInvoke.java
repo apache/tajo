@@ -33,7 +33,7 @@ import java.io.IOException;
  * An abstract class for actual function invocation.
  * The metadata for function invocation are stored in the {@link org.apache.tajo.function.FunctionInvocation} class.
  */
-public abstract class FunctionInvoke {
+public abstract class FunctionInvoke implements Cloneable {
   @Expose protected FunctionDesc functionDesc;
 
   public FunctionInvoke() {

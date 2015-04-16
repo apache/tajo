@@ -30,7 +30,7 @@ import java.io.IOException;
  */
 public class PythonFunctionInvoke extends FunctionInvoke implements Cloneable {
 
-  private PythonScriptEngine scriptEngine;
+  private transient PythonScriptEngine scriptEngine;
 
   public PythonFunctionInvoke() {
 
@@ -49,5 +49,11 @@ public class PythonFunctionInvoke extends FunctionInvoke implements Cloneable {
   public Datum eval(Tuple tuple) {
     Datum res = scriptEngine.eval(tuple);
     return res;
+  }
+
+  @Override
+  public Object clone() throws CloneNotSupportedException {
+    // nothing to do
+    return super.clone();
   }
 }

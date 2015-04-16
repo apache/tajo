@@ -29,7 +29,7 @@ import org.apache.tajo.util.TUtil;
 /**
  * This class invokes the legacy scala functions.
  */
-public class LegacyScalarFunctionInvoke extends FunctionInvoke {
+public class LegacyScalarFunctionInvoke extends FunctionInvoke implements Cloneable {
   @Expose private GeneralFunction function;
 
   public LegacyScalarFunctionInvoke() {

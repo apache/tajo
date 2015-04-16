@@ -61,8 +61,6 @@ public abstract class AbstractDBStore extends CatalogConstants implements Catalo
   protected final String catalogUri;
 
   private Connection conn;
-
-  protected Map<String, Boolean> baseTableMaps = new HashMap<String, Boolean>();
   
   protected XMLCatalogSchemaManager catalogSchemaManager;
 

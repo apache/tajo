@@ -91,8 +91,8 @@ public class PythonInvocationDesc implements ProtoObject<PythonInvocationDescPro
   @Override
   public Object clone() throws CloneNotSupportedException {
     PythonInvocationDesc clone = (PythonInvocationDesc) super.clone();
-    clone.funcName = funcName == null ? null : new String(funcName);
-    clone.filePath = filePath == null ? null : new String(filePath);
+    clone.funcName = funcName == null ? null : funcName;
+    clone.filePath = filePath == null ? null : filePath;
     return clone;
   }
 }

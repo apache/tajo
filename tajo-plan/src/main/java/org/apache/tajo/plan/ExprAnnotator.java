@@ -19,6 +19,7 @@
 package org.apache.tajo.plan;
 
 import com.google.common.collect.Sets;
+import org.apache.commons.collections.set.UnmodifiableSet;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.algebra.*;
@@ -72,7 +73,6 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
     LogicalPlan plan;
     LogicalPlan.QueryBlock currentBlock;
     NameResolvingMode columnRsvLevel;
-    EvalContext evalContext;
 
     public Context(LogicalPlanner.PlanContext planContext, NameResolvingMode colRsvLevel) {
       this.queryContext = planContext.queryContext;
@@ -385,7 +385,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       if (!EvalTreeUtil.checkIfCanBeConstant(evalNodes[i])) {
         throw new PlanningException("Non constant values cannot be included in IN PREDICATE.");
       }
-      values[i] = EvalTreeUtil.evaluateImmediately(ctx.evalContext, evalNodes[i]);
+      values[i] = EvalTreeUtil.evaluateImmediately(null, evalNodes[i]);
     }
     return new RowConstantEval(values);
   }
@@ -682,7 +682,8 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
   }
 
   public static final Set<String> WINDOW_FUNCTIONS =
-      Sets.newHashSet("row_number", "rank", "dense_rank", "percent_rank", "cume_dist", "first_value", "lag");
+      UnmodifiableSet.decorate(
+          Sets.newHashSet("row_number", "rank", "dense_rank", "percent_rank", "cume_dist", "first_value", "lag"));
 
   public EvalNode visitWindowFunction(Context ctx, Stack<Expr> stack, WindowFunctionExpr windowFunc)
       throws PlanningException {
@@ -907,9 +908,9 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
   public static int [] dateToIntArray(String years, String months, String days)
       throws PlanningException {
-    int year = Integer.valueOf(years);
-    int month = Integer.valueOf(months);
-    int day = Integer.valueOf(days);
+    int year = Integer.parseInt(years);
+    int month = Integer.parseInt(months);
+    int day = Integer.parseInt(days);
 
     if (!(1 <= year && year <= 9999)) {
       throw new PlanningException(String.format("Years (%d) must be between 1 and 9999 integer value", year));
@@ -933,12 +934,12 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
 
   public static int [] timeToIntArray(String hours, String minutes, String seconds, String fractionOfSecond)
       throws PlanningException {
-    int hour = Integer.valueOf(hours);
-    int minute = Integer.valueOf(minutes);
-    int second = Integer.valueOf(seconds);
+    int hour = Integer.parseInt(hours);
+    int minute = Integer.parseInt(minutes);
+    int second = Integer.parseInt(seconds);
     int fraction = 0;
     if (fractionOfSecond != null) {
-      fraction = Integer.valueOf(fractionOfSecond);
+      fraction = Integer.parseInt(fractionOfSecond);
     }
 
     if (!(0 <= hour && hour <= 23)) {

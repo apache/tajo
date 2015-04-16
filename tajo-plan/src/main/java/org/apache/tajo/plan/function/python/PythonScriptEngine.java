@@ -104,13 +104,11 @@ public class PythonScriptEngine extends TajoScriptEngine {
     String returnType;
     String funcName;
     int paramNum;
-    int schemaLineNumber;
 
-    public FuncInfo(String returnType, String funcName, int paramNum, int schemaLineNumber) {
+    public FuncInfo(String returnType, String funcName, int paramNum) {
       this.returnType = returnType.toUpperCase();
       this.funcName = funcName;
       this.paramNum = paramNum;
-      this.schemaLineNumber = schemaLineNumber;
     }
   }
 
@@ -121,14 +119,11 @@ public class PythonScriptEngine extends TajoScriptEngine {
     BufferedReader br = new BufferedReader(in);
     String line = br.readLine();
     String schemaString = null;
-    int lineNumber = 1;
-    int schemaLineNumber = -1;
     while (line != null) {
       if (pSchema.matcher(line).matches()) {
         int start = line.indexOf("(") + 2; //drop brackets/quotes
         int end = line.lastIndexOf(")") - 1;
         schemaString = line.substring(start,end).trim();
-        schemaLineNumber = lineNumber;
       } else if (pDef.matcher(line).matches()) {
         int nameStart = line.indexOf("def ") + "def ".length();
         int nameEnd = line.indexOf('(');
@@ -143,11 +138,10 @@ public class PythonScriptEngine extends TajoScriptEngine {
 
         String functionName = line.substring(nameStart, nameEnd).trim();
         schemaString = schemaString == null ? "blob" : schemaString;
-        functions.add(new FuncInfo(schemaString, functionName, paramNum, schemaLineNumber));
+        functions.add(new FuncInfo(schemaString, functionName, paramNum));
         schemaString = null;
       }
       line = br.readLine();
-      lineNumber++;
     }
     br.close();
     in.close();
