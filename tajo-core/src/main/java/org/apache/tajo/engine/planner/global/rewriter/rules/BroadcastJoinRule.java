@@ -47,7 +47,6 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
   }
 
   private ExecutionBlock merge(MasterPlan plan, ExecutionBlock child, ExecutionBlock parent) {
-    
 
     return parent;
   }
