@@ -10,7 +10,7 @@ FROM (
   WHERE
     l_returnflag = 'R'
 
-  UNION ALL
+  UNION
 
   SELECT
     *

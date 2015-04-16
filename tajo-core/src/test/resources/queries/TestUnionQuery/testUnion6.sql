@@ -6,7 +6,7 @@ FROM (
   FROM
     lineitem
 
-  UNION ALL
+  UNION
 
   SELECT
     *

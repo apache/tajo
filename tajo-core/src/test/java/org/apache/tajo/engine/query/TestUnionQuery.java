@@ -47,6 +47,150 @@ public class TestUnionQuery extends QueryTestCaseBase {
   /**
    * S (SA U SA) O
    */
+  public final void testUnionAll1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  /**
+   * S (S U S) O
+   */
+  public final void testUnionAll2() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  /**
+   * S O ((S G) U (S G))
+   */
+  public final void testUnionAll3() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  /**
+   * S G (S G)
+   */
+  public final void testUnionAll4() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  /**
+   * S G (S F G)
+   */
+  public final void testUnionAll5() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  /**
+   * S G (SA)
+   */
+  public final void testUnionAll6() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  /**
+   * S (SA)
+   */
+  public final void testUnionAll7() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testUnionAll8() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testUnionAll9() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testUnionAll10() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testUnionAll11() throws Exception {
+    // test filter pushdown
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testUnionAll12() throws Exception {
+    // test filter pushdown
+    // with stage in union query
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testUnionAll13() throws Exception {
+    // test filter pushdown
+    // with stage in union query
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testUnionAll14() throws Exception {
+    // test filter pushdown
+    // with group by stage in union query
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testUnionAll15() throws Exception {
+    // test filter pushdown
+    // with group by out of union query and join in union query
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testUnionAll16() throws Exception {
+    // test filter pushdown
+    // with count distinct out of union query and join in union query
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  /**
+   * S (SA U SA) O
+   */
   public final void testUnion1() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -182,6 +326,27 @@ public class TestUnionQuery extends QueryTestCaseBase {
   public final void testUnion16() throws Exception {
     // test filter pushdown
     // with count distinct out of union query and join in union query
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testUnionAllWithSameAliasNames() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testUnionAllWithDifferentAlias() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testUnionAllWithDifferentAliasAndFunction() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
     cleanupQuery(res);

@@ -10,7 +10,7 @@ FROM (
   WHERE
     l_returnflag = 'N'
 
-  UNION ALL
+  UNION
 
   SELECT
     concat(l_returnflag, l_shipdate) col3, l_linestatus col4, l_orderkey col5
