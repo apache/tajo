@@ -71,7 +71,7 @@ public abstract class TajoScriptEngine {
    * Shutdown TajoScriptEngine.
    * @throws IOException
    */
-  public abstract void shutdown() throws IOException;
+  public abstract void shutdown();
 
   /**
    * Evaluate the input tuple.

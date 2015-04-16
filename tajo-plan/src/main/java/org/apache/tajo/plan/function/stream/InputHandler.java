@@ -20,6 +20,7 @@ package org.apache.tajo.plan.function.stream;
 
 import org.apache.tajo.storage.Tuple;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -27,7 +28,7 @@ import java.io.OutputStream;
  * {@link InputHandler} is responsible for handling the input to the Tajo-Streaming external command.
  *
  */
-public class InputHandler {
+public class InputHandler implements Closeable {
 
   private final static byte[] END_OF_RECORD_DELIM = "|_\n".getBytes();
   private final static byte[] END_OF_STREAM = ("C" + "\\x04" + "|_\n").getBytes();
@@ -54,35 +55,12 @@ public class InputHandler {
     out.write(END_OF_RECORD_DELIM);
   }
 
-  /**
-   * Close the <code>InputHandler</code> since there is no more input
-   * to be sent to the managed process.
-   * @param process the managed process - this could be null in some cases
-   * like when input is through files. In that case, the process would not
-   * have been exec'ed yet - if this method if overridden it is the responsibility
-   * of the implementer to check that the process is usable. The managed process
-   * object is supplied by the ExecutableManager to this call so that this method
-   * can check if the process is alive if it needs to know.
-   *
-   * @throws IOException
-   */
-  public synchronized void close(Process process) throws IOException {
-    try {
-      if (!alreadyClosed) {
-        alreadyClosed = true;
-        out.flush();
-        out.close();
-        out = null;
-      }
-    } catch(IOException e) {
-      // check if we got an exception because
-      // the process actually completed and we were
-      // trying to flush and close it's stdin
-      if (process == null || process.exitValue() != 0) {
-        // the process had not terminated normally
-        // throw the exception we got
-        throw e;
-      }
+  public void close() throws IOException {
+    if (!alreadyClosed) {
+      out.flush();
+      out.close();
+      out = null;
+      alreadyClosed = true;
     }
   }
 

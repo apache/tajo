@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBuf;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -30,7 +31,7 @@ import java.io.InputStream;
  * {@link OutputHandler} is responsible for handling the output of the
  * Tajo-Streaming external command.
  */
-public class OutputHandler {
+public class OutputHandler implements Closeable {
   private static int DEFAULT_BUFFER = 64 * 1024;
   private final static byte[] END_OF_RECORD_DELIM = "|_\n".getBytes();
 
@@ -145,7 +146,7 @@ public class OutputHandler {
    * Close the <code>OutputHandler</code>.
    * @throws IOException
    */
-  public synchronized void close() throws IOException {
+  public void close() throws IOException {
     if(!alreadyClosed) {
       istream.close();
       istream = null;

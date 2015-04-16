@@ -35,6 +35,7 @@ import org.apache.tajo.function.PythonInvocationDesc;
 import org.apache.tajo.plan.function.stream.*;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
+import org.apache.tajo.util.FileUtil;
 import org.apache.tajo.util.TUtil;
 
 import java.io.*;
@@ -211,23 +212,25 @@ public class PythonScriptEngine extends TajoScriptEngine {
     startUdfController();
     createInputHandlers();
     setStreams();
-    LOG.info("PythonScriptExecutor starts up");
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("PythonScriptExecutor starts up");
+    }
   }
 
-  public void shutdown() throws IOException {
+  public void shutdown() {
     process.destroy();
-    if (stdin != null) {
-      stdin.close();
+    FileUtil.cleanup(LOG, stdin);
+    FileUtil.cleanup(LOG, stdout);
+    FileUtil.cleanup(LOG, stderr);
+    FileUtil.cleanup(LOG, inputHandler);
+    FileUtil.cleanup(LOG, outputHandler);
+    stdin = null;
+    stdout = stderr = null;
+    inputHandler = null;
+    outputHandler = null;
+    if (LOG.isDebugEnabled()) {
+      LOG.debug("PythonScriptExecutor shuts down");
     }
-    if (stdout != null) {
-      stdout.close();
-    }
-    if (stderr != null) {
-      stderr.close();
-    }
-    inputHandler.close(process);
-    outputHandler.close();
-    LOG.info("PythonScriptExecutor shuts down");
   }
 
   private void startUdfController() throws IOException {

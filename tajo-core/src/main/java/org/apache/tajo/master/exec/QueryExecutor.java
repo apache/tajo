@@ -322,7 +322,7 @@ public class QueryExecutor {
     }
   }
 
-  public static void stopScriptExecutors(EvalContext evalContext) throws IOException {
+  public static void stopScriptExecutors(EvalContext evalContext) {
     for (TajoScriptEngine executor : evalContext.getAllScriptEngines()) {
       executor.shutdown();
     }

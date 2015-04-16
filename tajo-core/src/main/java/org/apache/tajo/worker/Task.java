@@ -200,7 +200,7 @@ public class Task {
     }
   }
 
-  private void stopScriptExecutors() throws IOException {
+  private void stopScriptExecutors() {
     for (TajoScriptEngine executor : context.getEvalContext().getAllScriptEngines()) {
       executor.shutdown();
     }
@@ -274,21 +274,13 @@ public class Task {
   }
 
   public void kill() {
-    try {
-      stopScriptExecutors();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    stopScriptExecutors();
     context.setState(TaskAttemptState.TA_KILLED);
     context.stop();
   }
 
   public void abort() {
-    try {
-      stopScriptExecutors();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    stopScriptExecutors();
     context.stop();
   }
 
@@ -662,11 +654,7 @@ public class Task {
           if (retryNum == maxRetryNum) {
             LOG.error("ERROR: the maximum retry (" + retryNum + ") on the fetch exceeded (" + fetcher.getURI() + ")");
           }
-          try {
-            stopScriptExecutors();
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
+          stopScriptExecutors();
           context.stop(); // retry task
           ctx.getFetchLatch().countDown();
         }
