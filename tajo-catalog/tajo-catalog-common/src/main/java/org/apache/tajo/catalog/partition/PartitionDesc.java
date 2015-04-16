@@ -22,7 +22,7 @@ import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.catalog.Column;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
@@ -131,7 +131,7 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
 
 
   @Override
-  public CatalogProtos.PartitionDescProto getProto() {
+  public CatalogProtos.PartitionDescProto getProto(SerializeOption option) {
     if (builder == null) {
       builder = CatalogProtos.PartitionDescProto.newBuilder();
     }
@@ -143,7 +143,7 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
     builder.clearPartitionKeys();
     if (this.partitionKeys != null) {
       for(PartitionKey partitionKey : this.partitionKeys) {
-        builder.addPartitionKeys(partitionKey.getProto());
+        builder.addPartitionKeys(partitionKey.getProto(option));
       }
     }
 
@@ -161,7 +161,7 @@ public class PartitionDesc implements ProtoObject<CatalogProtos.PartitionDescPro
   }
 
   @Override
-  public String toJson() {
+  public String toJson(SerializeOption option) {
     return CatalogGsonHelper.toJson(this, PartitionDesc.class);
   }
 

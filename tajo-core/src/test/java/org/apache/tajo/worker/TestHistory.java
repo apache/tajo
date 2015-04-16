@@ -20,6 +20,7 @@ package org.apache.tajo.worker;
 
 import com.google.protobuf.ServiceException;
 import org.apache.hadoop.service.Service;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TajoTestingCluster;
 import org.apache.tajo.TaskAttemptId;
@@ -82,13 +83,13 @@ public class TestHistory {
 
     TaskRunnerHistory history = histories.iterator().next();
     assertEquals(Service.STATE.STOPPED, history.getState());
-    TaskRunnerHistory fromProto = new TaskRunnerHistory(history.getProto());
+    TaskRunnerHistory fromProto = new TaskRunnerHistory(history.getProto(SerializeOption.GENERIC));
     assertEquals(history.getExecutionBlockId(), fromProto.getExecutionBlockId());
     assertEquals(history.getFinishTime(), fromProto.getFinishTime());
     assertEquals(history.getStartTime(), fromProto.getStartTime());
     assertEquals(history.getState(), fromProto.getState());
     assertEquals(history.getContainerId(), fromProto.getContainerId());
-    assertEquals(history.getProto().getTaskHistoriesCount(), fromProto.getProto().getTaskHistoriesCount());
+    assertEquals(history.getProto(SerializeOption.GENERIC).getTaskHistoriesCount(), fromProto.getProto(SerializeOption.GENERIC).getTaskHistoriesCount());
   }
 
   @Test

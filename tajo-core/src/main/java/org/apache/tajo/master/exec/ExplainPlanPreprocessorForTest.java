@@ -18,6 +18,7 @@
 
 package org.apache.tajo.master.exec;
 
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.plan.LogicalPlan;
@@ -182,7 +183,7 @@ public class ExplainPlanPreprocessorForTest {
 
     @Override
     public int compare(EvalNode o1, EvalNode o2) {
-      return o1.toJson().compareTo(o2.toJson());
+      return o1.toJson(SerializeOption.GENERIC).compareTo(o2.toJson(SerializeOption.GENERIC));
     }
   }
 
@@ -190,7 +191,7 @@ public class ExplainPlanPreprocessorForTest {
 
     @Override
     public int compare(Target o1, Target o2) {
-      return o1.toJson().compareTo(o2.toJson());
+      return o1.toJson(SerializeOption.GENERIC).compareTo(o2.toJson(SerializeOption.GENERIC));
     }
   }
 

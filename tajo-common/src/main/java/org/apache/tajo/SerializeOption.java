@@ -16,12 +16,9 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.common;
+package org.apache.tajo;
 
-import com.google.protobuf.Message;
-import org.apache.tajo.SerializeOption;
-
-public interface ProtoObject<P extends Message> {
-
-	P getProto(SerializeOption option);
+// serialization option for protobuf or json
+public enum SerializeOption {
+  GENERIC, INTERNAL
 }

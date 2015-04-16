@@ -26,6 +26,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.api.records.ContainerId;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.util.RackResolver;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TaskAttemptId;
@@ -195,10 +196,10 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         if (context.isLeafQuery()) {
           TaskAttemptScheduleContext taskContext = new TaskAttemptScheduleContext();
           Task task = Stage.newEmptyTask(context, taskContext, stage, nextTaskId++);
-          task.addFragment(castEvent.getLeftFragment(), true);
+          task.addFragment(castEvent.getLeftFragment(), SerializeOption.INTERNAL, true);
           scheduledObjectNum++;
           if (castEvent.hasRightFragments()) {
-            task.addFragments(castEvent.getRightFragments());
+            task.addFragments(castEvent.getRightFragments(), SerializeOption.INTERNAL);
           }
           stage.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
         } else {
@@ -223,13 +224,13 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
         scheduledObjectNum++;
         for (Entry<String, List<FetchImpl>> eachFetch : fetches.entrySet()) {
           task.addFetches(eachFetch.getKey(), eachFetch.getValue());
-          task.addFragment(fragmentsForNonLeafTask[0], true);
+          task.addFragment(fragmentsForNonLeafTask[0], SerializeOption.INTERNAL, true);
           if (fragmentsForNonLeafTask[1] != null) {
-            task.addFragment(fragmentsForNonLeafTask[1], true);
+            task.addFragment(fragmentsForNonLeafTask[1], SerializeOption.INTERNAL, true);
           }
         }
         if (broadcastFragmentsForNonLeafTask != null && broadcastFragmentsForNonLeafTask.length > 0) {
-          task.addFragments(Arrays.asList(broadcastFragmentsForNonLeafTask));
+          task.addFragments(Arrays.asList(broadcastFragmentsForNonLeafTask), SerializeOption.INTERNAL);
         }
         stage.getEventHandler().handle(new TaskEvent(task.getId(), TaskEventType.T_SCHEDULE));
       } else if (event instanceof TaskAttemptToSchedulerEvent) {
@@ -840,7 +841,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               new ArrayList<FragmentProto>(task.getAllFragments()),
               "",
               false,
-              LogicalNodeSerializer.serialize(task.getLogicalPlan()),
+              LogicalNodeSerializer.serialize(task.getLogicalPlan(), SerializeOption.INTERNAL),
               context.getMasterContext().getQueryContext(),
               stage.getDataChannel(), stage.getBlock().getEnforcer());
           if (checkIfInterQuery(stage.getMasterPlan(), stage.getBlock())) {
@@ -852,7 +853,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
           assignedRequest.add(attemptId);
 
           scheduledObjectNum--;
-          taskRequest.getCallback().run(taskAssign.getProto());
+          taskRequest.getCallback().run(taskAssign.getProto(SerializeOption.INTERNAL));
         } else {
           throw new RuntimeException("Illegal State!!!!!!!!!!!!!!!!!!!!!");
         }
@@ -896,7 +897,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               Lists.newArrayList(task.getAllFragments()),
               "",
               false,
-              LogicalNodeSerializer.serialize(task.getLogicalPlan()),
+              LogicalNodeSerializer.serialize(task.getLogicalPlan(), SerializeOption.INTERNAL),
               context.getMasterContext().getQueryContext(),
               stage.getDataChannel(),
               stage.getBlock().getEnforcer());
@@ -916,7 +917,7 @@ public class DefaultTaskScheduler extends AbstractTaskScheduler {
               getWorkerConnectionInfo(taskRequest.getWorkerId());
           context.getMasterContext().getEventHandler().handle(new TaskAttemptAssignedEvent(attemptId,
               taskRequest.getContainerId(), connectionInfo));
-          taskRequest.getCallback().run(taskAssign.getProto());
+          taskRequest.getCallback().run(taskAssign.getProto(SerializeOption.INTERNAL));
           totalAssigned++;
           scheduledObjectNum--;
         }

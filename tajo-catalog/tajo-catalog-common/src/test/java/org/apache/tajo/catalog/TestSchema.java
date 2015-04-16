@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.exception.AlreadyExistsFieldException;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.SchemaProto;
@@ -135,7 +136,7 @@ public class TestSchema {
 
 	@Test
 	public final void testSchemaSchemaProto() {
-		Schema schema2 = new Schema(schema.getProto());
+		Schema schema2 = new Schema(schema.getProto(SerializeOption.GENERIC));
 		
 		assertEquals(schema, schema2);
 	}
@@ -167,7 +168,7 @@ public class TestSchema {
 
 	@Test
 	public final void testGetProto() {
-		SchemaProto proto = schema.getProto();
+		SchemaProto proto = schema.getProto(SerializeOption.GENERIC);
 		
 		assertEquals("name", proto.getFields(0).getName());
 		assertEquals("age", proto.getFields(1).getName());
@@ -180,13 +181,13 @@ public class TestSchema {
 	  schema.addColumn("abc", Type.FLOAT8);
 	  schema.addColumn("bbc", Type.FLOAT8);
 	  
-	  Schema schema2 = new Schema(schema.getProto());
-	  assertEquals(schema.getProto(), schema2.getProto());
+	  Schema schema2 = new Schema(schema.getProto(SerializeOption.GENERIC));
+	  assertEquals(schema.getProto(SerializeOption.GENERIC), schema2.getProto(SerializeOption.GENERIC));
 	  assertEquals(schema.getColumn(0), schema2.getColumn(0));
 	  assertEquals(schema.size(), schema2.size());
 	  
 	  Schema schema3 = (Schema) schema.clone();
-	  assertEquals(schema.getProto(), schema3.getProto());
+	  assertEquals(schema.getProto(SerializeOption.GENERIC), schema3.getProto(SerializeOption.GENERIC));
     assertEquals(schema.getColumn(0), schema3.getColumn(0));
     assertEquals(schema.size(), schema3.size());
 	}
@@ -201,24 +202,24 @@ public class TestSchema {
 
 	@Test
 	public final void testJson() {
-		Schema schema2 = new Schema(schema.getProto());
-		String json = schema2.toJson();
+		Schema schema2 = new Schema(schema.getProto(SerializeOption.GENERIC));
+		String json = schema2.toJson(SerializeOption.GENERIC);
 		Schema fromJson = CatalogGsonHelper.fromJson(json, Schema.class);
 		assertEquals(schema2, fromJson);
-    assertEquals(schema2.getProto(), fromJson.getProto());
+    assertEquals(schema2.getProto(SerializeOption.GENERIC), fromJson.getProto(SerializeOption.GENERIC));
 	}
 
   @Test
   public final void testProto() {
-    Schema schema2 = new Schema(schema.getProto());
-    SchemaProto proto = schema2.getProto();
+    Schema schema2 = new Schema(schema.getProto(SerializeOption.GENERIC));
+    SchemaProto proto = schema2.getProto(SerializeOption.GENERIC);
     Schema fromJson = new Schema(proto);
     assertEquals(schema2, fromJson);
   }
 
   @Test
   public final void testSetQualifier() {
-    Schema schema2 = new Schema(schema.getProto());
+    Schema schema2 = new Schema(schema.getProto(SerializeOption.GENERIC));
     schema2.setQualifier("test1");
     Column column = schema2.getColumn(1);
     assertEquals(1, schema2.getColumnIdByName("age"));
@@ -294,7 +295,7 @@ public class TestSchema {
   public static void verifySchema(Schema s1) {
     assertEquals(s1, s1);
 
-    SchemaProto proto = s1.getProto();
+    SchemaProto proto = s1.getProto(SerializeOption.GENERIC);
     assertEquals("Proto (de)serialized schema is different from the original: ", s1, new Schema(proto));
 
     Schema cloned = null;

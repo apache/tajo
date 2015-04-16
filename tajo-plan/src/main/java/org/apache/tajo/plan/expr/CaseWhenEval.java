@@ -21,6 +21,7 @@ package org.apache.tajo.plan.expr;
 import com.google.common.collect.Lists;
 import com.google.gson.annotations.Expose;
 
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -279,7 +280,7 @@ public class CaseWhenEval extends EvalNode implements GsonObject {
     }
 
     @Override
-    public String toJson() {
+    public String toJson(SerializeOption option) {
       return PlanGsonHelper.toJson(IfThenEval.this, IfThenEval.class);
     }
 

@@ -20,6 +20,7 @@ package org.apache.tajo.catalog;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -145,12 +146,12 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
   }
 
   @Override
-  public String toJson() {
+  public String toJson(SerializeOption option) {
     return CatalogGsonHelper.toJson(this, AlterTableDesc.class);
   }
 
   @Override
-  public AlterTableDescProto getProto() {
+  public AlterTableDescProto getProto(SerializeOption option) {
     AlterTableDescProto.Builder builder = AlterTableDescProto.newBuilder();
 
     if (null != this.tableName) {
@@ -166,10 +167,10 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
       builder.setAlterColumnName(alterColumnBuilder.build());
     }
     if (null != this.addColumn) {
-      builder.setAddColumn(addColumn.getProto());
+      builder.setAddColumn(addColumn.getProto(option));
     }
     if (null != this.properties) {
-      builder.setParams(properties.getProto());
+      builder.setParams(properties.getProto(option));
     }
 
     switch (alterTableType) {
@@ -195,7 +196,7 @@ public class AlterTableDesc implements ProtoObject<AlterTableDescProto>, GsonObj
     }
 
     if (null != this.partitionDesc) {
-      builder.setPartitionDesc(partitionDesc.getProto());
+      builder.setPartitionDesc(partitionDesc.getProto(option));
     }
 
     return builder.build();

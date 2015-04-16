@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog.statistics;
 
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos.TableStatsProto;
@@ -63,13 +64,13 @@ public class TestTableStat {
       assertEquals(cols[i], stat.getColumnStats().get(i));
     }
     
-    TableStats stat2 = new TableStats(stat.getProto());
+    TableStats stat2 = new TableStats(stat.getProto(SerializeOption.GENERIC));
     tableStatEquals(stat, stat2);
     
     TableStats stat3 = (TableStats) stat.clone();
     tableStatEquals(stat, stat3);
 
-    String json = stat.toJson();
+    String json = stat.toJson(SerializeOption.GENERIC);
     TableStats fromJson = CatalogGsonHelper.fromJson(json, TableStats.class);
     tableStatEquals(stat, fromJson);
   }
@@ -108,7 +109,7 @@ public class TestTableStat {
         public void run() {
           for (int j = 0; j < 100; j++) {
             try {
-              TableStatsProto proto = tableStats.getProto();
+              TableStatsProto proto = tableStats.getProto(SerializeOption.GENERIC);
               if (tableStats.getColumnStats().size() != proto.getColStatList().size()) {
                 success.set(false);
                 break;

@@ -19,6 +19,7 @@
 package org.apache.tajo.engine.planner.global;
 
 import com.google.common.base.Preconditions;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
@@ -152,7 +153,7 @@ public class DataChannel {
     return storeType;
   }
 
-  public DataChannelProto getProto() {
+  public DataChannelProto getProto(SerializeOption option) {
     DataChannelProto.Builder builder = DataChannelProto.newBuilder();
     builder.setSrcId(srcId.getProto());
     builder.setTargetId(targetId.getProto());
@@ -161,11 +162,11 @@ public class DataChannel {
     }
     builder.setShuffleType(shuffleType);
     if (schema != null) {
-      builder.setSchema(schema.getProto());
+      builder.setSchema(schema.getProto(option));
     }
     if (shuffleKeys != null) {
       for (Column column : shuffleKeys) {
-        builder.addShuffleKeys(column.getProto());
+        builder.addShuffleKeys(column.getProto(option));
       }
     }
     if (numOutputs != null) {

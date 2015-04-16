@@ -24,6 +24,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hive.conf.HiveConf;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.partition.PartitionDesc;
 import org.apache.tajo.catalog.partition.PartitionKey;
@@ -100,7 +101,7 @@ public class TestHCatalogStore {
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, CUSTOMER), schema, meta,
         new Path(warehousePath, new Path(DB_NAME, CUSTOMER)).toUri());
-    store.createTable(table.getProto());
+    store.createTable(table.getProto(SerializeOption.GENERIC));
     assertTrue(store.existTable(DB_NAME, CUSTOMER));
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, CUSTOMER));
@@ -129,7 +130,7 @@ public class TestHCatalogStore {
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, REGION), schema, meta,
         new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
-    store.createTable(table.getProto());
+    store.createTable(table.getProto(SerializeOption.GENERIC));
     assertTrue(store.existTable(DB_NAME, REGION));
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, REGION));
@@ -158,7 +159,7 @@ public class TestHCatalogStore {
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, REGION), schema, meta,
         new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
-    store.createTable(table.getProto());
+    store.createTable(table.getProto(SerializeOption.GENERIC));
     assertTrue(store.existTable(DB_NAME, REGION));
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, REGION));
@@ -192,7 +193,7 @@ public class TestHCatalogStore {
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, SUPPLIER), schema, meta,
         new Path(warehousePath, new Path(DB_NAME, SUPPLIER)).toUri());
 
-    store.createTable(table.getProto());
+    store.createTable(table.getProto(SerializeOption.GENERIC));
     assertTrue(store.existTable(DB_NAME, SUPPLIER));
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, SUPPLIER));
@@ -242,7 +243,7 @@ public class TestHCatalogStore {
         CatalogProtos.PartitionType.COLUMN, "n_nationkey,n_date", expressionSchema);
     table.setPartitionMethod(partitions);
 
-    store.createTable(table.getProto());
+    store.createTable(table.getProto(SerializeOption.GENERIC));
     assertTrue(store.existTable(DB_NAME, NATION));
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, NATION));
@@ -298,7 +299,7 @@ public class TestHCatalogStore {
 
     alterTableDesc.setPartitionDesc(partitionDesc);
 
-    store.alterTable(alterTableDesc.getProto());
+    store.alterTable(alterTableDesc.getProto(SerializeOption.GENERIC));
 
     CatalogProtos.PartitionDescProto resultDesc = store.getPartition(DB_NAME, NATION, partitionName);
     assertNotNull(resultDesc);
@@ -324,7 +325,7 @@ public class TestHCatalogStore {
 
     alterTableDesc.setPartitionDesc(partitionDesc);
 
-    store.alterTable(alterTableDesc.getProto());
+    store.alterTable(alterTableDesc.getProto(SerializeOption.GENERIC));
   }
 
   @Test
@@ -340,7 +341,7 @@ public class TestHCatalogStore {
     for(String tableName : tableNames){
       TableDesc table = new TableDesc(CatalogUtil.buildFQName("default", tableName), schema, meta,
           new Path(warehousePath, new Path(DB_NAME, tableName)).toUri());
-      store.createTable(table.getProto());
+      store.createTable(table.getProto(SerializeOption.GENERIC));
     }
 
     List<String> tables = store.getAllTableNames("default");
@@ -365,7 +366,7 @@ public class TestHCatalogStore {
 
     String tableName = "table1";
     TableDesc table = new TableDesc(DB_NAME + "." + tableName, schema, meta, warehousePath.toUri());
-    store.createTable(table.getProto());
+    store.createTable(table.getProto(SerializeOption.GENERIC));
     assertTrue(store.existTable(DB_NAME, tableName));
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, tableName));
@@ -390,7 +391,7 @@ public class TestHCatalogStore {
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, REGION), schema, meta,
         new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
-    store.createTable(table.getProto());
+    store.createTable(table.getProto(SerializeOption.GENERIC));
     assertTrue(store.existTable(DB_NAME, REGION));
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, REGION));
@@ -419,7 +420,7 @@ public class TestHCatalogStore {
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, REGION), schema, meta,
         new Path(warehousePath, new Path(DB_NAME, REGION)).toUri());
-    store.createTable(table.getProto());
+    store.createTable(table.getProto(SerializeOption.GENERIC));
     assertTrue(store.existTable(DB_NAME, REGION));
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, REGION));
@@ -451,7 +452,7 @@ public class TestHCatalogStore {
 
     TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, CUSTOMER), schema, meta,
         new Path(warehousePath, new Path(DB_NAME, CUSTOMER)).toUri());
-    store.createTable(table.getProto());
+    store.createTable(table.getProto(SerializeOption.GENERIC));
     assertTrue(store.existTable(DB_NAME, CUSTOMER));
 
     TableDesc table1 = new TableDesc(store.getTable(DB_NAME, CUSTOMER));

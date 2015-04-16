@@ -18,6 +18,7 @@
 
 package org.apache.tajo.plan.function;
 
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -51,7 +52,7 @@ public abstract class WindowAggFunc<T extends Datum> extends AggFunction<T> {
   public abstract T terminate(FunctionContext ctx);
 
   @Override
-  public String toJson() {
+  public String toJson(SerializeOption option) {
     return CatalogGsonHelper.toJson(this, WindowAggFunc.class);
   }
 

@@ -20,6 +20,7 @@ package org.apache.tajo.catalog;
 
 import com.google.common.base.Objects;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.annotation.NotNull;
 import org.apache.tajo.function.*;
 import org.apache.tajo.json.GsonObject;
@@ -61,6 +62,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
     this.supplement = new FunctionSupplement(proto.getSupplement());
   }
 
+  @SuppressWarnings("unchecked")
   public FunctionDesc(String signature, String className, FunctionType type,
                       DataType retType,
                       @NotNull DataType... argTypes) throws ClassNotFoundException {
@@ -165,7 +167,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
   public boolean equals(Object obj) {
     if (obj instanceof FunctionDesc) {
       FunctionDesc other = (FunctionDesc) obj;
-      if(this.getProto().equals(other.getProto()))
+      if(this.getProto(SerializeOption.GENERIC).equals(other.getProto(SerializeOption.GENERIC)))
         return true;
     }
     return false;
@@ -183,15 +185,15 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
   }
 
   @Override
-  public FunctionDescProto getProto() {
+  public FunctionDescProto getProto(SerializeOption option) {
     if (builder == null) {
       builder = FunctionDescProto.newBuilder();
     } else {
       builder.clear();
     }
-    builder.setSignature(signature.getProto());
-    builder.setSupplement(supplement.getProto());
-    builder.setInvocation(invocation.getProto());
+    builder.setSignature(signature.getProto(option));
+    builder.setSupplement(supplement.getProto(option));
+    builder.setInvocation(invocation.getProto(option));
     return builder.build();
   }
   
@@ -200,7 +202,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
 	  return getHelpSignature();
   }
   
-  public String toJson() {
+  public String toJson(SerializeOption option) {
     return CatalogGsonHelper.toJson(this, FunctionDesc.class);
   }
 

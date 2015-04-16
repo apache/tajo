@@ -21,6 +21,7 @@ package org.apache.tajo.plan.serder;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.protobuf.ByteString;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.algebra.WindowSpec.WindowFrameEndBoundType;
 import org.apache.tajo.algebra.WindowSpec.WindowFrameStartBoundType;
 import org.apache.tajo.catalog.proto.CatalogProtos;
@@ -51,13 +52,18 @@ public class EvalNodeSerializer
 
   public static class EvalTreeProtoBuilderContext {
     private int seqId = 0;
-    private Map<EvalNode, Integer> idMap = Maps.newHashMap();
-    private PlanProto.EvalNodeTree.Builder treeBuilder = PlanProto.EvalNodeTree.newBuilder();
+    private final Map<EvalNode, Integer> idMap = Maps.newHashMap();
+    private final PlanProto.EvalNodeTree.Builder treeBuilder = PlanProto.EvalNodeTree.newBuilder();
+    private final SerializeOption option;
+
+    public EvalTreeProtoBuilderContext(SerializeOption option) {
+      this.option = option;
+    }
   }
 
-  public static PlanProto.EvalNodeTree serialize(EvalNode evalNode) {
+  public static PlanProto.EvalNodeTree serialize(EvalNode evalNode, SerializeOption option) {
     EvalNodeSerializer.EvalTreeProtoBuilderContext context =
-        new EvalNodeSerializer.EvalTreeProtoBuilderContext();
+        new EvalNodeSerializer.EvalTreeProtoBuilderContext(option);
     instance.visit(context, evalNode, new Stack<EvalNode>());
     return context.treeBuilder.build();
   }
@@ -183,7 +189,7 @@ public class EvalNodeSerializer
 
   public EvalNode visitField(EvalTreeProtoBuilderContext context, Stack<EvalNode> stack, FieldEval field) {
     PlanProto.EvalNode.Builder builder = createEvalBuilder(context, field);
-    builder.setField(field.getColumnRef().getProto());
+    builder.setField(field.getColumnRef().getProto(context.option));
     context.treeBuilder.addNodes(builder);
     return field;
   }
@@ -261,7 +267,7 @@ public class EvalNodeSerializer
 
     // building itself
     PlanProto.FunctionEval.Builder funcBuilder = PlanProto.FunctionEval.newBuilder();
-    funcBuilder.setFuncion(function.getFuncDesc().getProto());
+    funcBuilder.setFuncion(function.getFuncDesc().getProto(context.option));
     for (int i = 0; i < childIds.length; i++) {
       funcBuilder.addParamIds(childIds[i]);
     }
@@ -290,7 +296,7 @@ public class EvalNodeSerializer
 
       if (winFunc.hasSortSpecs()) {
         windowFuncBuilder.addAllSortSpec(ProtoUtil.<CatalogProtos.SortSpecProto>toProtoObjects
-            (winFunc.getSortSpecs()));
+            (winFunc.getSortSpecs(), context.option));
       }
 
       windowFuncBuilder.setWindowFrame(buildWindowFrame(winFunc.getWindowFrame()));

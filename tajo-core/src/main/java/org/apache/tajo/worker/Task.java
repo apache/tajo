@@ -30,6 +30,7 @@ import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
@@ -152,7 +153,7 @@ public class Task {
       }
     }
 
-    interQuery = request.getProto().getInterQuery();
+    interQuery = request.getProto(SerializeOption.GENERIC).getInterQuery();
     if (interQuery) {
       context.setInterQuery();
       this.shuffleType = context.getDataChannel().getShuffleType();
@@ -286,7 +287,7 @@ public class Task {
     builder.setInputStats(reloadInputStats());
 
     if (context.getResultStats() != null) {
-      builder.setResultStats(context.getResultStats().getProto());
+      builder.setResultStats(context.getResultStats().getProto(SerializeOption.GENERIC));
     }
     return builder.build();
   }
@@ -312,7 +313,7 @@ public class Task {
   private CatalogProtos.TableStatsProto reloadInputStats() {
     synchronized(inputStats) {
       if (this.executor == null) {
-        return inputStats.getProto();
+        return inputStats.getProto(SerializeOption.GENERIC);
       }
 
       TableStats executorInputStats = this.executor.getInputStats();
@@ -320,7 +321,7 @@ public class Task {
       if (executorInputStats != null) {
         inputStats.setValues(executorInputStats);
       }
-      return inputStats.getProto();
+      return inputStats.getProto(SerializeOption.GENERIC);
     }
   }
 
@@ -331,9 +332,9 @@ public class Task {
     builder.setInputStats(reloadInputStats());
 
     if (context.hasResultStats()) {
-      builder.setResultStats(context.getResultStats().getProto());
+      builder.setResultStats(context.getResultStats().getProto(SerializeOption.GENERIC));
     } else {
-      builder.setResultStats(new TableStats().getProto());
+      builder.setResultStats(new TableStats().getProto(SerializeOption.GENERIC));
     }
 
     Iterator<Entry<Integer, String>> it = context.getShuffleFileOutputs();
@@ -504,7 +505,7 @@ public class Task {
       }
 
       if (context.getResultStats() != null) {
-        taskHistory.setOutputStats(context.getResultStats().getProto());
+        taskHistory.setOutputStats(context.getResultStats().getProto(SerializeOption.GENERIC));
       }
 
       if (hasFetchPhase()) {

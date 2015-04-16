@@ -28,6 +28,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.yarn.event.EventHandler;
 import org.apache.hadoop.yarn.state.*;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
@@ -332,7 +333,7 @@ public class Task implements EventHandler<TaskEvent> {
     }
   }
 
-  public void addFragment(Fragment fragment, boolean useDataLocation) {
+  public void addFragment(Fragment fragment, SerializeOption option, boolean useDataLocation) {
     Set<FragmentProto> fragmentProtos;
     if (fragMap.containsKey(fragment.getTableName())) {
       fragmentProtos = fragMap.get(fragment.getTableName());
@@ -340,16 +341,16 @@ public class Task implements EventHandler<TaskEvent> {
       fragmentProtos = new HashSet<FragmentProto>();
       fragMap.put(fragment.getTableName(), fragmentProtos);
     }
-    fragmentProtos.add(fragment.getProto());
+    fragmentProtos.add(fragment.getProto(option));
     if (useDataLocation) {
       addDataLocation(fragment);
     }
     totalFragmentNum++;
   }
 
-  public void addFragments(Collection<Fragment> fragments) {
+  public void addFragments(Collection<Fragment> fragments, SerializeOption option) {
     for (Fragment eachFragment: fragments) {
-      addFragment(eachFragment, false);
+      addFragment(eachFragment, option, false);
     }
   }
 

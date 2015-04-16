@@ -21,6 +21,7 @@ package org.apache.tajo.catalog.statistics;
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.StatProto;
@@ -122,7 +123,7 @@ public class StatSet implements ProtoObject<StatSetProto>, Cloneable {
   }
 
   @Override
-  public StatSetProto getProto() {
+  public StatSetProto getProto(SerializeOption option) {
     if (!viaProto) {
       mergeLocalToBuilder();
       proto = builder.build();

@@ -19,6 +19,7 @@
 package org.apache.tajo.plan;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -126,12 +127,12 @@ public class Target implements Cloneable, GsonObject, ProtoObject<PlanProto.Targ
     return target;
   }
 
-  public String toJson() {
+  public String toJson(SerializeOption option) {
     return PlanGsonHelper.toJson(this, Target.class);
   }
 
   @Override
-  public PlanProto.Target getProto() {
-    return LogicalNodeSerializer.convertTarget(this);
+  public PlanProto.Target getProto(SerializeOption option) {
+    return LogicalNodeSerializer.convertTarget(this, option);
   }
 }

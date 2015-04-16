@@ -24,6 +24,7 @@ import com.google.common.collect.Maps;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.TajoProtos.TaskAttemptState;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.catalog.Schema;
@@ -129,7 +130,7 @@ public class TaskAttemptContext {
   @VisibleForTesting
   public TaskAttemptContext(final QueryContext queryContext, final TaskAttemptId queryId,
                             final Fragment [] fragments,  final Path workDir) {
-    this(queryContext, null, queryId, FragmentConvertor.toFragmentProtoArray(fragments), workDir);
+    this(queryContext, null, queryId, FragmentConvertor.toFragmentProtoArray(SerializeOption.GENERIC, fragments), workDir);
   }
 
   public TajoConf getConf() {
@@ -257,10 +258,10 @@ public class TaskAttemptContext {
     fragmentMap.remove(tableId);
     for(Fragment t : fragments) {
       if (fragmentMap.containsKey(t.getTableName())) {
-        fragmentMap.get(t.getTableName()).add(t.getProto());
+        fragmentMap.get(t.getTableName()).add(t.getProto(SerializeOption.GENERIC));
       } else {
         List<FragmentProto> frags = new ArrayList<FragmentProto>();
-        frags.add(t.getProto());
+        frags.add(t.getProto(SerializeOption.GENERIC));
         fragmentMap.put(t.getTableName(), frags);
       }
     }

@@ -19,6 +19,7 @@
 package org.apache.tajo.client;
 
 import com.google.protobuf.ServiceException;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
@@ -144,11 +145,11 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
         ClientProtos.CreateTableRequest.Builder builder = ClientProtos.CreateTableRequest.newBuilder();
         builder.setSessionId(connection.sessionId);
         builder.setName(tableName);
-        builder.setSchema(schema.getProto());
-        builder.setMeta(meta.getProto());
+        builder.setSchema(schema.getProto(SerializeOption.GENERIC));
+        builder.setMeta(meta.getProto(SerializeOption.GENERIC));
         builder.setPath(path.toString());
         if (partitionMethodDesc != null) {
-          builder.setPartition(partitionMethodDesc.getProto());
+          builder.setPartition(partitionMethodDesc.getProto(SerializeOption.GENERIC));
         }
         ClientProtos.TableResponse res = tajoMasterService.createExternalTable(null, builder.build());
         if (res.getResultCode() == ClientProtos.ResultCode.OK) {

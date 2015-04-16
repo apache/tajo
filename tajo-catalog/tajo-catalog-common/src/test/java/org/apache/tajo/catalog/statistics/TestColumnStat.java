@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog.statistics;
 
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.json.CatalogGsonHelper;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -38,7 +39,7 @@ public class TestColumnStat {
     assertTrue(1000 == stat.getNumDistValues());
     assertTrue(999 == stat.getNumNulls());
     
-    ColumnStats stat2 = new ColumnStats(stat.getProto());
+    ColumnStats stat2 = new ColumnStats(stat.getProto(SerializeOption.GENERIC));
     assertTrue(1000 == stat2.getNumDistValues());
     assertTrue(999 == stat2.getNumNulls());
   }
@@ -51,7 +52,7 @@ public class TestColumnStat {
     stat.setMinValue(DatumFactory.createInt8(5));
     stat.setMaxValue(DatumFactory.createInt8(10));
     
-    ColumnStats stat2 = new ColumnStats(stat.getProto());
+    ColumnStats stat2 = new ColumnStats(stat.getProto(SerializeOption.GENERIC));
     assertEquals(stat, stat2);
   }
 
@@ -63,7 +64,7 @@ public class TestColumnStat {
     stat.setMinValue(DatumFactory.createInt8(5));
     stat.setMaxValue(DatumFactory.createInt8(10));
 
-    String json = stat.toJson();
+    String json = stat.toJson(SerializeOption.GENERIC);
     ColumnStats fromJson = CatalogGsonHelper.fromJson(json, ColumnStats.class);
     assertEquals(stat, fromJson);
   }

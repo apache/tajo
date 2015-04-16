@@ -19,6 +19,7 @@
 package org.apache.tajo.master.rm;
 
 import com.google.protobuf.RpcCallback;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.conf.TajoConf;
@@ -96,7 +97,7 @@ public class TestTajoResourceManager {
       WorkerConnectionInfo connectionInfo =
           new WorkerConnectionInfo("host" + (i + 1), 28091, 28092, 21000 + i, 28093, 28080);
       NodeHeartbeat tajoHeartbeat = NodeHeartbeat.newBuilder()
-          .setConnectionInfo(connectionInfo.getProto())
+          .setConnectionInfo(connectionInfo.getProto(SerializeOption.GENERIC))
           .setServerStatus(serverStatus)
           .build();
 

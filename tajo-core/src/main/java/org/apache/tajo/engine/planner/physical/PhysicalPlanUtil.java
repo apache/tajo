@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.physical;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.SortSpec;
@@ -116,7 +117,8 @@ public class PhysicalPlanUtil {
         fragments.add(fileFragment);
       }
     }
-    return FragmentConvertor.toFragmentProtoArray(fragments.toArray(new FileFragment[]{}));
+    return FragmentConvertor.toFragmentProtoArray(
+        SerializeOption.INTERNAL, fragments.toArray(new FileFragment[fragments.size()]));
   }
 
   /**

@@ -18,6 +18,7 @@
 
 package org.apache.tajo.datum;
 
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.InvalidCastException;
 import org.apache.tajo.json.CommonGsonHelper;
@@ -83,7 +84,7 @@ public class TestDateDatum {
   @Test
   public final void testToJson() {
     Datum d = DatumFactory.createDate(DATE);
-    Datum copy = CommonGsonHelper.fromJson(d.toJson(), Datum.class);
+    Datum copy = CommonGsonHelper.fromJson(d.toJson(SerializeOption.GENERIC), Datum.class);
     assertEquals(d, copy);
   }
 

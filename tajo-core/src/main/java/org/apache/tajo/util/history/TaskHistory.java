@@ -19,6 +19,7 @@
 package org.apache.tajo.util.history;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.json.GsonObject;
 
@@ -153,7 +154,7 @@ public class TaskHistory implements GsonObject {
   }
 
   @Override
-  public String toJson() {
+  public String toJson(SerializeOption option) {
     return CoreGsonHelper.toJson(this, TaskHistory.class);
   }
 

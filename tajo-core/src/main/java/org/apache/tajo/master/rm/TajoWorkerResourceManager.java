@@ -31,6 +31,7 @@ import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.yarn.api.records.NodeId;
 import org.apache.hadoop.yarn.event.AsyncDispatcher;
 import org.apache.hadoop.yarn.event.EventHandler;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.ContainerProtocol;
@@ -337,7 +338,7 @@ public class TajoWorkerResourceManager extends CompositeService implements Worke
                 ContainerProtocol.TajoContainerIdProto containerIdProto = containerId.getProto();
                 allocatedResources.add(WorkerAllocatedResource.newBuilder()
                   .setContainerId(containerIdProto)
-                  .setConnectionInfo(allocatedResource.worker.getConnectionInfo().getProto())
+                  .setConnectionInfo(allocatedResource.worker.getConnectionInfo().getProto(SerializeOption.INTERNAL))
                   .setAllocatedMemoryMB(allocatedResource.allocatedMemoryMB)
                   .setAllocatedDiskSlots(allocatedResource.allocatedDiskSlots)
                   .build());

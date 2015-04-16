@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -57,7 +58,7 @@ public abstract class EvalNode implements Cloneable, GsonObject, ProtoObject<Pla
 	public abstract String getName();
 
   @Override
-	public String toJson() {
+	public String toJson(SerializeOption option) {
     return PlanGsonHelper.toJson(this, EvalNode.class);
 	}
 
@@ -91,7 +92,7 @@ public abstract class EvalNode implements Cloneable, GsonObject, ProtoObject<Pla
   }
 
   @Override
-  public PlanProto.EvalNodeTree getProto() {
-    return EvalNodeSerializer.serialize(this);
+  public PlanProto.EvalNodeTree getProto(SerializeOption option) {
+    return EvalNodeSerializer.serialize(this, option);
   }
 }

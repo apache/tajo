@@ -21,6 +21,7 @@ package org.apache.tajo.engine.planner.global.builder;
 import com.google.common.base.Preconditions;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.proto.CatalogProtos.SortSpecProto;
@@ -537,12 +538,12 @@ public class DistinctGroupbyBuilder {
           Target target = new Target(new FieldEval(column));
           firstGroupbyTargets.add(target);
         }
-        firstStageGroupbyNode.setTargets(firstGroupbyTargets.toArray(new Target[]{}));
+        firstStageGroupbyNode.setTargets(firstGroupbyTargets.toArray(new Target[firstGroupbyTargets.size()]));
 
         // SecondStage:
         //   Set grouping column with origin groupby's columns
         //   Remove distinct group column from targets
-        secondStageGroupbyNode.setGroupingColumns(originGroupColumns.toArray(new Column[]{}));
+        secondStageGroupbyNode.setGroupingColumns(originGroupColumns.toArray(new Column[originGroupColumns.size()]));
 
         Target[] oldTargets = secondStageGroupbyNode.getTargets();
         List<Target> secondGroupbyTargets = new ArrayList<Target>();
@@ -573,7 +574,7 @@ public class DistinctGroupbyBuilder {
           }
           columnIdIndex++;
         }
-        secondStageGroupbyNode.setTargets(secondGroupbyTargets.toArray(new Target[]{}));
+        secondStageGroupbyNode.setTargets(secondGroupbyTargets.toArray(new Target[secondGroupbyTargets.size()]));
       } else {
         // FirstStage: Change target of aggFunction to function name expr
         List<Target> firstGroupbyTargets = new ArrayList<Target>();
@@ -602,7 +603,7 @@ public class DistinctGroupbyBuilder {
           columnIdIndex++;
           aggFuncIdx++;
         }
-        firstStageGroupbyNode.setTargets(firstGroupbyTargets.toArray(new Target[]{}));
+        firstStageGroupbyNode.setTargets(firstGroupbyTargets.toArray(new Target[firstGroupbyTargets.size()]));
         secondStageGroupbyNode.setInSchema(firstStageGroupbyNode.getOutSchema());
       }
       grpIdx++;
@@ -661,7 +662,7 @@ public class DistinctGroupbyBuilder {
         }
       }
     }
-    firstStageDistinctNode.setTargets(firstTargets.toArray(new Target[]{}));
+    firstStageDistinctNode.setTargets(firstTargets.toArray(new Target[firstTargets.size()]));
     firstStageDistinctNode.setResultColumnIds(TUtil.toArray(firstStageColumnIds));
 
     //Set SecondStage ColumnId and Input schema
@@ -694,7 +695,7 @@ public class DistinctGroupbyBuilder {
     for (GroupbyNode groupbyNode: firstStageDistinctNode.getSubPlans()) {
       List<SortSpecProto> sortSpecs = new ArrayList<SortSpecProto>();
       for (Column column: groupbyNode.getGroupingColumns()) {
-        sortSpecs.add(SortSpecProto.newBuilder().setColumn(column.getProto()).build());
+        sortSpecs.add(SortSpecProto.newBuilder().setColumn(column.getProto(SerializeOption.INTERNAL)).build());
       }
       sortSpecArrays.add( SortSpecArray.newBuilder()
           .setNodeId(secondStageDistinctNode.getSubPlans().get(index).getPID())
@@ -722,7 +723,7 @@ public class DistinctGroupbyBuilder {
     for (GroupbyNode groupbyNode: firstStageDistinctNode.getSubPlans()) {
       List<SortSpecProto> sortSpecs = new ArrayList<SortSpecProto>();
       for (Column column: groupbyNode.getGroupingColumns()) {
-        sortSpecs.add(SortSpecProto.newBuilder().setColumn(column.getProto()).build());
+        sortSpecs.add(SortSpecProto.newBuilder().setColumn(column.getProto(SerializeOption.INTERNAL)).build());
       }
       sortSpecArrays.add( SortSpecArray.newBuilder()
           .setNodeId(thirdStageDistinctNode.getSubPlans().get(index).getPID())

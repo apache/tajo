@@ -23,6 +23,7 @@ package org.apache.tajo.plan.logical;
 
 import com.google.gson.annotations.Expose;
 
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.json.GsonObject;
 import org.apache.tajo.plan.PlanString;
@@ -132,7 +133,7 @@ public abstract class LogicalNode implements Cloneable, GsonObject {
 	}
 
   @Override
-  public String toJson() {
+  public String toJson(SerializeOption option) {
     return PlanGsonHelper.toJson(this, LogicalNode.class);
   }
 

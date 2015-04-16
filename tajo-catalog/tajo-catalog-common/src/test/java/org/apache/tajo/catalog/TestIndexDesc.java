@@ -18,6 +18,7 @@
 
 package org.apache.tajo.catalog;
 
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
 import org.apache.tajo.common.TajoDataTypes.Type;
@@ -58,8 +59,8 @@ public class TestIndexDesc {
 
   @Test
   public void testIndexDescProto() {
-    IndexDescProto proto = desc1.getProto();
-    assertEquals(desc1.getProto(), proto);
+    IndexDescProto proto = desc1.getProto(SerializeOption.GENERIC);
+    assertEquals(desc1.getProto(SerializeOption.GENERIC), proto);
     assertEquals(desc1, new IndexDesc(proto));
   }
 

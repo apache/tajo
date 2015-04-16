@@ -19,6 +19,7 @@
 package org.apache.tajo.util;
 
 import com.google.common.collect.Lists;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.common.ProtoObject;
 
 import java.util.Collection;
@@ -54,20 +55,22 @@ public class ProtoUtil {
   }
 
   public static KeyValueSetProto convertFromMap(Map<String, String> map) {
-    return new KeyValueSet(map).getProto();
+    return new KeyValueSet(map).getProto(SerializeOption.GENERIC);
   }
 
   /**
-   * It converts an array of ProtoObjects into Iteratable one.
+   * Converts an array of ProtoObjects into an Iterable.
    *
-   * @param protoObjects
    * @param <T>
+   * @param protoObjects
+   * @param option
    * @return
    */
-  public static <T> Iterable<T> toProtoObjects(ProtoObject[] protoObjects) {
+  @SuppressWarnings("unchecked")
+  public static <T> Iterable<T> toProtoObjects(ProtoObject[] protoObjects, SerializeOption option) {
     List<T> converted = Lists.newArrayList();
     for (int i = 0; i < protoObjects.length; i++) {
-      converted.add((T) protoObjects[i].getProto());
+      converted.add((T) protoObjects[i].getProto(option));
     }
     return converted;
   }

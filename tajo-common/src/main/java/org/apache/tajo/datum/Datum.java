@@ -19,6 +19,7 @@
 package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
@@ -208,7 +209,7 @@ public abstract class Datum implements Comparable<Datum>, GsonObject {
   public abstract int compareTo(Datum datum);
 
   @Override
-  public String toJson() {
+  public String toJson(SerializeOption option) {
     return CommonGsonHelper.toJson(this, Datum.class);
   }
 

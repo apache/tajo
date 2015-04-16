@@ -18,6 +18,7 @@
 
 package org.apache.tajo.datum;
 
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.json.CommonGsonHelper;
 import org.apache.tajo.util.Bytes;
@@ -52,7 +53,7 @@ public class TestBytesDatum {
   @Test
   public final void testJson() {
 	  Datum d = DatumFactory.createBlob("12345".getBytes());
-	  String json = d.toJson();
+	  String json = d.toJson(SerializeOption.GENERIC);
 	  Datum fromJson = CommonGsonHelper.fromJson(json, Datum.class);
 	  assertTrue(d.equalsTo(fromJson).asBool());
   }

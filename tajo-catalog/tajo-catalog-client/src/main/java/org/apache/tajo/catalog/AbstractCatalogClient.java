@@ -21,6 +21,7 @@ package org.apache.tajo.catalog;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogProtocol.CatalogProtocolService;
 import org.apache.tajo.catalog.exception.NoSuchFunctionException;
@@ -521,7 +522,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
       return new ServerCallable<Boolean>(this.manager, getCatalogServerAddr(), CatalogProtocol.class, false) {
         public Boolean call(NettyClientBase client) throws ServiceException {
           CatalogProtocolService.BlockingInterface stub = getStub(client);
-          return stub.createTable(null, desc.getProto()).getValue();
+          return stub.createTable(null, desc.getProto(SerializeOption.GENERIC)).getValue();
         }
       }.withRetries();
     } catch (ServiceException e) {
@@ -589,7 +590,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
       return new ServerCallable<Boolean>(this.manager, getCatalogServerAddr(), CatalogProtocol.class, false) {
         public Boolean call(NettyClientBase client) throws ServiceException {
           CatalogProtocolService.BlockingInterface stub = getStub(client);
-          return stub.createIndex(null, index.getProto()).getValue();
+          return stub.createIndex(null, index.getProto(SerializeOption.GENERIC)).getValue();
         }
       }.withRetries();
     } catch (ServiceException e) {
@@ -724,7 +725,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
       return new ServerCallable<Boolean>(this.manager, getCatalogServerAddr(), CatalogProtocol.class, false) {
         public Boolean call(NettyClientBase client) throws ServiceException {
           CatalogProtocolService.BlockingInterface stub = getStub(client);
-          return stub.createFunction(null, funcDesc.getProto()).getValue();
+          return stub.createFunction(null, funcDesc.getProto(SerializeOption.GENERIC)).getValue();
         }
       }.withRetries();
     } catch (ServiceException e) {
@@ -837,7 +838,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
       return new ServerCallable<Boolean>(this.manager, getCatalogServerAddr(), CatalogProtocol.class, false) {
         public Boolean call(NettyClientBase client) throws ServiceException {
           CatalogProtocolService.BlockingInterface stub = getStub(client);
-          return stub.alterTable(null, desc.getProto()).getValue();
+          return stub.alterTable(null, desc.getProto(SerializeOption.GENERIC)).getValue();
         }
       }.withRetries();
     } catch (ServiceException e) {

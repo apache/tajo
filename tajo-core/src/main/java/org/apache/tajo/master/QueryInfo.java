@@ -20,6 +20,7 @@ package org.apache.tajo.master;
 
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.TableDesc;
@@ -182,7 +183,7 @@ public class QueryInfo implements GsonObject, History, Comparable<QueryInfo> {
   }
 
   @Override
-  public String toJson() {
+  public String toJson(SerializeOption option) {
     return CoreGsonHelper.toJson(this, QueryInfo.class);
   }
 
@@ -201,12 +202,12 @@ public class QueryInfo implements GsonObject, History, Comparable<QueryInfo> {
     return queryIdStr;
   }
 
-  public QueryInfoProto getProto() {
+  public QueryInfoProto getProto(SerializeOption option) {
     QueryInfoProto.Builder builder = QueryInfoProto.newBuilder();
 
     builder.setQueryId(queryId.toString())
         .setQueryState(queryState)
-        .setContextVars(context.getProto())
+        .setContextVars(context.getProto(option))
         .setProgress(progress)
         .setStartTime(startTime)
         .setFinishTime(finishTime)
@@ -215,7 +216,7 @@ public class QueryInfo implements GsonObject, History, Comparable<QueryInfo> {
         .setQueryMasterInfoPort(queryMasterInfoPort);
 
     if (resultDesc != null) {
-      builder.setResultDesc(resultDesc.getProto());
+      builder.setResultDesc(resultDesc.getProto(option));
     }
 
     if (sql != null) {

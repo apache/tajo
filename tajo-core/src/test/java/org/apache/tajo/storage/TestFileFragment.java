@@ -20,6 +20,7 @@ package org.apache.tajo.storage;
 
 import com.google.common.collect.Sets;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.storage.fragment.FragmentConvertor;
 import org.apache.tajo.util.CommonTestingUtil;
@@ -54,7 +55,7 @@ public class TestFileFragment {
   public final void testGetProtoAndRestore() {
     FileFragment fragment = new FileFragment("table1_1", new Path(path, "table0"), 0, 500);
 
-    FileFragment fragment1 = FragmentConvertor.convert(FileFragment.class, fragment.getProto());
+    FileFragment fragment1 = FragmentConvertor.convert(FileFragment.class, fragment.getProto(SerializeOption.GENERIC));
     assertEquals("table1_1", fragment1.getTableName());
     assertEquals(new Path(path, "table0"), fragment1.getPath());
     assertTrue(0 == fragment1.getStartKey());

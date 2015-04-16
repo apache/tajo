@@ -19,6 +19,7 @@
 package org.apache.tajo.util;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.statistics.TableStats;
@@ -332,7 +333,7 @@ public class JSPUtil {
 
   public static String tableStatToString(TableStats tableStats) {
     if(tableStats != null){
-      return tableStatToString(tableStats.getProto());
+      return tableStatToString(tableStats.getProto(SerializeOption.GENERIC));
     }
     else {
       return "No input statistics";

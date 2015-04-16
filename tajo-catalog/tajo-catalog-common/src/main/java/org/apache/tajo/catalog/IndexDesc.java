@@ -21,6 +21,7 @@ package org.apache.tajo.catalog;
 import com.google.common.base.Objects;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexDescProto;
 import org.apache.tajo.catalog.proto.CatalogProtos.IndexMethod;
@@ -89,7 +90,7 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
   }
 
   @Override
-  public IndexDescProto getProto() {
+  public IndexDescProto getProto(SerializeOption option) {
     IndexDescProto.Builder builder = IndexDescProto.newBuilder();
 
     CatalogProtos.TableIdentifierProto.Builder tableIdentifierBuilder = CatalogProtos.TableIdentifierProto.newBuilder();
@@ -102,7 +103,7 @@ public class IndexDesc implements ProtoObject<IndexDescProto>, Cloneable {
 
     builder.setTableIdentifier(tableIdentifierBuilder.build());
     builder.setIndexName(this.indexName);
-    builder.setColumn(this.column.getProto());
+    builder.setColumn(this.column.getProto(option));
     builder.setIndexMethod(indexMethod);
     builder.setIsUnique(this.isUnique);
     builder.setIsClustered(this.isClustered);

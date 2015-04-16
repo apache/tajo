@@ -20,6 +20,7 @@ package org.apache.tajo.util.history;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.reflect.TypeToken;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.ipc.ClientProtos.StageHistoryProto;
 import org.apache.tajo.json.GsonObject;
@@ -222,7 +223,7 @@ public class StageHistory implements GsonObject {
   }
 
   @Override
-  public String toJson() {
+  public String toJson(SerializeOption option) {
     return CoreGsonHelper.toJson(this, StageHistory.class);
   }
 

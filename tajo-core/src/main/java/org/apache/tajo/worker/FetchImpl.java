@@ -21,6 +21,7 @@ package org.apache.tajo.worker;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -112,7 +113,7 @@ public class FetchImpl implements ProtoObject<TajoWorkerProtocol.FetchProto>, Cl
   }
 
   @Override
-  public TajoWorkerProtocol.FetchProto getProto() {
+  public TajoWorkerProtocol.FetchProto getProto(SerializeOption option) {
     TajoWorkerProtocol.FetchProto.Builder builder = TajoWorkerProtocol.FetchProto.newBuilder();
 
     builder.setHost(host.getHost());

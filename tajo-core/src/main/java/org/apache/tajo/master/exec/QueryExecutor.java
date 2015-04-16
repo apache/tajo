@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.QueryId;
 import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.SessionVars;
@@ -197,7 +198,7 @@ public class QueryExecutor {
       bytesNum += encodedData.length;
       serializedResBuilder.addSerializedTuples(ByteString.copyFrom(encodedData));
     }
-    serializedResBuilder.setSchema(schema.getProto());
+    serializedResBuilder.setSchema(schema.getProto(SerializeOption.GENERIC));
     serializedResBuilder.setBytesNum(bytesNum);
 
     response.setResultSet(serializedResBuilder.build());
@@ -223,7 +224,7 @@ public class QueryExecutor {
 
     response.setQueryId(queryId.getProto());
     response.setMaxRowNum(maxRow);
-    response.setTableDesc(queryResultScanner.getTableDesc().getProto());
+    response.setTableDesc(queryResultScanner.getTableDesc().getProto(SerializeOption.GENERIC));
     response.setResultCode(ClientProtos.ResultCode.OK);
   }
 
@@ -259,7 +260,7 @@ public class QueryExecutor {
 
     response.setQueryId(queryInfo.getQueryId().getProto());
     response.setMaxRowNum(maxRow);
-    response.setTableDesc(desc.getProto());
+    response.setTableDesc(desc.getProto(SerializeOption.GENERIC));
     response.setResultCode(ClientProtos.ResultCode.OK);
   }
 
@@ -287,7 +288,7 @@ public class QueryExecutor {
       byte[] serializedBytes = encoder.toBytes(outTuple);
       ClientProtos.SerializedResultSet.Builder serializedResBuilder = ClientProtos.SerializedResultSet.newBuilder();
       serializedResBuilder.addSerializedTuples(ByteString.copyFrom(serializedBytes));
-      serializedResBuilder.setSchema(schema.getProto());
+      serializedResBuilder.setSchema(schema.getProto(SerializeOption.GENERIC));
       serializedResBuilder.setBytesNum(serializedBytes.length);
 
       responseBuilder.setResultSet(serializedResBuilder);
@@ -369,11 +370,11 @@ public class QueryExecutor {
 
       CatalogProtos.UpdateTableStatsProto.Builder builder = CatalogProtos.UpdateTableStatsProto.newBuilder();
       builder.setTableName(tableDesc.getName());
-      builder.setStats(stats.getProto());
+      builder.setStats(stats.getProto(SerializeOption.GENERIC));
 
       catalog.updateTableStats(builder.build());
 
-      responseBuilder.setTableDesc(tableDesc.getProto());
+      responseBuilder.setTableDesc(tableDesc.getProto(SerializeOption.GENERIC));
     } else {
       TableStats stats = new TableStats();
       long volume = Query.getTableVolume(context.getConf(), finalOutputDir);
@@ -386,7 +387,7 @@ public class QueryExecutor {
           .setTableName(nodeUniqName)
           .setMeta(CatalogProtos.TableProto.newBuilder().setStoreType(CatalogProtos.StoreType.CSV).build())
           .setSchema(CatalogProtos.SchemaProto.newBuilder().addAllFields(columns).build())
-          .setStats(stats.getProto())
+          .setStats(stats.getProto(SerializeOption.GENERIC))
           .build();
 
       responseBuilder.setTableDesc(tableDescProto);

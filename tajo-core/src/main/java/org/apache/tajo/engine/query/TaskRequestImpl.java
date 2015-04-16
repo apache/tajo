@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.query;
 
+import org.apache.tajo.SerializeOption;
 import org.apache.tajo.TaskAttemptId;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.planner.enforce.Enforcer;
@@ -89,8 +90,8 @@ public class TaskRequestImpl implements TaskRequest {
 	}
 
 	@Override
-	public TaskRequestProto getProto() {
-		mergeLocalToProto();
+	public TaskRequestProto getProto(SerializeOption option) {
+		mergeLocalToProto(option);
 		proto = viaProto ? proto : builder.build();
 		viaProto = true;
 		return proto;
@@ -115,9 +116,7 @@ public class TaskRequestImpl implements TaskRequest {
 		if (fragments != null) {
 			return fragments;
 		}
-		if (fragments == null) {
-			fragments = new ArrayList<FragmentProto>();
-		}
+    fragments = new ArrayList<FragmentProto>(p.getFragmentsCount());
 		for (int i = 0; i < p.getFragmentsCount(); i++) {
 			fragments.add(p.getFragments(i));
 		}
@@ -279,7 +278,7 @@ public class TaskRequestImpl implements TaskRequest {
 		viaProto = true;
 	}
 	
-	private void mergeLocalToBuilder() {
+	private void mergeLocalToBuilder(SerializeOption option) {
 		if (id != null) {
 			builder.setId(this.id.getProto());
 		}
@@ -302,28 +301,28 @@ public class TaskRequestImpl implements TaskRequest {
 		}
     if (this.fetches != null) {
       for (int i = 0; i < fetches.size(); i++) {
-        builder.addFetches(fetches.get(i).getProto());
+        builder.addFetches(fetches.get(i).getProto(option));
       }
     }
     if (this.shouldDie != null) {
       builder.setShouldDie(this.shouldDie);
     }
     if (this.queryContext != null) {
-      builder.setQueryContext(queryContext.getProto());
+      builder.setQueryContext(queryContext.getProto(option));
     }
     if (this.dataChannel != null) {
-      builder.setDataChannel(dataChannel.getProto());
+      builder.setDataChannel(dataChannel.getProto(option));
     }
     if (this.enforcer != null) {
-      builder.setEnforcer(enforcer.getProto());
+      builder.setEnforcer(enforcer.getProto(option));
     }
 	}
 
-	private void mergeLocalToProto() {
+	private void mergeLocalToProto(SerializeOption option) {
 		if(viaProto) {
 			maybeInitBuilder();
 		}
-		mergeLocalToBuilder();
+		mergeLocalToBuilder(option);
 		proto = builder.build();
 		viaProto = true;
 	}
