@@ -350,4 +350,41 @@ public class TestBlockingRpc {
     EchoMessage response2 = stub.echo(null, message);
     assertEquals(MESSAGE, response2.getMessage());
   }
+
+  @Test
+  public void testIdleTimeout() throws Exception {
+    RpcClientManager.RpcConnectionKey rpcConnectionKey =
+        new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, false);
+    BlockingRpcClient client = new BlockingRpcClient(rpcConnectionKey, retries, 1); //1 sec idle timeout
+    client.connect();
+    assertTrue(client.isConnected());
+
+    Thread.sleep(2000);
+    assertFalse(client.isConnected());
+
+    client.connect(); // try to reconnect
+    assertTrue(client.isConnected());
+    client.close();
+    assertFalse(client.isConnected());
+  }
+
+  @Test
+  public void testIdleTimeoutWithActiveRequest() throws Exception {
+    RpcClientManager.RpcConnectionKey rpcConnectionKey =
+        new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, false);
+    BlockingRpcClient client = new BlockingRpcClient(rpcConnectionKey, retries, 1); //1 sec idle timeout
+
+    client.connect();
+
+    assertTrue(client.isConnected());
+    BlockingInterface stub = client.getStub();
+    EchoMessage echoMessage = EchoMessage.newBuilder()
+        .setMessage(MESSAGE).build();
+
+    EchoMessage message = stub.deley(null, echoMessage); //3 sec delay
+    assertEquals(message, echoMessage);
+
+    Thread.sleep(2000);
+    assertFalse(client.isConnected());
+  }
 }

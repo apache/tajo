@@ -52,13 +52,13 @@ public class TestRpcClientManager {
       tasks.add(executor.submit(new Runnable() {
             @Override
             public void run() {
-              NettyClientBase clientBase = null;
+              NettyClientBase client = null;
               try {
-                clientBase = manager.getConnection(address, DummyProtocol.class, true);
+                client = manager.getClient(address, DummyProtocol.class, false);
               } catch (Throwable e) {
                 fail(e.getMessage());
               }
-              assertTrue(clientBase.isConnected());
+              assertTrue(client.isConnected());
             }
           })
       );
@@ -68,7 +68,7 @@ public class TestRpcClientManager {
       future.get();
     }
 
-    NettyClientBase clientBase = manager.getConnection(address, DummyProtocol.class, true);
+    NettyClientBase clientBase = manager.getClient(address, DummyProtocol.class, false);
     RpcClientManager.cleanup(clientBase);
     server.shutdown();
     executor.shutdown();
@@ -76,23 +76,21 @@ public class TestRpcClientManager {
 
   @Test
   public void testCloseFuture() throws Exception {
-    final int parallelCount = 50;
     final DummyProtocolAsyncImpl service = new DummyProtocolAsyncImpl();
     NettyServerBase server = new AsyncRpcServer(DummyProtocol.class,
-        service, new InetSocketAddress("127.0.0.1", 0), parallelCount);
+        service, new InetSocketAddress("127.0.0.1", 0), 3);
     server.start();
 
-    final InetSocketAddress address = server.getListenAddress();
     final RpcClientManager manager = RpcClientManager.getInstance();
 
-    NettyClientBase clientBase = manager.getConnection(address, DummyProtocol.class, true);
-    assertTrue(clientBase.isConnected());
-    assertTrue(clientBase.getChannel().isWritable());
+    NettyClientBase client = manager.getClient(server.getListenAddress(), DummyProtocol.class, true);
+    assertTrue(client.isConnected());
+    assertTrue(client.getChannel().isWritable());
 
-    RpcClientManager.RpcConnectionKey key = clientBase.getKey();
+    RpcClientManager.RpcConnectionKey key = client.getKey();
     assertTrue(RpcClientManager.contains(key));
 
-    clientBase.close();
+    client.close();
     assertFalse(RpcClientManager.contains(key));
     server.shutdown();
   }

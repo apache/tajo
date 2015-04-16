@@ -83,7 +83,7 @@ public class TajoContainerProxy extends ContainerProxy {
     NettyClientBase tajoWorkerRpc = null;
     try {
       InetSocketAddress addr = new InetSocketAddress(container.getNodeId().getHost(), container.getNodeId().getPort());
-      tajoWorkerRpc = RpcClientManager.getInstance().getConnection(addr, TajoWorkerProtocol.class, true);
+      tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true);
       TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
       tajoWorkerRpcClient.killTaskAttempt(null, taskAttemptId.getProto(), NullCallback.get());
     } catch (Throwable e) {
@@ -99,7 +99,7 @@ public class TajoContainerProxy extends ContainerProxy {
           .getQueryMasterManagerService().getBindAddr();
 
       InetSocketAddress addr = new InetSocketAddress(container.getNodeId().getHost(), container.getNodeId().getPort());
-      tajoWorkerRpc = RpcClientManager.getInstance().getConnection(addr, TajoWorkerProtocol.class, true);
+      tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true);
       TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
 
       TajoWorkerProtocol.RunExecutionBlockRequestProto request =
@@ -160,7 +160,7 @@ public class TajoContainerProxy extends ContainerProxy {
     NettyClientBase tmClient = null;
 
     ServiceTracker serviceTracker = context.getQueryMasterContext().getWorkerContext().getServiceTracker();
-    tmClient = manager.getConnection(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
+    tmClient = manager.getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
 
     QueryCoordinatorProtocol.QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
     masterClientService.releaseWorkerResource(null,

@@ -36,6 +36,9 @@ public class RpcClientManager {
 
   public static final int RPC_RETRIES = 3;
 
+  /* If all requests is done and client is idle state, client will be removed. */
+  public static final int RPC_IDLE_TIMEOUT = 43200; // 12 hour
+
   /* entries will be removed by ConnectionCloseFutureListener */
   private static final Map<RpcConnectionKey, NettyClientBase>
       clients = Collections.synchronizedMap(new HashMap<RpcConnectionKey, NettyClientBase>());
@@ -54,19 +57,20 @@ public class RpcClientManager {
     return instance;
   }
 
-  private NettyClientBase makeConnection(RpcConnectionKey rpcConnectionKey)
+  private NettyClientBase makeClient(RpcConnectionKey rpcConnectionKey)
       throws NoSuchMethodException, ClassNotFoundException, ConnectTimeoutException {
     NettyClientBase client;
     if (rpcConnectionKey.asyncMode) {
-      client = new AsyncRpcClient(rpcConnectionKey, RPC_RETRIES);
+      client = new AsyncRpcClient(rpcConnectionKey, RPC_RETRIES, RPC_IDLE_TIMEOUT);
     } else {
-      client = new BlockingRpcClient(rpcConnectionKey, RPC_RETRIES);
+      client = new BlockingRpcClient(rpcConnectionKey, RPC_RETRIES, RPC_IDLE_TIMEOUT);
     }
     return client;
   }
 
   /**
    * Connect a {@link NettyClientBase} to the remote {@link NettyServerBase}, and returns rpc client by protocol.
+   * This client will be shared per protocol and address. Client is removed in shared map when a client is closed
    * @param addr
    * @param protocolClass
    * @param asyncMode
@@ -75,8 +79,8 @@ public class RpcClientManager {
    * @throws ClassNotFoundException
    * @throws ConnectTimeoutException
    */
-  public NettyClientBase getConnection(InetSocketAddress addr,
-                                       Class<?> protocolClass, boolean asyncMode)
+  public NettyClientBase getClient(InetSocketAddress addr,
+                                   Class<?> protocolClass, boolean asyncMode)
       throws NoSuchMethodException, ClassNotFoundException, ConnectTimeoutException {
     RpcConnectionKey key = new RpcConnectionKey(addr, protocolClass, asyncMode);
 
@@ -84,12 +88,13 @@ public class RpcClientManager {
     synchronized (clients) {
       client = clients.get(key);
       if (client == null) {
-        clients.put(key, client = makeConnection(key));
+        clients.put(key, client = makeClient(key));
       }
     }
 
     if (!client.isConnected()) {
       client.connect();
+      client.getChannel().closeFuture().addListener(new ConnectionCloseFutureListener(key));
     }
     assert client.isConnected();
     return client;
@@ -100,7 +105,7 @@ public class RpcClientManager {
    * After it is closed, it is removed from clients map.
    */
   public static void close() {
-    LOG.debug("Closing RPC client manager");
+    LOG.info("Closing RPC client manager");
 
     for (NettyClientBase eachClient : clients.values()) {
       try {

@@ -351,4 +351,43 @@ public class TestAsyncRpc {
     assertEquals(future.get(), echoMessage);
     assertTrue(future.isDone());
   }
+
+  @Test
+  public void testIdleTimeout() throws Exception {
+    RpcClientManager.RpcConnectionKey rpcConnectionKey =
+        new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
+    AsyncRpcClient client = new AsyncRpcClient(rpcConnectionKey, retries, 1); //1 sec idle timeout
+    client.connect();
+    assertTrue(client.isConnected());
+
+    Thread.sleep(2000);
+    assertFalse(client.isConnected());
+
+    client.connect(); // try to reconnect
+    assertTrue(client.isConnected());
+    client.close();
+    assertFalse(client.isConnected());
+  }
+
+  @Test
+  public void testIdleTimeoutWithActiveRequest() throws Exception {
+    RpcClientManager.RpcConnectionKey rpcConnectionKey =
+        new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
+    AsyncRpcClient client = new AsyncRpcClient(rpcConnectionKey, retries, 1); //1 sec idle timeout
+    client.connect();
+
+    assertTrue(client.isConnected());
+    Interface stub = client.getStub();
+    EchoMessage echoMessage = EchoMessage.newBuilder()
+        .setMessage(MESSAGE).build();
+    CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
+    stub.deley(null, echoMessage, future); //3 sec delay
+
+    assertFalse(future.isDone());
+    assertEquals(future.get(), echoMessage);
+    assertTrue(future.isDone());
+
+    Thread.sleep(2000);
+    assertFalse(client.isConnected());
+  }
 }

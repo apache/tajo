@@ -198,7 +198,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
     NettyClientBase tajoWorkerRpc = null;
     try {
       InetSocketAddress addr = new InetSocketAddress(worker.getHost(), worker.getPort());
-      tajoWorkerRpc = RpcClientManager.getInstance().getConnection(addr, TajoWorkerProtocol.class, true);
+      tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true);
       TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
 
       tajoWorkerRpcClient.stopExecutionBlock(null, executionBlockId.getProto(),
@@ -316,7 +316,7 @@ public class TajoResourceAllocator extends AbstractResourceAllocator {
       try {
         ServiceTracker serviceTracker = queryTaskContext.getQueryMasterContext().getWorkerContext().getServiceTracker();
         tmClient = RpcClientManager.getInstance().
-            getConnection(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
+            getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
         QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
         masterClientService.allocateWorkerResources(null, request, callBack);
       } catch (Throwable e) {

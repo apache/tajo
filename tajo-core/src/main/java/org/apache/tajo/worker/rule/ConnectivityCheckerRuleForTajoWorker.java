@@ -40,7 +40,7 @@ public class ConnectivityCheckerRuleForTajoWorker implements SelfDiagnosisRule {
     RpcClientManager manager = RpcClientManager.getInstance();
 
     ServiceTracker serviceTracker = ServiceTrackerFactory.get(tajoConf);
-    NettyClientBase masterClient = manager.getConnection(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
+    NettyClientBase masterClient = manager.getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
     masterClient.getStub();
   }
 

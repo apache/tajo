@@ -154,7 +154,7 @@ public class ExecutionBlockContext {
 
   public NettyClientBase getQueryMasterConnection()
       throws NoSuchMethodException, ConnectTimeoutException, ClassNotFoundException {
-    return connManager.getConnection(qmMasterAddr, QueryMasterProtocol.class, true);
+    return connManager.getClient(qmMasterAddr, QueryMasterProtocol.class, true);
   }
 
   public void stop(){

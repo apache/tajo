@@ -181,7 +181,7 @@ public class WorkerHeartbeatService extends AbstractService {
           CallFuture<TajoHeartbeatResponse> callBack = new CallFuture<TajoHeartbeatResponse>();
 
           ServiceTracker serviceTracker = context.getServiceTracker();
-          rmClient = connectionManager.getConnection(serviceTracker.getResourceTrackerAddress(),
+          rmClient = connectionManager.getClient(serviceTracker.getResourceTrackerAddress(),
               TajoResourceTrackerProtocol.class, true);
           TajoResourceTrackerProtocol.TajoResourceTrackerProtocolService resourceTracker = rmClient.getStub();
           resourceTracker.heartbeat(callBack.getController(), heartbeatProto, callBack);

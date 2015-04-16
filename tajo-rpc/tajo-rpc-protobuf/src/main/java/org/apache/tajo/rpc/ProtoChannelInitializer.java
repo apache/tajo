@@ -51,7 +51,7 @@ class ProtoChannelInitializer extends ChannelInitializer<Channel> {
     pipeline.addLast("protobufDecoder", new ProtobufDecoder(defaultInstance));
     pipeline.addLast("frameEncoder", new ProtobufVarint32LengthFieldPrepender());
     pipeline.addLast("protobufEncoder", new ProtobufEncoder());
-    pipeline.addLast("idleStateHandler", new IdleStateHandler(0, idleTimeSeconds, 0)); //zero is disabling
+    pipeline.addLast("idleStateHandler", new IdleStateHandler(0, 0, idleTimeSeconds)); //zero is disabling
     pipeline.addLast("handler", handler);
   }
 }

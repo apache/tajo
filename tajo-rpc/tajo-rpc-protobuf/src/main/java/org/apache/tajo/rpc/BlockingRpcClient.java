@@ -209,9 +209,10 @@ public class BlockingRpcClient extends NettyClientBase {
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
       if (evt instanceof IdleStateEvent) {
         IdleStateEvent e = (IdleStateEvent) evt;
-        if (e.state() == IdleState.WRITER_IDLE) {
+        /* If all requests is done and event is triggered, channel will be closed. */
+        if (e.state() == IdleState.ALL_IDLE && requests.size() == 0) {
           ctx.close();
-          LOG.info("Idle connection closed successfully :" + ctx.channel().remoteAddress());
+          LOG.warn("Idle connection closed successfully :" + ctx.channel().remoteAddress());
         }
       }
     }

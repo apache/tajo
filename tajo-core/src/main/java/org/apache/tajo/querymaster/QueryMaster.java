@@ -187,7 +187,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
     for (WorkerResourceProto worker : workers) {
       try {
         TajoProtos.WorkerConnectionInfoProto connectionInfo = worker.getConnectionInfo();
-        rpc = manager.getConnection(NetUtils.createSocketAddr(connectionInfo.getHost(), connectionInfo.getPeerRpcPort()),
+        rpc = manager.getClient(NetUtils.createSocketAddr(connectionInfo.getHost(), connectionInfo.getPeerRpcPort()),
             TajoWorkerProtocol.class, true);
         TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
 
@@ -209,7 +209,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
     for (WorkerResourceProto worker : workers) {
       try {
         TajoProtos.WorkerConnectionInfoProto connectionInfo = worker.getConnectionInfo();
-        rpc = manager.getConnection(NetUtils.createSocketAddr(connectionInfo.getHost(), connectionInfo.getPeerRpcPort()),
+        rpc = manager.getClient(NetUtils.createSocketAddr(connectionInfo.getHost(), connectionInfo.getPeerRpcPort()),
             TajoWorkerProtocol.class, true);
         TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerProtocolService = rpc.getStub();
 
@@ -230,7 +230,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
       // update master address in worker context.
 
       ServiceTracker serviceTracker = workerContext.getServiceTracker();
-      rpc = manager.getConnection(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
+      rpc = manager.getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
       QueryCoordinatorProtocolService masterService = rpc.getStub();
 
       CallFuture<WorkerResourcesRequest> callBack = new CallFuture<WorkerResourcesRequest>();
@@ -336,7 +336,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
 
       NettyClientBase tmClient = null;
       try {
-        tmClient = manager.getConnection(workerContext.getServiceTracker().getUmbilicalAddress(),
+        tmClient = manager.getClient(workerContext.getServiceTracker().getUmbilicalAddress(),
             QueryCoordinatorProtocol.class, true);
 
         QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
@@ -437,7 +437,7 @@ public class QueryMaster extends CompositeService implements EventHandler {
             try {
 
               ServiceTracker serviceTracker = queryMasterContext.getWorkerContext().getServiceTracker();
-              tmClient = manager.getConnection(serviceTracker.getUmbilicalAddress(),
+              tmClient = manager.getClient(serviceTracker.getUmbilicalAddress(),
                   QueryCoordinatorProtocol.class, true);
               QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
 

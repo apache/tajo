@@ -99,12 +99,12 @@ public class SessionConnection implements Closeable {
 
   public NettyClientBase getTajoMasterConnection(boolean asyncMode) throws NoSuchMethodException,
       ConnectTimeoutException, ClassNotFoundException {
-    return manager.getConnection(getTajoMasterAddr(), TajoMasterClientProtocol.class, asyncMode);
+    return manager.getClient(getTajoMasterAddr(), TajoMasterClientProtocol.class, asyncMode);
   }
 
   public NettyClientBase getConnection(InetSocketAddress addr, Class protocolClass, boolean asyncMode)
       throws NoSuchMethodException, ConnectTimeoutException, ClassNotFoundException {
-    return manager.getConnection(addr, protocolClass, asyncMode);
+    return manager.getClient(addr, protocolClass, asyncMode);
   }
 
   protected KeyValueSet getProperties() {
@@ -127,7 +127,7 @@ public class SessionConnection implements Closeable {
   public boolean isConnected() {
     if(!closed.get()){
       try {
-        return manager.getConnection(serviceTracker.getClientServiceAddress(),
+        return manager.getClient(serviceTracker.getClientServiceAddress(),
             TajoMasterClientProtocol.class, false).isConnected();
       } catch (Throwable e) {
         return false;
@@ -286,7 +286,7 @@ public class SessionConnection implements Closeable {
     // remove session
     NettyClientBase client = null;
     try {
-      client = manager.getConnection(getTajoMasterAddr(), TajoMasterClientProtocol.class, false);
+      client = manager.getClient(getTajoMasterAddr(), TajoMasterClientProtocol.class, false);
       TajoMasterClientProtocolService.BlockingInterface tajoMaster = client.getStub();
       tajoMaster.removeSession(null, sessionId);
     } catch (Throwable e) {

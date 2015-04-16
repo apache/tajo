@@ -157,7 +157,7 @@ public class QueryInProgress {
     InetSocketAddress addr = NetUtils.createSocketAddr(queryInfo.getQueryMasterHost(), queryInfo.getQueryMasterPort());
     LOG.info("Connect to QueryMaster:" + addr);
     queryMasterRpc =
-        RpcClientManager.getInstance().getConnection(addr, QueryMasterProtocol.class, true);
+        RpcClientManager.getInstance().getClient(addr, QueryMasterProtocol.class, true);
     queryMasterRpcClient = queryMasterRpc.getStub();
   }
 

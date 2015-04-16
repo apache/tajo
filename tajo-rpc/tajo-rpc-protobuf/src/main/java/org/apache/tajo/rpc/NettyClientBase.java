@@ -117,8 +117,6 @@ public abstract class NettyClientBase implements Closeable {
     if (!f.isSuccess() && numRetries > 0) {
       doReconnect(address, f, retries);
     }
-
-    this.channelFuture.channel().closeFuture().addListener(new ConnectionCloseFutureListener(getKey()));
   }
 
   private void doReconnect(final InetSocketAddress address, ChannelFuture future, AtomicInteger retries)
