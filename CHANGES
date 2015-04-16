@@ -89,6 +89,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1467: Parenthesis at the start of SQL query is ignored. 
+    (Keuntae Park)
+
     TAJO-1541: Connection timeout in netty client is not working.
     (Contributed by navis, Committed by jihun)
 
