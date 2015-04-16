@@ -49,7 +49,7 @@ public class TestTajoResourceManager {
   int workerMemoryMB = 512 * 10;
   WorkerResourceAllocationResponse response;
 
-  private TajoWorkerResourceManager initResourceManager(boolean queryMasterMode) throws Exception {
+  private TajoWorkerResourceManager initResourceManager() throws Exception {
     tajoConf = new org.apache.tajo.conf.TajoConf();
 
     tajoConf.setFloatVar(TajoConf.ConfVars.TAJO_QUERYMASTER_DISK_SLOT, 0.0f);
@@ -85,8 +85,6 @@ public class TestTajoResourceManager {
       disks.add(disk);
 
       ServerStatusProto serverStatus = ServerStatusProto.newBuilder()
-          .setQueryMasterMode(queryMasterMode ? BOOL_TRUE : BOOL_FALSE)
-          .setTaskRunnerMode(BOOL_TRUE)
           .setDiskSlots(workerDiskSlots)
           .setMemoryResourceMB(workerMemoryMB)
           .setJvmHeap(jvmHeap)
@@ -113,7 +111,7 @@ public class TestTajoResourceManager {
   public void testHeartbeat() throws Exception {
     TajoWorkerResourceManager tajoWorkerResourceManager = null;
     try {
-      tajoWorkerResourceManager = initResourceManager(false);
+      tajoWorkerResourceManager = initResourceManager();
       assertEquals(numWorkers, tajoWorkerResourceManager.getWorkers().size());
       for(Worker worker: tajoWorkerResourceManager.getWorkers().values()) {
         WorkerResource resource = worker.getResource();
@@ -131,7 +129,7 @@ public class TestTajoResourceManager {
   public void testMemoryResource() throws Exception {
     TajoWorkerResourceManager tajoWorkerResourceManager = null;
     try {
-      tajoWorkerResourceManager = initResourceManager(false);
+      tajoWorkerResourceManager = initResourceManager();
 
       final int minMemory = 256;
       final int maxMemory = 512;
@@ -215,7 +213,7 @@ public class TestTajoResourceManager {
     TajoWorkerResourceManager tajoWorkerResourceManager = null;
 
     try {
-      tajoWorkerResourceManager = initResourceManager(false);
+      tajoWorkerResourceManager = initResourceManager();
 
       final int minMemory = 200;
       final int maxMemory = 500;
@@ -300,7 +298,7 @@ public class TestTajoResourceManager {
     TajoWorkerResourceManager tajoWorkerResourceManager = null;
 
     try {
-      tajoWorkerResourceManager = initResourceManager(false);
+      tajoWorkerResourceManager = initResourceManager();
 
       final float minDiskSlots = 1.0f;
       final float maxDiskSlots = 2.0f;
@@ -382,7 +380,7 @@ public class TestTajoResourceManager {
     TajoWorkerResourceManager tajoWorkerResourceManager = null;
 
     try {
-      tajoWorkerResourceManager = initResourceManager(false);
+      tajoWorkerResourceManager = initResourceManager();
 
       final float minDiskSlots = 1.0f;
       final float maxDiskSlots = 2.0f;

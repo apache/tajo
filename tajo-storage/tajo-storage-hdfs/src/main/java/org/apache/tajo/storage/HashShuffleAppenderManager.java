@@ -96,7 +96,9 @@ public class HashShuffleAppenderManager {
         partitionAppenderMeta.appender.init();
         partitionAppenderMap.put(partId, partitionAppenderMeta);
 
-        LOG.info("Create Hash shuffle file(partId=" + partId + "): " + dataFile);
+        if (LOG.isDebugEnabled()) {
+          LOG.debug("Create Hash shuffle file(partId=" + partId + "): " + dataFile);
+        }
       }
 
       return partitionAppenderMeta.appender;

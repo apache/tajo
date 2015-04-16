@@ -81,7 +81,7 @@ public class BetweenPredicate extends Expr {
     between.not = not;
     between.symmetric = symmetric;
     between.predicand = (Expr) predicand.clone();
-    between.begin = (Expr) between.clone();
+    between.begin = (Expr) begin.clone();
     between.end = (Expr) end.clone();
     return between;
   }

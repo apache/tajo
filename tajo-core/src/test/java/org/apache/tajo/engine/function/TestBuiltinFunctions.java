@@ -74,6 +74,152 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
   }
 
   @Test
+  public void testMinMaxDate() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("value", TajoDataTypes.Type.DATE);
+    String[] data = new String[]{ "2014-01-02", "2014-12-01", "2015-01-01", "1999-08-09", "2000-03-01" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select min(value) as min_value, max(value) as max_value from table11");
+      String ascExpected = "min_value,max_value\n" +
+              "-------------------------------\n" +
+              "1999-08-09,2015-01-01\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+  }
+
+  @Test
+  public void testMinMaxDateWithNull() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("value", TajoDataTypes.Type.DATE);
+    String[] data = new String[]{ "2014-01-02", "2014-12-01", "\\N", "\\N", "2000-03-01" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select min(value) as min_value, max(value) as max_value from table11");
+      String ascExpected = "min_value,max_value\n" +
+              "-------------------------------\n" +
+              "2000-03-01,2014-12-01\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+  }
+
+  @Test
+  public void testMinMaxTime() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("value", TajoDataTypes.Type.TIME);
+    String[] data = new String[]{ "11:11:11", "23:12:50", "00:00:01", "09:59:59", "12:13:14" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select min(value) as min_value, max(value) as max_value from table11");
+      String ascExpected = "min_value,max_value\n" +
+              "-------------------------------\n" +
+              "00:00:01,23:12:50\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+  }
+
+  @Test
+  public void testMinMaxTimeWithNull() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("value", TajoDataTypes.Type.TIME);
+    String[] data = new String[]{ "11:11:11", "\\N", "\\N", "09:59:59", "12:13:14" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select min(value) as min_value, max(value) as max_value from table11");
+      String ascExpected = "min_value,max_value\n" +
+              "-------------------------------\n" +
+              "09:59:59,12:13:14\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+  }
+
+  @Test
+  public void testMinMaxTimestamp() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("value", TajoDataTypes.Type.TIMESTAMP);
+    String[] data = new String[]{ "1999-01-01 11:11:11", "2015-01-01 23:12:50", "2016-12-24 00:00:01", 
+            "1977-05-04 09:59:59", "2002-11-21 12:13:14" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select min(value) as min_value, max(value) as max_value from table11");
+      String ascExpected = "min_value,max_value\n" +
+              "-------------------------------\n" +
+              "1977-05-04 09:59:59,2016-12-24 00:00:01\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+  }
+
+  @Test
+  public void testMinMaxTimestampWithNull() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("value", TajoDataTypes.Type.TIMESTAMP);
+    String[] data = new String[]{ "1999-01-01 11:11:11", "2015-01-01 23:12:50", "\\N",
+            "\\N", "2002-11-21 12:13:14" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select min(value) as min_value, max(value) as max_value from table11");
+      String ascExpected = "min_value,max_value\n" +
+              "-------------------------------\n" +
+              "1999-01-01 11:11:11,2015-01-01 23:12:50\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+  }
+
+  @Test
   public void testMinLong() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);
@@ -322,6 +468,135 @@ public class TestBuiltinFunctions extends QueryTestCaseBase {
     }
 
   }
+
+  @Test
+  public void testStdDevSamp() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_int", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_long", TajoDataTypes.Type.INT8);
+    schema.addColumn("value_float", TajoDataTypes.Type.FLOAT4);
+    schema.addColumn("value_double", TajoDataTypes.Type.FLOAT8);
+    String[] data = new String[]{
+        "1|\\N|-111|1.2|-50.5",
+        "2|1|\\N|\\N|52.5",
+        "3|2|-333|2.8|\\N" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select stddev_samp(value_int) as sdsamp_int, stddev_samp(value_long) as sdsamp_long, stddev_samp(value_float) as sdsamp_float, stddev_samp(value_double) as sdsamp_double from table11");
+      String ascExpected = "sdsamp_int,sdsamp_long,sdsamp_float,sdsamp_double\n" +
+          "-------------------------------\n" +
+          "0.7071067811865476,156.97770542341354,1.1313707824635184,72.8319984622144\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+
+  }
+
+  @Test
+  public void testStdDevSampWithFewNumbers() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_int", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_long", TajoDataTypes.Type.INT8);
+    schema.addColumn("value_float", TajoDataTypes.Type.FLOAT4);
+    schema.addColumn("value_double", TajoDataTypes.Type.FLOAT8);
+    String[] data = new String[]{
+        "1|\\N|\\N|\\N|-50.5",
+        "2|1|\\N|\\N|\\N",
+        "3|\\N|\\N|\\N|\\N" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select stddev_samp(value_int) as sdsamp_int, stddev_samp(value_long) as sdsamp_long, stddev_samp(value_float) as sdsamp_float, stddev_samp(value_double) as sdsamp_double from table11");
+      String ascExpected = "sdsamp_int,sdsamp_long,sdsamp_float,sdsamp_double\n" +
+          "-------------------------------\n" +
+          "null,null,null,null\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+
+  }
+
+  @Test
+  public void testStdDevPop() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_int", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_long", TajoDataTypes.Type.INT8);
+    schema.addColumn("value_float", TajoDataTypes.Type.FLOAT4);
+    schema.addColumn("value_double", TajoDataTypes.Type.FLOAT8);
+    String[] data = new String[]{
+        "1|\\N|-111|1.2|-50.5",
+        "2|1|\\N|\\N|52.5",
+        "3|2|-333|2.8|\\N" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select stddev_pop(value_int) as sdpop_int, stddev_pop(value_long) as sdpop_long, stddev_pop(value_float) as sdpop_float, stddev_pop(value_double) as sdpop_double from table11");
+      String ascExpected = "sdpop_int,sdpop_long,sdpop_float,sdpop_double\n" +
+          "-------------------------------\n" +
+          "0.5,111.0,0.7999999523162842,51.5\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+
+  }
+
+  @Test
+  public void testStdDevPopWithFewNumbers() throws Exception {
+    KeyValueSet tableOptions = new KeyValueSet();
+    tableOptions.set(StorageConstants.TEXT_DELIMITER, StorageConstants.DEFAULT_FIELD_DELIMITER);
+    tableOptions.set(StorageConstants.TEXT_NULL, "\\\\N");
+
+    Schema schema = new Schema();
+    schema.addColumn("id", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_int", TajoDataTypes.Type.INT4);
+    schema.addColumn("value_long", TajoDataTypes.Type.INT8);
+    schema.addColumn("value_float", TajoDataTypes.Type.FLOAT4);
+    schema.addColumn("value_double", TajoDataTypes.Type.FLOAT8);
+    String[] data = new String[]{
+        "1|\\N|\\N|\\N|-50.5",
+        "2|1|\\N|\\N|\\N",
+        "3|\\N|\\N|\\N|\\N" };
+    TajoTestingCluster.createTable("table11", schema, tableOptions, data, 1);
+
+    try {
+      ResultSet res = executeString("select stddev_pop(value_int) as sdpop_int, stddev_pop(value_long) as sdpop_long, stddev_pop(value_float) as sdpop_float, stddev_pop(value_double) as sdpop_double from table11");
+      String ascExpected = "sdpop_int,sdpop_long,sdpop_float,sdpop_double\n" +
+          "-------------------------------\n" +
+          "0.0,null,null,0.0\n";
+
+      assertEquals(ascExpected, resultSetToString(res));
+      res.close();
+    } finally {
+      executeString("DROP TABLE table11 PURGE");
+    }
+
+  }
+
 
 //  @Test
 //  public void testRandom() throws Exception {

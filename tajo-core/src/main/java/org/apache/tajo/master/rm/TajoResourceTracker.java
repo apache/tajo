@@ -18,7 +18,6 @@
 
 package org.apache.tajo.master.rm;
 
-import com.google.common.base.Preconditions;
 import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
 import org.apache.commons.logging.Log;
@@ -26,7 +25,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.AbstractService;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.ipc.QueryCoordinatorProtocol.ClusterResourceSummary;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.TajoHeartbeatResponse;
 import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
@@ -58,6 +56,8 @@ import static org.apache.tajo.ipc.TajoResourceTrackerProtocol.TajoResourceTracke
 public class TajoResourceTracker extends AbstractService implements TajoResourceTrackerProtocolService.Interface {
   /** Class logger */
   private Log LOG = LogFactory.getLog(TajoResourceTracker.class);
+
+  private final WorkerResourceManager manager;
   /** the context of TajoWorkerResourceManager */
   private final TajoRMContext rmContext;
   /** Liveliness monitor which checks ping expiry times of workers */
@@ -68,15 +68,18 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
   /** The bind address of RPC server of worker resource tracker */
   private InetSocketAddress bindAddress;
 
-  public TajoResourceTracker(TajoRMContext rmContext, WorkerLivelinessMonitor workerLivelinessMonitor) {
+  public TajoResourceTracker(WorkerResourceManager manager, WorkerLivelinessMonitor workerLivelinessMonitor) {
     super(TajoResourceTracker.class.getSimpleName());
-    this.rmContext = rmContext;
+    this.manager = manager;
+    this.rmContext = manager.getRMContext();
     this.workerLivelinessMonitor = workerLivelinessMonitor;
   }
 
   @Override
   public void serviceInit(Configuration conf) {
-    Preconditions.checkArgument(conf instanceof TajoConf, "Configuration must be a TajoConf instance");
+    if (!(conf instanceof TajoConf)) {
+      throw new IllegalArgumentException("Configuration must be a TajoConf instance");
+    }
     TajoConf systemConf = (TajoConf) conf;
 
     String confMasterServiceAddr = systemConf.getVar(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS);
@@ -174,18 +177,13 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
       }
 
     } finally {
-      builder.setClusterResourceSummary(getClusterResourceSummary());
+      builder.setClusterResourceSummary(manager.getClusterResourceSummary());
       done.run(builder.build());
     }
   }
 
   private Worker createWorkerResource(NodeHeartbeat request) {
-    boolean queryMasterMode = request.getServerStatus().getQueryMasterMode().getValue();
-    boolean taskRunnerMode = request.getServerStatus().getTaskRunnerMode().getValue();
-
     WorkerResource workerResource = new WorkerResource();
-    workerResource.setQueryMasterMode(queryMasterMode);
-    workerResource.setTaskRunnerMode(taskRunnerMode);
 
     if(request.getServerStatus() != null) {
       workerResource.setMemoryMB(request.getServerStatus().getMemoryResourceMB());
@@ -202,44 +200,5 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
     }
 
     return new Worker(rmContext, workerResource, new WorkerConnectionInfo(request.getConnectionInfo()));
-  }
-
-  public ClusterResourceSummary getClusterResourceSummary() {
-    int totalDiskSlots = 0;
-    int totalCpuCoreSlots = 0;
-    int totalMemoryMB = 0;
-
-    int totalAvailableDiskSlots = 0;
-    int totalAvailableCpuCoreSlots = 0;
-    int totalAvailableMemoryMB = 0;
-
-    synchronized(rmContext) {
-      for(int eachWorker: rmContext.getWorkers().keySet()) {
-        Worker worker = rmContext.getWorkers().get(eachWorker);
-
-        if(worker != null) {
-          WorkerResource resource = worker.getResource();
-
-          totalMemoryMB += resource.getMemoryMB();
-          totalAvailableMemoryMB += resource.getAvailableMemoryMB();
-
-          totalDiskSlots += resource.getDiskSlots();
-          totalAvailableDiskSlots += resource.getAvailableDiskSlots();
-
-          totalCpuCoreSlots += resource.getCpuCoreSlots();
-          totalAvailableCpuCoreSlots += resource.getAvailableCpuCoreSlots();
-        }
-      }
-    }
-
-    return ClusterResourceSummary.newBuilder()
-        .setNumWorkers(rmContext.getWorkers().size())
-        .setTotalCpuCoreSlots(totalCpuCoreSlots)
-        .setTotalDiskSlots(totalDiskSlots)
-        .setTotalMemoryMB(totalMemoryMB)
-        .setTotalAvailableCpuCoreSlots(totalAvailableCpuCoreSlots)
-        .setTotalAvailableDiskSlots(totalAvailableDiskSlots)
-        .setTotalAvailableMemoryMB(totalAvailableMemoryMB)
-        .build();
   }
 }
