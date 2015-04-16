@@ -33,7 +33,6 @@ import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.rpc.NettyClientBase;
-import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.ServerCallable;
 import org.apache.tajo.util.ProtoUtil;
 
@@ -275,17 +274,7 @@ public class QueryClientImpl implements QueryClient {
       return createNullResultSet(queryId);
     }
 
-    QueryStatus status = getQueryStatus(queryId);
-
-    while(status != null && !TajoClientUtil.isQueryComplete(status.getState())) {
-      try {
-        Thread.sleep(500);
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      }
-
-      status = getQueryStatus(queryId);
-    }
+    QueryStatus status = TajoClientUtil.waitCompletion(this, queryId);
 
     if (status.getState() == TajoProtos.QueryState.QUERY_SUCCEEDED) {
       if (status.hasResult()) {
@@ -558,19 +547,7 @@ public class QueryClientImpl implements QueryClient {
       builder.setQueryId(queryId.getProto());
       tajoMasterService.killQuery(null, builder.build());
 
-      long currentTimeMillis = System.currentTimeMillis();
-      long timeKillIssued = currentTimeMillis;
-      while ((currentTimeMillis < timeKillIssued + 10000L)
-          && ((status.getState() != TajoProtos.QueryState.QUERY_KILLED)
-          || (status.getState() == TajoProtos.QueryState.QUERY_KILL_WAIT))) {
-        try {
-          Thread.sleep(100L);
-        } catch(InterruptedException ie) {
-          break;
-        }
-        currentTimeMillis = System.currentTimeMillis();
-        status = getQueryStatus(queryId);
-      }
+      return TajoClientUtil.waitTerminal(this, queryId, 10000L);
 
     } catch(Exception e) {
       LOG.debug("Error when checking for application status", e);

@@ -18,7 +18,9 @@
 
 package org.apache.tajo.client;
 
+import com.google.protobuf.ServiceException;
 import org.apache.tajo.QueryId;
+import org.apache.tajo.QueryIdFactory;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.TajoProtos;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -27,6 +29,8 @@ import org.apache.tajo.catalog.TableDesc;
 import org.apache.tajo.ipc.ClientProtos;
 import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
+import org.apache.tajo.jdbc.TajoResultSetBase;
+import org.apache.tajo.rpc.RpcUtils;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 
 import java.io.IOException;
@@ -56,6 +60,43 @@ public class TajoClientUtil {
     return !isQueryWaitingForSchedule(state) && !isQueryRunning(state);
   }
 
+  /* query complete */
+  public static boolean isTerminal(TajoProtos.QueryState state) {
+    return state == TajoProtos.QueryState.QUERY_SUCCEEDED ||
+        state == TajoProtos.QueryState.QUERY_ERROR ||
+        state == TajoProtos.QueryState.QUERY_FAILED ||
+        state == TajoProtos.QueryState.QUERY_KILLED;
+  }
+
+  public static QueryStatus waitTerminal(QueryClient client, QueryId queryId, long timeout)
+      throws ServiceException {
+    QueryStatus status = client.getQueryStatus(queryId);
+
+    long interval = 100;
+    RpcUtils.Timer timer = new RpcUtils.Timer(timeout);
+    for (;!TajoClientUtil.isTerminal(status.getState()) && !timer.isTimedOut(); timer.elapsed()) {
+      timer.interval(interval);
+      status = client.getQueryStatus(queryId);
+      interval = Math.min(1000, interval << 1);
+    }
+    return status;
+  }
+
+  public static QueryStatus waitCompletion(QueryClient client, QueryId queryId) throws ServiceException {
+    QueryStatus status = client.getQueryStatus(queryId);
+
+    while(!isQueryComplete(status.getState())) {
+      try {
+        Thread.sleep(500);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+
+      status = client.getQueryStatus(queryId);
+    }
+    return status;
+  }
+
   public static ResultSet createResultSet(TajoClient client, QueryId queryId,
                                           ClientProtos.GetQueryResultResponse response, int fetchRows)
       throws IOException {
@@ -63,7 +104,7 @@ public class TajoClientUtil {
     return new FetchResultSet(client, desc.getLogicalSchema(), queryId, fetchRows);
   }
 
-  public static ResultSet createResultSet(QueryClient client, ClientProtos.SubmitQueryResponse response, int fetchRows)
+  public static TajoResultSetBase createResultSet(QueryClient client, ClientProtos.SubmitQueryResponse response, int fetchRows)
       throws IOException {
     if (response.hasTableDesc()) {
       // non-forward query
@@ -90,11 +131,11 @@ public class TajoClientUtil {
     }
   }
 
-  public static ResultSet createNullResultSet() {
-    return new TajoMemoryResultSet(null, new Schema(), null, 0, null);
+  public static TajoResultSetBase createNullResultSet() {
+    return new TajoMemoryResultSet(QueryIdFactory.NULL_QUERY_ID, new Schema(), null, 0, null);
   }
 
-  public static ResultSet createNullResultSet(QueryId queryId) {
+  public static TajoResultSetBase createNullResultSet(QueryId queryId) {
     return new TajoMemoryResultSet(queryId, new Schema(), null, 0, null);
   }
 }

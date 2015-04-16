@@ -18,6 +18,7 @@
 
 package org.apache.tajo.jdbc;
 
+import org.apache.tajo.QueryId;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
@@ -47,7 +48,11 @@ public abstract class TajoResultSetBase implements ResultSet {
   protected Schema schema;
   protected Tuple cur;
 
-  public TajoResultSetBase(@Nullable Map<String, String> clientSideSessionVars) {
+  protected final QueryId queryId;
+
+  public TajoResultSetBase(QueryId queryId, Schema schema, @Nullable Map<String, String> clientSideSessionVars) {
+    this.queryId = queryId;
+    this.schema = schema;
     this.clientSideSessionVars = clientSideSessionVars;
 
     if (clientSideSessionVars != null) {
@@ -67,6 +72,14 @@ public abstract class TajoResultSetBase implements ResultSet {
     curRow = 0;
     totalRow = 0;
     wasNull = false;
+  }
+
+  protected Schema getSchema() throws SQLException {
+    return schema;
+  }
+
+  public QueryId getQueryId() {
+    return queryId;
   }
 
   private void handleNull(Datum d) {
@@ -230,7 +243,7 @@ public abstract class TajoResultSetBase implements ResultSet {
     if (wasNull) {
       return null;
     }
-    TajoDataTypes.Type dataType = schema.getColumn(fieldId - 1).getDataType().getType();
+    TajoDataTypes.Type dataType = getSchema().getColumn(fieldId - 1).getDataType().getType();
 
     switch(dataType) {
       case BOOLEAN:  return d.asBool();
@@ -477,7 +490,7 @@ public abstract class TajoResultSetBase implements ResultSet {
 
   @Override
   public int findColumn(String colName) throws SQLException {
-    return schema.getColumnIdByName(colName);
+    return getSchema().getColumnIdByName(colName);
   }
 
   @Override
@@ -593,7 +606,7 @@ public abstract class TajoResultSetBase implements ResultSet {
 
   @Override
   public ResultSetMetaData getMetaData() throws SQLException {
-    return new TajoResultSetMetaData(schema);
+    return new TajoResultSetMetaData(getSchema());
   }
 
   @Override
