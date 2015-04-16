@@ -19,7 +19,7 @@
 package org.apache.tajo.plan.function.stream;
 
 import org.apache.hadoop.fs.ByteBufferReadable;
-import org.apache.hadoop.io.IOUtils;
+import org.apache.tajo.util.FileUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -66,6 +66,6 @@ public class ByteBufInputChannel extends AbstractInterruptibleChannel implements
 
   @Override
   protected void implCloseChannel() throws IOException {
-    IOUtils.cleanup(null, channel, inputStream);
+    FileUtil.cleanup(null, channel, inputStream);
   }
 }
