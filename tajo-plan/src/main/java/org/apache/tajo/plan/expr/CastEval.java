@@ -31,7 +31,7 @@ import java.util.TimeZone;
 
 import static org.apache.tajo.common.TajoDataTypes.DataType;
 
-public class CastEval extends UnaryEval {
+public class CastEval extends UnaryEval implements Cloneable {
   @Expose private DataType target;
   @Expose private TimeZone timezone;
 
