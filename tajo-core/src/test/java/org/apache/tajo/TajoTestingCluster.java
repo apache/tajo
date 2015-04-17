@@ -164,11 +164,11 @@ public class TajoTestingCluster {
     conf.setIntVar(ConfVars.WORKER_HISTORY_EXPIRE_PERIOD, 1);
 
     // Storage buffer size
-    int bufferSize = 64 * StorageUnit.KB;
+    int bufferSize = 32 * StorageUnit.KB;
     conf.setInt(RawFile.READ_BUFFER_SIZE, bufferSize);
     conf.setInt(RawFile.WRITE_BUFFER_SIZE, bufferSize);
     conf.setInt(DelimitedTextFile.READ_BUFFER_SIZE, bufferSize);
-    conf.setInt(DelimitedTextFile.READ_BUFFER_SIZE, bufferSize);
+    conf.setInt(DelimitedTextFile.WRITE_BUFFER_SIZE, bufferSize);
 
     /* Since Travi CI limits the size of standard output log up to 4MB */
     if (!StringUtils.isEmpty(LOG_LEVEL)) {
