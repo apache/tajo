@@ -184,7 +184,7 @@ public class ExternalSortExec extends SortExec {
 
     info(LOG, "Chunk #" + chunkId + " sort and written (" +
         FileUtil.humanReadableByteCount(appender.getOffset(), false) + " bytes, " + rowNum + " rows, " +
-        ", sort time: " + (sortEnd - sortStart) + " msec, " +
+        "sort time: " + (sortEnd - sortStart) + " msec, " +
         "write time: " + (chunkWriteEnd - chunkWriteStart) + " msec)");
     return outputPath;
   }

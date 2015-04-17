@@ -46,7 +46,7 @@ public abstract class ContainerProxy {
   protected ContainerState state;
   // store enough information to be able to cleanup the container
   protected TajoContainer container;
-  protected TajoContainerId containerID;
+  protected TajoContainerId containerId;
   protected String hostName;
   protected int port = -1;
 
@@ -60,7 +60,7 @@ public abstract class ContainerProxy {
     this.state = ContainerState.PREP;
     this.container = container;
     this.executionBlockId = executionBlockId;
-    this.containerID = container.getId();
+    this.containerId = container.getId();
   }
 
   public synchronized boolean isCompletelyDone() {
@@ -75,7 +75,11 @@ public abstract class ContainerProxy {
     return this.port;
   }
 
-  public String getId() {
-    return executionBlockId.toString();
+  public TajoContainerId getContainerId() {
+    return containerId;
+  }
+
+  public ExecutionBlockId getBlockId() {
+    return executionBlockId;
   }
 }
