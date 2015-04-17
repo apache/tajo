@@ -159,10 +159,10 @@ public class TestSortQuery extends QueryTestCaseBase {
 
   @Test
   public final void testSortWithDate() throws Exception {
-    // skip this test if catalog uses HCatalogStore.
-    // It is because HCatalogStore does not support Time data type.
+    // skip this test if catalog uses HiveCatalogStore.
+    // It is because HiveCatalogStore does not support Time data type.
 
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       // create external table table1 (col1 timestamp, col2 date, col3 time) ...
       executeDDL("create_table_with_date_ddl.sql", "table1");
 

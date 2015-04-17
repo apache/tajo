@@ -29,7 +29,7 @@ public class TestTajoDump extends QueryTestCaseBase {
 
   @Test
   public void testDump1() throws Exception {
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       executeString("CREATE TABLE \"" + getCurrentDatabase() +
           "\".\"TableName1\" (\"Age\" int, \"FirstName\" TEXT, lastname TEXT)");
 
@@ -48,7 +48,7 @@ public class TestTajoDump extends QueryTestCaseBase {
 
   @Test
   public void testDump2() throws Exception {
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       executeString("CREATE TABLE \"" + getCurrentDatabase() +
           "\".\"TableName2\" (\"Age\" int, \"Name\" Record (\"FirstName\" TEXT, lastname TEXT))");
 

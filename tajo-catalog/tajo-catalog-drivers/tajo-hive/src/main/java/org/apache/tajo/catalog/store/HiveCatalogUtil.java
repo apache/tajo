@@ -18,17 +18,13 @@
 package org.apache.tajo.catalog.store;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hive.metastore.IMetaStoreClient;
+import org.apache.hadoop.hive.metastore.api.FieldSchema;
 import org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat;
 import org.apache.hadoop.hive.ql.io.HiveSequenceFileOutputFormat;
 import org.apache.hadoop.hive.ql.io.RCFileOutputFormat;
 import org.apache.hadoop.hive.ql.metadata.Table;
 import org.apache.hadoop.hive.serde.serdeConstants;
-import org.apache.hcatalog.common.HCatException;
-import org.apache.hcatalog.data.schema.HCatFieldSchema;
-import org.apache.hcatalog.data.schema.HCatSchema;
 import org.apache.tajo.catalog.exception.CatalogException;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.catalog.CatalogUtil;
@@ -36,60 +32,44 @@ import org.apache.tajo.common.TajoDataTypes;
 import org.apache.thrift.TException;
 import parquet.hadoop.mapred.DeprecatedParquetOutputFormat;
 
-public class HCatalogUtil {
-  protected final Log LOG = LogFactory.getLog(getClass());
-
-  public static void validateHCatTableAndTajoSchema(HCatSchema tblSchema) throws CatalogException {
-    for (HCatFieldSchema hcatField : tblSchema.getFields()) {
-      validateHCatFieldAndTajoSchema(hcatField);
-    }
-  }
-
-  private static void validateHCatFieldAndTajoSchema(HCatFieldSchema fieldSchema) throws CatalogException {
-    try {
-      HCatFieldSchema.Type fieldType = fieldSchema.getType();
-      switch (fieldType) {
-        case ARRAY:
-          throw new HCatException("Tajo cannot support array field type.");
-        case STRUCT:
-          throw new HCatException("Tajo cannot support struct field type.");
-        case MAP:
-          throw new HCatException("Tajo cannot support map field type.");
+public class HiveCatalogUtil {
+  public static void validateSchema(Table tblSchema) throws CatalogException {
+    for (FieldSchema fieldSchema : tblSchema.getCols()) {
+      String fieldType = fieldSchema.getType();
+      if (fieldType.equalsIgnoreCase("ARRAY") || fieldType.equalsIgnoreCase("STRUCT")
+        || fieldType.equalsIgnoreCase("MAP")) {
+        throw new CatalogException("Unsupported field type :" + fieldType.toUpperCase());
       }
-    } catch (HCatException e) {
-      throw new CatalogException("incompatible hcatalog types when assigning to tajo type. - " +
-          "HCatFieldSchema:" + fieldSchema);
     }
   }
 
   public static TajoDataTypes.Type getTajoFieldType(String fieldType)  {
     Preconditions.checkNotNull(fieldType);
 
-    String typeStr = null;
-
-    if(fieldType.equalsIgnoreCase(serdeConstants.INT_TYPE_NAME))
-      typeStr = "INT4";
-    else if(fieldType.equalsIgnoreCase(serdeConstants.TINYINT_TYPE_NAME))
-      typeStr = "INT1";
-    else if(fieldType.equalsIgnoreCase(serdeConstants.SMALLINT_TYPE_NAME))
-      typeStr = "INT2";
-    else if(fieldType.equalsIgnoreCase(serdeConstants.BIGINT_TYPE_NAME))
-      typeStr = "INT8";
-    else if(fieldType.equalsIgnoreCase(serdeConstants.BOOLEAN_TYPE_NAME))
-      typeStr = "BOOLEAN";
-    else if(fieldType.equalsIgnoreCase(serdeConstants.FLOAT_TYPE_NAME))
-      typeStr = "FLOAT4";
-    else if(fieldType.equalsIgnoreCase(serdeConstants.DOUBLE_TYPE_NAME))
-      typeStr = "FLOAT8";
-    else if(fieldType.equalsIgnoreCase(serdeConstants.STRING_TYPE_NAME))
-      typeStr = "TEXT";
-    else if(fieldType.equalsIgnoreCase(serdeConstants.BINARY_TYPE_NAME))
-      typeStr = "BLOB";
-
-    try {
-      return Enum.valueOf(TajoDataTypes.Type.class, typeStr);
-    } catch (IllegalArgumentException iae) {
-      throw new CatalogException("Cannot find a matched type against from '" + typeStr + "'");
+    if(fieldType.equalsIgnoreCase(serdeConstants.INT_TYPE_NAME)) {
+      return TajoDataTypes.Type.INT4;
+    } else if(fieldType.equalsIgnoreCase(serdeConstants.TINYINT_TYPE_NAME)) {
+      return TajoDataTypes.Type.INT1;
+    } else if(fieldType.equalsIgnoreCase(serdeConstants.SMALLINT_TYPE_NAME)) {
+      return TajoDataTypes.Type.INT2;
+    } else if(fieldType.equalsIgnoreCase(serdeConstants.BIGINT_TYPE_NAME)) {
+      return TajoDataTypes.Type.INT8;
+    } else if(fieldType.equalsIgnoreCase(serdeConstants.BOOLEAN_TYPE_NAME)) {
+      return TajoDataTypes.Type.BOOLEAN;
+    } else if(fieldType.equalsIgnoreCase(serdeConstants.FLOAT_TYPE_NAME)) {
+      return TajoDataTypes.Type.FLOAT4;
+    } else if(fieldType.equalsIgnoreCase(serdeConstants.DOUBLE_TYPE_NAME)) {
+      return TajoDataTypes.Type.FLOAT8;
+    } else if(fieldType.equalsIgnoreCase(serdeConstants.STRING_TYPE_NAME)) {
+      return TajoDataTypes.Type.TEXT;
+    } else if(fieldType.equalsIgnoreCase(serdeConstants.BINARY_TYPE_NAME)) {
+      return TajoDataTypes.Type.BLOB;
+    } else if(fieldType.equalsIgnoreCase(serdeConstants.TIMESTAMP_TYPE_NAME)) {
+      return TajoDataTypes.Type.TIMESTAMP;
+    } else if(fieldType.equalsIgnoreCase(serdeConstants.DATE_TYPE_NAME)) {
+      return TajoDataTypes.Type.DATE;
+    } else {
+      throw new CatalogException("Cannot find a matched type against from '" + fieldType + "'");
     }
   }
 
