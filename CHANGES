@@ -2,7 +2,6 @@ Tajo Change Log
 
 Release 0.11.0 - unreleased
 
-
   NEW FEATURES
 
     TAJO-1494: Add SeekableScanner support to DelimitedTextFileScanner.
