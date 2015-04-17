@@ -94,16 +94,15 @@ public class TajoContainerProxy extends ContainerProxy {
   }
 
   private void assignExecutionBlock(ExecutionBlockId executionBlockId, TajoContainer container) {
-    NettyClientBase tajoWorkerRpc = null;
+    NettyClientBase tajoWorkerRpc;
     try {
-      InetSocketAddress myAddr= context.getQueryMasterContext().getWorkerContext()
-          .getQueryMasterManagerService().getBindAddr();
 
       InetSocketAddress addr = new InetSocketAddress(container.getNodeId().getHost(), container.getNodeId().getPort());
       tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true);
       TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
 
-      PlanProto.ShuffleType type = context.getQuery().getStage(executionBlockId).getDataChannel().getShuffleType();
+      PlanProto.ShuffleType shuffleType =
+          context.getQuery().getStage(executionBlockId).getDataChannel().getShuffleType();
 
       TajoWorkerProtocol.RunExecutionBlockRequestProto request =
           TajoWorkerProtocol.RunExecutionBlockRequestProto.newBuilder()
@@ -114,6 +113,7 @@ public class TajoContainerProxy extends ContainerProxy {
               .setQueryOutputPath(context.getStagingDir().toString())
               .setQueryContext(queryContext.getProto())
               .setPlanJson(planJson)
+              .setShuffleType(shuffleType)
               .build();
 
       tajoWorkerRpcClient.startExecutionBlock(null, request, NullCallback.get());
