@@ -22,6 +22,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.util.internal.PlatformDependent;
 import org.apache.hadoop.classification.InterfaceStability;
+import org.apache.tajo.util.CommonTestingUtil;
 
 import java.lang.reflect.Field;
 
@@ -38,7 +39,13 @@ public class BufferPool {
     *  Create a pooled ByteBuf allocator but disables the thread-local cache.
     *  Because the TaskRunner thread is newly created
     * */
-    allocator = createPooledByteBufAllocator(true, false, 0);
+
+     System.getProperty(CommonTestingUtil.TAJO_TEST_KEY, CommonTestingUtil.TAJO_TEST_TRUE);
+    int maxOrder = 11; // 16MiB chunkSize = pageSize << maxOrder
+    if (System.getProperty(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
+       maxOrder = 7; //1MiB chunk
+    }
+    allocator = createPooledByteBufAllocator(true, false, 0, maxOrder);
 
     /* if you are finding memory leak, please enable this line */
     //ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
@@ -50,6 +57,7 @@ public class BufferPool {
   public static PooledByteBufAllocator createPooledByteBufAllocator(
       boolean allowDirectBufs,
       boolean allowCache,
+      int maxOrder,
       int numCores) {
     if (numCores == 0) {
       numCores = Runtime.getRuntime().availableProcessors();
@@ -59,7 +67,7 @@ public class BufferPool {
         Math.min(getPrivateStaticField("DEFAULT_NUM_HEAP_ARENA"), numCores),
         Math.min(getPrivateStaticField("DEFAULT_NUM_DIRECT_ARENA"), allowDirectBufs ? numCores : 0),
         getPrivateStaticField("DEFAULT_PAGE_SIZE"),
-        getPrivateStaticField("DEFAULT_MAX_ORDER"),
+        Math.min(getPrivateStaticField("DEFAULT_MAX_ORDER"), maxOrder),
         allowCache ? getPrivateStaticField("DEFAULT_TINY_CACHE_SIZE") : 0,
         allowCache ? getPrivateStaticField("DEFAULT_SMALL_CACHE_SIZE") : 0,
         allowCache ? getPrivateStaticField("DEFAULT_NORMAL_CACHE_SIZE") : 0
