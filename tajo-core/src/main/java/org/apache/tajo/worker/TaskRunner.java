@@ -299,8 +299,6 @@ public class TaskRunner extends AbstractService {
               }
             } catch (Throwable t) {
               LOG.fatal(t.getMessage(), t);
-            } finally {
-              executionBlockContext.releaseConnection(client);
             }
           }
         }

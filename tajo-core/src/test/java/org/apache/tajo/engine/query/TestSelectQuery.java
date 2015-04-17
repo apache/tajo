@@ -708,4 +708,18 @@ public class TestSelectQuery extends QueryTestCaseBase {
       executeString("DROP TABLE table2");
     }
   }
+
+  @Test
+  public void testSelectWithParentheses1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testSelectWithParentheses2() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
 }

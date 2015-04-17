@@ -315,7 +315,7 @@ public class SimpleParser {
   }
 
   private boolean isStatementStart(char character) {
-    return state == ParsingState.TOK_START && (Character.isLetterOrDigit(character));
+    return state == ParsingState.TOK_START && (Character.isLetterOrDigit(character) || character == '(');
   }
 
   private boolean isStatementContinue() {
