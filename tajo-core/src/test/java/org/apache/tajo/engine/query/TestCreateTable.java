@@ -41,8 +41,8 @@ public class TestCreateTable extends QueryTestCaseBase {
   @Test
   public final void testVariousTypes() throws Exception {
     List<String> createdNames;
-    if (testingCluster.isHCatalogStoreRunning()) {
-      createdNames = executeDDL("create_table_various_types_for_hcatalog.sql", null);
+    if (testingCluster.isHiveCatalogStoreRunning()) {
+      createdNames = executeDDL("create_table_various_types_for_hive_catalog.sql", null);
     } else {
       createdNames = executeDDL("create_table_various_types.sql", null);
     }
@@ -135,7 +135,7 @@ public class TestCreateTable extends QueryTestCaseBase {
 
   @Test
   public final void testCreatedTableWithQuotedIdentifierAndVerifyPath() throws Exception {
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertPathOfCreatedTable("D6", "OldTable", "NewMgmtTable", "CREATE TABLE \"D6\".\"OldTable\" (age integer);");
     }
   }
@@ -174,7 +174,7 @@ public class TestCreateTable extends QueryTestCaseBase {
   @Test
   public final void testDelimitedIdentifierWithNonAsciiCharacters() throws Exception {
 
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       ResultSet res = null;
       try {
         List<String> tableNames = executeDDL("quoted_identifier_non_ascii_ddl.sql", "table1", "\"테이블1\"");
@@ -207,7 +207,7 @@ public class TestCreateTable extends QueryTestCaseBase {
 
   @Test
   public final void testDelimitedIdentifierWithMixedCharacters() throws Exception {
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       ResultSet res = null;
 
       try {
@@ -442,8 +442,8 @@ public class TestCreateTable extends QueryTestCaseBase {
 
   @Test
   public final void testCreateTableLike1() throws Exception {
-    // Hcatalog does not support varchar type in hive-0.12.0
-    if (testingCluster.isHCatalogStoreRunning()) {
+    // //HiveCatalogStore does not support varchar type in hive-0.12.0
+    if (testingCluster.isHiveCatalogStoreRunning()) {
       // Basic create table with default database
       executeString("CREATE TABLE table1 (c1 int, c2 text);").close();
       executeString("CREATE TABLE table2 LIKE table1");

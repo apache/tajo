@@ -47,18 +47,18 @@ import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.junit.Assert.*;
 
 /**
- * TestHCatalogStore. Test case for
- * {@link org.apache.tajo.catalog.store.HCatalogStore}
+ * TestHiveCatalogStore. Test case for
+ * {@link org.apache.tajo.catalog.store.HiveCatalogStore}
  */
 
-public class TestHCatalogStore {
+public class TestHiveCatalogStore {
   private static final String DB_NAME = "test_hive";
   private static final String CUSTOMER = "customer";
   private static final String NATION = "nation";
   private static final String REGION = "region";
   private static final String SUPPLIER = "supplier";
 
-  private static HCatalogStore store;
+  private static HiveCatalogStore store;
   private static Path warehousePath;
 
   @BeforeClass
@@ -73,9 +73,9 @@ public class TestHCatalogStore {
     conf.set(HiveConf.ConfVars.METASTORECONNECTURLKEY.varname, jdbcUri);
     conf.set(TajoConf.ConfVars.WAREHOUSE_DIR.varname, warehousePath.toUri().toString());
 
-    // create local HCatalogStore.
+    // create local HiveCatalogStore.
     TajoConf tajoConf = new TajoConf(conf);
-    store = new HCatalogStore(tajoConf);
+    store = new HiveCatalogStore(tajoConf);
     store.createDatabase(DB_NAME, null);
   }
 
@@ -463,5 +463,42 @@ public class TestHCatalogStore {
     }
 
     store.dropTable(DB_NAME, CUSTOMER);
+  }
+
+  @Test
+  public void testDataTypeCompatibility() throws Exception {
+    String tableName = CatalogUtil.normalizeIdentifier("testDataTypeCompatibility");
+
+    TableMeta meta = new TableMeta(CatalogProtos.StoreType.CSV, new KeyValueSet());
+
+    org.apache.tajo.catalog.Schema schema = new org.apache.tajo.catalog.Schema();
+    schema.addColumn("col1", TajoDataTypes.Type.INT4);
+    schema.addColumn("col2", TajoDataTypes.Type.INT1);
+    schema.addColumn("col3", TajoDataTypes.Type.INT2);
+    schema.addColumn("col4", TajoDataTypes.Type.INT8);
+    schema.addColumn("col5", TajoDataTypes.Type.BOOLEAN);
+    schema.addColumn("col6", TajoDataTypes.Type.FLOAT4);
+    schema.addColumn("col7", TajoDataTypes.Type.FLOAT8);
+    schema.addColumn("col8", TajoDataTypes.Type.TEXT);
+    schema.addColumn("col9", TajoDataTypes.Type.BLOB);
+    schema.addColumn("col10", TajoDataTypes.Type.TIMESTAMP);
+    schema.addColumn("col11", TajoDataTypes.Type.DATE);
+
+    TableDesc table = new TableDesc(CatalogUtil.buildFQName(DB_NAME, tableName), schema, meta,
+      new Path(warehousePath, new Path(DB_NAME, tableName)).toUri());
+    store.createTable(table.getProto());
+    assertTrue(store.existTable(DB_NAME, tableName));
+
+    TableDesc table1 = new TableDesc(store.getTable(DB_NAME, tableName));
+    assertEquals(table.getName(), table1.getName());
+    assertEquals(table.getPath(), table1.getPath());
+    assertEquals(table.getSchema().size(), table1.getSchema().size());
+    for (int i = 0; i < table.getSchema().size(); i++) {
+      assertEquals(table.getSchema().getColumn(i).getSimpleName(), table1.getSchema().getColumn(i).getSimpleName());
+    }
+
+    assertEquals(StringEscapeUtils.escapeJava(StorageConstants.DEFAULT_FIELD_DELIMITER),
+      table1.getMeta().getOption(StorageConstants.TEXT_DELIMITER));
+    store.dropTable(DB_NAME, tableName);
   }
 }

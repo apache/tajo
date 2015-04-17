@@ -31,10 +31,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Manages a pool of HiveMetaStoreClient connections. If the connection pool is empty
  * a new client is created and added to the pool. There is no size limit.
  */
-public class HCatalogStoreClientPool {
-  private static final Logger LOG = Logger.getLogger(HCatalogStoreClientPool.class);
-  private final ConcurrentLinkedQueue<HCatalogStoreClient> clientPool =
-      new ConcurrentLinkedQueue<HCatalogStoreClient>();
+public class HiveCatalogStoreClientPool {
+  private static final Logger LOG = Logger.getLogger(HiveCatalogStoreClientPool.class);
+  private final ConcurrentLinkedQueue<HiveCatalogStoreClient> clientPool =
+      new ConcurrentLinkedQueue<HiveCatalogStoreClient>();
   private AtomicBoolean poolClosed = new AtomicBoolean(false);
   private HiveConf hiveConf;
 
@@ -42,11 +42,11 @@ public class HCatalogStoreClientPool {
    * A wrapper around the HiveMetaStoreClient that manages interactions with the
    * connection pool.
    */
-  public class HCatalogStoreClient {
+  public class HiveCatalogStoreClient {
     private final IMetaStoreClient hiveClient;
     public AtomicBoolean isInUse = new AtomicBoolean(false);
 
-    private HCatalogStoreClient(HiveConf hiveConf) {
+    private HiveCatalogStoreClient(HiveConf hiveConf) {
       try {
         HiveMetaHookLoader hookLoader = new HiveMetaHookLoader() {
           @Override
@@ -98,16 +98,16 @@ public class HCatalogStoreClientPool {
     }
   }
 
-  public HCatalogStoreClientPool(int initialSize) {
-    this(initialSize, new HiveConf(HCatalogStoreClientPool.class));
+  public HiveCatalogStoreClientPool(int initialSize) {
+    this(initialSize, new HiveConf(HiveCatalogStoreClientPool.class));
   }
 
-  public HCatalogStoreClientPool(int initialSize, HiveConf hiveConf) {
+  public HiveCatalogStoreClientPool(int initialSize, HiveConf hiveConf) {
     this.hiveConf = hiveConf;
     addClients(initialSize);
   }
 
-  public HCatalogStoreClientPool(int initialSize, Configuration conf) {
+  public HiveCatalogStoreClientPool(int initialSize, Configuration conf) {
     this.hiveConf = new HiveConf();
     setParameters(conf);
     addClients(initialSize);
@@ -125,14 +125,14 @@ public class HCatalogStoreClientPool {
    */
   public void addClients(int numClients) {
     for (int i = 0; i < numClients; ++i) {
-      clientPool.add(new HCatalogStoreClient(hiveConf));
+      clientPool.add(new HiveCatalogStoreClient(hiveConf));
     }
   }
 
   /**
    * Gets a client from the pool. If the pool is empty a new client is created.
    */
-  public synchronized HCatalogStoreClient getClient() {
+  public synchronized HiveCatalogStoreClient getClient() {
     // The MetaStoreClient c'tor relies on knowing the Hadoop version by asking
     // org.apache.hadoop.util.VersionInfo. The VersionInfo class relies on opening
     // the 'common-version-info.properties' file as a resource from hadoop-common*.jar
@@ -142,10 +142,10 @@ public class HCatalogStoreClientPool {
       Thread.currentThread().setContextClassLoader(ClassLoader.getSystemClassLoader());
     }
 
-    HCatalogStoreClient client = clientPool.poll();
+    HiveCatalogStoreClient client = clientPool.poll();
     // The pool was empty so create a new client and return that.
     if (client == null) {
-      client = new HCatalogStoreClient(hiveConf);
+      client = new HiveCatalogStoreClient(hiveConf);
     }
     client.markInUse();
 
@@ -162,7 +162,7 @@ public class HCatalogStoreClientPool {
       return;
     }
 
-    HCatalogStoreClient client = null;
+    HiveCatalogStoreClient client = null;
     while ((client = clientPool.poll()) != null) {
       client.getHiveClient().close();
     }
