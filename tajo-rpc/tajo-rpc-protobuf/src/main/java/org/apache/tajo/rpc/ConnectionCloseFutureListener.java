@@ -16,42 +16,20 @@
  * limitations under the License.
  */
 
-package org.apache.tajo.algebra;
+package org.apache.tajo.rpc;
 
-import com.google.common.base.Objects;
-import com.google.gson.annotations.Expose;
-import com.google.gson.annotations.SerializedName;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 
-public abstract class UnaryOperator extends Expr {
-  @Expose @SerializedName("Expr")
-  private Expr child;
+public class ConnectionCloseFutureListener implements GenericFutureListener {
+  private RpcClientManager.RpcConnectionKey key;
 
-  public UnaryOperator(OpType type) {
-    super(type);
-  }
-
-  public Expr getChild() {
-    return this.child;
-  }
-
-  public boolean hasChild() {
-    return child != null;
-  }
-
-  public void setChild(Expr op) {
-    this.child = op;
-  }
-
-  public int hashCode() {
-    return Objects.hashCode(getType(), child.hashCode());
+  public ConnectionCloseFutureListener(RpcClientManager.RpcConnectionKey key) {
+    this.key = key;
   }
 
   @Override
-  public Object clone() throws CloneNotSupportedException {
-    UnaryOperator unaryOperator = (UnaryOperator) super.clone();
-    if (child != null) {
-      unaryOperator.child = (Expr) child.clone();
-    }
-    return unaryOperator;
+  public void operationComplete(Future future) throws Exception {
+    RpcClientManager.remove(key);
   }
 }
