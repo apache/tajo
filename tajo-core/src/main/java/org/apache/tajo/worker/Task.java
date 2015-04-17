@@ -425,50 +425,47 @@ public class Task {
       context.getHashShuffleAppenderManager().finalizeTask(taskId);
 
       NettyClientBase client = executionBlockContext.getQueryMasterConnection();
-      try {
-        QueryMasterProtocol.QueryMasterProtocolService.Interface queryMasterStub = client.getStub();
-        if (context.isStopped()) {
-          context.setExecutorProgress(0.0f);
 
-          if (context.getState() == TaskAttemptState.TA_KILLED) {
-            queryMasterStub.statusUpdate(null, getReport(), NullCallback.get());
-            executionBlockContext.killedTasksNum.incrementAndGet();
-          } else {
-            context.setState(TaskAttemptState.TA_FAILED);
-            TaskFatalErrorReport.Builder errorBuilder =
-                TaskFatalErrorReport.newBuilder()
-                    .setId(getId().getProto());
-            if (error != null) {
-              if (error.getMessage() == null) {
-                errorBuilder.setErrorMessage(error.getClass().getCanonicalName());
-              } else {
-                errorBuilder.setErrorMessage(error.getMessage());
-              }
-              errorBuilder.setErrorTrace(ExceptionUtils.getStackTrace(error));
-            }
+      QueryMasterProtocol.QueryMasterProtocolService.Interface queryMasterStub = client.getStub();
+      if (context.isStopped()) {
+        context.setExecutorProgress(0.0f);
 
-            queryMasterStub.fatalError(null, errorBuilder.build(), NullCallback.get());
-            executionBlockContext.failedTasksNum.incrementAndGet();
-          }
+        if (context.getState() == TaskAttemptState.TA_KILLED) {
+          queryMasterStub.statusUpdate(null, getReport(), NullCallback.get());
+          executionBlockContext.killedTasksNum.incrementAndGet();
         } else {
-          // if successful
-          context.setProgress(1.0f);
-          context.setState(TaskAttemptState.TA_SUCCEEDED);
-          executionBlockContext.succeededTasksNum.incrementAndGet();
+          context.setState(TaskAttemptState.TA_FAILED);
+          TaskFatalErrorReport.Builder errorBuilder =
+              TaskFatalErrorReport.newBuilder()
+                  .setId(getId().getProto());
+          if (error != null) {
+            if (error.getMessage() == null) {
+              errorBuilder.setErrorMessage(error.getClass().getCanonicalName());
+            } else {
+              errorBuilder.setErrorMessage(error.getMessage());
+            }
+            errorBuilder.setErrorTrace(ExceptionUtils.getStackTrace(error));
+          }
 
-          TaskCompletionReport report = getTaskCompletionReport();
-          queryMasterStub.done(null, report, NullCallback.get());
+          queryMasterStub.fatalError(null, errorBuilder.build(), NullCallback.get());
+          executionBlockContext.failedTasksNum.incrementAndGet();
         }
-        finishTime = System.currentTimeMillis();
-        LOG.info(context.getTaskId() + " completed. " +
-            "Worker's task counter - total:" + executionBlockContext.completedTasksNum.intValue() +
-            ", succeeded: " + executionBlockContext.succeededTasksNum.intValue()
-            + ", killed: " + executionBlockContext.killedTasksNum.intValue()
-            + ", failed: " + executionBlockContext.failedTasksNum.intValue());
-        cleanupTask();
-      } finally {
-        executionBlockContext.releaseConnection(client);
+      } else {
+        // if successful
+        context.setProgress(1.0f);
+        context.setState(TaskAttemptState.TA_SUCCEEDED);
+        executionBlockContext.succeededTasksNum.incrementAndGet();
+
+        TaskCompletionReport report = getTaskCompletionReport();
+        queryMasterStub.done(null, report, NullCallback.get());
       }
+      finishTime = System.currentTimeMillis();
+      LOG.info(context.getTaskId() + " completed. " +
+          "Worker's task counter - total:" + executionBlockContext.completedTasksNum.intValue() +
+          ", succeeded: " + executionBlockContext.succeededTasksNum.intValue()
+          + ", killed: " + executionBlockContext.killedTasksNum.intValue()
+          + ", failed: " + executionBlockContext.failedTasksNum.intValue());
+      cleanupTask();
     }
   }
 

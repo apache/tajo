@@ -33,9 +33,6 @@ import org.apache.hadoop.hive.serde2.columnar.ColumnarSerDe;
 import org.apache.hadoop.hive.serde2.columnar.LazyBinaryColumnarSerDe;
 import org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe;
 import org.apache.hadoop.hive.serde2.lazybinary.LazyBinarySerDe;
-import org.apache.hcatalog.common.HCatUtil;
-import org.apache.hcatalog.data.schema.HCatFieldSchema;
-import org.apache.hcatalog.data.schema.HCatSchema;
 import org.apache.tajo.TajoConstants;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.*;
@@ -63,35 +60,35 @@ import java.util.*;
 
 import static org.apache.tajo.catalog.proto.CatalogProtos.PartitionType;
 
-public class HCatalogStore extends CatalogConstants implements CatalogStore {
+public class HiveCatalogStore extends CatalogConstants implements CatalogStore {
   protected final Log LOG = LogFactory.getLog(getClass());
 
   private static String HIVE_WAREHOUSE_DIR_CONF_KEY = "hive.metastore.warehouse.dir";
 
   protected Configuration conf;
   private static final int CLIENT_POOL_SIZE = 2;
-  private final HCatalogStoreClientPool clientPool;
+  private final HiveCatalogStoreClientPool clientPool;
   private final String defaultTableSpaceUri;
 
-  public HCatalogStore(final Configuration conf) throws InternalException {
+  public HiveCatalogStore(final Configuration conf) throws InternalException {
     if (!(conf instanceof TajoConf)) {
       throw new CatalogException("Invalid Configuration Type:" + conf.getClass().getSimpleName());
     }
     this.conf = conf;
     this.defaultTableSpaceUri = TajoConf.getWarehouseDir((TajoConf) conf).toString();
-    this.clientPool = new HCatalogStoreClientPool(CLIENT_POOL_SIZE, conf);
+    this.clientPool = new HiveCatalogStoreClientPool(CLIENT_POOL_SIZE, conf);
   }
 
   @Override
   public boolean existTable(final String databaseName, final String tableName) throws CatalogException {
     boolean exist = false;
     org.apache.hadoop.hive.ql.metadata.Table table;
-    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
 
     // get table
     try {
       client = clientPool.getClient();
-      table = HCatalogUtil.getTable(client.getHiveClient(), databaseName, tableName);
+      table = HiveCatalogUtil.getTable(client.getHiveClient(), databaseName, tableName);
       if (table != null) {
         exist = true;
       }
@@ -111,7 +108,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
   @Override
   public final CatalogProtos.TableDescProto getTable(String databaseName, final String tableName) throws CatalogException {
     org.apache.hadoop.hive.ql.metadata.Table table = null;
-    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     Path path = null;
     CatalogProtos.StoreType storeType = null;
     org.apache.tajo.catalog.Schema schema = null;
@@ -126,7 +123,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       // get hive table schema
       try {
         client = clientPool.getClient();
-        table = HCatalogUtil.getTable(client.getHiveClient(), databaseName, tableName);
+        table = HiveCatalogUtil.getTable(client.getHiveClient(), databaseName, tableName);
         path = table.getPath();
       } catch (NoSuchObjectException nsoe) {
         throw new CatalogException("Table not found. - tableName:" + tableName, nsoe);
@@ -134,18 +131,12 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         throw new CatalogException(e);
       }
 
-      // convert hcatalog field schema into tajo field schema.
+      // convert HiveCatalogStore field schema into tajo field schema.
       schema = new org.apache.tajo.catalog.Schema();
-      HCatSchema tableSchema = null;
 
-      try {
-        tableSchema = HCatUtil.getTableSchemaWithPtnCols(table);
-      } catch (IOException ioe) {
-        throw new CatalogException("Fail to get table schema. - tableName:" + tableName, ioe);
-      }
-      List<HCatFieldSchema> fieldSchemaList = tableSchema.getFields();
+      List<FieldSchema> fieldSchemaList = table.getCols();
       boolean isPartitionKey = false;
-      for (HCatFieldSchema eachField : fieldSchemaList) {
+      for (FieldSchema eachField : fieldSchemaList) {
         isPartitionKey = false;
 
         if (table.getPartitionKeys() != null) {
@@ -159,17 +150,13 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         if (!isPartitionKey) {
           String fieldName = databaseName + CatalogConstants.IDENTIFIER_DELIMITER + tableName +
               CatalogConstants.IDENTIFIER_DELIMITER + eachField.getName();
-          TajoDataTypes.Type dataType = HCatalogUtil.getTajoFieldType(eachField.getType().toString());
+          TajoDataTypes.Type dataType = HiveCatalogUtil.getTajoFieldType(eachField.getType().toString());
           schema.addColumn(fieldName, dataType);
         }
       }
 
       // validate field schema.
-      try {
-        HCatalogUtil.validateHCatTableAndTajoSchema(tableSchema);
-      } catch (Exception e) {
-        throw new CatalogException("HCatalog cannot support schema. - schema:" + tableSchema.toString(), e);
-      }
+      HiveCatalogUtil.validateSchema(table);
 
       stats = new TableStats();
       options = new KeyValueSet();
@@ -198,7 +185,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
         // set file output format
         String fileOutputformat = properties.getProperty(hive_metastoreConstants.FILE_OUTPUT_FORMAT);
-        storeType = CatalogUtil.getStoreType(HCatalogUtil.getStoreType(fileOutputformat));
+        storeType = CatalogUtil.getStoreType(HiveCatalogUtil.getStoreType(fileOutputformat));
 
         if (storeType.equals(CatalogProtos.StoreType.TEXTFILE)) {
           options.set(StorageConstants.TEXT_DELIMITER, StringEscapeUtils.escapeJava(fieldDelimiter));
@@ -248,7 +235,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         if (partitionKeys.size() > 0) {
           for (int i = 0; i < partitionKeys.size(); i++) {
             FieldSchema fieldSchema = partitionKeys.get(i);
-            TajoDataTypes.Type dataType = HCatalogUtil.getTajoFieldType(fieldSchema.getType().toString());
+            TajoDataTypes.Type dataType = HiveCatalogUtil.getTajoFieldType(fieldSchema.getType().toString());
             String fieldName = databaseName + CatalogConstants.IDENTIFIER_DELIMITER + tableName +
                 CatalogConstants.IDENTIFIER_DELIMITER + fieldSchema.getName();
             expressionSchema.addColumn(new Column(fieldName, dataType));
@@ -294,7 +281,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public final List<String> getAllTableNames(String databaseName) throws CatalogException {
-    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
 
     try {
       client = clientPool.getClient();
@@ -335,7 +322,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
       builder.setUri(defaultTableSpaceUri);
       return builder.build();
     } else {
-      throw new CatalogException("tablespace concept is not supported in HCatalogStore");
+      throw new CatalogException("tablespace concept is not supported in HiveCatalogStore");
     }
   }
 
@@ -347,12 +334,12 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public void alterTablespace(CatalogProtos.AlterTablespaceProto alterProto) throws CatalogException {
-    throw new CatalogException("tablespace concept is not supported in HCatalogStore");
+    throw new CatalogException("tablespace concept is not supported in HiveCatalogStore");
   }
 
   @Override
   public void createDatabase(String databaseName, String tablespaceName) throws CatalogException {
-    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
 
     try {
       Database database = new Database(
@@ -375,7 +362,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public boolean existDatabase(String databaseName) throws CatalogException {
-    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
 
     try {
       client = clientPool.getClient();
@@ -392,7 +379,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public void dropDatabase(String databaseName) throws CatalogException {
-    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
 
     try {
       client = clientPool.getClient();
@@ -410,7 +397,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public Collection<String> getAllDatabaseNames() throws CatalogException {
-    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
 
     try {
       client = clientPool.getClient();
@@ -426,7 +413,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public final void createTable(final CatalogProtos.TableDescProto tableDescProto) throws CatalogException {
-    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
 
     TableDesc tableDesc = new TableDesc(tableDescProto);
     String[] splitted = CatalogUtil.splitFQTableName(tableDesc.getName());
@@ -458,7 +445,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         Path tablePath = new Path(tableDesc.getPath());
         FileSystem fs = tablePath.getFileSystem(conf);
         if (fs.isFile(tablePath)) {
-          LOG.warn("A table path is a file, but HCatalog does not allow a file path.");
+          LOG.warn("A table path is a file, but HiveCatalogStore does not allow a file path.");
           sd.setLocation(tablePath.getParent().toString());
         } else {
           sd.setLocation(tablePath.toString());
@@ -471,7 +458,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
       for (Column eachField : columns) {
         cols.add(new FieldSchema(eachField.getSimpleName(),
-            HCatalogUtil.getHiveFieldType(eachField.getDataType()), ""));
+            HiveCatalogUtil.getHiveFieldType(eachField.getDataType()), ""));
       }
       sd.setCols(cols);
 
@@ -480,7 +467,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
         List<FieldSchema> partitionKeys = new ArrayList<FieldSchema>();
         for (Column eachPartitionKey : tableDesc.getPartitionMethod().getExpressionSchema().getColumns()) {
           partitionKeys.add(new FieldSchema(eachPartitionKey.getSimpleName(),
-              HCatalogUtil.getHiveFieldType(eachPartitionKey.getDataType()), ""));
+              HiveCatalogUtil.getHiveFieldType(eachPartitionKey.getDataType()), ""));
         }
         table.setPartitionKeys(partitionKeys);
       }
@@ -581,7 +568,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
   @Override
   public final void dropTable(String databaseName, final String tableName) throws CatalogException {
-    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
 
     try {
       client = clientPool.getClient();
@@ -656,7 +643,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
 
   private void renameTable(String databaseName, String tableName, String newTableName) {
-    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     try {
       client = clientPool.getClient();
       Table newTable = client.getHiveClient().getTable(databaseName, tableName);
@@ -674,7 +661,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
   }
 
   private void renameColumn(String databaseName, String tableName, CatalogProtos.AlterColumnProto alterColumnProto) {
-    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     try {
 
       client = clientPool.getClient();
@@ -700,14 +687,14 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
 
   private void addNewColumn(String databaseName, String tableName, CatalogProtos.ColumnProto columnProto) {
-    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     try {
 
       client = clientPool.getClient();
       Table table = client.getHiveClient().getTable(databaseName, tableName);
       List<FieldSchema> columns = table.getSd().getCols();
       columns.add(new FieldSchema(columnProto.getName(),
-          HCatalogUtil.getHiveFieldType(columnProto.getDataType()), ""));
+          HiveCatalogUtil.getHiveFieldType(columnProto.getDataType()), ""));
       client.getHiveClient().alter_table(databaseName, tableName, table);
 
 
@@ -723,7 +710,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
   private void addPartition(String databaseName, String tableName, CatalogProtos.PartitionDescProto
     partitionDescProto) {
-    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     try {
 
       client = clientPool.getClient();
@@ -755,7 +742,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
   private void dropPartition(String databaseName, String tableName, CatalogProtos.PartitionDescProto
     partitionDescProto) {
-    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     try {
 
       client = clientPool.getClient();
@@ -809,7 +796,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
   @Override
   public CatalogProtos.PartitionDescProto getPartition(String databaseName, String tableName,
                                                        String partitionName) throws CatalogException {
-    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
     CatalogProtos.PartitionDescProto.Builder builder = null;
 
     try {
@@ -924,7 +911,7 @@ public class HCatalogStore extends CatalogConstants implements CatalogStore {
 
   private boolean existColumn(final String databaseName ,final String tableName , final String columnName) throws CatalogException {
     boolean exist = false;
-    HCatalogStoreClientPool.HCatalogStoreClient client = null;
+    HiveCatalogStoreClientPool.HiveCatalogStoreClient client = null;
 
     try {
 

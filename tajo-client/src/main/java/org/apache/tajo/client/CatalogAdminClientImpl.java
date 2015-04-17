@@ -47,8 +47,8 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
 
   @Override
   public boolean createDatabase(final String databaseName) throws ServiceException {
-    return new ServerCallable<Boolean>(connection.connPool, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<Boolean>(connection.manager, connection.getTajoMasterAddr(),
+        TajoMasterClientProtocol.class, false) {
 
       public Boolean call(NettyClientBase client) throws ServiceException {
 
@@ -63,8 +63,8 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   @Override
   public boolean existDatabase(final String databaseName) throws ServiceException {
 
-    return new ServerCallable<Boolean>(connection.connPool, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<Boolean>(connection.manager, connection.getTajoMasterAddr(),
+        TajoMasterClientProtocol.class, false) {
 
       public Boolean call(NettyClientBase client) throws ServiceException {
 
@@ -79,8 +79,8 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   @Override
   public boolean dropDatabase(final String databaseName) throws ServiceException {
 
-    return new ServerCallable<Boolean>(connection.connPool, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<Boolean>(connection.manager, connection.getTajoMasterAddr(),
+        TajoMasterClientProtocol.class, false) {
 
       public Boolean call(NettyClientBase client) throws ServiceException {
 
@@ -95,8 +95,8 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   @Override
   public List<String> getAllDatabaseNames() throws ServiceException {
 
-    return new ServerCallable<List<String>>(connection.connPool, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<List<String>>(connection.manager, connection.getTajoMasterAddr(),
+        TajoMasterClientProtocol.class, false) {
 
       public List<String> call(NettyClientBase client) throws ServiceException {
 
@@ -110,8 +110,8 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
 
   public boolean existTable(final String tableName) throws ServiceException {
 
-    return new ServerCallable<Boolean>(connection.connPool, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<Boolean>(connection.manager, connection.getTajoMasterAddr(),
+        TajoMasterClientProtocol.class, false) {
 
       public Boolean call(NettyClientBase client) throws ServiceException {
         connection.checkSessionAndGet(client);
@@ -132,8 +132,8 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
                                        final TableMeta meta, final PartitionMethodDesc partitionMethodDesc)
       throws SQLException, ServiceException {
 
-    return new ServerCallable<TableDesc>(connection.connPool, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<TableDesc>(connection.manager, connection.getTajoMasterAddr(),
+        TajoMasterClientProtocol.class, false) {
 
       public TableDesc call(NettyClientBase client) throws ServiceException, SQLException {
 
@@ -168,8 +168,8 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   @Override
   public boolean dropTable(final String tableName, final boolean purge) throws ServiceException {
 
-    return new ServerCallable<Boolean>(connection.connPool, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<Boolean>(connection.manager, connection.getTajoMasterAddr(),
+        TajoMasterClientProtocol.class, false) {
 
       public Boolean call(NettyClientBase client) throws ServiceException {
 
@@ -189,8 +189,8 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
 
   @Override
   public List<String> getTableList(@Nullable final String databaseName) throws ServiceException {
-    return new ServerCallable<List<String>>(connection.connPool, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<List<String>>(connection.manager, connection.getTajoMasterAddr(),
+        TajoMasterClientProtocol.class, false) {
 
       public List<String> call(NettyClientBase client) throws ServiceException {
 
@@ -212,8 +212,8 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   @Override
   public TableDesc getTableDesc(final String tableName) throws ServiceException {
 
-    return new ServerCallable<TableDesc>(connection.connPool, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<TableDesc>(connection.manager, connection.getTajoMasterAddr(),
+        TajoMasterClientProtocol.class, false) {
 
       public TableDesc call(NettyClientBase client) throws ServiceException, SQLException {
 
@@ -237,8 +237,8 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
   @Override
   public List<CatalogProtos.FunctionDescProto> getFunctions(final String functionName) throws ServiceException {
 
-    return new ServerCallable<List<CatalogProtos.FunctionDescProto>>(connection.connPool,
-        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<List<CatalogProtos.FunctionDescProto>>(connection.manager,
+        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false) {
 
       public List<CatalogProtos.FunctionDescProto> call(NettyClientBase client) throws ServiceException, SQLException {
 
@@ -260,8 +260,8 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
 
   @Override
   public IndexDescProto getIndex(final String indexName) throws ServiceException {
-    return new ServerCallable<IndexDescProto>(connection.connPool,
-        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<IndexDescProto>(connection.manager,
+        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false) {
 
       @Override
       public IndexDescProto call(NettyClientBase client) throws Exception {
@@ -274,8 +274,8 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
 
   @Override
   public boolean existIndex(final String indexName) throws ServiceException {
-    return new ServerCallable<Boolean>(connection.connPool,
-        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<Boolean>(connection.manager,
+        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false) {
 
       @Override
       public Boolean call(NettyClientBase client) throws Exception {
@@ -288,8 +288,8 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
 
   @Override
   public List<IndexDescProto> getIndexes(final String tableName) throws ServiceException {
-    return new ServerCallable<List<IndexDescProto>>(connection.connPool,
-        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<List<IndexDescProto>>(connection.manager,
+        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false) {
 
       @Override
       public List<IndexDescProto> call(NettyClientBase client) throws Exception {
@@ -307,8 +307,8 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
 
   @Override
   public boolean hasIndexes(final String tableName) throws ServiceException {
-    return new ServerCallable<Boolean>(connection.connPool,
-        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<Boolean>(connection.manager,
+        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false) {
 
       @Override
       public Boolean call(NettyClientBase client) throws Exception {
@@ -321,8 +321,8 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
 
   @Override
   public IndexDescProto getIndex(final String tableName, final String[] columnNames) throws ServiceException {
-    return new ServerCallable<IndexDescProto>(connection.connPool,
-        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<IndexDescProto>(connection.manager,
+        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false) {
 
       @Override
       public IndexDescProto call(NettyClientBase client) throws Exception {
@@ -345,8 +345,8 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
 
   @Override
   public boolean existIndex(final String tableName, final String[] columnName) throws ServiceException {
-    return new ServerCallable<Boolean>(connection.connPool,
-        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<Boolean>(connection.manager,
+        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false) {
 
       @Override
       public Boolean call(NettyClientBase client) throws Exception {
@@ -364,8 +364,8 @@ public class CatalogAdminClientImpl implements CatalogAdminClient {
 
   @Override
   public boolean dropIndex(final String indexName) throws ServiceException {
-    return new ServerCallable<Boolean>(connection.connPool,
-        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<Boolean>(connection.manager,
+        connection.getTajoMasterAddr(), TajoMasterClientProtocol.class, false) {
 
       @Override
       public Boolean call(NettyClientBase client) throws Exception {

@@ -31,7 +31,7 @@ public class TestAlterTablespace extends QueryTestCaseBase {
 
   @Test
   public final void testAlterLocation() throws Exception {
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       //////////////////////////////////////////////////////////////////////////////
       // Create two table spaces
       //////////////////////////////////////////////////////////////////////////////

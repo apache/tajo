@@ -132,9 +132,9 @@
                       run cp -r ${basedir}/tajo-catalog-common/target/tajo-catalog-common-${project.version}*.jar .
                       run cp -r ${basedir}/tajo-catalog-client/target/tajo-catalog-client-${project.version}*.jar .
                       run cp -r ${basedir}/tajo-catalog-server/target/tajo-catalog-server-${project.version}*.jar .
-                      if [ -f ${basedir}/tajo-catalog-drivers/tajo-hcatalog/target/tajo-hcatalog-${project.version}.jar ]
+                      if [ -f ${basedir}/tajo-catalog-drivers/tajo-hive/target/tajo-hive-${project.version}.jar ]
                       then
-                      run cp -r ${basedir}/tajo-catalog-drivers/tajo-hcatalog/target/tajo-hcatalog-${project.version}*.jar .
+                      run cp -r ${basedir}/tajo-catalog-drivers/tajo-hive/target/tajo-hive-${project.version}*.jar .
                       fi
                       echo
                       echo "Tajo Catalog dist layout available at: ${project.build.directory}/tajo-catalog-${project.version}"

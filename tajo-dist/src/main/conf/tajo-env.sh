@@ -72,7 +72,7 @@
 # The scheduling priority for daemon processes.  See 'man nice'.
 # export TAJO_NICENESS=10
 
-# It must be required to use HCatalogStore
+# It must be required to use HiveCatalogStore
 # export HIVE_HOME=
 # export HIVE_JDBC_DRIVER_DIR=
 
