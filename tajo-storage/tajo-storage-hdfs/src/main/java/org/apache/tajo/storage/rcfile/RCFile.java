@@ -1256,21 +1256,17 @@ public class RCFile {
       for (int i = 0; i < targetColumnIndexes.length; i++) {
         int tid = targetColumnIndexes[i];
         SelectedColumn col = new SelectedColumn();
+        col.colIndex = tid;
         if (tid < columnNumber) {
           skippedColIDs[tid] = false;
-
-          col.colIndex = tid;
           col.runLength = 0;
           col.prvLength = -1;
           col.rowReadIndex = 0;
-          selectedColumns[i] = col;
           colValLenBufferReadIn[i] = new NonSyncDataInputBuffer();
         }  else {
-          col = new SelectedColumn();
           col.isNulled = true;
-          col.colIndex = tid;
-          selectedColumns[i] = col;
         }
+        selectedColumns[i] = col;
       }
 
       currentKey = createKeyBuffer();
