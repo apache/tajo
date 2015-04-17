@@ -190,7 +190,7 @@ public class TestBroadcastJoinPlan {
     QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
-    globalPlanner.build(masterPlan);
+    globalPlanner.build(queryContext, masterPlan);
 
     /*
     |-eb_1395714781593_0000_000005 (TERMINAL)
@@ -251,7 +251,7 @@ public class TestBroadcastJoinPlan {
     QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
-    globalPlanner.build(masterPlan);
+    globalPlanner.build(queryContext, masterPlan);
 
     /*
     |-eb_1402500846700_0000_000005
@@ -315,7 +315,7 @@ public class TestBroadcastJoinPlan {
     QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
-    globalPlanner.build(masterPlan);
+    globalPlanner.build(queryContext, masterPlan);
 
     ExecutionBlockCursor ebCursor = new ExecutionBlockCursor(masterPlan);
     while (ebCursor.hasNext()) {
@@ -343,7 +343,7 @@ public class TestBroadcastJoinPlan {
     QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
-    globalPlanner.build(masterPlan);
+    globalPlanner.build(queryContext, masterPlan);
 
     /*
     |-eb_1395736346625_0000_000009
@@ -393,7 +393,7 @@ public class TestBroadcastJoinPlan {
     QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
-    globalPlanner.build(masterPlan);
+    globalPlanner.build(queryContext, masterPlan);
 
     /*
     |-eb_1395749810370_0000_000007
@@ -434,7 +434,7 @@ public class TestBroadcastJoinPlan {
     QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
-    globalPlanner.build(masterPlan);
+    globalPlanner.build(queryContext, masterPlan);
 
     /*
     |-eb_1395794091662_0000_000007
@@ -490,7 +490,7 @@ public class TestBroadcastJoinPlan {
     QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
-    globalPlanner.build(masterPlan);
+    globalPlanner.build(queryContext, masterPlan);
 
     // ((((default.small1 ⟕ default.small2) ⟕ default.small3) ⟕ default.large1) ⟕ default.large2)
     /*
@@ -544,7 +544,7 @@ public class TestBroadcastJoinPlan {
     QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
-    globalPlanner.build(masterPlan);
+    globalPlanner.build(queryContext, masterPlan);
 
     // ((((default.large1 ⟕ default.large2) ⟕ default.small1) ⟕ default.small2) ⟕ default.small3)
     /*
@@ -627,7 +627,7 @@ public class TestBroadcastJoinPlan {
     QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
-    globalPlanner.build(masterPlan);
+    globalPlanner.build(queryContext, masterPlan);
 
     //(((((default.large1 ⟕ default.large2) ⟕ default.small1) ⟕ default.large3) ⟕ default.small2) ⟕ default.small3)
     /*
@@ -710,7 +710,7 @@ public class TestBroadcastJoinPlan {
     QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
-    globalPlanner.build(masterPlan);
+    globalPlanner.build(queryContext, masterPlan);
 
     /*
     |-eb_1406022971444_0000_000005
@@ -769,7 +769,7 @@ public class TestBroadcastJoinPlan {
     QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
-    globalPlanner.build(masterPlan);
+    globalPlanner.build(queryContext, masterPlan);
 
     //(((default.small1 ⟕ default.small2) ⟕ default.large1) ⟕ default.small3)
     /*
@@ -822,7 +822,7 @@ public class TestBroadcastJoinPlan {
     QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
-    globalPlanner.build(masterPlan);
+    globalPlanner.build(queryContext, masterPlan);
 
     // ((((default.small1 ⟕ default.small2) ⟕ default.large1) ⟕ default.large2) ⟕ default.small3)
 
@@ -914,7 +914,7 @@ public class TestBroadcastJoinPlan {
     QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
-    globalPlanner.build(masterPlan);
+    globalPlanner.build(queryContext, masterPlan);
 
     // (((default.small1 ⋈θ default.small2) ⟕ default.large1) ⟕ default.small3)
     /*
@@ -979,7 +979,7 @@ public class TestBroadcastJoinPlan {
     QueryContext queryContext = new QueryContext(conf);
     MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
     GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
-    globalPlanner.build(masterPlan);
+    globalPlanner.build(queryContext, masterPlan);
 
     // (((default.large1 ⋈θ default.small1) ⟕ default.large2) ⟕ default.small2)
     /*

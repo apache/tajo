@@ -120,22 +120,31 @@ public class ExecutionBlock {
     return hasUnionPlan;
   }
 
-  public void addBroadcastTable(String tableName) {
+  public void addBroadcastRelation(String tableName) {
     broadcasted.add(tableName);
     enforcer.addBroadcast(tableName);
   }
 
-  public void removeBroadcastTable(String tableName) {
+  public void removeBroadcastRelation(String tableName) {
     broadcasted.remove(tableName);
     enforcer.removeBroadcast(tableName);
   }
 
-  public boolean hasBroadcastTable() {
+  public boolean isBroadcastRelation(String tableName) {
+    return broadcasted.contains(tableName);
+  }
+
+  public boolean hasBroadcastRelation() {
     return broadcasted.size() > 0;
   }
 
-  public boolean isBroadcastTable(String tableName) {
-    return broadcasted.contains(tableName);
+  /**
+   * Check this execution block is broadcastable.
+   * This execution block is broadcastable only when its every input is broadcastable.
+   * @return true if broadcastable
+   */
+  public boolean isBroadcastable() {
+    return broadcasted.size() == scanlist.size();
   }
 
   public Collection<String> getBroadcastTables() {

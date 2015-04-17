@@ -18,7 +18,9 @@
 
 package org.apache.tajo.engine.planner.global.rewriter;
 
+import org.apache.tajo.OverridableConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
+import org.apache.tajo.plan.PlanningException;
 
 /**
  * A rewrite rule for global plans
@@ -29,15 +31,16 @@ public interface GlobalPlanRewriteRule {
    * Return rule name
    * @return Rule name
    */
-  public abstract String getName();
+  String getName();
 
   /**
    * Check if this rule should be applied.
    *
+   * @param queryContext Query context
    * @param plan Global Plan
    * @return
    */
-  public abstract boolean isEligible(MasterPlan plan);
+  boolean isEligible(OverridableConf queryContext, MasterPlan plan);
 
   /**
    * Rewrite a global plan
@@ -45,5 +48,5 @@ public interface GlobalPlanRewriteRule {
    * @param plan Global Plan
    * @return
    */
-  public abstract MasterPlan rewrite(MasterPlan plan);
+  MasterPlan rewrite(MasterPlan plan) throws PlanningException;
 }

@@ -20,6 +20,7 @@ package org.apache.tajo.engine.planner.global.rewriter;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.tajo.OverridableConf;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.util.ReflectionUtil;
@@ -67,11 +68,11 @@ public class GlobalPlanRewriteEngine {
    * @param plan The plan to be rewritten with all query rewrite rule.
    * @return The rewritten plan.
    */
-  public MasterPlan rewrite(MasterPlan plan) throws PlanningException {
+  public MasterPlan rewrite(OverridableConf queryContext, MasterPlan plan) throws PlanningException {
     GlobalPlanRewriteRule rule;
     for (Map.Entry<String, GlobalPlanRewriteRule> rewriteRule : rewriteRules.entrySet()) {
       rule = rewriteRule.getValue();
-      if (rule.isEligible(plan)) {
+      if (rule.isEligible(queryContext, plan)) {
         plan = rule.rewrite(plan);
         if (LOG.isDebugEnabled()) {
           LOG.debug("The rule \"" + rule.getName() + " \" rewrites the query.");

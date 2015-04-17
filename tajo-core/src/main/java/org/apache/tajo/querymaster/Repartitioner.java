@@ -194,7 +194,7 @@ public class Repartitioner {
     // Assigning either fragments or fetch urls to query units
     boolean isAllBroadcastTable = true;
     for (int i = 0; i < scans.length; i++) {
-      if (!execBlock.isBroadcastTable(scans[i].getCanonicalName())) {
+      if (!execBlock.isBroadcastRelation(scans[i].getCanonicalName())) {
         isAllBroadcastTable = false;
         break;
       }
@@ -218,7 +218,7 @@ public class Repartitioner {
       }
       int baseScanIdx = maxStatsScanIdx;
       scans[baseScanIdx].setBroadcastTable(false);
-      execBlock.removeBroadcastTable(scans[baseScanIdx].getCanonicalName());
+      execBlock.removeBroadcastRelation(scans[baseScanIdx].getCanonicalName());
       LOG.info(String.format("[Distributed Join Strategy] : Broadcast Join with all tables, base_table=%s, base_volume=%d",
           scans[baseScanIdx].getCanonicalName(), stats[baseScanIdx]));
       scheduleLeafTasksWithBroadcastTable(schedulerContext, stage, baseScanIdx, fragments);
@@ -239,7 +239,7 @@ public class Repartitioner {
           nonLeafScanNamesBuilder.append(namePrefix).append(scans[i].getCanonicalName());
           namePrefix = ",";
         }
-        if (execBlock.isBroadcastTable(scans[i].getCanonicalName())) {
+        if (execBlock.isBroadcastRelation(scans[i].getCanonicalName())) {
           broadcastIndexList.add(i);
         } else {
           // finding largest table.

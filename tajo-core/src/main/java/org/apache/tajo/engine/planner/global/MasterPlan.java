@@ -108,6 +108,13 @@ public class MasterPlan {
     return execBlockMap.get(execBlockId);
   }
 
+  public void removeExecBlock(ExecutionBlockId execBlockId) throws IllegalStateException {
+    if (getIncomingChannels(execBlockId).size() > 0 || getOutgoingChannels(execBlockId).size() > 0) {
+      throw new IllegalStateException("Cannot remove execution blocks because some other execution blocks are connected");
+    }
+    execBlockMap.remove(execBlockId);
+  }
+
   public void addConnect(DataChannel dataChannel) {
     execBlockGraph.addEdge(dataChannel.getSrcId(), dataChannel.getTargetId(), dataChannel);
   }

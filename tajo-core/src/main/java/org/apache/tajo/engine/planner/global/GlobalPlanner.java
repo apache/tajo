@@ -40,6 +40,7 @@ import org.apache.tajo.engine.planner.BroadcastJoinPlanVisitor;
 import org.apache.tajo.engine.planner.global.builder.DistinctGroupbyBuilder;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteEngine;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRuleProvider;
+import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
@@ -119,7 +120,7 @@ public class GlobalPlanner {
   /**
    * Builds a master plan from the given logical plan.
    */
-  public void build(MasterPlan masterPlan) throws IOException, PlanningException {
+  public void build(QueryContext queryContext, MasterPlan masterPlan) throws IOException, PlanningException {
 
     DistributedPlannerVisitor planner = new DistributedPlannerVisitor();
     GlobalPlanContext globalPlanContext = new GlobalPlanContext();
@@ -169,7 +170,7 @@ public class GlobalPlanner {
     masterPlan.setTerminal(terminalBlock);
     LOG.info("\n" + masterPlan.toString());
 
-    rewriteEngine.rewrite(masterPlan);
+    rewriteEngine.rewrite(queryContext, masterPlan);
   }
 
   private static void setFinalOutputChannel(DataChannel outputChannel, Schema outputSchema) {
@@ -382,7 +383,7 @@ public class GlobalPlanner {
         }
 
         for (ScanNode eachBroadcastTarget: broadcastTargetScanNodes) {
-          currentBlock.addBroadcastTable(eachBroadcastTarget.getCanonicalName());
+          currentBlock.addBroadcastRelation(eachBroadcastTarget.getCanonicalName());
           context.execBlockMap.remove(eachBroadcastTarget.getPID());
         }
 
@@ -1344,7 +1345,7 @@ public class GlobalPlanner {
 
       if (leftChild.getType() == NodeType.JOIN && checkIfCanBeOneOfBroadcastJoin(node.getRightChild())) {
         ScanNode scanNode = node.getRightChild();
-        if (leftChildBlock.isBroadcastTable(scanNode.getCanonicalName())) {
+        if (leftChildBlock.isBroadcastRelation(scanNode.getCanonicalName())) {
           context.execBlockMap.put(node.getPID(), leftChildBlock);
           return node;
         }

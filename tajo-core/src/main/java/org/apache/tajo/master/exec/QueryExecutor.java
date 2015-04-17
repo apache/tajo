@@ -465,7 +465,7 @@ public class QueryExecutor {
     }
 
     MasterPlan masterPlan = new MasterPlan(QueryIdFactory.NULL_QUERY_ID, context, plan);
-    planner.build(masterPlan);
+    planner.build(context, masterPlan);
 
     return masterPlan;
   }
