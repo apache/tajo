@@ -16,23 +16,24 @@
  * limitations under the License.
  */
 
-option java_package = "org.apache.tajo";
-option java_outer_classname = "InternalTypes";
-option java_generic_services = false;
-option java_generate_equals_and_hash = true;
+package org.apache.tajo.engine.function.builtin;
 
-message AvgLongProto {
-  required int64 sum = 1;
-  required int64 count = 2;
-}
+import org.apache.tajo.catalog.Column;
+import org.apache.tajo.common.TajoDataTypes.Type;
+import org.apache.tajo.engine.function.annotation.Description;
+import org.apache.tajo.engine.function.annotation.ParamTypes;
 
-message AvgDoubleProto {
-  required double sum = 1;
-  required int64 count = 2;
-}
-
-message VarianceProto {
-  required double squareSumOfDiff = 1;
-  required double avg = 2;
-  required int64 count = 3;
+@Description(
+    functionName = "VAR_SAMP",
+    description = "The unbiased sample variance of a set of numbers.",
+    example = "> SELECT VAR_SAMP(expr);",
+    returnType = Type.FLOAT8,
+    paramTypes = {@ParamTypes(paramTypes = {Type.FLOAT8})}
+)
+public class VarSampDouble extends VarSamp {
+  public VarSampDouble() {
+    super(new Column[] {
+        new Column("expr", Type.FLOAT8)
+    });
+  }
 }

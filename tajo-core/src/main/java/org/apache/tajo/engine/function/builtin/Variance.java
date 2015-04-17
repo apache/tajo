@@ -29,64 +29,64 @@ import org.apache.tajo.plan.function.AggFunction;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.storage.Tuple;
 
-import static org.apache.tajo.InternalTypes.StdDevProto;
+import static org.apache.tajo.InternalTypes.VarianceProto;
 
-public abstract class StdDev extends AggFunction<Datum> {
+public abstract class Variance extends AggFunction<Datum> {
 
-  public StdDev(Column[] definedArgs) {
+  public Variance(Column[] definedArgs) {
     super(definedArgs);
   }
 
-  public StdDevContext newContext() {
-    return new StdDevContext();
+  public VarianceContext newContext() {
+    return new VarianceContext();
   }
 
   @Override
   public void eval(FunctionContext ctx, Tuple params) {
-    StdDevContext StdDevCtx = (StdDevContext) ctx;
+    VarianceContext varianceCtx = (VarianceContext) ctx;
     Datum datum = params.get(0);
     if (datum.isNotNull()) {
-      double delta = datum.asFloat8() - StdDevCtx.avg;
-      StdDevCtx.count++;
-      StdDevCtx.avg += delta/StdDevCtx.count;
-      StdDevCtx.squareSumOfDiff += delta * (datum.asFloat8() - StdDevCtx.avg);
+      double delta = datum.asFloat8() - varianceCtx.avg;
+      varianceCtx.count++;
+      varianceCtx.avg += delta/varianceCtx.count;
+      varianceCtx.squareSumOfDiff += delta * (datum.asFloat8() - varianceCtx.avg);
     }
   }
 
   @Override
   public void merge(FunctionContext ctx, Tuple part) {
-    StdDevContext StdDevCtx = (StdDevContext) ctx;
+    VarianceContext varianceCtx = (VarianceContext) ctx;
     Datum d = part.get(0);
     if (d instanceof NullDatum) {
       return;
     }
     ProtobufDatum datum = (ProtobufDatum) d;
-    StdDevProto proto = (StdDevProto) datum.get();
-    double delta = proto.getAvg() - StdDevCtx.avg;
-    StdDevCtx.avg += delta * proto.getCount() / (StdDevCtx.count + proto.getCount());
-    StdDevCtx.squareSumOfDiff += proto.getSquareSumOfDiff() + delta * delta * StdDevCtx.count * proto.getCount() / (StdDevCtx.count + proto.getCount());
-    StdDevCtx.count += proto.getCount();
+    VarianceProto proto = (VarianceProto) datum.get();
+    double delta = proto.getAvg() - varianceCtx.avg;
+    varianceCtx.avg += delta * proto.getCount() / (varianceCtx.count + proto.getCount());
+    varianceCtx.squareSumOfDiff += proto.getSquareSumOfDiff() + delta * delta * varianceCtx.count * proto.getCount() / (varianceCtx.count + proto.getCount());
+    varianceCtx.count += proto.getCount();
   }
 
   @Override
   public Datum getPartialResult(FunctionContext ctx) {
-    StdDevContext StdDevCtx = (StdDevContext) ctx;
-    if (StdDevCtx.count == 0) {
+    VarianceContext varianceCtx = (VarianceContext) ctx;
+    if (varianceCtx.count == 0) {
       return NullDatum.get();
     }
-    StdDevProto.Builder builder = StdDevProto.newBuilder();
-    builder.setSquareSumOfDiff(StdDevCtx.squareSumOfDiff);
-    builder.setAvg(StdDevCtx.avg);
-    builder.setCount(StdDevCtx.count);
+    VarianceProto.Builder builder = VarianceProto.newBuilder();
+    builder.setSquareSumOfDiff(varianceCtx.squareSumOfDiff);
+    builder.setAvg(varianceCtx.avg);
+    builder.setCount(varianceCtx.count);
     return new ProtobufDatum(builder.build());
   }
 
   @Override
   public DataType getPartialResultType() {
-    return CatalogUtil.newDataType(Type.PROTOBUF, StdDevProto.class.getName());
+    return CatalogUtil.newDataType(Type.PROTOBUF, VarianceProto.class.getName());
   }
 
-  protected static class StdDevContext implements FunctionContext {
+  protected static class VarianceContext implements FunctionContext {
     double squareSumOfDiff = 0.0;
     double avg = 0.0;
     long count = 0;
