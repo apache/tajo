@@ -56,7 +56,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     res.close();
 
     TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "table1");
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertEquals(5, desc.getStats().getNumRows().intValue());
     }
 
@@ -76,7 +76,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     res.close();
 
     TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "table1");
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertEquals(5, desc.getStats().getNumRows().intValue());
     }
 
@@ -311,7 +311,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     res = executeFile("testInsertOverwriteSmallerColumns.sql");
     res.close();
     TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "table1");
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertEquals(5, desc.getStats().getNumRows().intValue());
     }
     assertEquals(originalDesc.getSchema(), desc.getSchema());
@@ -331,7 +331,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     res = executeFile("testInsertOverwriteWithTargetColumns.sql");
     res.close();
     TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "table1");
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertEquals(5, desc.getStats().getNumRows().intValue());
     }
 
@@ -385,7 +385,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     res = executeString("insert overwrite into full_table_csv select * from default.lineitem where l_orderkey = 3");
     res.close();
     TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "full_table_csv");
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertEquals(2, desc.getStats().getNumRows().intValue());
     }
     executeString("DROP TABLE full_table_csv PURGE");
@@ -402,7 +402,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     res = executeFile("load_to_lineitem_year_month.sql");
     res.close();
     TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "lineitem_year_month");
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertEquals(5, desc.getStats().getNumRows().intValue());
     }
 
@@ -424,7 +424,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     CatalogService catalog = testingCluster.getMaster().getCatalog();
     assertTrue(catalog.existsTable(getCurrentDatabase(), tableName));
     TableDesc orderKeys = catalog.getTableDesc(getCurrentDatabase(), tableName);
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertEquals(5, orderKeys.getStats().getNumRows().intValue());
     }
 
@@ -435,7 +435,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
     assertTrue(catalog.existsTable(getCurrentDatabase(), tableName));
     orderKeys = catalog.getTableDesc(getCurrentDatabase(), tableName);
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertEquals(2, orderKeys.getStats().getNumRows().intValue());
     }
     executeString("DROP TABLE " + tableName + " PURGE");
@@ -453,7 +453,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     res = executeString("insert overwrite into " + tableName + " select * from default.lineitem where l_orderkey = 3");
     res.close();
     TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), tableName);
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertEquals(2, desc.getStats().getNumRows().intValue());
     }
     executeString("DROP TABLE " + tableName + " PURGE");
@@ -480,7 +480,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     res = executeQuery();
     res.close();
     TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), tableName);
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertEquals(2, desc.getStats().getNumRows().intValue());
     }
 
@@ -497,7 +497,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
   @Test
   public final void testInsertOverwriteLocationWithCompression() throws Exception {
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       ResultSet res = executeQuery();
       res.close();
       FileSystem fs = FileSystem.get(testingCluster.getConfiguration());
@@ -515,7 +515,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
   @Test
   public final void testInsertOverwriteWithAsteriskUsingParquet() throws Exception {
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       ResultSet res = executeFile("full_table_parquet_ddl.sql");
       res.close();
 
@@ -526,7 +526,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
           "insert overwrite into full_table_parquet select * from default.lineitem where l_orderkey = 3");
       res.close();
       TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "full_table_parquet");
-      if (!testingCluster.isHCatalogStoreRunning()) {
+      if (!testingCluster.isHiveCatalogStoreRunning()) {
         assertEquals(2, desc.getStats().getNumRows().intValue());
       }
 
@@ -542,7 +542,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
   @Test
   public final void testInsertOverwriteIntoParquet() throws Exception {
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       executeString("create table parquet_table " +
           "(l_orderkey int4, l_shipdate text, l_shipdate_function text) using parquet").close();
 
@@ -554,7 +554,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
               "select l_orderkey, l_shipdate, substr(l_shipdate, 1, 10) from default.lineitem").close();
 
       TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "parquet_table");
-      if (!testingCluster.isHCatalogStoreRunning()) {
+      if (!testingCluster.isHiveCatalogStoreRunning()) {
         assertEquals(5, desc.getStats().getNumRows().intValue());
       }
 
@@ -577,7 +577,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
 
   @Test
   public final void testInsertOverwriteIntoPartitionedParquet() throws Exception {
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       executeString("create table parquet_table " +
           "(l_orderkey int4, l_shipdate_function text) using parquet partition by column (l_shipdate text)").close();
 
@@ -589,7 +589,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
               "select l_orderkey, substr(l_shipdate, 1, 10), l_shipdate from default.lineitem").close();
 
       TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "parquet_table");
-      if (!testingCluster.isHCatalogStoreRunning()) {
+      if (!testingCluster.isHiveCatalogStoreRunning()) {
         assertEquals(5, desc.getStats().getNumRows().intValue());
       }
 
@@ -622,7 +622,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     res.close();
 
     TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), "table1");
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertEquals(5, desc.getStats().getNumRows().intValue());
     }
     executeString("DROP TABLE table1 PURGE");
@@ -642,7 +642,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     res.close();
 
     TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), tableName);
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertEquals(1, desc.getStats().getNumRows().intValue());
     }
 
@@ -669,7 +669,7 @@ public class TestInsertQuery extends QueryTestCaseBase {
     res.close();
 
     TableDesc desc = catalog.getTableDesc(getCurrentDatabase(), tableName);
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertEquals(1, desc.getStats().getNumRows().intValue());
     }
 
