@@ -29,8 +29,6 @@ public enum QueryVars implements ConfigKey {
   OUTPUT_OVERWRITE,
   OUTPUT_AS_DIRECTORY,
   OUTPUT_PER_FILE_SIZE,
-  PYTHON_SCRIPT_CODE_DIR,
-  PYTHON_CONTROLLER_LOG_DIR
   ;
 
   QueryVars() {

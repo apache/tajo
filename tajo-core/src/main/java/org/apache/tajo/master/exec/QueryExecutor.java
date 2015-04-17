@@ -316,7 +316,7 @@ public class QueryExecutor {
         if (functionEval.getFuncDesc().getInvocation().hasPython()) {
           TajoScriptEngine scriptExecutor = new PythonScriptEngine(functionEval.getFuncDesc());
           evalContext.addScriptEngine(eval, scriptExecutor);
-          scriptExecutor.start(queryContext);
+          scriptExecutor.start(queryContext.getConf());
         }
       }
     }

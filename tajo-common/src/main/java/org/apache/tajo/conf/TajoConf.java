@@ -295,6 +295,7 @@ public class TajoConf extends Configuration {
 
     // Python UDF
     PYTHON_CODE_DIR("tajo.function.python.code-dir", ""),
+    PYTHON_CONTROLLER_LOG_DIR("tajo.function.python.controller.log-dir", ""),
 
     /////////////////////////////////////////////////////////////////////////////////
     // User Session Configuration

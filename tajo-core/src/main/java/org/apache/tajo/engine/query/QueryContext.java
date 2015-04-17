@@ -25,8 +25,8 @@ import org.apache.tajo.QueryVars;
 import org.apache.tajo.SessionVars;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
 import org.apache.tajo.conf.TajoConf;
-import org.apache.tajo.session.Session;
 import org.apache.tajo.plan.logical.NodeType;
+import org.apache.tajo.session.Session;
 
 import static org.apache.tajo.rpc.protocolrecords.PrimitiveProtos.KeyValueSetProto;
 
@@ -149,14 +149,6 @@ public class QueryContext extends OverridableConf {
   public NodeType getCommandType() {
     String strVal = get(QueryVars.COMMAND_TYPE);
     return strVal != null ? NodeType.valueOf(strVal) : null;
-  }
-
-  public void setPythonScriptPath(String path) {
-    put(QueryVars.PYTHON_SCRIPT_CODE_DIR, path);
-  }
-
-  public String getPythonScriptPath() {
-    return get(QueryVars.PYTHON_SCRIPT_CODE_DIR);
   }
 
   public void setCreateTable() {

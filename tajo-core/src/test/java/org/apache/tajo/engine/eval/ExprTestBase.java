@@ -55,7 +55,6 @@ import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.BytesUtils;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.QueryContextUtil;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -97,7 +96,7 @@ public class ExprTestBase {
     cat.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
     cat.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     Map<FunctionSignature, FunctionDesc> map = FunctionLoader.load();
-    map = FunctionLoader.loadOptionalFunctions(conf, map);
+    map = FunctionLoader.loadUserDefinedFunctions(conf, map);
     for (FunctionDesc funcDesc : map.values()) {
       cat.createFunction(funcDesc);
     }
@@ -226,7 +225,6 @@ public class ExprTestBase {
       queryContext = LocalTajoTestingUtility.createDummyContext(conf);
       queryContext.putAll(context);
     }
-    QueryContextUtil.updatePythonScriptPath(conf, queryContext);
 
     String timezoneId = queryContext.get(SessionVars.TIMEZONE);
     TimeZone timeZone = TimeZone.getTimeZone(timezoneId);
