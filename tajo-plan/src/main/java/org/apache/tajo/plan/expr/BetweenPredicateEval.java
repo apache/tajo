@@ -20,7 +20,6 @@ package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
 
-import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
@@ -228,7 +227,7 @@ public class BetweenPredicateEval extends EvalNode implements Cloneable {
   }
 
   @Override
-  public EvalNode bind(@Nullable EvalContext evalContext, Schema schema) {
+  public EvalNode bind(EvalContext evalContext, Schema schema) {
     super.bind(evalContext, schema);
     if (begin.getType() == EvalType.CONST && end.getType() == EvalType.CONST) {
       Datum beginValue = ((ConstEval)begin).getValue();

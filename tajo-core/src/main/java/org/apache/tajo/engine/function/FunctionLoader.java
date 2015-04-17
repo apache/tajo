@@ -84,15 +84,15 @@ public class FunctionLoader {
   }
 
   /**
-   * Load functions that are user-defined functions.
+   * Load functions that are optionally defined by users.
    *
    * @param conf
    * @param functionMap
    * @return
    * @throws IOException
    */
-  public static Map<FunctionSignature, FunctionDesc> loadUserDefinedFunctions(TajoConf conf,
-                                                                              Map<FunctionSignature, FunctionDesc> functionMap)
+  public static Map<FunctionSignature, FunctionDesc> loadOptionalFunctions(TajoConf conf,
+                                                                           Map<FunctionSignature, FunctionDesc> functionMap)
       throws IOException {
 
     String[] codePaths = conf.getStrings(TajoConf.ConfVars.PYTHON_CODE_DIR.varname);

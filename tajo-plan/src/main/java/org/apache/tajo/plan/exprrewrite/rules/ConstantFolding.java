@@ -94,8 +94,8 @@ public class ConstantFolding extends SimpleEvalNodeVisitor<LogicalPlanner.PlanCo
       if (evalNode.getFuncDesc().getInvocation().hasPython()) {
         TajoScriptEngine executor = new PythonScriptEngine(evalNode.getFuncDesc());
         try {
-          executor.start(context.getQueryContext().getConf());
-          EvalContext evalContext = new EvalContext(context.getQueryContext());
+          executor.start(context.getQueryContext());
+          EvalContext evalContext = new EvalContext();
           evalContext.addScriptEngine(evalNode, executor);
           evalNode.bind(evalContext, null);
           Datum funcRes = evalNode.eval(null);

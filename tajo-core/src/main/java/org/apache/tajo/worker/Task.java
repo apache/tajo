@@ -46,6 +46,7 @@ import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol.*;
 import org.apache.tajo.ipc.TajoWorkerProtocol.EnforceProperty.EnforceType;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
+import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.function.python.TajoScriptEngine;
 import org.apache.tajo.plan.logical.*;
 import org.apache.tajo.plan.serder.LogicalNodeDeserializer;
@@ -57,6 +58,7 @@ import org.apache.tajo.rpc.NullCallback;
 import org.apache.tajo.storage.*;
 import org.apache.tajo.storage.fragment.FileFragment;
 import org.apache.tajo.util.NetUtils;
+import org.apache.tajo.util.QueryContextUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -100,6 +102,8 @@ public class Task {
   private Schema finalSchema = null;
   private TupleComparator sortComp = null;
 
+  private PythonScriptEngine pythonEngine;
+
   public Task(String taskRunnerId,
               Path baseDir,
               TaskAttemptId taskId,
@@ -134,7 +138,8 @@ public class Task {
   }
 
   public void initPlan() throws IOException {
-    plan = LogicalNodeDeserializer.deserialize(context.getEvalContext(), request.getPlan());
+    QueryContextUtil.updatePythonScriptPath(systemConf, queryContext);
+    plan = LogicalNodeDeserializer.deserialize(queryContext, context.getEvalContext(), request.getPlan());
     LogicalNode [] scanNode = PlannerUtil.findAllNodes(plan, NodeType.SCAN);
     if (scanNode != null) {
       for (LogicalNode node : scanNode) {
@@ -191,7 +196,7 @@ public class Task {
 
   private void startScriptExecutors() throws IOException {
     for (TajoScriptEngine executor : context.getEvalContext().getAllScriptEngines()) {
-      executor.start(systemConf);
+      executor.start(queryContext);
     }
   }
 

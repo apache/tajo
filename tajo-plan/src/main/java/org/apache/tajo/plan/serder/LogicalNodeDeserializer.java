@@ -21,6 +21,7 @@ package org.apache.tajo.plan.serder;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.hadoop.fs.Path;
+import org.apache.tajo.OverridableConf;
 import org.apache.tajo.algebra.JoinType;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
@@ -51,11 +52,12 @@ public class LogicalNodeDeserializer {
   /**
    * Deserialize a list of nodes into a logical node tree.
    *
-   * @param evalContext eval context
+   * @param context QueryContext
    * @param tree LogicalNodeTree which contains a list of serialized logical nodes.
    * @return A logical node tree
    */
-  public static LogicalNode deserialize(@Nullable EvalContext evalContext, PlanProto.LogicalNodeTree tree) {
+  public static LogicalNode deserialize(OverridableConf context, @Nullable EvalContext evalContext,
+                                        PlanProto.LogicalNodeTree tree) {
     Map<Integer, LogicalNode> nodeMap = Maps.newHashMap();
 
     // sort serialized logical nodes in an ascending order of their sids
@@ -85,10 +87,10 @@ public class LogicalNodeDeserializer {
         current = convertSetSession(protoNode);
         break;
       case EXPRS:
-        current = convertEvalExpr(evalContext, protoNode);
+        current = convertEvalExpr(context, evalContext, protoNode);
         break;
       case PROJECTION:
-        current = convertProjection(evalContext, nodeMap, protoNode);
+        current = convertProjection(context, evalContext, nodeMap, protoNode);
         break;
       case LIMIT:
         current = convertLimit(nodeMap, protoNode);
@@ -97,34 +99,34 @@ public class LogicalNodeDeserializer {
         current = convertSort(nodeMap, protoNode);
         break;
       case WINDOW_AGG:
-        current = convertWindowAgg(evalContext, nodeMap, protoNode);
+        current = convertWindowAgg(context, evalContext, nodeMap, protoNode);
         break;
       case HAVING:
-        current = convertHaving(evalContext, nodeMap, protoNode);
+        current = convertHaving(context, evalContext, nodeMap, protoNode);
         break;
       case GROUP_BY:
-        current = convertGroupby(evalContext, nodeMap, protoNode);
+        current = convertGroupby(context, evalContext, nodeMap, protoNode);
         break;
       case DISTINCT_GROUP_BY:
-        current = convertDistinctGroupby(evalContext, nodeMap, protoNode);
+        current = convertDistinctGroupby(context, evalContext, nodeMap, protoNode);
         break;
       case SELECTION:
-        current = convertFilter(evalContext, nodeMap, protoNode);
+        current = convertFilter(context, evalContext, nodeMap, protoNode);
         break;
       case JOIN:
-        current = convertJoin(evalContext, nodeMap, protoNode);
+        current = convertJoin(context, evalContext, nodeMap, protoNode);
         break;
       case TABLE_SUBQUERY:
-        current = convertTableSubQuery(evalContext, nodeMap, protoNode);
+        current = convertTableSubQuery(context, evalContext, nodeMap, protoNode);
         break;
       case UNION:
         current = convertUnion(nodeMap, protoNode);
         break;
       case PARTITIONS_SCAN:
-        current = convertPartitionScan(evalContext, protoNode);
+        current = convertPartitionScan(context, evalContext, protoNode);
         break;
       case SCAN:
-        current = convertScan(evalContext, protoNode);
+        current = convertScan(context, evalContext, protoNode);
         break;
 
       case CREATE_TABLE:
@@ -189,24 +191,24 @@ public class LogicalNodeDeserializer {
     return setSession;
   }
 
-  private static EvalExprNode convertEvalExpr(EvalContext evalContext,
+  private static EvalExprNode convertEvalExpr(OverridableConf context, EvalContext evalContext,
                                               PlanProto.LogicalNode protoNode) {
     PlanProto.EvalExprNode evalExprProto = protoNode.getExprEval();
 
     EvalExprNode evalExpr = new EvalExprNode(protoNode.getNodeId());
     evalExpr.setInSchema(convertSchema(protoNode.getInSchema()));
-    evalExpr.setTargets(convertTargets(evalContext, evalExprProto.getTargetsList()));
+    evalExpr.setTargets(convertTargets(context, evalContext, evalExprProto.getTargetsList()));
 
     return evalExpr;
   }
 
-  private static ProjectionNode convertProjection(EvalContext evalContext,
+  private static ProjectionNode convertProjection(OverridableConf context, EvalContext evalContext,
                                                   Map<Integer, LogicalNode> nodeMap,
                                                   PlanProto.LogicalNode protoNode) {
     PlanProto.ProjectionNode projectionProto = protoNode.getProjection();
 
     ProjectionNode projectionNode = new ProjectionNode(protoNode.getNodeId());
-    projectionNode.init(projectionProto.getDistinct(), convertTargets(evalContext,
+    projectionNode.init(projectionProto.getDistinct(), convertTargets(context, evalContext,
         projectionProto.getTargetsList()));
     projectionNode.setChild(nodeMap.get(projectionProto.getChildSeq()));
     projectionNode.setInSchema(convertSchema(protoNode.getInSchema()));
@@ -239,20 +241,21 @@ public class LogicalNodeDeserializer {
     return sortNode;
   }
 
-  private static HavingNode convertHaving(EvalContext evalContext,
+  private static HavingNode convertHaving(OverridableConf context, EvalContext evalContext,
                                           Map<Integer, LogicalNode> nodeMap, PlanProto.LogicalNode protoNode) {
     PlanProto.FilterNode havingProto = protoNode.getFilter();
 
     HavingNode having = new HavingNode(protoNode.getNodeId());
     having.setChild(nodeMap.get(havingProto.getChildSeq()));
-    having.setQual(EvalNodeDeserializer.deserialize(evalContext, havingProto.getQual()));
+    having.setQual(EvalNodeDeserializer.deserialize(context, evalContext, havingProto.getQual()));
     having.setInSchema(convertSchema(protoNode.getInSchema()));
     having.setOutSchema(convertSchema(protoNode.getOutSchema()));
 
     return having;
   }
 
-  private static WindowAggNode convertWindowAgg(EvalContext evalContext, Map<Integer, LogicalNode> nodeMap,
+  private static WindowAggNode convertWindowAgg(OverridableConf context, EvalContext evalContext,
+                                                Map<Integer, LogicalNode> nodeMap,
                                                 PlanProto.LogicalNode protoNode) {
     PlanProto.WindowAggNode windowAggProto = protoNode.getWindowAgg();
 
@@ -264,7 +267,7 @@ public class LogicalNodeDeserializer {
     }
 
     if (windowAggProto.getWindowFunctionsCount() > 0) {
-      windowAgg.setWindowFunctions(convertWindowFunccEvals(evalContext,
+      windowAgg.setWindowFunctions(convertWindowFunccEvals(context, evalContext,
           windowAggProto.getWindowFunctionsList()));
     }
 
@@ -275,7 +278,7 @@ public class LogicalNodeDeserializer {
     }
 
     if (windowAggProto.getTargetsCount() > 0) {
-      windowAgg.setTargets(convertTargets(evalContext, windowAggProto.getTargetsList()));
+      windowAgg.setTargets(convertTargets(context, evalContext, windowAggProto.getTargetsList()));
     }
 
     windowAgg.setInSchema(convertSchema(protoNode.getInSchema()));
@@ -284,8 +287,8 @@ public class LogicalNodeDeserializer {
     return windowAgg;
   }
 
-  private static GroupbyNode convertGroupby(EvalContext evalContext, Map<Integer, LogicalNode> nodeMap,
-                                            PlanProto.LogicalNode protoNode) {
+  private static GroupbyNode convertGroupby(OverridableConf context, EvalContext evalContext,
+                                            Map<Integer, LogicalNode> nodeMap, PlanProto.LogicalNode protoNode) {
     PlanProto.GroupbyNode groupbyProto = protoNode.getGroupby();
 
     GroupbyNode groupby = new GroupbyNode(protoNode.getNodeId());
@@ -296,10 +299,10 @@ public class LogicalNodeDeserializer {
       groupby.setGroupingColumns(convertColumns(groupbyProto.getGroupingKeysList()));
     }
     if (groupbyProto.getAggFunctionsCount() > 0) {
-      groupby.setAggFunctions(convertAggFuncCallEvals(evalContext, groupbyProto.getAggFunctionsList()));
+      groupby.setAggFunctions(convertAggFuncCallEvals(context, evalContext, groupbyProto.getAggFunctionsList()));
     }
     if (groupbyProto.getTargetsCount() > 0) {
-      groupby.setTargets(convertTargets(evalContext, groupbyProto.getTargetsList()));
+      groupby.setTargets(convertTargets(context, evalContext, groupbyProto.getTargetsList()));
     }
 
     groupby.setInSchema(convertSchema(protoNode.getInSchema()));
@@ -308,7 +311,8 @@ public class LogicalNodeDeserializer {
     return groupby;
   }
 
-  private static DistinctGroupbyNode convertDistinctGroupby(EvalContext evalContext, Map<Integer, LogicalNode> nodeMap,
+  private static DistinctGroupbyNode convertDistinctGroupby(OverridableConf context, EvalContext evalContext,
+                                                            Map<Integer, LogicalNode> nodeMap,
                                                             PlanProto.LogicalNode protoNode) {
     PlanProto.DistinctGroupbyNode distinctGroupbyProto = protoNode.getDistinctGroupby();
 
@@ -316,14 +320,14 @@ public class LogicalNodeDeserializer {
     distinctGroupby.setChild(nodeMap.get(distinctGroupbyProto.getChildSeq()));
 
     if (distinctGroupbyProto.hasGroupbyNode()) {
-      distinctGroupby.setGroupbyPlan(convertGroupby(evalContext, nodeMap,
+      distinctGroupby.setGroupbyPlan(convertGroupby(context, evalContext, nodeMap,
           distinctGroupbyProto.getGroupbyNode()));
     }
 
     if (distinctGroupbyProto.getSubPlansCount() > 0) {
       List<GroupbyNode> subPlans = TUtil.newList();
       for (int i = 0; i < distinctGroupbyProto.getSubPlansCount(); i++) {
-        subPlans.add(convertGroupby(evalContext, nodeMap, distinctGroupbyProto.getSubPlans(i)));
+        subPlans.add(convertGroupby(context, evalContext, nodeMap, distinctGroupbyProto.getSubPlans(i)));
       }
       distinctGroupby.setSubPlans(subPlans);
     }
@@ -332,11 +336,11 @@ public class LogicalNodeDeserializer {
       distinctGroupby.setGroupingColumns(convertColumns(distinctGroupbyProto.getGroupingKeysList()));
     }
     if (distinctGroupbyProto.getAggFunctionsCount() > 0) {
-      distinctGroupby.setAggFunctions(convertAggFuncCallEvals(evalContext,
+      distinctGroupby.setAggFunctions(convertAggFuncCallEvals(context, evalContext,
           distinctGroupbyProto.getAggFunctionsList()));
     }
     if (distinctGroupbyProto.getTargetsCount() > 0) {
-      distinctGroupby.setTargets(convertTargets(evalContext, distinctGroupbyProto.getTargetsList()));
+      distinctGroupby.setTargets(convertTargets(context, evalContext, distinctGroupbyProto.getTargetsList()));
     }
     int [] resultColumnIds = new int[distinctGroupbyProto.getResultIdCount()];
     for (int i = 0; i < distinctGroupbyProto.getResultIdCount(); i++) {
@@ -351,7 +355,7 @@ public class LogicalNodeDeserializer {
     return distinctGroupby;
   }
 
-  private static JoinNode convertJoin(EvalContext evalContext,
+  private static JoinNode convertJoin(OverridableConf context, EvalContext evalContext,
                                       Map<Integer, LogicalNode> nodeMap, PlanProto.LogicalNode protoNode) {
     PlanProto.JoinNode joinProto = protoNode.getJoin();
 
@@ -362,16 +366,16 @@ public class LogicalNodeDeserializer {
     join.setInSchema(convertSchema(protoNode.getInSchema()));
     join.setOutSchema(convertSchema(protoNode.getOutSchema()));
     if (joinProto.hasJoinQual()) {
-      join.setJoinQual(EvalNodeDeserializer.deserialize(evalContext, joinProto.getJoinQual()));
+      join.setJoinQual(EvalNodeDeserializer.deserialize(context, evalContext, joinProto.getJoinQual()));
     }
     if (joinProto.getExistsTargets()) {
-      join.setTargets(convertTargets(evalContext, joinProto.getTargetsList()));
+      join.setTargets(convertTargets(context, evalContext, joinProto.getTargetsList()));
     }
 
     return join;
   }
 
-  private static SelectionNode convertFilter(EvalContext evalContext,
+  private static SelectionNode convertFilter(OverridableConf context, EvalContext evalContext,
                                              Map<Integer, LogicalNode> nodeMap, PlanProto.LogicalNode protoNode) {
     PlanProto.FilterNode filterProto = protoNode.getFilter();
 
@@ -379,7 +383,7 @@ public class LogicalNodeDeserializer {
     selection.setInSchema(convertSchema(protoNode.getInSchema()));
     selection.setOutSchema(convertSchema(protoNode.getOutSchema()));
     selection.setChild(nodeMap.get(filterProto.getChildSeq()));
-    selection.setQual(EvalNodeDeserializer.deserialize(evalContext, filterProto.getQual()));
+    selection.setQual(EvalNodeDeserializer.deserialize(context, evalContext, filterProto.getQual()));
 
     return selection;
   }
@@ -396,14 +400,14 @@ public class LogicalNodeDeserializer {
     return union;
   }
 
-  private static ScanNode convertScan(EvalContext evalContext, PlanProto.LogicalNode protoNode) {
+  private static ScanNode convertScan(OverridableConf context, EvalContext evalContext, PlanProto.LogicalNode protoNode) {
     ScanNode scan = new ScanNode(protoNode.getNodeId());
-    fillScanNode(evalContext, protoNode, scan);
+    fillScanNode(context, evalContext, protoNode, scan);
 
     return scan;
   }
 
-  private static void fillScanNode(EvalContext evalContext, PlanProto.LogicalNode protoNode,
+  private static void fillScanNode(OverridableConf context, EvalContext evalContext, PlanProto.LogicalNode protoNode,
                                    ScanNode scan) {
     PlanProto.ScanNode scanProto = protoNode.getScan();
     if (scanProto.hasAlias()) {
@@ -413,11 +417,11 @@ public class LogicalNodeDeserializer {
     }
 
     if (scanProto.getExistTargets()) {
-      scan.setTargets(convertTargets(evalContext, scanProto.getTargetsList()));
+      scan.setTargets(convertTargets(context, evalContext, scanProto.getTargetsList()));
     }
 
     if (scanProto.hasQual()) {
-      scan.setQual(EvalNodeDeserializer.deserialize(evalContext, scanProto.getQual()));
+      scan.setQual(EvalNodeDeserializer.deserialize(context, evalContext, scanProto.getQual()));
     }
 
     if(scanProto.hasBroadcast()){
@@ -427,10 +431,10 @@ public class LogicalNodeDeserializer {
     scan.setOutSchema(convertSchema(protoNode.getOutSchema()));
   }
 
-  private static PartitionedTableScanNode convertPartitionScan(EvalContext evalContext,
+  private static PartitionedTableScanNode convertPartitionScan(OverridableConf context, EvalContext evalContext,
                                                                PlanProto.LogicalNode protoNode) {
     PartitionedTableScanNode partitionedScan = new PartitionedTableScanNode(protoNode.getNodeId());
-    fillScanNode(evalContext, protoNode, partitionedScan);
+    fillScanNode(context, evalContext, protoNode, partitionedScan);
 
     PlanProto.PartitionScanSpec partitionScanProto = protoNode.getPartitionScan();
     Path [] paths = new Path[partitionScanProto.getPathsCount()];
@@ -441,7 +445,7 @@ public class LogicalNodeDeserializer {
     return partitionedScan;
   }
 
-  private static TableSubQueryNode convertTableSubQuery(EvalContext evalContext,
+  private static TableSubQueryNode convertTableSubQuery(OverridableConf context, EvalContext evalContext,
                                                         Map<Integer, LogicalNode> nodeMap,
                                                         PlanProto.LogicalNode protoNode) {
     PlanProto.TableSubQueryNode proto = protoNode.getTableSubQuery();
@@ -450,7 +454,7 @@ public class LogicalNodeDeserializer {
     tableSubQuery.init(proto.getTableName(), nodeMap.get(proto.getChildSeq()));
     tableSubQuery.setInSchema(convertSchema(protoNode.getInSchema()));
     if (proto.getTargetsCount() > 0) {
-      tableSubQuery.setTargets(convertTargets(evalContext, proto.getTargetsList()));
+      tableSubQuery.setTargets(convertTargets(context, evalContext, proto.getTargetsList()));
     }
 
     return tableSubQuery;
@@ -607,21 +611,21 @@ public class LogicalNodeDeserializer {
     return truncateTable;
   }
 
-  private static AggregationFunctionCallEval [] convertAggFuncCallEvals(EvalContext evalContext,
-                                                                        List<PlanProto.EvalNodeTree> evalTrees) {
+  private static AggregationFunctionCallEval [] convertAggFuncCallEvals(OverridableConf context, EvalContext evalContext,
+                                                                       List<PlanProto.EvalNodeTree> evalTrees) {
     AggregationFunctionCallEval [] aggFuncs = new AggregationFunctionCallEval[evalTrees.size()];
     for (int i = 0; i < aggFuncs.length; i++) {
-      aggFuncs[i] = (AggregationFunctionCallEval) EvalNodeDeserializer.deserialize(evalContext,
+      aggFuncs[i] = (AggregationFunctionCallEval) EvalNodeDeserializer.deserialize(context, evalContext,
           evalTrees.get(i));
     }
     return aggFuncs;
   }
 
-  private static WindowFunctionEval[] convertWindowFunccEvals(EvalContext evalContext,
+  private static WindowFunctionEval[] convertWindowFunccEvals(OverridableConf context, EvalContext evalContext,
                                                               List<PlanProto.EvalNodeTree> evalTrees) {
     WindowFunctionEval[] winFuncEvals = new WindowFunctionEval[evalTrees.size()];
     for (int i = 0; i < winFuncEvals.length; i++) {
-      winFuncEvals[i] = (WindowFunctionEval) EvalNodeDeserializer.deserialize(evalContext, evalTrees.get(i));
+      winFuncEvals[i] = (WindowFunctionEval) EvalNodeDeserializer.deserialize(context, evalContext, evalTrees.get(i));
     }
     return winFuncEvals;
   }
@@ -638,12 +642,12 @@ public class LogicalNodeDeserializer {
     return columns;
   }
 
-  public static Target[] convertTargets(EvalContext evalContext,
+  public static Target[] convertTargets(OverridableConf context, EvalContext evalContext,
                                         List<PlanProto.Target> targetsProto) {
     Target [] targets = new Target[targetsProto.size()];
     for (int i = 0; i < targets.length; i++) {
       PlanProto.Target targetProto = targetsProto.get(i);
-      EvalNode evalNode = EvalNodeDeserializer.deserialize(evalContext, targetProto.getExpr());
+      EvalNode evalNode = EvalNodeDeserializer.deserialize(context, evalContext, targetProto.getExpr());
       if (targetProto.hasAlias()) {
         targets[i] = new Target(evalNode, targetProto.getAlias());
       } else {

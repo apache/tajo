@@ -18,7 +18,6 @@
 
 package org.apache.tajo.plan.expr;
 
-import org.apache.tajo.OverridableConf;
 import org.apache.tajo.plan.function.python.TajoScriptEngine;
 import org.apache.tajo.util.TUtil;
 
@@ -26,13 +25,7 @@ import java.util.Collection;
 import java.util.Map;
 
 public class EvalContext {
-  private final OverridableConf queryContext;
-
   private final Map<EvalNode, TajoScriptEngine> scriptEngineMap = TUtil.newHashMap();
-
-  public EvalContext(OverridableConf queryContext) {
-    this.queryContext = queryContext;
-  }
 
   public void addScriptEngine(EvalNode evalNode, TajoScriptEngine scriptExecutor) {
     this.scriptEngineMap.put(evalNode, scriptExecutor);
@@ -48,9 +41,5 @@ public class EvalContext {
 
   public Collection<TajoScriptEngine> getAllScriptEngines() {
     return this.scriptEngineMap.values();
-  }
-
-  public OverridableConf getQueryContext() {
-    return queryContext;
   }
 }

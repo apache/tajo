@@ -16,45 +16,13 @@
  * limitations under the License.
  */
 
-package org.apache.tajo;
+package org.apache.tajo.util;
 
-import org.apache.tajo.validation.Validator;
+import org.apache.tajo.conf.TajoConf;
+import org.apache.tajo.engine.query.QueryContext;
 
-public enum QueryVars implements ConfigKey {
-  COMMAND_TYPE,
-  STAGING_DIR,
-  OUTPUT_TABLE_NAME,
-  OUTPUT_TABLE_PATH,
-  OUTPUT_PARTITIONS,
-  OUTPUT_OVERWRITE,
-  OUTPUT_AS_DIRECTORY,
-  OUTPUT_PER_FILE_SIZE,
-  PYTHON_SCRIPT_CODE_DIR,
-  PYTHON_CONTROLLER_LOG_DIR
-  ;
-
-  QueryVars() {
-  }
-
-  @Override
-  public String keyname() {
-    return name().toLowerCase();
-  }
-
-  @Override
-  public ConfigType type() {
-    return ConfigType.QUERY;
-  }
-
-  @Override
-  public Class<?> valueClass() {
-    return null;
-  }
-
-  @Override
-  public Validator validator() {
-    return null;
+public class QueryContextUtil {
+  public static void updatePythonScriptPath(TajoConf systemConf, QueryContext queryContext) {
+    queryContext.setPythonScriptPath(systemConf.getVar(TajoConf.ConfVars.PYTHON_CODE_DIR));
   }
 }
-
-

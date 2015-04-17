@@ -237,7 +237,7 @@ public class TajoWorker extends CompositeService {
 
     historyReader = new HistoryReader(workerContext.getWorkerName(), this.systemConf);
 
-    FunctionLoader.loadUserDefinedFunctions(systemConf, new HashMap<FunctionSignature, FunctionDesc>());
+    FunctionLoader.loadOptionalFunctions(systemConf, new HashMap<FunctionSignature, FunctionDesc>());
     
     diagnoseTajoWorker();
   }

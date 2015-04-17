@@ -19,7 +19,6 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
-import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Column;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -41,7 +40,7 @@ public class FieldEval extends EvalNode implements Cloneable {
 	}
 
   @Override
-  public EvalNode bind(@Nullable EvalContext evalContext, Schema schema) {
+  public EvalNode bind(EvalContext evalContext, Schema schema) {
     super.bind(evalContext, schema);
     // TODO - column namespace should be improved to simplify name handling and resolving.
     if (column.hasQualifier()) {
