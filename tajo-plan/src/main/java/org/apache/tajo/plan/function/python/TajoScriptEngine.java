@@ -18,7 +18,7 @@
 
 package org.apache.tajo.plan.function.python;
 
-import org.apache.tajo.OverridableConf;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
 
@@ -62,10 +62,10 @@ public abstract class TajoScriptEngine {
   /**
    * Start TajoScriptEngine.
    *
-   * @param queryContext
+   * @param systemConf
    * @throws IOException
    */
-  public abstract void start(OverridableConf queryContext) throws IOException;
+  public abstract void start(Configuration systemConf) throws IOException;
 
   /**
    * Shutdown TajoScriptEngine.

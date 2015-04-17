@@ -151,14 +151,6 @@ public class QueryContext extends OverridableConf {
     return strVal != null ? NodeType.valueOf(strVal) : null;
   }
 
-  public void setPythonScriptPath(String path) {
-    put(QueryVars.PYTHON_SCRIPT_CODE_DIR, path);
-  }
-
-  public String getPythonScriptPath() {
-    return get(QueryVars.PYTHON_SCRIPT_CODE_DIR);
-  }
-
   public void setCreateTable() {
     setCommandType(NodeType.CREATE_TABLE);
   }

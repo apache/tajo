@@ -84,13 +84,14 @@ public class TaskAttemptContext {
   private Map<Integer, Long> partitionOutputVolume;
   private HashShuffleAppenderManager hashShuffleAppenderManager;
 
-  private EvalContext evalContext = new EvalContext();
+  private EvalContext evalContext;
 
   public TaskAttemptContext(QueryContext queryContext, final ExecutionBlockContext executionBlockContext,
                             final TaskAttemptId queryId,
                             final FragmentProto[] fragments,
                             final Path workDir) {
     this.queryContext = queryContext;
+    this.evalContext = new EvalContext(queryContext);
 
     if (executionBlockContext != null) { // For unit tests
       this.workerContext = executionBlockContext.getWorkerContext();

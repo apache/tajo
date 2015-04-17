@@ -20,6 +20,7 @@ package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.OverridableConf;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
@@ -33,15 +34,16 @@ public class GeneralFunctionEval extends FunctionEval {
   protected FunctionInvoke funcInvoke;
   @Expose protected FunctionInvokeContext invokeContext;
 
-	public GeneralFunctionEval(OverridableConf queryContext, FunctionDesc desc, EvalNode[] givenArgs)
+	public GeneralFunctionEval(FunctionDesc desc, EvalNode[] givenArgs)
       throws IOException {
 		super(EvalType.FUNCTION, desc, givenArgs);
-    this.invokeContext = new FunctionInvokeContext(queryContext, getParamType());
   }
 
   @Override
-  public EvalNode bind(EvalContext evalContext, Schema schema) {
+  public EvalNode bind(@Nullable EvalContext evalContext, Schema schema) {
     super.bind(evalContext, schema);
+
+    this.invokeContext = new FunctionInvokeContext(evalContext.getQueryContext(), getParamType());
     try {
       this.funcInvoke = FunctionInvoke.newInstance(funcDesc);
       if (evalContext != null && evalContext.hasScriptEngine(this)) {

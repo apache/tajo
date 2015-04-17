@@ -21,6 +21,7 @@ package org.apache.tajo.plan.function.python;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.QueryVars;
 import org.apache.tajo.catalog.*;
@@ -170,7 +171,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private static final int CONTROLLER_LOG_FILE_PATH = 8; // Controller log file logs progress through the controller script not user code.
   private static final int OUT_SCHEMA = 9; // the schema of the output column
 
-  private OverridableConf queryContext;
+  private Configuration systemConf;
 
   private Process process; // Handle to the external execution of python functions
 
@@ -207,8 +208,9 @@ public class PythonScriptEngine extends TajoScriptEngine {
     outSchema = new Schema(new Column[]{new Column("out", functionSignature.getReturnType())});
   }
 
-  public void start(OverridableConf queryContext) throws IOException {
-    this.queryContext = queryContext;
+  @Override
+  public void start(Configuration systemConf) throws IOException {
+    this.systemConf = systemConf;
     startUdfController();
     createInputHandlers();
     setStreams();
@@ -217,6 +219,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
     }
   }
 
+  @Override
   public void shutdown() {
     process.destroy();
     FileUtil.cleanup(LOG, stdin);
@@ -247,10 +250,10 @@ public class PythonScriptEngine extends TajoScriptEngine {
     String[] command = new String[10];
 
     // TODO: support controller logging
-    String standardOutputRootWriteLocation = "";
-    if (queryContext.containsKey(QueryVars.PYTHON_CONTROLLER_LOG_DIR)) {
+    String standardOutputRootWriteLocation = systemConf.get(TajoConf.ConfVars.PYTHON_CONTROLLER_LOG_DIR.keyname(),
+        DEFAULT_LOG_DIR);
+    if (standardOutputRootWriteLocation != null) {
       LOG.warn("Currently, logging is not supported for the python controller.");
-      standardOutputRootWriteLocation = queryContext.get(QueryVars.PYTHON_CONTROLLER_LOG_DIR, DEFAULT_LOG_DIR);
     }
     String controllerLogFileName, outFileName, errOutFileName;
 
@@ -269,10 +272,10 @@ public class PythonScriptEngine extends TajoScriptEngine {
     command[UDF_FILE_NAME] = fileName;
     command[UDF_FILE_PATH] = lastSeparator <= 0 ? "." : filePath.substring(0, lastSeparator - 1);
     command[UDF_NAME] = funcName;
-    if (!queryContext.containsKey(QueryVars.PYTHON_SCRIPT_CODE_DIR)) {
+    String fileCachePath = systemConf.get(TajoConf.ConfVars.PYTHON_CODE_DIR.keyname());
+    if (fileCachePath == null) {
       throw new IOException(TajoConf.ConfVars.PYTHON_CODE_DIR.keyname() + " must be set.");
     }
-    String fileCachePath = queryContext.get(QueryVars.PYTHON_SCRIPT_CODE_DIR);
     command[PATH_TO_FILE_CACHE] = "'" + fileCachePath + "'";
     command[STD_OUT_OUTPUT_PATH] = outFileName;
     command[STD_ERR_OUTPUT_PATH] = errOutFileName;

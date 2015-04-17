@@ -21,6 +21,7 @@ package org.apache.tajo.plan.expr;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
@@ -49,7 +50,7 @@ public abstract class FunctionEval extends EvalNode implements Cloneable {
 	}
 
   @Override
-  public EvalNode bind(EvalContext evalContext, Schema schema) {
+  public EvalNode bind(@Nullable EvalContext evalContext, Schema schema) {
     super.bind(evalContext, schema);
     this.params = new VTuple(argEvals.length);
     return this;

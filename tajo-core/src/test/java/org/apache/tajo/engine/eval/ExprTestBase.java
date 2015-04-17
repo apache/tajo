@@ -55,7 +55,6 @@ import org.apache.tajo.storage.VTuple;
 import org.apache.tajo.util.BytesUtils;
 import org.apache.tajo.util.CommonTestingUtil;
 import org.apache.tajo.util.KeyValueSet;
-import org.apache.tajo.util.QueryContextUtil;
 import org.apache.tajo.util.datetime.DateTimeUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -97,7 +96,7 @@ public class ExprTestBase {
     cat.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
     cat.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
     Map<FunctionSignature, FunctionDesc> map = FunctionLoader.load();
-    map = FunctionLoader.loadOptionalFunctions(conf, map);
+    map = FunctionLoader.loadUserDefinedFunctions(conf, map);
     for (FunctionDesc funcDesc : map.values()) {
       cat.createFunction(funcDesc);
     }
@@ -174,7 +173,7 @@ public class ExprTestBase {
       assertJsonSerDer(t.getEvalTree());
     }
     for (Target t : targets) {
-      assertEvalTreeProtoSerDer(context, t.getEvalTree());
+      assertEvalTreeProtoSerDer(t.getEvalTree());
     }
     return targets;
   }
@@ -226,7 +225,6 @@ public class ExprTestBase {
       queryContext = LocalTajoTestingUtility.createDummyContext(conf);
       queryContext.putAll(context);
     }
-    QueryContextUtil.updatePythonScriptPath(conf, queryContext);
 
     String timezoneId = queryContext.get(SessionVars.TIMEZONE);
     TimeZone timeZone = TimeZone.getTimeZone(timezoneId);
@@ -273,7 +271,7 @@ public class ExprTestBase {
     Target [] targets;
 
     TajoClassLoader classLoader = new TajoClassLoader();
-    EvalContext evalContext = new EvalContext();
+    EvalContext evalContext = new EvalContext(queryContext);
 
     try {
       targets = getRawTargets(queryContext, query, condition);
@@ -332,8 +330,8 @@ public class ExprTestBase {
     }
   }
 
-  public static void assertEvalTreeProtoSerDer(OverridableConf context, EvalNode evalNode) {
+  public static void assertEvalTreeProtoSerDer(EvalNode evalNode) {
     PlanProto.EvalNodeTree converted = EvalNodeSerializer.serialize(evalNode);
-    assertEquals(evalNode, EvalNodeDeserializer.deserialize(context, null, converted));
+    assertEquals(evalNode, EvalNodeDeserializer.deserialize(null, converted));
   }
 }

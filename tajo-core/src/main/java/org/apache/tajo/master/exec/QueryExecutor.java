@@ -269,7 +269,7 @@ public class QueryExecutor {
       throws Exception {
     LogicalRootNode rootNode = plan.getRootBlock().getRoot();
 
-    EvalContext evalContext = new EvalContext();
+    EvalContext evalContext = new EvalContext(queryContext);
     Target[] targets = plan.getRootBlock().getRawTargets();
     if (targets == null) {
       throw new PlanningException("No targets");
@@ -316,7 +316,7 @@ public class QueryExecutor {
         if (functionEval.getFuncDesc().getInvocation().hasPython()) {
           TajoScriptEngine scriptExecutor = new PythonScriptEngine(functionEval.getFuncDesc());
           evalContext.addScriptEngine(eval, scriptExecutor);
-          scriptExecutor.start(queryContext);
+          scriptExecutor.start(queryContext.getConf());
         }
       }
     }

@@ -210,7 +210,7 @@ public class TajoMaster extends CompositeService {
 
   private Collection<FunctionDesc> loadFunctions() throws IOException {
     Map<FunctionSignature, FunctionDesc> functionMap = FunctionLoader.load();
-    return FunctionLoader.loadOptionalFunctions(systemConf, functionMap).values();
+    return FunctionLoader.loadUserDefinedFunctions(systemConf, functionMap).values();
   }
 
   private void initSystemMetrics() {

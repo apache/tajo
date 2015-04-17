@@ -20,8 +20,9 @@ package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
 
-import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
+import org.apache.tajo.annotation.Nullable;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.storage.Tuple;
@@ -35,14 +36,9 @@ public class CastEval extends UnaryEval implements Cloneable {
   @Expose private DataType target;
   @Expose private TimeZone timezone;
 
-  public CastEval(OverridableConf context, EvalNode operand, DataType target) {
+  public CastEval(EvalNode operand, DataType target) {
     super(EvalType.CAST, operand);
     this.target = target;
-
-    if (context.containsKey(SessionVars.TIMEZONE)) {
-      String timezoneId = context.get(SessionVars.TIMEZONE);
-      timezone = TimeZone.getTimeZone(timezoneId);
-    }
   }
 
   public EvalNode getOperand() {
@@ -65,6 +61,15 @@ public class CastEval extends UnaryEval implements Cloneable {
   @Override
   public String getName() {
     return target.getType().name();
+  }
+
+  public EvalNode bind(@Nullable EvalContext evalContext, Schema schema) {
+    super.bind(evalContext, schema);
+    if (evalContext.getQueryContext().containsKey(SessionVars.TIMEZONE)) {
+      String timezoneId = evalContext.getQueryContext().get(SessionVars.TIMEZONE);
+      timezone = TimeZone.getTimeZone(timezoneId);
+    }
+    return this;
   }
 
   @Override

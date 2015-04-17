@@ -188,7 +188,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       return newConst;
 
     } else {
-      return new CastEval(ctx.queryContext, evalNode, toType);
+      return new CastEval(evalNode, toType);
     }
   }
 
@@ -609,7 +609,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       FunctionType functionType = funcDesc.getFuncType();
       if (functionType == FunctionType.GENERAL
           || functionType == FunctionType.UDF) {
-        return new GeneralFunctionEval(ctx.queryContext, funcDesc, givenArgs);
+        return new GeneralFunctionEval(funcDesc, givenArgs);
       } else if (functionType == FunctionType.AGGREGATION
           || functionType == FunctionType.UDA) {
         if (!ctx.currentBlock.hasNode(NodeType.GROUP_BY)) {
@@ -801,7 +801,7 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
               LogicalPlanner.convertDataType(expr.getTarget()).getDataType(), tz));
 
     } else {
-      return new CastEval(ctx.queryContext, child, LogicalPlanner.convertDataType(expr.getTarget()).getDataType());
+      return new CastEval(child, LogicalPlanner.convertDataType(expr.getTarget()).getDataType());
     }
   }
 

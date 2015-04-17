@@ -53,7 +53,7 @@ import java.util.*;
  */
 public class EvalNodeDeserializer {
 
-  public static EvalNode deserialize(OverridableConf context, EvalContext evalContext, PlanProto.EvalNodeTree tree) {
+  public static EvalNode deserialize(EvalContext evalContext, PlanProto.EvalNodeTree tree) {
     Map<Integer, EvalNode> evalNodeMap = Maps.newHashMap();
 
     // sort serialized eval nodes in an ascending order of their IDs.
@@ -89,7 +89,7 @@ public class EvalNodeDeserializer {
           current = new IsNullEval(unaryProto.getNegative(), child);
           break;
         case CAST:
-          current = new CastEval(context, child, unaryProto.getCastingType());
+          current = new CastEval(child, unaryProto.getCastingType());
           break;
         case SIGNED:
           current = new SignedEval(unaryProto.getNegative(), child);
@@ -181,7 +181,7 @@ public class EvalNodeDeserializer {
         try {
           funcDesc = new FunctionDesc(funcProto.getFuncion());
           if (type == EvalType.FUNCTION) {
-            current = new GeneralFunctionEval(context, funcDesc, params);
+            current = new GeneralFunctionEval(funcDesc, params);
             if (evalContext != null && funcDesc.getInvocation().hasPython()) {
               evalContext.addScriptEngine(current, new PythonScriptEngine(funcDesc));
             }

@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
@@ -74,7 +75,7 @@ public abstract class PatternMatchPredicateEval extends BinaryEval {
   }
 
   @Override
-  public EvalNode bind(EvalContext evalContext, Schema schema) {
+  public EvalNode bind(@Nullable EvalContext evalContext, Schema schema) {
     super.bind(evalContext, schema);
     compile(pattern);
     return this;
