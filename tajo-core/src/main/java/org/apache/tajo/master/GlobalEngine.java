@@ -44,7 +44,6 @@ import org.apache.tajo.ipc.ClientProtos.ResultCode;
 import org.apache.tajo.master.TajoMaster.MasterContext;
 import org.apache.tajo.master.exec.DDLExecutor;
 import org.apache.tajo.master.exec.QueryExecutor;
-import org.apache.tajo.master.exec.prehook.DistributedQueryHookManager;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.plan.*;
 import org.apache.tajo.plan.logical.InsertNode;
@@ -78,7 +77,6 @@ public class GlobalEngine extends AbstractService {
   private LogicalPlanner planner;
   private LogicalOptimizer optimizer;
   private LogicalPlanVerifier annotatedPlanVerifier;
-  private DistributedQueryHookManager hookManager;
 
   private QueryExecutor queryExecutor;
   private DDLExecutor ddlExecutor;

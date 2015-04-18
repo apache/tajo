@@ -375,7 +375,7 @@ public class DistinctGroupbyHashAggregationExec extends UnaryPhysicalExec {
       }
 
       for (EvalNode aggFunction : aggFunctions) {
-        aggFunction.bind(schema);
+        aggFunction.bind(context.getEvalContext(), schema);
       }
 
       tupleSize = groupingKeyIds.length + aggFunctionsNum;

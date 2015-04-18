@@ -62,7 +62,7 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
     assertDatabaseExists("jdbc_test1");
     pstmt.close();
 
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertDatabaseNotExists("Jdbc_Test2");
       pstmt = conn.prepareStatement("CREATE DATABASE \"Jdbc_Test2\"");
       pstmt.executeUpdate();
@@ -72,7 +72,7 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
 
     conn.setCatalog("jdbc_test1");
     assertEquals("jdbc_test1", conn.getCatalog());
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       conn.setCatalog("Jdbc_Test2");
       assertEquals("Jdbc_Test2", conn.getCatalog());
     }
@@ -95,7 +95,7 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
     pstmt = conn.prepareStatement("DROP DATABASE jdbc_test1");
     pstmt.executeUpdate();
     pstmt.close();
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       pstmt = conn.prepareStatement("DROP DATABASE \"Jdbc_Test2\"");
       pstmt.executeUpdate();
       pstmt.close();
@@ -126,7 +126,7 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
     pstmt.executeUpdate();
     pstmt.close();
 
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       // create database "jdbc_test2" and its tables
       assertDatabaseNotExists("Jdbc_Test4");
       pstmt = defaultConnect.prepareStatement("CREATE DATABASE \"Jdbc_Test4\"");
@@ -147,13 +147,13 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
     List<String> newDatabases = getListFromResultSet(dbmd.getCatalogs(), "TABLE_CAT");
 
     newDatabases.removeAll(existingDatabases);
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertEquals(2, newDatabases.size());
     } else {
       assertEquals(1, newDatabases.size());
     }
     assertTrue(newDatabases.contains("jdbc_test3"));
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       assertTrue(newDatabases.contains("Jdbc_Test4"));
     }
 
@@ -162,7 +162,7 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
     assertResultSet(res, "getTables1.result");
     res.close();
 
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       res = defaultConnect.getMetaData().getTables("Jdbc_Test4", null, null, null);
       assertResultSet(res, "getTables2.result");
       res.close();
@@ -182,7 +182,7 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
     executeString("DROP TABLE jdbc_test3.table2");
     executeString("DROP DATABASE jdbc_test3");
 
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       String jdbcTest2ConnUri =
           TestTajoJdbc.buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(), "Jdbc_Test4");
       Connection jdbcTest2Conn = DriverManager.getConnection(jdbcTest2ConnUri);
@@ -268,7 +268,7 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
 
   @Test
   public void testGetColumnsWithPattern() throws Exception {
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       String connUri = TestTajoJdbc.buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
           TajoConstants.DEFAULT_DATABASE_NAME);
       Connection conn = DriverManager.getConnection(connUri);
@@ -397,7 +397,7 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
 
   @Test
   public void testEmptyMetaInfo() throws Exception {
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       String connUri = TestTajoJdbc.buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
           TajoConstants.DEFAULT_DATABASE_NAME);
       Connection conn = DriverManager.getConnection(connUri);
@@ -464,7 +464,7 @@ public class TestTajoDatabaseMetaData extends QueryTestCaseBase {
 
   @Test
   public void testGetTypeInfo() throws Exception {
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       String connUri = TestTajoJdbc.buildConnectionUri(tajoMasterAddress.getHostName(), tajoMasterAddress.getPort(),
           TajoConstants.DEFAULT_DATABASE_NAME);
       Connection conn = DriverManager.getConnection(connUri);

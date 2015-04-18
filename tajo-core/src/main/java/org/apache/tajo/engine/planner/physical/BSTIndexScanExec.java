@@ -114,7 +114,7 @@ public class BSTIndexScanExec extends PhysicalExec {
     super.init();
     progress = 0.0f;
     if (qual != null) {
-      qual.bind(inSchema);
+      qual.bind(context.getEvalContext(), inSchema);
     }
   }
 

@@ -18,13 +18,11 @@
 
 package org.apache.tajo.rpc;
 
+import com.google.protobuf.ServiceException;
+
 import java.io.IOException;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-
-import com.google.protobuf.ServiceException;
 
 public abstract class ServerCallable<T> {
   protected InetSocketAddress addr;
@@ -33,21 +31,16 @@ public abstract class ServerCallable<T> {
   protected Class<?> protocol;
   protected boolean asyncMode;
   protected boolean closeConn;
-  protected RpcConnectionPool connPool;
+  protected RpcClientManager manager;
 
   public abstract T call(NettyClientBase client) throws Exception;
 
-  public ServerCallable(RpcConnectionPool connPool,  InetSocketAddress addr, Class<?> protocol, boolean asyncMode) {
-    this(connPool, addr, protocol, asyncMode, false);
-  }
-
-  public ServerCallable(RpcConnectionPool connPool, InetSocketAddress addr, Class<?> protocol,
-                        boolean asyncMode, boolean closeConn) {
-    this.connPool = connPool;
+  public ServerCallable(RpcClientManager manager, InetSocketAddress addr, Class<?> protocol,
+                        boolean asyncMode) {
+    this.manager = manager;
     this.addr = addr;
     this.protocol = protocol;
     this.asyncMode = asyncMode;
-    this.closeConn = closeConn;
   }
 
   public void beforeCall() {
@@ -74,26 +67,24 @@ public abstract class ServerCallable<T> {
    * Run this instance with retries, timed waits,
    * and refinds of missing regions.
    *
-   * @param <T> the type of the return value
    * @return an object of type T
    * @throws com.google.protobuf.ServiceException if a remote or network exception occurs
    */
+
   public T withRetries() throws ServiceException {
     //TODO configurable
     final long pause = 500; //ms
     final int numRetries = 3;
-    List<Throwable> exceptions = new ArrayList<Throwable>();
 
     for (int tries = 0; tries < numRetries; tries++) {
       NettyClientBase client = null;
       try {
         beforeCall();
         if(addr != null) {
-          client = connPool.getConnection(addr, protocol, asyncMode);
+          client = manager.getClient(addr, protocol, asyncMode);
         }
         return call(client);
       } catch (IOException ioe) {
-        exceptions.add(ioe);
         if(abort) {
           throw new ServiceException(ioe.getMessage(), ioe);
         }
@@ -105,9 +96,7 @@ public abstract class ServerCallable<T> {
       } finally {
         afterCall();
         if(closeConn) {
-          connPool.closeConnection(client);
-        } else {
-          connPool.releaseConnection(client);
+          RpcClientManager.cleanup(client);
         }
       }
       try {
@@ -122,7 +111,6 @@ public abstract class ServerCallable<T> {
 
   /**
    * Run this instance against the server once.
-   * @param <T> the type of the return value
    * @return an object of type T
    * @throws java.io.IOException if a remote or network exception occurs
    * @throws RuntimeException other unspecified error
@@ -131,7 +119,7 @@ public abstract class ServerCallable<T> {
     NettyClientBase client = null;
     try {
       beforeCall();
-      client = connPool.getConnection(addr, protocol, asyncMode);
+      client = manager.getClient(addr, protocol, asyncMode);
       return call(client);
     } catch (Throwable t) {
       Throwable t2 = translateException(t);
@@ -143,9 +131,7 @@ public abstract class ServerCallable<T> {
     } finally {
       afterCall();
       if(closeConn) {
-        connPool.closeConnection(client);
-      } else {
-        connPool.releaseConnection(client);
+        RpcClientManager.cleanup(client);
       }
     }
   }

@@ -33,7 +33,7 @@ import org.apache.tajo.master.rm.WorkerResourceManager;
 import org.apache.tajo.plan.logical.LogicalRootNode;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.rpc.RpcConnectionPool;
+import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
 import org.apache.tajo.session.Session;
 import org.apache.tajo.util.NetUtils;
@@ -112,7 +112,7 @@ public class QueryInProgress {
     masterContext.getResourceManager().releaseQueryMaster(queryId);
 
     if(queryMasterRpc != null) {
-      RpcConnectionPool.getPool().closeConnection(queryMasterRpc);
+      RpcClientManager.cleanup(queryMasterRpc);
     }
 
     try {
@@ -157,7 +157,7 @@ public class QueryInProgress {
     InetSocketAddress addr = NetUtils.createSocketAddr(queryInfo.getQueryMasterHost(), queryInfo.getQueryMasterPort());
     LOG.info("Connect to QueryMaster:" + addr);
     queryMasterRpc =
-        RpcConnectionPool.getPool().getConnection(addr, QueryMasterProtocol.class, true);
+        RpcClientManager.getInstance().getClient(addr, QueryMasterProtocol.class, true);
     queryMasterRpcClient = queryMasterRpc.getStub();
   }
 

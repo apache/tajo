@@ -477,7 +477,6 @@ public class DateTimeFormat {
       KeyWord keyword = new KeyWord();
       keyword.name = (String)eachKeywordValue[0];
       keyword.len = ((Integer)eachKeywordValue[1]).intValue();
-      keyword.id = ((DCH_poz)eachKeywordValue[2]).getValue();
       keyword.idType = ((DCH_poz)eachKeywordValue[2]);
       keyword.is_digit = ((Boolean)eachKeywordValue[3]).booleanValue();
       keyword.date_mode = (FromCharDateMode)eachKeywordValue[4];
@@ -513,7 +512,6 @@ public class DateTimeFormat {
   static class KeyWord {
     String name;
     int len;
-    int id;
     DCH_poz idType;
     boolean is_digit;
     FromCharDateMode date_mode;

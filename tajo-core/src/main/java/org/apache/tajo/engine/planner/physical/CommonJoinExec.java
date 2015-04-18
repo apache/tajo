@@ -54,7 +54,7 @@ public abstract class CommonJoinExec extends BinaryPhysicalExec {
   public void init() throws IOException {
     super.init();
     if (hasJoinQual) {
-      joinQual.bind(inSchema);
+      joinQual.bind(context.getEvalContext(), inSchema);
     }
   }
 
