@@ -394,9 +394,9 @@ public class TestMathFunctions extends ExprTestBase {
 
   @Test
   public void testPow() throws IOException {
-    testSimpleEval("select pow(9,3) as col1 ", new String[]{String.valueOf(Math.pow(9,3))});
-    testSimpleEval("select pow(1.0,3) as col1 ", new String[]{String.valueOf(Math.pow(1.0,3))});
-    testSimpleEval("select pow(20.1,3.1) as col1 ", new String[]{String.valueOf(Math.pow(20.1,3.1))});
+    testSimpleEval("select pow(9,3) as col1 ", new String[]{String.valueOf(Math.pow(9, 3))});
+    testSimpleEval("select pow(1.0,3) as col1 ", new String[]{String.valueOf(Math.pow(1.0, 3))});
+    testSimpleEval("select pow(20.1,3.1) as col1 ", new String[]{String.valueOf(Math.pow(20.1, 3.1))});
     testSimpleEval("select pow(null,3.1) as col1 ", new String[]{""});
     testSimpleEval("select pow(20.1,null) as col1 ", new String[]{""});
 
@@ -408,8 +408,8 @@ public class TestMathFunctions extends ExprTestBase {
 
     testEval(schema, "table1", "0.4,2.7,3,2", "select pow(col1, col2), pow(col3, col4) from table1",
         new String[]{
-            String.valueOf(Math.pow((float)0.4, 2.7)),
-            String.valueOf(Math.pow(3,2))
+            String.valueOf(Math.pow((float) 0.4, 2.7)),
+            String.valueOf(Math.pow(3, 2))
         });
   }
 

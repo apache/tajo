@@ -4,13 +4,15 @@ Release 0.11.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1344: Python UDF support. (jihoon)
+
+    TAJO-923: Add VAR_SAMP and VAR_POP window functions. 
+    (Contributed by Dongjoon Hyun, Committed by jihoon)
+
     TAJO-1494: Add SeekableScanner support to DelimitedTextFileScanner.
     (jinho)
 
     TAJO-921: Add STDDEV_SAMP and STDDEV_POP window functions. (Keuntae Park)
-
-    TAJO-923: Add VAR_SAMP and VAR_POP window functions. 
-    (Contributed by Dongjoon Hyun, Committed by jihoon)
 
     TAJO-1135: Implement queryable virtual table for cluster information.
     (jihun)

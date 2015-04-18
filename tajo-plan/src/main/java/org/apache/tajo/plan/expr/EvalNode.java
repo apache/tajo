@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
+import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.ProtoObject;
 import org.apache.tajo.common.TajoDataTypes.DataType;
@@ -61,9 +62,9 @@ public abstract class EvalNode implements Cloneable, GsonObject, ProtoObject<Pla
     return PlanGsonHelper.toJson(this, EvalNode.class);
 	}
 
-  public EvalNode bind(Schema schema) {
+  public EvalNode bind(@Nullable EvalContext evalContext, Schema schema) {
     for (int i = 0; i < childNum(); i++) {
-      getChild(i).bind(schema);
+      getChild(i).bind(evalContext, schema);
     }
     isBinded = true;
     return this;
