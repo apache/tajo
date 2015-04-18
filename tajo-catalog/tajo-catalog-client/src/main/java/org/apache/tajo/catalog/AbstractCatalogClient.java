@@ -781,7 +781,7 @@ public abstract class AbstractCatalogClient implements CatalogService {
       return false;
     }
   }
-  
+
   @Override
   public final boolean createFunction(final FunctionDesc funcDesc) {
     try {
