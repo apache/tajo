@@ -16,18 +16,9 @@
 
 from tajo_util import outputType
 
-@outputType('int4')
-def return_one():
-    return 1
+class sum_py:
 
-@outputType("text")
-def helloworld():
-    return 'Hello, World'
+def merge(aggregated, input):
+    aggregated += input
 
-# No decorator - blob
-def concat_py(str):
-    return str+str
 
-@outputType('int4')
-def sum_py(a,b):
-    return a+b
