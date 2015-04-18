@@ -16,9 +16,10 @@
 
 from tajo_util import outputType
 
+
 class sum_py:
 
-def merge(aggregated, input):
-    aggregated += input
+    def merge(self, aggregated, input):
+        aggregated += input
 
 

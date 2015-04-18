@@ -16,11 +16,11 @@
 
 from tajo_util import outputType
 
-@outputType('int4')
+@output_type('int4')
 def return_one():
     return 1
 
-@outputType("text")
+@output_type("text")
 def helloworld():
     return 'Hello, World'
 
@@ -28,6 +28,6 @@ def helloworld():
 def concat_py(str):
     return str+str
 
-@outputType('int4')
+@output_type('int4')
 def sum_py(a,b):
     return a+b
