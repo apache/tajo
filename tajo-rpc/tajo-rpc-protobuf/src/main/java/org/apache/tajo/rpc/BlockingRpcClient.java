@@ -77,7 +77,7 @@ public class BlockingRpcClient extends NettyClientBase {
       callback.setFailed("BlockingRpcClient terminates all the connections",
           new ServiceException("BlockingRpcClient terminates all the connections"));
     }
-
+    requests.clear();
     super.close();
   }
 
@@ -169,7 +169,6 @@ public class BlockingRpcClient extends NettyClientBase {
         if (rpcResponse.hasErrorMessage()) {
           callback.setFailed(rpcResponse.getErrorMessage(),
               makeTajoServiceException(rpcResponse, new ServiceException(rpcResponse.getErrorTrace())));
-          throw new RemoteException(getErrorMessage(rpcResponse.getErrorMessage()));
         } else {
           Message responseMessage;
 
@@ -188,10 +187,12 @@ public class BlockingRpcClient extends NettyClientBase {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
         throws Exception {
+      /* Current requests will be failed */
       for(ProtoCallFuture callback: requests.values()) {
         callback.setFailed(cause.getMessage(), cause);
       }
-      
+      requests.clear();
+
       if(LOG.isDebugEnabled()) {
         LOG.error("" + cause.getMessage(), cause);
       } else {
