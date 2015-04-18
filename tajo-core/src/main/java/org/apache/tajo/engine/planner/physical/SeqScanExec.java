@@ -109,7 +109,7 @@ public class SeqScanExec extends ScanExec {
       FieldEval targetExpr = new FieldEval(column);
       Datum datum = NullDatum.get();
       if (partitionRow != null) {
-        targetExpr.bind(columnPartitionSchema);
+        targetExpr.bind(context.getEvalContext(), columnPartitionSchema);
         datum = targetExpr.eval(partitionRow);
       }
       ConstEval constExpr = new ConstEval(datum);
@@ -163,7 +163,7 @@ public class SeqScanExec extends ScanExec {
     super.init();
 
     if (plan.hasQual()) {
-      qual.bind(inSchema);
+      qual.bind(context.getEvalContext(), inSchema);
     }
   }
 
