@@ -68,7 +68,7 @@ public class TestFunctionDesc {
     desc.setDetail("detail");
 
     assertEquals("sum", desc.getFunctionName());
-    assertEquals(TestSum.class, desc.getFuncClass());
+    assertEquals(TestSum.class, desc.getLegacyFuncClass());
     assertEquals(FunctionType.GENERAL, desc.getFuncType());
     assertEquals(Type.INT4, desc.getReturnType().getType());
     assertArrayEquals(CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.INT8),
@@ -84,7 +84,7 @@ public class TestFunctionDesc {
     FunctionDesc newDesc = new FunctionDesc(proto);
 
     assertEquals("sum", newDesc.getFunctionName());
-    assertEquals(TestSum.class, newDesc.getFuncClass());
+    assertEquals(TestSum.class, newDesc.getLegacyFuncClass());
     assertEquals(FunctionType.GENERAL, newDesc.getFuncType());
     assertEquals(Type.INT4, newDesc.getReturnType().getType());
 

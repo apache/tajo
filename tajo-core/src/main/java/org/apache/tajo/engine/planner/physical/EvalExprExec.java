@@ -41,7 +41,7 @@ public class EvalExprExec extends PhysicalExec {
     super.init();
     progress = 0.0f;
     for (Target target : plan.getTargets()) {
-      target.getEvalTree().bind(inSchema);
+      target.getEvalTree().bind(context.getEvalContext(), inSchema);
     }
   }
 

@@ -36,7 +36,10 @@ import org.apache.tajo.engine.codegen.TajoClassLoader;
 import org.apache.tajo.engine.function.FunctionLoader;
 import org.apache.tajo.engine.json.CoreGsonHelper;
 import org.apache.tajo.engine.parser.SQLAnalyzer;
+import org.apache.tajo.function.FunctionSignature;
+import org.apache.tajo.master.exec.QueryExecutor;
 import org.apache.tajo.plan.*;
+import org.apache.tajo.plan.expr.EvalContext;
 import org.apache.tajo.plan.expr.EvalNode;
 import org.apache.tajo.plan.serder.EvalNodeDeserializer;
 import org.apache.tajo.plan.serder.EvalNodeSerializer;
@@ -58,6 +61,7 @@ import org.junit.BeforeClass;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.TimeZone;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
@@ -91,7 +95,9 @@ public class ExprTestBase {
     cat = util.getMiniCatalogCluster().getCatalog();
     cat.createTablespace(DEFAULT_TABLESPACE_NAME, "hdfs://localhost:1234/warehouse");
     cat.createDatabase(DEFAULT_DATABASE_NAME, DEFAULT_TABLESPACE_NAME);
-    for (FunctionDesc funcDesc : FunctionLoader.load()) {
+    Map<FunctionSignature, FunctionDesc> map = FunctionLoader.load();
+    map = FunctionLoader.loadUserDefinedFunctions(conf, map);
+    for (FunctionDesc funcDesc : map.values()) {
       cat.createFunction(funcDesc);
     }
 
@@ -126,8 +132,8 @@ public class ExprTestBase {
    * @return
    * @throws PlanningException
    */
-  private static Target[] getRawTargets(QueryContext context, String query, boolean condition) throws PlanningException,
-      InvalidStatementException {
+  private static Target[] getRawTargets(QueryContext context, String query, boolean condition)
+      throws PlanningException, InvalidStatementException {
 
     List<ParsedResult> parsedResults = SimpleParser.parseScript(query);
     if (parsedResults.size() > 1) {
@@ -265,6 +271,7 @@ public class ExprTestBase {
     Target [] targets;
 
     TajoClassLoader classLoader = new TajoClassLoader();
+    EvalContext evalContext = new EvalContext();
 
     try {
       targets = getRawTargets(queryContext, query, condition);
@@ -274,6 +281,7 @@ public class ExprTestBase {
         codegen = new EvalCodeGenerator(classLoader);
       }
 
+      QueryExecutor.startScriptExecutors(queryContext, evalContext, targets);
       Tuple outTuple = new VTuple(targets.length);
       for (int i = 0; i < targets.length; i++) {
         EvalNode eval = targets[i].getEvalTree();
@@ -281,7 +289,7 @@ public class ExprTestBase {
         if (queryContext.getBool(SessionVars.CODEGEN)) {
           eval = codegen.compile(inputSchema, eval);
         }
-        eval.bind(inputSchema);
+        eval.bind(evalContext, inputSchema);
 
         outTuple.put(i, eval.eval(vtuple));
       }
@@ -318,11 +326,12 @@ public class ExprTestBase {
       if (schema != null) {
         cat.dropTable(qualifiedTableName);
       }
+      QueryExecutor.stopScriptExecutors(evalContext);
     }
   }
 
   public static void assertEvalTreeProtoSerDer(OverridableConf context, EvalNode evalNode) {
     PlanProto.EvalNodeTree converted = EvalNodeSerializer.serialize(evalNode);
-    assertEquals(evalNode, EvalNodeDeserializer.deserialize(context, converted));
+    assertEquals(evalNode, EvalNodeDeserializer.deserialize(context, null, converted));
   }
 }

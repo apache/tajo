@@ -19,6 +19,7 @@
 package org.apache.tajo.datum;
 
 import com.google.protobuf.Message;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.common.TajoDataTypes.Type;
 import org.apache.tajo.exception.InvalidCastException;
@@ -66,7 +67,7 @@ public class DatumFactory {
       case INET4:
         return Inet4Datum.class;
       case ANY:
-        return NullDatum.class;
+        return AnyDatum.class;
       case NULL_TYPE:
         return NullDatum.class;
       default:
@@ -377,16 +378,16 @@ public class DatumFactory {
     return new TimestampDatum(DateTimeUtil.toJulianTimestampWithTZ(str, tz));
   }
 
-  public static BlobDatum createBlob(byte[] val) {
-    return new BlobDatum(val);
+  public static BlobDatum createBlob(byte[] encoded) {
+    return new BlobDatum(encoded);
   }
 
-  public static BlobDatum createBlob(byte[] val, int offset, int length) {
-    return new BlobDatum(val, offset, length);
+  public static BlobDatum createBlob(byte[] encoded, int offset, int length) {
+    return new BlobDatum(encoded, offset, length);
   }
 
-  public static BlobDatum createBlob(String val) {
-    return new BlobDatum(val.getBytes());
+  public static BlobDatum createBlob(String plainString) {
+    return new BlobDatum(Base64.encodeBase64(plainString.getBytes()));
   }
 
   public static Inet4Datum createInet4(int encoded) {
@@ -403,6 +404,10 @@ public class DatumFactory {
 
   public static Inet4Datum createInet4(String val) {
     return new Inet4Datum(val);
+  }
+
+  public static AnyDatum createAny(Datum val) {
+    return new AnyDatum(val);
   }
 
   public static Datum cast(Datum operandDatum, DataType target, @Nullable TimeZone tz) {
@@ -454,6 +459,8 @@ public class DatumFactory {
       return DatumFactory.createBlob(operandDatum.asByteArray());
     case INET4:
       return DatumFactory.createInet4(operandDatum.asByteArray());
+    case ANY:
+      return DatumFactory.createAny(operandDatum);
     default:
       throw new InvalidCastException(operandDatum.type(), target.getType());
     }

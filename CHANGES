@@ -4,6 +4,11 @@ Release 0.11.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1344: Python UDF support. (jihoon)
+
+    TAJO-923: Add VAR_SAMP and VAR_POP window functions. 
+    (Contributed by Dongjoon Hyun, Committed by jihoon)
+
     TAJO-1494: Add SeekableScanner support to DelimitedTextFileScanner.
     (jinho)
 
@@ -90,6 +95,10 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1569: BlockingRpcClient can make other request fail. (jinho)
+
+    TAJO-1564: TestFetcher fails occasionally. (jinho)
 
     TAJO-1497: RPC client does not share a connection. (jinho)
 

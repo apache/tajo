@@ -218,6 +218,22 @@ public class TestBlockingRpc {
   }
 
   @Test
+  public void testThrowException2() throws Exception {
+    EchoMessage message = EchoMessage.newBuilder()
+        .setMessage(MESSAGE).build();
+
+    try {
+      stub.throwException(null, message);
+      fail("RpcCall should throw exception");
+    } catch (Throwable t) {
+      assertTrue(t instanceof TajoServiceException);
+    }
+
+    EchoMessage message1 = stub.deley(null, message);
+    assertEquals(message, message1);
+  }
+
+  @Test
   @SetupRpcConnection(setupRpcServer=false,setupRpcClient=false)
   public void testConnectionRetry() throws Exception {
     retries = 10;

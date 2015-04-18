@@ -92,7 +92,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
    */
   public Function newInstance() throws InternalException {
     try {
-      Constructor<? extends Function> cons = getFuncClass().getConstructor();
+      Constructor<? extends Function> cons = getLegacyFuncClass().getConstructor();
       return cons.newInstance();
     } catch (Exception ioe) {
       throw new InternalException("Cannot initiate function " + signature);
@@ -124,7 +124,7 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
   ////////////////////////////////////////
 
   @SuppressWarnings("unchecked")
-  public Class<? extends Function> getFuncClass() {
+  public Class<? extends Function> getLegacyFuncClass() {
     return invocation.getLegacy().getFunctionClass();
   }
 
