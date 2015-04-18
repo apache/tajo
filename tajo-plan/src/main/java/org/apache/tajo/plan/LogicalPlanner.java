@@ -115,6 +115,10 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       return queryBlock;
     }
 
+    public OverridableConf getQueryContext() {
+      return queryContext;
+    }
+
     public String toString() {
       return "block=" + queryBlock.getName() + ", relNum=" + queryBlock.getRelations().size() + ", "+
           queryBlock.namedExprsMgr.toString();
@@ -132,7 +136,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
   }
 
   @VisibleForTesting
-  public LogicalPlan createPlan(OverridableConf queryContext, Expr expr, boolean debug) throws PlanningException {
+  public LogicalPlan createPlan(OverridableConf queryContext, Expr expr, boolean debug)
+      throws PlanningException {
 
     LogicalPlan plan = new LogicalPlan(this);
 
@@ -810,7 +815,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     limitNode.setInSchema(child.getOutSchema());
     limitNode.setOutSchema(child.getOutSchema());
 
-    firstFetNum.bind(null);
+    firstFetNum.bind(null, null);
     limitNode.setFetchFirst(firstFetNum.eval(null).asInt8());
 
     return limitNode;

@@ -35,10 +35,11 @@ import org.apache.tajo.datum.*;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.plan.expr.*;
 import org.apache.tajo.plan.function.AggFunction;
-import org.apache.tajo.plan.function.GeneralFunction;
+import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.plan.logical.WindowSpec;
 import org.apache.tajo.plan.serder.PlanProto.WinFunctionEvalSpec;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -52,7 +53,7 @@ import java.util.*;
  */
 public class EvalNodeDeserializer {
 
-  public static EvalNode deserialize(OverridableConf context, PlanProto.EvalNodeTree tree) {
+  public static EvalNode deserialize(OverridableConf context, EvalContext evalContext, PlanProto.EvalNodeTree tree) {
     Map<Integer, EvalNode> evalNodeMap = Maps.newHashMap();
 
     // sort serialized eval nodes in an ascending order of their IDs.
@@ -180,9 +181,10 @@ public class EvalNodeDeserializer {
         try {
           funcDesc = new FunctionDesc(funcProto.getFuncion());
           if (type == EvalType.FUNCTION) {
-            GeneralFunction instance = (GeneralFunction) funcDesc.newInstance();
-            current = new GeneralFunctionEval(context, new FunctionDesc(funcProto.getFuncion()), instance, params);
-
+            current = new GeneralFunctionEval(context, funcDesc, params);
+            if (evalContext != null && funcDesc.getInvocation().hasPython()) {
+              evalContext.addScriptEngine(current, new PythonScriptEngine(funcDesc));
+            }
           } else if (type == EvalType.AGG_FUNCTION || type == EvalType.WINDOW_FUNCTION) {
             AggFunction instance = (AggFunction) funcDesc.newInstance();
             if (type == EvalType.AGG_FUNCTION) {
@@ -228,6 +230,8 @@ public class EvalNodeDeserializer {
           throw new NoSuchFunctionException(functionName, parameterTypes);
         } catch (InternalException ie) {
           throw new NoSuchFunctionException(funcDesc.getFunctionName(), funcDesc.getParamTypes());
+        } catch (IOException e) {
+          throw new NoSuchFunctionException(e.getMessage());
         }
       } else {
         throw new RuntimeException("Unknown EvalType: " + type.name());
@@ -309,6 +313,8 @@ public class EvalNodeDeserializer {
       return new IntervalDatum(datum.getInterval().getMonth(), datum.getInterval().getMsec());
     case NULL_TYPE:
       return NullDatum.get();
+    case ANY:
+      return DatumFactory.createAny(deserialize(datum.getActual()));
     default:
       throw new RuntimeException("Unknown data type: " + datum.getType().name());
     }

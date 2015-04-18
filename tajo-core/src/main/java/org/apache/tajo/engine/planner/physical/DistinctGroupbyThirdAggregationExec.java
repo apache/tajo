@@ -252,7 +252,7 @@ public class DistinctGroupbyThirdAggregationExec extends UnaryPhysicalExec {
       aggrFunctions = groupbyNode.getAggFunctions();
       if (aggrFunctions != null) {
         for (AggregationFunctionCallEval eachFunction: aggrFunctions) {
-          eachFunction.bind(inSchema);
+          eachFunction.bind(context.getEvalContext(), inSchema);
           eachFunction.setFinalPhase();
         }
       }

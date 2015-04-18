@@ -25,16 +25,24 @@ import com.google.common.collect.Sets;
 import org.apache.commons.collections.Predicate;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.PathFilter;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.common.TajoDataTypes;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.function.annotation.Description;
 import org.apache.tajo.engine.function.annotation.ParamOptionTypes;
 import org.apache.tajo.engine.function.annotation.ParamTypes;
 import org.apache.tajo.function.*;
+import org.apache.tajo.plan.function.python.PythonScriptEngine;
 import org.apache.tajo.util.ClassUtil;
+import org.apache.tajo.util.TUtil;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
@@ -44,8 +52,14 @@ import static org.apache.tajo.catalog.proto.CatalogProtos.FunctionType.GENERAL;
 public class FunctionLoader {
 
   private static Log LOG = LogFactory.getLog(FunctionLoader.class);
+  public static final String PYTHON_FUNCTION_NAMESPACE = "python";
 
-  public static Collection<FunctionDesc> load() {
+  /**
+   * Load built-in functions
+   *
+   * @return
+   */
+  public static Map<FunctionSignature, FunctionDesc> load() {
     Map<FunctionSignature, FunctionDesc> map = Maps.newHashMap();
 
     List<FunctionDesc> dd = Lists.newArrayList();
@@ -66,7 +80,48 @@ public class FunctionLoader {
       }
     }
 
-    return map.values();
+    return map;
+  }
+
+  /**
+   * Load functions that are defined by users.
+   *
+   * @param conf
+   * @param functionMap
+   * @return
+   * @throws IOException
+   */
+  public static Map<FunctionSignature, FunctionDesc> loadUserDefinedFunctions(TajoConf conf,
+                                                                              Map<FunctionSignature, FunctionDesc> functionMap)
+      throws IOException {
+
+    String[] codePaths = conf.getStrings(TajoConf.ConfVars.PYTHON_CODE_DIR.varname);
+    if (codePaths != null) {
+      FileSystem localFS = FileSystem.getLocal(conf);
+      for (String codePathStr : codePaths) {
+        Path codePath = new Path(codePathStr);
+        List<Path> filePaths = TUtil.newList();
+        if (localFS.isDirectory(codePath)) {
+          for (FileStatus file : localFS.listStatus(codePath, new PathFilter() {
+            @Override
+            public boolean accept(Path path) {
+              return path.getName().endsWith(PythonScriptEngine.FILE_EXTENSION);
+            }
+          })) {
+            filePaths.add(file.getPath());
+          }
+        } else {
+          filePaths.add(codePath);
+        }
+        for (Path filePath : filePaths) {
+          for (FunctionDesc f : PythonScriptEngine.registerFunctions(filePath.toUri(),
+              FunctionLoader.PYTHON_FUNCTION_NAMESPACE)) {
+            functionMap.put(f.getSignature(), f);
+          }
+        }
+      }
+    }
+    return functionMap;
   }
 
   public static Set<FunctionDesc> findScalarFunctions() {

@@ -163,6 +163,8 @@ public class TajoTestingCluster {
     // Memory cache termination
     conf.setIntVar(ConfVars.WORKER_HISTORY_EXPIRE_PERIOD, 1);
 
+    conf.setStrings(ConfVars.PYTHON_CODE_DIR.varname, getClass().getResource("/python").toString());
+
     // Storage buffer size
     int bufferSize = 32 * StorageUnit.KB;
     conf.setInt(RawFile.READ_BUFFER_SIZE, bufferSize);
