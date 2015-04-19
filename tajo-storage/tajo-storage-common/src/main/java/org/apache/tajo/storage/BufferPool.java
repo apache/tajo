@@ -19,9 +19,13 @@
 package org.apache.tajo.storage;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.UnpooledByteBufAllocator;
+import io.netty.util.ResourceLeakDetector;
 import io.netty.util.internal.PlatformDependent;
 import org.apache.hadoop.classification.InterfaceStability;
+import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.util.CommonTestingUtil;
 
 import java.lang.reflect.Field;
@@ -29,7 +33,8 @@ import java.lang.reflect.Field;
 /* this class is PooledBuffer holder */
 public class BufferPool {
 
-  private static final PooledByteBufAllocator allocator;
+  public static final String ALLOW_CACHE = "tajo.storage.buffer.thread-local.cache";
+  private static final ByteBufAllocator ALLOCATOR;
 
   private BufferPool() {
   }
@@ -40,15 +45,16 @@ public class BufferPool {
     *  Because the TaskRunner thread is newly created
     * */
 
-     System.getProperty(CommonTestingUtil.TAJO_TEST_KEY, CommonTestingUtil.TAJO_TEST_TRUE);
-    int maxOrder = 11; // 16MiB chunkSize = pageSize << maxOrder
     if (System.getProperty(CommonTestingUtil.TAJO_TEST_KEY, "FALSE").equalsIgnoreCase("TRUE")) {
-       maxOrder = 7; //1MiB chunk
-    }
-    allocator = createPooledByteBufAllocator(true, false, 0, maxOrder);
+      /* Disable pooling buffers for memory usage  */
+      ALLOCATOR = UnpooledByteBufAllocator.DEFAULT;
 
-    /* if you are finding memory leak, please enable this line */
-    //ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
+      /* if you are finding memory leak, please enable this line */
+      ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
+    } else {
+      TajoConf tajoConf = new TajoConf();
+      ALLOCATOR = createPooledByteBufAllocator(true, tajoConf.getBoolean(ALLOW_CACHE, false), 0);
+    }
   }
 
   /**
@@ -57,7 +63,6 @@ public class BufferPool {
   public static PooledByteBufAllocator createPooledByteBufAllocator(
       boolean allowDirectBufs,
       boolean allowCache,
-      int maxOrder,
       int numCores) {
     if (numCores == 0) {
       numCores = Runtime.getRuntime().availableProcessors();
@@ -67,7 +72,7 @@ public class BufferPool {
         Math.min(getPrivateStaticField("DEFAULT_NUM_HEAP_ARENA"), numCores),
         Math.min(getPrivateStaticField("DEFAULT_NUM_DIRECT_ARENA"), allowDirectBufs ? numCores : 0),
         getPrivateStaticField("DEFAULT_PAGE_SIZE"),
-        Math.min(getPrivateStaticField("DEFAULT_MAX_ORDER"), maxOrder),
+        getPrivateStaticField("DEFAULT_MAX_ORDER"),
         allowCache ? getPrivateStaticField("DEFAULT_TINY_CACHE_SIZE") : 0,
         allowCache ? getPrivateStaticField("DEFAULT_SMALL_CACHE_SIZE") : 0,
         allowCache ? getPrivateStaticField("DEFAULT_NORMAL_CACHE_SIZE") : 0
@@ -91,7 +96,7 @@ public class BufferPool {
 
 
   public static ByteBuf directBuffer(int size) {
-    return allocator.directBuffer(size);
+    return ALLOCATOR.directBuffer(size);
   }
 
   /**
@@ -101,7 +106,7 @@ public class BufferPool {
    * @return allocated ByteBuf from pool
    */
   public static ByteBuf directBuffer(int size, int max) {
-    return allocator.directBuffer(size, max);
+    return ALLOCATOR.directBuffer(size, max);
   }
 
   @InterfaceStability.Unstable

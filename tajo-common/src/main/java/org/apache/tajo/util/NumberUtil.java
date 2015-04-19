@@ -604,7 +604,7 @@ public class NumberUtil {
    * @throws NumberFormatException if the argument could not be parsed as a double
    */
   public static double parseDouble(ByteBuf bytes, int start, int length) {
-    if (!PlatformDependent.hasUnsafe()) {
+    if (!bytes.hasMemoryAddress()) {
       return parseDouble(bytes.array(), start, length);
     }
 
@@ -815,7 +815,7 @@ public class NumberUtil {
    * @throws NumberFormatException if the argument could not be parsed as an int quantity.
    */
   public static int parseInt(ByteBuf bytes, int start, int length, int radix) {
-    if (!PlatformDependent.hasUnsafe()) {
+    if (!bytes.hasMemoryAddress()) {
       return parseInt(bytes.array(), start, length);
     }
 
@@ -942,7 +942,7 @@ public class NumberUtil {
    * @throws NumberFormatException if the argument could not be parsed as an long quantity.
    */
   public static long parseLong(ByteBuf bytes, int start, int length, int radix) {
-    if (!PlatformDependent.hasUnsafe()) {
+    if (!bytes.hasMemoryAddress()) {
       return parseInt(bytes.array(), start, length);
     }
 
