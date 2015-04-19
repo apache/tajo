@@ -22,6 +22,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1570: CatalogUtil newSimpleDataTypeArray should use newSimpleDataType.
+    (Contributed by DaeMyung Kang, Committed by jihoon)
+
     TAJO-1442: Improve Hive Compatibility. (jaehwa)
 
     TAJO-1530: Display warn message when the query kill button is clicked in 
