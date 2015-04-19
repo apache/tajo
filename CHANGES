@@ -27,6 +27,9 @@ Release 0.10.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1560: HashShuffle report should be ignored when a succeed tasks are not 
+    included. (jinho)
+
     TAJO-1564: TestFetcher fails occasionally. (jinho)
 
     TAJO-1538: TajoWorkerResourceManager.allocatedResourceMap is increasing 

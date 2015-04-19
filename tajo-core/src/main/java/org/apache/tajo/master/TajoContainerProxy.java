@@ -23,9 +23,7 @@ import org.apache.hadoop.util.StringUtils;
 import org.apache.hadoop.yarn.api.records.ContainerLaunchContext;
 import org.apache.tajo.ExecutionBlockId;
 import org.apache.tajo.TaskAttemptId;
-import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
-import org.apache.tajo.ha.HAServiceUtil;
 import org.apache.tajo.ipc.ContainerProtocol;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol;
 import org.apache.tajo.ipc.TajoWorkerProtocol;
@@ -34,6 +32,7 @@ import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.master.event.TaskFatalErrorEvent;
 import org.apache.tajo.master.rm.TajoWorkerContainer;
 import org.apache.tajo.master.rm.TajoWorkerContainerId;
+import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
@@ -98,12 +97,13 @@ public class TajoContainerProxy extends ContainerProxy {
   private void assignExecutionBlock(ExecutionBlockId executionBlockId, TajoContainer container) {
     NettyClientBase tajoWorkerRpc = null;
     try {
-      InetSocketAddress myAddr= context.getQueryMasterContext().getWorkerContext()
-          .getQueryMasterManagerService().getBindAddr();
 
       InetSocketAddress addr = new InetSocketAddress(container.getNodeId().getHost(), container.getNodeId().getPort());
       tajoWorkerRpc = RpcConnectionPool.getPool().getConnection(addr, TajoWorkerProtocol.class, true);
       TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
+
+      PlanProto.ShuffleType shuffleType =
+          context.getQuery().getStage(executionBlockId).getDataChannel().getShuffleType();
 
       TajoWorkerProtocol.RunExecutionBlockRequestProto request =
           TajoWorkerProtocol.RunExecutionBlockRequestProto.newBuilder()
@@ -114,6 +114,7 @@ public class TajoContainerProxy extends ContainerProxy {
               .setQueryOutputPath(context.getStagingDir().toString())
               .setQueryContext(queryContext.getProto())
               .setPlanJson(planJson)
+              .setShuffleType(shuffleType)
               .build();
 
       tajoWorkerRpcClient.startExecutionBlock(null, request, NullCallback.get());
