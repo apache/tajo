@@ -1336,6 +1336,7 @@ public class Stage implements EventHandler<StageEvent> {
 
   /**
    * HASH_SHUFFLE, SCATTERED_HASH_SHUFFLE should get report from worker nodes when ExecutionBlock is stopping.
+   * RANGE_SHUFFLE report is sent from task reporter when a Task is finished in worker node.
    */
   public static boolean checkIfNeedFinalizing(ShuffleType type) {
     switch (type) {
