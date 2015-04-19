@@ -831,7 +831,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
     ExprNormalizedResult [] normalizedExprList = new ExprNormalizedResult[sortKeyNum];
     for (int i = 0; i < sortKeyNum; i++) {
-      normalizedExprList[i] = normalizer.normalize(context, sortSpecs[i].getKey());
+      normalizedExprList[i] = normalizer.normalizeSort(context, sortSpecs[i].getKey());
     }
     for (int i = 0; i < sortKeyNum; i++) {
       referNames[i] = block.namedExprsMgr.addExpr(normalizedExprList[i].baseExpr);

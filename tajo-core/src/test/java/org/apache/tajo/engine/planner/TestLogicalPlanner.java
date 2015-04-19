@@ -153,6 +153,7 @@ public class TestLogicalPlanner {
       "create index idx_employee on employee using bitmap (name null first, empId desc) with ('fillfactor' = 70)", // 11
       "select name, score from employee, score order by score limit 3", // 12
       "select length(name), length(deptname), *, empid+10 from employee where empId > 500", // 13
+      "select n2.n_name from nation n1, nation n2, nation n3 where n1.n_name=n2.n_name and n1.n_name=n3.n_name order by n_name" // 14
   };
 
   public static final void testCloneLogicalNode(LogicalNode n1) throws CloneNotSupportedException {
@@ -753,6 +754,19 @@ public class TestLogicalPlanner {
     assertEquals(NodeType.SCAN, joinNode.getRightChild().getType());
     ScanNode rightNode = joinNode.getRightChild();
     assertEquals(CatalogUtil.buildFQName(DEFAULT_DATABASE_NAME, "score"), rightNode.getTableName());
+  }
+
+  @Test
+  public final void testOrderByColumnNameResolution() throws CloneNotSupportedException, PlanningException {
+    QueryContext qc = new QueryContext(util.getConfiguration(), session);
+
+    Expr expr = sqlAnalyzer.parse(QUERIES[14]);
+
+    try {
+      LogicalNode plan = planner.createPlan(qc, expr).getRootBlock().getRoot();
+    } catch (NoSuchColumnException nsce) {
+      fail(nsce.toString());
+    }
   }
 
   @Test
