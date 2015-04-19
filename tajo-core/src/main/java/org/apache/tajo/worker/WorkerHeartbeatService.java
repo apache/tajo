@@ -35,6 +35,7 @@ import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcConnectionPool;
 import org.apache.tajo.rpc.protocolrecords.PrimitiveProtos;
+import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.storage.DiskDeviceInfo;
 import org.apache.tajo.storage.DiskMountInfo;
@@ -57,7 +58,7 @@ public class WorkerHeartbeatService extends AbstractService {
 
   private final TajoWorker.WorkerContext context;
   private TajoConf systemConf;
-  private RpcConnectionPool connectionPool;
+  private RpcClientManager connectionManager;
   private WorkerHeartbeatThread thread;
   private static final float HDFS_DATANODE_STORAGE_SIZE;
 
@@ -72,10 +73,12 @@ public class WorkerHeartbeatService extends AbstractService {
 
   @Override
   public void serviceInit(Configuration conf) throws Exception {
-    Preconditions.checkArgument(conf instanceof TajoConf, "Configuration must be a TajoConf instance.");
+    if (!(conf instanceof TajoConf)) {
+      throw new IllegalArgumentException("Configuration must be a TajoConf instance");
+    }
     this.systemConf = (TajoConf) conf;
 
-    connectionPool = RpcConnectionPool.getPool();
+    this.connectionManager = RpcClientManager.getInstance();
     super.serviceInit(conf);
   }
 
@@ -184,7 +187,7 @@ public class WorkerHeartbeatService extends AbstractService {
           CallFuture<TajoHeartbeatResponse> callBack = new CallFuture<TajoHeartbeatResponse>();
 
           ServiceTracker serviceTracker = context.getServiceTracker();
-          rmClient = connectionPool.getConnection(serviceTracker.getResourceTrackerAddress(),
+          rmClient = connectionManager.getClient(serviceTracker.getResourceTrackerAddress(),
               TajoResourceTrackerProtocol.class, true);
           TajoResourceTrackerProtocol.TajoResourceTrackerProtocolService resourceTracker = rmClient.getStub();
           resourceTracker.heartbeat(callBack.getController(), heartbeatProto, callBack);
@@ -207,8 +210,6 @@ public class WorkerHeartbeatService extends AbstractService {
           LOG.warn("Heartbeat response is being delayed.", te);
         } catch (Exception e) {
           LOG.error(e.getMessage(), e);
-        } finally {
-          connectionPool.releaseConnection(rmClient);
         }
 
         try {
