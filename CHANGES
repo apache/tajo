@@ -96,6 +96,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1560: HashShuffle report should be ignored when a succeed tasks are not
+    included. (jinho)
+
     TAJO-1569: BlockingRpcClient can make other request fail. (jinho)
 
     TAJO-1564: TestFetcher fails occasionally. (jinho)
