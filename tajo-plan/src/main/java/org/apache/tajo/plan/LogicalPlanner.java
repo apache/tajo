@@ -485,9 +485,9 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
 
         for (int i = 0; i < groupingKeyNum; i++) {
           Target target = groupbyNode.getTargets()[i];
-          if (groupbyNode.getTargets()[i].getEvalTree().getType() == EvalType.FIELD) {
+          if (target.getEvalTree().getType() == EvalType.FIELD) {
             FieldEval grpKeyEvalNode = target.getEvalTree();
-            if (!groupbyNode.getInSchema().contains(grpKeyEvalNode.getColumnRef())) {
+            if (!groupbyNode.getInSchema().containsByQualifiedName(grpKeyEvalNode.getColumnRef().getQualifiedName())) {
               throwCannotEvaluateException(projectable, grpKeyEvalNode.getName());
             }
           }
@@ -551,7 +551,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     for (Target target : projectable.getTargets()) {
       Set<Column> columns = EvalTreeUtil.findUniqueColumns(target.getEvalTree());
       for (Column c : columns) {
-        if (!baseSchema.contains(c)) {
+        if (!baseSchema.containsByQualifiedName(c.getQualifiedName())) {
           throwCannotEvaluateException(projectable, c.getQualifiedName());
         }
       }
@@ -1200,8 +1200,8 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     Column rightJoinKey;
 
     for (Column common : commons.getColumns()) {
-      leftJoinKey = leftSchema.getColumn(common.getQualifiedName());
-      rightJoinKey = rightSchema.getColumn(common.getQualifiedName());
+      leftJoinKey = leftSchema.getColumn(leftSchema.getColumnIdByName(common.getQualifiedName()));
+      rightJoinKey = rightSchema.getColumn(rightSchema.getColumnIdByName(common.getQualifiedName()));
       equiQual = new BinaryEval(EvalType.EQUAL,
           new FieldEval(leftJoinKey), new FieldEval(rightJoinKey));
       if (njQual == null) {

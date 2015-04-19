@@ -147,13 +147,26 @@ public class TestSchema {
 		assertEquals(col3, schema.getColumn("addr"));
 	}
 
-	@Test
-	public final void testAddField() {
-		Schema schema = new Schema();
-		assertFalse(schema.containsByQualifiedName("studentId"));
-		schema.addColumn("studentId", Type.INT4);
-		assertTrue(schema.containsByQualifiedName("studentId"));
-	}
+    @Test
+    public final void testAddField() {
+      Schema schema = new Schema();
+
+      assertFalse(schema.contains("studentId"));
+      assertFalse(schema.containsByQualifiedName("studentId"));
+      schema.addColumn("default.t1.studentId", Type.INT4);
+      assertTrue(schema.contains("studentId"));
+      assertTrue(schema.containsByQualifiedName("default.t1.studentId"));
+
+      assertFalse(schema.containsByQualifiedName("default.t2.studentId"));
+      schema.addColumn("default.t2.studentId", Type.INT4);
+      assertTrue(schema.containsByQualifiedName("default.t2.studentId"));
+      try {
+        schema.contains("studentId");
+        fail();
+      } catch (RuntimeException e) {
+        assertEquals(e.getMessage(), "Ambiguous Column name");
+      }
+    }
 
 	@Test
 	public final void testEqualsObject() {
