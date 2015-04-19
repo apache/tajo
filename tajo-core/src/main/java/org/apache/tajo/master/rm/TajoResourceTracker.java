@@ -28,6 +28,7 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.TajoHeartbeatResponse;
 import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
+import org.apache.tajo.master.cluster.WorkerIdGenerator;
 import org.apache.tajo.rpc.AsyncRpcServer;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
@@ -67,12 +68,15 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
   private AsyncRpcServer server;
   /** The bind address of RPC server of worker resource tracker */
   private InetSocketAddress bindAddress;
+  /** Simple Id Generator for Tajo Workers */
+  private final WorkerIdGenerator workerIdGenerator;
 
   public TajoResourceTracker(WorkerResourceManager manager, WorkerLivelinessMonitor workerLivelinessMonitor) {
     super(TajoResourceTracker.class.getSimpleName());
     this.manager = manager;
     this.rmContext = manager.getRMContext();
     this.workerLivelinessMonitor = workerLivelinessMonitor;
+    this.workerIdGenerator = new WorkerIdGenerator(this.rmContext);
   }
 
   @Override
@@ -134,13 +138,26 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
       // get a workerId from the heartbeat
       int workerId = heartbeat.getConnectionInfo().getId();
 
-      if(rmContext.getWorkers().containsKey(workerId)) { // if worker is running
+      // new worker pings heartbeat, this worker id will be unallocated worker id.
+      if (workerId == WorkerConnectionInfo.UNALLOCATED_WORKER_ID) {
+        workerId = workerIdGenerator.getGeneratedId();
+
+        // create new worker instance
+        Worker newWorker = createWorkerResource(workerId, heartbeat);
+        rmContext.getWorkers().putIfAbsent(workerId, newWorker);
+
+        // Transit the worker to RUNNING
+        rmContext.rmDispatcher.getEventHandler().handle(new WorkerEvent(workerId, WorkerEventType.STARTED));
+
+        workerLivelinessMonitor.register(workerId);
+        builder.setGeneratedWorkerId(workerId);
+      } else if(rmContext.getWorkers().containsKey(workerId)) { // if worker is running
 
         // status update
         rmContext.getDispatcher().getEventHandler().handle(createStatusEvent(workerId, heartbeat));
         // refresh ping
         workerLivelinessMonitor.receivedPing(workerId);
-
+        builder.clearGeneratedWorkerId();
       } else if (rmContext.getInactiveWorkers().containsKey(workerId)) { // worker was inactive
 
         // remove the inactive worker from the list of inactive workers.
@@ -148,7 +165,7 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
         workerLivelinessMonitor.unregister(worker.getWorkerId());
 
         // create new worker instance
-        Worker newWorker = createWorkerResource(heartbeat);
+        Worker newWorker = createWorkerResource(workerId, heartbeat);
         int newWorkerId = newWorker.getWorkerId();
         // add the new worker to the list of active workers
         rmContext.getWorkers().putIfAbsent(newWorkerId, newWorker);
@@ -157,11 +174,11 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
         rmContext.getDispatcher().getEventHandler().handle(new WorkerEvent(newWorkerId, WorkerEventType.STARTED));
         // register the worker to the liveliness monitor
         workerLivelinessMonitor.register(newWorkerId);
-
-      } else { // if new worker pings firstly
+        builder.clearGeneratedWorkerId();
+      } else { // If resource tracker restart, tajo worker needed to re-register to context
 
         // create new worker instance
-        Worker newWorker = createWorkerResource(heartbeat);
+        Worker newWorker = createWorkerResource(workerId, heartbeat);
         Worker oldWorker = rmContext.getWorkers().putIfAbsent(workerId, newWorker);
 
         if (oldWorker == null) {
@@ -182,8 +199,10 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
     }
   }
 
-  private Worker createWorkerResource(NodeHeartbeat request) {
+  private Worker createWorkerResource(int workerId, NodeHeartbeat request) {
     WorkerResource workerResource = new WorkerResource();
+    WorkerConnectionInfo workerConnectionInfo = new WorkerConnectionInfo(request.getConnectionInfo());
+    workerConnectionInfo.setId(workerId);
 
     if(request.getServerStatus() != null) {
       workerResource.setMemoryMB(request.getServerStatus().getMemoryResourceMB());
@@ -199,6 +218,6 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
       workerResource.setCpuCoreSlots(4);
     }
 
-    return new Worker(rmContext, workerResource, new WorkerConnectionInfo(request.getConnectionInfo()));
+    return new Worker(rmContext, workerResource, workerConnectionInfo);
   }
 }

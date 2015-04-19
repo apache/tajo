@@ -29,6 +29,7 @@ import org.apache.tajo.ipc.QueryCoordinatorProtocol.ClusterResourceSummary;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.ServerStatusProto;
 import org.apache.tajo.ipc.QueryCoordinatorProtocol.TajoHeartbeatResponse;
 import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
+import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.RpcClientManager;
@@ -193,6 +194,12 @@ public class WorkerHeartbeatService extends AbstractService {
               context.setNumClusterNodes(clusterResourceSummary.getNumWorkers());
             }
             context.setClusterResource(clusterResourceSummary);
+            if (context.getConnectionInfo().getId() == WorkerConnectionInfo.UNALLOCATED_WORKER_ID
+                && response.hasGeneratedWorkerId()) {
+              int workerId = response.getGeneratedWorkerId();
+              context.getConnectionInfo().setId(workerId);
+              LOG.info("Worker get allocated id (" + workerId + ") from Master");
+            }
           } else {
             if(callBack.getController().failed()) {
               throw new ServiceException(callBack.getController().errorText());
