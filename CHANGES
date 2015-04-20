@@ -190,6 +190,9 @@ Release 0.11.0 - unreleased
   
   TASKS
 
+    TAJO-1568: Apply UnpooledByteBufAllocator when a tajo.test.enabled
+    is set to enable. (jinho)
+
     TAJO-1567: Update old license in some pom.xml files.
     (Contributed by Dongjoon Hyun, Committed by jinho)
 
