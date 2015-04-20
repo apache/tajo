@@ -211,7 +211,8 @@ public class TestKillQuery {
     taskRequest.setInterQuery();
     TaskAttemptId attemptId = new TaskAttemptId(tid, 1);
 
-    ExecutionBlockContext context = new ExecutionBlockContext(conf, null, null, new QueryContext(conf), null, eid, null);
+    ExecutionBlockContext context =
+        new ExecutionBlockContext(conf, null, null, new QueryContext(conf), null, eid, null, null);
 
     org.apache.tajo.worker.Task task = new Task("test", CommonTestingUtil.getTestDir(), attemptId,
         conf, context, taskRequest);
