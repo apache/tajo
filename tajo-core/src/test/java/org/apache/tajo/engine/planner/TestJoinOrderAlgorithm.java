@@ -44,7 +44,7 @@ import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
 import static org.junit.Assert.*;
 
-public class TestGreedyHeuristicJoinOrderAlgorithm {
+public class TestJoinOrderAlgorithm {
 
   private static TajoTestingCluster util;
   private static CatalogService catalog;
