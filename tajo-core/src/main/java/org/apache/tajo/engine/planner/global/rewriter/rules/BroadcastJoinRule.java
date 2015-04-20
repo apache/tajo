@@ -20,13 +20,15 @@ package org.apache.tajo.engine.planner.global.rewriter.rules;
 
 import org.apache.tajo.OverridableConf;
 import org.apache.tajo.SessionVars;
+import org.apache.tajo.engine.planner.global.DataChannel;
 import org.apache.tajo.engine.planner.global.ExecutionBlock;
 import org.apache.tajo.engine.planner.global.MasterPlan;
 import org.apache.tajo.engine.planner.global.rewriter.GlobalPlanRewriteRule;
 import org.apache.tajo.plan.LogicalPlan;
 import org.apache.tajo.plan.PlanningException;
 import org.apache.tajo.plan.logical.*;
-import org.apache.tajo.plan.util.PlannerUtil;
+
+import java.util.List;
 
 public class BroadcastJoinRule implements GlobalPlanRewriteRule {
   private long broadcastTableSizeThreshold;
@@ -44,7 +46,9 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
         if (block.hasNode(NodeType.JOIN)) {
           broadcastTableSizeThreshold = queryContext.getLong(SessionVars.BROADCAST_TABLE_SIZE_LIMIT);
           if (broadcastTableSizeThreshold > 0) {
-            parentFinder = new ParentFinder();
+            if (parentFinder == null) {
+              parentFinder = new ParentFinder();
+            }
             return true;
           }
         }
@@ -63,7 +67,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
     if (plan.isLeaf(current)) {
       // in leaf execution blocks, find input tables which size is less than the predefined threshold.
       for (ScanNode scanNode : current.getScanNodes()) {
-        if (getTableVolume(scanNode) > broadcastTableSizeThreshold) {
+        if (getTableVolume(scanNode) <= broadcastTableSizeThreshold) {
           current.addBroadcastRelation(scanNode.getTableName());
         }
       }
@@ -73,8 +77,15 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
         rewrite(plan, child);
       }
       if (current.hasJoin()) {
+        boolean needMerge = false;
         for (ExecutionBlock child : plan.getChilds(current)) {
           if (child.isBroadcastable()) {
+            needMerge = true;
+            break;
+          }
+        }
+        if (needMerge) {
+          for (ExecutionBlock child : plan.getChilds(current)) {
             merge(plan, child, current);
           }
         }
@@ -101,25 +112,26 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
       throw new PlanningException("Cannot find any scan nodes for " + child.getId() + " in " + parent.getId());
     }
 
-    parentFinder.find(scanForChild);
+    parentFinder.set(scanForChild);
+    parentFinder.find(parent.getPlan());
     LogicalNode parentOfScanForChild = parentFinder.found;
     if (parentOfScanForChild == null) {
       throw new PlanningException("Cannot find the parent of " + scanForChild.getCanonicalName());
     }
 
-    StoreTableNode storeForParent = PlannerUtil.findTopNode(child.getPlan(), NodeType.STORE);
-    if (storeForParent == null) {
-      throw new PlanningException("Cannot find any store nodes for " + parent.getId() + " in " + child.getId());
+    LogicalNode rootOfChild = child.getPlan();
+    if (rootOfChild.getType() == NodeType.STORE) {
+      rootOfChild = ((StoreTableNode)rootOfChild).getChild();
     }
 
     if (parentOfScanForChild instanceof UnaryNode) {
-      ((UnaryNode) parentOfScanForChild).setChild(storeForParent.getChild());
+      ((UnaryNode) parentOfScanForChild).setChild(rootOfChild);
     } else if (parentOfScanForChild instanceof BinaryNode) {
       BinaryNode binary = (BinaryNode) parentOfScanForChild;
       if (binary.getLeftChild().equals(scanForChild)) {
-        binary.setLeftChild(storeForParent.getChild());
+        binary.setLeftChild(rootOfChild);
       } else if (binary.getRightChild().equals(scanForChild)) {
-        binary.setRightChild(storeForParent.getChild());
+        binary.setRightChild(rootOfChild);
       } else {
         throw new PlanningException(scanForChild.getPID() + " is not a child of " + parentOfScanForChild.getPID());
       }
@@ -127,8 +139,18 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
       throw new PlanningException(parentOfScanForChild + " seems to not have any children");
     }
 
+    for (String broadcastable : child.getBroadcastTables()) {
+      parent.addBroadcastRelation(broadcastable);
+    }
+
     plan.disconnect(child, parent);
-    plan.removeExecBlock(child.getId());
+    List<DataChannel> channels = plan.getIncomingChannels(child.getId());
+    if (channels == null || channels.size() == 0) {
+      channels = plan.getOutgoingChannels(child.getId());
+      if (channels == null || channels.size() == 0) {
+        plan.removeExecBlock(child.getId());
+      }
+    }
 
     return parent;
   }
@@ -159,8 +181,8 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
       this.found = null;
     }
 
-    public void find(LogicalNode childOfTarget) {
-      this.visit(childOfTarget);
+    public void find(LogicalNode root) {
+      this.visit(root);
     }
 
     @Override

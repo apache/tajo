@@ -39,8 +39,8 @@ public class GlobalPlanTestRuleProvider extends BaseGlobalPlanRewriteRuleProvide
   @Override
   public Collection<Class<? extends GlobalPlanRewriteRule>> getRules() {
     List<Class<? extends GlobalPlanRewriteRule>> injectedRules = Lists.newArrayList(super.getRules());
-    injectedRules.add(GlobalPlanEqualityTester.class);
     injectedRules.add(BroadcastJoinRule.class);
+    injectedRules.add(GlobalPlanEqualityTester.class);
     return injectedRules;
   }
 }

@@ -109,9 +109,16 @@ public class MasterPlan {
   }
 
   public void removeExecBlock(ExecutionBlockId execBlockId) throws IllegalStateException {
-    if (getIncomingChannels(execBlockId).size() > 0 || getOutgoingChannels(execBlockId).size() > 0) {
+    List<DataChannel> channels = getIncomingChannels(execBlockId);
+    if (channels != null && channels.size() > 0) {
       throw new IllegalStateException("Cannot remove execution blocks because some other execution blocks are connected");
     }
+
+    channels = getOutgoingChannels(execBlockId);
+    if (channels != null && channels.size() > 0) {
+      throw new IllegalStateException("Cannot remove execution blocks because some other execution blocks are connected");
+    }
+
     execBlockMap.remove(execBlockId);
   }
 
