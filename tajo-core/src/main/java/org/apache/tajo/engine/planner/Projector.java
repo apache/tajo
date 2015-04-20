@@ -63,7 +63,7 @@ public class Projector {
 
   public void init() {
     for (EvalNode eval : evals) {
-      eval.bind(inSchema);
+      eval.bind(context.getEvalContext(), inSchema);
     }
   }
 

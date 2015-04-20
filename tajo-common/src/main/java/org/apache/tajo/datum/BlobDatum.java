@@ -23,6 +23,7 @@ package org.apache.tajo.datum;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.exception.InvalidOperationException;
+import org.apache.tajo.util.TUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -130,8 +131,8 @@ public class BlobDatum extends Datum {
       BlobDatum other = (BlobDatum) obj;
       initFromBytes();
       other.initFromBytes();
-      return bb.equals(other.bb);
-    }
+			return Arrays.equals(this.val, other.val);
+		}
     
     return false;
   }

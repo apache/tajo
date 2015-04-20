@@ -330,25 +330,26 @@ enum EvalType {
   WINDOW_FUNCTION = 18;
   AGG_FUNCTION = 19;
   FUNCTION = 20;
+  PYTHON_FUNCTION = 21;
 
   // String operator or pattern matching predicates
-  LIKE = 21;
-  SIMILAR_TO = 22;
-  REGEX = 23;
-  CONCATENATE = 24;
+  LIKE = 22;
+  SIMILAR_TO = 23;
+  REGEX = 24;
+  CONCATENATE = 25;
 
   // Other predicates
-  BETWEEN = 25;
-  CASE = 26;
-  IF_THEN = 27;
-  IN = 28;
+  BETWEEN = 26;
+  CASE = 27;
+  IF_THEN = 28;
+  IN = 29;
 
   // Value or Reference
-  SIGNED = 29;
-  CAST = 30;
-  ROW_CONSTANT = 31;
-  FIELD = 32;
-  CONST = 33;
+  SIGNED = 30;
+  CAST = 31;
+  ROW_CONSTANT = 32;
+  FIELD = 33;
+  CONST = 34;
 }
 
 message EvalNodeTree {
@@ -476,6 +477,7 @@ message Datum {
   optional string text = 7;
   optional bytes blob = 8;
   optional Interval interval = 12;
+  optional Datum actual = 13; // for ANY type datum
 }
 
 message Interval {
