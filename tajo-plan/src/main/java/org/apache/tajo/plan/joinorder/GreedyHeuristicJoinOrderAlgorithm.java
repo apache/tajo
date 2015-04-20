@@ -197,7 +197,8 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         }
         double cost = getCost(foundJoin);
 
-        if (cost < minCost || (cost == minCost && cost == Double.MAX_VALUE)) {
+        if (cost < minCost ||
+            (cost == minCost && cost == Double.MAX_VALUE)) {
           minCost = cost;
           bestJoin = foundJoin;
           relatedJoinEdges = joinEdgePairs;
