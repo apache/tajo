@@ -99,6 +99,9 @@ Release 0.11.0 - unreleased
 
   BUG FIXES
 
+    TAJO-1522: NPE making stage history before task scheduler is initialized.
+    (Contributed by navis, Committed by jinho)
+
     TAJO-1560: HashShuffle report should be ignored when a succeed tasks are not
     included. (jinho)
 
