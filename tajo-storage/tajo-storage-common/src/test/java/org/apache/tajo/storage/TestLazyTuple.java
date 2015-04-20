@@ -65,7 +65,7 @@ public class TestLazyTuple {
     sb.append(DatumFactory.createFloat4(77.9f)).append('|');
     sb.append(DatumFactory.createFloat8(271.9f)).append('|');
     sb.append(DatumFactory.createText("str2")).append('|');
-    sb.append(DatumFactory.createBlob("jinho".getBytes())).append('|');
+    sb.append(DatumFactory.createBlob("jinho")).append('|');
     sb.append(DatumFactory.createInet4("192.168.0.1")).append('|');
     sb.append(new String(nullbytes)).append('|');
     sb.append(NullDatum.get());
