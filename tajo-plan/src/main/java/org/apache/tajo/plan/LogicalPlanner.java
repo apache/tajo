@@ -1524,7 +1524,7 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
     // we use only a sequence of preceding columns of target table's schema
     // as target columns.
     //
-    // For example, consider a target table and an 'insert into' query are give as follows:
+    // For example, consider a target table and an 'insert into' query are given as follows:
     //
     // CREATE TABLE TB1                  (col1 int,  col2 int, col3 long);
     //                                      ||          ||
@@ -1586,11 +1586,12 @@ public class LogicalPlanner extends BaseAlgebraVisitor<LogicalPlanner.PlanContex
       // Modifying projected columns by adding NULL constants
       // It is because that table appender does not support target columns to be written.
       List<Target> targets = TUtil.newList();
-      for (int i = 0, j = 0; i < tableSchema.size(); i++) {
+      for (int i = 0; i < tableSchema.size(); i++) {
         Column column = tableSchema.getColumn(i);
 
-        if(targetColumns.contains(column) && j < projectionNode.getTargets().length) {
-          targets.add(projectionNode.getTargets()[j++]);
+        int idxInProjectionNode = targetColumns.getIndex(column);
+        if (idxInProjectionNode >= 0 && idxInProjectionNode < projectionNode.getTargets().length) {
+          targets.add(projectionNode.getTargets()[idxInProjectionNode]);
         } else {
           targets.add(new Target(new ConstEval(NullDatum.get()), column.getSimpleName()));
         }
