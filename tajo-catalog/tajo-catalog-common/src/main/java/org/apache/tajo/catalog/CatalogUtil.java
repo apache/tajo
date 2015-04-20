@@ -343,7 +343,11 @@ public class CatalogUtil {
   }
 
   public static DataType newSimpleDataType(Type type) {
-    return DataType.newBuilder().setType(type).build();
+		if (type != Type.CHAR) {
+			return DataType.newBuilder().setType(type).build();
+		} else {
+			return newDataTypeWithLen(Type.CHAR, 1);
+		}
   }
 
   /**
@@ -362,7 +366,7 @@ public class CatalogUtil {
   public static DataType [] newSimpleDataTypeArray(Type... types) {
     DataType [] dataTypes = new DataType[types.length];
     for (int i = 0; i < types.length; i++) {
-      dataTypes[i] = DataType.newBuilder().setType(types[i]).build();
+      dataTypes[i] = newSimpleDataType(types[i]);
     }
     return dataTypes;
   }
