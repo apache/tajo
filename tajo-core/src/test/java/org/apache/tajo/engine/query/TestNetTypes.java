@@ -28,7 +28,7 @@ public class TestNetTypes extends QueryTestCaseBase {
 
   @Before
   public final void setUp() throws Exception {
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       executeDDL("table1_ddl.sql", "table1");
       executeDDL("table2_ddl.sql", "table2");
     }
@@ -36,8 +36,8 @@ public class TestNetTypes extends QueryTestCaseBase {
 
   @Test
   public final void testSelect() throws Exception {
-    // Skip all tests when HCatalogStore is used.
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    // Skip all tests when HiveCatalogStore is used.
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       // select name, addr from table1;
       ResultSet res = executeQuery();
       assertResultSet(res);
@@ -47,8 +47,8 @@ public class TestNetTypes extends QueryTestCaseBase {
 
   @Test
   public final void testGroupby() throws Exception {
-    // Skip all tests when HCatalogStore is used.
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    // Skip all tests when HiveCatalogStore is used.
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       // select name, addr, count(1) from table1 group by name, addr;
       ResultSet res = executeQuery();
       assertResultSet(res);
@@ -58,8 +58,8 @@ public class TestNetTypes extends QueryTestCaseBase {
 
   @Test
   public final void testGroupby2() throws Exception {
-    // Skip all tests when HCatalogStore is used.
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    // Skip all tests when HiveCatalogStore is used.
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       // select addr, count(*) from table1 group by addr;
       ResultSet res = executeQuery();
       assertResultSet(res);
@@ -69,8 +69,8 @@ public class TestNetTypes extends QueryTestCaseBase {
 
   @Test
   public final void testSort() throws Exception {
-    // Skip all tests when HCatalogStore is used.
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    // Skip all tests when HiveCatalogStore is used.
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       // select * from table1 order by addr;
       ResultSet res = executeQuery();
       assertResultSet(res);
@@ -80,8 +80,8 @@ public class TestNetTypes extends QueryTestCaseBase {
 
   @Test
   public final void testSort2() throws Exception {
-    // Skip all tests when HCatalogStore is used.
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    // Skip all tests when HiveCatalogStore is used.
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       // select addr from table2 order by addr;
       ResultSet res = executeQuery();
       assertResultSet(res);
@@ -91,8 +91,8 @@ public class TestNetTypes extends QueryTestCaseBase {
 
   @Test
   public final void testJoin() throws Exception {
-    // Skip all tests when HCatalogStore is used.
-    if (!testingCluster.isHCatalogStoreRunning()) {
+    // Skip all tests when HiveCatalogStore is used.
+    if (!testingCluster.isHiveCatalogStoreRunning()) {
       // select * from table1 as t1, table2 as t2 where t1.addr = t2.addr;
       ResultSet res = executeQuery();
       assertResultSet(res);

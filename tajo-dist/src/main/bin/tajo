@@ -295,9 +295,6 @@ if [ -d ${HIVE_LIB} ]; then
     CLASSPATH=${CLASSPATH}:$f;
   done
 
-  for f in $HIVE_HOME/hcatalog/share/hcatalog/*hcatalog-core-*.jar; do
-    CLASSPATH=${CLASSPATH}:$f;
-  done
 fi
 
 if [ "${HIVE_JDBC_DRIVER_DIR}" != "" ]; then

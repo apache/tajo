@@ -70,12 +70,12 @@ public class TestCatalog {
 
 	@BeforeClass
 	public static void setUp() throws Exception {
-    final String HCATALOG_CLASS_NAME = "org.apache.tajo.catalog.store.HCatalogStore";
+    final String HIVE_CATALOG_CLASS_NAME = "org.apache.tajo.catalog.store.HiveCatalogStore";
 
     String driverClass = System.getProperty(CatalogConstants.STORE_CLASS);
 
-    // here, we don't choose HCatalogStore due to some dependency problems.
-    if (driverClass == null || driverClass.equals(HCATALOG_CLASS_NAME)) {
+    // here, we don't choose HiveCatalogStore due to some dependency problems.
+    if (driverClass == null || driverClass.equals(HIVE_CATALOG_CLASS_NAME)) {
       driverClass = DerbyStore.class.getCanonicalName();
     }
     String catalogURI = System.getProperty(CatalogConstants.CATALOG_URI);
@@ -666,7 +666,7 @@ public class TestCatalog {
     FunctionDesc retrived = catalog.getFunction("test10", CatalogUtil.newSimpleDataTypeArray(Type.INT4, Type.BLOB));
 
     assertEquals(retrived.getFunctionName(), "test10");
-    assertEquals(retrived.getFuncClass(), TestFunc2.class);
+    assertEquals(retrived.getLegacyFuncClass(), TestFunc2.class);
     assertEquals(retrived.getFuncType(), FunctionType.GENERAL);
 
     assertFalse(catalog.containFunction("test10", CatalogUtil.newSimpleDataTypeArray(Type.BLOB, Type.INT4)));
@@ -685,7 +685,7 @@ public class TestCatalog {
 		FunctionDesc retrived = catalog.getFunction("test2", CatalogUtil.newSimpleDataTypeArray(Type.INT4));
 
 		assertEquals(retrived.getFunctionName(),"test2");
-		assertEquals(retrived.getFuncClass(),TestFunc1.class);
+		assertEquals(retrived.getLegacyFuncClass(),TestFunc1.class);
 		assertEquals(retrived.getFuncType(),FunctionType.UDF);
 	}
 

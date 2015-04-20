@@ -32,10 +32,11 @@ import org.apache.tajo.master.container.TajoContainerId;
 import org.apache.tajo.master.event.TaskFatalErrorEvent;
 import org.apache.tajo.master.rm.TajoWorkerContainer;
 import org.apache.tajo.master.rm.TajoWorkerContainerId;
+import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.rpc.RpcConnectionPool;
+import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.worker.TajoWorker;
 
@@ -83,26 +84,25 @@ public class TajoContainerProxy extends ContainerProxy {
     NettyClientBase tajoWorkerRpc = null;
     try {
       InetSocketAddress addr = new InetSocketAddress(container.getNodeId().getHost(), container.getNodeId().getPort());
-      tajoWorkerRpc = RpcConnectionPool.getPool().getConnection(addr, TajoWorkerProtocol.class, true);
+      tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true);
       TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
       tajoWorkerRpcClient.killTaskAttempt(null, taskAttemptId.getProto(), NullCallback.get());
     } catch (Throwable e) {
       /* Worker RPC failure */
       context.getEventHandler().handle(new TaskFatalErrorEvent(taskAttemptId, e.getMessage()));
-    } finally {
-      RpcConnectionPool.getPool().releaseConnection(tajoWorkerRpc);
     }
   }
 
   private void assignExecutionBlock(ExecutionBlockId executionBlockId, TajoContainer container) {
-    NettyClientBase tajoWorkerRpc = null;
+    NettyClientBase tajoWorkerRpc;
     try {
-      InetSocketAddress myAddr= context.getQueryMasterContext().getWorkerContext()
-          .getQueryMasterManagerService().getBindAddr();
 
       InetSocketAddress addr = new InetSocketAddress(container.getNodeId().getHost(), container.getNodeId().getPort());
-      tajoWorkerRpc = RpcConnectionPool.getPool().getConnection(addr, TajoWorkerProtocol.class, true);
+      tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true);
       TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
+
+      PlanProto.ShuffleType shuffleType =
+          context.getQuery().getStage(executionBlockId).getDataChannel().getShuffleType();
 
       TajoWorkerProtocol.RunExecutionBlockRequestProto request =
           TajoWorkerProtocol.RunExecutionBlockRequestProto.newBuilder()
@@ -113,13 +113,12 @@ public class TajoContainerProxy extends ContainerProxy {
               .setQueryOutputPath(context.getStagingDir().toString())
               .setQueryContext(queryContext.getProto())
               .setPlanJson(planJson)
+              .setShuffleType(shuffleType)
               .build();
 
       tajoWorkerRpcClient.startExecutionBlock(null, request, NullCallback.get());
     } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
-    } finally {
-      RpcConnectionPool.getPool().releaseConnection(tajoWorkerRpc);
     }
   }
 
@@ -160,21 +159,19 @@ public class TajoContainerProxy extends ContainerProxy {
       containerIdProtos.add(TajoWorkerContainerId.getContainerIdProto(eachContainerId));
     }
 
-    RpcConnectionPool connPool = RpcConnectionPool.getPool();
+    RpcClientManager manager = RpcClientManager.getInstance();
     NettyClientBase tmClient = null;
-    try {
-      ServiceTracker serviceTracker = context.getQueryMasterContext().getWorkerContext().getServiceTracker();
-      tmClient = connPool.getConnection(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
 
-      QueryCoordinatorProtocol.QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
-        masterClientService.releaseWorkerResource(null,
-            QueryCoordinatorProtocol.WorkerResourceReleaseRequest.newBuilder()
-                .setExecutionBlockId(executionBlockId.getProto())
-                .addAllContainerIds(containerIdProtos)
-                .build(),
-            NullCallback.get());
-    } finally {
-      connPool.releaseConnection(tmClient);
-    }
+    ServiceTracker serviceTracker = context.getQueryMasterContext().getWorkerContext().getServiceTracker();
+    tmClient = manager.getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
+
+    QueryCoordinatorProtocol.QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
+    masterClientService.releaseWorkerResource(null,
+        QueryCoordinatorProtocol.WorkerResourceReleaseRequest.newBuilder()
+            .setExecutionBlockId(executionBlockId.getProto())
+            .addAllContainerIds(containerIdProtos)
+            .build(),
+        NullCallback.get());
+
   }
 }

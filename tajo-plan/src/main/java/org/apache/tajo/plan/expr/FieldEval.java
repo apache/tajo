@@ -40,8 +40,8 @@ public class FieldEval extends EvalNode implements Cloneable {
 	}
 
   @Override
-  public EvalNode bind(Schema schema) {
-    super.bind(schema);
+  public EvalNode bind(EvalContext evalContext, Schema schema) {
+    super.bind(evalContext, schema);
     // TODO - column namespace should be improved to simplify name handling and resolving.
     if (column.hasQualifier()) {
       fieldId = schema.getColumnId(column.getQualifiedName());
