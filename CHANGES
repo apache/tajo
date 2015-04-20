@@ -22,6 +22,9 @@ Release 0.11.0 - unreleased
 
   IMPROVEMENT
 
+    TAJO-1548: Refactoring condition code for CHAR into CatalogUtil.
+    (Contributed by DaeMyung Kang, Committed by jaehwa)
+
     TAJO-1570: CatalogUtil newSimpleDataTypeArray should use newSimpleDataType.
     (Contributed by DaeMyung Kang, Committed by jihoon)
 
