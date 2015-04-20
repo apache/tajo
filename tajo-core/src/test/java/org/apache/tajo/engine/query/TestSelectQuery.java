@@ -710,6 +710,27 @@ public class TestSelectQuery extends QueryTestCaseBase {
   }
 
   @Test
+  public void testSelectPythonFuncs() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testSelectWithPredicateOnPythonFunc() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public void testNestedPythonFunction() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
   public void testSelectWithParentheses1() throws Exception {
     ResultSet res = executeQuery();
     assertResultSet(res);

@@ -4,6 +4,11 @@ Release 0.11.0 - unreleased
 
   NEW FEATURES
 
+    TAJO-1344: Python UDF support. (jihoon)
+
+    TAJO-923: Add VAR_SAMP and VAR_POP window functions. 
+    (Contributed by Dongjoon Hyun, Committed by jihoon)
+
     TAJO-1494: Add SeekableScanner support to DelimitedTextFileScanner.
     (jinho)
 
@@ -16,6 +21,11 @@ Release 0.11.0 - unreleased
     (Contributed by Dongjoon Hyun, Committed by jihoon)
 
   IMPROVEMENT
+
+    TAJO-1570: CatalogUtil newSimpleDataTypeArray should use newSimpleDataType.
+    (Contributed by DaeMyung Kang, Committed by jihoon)
+
+    TAJO-1442: Improve Hive Compatibility. (jaehwa)
 
     TAJO-1530: Display warn message when the query kill button is clicked in 
     WEB UI. (Contributed by Dongjoon Hyun, Committed by hyoungjun)
@@ -88,6 +98,16 @@ Release 0.11.0 - unreleased
     (Contributed by navis, Committed by hyunsik)
 
   BUG FIXES
+
+    TAJO-1522: NPE making stage history before task scheduler is initialized.
+    (Contributed by navis, Committed by jinho)
+
+    TAJO-1560: HashShuffle report should be ignored when a succeed tasks are not
+    included. (jinho)
+
+    TAJO-1569: BlockingRpcClient can make other request fail. (jinho)
+
+    TAJO-1564: TestFetcher fails occasionally. (jinho)
 
     TAJO-1497: RPC client does not share a connection. (jinho)
 
@@ -169,6 +189,12 @@ Release 0.11.0 - unreleased
     TAJO-1351: Resolve findbug warnings on Tajo Common Module. (jihun)
   
   TASKS
+
+    TAJO-1568: Apply UnpooledByteBufAllocator when a tajo.test.enabled
+    is set to enable. (jinho)
+
+    TAJO-1567: Update old license in some pom.xml files.
+    (Contributed by Dongjoon Hyun, Committed by jinho)
 
     TAJO-1526: Investigate the frequent failures of Travis CI. (jihoon)
 
