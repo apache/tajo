@@ -28,11 +28,6 @@ class SumPy:
     def name(self):
         return self.func_name
 
-    # return the function signature
-    @output_type('text')
-    def signature(self):
-        return self.func_signature
-
     # eval at the first stage
     @output_type('int8')
     def eval(self, item):
