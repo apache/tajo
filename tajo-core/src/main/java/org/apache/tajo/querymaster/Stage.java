@@ -239,7 +239,8 @@ public class Stage implements EventHandler<StageEvent> {
               EnumSet.of(
                   StageEventType.SQ_START,
                   StageEventType.SQ_KILL,
-                  StageEventType.SQ_CONTAINER_ALLOCATED))
+                  StageEventType.SQ_CONTAINER_ALLOCATED,
+                  StageEventType.SQ_SHUFFLE_REPORT))
 
           // Transitions from KILLED state
           .addTransition(StageState.KILLED, StageState.KILLED,
@@ -1300,6 +1301,53 @@ public class Stage implements EventHandler<StageEvent> {
     stopShuffleReceiver.set(true);
   }
 
+  private void finalizeShuffleReport(StageShuffleReportEvent event, ShuffleType type) {
+    if(!checkIfNeedFinalizing(type)) return;
+
+    TajoWorkerProtocol.ExecutionBlockReport report = event.getReport();
+
+    if (!report.getReportSuccess()) {
+      stopFinalization();
+      LOG.error(getId() + ", " + type + " report are failed. Caused by:" + report.getReportErrorMessage());
+      eventHandler.handle(new StageEvent(getId(), StageEventType.SQ_FAILED));
+    }
+
+    completedShuffleTasks.addAndGet(report.getSucceededTasks());
+    if (report.getIntermediateEntriesCount() > 0) {
+      for (IntermediateEntryProto eachInterm : report.getIntermediateEntriesList()) {
+        hashShuffleIntermediateEntries.add(new IntermediateEntry(eachInterm));
+      }
+    }
+
+    if (completedShuffleTasks.get() >= succeededObjectCount) {
+      LOG.info(getId() + ", Finalized " + type + " reports: " + completedShuffleTasks.get());
+      eventHandler.handle(new StageEvent(getId(), StageEventType.SQ_STAGE_COMPLETED));
+      if (timeoutChecker != null) {
+        stopFinalization();
+        synchronized (timeoutChecker){
+          timeoutChecker.notifyAll();
+        }
+      }
+    } else {
+      LOG.info(getId() + ", Received " + type + " reports " +
+          completedShuffleTasks.get() + "/" + succeededObjectCount);
+    }
+  }
+
+  /**
+   * HASH_SHUFFLE, SCATTERED_HASH_SHUFFLE should get report from worker nodes when ExecutionBlock is stopping.
+   * RANGE_SHUFFLE report is sent from task reporter when a task finished in worker node.
+   */
+  public static boolean checkIfNeedFinalizing(ShuffleType type) {
+    switch (type) {
+      case HASH_SHUFFLE:
+      case SCATTERED_HASH_SHUFFLE:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   private static class StageFinalizeTransition implements SingleArcTransition<Stage, StageEvent> {
 
     @Override
@@ -1310,71 +1358,50 @@ public class Stage implements EventHandler<StageEvent> {
       }
 
       stage.lastContactTime = System.currentTimeMillis();
+      ShuffleType shuffleType = stage.getDataChannel().getShuffleType();
       try {
         if (event instanceof StageShuffleReportEvent) {
-
-          StageShuffleReportEvent finalizeEvent = (StageShuffleReportEvent) event;
-          TajoWorkerProtocol.ExecutionBlockReport report = finalizeEvent.getReport();
-
-          if (!report.getReportSuccess()) {
-            stage.stopFinalization();
-            LOG.error(stage.getId() + ", Shuffle report are failed. Caused by:" + report.getReportErrorMessage());
-            stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_FAILED));
-          }
-
-          stage.completedShuffleTasks.addAndGet(finalizeEvent.getReport().getSucceededTasks());
-          if (report.getIntermediateEntriesCount() > 0) {
-            for (IntermediateEntryProto eachInterm : report.getIntermediateEntriesList()) {
-              stage.hashShuffleIntermediateEntries.add(new IntermediateEntry(eachInterm));
-            }
-          }
-
-          if (stage.completedShuffleTasks.get() >= stage.succeededObjectCount) {
-            LOG.info(stage.getId() + ", Finalized shuffle reports: " + stage.completedShuffleTasks.get());
-            stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_STAGE_COMPLETED));
-            if (stage.timeoutChecker != null) {
-              stage.stopFinalization();
-              synchronized (stage.timeoutChecker){
-                stage.timeoutChecker.notifyAll();
-              }
-            }
-          } else {
-            LOG.info(stage.getId() + ", Received shuffle report: " +
-                stage.completedShuffleTasks.get() + "/" + stage.succeededObjectCount);
-          }
-
+          stage.finalizeShuffleReport((StageShuffleReportEvent) event, shuffleType);
         } else {
-          LOG.info(String.format("Stage finalize - %s (total=%d, success=%d, killed=%d)",
+          LOG.info(String.format("Stage - %s finalize %s (total=%d, success=%d, killed=%d)",
               stage.getId().toString(),
+              shuffleType,
               stage.totalScheduledObjectsCount,
               stage.succeededObjectCount,
               stage.killedObjectCount));
           stage.finalizeStage();
-          LOG.info(stage.getId() + ", waiting for shuffle reports. expected Tasks:" + stage.succeededObjectCount);
 
+          if (checkIfNeedFinalizing(shuffleType)) {
+            /* wait for StageShuffleReportEvent from worker nodes */
+
+            LOG.info(stage.getId() + ", wait for " + shuffleType + " reports. expected Tasks:"
+                + stage.succeededObjectCount);
           /* FIXME implement timeout handler of stage and task */
-          if (stage.timeoutChecker != null) {
-            stage.timeoutChecker = new Thread(new Runnable() {
-              @Override
-              public void run() {
-                while (stage.getSynchronizedState() == StageState.FINALIZING && !Thread.interrupted()) {
-                  long elapsedTime = System.currentTimeMillis() - stage.lastContactTime;
-                  if (elapsedTime > 120 * 1000) {
-                    stage.stopFinalization();
-                    LOG.error(stage.getId() + ": Timed out while receiving intermediate reports: " + elapsedTime
-                        + " ms, report:" + stage.completedShuffleTasks.get() + "/" + stage.succeededObjectCount);
-                    stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_FAILED));
-                  }
-                  synchronized (this) {
-                    try {
-                      this.wait(1 * 1000);
-                    } catch (InterruptedException e) {
+            if (stage.timeoutChecker != null) {
+              stage.timeoutChecker = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                  while (stage.getSynchronizedState() == StageState.FINALIZING && !Thread.interrupted()) {
+                    long elapsedTime = System.currentTimeMillis() - stage.lastContactTime;
+                    if (elapsedTime > 120 * 1000) {
+                      stage.stopFinalization();
+                      LOG.error(stage.getId() + ": Timed out while receiving intermediate reports: " + elapsedTime
+                          + " ms, report:" + stage.completedShuffleTasks.get() + "/" + stage.succeededObjectCount);
+                      stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_FAILED));
+                    }
+                    synchronized (this) {
+                      try {
+                        this.wait(1 * 1000);
+                      } catch (InterruptedException e) {
+                      }
                     }
                   }
                 }
-              }
-            });
-            stage.timeoutChecker.start();
+              });
+              stage.timeoutChecker.start();
+            }
+          } else {
+            stage.handle(new StageEvent(stage.getId(), StageEventType.SQ_STAGE_COMPLETED));
           }
         }
       } catch (Throwable t) {

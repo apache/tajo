@@ -24,19 +24,19 @@ import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.plan.function.FunctionContext;
 
-public abstract class StdDevPop extends StdDev {
+public abstract class StdDevPop extends Variance {
   public StdDevPop(Column[] definedArgs) {
     super(definedArgs);
   }
 
   @Override
   public Datum terminate(FunctionContext ctx) {
-    StdDevContext StdDevCtx = (StdDevContext) ctx;
-    if (StdDevCtx.count == 0) {
+    VarianceContext varianceCtx = (VarianceContext) ctx;
+    if (varianceCtx.count == 0) {
       return NullDatum.get();
-    } else if (StdDevCtx.count == 1) {
+    } else if (varianceCtx.count == 1) {
       return DatumFactory.createFloat8(0);
     }
-    return DatumFactory.createFloat8(Math.sqrt(StdDevCtx.squareSumOfDiff / StdDevCtx.count));
+    return DatumFactory.createFloat8(Math.sqrt(varianceCtx.squareSumOfDiff / varianceCtx.count));
   }
 }

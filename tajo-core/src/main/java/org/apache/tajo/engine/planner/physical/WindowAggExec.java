@@ -164,7 +164,7 @@ public class WindowAggExec extends UnaryPhysicalExec {
   public void init() throws IOException {
     super.init();
     for (EvalNode functionEval : functions) {
-      functionEval.bind(inSchema);
+      functionEval.bind(context.getEvalContext(), inSchema);
     }
   }
 

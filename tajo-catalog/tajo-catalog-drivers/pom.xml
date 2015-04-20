@@ -40,6 +40,7 @@
         <artifactId>apache-rat-plugin</artifactId>
         <configuration>
           <excludes>
+            <exclude>tajo-hive/**</exclude>
             <exclude>tajo-hcatalog/**</exclude>
           </excludes>
         </configuration>
@@ -57,35 +58,9 @@
     </plugins>
   </build>
 
-  <profiles>
-    <profile>
-      <id>hcatalog-0.12.0</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
-      <modules>
-        <module>tajo-hcatalog</module>
-      </modules>
-    </profile>
-    <profile>
-      <id>hcatalog-0.13.0</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
-      <modules>
-        <module>tajo-hcatalog</module>
-      </modules>
-    </profile>
-    <profile>
-      <id>hcatalog-0.13.1</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
-      <modules>
-        <module>tajo-hcatalog</module>
-      </modules>
-    </profile>
-  </profiles>
+  <modules>
+    <module>tajo-hive</module>
+  </modules>
 
   <reporting>
     <plugins>
