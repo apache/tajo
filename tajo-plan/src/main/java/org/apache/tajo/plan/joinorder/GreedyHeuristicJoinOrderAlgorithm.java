@@ -37,6 +37,7 @@ import java.util.*;
  */
 public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
   public static final double DEFAULT_SELECTION_FACTOR = 0.1;
+  public static final int DEFAULT_JOIN_SCALE_ADJUST_FACTOR = 10 * 1024 * 1024; // 10MB
 
   @Override
   public FoundJoinOrder findBestOrder(LogicalPlan plan, LogicalPlan.QueryBlock block, JoinGraph joinGraph,
@@ -196,7 +197,7 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
         }
         double cost = getCost(foundJoin);
 
-        if (cost < minCost) {
+        if (cost < minCost || (cost == minCost && cost == Double.MAX_VALUE)) {
           minCost = cost;
           bestJoin = foundJoin;
           relatedJoinEdges = joinEdgePairs;
@@ -313,10 +314,26 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
       // TODO - should consider join type
       // TODO - should statistic information obtained from query history
       filterFactor = filterFactor * Math.pow(DEFAULT_SELECTION_FACTOR, joinEdge.getJoinQual().length);
-      return getCost(joinEdge.getLeftRelation()) * getCost(joinEdge.getRightRelation()) * filterFactor;
+      return checkInfinity(getCost(joinEdge.getLeftRelation()) * getCost(joinEdge.getRightRelation()) * filterFactor);
     } else {
       // make cost bigger if cross join
-      return Math.pow(getCost(joinEdge.getLeftRelation()) * getCost(joinEdge.getRightRelation()), 2);
+      return checkInfinity(Math.pow(getCost(joinEdge.getLeftRelation()) * getCost(joinEdge.getRightRelation()), 2));
+    }
+  }
+
+
+  /**
+   * If a calculated cost is a infinity value, return Long.MAX_VALUE
+   * @param cost
+   * @return
+   */
+  private static double checkInfinity(double cost) {
+    if (cost == Double.POSITIVE_INFINITY) {
+      return Long.MAX_VALUE;
+    } else if (cost == Double.NEGATIVE_INFINITY) {
+      return Long.MIN_VALUE;
+    } else {
+      return cost;
     }
   }
 
@@ -351,10 +368,10 @@ public class GreedyHeuristicJoinOrderAlgorithm implements JoinOrderAlgorithm {
     case SCAN:
       ScanNode scanNode = (ScanNode) node;
       if (scanNode.getTableDesc().getStats() != null) {
-        double cost = ((ScanNode)node).getTableDesc().getStats().getNumBytes();
+        double cost = ((ScanNode)node).getTableDesc().getStats().getNumBytes() / DEFAULT_JOIN_SCALE_ADJUST_FACTOR;
         return cost;
       } else {
-        return Long.MAX_VALUE;
+        return Integer.MAX_VALUE;
       }
 
     case UNION:

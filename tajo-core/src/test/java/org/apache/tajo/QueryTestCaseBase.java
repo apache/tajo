@@ -18,6 +18,7 @@
 
 package org.apache.tajo;
 
+import com.google.common.base.Joiner;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -70,10 +71,7 @@ import java.net.URL;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -441,7 +439,18 @@ public class QueryTestCaseBase {
    * @param result Query result to be compared.
    */
   public final void assertResultSet(ResultSet result) throws IOException {
-    assertResultSet("Result Verification", result, getMethodName() + ".result");
+    assertResultSet(result, false);
+  }
+
+  /**
+   * Assert the equivalence between the expected result and an actual query result.
+   * If it isn't it throws an AssertionError.
+   *
+   * @param result Query result to be compared.
+   * @param ignoreOrdering If true, don't concern ordering.
+   */
+  public final void assertResultSet(ResultSet result, boolean ignoreOrdering) throws IOException {
+    assertResultSet("Result Verification", result, getMethodName() + ".result", ignoreOrdering);
   }
 
   /**
@@ -452,7 +461,7 @@ public class QueryTestCaseBase {
    * @param resultFileName The file name containing the result to be compared
    */
   public final void assertResultSet(ResultSet result, String resultFileName) throws IOException {
-    assertResultSet("Result Verification", result, resultFileName);
+    assertResultSet("Result Verification", result, resultFileName, false);
   }
 
   /**
@@ -461,12 +470,13 @@ public class QueryTestCaseBase {
    *
    * @param message message The message to printed if the assertion is failed.
    * @param result Query result to be compared.
+   * @param ignoreOrdering If true, don't concern ordering.
    */
-  public final void assertResultSet(String message, ResultSet result, String resultFileName) throws IOException {
-    FileSystem fs = currentQueryPath.getFileSystem(testBase.getTestingCluster().getConfiguration());
+  public final void assertResultSet(String message, ResultSet result, String resultFileName,
+                                    boolean ignoreOrdering) throws IOException {
     Path resultFile = getResultFile(resultFileName);
     try {
-      verifyResultText(message, result, resultFile);
+      verifyResultText(message, result, resultFile, ignoreOrdering);
     } catch (SQLException e) {
       throw new IOException(e);
     }
@@ -584,10 +594,56 @@ public class QueryTestCaseBase {
     return sb.toString();
   }
 
+  private Map<String, Integer> stringToMap(String str) throws SQLException {
+    Map<String, Integer> resultMap = new HashMap<String, Integer>();
+
+    for (String eachLine: str.split("\n")) {
+      if (resultMap.containsKey(eachLine)) {
+        resultMap.put(eachLine, resultMap.get(eachLine) + 1);
+      } else {
+        resultMap.put(eachLine, 1);
+      }
+    }
+
+    return resultMap;
+  }
+
   private void verifyResultText(String message, ResultSet res, Path resultFile) throws SQLException, IOException {
+    verifyResultText(message, res, resultFile, false);
+  }
+
+  /**
+   * It compares ResultSet with the contents of given resultFile.
+   * @param message the message which is shown when query failed.
+   * @param res query result
+   * @param resultFile the file path which contains the expected data.
+   * @param ignoreLineOrder if true, the order of result is ignored.
+   * @throws SQLException
+   * @throws IOException
+   */
+  private void verifyResultText(String message, ResultSet res, Path resultFile, boolean ignoreLineOrder)
+    throws SQLException, IOException {
     String actualResult = resultSetToString(res);
     String expectedResult = FileUtil.readTextFile(new File(resultFile.toUri()));
-    assertEquals(message, expectedResult.trim(), actualResult.trim());
+    if (ignoreLineOrder) {
+      Map<String, Integer> resultSetMap = stringToMap(actualResult);
+      for (String eachExpectedLine: expectedResult.split("\n")) {
+        if (!resultSetMap.containsKey(eachExpectedLine)) {
+          fail(message + ", no expected value: " + eachExpectedLine);
+        } else {
+          int remainCount = resultSetMap.get(eachExpectedLine);
+          remainCount--;
+          if (remainCount == 0) {
+            resultSetMap.remove(eachExpectedLine);
+          }
+        }
+      }
+      if (!resultSetMap.isEmpty()) {
+        fail(message + ", too many result: " + Joiner.on(",").join(resultSetMap.keySet()));
+      }
+    } else {
+      assertEquals(message, expectedResult.trim(), actualResult.trim());
+    }
   }
 
   private Path getQueryFilePath(String fileName) throws IOException {

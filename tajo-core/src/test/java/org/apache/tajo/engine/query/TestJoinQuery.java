@@ -214,7 +214,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
   @Test
   public final void testJoinWithMultipleJoinQual3() throws Exception {
     ResultSet res = executeQuery();
-    assertResultSet(res);
+    assertResultSet(res, true);
     cleanupQuery(res);
   }
 
@@ -598,7 +598,7 @@ public class TestJoinQuery extends QueryTestCaseBase {
     where t.n_name in ('ARGENTINA','ETHIOPIA', 'MOROCCO');
      */
     ResultSet res = executeJsonQuery();
-    assertResultSet(res);
+    assertResultSet(res, true);
     cleanupQuery(res);
   }
 
