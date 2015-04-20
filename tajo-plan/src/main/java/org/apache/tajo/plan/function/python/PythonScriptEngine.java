@@ -248,8 +248,9 @@ public class PythonScriptEngine extends TajoScriptEngine {
     String[] command = new String[10];
 
     // TODO: support controller logging
-    String standardOutputRootWriteLocation = systemConf.get(TajoConf.ConfVars.PYTHON_CONTROLLER_LOG_DIR.keyname(),
-        DEFAULT_LOG_DIR);
+//    String standardOutputRootWriteLocation = systemConf.get(TajoConf.ConfVars.PYTHON_CONTROLLER_LOG_DIR.keyname(),
+//        DEFAULT_LOG_DIR);
+    String standardOutputRootWriteLocation = "/home/jihoon/Projects/tajo";
     if (!standardOutputRootWriteLocation.equals(DEFAULT_LOG_DIR)) {
       LOG.warn("Currently, logging is not supported for the python controller.");
     }

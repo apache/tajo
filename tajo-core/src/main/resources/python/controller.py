@@ -28,6 +28,7 @@ except ImportError:
     USE_DATEUTIL = False
 
 from tajo_util import write_user_exception, udf_logging
+from tajo_udaf import AbstractUdaf
 
 FIELD_DELIMITER = ','
 TUPLE_START = '('
@@ -74,12 +75,14 @@ TURN_ON_OUTPUT_CAPTURING = TYPE_CHARARRAY + "TURN_ON_OUTPUT_CAPTURING" + END_REC
 NUM_LINES_OFFSET_TRACE = int(os.environ.get('PYTHON_TRACE_OFFSET', 0))
 
 class PythonStreamingController:
+    udaf_instance = None
+
     def __init__(self, profiling_mode=False):
         self.profiling_mode = profiling_mode
 
     def main(self,
              module_name, file_path, func_name, cache_path,
-             output_stream_path, error_stream_path, log_file_name, output_schema):
+             output_stream_path, error_stream_path, log_file_name, output_schema, isUdaf=False, class_name=""):
         sys.stdin = os.fdopen(sys.stdin.fileno(), 'rb', 0)
 
         # Need to ensure that user functions can't write to the streams we use to communicate with pig.
@@ -95,7 +98,7 @@ class PythonStreamingController:
         sys.path.append(cache_path)
         sys.path.append('.')
 
-        should_log = False
+        should_log = True
         if should_log:
             logging.basicConfig(filename=log_file_name, format="%(asctime)s %(levelname)s %(message)s", level=udf_logging.udf_log_level)
             logging.info("To reduce the amount of information being logged only a small subset of rows are logged at the "
@@ -103,12 +106,16 @@ class PythonStreamingController:
 
         input_str = self.get_next_input()
 
-        try:
-            func = __import__(module_name, globals(), locals(), [func_name], -1).__dict__[func_name]
-        except:
-            # These errors should always be caused by user code.
-            write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
-            self.close_controller(-1)
+        # try:
+        #     func = __import__(module_name, globals(), locals(), [func_name], -1).__dict__[func_name]
+        # except:
+        #     # These errors should always be caused by user code.
+        #     write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
+        #     self.close_controller(-1)
+        if isUdaf:
+            func = self.load_udaf(module_name, class_name, func_name)
+        else:
+            func = self.load_udf(module_name, func_name)
 
         log_message = logging.info
         if udf_logging.udf_log_level == logging.DEBUG:
@@ -184,6 +191,28 @@ class PythonStreamingController:
         self.stream_output.write("\n")
         self.stream_output.close()
         sys.exit(exit_code)
+
+    def load_udf(self, module_name, func_name):
+        try:
+            func = __import__(module_name, globals(), locals(), [func_name], -1).__dict__[func_name]
+            return func
+        except:
+            # These errors should always be caused by user code.
+            write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
+            self.close_controller(-1)
+
+    # TODO: add arguments for the class constructor
+    def load_udaf(self, module_name, class_name, func_name):
+        try:
+            if self.udaf_instance is None:
+                clazz = __import__(module_name, globals(), locals(), [class_name], -1).__dict__[class_name]
+                udaf_instance = clazz()
+            func = getattr(clazz, func_name)
+            return func
+        except:
+            # These errors should always be caused by user code.
+            write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
+            self.close_controller(-1)
 
 def deserialize_input(input_str):
     if len(input_str) == 0:

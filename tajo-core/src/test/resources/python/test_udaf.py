@@ -22,6 +22,9 @@ class SumPy(AbstractUdaf):
     name = 'sum_py'
     aggregated = 0
 
+    def __init__(self, aggregated=0):
+        self.aggregated = aggregated
+
     # return the function name
     @output_type('text')
     def name(self):
