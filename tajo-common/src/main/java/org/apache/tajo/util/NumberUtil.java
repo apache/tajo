@@ -604,12 +604,12 @@ public class NumberUtil {
    * @throws NumberFormatException if the argument could not be parsed as a double
    */
   public static double parseDouble(ByteBuf bytes, int start, int length) {
-    if (!PlatformDependent.hasUnsafe()) {
-      return parseDouble(bytes.array(), start, length);
-    }
-
     if (bytes == null) {
       throw new NumberFormatException("String is null");
+    }
+
+    if (!bytes.hasMemoryAddress()) {
+      return parseDouble(bytes.array(), start, length);
     }
 
     if (length == 0 || bytes.writerIndex() < start + length) {
@@ -815,13 +815,14 @@ public class NumberUtil {
    * @throws NumberFormatException if the argument could not be parsed as an int quantity.
    */
   public static int parseInt(ByteBuf bytes, int start, int length, int radix) {
-    if (!PlatformDependent.hasUnsafe()) {
-      return parseInt(bytes.array(), start, length);
-    }
-
     if (bytes == null) {
       throw new NumberFormatException("String is null");
     }
+
+    if (!bytes.hasMemoryAddress()) {
+      return parseInt(bytes.array(), start, length);
+    }
+
     if (radix < Character.MIN_RADIX || radix > Character.MAX_RADIX) {
       throw new NumberFormatException("Invalid radix: " + radix);
     }
@@ -942,13 +943,14 @@ public class NumberUtil {
    * @throws NumberFormatException if the argument could not be parsed as an long quantity.
    */
   public static long parseLong(ByteBuf bytes, int start, int length, int radix) {
-    if (!PlatformDependent.hasUnsafe()) {
-      return parseInt(bytes.array(), start, length);
-    }
-
     if (bytes == null) {
       throw new NumberFormatException("String is null");
     }
+
+    if (!bytes.hasMemoryAddress()) {
+      return parseInt(bytes.array(), start, length);
+    }
+
     if (radix < Character.MIN_RADIX || radix > Character.MAX_RADIX) {
       throw new NumberFormatException("Invalid radix: " + radix);
     }
