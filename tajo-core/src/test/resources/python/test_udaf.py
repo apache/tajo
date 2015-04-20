@@ -15,11 +15,9 @@
 #  limitations under the License.
 
 from tajo_util import output_type
-from tajo_udaf import AbstractUdaf
 
 
-class SumPy(AbstractUdaf):
-    name = 'sum_py'
+class SumPy:
     aggregated = 0
 
     def __init__(self, aggregated=0):
@@ -28,17 +26,22 @@ class SumPy(AbstractUdaf):
     # return the function name
     @output_type('text')
     def name(self):
-        return self.name
+        return self.func_name
+
+    # return the function signature
+    @output_type('text')
+    def signature(self):
+        return self.func_signature
 
     # eval at the first stage
     @output_type('int8')
-    def eval(self, tuple):
-        self.aggregated += tuple[:1]
+    def eval(self, item):
+        self.aggregated += item
 
     # merge the result of the first stage
     @output_type('int8')
-    def merge(self, tuple):
-        self.aggregated += tuple[:1]
+    def merge(self, item):
+        self.aggregated += item
 
     # get the final result
     @output_type('int8')

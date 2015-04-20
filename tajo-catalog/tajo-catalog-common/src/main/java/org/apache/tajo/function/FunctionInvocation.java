@@ -37,6 +37,8 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
   ClassBaseInvocationDesc<?> aggregationJIT;
   @Expose
   PythonInvocationDesc python;
+  @Expose
+  PythonAggInvocationDesc pythonAggregation;
 
   public FunctionInvocation() {
   }
@@ -59,6 +61,9 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
     }
     if (proto.hasPython()) {
       this.python = new PythonInvocationDesc(proto.getPython());
+    }
+    if (proto.hasAggregationPython()) {
+      this.pythonAggregation = new PythonAggInvocationDesc(proto.getAggregationPython());
     }
   }
 
@@ -138,6 +143,18 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
     return python;
   }
 
+  public boolean hasPythonAggregation() {
+    return pythonAggregation != null;
+  }
+
+  public void setPythonAggregation(PythonAggInvocationDesc pythonAggregation) {
+    this.pythonAggregation = pythonAggregation;
+  }
+
+  public PythonAggInvocationDesc getPythonAggregation() {
+    return this.pythonAggregation;
+  }
+
   @Override
   public FunctionInvocationProto getProto() {
     FunctionInvocationProto.Builder builder = FunctionInvocationProto.newBuilder();
@@ -159,6 +176,9 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
     if (hasPython()) {
       builder.setPython(python.getProto());
     }
+    if (hasPythonAggregation()) {
+      builder.setAggregationPython(pythonAggregation.getProto());
+    }
     return builder.build();
   }
 
@@ -169,6 +189,7 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
 
   public String toString() {
     return "legacy=" + hasLegacy() + ",scalar=" + hasScalar() + ",agg=" + hasAggregation() +
-        ",scalarJIT=" + hasScalarJIT() + ",aggJIT=" + hasAggregationJIT() + ",python=" + hasPython();
+        ",scalarJIT=" + hasScalarJIT() + ",aggJIT=" + hasAggregationJIT() + ",python=" + hasPython() +
+        ",aggPython=" + hasPythonAggregation();
   }
 }

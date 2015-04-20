@@ -27,10 +27,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.function.FunctionInvocation;
-import org.apache.tajo.function.FunctionSignature;
-import org.apache.tajo.function.FunctionSupplement;
-import org.apache.tajo.function.PythonInvocationDesc;
+import org.apache.tajo.function.*;
 import org.apache.tajo.plan.function.stream.*;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.storage.VTuple;
@@ -70,20 +67,33 @@ public class PythonScriptEngine extends TajoScriptEngine {
     Set<FunctionDesc> functionDescs = TUtil.newHashSet();
 
     InputStream in = getScriptAsStream(path);
-    List<FuncInfo> functions = null;
+    List<FunctionInfo> functions = null;
     try {
       functions = getFunctions(in);
     } finally {
       in.close();
     }
-    for(FuncInfo funcInfo : functions) {
-      TajoDataTypes.DataType returnType = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.valueOf(funcInfo.returnType));
-      FunctionSignature signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, funcInfo.funcName,
-          returnType, createParamTypes(funcInfo.paramNum));
+    for(FunctionInfo funcInfo : functions) {
+      FunctionSignature signature;
       FunctionInvocation invocation = new FunctionInvocation();
-      PythonInvocationDesc invocationDesc = new PythonInvocationDesc(funcInfo.funcName, path.getPath());
-      invocation.setPython(invocationDesc);
-      FunctionSupplement supplement = new FunctionSupplement();
+      FunctionSupplement supplement = new FunctionSupplement();;
+      if (funcInfo instanceof ScalarFuncInfo) {
+        ScalarFuncInfo scalarFuncInfo = (ScalarFuncInfo) funcInfo;
+        TajoDataTypes.DataType returnType =
+            CatalogUtil.newSimpleDataType(TajoDataTypes.Type.valueOf(scalarFuncInfo.returnType));
+        signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, scalarFuncInfo.funcName,
+            returnType, createParamTypes(scalarFuncInfo.paramNum));
+        PythonInvocationDesc invocationDesc = new PythonInvocationDesc(scalarFuncInfo.funcName, path.getPath());
+        invocation.setPython(invocationDesc);
+      } else {
+        AggFuncInfo aggFuncInfo = (AggFuncInfo) funcInfo;
+        TajoDataTypes.DataType returnType =
+            CatalogUtil.newSimpleDataType(TajoDataTypes.Type.valueOf(aggFuncInfo.terminateInfo.returnType));
+        signature = new FunctionSignature(CatalogProtos.FunctionType.UDA, aggFuncInfo.funcName,
+            returnType, createParamTypes(aggFuncInfo.evalInfo.paramNum));
+        PythonAggInvocationDesc invocationDesc = new PythonAggInvocationDesc(aggFuncInfo.className, path.getPath());
+        invocation.setPythonAggregation(invocationDesc);
+      }
       functionDescs.add(new FunctionDesc(signature, invocation, supplement));
     }
     return functionDescs;
@@ -101,14 +111,24 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private static final Pattern pDef = Pattern.compile("^\\s*def\\s+(\\w+)\\s*.+");
   private static final Pattern pClass = Pattern.compile("class.*");
 
-  private static class FuncInfo {
+  private interface FunctionInfo {
+
+  }
+
+  private static class AggFuncInfo implements FunctionInfo {
+    String className;
+    String funcName;
+    ScalarFuncInfo evalInfo;
+    ScalarFuncInfo mergeInfo;
+    ScalarFuncInfo terminateInfo;
+  }
+
+  private static class ScalarFuncInfo implements FunctionInfo {
     String returnType;
     String funcName;
-    String className;
     int paramNum;
-    boolean isUdaf;
 
-    public FuncInfo(String returnType, String funcName, int paramNum) {
+    public ScalarFuncInfo(String returnType, String funcName, int paramNum) {
       this.returnType = returnType.toUpperCase();
       this.funcName = funcName;
       this.paramNum = paramNum;
@@ -116,18 +136,20 @@ public class PythonScriptEngine extends TajoScriptEngine {
   }
 
   // TODO: python parser must be improved.
-  private static List<FuncInfo> getFunctions(InputStream is) throws IOException {
-    List<FuncInfo> functions = TUtil.newList();
+  private static List<FunctionInfo> getFunctions(InputStream is) throws IOException {
+    List<FunctionInfo> functions = TUtil.newList();
     InputStreamReader in = new InputStreamReader(is, Charset.defaultCharset());
     BufferedReader br = new BufferedReader(in);
     String line = br.readLine();
     String schemaString = null;
+    AggFuncInfo aggFuncInfo = null;
     while (line != null) {
       if (pSchema.matcher(line).matches()) {
         int start = line.indexOf("(") + 2; //drop brackets/quotes
         int end = line.lastIndexOf(")") - 1;
         schemaString = line.substring(start,end).trim();
       } else if (pDef.matcher(line).matches()) {
+        boolean isUdaf = aggFuncInfo != null && line.indexOf("def ") > 0;
         int nameStart = line.indexOf("def ") + "def ".length();
         int nameEnd = line.indexOf('(');
         int signatureEnd = line.indexOf(')');
@@ -138,15 +160,45 @@ public class PythonScriptEngine extends TajoScriptEngine {
         } else {
           paramNum = params.length;
         }
+        if (params[0].trim().equals("self")) {
+          paramNum--;
+        }
 
         String functionName = line.substring(nameStart, nameEnd).trim();
         schemaString = schemaString == null ? "blob" : schemaString;
-        functions.add(new FuncInfo(schemaString, functionName, paramNum));
+
+        if (isUdaf) {
+          if (functionName.equals("eval")) {
+            aggFuncInfo.evalInfo = new ScalarFuncInfo(schemaString, functionName, paramNum);
+          } else if (functionName.equals("merge")) {
+            aggFuncInfo.mergeInfo = new ScalarFuncInfo(schemaString, functionName, paramNum);
+          } else if (functionName.equals("terminate")) {
+            aggFuncInfo.terminateInfo = new ScalarFuncInfo(schemaString, functionName, paramNum);
+          }
+        } else {
+          aggFuncInfo = null;
+          functions.add(new ScalarFuncInfo(schemaString, functionName, paramNum));
+        }
+
         schemaString = null;
       } else if (pClass.matcher(line).matches()) {
         // UDAF
+        if (aggFuncInfo != null) {
+          functions.add(aggFuncInfo);
+        }
+        aggFuncInfo = new AggFuncInfo();
+        int classNameStart = line.indexOf("class ") + "class ".length();
+        int classNameEnd = line.indexOf("(");
+        if (classNameEnd < 0) {
+          classNameEnd = line.indexOf(":");
+        }
+        aggFuncInfo.className = line.substring(classNameStart, classNameEnd).trim();
+        aggFuncInfo.funcName = aggFuncInfo.className;
       }
       line = br.readLine();
+    }
+    if (aggFuncInfo != null) {
+      functions.add(aggFuncInfo);
     }
     br.close();
     in.close();
