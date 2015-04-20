@@ -96,7 +96,9 @@ public class Join extends BinaryOperator {
   public Object clone() throws CloneNotSupportedException {
     Join join = (Join) super.clone();
     join.joinType = joinType;
-    join.joinQual = (Expr) joinQual.clone();
+    if (joinQual != null) {
+      join.joinQual = (Expr) joinQual.clone();
+    }
     if (joinColumns != null) {
       join.joinColumns = new ColumnReferenceExpr[joinColumns.length];
       for (ColumnReferenceExpr colume : joinColumns) {
