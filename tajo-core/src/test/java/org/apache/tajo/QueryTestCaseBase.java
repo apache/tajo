@@ -212,7 +212,9 @@ public class QueryTestCaseBase {
   @Before
   public void printTestName() {
     /* protect a travis stalled build */
-    System.out.println("Run: " + name.getMethodName());
+    System.out.println("Run: " + name.getMethodName() +
+         " Used memory: " + ((Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory())
+        / (1024 * 1024)) + "MBytes");
   }
 
   public QueryTestCaseBase() {
