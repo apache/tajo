@@ -23,8 +23,7 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.plan.function.AggFunction;
-import org.apache.tajo.plan.function.FunctionContext;
+import org.apache.tajo.plan.function.*;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 
@@ -33,20 +32,23 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   @Expose boolean finalPhase = true;
   @Expose String alias;
 
-  protected AggFunction instance;
+//  protected AggFunction instance;
+  @Expose protected FunctionInvokeContext invokeContext;
+  protected transient AggFunctionInvoke functionInvoke;
 
-  protected AggregationFunctionCallEval(EvalType type, FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs) {
+//  protected AggregationFunctionCallEval(EvalType type, FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs) {
+  protected AggregationFunctionCallEval(EvalType type, FunctionDesc desc, EvalNode[] givenArgs) {
     super(type, desc, givenArgs);
-    this.instance = instance;
+    this.invokeContext = new FunctionInvokeContext(null, getParamType());
   }
 
-  public AggregationFunctionCallEval(FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs) {
-    super(EvalType.AGG_FUNCTION, desc, givenArgs);
-    this.instance = instance;
+//  public AggregationFunctionCallEval(FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs) {
+  public AggregationFunctionCallEval(FunctionDesc desc, EvalNode[] givenArgs) {
+    this(EvalType.AGG_FUNCTION, desc, givenArgs);
   }
 
   public FunctionContext newContext() {
-    return instance.newContext();
+    return functionInvoke.newContext();
   }
 
   public void merge(FunctionContext context, Tuple tuple) {
@@ -59,9 +61,9 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   protected void mergeParam(FunctionContext context, Tuple params) {
     if (!intermediatePhase && !finalPhase) {
       // firstPhase
-      instance.eval(context, params);
+      functionInvoke.eval(context, params);
     } else {
-      instance.merge(context, params);
+      functionInvoke.merge(context, params);
     }
   }
 
@@ -75,16 +77,17 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
       throw new IllegalStateException("bind() must be called before terminate()");
     }
     if (!finalPhase) {
-      return instance.getPartialResult(context);
+      return functionInvoke.getPartialResult(context);
     } else {
-      return instance.terminate(context);
+      return functionInvoke.terminate(context);
     }
   }
 
   @Override
   public DataType getValueType() {
     if (!finalPhase) {
-      return instance.getPartialResultType();
+//      return instance.getPartialResultType();
+      return functionInvoke.getPartialResultType();
     } else {
       return funcDesc.getReturnType();
     }
@@ -104,7 +107,11 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
     clone.finalPhase = finalPhase;
     clone.intermediatePhase = intermediatePhase;
     clone.alias = alias;
-    clone.instance = (AggFunction)instance.clone();
+//    clone.instance = (AggFunction)instance.clone();
+    clone.invokeContext = (FunctionInvokeContext) invokeContext.clone();
+    if (functionInvoke != null) {
+      clone.functionInvoke = functionInvoke;
+    }
 
     return clone;
   }
@@ -146,7 +153,9 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
     int result = super.hashCode();
     result = prime * result + ((alias == null) ? 0 : alias.hashCode());
     result = prime * result + (finalPhase ? 1231 : 1237);
-    result = prime * result + ((instance == null) ? 0 : instance.hashCode());
+//    result = prime * result + ((instance == null) ? 0 : instance.hashCode());
+    result = prime * result + ((invokeContext == null) ? 0 : invokeContext.hashCode());
+    result = prime * result + ((functionInvoke == null) ? 0 : functionInvoke.hashCode());
     result = prime * result + (intermediatePhase ? 1231 : 1237);
     return result;
   }
@@ -157,7 +166,9 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
       AggregationFunctionCallEval other = (AggregationFunctionCallEval) obj;
 
       boolean eq = super.equals(other);
-      eq &= instance.equals(other.instance);
+//      eq &= instance.equals(other.instance);
+      eq &= TUtil.checkEquals(invokeContext, other.intermediatePhase);
+      eq &= TUtil.checkEquals(functionInvoke, other.functionInvoke);
       eq &= intermediatePhase == other.intermediatePhase;
       eq &= finalPhase == other.finalPhase;
       eq &= TUtil.checkEquals(alias, other.alias);
