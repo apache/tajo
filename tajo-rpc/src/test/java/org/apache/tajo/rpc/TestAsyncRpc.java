@@ -19,6 +19,7 @@
 package org.apache.tajo.rpc;
 
 import com.google.protobuf.RpcCallback;
+import io.netty.channel.ConnectTimeoutException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.test.DummyProtocol;
@@ -33,8 +34,6 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-
-import io.netty.channel.ConnectTimeoutException;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -60,17 +59,17 @@ public class TestAsyncRpc {
   Interface stub;
   DummyProtocolAsyncImpl service;
   int retries;
-  
+
   @Retention(RetentionPolicy.RUNTIME)
   @Target(ElementType.METHOD)
   @interface SetupRpcConnection {
     boolean setupRpcServer() default true;
     boolean setupRpcClient() default true;
   }
-  
+
   @Rule
   public ExternalResource resource = new ExternalResource() {
-    
+
     private Description description;
 
     @Override
@@ -86,7 +85,7 @@ public class TestAsyncRpc {
       if (setupRpcConnection == null || setupRpcConnection.setupRpcServer()) {
         setUpRpcServer();
       }
-      
+
       if (setupRpcConnection == null || setupRpcConnection.setupRpcClient()) {
         setUpRpcClient();
       }
@@ -103,7 +102,7 @@ public class TestAsyncRpc {
           fail(e.getMessage());
         }
       }
-      
+
       if (setupRpcConnection == null || setupRpcConnection.setupRpcServer()) {
         try {
           tearDownRpcServer();
@@ -112,21 +111,25 @@ public class TestAsyncRpc {
         }
       }
     }
-    
+
   };
-  
+
   public void setUpRpcServer() throws Exception {
     service = new DummyProtocolAsyncImpl();
     server = new AsyncRpcServer(DummyProtocol.class,
         service, new InetSocketAddress("127.0.0.1", 0), 2);
     server.start();
   }
-  
+
   public void setUpRpcClient() throws Exception {
     retries = 1;
 
-    client = new AsyncRpcClient(DummyProtocol.class,
-        RpcUtils.getConnectAddress(server.getListenAddress()), retries);
+    RpcClientManager.RpcConnectionKey rpcConnectionKey =
+        new RpcClientManager.RpcConnectionKey(
+            RpcUtils.getConnectAddress(server.getListenAddress()),
+            DummyProtocol.class, true);
+    client = new AsyncRpcClient(rpcConnectionKey, retries);
+    client.connect();
     stub = client.getStub();
   }
 
@@ -134,14 +137,14 @@ public class TestAsyncRpc {
   public static void tearDownClass() throws Exception {
     RpcChannelFactory.shutdownGracefully();
   }
-  
+
   public void tearDownRpcServer() throws Exception {
     if(server != null) {
       server.shutdown();
       server = null;
     }
   }
-  
+
   public void tearDownRpcClient() throws Exception {
     if(client != null) {
       client.close();
@@ -296,7 +299,11 @@ public class TestAsyncRpc {
     });
     serverThread.start();
 
-    client = new AsyncRpcClient(DummyProtocol.class, address, retries);
+    RpcClientManager.RpcConnectionKey rpcConnectionKey =
+        new RpcClientManager.RpcConnectionKey(address, DummyProtocol.class, true);
+    client = new AsyncRpcClient(rpcConnectionKey, retries);
+    client.connect();
+    assertTrue(client.isConnected());
     stub = client.getStub();
     stub.echo(future.getController(), echoMessage, future);
 
@@ -310,7 +317,10 @@ public class TestAsyncRpc {
     InetSocketAddress address = new InetSocketAddress("test", 0);
     boolean expected = false;
     try {
-      new AsyncRpcClient(DummyProtocol.class, address, retries);
+      RpcClientManager.RpcConnectionKey rpcConnectionKey =
+          new RpcClientManager.RpcConnectionKey(address, DummyProtocol.class, true);
+      NettyClientBase client = new AsyncRpcClient(rpcConnectionKey, retries);
+      client.connect();
       fail();
     } catch (ConnectTimeoutException e) {
       expected = true;
@@ -318,14 +328,19 @@ public class TestAsyncRpc {
       fail();
     }
     assertTrue(expected);
+
   }
 
   @Test
   @SetupRpcConnection(setupRpcClient=false)
   public void testUnresolvedAddress() throws Exception {
     String hostAndPort = RpcUtils.normalizeInetSocketAddress(server.getListenAddress());
-    client = new AsyncRpcClient(DummyProtocol.class,
-        RpcUtils.createUnresolved(hostAndPort), retries);
+    RpcClientManager.RpcConnectionKey rpcConnectionKey =
+        new RpcClientManager.RpcConnectionKey(
+            RpcUtils.createUnresolved(hostAndPort), DummyProtocol.class, true);
+    client = new AsyncRpcClient(rpcConnectionKey, retries);
+    client.connect();
+    assertTrue(client.isConnected());
     Interface stub = client.getStub();
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
@@ -335,5 +350,44 @@ public class TestAsyncRpc {
     assertFalse(future.isDone());
     assertEquals(future.get(), echoMessage);
     assertTrue(future.isDone());
+  }
+
+  @Test
+  public void testIdleTimeout() throws Exception {
+    RpcClientManager.RpcConnectionKey rpcConnectionKey =
+        new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
+    AsyncRpcClient client = new AsyncRpcClient(rpcConnectionKey, retries, 1); //1 sec idle timeout
+    client.connect();
+    assertTrue(client.isConnected());
+
+    Thread.sleep(2000);
+    assertFalse(client.isConnected());
+
+    client.connect(); // try to reconnect
+    assertTrue(client.isConnected());
+    client.close();
+    assertFalse(client.isConnected());
+  }
+
+  @Test
+  public void testIdleTimeoutWithActiveRequest() throws Exception {
+    RpcClientManager.RpcConnectionKey rpcConnectionKey =
+        new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
+    AsyncRpcClient client = new AsyncRpcClient(rpcConnectionKey, retries, 1); //1 sec idle timeout
+    client.connect();
+
+    assertTrue(client.isConnected());
+    Interface stub = client.getStub();
+    EchoMessage echoMessage = EchoMessage.newBuilder()
+        .setMessage(MESSAGE).build();
+    CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
+    stub.deley(null, echoMessage, future); //3 sec delay
+
+    assertFalse(future.isDone());
+    assertEquals(future.get(), echoMessage);
+    assertTrue(future.isDone());
+
+    Thread.sleep(2000);
+    assertFalse(client.isConnected());
   }
 }

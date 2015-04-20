@@ -83,6 +83,8 @@ Release 0.10.1 - unreleased
   
   TASKS
 
+    TAJO-1571: Merge TAJO-1497 and TAJO-1569 to 0.10.1. (jinho)
+
     TAJO-1568: Apply UnpooledByteBufAllocator when a tajo.test.enabled 
     is set to enable. (jinho)
 

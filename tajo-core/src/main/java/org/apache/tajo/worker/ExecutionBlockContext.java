@@ -38,7 +38,7 @@ import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.rpc.RpcConnectionPool;
+import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.NetUtils;
@@ -76,7 +76,7 @@ public class ExecutionBlockContext {
   private ExecutionBlockSharedResource resource;
 
   private TajoQueryEngine queryEngine;
-  private RpcConnectionPool connPool;
+  private RpcClientManager connManager;
   private InetSocketAddress qmMasterAddr;
   private WorkerConnectionInfo queryMaster;
   private TajoConf systemConf;
@@ -100,7 +100,7 @@ public class ExecutionBlockContext {
                                PlanProto.ShuffleType shuffleType) throws Throwable {
     this.manager = manager;
     this.executionBlockId = executionBlockId;
-    this.connPool = RpcConnectionPool.getPool();
+    this.connManager = RpcClientManager.getInstance();
     this.queryMaster = queryMaster;
     this.systemConf = conf;
     this.reporter = new Reporter();
@@ -149,13 +149,8 @@ public class ExecutionBlockContext {
 
   public QueryMasterProtocol.QueryMasterProtocolService.Interface getQueryMasterStub()
       throws NoSuchMethodException, ConnectTimeoutException, ClassNotFoundException {
-    NettyClientBase clientBase = null;
-    try {
-      clientBase = connPool.getConnection(qmMasterAddr, QueryMasterProtocol.class, true);
-      return clientBase.getStub();
-    } finally {
-      connPool.releaseConnection(clientBase);
-    }
+    NettyClientBase clientBase = connManager.getClient(qmMasterAddr, QueryMasterProtocol.class, true);
+    return clientBase.getStub();
   }
 
   public void stop(){

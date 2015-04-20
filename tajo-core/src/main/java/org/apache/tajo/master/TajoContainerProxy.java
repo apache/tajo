@@ -36,7 +36,7 @@ import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.querymaster.QueryMasterTask;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.rpc.RpcConnectionPool;
+import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.service.ServiceTracker;
 import org.apache.tajo.worker.TajoWorker;
 
@@ -83,14 +83,12 @@ public class TajoContainerProxy extends ContainerProxy {
     NettyClientBase tajoWorkerRpc = null;
     try {
       InetSocketAddress addr = new InetSocketAddress(container.getNodeId().getHost(), container.getNodeId().getPort());
-      tajoWorkerRpc = RpcConnectionPool.getPool().getConnection(addr, TajoWorkerProtocol.class, true);
+      tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true);
       TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
       tajoWorkerRpcClient.killTaskAttempt(null, taskAttemptId.getProto(), NullCallback.get());
     } catch (Throwable e) {
       /* Worker RPC failure */
       context.getEventHandler().handle(new TaskFatalErrorEvent(taskAttemptId, e.getMessage()));
-    } finally {
-      RpcConnectionPool.getPool().releaseConnection(tajoWorkerRpc);
     }
   }
 
@@ -99,7 +97,7 @@ public class TajoContainerProxy extends ContainerProxy {
     try {
 
       InetSocketAddress addr = new InetSocketAddress(container.getNodeId().getHost(), container.getNodeId().getPort());
-      tajoWorkerRpc = RpcConnectionPool.getPool().getConnection(addr, TajoWorkerProtocol.class, true);
+      tajoWorkerRpc = RpcClientManager.getInstance().getClient(addr, TajoWorkerProtocol.class, true);
       TajoWorkerProtocol.TajoWorkerProtocolService tajoWorkerRpcClient = tajoWorkerRpc.getStub();
 
       PlanProto.ShuffleType shuffleType =
@@ -120,8 +118,6 @@ public class TajoContainerProxy extends ContainerProxy {
       tajoWorkerRpcClient.startExecutionBlock(null, request, NullCallback.get());
     } catch (Throwable e) {
       LOG.error(e.getMessage(), e);
-    } finally {
-      RpcConnectionPool.getPool().releaseConnection(tajoWorkerRpc);
     }
   }
 
@@ -173,23 +169,18 @@ public class TajoContainerProxy extends ContainerProxy {
       containerIdProtos.add(TajoWorkerContainerId.getContainerIdProto(eachContainerId));
     }
 
-    RpcConnectionPool connPool = RpcConnectionPool.getPool();
+    RpcClientManager manager = RpcClientManager.getInstance();
     NettyClientBase tmClient = null;
-    try {
-      ServiceTracker serviceTracker = context.getQueryMasterContext().getWorkerContext().getServiceTracker();
-      tmClient = connPool.getConnection(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
 
-      QueryCoordinatorProtocol.QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
-        masterClientService.releaseWorkerResource(null,
-            QueryCoordinatorProtocol.WorkerResourceReleaseRequest.newBuilder()
-              .setExecutionBlockId(executionBlockId.getProto())
-              .addAllContainerIds(containerIdProtos)
-              .build(),
-          NullCallback.get());
-    } catch (Throwable e) {
-      LOG.error(e.getMessage(), e);
-    } finally {
-      connPool.releaseConnection(tmClient);
-    }
+    ServiceTracker serviceTracker = context.getQueryMasterContext().getWorkerContext().getServiceTracker();
+    tmClient = manager.getClient(serviceTracker.getUmbilicalAddress(), QueryCoordinatorProtocol.class, true);
+
+    QueryCoordinatorProtocol.QueryCoordinatorProtocolService masterClientService = tmClient.getStub();
+    masterClientService.releaseWorkerResource(null,
+        QueryCoordinatorProtocol.WorkerResourceReleaseRequest.newBuilder()
+            .setExecutionBlockId(executionBlockId.getProto())
+            .addAllContainerIds(containerIdProtos)
+            .build(),
+        NullCallback.get());
   }
 }
