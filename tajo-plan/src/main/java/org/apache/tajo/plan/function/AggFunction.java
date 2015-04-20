@@ -35,8 +35,18 @@ public abstract class AggFunction<T extends Datum> extends Function<T> {
 
   public abstract FunctionContext newContext();
 
+  /**
+   * Called at the first stage.
+   * @param ctx
+   * @param params
+   */
   public abstract void eval(FunctionContext ctx, Tuple params);
 
+  /**
+   * Called at all stages except the first one.
+   * @param ctx
+   * @param part
+   */
   public void merge(FunctionContext ctx, Tuple part) {
     eval(ctx, part);
   }

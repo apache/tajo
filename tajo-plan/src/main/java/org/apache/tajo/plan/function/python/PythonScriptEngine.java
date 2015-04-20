@@ -97,7 +97,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
     return paramTypes;
   }
 
-  private static final Pattern pSchema = Pattern.compile("^\\s*\\W+outputType.*");
+  private static final Pattern pSchema = Pattern.compile("^\\s*\\W+output_type.*");
   private static final Pattern pDef = Pattern.compile("^\\s*def\\s+(\\w+)\\s*.+");
 
   private static class FuncInfo {

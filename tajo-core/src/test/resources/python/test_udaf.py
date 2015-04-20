@@ -16,17 +16,10 @@
 
 from tajo_util import outputType
 
-#Percent- Percentage
-@output_type("float8")
-def percent(num, total):
-    return num * 100 / float(total)
 
-#commaFormat- format a number with commas, 12345-> 12,345
-@output_type("text")
-def comma_format(num):
-    return '{:,}'.format(num)
+class sum_py:
 
-#concatMultiple- concat multiple words
-@output_type("text")
-def concat4(word1, word2, word3, word4):
-    return word1 + " " + word2 + " " + word3 + " " + word4
+    def merge(self, aggregated, input):
+        aggregated += input
+
+
