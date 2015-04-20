@@ -28,7 +28,6 @@ except ImportError:
     USE_DATEUTIL = False
 
 from tajo_util import write_user_exception, udf_logging
-from tajo_udaf import AbstractUdaf
 
 FIELD_DELIMITER = ','
 TUPLE_START = '('
@@ -74,8 +73,8 @@ END_OF_STREAM = TYPE_CHARARRAY + "\x04" + END_RECORD_DELIM
 TURN_ON_OUTPUT_CAPTURING = TYPE_CHARARRAY + "TURN_ON_OUTPUT_CAPTURING" + END_RECORD_DELIM
 NUM_LINES_OFFSET_TRACE = int(os.environ.get('PYTHON_TRACE_OFFSET', 0))
 
+
 class PythonStreamingController:
-    udaf_instance = None
 
     def __init__(self, profiling_mode=False):
         self.profiling_mode = profiling_mode
@@ -91,8 +90,8 @@ class PythonStreamingController:
 
         self.input_stream = sys.stdin
         # TODO: support controller logging
-        # self.log_stream = open(output_stream_path, 'a')
-        # sys.stderr = open(error_stream_path, 'w')
+        self.log_stream = open(output_stream_path, 'a')
+        sys.stderr = open(error_stream_path, 'w')
 
         sys.path.append(file_path)
         sys.path.append(cache_path)

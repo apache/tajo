@@ -813,4 +813,10 @@ public class TestGroupByQuery extends QueryTestCaseBase {
     assertResultSet(res);
     cleanupQuery(res);
   }
+
+  @Test
+  public final void testPythonUdaf() throws Exception {
+    ResultSet res = executeString("select sum_py(n_nationkey) from nation");
+    System.out.println(resultSetToString(res));
+  }
 }
