@@ -27,6 +27,9 @@ Release 0.10.1 - unreleased
 
   BUG FIXES
 
+    TAJO-1419: Tsql session command doesn't work. (Contributed by DaeMyung Kang,
+    Committed by jihoon)
+
     TAJO-1481: Numeric conversion of Inet4 type should be considered as unsigned.
     (Contributed by navis, Committed by jihoon)
 
