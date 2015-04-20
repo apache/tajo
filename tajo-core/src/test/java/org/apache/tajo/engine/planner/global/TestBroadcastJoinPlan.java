@@ -375,47 +375,47 @@ public class TestBroadcastJoinPlan {
     assertEquals(5, index);
   }
 
-  @Test
-  public final void testNotBroadcastJoinSubquery() throws IOException, PlanningException {
-    // This query is not broadcast join;
-    String query = "select count(*) from large1 " +
-        "join (select * from small1) a on large1_id = a.small1_id " +
-        "join small2 on a.small1_id = small2_id";
-
-    LogicalPlanner planner = new LogicalPlanner(catalog);
-    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
-    Expr expr =  analyzer.parse(query);
-    LogicalPlan plan = planner.createPlan(defaultContext, expr);
-
-    optimizer.optimize(plan);
-
-    QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
-    QueryContext queryContext = new QueryContext(conf);
-    MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
-    GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
-    globalPlanner.build(queryContext, masterPlan);
-
-    /*
-    |-eb_1395749810370_0000_000007
-       |-eb_1395749810370_0000_000006 (GROUP-BY)
-          |-eb_1395749810370_0000_000005 (GROUP-BY, JOIN)
-             |-eb_1395749810370_0000_000004 (LEAF, SCAN, large1)
-             |-eb_1395749810370_0000_000003 (JOIN)
-                |-eb_1395749810370_0000_000002 (LEAF, SCAN, small2)
-                |-eb_1395749810370_0000_000001 (LEAF, TABLE_SUBQUERY, small1)
-     */
-
-    ExecutionBlockCursor ebCursor = new ExecutionBlockCursor(masterPlan);
-    int index = 0;
-    while (ebCursor.hasNext()) {
-      ExecutionBlock eb = ebCursor.nextBlock();
-      Collection<String> broadcastTables = eb.getBroadcastTables();
-      assertTrue(broadcastTables == null || broadcastTables.isEmpty());
-      index++;
-    }
-
-    assertEquals(7, index);
-  }
+//  @Test
+//  public final void testNotBroadcastJoinSubquery() throws IOException, PlanningException {
+//    // This query is not broadcast join;
+//    String query = "select count(*) from large1 " +
+//        "join (select * from small1) a on large1_id = a.small1_id " +
+//        "join small2 on a.small1_id = small2_id";
+//
+//    LogicalPlanner planner = new LogicalPlanner(catalog);
+//    LogicalOptimizer optimizer = new LogicalOptimizer(conf);
+//    Expr expr =  analyzer.parse(query);
+//    LogicalPlan plan = planner.createPlan(defaultContext, expr);
+//
+//    optimizer.optimize(plan);
+//
+//    QueryId queryId = QueryIdFactory.newQueryId(System.currentTimeMillis(), 0);
+//    QueryContext queryContext = new QueryContext(conf);
+//    MasterPlan masterPlan = new MasterPlan(queryId, queryContext, plan);
+//    GlobalPlanner globalPlanner = new GlobalPlanner(conf, catalog);
+//    globalPlanner.build(queryContext, masterPlan);
+//
+//    /*
+//    |-eb_1395749810370_0000_000007
+//       |-eb_1395749810370_0000_000006 (GROUP-BY)
+//          |-eb_1395749810370_0000_000005 (GROUP-BY, JOIN)
+//             |-eb_1395749810370_0000_000004 (LEAF, SCAN, large1)
+//             |-eb_1395749810370_0000_000003 (JOIN)
+//                |-eb_1395749810370_0000_000002 (LEAF, SCAN, small2)
+//                |-eb_1395749810370_0000_000001 (LEAF, TABLE_SUBQUERY, small1)
+//     */
+//
+//    ExecutionBlockCursor ebCursor = new ExecutionBlockCursor(masterPlan);
+//    int index = 0;
+//    while (ebCursor.hasNext()) {
+//      ExecutionBlock eb = ebCursor.nextBlock();
+//      Collection<String> broadcastTables = eb.getBroadcastTables();
+//      assertTrue(broadcastTables == null || broadcastTables.isEmpty());
+//      index++;
+//    }
+//
+//    assertEquals(7, index);
+//  }
 
   @Test
   public final void testBroadcastJoinSubquery() throws IOException, PlanningException {

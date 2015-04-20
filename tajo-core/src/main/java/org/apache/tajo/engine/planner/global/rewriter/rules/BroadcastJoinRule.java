@@ -79,7 +79,7 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
       if (current.hasJoin()) {
         boolean needMerge = false;
         for (ExecutionBlock child : plan.getChilds(current)) {
-          if (child.isBroadcastable()) {
+          if (child.isBroadcastable(broadcastTableSizeThreshold)) {
             needMerge = true;
             break;
           }
@@ -151,6 +151,8 @@ public class BroadcastJoinRule implements GlobalPlanRewriteRule {
         plan.removeExecBlock(child.getId());
       }
     }
+
+    parent.setPlan(parent.getPlan());
 
     return parent;
   }
