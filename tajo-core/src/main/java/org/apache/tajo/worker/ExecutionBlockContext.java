@@ -20,6 +20,7 @@ package org.apache.tajo.worker;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import io.netty.channel.ConnectTimeoutException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
@@ -34,16 +35,14 @@ import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.engine.query.QueryContext;
 import org.apache.tajo.ipc.QueryMasterProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
+import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
-import org.apache.tajo.rpc.RpcConnectionPool;
+import org.apache.tajo.rpc.RpcClientManager;
 import org.apache.tajo.storage.HashShuffleAppenderManager;
 import org.apache.tajo.storage.StorageUtil;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.Pair;
-
-import io.netty.channel.ConnectTimeoutException;
-import io.netty.channel.EventLoopGroup;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -66,8 +65,6 @@ public class ExecutionBlockContext {
   public AtomicInteger killedTasksNum = new AtomicInteger();
   public AtomicInteger failedTasksNum = new AtomicInteger();
 
-  private EventLoopGroup loopGroup;
-  // for temporal or intermediate files
   private FileSystem localFS;
   // for input files
   private FileSystem defaultFS;
@@ -79,7 +76,7 @@ public class ExecutionBlockContext {
   private ExecutionBlockSharedResource resource;
 
   private TajoQueryEngine queryEngine;
-  private RpcConnectionPool connPool;
+  private RpcClientManager connManager;
   private InetSocketAddress qmMasterAddr;
   private WorkerConnectionInfo queryMaster;
   private TajoConf systemConf;
@@ -90,6 +87,8 @@ public class ExecutionBlockContext {
 
   private AtomicBoolean stop = new AtomicBoolean();
 
+  private PlanProto.ShuffleType shuffleType;
+
   // It keeps all of the query unit attempts while a TaskRunner is running.
   private final ConcurrentMap<TaskAttemptId, Task> tasks = Maps.newConcurrentMap();
 
@@ -97,10 +96,11 @@ public class ExecutionBlockContext {
 
   public ExecutionBlockContext(TajoConf conf, TajoWorker.WorkerContext workerContext,
                                TaskRunnerManager manager, QueryContext queryContext, String plan,
-                               ExecutionBlockId executionBlockId, WorkerConnectionInfo queryMaster) throws Throwable {
+                               ExecutionBlockId executionBlockId, WorkerConnectionInfo queryMaster,
+                               PlanProto.ShuffleType shuffleType) throws Throwable {
     this.manager = manager;
     this.executionBlockId = executionBlockId;
-    this.connPool = RpcConnectionPool.getPool();
+    this.connManager = RpcClientManager.getInstance();
     this.queryMaster = queryMaster;
     this.systemConf = conf;
     this.reporter = new Reporter();
@@ -114,6 +114,7 @@ public class ExecutionBlockContext {
     this.plan = plan;
     this.resource = new ExecutionBlockSharedResource();
     this.workerContext = workerContext;
+    this.shuffleType = shuffleType;
   }
 
   public void init() throws Throwable {
@@ -139,12 +140,8 @@ public class ExecutionBlockContext {
     } catch (Throwable e) {
       try {
         NettyClientBase client = getQueryMasterConnection();
-        try {
-          QueryMasterProtocol.QueryMasterProtocolService.Interface stub = client.getStub();
-          stub.killQuery(null, executionBlockId.getQueryId().getProto(), NullCallback.get());
-        } finally {
-          connPool.releaseConnection(client);
-        }
+        QueryMasterProtocol.QueryMasterProtocolService.Interface stub = client.getStub();
+        stub.killQuery(null, executionBlockId.getQueryId().getProto(), NullCallback.get());
       } catch (Throwable t) {
         //ignore
       }
@@ -158,11 +155,7 @@ public class ExecutionBlockContext {
 
   public NettyClientBase getQueryMasterConnection()
       throws NoSuchMethodException, ConnectTimeoutException, ClassNotFoundException {
-    return connPool.getConnection(qmMasterAddr, QueryMasterProtocol.class, true);
-  }
-
-  public void releaseConnection(NettyClientBase connection) {
-    connPool.releaseConnection(connection);
+    return connManager.getClient(qmMasterAddr, QueryMasterProtocol.class, true);
   }
 
   public void stop(){
@@ -199,10 +192,6 @@ public class ExecutionBlockContext {
 
   public FileSystem getLocalFS() {
     return localFS;
-  }
-
-  public FileSystem getDefaultFS() {
-    return defaultFS;
   }
 
   public LocalDirAllocator getLocalDirAllocator() {
@@ -272,17 +261,30 @@ public class ExecutionBlockContext {
     return workerContext;
   }
 
-  private void sendExecutionBlockReport(ExecutionBlockReport reporter) throws Exception {
-    NettyClientBase client = getQueryMasterConnection();
-    try {
-      QueryMasterProtocol.QueryMasterProtocolService.Interface stub = client.getStub();
-      stub.doneExecutionBlock(null, reporter, NullCallback.get());
-    } finally {
-      connPool.releaseConnection(client);
+  /**
+   * HASH_SHUFFLE, SCATTERED_HASH_SHUFFLE should send report when this executionBlock stopping.
+   */
+  protected void sendShuffleReport() throws Exception {
+
+    switch (shuffleType) {
+      case HASH_SHUFFLE:
+      case SCATTERED_HASH_SHUFFLE:
+        sendHashShuffleReport(executionBlockId);
+        break;
+      case NONE_SHUFFLE:
+      case RANGE_SHUFFLE:
+      default:
+        break;
     }
   }
 
-  protected void reportExecutionBlock(ExecutionBlockId ebId) {
+  private void sendHashShuffleReport(ExecutionBlockId ebId) throws Exception {
+    /* This case is that worker did not ran tasks */
+    if(completedTasksNum.get() == 0) return;
+
+    NettyClientBase client = getQueryMasterConnection();
+    QueryMasterProtocol.QueryMasterProtocolService.Interface stub = client.getStub();
+
     ExecutionBlockReport.Builder reporterBuilder = ExecutionBlockReport.newBuilder();
     reporterBuilder.setEbId(ebId.getProto());
     reporterBuilder.setReportSuccess(true);
@@ -293,7 +295,7 @@ public class ExecutionBlockContext {
           getWorkerContext().getHashShuffleAppenderManager().close(ebId);
       if (shuffles == null) {
         reporterBuilder.addAllIntermediateEntries(intermediateEntries);
-        sendExecutionBlockReport(reporterBuilder.build());
+        stub.doneExecutionBlock(null, reporterBuilder.build(), NullCallback.get());
         return;
       }
 
@@ -346,7 +348,7 @@ public class ExecutionBlockContext {
       }
     }
     try {
-      sendExecutionBlockReport(reporterBuilder.build());
+      stub.doneExecutionBlock(null, reporterBuilder.build(), NullCallback.get());
     } catch (Throwable e) {
       // can't send report to query master
       LOG.fatal(e.getMessage(), e);
@@ -405,7 +407,6 @@ public class ExecutionBlockContext {
                 throw new RuntimeException(t);
               }
             } finally {
-              releaseConnection(client);
               if (remainingRetries > 0 && !reporterStop.get()) {
                 synchronized (reporterThread) {
                   try {

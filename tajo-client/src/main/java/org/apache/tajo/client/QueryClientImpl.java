@@ -20,7 +20,6 @@ package org.apache.tajo.client;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ServiceException;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.*;
@@ -34,7 +33,6 @@ import org.apache.tajo.ipc.TajoMasterClientProtocol;
 import org.apache.tajo.jdbc.FetchResultSet;
 import org.apache.tajo.jdbc.TajoMemoryResultSet;
 import org.apache.tajo.rpc.NettyClientBase;
-import org.apache.tajo.rpc.RpcChannelFactory;
 import org.apache.tajo.rpc.ServerCallable;
 import org.apache.tajo.util.ProtoUtil;
 
@@ -53,11 +51,14 @@ public class QueryClientImpl implements QueryClient {
   private static final Log LOG = LogFactory.getLog(QueryClientImpl.class);
   private final SessionConnection connection;
   private final int defaultFetchRows;
+//maxRows number is limit value of resultSet. The value must be >= 0, and 0 means there is not limit.
+  private int maxRows;
 
   public QueryClientImpl(SessionConnection connection) {
     this.connection = connection;
     this.defaultFetchRows = this.connection.getProperties().getInt(SessionVars.FETCH_ROWNUM.getConfVars().keyname(),
         SessionVars.FETCH_ROWNUM.getConfVars().defaultIntVal);
+    this.maxRows = 0;
   }
 
   @Override
@@ -114,8 +115,6 @@ public class QueryClientImpl implements QueryClient {
       tajoMaster.closeNonForwardQuery(null, builder.build());
     } catch (Exception e) {
       LOG.warn("Fail to close a TajoMaster connection (qid=" + queryId + ", msg=" + e.getMessage() + ")", e);
-    } finally {
-      connection.connPool.closeConnection(tmClient);
     }
   }
 
@@ -157,8 +156,8 @@ public class QueryClientImpl implements QueryClient {
   @Override
   public ClientProtos.SubmitQueryResponse executeQuery(final String sql) throws ServiceException {
 
-    return new ServerCallable<ClientProtos.SubmitQueryResponse>(connection.connPool, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<ClientProtos.SubmitQueryResponse>(connection.manager, connection.getTajoMasterAddr(),
+        TajoMasterClientProtocol.class, false) {
 
       public ClientProtos.SubmitQueryResponse call(NettyClientBase client) throws ServiceException {
 
@@ -183,8 +182,8 @@ public class QueryClientImpl implements QueryClient {
   @Override
   public ClientProtos.SubmitQueryResponse executeQueryWithJson(final String json) throws ServiceException {
 
-    return new ServerCallable<ClientProtos.SubmitQueryResponse>(connection.connPool, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<ClientProtos.SubmitQueryResponse>(connection.manager, connection.getTajoMasterAddr(),
+        TajoMasterClientProtocol.class, false) {
 
       public ClientProtos.SubmitQueryResponse call(NettyClientBase client) throws ServiceException {
 
@@ -320,8 +319,6 @@ public class QueryClientImpl implements QueryClient {
 
     } catch (Exception e) {
       throw new ServiceException(e.getMessage(), e);
-    } finally {
-      connection.connPool.releaseConnection(tmClient);
     }
     return new QueryStatus(res);
   }
@@ -366,8 +363,6 @@ public class QueryClientImpl implements QueryClient {
 
     } catch (Exception e) {
       throw new ServiceException(e.getMessage(), e);
-    } finally {
-      connection.connPool.releaseConnection(tmClient);
     }
   }
 
@@ -377,8 +372,8 @@ public class QueryClientImpl implements QueryClient {
 
     try {
       final ServerCallable<ClientProtos.SerializedResultSet> callable =
-          new ServerCallable<ClientProtos.SerializedResultSet>(connection.connPool, connection.getTajoMasterAddr(),
-              TajoMasterClientProtocol.class, false, true) {
+          new ServerCallable<ClientProtos.SerializedResultSet>(connection.manager, connection.getTajoMasterAddr(),
+              TajoMasterClientProtocol.class, false) {
 
             public ClientProtos.SerializedResultSet call(NettyClientBase client) throws ServiceException {
 
@@ -432,8 +427,8 @@ public class QueryClientImpl implements QueryClient {
   @Override
   public boolean updateQuery(final String sql) throws ServiceException {
 
-    return new ServerCallable<Boolean>(connection.connPool, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<Boolean>(connection.manager, connection.getTajoMasterAddr(),
+        TajoMasterClientProtocol.class, false) {
 
       public Boolean call(NettyClientBase client) throws ServiceException {
 
@@ -462,8 +457,8 @@ public class QueryClientImpl implements QueryClient {
   @Override
   public boolean updateQueryWithJson(final String json) throws ServiceException {
 
-    return new ServerCallable<Boolean>(connection.connPool, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<Boolean>(connection.manager, connection.getTajoMasterAddr(),
+        TajoMasterClientProtocol.class, false) {
 
       public Boolean call(NettyClientBase client) throws ServiceException {
 
@@ -490,8 +485,8 @@ public class QueryClientImpl implements QueryClient {
   @Override
   public List<ClientProtos.BriefQueryInfo> getRunningQueryList() throws ServiceException {
 
-    return new ServerCallable<List<ClientProtos.BriefQueryInfo>>(connection.connPool, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<List<ClientProtos.BriefQueryInfo>>(connection.manager, connection.getTajoMasterAddr(),
+        TajoMasterClientProtocol.class, false) {
 
       public List<ClientProtos.BriefQueryInfo> call(NettyClientBase client) throws ServiceException {
 
@@ -510,8 +505,8 @@ public class QueryClientImpl implements QueryClient {
   @Override
   public List<ClientProtos.BriefQueryInfo> getFinishedQueryList() throws ServiceException {
 
-    return new ServerCallable<List<ClientProtos.BriefQueryInfo>>(connection.connPool, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<List<ClientProtos.BriefQueryInfo>>(connection.manager, connection.getTajoMasterAddr(),
+        TajoMasterClientProtocol.class, false) {
 
       public List<ClientProtos.BriefQueryInfo> call(NettyClientBase client) throws ServiceException {
 
@@ -530,8 +525,8 @@ public class QueryClientImpl implements QueryClient {
   @Override
   public List<ClientProtos.WorkerResourceInfo> getClusterInfo() throws ServiceException {
 
-    return new ServerCallable<List<ClientProtos.WorkerResourceInfo>>(connection.connPool, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<List<ClientProtos.WorkerResourceInfo>>(connection.manager, connection.getTajoMasterAddr(),
+        TajoMasterClientProtocol.class, false) {
 
       public List<ClientProtos.WorkerResourceInfo> call(NettyClientBase client) throws ServiceException {
 
@@ -582,15 +577,23 @@ public class QueryClientImpl implements QueryClient {
 
     } catch(Exception e) {
       LOG.debug("Error when checking for application status", e);
-    } finally {
-      connection.connPool.releaseConnection(tmClient);
     }
     return status;
   }
 
+  @Override
+  public void setMaxRows(int maxRows) {
+		this.maxRows = maxRows;
+  }
+  
+  @Override
+  public int getMaxRows() {
+  	return this.maxRows;
+  }
+  
   public QueryInfoProto getQueryInfo(final QueryId queryId) throws ServiceException {
-    return new ServerCallable<QueryInfoProto>(connection.connPool, connection.getTajoMasterAddr(),
-        TajoMasterClientProtocol.class, false, true) {
+    return new ServerCallable<QueryInfoProto>(connection.manager, connection.getTajoMasterAddr(),
+        TajoMasterClientProtocol.class, false) {
       public QueryInfoProto call(NettyClientBase client) throws ServiceException {
         connection.checkSessionAndGet(client);
 
@@ -619,8 +622,8 @@ public class QueryClientImpl implements QueryClient {
     InetSocketAddress qmAddress = new InetSocketAddress(
         queryInfo.getHostNameOfQM(), queryInfo.getQueryMasterClientPort());
 
-    return new ServerCallable<QueryHistoryProto>(connection.connPool, qmAddress,
-        QueryMasterClientProtocol.class, false, true) {
+    return new ServerCallable<QueryHistoryProto>(connection.manager, qmAddress,
+        QueryMasterClientProtocol.class, false) {
       public QueryHistoryProto call(NettyClientBase client) throws ServiceException {
         connection.checkSessionAndGet(client);
 

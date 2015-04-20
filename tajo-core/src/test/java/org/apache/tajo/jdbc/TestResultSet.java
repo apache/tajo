@@ -139,8 +139,8 @@ public class TestResultSet {
 
   @Test
   public void testDateTimeType() throws Exception {
-    // Hcatalog does not support date type, time type in hive-0.12.0
-    if(util.isHCatalogStoreRunning()) return;
+    // HiveCatalog does not support date type, time type in hive-0.12.0
+    if(util.isHiveCatalogStoreRunning()) return;
 
     ResultSet res = null;
     TajoClient client = util.newTajoClient();

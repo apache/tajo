@@ -50,6 +50,9 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   }
 
   public void merge(FunctionContext context, Tuple tuple) {
+    if (!isBinded) {
+      throw new IllegalStateException("bind() must be called before merge()");
+    }
     mergeParam(context, evalParams(tuple));
   }
 
@@ -68,6 +71,9 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   }
 
   public Datum terminate(FunctionContext context) {
+    if (!isBinded) {
+      throw new IllegalStateException("bind() must be called before terminate()");
+    }
     if (!finalPhase) {
       return instance.getPartialResult(context);
     } else {

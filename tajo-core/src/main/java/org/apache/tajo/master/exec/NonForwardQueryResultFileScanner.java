@@ -143,6 +143,11 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     return tableDesc;
   }
 
+  @Override
+  public int getCurrentRowNumber() {
+    return currentNumRows;
+  }
+
   public void close() throws Exception {
     if (scanExec != null) {
       scanExec.close();

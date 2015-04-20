@@ -74,13 +74,17 @@ public abstract class PatternMatchPredicateEval extends BinaryEval {
   }
 
   @Override
-  public void bind(Schema schema) {
-    super.bind(schema);
+  public EvalNode bind(EvalContext evalContext, Schema schema) {
+    super.bind(evalContext, schema);
     compile(pattern);
+    return this;
   }
 
   @Override
   public Datum eval(Tuple tuple) {
+    if (!isBinded) {
+      throw new IllegalStateException("bind() must be called before eval()");
+    }
     Datum predicand = leftExpr.eval(tuple);
     if (predicand.isNull()) {
       return NullDatum.get();

@@ -174,7 +174,7 @@ public class EvalCodeGenContext extends TajoGeneratorAdapter {
 
       } else if (entry.getKey().getType() == EvalType.FUNCTION) {
         GeneralFunctionEval function = (GeneralFunctionEval) entry.getKey();
-        final String internalName = TajoGeneratorAdapter.getInternalName(function.getFuncDesc().getFuncClass());
+        final String internalName = TajoGeneratorAdapter.getInternalName(function.getFuncDesc().getLegacyFuncClass());
 
         // new and initialization of function
         initMethod.visitTypeInsn(Opcodes.NEW, internalName);
@@ -198,12 +198,12 @@ public class EvalCodeGenContext extends TajoGeneratorAdapter {
 
         initMethod.visitVarInsn(Opcodes.ALOAD, FUNCTION);
         consAdapter.aload(PARAM_TYPE_ARRAY);
-        consAdapter.invokeVirtual(function.getFuncDesc().getFuncClass(), "init", void.class, new Class[] {FunctionEval.ParamType[].class});
+        consAdapter.invokeVirtual(function.getFuncDesc().getLegacyFuncClass(), "init", void.class, new Class[] {FunctionEval.ParamType[].class});
 
         initMethod.visitVarInsn(Opcodes.ALOAD, 0);
         initMethod.visitVarInsn(Opcodes.ALOAD, FUNCTION);
         initMethod.visitFieldInsn(Opcodes.PUTFIELD, this.owner, entry.getValue(),
-            "L" + TajoGeneratorAdapter.getInternalName(function.getFuncDesc().getFuncClass()) + ";");
+            "L" + TajoGeneratorAdapter.getInternalName(function.getFuncDesc().getLegacyFuncClass()) + ";");
 
       }
     }

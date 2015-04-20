@@ -67,45 +67,16 @@ public class RpcUtils {
     return InetSocketAddress.createUnresolved(splitted[0], Integer.parseInt(splitted[1]));
   }
 
-  public static class Timer {
-    private long remaining;
-    private long prev;
-    public Timer(long timeout) {
-      this.remaining = timeout;
-      this.prev = System.currentTimeMillis();
-    }
-
-    public boolean isTimedOut() {
-      return remaining <= 0;
-    }
-
-    public void elapsed() {
-      long current = System.currentTimeMillis();
-      remaining -= (prev - current);
-      prev = current;
-    }
-
-    public void interval(long wait) {
-      if (wait <= 0 || isTimedOut()) {
-        return;
-      }
-      try {
-        Thread.sleep(Math.min(remaining, wait));
-      } catch (Exception ex) {
-        // ignore
-      }
-    }
-
-    public long remaining() {
-      return remaining;
-    }
-  }
-
+  // non-blocking lock which passes only a ticket before cleared or removed
   public static class Scrutineer<T> {
 
     private final AtomicReference<T> reference = new AtomicReference<T>();
 
-    T check(T ticket) {
+    public T expire() {
+      return reference.getAndSet(null);
+    }
+
+    public T check(T ticket) {
       T granted = reference.get();
       for (;granted == null; granted = reference.get()) {
         if (reference.compareAndSet(null, ticket)) {
@@ -115,7 +86,7 @@ public class RpcUtils {
       return granted;
     }
 
-    boolean clear(T granted) {
+    public boolean clear(T granted) {
       return reference.compareAndSet(granted, null);
     }
   }

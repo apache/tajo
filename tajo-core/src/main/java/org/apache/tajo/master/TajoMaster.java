@@ -21,10 +21,7 @@ package org.apache.tajo.master;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.service.CompositeService;
@@ -36,10 +33,12 @@ import org.apache.hadoop.yarn.util.RackResolver;
 import org.apache.hadoop.yarn.util.SystemClock;
 import org.apache.tajo.catalog.CatalogServer;
 import org.apache.tajo.catalog.CatalogService;
+import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.LocalCatalogWrapper;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.conf.TajoConf.ConfVars;
 import org.apache.tajo.engine.function.FunctionLoader;
+import org.apache.tajo.function.FunctionSignature;
 import org.apache.tajo.master.rm.TajoWorkerResourceManager;
 import org.apache.tajo.master.rm.WorkerResourceManager;
 import org.apache.tajo.metrics.CatalogMetricsGaugeSet;
@@ -59,6 +58,7 @@ import org.apache.tajo.util.history.HistoryWriter;
 import org.apache.tajo.util.metrics.TajoSystemMetrics;
 import org.apache.tajo.webapp.QueryExecutorServlet;
 import org.apache.tajo.webapp.StaticHttpServer;
+import org.apache.tajo.ws.rs.TajoRestService;
 
 import java.io.*;
 import java.lang.management.ManagementFactory;
@@ -67,7 +67,9 @@ import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Constructor;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import static org.apache.tajo.TajoConstants.DEFAULT_DATABASE_NAME;
 import static org.apache.tajo.TajoConstants.DEFAULT_TABLESPACE_NAME;
@@ -119,6 +121,7 @@ public class TajoMaster extends CompositeService {
   private WorkerResourceManager resourceManager;
   //Web Server
   private StaticHttpServer webServer;
+  private TajoRestService restServer;
 
   private QueryManager queryManager;
 
@@ -175,7 +178,7 @@ public class TajoMaster extends CompositeService {
       diagnoseTajoMaster();
       this.storeManager = StorageManager.getFileStorageManager(systemConf);
 
-      catalogServer = new CatalogServer(FunctionLoader.load());
+      catalogServer = new CatalogServer(loadFunctions());
       addIfService(catalogServer);
       catalog = new LocalCatalogWrapper(catalogServer, systemConf);
 
@@ -193,6 +196,9 @@ public class TajoMaster extends CompositeService {
 
       tajoMasterService = new QueryCoordinatorService(context);
       addIfService(tajoMasterService);
+      
+      restServer = new TajoRestService(context);
+      addIfService(restServer);
     } catch (Exception e) {
       LOG.error(e.getMessage(), e);
       throw e;
@@ -200,6 +206,11 @@ public class TajoMaster extends CompositeService {
 
     super.serviceInit(systemConf);
     LOG.info("Tajo Master is initialized.");
+  }
+
+  private Collection<FunctionDesc> loadFunctions() throws IOException {
+    Map<FunctionSignature, FunctionDesc> functionMap = FunctionLoader.load();
+    return FunctionLoader.loadUserDefinedFunctions(systemConf, functionMap).values();
   }
 
   private void initSystemMetrics() {
@@ -375,6 +386,14 @@ public class TajoMaster extends CompositeService {
         LOG.error(e, e);
       }
     }
+    
+    if (restServer != null) {
+      try {
+        restServer.stop();
+      } catch (Exception e) {
+        LOG.error(e.getMessage(), e);
+      }
+    }
 
     if (webServer != null) {
       try {
@@ -473,6 +492,10 @@ public class TajoMaster extends CompositeService {
 
     public HistoryReader getHistoryReader() {
       return historyReader;
+    }
+    
+    public TajoRestService getRestServer() {
+      return restServer;
     }
   }
 

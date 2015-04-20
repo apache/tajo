@@ -37,6 +37,7 @@
     <protobuf.version>2.5.0</protobuf.version>
     <tajo.version>0.11.0-SNAPSHOT</tajo.version>
     <hbase.version>0.98.7-hadoop2</hbase.version>
+    <hive.version>1.1.0</hive.version>
     <netty.version>4.0.25.Final</netty.version>
     <jersey.version>2.6</jersey.version>
     <tajo.root>${project.parent.relativePath}/..</tajo.root>
@@ -1012,6 +1013,11 @@
         <version>2.6</version>
       </dependency>
       <dependency>
+        <groupId>commons-codec</groupId>
+        <artifactId>commons-codec</artifactId>
+        <version>1.10</version>
+      </dependency>
+      <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
         <version>11.0.2</version>
@@ -1093,6 +1099,16 @@
         <groupId>javax.ws.rs</groupId>
         <artifactId>javax.ws.rs-api</artifactId>
         <version>2.0.1</version>
+      </dependency>
+      <dependency>
+        <groupId>net.minidev</groupId>
+        <artifactId>json-smart</artifactId>
+        <version>2.1.1</version>
+      </dependency>
+      <dependency>
+        <groupId>com.jayway.jsonpath</groupId>
+        <artifactId>json-path</artifactId>
+        <version>2.0.0</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
