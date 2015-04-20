@@ -193,6 +193,45 @@ public class NonForwardQueryResultFileScanner implements NonForwardQueryResultSc
     return rows;
   }
 
+  public ByteString getCompressedNextRows(int fetchRowNum) throws IOException {
+    List<byte[]> rows = new ArrayList<byte[]>();
+    if (scanExec == null) {
+      return null;
+    }
+    int rowCount = 0;
+    while (true) {
+      Tuple tuple = scanExec.next();
+      if (tuple == null) {
+        scanExec.close();
+        scanExec = null;
+        initSeqScanExec();
+        if (scanExec != null) {
+          tuple = scanExec.next();
+        }
+        if (tuple == null) {
+          if (scanExec != null) {
+            scanExec.close();
+            scanExec = null;
+          }
+          break;
+        }
+      }
+      byte[] row = rowEncoder.toBytes(tuple);
+      rows.add(row);
+      rowCount++;
+      currentNumRows++;
+      if (rowCount >= fetchRowNum) {
+        break;
+      }
+      if (currentNumRows >= maxRow) {
+        scanExec.close();
+        scanExec = null;
+        break;
+      }
+    }
+    return ByteString.copyFrom(RowStoreUtil.RowStoreCompressor.toBytes(rows));
+  }
+
   @Override
   public Schema getLogicalSchema() {
     return tableDesc.getLogicalSchema();

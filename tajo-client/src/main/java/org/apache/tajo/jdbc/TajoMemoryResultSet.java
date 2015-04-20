@@ -45,6 +45,18 @@ public class TajoMemoryResultSet extends TajoResultSetBase {
     this.serializedTuples = serializedTuples;
     this.decoder = RowStoreUtil.createDecoder(schema);
     init();
+
+    if (maxRowNum < 0) {
+      // decompress ByteString, reconstruct serializedTuples
+      byte[] compressRows = serializedTuples.get(0).toByteArray();
+      serializedTuples.clear();
+      List<byte[]> decompressedRows = RowStoreUtil.RowStoreDecompressor.toList(compressRows);
+      this.totalRow = decompressedRows.size();
+      for (byte[] row : decompressedRows) {
+        ByteString bs = ByteString.copyFrom(row);
+        serializedTuples.add(bs);
+      }
+    }
   }
 
   @Override

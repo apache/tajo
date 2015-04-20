@@ -18,6 +18,7 @@
 
 package org.apache.tajo.client;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.ServiceException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -38,6 +39,7 @@ import org.apache.tajo.util.ProtoUtil;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -401,11 +403,20 @@ public class QueryClientImpl implements QueryClient {
 
       ClientProtos.SerializedResultSet serializedResultSet = callable.withRetries();
 
-      return new TajoMemoryResultSet(queryId,
-          new Schema(serializedResultSet.getSchema()),
-          serializedResultSet.getSerializedTuplesList(),
-          serializedResultSet.getSerializedTuplesCount(),
-          getClientSideSessionVars());
+      if (serializedResultSet.hasCompressedTuples()) {
+        List<ByteString> resultSet = new ArrayList<ByteString>();
+        resultSet.add(serializedResultSet.getCompressedTuples());
+        return new TajoMemoryResultSet(queryId,
+                new Schema(serializedResultSet.getSchema()),
+                resultSet, -1,
+                getClientSideSessionVars());
+      } else {
+        return new TajoMemoryResultSet(queryId,
+                new Schema(serializedResultSet.getSchema()),
+                serializedResultSet.getSerializedTuplesList(),
+                serializedResultSet.getSerializedTuplesCount(),
+                getClientSideSessionVars());
+      }
     } catch (ServiceException e) {
       throw e;
     } catch (Throwable e) {

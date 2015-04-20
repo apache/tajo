@@ -123,6 +123,7 @@ message SerializedResultSet {
   optional SchemaProto schema = 1;
   optional int32 bytesNum = 2;
   repeated bytes serializedTuples = 3;
+  optional bytes compressedTuples = 4;
 }
 
 message SubmitQueryResponse {

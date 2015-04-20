@@ -29,10 +29,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.service.AbstractService;
-import org.apache.tajo.QueryId;
-import org.apache.tajo.QueryIdFactory;
-import org.apache.tajo.TajoIdProtos;
-import org.apache.tajo.TajoProtos;
+import org.apache.tajo.*;
 import org.apache.tajo.catalog.*;
 import org.apache.tajo.catalog.exception.NoSuchDatabaseException;
 import org.apache.tajo.catalog.partition.PartitionMethodDesc;
@@ -65,6 +62,7 @@ import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.util.*;
 
@@ -548,16 +546,37 @@ public class TajoMasterClientService extends AbstractService {
           session.addNonForwardQueryResultScanner(queryResultScanner);
         }
 
-        List<ByteString> rows = queryResultScanner.getNextRows(request.getFetchRowNum());
+        boolean needCompress = false;
+        Method compressMethod = null;
+        try {
+          //String v = session.getVariable("compress");
+          String v = session.getVariable(SessionVars.FETCH_COMPRESS.keyname());
+          compressMethod = queryResultScanner.getClass().getMethod("getCompressedNextRows", int.class);
+          if (0 == v.compareToIgnoreCase("true") && null != compressMethod)
+            needCompress = true;
+        } catch (Throwable t) {
+          // when session variable "compress" was not set
+        }
+
+        int rowSize = 0;
+        if (needCompress) {
+          ByteString rows = (ByteString) compressMethod.invoke(queryResultScanner, request.getFetchRowNum());
+          if (rows != null) {
+            resultSetBuilder.setCompressedTuples(rows);
+          }
+        } else {
+          List<ByteString> rows = queryResultScanner.getNextRows(request.getFetchRowNum());
+          resultSetBuilder.addAllSerializedTuples(rows);
+          rowSize = rows.size();
+        }
 
         resultSetBuilder.setSchema(queryResultScanner.getLogicalSchema().getProto());
-        resultSetBuilder.addAllSerializedTuples(rows);
 
         builder.setResultSet(resultSetBuilder.build());
         builder.setResultCode(ResultCode.OK);
 
         LOG.info("Send result to client for " +
-            request.getSessionId().getId() + "," + queryId + ", " + rows.size() + " rows");
+            request.getSessionId().getId() + "," + queryId + ", " + rowSize + " rows");
 
       } catch (Throwable t) {
         LOG.error(t.getMessage(), t);
