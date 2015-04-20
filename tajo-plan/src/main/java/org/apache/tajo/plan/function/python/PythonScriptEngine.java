@@ -99,11 +99,14 @@ public class PythonScriptEngine extends TajoScriptEngine {
 
   private static final Pattern pSchema = Pattern.compile("^\\s*\\W+output_type.*");
   private static final Pattern pDef = Pattern.compile("^\\s*def\\s+(\\w+)\\s*.+");
+  private static final Pattern pClass = Pattern.compile("class.*");
 
   private static class FuncInfo {
     String returnType;
     String funcName;
+    String className;
     int paramNum;
+    boolean isUdaf;
 
     public FuncInfo(String returnType, String funcName, int paramNum) {
       this.returnType = returnType.toUpperCase();
@@ -140,6 +143,8 @@ public class PythonScriptEngine extends TajoScriptEngine {
         schemaString = schemaString == null ? "blob" : schemaString;
         functions.add(new FuncInfo(schemaString, functionName, paramNum));
         schemaString = null;
+      } else if (pClass.matcher(line).matches()) {
+        // UDAF
       }
       line = br.readLine();
     }

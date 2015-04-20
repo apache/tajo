@@ -32,13 +32,13 @@ class SumPy(AbstractUdaf):
 
     # eval at the first stage
     @output_type('int8')
-    def eval(self, item):
-        self.aggregated += item
+    def eval(self, tuple):
+        self.aggregated += tuple[:1]
 
     # merge the result of the first stage
     @output_type('int8')
-    def merge(self, item):
-        self.aggregated += item
+    def merge(self, tuple):
+        self.aggregated += tuple[:1]
 
     # get the final result
     @output_type('int8')

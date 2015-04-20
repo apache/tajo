@@ -27,11 +27,11 @@ class AbstractUdaf:
         """Return the function name"""
         return
 
-    def eval(self, item):
+    def eval(self, tuple):
         """Eval item at the first stage"""
         return
 
-    def merge(self, item):
+    def merge(self, tuple):
         """Merge the result of the first stage"""
         return
 

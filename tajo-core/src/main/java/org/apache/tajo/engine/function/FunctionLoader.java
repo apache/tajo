@@ -84,7 +84,7 @@ public class FunctionLoader {
   }
 
   /**
-   * Load functions that are defined by users.
+   * Load functions defined by users.
    *
    * @param conf
    * @param functionMap
