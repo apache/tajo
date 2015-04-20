@@ -469,8 +469,12 @@ public class Stage implements EventHandler<StageEvent> {
     stageHistory.setKilledObjectCount(killedObjectCount);
     stageHistory.setFailedObjectCount(failedObjectCount);
     stageHistory.setTotalScheduledObjectsCount(totalScheduledObjectsCount);
-    stageHistory.setHostLocalAssigned(getTaskScheduler().getHostLocalAssigned());
-    stageHistory.setRackLocalAssigned(getTaskScheduler().getRackLocalAssigned());
+
+    AbstractTaskScheduler scheduler = getTaskScheduler();
+    if (scheduler != null) {
+      stageHistory.setHostLocalAssigned(scheduler.getHostLocalAssigned());
+      stageHistory.setRackLocalAssigned(scheduler.getRackLocalAssigned());
+    }
 
     long totalInputBytes = 0;
     long totalReadBytes = 0;
