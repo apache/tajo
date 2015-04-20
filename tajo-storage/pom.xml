@@ -37,6 +37,7 @@
     <module>tajo-storage-common</module>
     <module>tajo-storage-hdfs</module>
     <module>tajo-storage-hbase</module>
+    <module>tajo-storage-elasticsearch</module>
   </modules>
 
   <build>
@@ -132,6 +133,7 @@
                       run cp -r ${basedir}/tajo-storage-common/target/tajo-storage-common-${project.version}*.jar .
                       run cp -r ${basedir}/tajo-storage-hdfs/target/tajo-storage-hdfs-${project.version}*.jar .
                       run cp -r ${basedir}/tajo-storage-hbase/target/tajo-storage-hbase-${project.version}*.jar .
+                      run cp -r ${basedir}/tajo-storage-elasticsearch/target/tajo-storage-elasticsearch-${project.version}*.jar .
 
                       echo
                       echo "Tajo Storage dist layout available at: ${project.build.directory}/tajo-storage-${project.version}"
