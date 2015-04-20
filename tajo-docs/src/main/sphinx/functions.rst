@@ -41,11 +41,11 @@ Please note that you can specify multiple paths with ``','`` as a delimiter. Eac
 
   # /path/to/script1.py
 
-  @outputType('int4')
+  @output_type('int4')
   def return_one():
     return 1
 
-  @outputType("text")
+  @output_type("text")
   def helloworld():
     return 'Hello, World'
 
@@ -53,7 +53,7 @@ Please note that you can specify multiple paths with ``','`` as a delimiter. Eac
   def concat_py(str):
     return str+str
 
-  @outputType('int4')
+  @output_type('int4')
   def sum_py(a,b):
     return a+b
 
@@ -66,7 +66,7 @@ Decorators and types
 By default, every function has a return type of ``BLOB``.
 You can use Python decorators to define output types for the script functions. Tajo can figure out return types from the annotations of the Python script.
 
-* ``outputType``: Defines the return data type for a script UDF in a format that Tajo can understand. The defined type must be one of the types supported by Tajo. For supported types, please refer to :doc:`/sql_language/data_model`.
+* ``output_type``: Defines the return data type for a script UDF in a format that Tajo can understand. The defined type must be one of the types supported by Tajo. For supported types, please refer to :doc:`/sql_language/data_model`.
 
 -----------------------
 Query example

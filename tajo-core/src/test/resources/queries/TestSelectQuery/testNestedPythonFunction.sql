@@ -1,1 +1,1 @@
-select * from nation where sum_py(n_regionkey, return_one()) < 2
+select * from nation where add_py(n_regionkey, return_one()) < 2

@@ -16,18 +16,25 @@
 
 from tajo_util import output_type
 
-@output_type('int4')
-def return_one():
-    return 1
 
-@output_type("text")
-def helloworld():
-    return 'Hello, World'
+class AbstractUdaf:
 
-# No decorator - blob
-def concat_py(str):
-    return str+str
+    def __init__(self):
+        return
 
-@output_type('int4')
-def add_py(a,b):
-    return a+b
+    @output_type('text')
+    def name(self):
+        """Return the function name"""
+        return
+
+    def eval(self, item):
+        """Eval item at the first stage"""
+        return
+
+    def merge(self, item):
+        """Merge the result of the first stage"""
+        return
+
+    def terminate(self):
+        """Get the final result"""
+        return

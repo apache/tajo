@@ -1,1 +1,1 @@
-select count(*) from nation where sum_py(n_nationkey, 1) > 2 group by n_regionkey
+select count(*) from nation where add_py(n_nationkey, 1) > 2 group by n_regionkey

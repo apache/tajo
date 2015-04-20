@@ -14,12 +14,30 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from tajo_util import outputType
+from tajo_util import output_type
+from tajo_udaf import AbstractUdaf
 
 
-class sum_py:
+class SumPy(AbstractUdaf):
+    name = 'sum_py'
+    aggregated = 0
 
-    def merge(self, aggregated, input):
-        aggregated += input
+    # return the function name
+    @output_type('text')
+    def name(self):
+        return self.name
 
+    # eval at the first stage
+    @output_type('int8')
+    def eval(self, item):
+        self.aggregated += item
 
+    # merge the result of the first stage
+    @output_type('int8')
+    def merge(self, item):
+        self.aggregated += item
+
+    # get the final result
+    @output_type('int8')
+    def terminate(self):
+        return self.aggregated
