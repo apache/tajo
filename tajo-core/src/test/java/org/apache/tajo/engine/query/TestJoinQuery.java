@@ -18,6 +18,7 @@
 
 package org.apache.tajo.engine.query;
 
+import junit.framework.Assert;
 import org.apache.tajo.IntegrationTest;
 import org.apache.tajo.QueryTestCaseBase;
 import org.apache.tajo.TajoConstants;
@@ -1188,6 +1189,18 @@ public class TestJoinQuery extends QueryTestCaseBase {
   @Test
   public final void testJoinWithOrPredicates() throws Exception {
     ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testNaturalJoin() throws Exception {
+    ResultSet res = null;
+    try {
+      res = executeQuery();
+    } catch (Exception e) {
+      Assert.fail();
+    }
     assertResultSet(res);
     cleanupQuery(res);
   }
