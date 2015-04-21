@@ -37,8 +37,6 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
   ClassBaseInvocationDesc<?> aggregationJIT;
   @Expose
   PythonInvocationDesc python;
-  @Expose
-  PythonAggInvocationDesc pythonAggregation;
 
   public FunctionInvocation() {
   }
@@ -61,9 +59,6 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
     }
     if (proto.hasPython()) {
       this.python = new PythonInvocationDesc(proto.getPython());
-    }
-    if (proto.hasAggregationPython()) {
-      this.pythonAggregation = new PythonAggInvocationDesc(proto.getAggregationPython());
     }
   }
 
@@ -132,7 +127,7 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
   }
 
   public boolean hasPython() {
-    return python != null;
+    return python != null && python.isUdf();
   }
 
   public void setPython(PythonInvocationDesc python) {
@@ -144,15 +139,15 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
   }
 
   public boolean hasPythonAggregation() {
-    return pythonAggregation != null;
+    return python != null && !python.isUdf();
   }
 
-  public void setPythonAggregation(PythonAggInvocationDesc pythonAggregation) {
-    this.pythonAggregation = pythonAggregation;
+  public void setPythonAggregation(PythonInvocationDesc pythonAggregation) {
+    this.python = pythonAggregation;
   }
 
-  public PythonAggInvocationDesc getPythonAggregation() {
-    return this.pythonAggregation;
+  public PythonInvocationDesc getPythonAggregation() {
+    return this.python;
   }
 
   @Override
@@ -175,9 +170,6 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
     }
     if (hasPython()) {
       builder.setPython(python.getProto());
-    }
-    if (hasPythonAggregation()) {
-      builder.setAggregationPython(pythonAggregation.getProto());
     }
     return builder.build();
   }

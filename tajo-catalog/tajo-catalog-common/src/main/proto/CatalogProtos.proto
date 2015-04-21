@@ -412,7 +412,6 @@ message FunctionInvocationProto {
   optional StaticMethodInvocationDescProto scalarJIT = 4;
   optional ClassBaseInvocationDescProto aggregationJIT = 5;
   optional PythonInvocationDescProto python = 6;
-  optional PythonAggInvocationDescProto aggregationPython = 7;
 }
 
 message ClassBaseInvocationDescProto {
@@ -429,9 +428,5 @@ message StaticMethodInvocationDescProto {
 message PythonInvocationDescProto {
   required string funcName = 1;
   required string filePath = 2;
-}
-
-message PythonAggInvocationDescProto {
-  required string className = 1;
-  required string filePath = 2;
+  required bool udf = 3;
 }

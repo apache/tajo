@@ -83,7 +83,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
             CatalogUtil.newSimpleDataType(TajoDataTypes.Type.valueOf(scalarFuncInfo.returnType));
         signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, scalarFuncInfo.funcName,
             returnType, createParamTypes(scalarFuncInfo.paramNum));
-        PythonInvocationDesc invocationDesc = new PythonInvocationDesc(scalarFuncInfo.funcName, path.getPath());
+        PythonInvocationDesc invocationDesc = new PythonInvocationDesc(scalarFuncInfo.funcName, path.getPath(), true);
         invocation.setPython(invocationDesc);
       } else {
         AggFuncInfo aggFuncInfo = (AggFuncInfo) funcInfo;
@@ -91,7 +91,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
             CatalogUtil.newSimpleDataType(TajoDataTypes.Type.valueOf(aggFuncInfo.terminateInfo.returnType));
         signature = new FunctionSignature(CatalogProtos.FunctionType.UDA, aggFuncInfo.funcName,
             returnType, createParamTypes(aggFuncInfo.evalInfo.paramNum));
-        PythonAggInvocationDesc invocationDesc = new PythonAggInvocationDesc(aggFuncInfo.className, path.getPath());
+        PythonInvocationDesc invocationDesc = new PythonInvocationDesc(aggFuncInfo.className, path.getPath(), false);
         invocation.setPythonAggregation(invocationDesc);
       }
       functionDescs.add(new FunctionDesc(signature, invocation, supplement));
@@ -219,12 +219,13 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private static final int PATH_TO_CONTROLLER_FILE = 1;
   private static final int UDF_FILE_NAME = 2; // Name of file where UDF function is defined
   private static final int UDF_FILE_PATH = 3; // Path to directory containing file where UDF function is defined
-  private static final int UDF_NAME = 4; // Name of UDF function being called.
-  private static final int PATH_TO_FILE_CACHE = 5; // Directory where required files (like tajo_util) are cached on cluster nodes.
-  private static final int STD_OUT_OUTPUT_PATH = 6; // File for output from when user writes to standard output.
-  private static final int STD_ERR_OUTPUT_PATH = 7; // File for output from when user writes to standard error.
-  private static final int CONTROLLER_LOG_FILE_PATH = 8; // Controller log file logs progress through the controller script not user code.
-  private static final int OUT_SCHEMA = 9; // the schema of the output column
+  private static final int PATH_TO_FILE_CACHE = 4; // Directory where required files (like tajo_util) are cached on cluster nodes.
+  private static final int STD_OUT_OUTPUT_PATH = 5; // File for output from when user writes to standard output.
+  private static final int STD_ERR_OUTPUT_PATH = 6; // File for output from when user writes to standard error.
+  private static final int CONTROLLER_LOG_FILE_PATH = 7; // Controller log file logs progress through the controller script not user code.
+  private static final int OUT_SCHEMA = 8; // the schema of the output column
+  private static final int FUNCTION_OR_CLASS_NAME = 9; // if FUNCTION_TYPE is UDF, function name; if FUNCTION_TYPE is UDAF, class name.
+  private static final int FUNCTION_TYPE = 10; // UDF or UDAF
 
   private Configuration systemConf;
 
@@ -327,7 +328,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
     fileName = fileName.endsWith(FILE_EXTENSION) ? fileName.substring(0, fileName.length()-3) : fileName;
     command[UDF_FILE_NAME] = fileName;
     command[UDF_FILE_PATH] = lastSeparator <= 0 ? "." : filePath.substring(0, lastSeparator - 1);
-    command[UDF_NAME] = funcName;
     String fileCachePath = systemConf.get(TajoConf.ConfVars.PYTHON_CODE_DIR.keyname());
     if (fileCachePath == null) {
       throw new IOException(TajoConf.ConfVars.PYTHON_CODE_DIR.keyname() + " must be set.");
@@ -337,6 +337,8 @@ public class PythonScriptEngine extends TajoScriptEngine {
     command[STD_ERR_OUTPUT_PATH] = errOutFileName;
     command[CONTROLLER_LOG_FILE_PATH] = controllerLogFileName;
     command[OUT_SCHEMA] = outSchema.getColumn(0).getDataType().getType().name().toLowerCase();
+    command[FUNCTION_OR_CLASS_NAME] = funcName;
+    command[FUNCTION_TYPE] = invocationDesc.isUdf() ? "UDF" : "UDAF";
 
     return command;
   }
@@ -453,7 +455,25 @@ public class PythonScriptEngine extends TajoScriptEngine {
 
   @Override
   public Schema getIntermSchema() {
-    return null;
+    try {
+      Tuple input = EMPTY_INPUT;
+
+      inputHandler.putNext("get_interm_schema", input);
+      stdin.flush();
+    } catch (Exception e) {
+      throw new RuntimeException("Failed adding input to inputQueue", e);
+    }
+
+    try {
+      Tuple result = outputHandler.getNext();
+      Schema schema = new Schema();
+      for (int i = 0; i < result.size(); i += 2) {
+        schema.addColumn(result.getText(i), TajoDataTypes.Type.valueOf(result.getText(i+1)));
+      }
+      return schema;
+    } catch (Exception e) {
+      throw new RuntimeException("Problem getting output", e);
+    }
   }
 
   @Override
@@ -461,7 +481,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
     try {
       Tuple input = EMPTY_INPUT;
 
-      // TODO: get schema
       inputHandler.putNext("get_interm_result", input);
       stdin.flush();
     } catch (Exception e) {
