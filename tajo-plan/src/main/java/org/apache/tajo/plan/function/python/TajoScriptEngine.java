@@ -19,6 +19,7 @@
 package org.apache.tajo.plan.function.python;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.storage.Tuple;
 
@@ -79,5 +80,13 @@ public abstract class TajoScriptEngine {
    * @param input
    * @return
    */
-  public abstract Datum eval(Tuple input);
+  public abstract Datum callScalarFunc(Tuple input);
+
+  public abstract void callAggFunc(boolean isFirstStage, Tuple input);
+
+  public abstract Schema getIntermSchema();
+
+  public abstract Tuple getIntermResult();
+
+  public abstract Datum getFinalResult();
 }

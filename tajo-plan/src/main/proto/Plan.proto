@@ -497,3 +497,12 @@ enum TransmitType {
   PULL_TRANSMIT = 1;
   FILE_WRITE = 2;
 }
+
+message NamedDatum {
+  required string name = 1;
+  required Datum val = 2;
+}
+
+message NamedTuple {
+  repeated NamedDatum datums = 1;
+}

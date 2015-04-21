@@ -55,6 +55,10 @@ public class InputHandler implements Closeable {
     out.write(END_OF_RECORD_DELIM);
   }
 
+  public void putNext(String methodName, Tuple t) throws IOException {
+
+  }
+
   public void close() throws IOException {
     if (!alreadyClosed) {
       out.flush();

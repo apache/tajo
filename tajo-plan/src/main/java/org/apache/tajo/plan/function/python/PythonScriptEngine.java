@@ -400,7 +400,8 @@ public class PythonScriptEngine extends TajoScriptEngine {
     return controllerPath;
   }
 
-  public Datum eval(Tuple input) {
+  @Override
+  public Datum callScalarFunc(Tuple input) {
     try {
       if (input == null) {
         // When nothing is passed into the UDF the tuple
@@ -410,6 +411,77 @@ public class PythonScriptEngine extends TajoScriptEngine {
       }
 
       inputHandler.putNext(input);
+      stdin.flush();
+    } catch (Exception e) {
+      throw new RuntimeException("Failed adding input to inputQueue", e);
+    }
+    Datum result;
+    try {
+      result = outputHandler.getNext().get(0);
+    } catch (Exception e) {
+      throw new RuntimeException("Problem getting output", e);
+    }
+
+    return result;
+  }
+
+  @Override
+  public void callAggFunc(boolean isFirstStage, Tuple input) {
+    String methodName;
+    if (isFirstStage) {
+      // eval
+      methodName = "eval";
+    } else {
+      // merge
+      methodName = "merge";
+    }
+
+    try {
+      if (input == null) {
+        // When nothing is passed into the UDF the tuple
+        // being sent is the full tuple for the relation.
+        // We want it to be nothing (since that's what the user wrote).
+        input = EMPTY_INPUT;
+      }
+
+      inputHandler.putNext(methodName, input);
+      stdin.flush();
+    } catch (Exception e) {
+      throw new RuntimeException("Failed adding input to inputQueue", e);
+    }
+  }
+
+  @Override
+  public Schema getIntermSchema() {
+    return null;
+  }
+
+  @Override
+  public Tuple getIntermResult() {
+    try {
+      Tuple input = EMPTY_INPUT;
+
+      // TODO: get schema
+      inputHandler.putNext("get_interm_result", input);
+      stdin.flush();
+    } catch (Exception e) {
+      throw new RuntimeException("Failed adding input to inputQueue", e);
+    }
+    Tuple result;
+    try {
+      result = outputHandler.getNext();
+    } catch (Exception e) {
+      throw new RuntimeException("Problem getting output", e);
+    }
+
+    return result;
+  }
+
+  public Datum getFinalResult() {
+    try {
+      Tuple input = EMPTY_INPUT;
+
+      inputHandler.putNext("get_final_result", input);
       stdin.flush();
     } catch (Exception e) {
       throw new RuntimeException("Failed adding input to inputQueue", e);

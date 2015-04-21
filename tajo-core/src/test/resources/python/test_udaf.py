@@ -17,28 +17,30 @@
 from tajo_util import output_type
 
 
-class SumPy:
-    aggregated = 0
+class AvgPy:
+    sum = 0
+    cnt = 0
 
-    def __init__(self, aggregated=0):
-        self.aggregated = aggregated
-
-    # return the function name
-    @output_type('text')
-    def name(self):
-        return self.func_name
+    def __init__(self, sum=0, cnt=0):
+        self.sum = sum
+        self.cnt = cnt
 
     # eval at the first stage
-    @output_type('int8')
     def eval(self, item):
-        self.aggregated += item
+        self.sum += item
+        self.cnt += 1
 
-    # merge the result of the first stage
-    @output_type('int8')
+    # get intermediate result
+    @output_type('int4', 'int4')
+    def get_interm_result(self):
+        return [self.sum, self.cnt]
+
+    # merge intermediate results
     def merge(self, item):
-        self.aggregated += item
+        self.sum += item
+        self.cnt += 1
 
-    # get the final result
-    @output_type('int8')
-    def terminate(self):
-        return self.aggregated
+    # get final result
+    @output_type('float4')
+    def get_final_result(self):
+        return self.sum / self.cnt

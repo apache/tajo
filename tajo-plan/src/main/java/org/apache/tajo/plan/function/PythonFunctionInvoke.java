@@ -47,7 +47,7 @@ public class PythonFunctionInvoke extends FunctionInvoke implements Cloneable {
 
   @Override
   public Datum eval(Tuple tuple) {
-    Datum res = scriptEngine.eval(tuple);
+    Datum res = scriptEngine.callScalarFunc(tuple);
     return res;
   }
 

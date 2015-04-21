@@ -23,10 +23,8 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.exception.UnsupportedException;
-import org.apache.tajo.plan.expr.EvalContext;
 import org.apache.tajo.storage.Tuple;
 
-import java.io.Closeable;
 import java.io.IOException;
 
 /**
@@ -46,7 +44,7 @@ public abstract class FunctionInvoke implements Cloneable {
 
   public static FunctionInvoke newInstance(FunctionDesc desc) throws InternalException {
     if (desc.getInvocation().hasLegacy()) {
-      return new LegacyScalarFunctionInvoke(desc);
+      return new ClassBasedScalarFunctionInvoke(desc);
     } else if (desc.getInvocation().hasPython()) {
       return new PythonFunctionInvoke(desc);
     } else {

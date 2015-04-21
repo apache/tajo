@@ -22,21 +22,20 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.datum.Datum;
 import org.apache.tajo.exception.InternalException;
-import org.apache.tajo.plan.expr.EvalContext;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 
 /**
- * This class invokes the legacy scala functions.
+ * This class invokes class-based scala functions.
  */
-public class LegacyScalarFunctionInvoke extends FunctionInvoke implements Cloneable {
+public class ClassBasedScalarFunctionInvoke extends FunctionInvoke implements Cloneable {
   @Expose private GeneralFunction function;
 
-  public LegacyScalarFunctionInvoke() {
+  public ClassBasedScalarFunctionInvoke() {
 
   }
 
-  public LegacyScalarFunctionInvoke(FunctionDesc funcDesc) throws InternalException {
+  public ClassBasedScalarFunctionInvoke(FunctionDesc funcDesc) throws InternalException {
     super(funcDesc);
     function = (GeneralFunction) funcDesc.newInstance();
   }
@@ -59,8 +58,8 @@ public class LegacyScalarFunctionInvoke extends FunctionInvoke implements Clonea
 
   @Override
   public boolean equals(Object o) {
-    if (o instanceof LegacyScalarFunctionInvoke) {
-      LegacyScalarFunctionInvoke other = (LegacyScalarFunctionInvoke) o;
+    if (o instanceof ClassBasedScalarFunctionInvoke) {
+      ClassBasedScalarFunctionInvoke other = (ClassBasedScalarFunctionInvoke) o;
       return super.equals(other) &&
           TUtil.checkEquals(function, other.function);
     }
@@ -74,7 +73,7 @@ public class LegacyScalarFunctionInvoke extends FunctionInvoke implements Clonea
 
   @Override
   public Object clone() throws CloneNotSupportedException {
-    LegacyScalarFunctionInvoke clone = (LegacyScalarFunctionInvoke) super.clone();
+    ClassBasedScalarFunctionInvoke clone = (ClassBasedScalarFunctionInvoke) super.clone();
     clone.function = (GeneralFunction) function.clone();
     return clone;
   }

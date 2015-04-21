@@ -80,8 +80,8 @@ class PythonStreamingController:
         self.profiling_mode = profiling_mode
 
     def main(self,
-             module_name, file_path, func_name, cache_path,
-             output_stream_path, error_stream_path, log_file_name, output_schema, isUdaf=False, class_name=""):
+             module_name, file_path, cache_path,
+             output_stream_path, error_stream_path, log_file_name, output_schema, name, type='UDF'):
         sys.stdin = os.fdopen(sys.stdin.fileno(), 'rb', 0)
 
         # Need to ensure that user functions can't write to the streams we use to communicate with pig.
@@ -105,15 +105,24 @@ class PythonStreamingController:
 
         input_str = self.get_next_input()
 
+
+        # TODO: add command to input_str
+        # ex: 'eval 1', 'add_py 1', 'merge 10'
+
         # try:
         #     func = __import__(module_name, globals(), locals(), [func_name], -1).__dict__[func_name]
         # except:
         #     # These errors should always be caused by user code.
         #     write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
         #     self.close_controller(-1)
-        if isUdaf:
+        if type == 'UDAF':
+            class_name = name
+            # TODO: parse func_name from input_str
+            # eval 1
             func = self.load_udaf(module_name, class_name, func_name)
         else:
+            # add_py 1
+            func_name = name
             func = self.load_udf(module_name, func_name)
 
         log_message = logging.info

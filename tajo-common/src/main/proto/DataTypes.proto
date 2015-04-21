@@ -96,6 +96,9 @@ enum Type {
   TIMESTAMP_ARRAY = 134;
   TIMESTAMPZ_ARRAY = 135;
   INTERVAL_ARRAY = 136;
+
+  // tuple type
+  NAMED_TUPLE = 141;
 }
 
 message DataType {

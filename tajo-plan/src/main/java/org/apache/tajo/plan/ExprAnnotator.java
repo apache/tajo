@@ -615,7 +615,8 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
         if (!ctx.currentBlock.hasNode(NodeType.GROUP_BY)) {
           ctx.currentBlock.setAggregationRequire();
         }
-        return new AggregationFunctionCallEval(funcDesc, (AggFunction) funcDesc.newInstance(), givenArgs);
+//        return new AggregationFunctionCallEval(funcDesc, (AggFunction) funcDesc.newInstance(), givenArgs);
+        return new AggregationFunctionCallEval(funcDesc, givenArgs);
       } else if (functionType == FunctionType.DISTINCT_AGGREGATION
           || functionType == FunctionType.DISTINCT_UDA) {
         throw new PlanningException("Unsupported function: " + funcDesc.toString());
@@ -638,14 +639,15 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       throw new NoSuchFunctionException(expr.getSignature(), new DataType[]{});
     }
 
-    try {
+//    try {
       ctx.currentBlock.setAggregationRequire();
 
-      return new AggregationFunctionCallEval(countRows, (AggFunction) countRows.newInstance(),
-          new EvalNode[] {});
-    } catch (InternalException e) {
-      throw new NoSuchFunctionException(countRows.getFunctionName(), new DataType[]{});
-    }
+//      return new AggregationFunctionCallEval(countRows, (AggFunction) countRows.newInstance(),
+//          new EvalNode[] {});
+      return new AggregationFunctionCallEval(countRows, new EvalNode[] {});
+//    } catch (InternalException e) {
+//      throw new NoSuchFunctionException(countRows.getFunctionName(), new DataType[]{});
+//    }
   }
 
   @Override
@@ -674,11 +676,12 @@ public class ExprAnnotator extends BaseAlgebraVisitor<ExprAnnotator.Context, Eva
       ctx.currentBlock.setAggregationRequire();
     }
 
-    try {
-      return new AggregationFunctionCallEval(funcDesc, (AggFunction) funcDesc.newInstance(), givenArgs);
-    } catch (InternalException e) {
-      throw new PlanningException(e);
-    }
+//    try {
+//      return new AggregationFunctionCallEval(funcDesc, (AggFunction) funcDesc.newInstance(), givenArgs);
+      return new AggregationFunctionCallEval(funcDesc, givenArgs);
+//    } catch (InternalException e) {
+//      throw new PlanningException(e);
+//    }
   }
 
   public static final Set<String> WINDOW_FUNCTIONS =
