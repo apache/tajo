@@ -196,10 +196,8 @@ public class DefaultTajoCliOutputFormatter implements TajoCliOutputFormatter {
     if (message == null) {
       return TajoCli.ERROR_PREFIX + "No error message";
     }
-    String[] lines = message.split("\n");
-    message = lines[0];
 
-    int index = message.lastIndexOf(TajoCli.ERROR_PREFIX);
+    int index = message.indexOf(TajoCli.ERROR_PREFIX);
     if (index < 0) {
       message = TajoCli.ERROR_PREFIX + message;
     } else {
