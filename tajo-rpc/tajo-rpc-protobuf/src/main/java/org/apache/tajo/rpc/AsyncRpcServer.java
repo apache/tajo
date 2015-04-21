@@ -32,14 +32,14 @@ import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 
-public class AsyncRpcServer extends NettyServerBase {
+public class AsyncRpcServer<T> extends NettyServerBase {
   private static final Log LOG = LogFactory.getLog(AsyncRpcServer.class);
 
   private final Service service;
   private final ChannelInitializer<Channel> initializer;
 
   public AsyncRpcServer(final Class<?> protocol,
-                        final Object instance,
+                        final T instance,
                         final InetSocketAddress bindAddress,
                         final int workerNum)
       throws Exception {
@@ -52,7 +52,7 @@ public class AsyncRpcServer extends NettyServerBase {
     Method method = serviceClass.getMethod("newReflectiveService", interfaceClass);
     this.service = (Service) method.invoke(null, instance);
 
-    this.initializer = new ProtoChannelInitializer(new ServerHandler(), RpcRequest.getDefaultInstance());
+    this.initializer = new ProtoServerChannelInitializer(new ServerHandler(), RpcRequest.getDefaultInstance());
     super.init(this.initializer, workerNum);
   }
 
@@ -75,6 +75,33 @@ public class AsyncRpcServer extends NettyServerBase {
         LOG.debug(serviceName + " closes a connection. The number of current connections are " + accepted.size());
       }
       super.channelUnregistered(ctx);
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+      ctx.fireChannelActive();
+
+      for (ChannelEventListener l : getChannelListener()){
+        l.channelActive(ctx);
+      }
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+      ctx.fireChannelInactive();
+
+      for (ChannelEventListener l : getChannelListener()){
+        l.channelInactive(ctx);
+      }
+    }
+
+    @Override
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+
+      if (!acceptInboundMessage(msg)) {
+        LOG.info("channelRead: " + msg);
+      }
+      super.channelRead(ctx, msg);
     }
 
     @Override
@@ -123,6 +150,7 @@ public class AsyncRpcServer extends NettyServerBase {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
         throws Exception{
+      cause.printStackTrace();
       if (cause instanceof RemoteCallException) {
         RemoteCallException callException = (RemoteCallException) cause;
         ctx.writeAndFlush(callException.getResponse());

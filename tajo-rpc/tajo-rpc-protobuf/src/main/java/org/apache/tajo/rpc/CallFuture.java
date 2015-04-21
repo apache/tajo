@@ -21,10 +21,7 @@ package org.apache.tajo.rpc;
 import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
 
-import java.util.concurrent.Future;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 public class CallFuture<T> implements RpcCallback<T>, Future<T> {
 
@@ -34,7 +31,7 @@ public class CallFuture<T> implements RpcCallback<T>, Future<T> {
   private RpcController controller;
 
   public CallFuture() {
-    controller = new DefaultRpcController();
+    controller = new DefaultRpcController(this);
   }
 
   public RpcController getController() {
@@ -68,7 +65,6 @@ public class CallFuture<T> implements RpcCallback<T>, Future<T> {
   @Override
   public T get() throws InterruptedException {
     sem.acquire();
-
     return response;
   }
 

@@ -35,6 +35,7 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 public class AsyncRpcClient extends NettyClientBase {
   private static final Log LOG = LogFactory.getLog(AsyncRpcClient.class);
@@ -61,7 +62,7 @@ public class AsyncRpcClient extends NettyClientBase {
     stubMethod = getServiceClass().getMethod("newStub", RpcChannel.class);
     rpcChannel = new ProxyRpcChannel();
     inboundHandler = new ClientChannelInboundHandler();
-    init(new ProtoChannelInitializer(inboundHandler, RpcResponse.getDefaultInstance(), idleTimeSeconds));
+    init(new ProtoClientChannelInitializer(inboundHandler, RpcResponse.getDefaultInstance(), idleTimeSeconds));
   }
 
   @Override
@@ -95,7 +96,7 @@ public class AsyncRpcClient extends NettyClientBase {
                            final RpcController controller,
                            final Message param,
                            final Message responseType,
-                           RpcCallback<Message> done) {
+                           final RpcCallback<Message> done) {
 
       int nextSeqId = sequence.getAndIncrement();
 
@@ -104,13 +105,34 @@ public class AsyncRpcClient extends NettyClientBase {
       inboundHandler.registerCallback(nextSeqId,
           new ResponseCallback(controller, responseType, done));
 
-      ChannelPromise channelPromise = getChannel().newPromise();
-      channelPromise.addListener(new GenericFutureListener<ChannelFuture>() {
+      invoke(rpcRequest, 0);
+    }
 
+    private void invoke(final Message rpcRequest, final int retry) {
+
+      final ChannelPromise channelPromise = getChannel().newPromise();
+
+      channelPromise.addListener(new GenericFutureListener<ChannelFuture>() {
         @Override
-        public void operationComplete(ChannelFuture future) throws Exception {
+        public void operationComplete(final ChannelFuture future) throws Exception {
           if (!future.isSuccess()) {
-            inboundHandler.exceptionCaught(null, new ServiceException(future.cause()));
+            /* Repeat retry until the connection attempt succeeds or exceeded retries */
+            if(!future.channel().isOpen() && retry < numRetries) {
+              final EventLoop loop = future.channel().eventLoop();
+              loop.schedule(new Runnable() {
+                @Override
+                public void run() {
+                  AsyncRpcClient.this.doConnect(getKey().addr).addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                      invoke(rpcRequest, retry + 1);
+                    }
+                  });
+                }
+              }, PAUSE, TimeUnit.MILLISECONDS);
+            } else {
+              inboundHandler.exceptionCaught(null, new ServiceException(future.cause()));
+            }
           }
         }
       });
@@ -156,20 +178,20 @@ public class AsyncRpcClient extends NettyClientBase {
         }
         callback.run(null);
       } else { // if rpc call succeed
-        try {
-          Message responseMessage;
-          if (!rpcResponse.hasResponseMessage()) {
-            responseMessage = null;
-          } else {
+
+        Message responseMessage = null;
+        if (rpcResponse.hasResponseMessage()) {
+
+          try {
             responseMessage = responsePrototype.newBuilderForType().mergeFrom(
                 rpcResponse.getResponseMessage()).build();
+          } catch (InvalidProtocolBufferException e) {
+            if (controller != null) {
+              this.controller.setFailed(e.getMessage());
+            }
           }
-
-          callback.run(responseMessage);
-
-        } catch (InvalidProtocolBufferException e) {
-          throw new RemoteException(getErrorMessage(""), e);
         }
+        callback.run(responseMessage);
       }
     }
   }
@@ -205,20 +227,24 @@ public class AsyncRpcClient extends NettyClientBase {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
       super.channelActive(ctx);
-      LOG.info("Connection established successfully : " + ctx.channel().remoteAddress());
+      LOG.info("Connection established successfully : " + ctx.channel());
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+      super.channelInactive(ctx);
+      sendExceptions("Connection is closed :" + ctx.channel().remoteAddress());
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
         throws Exception {
-      LOG.error(getRemoteAddress() + "," + protocol + "," + cause.getMessage(), cause);
-
       sendExceptions(cause.getMessage());
       
       if(LOG.isDebugEnabled()) {
-        LOG.error(cause.getMessage(), cause);
+        LOG.error(getRemoteAddress() + "," + protocol + "," + cause.getMessage(), cause);
       } else {
-        LOG.error("RPC Exception:" + cause.getMessage());
+        LOG.error(getRemoteAddress() + "," + protocol + "," + cause.getMessage());
       }
     }
 
@@ -226,12 +252,38 @@ public class AsyncRpcClient extends NettyClientBase {
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
       if (evt instanceof IdleStateEvent) {
         IdleStateEvent e = (IdleStateEvent) evt;
-        /* If all requests is done and event is triggered, channel will be closed. */
-        if (e.state() == IdleState.ALL_IDLE && requests.size() == 0) {
-          ctx.close();
-          LOG.warn("Idle connection closed successfully :" + ctx.channel().remoteAddress());
+        if (e.state() == IdleState.WRITER_IDLE && requests.size() == 0) {
+          /* If all requests is done and event is triggered, idle channel will be closed. */
+//          LOG.info("If all requests is done and event is triggered, idle channel will be closed.");
+//          ctx.close();
+//          LOG.warn("Idle connection closed successfully :" + ctx.channel());
         }
       }
     }
+
+    /*@Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+      if (evt instanceof IdleStateEvent) {
+        IdleStateEvent e = (IdleStateEvent) evt;
+        if (e.state() == IdleState.READER_IDLE) {
+          if (enablePing) {
+            *//* did not receive ping. may be server hangs*//*
+            LOG.info("did not receive ping. may be server hangs");
+            ctx.close();
+          } else {
+            if (requests.size() == 0) {
+              *//* If all requests is done and event is triggered, idle channel will be closed. *//*
+              LOG.info("If all requests is done and event is triggered, idle channel will be closed.");
+              ctx.close();
+              LOG.warn("Idle connection closed successfully :" + ctx.channel().remoteAddress());
+            }
+          }
+        } else if (enablePing && e.state() == IdleState.WRITER_IDLE) {
+          *//* ping packet*//*
+          LOG.info("ping packet");
+          ctx.writeAndFlush(Unpooled.EMPTY_BUFFER);
+        }
+      }
+    }*/
   }
 }

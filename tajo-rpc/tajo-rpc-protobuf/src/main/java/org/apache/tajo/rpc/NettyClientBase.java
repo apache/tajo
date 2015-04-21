@@ -35,9 +35,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 public abstract class NettyClientBase implements Closeable {
   private static final Log LOG = LogFactory.getLog(NettyClientBase.class);
   private static final int CONNECTION_TIMEOUT = 60000;  // 60 sec
-  private static final long PAUSE = 1000; // 1 sec
+  protected static final int PAUSE = 1000; // 1 sec
 
-  private final int numRetries;
+  protected final int numRetries;
 
   private Bootstrap bootstrap;
   private volatile ChannelFuture channelFuture;
@@ -96,7 +96,7 @@ public abstract class NettyClientBase implements Closeable {
     return address;
   }
 
-  private ChannelFuture doConnect(SocketAddress address) {
+  protected ChannelFuture doConnect(SocketAddress address) {
     return this.channelFuture = bootstrap.clone().connect(address);
   }
 
@@ -124,7 +124,7 @@ public abstract class NettyClientBase implements Closeable {
 
     for (; ; ) {
       if (numRetries >= retries.getAndIncrement()) {
-
+        //future.cause().printStackTrace();
         LOG.warn(future.cause().getMessage() + " Try to reconnect");
         try {
           Thread.sleep(PAUSE);

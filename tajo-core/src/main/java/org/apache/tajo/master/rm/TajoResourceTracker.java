@@ -20,6 +20,7 @@ package org.apache.tajo.master.rm;
 
 import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
+import io.netty.channel.ChannelHandlerContext;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -29,6 +30,7 @@ import org.apache.tajo.ipc.QueryCoordinatorProtocol.TajoHeartbeatResponse;
 import org.apache.tajo.ipc.TajoResourceTrackerProtocol;
 import org.apache.tajo.master.cluster.WorkerConnectionInfo;
 import org.apache.tajo.rpc.AsyncRpcServer;
+import org.apache.tajo.rpc.ChannelEventListener;
 import org.apache.tajo.util.NetUtils;
 import org.apache.tajo.util.ProtoUtil;
 
@@ -76,7 +78,7 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
   }
 
   @Override
-  public void serviceInit(Configuration conf) {
+  public void serviceInit(Configuration conf) throws Exception {
     if (!(conf instanceof TajoConf)) {
       throw new IllegalArgumentException("Configuration must be a TajoConf instance");
     }
@@ -87,6 +89,17 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
 
     try {
       server = new AsyncRpcServer(TajoResourceTrackerProtocol.class, this, initIsa, 3);
+      server.addChannelListener(new ChannelEventListener() {
+        @Override
+        public void channelActive(ChannelHandlerContext ctx) {
+          LOG.warn(ctx.channel().remoteAddress() + " is connected");
+        }
+
+        @Override
+        public void channelInactive(ChannelHandlerContext ctx) {
+          LOG.warn(ctx.channel().remoteAddress() + " is disconnected");
+        }
+      });
     } catch (Exception e) {
       LOG.error(e);
       throw new IOError(e);
@@ -98,17 +111,17 @@ public class TajoResourceTracker extends AbstractService implements TajoResource
     systemConf.setVar(TajoConf.ConfVars.RESOURCE_TRACKER_RPC_ADDRESS, NetUtils.normalizeInetSocketAddress(bindAddress));
 
     LOG.info("TajoResourceTracker starts up (" + this.bindAddress + ")");
-    super.start();
+    super.serviceInit(conf);
   }
 
   @Override
-  public void serviceStop() {
+  public void serviceStop() throws Exception {
     // server can be null if some exception occurs before the rpc server starts up.
     if(server != null) {
       server.shutdown();
       server = null;
     }
-    super.stop();
+    super.serviceStop();
   }
 
   /** The response builder */

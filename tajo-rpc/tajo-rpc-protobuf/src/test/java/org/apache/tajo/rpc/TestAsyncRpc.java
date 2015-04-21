@@ -117,7 +117,7 @@ public class TestAsyncRpc {
   public void setUpRpcServer() throws Exception {
     service = new DummyProtocolAsyncImpl();
     server = new AsyncRpcServer(DummyProtocol.class,
-        service, new InetSocketAddress("127.0.0.1", 0), 2);
+        service, new InetSocketAddress("127.0.0.1", 0), 5);
     server.start();
   }
   
@@ -360,7 +360,7 @@ public class TestAsyncRpc {
     client.connect();
     assertTrue(client.isConnected());
 
-    Thread.sleep(2000);
+    Thread.sleep(6000);
     assertFalse(client.isConnected());
 
     client.connect(); // try to reconnect
@@ -374,6 +374,7 @@ public class TestAsyncRpc {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, true);
     AsyncRpcClient client = new AsyncRpcClient(rpcConnectionKey, retries, 1); //1 sec idle timeout
+
     client.connect();
 
     assertTrue(client.isConnected());
