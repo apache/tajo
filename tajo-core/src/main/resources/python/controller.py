@@ -69,6 +69,18 @@ TYPE_DATETIME = "T"
 TYPE_BIGINTEGER = "N"
 TYPE_BIGDECIMAL = "E"
 
+EVAL_FUNC = "eval"
+MERGE_FUNC = "merge"
+GET_PARTIAL_RESULT_FUNC = "get_partial_result"
+GET_FINAL_RESULT_FUNC = "get_final_result"
+GET_INTERM_SCHEMA_FUNC = "get_interm_schema"
+
+WRAPPED_EVAL_FUNC = PRE_WRAP_DELIM + EVAL_FUNC + POST_WRAP_DELIM
+WRAPPED_MERGE_FUNC = PRE_WRAP_DELIM + MERGE_FUNC + POST_WRAP_DELIM
+WRAPPED_GET_PARTIAL_RESULT_FUNC = PRE_WRAP_DELIM + GET_PARTIAL_RESULT_FUNC + POST_WRAP_DELIM
+WRAPPED_GET_FINAL_RESULT_FUNC = PRE_WRAP_DELIM + GET_FINAL_RESULT_FUNC + POST_WRAP_DELIM
+WRAPPED_GET_INTERM_SCHEMA_FUNC = PRE_WRAP_DELIM + GET_INTERM_SCHEMA_FUNC + POST_WRAP_DELIM
+
 END_OF_STREAM = TYPE_CHARARRAY + "\x04" + END_RECORD_DELIM
 TURN_ON_OUTPUT_CAPTURING = TYPE_CHARARRAY + "TURN_ON_OUTPUT_CAPTURING" + END_RECORD_DELIM
 NUM_LINES_OFFSET_TRACE = int(os.environ.get('PYTHON_TRACE_OFFSET', 0))
@@ -81,7 +93,7 @@ class PythonStreamingController:
 
     def main(self,
              module_name, file_path, cache_path,
-             output_stream_path, error_stream_path, log_file_name, output_schema, name, type='UDF'):
+             output_stream_path, error_stream_path, log_file_name, output_schema, name, type):
         sys.stdin = os.fdopen(sys.stdin.fileno(), 'rb', 0)
 
         # Need to ensure that user functions can't write to the streams we use to communicate with pig.
@@ -105,10 +117,6 @@ class PythonStreamingController:
 
         input_str = self.get_next_input()
 
-
-        # TODO: add command to input_str
-        # ex: 'eval 1', 'add_py 1', 'merge 10'
-
         # try:
         #     func = __import__(module_name, globals(), locals(), [func_name], -1).__dict__[func_name]
         # except:
@@ -117,13 +125,14 @@ class PythonStreamingController:
         #     self.close_controller(-1)
         if type == 'UDAF':
             class_name = name
-            # TODO: parse func_name from input_str
-            # eval 1
+            func_name = self.get_func_name(input_str)
             func = self.load_udaf(module_name, class_name, func_name)
-        else:
+        elif type == 'UDF':
             # add_py 1
             func_name = name
             func = self.load_udf(module_name, func_name)
+        else:
+            raise Exception("Unsupported type: " + type)
 
         log_message = logging.info
         if udf_logging.udf_log_level == logging.DEBUG:
@@ -221,6 +230,21 @@ class PythonStreamingController:
             # These errors should always be caused by user code.
             write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
             self.close_controller(-1)
+
+    def get_func_name(self, input_str):
+        splits = input_str.split(WRAPPED_FIELD_DELIMITER)
+        if splits[0] == WRAPPED_EVAL_FUNC:
+            return EVAL_FUNC
+        elif splits[1] == WRAPPED_MERGE_FUNC:
+            return MERGE_FUNC
+        elif splits[2] == WRAPPED_GET_PARTIAL_RESULT_FUNC:
+            return GET_PARTIAL_RESULT_FUNC
+        elif splits[3] == WRAPPED_GET_FINAL_RESULT_FUNC:
+            return GET_FINAL_RESULT_FUNC
+        elif splits[4] == WRAPPED_GET_INTERM_SCHEMA_FUNC:
+            return GET_INTERM_SCHEMA_FUNC
+        else:
+            raise Exception("Not supported function: " + splits[0])
 
 def deserialize_input(input_str):
     if len(input_str) == 0:
@@ -363,5 +387,7 @@ def serialize_output(output, out_schema, utfEncodeAllFields=False):
 
 if __name__ == '__main__':
     controller = PythonStreamingController()
+    print 'testestestestestest'
+    print sys.argv
     controller.main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4],
-                    sys.argv[5], sys.argv[6], sys.argv[7], sys.argv[8])
+                    sys.argv[5], sys.argv[6], sys.argv[7], sys.argv[8]. sys.argv[9])

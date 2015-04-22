@@ -86,7 +86,7 @@ public abstract class TajoScriptEngine {
 
   public abstract Schema getIntermSchema();
 
-  public abstract Tuple getIntermResult();
+  public abstract Tuple getPartialResult();
 
   public abstract Datum getFinalResult();
 }

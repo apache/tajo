@@ -37,6 +37,7 @@ import org.apache.tajo.util.TUtil;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.text.ParseException;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -76,25 +77,25 @@ public class PythonScriptEngine extends TajoScriptEngine {
     for(FunctionInfo funcInfo : functions) {
       FunctionSignature signature;
       FunctionInvocation invocation = new FunctionInvocation();
-      FunctionSupplement supplement = new FunctionSupplement();;
+      FunctionSupplement supplement = new FunctionSupplement();
       if (funcInfo instanceof ScalarFuncInfo) {
         ScalarFuncInfo scalarFuncInfo = (ScalarFuncInfo) funcInfo;
-        TajoDataTypes.DataType returnType =
-            CatalogUtil.newSimpleDataType(TajoDataTypes.Type.valueOf(scalarFuncInfo.returnType));
+        TajoDataTypes.DataType returnType = getReturnTypes(scalarFuncInfo)[0];
         signature = new FunctionSignature(CatalogProtos.FunctionType.UDF, scalarFuncInfo.funcName,
             returnType, createParamTypes(scalarFuncInfo.paramNum));
         PythonInvocationDesc invocationDesc = new PythonInvocationDesc(scalarFuncInfo.funcName, path.getPath(), true);
         invocation.setPython(invocationDesc);
+        functionDescs.add(new FunctionDesc(signature, invocation, supplement));
       } else {
         AggFuncInfo aggFuncInfo = (AggFuncInfo) funcInfo;
-        TajoDataTypes.DataType returnType =
-            CatalogUtil.newSimpleDataType(TajoDataTypes.Type.valueOf(aggFuncInfo.terminateInfo.returnType));
+        TajoDataTypes.DataType returnType = getReturnTypes(aggFuncInfo.getFinalResultInfo)[0];
         signature = new FunctionSignature(CatalogProtos.FunctionType.UDA, aggFuncInfo.funcName,
             returnType, createParamTypes(aggFuncInfo.evalInfo.paramNum));
         PythonInvocationDesc invocationDesc = new PythonInvocationDesc(aggFuncInfo.className, path.getPath(), false);
         invocation.setPythonAggregation(invocationDesc);
+        IntermFunctionSignature intermFunctionSignature = new IntermFunctionSignature(aggFuncInfo.intermSchema);
+        functionDescs.add(new FunctionDesc(signature, invocation, supplement, intermFunctionSignature));
       }
-      functionDescs.add(new FunctionDesc(signature, invocation, supplement));
     }
     return functionDescs;
   }
@@ -105,6 +106,14 @@ public class PythonScriptEngine extends TajoScriptEngine {
       paramTypes[i] = TajoDataTypes.DataType.newBuilder().setType(TajoDataTypes.Type.ANY).build();
     }
     return paramTypes;
+  }
+
+  private static TajoDataTypes.DataType[] getReturnTypes(ScalarFuncInfo scalarFuncInfo) {
+    TajoDataTypes.DataType[] returnTypes = new TajoDataTypes.DataType[scalarFuncInfo.returnTypes.length];
+    for (int i = 0; i < scalarFuncInfo.returnTypes.length; i++) {
+      returnTypes[i] = CatalogUtil.newSimpleDataType(TajoDataTypes.Type.valueOf(scalarFuncInfo.returnTypes[i]));
+    }
+    return returnTypes;
   }
 
   private static final Pattern pSchema = Pattern.compile("^\\s*\\W+output_type.*");
@@ -120,19 +129,39 @@ public class PythonScriptEngine extends TajoScriptEngine {
     String funcName;
     ScalarFuncInfo evalInfo;
     ScalarFuncInfo mergeInfo;
-    ScalarFuncInfo terminateInfo;
+    ScalarFuncInfo getPartialResultInfo;
+    ScalarFuncInfo getFinalResultInfo;
+    Schema intermSchema;
   }
 
   private static class ScalarFuncInfo implements FunctionInfo {
-    String returnType;
+    String[] returnTypes;
     String funcName;
     int paramNum;
 
-    public ScalarFuncInfo(String returnType, String funcName, int paramNum) {
-      this.returnType = returnType.toUpperCase();
+    public ScalarFuncInfo(String[] quotedSchemaStrings, String funcName, int paramNum) {
+      this.returnTypes = new String[quotedSchemaStrings.length];
+      for (int i = 0; i < quotedSchemaStrings.length; i++) {
+        String quotedString = quotedSchemaStrings[i].trim();
+        String[] tokens = quotedString.substring(1, quotedString.length()-1).split(":");
+        this.returnTypes[i] = tokens.length == 1 ? tokens[0].toUpperCase() : tokens[1].toUpperCase();
+      }
       this.funcName = funcName;
       this.paramNum = paramNum;
     }
+  }
+
+  private static Schema getSchemaFromDecorator(String []quotedSchemaStrings) {
+    Schema schema = new Schema();
+    for (int i = 0; i < quotedSchemaStrings.length; i++) {
+      String quotedString = quotedSchemaStrings[i].trim();
+      String[] tokens = quotedString.substring(1, quotedString.length() - 1).split(":");
+      if (tokens.length != 2) {
+        // TODO: error
+      }
+      schema.addColumn(tokens[0], CatalogUtil.newSimpleDataType(TajoDataTypes.Type.valueOf(tokens[1].toUpperCase())));
+    }
+    return schema;
   }
 
   // TODO: python parser must be improved.
@@ -141,13 +170,13 @@ public class PythonScriptEngine extends TajoScriptEngine {
     InputStreamReader in = new InputStreamReader(is, Charset.defaultCharset());
     BufferedReader br = new BufferedReader(in);
     String line = br.readLine();
-    String schemaString = null;
+    String[] quotedSchemaStrings = null;
     AggFuncInfo aggFuncInfo = null;
     while (line != null) {
       if (pSchema.matcher(line).matches()) {
-        int start = line.indexOf("(") + 2; //drop brackets/quotes
-        int end = line.lastIndexOf(")") - 1;
-        schemaString = line.substring(start,end).trim();
+        int start = line.indexOf("(") + 1; //drop brackets
+        int end = line.lastIndexOf(")");
+        quotedSchemaStrings = line.substring(start,end).trim().split(",");
       } else if (pDef.matcher(line).matches()) {
         boolean isUdaf = aggFuncInfo != null && line.indexOf("def ") > 0;
         int nameStart = line.indexOf("def ") + "def ".length();
@@ -165,22 +194,25 @@ public class PythonScriptEngine extends TajoScriptEngine {
         }
 
         String functionName = line.substring(nameStart, nameEnd).trim();
-        schemaString = schemaString == null ? "blob" : schemaString;
+        quotedSchemaStrings = quotedSchemaStrings == null ? new String[] {"'blob'"} : quotedSchemaStrings;
 
         if (isUdaf) {
           if (functionName.equals("eval")) {
-            aggFuncInfo.evalInfo = new ScalarFuncInfo(schemaString, functionName, paramNum);
+            aggFuncInfo.evalInfo = new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum);
           } else if (functionName.equals("merge")) {
-            aggFuncInfo.mergeInfo = new ScalarFuncInfo(schemaString, functionName, paramNum);
-          } else if (functionName.equals("terminate")) {
-            aggFuncInfo.terminateInfo = new ScalarFuncInfo(schemaString, functionName, paramNum);
+            aggFuncInfo.mergeInfo = new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum);
+          } else if (functionName.equals("get_partial_result")) {
+            aggFuncInfo.getPartialResultInfo = new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum);
+            aggFuncInfo.intermSchema = getSchemaFromDecorator(quotedSchemaStrings);
+          } else if (functionName.equals("get_final_result")) {
+            aggFuncInfo.getFinalResultInfo = new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum);
           }
         } else {
           aggFuncInfo = null;
-          functions.add(new ScalarFuncInfo(schemaString, functionName, paramNum));
+          functions.add(new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum));
         }
 
-        schemaString = null;
+        quotedSchemaStrings = null;
       } else if (pClass.matcher(line).matches()) {
         // UDAF
         if (aggFuncInfo != null) {
@@ -193,7 +225,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
           classNameEnd = line.indexOf(":");
         }
         aggFuncInfo.className = line.substring(classNameStart, classNameEnd).trim();
-        aggFuncInfo.funcName = aggFuncInfo.className;
+        aggFuncInfo.funcName = aggFuncInfo.className.toLowerCase();
       }
       line = br.readLine();
     }
@@ -239,6 +271,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private InputStream stderr; // stderr of the process
 
   private final FunctionSignature functionSignature;
+  private final IntermFunctionSignature intermFunctionSignature; // for UDAF
   private final PythonInvocationDesc invocationDesc;
   private final Schema inSchema;
   private final Schema outSchema;
@@ -250,11 +283,12 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private static final Tuple EMPTY_INPUT = new VTuple(0);
 
   public PythonScriptEngine(FunctionDesc functionDesc) {
-    if (!functionDesc.getInvocation().hasPython()) {
+    if (!functionDesc.getInvocation().hasPython() && !functionDesc.getInvocation().hasPythonAggregation()) {
       throw new IllegalStateException("Function type must be 'python'");
     }
     functionSignature = functionDesc.getSignature();
     invocationDesc = functionDesc.getInvocation().getPython();
+    intermFunctionSignature = functionDesc.getIntermSignature();
 
     TajoDataTypes.DataType[] paramTypes = functionSignature.getParamTypes();
     inSchema = new Schema();
@@ -303,7 +337,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
    * @throws IOException
    */
   private String[] buildCommand() throws IOException {
-    String[] command = new String[10];
+    String[] command = new String[11];
 
     // TODO: support controller logging
 //    String standardOutputRootWriteLocation = systemConf.get(TajoConf.ConfVars.PYTHON_CONTROLLER_LOG_DIR.keyname(),
@@ -455,33 +489,15 @@ public class PythonScriptEngine extends TajoScriptEngine {
 
   @Override
   public Schema getIntermSchema() {
-    try {
-      Tuple input = EMPTY_INPUT;
-
-      inputHandler.putNext("get_interm_schema", input);
-      stdin.flush();
-    } catch (Exception e) {
-      throw new RuntimeException("Failed adding input to inputQueue", e);
-    }
-
-    try {
-      Tuple result = outputHandler.getNext();
-      Schema schema = new Schema();
-      for (int i = 0; i < result.size(); i += 2) {
-        schema.addColumn(result.getText(i), TajoDataTypes.Type.valueOf(result.getText(i+1)));
-      }
-      return schema;
-    } catch (Exception e) {
-      throw new RuntimeException("Problem getting output", e);
-    }
+    return intermFunctionSignature.getIntermSchema();
   }
 
   @Override
-  public Tuple getIntermResult() {
+  public Tuple getPartialResult() {
     try {
       Tuple input = EMPTY_INPUT;
 
-      inputHandler.putNext("get_interm_result", input);
+      inputHandler.putNext("get_partial_result", input);
       stdin.flush();
     } catch (Exception e) {
       throw new RuntimeException("Failed adding input to inputQueue", e);

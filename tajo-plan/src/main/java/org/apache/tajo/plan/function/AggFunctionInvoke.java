@@ -22,6 +22,8 @@ import com.google.gson.annotations.Expose;
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.exception.InternalException;
+import org.apache.tajo.exception.UnsupportedException;
 import org.apache.tajo.storage.Tuple;
 
 import java.io.IOException;
@@ -31,6 +33,16 @@ public abstract class AggFunctionInvoke implements Cloneable {
 
   public AggFunctionInvoke(FunctionDesc functionDesc) {
     this.functionDesc = functionDesc;
+  }
+
+  public static AggFunctionInvoke newInstance(FunctionDesc desc) throws InternalException {
+    if (desc.getInvocation().hasAggregation()) {
+      return new ClassBasedAggFunctionInvoke(desc);
+    } else if (desc.getInvocation().hasPythonAggregation()) {
+      return new PythonAggFunctionInvoke(desc);
+    } else {
+      throw new UnsupportedException(desc.getInvocation() + " is not supported");
+    }
   }
 
   public void setFunctionDesc(FunctionDesc functionDesc) {

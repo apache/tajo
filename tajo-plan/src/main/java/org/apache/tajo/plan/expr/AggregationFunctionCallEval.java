@@ -19,13 +19,19 @@
 package org.apache.tajo.plan.expr;
 
 import com.google.gson.annotations.Expose;
-
+import org.apache.tajo.catalog.CatalogUtil;
 import org.apache.tajo.catalog.FunctionDesc;
+import org.apache.tajo.catalog.Schema;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.plan.function.*;
+import org.apache.tajo.plan.function.AggFunctionInvoke;
+import org.apache.tajo.plan.function.FunctionContext;
+import org.apache.tajo.plan.function.FunctionInvokeContext;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
+
+import java.io.IOException;
 
 public class AggregationFunctionCallEval extends FunctionEval implements Cloneable {
   @Expose boolean intermediatePhase = false;
@@ -49,6 +55,25 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
 
   public FunctionContext newContext() {
     return functionInvoke.newContext();
+  }
+
+  @Override
+  public EvalNode bind(EvalContext evalContext, Schema schema) {
+    super.bind(evalContext, schema);
+
+    try {
+      this.functionInvoke = AggFunctionInvoke.newInstance(funcDesc);
+//      if (evalContext != null && evalContext.hasScriptEngine(this)) {
+      if (evalContext != null) {
+        if (evalContext.hasScriptEngine(this))
+          this.invokeContext.setScriptEngine(evalContext.getScriptEngine(this));
+      }
+      this.functionInvoke.init(invokeContext);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
+    return this;
   }
 
   public void merge(FunctionContext context, Tuple tuple) {
@@ -87,7 +112,11 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   public DataType getValueType() {
     if (!finalPhase) {
 //      return instance.getPartialResultType();
-      return functionInvoke.getPartialResultType();
+      if (funcDesc.getInvocation().hasPythonAggregation()) {
+        return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.PROTOBUF);
+      } else {
+        return functionInvoke.getPartialResultType();
+      }
     } else {
       return funcDesc.getReturnType();
     }
@@ -154,8 +183,6 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
     result = prime * result + ((alias == null) ? 0 : alias.hashCode());
     result = prime * result + (finalPhase ? 1231 : 1237);
 //    result = prime * result + ((instance == null) ? 0 : instance.hashCode());
-    result = prime * result + ((invokeContext == null) ? 0 : invokeContext.hashCode());
-    result = prime * result + ((functionInvoke == null) ? 0 : functionInvoke.hashCode());
     result = prime * result + (intermediatePhase ? 1231 : 1237);
     return result;
   }
@@ -167,8 +194,6 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
 
       boolean eq = super.equals(other);
 //      eq &= instance.equals(other.instance);
-      eq &= TUtil.checkEquals(invokeContext, other.intermediatePhase);
-      eq &= TUtil.checkEquals(functionInvoke, other.functionInvoke);
       eq &= intermediatePhase == other.intermediatePhase;
       eq &= finalPhase == other.finalPhase;
       eq &= TUtil.checkEquals(alias, other.alias);

@@ -64,7 +64,7 @@ public class PythonAggFunctionInvoke extends AggFunctionInvoke implements Clonea
   public Datum getPartialResult(FunctionContext context) {
     // TODO: get tuples from script engine
     Schema intermSchema = scriptEngine.getIntermSchema();
-    Tuple intermResult = scriptEngine.getIntermResult();
+    Tuple intermResult = scriptEngine.getPartialResult();
     PlanProto.NamedTuple.Builder builder = PlanProto.NamedTuple.newBuilder();
     for (int i = 0; i < intermResult.size(); i++) {
       PlanProto.NamedDatum.Builder datumBuilder = PlanProto.NamedDatum.newBuilder();

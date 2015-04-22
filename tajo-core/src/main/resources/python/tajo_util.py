@@ -39,7 +39,7 @@ class udf_logging(object):
         cls.udf_log_level = logging.DEBUG
 
 
-def output_type(type_str):
+def output_type(*type_str):
     def wrap(f):
         def wrapped_f(*args):
             return f(*args)

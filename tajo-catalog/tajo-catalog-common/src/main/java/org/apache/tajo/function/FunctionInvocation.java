@@ -168,7 +168,7 @@ public class FunctionInvocation implements ProtoObject<FunctionInvocationProto> 
     if (hasAggregationJIT()) {
       builder.setAggregationJIT(aggregationJIT.getProto());
     }
-    if (hasPython()) {
+    if (hasPython() || hasPythonAggregation()) {
       builder.setPython(python.getProto());
     }
     return builder.build();

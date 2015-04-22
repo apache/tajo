@@ -186,7 +186,7 @@ public class EvalNodeDeserializer {
               evalContext.addScriptEngine(current, new PythonScriptEngine(funcDesc));
             }
           } else if (type == EvalType.AGG_FUNCTION || type == EvalType.WINDOW_FUNCTION) {
-            AggFunction instance = (AggFunction) funcDesc.newInstance();
+//            AggFunction instance = (AggFunction) funcDesc.newInstance();
             if (type == EvalType.AGG_FUNCTION) {
               AggregationFunctionCallEval aggFunc =
 //                  new AggregationFunctionCallEval(new FunctionDesc(funcProto.getFuncion()), instance, params);
@@ -200,7 +200,12 @@ public class EvalNodeDeserializer {
               }
               current = aggFunc;
 
+              if (evalContext != null && funcDesc.getInvocation().hasPythonAggregation()) {
+                evalContext.addScriptEngine(current, new PythonScriptEngine(funcDesc));
+              }
+
             } else {
+              AggFunction instance = (AggFunction) funcDesc.newInstance();
               WinFunctionEvalSpec windowFuncProto = protoNode.getWinFunction();
 
               WindowFunctionEval winFunc =

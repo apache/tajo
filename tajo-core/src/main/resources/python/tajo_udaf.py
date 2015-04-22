@@ -22,11 +22,6 @@ class AbstractUdaf:
     def __init__(self):
         return
 
-    @output_type('text')
-    def name(self):
-        """Return the function name"""
-        return
-
     def eval(self, tuple):
         """Eval item at the first stage"""
         return

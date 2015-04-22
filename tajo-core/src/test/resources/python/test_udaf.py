@@ -21,9 +21,9 @@ class AvgPy:
     sum = 0
     cnt = 0
 
-    def __init__(self, sum=0, cnt=0):
-        self.sum = sum
-        self.cnt = cnt
+    def __init__(self):
+        self.sum = 0
+        self.cnt = 0
 
     # eval at the first stage
     def eval(self, item):
@@ -31,14 +31,14 @@ class AvgPy:
         self.cnt += 1
 
     # get intermediate result
-    @output_type('int4', 'int4')
-    def get_interm_result(self):
+    @output_type('sum:int4', 'cnt:int4')
+    def get_partial_result(self):
         return [self.sum, self.cnt]
 
     # merge intermediate results
-    def merge(self, item):
-        self.sum += item
-        self.cnt += 1
+    def merge(self, sum, cnt):
+        self.sum += sum
+        self.cnt += cnt
 
     # get final result
     @output_type('float4')

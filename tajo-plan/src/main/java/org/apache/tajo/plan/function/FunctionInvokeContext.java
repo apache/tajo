@@ -23,6 +23,7 @@ import org.apache.tajo.OverridableConf;
 import org.apache.tajo.annotation.Nullable;
 import org.apache.tajo.plan.expr.FunctionEval;
 import org.apache.tajo.plan.function.python.TajoScriptEngine;
+import org.apache.tajo.util.TUtil;
 
 import java.util.Arrays;
 
@@ -68,7 +69,8 @@ public class FunctionInvokeContext implements Cloneable {
   public boolean equals(Object o) {
     if (o instanceof FunctionInvokeContext) {
       FunctionInvokeContext other = (FunctionInvokeContext) o;
-      return queryContext.equals(other.queryContext) && Arrays.equals(paramTypes, other.paramTypes);
+      return TUtil.checkEquals(queryContext, other.queryContext) &&
+          Arrays.equals(paramTypes, other.paramTypes);
     }
     return false;
   }
