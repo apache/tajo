@@ -87,13 +87,14 @@ NUM_LINES_OFFSET_TRACE = int(os.environ.get('PYTHON_TRACE_OFFSET', 0))
 
 
 class PythonStreamingController:
+    udaf_instance = None
 
     def __init__(self, profiling_mode=False):
         self.profiling_mode = profiling_mode
 
     def main(self,
              module_name, file_path, cache_path,
-             output_stream_path, error_stream_path, log_file_name, output_schema, name, type):
+             output_stream_path, error_stream_path, log_file_name, output_schema, name, func_type):
         sys.stdin = os.fdopen(sys.stdin.fileno(), 'rb', 0)
 
         # Need to ensure that user functions can't write to the streams we use to communicate with pig.
@@ -123,22 +124,26 @@ class PythonStreamingController:
         #     # These errors should always be caused by user code.
         #     write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
         #     self.close_controller(-1)
-        if type == 'UDAF':
-            class_name = name
-            func_name = self.get_func_name(input_str)
-            func = self.load_udaf(module_name, class_name, func_name)
-        elif type == 'UDF':
-            # add_py 1
-            func_name = name
-            func = self.load_udf(module_name, func_name)
-        else:
-            raise Exception("Unsupported type: " + type)
 
         log_message = logging.info
         if udf_logging.udf_log_level == logging.DEBUG:
             log_message = logging.debug
 
         while input_str != END_OF_STREAM:
+            if func_type == 'UDAF':
+                class_name = name
+                logging.info('class_name: ' + class_name)
+                func_name = self.get_func_name(input_str)
+                logging.info('func_name: ' + func_name)
+                func = self.load_udaf(module_name, class_name, func_name)
+                data_start = input_str.find(WRAPPED_FIELD_DELIMITER) + len(WRAPPED_FIELD_DELIMITER)
+                input_str = input_str[data_start:]
+            elif func_type == 'UDF':
+                func_name = name
+                func = self.load_udf(module_name, func_name)
+            else:
+                raise Exception("Unsupported type: " + type)
+
             try:
                 try:
                     if should_log:
@@ -152,7 +157,10 @@ class PythonStreamingController:
                     self.close_controller(-3)
 
                 try:
-                    func_output = func(*inputs)
+                    if func_name == GET_PARTIAL_RESULT_FUNC or func_name == GET_FINAL_RESULT_FUNC:
+                        func_output = func()
+                    else:
+                        func_output = func(*inputs)
                     if should_log:
                         log_message("UDF Output: %s" % (unicode(func_output)))
                 except:
@@ -218,30 +226,30 @@ class PythonStreamingController:
             write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
             self.close_controller(-1)
 
-    # TODO: add arguments for the class constructor
     def load_udaf(self, module_name, class_name, func_name):
         try:
             if self.udaf_instance is None:
-                clazz = __import__(module_name, globals(), locals(), [class_name], -1).__dict__[class_name]
+                clazz = __import__(module_name, globals(), locals(), [class_name]).__dict__[class_name]
                 udaf_instance = clazz()
-            func = getattr(clazz, func_name)
+            func = getattr(udaf_instance, func_name)
             return func
         except:
             # These errors should always be caused by user code.
             write_user_exception(module_name, self.stream_error, NUM_LINES_OFFSET_TRACE)
             self.close_controller(-1)
 
-    def get_func_name(self, input_str):
+    @staticmethod
+    def get_func_name(input_str):
         splits = input_str.split(WRAPPED_FIELD_DELIMITER)
         if splits[0] == WRAPPED_EVAL_FUNC:
             return EVAL_FUNC
-        elif splits[1] == WRAPPED_MERGE_FUNC:
+        elif splits[0] == WRAPPED_MERGE_FUNC:
             return MERGE_FUNC
-        elif splits[2] == WRAPPED_GET_PARTIAL_RESULT_FUNC:
+        elif splits[0] == WRAPPED_GET_PARTIAL_RESULT_FUNC:
             return GET_PARTIAL_RESULT_FUNC
-        elif splits[3] == WRAPPED_GET_FINAL_RESULT_FUNC:
+        elif splits[0] == WRAPPED_GET_FINAL_RESULT_FUNC:
             return GET_FINAL_RESULT_FUNC
-        elif splits[4] == WRAPPED_GET_INTERM_SCHEMA_FUNC:
+        elif splits[0] == WRAPPED_GET_INTERM_SCHEMA_FUNC:
             return GET_INTERM_SCHEMA_FUNC
         else:
             raise Exception("Not supported function: " + splits[0])
@@ -387,7 +395,5 @@ def serialize_output(output, out_schema, utfEncodeAllFields=False):
 
 if __name__ == '__main__':
     controller = PythonStreamingController()
-    print 'testestestestestest'
-    print sys.argv
     controller.main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4],
-                    sys.argv[5], sys.argv[6], sys.argv[7], sys.argv[8]. sys.argv[9])
+                    sys.argv[5], sys.argv[6], sys.argv[7], sys.argv[8], sys.argv[9])

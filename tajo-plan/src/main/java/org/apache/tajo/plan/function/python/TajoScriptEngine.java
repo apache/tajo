@@ -31,6 +31,9 @@ import java.net.URI;
  */
 public abstract class TajoScriptEngine {
 
+  protected boolean intermediatePhase = false;
+  protected boolean finalPhase = false;
+
   /**
    * Open a stream load a script locally or in the classpath
    * @param scriptPath the path of the script
@@ -82,11 +85,19 @@ public abstract class TajoScriptEngine {
    */
   public abstract Datum callScalarFunc(Tuple input);
 
-  public abstract void callAggFunc(boolean isFirstStage, Tuple input);
+  public abstract void callAggFunc(Tuple input);
 
   public abstract Schema getIntermSchema();
 
   public abstract Tuple getPartialResult();
 
   public abstract Datum getFinalResult();
+
+  public void setIntermediatePhase(boolean flag) {
+    this.intermediatePhase = flag;
+  }
+
+  public void setFinalPhase(boolean flag) {
+    this.finalPhase = flag;
+  }
 }

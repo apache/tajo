@@ -200,7 +200,9 @@ public class FunctionDesc implements ProtoObject<FunctionDescProto>, Cloneable, 
     desc.signature = signature.clone();
     desc.supplement = supplement.clone();
     desc.invocation = this.invocation;
-    desc.intermSignature = (IntermFunctionSignature) intermSignature.clone();
+    if (intermSignature != null) {
+      desc.intermSignature = (IntermFunctionSignature) intermSignature.clone();
+    }
 
     return desc;
   }

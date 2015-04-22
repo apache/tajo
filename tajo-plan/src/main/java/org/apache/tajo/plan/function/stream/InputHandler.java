@@ -56,7 +56,9 @@ public class InputHandler implements Closeable {
   }
 
   public void putNext(String methodName, Tuple t) throws IOException {
-
+    String wrappedMethod = "|" + methodName + "_|,_";
+    out.write(wrappedMethod.getBytes());
+    putNext(t);
   }
 
   public void close() throws IOException {

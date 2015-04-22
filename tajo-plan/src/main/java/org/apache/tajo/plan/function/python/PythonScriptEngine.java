@@ -27,6 +27,7 @@ import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.conf.TajoConf;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.function.*;
 import org.apache.tajo.plan.function.stream.*;
 import org.apache.tajo.storage.Tuple;
@@ -37,7 +38,6 @@ import org.apache.tajo.util.TUtil;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
-import java.text.ParseException;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -273,14 +273,15 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private final FunctionSignature functionSignature;
   private final IntermFunctionSignature intermFunctionSignature; // for UDAF
   private final PythonInvocationDesc invocationDesc;
-  private final Schema inSchema;
-  private final Schema outSchema;
+  private Schema inSchema;
+  private Schema outSchema;
   private final int [] projectionCols = new int[]{0};
 
   private final CSVLineSerDe lineSerDe = new CSVLineSerDe();
   private final TableMeta pipeMeta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.TEXTFILE);
 
-  private static final Tuple EMPTY_INPUT = new VTuple(0);
+//  private static final Tuple EMPTY_INPUT = new VTuple(0);
+  private Tuple emptyInput;
 
   public PythonScriptEngine(FunctionDesc functionDesc) {
     if (!functionDesc.getInvocation().hasPython() && !functionDesc.getInvocation().hasPythonAggregation()) {
@@ -289,21 +290,27 @@ public class PythonScriptEngine extends TajoScriptEngine {
     functionSignature = functionDesc.getSignature();
     invocationDesc = functionDesc.getInvocation().getPython();
     intermFunctionSignature = functionDesc.getIntermSignature();
+    setSchema();
+  }
 
-    TajoDataTypes.DataType[] paramTypes = functionSignature.getParamTypes();
-    inSchema = new Schema();
-    for (int i = 0; i < paramTypes.length; i++) {
-      inSchema.addColumn(new Column("in_" + i, paramTypes[i]));
+  public PythonScriptEngine(FunctionDesc functionDesc, boolean intermediatePhase, boolean finalPhase) {
+    if (!functionDesc.getInvocation().hasPython() && !functionDesc.getInvocation().hasPythonAggregation()) {
+      throw new IllegalStateException("Function type must be 'python'");
     }
-    outSchema = new Schema(new Column[]{new Column("out", functionSignature.getReturnType())});
+    functionSignature = functionDesc.getSignature();
+    invocationDesc = functionDesc.getInvocation().getPython();
+    intermFunctionSignature = functionDesc.getIntermSignature();
+    this.intermediatePhase = intermediatePhase;
+    this.finalPhase = finalPhase;
+    setSchema();
   }
 
   @Override
   public void start(Configuration systemConf) throws IOException {
     this.systemConf = systemConf;
     startUdfController();
-    createInputHandlers();
     setStreams();
+    createInputHandlers();
     if (LOG.isDebugEnabled()) {
       LOG.debug("PythonScriptExecutor starts up");
     }
@@ -342,7 +349,8 @@ public class PythonScriptEngine extends TajoScriptEngine {
     // TODO: support controller logging
 //    String standardOutputRootWriteLocation = systemConf.get(TajoConf.ConfVars.PYTHON_CONTROLLER_LOG_DIR.keyname(),
 //        DEFAULT_LOG_DIR);
-    String standardOutputRootWriteLocation = "/home/jihoon/Projects/tajo/";
+//    String standardOutputRootWriteLocation = "/home/jihoon/Projects/tajo/";
+    String standardOutputRootWriteLocation = "/Users/jihoonson/Projects/tajo/";
     if (!standardOutputRootWriteLocation.equals(DEFAULT_LOG_DIR)) {
       LOG.warn("Currently, logging is not supported for the python controller.");
     }
@@ -377,13 +385,48 @@ public class PythonScriptEngine extends TajoScriptEngine {
     return command;
   }
 
-  private void createInputHandlers() {
+  private void setSchema() {
+    if (invocationDesc.isUdf()) {
+      TajoDataTypes.DataType[] paramTypes = functionSignature.getParamTypes();
+      inSchema = new Schema();
+      for (int i = 0; i < paramTypes.length; i++) {
+        inSchema.addColumn(new Column("in_" + i, paramTypes[i]));
+      }
+      outSchema = new Schema(new Column[]{new Column("out", functionSignature.getReturnType())});
+    } else {
+      // UDAF
+      if (!intermediatePhase && !finalPhase) {
+        // first phase
+        TajoDataTypes.DataType[] paramTypes = functionSignature.getParamTypes();
+        inSchema = new Schema();
+        for (int i = 0; i < paramTypes.length; i++) {
+          inSchema.addColumn(new Column("in_" + i, paramTypes[i]));
+        }
+        outSchema = intermFunctionSignature.getIntermSchema();
+      } else if (intermediatePhase) {
+        inSchema = intermFunctionSignature.getIntermSchema();
+        outSchema = intermFunctionSignature.getIntermSchema();
+      } else if (finalPhase) {
+        inSchema = intermFunctionSignature.getIntermSchema();
+        outSchema = new Schema(new Column[]{new Column("out", functionSignature.getReturnType())});
+      }
+    }
+    emptyInput = new VTuple(inSchema.size());
+    for (int i = 0; i < inSchema.size(); i++) {
+      emptyInput.put(i, NullDatum.get());
+    }
+  }
+
+  private void createInputHandlers() throws IOException {
+    setSchema();
     TextLineSerializer serializer = lineSerDe.createSerializer(inSchema, pipeMeta);
     serializer.init();
     this.inputHandler = new InputHandler(serializer);
+    inputHandler.bindTo(stdin);
     TextLineDeserializer deserializer = lineSerDe.createDeserializer(outSchema, pipeMeta, projectionCols);
     deserializer.init();
     this.outputHandler = new OutputHandler(deserializer);
+    outputHandler.bindTo(stdout);
   }
 
   /**
@@ -391,13 +434,9 @@ public class PythonScriptEngine extends TajoScriptEngine {
    *
    * @throws IOException
    */
-  private void setStreams() throws IOException {
+  private void setStreams() {
     stdout = new DataInputStream(new BufferedInputStream(process.getInputStream()));
-    outputHandler.bindTo(stdout);
-
     stdin = new DataOutputStream(new BufferedOutputStream(process.getOutputStream()));
-    inputHandler.bindTo(stdin);
-
     stderr = new DataInputStream(new BufferedInputStream(process.getErrorStream()));
   }
 
@@ -443,9 +482,12 @@ public class PythonScriptEngine extends TajoScriptEngine {
         // When nothing is passed into the UDF the tuple
         // being sent is the full tuple for the relation.
         // We want it to be nothing (since that's what the user wrote).
-        input = EMPTY_INPUT;
+        input = emptyInput;
       }
 
+//      if (inputHandler == null) {
+//        createInputHandlers();
+//      }
       inputHandler.putNext(input);
       stdin.flush();
     } catch (Exception e) {
@@ -462,9 +504,9 @@ public class PythonScriptEngine extends TajoScriptEngine {
   }
 
   @Override
-  public void callAggFunc(boolean isFirstStage, Tuple input) {
+  public void callAggFunc(Tuple input) {
     String methodName;
-    if (isFirstStage) {
+    if (!intermediatePhase && !finalPhase) {
       // eval
       methodName = "eval";
     } else {
@@ -477,13 +519,21 @@ public class PythonScriptEngine extends TajoScriptEngine {
         // When nothing is passed into the UDF the tuple
         // being sent is the full tuple for the relation.
         // We want it to be nothing (since that's what the user wrote).
-        input = EMPTY_INPUT;
+        input = emptyInput;
       }
 
+//      if (inputHandler == null) {
+//        createInputHandlers();
+//      }
       inputHandler.putNext(methodName, input);
       stdin.flush();
     } catch (Exception e) {
       throw new RuntimeException("Failed adding input to inputQueue", e);
+    }
+    try {
+      outputHandler.getNext().get(0);
+    } catch (Exception e) {
+      throw new RuntimeException("Problem getting output", e);
     }
   }
 
@@ -495,8 +545,11 @@ public class PythonScriptEngine extends TajoScriptEngine {
   @Override
   public Tuple getPartialResult() {
     try {
-      Tuple input = EMPTY_INPUT;
+      Tuple input = emptyInput;
 
+//      if (inputHandler == null) {
+//        createInputHandlers();
+//      }
       inputHandler.putNext("get_partial_result", input);
       stdin.flush();
     } catch (Exception e) {
@@ -514,8 +567,11 @@ public class PythonScriptEngine extends TajoScriptEngine {
 
   public Datum getFinalResult() {
     try {
-      Tuple input = EMPTY_INPUT;
+      Tuple input = emptyInput;
 
+//      if (inputHandler == null) {
+//        createInputHandlers();
+//      }
       inputHandler.putNext("get_final_result", input);
       stdin.flush();
     } catch (Exception e) {

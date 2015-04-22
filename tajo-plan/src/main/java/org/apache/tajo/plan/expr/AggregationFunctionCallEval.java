@@ -28,6 +28,7 @@ import org.apache.tajo.datum.Datum;
 import org.apache.tajo.plan.function.AggFunctionInvoke;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.function.FunctionInvokeContext;
+import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 
@@ -63,10 +64,10 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
 
     try {
       this.functionInvoke = AggFunctionInvoke.newInstance(funcDesc);
-//      if (evalContext != null && evalContext.hasScriptEngine(this)) {
-      if (evalContext != null) {
-        if (evalContext.hasScriptEngine(this))
-          this.invokeContext.setScriptEngine(evalContext.getScriptEngine(this));
+      if (evalContext != null && evalContext.hasScriptEngine(this)) {
+        this.invokeContext.setScriptEngine(evalContext.getScriptEngine(this));
+        this.invokeContext.getScriptEngine().setIntermediatePhase(intermediatePhase);
+        this.invokeContext.getScriptEngine().setFinalPhase(finalPhase);
       }
       this.functionInvoke.init(invokeContext);
     } catch (IOException e) {
@@ -113,7 +114,7 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
     if (!finalPhase) {
 //      return instance.getPartialResultType();
       if (funcDesc.getInvocation().hasPythonAggregation()) {
-        return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.PROTOBUF);
+        return CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, PlanProto.NamedTuple.class.getName());
       } else {
         return functionInvoke.getPartialResultType();
       }

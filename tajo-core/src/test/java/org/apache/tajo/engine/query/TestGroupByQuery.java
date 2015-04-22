@@ -69,7 +69,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   @Parameters
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
-        {"MultiLevel"},
+//        {"MultiLevel"},
         {"No-MultiLevel"},
     });
   }

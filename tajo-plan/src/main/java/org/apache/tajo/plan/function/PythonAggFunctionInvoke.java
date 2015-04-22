@@ -23,11 +23,15 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.datum.DatumFactory;
+import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
+import org.apache.tajo.plan.serder.EvalNodeDeserializer;
 import org.apache.tajo.plan.serder.EvalNodeSerializer;
 import org.apache.tajo.plan.serder.PlanProto;
 import org.apache.tajo.storage.Tuple;
+import org.apache.tajo.storage.VTuple;
 
 import java.io.IOException;
 
@@ -52,12 +56,22 @@ public class PythonAggFunctionInvoke extends AggFunctionInvoke implements Clonea
 
   @Override
   public void eval(FunctionContext context, Tuple params) {
-    scriptEngine.callAggFunc(true, params);
+    scriptEngine.callAggFunc(params);
   }
 
   @Override
   public void merge(FunctionContext context, Tuple params) {
-    scriptEngine.callAggFunc(false, params);
+    if (params.get(0) instanceof NullDatum) {
+      return;
+    }
+    ProtobufDatum protobufDatum = (ProtobufDatum) params.get(0);
+    PlanProto.NamedTuple namedTuple = (PlanProto.NamedTuple) protobufDatum.get();
+    Tuple input = new VTuple(namedTuple.getDatumsCount());
+    for (int i = 0; i < namedTuple.getDatumsCount(); i++) {
+      input.put(i, EvalNodeDeserializer.deserialize(namedTuple.getDatums(i).getVal()));
+    }
+
+    scriptEngine.callAggFunc(input);
   }
 
   @Override
@@ -77,7 +91,7 @@ public class PythonAggFunctionInvoke extends AggFunctionInvoke implements Clonea
 
   @Override
   public TajoDataTypes.DataType getPartialResultType() {
-    return CatalogUtil.newSimpleDataType(TajoDataTypes.Type.PROTOBUF);
+    return CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, PlanProto.NamedTuple.class.getName());
   }
 
   @Override

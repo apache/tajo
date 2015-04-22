@@ -201,7 +201,8 @@ public class EvalNodeDeserializer {
               current = aggFunc;
 
               if (evalContext != null && funcDesc.getInvocation().hasPythonAggregation()) {
-                evalContext.addScriptEngine(current, new PythonScriptEngine(funcDesc));
+                evalContext.addScriptEngine(current, new PythonScriptEngine(funcDesc,
+                    aggFunc.isIntermediatePhase(), aggFunc.isFinalPhase()));
               }
 
             } else {
