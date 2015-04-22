@@ -130,6 +130,20 @@ public class RpcClientManager {
     return clients.remove(key);
   }
 
+  protected static boolean put(NettyClientBase client) {
+    synchronized (clients) {
+      if (clients.containsKey(client.getKey())) {
+        return false;
+      } else {
+        clients.put(client.getKey(), client);
+        if(client.isConnected()) {
+          client.getChannel().closeFuture().addListener(new ConnectionCloseFutureListener(client.getKey()));
+        }
+        return true;
+      }
+    }
+  }
+
   protected static boolean contains(RpcConnectionKey key) {
     return clients.containsKey(key);
   }

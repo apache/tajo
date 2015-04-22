@@ -18,10 +18,13 @@
 
 package org.apache.tajo.rpc;
 
+import com.google.protobuf.Message;
+import com.google.protobuf.ServiceException;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.concurrent.GenericFutureListener;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcClientManager.RpcConnectionKey;
@@ -30,6 +33,7 @@ import java.io.Closeable;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class NettyClientBase implements Closeable {
@@ -37,7 +41,7 @@ public abstract class NettyClientBase implements Closeable {
   private static final int CONNECTION_TIMEOUT = 60000;  // 60 sec
   protected static final int PAUSE = 1000; // 1 sec
 
-  protected final int numRetries;
+  protected final int maxRetries;
 
   private Bootstrap bootstrap;
   private volatile ChannelFuture channelFuture;
@@ -51,7 +55,7 @@ public abstract class NettyClientBase implements Closeable {
       throws ClassNotFoundException, NoSuchMethodException {
     this.key = rpcConnectionKey;
     this.protocol = rpcConnectionKey.protocolClass;
-    this.numRetries = numRetries;
+    this.maxRetries = numRetries;
   }
 
   // should be called from sub class
@@ -88,6 +92,43 @@ public abstract class NettyClientBase implements Closeable {
 
   public abstract <T> T getStub();
 
+  /**
+   *  Repeat invoke rpc request until the connection attempt succeeds or exceeded retries
+   */
+  protected void invoke(final Message rpcRequest, final int retry) {
+
+    final ChannelPromise channelPromise = getChannel().newPromise();
+
+    channelPromise.addListener(new GenericFutureListener<ChannelFuture>() {
+      @Override
+      public void operationComplete(final ChannelFuture future) throws Exception {
+        if (!future.isSuccess()) {
+
+          if(!future.channel().isOpen() && retry < maxRetries) {
+            LOG.warn(future.cause() + " Try to reconnect :" + getKey().addr);
+            final EventLoop loop = future.channel().eventLoop();
+
+            loop.schedule(new Runnable() {
+              @Override
+              public void run() {
+                doConnect(getKey().addr).addListener(new ChannelFutureListener() {
+                  @Override
+                  public void operationComplete(ChannelFuture future) throws Exception {
+                    invoke(rpcRequest, retry + 1);
+                  }
+                });
+              }
+            }, PAUSE, TimeUnit.MILLISECONDS);
+          } else {
+            getChannel().pipeline().fireExceptionCaught(new ServiceException(future.cause()));
+          }
+        } else {
+          RpcClientManager.put(NettyClientBase.this);
+        }
+      }
+    });
+    getChannel().writeAndFlush(rpcRequest, channelPromise);
+  }
 
   private InetSocketAddress resolveAddress(InetSocketAddress address) {
     if (address.isUnresolved()) {
@@ -96,15 +137,14 @@ public abstract class NettyClientBase implements Closeable {
     return address;
   }
 
-  protected ChannelFuture doConnect(SocketAddress address) {
+  private ChannelFuture doConnect(SocketAddress address) {
     return this.channelFuture = bootstrap.clone().connect(address);
   }
-
 
   public synchronized void connect() throws ConnectTimeoutException {
     if (isConnected()) return;
 
-    final AtomicInteger retries = new AtomicInteger();
+    int retries = 0;
     InetSocketAddress address = key.addr;
     if (address.isUnresolved()) {
       address = resolveAddress(address);
@@ -112,20 +152,19 @@ public abstract class NettyClientBase implements Closeable {
 
     /* do not call await() inside handler */
     ChannelFuture f = doConnect(address).awaitUninterruptibly();
-    retries.incrementAndGet();
+    retries++;
 
-    if (!f.isSuccess() && numRetries > 0) {
-      doReconnect(address, f, retries);
+    if (!f.isSuccess() && maxRetries > 0) {
+      doReconnect(address, f, ++retries);
     }
   }
 
-  private void doReconnect(final InetSocketAddress address, ChannelFuture future, AtomicInteger retries)
+  private void doReconnect(final InetSocketAddress address, ChannelFuture future, int retries)
       throws ConnectTimeoutException {
 
     for (; ; ) {
-      if (numRetries >= retries.getAndIncrement()) {
-        //future.cause().printStackTrace();
-        LOG.warn(future.cause().getMessage() + " Try to reconnect");
+      if (maxRetries >= retries++) {
+        LOG.warn(future.cause() + " Try to reconnect");
         try {
           Thread.sleep(PAUSE);
         } catch (InterruptedException e) {
@@ -136,7 +175,7 @@ public abstract class NettyClientBase implements Closeable {
           break;
         }
       } else {
-        throw new ConnectTimeoutException("Max retry count has been exceeded. attempts=" + numRetries
+        throw new ConnectTimeoutException("Max retry count has been exceeded. attempts=" + retries
             + " caused by: " + future.cause());
       }
     }

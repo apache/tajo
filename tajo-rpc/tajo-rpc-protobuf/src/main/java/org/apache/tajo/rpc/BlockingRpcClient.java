@@ -23,10 +23,12 @@ import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
-import io.netty.channel.*;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
-import io.netty.util.concurrent.GenericFutureListener;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcClientManager.RpcConnectionKey;
@@ -98,19 +100,10 @@ public class BlockingRpcClient extends NettyClientBase {
           new ProtoCallFuture(controller, responsePrototype);
       requests.put(nextSeqId, callFuture);
 
-      ChannelPromise channelPromise = getChannel().newPromise();
-      channelPromise.addListener(new GenericFutureListener<ChannelFuture>() {
-        @Override
-        public void operationComplete(ChannelFuture future) throws Exception {
-          if (!future.isSuccess()) {
-            inboundHandler.exceptionCaught(null, new ServiceException(future.cause()));
-          }
-        }
-      });
-      getChannel().writeAndFlush(rpcRequest, channelPromise);
+      invoke(rpcRequest, 0);
 
       try {
-        return callFuture.get(60, TimeUnit.SECONDS);
+        return callFuture.get(180, TimeUnit.SECONDS);
       } catch (Throwable t) {
         if (t instanceof ExecutionException) {
           Throwable cause = t.getCause();
@@ -214,6 +207,12 @@ public class BlockingRpcClient extends NettyClientBase {
         if (e.state() == IdleState.ALL_IDLE && requests.size() == 0) {
           ctx.close();
           LOG.warn("Idle connection closed successfully :" + ctx.channel().remoteAddress());
+        }
+      } else if (evt instanceof MonitorStateEvent) {
+        MonitorStateEvent e = (MonitorStateEvent) evt;
+        if (e.state() == MonitorStateEvent.MonitorState.PING_EXPIRED) {
+          ctx.close();
+          ctx.fireExceptionCaught(new ServiceException("No response to ping request: " + ctx.channel()));
         }
       }
     }

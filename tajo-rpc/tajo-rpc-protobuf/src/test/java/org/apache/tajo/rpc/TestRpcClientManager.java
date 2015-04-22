@@ -19,6 +19,7 @@
 package org.apache.tajo.rpc;
 
 import org.apache.tajo.rpc.test.DummyProtocol;
+import org.apache.tajo.rpc.test.TestProtos;
 import org.apache.tajo.rpc.test.impl.DummyProtocolAsyncImpl;
 import org.junit.Test;
 
@@ -92,6 +93,43 @@ public class TestRpcClientManager {
 
     client.close();
     assertFalse(RpcClientManager.contains(key));
+    server.shutdown();
+  }
+
+  @Test
+  public void testCloseFuture2() throws Exception {
+    final DummyProtocolAsyncImpl service = new DummyProtocolAsyncImpl();
+    NettyServerBase server = new AsyncRpcServer(DummyProtocol.class,
+        service, new InetSocketAddress("127.0.0.1", 1231), 3);
+
+
+    final RpcClientManager manager = RpcClientManager.getInstance();
+
+    server.start();
+    NettyClientBase client = manager.getClient(new InetSocketAddress("127.0.0.1", 1231), DummyProtocol.class, true);
+    assertTrue(client.isConnected());
+    assertTrue(client.getChannel().isWritable());
+
+    RpcClientManager.RpcConnectionKey key = client.getKey();
+    assertTrue(RpcClientManager.contains(key));
+
+
+    client.close();
+    assertFalse(client.isConnected());
+    assertFalse(RpcClientManager.contains(key));
+    DummyProtocol.DummyProtocolService.Interface stub = client.getStub();
+    TestProtos.EchoMessage echoMessage = TestProtos.EchoMessage.newBuilder()
+        .setMessage("test").build();
+    CallFuture<TestProtos.EchoMessage> future = new CallFuture<TestProtos.EchoMessage>();
+    stub.deley(null, echoMessage, future);
+    future.get();
+
+    assertTrue(client.isConnected());
+    assertTrue(RpcClientManager.contains(key));
+
+    client.close();
+    assertFalse(RpcClientManager.contains(key));
+
     server.shutdown();
   }
 }

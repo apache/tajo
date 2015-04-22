@@ -375,13 +375,14 @@ public class TestBlockingRpc {
     client.connect();
     assertTrue(client.isConnected());
 
-    Thread.sleep(2000);
-    assertFalse(client.isConnected());
-
-    client.connect(); // try to reconnect
-    assertTrue(client.isConnected());
+//    Thread.sleep(2000);
+//    assertFalse(client.isConnected());
+//
+//    client.connect(); // try to reconnect
+//    assertTrue(client.isConnected());
+//    client.close();
+//    assertFalse(client.isConnected());
     client.close();
-    assertFalse(client.isConnected());
   }
 
   @Test
@@ -399,6 +400,7 @@ public class TestBlockingRpc {
 
     EchoMessage message = stub.deley(null, echoMessage); //3 sec delay
     assertEquals(message, echoMessage);
+    client.close();
 
     Thread.sleep(2000);
     assertFalse(client.isConnected());

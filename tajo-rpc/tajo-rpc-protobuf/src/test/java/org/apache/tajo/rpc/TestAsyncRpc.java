@@ -360,13 +360,14 @@ public class TestAsyncRpc {
     client.connect();
     assertTrue(client.isConnected());
 
-    Thread.sleep(6000);
+    Thread.sleep(8000);
     assertFalse(client.isConnected());
 
     client.connect(); // try to reconnect
     assertTrue(client.isConnected());
     client.close();
     assertFalse(client.isConnected());
+    client.close();
   }
 
   @Test
@@ -388,7 +389,8 @@ public class TestAsyncRpc {
     assertEquals(future.get(), echoMessage);
     assertTrue(future.isDone());
 
-    Thread.sleep(2000);
-    assertFalse(client.isConnected());
+    //Thread.sleep(2000);
+    //assertFalse(client.isConnected());
+    client.close();
   }
 }

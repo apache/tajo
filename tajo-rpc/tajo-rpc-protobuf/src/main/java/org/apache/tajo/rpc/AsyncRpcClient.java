@@ -20,10 +20,11 @@ package org.apache.tajo.rpc;
 
 import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.*;
-import io.netty.channel.*;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
-import io.netty.util.concurrent.GenericFutureListener;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcClientManager.RpcConnectionKey;
@@ -35,7 +36,6 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 
 public class AsyncRpcClient extends NettyClientBase {
   private static final Log LOG = LogFactory.getLog(AsyncRpcClient.class);
@@ -108,37 +108,6 @@ public class AsyncRpcClient extends NettyClientBase {
       invoke(rpcRequest, 0);
     }
 
-    private void invoke(final Message rpcRequest, final int retry) {
-
-      final ChannelPromise channelPromise = getChannel().newPromise();
-
-      channelPromise.addListener(new GenericFutureListener<ChannelFuture>() {
-        @Override
-        public void operationComplete(final ChannelFuture future) throws Exception {
-          if (!future.isSuccess()) {
-            /* Repeat retry until the connection attempt succeeds or exceeded retries */
-            if(!future.channel().isOpen() && retry < numRetries) {
-              final EventLoop loop = future.channel().eventLoop();
-              loop.schedule(new Runnable() {
-                @Override
-                public void run() {
-                  AsyncRpcClient.this.doConnect(getKey().addr).addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                      invoke(rpcRequest, retry + 1);
-                    }
-                  });
-                }
-              }, PAUSE, TimeUnit.MILLISECONDS);
-            } else {
-              inboundHandler.exceptionCaught(null, new ServiceException(future.cause()));
-            }
-          }
-        }
-      });
-      getChannel().writeAndFlush(rpcRequest, channelPromise);
-    }
-
     private Message buildRequest(int seqId,
                                  MethodDescriptor method,
                                  Message param) {
@@ -209,7 +178,7 @@ public class AsyncRpcClient extends NettyClientBase {
 
       if (requests.putIfAbsent(seqId, callback) != null) {
         throw new RemoteException(
-            getErrorMessage("Duplicate Sequence Id "+ seqId));
+            getErrorMessage("Duplicate Sequence Id " + seqId));
       }
     }
 
@@ -240,8 +209,8 @@ public class AsyncRpcClient extends NettyClientBase {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
         throws Exception {
       sendExceptions(cause.getMessage());
-      
-      if(LOG.isDebugEnabled()) {
+
+      if (LOG.isDebugEnabled()) {
         LOG.error(getRemoteAddress() + "," + protocol + "," + cause.getMessage(), cause);
       } else {
         LOG.error(getRemoteAddress() + "," + protocol + "," + cause.getMessage());
@@ -250,6 +219,7 @@ public class AsyncRpcClient extends NettyClientBase {
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+
       if (evt instanceof IdleStateEvent) {
         IdleStateEvent e = (IdleStateEvent) evt;
         if (e.state() == IdleState.WRITER_IDLE && requests.size() == 0) {
@@ -258,9 +228,14 @@ public class AsyncRpcClient extends NettyClientBase {
 //          ctx.close();
 //          LOG.warn("Idle connection closed successfully :" + ctx.channel());
         }
+      } else if (evt instanceof MonitorStateEvent) {
+        MonitorStateEvent e = (MonitorStateEvent) evt;
+        if (e.state() == MonitorStateEvent.MonitorState.PING_EXPIRED) {
+          ctx.close();
+          ctx.fireExceptionCaught(new ServiceException("No response to ping request: " + ctx.channel()));
+        }
       }
     }
-
     /*@Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
       if (evt instanceof IdleStateEvent) {
@@ -285,5 +260,6 @@ public class AsyncRpcClient extends NettyClientBase {
         }
       }
     }*/
+
   }
 }

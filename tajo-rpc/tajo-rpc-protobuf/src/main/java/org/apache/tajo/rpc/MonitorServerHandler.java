@@ -24,6 +24,8 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
+import java.nio.charset.Charset;
+
 @ChannelHandler.Sharable
 public class MonitorServerHandler extends ChannelInboundHandlerAdapter {
   private ByteBuf ping;
@@ -31,7 +33,7 @@ public class MonitorServerHandler extends ChannelInboundHandlerAdapter {
   @Override
   public void channelActive(ChannelHandlerContext ctx) throws Exception {
     // Initialize the message.
-    ping = ctx.alloc().directBuffer(4).writeBytes("test".getBytes());
+    ping = ctx.alloc().directBuffer(4).writeBytes(RpcConstants.PING_PACKET.getBytes(Charset.defaultCharset()));
     super.channelActive(ctx);
   }
 
@@ -42,8 +44,8 @@ public class MonitorServerHandler extends ChannelInboundHandlerAdapter {
   }
 
   private boolean isPing(Object msg) {
-    if(msg instanceof ByteBuf){
-      return ByteBufUtil.equals(ping.duplicate(), ((ByteBuf)msg).duplicate());
+    if (msg instanceof ByteBuf) {
+      return ByteBufUtil.equals(ping.duplicate(), ((ByteBuf) msg).duplicate());
     }
 
     return false;
@@ -51,8 +53,8 @@ public class MonitorServerHandler extends ChannelInboundHandlerAdapter {
 
   @Override
   public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-    if(isPing(msg)){
-      /* receive ping from client */
+    if (isPing(msg)) {
+      /* sent response ping to client */
       ctx.writeAndFlush(msg);
     } else {
       super.channelRead(ctx, msg);

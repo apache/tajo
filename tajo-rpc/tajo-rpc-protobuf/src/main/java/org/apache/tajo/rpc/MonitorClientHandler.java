@@ -18,27 +18,34 @@
 
 package org.apache.tajo.rpc;
 
-import com.google.protobuf.ServiceException;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.util.ReferenceCountUtil;
 
-@ChannelHandler.Sharable
+import java.nio.charset.Charset;
+
+/**
+ * Triggers an {@link MonitorStateEvent} when a remote peer has not respond.
+ * */
+
 public class MonitorClientHandler extends ChannelInboundHandlerAdapter {
-  private static final Log LOG = LogFactory.getLog(MonitorClientHandler.class);
-
   private ByteBuf ping;
+  private boolean enableMonitor;
 
   @Override
   public void channelActive(ChannelHandlerContext ctx) throws Exception {
     // Initialize the message.
-    ping = ctx.alloc().buffer(4).writeBytes("test".getBytes());
+    ping = ctx.alloc().buffer(RpcConstants.PING_PACKET.length())
+        .writeBytes(RpcConstants.PING_PACKET.getBytes(Charset.defaultCharset()));
+    IdleStateHandler handler = ctx.pipeline().get(IdleStateHandler.class);
+    if(handler != null && handler.getWriterIdleTimeInMillis() > 0) {
+      enableMonitor = true;
+    }
     super.channelActive(ctx);
   }
 
@@ -57,24 +64,23 @@ public class MonitorClientHandler extends ChannelInboundHandlerAdapter {
 
   @Override
   public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-    if(!isPing(msg)){
-      super.channelRead(ctx, msg);
-    } else {
+    if(enableMonitor && isPing(msg)){
       //ignore ping response
+      ReferenceCountUtil.release(msg);
+    } else {
+      super.channelRead(ctx, msg);
     }
   }
 
   @Override
   public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-    if (evt instanceof IdleStateEvent) {
+    if (enableMonitor && evt instanceof IdleStateEvent) {
       IdleStateEvent e = (IdleStateEvent) evt;
-      if (e.state() == IdleState.READER_IDLE) {
-        /* No response to ping request. may be server hangs */
-        LOG.error("Did not receive ping. Might be server hangs");
-        ctx.close();
-        ctx.fireExceptionCaught(new ServiceException("No response to ping request: " + ctx.channel()));
+      if (e.state() == IdleState.READER_IDLE && !e.isFirst()) {
+        /* No response to ping request.*/
+        ctx.fireUserEventTriggered(MonitorStateEvent.MONITOR_EXPIRED_STATE_EVENT);
       } else if (e.state() == IdleState.WRITER_IDLE) {
-        /* ping packet*/
+        /* send ping packet to remote server */
         ctx.writeAndFlush(ping.duplicate().retain());
       }
     }
