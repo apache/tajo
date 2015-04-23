@@ -31,7 +31,7 @@ class AvgPy:
         self.cnt += 1
 
     # get intermediate result
-    @output_type('sum:int4', 'cnt:int4')
+    @output_type('int4', 'int4')
     def get_partial_result(self):
         return [self.sum, self.cnt]
 
@@ -57,7 +57,7 @@ class CountPy:
         self.cnt += 1
 
     # get intermediate result
-    @output_type('cnt:int4')
+    @output_type('int4')
     def get_partial_result(self):
         return [self.cnt]
 
@@ -69,3 +69,4 @@ class CountPy:
     @output_type('float4')
     def get_final_result(self):
         return self.cnt
+

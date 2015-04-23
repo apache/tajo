@@ -416,7 +416,7 @@ message FunctionInvocationProto {
 }
 
 message IntermFunctionSignatureProto {
-  required SchemaProto schema = 1;
+  repeated DataType intermParamTypes = 1;
 }
 
 message ClassBaseInvocationDescProto {

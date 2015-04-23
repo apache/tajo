@@ -93,7 +93,8 @@ public class PythonScriptEngine extends TajoScriptEngine {
             returnType, createParamTypes(aggFuncInfo.evalInfo.paramNum));
         PythonInvocationDesc invocationDesc = new PythonInvocationDesc(aggFuncInfo.className, path.getPath(), false);
         invocation.setPythonAggregation(invocationDesc);
-        IntermFunctionSignature intermFunctionSignature = new IntermFunctionSignature(aggFuncInfo.intermSchema);
+        IntermFunctionSignature intermFunctionSignature = new IntermFunctionSignature(
+            getReturnTypes(aggFuncInfo.getPartialResultInfo));
         functionDescs.add(new FunctionDesc(signature, invocation, supplement, intermFunctionSignature));
       }
     }
@@ -131,7 +132,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
     ScalarFuncInfo mergeInfo;
     ScalarFuncInfo getPartialResultInfo;
     ScalarFuncInfo getFinalResultInfo;
-    Schema intermSchema;
   }
 
   private static class ScalarFuncInfo implements FunctionInfo {
@@ -149,19 +149,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
       this.funcName = funcName;
       this.paramNum = paramNum;
     }
-  }
-
-  private static Schema getSchemaFromDecorator(String []quotedSchemaStrings) {
-    Schema schema = new Schema();
-    for (int i = 0; i < quotedSchemaStrings.length; i++) {
-      String quotedString = quotedSchemaStrings[i].trim();
-      String[] tokens = quotedString.substring(1, quotedString.length() - 1).split(":");
-      if (tokens.length != 2) {
-        // TODO: error
-      }
-      schema.addColumn(tokens[0], CatalogUtil.newSimpleDataType(TajoDataTypes.Type.valueOf(tokens[1].toUpperCase())));
-    }
-    return schema;
   }
 
   // TODO: python parser must be improved.
@@ -203,7 +190,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
             aggFuncInfo.mergeInfo = new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum);
           } else if (functionName.equals("get_partial_result")) {
             aggFuncInfo.getPartialResultInfo = new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum);
-            aggFuncInfo.intermSchema = getSchemaFromDecorator(quotedSchemaStrings);
           } else if (functionName.equals("get_final_result")) {
             aggFuncInfo.getFinalResultInfo = new ScalarFuncInfo(quotedSchemaStrings, functionName, paramNum);
           }
@@ -403,12 +389,11 @@ public class PythonScriptEngine extends TajoScriptEngine {
         for (int i = 0; i < paramTypes.length; i++) {
           inSchema.addColumn(new Column("in_" + i, paramTypes[i]));
         }
-        outSchema = intermFunctionSignature.getIntermSchema();
+        outSchema = getSchemaFromTypes(intermFunctionSignature.getIntermSchema());
       } else if (intermediatePhase) {
-        inSchema = intermFunctionSignature.getIntermSchema();
-        outSchema = intermFunctionSignature.getIntermSchema();
+        inSchema = outSchema = getSchemaFromTypes(intermFunctionSignature.getIntermSchema());
       } else if (finalPhase) {
-        inSchema = intermFunctionSignature.getIntermSchema();
+        inSchema = getSchemaFromTypes(intermFunctionSignature.getIntermSchema());
         outSchema = new Schema(new Column[]{new Column("out", functionSignature.getReturnType())});
       }
     }
@@ -420,6 +405,14 @@ public class PythonScriptEngine extends TajoScriptEngine {
     for (int i = 0; i < outSchema.size(); i++) {
       projectionCols[i] = i;
     }
+  }
+
+  private static Schema getSchemaFromTypes(TajoDataTypes.DataType[] types) {
+    Schema schema = new Schema();
+    for (int i = 0; i < types.length; i++) {
+      schema.addColumn("col_"+i, types[i]);
+    }
+    return schema;
   }
 
   private void createInputHandlers() throws IOException {
@@ -544,7 +537,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
 
   @Override
   public Schema getIntermSchema() {
-    return intermFunctionSignature.getIntermSchema();
+    return getSchemaFromTypes(intermFunctionSignature.getIntermSchema());
   }
 
   @Override

@@ -20,55 +20,59 @@ package org.apache.tajo.function;
 
 import com.google.gson.annotations.Expose;
 import org.apache.tajo.annotation.NotNull;
-import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.catalog.proto.CatalogProtos;
 import org.apache.tajo.common.ProtoObject;
+import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.util.TUtil;
+
+import java.util.Arrays;
 
 public class IntermFunctionSignature implements ProtoObject<CatalogProtos.IntermFunctionSignatureProto>, Cloneable {
 
-  @Expose private Schema intermSchema;
+  @Expose private TajoDataTypes.DataType[] intermParamTypes;
 
-  public IntermFunctionSignature(@NotNull Schema schema) {
-    this.intermSchema = schema;
+  public IntermFunctionSignature(@NotNull TajoDataTypes.DataType[] intermParamTypes) {
+    this.intermParamTypes = intermParamTypes;
   }
 
   public IntermFunctionSignature(CatalogProtos.IntermFunctionSignatureProto proto) {
-    this.intermSchema = new Schema(proto.getSchema());
+    this.intermParamTypes = proto.getIntermParamTypesList().toArray(
+        new TajoDataTypes.DataType[proto.getIntermParamTypesCount()]);
   }
 
-  public Schema getIntermSchema() {
-    return intermSchema;
+  public TajoDataTypes.DataType[] getIntermSchema() {
+    return intermParamTypes;
   }
 
   @Override
   public int hashCode() {
-    return intermSchema.hashCode();
+    return Arrays.hashCode(intermParamTypes);
   }
 
   @Override
   public boolean equals(Object o) {
     if (o instanceof IntermFunctionSignature) {
       IntermFunctionSignature other = (IntermFunctionSignature) o;
-      return TUtil.checkEquals(intermSchema, other.intermSchema);
+      return TUtil.checkEquals(intermParamTypes, other.intermParamTypes);
     }
     return false;
   }
 
   @Override
   public String toString() {
-    return "intermediate schema(" + intermSchema + ")";
+    return "intermediate types (" + TUtil.arrayToString(intermParamTypes) + ")";
   }
 
   @Override
   public CatalogProtos.IntermFunctionSignatureProto getProto() {
-    return CatalogProtos.IntermFunctionSignatureProto.newBuilder().setSchema(intermSchema.getProto()).build();
+    return CatalogProtos.IntermFunctionSignatureProto.newBuilder().addAllIntermParamTypes(
+        TUtil.newList(intermParamTypes)).build();
   }
 
   @Override
   public Object clone() throws CloneNotSupportedException {
     IntermFunctionSignature clone = (IntermFunctionSignature) super.clone();
-    clone.intermSchema = intermSchema;
+    clone.intermParamTypes = intermParamTypes;
     return clone;
   }
 }
