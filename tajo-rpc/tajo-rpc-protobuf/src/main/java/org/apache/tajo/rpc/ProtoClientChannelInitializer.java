@@ -29,27 +29,31 @@ import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 import io.netty.handler.timeout.IdleStateHandler;
 
+import java.util.concurrent.TimeUnit;
+
 class ProtoClientChannelInitializer extends ChannelInitializer<Channel> {
   private final MessageLite defaultInstance;
   private final ChannelHandler handler;
-  private final int idleTimeoutSeconds;
+  private final long timeoutTimeNanos;
   private final boolean enablePing;
 
-  public ProtoClientChannelInitializer(ChannelHandler handler, MessageLite defaultInstance, int idleTimeoutSeconds,
+  public ProtoClientChannelInitializer(ChannelHandler handler, MessageLite defaultInstance,
+                                       long timeoutTimeNanos,
                                        boolean enablePing) {
     this.handler = handler;
     this.defaultInstance = defaultInstance;
-    this.idleTimeoutSeconds = idleTimeoutSeconds;
+    this.timeoutTimeNanos = timeoutTimeNanos;
     this.enablePing = enablePing;
   }
 
   @Override
   protected void initChannel(Channel channel) throws Exception {
     ChannelPipeline pipeline = channel.pipeline();
-    pipeline.addLast("idleStateHandler", new IdleStateHandler(idleTimeoutSeconds, idleTimeoutSeconds / 2, 0));
-    if(enablePing) {
-      pipeline.addLast("MonitorClientHandler", new MonitorClientHandler());
-    }
+    pipeline.addLast("idleStateHandler",
+        new IdleStateHandler(timeoutTimeNanos, timeoutTimeNanos / 2, 0, TimeUnit.NANOSECONDS));
+
+    if (enablePing) pipeline.addLast("MonitorClientHandler", new MonitorClientHandler());
+
     pipeline.addLast("frameDecoder", new ProtobufVarint32FrameDecoder());
     pipeline.addLast("protobufDecoder", new ProtobufDecoder(defaultInstance));
     pipeline.addLast("frameEncoder", new ProtobufVarint32LengthFieldPrepender());

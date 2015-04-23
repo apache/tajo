@@ -32,14 +32,15 @@ import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @ThreadSafe
 public class RpcClientManager {
   private static final Log LOG = LogFactory.getLog(RpcClientManager.class);
 
   public static final int RPC_RETRIES = 3;
-  public static final int DEFAULT_IDLE_TIMEOUT_SECONDS = 60;
-  private int idleTimeoutSeconds = DEFAULT_IDLE_TIMEOUT_SECONDS;
+  public static final int DEFAULT_TIMEOUT_SECONDS = 180;
+  private int timeoutSeconds = DEFAULT_TIMEOUT_SECONDS;
 
   /* entries will be removed by ConnectionCloseFutureListener */
   private static final Map<RpcConnectionKey, NettyClientBase>
@@ -61,14 +62,15 @@ public class RpcClientManager {
 
   private NettyClientBase makeClient(RpcConnectionKey rpcConnectionKey,
                                      int retries,
-                                     int idleTimeout,
+                                     long timeout,
+                                     TimeUnit timeUnit,
                                      boolean enablePing)
       throws NoSuchMethodException, ClassNotFoundException, ConnectException {
     NettyClientBase client;
     if (rpcConnectionKey.asyncMode) {
-      client = new AsyncRpcClient(rpcConnectionKey, retries, idleTimeout, enablePing);
+      client = new AsyncRpcClient(rpcConnectionKey, retries, timeout, timeUnit, enablePing);
     } else {
-      client = new BlockingRpcClient(rpcConnectionKey, retries, idleTimeout, enablePing);
+      client = new BlockingRpcClient(rpcConnectionKey, retries, timeout, timeUnit, enablePing);
     }
     return client;
   }
@@ -86,7 +88,7 @@ public class RpcClientManager {
     synchronized (clients) {
       client = clients.get(key);
       if (client == null) {
-        clients.put(key, client = makeClient(key, RPC_RETRIES, getIdleTimeoutSeconds(), true));
+        clients.put(key, client = makeClient(key, RPC_RETRIES, getTimeoutSeconds(), TimeUnit.NANOSECONDS, true));
       }
     }
 
@@ -98,14 +100,14 @@ public class RpcClientManager {
       client.subscribeEvent(new ChannelEventListener() {
         @Override
         public void channelRegistered(ChannelHandlerContext ctx) {
-          /* if client is recovered, it should be add client map */
+          /* if client is recovered, it add in client map */
           clients.put(finalClient.getKey(), finalClient);
           finalClient.getChannel().closeFuture().addListener(new ClientCloseFutureListener(finalClient.getKey()));
         }
 
         @Override
         public void channelUnregistered(ChannelHandlerContext ctx) {
-          /* if channel is reused, event is not fired */
+          /* if channel is reused, event will not fired */
         }
       });
     }
@@ -116,18 +118,27 @@ public class RpcClientManager {
 
   /**
    * Connect a {@link NettyClientBase} to the remote {@link NettyServerBase}, and returns rpc client by protocol.
-   * This client can not managed. It must be closed.
+   * This client does not managed. It should close.
    */
   public synchronized NettyClientBase newClient(InetSocketAddress addr,
                                                 Class<?> protocolClass,
                                                 boolean asyncMode,
                                                 int retries,
-                                                int idleTimeout,
+                                                long timeout,
+                                                TimeUnit timeUnit,
                                                 boolean enablePing)
       throws NoSuchMethodException, ClassNotFoundException, ConnectException {
-    RpcConnectionKey key = new RpcConnectionKey(addr, protocolClass, asyncMode);
 
-    NettyClientBase client = makeClient(key, retries, idleTimeout, enablePing);
+    return newClient(new RpcConnectionKey(addr, protocolClass, asyncMode), retries, timeout, timeUnit, enablePing);
+  }
+
+  public synchronized NettyClientBase newClient(RpcConnectionKey key,
+                                                int retries,
+                                                long timeout,
+                                                TimeUnit timeUnit,
+                                                boolean enablePing)
+      throws NoSuchMethodException, ClassNotFoundException, ConnectException {
+    NettyClientBase client = makeClient(key, retries, timeout, timeUnit, enablePing);
     client.connect();
     assert client.isConnected();
     return client;
@@ -176,12 +187,12 @@ public class RpcClientManager {
     }
   }
 
-  public int getIdleTimeoutSeconds() {
-    return idleTimeoutSeconds;
+  public int getTimeoutSeconds() {
+    return timeoutSeconds;
   }
 
-  public void setIdleTimeoutSeconds(int idleTimeoutSeconds) {
-    this.idleTimeoutSeconds = idleTimeoutSeconds;
+  public void setTimeoutSeconds(int timeoutSeconds) {
+    this.timeoutSeconds = timeoutSeconds;
   }
 
   static class RpcConnectionKey {

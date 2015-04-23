@@ -24,7 +24,6 @@ import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.Service;
 import io.netty.channel.*;
-import io.netty.util.concurrent.EventExecutor;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
@@ -32,7 +31,6 @@ import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
-import java.util.Iterator;
 
 public class AsyncRpcServer extends NettyServerBase {
   private static final Log LOG = LogFactory.getLog(AsyncRpcServer.class);
@@ -116,27 +114,7 @@ public class AsyncRpcServer extends NettyServerBase {
           }
         };
 
-        EventExecutor loop = ctx.channel().eventLoop();
-        Iterator<EventExecutor> iterator = ctx.channel().eventLoop().parent().iterator();
-        while (iterator.hasNext()) {
-          loop = iterator.next();
-          if (!loop.inEventLoop()) break;
-        }
-
-        final Message finalParamProto = paramProto;
-        loop.submit(new Runnable() {
-          @Override
-          public void run() {
-            try {
-              service.callMethod(methodDescriptor, controller, finalParamProto, callback);
-            } catch (RemoteCallException e) {
-              ctx.writeAndFlush(e.getResponse());
-            } catch (Throwable throwable) {
-              RemoteCallException exception = new RemoteCallException(request.getId(), methodDescriptor, throwable);
-              ctx.writeAndFlush(exception.getResponse());
-            }
-          }
-        });
+        service.callMethod(methodDescriptor, controller, paramProto, callback);
       } catch (RemoteCallException e) {
         ctx.writeAndFlush(e.getResponse());
       } catch (Throwable throwable) {

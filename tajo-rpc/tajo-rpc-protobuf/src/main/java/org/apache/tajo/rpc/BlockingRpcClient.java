@@ -52,20 +52,22 @@ public class BlockingRpcClient extends NettyClientBase {
    */
   BlockingRpcClient(RpcConnectionKey rpcConnectionKey, int retries)
       throws NoSuchMethodException, ClassNotFoundException {
-    this(rpcConnectionKey, retries, 0, false);
+    this(rpcConnectionKey, retries, 0, TimeUnit.NANOSECONDS, false);
   }
 
   /**
    *
    * @param rpcConnectionKey
    * @param retries retry operation number of times
-   * @param idleTimeoutSeconds  connection timeout seconds
-   * @param enablePing enable network inactive detecting
+   * @param timeout  disable ping, it trigger timeout event on idle-state.
+   *                 otherwise it is request timeout on active-state
+   * @param timeUnit TimeUnit
+   * @param enablePing enable to detect remote peer hangs
    * @throws ClassNotFoundException
    * @throws NoSuchMethodException
    */
-  BlockingRpcClient(RpcConnectionKey rpcConnectionKey, int retries, int idleTimeoutSeconds, boolean enablePing)
-      throws ClassNotFoundException, NoSuchMethodException {
+  BlockingRpcClient(RpcConnectionKey rpcConnectionKey, int retries, long timeout, TimeUnit timeUnit,
+                    boolean enablePing) throws ClassNotFoundException, NoSuchMethodException {
     super(rpcConnectionKey, retries);
     this.stubMethod = getServiceClass().getMethod("newBlockingStub", BlockingRpcChannel.class);
     this.rpcChannel = new ProxyRpcChannel();
@@ -73,7 +75,7 @@ public class BlockingRpcClient extends NettyClientBase {
     this.enablePing = enablePing;
     init(new ProtoClientChannelInitializer(inboundHandler,
         RpcResponse.getDefaultInstance(),
-        idleTimeoutSeconds,
+        timeUnit.toNanos(timeout),
         enablePing));
   }
 
@@ -85,6 +87,11 @@ public class BlockingRpcClient extends NettyClientBase {
   @Override
   public int getActiveRequests() {
     return requests.size();
+  }
+
+  @Override
+  public ChannelInboundHandler getHandler() {
+    return inboundHandler;
   }
 
   private void sendExceptions(String message) {
@@ -256,7 +263,7 @@ public class BlockingRpcClient extends NettyClientBase {
 
       if (!enablePing && evt instanceof IdleStateEvent) {
         IdleStateEvent e = (IdleStateEvent) evt;
-        /* If all requests is done and event is triggered, channel will be closed. */
+        /* If all requests is done and event is triggered, idle channel close. */
         if (e.state() == IdleState.READER_IDLE && getActiveRequests() == 0) {
           ctx.close();
           LOG.info("Idle connection closed successfully :" + ctx.channel().remoteAddress());

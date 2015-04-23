@@ -101,6 +101,8 @@ public abstract class NettyClientBase implements Closeable {
 
   public abstract int getActiveRequests();
 
+  public abstract ChannelInboundHandler getHandler();
+
   public boolean subscribeEvent(ChannelEventListener listener) {
     return channelEventListeners.add(listener);
   }
@@ -142,7 +144,8 @@ public abstract class NettyClientBase implements Closeable {
             }, PAUSE, TimeUnit.MILLISECONDS);
           } else {
             /* Max retry count has been exceeded or internal failure */
-            getChannel().pipeline().fireExceptionCaught(new RecoverableException(requestId, future.cause()));
+            getHandler().exceptionCaught(getChannel().pipeline().lastContext(),
+                new RecoverableException(requestId, future.cause()));
           }
         }
       }

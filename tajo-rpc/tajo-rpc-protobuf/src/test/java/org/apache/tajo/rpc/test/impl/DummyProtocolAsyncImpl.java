@@ -68,7 +68,7 @@ public class DummyProtocolAsyncImpl implements Interface {
   }
 
   @Override
-  public void deley(RpcController controller, EchoMessage request,
+  public void delay(RpcController controller, EchoMessage request,
                     RpcCallback<EchoMessage> done) {
     try {
       Thread.sleep(3000);
@@ -76,6 +76,17 @@ public class DummyProtocolAsyncImpl implements Interface {
       LOG.error(e.getMessage());
     }
 
+    done.run(request);
+  }
+
+  @Override
+  public void busy(RpcController controller, EchoMessage request,
+                   RpcCallback<EchoMessage> done) {
+    try {
+      Thread.sleep(30000);
+    } catch (InterruptedException e) {
+      LOG.error(e.getMessage());
+    }
     done.run(request);
   }
 

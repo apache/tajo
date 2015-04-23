@@ -23,15 +23,12 @@ import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.Message;
 import com.google.protobuf.RpcController;
 import io.netty.channel.*;
-import io.netty.util.concurrent.EventExecutor;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
-import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
-import java.util.Iterator;
 
 public class BlockingRpcServer extends NettyServerBase {
   private static Log LOG = LogFactory.getLog(BlockingRpcServer.class);
@@ -96,40 +93,19 @@ public class BlockingRpcServer extends NettyServerBase {
               .mergeFrom(request.getRequestMessage()).build();
         }
 
+        RpcController controller = new NettyRpcController();
+        Message returnValue = service.callBlockingMethod(methodDescriptor, controller, paramProto);
 
-        EventExecutor loop = ctx.channel().eventLoop();
-        Iterator<EventExecutor> iterator = ctx.channel().eventLoop().parent().iterator();
-        while (iterator.hasNext()) {
-          loop = iterator.next();
-          if (!loop.inEventLoop()) break;
+        RpcProtos.RpcResponse.Builder builder = RpcProtos.RpcResponse.newBuilder().setId(request.getId());
+
+        if (returnValue != null) {
+          builder.setResponseMessage(returnValue.toByteString());
         }
 
-        final Message finalParamProto = paramProto;
-        loop.submit(new Runnable() {
-          @Override
-          public void run() {
-            try {
-              RpcController controller = new NettyRpcController();
-              Message returnValue = service.callBlockingMethod(methodDescriptor, controller, finalParamProto);
-
-              RpcResponse.Builder builder = RpcResponse.newBuilder().setId(request.getId());
-
-              if (returnValue != null) {
-                builder.setResponseMessage(returnValue.toByteString());
-              }
-
-              if (controller.failed()) {
-                builder.setErrorMessage(controller.errorText());
-              }
-              ctx.writeAndFlush(builder.build());
-            } catch (RemoteCallException e) {
-              ctx.writeAndFlush(e.getResponse());
-            } catch (Throwable throwable) {
-              RemoteCallException exception = new RemoteCallException(request.getId(), methodDescriptor, throwable);
-              ctx.writeAndFlush(exception.getResponse());
-            }
-          }
-        });
+        if (controller.failed()) {
+          builder.setErrorMessage(controller.errorText());
+        }
+        ctx.writeAndFlush(builder.build());
       } catch (RemoteCallException e) {
         ctx.writeAndFlush(e.getResponse());
       } catch (Throwable throwable) {

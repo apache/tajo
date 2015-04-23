@@ -65,7 +65,7 @@ public class DummyProtocolBlockingImpl implements BlockingInterface {
   }
 
   @Override
-  public EchoMessage deley(RpcController controller, EchoMessage request)
+  public EchoMessage delay(RpcController controller, EchoMessage request)
       throws ServiceException {
     try {
       Thread.sleep(3000);
@@ -73,6 +73,16 @@ public class DummyProtocolBlockingImpl implements BlockingInterface {
       //throw new ServiceException(e.getMessage(), e);
     }
 
+    return request;
+  }
+
+  @Override
+  public EchoMessage busy(RpcController controller, EchoMessage request) {
+    try {
+      Thread.sleep(30000);
+    } catch (InterruptedException e) {
+      LOG.error(e.getMessage());
+    }
     return request;
   }
 

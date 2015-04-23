@@ -31,16 +31,10 @@ import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 class ProtoServerChannelInitializer extends ChannelInitializer<Channel> {
   private final MessageLite defaultInstance;
   private final ChannelHandler handler;
-  private final int idleTimeSeconds;
 
   public ProtoServerChannelInitializer(ChannelHandler handler, MessageLite defaultInstance) {
-    this(handler, defaultInstance, 0);
-  }
-
-  public ProtoServerChannelInitializer(ChannelHandler handler, MessageLite defaultInstance, int idleTimeSeconds) {
     this.handler = handler;
     this.defaultInstance = defaultInstance;
-    this.idleTimeSeconds = idleTimeSeconds;
   }
 
   @Override

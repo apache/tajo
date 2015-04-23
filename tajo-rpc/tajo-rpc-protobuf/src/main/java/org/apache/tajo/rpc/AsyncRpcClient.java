@@ -22,6 +22,7 @@ import com.google.protobuf.Descriptors.MethodDescriptor;
 import com.google.protobuf.*;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
@@ -36,6 +37,7 @@ import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 public class AsyncRpcClient extends NettyClientBase {
   private static final Log LOG = LogFactory.getLog(AsyncRpcClient.class);
@@ -54,19 +56,21 @@ public class AsyncRpcClient extends NettyClientBase {
    */
   AsyncRpcClient(RpcConnectionKey rpcConnectionKey, int retries)
       throws ClassNotFoundException, NoSuchMethodException {
-    this(rpcConnectionKey, retries, 0, false);
+    this(rpcConnectionKey, retries, 0, TimeUnit.NANOSECONDS, false);
   }
 
   /**
    *
    * @param rpcConnectionKey
    * @param retries retry operation number of times
-   * @param idleTimeoutSeconds  connection timeout seconds
-   * @param enablePing enable network inactive detecting
+   * @param timeout  disable ping, it trigger timeout event on idle-state.
+   *                 otherwise it is request timeout on active-state
+   * @param timeUnit TimeUnit
+   * @param enablePing enable to detect remote peer hangs
    * @throws ClassNotFoundException
    * @throws NoSuchMethodException
    */
-  AsyncRpcClient(RpcConnectionKey rpcConnectionKey, int retries, int idleTimeoutSeconds, boolean enablePing)
+  AsyncRpcClient(RpcConnectionKey rpcConnectionKey, int retries, long timeout, TimeUnit timeUnit, boolean enablePing)
       throws ClassNotFoundException, NoSuchMethodException {
     super(rpcConnectionKey, retries);
     this.stubMethod = getServiceClass().getMethod("newStub", RpcChannel.class);
@@ -75,7 +79,7 @@ public class AsyncRpcClient extends NettyClientBase {
     this.enablePing = enablePing;
     init(new ProtoClientChannelInitializer(inboundHandler,
         RpcResponse.getDefaultInstance(),
-        idleTimeoutSeconds,
+        timeUnit.toNanos(timeout),
         enablePing));
   }
 
@@ -87,6 +91,11 @@ public class AsyncRpcClient extends NettyClientBase {
   @Override
   public int getActiveRequests() {
     return requests.size();
+  }
+
+  @Override
+  public ChannelInboundHandler getHandler() {
+    return inboundHandler;
   }
 
   private void sendExceptions(String message) {
@@ -270,7 +279,7 @@ public class AsyncRpcClient extends NettyClientBase {
 
       if (!enablePing && evt instanceof IdleStateEvent) {
         IdleStateEvent e = (IdleStateEvent) evt;
-        /* If all requests is done and event is triggered, idle channel will be closed. */
+        /* If all requests is done and event is triggered, idle channel close. */
         if (e.state() == IdleState.READER_IDLE && getActiveRequests() == 0) {
           ctx.close();
           LOG.info("Idle connection closed successfully :" + ctx.channel());
