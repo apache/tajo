@@ -110,7 +110,7 @@ class PythonStreamingController:
         sys.path.append(cache_path)
         sys.path.append('.')
 
-        should_log = True
+        should_log = False
         if should_log:
             logging.basicConfig(filename=log_file_name, format="%(asctime)s %(levelname)s %(message)s", level=udf_logging.udf_log_level)
             logging.info("To reduce the amount of information being logged only a small subset of rows are logged at the "
@@ -130,12 +130,9 @@ class PythonStreamingController:
             log_message = logging.debug
 
         while input_str != END_OF_STREAM:
-            logging.info('input_str: ' + input_str)
             if func_type == 'UDAF':
                 class_name = name
-                logging.info('class_name: ' + class_name)
                 func_name = self.get_func_name(input_str)
-                logging.info('func_name: ' + func_name)
                 func = self.load_udaf(module_name, class_name, func_name)
                 data_start = input_str.find(WRAPPED_PARAMETER_DELIMITER) + len(WRAPPED_PARAMETER_DELIMITER)
                 input_str = input_str[data_start:]

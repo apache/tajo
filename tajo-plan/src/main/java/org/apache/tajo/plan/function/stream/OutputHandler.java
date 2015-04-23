@@ -169,6 +169,9 @@ public class OutputHandler implements Closeable {
       istream.close();
       istream = null;
       alreadyClosed = true;
+      if (this.buf.refCnt() > 0) {
+        this.buf.release();
+      }
     }
   }
 }
