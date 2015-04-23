@@ -19,7 +19,6 @@
 package org.apache.tajo.rpc;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ConnectTimeoutException;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.internal.logging.CommonsLoggerFactory;
@@ -64,7 +63,7 @@ public class RpcClientManager {
                                      int retries,
                                      int idleTimeout,
                                      boolean enablePing)
-      throws NoSuchMethodException, ClassNotFoundException, ConnectTimeoutException {
+      throws NoSuchMethodException, ClassNotFoundException, ConnectException {
     NettyClientBase client;
     if (rpcConnectionKey.asyncMode) {
       client = new AsyncRpcClient(rpcConnectionKey, retries, idleTimeout, enablePing);

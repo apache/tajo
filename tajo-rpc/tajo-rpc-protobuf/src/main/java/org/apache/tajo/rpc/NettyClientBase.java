@@ -182,7 +182,7 @@ public abstract class NettyClientBase implements Closeable {
   }
 
   private void doReconnect(final InetSocketAddress address, ChannelFuture future, int retries)
-      throws ConnectTimeoutException {
+      throws ConnectException {
 
     for (; ; ) {
       if (maxRetries > retries) {

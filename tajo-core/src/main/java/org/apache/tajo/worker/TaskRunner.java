@@ -19,7 +19,6 @@
 package org.apache.tajo.worker;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -38,8 +37,7 @@ import org.apache.tajo.rpc.CallFuture;
 import org.apache.tajo.rpc.NettyClientBase;
 import org.apache.tajo.rpc.NullCallback;
 
-import io.netty.channel.ConnectTimeoutException;
-
+import java.net.ConnectException;
 import java.util.concurrent.*;
 
 import static org.apache.tajo.ipc.TajoWorkerProtocol.*;
@@ -200,7 +198,7 @@ public class TaskRunner extends AbstractService {
             NettyClientBase client;
             try {
               client = executionBlockContext.getQueryMasterConnection();
-            } catch (ConnectTimeoutException ce) {
+            } catch (ConnectException ce) {
               // NettyClientBase throws ConnectTimeoutException if connection was failed
               stop();
               getContext().stopTaskRunner(getId());
