@@ -498,11 +498,6 @@ enum TransmitType {
   FILE_WRITE = 2;
 }
 
-message NamedDatum {
-  required string name = 1;
-  required Datum val = 2;
-}
-
-message NamedTuple {
-  repeated NamedDatum datums = 1;
+message Tuple {
+  repeated Datum datums = 1;
 }

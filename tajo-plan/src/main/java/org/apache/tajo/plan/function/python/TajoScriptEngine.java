@@ -87,8 +87,6 @@ public abstract class TajoScriptEngine {
 
   public abstract void callAggFunc(Tuple input);
 
-  public abstract Schema getIntermSchema();
-
   public abstract Tuple getPartialResult();
 
   public abstract Datum getFinalResult();

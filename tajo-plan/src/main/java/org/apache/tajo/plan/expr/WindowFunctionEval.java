@@ -38,7 +38,6 @@ public class WindowFunctionEval extends AggregationFunctionCallEval implements C
 
   public WindowFunctionEval(FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs,
                             WindowSpec.WindowFrame windowFrame) {
-//    super(EvalType.WINDOW_FUNCTION, desc, instance, givenArgs);
     super(EvalType.WINDOW_FUNCTION, desc, givenArgs);
     this.windowFrame = windowFrame;
   }
@@ -69,7 +68,6 @@ public class WindowFunctionEval extends AggregationFunctionCallEval implements C
     if (!isBinded) {
       throw new IllegalStateException("bind() must be called before terminate()");
     }
-//    return instance.terminate(context);
     return null;
   }
 

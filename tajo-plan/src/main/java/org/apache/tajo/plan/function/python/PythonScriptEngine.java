@@ -261,13 +261,11 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private final PythonInvocationDesc invocationDesc;
   private Schema inSchema;
   private Schema outSchema;
-//  private final int [] projectionCols = new int[]{0};
   private int[] projectionCols;
 
   private final CSVLineSerDe lineSerDe = new CSVLineSerDe();
   private final TableMeta pipeMeta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.TEXTFILE);
 
-//  private static final Tuple EMPTY_INPUT = new VTuple(0);
   private Tuple emptyInput;
 
   public PythonScriptEngine(FunctionDesc functionDesc) {
@@ -483,9 +481,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
         input = emptyInput;
       }
 
-//      if (inputHandler == null) {
-//        createInputHandlers();
-//      }
       inputHandler.putNext(input);
       stdin.flush();
     } catch (Exception e) {
@@ -520,9 +515,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
         input = emptyInput;
       }
 
-//      if (inputHandler == null) {
-//        createInputHandlers();
-//      }
       inputHandler.putNext(methodName, input);
       stdin.flush();
     } catch (Exception e) {
@@ -536,18 +528,10 @@ public class PythonScriptEngine extends TajoScriptEngine {
   }
 
   @Override
-  public Schema getIntermSchema() {
-    return getSchemaFromTypes(intermFunctionSignature.getIntermSchema());
-  }
-
-  @Override
   public Tuple getPartialResult() {
     try {
       Tuple input = emptyInput;
 
-//      if (inputHandler == null) {
-//        createInputHandlers();
-//      }
       inputHandler.putNext("get_partial_result", input);
       stdin.flush();
     } catch (Exception e) {
@@ -567,9 +551,6 @@ public class PythonScriptEngine extends TajoScriptEngine {
     try {
       Tuple input = emptyInput;
 
-//      if (inputHandler == null) {
-//        createInputHandlers();
-//      }
       inputHandler.putNext("get_final_result", input);
       stdin.flush();
     } catch (Exception e) {

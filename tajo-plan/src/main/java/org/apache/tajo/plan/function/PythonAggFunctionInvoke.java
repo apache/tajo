@@ -23,7 +23,6 @@ import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.datum.DatumFactory;
 import org.apache.tajo.datum.NullDatum;
 import org.apache.tajo.datum.ProtobufDatum;
 import org.apache.tajo.plan.function.python.PythonScriptEngine;
@@ -65,10 +64,10 @@ public class PythonAggFunctionInvoke extends AggFunctionInvoke implements Clonea
       return;
     }
     ProtobufDatum protobufDatum = (ProtobufDatum) params.get(0);
-    PlanProto.NamedTuple namedTuple = (PlanProto.NamedTuple) protobufDatum.get();
+    PlanProto.Tuple namedTuple = (PlanProto.Tuple) protobufDatum.get();
     Tuple input = new VTuple(namedTuple.getDatumsCount());
     for (int i = 0; i < namedTuple.getDatumsCount(); i++) {
-      input.put(i, EvalNodeDeserializer.deserialize(namedTuple.getDatums(i).getVal()));
+      input.put(i, EvalNodeDeserializer.deserialize(namedTuple.getDatums(i)));
     }
 
     scriptEngine.callAggFunc(input);
@@ -76,22 +75,17 @@ public class PythonAggFunctionInvoke extends AggFunctionInvoke implements Clonea
 
   @Override
   public Datum getPartialResult(FunctionContext context) {
-    // TODO: get tuples from script engine
-    Schema intermSchema = scriptEngine.getIntermSchema();
     Tuple intermResult = scriptEngine.getPartialResult();
-    PlanProto.NamedTuple.Builder builder = PlanProto.NamedTuple.newBuilder();
+    PlanProto.Tuple.Builder builder = PlanProto.Tuple.newBuilder();
     for (int i = 0; i < intermResult.size(); i++) {
-      PlanProto.NamedDatum.Builder datumBuilder = PlanProto.NamedDatum.newBuilder();
-      datumBuilder.setName(intermSchema.getColumn(i).getSimpleName());
-      datumBuilder.setVal(EvalNodeSerializer.serialize(intermResult.get(i)));
-      builder.addDatums(datumBuilder.build());
+      builder.addDatums(EvalNodeSerializer.serialize(intermResult.get(i)));
     }
     return new ProtobufDatum(builder.build());
   }
 
   @Override
   public TajoDataTypes.DataType getPartialResultType() {
-    return CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, PlanProto.NamedTuple.class.getName());
+    return CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, PlanProto.Tuple.class.getName());
   }
 
   @Override
