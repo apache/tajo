@@ -63,13 +63,13 @@ public class StreamingUtil {
       cmdArgs.add(sb.toString());
     }
 
-    if (LOG.isDebugEnabled()) {
+//    if (LOG.isDebugEnabled()) {
       StringBuffer sb = new StringBuffer("command: ");
       for (String cmd : cmdArgs) {
         sb.append(cmd).append(" ");
       }
-      LOG.debug(sb.toString());
-    }
+      LOG.info(sb.toString());
+//    }
 
     // Start the external process
     ProcessBuilder processBuilder = new ProcessBuilder(cmdArgs

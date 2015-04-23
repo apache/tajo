@@ -36,7 +36,7 @@ public class CSVLineSerializer extends TextLineSerializer {
   private byte[] delimiter;
   private int columnNum;
 
-  private final static String PARAM_DELIM = "|\t_";
+  public final static String PARAM_DELIM = "|\t_";
 
   public CSVLineSerializer(Schema schema, TableMeta meta) {
     super(schema, meta);

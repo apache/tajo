@@ -44,3 +44,28 @@ class AvgPy:
     @output_type('float4')
     def get_final_result(self):
         return self.sum / self.cnt
+
+
+class CountPy:
+    cnt = 0
+
+    def __init__(self):
+        self.cnt = 0
+
+    # eval at the first stage
+    def eval(self):
+        self.cnt += 1
+
+    # get intermediate result
+    @output_type('cnt:int4')
+    def get_partial_result(self):
+        return [self.cnt]
+
+    # merge intermediate results
+    def merge(self, cnt):
+        self.cnt += cnt
+
+    # get final result
+    @output_type('float4')
+    def get_final_result(self):
+        return self.cnt

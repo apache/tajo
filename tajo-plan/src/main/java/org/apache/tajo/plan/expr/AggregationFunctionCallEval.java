@@ -25,6 +25,7 @@ import org.apache.tajo.catalog.Schema;
 import org.apache.tajo.common.TajoDataTypes;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
+import org.apache.tajo.exception.InternalException;
 import org.apache.tajo.plan.function.AggFunctionInvoke;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.function.FunctionInvokeContext;
@@ -47,6 +48,11 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   protected AggregationFunctionCallEval(EvalType type, FunctionDesc desc, EvalNode[] givenArgs) {
     super(type, desc, givenArgs);
     this.invokeContext = new FunctionInvokeContext(null, getParamType());
+    try {
+      this.functionInvoke = AggFunctionInvoke.newInstance(funcDesc);
+    } catch (InternalException e) {
+      throw new RuntimeException(e);
+    }
   }
 
 //  public AggregationFunctionCallEval(FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs) {
@@ -63,7 +69,6 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
     super.bind(evalContext, schema);
 
     try {
-      this.functionInvoke = AggFunctionInvoke.newInstance(funcDesc);
       if (evalContext != null && evalContext.hasScriptEngine(this)) {
         this.invokeContext.setScriptEngine(evalContext.getScriptEngine(this));
         this.invokeContext.getScriptEngine().setIntermediatePhase(intermediatePhase);
@@ -113,11 +118,12 @@ public class AggregationFunctionCallEval extends FunctionEval implements Cloneab
   public DataType getValueType() {
     if (!finalPhase) {
 //      return instance.getPartialResultType();
-      if (funcDesc.getInvocation().hasPythonAggregation()) {
-        return CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, PlanProto.NamedTuple.class.getName());
-      } else {
-        return functionInvoke.getPartialResultType();
-      }
+      return functionInvoke.getPartialResultType();
+//      if (funcDesc.getInvocation().hasPythonAggregation()) {
+//        return CatalogUtil.newDataType(TajoDataTypes.Type.PROTOBUF, PlanProto.NamedTuple.class.getName());
+//      } else {
+//        return functionInvoke.getPartialResultType();
+//      }
     } else {
       return funcDesc.getReturnType();
     }

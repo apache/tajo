@@ -36,7 +36,8 @@ public abstract class AggFunctionInvoke implements Cloneable {
   }
 
   public static AggFunctionInvoke newInstance(FunctionDesc desc) throws InternalException {
-    if (desc.getInvocation().hasAggregation()) {
+    // TODO: The below line is due to the bug in the function type. The type of class-based functions is not set properly.
+    if (desc.getInvocation().hasLegacy()) {
       return new ClassBasedAggFunctionInvoke(desc);
     } else if (desc.getInvocation().hasPythonAggregation()) {
       return new PythonAggFunctionInvoke(desc);

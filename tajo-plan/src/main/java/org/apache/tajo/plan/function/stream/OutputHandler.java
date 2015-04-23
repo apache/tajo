@@ -48,13 +48,16 @@ public class OutputHandler implements Closeable {
   // Both of these ignore the trailing "\n".  So if the default delimiter is "\n", recordDelimStr is "".
   private String recordDelimStr = null;
   private int recordDelimLength = 0;
-  private final Tuple tuple = new VTuple(1);
+  private final Tuple tuple;
 
   // flag to mark if close() has already been called
   private boolean alreadyClosed = false;
+  private final String FIELD_DELIM;
 
   public OutputHandler(TextLineDeserializer deserializer) {
     this.deserializer = deserializer;
+    FIELD_DELIM = new String(CSVLineSerDe.getFieldDelimiter(deserializer.meta));
+    tuple = new VTuple(deserializer.schema.size());
   }
 
   /**
@@ -113,10 +116,25 @@ public class OutputHandler implements Closeable {
       currValue += new String(lineBytes);
     }
 
-    if (currValue.contains("|_")) {
-      int pos = currValue.lastIndexOf("|_");
-      currValue = currValue.substring(0, pos);
+    String line = currValue;
+
+    int candidate = -1;
+    StringBuffer sb = new StringBuffer();
+    while ((candidate=line.indexOf("|")) >= 0) {
+      if (line.substring(candidate, candidate+2).equals("|_")) {
+        // record end
+        sb.append(line.substring(0, candidate));
+        break;
+      } else if (line.substring(candidate, candidate+3).equals("|,_")) {
+        sb.append(line.substring(0, candidate)).append(FIELD_DELIM);
+        line = line.substring(candidate+3, line.length());
+      } else if (line.substring(candidate, candidate+3).equals("|-_")) {
+        // null value
+        sb.append(FIELD_DELIM);
+        line = line.substring(candidate+3, line.length());
+      }
     }
+    currValue = sb.toString();
 
     return true;
   }

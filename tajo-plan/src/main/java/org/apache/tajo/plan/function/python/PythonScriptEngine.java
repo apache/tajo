@@ -275,7 +275,8 @@ public class PythonScriptEngine extends TajoScriptEngine {
   private final PythonInvocationDesc invocationDesc;
   private Schema inSchema;
   private Schema outSchema;
-  private final int [] projectionCols = new int[]{0};
+//  private final int [] projectionCols = new int[]{0};
+  private int[] projectionCols;
 
   private final CSVLineSerDe lineSerDe = new CSVLineSerDe();
   private final TableMeta pipeMeta = CatalogUtil.newTableMeta(CatalogProtos.StoreType.TEXTFILE);
@@ -349,8 +350,8 @@ public class PythonScriptEngine extends TajoScriptEngine {
     // TODO: support controller logging
 //    String standardOutputRootWriteLocation = systemConf.get(TajoConf.ConfVars.PYTHON_CONTROLLER_LOG_DIR.keyname(),
 //        DEFAULT_LOG_DIR);
-//    String standardOutputRootWriteLocation = "/home/jihoon/Projects/tajo/";
-    String standardOutputRootWriteLocation = "/Users/jihoonson/Projects/tajo/";
+    String standardOutputRootWriteLocation = "/home/jihoon/Projects/tajo/";
+//    String standardOutputRootWriteLocation = "/Users/jihoonson/Projects/tajo/";
     if (!standardOutputRootWriteLocation.equals(DEFAULT_LOG_DIR)) {
       LOG.warn("Currently, logging is not supported for the python controller.");
     }
@@ -414,6 +415,10 @@ public class PythonScriptEngine extends TajoScriptEngine {
     emptyInput = new VTuple(inSchema.size());
     for (int i = 0; i < inSchema.size(); i++) {
       emptyInput.put(i, NullDatum.get());
+    }
+    projectionCols = new int[outSchema.size()];
+    for (int i = 0; i < outSchema.size(); i++) {
+      projectionCols[i] = i;
     }
   }
 
@@ -528,7 +533,7 @@ public class PythonScriptEngine extends TajoScriptEngine {
       inputHandler.putNext(methodName, input);
       stdin.flush();
     } catch (Exception e) {
-      throw new RuntimeException("Failed adding input to inputQueue", e);
+      throw new RuntimeException("Failed adding input to inputQueue while executing " + methodName + " with " + input, e);
     }
     try {
       outputHandler.getNext().get(0);

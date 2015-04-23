@@ -56,7 +56,7 @@ public class InputHandler implements Closeable {
   }
 
   public void putNext(String methodName, Tuple t) throws IOException {
-    String wrappedMethod = "|" + methodName + "_|,_";
+    String wrappedMethod = "|" + methodName + "_" + CSVLineSerializer.PARAM_DELIM;
     out.write(wrappedMethod.getBytes());
     putNext(t);
   }

@@ -816,7 +816,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
   @Test
   public final void testPythonUdaf() throws Exception {
-    ResultSet res = executeString("select avgpy(n_nationkey) from nation");
+    ResultSet res = executeString("select avgpy(n_nationkey), avg(n_nationkey), countpy() from nation");
     System.out.println(resultSetToString(res));
   }
 }

@@ -130,13 +130,14 @@ class PythonStreamingController:
             log_message = logging.debug
 
         while input_str != END_OF_STREAM:
+            logging.info('input_str: ' + input_str)
             if func_type == 'UDAF':
                 class_name = name
                 logging.info('class_name: ' + class_name)
                 func_name = self.get_func_name(input_str)
                 logging.info('func_name: ' + func_name)
                 func = self.load_udaf(module_name, class_name, func_name)
-                data_start = input_str.find(WRAPPED_FIELD_DELIMITER) + len(WRAPPED_FIELD_DELIMITER)
+                data_start = input_str.find(WRAPPED_PARAMETER_DELIMITER) + len(WRAPPED_PARAMETER_DELIMITER)
                 input_str = input_str[data_start:]
             elif func_type == 'UDF':
                 func_name = name
@@ -230,8 +231,8 @@ class PythonStreamingController:
         try:
             if self.udaf_instance is None:
                 clazz = __import__(module_name, globals(), locals(), [class_name]).__dict__[class_name]
-                udaf_instance = clazz()
-            func = getattr(udaf_instance, func_name)
+                self.udaf_instance = clazz()
+            func = getattr(self.udaf_instance, func_name)
             return func
         except:
             # These errors should always be caused by user code.
@@ -240,7 +241,7 @@ class PythonStreamingController:
 
     @staticmethod
     def get_func_name(input_str):
-        splits = input_str.split(WRAPPED_FIELD_DELIMITER)
+        splits = input_str.split(WRAPPED_PARAMETER_DELIMITER)
         if splits[0] == WRAPPED_EVAL_FUNC:
             return EVAL_FUNC
         elif splits[0] == WRAPPED_MERGE_FUNC:
@@ -382,6 +383,8 @@ def serialize_output(output, out_schema, utfEncodeAllFields=False):
         result = str(output)
     elif output_type == datetime:
         result = output.isoformat()
+    elif output_type == list:
+        result = list_to_str(output, out_schema)
     elif utfEncodeAllFields or output_type == str or output_type == unicode:
         # unicode is necessary in cases where we're encoding non-strings.
         result = unicode(output).encode('utf-8')
@@ -392,6 +395,13 @@ def serialize_output(output, out_schema, utfEncodeAllFields=False):
         return base64.b64encode(result)
     else:
         return result
+
+def list_to_str(list_of_item, out_schema):
+    result = ''
+    for item in list_of_item:
+        result += serialize_output(item, out_schema) + WRAPPED_FIELD_DELIMITER
+    result = result[:len(result)-len(WRAPPED_FIELD_DELIMITER)]
+    return result
 
 if __name__ == '__main__':
     controller = PythonStreamingController()
