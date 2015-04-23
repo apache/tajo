@@ -69,7 +69,7 @@ public class TestGroupByQuery extends QueryTestCaseBase {
   @Parameters
   public static Collection<Object[]> generateParameters() {
     return Arrays.asList(new Object[][]{
-//        {"MultiLevel"},
+        {"MultiLevel"},
         {"No-MultiLevel"},
     });
   }
@@ -816,7 +816,36 @@ public class TestGroupByQuery extends QueryTestCaseBase {
 
   @Test
   public final void testPythonUdaf() throws Exception {
-    ResultSet res = executeString("select avgpy(n_nationkey), avg(n_nationkey), countpy() from nation");
-    System.out.println(resultSetToString(res));
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testPythonUdafWithHaving() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testPythonUdafWithNullData() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testComplexTargetWithPythonUdaf() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
+  }
+
+  @Test
+  public final void testDistinctPythonUdafWithUnion1() throws Exception {
+    ResultSet res = executeQuery();
+    assertResultSet(res);
+    cleanupQuery(res);
   }
 }
