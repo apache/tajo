@@ -18,25 +18,23 @@
 
 package org.apache.tajo.plan.expr;
 
-import java.util.Arrays;
-
 import com.google.gson.annotations.Expose;
-
 import org.apache.tajo.catalog.FunctionDesc;
 import org.apache.tajo.catalog.SortSpec;
 import org.apache.tajo.common.TajoDataTypes.DataType;
 import org.apache.tajo.datum.Datum;
-import org.apache.tajo.plan.function.AggFunction;
 import org.apache.tajo.plan.function.FunctionContext;
 import org.apache.tajo.plan.logical.WindowSpec;
 import org.apache.tajo.storage.Tuple;
 import org.apache.tajo.util.TUtil;
 
+import java.util.Arrays;
+
 public class WindowFunctionEval extends AggregationFunctionCallEval implements Cloneable {
   @Expose private SortSpec [] sortSpecs;
   @Expose WindowSpec.WindowFrame windowFrame;
 
-  public WindowFunctionEval(FunctionDesc desc, AggFunction instance, EvalNode[] givenArgs,
+  public WindowFunctionEval(FunctionDesc desc, EvalNode[] givenArgs,
                             WindowSpec.WindowFrame windowFrame) {
     super(EvalType.WINDOW_FUNCTION, desc, givenArgs);
     this.windowFrame = windowFrame;
@@ -60,7 +58,7 @@ public class WindowFunctionEval extends AggregationFunctionCallEval implements C
 
   @Override
   protected void mergeParam(FunctionContext context, Tuple params) {
-//    instance.eval(context, params);
+    functionInvoke.eval(context, params);
   }
 
   @Override
@@ -68,7 +66,7 @@ public class WindowFunctionEval extends AggregationFunctionCallEval implements C
     if (!isBinded) {
       throw new IllegalStateException("bind() must be called before terminate()");
     }
-    return null;
+    return functionInvoke.terminate(context);
   }
 
   @Override

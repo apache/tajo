@@ -204,11 +204,10 @@ public class EvalNodeDeserializer {
               }
 
             } else {
-              AggFunction instance = (AggFunction) funcDesc.newInstance();
               WinFunctionEvalSpec windowFuncProto = protoNode.getWinFunction();
 
               WindowFunctionEval winFunc =
-                  new WindowFunctionEval(new FunctionDesc(funcProto.getFuncion()), instance, params,
+                  new WindowFunctionEval(new FunctionDesc(funcProto.getFuncion()), params,
                       convertWindowFrame(windowFuncProto.getWindowFrame()));
 
               if (windowFuncProto.getSortSpecCount() > 0) {
