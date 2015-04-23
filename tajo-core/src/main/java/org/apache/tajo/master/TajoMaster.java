@@ -21,7 +21,10 @@ package org.apache.tajo.master;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.*;
+import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.service.CompositeService;
@@ -168,14 +171,10 @@ public class TajoMaster extends CompositeService {
       RackResolver.init(systemConf);
 
       initResourceManager();
-      initWebServer();
 
       this.dispatcher = new AsyncDispatcher();
       addIfService(dispatcher);
 
-      // check the system directory and create if they are not created.
-      checkAndInitializeSystemDirectories();
-      diagnoseTajoMaster();
       this.storeManager = StorageManager.getFileStorageManager(systemConf);
 
       catalogServer = new CatalogServer(loadFunctions());
@@ -311,12 +310,14 @@ public class TajoMaster extends CompositeService {
   public void serviceStart() throws Exception {
     LOG.info("TajoMaster is starting up");
 
-    startJvmPauseMonitor();
+    // check the system directory and create if they are not created.
+    checkAndInitializeSystemDirectories();
+    diagnoseTajoMaster();
 
     // check base tablespace and databases
     checkBaseTBSpaceAndDatabase();
 
-    super.serviceStart();
+    initWebServer();
 
     // Setting the system global configs
     systemConf.setSocketAddr(ConfVars.CATALOG_ADDRESS.varname,
@@ -329,9 +330,10 @@ public class TajoMaster extends CompositeService {
     }
 
     initSystemMetrics();
-
+    startJvmPauseMonitor();
     haService = ServiceTrackerFactory.get(systemConf);
     haService.register();
+    super.serviceStart();
 
     historyWriter = new HistoryWriter(getMasterName(), true);
     historyWriter.init(getConfig());
