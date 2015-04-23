@@ -2,7 +2,7 @@ select
   sum(distinct l_orderkey),
   l_linenumber,
   count(distinct l_orderkey),
-  count(*) as total
+  countpy() as total
 from
   (
     select

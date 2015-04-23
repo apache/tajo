@@ -1,1 +1,1 @@
-select avgpy(n_nationkey), avg(n_nationkey), countpy() from nation
+select avgpy(n_nationkey), avg(n_nationkey), countpy() from nation;

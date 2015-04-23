@@ -43,7 +43,7 @@ class AvgPy:
     # get final result
     @output_type('float8')
     def get_final_result(self):
-        return self.sum / (float)self.cnt
+        return self.sum / float(self.cnt)
 
 
 class CountPy:
