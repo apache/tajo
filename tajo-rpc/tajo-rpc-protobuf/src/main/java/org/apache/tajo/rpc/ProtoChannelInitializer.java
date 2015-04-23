@@ -47,13 +47,11 @@ class ProtoChannelInitializer extends ChannelInitializer<Channel> {
   @Override
   protected void initChannel(Channel channel) throws Exception {
     ChannelPipeline pipeline = channel.pipeline();
-    pipeline.addLast("idleStateHandler", new IdleStateHandler(idleTimeSeconds * 2, idleTimeSeconds, 0)); //zero is disabling
-    pipeline.addLast("MonitorServerHandler", new MonitorServerHandler());
-    pipeline.addLast("MonitorClientHandler", new MonitorClientHandler());
     pipeline.addLast("frameDecoder", new ProtobufVarint32FrameDecoder());
     pipeline.addLast("protobufDecoder", new ProtobufDecoder(defaultInstance));
     pipeline.addLast("frameEncoder", new ProtobufVarint32LengthFieldPrepender());
     pipeline.addLast("protobufEncoder", new ProtobufEncoder());
+    pipeline.addLast("idleStateHandler", new IdleStateHandler(0, 0, idleTimeSeconds)); //zero is disabling
     pipeline.addLast("handler", handler);
   }
 }

@@ -76,6 +76,7 @@ public class DummyProtocolBlockingImpl implements BlockingInterface {
     return request;
   }
 
+  @Override
   public EchoMessage throwException(RpcController controller, EchoMessage request)
       throws ServiceException {
     throw new ServiceException("Exception Test");

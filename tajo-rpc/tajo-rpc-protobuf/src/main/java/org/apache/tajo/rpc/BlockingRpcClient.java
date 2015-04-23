@@ -18,17 +18,12 @@
 
 package org.apache.tajo.rpc;
 
-import com.google.protobuf.BlockingRpcChannel;
+import com.google.protobuf.*;
 import com.google.protobuf.Descriptors.MethodDescriptor;
-import com.google.protobuf.Message;
-import com.google.protobuf.RpcController;
-import com.google.protobuf.ServiceException;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.*;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcClientManager.RpcConnectionKey;
@@ -49,6 +44,7 @@ public class BlockingRpcClient extends NettyClientBase {
   private final Method stubMethod;
   private final ProxyRpcChannel rpcChannel;
   private final ChannelInboundHandlerAdapter inboundHandler;
+  private final boolean enablePing;
 
   /**
    * Intentionally make this method package-private, avoiding user directly
@@ -56,16 +52,29 @@ public class BlockingRpcClient extends NettyClientBase {
    */
   BlockingRpcClient(RpcConnectionKey rpcConnectionKey, int retries)
       throws NoSuchMethodException, ClassNotFoundException {
-    this(rpcConnectionKey, retries, 0);
+    this(rpcConnectionKey, retries, 0, false);
   }
 
-  BlockingRpcClient(RpcConnectionKey rpcConnectionKey, int retries, int idleTimeSeconds)
+  /**
+   *
+   * @param rpcConnectionKey
+   * @param retries retry operation number of times
+   * @param idleTimeoutSeconds  connection timeout seconds
+   * @param enablePing enable network inactive detecting
+   * @throws ClassNotFoundException
+   * @throws NoSuchMethodException
+   */
+  BlockingRpcClient(RpcConnectionKey rpcConnectionKey, int retries, int idleTimeoutSeconds, boolean enablePing)
       throws ClassNotFoundException, NoSuchMethodException {
     super(rpcConnectionKey, retries);
-    stubMethod = getServiceClass().getMethod("newBlockingStub", BlockingRpcChannel.class);
-    rpcChannel = new ProxyRpcChannel();
-    inboundHandler = new ClientChannelInboundHandler();
-    init(new ProtoChannelInitializer(inboundHandler, RpcResponse.getDefaultInstance(), idleTimeSeconds));
+    this.stubMethod = getServiceClass().getMethod("newBlockingStub", BlockingRpcChannel.class);
+    this.rpcChannel = new ProxyRpcChannel();
+    this.inboundHandler = new ClientChannelInboundHandler();
+    this.enablePing = enablePing;
+    init(new ProtoClientChannelInitializer(inboundHandler,
+        RpcResponse.getDefaultInstance(),
+        idleTimeoutSeconds,
+        enablePing));
   }
 
   @Override
@@ -74,12 +83,32 @@ public class BlockingRpcClient extends NettyClientBase {
   }
 
   @Override
-  public void close() {
-    for(ProtoCallFuture callback: requests.values()) {
-      callback.setFailed("BlockingRpcClient terminates all the connections",
-          new ServiceException("BlockingRpcClient terminates all the connections"));
+  public int getActiveRequests() {
+    return requests.size();
+  }
+
+  private void sendExceptions(String message) {
+    synchronized (this) {
+      for (int requestId : requests.keySet()) {
+        sendException(requestId, message);
+      }
     }
-    requests.clear();
+  }
+
+  private void sendException(RecoverableException e) {
+    sendException(e.getSeqId(), ExceptionUtils.getRootCauseMessage(e));
+  }
+
+  private void sendException(int requestId, String message) {
+    ProtoCallFuture callback = requests.remove(requestId);
+    if (callback != null) {
+      callback.setFailed(message+"", new TajoServiceException(message));
+    }
+  }
+
+  @Override
+  public void close() {
+    sendExceptions("BlockingRpcClient terminates all the connections");
     super.close();
   }
 
@@ -100,10 +129,10 @@ public class BlockingRpcClient extends NettyClientBase {
           new ProtoCallFuture(controller, responsePrototype);
       requests.put(nextSeqId, callFuture);
 
-      invoke(rpcRequest, 0);
+      invoke(rpcRequest, nextSeqId, 0);
 
       try {
-        return callFuture.get(180, TimeUnit.SECONDS);
+        return callFuture.get();
       } catch (Throwable t) {
         if (t instanceof ExecutionException) {
           Throwable cause = t.getCause();
@@ -163,15 +192,16 @@ public class BlockingRpcClient extends NettyClientBase {
           callback.setFailed(rpcResponse.getErrorMessage(),
               makeTajoServiceException(rpcResponse, new ServiceException(rpcResponse.getErrorTrace())));
         } else {
-          Message responseMessage;
+          Message responseMessage = null;
 
-          if (!rpcResponse.hasResponseMessage()) {
-            responseMessage = null;
-          } else {
-            responseMessage = callback.returnType.newBuilderForType().mergeFrom(rpcResponse.getResponseMessage())
-                .build();
+          if (rpcResponse.hasResponseMessage()) {
+            try {
+              responseMessage = callback.returnType.newBuilderForType().mergeFrom(rpcResponse.getResponseMessage())
+                  .build();
+            } catch (InvalidProtocolBufferException e) {
+              callback.setFailed(e.getMessage(), e);
+            }
           }
-
           callback.setResponse(responseMessage);
         }
       }
@@ -180,39 +210,61 @@ public class BlockingRpcClient extends NettyClientBase {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
         throws Exception {
-      /* Current requests will be failed */
-      for(ProtoCallFuture callback: requests.values()) {
-        callback.setFailed(cause.getMessage(), cause);
-      }
-      requests.clear();
 
-      if(LOG.isDebugEnabled()) {
-        LOG.error("" + cause.getMessage(), cause);
+      if (LOG.isDebugEnabled()) {
+        LOG.error(getRemoteAddress() + "," + protocol + "," + ExceptionUtils.getRootCauseMessage(cause), cause);
       } else {
-        LOG.error("RPC Exception:" + cause.getMessage());
+        LOG.error(getRemoteAddress() + "," + protocol + "," + ExceptionUtils.getRootCauseMessage(cause));
       }
+
+      if (cause instanceof RecoverableException) {
+        sendException((RecoverableException) cause);
+      } else {
+        /* unrecoverable fatal error*/
+        sendExceptions(ExceptionUtils.getRootCauseMessage(cause));
+        if(ctx.channel().isOpen()) {
+          ctx.close();
+        }
+      }
+    }
+
+    @Override
+    public void channelRegistered(ChannelHandlerContext ctx) throws Exception {
+      for (ChannelEventListener listener : getSubscribers()) {
+        listener.channelRegistered(ctx);
+      }
+      super.channelRegistered(ctx);
+    }
+
+    @Override
+    public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+      for (ChannelEventListener listener : getSubscribers()) {
+        listener.channelUnregistered(ctx);
+      }
+
+      super.channelUnregistered(ctx);
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
       super.channelActive(ctx);
-      LOG.info("Connection established successfully : " + ctx.channel().remoteAddress());
+      LOG.info("Connection established successfully : " + ctx.channel());
     }
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-      if (evt instanceof IdleStateEvent) {
+
+      if (!enablePing && evt instanceof IdleStateEvent) {
         IdleStateEvent e = (IdleStateEvent) evt;
         /* If all requests is done and event is triggered, channel will be closed. */
-        if (e.state() == IdleState.ALL_IDLE && requests.size() == 0) {
+        if (e.state() == IdleState.READER_IDLE && getActiveRequests() == 0) {
           ctx.close();
-          LOG.warn("Idle connection closed successfully :" + ctx.channel().remoteAddress());
+          LOG.info("Idle connection closed successfully :" + ctx.channel().remoteAddress());
         }
       } else if (evt instanceof MonitorStateEvent) {
         MonitorStateEvent e = (MonitorStateEvent) evt;
         if (e.state() == MonitorStateEvent.MonitorState.PING_EXPIRED) {
-          ctx.close();
-          ctx.fireExceptionCaught(new ServiceException("No response to ping request: " + ctx.channel()));
+          exceptionCaught(ctx, new ServiceException("Server has not respond: " + ctx.channel()));
         }
       }
     }

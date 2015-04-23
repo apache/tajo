@@ -31,7 +31,7 @@ public class CallFuture<T> implements RpcCallback<T>, Future<T> {
   private RpcController controller;
 
   public CallFuture() {
-    controller = new DefaultRpcController(this);
+    controller = new DefaultRpcController();
   }
 
   public RpcController getController() {

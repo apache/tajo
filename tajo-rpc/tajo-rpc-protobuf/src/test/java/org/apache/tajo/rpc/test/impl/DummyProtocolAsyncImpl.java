@@ -79,8 +79,14 @@ public class DummyProtocolAsyncImpl implements Interface {
     done.run(request);
   }
 
+  @Override
   public void throwException(RpcController controller, EchoMessage request,
                              RpcCallback<EchoMessage> done) {
-    done.run(request);
+    if(controller != null) {
+      controller.setFailed("throwException");
+      done.run(request);
+    } else {
+      throw new RuntimeException("throwException");
+    }
   }
 }

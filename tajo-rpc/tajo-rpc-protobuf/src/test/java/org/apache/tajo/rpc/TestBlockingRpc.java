@@ -371,7 +371,7 @@ public class TestBlockingRpc {
   public void testIdleTimeout() throws Exception {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, false);
-    BlockingRpcClient client = new BlockingRpcClient(rpcConnectionKey, retries, 1); //1 sec idle timeout
+    BlockingRpcClient client = new BlockingRpcClient(rpcConnectionKey, retries, 1, true); //1 sec idle timeout
     client.connect();
     assertTrue(client.isConnected());
 
@@ -389,7 +389,7 @@ public class TestBlockingRpc {
   public void testIdleTimeoutWithActiveRequest() throws Exception {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
         new RpcClientManager.RpcConnectionKey(server.getListenAddress(), DummyProtocol.class, false);
-    BlockingRpcClient client = new BlockingRpcClient(rpcConnectionKey, retries, 1); //1 sec idle timeout
+    BlockingRpcClient client = new BlockingRpcClient(rpcConnectionKey, retries, 1, true); //1 sec idle timeout
 
     client.connect();
 

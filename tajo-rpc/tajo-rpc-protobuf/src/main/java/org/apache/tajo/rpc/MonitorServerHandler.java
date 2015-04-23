@@ -20,14 +20,21 @@ package org.apache.tajo.rpc;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.nio.charset.Charset;
 
-@ChannelHandler.Sharable
+/**
+ * MonitorServerHandler is a packet receiver for detecting server hangs
+ * Reply response when a remote peer sent a ping packet.
+ */
+
 public class MonitorServerHandler extends ChannelInboundHandlerAdapter {
+  private static final Log LOG = LogFactory.getLog(MonitorServerHandler.class);
+
   private ByteBuf ping;
 
   @Override
@@ -54,7 +61,10 @@ public class MonitorServerHandler extends ChannelInboundHandlerAdapter {
   @Override
   public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
     if (isPing(msg)) {
-      /* sent response ping to client */
+      /* reply to client */
+      if(LOG.isDebugEnabled()){
+        LOG.debug("reply to " + ctx.channel());
+      }
       ctx.writeAndFlush(msg);
     } else {
       super.channelRead(ctx, msg);

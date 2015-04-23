@@ -26,14 +26,14 @@ import io.netty.channel.ChannelHandlerContext;
 public interface ChannelEventListener {
 
   /**
-   * Performs actions before start.
-   * @param obj Method caller
+   * Performs actions before channel open.
+   * @param ctx
    */
-  void channelActive(ChannelHandlerContext ctx);
+  void channelRegistered(ChannelHandlerContext ctx);
   
   /**
-   * Performs actions after start.
-   * @param obj Method caller
+   * Performs actions after channel close
+   * @param ctx
    */
-  void channelInactive(ChannelHandlerContext ctx);
+  void channelUnregistered(ChannelHandlerContext ctx);
 }

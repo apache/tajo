@@ -26,14 +26,19 @@ import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.ReferenceCountUtil;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.nio.charset.Charset;
 
 /**
+ * MonitorClientHandler is a packet sender for detecting server hangs
  * Triggers an {@link MonitorStateEvent} when a remote peer has not respond.
- * */
+ */
 
 public class MonitorClientHandler extends ChannelInboundHandlerAdapter {
+  private static final Log LOG = LogFactory.getLog(MonitorClientHandler.class);
+
   private ByteBuf ping;
   private boolean enableMonitor;
 
@@ -66,6 +71,9 @@ public class MonitorClientHandler extends ChannelInboundHandlerAdapter {
   public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
     if(enableMonitor && isPing(msg)){
       //ignore ping response
+      if(LOG.isDebugEnabled()) {
+        LOG.debug("received ping " + ctx.channel());
+      }
       ReferenceCountUtil.release(msg);
     } else {
       super.channelRead(ctx, msg);
@@ -77,10 +85,14 @@ public class MonitorClientHandler extends ChannelInboundHandlerAdapter {
     if (enableMonitor && evt instanceof IdleStateEvent) {
       IdleStateEvent e = (IdleStateEvent) evt;
       if (e.state() == IdleState.READER_IDLE && !e.isFirst()) {
-        /* No response to ping request.*/
+        /* trigger expired event */
+        LOG.info("Server has not respond " + ctx.channel());
         ctx.fireUserEventTriggered(MonitorStateEvent.MONITOR_EXPIRED_STATE_EVENT);
       } else if (e.state() == IdleState.WRITER_IDLE) {
         /* send ping packet to remote server */
+        if(LOG.isDebugEnabled()){
+          LOG.debug("sending ping request " + ctx.channel());
+        }
         ctx.writeAndFlush(ping.duplicate().retain());
       }
     }

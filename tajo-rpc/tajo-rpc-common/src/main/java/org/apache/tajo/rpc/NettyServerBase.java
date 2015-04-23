@@ -18,6 +18,9 @@
 
 package org.apache.tajo.rpc;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
@@ -28,14 +31,15 @@ import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.concurrent.GlobalEventExecutor;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import java.io.IOException;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -56,7 +60,6 @@ public class NettyServerBase {
 
   private InetSocketAddress initIsa;
   private Set<RpcEventListener> listeners = Collections.synchronizedSet(new HashSet<RpcEventListener>());
-  private Set<ChannelEventListener> channelEventListeners = Collections.synchronizedSet(new HashSet<ChannelEventListener>());
 
   public NettyServerBase(InetSocketAddress address) {
     this.initIsa = address;
@@ -237,14 +240,4 @@ public class NettyServerBase {
   public void removeListener(RpcEventListener listener) {
     listeners.remove(listener);
   }
-
-  public void addChannelListener(ChannelEventListener listener) {
-    channelEventListeners.add(listener);
-  }
-
-  public void removeChannelListener(ChannelEventListener listener) {
-    channelEventListeners.remove(listener);
-  }
-
-  public Collection<ChannelEventListener> getChannelListener() { return channelEventListeners; }
 }

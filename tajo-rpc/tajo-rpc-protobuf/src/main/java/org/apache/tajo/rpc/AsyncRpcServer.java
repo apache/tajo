@@ -24,6 +24,7 @@ import com.google.protobuf.RpcCallback;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.Service;
 import io.netty.channel.*;
+import io.netty.util.concurrent.EventExecutor;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.tajo.rpc.RpcProtos.RpcRequest;
@@ -31,15 +32,16 @@ import org.apache.tajo.rpc.RpcProtos.RpcResponse;
 
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.util.Iterator;
 
-public class AsyncRpcServer<T> extends NettyServerBase {
+public class AsyncRpcServer extends NettyServerBase {
   private static final Log LOG = LogFactory.getLog(AsyncRpcServer.class);
 
   private final Service service;
   private final ChannelInitializer<Channel> initializer;
 
   public AsyncRpcServer(final Class<?> protocol,
-                        final T instance,
+                        final Object instance,
                         final InetSocketAddress bindAddress,
                         final int workerNum)
       throws Exception {
@@ -78,84 +80,84 @@ public class AsyncRpcServer<T> extends NettyServerBase {
     }
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-      ctx.fireChannelActive();
-
-      for (ChannelEventListener l : getChannelListener()){
-        l.channelActive(ctx);
-      }
-    }
-
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-      ctx.fireChannelInactive();
-
-      for (ChannelEventListener l : getChannelListener()){
-        l.channelInactive(ctx);
-      }
-    }
-
-    @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-
-      if (!acceptInboundMessage(msg)) {
-        LOG.info("channelRead: " + msg);
-      }
-      super.channelRead(ctx, msg);
-    }
-
-    @Override
     protected void channelRead0(final ChannelHandlerContext ctx, final RpcRequest request) throws Exception {
 
       String methodName = request.getMethodName();
-      MethodDescriptor methodDescriptor = service.getDescriptorForType().findMethodByName(methodName);
+      final MethodDescriptor methodDescriptor = service.getDescriptorForType().findMethodByName(methodName);
 
-      if (methodDescriptor == null) {
-        throw new RemoteCallException(request.getId(), new NoSuchMethodException(methodName));
-      }
+      try {
+        if (methodDescriptor == null) {
+          throw new RemoteCallException(request.getId(), new NoSuchMethodException(methodName));
+        }
 
-      Message paramProto = null;
-      if (request.hasRequestMessage()) {
-        try {
+        Message paramProto = null;
+        if (request.hasRequestMessage()) {
           paramProto = service.getRequestPrototype(methodDescriptor).newBuilderForType()
               .mergeFrom(request.getRequestMessage()).build();
-        } catch (Throwable t) {
-          throw new RemoteCallException(request.getId(), methodDescriptor, t);
         }
+
+        final RpcController controller = new NettyRpcController();
+
+        final RpcCallback<Message> callback = !request.hasId() ? null : new RpcCallback<Message>() {
+
+          public void run(Message returnValue) {
+
+            RpcResponse.Builder builder = RpcResponse.newBuilder().setId(request.getId());
+
+            if (returnValue != null) {
+              builder.setResponseMessage(returnValue.toByteString());
+            }
+
+            if (controller.failed()) {
+              builder.setErrorMessage(controller.errorText());
+            }
+
+            ctx.writeAndFlush(builder.build());
+          }
+        };
+
+        EventExecutor loop = ctx.channel().eventLoop();
+        Iterator<EventExecutor> iterator = ctx.channel().eventLoop().parent().iterator();
+        while (iterator.hasNext()) {
+          loop = iterator.next();
+          if (!loop.inEventLoop()) break;
+        }
+
+        final Message finalParamProto = paramProto;
+        loop.submit(new Runnable() {
+          @Override
+          public void run() {
+            try {
+              service.callMethod(methodDescriptor, controller, finalParamProto, callback);
+            } catch (RemoteCallException e) {
+              ctx.writeAndFlush(e.getResponse());
+            } catch (Throwable throwable) {
+              RemoteCallException exception = new RemoteCallException(request.getId(), methodDescriptor, throwable);
+              ctx.writeAndFlush(exception.getResponse());
+            }
+          }
+        });
+      } catch (RemoteCallException e) {
+        ctx.writeAndFlush(e.getResponse());
+      } catch (Throwable throwable) {
+        RemoteCallException exception = new RemoteCallException(request.getId(), methodDescriptor, throwable);
+        ctx.writeAndFlush(exception.getResponse());
       }
-
-      final RpcController controller = new NettyRpcController();
-
-      RpcCallback<Message> callback = !request.hasId() ? null : new RpcCallback<Message>() {
-
-        public void run(Message returnValue) {
-
-          RpcResponse.Builder builder = RpcResponse.newBuilder().setId(request.getId());
-
-          if (returnValue != null) {
-            builder.setResponseMessage(returnValue.toByteString());
-          }
-
-          if (controller.failed()) {
-            builder.setErrorMessage(controller.errorText());
-          }
-
-          ctx.writeAndFlush(builder.build());
-        }
-      };
-
-      service.callMethod(methodDescriptor, controller, paramProto, callback);
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
-        throws Exception{
-      cause.printStackTrace();
+        throws Exception {
       if (cause instanceof RemoteCallException) {
         RemoteCallException callException = (RemoteCallException) cause;
         ctx.writeAndFlush(callException.getResponse());
       } else {
-        LOG.error(cause.getMessage());
+        /* unhandled exception. */
+        if (ctx.channel().isOpen()) {
+          /* client can be triggered channelInactiveEvent */
+          ctx.close();
+        }
+        LOG.fatal(cause.getMessage(), cause);
       }
     }
   }

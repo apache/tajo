@@ -25,11 +25,6 @@ public class DefaultRpcController implements RpcController {
   private String errorText;
   private boolean error;
   private boolean canceled;
-  private RpcCallback future;
-
-  public DefaultRpcController(RpcCallback future) {
-    this.future = future;
-  }
 
   @Override
   public void reset() {
@@ -57,7 +52,6 @@ public class DefaultRpcController implements RpcController {
   public void setFailed(String s) {
     this.errorText = s;
     this.error = true;
-    this.future.run(null);
   }
 
   @Override

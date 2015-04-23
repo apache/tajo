@@ -27,7 +27,6 @@ import io.netty.handler.codec.protobuf.ProtobufDecoder;
 import io.netty.handler.codec.protobuf.ProtobufEncoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
-import io.netty.handler.timeout.IdleStateHandler;
 
 class ProtoServerChannelInitializer extends ChannelInitializer<Channel> {
   private final MessageLite defaultInstance;
@@ -47,7 +46,6 @@ class ProtoServerChannelInitializer extends ChannelInitializer<Channel> {
   @Override
   protected void initChannel(Channel channel) throws Exception {
     ChannelPipeline pipeline = channel.pipeline();
-    pipeline.addLast("idleStateHandler", new IdleStateHandler(idleTimeSeconds * 2, idleTimeSeconds, 0)); //zero is disabling
     pipeline.addLast("MonitorServerHandler", new MonitorServerHandler());
     pipeline.addLast("frameDecoder", new ProtobufVarint32FrameDecoder());
     pipeline.addLast("protobufDecoder", new ProtobufDecoder(defaultInstance));
