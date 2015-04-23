@@ -29,9 +29,9 @@ import org.apache.tajo.util.TUtil;
  * and a file path to the script where the function is defined.
  */
 public class PythonInvocationDesc implements ProtoObject<PythonInvocationDescProto>, Cloneable {
-  @Expose private boolean isUdf;
-  @Expose private String funcOrClassName;
-  @Expose private String filePath;
+  @Expose private boolean isUdf; // true if udf, false if udaf
+  @Expose private String funcOrClassName; // function name if udf, class name if udaf
+  @Expose private String filePath; // file path to the python module
 
   /**
    * Constructor of {@link PythonInvocationDesc}.
@@ -44,10 +44,6 @@ public class PythonInvocationDesc implements ProtoObject<PythonInvocationDescPro
     this.funcOrClassName = funcOrClassName;
     this.filePath = filePath;
     this.isUdf = isUdf;
-  }
-
-  public void setFuncName(String funcName) {
-    this.funcOrClassName = funcName;
   }
 
   public void setFilePath(String filePath) {

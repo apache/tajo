@@ -60,6 +60,7 @@ public abstract class AggFunctionInvoke implements Cloneable {
 
   public abstract Datum getPartialResult(FunctionContext context);
 
+  // TODO: use {@link IntermFunctionSignature} instead of this function.
   public abstract TajoDataTypes.DataType getPartialResultType();
 
   public abstract Datum terminate(FunctionContext context);

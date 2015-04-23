@@ -27,6 +27,9 @@ import org.apache.tajo.util.TUtil;
 
 import java.util.Arrays;
 
+/**
+ * {@link IntermFunctionSignature} is used for only aggregation functions to keep the schema of intermediate results.
+ */
 public class IntermFunctionSignature implements ProtoObject<CatalogProtos.IntermFunctionSignatureProto>, Cloneable {
 
   @Expose private TajoDataTypes.DataType[] intermParamTypes;
