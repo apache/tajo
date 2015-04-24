@@ -102,9 +102,11 @@ public class AsyncRpcClient extends NettyClientBase {
     }
 
     @Override
-    protected void handleException(ResponseCallback callback, String message) {
+    protected void handleException(int requestId, ResponseCallback callback, String message) {
       RpcResponse.Builder responseBuilder = RpcResponse.newBuilder()
-          .setErrorMessage(message + "");
+          .setErrorMessage(message + "")
+          .setId(requestId);
+
       callback.run(responseBuilder.build());
     }
   }

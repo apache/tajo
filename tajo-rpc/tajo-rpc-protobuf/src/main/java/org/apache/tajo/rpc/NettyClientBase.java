@@ -315,10 +315,11 @@ public abstract class NettyClientBase implements Closeable {
 
     /**
      * Calls from exceptionCaught
+     * @param requestId sequence id of request.
      * @param callback callback of type {@link T}.
      * @param message the error message to handle
      */
-    protected abstract void handleException(T callback, String message);
+    protected abstract void handleException(int requestId, T callback, String message);
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
@@ -348,7 +349,7 @@ public abstract class NettyClientBase implements Closeable {
      */
     private void sendExceptions(String message) {
       for (int requestId : requests.keySet()) {
-        handleException(requests.remove(requestId), message);
+        handleException(requestId, requests.remove(requestId), message);
       }
     }
 
@@ -359,7 +360,7 @@ public abstract class NettyClientBase implements Closeable {
       T callback = requests.remove(e.getSeqId());
 
       if (callback != null) {
-        handleException(callback, ExceptionUtils.getRootCauseMessage(e));
+        handleException(e.getSeqId(), callback, ExceptionUtils.getRootCauseMessage(e));
       }
     }
 

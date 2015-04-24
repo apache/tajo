@@ -141,7 +141,7 @@ public class BlockingRpcClient extends NettyClientBase {
     }
 
     @Override
-    protected void handleException(ProtoCallFuture callback, String message) {
+    protected void handleException(int requestId, ProtoCallFuture callback, String message) {
       callback.setFailed(message + "", new TajoServiceException(message));
     }
   }
