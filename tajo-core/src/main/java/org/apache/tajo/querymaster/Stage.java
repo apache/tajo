@@ -1313,7 +1313,7 @@ public class Stage implements EventHandler<StageEvent> {
     if (!report.getReportSuccess()) {
       stopFinalization();
       LOG.error(getId() + ", " + type + " report are failed. Caused by:" + report.getReportErrorMessage());
-      eventHandler.handle(new StageEvent(getId(), StageEventType.SQ_FAILED));
+      getEventHandler().handle(new StageEvent(getId(), StageEventType.SQ_FAILED));
     }
 
     completedShuffleTasks.addAndGet(report.getSucceededTasks());
@@ -1325,7 +1325,7 @@ public class Stage implements EventHandler<StageEvent> {
 
     if (completedShuffleTasks.get() >= succeededObjectCount) {
       LOG.info(getId() + ", Finalized " + type + " reports: " + completedShuffleTasks.get());
-      eventHandler.handle(new StageEvent(getId(), StageEventType.SQ_STAGE_COMPLETED));
+      getEventHandler().handle(new StageEvent(getId(), StageEventType.SQ_STAGE_COMPLETED));
       if (timeoutChecker != null) {
         stopFinalization();
         synchronized (timeoutChecker){
@@ -1391,7 +1391,7 @@ public class Stage implements EventHandler<StageEvent> {
                       stage.stopFinalization();
                       LOG.error(stage.getId() + ": Timed out while receiving intermediate reports: " + elapsedTime
                           + " ms, report:" + stage.completedShuffleTasks.get() + "/" + stage.succeededObjectCount);
-                      stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_FAILED));
+                      stage.getEventHandler().handle(new StageEvent(stage.getId(), StageEventType.SQ_FAILED));
                     }
                     synchronized (this) {
                       try {
@@ -1405,14 +1405,14 @@ public class Stage implements EventHandler<StageEvent> {
               stage.timeoutChecker.start();
             }
           } else {
-            stage.handle(new StageEvent(stage.getId(), StageEventType.SQ_STAGE_COMPLETED));
+            stage.getEventHandler().handle(new StageEvent(stage.getId(), StageEventType.SQ_STAGE_COMPLETED));
           }
         }
       } catch (Throwable t) {
         LOG.error(t.getMessage(), t);
         stage.stopFinalization();
-        stage.eventHandler.handle(new StageDiagnosticsUpdateEvent(stage.getId(), t.getMessage()));
-        stage.eventHandler.handle(new StageEvent(stage.getId(), StageEventType.SQ_INTERNAL_ERROR));
+        stage.getEventHandler().handle(new StageDiagnosticsUpdateEvent(stage.getId(), t.getMessage()));
+        stage.getEventHandler().handle(new StageEvent(stage.getId(), StageEventType.SQ_INTERNAL_ERROR));
       }
     }
   }
