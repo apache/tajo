@@ -267,7 +267,7 @@ public class TestAsyncRpc {
     assertNull(future.getController().errorText());
   }
 
-  @Test(timeout = 10000)
+  @Test(timeout = 60000)
   public void testServerShutdown() throws Exception {
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
@@ -283,9 +283,8 @@ public class TestAsyncRpc {
     assertNotNull(future.getController().errorText(), future.getController().errorText());
   }
 
-  @Test(timeout = 10000)
+  @Test(timeout = 60000)
   public void testServerShutdown2() throws Exception {
-
     EchoMessage echoMessage = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
     CallFuture<EchoMessage> future = new CallFuture<EchoMessage>();
@@ -348,7 +347,7 @@ public class TestAsyncRpc {
   }
 
 
-  @Test(timeout = 10000)
+  @Test(timeout = 60000)
   @SetupRpcConnection(setupRpcServer = false, setupRpcClient = false)
   public void testClientRetryFailureOnStartup() throws Exception {
     retries = 2;
@@ -380,7 +379,7 @@ public class TestAsyncRpc {
     assertNotNull(future.getController().errorText(), future.getController().errorText());
   }
 
-  @Test(timeout = 10000)
+  @Test(timeout = 60000)
   @SetupRpcConnection(setupRpcServer = false, setupRpcClient = false)
   public void testUnresolvedAddress() throws Exception {
     InetSocketAddress address = new InetSocketAddress("test", 0);
@@ -403,7 +402,7 @@ public class TestAsyncRpc {
 
   }
 
-  @Test(timeout = 10000)
+  @Test(timeout = 60000)
   @SetupRpcConnection(setupRpcClient = false)
   public void testUnresolvedAddress2() throws Exception {
     String hostAndPort = RpcUtils.normalizeInetSocketAddress(server.getListenAddress());
@@ -428,7 +427,7 @@ public class TestAsyncRpc {
     }
   }
 
-  @Test(timeout = 20000)
+  @Test(timeout = 60000)
   @SetupRpcConnection(setupRpcClient = false)
   public void testStubRecovery() throws Exception {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
@@ -460,7 +459,7 @@ public class TestAsyncRpc {
     }
   }
 
-  @Test(timeout = 20000)
+  @Test(timeout = 60000)
   @SetupRpcConnection(setupRpcClient = false)
   public void testIdleTimeout() throws Exception {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
@@ -481,7 +480,7 @@ public class TestAsyncRpc {
     client.close();
   }
 
-  @Test(timeout = 20000)
+  @Test(timeout = 60000)
   @SetupRpcConnection(setupRpcClient = false)
   public void testPingOnIdle() throws Exception {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
@@ -500,7 +499,7 @@ public class TestAsyncRpc {
     client.close();
   }
 
-  @Test(timeout = 20000)
+  @Test(timeout = 60000)
   @SetupRpcConnection(setupRpcClient = false)
   public void testIdleTimeoutWithActiveRequest() throws Exception {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
@@ -528,7 +527,7 @@ public class TestAsyncRpc {
     assertFalse(client.isConnected());
   }
 
-  @Test(timeout = 40000)
+  @Test(timeout = 60000)
   @SetupRpcConnection(setupRpcClient = false)
   public void testRequestTimeoutOnBusy() throws Exception {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =

@@ -245,7 +245,7 @@ public class TestBlockingRpc {
     assertNull(controller.errorText());
   }
 
-  @Test(timeout = 10000)
+  @Test(timeout = 60000)
   public void testServerShutdown() throws Exception {
     EchoMessage message = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
@@ -261,7 +261,7 @@ public class TestBlockingRpc {
     assertTrue(expect);
   }
 
-  @Test(timeout = 10000)
+  @Test(timeout = 60000)
   public void testServerShutdown2() throws Exception {
     EchoMessage message = EchoMessage.newBuilder()
         .setMessage(MESSAGE).build();
@@ -330,7 +330,7 @@ public class TestBlockingRpc {
     }
   }
 
-  @Test(timeout = 10000)
+  @Test(timeout = 60000)
   @SetupRpcConnection(setupRpcServer = false, setupRpcClient = false)
   public void testClientRetryOnStartup() throws Exception {
     retries = 10;
@@ -371,7 +371,7 @@ public class TestBlockingRpc {
     server.shutdown();
   }
 
-  @Test(timeout = 10000)
+  @Test(timeout = 60000)
   @SetupRpcConnection(setupRpcServer = false, setupRpcClient = false)
   public void testClientRetryFailureOnStartup() throws Exception {
     retries = 2;
@@ -403,7 +403,7 @@ public class TestBlockingRpc {
     RpcClientManager.cleanup(client);
   }
 
-  @Test(timeout = 10000)
+  @Test(timeout = 60000)
   @SetupRpcConnection(setupRpcServer = false, setupRpcClient = false)
   public void testUnresolvedAddress() throws Exception {
     InetSocketAddress address = new InetSocketAddress("test", 0);
@@ -447,7 +447,7 @@ public class TestBlockingRpc {
     }
   }
 
-  @Test(timeout = 20000)
+  @Test(timeout = 60000)
   @SetupRpcConnection(setupRpcClient = false)
   public void testStubRecovery() throws Exception {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
@@ -478,7 +478,7 @@ public class TestBlockingRpc {
   }
 
 
-  @Test(timeout = 20000)
+  @Test(timeout = 60000)
   @SetupRpcConnection(setupRpcClient = false)
   public void testIdleTimeout() throws Exception {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
@@ -499,7 +499,7 @@ public class TestBlockingRpc {
     client.close();
   }
 
-  @Test(timeout = 20000)
+  @Test(timeout = 60000)
   @SetupRpcConnection(setupRpcClient = false)
   public void testPingOnIdle() throws Exception {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
@@ -518,7 +518,7 @@ public class TestBlockingRpc {
     client.close();
   }
 
-  @Test(timeout = 20000)
+  @Test(timeout = 60000)
   @SetupRpcConnection(setupRpcClient = false)
   public void testIdleTimeoutWithActiveRequest() throws Exception {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
@@ -541,7 +541,7 @@ public class TestBlockingRpc {
     assertFalse(client.isConnected());
   }
 
-  @Test(timeout = 40000)
+  @Test(timeout = 60000)
   @SetupRpcConnection(setupRpcClient = false)
   public void testRequestTimeoutOnBusy() throws Exception {
     RpcClientManager.RpcConnectionKey rpcConnectionKey =
