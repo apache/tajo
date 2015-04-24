@@ -89,7 +89,10 @@ public class SimpleParser {
 
     // if parsing continues, it means that the previous line is broken by '\n'.
     // So, we should add new line to rawAppender.
-    if (isStatementContinue()) {
+    int appenderLen = rawAppender.length();
+    if (appenderLen != 0
+      && rawAppender.charAt(appenderLen - 1) != '\n'
+      && isStatementContinue()) {
       rawAppender.append("\n");
     }
 
@@ -298,9 +301,6 @@ public class SimpleParser {
 
   /**
    * It checks if inline comment '--' begins.
-   * @param chars
-   * @param idx
-   * @return
    */
   private boolean isInlineCommentStart(char[] chars, int idx) {
     if (idx >= chars.length - 1) {
